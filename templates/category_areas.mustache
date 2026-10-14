@@ -1,0 +1,326 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_areas
+
+    The areas of a page: one poster per area and, between the rows, the panel of
+    the open one. The same partial draws the root's directory and the first
+    section of a category page organised by area, so a poster looks and behaves
+    the same on both. category_listing::areas() builds the context and holds the
+    rule behind each flag.
+
+    The posters are a grid of list items. Past the slice the server cuts at, the
+    rest sit inside a native disclosure below the grid, with a grid of their own;
+    it is drawn open when the open poster is among them, or the panel would be
+    drawn where nobody can see it.
+
+    The panel is one list item per page, always in the document: inside the grid
+    that holds the open poster, right after that poster's item, or, when nothing
+    is open, empty and hidden at the end of the main grid, where the client
+    module fills it. Its style attribute carries the five integers that place its
+    row and its arrow per breakpoint, and the open area's band, which paints its
+    rail, its head and its glow; integers and one hex colour printed back by
+    branding::hex() are that attribute's whole vocabulary, so this CSS-context
+    sink can only ever hold numbers and a colour.
+
+    Without JavaScript every poster is a link: an expandable one opens its panel
+    (landing on it by the fragment), the open one closes it (landing back on the
+    poster), and one with nothing to open is the area's own page. The hint under
+    the grid goes once a panel is open. The status paragraph sits outside both
+    grids and is never re-created, so a screen reader keeps tracking it while the
+    client rewrites its text after every load.
+
+    On a category page the link to the courses sitting directly in the category
+    is written beside the heading, hidden while that section is, so the client
+    can offer it again; the root has no such section.
+
+    Under a search or a filter the section says so (data-filtered) and carries
+    the sentence a zero panel's announcement ends with (data-elsewhere). Every
+    poster wears its number as a pill; a poster with no result leaves its grid
+    through the hidden attribute on its item - never removed, and never the open
+    one - and the areas with no result are named in a closed disclosure after the
+    grids, each a link to the area's own page without the criterion (or its name
+    as text where the reader has no page to open), the open one's entry hidden
+    while it stays in the grid. That disclosure carries both of its sentences, so
+    the client swaps them without composing anything. The reveal past the slice
+    opens by itself when it holds a result, and is hidden when it holds neither a
+    result nor the open poster. When nothing matched anywhere and no panel is
+    open, a box says so, with the page's way out of every filter and, on a
+    category page searched for a term, a link to the root carrying the term,
+    offered only where the reader may open the root. Each of these is in the
+    document on every page, hidden when it has nothing to say, because the client
+    applies filters in place and shows them again. The root reads its search
+    alone, so its box speaks of the search and its way out clears it.
+
+    The example draws both states at once - a poster at rest beside one wearing
+    its pill and a zero poster the criterion hid, with the summary and the
+    "nothing matches" box - so that every region is rendered and linted from one
+    context. A real page is at rest or narrowed, never both.
+
+    Example context (json):
+    {
+        "categoryid": 7,
+        "isroot": false,
+        "heading": "Áreas em Proteção Civil",
+        "hasdirectlink": true,
+        "directlinklabel": "Ir para os cursos desta categoria",
+        "isopen": true,
+        "filtered": true,
+        "elsewhere": "Há resultados em outra área.",
+        "hasposters": true,
+        "posters": [
+            {
+                "id": 8,
+                "name": "Brigada",
+                "url": "https://example.com/course/index.php?categoryid=8",
+                "description": "Formação continuada e cursos técnicos.",
+                "hasdescription": true,
+                "style": "--dim-card-band: #070093; --dim-card-ink: #ffffff; --dim-mark-a: 0.20;",
+                "imageurl": null,
+                "hasimage": false,
+                "hasvideo": false,
+                "videourl": null,
+                "videotype": null,
+                "badges": [],
+                "hasbadges": false,
+                "badgeslabel": "Instituições",
+                "hasmark": true,
+                "markfolder": true,
+                "count": 12,
+                "linkable": true,
+                "istext": false,
+                "variant": "band",
+                "expandable": true,
+                "isopen": true,
+                "controlurl": "https://example.com/course/index.php?categoryid=7#dim-area-8",
+                "hascontrolurl": true,
+                "shell": {"titleurl": "https://example.com/course/index.php?categoryid=8", "ctaurl": "https://example.com/course/index.php?categoryid=8&q=resgate&sort=recent", "ctalabel": "Acessar Brigada · mais 4 resultados", "resultlabel": "12 resultados", "resultcount": "12"},
+                "hidden": false,
+                "results": {"has": true, "label": "12 resultados", "count": "12", "iszero": false}
+            },
+            {
+                "id": 9,
+                "name": "Trânsito",
+                "url": "https://example.com/course/index.php?categoryid=9",
+                "description": "",
+                "hasdescription": false,
+                "style": "--dim-card-band: #12484f; --dim-card-ink: #ffffff;",
+                "imageurl": "https://example.com/pluginfile.php/31/theme_dimensions/categorycover/9/abc/capa.jpg",
+                "hasimage": true,
+                "hasvideo": false,
+                "videourl": null,
+                "videotype": null,
+                "badges": [],
+                "hasbadges": false,
+                "badgeslabel": "Instituições",
+                "hasmark": false,
+                "markfolder": false,
+                "count": 0,
+                "linkable": true,
+                "istext": false,
+                "variant": "photo",
+                "expandable": false,
+                "isopen": false,
+                "controlurl": "https://example.com/course/index.php?categoryid=9",
+                "hascontrolurl": true,
+                "shell": {"titleurl": "https://example.com/course/index.php?categoryid=9", "ctaurl": "https://example.com/course/index.php?categoryid=9&sort=recent", "ctalabel": "Acessar Trânsito", "resultlabel": "", "resultcount": ""},
+                "hidden": false,
+                "results": {"has": false, "label": "", "count": "", "iszero": false}
+            },
+            {
+                "id": 10,
+                "name": "Aviação",
+                "url": "https://example.com/course/index.php?categoryid=10",
+                "description": "",
+                "hasdescription": false,
+                "style": "--dim-card-band: #4b3f72; --dim-card-ink: #ffffff; --dim-mark-a: 0.18;",
+                "imageurl": null,
+                "hasimage": false,
+                "hasvideo": false,
+                "videourl": null,
+                "videotype": null,
+                "badges": [],
+                "hasbadges": false,
+                "badgeslabel": "Instituições",
+                "hasmark": true,
+                "markfolder": true,
+                "count": 0,
+                "linkable": true,
+                "istext": false,
+                "variant": "band",
+                "expandable": true,
+                "isopen": false,
+                "controlurl": "https://example.com/course/index.php?categoryid=7&q=resgate&open=10#dim-panel",
+                "hascontrolurl": true,
+                "shell": {"titleurl": "https://example.com/course/index.php?categoryid=10", "ctaurl": "https://example.com/course/index.php?categoryid=10&q=resgate&sort=recent", "ctalabel": "Acessar Aviação", "resultlabel": "0 resultados", "resultcount": "0"},
+                "hidden": true,
+                "results": {"has": true, "label": "0 resultados", "count": "0", "iszero": true}
+            }
+        ],
+        "hasmore": true,
+        "morehidden": false,
+        "morelabel": "Mostrar mais 1 área",
+        "moreopen": false,
+        "postersmore": [
+            {
+                "id": 14,
+                "name": "Defesa Civil",
+                "url": "https://example.com/course/index.php?categoryid=14",
+                "description": "Prevenção, resposta e reconstrução.",
+                "hasdescription": true,
+                "style": "--dim-card-band: #4b3f72; --dim-card-ink: #ffffff; --dim-mark-a: 0.18;",
+                "imageurl": null,
+                "hasimage": false,
+                "hasvideo": false,
+                "videourl": null,
+                "videotype": null,
+                "badges": [],
+                "hasbadges": false,
+                "badgeslabel": "Instituições",
+                "hasmark": true,
+                "markfolder": true,
+                "count": 3,
+                "linkable": true,
+                "istext": false,
+                "variant": "band",
+                "expandable": true,
+                "isopen": false,
+                "controlurl": "https://example.com/course/index.php?categoryid=7&open=14#dim-panel",
+                "hascontrolurl": true,
+                "shell": {"titleurl": "https://example.com/course/index.php?categoryid=14", "ctaurl": "https://example.com/course/index.php?categoryid=14&sort=recent", "ctalabel": "Acessar Defesa Civil", "resultlabel": "", "resultcount": ""},
+                "hidden": false,
+                "results": {"has": false, "label": "", "count": "", "iszero": false}
+            }
+        ],
+        "panelinmain": true,
+        "panelinmore": false,
+        "panelstyle": "--dim-row-3: 2; --dim-row-2: 2; --dim-row-1: 2; --dim-col-3: 0; --dim-col-2: 0; --dim-area-bg: #070093;",
+        "panel": {
+            "id": 8,
+            "name": "Brigada",
+            "titleurl": "https://example.com/course/index.php?categoryid=8",
+            "haslink": true,
+            "isd20": false,
+            "subtitle": "12 cursos",
+            "psortname": false,
+            "sorturlrecent": "https://example.com/course/index.php?categoryid=7&open=8#dim-panel",
+            "sorturlname": "https://example.com/course/index.php?categoryid=7&open=8&psort=name#dim-panel",
+            "closeurl": "https://example.com/course/index.php?categoryid=7#dim-area-8",
+            "also": {
+                "has": false,
+                "pills": [],
+                "hasmore": false,
+                "morecount": "0",
+                "moreurl": ""
+            },
+            "hascards": false,
+            "few": false,
+            "counter": "",
+            "tile": {"has": false, "count": "0", "label": "cursos", "url": ""},
+            "isrows": false,
+            "isempty": true,
+            "iszero": false,
+            "zero": "",
+            "suggestions": [],
+            "hassuggestions": false,
+            "cta": {"has": true, "url": "https://example.com/course/index.php?categoryid=8&sort=recent", "label": "Acessar Brigada"},
+            "seeaslist": {"has": false, "url": ""},
+            "jsmode": false,
+            "isloading": false,
+            "isskeleton": false,
+            "iserror": false,
+            "cards": []
+        },
+        "hashint": false,
+        "nomatch": {
+            "show": true,
+            "label": "Nada para “resgate” em outras 2 áreas",
+            "labelall": "Nada para “resgate” em outras 2 áreas",
+            "labelless": "Nada para “resgate” em outra área",
+            "areas": [
+                {"id": 10, "name": "Aviação", "url": "https://example.com/course/index.php?categoryid=10", "haslink": true, "isopen": false},
+                {"id": 15, "name": "Proteção Ambiental", "url": "", "haslink": false, "isopen": false}
+            ]
+        },
+        "allempty": true,
+        "allemptylabel": "Nenhum curso corresponde à busca e aos filtros.",
+        "allemptyhint": "Tente outro termo ou limpe os filtros.",
+        "clearlabel": "Limpar filtros",
+        "searchallurl": "https://example.com/course/index.php?q=resgate",
+        "clearurl": "https://example.com/course/index.php?categoryid=7",
+        "emptylabel": "Ainda não há categorias para mostrar aqui."
+    }
+}}
+<section class="dim-areas{{#isopen}} dim-areas--open{{/isopen}}" data-region="dim-areas" data-categoryid="{{categoryid}}" data-filtered="{{#filtered}}1{{/filtered}}{{^filtered}}0{{/filtered}}" data-elsewhere="{{elsewhere}}" aria-labelledby="dim-areas-title">
+    <div class="dim-areas__head">
+        <h2 class="dim-areas__title" id="dim-areas-title">{{heading}}</h2>
+        {{^isroot}}
+        <a class="dim-areas__skip" href="#dim-direct-title" data-region="dim-direct-skip"{{^hasdirectlink}} hidden{{/hasdirectlink}}>{{directlinklabel}}</a>
+        {{/isroot}}
+    </div>
+    {{#hasposters}}
+    <ul class="dim-vitrine__grid dim-areas__grid" role="list" data-region="dim-areas-grid">
+        {{#posters}}
+        <li class="dim-areas__item"{{#hidden}} hidden{{/hidden}}>{{> theme_dimensions/category_directory_card }}</li>
+        {{#isopen}}
+        <li class="dim-panel" id="dim-panel" data-region="dim-panel" style="{{panelstyle}}">{{#panel}}{{> theme_dimensions/category_panel }}{{/panel}}</li>
+        {{/isopen}}
+        {{/posters}}
+        {{^isopen}}
+        <li class="dim-panel" id="dim-panel" data-region="dim-panel" hidden></li>
+        {{/isopen}}
+    </ul>
+    {{#hashint}}
+    <p class="dim-areas__hint" data-region="dim-areas-hint"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> {{#str}}category_areas_hint, theme_dimensions{{/str}}</p>
+    {{/hashint}}
+    <div class="dim-areas__allempty" data-region="dim-areas-empty"{{^allempty}} hidden{{/allempty}}>
+        <p><b>{{allemptylabel}}</b></p>
+        <p>{{allemptyhint}}</p>
+        <p class="dim-areas__allemptyways">
+            <a class="dim-areas__allemptyclear" href="{{clearurl}}" data-action="dim-clear">{{clearlabel}}</a>
+            <a class="dim-areas__searchall" href="{{searchallurl}}" data-region="dim-areas-searchall"{{^searchallurl}} hidden{{/searchallurl}}>{{#str}}category_searchall, theme_dimensions{{/str}}</a>
+        </p>
+    </div>
+    {{#hasmore}}
+    <details class="dim-vitrine__more dim-areas__more" data-region="dim-areas-more"{{#moreopen}} open{{/moreopen}}{{#morehidden}} hidden{{/morehidden}}>
+        <summary class="dim-vitrine__morebutton" data-region="dim-areas-moresummary">{{morelabel}}</summary>
+        <ul class="dim-vitrine__grid dim-areas__grid" role="list" data-region="dim-areas-grid">
+            {{#postersmore}}
+            <li class="dim-areas__item"{{#hidden}} hidden{{/hidden}}>{{> theme_dimensions/category_directory_card }}</li>
+            {{#isopen}}
+            <li class="dim-panel" id="dim-panel" data-region="dim-panel" style="{{panelstyle}}">{{#panel}}{{> theme_dimensions/category_panel }}{{/panel}}</li>
+            {{/isopen}}
+            {{/postersmore}}
+        </ul>
+    </details>
+    {{/hasmore}}
+    <details class="dim-areas__nomatch" id="dim-nomatch" data-region="dim-areas-nomatch" data-label-all="{{nomatch.labelall}}" data-label-less="{{nomatch.labelless}}"{{^nomatch.show}} hidden{{/nomatch.show}}>
+        <summary class="dim-areas__nomatchsummary" data-region="dim-nomatch-summary">{{nomatch.label}}</summary>
+        <ul class="dim-areas__nomatchlist" role="list" data-region="dim-nomatch-list">
+            {{#nomatch.areas}}
+            <li data-categoryid="{{id}}"{{#isopen}} hidden{{/isopen}}>{{#haslink}}<a href="{{url}}">{{name}}</a>{{/haslink}}{{^haslink}}{{name}}{{/haslink}}</li>
+            {{/nomatch.areas}}
+        </ul>
+    </details>
+    {{/hasposters}}
+    {{^hasposters}}
+    <div class="dim-vitrine__empty" data-region="dim-vitrine-empty">
+        <p>{{emptylabel}}</p>
+    </div>
+    {{/hasposters}}
+    <p class="visually-hidden" role="status" aria-live="polite" data-region="dim-panel-status"></p>
+</section>

@@ -1,0 +1,303 @@
+// Theme Dimensions - The course notice.
+//
+// The one notice region of a course page (templates/course_notice.mustache), in place of Boost Union's
+// stacked course related hints. The design is the course notice mockup: a card cut at its top
+// right corner, a 4px brand mark down its left edge, a bar of chips and buttons, and the detail rows.
+//
+// This file is concatenated into the theme's main SCSS and so reaches every page of the site, and
+// plugin and theme CSS is compiled before nothing that would yield to a bare class: every selector is
+// qualified with the notice's own class. The tokens are declared on the region itself, read from
+// Bootstrap's own (which follow the colour mode) with the design system's tokens and a literal as the
+// fallback chain; the dark half re-points the brand inks and the chip tones at the foot of the file.
+// Moodle 5.2 has one dark mechanism, data-bs-theme on the html element.
+
+.dim-coursenotice {
+    --fsn-card: var(--bs-body-bg, var(--surface-card, #fff));
+    --fsn-subtle: var(--bs-tertiary-bg, var(--surface-subtle, #f2f3f5));
+    --fsn-line: var(--bs-border-color, var(--border-default, #dee2e6));
+    --fsn-line-soft: var(--bs-border-color-translucent, var(--border-subtle, #e9ecef));
+    --fsn-ink: var(--bs-body-color, var(--text-body, #1f1f1f));
+    --fsn-muted: var(--bs-secondary-color, var(--text-muted, #505050));
+    --fsn-mark: var(--dim-ds-blue-400, #4456ff);
+    --fsn-heading: var(--text-heading, var(--bs-primary, #070093));
+    --fsn-link: var(--text-link, var(--bs-link-color, #070093));
+    --fsn-cta: var(--dim-ds-blue-600, #070093);
+    --fsn-cta-ink: var(--dim-ds-white, #fff);
+    --fsn-ring: var(--focus-ring, #4456ff);
+    // The chip and note tones: the design system's feedback hues, each with its own ink.
+    --fsn-ok-bg: var(--dim-ds-green-050, #f0fbe0);
+    --fsn-ok-fg: var(--dim-ds-green-700, #2f6b00);
+    --fsn-warn-bg: var(--dim-ds-yellow-100, #fcefdc);
+    --fsn-warn-fg: var(--dim-ds-yellow-800, #60451f);
+    --fsn-info-bg: var(--dim-ds-cyan-100, #cce6ea);
+    --fsn-info-fg: var(--dim-ds-cyan-800, #00343c);
+    --fsn-chamfer: 18px;
+
+    position: relative;
+    margin: 0 0 1rem;
+    background: var(--fsn-card);
+    color: var(--fsn-ink);
+    border: 1px solid var(--fsn-line);
+    border-inline-start: 0;
+    border-radius: 0 0 var(--radius-md, 8px) var(--radius-md, 8px);
+    // The design's cut corner. A clip-path also clips outlines, so the bar keeps enough padding on
+    // its right for the fold control's focus ring to stay inside the polygon.
+    clip-path: polygon(0 0, calc(100% - var(--fsn-chamfer)) 0, 100% var(--fsn-chamfer), 100% 100%, 0 100%);
+    font-size: .9375rem;
+}
+
+.dim-coursenotice::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: var(--fsn-mark);
+}
+
+.dim-coursenotice .icon {
+    // Core's global .icon rule gives every glyph a right margin meant for a label that follows it;
+    // these controls space their content with a gap.
+    margin: 0;
+}
+
+.dim-coursenotice .dim-coursenotice__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 10px 1.75rem 10px 18px;
+}
+
+.dim-coursenotice .dim-coursenotice__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-inline-end: 4px;
+    color: var(--fsn-heading);
+    font-family: var(--bs-font-sans-serif, inherit);
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+.dim-coursenotice .dim-coursenotice__chips {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dim-coursenotice .dim-coursenotice__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border-radius: var(--radius-pill, 50rem);
+    background: var(--fsn-subtle);
+    color: var(--fsn-muted);
+    font-size: .76rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.dim-coursenotice .dim-coursenotice__chip::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentcolor;
+    opacity: .8;
+}
+
+.dim-coursenotice .dim-coursenotice__chip--ok {
+    background: var(--fsn-ok-bg);
+    color: var(--fsn-ok-fg);
+}
+
+.dim-coursenotice .dim-coursenotice__chip--warn {
+    background: var(--fsn-warn-bg);
+    color: var(--fsn-warn-fg);
+}
+
+.dim-coursenotice .dim-coursenotice__chip--info {
+    background: var(--fsn-info-bg);
+    color: var(--fsn-info-fg);
+}
+
+.dim-coursenotice .dim-coursenotice__acts,
+.dim-coursenotice .dim-coursenotice__quick {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.dim-coursenotice .dim-coursenotice__acts {
+    margin-inline-start: auto;
+}
+
+.dim-coursenotice .dim-coursenotice__quick[hidden],
+.dim-coursenotice .dim-coursenotice__detail[hidden] {
+    display: none;
+}
+
+.dim-coursenotice .dim-coursenotice__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border: 1px solid var(--fsn-line);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--fsn-card);
+    color: var(--fsn-ink);
+    font-size: .8rem;
+    font-weight: 500;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dim-coursenotice .dim-coursenotice__btn:hover {
+    border-color: var(--fsn-mark);
+    color: var(--fsn-heading);
+}
+
+.dim-coursenotice .dim-coursenotice__btn:focus-visible {
+    outline: var(--focus-ring-width, 3px) solid var(--fsn-ring);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+.dim-coursenotice .dim-coursenotice__btn--icon {
+    padding: 7px 8px;
+}
+
+.dim-coursenotice .dim-coursenotice__btn--primary,
+.dim-coursenotice .dim-coursenotice__btn--primary:hover {
+    border-color: var(--fsn-cta);
+    background: var(--fsn-cta);
+    color: var(--fsn-cta-ink);
+}
+
+.dim-coursenotice [data-action="dim-coursenotice-toggle"] .icon {
+    transition: transform 150ms ease-in-out;
+}
+
+.dim-coursenotice [data-action="dim-coursenotice-toggle"][aria-expanded="true"] .icon {
+    transform: rotate(180deg);
+}
+
+.dim-coursenotice .dim-coursenotice__detail {
+    display: grid;
+    gap: 10px;
+    padding: 12px 14px 14px 18px;
+    border-top: 1px solid var(--fsn-line-soft);
+}
+
+.dim-coursenotice .dim-coursenotice__row {
+    display: grid;
+    grid-template-columns: 9.5rem minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    align-items: center;
+}
+
+.dim-coursenotice .dim-coursenotice__label {
+    color: var(--fsn-muted);
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.dim-coursenotice .dim-coursenotice__label small {
+    display: block;
+    font-size: .72rem;
+    font-weight: 400;
+}
+
+.dim-coursenotice .dim-coursenotice__address {
+    min-width: 0;
+    padding: 7px 10px;
+    overflow-x: auto;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--fsn-subtle);
+    color: var(--fsn-ink);
+    font-size: .82rem;
+    white-space: nowrap;
+}
+
+.dim-coursenotice .dim-coursenotice__rowacts {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.dim-coursenotice .dim-coursenotice__note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--fsn-muted);
+    font-size: .8rem;
+}
+
+.dim-coursenotice .dim-coursenotice__note > .icon {
+    flex: none;
+    margin-top: 2px;
+}
+
+.dim-coursenotice .dim-coursenotice__note--warn > .icon {
+    color: var(--fsn-warn-fg);
+}
+
+.dim-coursenotice .dim-coursenotice__note strong {
+    color: var(--fsn-ink);
+    font-weight: 600;
+}
+
+.dim-coursenotice .dim-coursenotice__note a {
+    color: var(--fsn-link);
+}
+
+.dim-coursenotice .dim-coursenotice__line {
+    display: block;
+}
+
+.dim-coursenotice .dim-coursenotice__line + .dim-coursenotice__line {
+    margin-top: 4px;
+}
+
+@media (max-width: 575.98px) {
+    .dim-coursenotice .dim-coursenotice__row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dim-coursenotice .dim-coursenotice__acts {
+        margin-inline-start: 0;
+    }
+}
+
+// MooTube moves the notice into its own scrolling content (amd/src/coursenotice.js), whose children
+// run edge to edge: the notice takes the spacing the format gives its own panels.
+body#page-course-view-mtube .dim-coursenotice.dim-coursenotice--mtube {
+    margin: 1rem 1rem 0;
+}
+
+// ---- The dark half ----------------------------------------------------------------------------
+// The surfaces, lines and body inks follow Bootstrap's own dark tokens already. The brand inks move
+// to the design system's lighter stops (the navy would be a hole in a dark page), and the chip tones
+// take the dark pairs the category showcase's badges were audited with (category.scss): each over
+// the 4.5:1 floor.
+:root[data-bs-theme="dark"] .dim-coursenotice {
+    --fsn-mark: var(--dim-ds-blue-300, #7c84ff);
+    --fsn-heading: var(--dim-ds-blue-200, #adb2f0);
+    --fsn-link: var(--dim-ds-blue-200, #adb2f0);
+    --fsn-cta: var(--dim-ds-blue-400, #4456ff);
+    --fsn-ring: var(--dim-ds-blue-300, #7c84ff);
+    --fsn-ok-bg: #18330c;
+    --fsn-ok-fg: #a9ee55; // 9.9:1.
+    --fsn-warn-bg: #3a2c0c;
+    --fsn-warn-fg: #f0c674; // 8.4:1.
+    --fsn-info-bg: #0c2e33;
+    --fsn-info-fg: #7fd8e4; // 8.8:1.
+}

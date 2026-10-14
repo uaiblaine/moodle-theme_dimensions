@@ -1,0 +1,461 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Theme Dimensions - Tests for the course form hook callback
+ *
+ * @package    theme_dimensions
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace theme_dimensions\local\hook\course;
+
+use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\hotsitefields;
+use PHPUnit\Framework\Attributes\CoversClass;
+
+/**
+ * Tests for the course form hook callback.
+ *
+ * @package    theme_dimensions
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+#[CoversClass(after_form_definition::class)]
+final class after_form_definition_test extends \advanced_testcase {
+    /** @var string Form element name of the page model select. */
+    private const MODELO = 'customfield_' . hotsitefields::SHORTNAME_MODELO;
+
+    /**
+     * Leave no router built under this test's setting behind.
+     */
+    protected function tearDown(): void {
+        \core\di::reset_container();
+        parent::tearDown();
+    }
+
+    /**
+     * Declare the site's router configured or not, and let the next reader build the router against it.
+     *
+     * @param bool $configured Whether the router is configured.
+     * @return void
+     */
+    private function set_router(bool $configured): void {
+        global $CFG;
+        $CFG->routerconfigured = $configured;
+        \core\di::reset_container();
+    }
+
+    /**
+     * Build the hook around a minimal form.
+     *
+     * The '_static' sibling mirrors what core adds for a field that carries a
+     * description ({@see \core_customfield\handler::instance_form_definition()}).
+     *
+     * @param \stdClass|null $course The course being edited, if any.
+     * @return \core_course\hook\after_form_definition The hook.
+     */
+    private function make_hook(?\stdClass $course = null): \core_course\hook\after_form_definition {
+        global $CFG;
+        require_once($CFG->libdir . '/formslib.php');
+        require_once($CFG->dirroot . '/course/edit_form.php');
+
+        $mform = new \MoodleQuickForm('testform', 'post', '/');
+        $mform->addElement('header', 'category_hotsite', 'Hotsite');
+        $mform->addElement('select', self::MODELO, 'Enrolment page model', [0 => '', 1 => 'Course', 2 => 'Event']);
+        $mform->addElement('static', self::MODELO . '_static', '', 'Which model the hotsite uses.');
+        $mform->addElement('text', 'shortname', 'Short name');
+
+        $formwrapper = $this->createMock(\course_edit_form::class);
+        $formwrapper->method('get_course')->willReturn($course ?? new \stdClass());
+        return new \core_course\hook\after_form_definition($formwrapper, $mform);
+    }
+
+    /**
+     * Create a course, optionally opted into a hotsite model.
+     *
+     * @param int $modelo The page model select value (0 = none).
+     * @return \stdClass The course record.
+     */
+    private function create_course_with_model(int $modelo): \stdClass {
+        \core_course\customfield\course_handler::reset_caches();
+        hotsitefields::reset_field_cache();
+        hotsitefields::ensure_fields();
+        hotsitefields::reset_field_cache();
+
+        $this->setAdminUser();
+        $course = self::getDataGenerator()->create_course();
+        if ($modelo) {
+            $handler = \core_course\customfield\course_handler::create();
+            $handler->instance_form_save((object) [
+                'id' => $course->id,
+                'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
+            ]);
+        }
+        return $course;
+    }
+
+    /**
+     * The names of a form's elements, in the order they will be rendered.
+     *
+     * @param \MoodleQuickForm $mform The form.
+     * @return array List of element names.
+     */
+    private function element_order(\MoodleQuickForm $mform): array {
+        $names = [];
+        foreach ($mform->_elements as $element) {
+            $names[] = $element->getName();
+        }
+        return $names;
+    }
+
+    /**
+     * A course with a page model gets its public address and a link to its hotsite, right under the model field.
+     *
+     * With the router configured the address is the short one, minted by this very visit to the
+     * form, shown as text with a copy button, and the link opens it.
+     */
+    public function test_link_is_added_for_a_course_with_a_model(): void {
+        $this->resetAfterTest();
+        $this->set_router(true);
+        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $this->assertNull(links::existing_code((int) $course->id), 'Nothing minted before the form is built.');
+
+        $hook = $this->make_hook($course);
+        after_form_definition::callback($hook);
+
+        $this->assertTrue($hook->mform->elementExists(after_form_definition::LINK_ELEMENT));
+
+        $code = links::existing_code((int) $course->id);
+        $this->assertNotNull($code, 'Building the form minted the address.');
+        $address = links::share((int) $course->id)->out(false);
+        $this->assertStringContainsString('/p/' . $code, $address);
+
+        $html = $hook->mform->getElement(after_form_definition::LINK_ELEMENT)->toHtml();
+        $this->assertStringContainsString('href="' . $address . '"', $html);
+        $this->assertStringContainsString('>' . $address . '</code>', $html);
+        $this->assertStringContainsString('data-action="copytoclipboard"', $html);
+        $this->assertStringNotContainsString('hotsite.php', $html);
+        $this->assertStringContainsString('target="_blank"', $html);
+        $this->assertStringContainsString(get_string('hotsite_viewlink', hotsitefields::COMPONENT), $html);
+        $this->assertStringContainsString(get_string('hotsite_address', hotsitefields::COMPONENT), $html);
+        $this->assertStringNotContainsString(s(get_string('hotsite_addressrouteroff', hotsitefields::COMPONENT)), $html);
+
+        // It lands after the model select and after the sentence describing it, not before either.
+        $order = $this->element_order($hook->mform);
+        $this->assertSame(
+            [self::MODELO, self::MODELO . '_static', after_form_definition::LINK_ELEMENT],
+            array_slice($order, array_search(self::MODELO, $order, true), 3)
+        );
+    }
+
+    /**
+     * Without the router the form shows the page's own address, says why, and mints nothing.
+     */
+    public function test_link_falls_back_to_the_page_address_while_the_router_is_off(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->set_router(false);
+        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+
+        $hook = $this->make_hook($course);
+        after_form_definition::callback($hook);
+
+        $html = $hook->mform->getElement(after_form_definition::LINK_ELEMENT)->toHtml();
+        $this->assertStringContainsString('href="' . links::page((int) $course->id)->out(false) . '"', $html);
+        $this->assertStringNotContainsString('/p/', $html);
+        // The double stash escapes the apostrophe, so the sentence is compared in its escaped spelling.
+        $this->assertStringContainsString(s(get_string('hotsite_addressrouteroff', hotsitefields::COMPONENT)), $html);
+        $this->assertSame(0, $DB->count_records('shortlink'));
+    }
+
+    /**
+     * A course whose guest access needs no password gets the guest entry's row, with a code of its own.
+     *
+     * The course is not public, so the row says the address takes in logged-in readers only. The
+     * control is the same course with its guest access instance disabled: no row, no second code.
+     */
+    public function test_the_guest_entry_row_is_added_where_the_course_offers_it(): void {
+        global $DB;
+        $this->resetAfterTest();
+        // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
+        set_config('autologinguests', 1);
+        $this->set_router(true);
+        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $guestlabel = get_string('hotsite_guestaddress', hotsitefields::COMPONENT);
+
+        // Control first: the generator leaves guest access disabled.
+        $hook = $this->make_hook($course);
+        after_form_definition::callback($hook);
+        $html = $hook->mform->getElement(after_form_definition::LINK_ELEMENT)->toHtml();
+        $this->assertStringNotContainsString($guestlabel, $html);
+        $this->assertNull(links::existing_code((int) $course->id, links::LINKTYPE_GUEST), 'Nothing minted for it.');
+
+        $DB->set_field('enrol', 'status', ENROL_INSTANCE_ENABLED, ['courseid' => $course->id, 'enrol' => 'guest']);
+        $hook = $this->make_hook($course);
+        after_form_definition::callback($hook);
+        $html = $hook->mform->getElement(after_form_definition::LINK_ELEMENT)->toHtml();
+
+        $code = links::existing_code((int) $course->id, links::LINKTYPE_GUEST);
+        $this->assertNotNull($code, 'Building the form minted the guest entry\'s code beside the hotsite\'s.');
+        $this->assertNotSame(links::existing_code((int) $course->id), $code);
+        $address = links::guest_share((int) $course->id)->out(false);
+        $this->assertStringContainsString('/p/' . $code, $address);
+        $this->assertStringContainsString($guestlabel, $html);
+        $this->assertStringContainsString(get_string('hotsite_guestaddresssub', hotsitefields::COMPONENT), $html);
+        $this->assertStringContainsString('>' . $address . '</code>', $html);
+        $this->assertStringContainsString('href="' . $address . '"', $html);
+        $this->assertStringContainsString('data-clipboard-target="#theme_dimensions-hotsiteguestaddress-', $html);
+        $this->assertStringContainsString(get_string('hotsite_guestaddressnotpublic', hotsitefields::COMPONENT), $html);
+    }
+
+    /**
+     * A course which never opted into a hotsite gets no link.
+     *
+     * The control is the test above: the same form, the same course generator and
+     * the same callback do produce the link once a model is stored, so a pass here
+     * is the model check answering and not the callback failing to run.
+     */
+    public function test_link_is_absent_without_a_model(): void {
+        $this->resetAfterTest();
+        $course = $this->create_course_with_model(0);
+
+        $hook = $this->make_hook($course);
+        after_form_definition::callback($hook);
+
+        $this->assertFalse($hook->mform->elementExists(after_form_definition::LINK_ELEMENT));
+    }
+
+    /**
+     * A course being created has no saved hotsite to look at.
+     */
+    public function test_link_is_absent_while_the_course_is_being_created(): void {
+        $this->resetAfterTest();
+        $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+
+        $hook = $this->make_hook();
+        after_form_definition::callback($hook);
+
+        $this->assertFalse($hook->mform->elementExists(after_form_definition::LINK_ELEMENT));
+    }
+
+    /**
+     * Without the model select there is no anchor to place the link against.
+     *
+     * Reached by an editor who may fill the course form but not its custom fields:
+     * core leaves the whole category out of the form for them.
+     */
+    public function test_link_is_absent_when_the_model_field_is_not_in_the_form(): void {
+        $this->resetAfterTest();
+        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+
+        $hook = $this->make_hook($course);
+        $hook->mform->removeElement(self::MODELO);
+        $hook->mform->removeElement(self::MODELO . '_static');
+        after_form_definition::callback($hook);
+
+        $this->assertFalse($hook->mform->elementExists(after_form_definition::LINK_ELEMENT));
+    }
+
+    /**
+     * The link is placed even when the model field carries no description.
+     */
+    public function test_link_is_placed_without_a_field_description(): void {
+        $this->resetAfterTest();
+        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+
+        $hook = $this->make_hook($course);
+        $hook->mform->removeElement(self::MODELO . '_static');
+        after_form_definition::callback($hook);
+
+        $order = $this->element_order($hook->mform);
+        $this->assertSame(
+            [self::MODELO, after_form_definition::LINK_ELEMENT],
+            array_slice($order, array_search(self::MODELO, $order, true), 2)
+        );
+    }
+    /**
+     * Add the round-6 controls, each with its description, to a hook's form.
+     *
+     * @param \MoodleQuickForm $mform The form built by make_hook().
+     * @return void
+     */
+    private static function add_round6_elements(\MoodleQuickForm $mform): void {
+        $mform->addElement('select', 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE, 'Modality', [0 => '', 1 => 'Online']);
+        foreach (hotsitefields::ROUND6_SHORTNAMES as $shortname) {
+            $mform->addElement('text', 'customfield_' . $shortname, $shortname);
+            $mform->addElement('static', 'customfield_' . $shortname . '_static', '', 'Description.');
+        }
+    }
+
+    /**
+     * The elements a value of a control hides, as the form hands them to its script.
+     *
+     * @param \MoodleQuickForm $mform The form.
+     * @param string $dependenton The control.
+     * @param string $condition The condition.
+     * @param string $value The value.
+     * @return string[] The hidden element names, sorted.
+     */
+    private static function hidden_by(\MoodleQuickForm $mform, string $dependenton, string $condition, string $value): array {
+        // The second member is the dependency map; the first is the form's id.
+        $names = $mform->getLockOptionObject()[1][$dependenton][$condition][$value][\MoodleQuickForm::DEP_HIDE] ?? [];
+        sort($names);
+        return $names;
+    }
+
+    /**
+     * Each round-6 field and its description are hidden while the rest of the form says it does not apply.
+     */
+    public function test_round6_fields_are_hidden_where_they_do_not_apply(): void {
+        $this->resetAfterTest();
+        $hook = $this->make_hook();
+        self::add_round6_elements($hook->mform);
+        after_form_definition::callback($hook);
+
+        $pair = function (string ...$shortnames): array {
+            $names = [];
+            foreach ($shortnames as $shortname) {
+                $names[] = 'customfield_' . $shortname;
+                $names[] = 'customfield_' . $shortname . '_static';
+            }
+            sort($names);
+            return $names;
+        };
+
+        $this->assertSame(
+            $pair(
+                hotsitefields::SHORTNAME_FORMATO,
+                hotsitefields::SHORTNAME_AULASAOVIVO,
+                hotsitefields::SHORTNAME_AULASAOVIVOQUANDO
+            ),
+            self::hidden_by($hook->mform, self::MODELO, 'eq', (string) hotsitefields::MODELO_EVENTO)
+        );
+        $this->assertSame(
+            $pair(hotsitefields::SHORTNAME_AULASAOVIVO, hotsitefields::SHORTNAME_AULASAOVIVOQUANDO),
+            self::hidden_by(
+                $hook->mform,
+                'customfield_' . hotsitefields::SHORTNAME_FORMATO,
+                'eq',
+                (string) hotsitefields::FORMATO_AUTOINSTRUCIONAL
+            )
+        );
+        $this->assertSame(
+            $pair(hotsitefields::SHORTNAME_AULASAOVIVOQUANDO),
+            self::hidden_by($hook->mform, 'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO, 'notchecked', '1')
+        );
+        // The in-person workload is never hidden: a hideIf on its float element breaks the save.
+        $this->assertSame(
+            $pair(hotsitefields::SHORTNAME_ENCONTROS),
+            self::hidden_by(
+                $hook->mform,
+                'customfield_' . hotsitefields::SHORTNAME_MODALIDADE,
+                'neq',
+                (string) hotsitefields::MODALIDADE_HIBRIDO
+            )
+        );
+    }
+
+    /**
+     * A form without the round-6 fields (an editor who may not edit them) gains no rule at all.
+     */
+    public function test_no_rule_is_set_without_the_fields(): void {
+        $this->resetAfterTest();
+        $hook = $this->make_hook();
+        after_form_definition::callback($hook);
+        $this->assertSame([], self::hidden_by($hook->mform, self::MODELO, 'eq', (string) hotsitefields::MODELO_EVENTO));
+    }
+    /**
+     * A course's self enrolment instance, enabled, with the given fields.
+     *
+     * @param \stdClass $course The course.
+     * @param array $fields The fields to set on the instance.
+     * @return \stdClass The {enrol} record.
+     */
+    private static function self_instance(\stdClass $course, array $fields): \stdClass {
+        global $DB;
+        $instance = $DB->get_record('enrol', ['courseid' => $course->id, 'enrol' => 'self'], '*', MUST_EXIST);
+        $DB->update_record('enrol', (object) (['id' => $instance->id, 'status' => ENROL_INSTANCE_ENABLED] + $fields));
+        return $DB->get_record('enrol', ['id' => $instance->id], '*', MUST_EXIST);
+    }
+
+    /**
+     * The hook of a course form that carries the modality field and its description.
+     *
+     * @param \stdClass|null $course The course being edited, if any.
+     * @return \core_course\hook\after_form_definition The hook.
+     */
+    private function hook_with_modality(?\stdClass $course): \core_course\hook\after_form_definition {
+        $hook = $this->make_hook($course);
+        $modalidade = 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE;
+        $hook->mform->addElement('select', $modalidade, 'Modality', [0 => '', 1 => 'Online']);
+        $hook->mform->addElement('static', $modalidade . '_static', '', 'Whether the offering is online.');
+        return $hook;
+    }
+
+    /**
+     * An event whose enrolment method sets no deadline is warned, by the method's name, under the modality.
+     */
+    public function test_an_event_with_an_undated_method_is_warned(): void {
+        $this->resetAfterTest();
+        $course = $this->create_course_with_model(hotsitefields::MODELO_EVENTO);
+        self::self_instance($course, ['name' => 'Presencial', 'enrolenddate' => 0, 'customint6' => 1]);
+
+        $hook = $this->hook_with_modality($course);
+        after_form_definition::callback($hook);
+
+        $this->assertTrue($hook->mform->elementExists(after_form_definition::DEADLINE_ELEMENT));
+        $html = $hook->mform->getElement(after_form_definition::DEADLINE_ELEMENT)->toHtml();
+        $this->assertStringContainsString(
+            s(get_string('hotsite_nodeadline', 'theme_dimensions', 'Presencial')),
+            $html
+        );
+        $modalidade = 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE;
+        $order = $this->element_order($hook->mform);
+        $this->assertSame(
+            [$modalidade, $modalidade . '_static', after_form_definition::DEADLINE_ELEMENT],
+            array_values(array_intersect($order, [$modalidade, $modalidade . '_static', after_form_definition::DEADLINE_ELEMENT]))
+        );
+    }
+
+    /**
+     * No warning for a dated method, a method closed to new enrolments, a course, or a course being created.
+     */
+    public function test_no_warning_where_a_deadline_is_set_or_none_is_needed(): void {
+        $this->resetAfterTest();
+        $event = $this->create_course_with_model(hotsitefields::MODELO_EVENTO);
+        $instance = self::self_instance($event, ['enrolenddate' => time() + WEEKSECS, 'customint6' => 1]);
+        $hook = $this->hook_with_modality($event);
+        after_form_definition::callback($hook);
+        $this->assertFalse($hook->mform->elementExists(after_form_definition::DEADLINE_ELEMENT));
+
+        self::self_instance($event, ['id' => $instance->id, 'enrolenddate' => 0, 'customint6' => 0]);
+        $hook = $this->hook_with_modality($event);
+        after_form_definition::callback($hook);
+        $this->assertFalse($hook->mform->elementExists(after_form_definition::DEADLINE_ELEMENT));
+
+        $curso = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        self::self_instance($curso, ['enrolenddate' => 0, 'customint6' => 1]);
+        $hook = $this->hook_with_modality($curso);
+        after_form_definition::callback($hook);
+        $this->assertFalse($hook->mform->elementExists(after_form_definition::DEADLINE_ELEMENT));
+
+        $hook = $this->hook_with_modality(null);
+        after_form_definition::callback($hook);
+        $this->assertFalse($hook->mform->elementExists(after_form_definition::DEADLINE_ELEMENT));
+    }
+}

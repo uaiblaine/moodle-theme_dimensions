@@ -1,0 +1,69 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_searchline
+
+    The toolbar of the root of the course index: its search line, and nothing
+    else. The root reads the search and no filter, so it draws no filter
+    disclosure, no organisation, no view toggle and no count row - the pills on
+    the posters and the summary of areas with no result say where the results
+    are.
+
+    It is the category toolbar's first line in everything a reader and the
+    listing's module meet: the same GET form and hook, the same name-less
+    default submit first (see category_toolbar), the same box and the same
+    too-short notice. With the listing's module armed - a real account - the
+    search is live; without it the visible "Search" button submits, and the
+    listing's module hides that button.
+
+    The open panel travels in hidden fields, as on the category toolbar: the
+    panel's module keeps them in step with the address.
+
+    Example context (json):
+    {
+        "action": "https://example.com/course/index.php",
+        "hidden": [],
+        "formid": "dim-vitrine-form-0",
+        "searchid": "dim-vitrine-q-0",
+        "searchname": "q",
+        "searchlabel": "Buscar cursos",
+        "searchplaceholder": "Buscar pelo nome",
+        "query": "incêndio",
+        "searchtooshort": false,
+        "searchtooshortlabel": "Digite pelo menos 2 caracteres para buscar.",
+        "openfields": [
+            {"name": "open", "value": 7, "region": "dim-open-field"}
+        ],
+        "submitlabel": "Buscar"
+    }
+}}
+<form class="dim-toolbar dim-toolbar--searchonly" id="{{formid}}" method="get" action="{{action}}" role="search" data-region="dim-vitrine-toolbar">
+    {{#hidden}}<input type="hidden" name="{{name}}" value="{{value}}">{{/hidden}}
+    {{#openfields}}
+    <input type="hidden" name="{{name}}" value="{{value}}" data-region="{{region}}">
+    {{/openfields}}
+    <button type="submit" class="visually-hidden dim-toolbar__defaultsubmit" tabindex="-1">{{submitlabel}}</button>
+    <div class="dim-toolbar__row">
+        <div class="dim-toolbar__search">
+            <label class="visually-hidden" for="{{searchid}}">{{searchlabel}}</label>
+            <i class="fa fa-magnifying-glass dim-toolbar__searchicon" aria-hidden="true"></i>
+            <input class="form-control dim-toolbar__input" type="search" id="{{searchid}}" name="{{searchname}}" value="{{query}}" placeholder="{{searchplaceholder}}" autocomplete="off">
+        </div>
+        <button type="submit" class="dim-toolbar__submit dim-nojs-only">{{submitlabel}}</button>
+    </div>
+    <p class="dim-toolbar__notice" role="status" data-region="dim-toolbar-notice"{{^searchtooshort}} hidden{{/searchtooshort}}>{{searchtooshortlabel}}</p>
+</form>

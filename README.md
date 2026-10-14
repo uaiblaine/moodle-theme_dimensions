@@ -1,0 +1,231 @@
+moodle-theme_dimensions
+=======================
+
+[![Moodle Plugin CI](https://github.com/uaiblaine/moodle-theme_dimensions/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/uaiblaine/moodle-theme_dimensions/actions/workflows/ci.yml?query=branch%3Amain)
+
+Dimensions is a Moodle theme: a child of
+[Boost Union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union), which makes it a
+grandchild of Boost. It inherits everything Boost Union does - every setting, every template, every
+line of SCSS - and adds its own login page, category showcase, course landing pages, focus mode and
+course notice on top of it.
+
+It is the theme of the *dimensions* family of plugins, beside
+[local_dimensions](https://github.com/uaiblaine/moodle-local_dimensions),
+[block_dimensions](https://github.com/uaiblaine/moodle-block_dimensions) and
+[block_compass](https://github.com/uaiblaine/moodle-block_compass), and it is meant to grow around
+their user experience, Moodle's competency framework first (see the roadmap below).
+
+The starting point is the official
+[Boost Union Child](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union_child)
+boilerplate. The structure of `config.php`, `lib.php` and the SCSS inheritance settings comes from
+there unchanged, so the upstream documentation about how a Boost Union child theme works applies to
+this theme as well.
+
+
+Requirements
+------------
+
+- Moodle 5.2. The theme declares `$plugin->supported = [502, 502]` and is not meant to be installed
+  on any other release yet; Moodle 5.3 is next (see the roadmap).
+- PHP as Moodle 5.2 requires it.
+
+### Required plugins
+
+| Plugin | Version | Why |
+|---|---|---|
+| [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | v5.2-r8 or later | The parent theme. |
+| [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026042005 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
+| [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) | 2026090500 or later | The field type of the landing pages' badges and share picture. |
+
+### Optional plugins
+
+| Plugin | What it adds |
+|---|---|
+| auth_loginsteps | Its logo and identity provider data on the login page, and its own shell for the second factor and privileged session pages. The theme asks it by class name and never requires it. |
+| [local_page](https://github.com/uaiblaine/moodle-local_page) | The pages strip on a category page. Without it the strip is simply not drawn. |
+
+
+Installation
+------------
+
+Install the plugin like any other plugin, to the folder `theme/dimensions`. See
+<https://docs.moodle.org/en/Installing_plugins> for the details.
+
+After installation the theme looks and behaves like Boost Union. Select it in *Site administration >
+Appearance > Themes > Theme selector* to activate it; its own settings live in *Site administration >
+Appearance > Boost Union > Dimensions*.
+
+Installing the theme creates two course custom field categories, *Hotsite* (the landing page fields)
+and *Focus mode* (one checkbox). They are created once and never deleted; fields whose short names
+already exist on the site are left alone.
+
+
+Features
+--------
+
+### Custom login page
+
+On by default (*Login page > Login page to show*). The theme draws the login page itself: an
+institutional panel on the left - the logo, a kicker, a title and an optional monitoring notice -
+and, on the right, the ways in, stacked with an "or" between them: the identity providers first,
+then the username and password form, then "Create my account" whenever core's self registration is
+on. The panel follows the whole login flow (password recovery, the MFA challenge and every other
+page on the login layout).
+
+- **No request to an identity provider before a choice.** Core renders each provider's image from
+  the provider's own address, which makes every visitor's browser announce itself to it. This page
+  draws known providers from the Font Awesome Brands font Moodle already ships, and shows a
+  provider it has no mark for by name only, unless its image is served by this site.
+- **A reset hint after the second failed login in a row**, counted per browser session and never per
+  account, so it reveals nothing about which usernames exist.
+- **The panel's copy is a setting** (*Login page > Institutional panel*); a field left empty shows its
+  language string, which follows each user's language.
+- While the page is on, Boost Union's login page settings that shape the form are not read; core's
+  own switches (`showloginform`, the enabled authentication plugins, `guestloginbutton`,
+  `registerauth`) decide what is drawn. *Leave it to Boost Union* gives Boost Union's page back
+  exactly as configured there.
+
+### Category showcase
+
+With *Category showcase > Show the category showcase* on, `/course/index.php?categoryid=N` is the
+theme's own page: a hero with the category's name, tagline, description, counts and tabs, then the
+courses of the category and its subcategories as cards or a dense list, with search, state chips,
+filter groups built from course custom fields, a start-date filter, a category tree and real paging.
+It works with JavaScript off; with JavaScript on, every choice is applied in place. The listing is
+organised **by area** (one poster per subcategory, whose courses open in a panel between the rows),
+**A-Z** or **Recent**. Each card shows the enrolment state for the reader, a favourite star and a
+"More information" dialogue.
+
+- A category manager styles the hero from the *Category appearance* tab: layout, background image,
+  a free colour pair refused below the WCAG AA contrast of 4.5:1, up to three crests, a card cover
+  and a short cover video that plays muted on hover.
+- `/course/index.php` without a category is a **directory** of the top-level categories.
+- A category local_unlistedcourses holds **public** has a page for visitors who are not logged in,
+  with forced login left on, and the root directory can be opened to visitors too; both are off
+  until an administrator switches them on. A category held **unlisted** is withheld from every
+  listing the theme renders.
+
+### Course landing pages
+
+Called "hotsite" in the code. A landing-style enrolment page for each course that opts in, at
+`/theme_dimensions/hotsite/<courseid>` on a site whose router is configured (and at
+`/theme/dimensions/hotsite.php?id=<courseid>` otherwise). A course opts in by choosing a page model
+(*Course* or *Event*) in the *Hotsite* custom fields of its settings, which also hold the modality,
+workload, audience, programme, certification, venue, a reviewed public description, a presentation
+video address, up to four badges and a share picture. The page shows only the enrolment methods
+the current user can actually use, and `/enrol/index.php?id=N` forwards to it for a course with a
+model. Each page gets a short public address that can be dictated over the phone
+(`https://<site>/p/batepo`) once Moodle's router is configured.
+
+### Focus mode
+
+An activity page opens in a reduced shell: a bar carrying the activity name where the navigation bar
+normally is, the course index and the block drawer kept, no breadcrumb and no tabs. A course switches
+it on with its *Focus mode on activities* checkbox; in a course that did not, a *Focus mode* button in
+the navigation bar opens that course's activities focused for the rest of the browser session. The reading width is remembered per user.
+Quiz attempt pages are excluded by default, and `?focusoff=1` renders any one request with the
+ordinary theme.
+
+### Course notice
+
+One notice region replaces Boost Union's course related hints on every course page, under the same
+Boost Union settings, capabilities and texts: a bar of chips that sums the course's state up, with
+the details under it. For whoever edits the course, a course with a landing page gets a
+*Promotion* section with its public addresses and copy buttons.
+
+### Profile access rule
+
+A person may open another person's profile only when they can see every profile, when they share a
+course whose participant list they may see, or when they come from the page of a course in which the
+other person is a course contact. The rule only ever narrows core's answer, and it applies while
+core's `forceloginforprofiles` is on (Boost Union's recommendations overview says whether it is).
+
+### Guest access
+
+A course whose guest access needs no password gets an *Enter as guest* address beside its landing
+page's: a visitor lands on the course as the guest account in one step, while link previews never
+open a guest session. The login page tab also sets where the guest account goes from the site's
+home page (*Guest home page*).
+
+### Open Graph
+
+The public landing page and the public category page carry Open Graph tags (title, the reviewed
+public description, a 1200x630 preview image, canonical URL, site name, locale), so a shared link
+unfurls in messaging apps and social networks. They are `noindex` unless the site is open to search
+engines.
+
+### Pages strip
+
+With local_page installed, a category page names that category's pages under its hero, as the
+plugin's own rules let the reader see them.
+
+### Settings tabs
+
+*Site administration > Appearance > Boost Union > Dimensions*:
+
+| Tab | What it holds |
+|---|---|
+| General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. |
+| Login page | The login page switch, the institutional panel's copy, the username field mask and the guest home page. |
+| Identity | The navbar style: the theme's navy with a 3px signature band, or *Leave it to Boost Union*. |
+| Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
+| Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
+
+
+Brazil-specific today
+---------------------
+
+The theme was built for a Brazilian site, and two things still assume one. Both will become
+optional.
+
+- **The CPF username mask** (*Login page > Accept only a CPF in the username field*, on by default)
+  turns the username field into a CPF field: it formats the digits as `000.000.000-00`, refuses a CPF
+  whose check digits do not add up, and strips the mask before the form is sent. With it on, no
+  account whose username is not a CPF can use the login form, the site administrator included; the
+  way back is
+
+  ```
+  https://<your site>/login/index.php?nocpf=1
+  ```
+
+  which loads the plain Boost Union form for that request. It is a convenience in the browser, not an
+  authentication rule. Switch the setting off on a site whose usernames are not CPFs.
+- **The login page's wording**, such as "Sign in with your CPF", is a language string; edit it through
+  *Site administration > Language > Language customisation*.
+
+The course custom fields of the landing pages also carry Portuguese short names (`hotsite_modelo`,
+`modalidade`, ...), which are identifiers and never shown to readers.
+
+
+Capabilities and privacy
+------------------------
+
+The theme declares no capabilities of its own; its settings page is guarded by Boost Union's
+`theme/boost_union:configure`. It stores one table (the branding of a category, no personal data)
+and five user preferences (display choices such as the focus mode width and the category view),
+which its privacy provider describes and exports.
+
+
+Roadmap
+-------
+
+- **Moodle 5.3 as the base**, once Boost Union releases its 5.3 version.
+- **The competency framework's user experience** across the dimensions family of plugins
+  (local_dimensions, block_dimensions, block_compass), with this theme as its home.
+
+
+Credits
+-------
+
+Built on [Boost Union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) and on the
+[Boost Union Child](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union_child)
+boilerplate by moodle-an-hochschulen (Moodle an Hochschulen e.V.), Alexander Bias, Daniel
+Poggenpohl and Lars Bonczek. The Behat step definition overrides are theirs as well.
+
+
+License
+-------
+
+This plugin is licensed under the [GNU GPL v3 or later](http://www.gnu.org/copyleft/gpl.html).
+
+Copyright: 2026 Anderson Blaine

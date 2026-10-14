@@ -1,0 +1,215 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_card
+
+    One course of the category showcase. The same markup serves the card view
+    and the dense list view - the view is one class on the listing container,
+    never a second template - and the panel's rail restyles it as a mini card.
+
+    Anatomy: a media band holding the course image (or the flat fallback the
+    stylesheet paints), the event's date tile and the kind pill; a body with the
+    subcategory overline, the title and its link, the meta line, then the badge
+    row - the course's crests, the state pill (the design system's own pair of
+    tokens, never a Bootstrap utility, with a decorative icon before its
+    sentence) and, for staff, the hidden badge; then the route line, only on a
+    card whose viewer holds a row that is not active and could also enrol now
+    (the enrolment matrix's decision D2: the sentence beside the call to action
+    that goes there); in the same place, the opening line, only on a card whose
+    way in is refused until an enrolment window opens, with that date (plain
+    text, its icon decorative); then the trailing action cluster - the call to action, the native details disclosure
+    whose panel is anchored to the card, and last the favourite star, so that in
+    list view it falls into the cluster's flow beside the button instead of over
+    the kind glyph. The star is drawn only for a logged-in viewer and stays
+    hidden until a client module marks the body (categorystar's dim-star-js, or
+    the listing's dim-js), because a star that does nothing is worse than none.
+
+    Every text value arrives in the plain spelling and is escaped here.
+
+    The client modules address this template through data attributes only,
+    never a class: a class is presentation and moves with the design, and a
+    renamed hook reddens the markup test instead of silently disarming a
+    behaviour. The article (dim-card) carries the course id and the classifier
+    state, which is how the modules know which cards to ask progress for;
+    dim-card-details names the disclosure and dim-card-panel its inner panel,
+    the element whose children the hover peek clones; dim-card-titlelink takes
+    the focus on the first appended card when no load-more button or next-page
+    link remains; dim-card-title, the heading rather than the link, is where the
+    search term is marked, because a visitor's card with no page to open draws
+    its title as plain text; the badge row holds an empty, hidden
+    dim-card-progress span the module fills with the progress sentence, so no
+    row changes height when a batch lands; and the star carries both spellings
+    of its label plus a hook on the visually hidden span, so pressing it
+    relabels it without a round trip.
+
+    The crests are written in the badge row and not in the media band, although
+    the card view draws them over it: the list view puts them in the right-hand
+    cluster beside the state badge, and one markup serves both views. The
+    stylesheet lifts them onto the image with an absolute position, as it does
+    the star. They are the course's own badges - the ones its enrolment page
+    shows - and never the category's.
+
+    dim-card__badge, beside each badge's own classes, is the card's hook on its
+    badges: the panel's rail resizes them through it, while the design-system
+    classes keep every colour.
+
+    The card carries its own "More information" dialogue, drawn into an inert
+    <template> (dim-card-modal) by category_card_modal from this same context.
+    Without JavaScript nothing reads it and the disclosure opens its panel in
+    place; categorycoursemodal intercepts the summary and opens the dialogue
+    instead, so the disclosure is the fallback and never a second path to keep.
+
+    Example context (json):
+    {
+        "id": 42,
+        "fullname": "Atendimento Pré-Hospitalar & Resgate",
+        "url": "https://example.com/enrol/index.php?id=42",
+        "hasurl": true,
+        "overline": "Brigada",
+        "hasoverline": true,
+        "imageurl": "https://example.com/pluginfile.php/31/course/overviewfiles/capa.jpg",
+        "hasimage": true,
+        "badges": [
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc/brasao-alfa.png", "alt": "brasao alfa"},
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/def/dimensions.svg", "alt": "dimensions"}
+        ],
+        "hasbadges": true,
+        "badgeslabel": "Instituições",
+        "isevento": false,
+        "kindlabel": "Curso",
+        "haskind": true,
+        "datetile": null,
+        "meta": "36 horas · Presencial · São Paulo",
+        "state": "scheduled",
+        "badge": {"label": "Acesso a partir de 12/11/2026", "classes": "dim-badge dim-badge--scheduled", "icon": "fa-calendar"},
+        "hasroute": true,
+        "routelabel": "Você também pode se inscrever agora",
+        "hasopens": false,
+        "openslabel": "",
+        "ishidden": false,
+        "hiddenbadge": {"label": "Oculto de estudantes", "classes": "dim-badge dim-badge--hidden"},
+        "ismuted": false,
+        "cta": {"label": "Inscrever-se agora", "url": "https://example.com/enrol/index.php?id=42", "primary": false},
+        "hascta": true,
+        "showstar": true,
+        "favourite": false,
+        "starlabel": "Adicionar aos favoritos: Atendimento Pré-Hospitalar & Resgate",
+        "starlabeladd": "Adicionar aos favoritos: Atendimento Pré-Hospitalar & Resgate",
+        "starlabelremove": "Remover dos favoritos: Atendimento Pré-Hospitalar & Resgate",
+        "detailsid": "dim-card-details-42",
+        "detailslabel": "Mais informações",
+        "excerpt": "Curso de atendimento pré-hospitalar para brigadistas voluntários.",
+        "hasexcerpt": true,
+        "facts": [
+            {"label": "Carga horária", "value": "36 horas", "icon": "fa-clock"},
+            {"label": "Modalidade", "value": "Presencial", "icon": "fa-display"},
+            {"label": "Contato", "value": "Terry Teacher (Professor)", "icon": "fa-user"}
+        ],
+        "hasfacts": true,
+        "learn": ["Triagem de vítimas", "Imobilização", "Transporte seguro"],
+        "haslearn": true,
+        "learnlabel": "O que você vai aprender",
+        "modal": {
+            "kicker": "Brigada",
+            "haskicker": true,
+            "factslabel": "Informações do curso",
+            "primary": {"label": "Inscrever-se agora", "url": "https://example.com/enrol/index.php?id=42", "disabled": false, "note": "", "icon": "fa-arrow-right"},
+            "hasprimary": true,
+            "secondary": {"label": "Página do curso", "url": "https://example.com/theme/dimensions/hotsite.php?id=42"},
+            "hassecondary": true
+        }
+    }
+}}
+<article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}">
+    <div class="dim-card__media{{#hasimage}} dim-card__media--image{{/hasimage}}">
+        {{#hasimage}}
+        <img class="dim-card__image" src="{{imageurl}}" alt="" loading="lazy" decoding="async" width="320" height="150">
+        {{/hasimage}}
+        {{#datetile}}
+        <span class="dim-card__datetile"><b>{{day}}</b><span>{{month}}</span></span>
+        {{/datetile}}
+        {{#haskind}}
+        <span class="dim-card__kind{{#isevento}} dim-card__kind--event{{/isevento}}"><i class="fa {{#isevento}}fa-calendar-day{{/isevento}}{{^isevento}}fa-graduation-cap{{/isevento}}" aria-hidden="true"></i><span class="dim-card__kindlabel">{{kindlabel}}</span></span>
+        {{/haskind}}
+    </div>
+    <div class="dim-card__body">
+        <div class="dim-card__titlewrap">
+            {{#hasoverline}}
+            <span class="dim-card__over">{{overline}}</span>
+            {{/hasoverline}}
+            <h3 class="dim-card__title" data-region="dim-card-title">{{#hasurl}}<a href="{{url}}" title="{{fullname}}" data-region="dim-card-titlelink">{{fullname}}</a>{{/hasurl}}{{^hasurl}}<span title="{{fullname}}">{{fullname}}</span>{{/hasurl}}</h3>
+            {{#meta}}
+            <p class="dim-card__meta">{{meta}}</p>
+            {{/meta}}
+        </div>
+        <div class="dim-card__row">
+            {{#hasbadges}}
+            <ul class="dim-card__crests" role="list" aria-label="{{badgeslabel}}" data-region="dim-card-crests">
+                {{#badges}}
+                <li class="dim-card__crest"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
+                {{/badges}}
+            </ul>
+            {{/hasbadges}}
+            <span class="dim-card__badge {{badge.classes}}"><i class="fa {{badge.icon}}" aria-hidden="true"></i> {{badge.label}}</span>
+            {{#ishidden}}
+            <span class="dim-card__badge {{hiddenbadge.classes}}"><i class="fa fa-eye-slash" aria-hidden="true"></i> {{hiddenbadge.label}}</span>
+            {{/ishidden}}
+            <span class="dim-card__prog" data-region="dim-card-progress" hidden></span>
+        </div>
+        {{#hasroute}}
+        <p class="dim-card__route"><i class="fa fa-arrow-right" aria-hidden="true"></i> {{routelabel}}</p>
+        {{/hasroute}}
+        {{#hasopens}}
+        <p class="dim-card__opens" data-region="dim-card-opens"><i class="fa fa-calendar-plus" aria-hidden="true"></i> {{openslabel}}</p>
+        {{/hasopens}}
+        <div class="dim-card__actions">
+            {{#cta}}
+            <a class="btn btn-sm dim-card__cta {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}}" href="{{url}}">{{label}}</a>
+            {{/cta}}
+            <details class="dim-card__details" id="{{detailsid}}" data-region="dim-card-details">
+                <summary class="btn btn-sm dim-card__summary">{{detailslabel}}</summary>
+                <div class="dim-card__panel" data-region="dim-card-panel">
+                    <h4 class="dim-card__paneltitle">{{fullname}}</h4>
+                    {{#hasexcerpt}}
+                    <p class="dim-card__excerpt">{{excerpt}}</p>
+                    {{/hasexcerpt}}
+                    {{#hasfacts}}
+                    <ul class="dim-card__facts">
+                        {{#facts}}
+                        <li><span class="dim-card__factlabel">{{label}}:</span> <b>{{value}}</b></li>
+                        {{/facts}}
+                    </ul>
+                    {{/hasfacts}}
+                    {{#haslearn}}
+                    <p class="dim-card__learnlabel">{{learnlabel}}</p>
+                    <ul class="dim-card__learn">
+                        {{#learn}}
+                        <li><i class="fa fa-check" aria-hidden="true"></i> {{.}}</li>
+                        {{/learn}}
+                    </ul>
+                    {{/haslearn}}
+                </div>
+            </details>
+            {{#showstar}}
+            <button type="button" class="dim-card__star dim-js-only" aria-pressed="{{#favourite}}true{{/favourite}}{{^favourite}}false{{/favourite}}" data-action="dim-star" data-courseid="{{id}}" data-star-add="{{starlabeladd}}" data-star-remove="{{starlabelremove}}"><i class="{{#favourite}}fa-solid{{/favourite}}{{^favourite}}fa-regular{{/favourite}} fa-star" aria-hidden="true"></i><span class="visually-hidden" data-region="dim-star-label">{{starlabel}}</span></button>
+            {{/showstar}}
+        </div>
+    </div>
+    <template data-region="dim-card-modal">
+        {{> theme_dimensions/category_card_modal }}
+    </template>
+</article>

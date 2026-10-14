@@ -1,0 +1,134 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/focusmode_bar
+
+    The bar which replaces Boost Union's navbar while focus mode applies.
+
+    It keeps the navbar and fixed-top classes deliberately: every offset which stops the
+    page sliding under a fixed bar is compiled from Boost's own navbar height, and none of
+    those selectors matches on the navbar class itself. So the box, the height, the print
+    removal and this theme's signature band all come for free, and only the contents change.
+
+    The colour classes and the Bootstrap colour mode arrive already resolved from the layout
+    context, which is what lets a Boost Union flavour recolour the bar with no code here.
+
+    The bar is one row which cannot wrap, and the controls hold no free space of their own: an
+    auto margin in the stylesheet pushes them to the end of it.
+
+    The exit label follows the entry button's idiom exactly - a span hidden from view below the
+    medium breakpoint and a visually-hidden twin shown only there - so the control has an
+    accessible name at every width and never two at once.
+
+    Context variables required for this template (described without braces, because a
+    Mustache comment closes at the first pair of closing braces it meets):
+
+    * navbarcolorclasses - the background utility classes Boost Union resolved for the navbar
+    * databstheme - the Bootstrap colour mode for the bar, or the empty string
+    * coursename - the course short name, plain spelling, shown as an overline
+    * closeurl - where "Exit focus mode" goes, and where the overline links
+    * title - the activity name, the page's h1
+    * headeractions - list of objects with an html key: the manual completion button or the status badge
+    * expanded - whether the reading column is currently widened
+    * widthlabel - the width button's name, the same in both states: aria-pressed carries the state
+    * hasmore - whether the overflow menu carries anything at all
+    * moreitems - list of objects with url and text keys
+    * editswitch - core's rendered edit switch, or the empty string
+    * leaveform - true when leaving must also clear the manual focus session
+    * actionurl - the theme's focus endpoint, which the leave form posts to
+    * sesskey - the session key of the leave form
+    * cmid - the course module id of the leave form
+    * closelabel - the visible text of the close control
+    * closetitle - its tooltip
+
+    Example context (json):
+    {
+        "navbarcolorclasses": "bg-primary",
+        "databstheme": "dark",
+        "coursename": "APH-2026",
+        "closeurl": "https://example.com/course/view.php?id=2#module-4",
+        "title": "Sinais vitais",
+        "headeractions": [
+            {"html": "<button class='btn btn-outline-secondary' data-action='toggle-manual-completion'>Mark as done</button>"}
+        ],
+        "expanded": false,
+        "widthlabel": "Wide reading column",
+        "hasmore": true,
+        "moreitems": [
+            {"url": "https://example.com/course/modedit.php?update=4", "text": "Settings"},
+            {"url": "https://example.com/report/log/index.php?id=2", "text": "Reports"}
+        ],
+        "editswitch": "",
+        "leaveform": false,
+        "actionurl": "https://example.com/theme/dimensions/focus.php",
+        "sesskey": "AbC123dEf4",
+        "cmid": 4,
+        "closelabel": "Exit focus mode",
+        "closetitle": "Back to the course"
+    }
+}}
+<nav class="navbar fixed-top dimensions-focusbar {{navbarcolorclasses}}" {{#databstheme}}data-bs-theme="{{databstheme}}"{{/databstheme}} aria-label="{{#str}}focusmode_bar, theme_dimensions{{/str}}">
+    <div class="dimensions-focusbar-heading">
+        <a class="dimensions-focusbar-course d-none d-md-block" href="{{closeurl}}">{{coursename}}</a>
+        <h1 class="dimensions-focusbar-title">{{title}}</h1>
+    </div>
+    <div class="dimensions-focusbar-actions">
+        {{#headeractions}}
+            <div class="dimensions-focusbar-action">{{{html}}}</div>
+        {{/headeractions}}
+        <button type="button" class="btn dimensions-focusbar-width d-none d-lg-inline-flex" data-action="dimensions-focus-width" aria-pressed="{{#expanded}}true{{/expanded}}{{^expanded}}false{{/expanded}}" title="{{widthlabel}}">
+            <span class="dimensions-focusbar-width-expand{{#expanded}} d-none{{/expanded}}" data-region="dimensions-focus-width-expand">{{#pix}} e/resize, core {{/pix}}</span>
+            <span class="dimensions-focusbar-width-contract{{^expanded}} d-none{{/expanded}}" data-region="dimensions-focus-width-contract">{{#pix}} e/merge_cells, core {{/pix}}</span>
+            <span class="visually-hidden">{{widthlabel}}</span>
+        </button>
+        {{#hasmore}}
+            <div class="dimensions-focusbar-more dropdown">
+                <button type="button" class="btn dimensions-focusbar-morebutton" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="{{#str}}focusmode_more, theme_dimensions{{/str}}">
+                    <span class="visually-hidden">{{#str}}focusmode_more, theme_dimensions{{/str}}</span>
+                    <i class="icon fa fa-ellipsis-vertical fa-fw" aria-hidden="true"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                    {{#moreitems}}
+                        <a class="dropdown-item" href="{{url}}">{{text}}</a>
+                    {{/moreitems}}
+                    {{#editswitch}}
+                        <div class="dropdown-item-text dimensions-focusbar-editswitch">{{{editswitch}}}</div>
+                    {{/editswitch}}
+                </div>
+            </div>
+        {{/hasmore}}
+        {{#leaveform}}
+            <form class="dimensions-focusbar-leave" method="post" action="{{actionurl}}">
+                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                <input type="hidden" name="cmid" value="{{cmid}}">
+                <input type="hidden" name="action" value="leave">
+                <button type="submit" class="btn dimensions-focusbar-close" title="{{closetitle}}">
+                    <i class="icon fa fa-xmark fa-fw" aria-hidden="true"></i>
+                    <span class="dimensions-focusbar-close-label d-none d-md-inline">{{closelabel}}</span>
+                    <span class="visually-hidden d-md-none">{{closelabel}}</span>
+                </button>
+            </form>
+        {{/leaveform}}
+        {{^leaveform}}
+            <a class="btn dimensions-focusbar-close" href="{{closeurl}}" title="{{closetitle}}">
+                <i class="icon fa fa-xmark fa-fw" aria-hidden="true"></i>
+                <span class="dimensions-focusbar-close-label d-none d-md-inline">{{closelabel}}</span>
+                <span class="visually-hidden d-md-none">{{closelabel}}</span>
+            </a>
+        {{/leaveform}}
+    </div>
+</nav>

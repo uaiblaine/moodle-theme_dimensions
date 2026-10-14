@@ -1,0 +1,47 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_course_modal
+
+    The course dialogue's frame: core/modal itself, with three blocks of it changed. The dialogue
+    carries the plugin's own class, which every rule of its stylesheet is qualified by, and the
+    header keeps core's close button and a visually hidden title - the course's visible title lives
+    on the cover inside the body, so that it scrolls away with the picture it is printed on, and
+    the header is laid over the cover's corner. The hidden title is what core's root is labelled
+    by until categorycoursemodal hands that id to the cover's title and removes it, so the dialogue
+    has one heading, the one a reader sees; the body and the footer stay core's blocks, which the
+    module fills with the two parts of the card's own category_card_modal.
+    The hidden title keeps core's data-region="title": core/modal's constructor raises an exception
+    when the header has none.
+
+    Everything core/modal brings is kept: the focus trap, Escape, the close button, the backdrop
+    and the focus given back to the control that opened it.
+
+    Example context (json):
+    {
+        "title": "Atendimento Pré-Hospitalar",
+        "body": "<div class=\"dim-cmodal__sheet\"><h2 class=\"dim-cmodal__title\" data-region=\"title\">Atendimento Pré-Hospitalar</h2></div>",
+        "footer": "<div class=\"dim-cmodal__actions\"><a class=\"btn dim-cmodal__button dim-cmodal__button--primary\" href=\"https://example.com/course/view.php?id=42\">Continuar curso</a></div>"
+    }
+}}
+{{< core/modal }}
+    {{$classes}}dim-cmodal__dialog{{/classes}}
+    {{$headerclasses}}dim-cmodal__close{{/headerclasses}}
+    {{$header}}
+        <h2 id="{{uniqid}}-modal-title" class="visually-hidden" data-region="title">{{title}}</h2>
+    {{/header}}
+{{/ core/modal }}

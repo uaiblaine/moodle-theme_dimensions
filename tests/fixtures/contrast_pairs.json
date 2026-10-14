@@ -1,0 +1,119 @@
+{
+    "note": "The WCAG 2.x contrast of five colour pairs, measured once and read by BOTH implementations: branding_test asserts branding::contrast() against it, and amd_source_test asserts the editor module's own maths against it. A server that refuses a pair the panel called safe, or a panel that praises a pair the server refuses, is the defect this file exists to make impossible. Ratios are exact to six decimals; a reader may compare to within 0.01.",
+    "tolerance": 0.01,
+    "pairs": [
+        {
+            "bg": "#070093",
+            "ink": "#ffffff",
+            "ratio": 14.681711,
+            "why": "The institutional navy on white: the default pair, comfortably over AAA."
+        },
+        {
+            "bg": "#12484f",
+            "ink": "#ffffff",
+            "ratio": 10.166694,
+            "why": "The slate preset on white, over AAA."
+        },
+        {
+            "bg": "#ffffff",
+            "ink": "#000000",
+            "ratio": 21.0,
+            "why": "The ceiling of the scale, and the one pair whose ratio can be checked by hand."
+        },
+        {
+            "bg": "#777777",
+            "ink": "#888888",
+            "ratio": 1.263253,
+            "why": "Two greys a manager might read as different: far under AA, and the pair the editor's floor scenario types."
+        },
+        {
+            "bg": "#757575",
+            "ink": "#ffffff",
+            "ratio": 4.607518,
+            "why": "Just over the 4.5:1 floor, so a rounding difference between the two implementations lands on opposite sides of the refusal."
+        }
+    ],
+    "spellingsnote": "The vocabulary of a colour, as the ONE thing both halves must accept and refuse identically: branding::hex() on the server and HEXRE in amd/src/categoryhero.js. A value one accepts and the other refuses is a panel that grades a pair the form will not store, or a form that stores a pair the panel called invalid - which is the drift this file exists to make impossible, and which the five pairs above do not cover because every one of them is already written in the one spelling. The leading # is REQUIRED on both sides, which is what the help text and the error message say (\"#rrggbb\").",
+    "spellings": [
+        {
+            "value": "#12484f",
+            "accepted": true,
+            "why": "The one spelling everything is normalised to."
+        },
+        {
+            "value": "#12484F",
+            "accepted": true,
+            "why": "Case is normalised, not refused."
+        },
+        {
+            "value": "#fff",
+            "accepted": true,
+            "why": "The three-digit form, which a colour picker's users write."
+        },
+        {
+            "value": "  #12484f  ",
+            "accepted": true,
+            "why": "Both sides trim before parsing."
+        },
+        {
+            "value": "12484f",
+            "accepted": false,
+            "why": "No hash: refused on BOTH sides, so the panel and the form say the same thing."
+        },
+        {
+            "value": "fff",
+            "accepted": false,
+            "why": "The three-digit form is not exempt from the hash either."
+        },
+        {
+            "value": "",
+            "accepted": false,
+            "why": "An empty field is not a colour."
+        },
+        {
+            "value": "crimson",
+            "accepted": false,
+            "why": "A CSS colour name is not a hex value."
+        },
+        {
+            "value": "#12345",
+            "accepted": false,
+            "why": "Five digits: neither form."
+        },
+        {
+            "value": "#1234567",
+            "accepted": false,
+            "why": "Seven digits: neither form."
+        },
+        {
+            "value": "#fff;background:url(x)",
+            "accepted": false,
+            "why": "The declaration the inline style attribute exists to keep out."
+        },
+        {
+            "value": "#fff\" onload=\"x",
+            "accepted": false,
+            "why": "The attribute escape, refused before the double stash ever sees it."
+        },
+        {
+            "value": "rgb(1, 2, 3)",
+            "accepted": false,
+            "why": "A function is not the vocabulary."
+        },
+        {
+            "value": "var(--bs-primary)",
+            "accepted": false,
+            "why": "Nor is a custom property reference."
+        },
+        {
+            "value": "#gggggg",
+            "accepted": false,
+            "why": "Six characters, none of them a hex digit."
+        },
+        {
+            "value": "#12 484f",
+            "accepted": false,
+            "why": "An inner space: six digits only once the space is ignored, which neither side does."
+        }
+    ]
+}

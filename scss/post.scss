@@ -1,0 +1,540 @@
+// Theme Dimensions - SCSS.
+//
+// Added on top of Boost Union's compiled SCSS. Token names are the theme's design system's,
+// including the unprefixed semantic aliases (--surface-page, --text-body); keep them as they are,
+// because a rename breaks every stylesheet and the markup tests that name them.
+
+/* ---- Tokens ------------------------------------------------------------- */
+:root {
+    /* Primitives - brand blues (brand manual: #070093 institutional, #4456FF highlight). */
+    --dim-ds-blue-050: #edeefb;
+    --dim-ds-blue-100: #d6d8f7;
+    --dim-ds-blue-200: #adb2f0;
+    --dim-ds-blue-300: #7c84ff;
+    --dim-ds-blue-400: #4456ff;
+    --dim-ds-blue-500: #2a31c9;
+    --dim-ds-blue-600: #070093;
+    --dim-ds-blue-700: #050073;
+    --dim-ds-blue-800: #030050;
+    --dim-ds-blue-900: #020034;
+    /* Primitives - brand green, for specific elements only. */
+    --dim-ds-green-050: #f0fbe0;
+    --dim-ds-green-400: #69e000;
+    --dim-ds-green-700: #2f6b00;
+    --dim-ds-green-800: #1e4500;
+    /* Primitives - neutrals: the manual greys over Boost's surface greys. */
+    --dim-ds-gray-050: #f8f9fa;
+    --dim-ds-gray-100: #f2f3f5;
+    --dim-ds-gray-200: #e9ecef;
+    --dim-ds-gray-300: #dee2e6;
+    --dim-ds-gray-400: #c8c8c8;
+    --dim-ds-gray-500: #969696;
+    --dim-ds-gray-600: #6a737b;
+    --dim-ds-gray-700: #505050;
+    --dim-ds-gray-800: #343a40;
+    --dim-ds-gray-900: #1f1f1f;
+    --dim-ds-white: #fff;
+    /* Primitives - the feedback hues the state badges pair with their own ink. */
+    --dim-ds-cyan-100: #cce6ea;
+    --dim-ds-cyan-800: #00343c;
+    --dim-ds-yellow-100: #fcefdc;
+    --dim-ds-yellow-800: #60451f;
+    --dim-ds-red-100: #f4d6d2;
+    --dim-ds-red-500: #ca3120;
+    --dim-ds-red-800: #51140d;
+
+    /* Semantic aliases - components consume only these. */
+    --surface-page: var(--dim-ds-gray-050);
+    --surface-card: var(--dim-ds-white);
+    --surface-subtle: var(--dim-ds-gray-100);
+    --surface-strong: var(--dim-ds-gray-200);
+    --surface-inverse: var(--dim-ds-blue-600);
+    --surface-inverse-deep: var(--dim-ds-blue-800);
+    --text-body: var(--dim-ds-gray-900);
+    --text-muted: var(--dim-ds-gray-700);
+    --text-subtle: var(--dim-ds-gray-500);
+    --text-inverse: var(--dim-ds-white);
+    --text-inverse-muted: var(--dim-ds-blue-100);
+    --text-heading: var(--dim-ds-blue-600);
+    --text-link: var(--dim-ds-blue-600);
+    --text-link-hover: var(--dim-ds-blue-700);
+    --border-default: var(--dim-ds-gray-300);
+    --border-subtle: var(--dim-ds-gray-200);
+    --border-strong: var(--dim-ds-gray-400);
+    --border-inverse: rgba(255, 255, 255, .24);
+    --interactive-primary: var(--dim-ds-blue-600);
+    --interactive-primary-tint: var(--dim-ds-blue-050);
+    --accent-highlight: var(--dim-ds-blue-400);
+    --accent-progress: var(--dim-ds-green-400);
+    --focus-ring: var(--dim-ds-blue-400);
+    --focus-ring-width: 3px;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 50rem;
+    --shadow-sm: 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06);
+    --shadow-md: 0 4px 12px rgba(7, 0, 147, .10);
+    --shadow-lg: 0 12px 32px rgba(7, 0, 147, .14);
+    --motion-fast: 150ms;
+    --motion-base: 250ms;
+    --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Spacing scale and the reading measure, named as in the design system. */
+    --space-3xs: 2px;
+    --space-xxs: 4px;
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 16px;
+    --space-lg: 20px;
+    --space-xl: 32px;
+    --layout-max: 1200px;
+    --layout-narrow: 720px;
+
+    /* Noto Sans for long-form learning content, the one documented exception to Outfit. The
+       fallbacks keep the text readable wherever Outfit or Noto Sans is not installed. */
+    --font-reading: 'Noto Sans', 'Outfit', system-ui, -apple-system, sans-serif;
+    --leading-relaxed: 1.65;
+
+    /* The 3px rule under the navbar. A Boost Union flavour overrides it in look_rawscss so each
+       organisation signs its own area; the default is the highlight blue. */
+    --dimensions-navbar-band: var(--accent-highlight);
+}
+
+/* ---- Focus: WCAG 2.2 AA, the same ring on white and on navy -------------- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+/* ---- Navbar: the signature band ----------------------------------------- */
+/* Drawn as a pseudo-element rather than a border-bottom on purpose. Boost Union sets
+   `border-bottom: none` on a dark navbar - deliberately, because a light hairline looks wrong
+   there - with a selector more specific than anything a child theme should be writing to outbid.
+   A pseudo-element is not in that argument at all, and it survives whatever Boost Union does to
+   the navbar's borders and shadows in a future release. */
+.navbar.fixed-top {
+    &::after {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: var(--dimensions-navbar-band);
+        content: "";
+    }
+}
+
+/* ---- Navbar: the user's name, from md up --------------------------------- */
+/* The colour is inherited: with the navbar in Bootstrap's dark colour mode, everything inside it
+   already reads. Setting it here would fight the mode rather than follow it. */
+/* Core renders only the avatar in the toggle; the name is added by this theme's override of
+   core/user_menu_metadata. It is hidden below md because the navbar collapses there and the
+   avatar alone already identifies the session. */
+.dimensions-usermenu-name {
+    margin-left: .5rem;
+    max-width: 15rem;
+    overflow: hidden;
+    font-size: .875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* ---- Dropdowns inside the navy chrome ----------------------------------- */
+/* Boost Union pins the user menu to data-bs-theme="light"; these custom properties sit on the
+   menu itself, which is where Bootstrap 5.3 reads them from, so they win without !important. */
+.navbar .dropdown-menu {
+    --bs-dropdown-bg: var(--surface-inverse-deep);
+    --bs-dropdown-color: var(--text-inverse);
+    --bs-dropdown-link-color: var(--text-inverse);
+    --bs-dropdown-link-hover-bg: rgba(255, 255, 255, .12);
+    --bs-dropdown-link-hover-color: var(--text-inverse);
+    --bs-dropdown-link-active-bg: var(--accent-highlight);
+    --bs-dropdown-link-active-color: var(--text-inverse);
+    --bs-dropdown-border-color: var(--border-inverse);
+    --bs-dropdown-divider-bg: var(--border-inverse);
+    --bs-dropdown-header-color: var(--dim-ds-blue-100);
+    --bs-dropdown-link-disabled-color: var(--dim-ds-blue-200);
+}
+
+/* ---- The pill both ways through focus mode wear -------------------------- */
+/* One shape, defined once, for the way in and the way out of focus mode, which a person meets
+   seconds apart; a unit test asserts both controls include it.
+
+   The exit control's own rule cannot live here - it has to be scoped under the focus body class,
+   which scss/focusmode.scss is tested for - and this one cannot live there, because the entry
+   button renders on an ordinary activity page which carries no such class. Both files are
+   concatenated into one Sass document by lib.php, post.scss first, so a mixin defined here is in
+   scope there.
+
+   Nothing here names a text colour by hand. The bar underneath is not one colour: this theme
+   fills in the institutional navy by default, Boost Union ships navbarcolor as bg-body, an
+   administrator may set it back and a flavour may set it per organisation. So the type takes the
+   brand colour the navbar's own Bootstrap colour mode already resolved, and only the hairline and
+   the hover tint are chosen - through the two custom properties below, which the dark mode sets
+   and a light navbar leaves alone. Not "inherit": the nav element carries no colour of its own,
+   only Bootstrap's custom properties, so inheritance walks up to the body and paints the label
+   dark on the navy bar. currentColor at a fraction of its opacity would need color-mix(), which
+   Moodle's stylelint rejects. The 3px focus ring is the global one at the top of this file.
+
+   The min-height is a floor and not a size: it keeps a labelled pill (as tall as its line box)
+   and an icon-only one (as tall as its glyph, which is shorter) the same height side by side. It
+   is the labelled height written from this mixin's own numbers: the line box (1.2em), the two
+   .25rem paddings and the two hairlines, because every element is on the border box and a bare
+   1.2em would be under the natural height. On a labelled control it is already met and changes
+   nothing, so the entry button still matches core's own compact navbar controls.
+
+   No fixed height, though: inside the focus bar the same shape needs a phone target, and that is
+   decided in focusmode.scss, at the breakpoint where the label goes. */
+@mixin dimensions-navbar-pill {
+    display: inline-flex;
+    gap: var(--space-xs);
+    align-items: center;
+    padding: .25rem .75rem;
+    border: 1px solid var(--dimensions-pill-border, var(--border-default));
+    border-radius: var(--radius-pill);
+    color: var(--bs-navbar-brand-color, var(--bs-body-color));
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    min-height: calc(1.2em + .5rem + 2px);
+
+    &:hover,
+    &:focus {
+        background-color: var(--dimensions-pill-hover, var(--surface-subtle));
+        color: var(--bs-navbar-brand-color, var(--bs-body-color));
+    }
+}
+
+/* The same pill with no room for a label: the horizontal padding collapses to match the vertical
+   one and the gap goes, so the glyph sits in the middle of a box which is square by arithmetic
+   rather than by a magic number. */
+@mixin dimensions-navbar-pill-icon {
+    justify-content: center;
+    gap: 0;
+    padding-right: .25rem;
+    padding-left: .25rem;
+}
+
+/* The two things a dark navbar changes about the pill, declared once on the navbar itself and
+   read by inheritance. Both navbars are covered by this one rule: the ordinary one the entry
+   button is spliced into, and the focus bar, which is a .navbar and carries the same attribute
+   from the same layout context key. A light navbar has no attribute, leaves them unset, and the
+   mixin's own fallbacks apply - which is the whole light-bar case, in two lines. */
+.navbar[data-bs-theme="dark"] {
+    --dimensions-pill-border: var(--border-inverse);
+    --dimensions-pill-hover: rgba(255, 255, 255, .12);
+}
+
+/* ---- The way into focus mode, in the ordinary navbar --------------------- */
+/* This button is spliced into the navbar of an ordinary activity page, so the page carries no
+   focus body class and the rule cannot live in scss/focusmode.scss, where every top-level
+   selector is scoped to one and a unit test says so. Bootstrap's bare .btn gives it no edge, so
+   it would be lost between the edit switch and the bell. */
+.dimensions-focus-entry-button {
+    @include dimensions-navbar-pill;
+}
+
+/* ---- Calendar ------------------------------------------------------------ */
+/* Only core's own classes, read from calendar/templates/month_detailed.mustache. No template is
+   overridden here. */
+.calendarwrapper {
+    .calendar-controls {
+        padding: 6px 6px 6px 1.25rem;
+        border-radius: var(--radius-pill);
+        background: var(--surface-subtle);
+    }
+
+    .calendarmonth {
+        th.header {
+            color: var(--text-muted);
+            font-size: .6875rem;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        td.weekend {
+            background: var(--surface-page);
+        }
+
+        td.day .day-number-circle {
+            display: inline-flex;
+            width: 30px;
+            height: 30px;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+        }
+
+        td.day.today .day-number-circle {
+            background: var(--interactive-primary);
+            color: var(--text-inverse);
+        }
+    }
+
+    /* Scope in shades of blue, personal in grey, deadlines in the status hues the design system
+       already inherits from Moodle - no new hue is invented for the calendar. */
+    .calendar_event_site {
+        background-color: var(--dim-ds-blue-800);
+    }
+
+    .calendar_event_category {
+        background-color: var(--dim-ds-blue-600);
+    }
+
+    .calendar_event_course {
+        background-color: var(--dim-ds-blue-400);
+    }
+
+    .calendar_event_group {
+        background-color: var(--dim-ds-blue-300);
+    }
+
+    .calendar_event_user {
+        background-color: var(--dim-ds-gray-500);
+    }
+
+    .calendar_event_due {
+        background-color: var(--dim-ds-red-500);
+    }
+
+    .calendar_event_close {
+        background-color: var(--dim-ds-red-800);
+    }
+
+    .calendar_event_open {
+        background-color: var(--dim-ds-green-400);
+    }
+}
+
+/* The generic "not available" page. Deliberately plain: it must look like a
+   deadpan system response, not like a locked door with something behind it. */
+.theme_dimensions-unavailable {
+    .dimensions-unavailable-card {
+        max-width: 34rem;
+        background-color: var(--surface-card);
+        border-color: var(--border-default);
+        color: var(--text-body);
+    }
+
+    .dimensions-unavailable-card h1 {
+        color: var(--text-heading);
+    }
+}
+
+/* ---- User profile -------------------------------------------------------- */
+/* Paints the page user/profile.php and user/view.php share. The tree markup comes from this
+   theme's own myprofile renderer; the heading, the picture and the "About me" block above it are
+   printed by the two core scripts, so they are reached here by core's classes only.
+
+   The layout replaces Boost's `column-count: 2` on .profile_tree. CSS columns flow the cards
+   top-to-bottom and then break them across the gutter, which is why core has to mark every
+   section `d-inline-block w-100` to stop a card being cut in half - and it still leaves the
+   reading order down one column and up the next. A flex row keeps document order.
+
+   The two-column cap is `flex: 1 1 45%` with a rem floor, not a grid `auto-fit`:
+   `repeat(auto-fit, minmax(19rem, 1fr))` silently resolves to three columns on a 1083px card,
+   and the modern ways of capping it - `minmax(max(19rem, 45%), 1fr)`, `container-type` - are
+   rejected by Moodle's stylelint. Three items of 45% cannot share a row,
+   so 45% is the cap; the floor keeps a column usable. It is governed by #region-main rather than
+   by the viewport, which matters because the block drawer changes that width without changing
+   the window's. */
+.userprofile {
+    .page-context-header {
+        margin-bottom: var(--space-xl);
+
+        .page-header-image img {
+            border-radius: var(--radius-pill);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .page-header-headings h1 {
+            color: var(--text-heading);
+            font-weight: 700;
+            letter-spacing: -.02em;
+        }
+    }
+
+    /* Long-form text the person wrote about themselves: the reading face and the reading
+       measure, both from the design system, rather than the interface face at full width. */
+    .description {
+        max-width: var(--layout-narrow);
+        margin-bottom: var(--space-xl);
+        color: var(--text-muted);
+        font-family: var(--font-reading);
+        line-height: 1.65;
+    }
+
+    .profile_tree.dimensions-profile {
+        display: flex;
+        column-count: auto;
+        flex-wrap: wrap;
+        gap: var(--space-md);
+    }
+}
+
+.dimensions-profile-card {
+    display: flex;
+    min-width: 19rem;
+    flex: 1 1 45%;
+    flex-direction: column;
+    padding: var(--space-lg);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--motion-fast) var(--motion-ease);
+
+    &:hover {
+        box-shadow: var(--shadow-md);
+    }
+}
+
+/* The card heading: the navy for the type and the highlight blue as a rule rather than as a
+   fill, because the design system never uses #4456FF as a surface. */
+.dimensions-profile-card-title {
+    margin: 0 0 var(--space-md);
+    color: var(--text-heading);
+    font-size: .9375rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+
+    /* A short rule, not a full-width border. The design system uses the highlight blue as a
+       mark of state - a focus ring, an active tab, the rule under an overline - and four
+       card-wide 2px rules down one page turn a mark into a divider. */
+    &::after {
+        display: block;
+        width: 2.25rem;
+        height: 3px;
+        margin-top: var(--space-xs);
+        background: var(--accent-highlight);
+        content: "";
+    }
+}
+
+.dimensions-profile-facts {
+    margin: 0;
+
+    .dimensions-profile-fact + .dimensions-profile-fact {
+        margin-top: var(--space-md);
+    }
+}
+
+/* Label above value, not beside it. A course name, an email address and a list of roles have
+   nothing like a common width, and a two-column definition list either truncates them or leaves
+   a ragged gutter. Uppercased small type separates the label without needing a second colour. */
+/* --text-muted, not --text-subtle. The subtle grey is #969696, which is 2.96:1 on the white
+   card and fails WCAG AA for text of any size; at the 11px this label is set in it is not a
+   borderline call. The muted grey is 8.06:1 and still reads as secondary next to the value. */
+.dimensions-profile-fact-label {
+    margin: 0 0 var(--space-3xs);
+    color: var(--text-muted);
+    font-size: .6875rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.dimensions-profile-fact-value {
+    margin: 0;
+    color: var(--text-body);
+
+    /* Several nodes hand over a whole <ul> as their content - the course list and the group
+       list among them - built with html_writer by core. They are values, not navigation. */
+    ul {
+        margin: 0;
+        padding-left: 0;
+        list-style: none;
+    }
+
+    li + li {
+        margin-top: var(--space-3xs);
+    }
+}
+
+/* Actions sit under a rule at the foot of the card, so that "Edit profile" stops competing with
+   the person's email address for the same attention. margin-top:auto pins them to the bottom of
+   whichever card in the row is taller. */
+.dimensions-profile-actions {
+    margin: var(--space-lg) 0 0;
+    padding: var(--space-sm) 0 0;
+    border-top: 1px solid var(--border-subtle);
+    list-style: none;
+
+    .dimensions-profile-action + .dimensions-profile-action {
+        margin-top: var(--space-xs);
+    }
+
+    /* .btn-link as well as a real link: a node may hand over a rendered control instead of a
+       url - tool_muloginas passes its whole "Log in as" button as the node title - and inside
+       this card it should read like the actions beside it, not like a form submit. */
+    a,
+    .btn-link {
+        color: var(--text-link);
+        font-weight: 500;
+        text-decoration: none;
+
+        &:hover,
+        &:focus {
+            color: var(--text-link-hover);
+            text-decoration: underline;
+        }
+    }
+}
+
+.dimensions-profile-card .dimensions-profile-actions {
+    margin-top: auto;
+}
+
+/* A card of nothing but actions - "Reports", "Miscellaneous" - has no facts to be separated
+   from, so it gets neither the rule nor the push to the foot of the row. Without this the
+   links sit at the bottom of a tall card under two rules a few pixels apart. */
+.dimensions-profile-card .dimensions-profile-card-title + .dimensions-profile-actions {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
+
+/* Core's own right-alignment of these two, which the flat list needed and this layout does not:
+   they are ordinary actions here and are read with the rest. */
+.userprofile .dimensions-profile .editprofile,
+.userprofile .dimensions-profile .viewmore {
+    text-align: left;
+}
+
+/* auth_loginsteps' Security area, a category of the profile tree that plugin decides and this
+   renderer places first: the whole width of the page, its facts two to a row (the fleet's two
+   columns: a 45% basis with a rem floor), two-step verification across the whole card. */
+.dimensions-profile-card.auth-loginsteps-security {
+    flex-basis: 100%;
+
+    .dimensions-profile-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-lg);
+
+        .dimensions-profile-fact {
+            min-width: 16rem;
+            flex: 1 1 45%;
+        }
+
+        .dimensions-profile-fact + .dimensions-profile-fact {
+            margin-top: 0;
+        }
+
+        .dimensions-profile-fact:first-child {
+            flex-basis: 100%;
+        }
+    }
+}

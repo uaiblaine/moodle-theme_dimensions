@@ -1,0 +1,111 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_daterange
+
+    The one date control of the design: a start box and an end box side by
+    side, each with its own control that clears it, and ONE popover holding
+    two months that both boxes open. Either bound may be set alone; the server
+    states what each keeps (criteria).
+
+    Only the client module (daterange) renders it. A reader without JavaScript
+    gets the toolbar's two native date fields, which stay in the document under
+    this control and keep carrying the two parameters the form posts; that is
+    why the toolbar mounts it into an empty region rather than drawing a
+    skeleton of it.
+
+    Each box is a button and not an input: its value is never typed and it
+    opens a disclosure. Both carry the same aria-controls, the popover's id,
+    because they open the same one, and which bound a press of a day sets is
+    the box that opened it (data-bound, the parameter's own name). A box's name
+    is its label followed by its date; once a date is set the label leaves the
+    picture (visually-hidden) and stays in the name. No dialogue role: nothing
+    is trapped and Escape returns the focus to the box.
+
+    The month grids are left empty on purpose: the day names come from the
+    browser's formatter in the document's language and the column a week begins
+    under is the site's, facts that arrive after this template has rendered. The
+    client writes the grids, their rows and their cells, with the roving
+    tabindex, the roles and the grid's label (its month's caption). The second
+    month is the client's to show or hide by width. The prompt above the months
+    says which bound the next press sets.
+
+    A press describes a period and applies nothing: the popover stays open on
+    the draft until the footer's "Done" applies it. The footer's control drops
+    the whole period and carries the same action as each box's own control,
+    which drops that box's bound alone (data-bound), so one handler serves all
+    three.
+
+    Example context (json):
+    {
+        "fromid": "dim-daterange-7-from",
+        "toid": "dim-daterange-7-to",
+        "popid": "dim-daterange-pop-7",
+        "fromvalue": "17 Sep 2026",
+        "tovalue": "",
+        "hasfrom": true,
+        "hasto": false,
+        "prompt": "Choose the last day",
+        "month": "September 2026",
+        "nextmonth": "October 2026"
+    }
+}}
+<div class="dim-daterange" data-region="dim-daterange-field">
+    <div class="dim-daterange__boxes" role="group" aria-label="{{#str}}category_daterange, theme_dimensions{{/str}}">
+        <div class="dim-daterange__box">
+            <button class="form-control dim-daterange__field" type="button" id="{{fromid}}" data-action="dim-daterange-open" data-bound="from" aria-expanded="false" aria-controls="{{popid}}">
+                <i class="fa fa-calendar-days dim-daterange__icon" aria-hidden="true"></i>
+                <span class="dim-daterange__label{{#hasfrom}} visually-hidden{{/hasfrom}}" data-region="dim-daterange-label">{{#str}}category_datefrom, theme_dimensions{{/str}}</span>
+                <span class="dim-daterange__value" data-region="dim-daterange-value">{{fromvalue}}</span>
+            </button>
+            <button class="dim-daterange__clear" type="button" data-action="dim-daterange-clear" data-bound="from"{{^hasfrom}} hidden{{/hasfrom}}>
+                <i class="fa fa-xmark" aria-hidden="true"></i><span class="visually-hidden">{{#str}}category_dateclearfrom, theme_dimensions{{/str}}</span>
+            </button>
+        </div>
+        <div class="dim-daterange__box">
+            <button class="form-control dim-daterange__field" type="button" id="{{toid}}" data-action="dim-daterange-open" data-bound="to" aria-expanded="false" aria-controls="{{popid}}">
+                <i class="fa fa-calendar-days dim-daterange__icon" aria-hidden="true"></i>
+                <span class="dim-daterange__label{{#hasto}} visually-hidden{{/hasto}}" data-region="dim-daterange-label">{{#str}}category_dateto, theme_dimensions{{/str}}</span>
+                <span class="dim-daterange__value" data-region="dim-daterange-value">{{tovalue}}</span>
+            </button>
+            <button class="dim-daterange__clear" type="button" data-action="dim-daterange-clear" data-bound="to"{{^hasto}} hidden{{/hasto}}>
+                <i class="fa fa-xmark" aria-hidden="true"></i><span class="visually-hidden">{{#str}}category_dateclearto, theme_dimensions{{/str}}</span>
+            </button>
+        </div>
+    </div>
+    <div class="dim-daterange__pop" id="{{popid}}" data-region="dim-daterange-pop" hidden>
+        <div class="dim-daterange__nav">
+            <button class="dim-daterange__step" type="button" data-action="dim-daterange-prev"><i class="fa fa-chevron-left" aria-hidden="true"></i><span class="visually-hidden">{{#str}}category_dateprevmonth, theme_dimensions{{/str}}</span></button>
+            <p class="dim-daterange__prompt" data-region="dim-daterange-prompt" aria-live="polite">{{prompt}}</p>
+            <button class="dim-daterange__step" type="button" data-action="dim-daterange-next"><i class="fa fa-chevron-right" aria-hidden="true"></i><span class="visually-hidden">{{#str}}category_datenextmonth, theme_dimensions{{/str}}</span></button>
+        </div>
+        <div class="dim-daterange__months">
+            <div class="dim-daterange__monthblock" data-region="dim-daterange-monthblock">
+                <span class="dim-daterange__month" id="{{popid}}-month-0" data-region="dim-daterange-month" aria-live="polite">{{month}}</span>
+                <div class="dim-daterange__grid" data-region="dim-daterange-grid"></div>
+            </div>
+            <div class="dim-daterange__monthblock" data-region="dim-daterange-monthblock">
+                <span class="dim-daterange__month" id="{{popid}}-month-1" data-region="dim-daterange-month" aria-live="polite">{{nextmonth}}</span>
+                <div class="dim-daterange__grid" data-region="dim-daterange-grid"></div>
+            </div>
+        </div>
+        <div class="dim-daterange__footer">
+            <button class="btn btn-link btn-sm dim-daterange__footerclear" type="button" data-action="dim-daterange-clear">{{#str}}category_dateclear, theme_dimensions{{/str}}</button>
+            <button class="btn btn-primary btn-sm dim-daterange__done" type="button" data-action="dim-daterange-done">{{#str}}category_datedone, theme_dimensions{{/str}}</button>
+        </div>
+    </div>
+</div>

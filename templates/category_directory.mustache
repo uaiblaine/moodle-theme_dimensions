@@ -1,0 +1,159 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_directory
+
+    The root of the course index, drawn as a directory of categories. A course
+    never sits directly in the top-level pseudo-category, so the page has no
+    course grid and no pager: it is the search line, then one poster per
+    top-level category the viewer may discover, drawn by the areas partial a
+    category page organised by area uses, with the panel of the open one between
+    the rows. That panel lists the area's whole subtree, since a panel of a
+    top-level category's direct courses would always be empty. Every category
+    page below the root keeps the recursive listing.
+
+    The root counts nothing at rest, so no poster can be known to be empty: every
+    poster opens a panel, and an empty one says so inside it. No poster wears a
+    number at rest either - how much an area holds is a fact about a listing the
+    reader has not opened, and the panel says it once open. Without JavaScript a
+    poster is a link reloading this page with its panel open; for a real account
+    the panel module turns it into a button and fetches the panel.
+
+    Past population::DIRECTORY_SLICE posters the rest sit inside a closed native
+    disclosure, drawn open when the open poster is among them. It is a page cut
+    and not a data cut - every poster is built by the same server pass - and,
+    because every image and crest loads lazily, a browser fetches the hidden
+    posters' pictures only once they are revealed.
+
+    The empty state talks about categories and not about courses: a reader who
+    may browse no top-level category has not been told that the site holds no
+    course.
+
+    The root reads the search and no other criterion. The search line comes
+    first (category_searchline); under a term every poster wears how many matches
+    its area holds, a poster with none leaves the grid for the summary of areas
+    with no result, and the areas' own box says when nothing matched anywhere.
+    For a real account the listing's module runs here, reading the vitrine
+    payload, and searches as the reader types; without it the line's form
+    submits.
+
+    The container names itself as the showcase's region like the listing does,
+    which keeps one body class and one stylesheet over both pages.
+
+    Example context (json):
+    {
+        "categoryid": 0,
+        "isdirectory": true,
+        "areas": {
+            "categoryid": 0,
+            "isroot": true,
+            "heading": "Áreas",
+            "hasdirectlink": false,
+            "directlinklabel": "Ir para os cursos desta categoria",
+            "isopen": false,
+            "hasposters": true,
+            "posters": [
+                {
+                    "id": 7,
+                    "name": "Brigada Voluntária",
+                    "url": "https://example.com/course/index.php?categoryid=7",
+                    "description": "Formação continuada, cursos técnicos e eventos da organização.",
+                    "hasdescription": true,
+                    "style": "--dim-card-band: #070093; --dim-card-ink: #ffffff; --dim-mark-a: 0.20; --dim-mark: url('https://example.com/pluginfile.php/31/theme_dimensions/categorybadge1/7/abc/brasao-alfa.png');",
+                    "imageurl": null,
+                    "hasimage": false,
+                    "hasvideo": false,
+                    "videourl": null,
+                    "videotype": null,
+                    "badges": [
+                        {"url": "https://example.com/pluginfile.php/31/theme_dimensions/categorybadge1/7/abc/brasao-alfa.png", "alt": "brasao alfa"}
+                    ],
+                    "hasbadges": true,
+                    "badgeslabel": "Instituições",
+                    "hasmark": true,
+                    "markfolder": false,
+                    "istext": false,
+                    "variant": "band",
+                    "expandable": true,
+                    "isopen": false,
+                    "controlurl": "https://example.com/course/index.php?open=7#dim-panel",
+                    "hascontrolurl": true,
+                    "shell": {"titleurl": "https://example.com/course/index.php?categoryid=7", "ctaurl": "https://example.com/course/index.php?categoryid=7&sort=recent", "ctalabel": "Acessar Brigada Voluntária"}
+                },
+                {
+                    "id": 9,
+                    "name": "Proteção Civil",
+                    "url": "https://example.com/course/index.php?categoryid=9",
+                    "description": "",
+                    "hasdescription": false,
+                    "style": "--dim-card-band: #12484f; --dim-card-ink: #ffffff;",
+                    "imageurl": "https://example.com/pluginfile.php/31/theme_dimensions/categoryhero/9/abc/capa.jpg",
+                    "hasimage": true,
+                    "hasvideo": false,
+                    "videourl": null,
+                    "videotype": null,
+                    "badges": [],
+                    "hasbadges": false,
+                    "badgeslabel": "Instituições",
+                    "hasmark": false,
+                    "markfolder": false,
+                    "istext": false,
+                    "variant": "photo",
+                    "expandable": true,
+                    "isopen": false,
+                    "controlurl": "https://example.com/course/index.php?open=9#dim-panel",
+                    "hascontrolurl": true,
+                    "shell": {"titleurl": "https://example.com/course/index.php?categoryid=9", "ctaurl": "https://example.com/course/index.php?categoryid=9&sort=recent", "ctalabel": "Acessar Proteção Civil"}
+                }
+            ],
+            "hasmore": false,
+            "morelabel": "",
+            "moreopen": false,
+            "postersmore": [],
+            "panelinmain": false,
+            "panelinmore": false,
+            "panelstyle": "",
+            "panel": null,
+            "hashint": true,
+            "emptylabel": "Ainda não há categorias para mostrar aqui."
+        },
+        "hasdirectory": true,
+        "search": {
+            "action": "https://example.com/course/index.php",
+            "hidden": [],
+            "formid": "dim-vitrine-form-0",
+            "searchid": "dim-vitrine-q-0",
+            "searchname": "q",
+            "searchlabel": "Buscar cursos",
+            "searchplaceholder": "Buscar pelo nome",
+            "query": "",
+            "searchtooshort": false,
+            "searchtooshortlabel": "Digite pelo menos 2 caracteres para buscar.",
+            "openfields": [],
+            "submitlabel": "Buscar"
+        },
+        "vitrine": "{\"categoryid\":0,\"page\":0,\"query\":\"\"}"
+    }
+}}
+<section class="dim-vitrine dim-vitrine--directory dim-vitrine--cards" data-region="dim-vitrine" data-categoryid="{{categoryid}}" data-vitrine="{{vitrine}}">
+    {{#search}}
+    {{> theme_dimensions/category_searchline }}
+    {{/search}}
+    {{#areas}}
+    {{> theme_dimensions/category_areas }}
+    {{/areas}}
+</section>

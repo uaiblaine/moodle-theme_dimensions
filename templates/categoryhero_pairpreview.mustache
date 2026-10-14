@@ -1,0 +1,59 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/categoryhero_pairpreview
+
+    The preview of the colour pair, the last row of the colours section of the
+    category appearance form: the category's own name set on the solid band, in
+    the colours that are stored.
+
+    It is TEXT on a coloured box and not a picture, so it carries no image role
+    and nothing is hidden from a screen reader: the caption under the name is
+    ordinary visible text saying what the box is.
+
+    The form renders this with the stored pair, so it is correct with JavaScript
+    switched off and never disagrees with the two fields above it. With the
+    module running, the categoryhero AMD module writes the two colours into this
+    element's style as they are typed, from the same valid-hex path that drives
+    the swatch - an invalid value leaves the last valid pair on the band.
+
+    Context variables required for this template:
+    * name - the category's name, in the PLAIN spelling (this template escapes it)
+    * style - the band's declarations, built by the form from branding::hex() alone
+
+    The style value is the one CSS-context sink of this template: Mustache escaping
+    does not protect that context, so the form is what constrains the value to a
+    pair of hex colours, and nothing here may put anything else into that attribute.
+
+    Data-region hook the module addresses:
+    * dim-pair-preview - the band itself, whose two colours the module writes
+
+    @copyright  2026 Anderson Blaine
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+        "name": "Departamento de Brigada Regional",
+        "style": "background-color: #070093; color: #ffffff;"
+    }
+}}
+<div class="dim-pair-preview" data-region="dim-pair-preview" style="{{style}}">
+    <span class="dim-pair-preview__name">{{name}}</span>
+    <small class="dim-pair-preview__caption">
+        {{#str}}categoryhero_pairpreview, theme_dimensions{{/str}}
+    </small>
+</div>

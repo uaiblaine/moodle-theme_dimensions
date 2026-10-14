@@ -1,0 +1,173 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/course_notice
+
+    The one notice region of a course page, in place of Boost Union's course related hints.
+
+    A bar - the title, the chips that sum the state up, the bar actions and, on a notice that can
+    be folded, the quick copy buttons and the fold control - and the detail under it: one row per
+    address (label, the address as text, copy, open) and one row per note. Notes of this theme are
+    plain text with an optional link; notes made of Boost Union's hint strings are trusted HTML,
+    one line each, printed with triple stashes as Boost Union prints them in its own cards.
+
+    The quick copy buttons and the detail's rows copy from the same code element, which core's
+    copy_to_clipboard reads whether or not the detail is shown. The fold is aria-expanded on the
+    control and the hidden attribute on the detail; the module theme_dimensions/coursenotice
+    moves both and stores the choice. On a MooTube course page the module also moves the region
+    into the format's own scrolling content, where it can be seen.
+
+    Context variables required for this template:
+    * uniqid - Id of the region; the detail and the addresses derive theirs from it.
+    * courseid - The course id.
+    * promote - Whether the notice carries the promotion section (addresses).
+    * title - The region's visible title and accessible name.
+    * toggle - Whether the notice can be folded.
+    * collapsed - Whether it is drawn folded.
+    * expanded - The opposite of collapsed, for aria-expanded.
+    * canpersist - Whether the fold may be stored as a preference.
+    * preference - Name of that preference.
+    * togglelabel - Accessible name of the fold control.
+    * haschips - Whether there is any chip.
+    * chips - The chips: key, label, tone (ok, warn or info).
+    * actions - The bar actions: key, label, url.
+    * links - The address rows: key, label, sub, url, addressid, copied, quicklabel, copylabel, openlabel.
+    * notes - The note rows: key, tone, lead, text, link (url, label) or null, lines (trusted HTML), haslines.
+    * hasdetail - Whether there is any address or note.
+
+    Example context (json):
+    {
+        "uniqid": "dim-coursenotice-2",
+        "courseid": 2,
+        "promote": true,
+        "title": "Promotion",
+        "toggle": true,
+        "collapsed": false,
+        "expanded": true,
+        "canpersist": true,
+        "preference": "theme_dimensions_coursenotice_collapsed",
+        "togglelabel": "Show details",
+        "haschips": true,
+        "chips": [
+            {"key": "public", "label": "Public", "tone": "ok"},
+            {"key": "hotsite", "label": "Hotsite · Course online", "tone": "info"},
+            {"key": "hidden", "label": "Hidden course", "tone": "warn"}
+        ],
+        "actions": [
+            {"key": "switchedrole", "label": "Return to my normal role", "url": "https://example.org/course/switchrole.php?id=2"}
+        ],
+        "links": [
+            {
+                "key": "hotsite",
+                "label": "Hotsite",
+                "sub": "Enrolment page",
+                "url": "https://example.org/p/rerotu",
+                "addressid": "dim-coursenotice-2-hotsite",
+                "copied": "Address copied",
+                "quicklabel": "Copy the address: Hotsite",
+                "copylabel": "Copy Hotsite",
+                "openlabel": "Open Hotsite in a new tab"
+            }
+        ],
+        "notes": [
+            {
+                "key": "public",
+                "tone": "ok",
+                "lead": "Public:",
+                "text": "anybody with the link sees the hotsite and its preview on social networks, without logging in.",
+                "link": {"url": "https://example.org/course/edit.php?id=2", "label": "Change the discoverability"},
+                "lines": [],
+                "haslines": false
+            },
+            {
+                "key": "hidden",
+                "tone": "warn",
+                "lead": "",
+                "text": "",
+                "link": null,
+                "lines": ["This course is currently <strong>hidden</strong>."],
+                "haslines": true
+            }
+        ],
+        "hasdetail": true
+    }
+}}
+<section class="dim-coursenotice{{#promote}} dim-coursenotice--promote{{/promote}}" id="{{uniqid}}"
+        aria-label="{{title}}" data-region="dim-coursenotice" data-courseid="{{courseid}}"
+        data-preference="{{preference}}" data-canpersist="{{#canpersist}}1{{/canpersist}}{{^canpersist}}0{{/canpersist}}">
+    <div class="dim-coursenotice__bar">
+        <span class="dim-coursenotice__title">
+            {{#promote}}{{#pix}} i/bullhorn, core {{/pix}}{{/promote}}{{^promote}}{{#pix}} i/info, core {{/pix}}{{/promote}}
+            <span>{{title}}</span>
+        </span>
+        {{#haschips}}
+        <ul class="dim-coursenotice__chips">
+            {{#chips}}
+            <li class="dim-coursenotice__chip dim-coursenotice__chip--{{tone}}" data-key="{{key}}">{{label}}</li>
+            {{/chips}}
+        </ul>
+        {{/haschips}}
+        <div class="dim-coursenotice__acts">
+            {{#actions}}
+            <a class="dim-coursenotice__btn dim-coursenotice__btn--primary" href="{{url}}" data-key="{{key}}">{{label}}</a>
+            {{/actions}}
+            {{#toggle}}
+            <span class="dim-coursenotice__quick" data-region="dim-coursenotice-quick"{{^collapsed}} hidden{{/collapsed}}>
+                {{#links}}
+                <button type="button" class="dim-coursenotice__btn" data-action="copytoclipboard"
+                        data-clipboard-target="#{{addressid}}" data-clipboard-success-message="{{copied}}"
+                        aria-label="{{quicklabel}}">{{#pix}} t/copy, core {{/pix}}<span>{{label}}</span></button>
+                {{/links}}
+            </span>
+            <button type="button" class="dim-coursenotice__btn dim-coursenotice__btn--icon" data-action="dim-coursenotice-toggle"
+                    aria-expanded="{{#expanded}}true{{/expanded}}{{^expanded}}false{{/expanded}}"
+                    aria-controls="{{uniqid}}-detail" aria-label="{{togglelabel}}">{{#pix}} t/expanded, core {{/pix}}</button>
+            {{/toggle}}
+        </div>
+    </div>
+    {{#hasdetail}}
+    <div class="dim-coursenotice__detail" id="{{uniqid}}-detail" data-region="dim-coursenotice-detail"{{#collapsed}} hidden{{/collapsed}}>
+        {{#links}}
+        <div class="dim-coursenotice__row" data-key="{{key}}">
+            <span class="dim-coursenotice__label">{{label}}<small>{{sub}}</small></span>
+            <code class="dim-coursenotice__address" id="{{addressid}}">{{url}}</code>
+            <span class="dim-coursenotice__rowacts">
+                <button type="button" class="dim-coursenotice__btn dim-coursenotice__btn--icon" data-action="copytoclipboard"
+                        data-clipboard-target="#{{addressid}}" data-clipboard-success-message="{{copied}}"
+                        aria-label="{{copylabel}}">{{#pix}} t/copy, core {{/pix}}</button>
+                <a class="dim-coursenotice__btn dim-coursenotice__btn--icon" href="{{url}}" target="_blank" rel="noopener noreferrer"
+                   aria-label="{{openlabel}}">{{#pix}} i/externallink, core {{/pix}}</a>
+            </span>
+        </div>
+        {{/links}}
+        {{#notes}}
+        <div class="dim-coursenotice__note dim-coursenotice__note--{{tone}}" data-key="{{key}}">
+            {{#pix}} i/info, core {{/pix}}
+            <div class="dim-coursenotice__notebody">
+                {{#lead}}<strong>{{lead}}</strong> {{/lead}}{{text}}{{#link}} <a href="{{url}}">{{label}}</a>{{/link}}
+                {{#haslines}}{{#lines}}<span class="dim-coursenotice__line">{{{.}}}</span>{{/lines}}{{/haslines}}
+            </div>
+        </div>
+        {{/notes}}
+    </div>
+    {{/hasdetail}}
+</section>
+{{#js}}
+require(['theme_dimensions/coursenotice'], function(notice) {
+    notice.init('{{uniqid}}');
+});
+{{/js}}

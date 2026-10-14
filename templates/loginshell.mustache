@@ -1,0 +1,58 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/loginshell
+
+    A bare page around auth_loginsteps' shell, for the login-layout pages layout/login.php
+    draws on it (the second factor, the privileged session). Boost's embedded page, with the
+    shell in place of the main region: the shell already holds the main content.
+
+    Context variables required for this template:
+    * output - The core renderer.
+    * shellhtml - The shell, rendered by auth_loginsteps/shell/corepage, holding the main content.
+
+    Example context (json):
+    {
+        "output": {
+            "doctype": "<!DOCTYPE html>",
+            "htmlattributes": "lang=\"en\"",
+            "page_title": "Two-step verification",
+            "favicon": "favicon.ico",
+            "standard_top_of_body_html": "<a class=\"visually-hidden-focusable\" href=\"#maincontent\">Skip to main content</a>"
+        },
+        "shellhtml": "<div class=\"auth-loginsteps-shell\" data-screen=\"mfa\"><div role=\"main\"><h1>Two-step verification</h1></div></div>"
+    }
+}}
+{{{ output.doctype }}}
+<html {{{ output.htmlattributes }}}>
+<head>
+    <title>{{{ output.page_title }}}</title>
+    <link rel="shortcut icon" href="{{{ output.favicon }}}">
+    {{{ output.standard_head_html }}}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body {{{ output.body_attributes }}}>
+{{> core/local/toast/wrapper}}
+
+{{{ output.standard_top_of_body_html }}}
+<div id="page" class="theme-dimensions-loginshell">
+    {{{ shellhtml }}}
+</div>
+{{{ output.standard_end_of_body_html }}}
+</body>
+</html>

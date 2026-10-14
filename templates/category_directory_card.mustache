@@ -1,0 +1,175 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_directory_card
+
+    One poster of an area, drawn by the areas partial inside a list item of its
+    grid, on the root's directory and on a category page organised by area
+    alike. The list item belongs to the areas partial so that this partial is a
+    whole element on its own, which is what the template lint renders. The
+    poster is the card as a whole: its media fills it, the area's crests and the
+    kind tag sit on top, and its name, description and trigger sit on a solid
+    base in the area's own colour, so the text keeps the pair the editor
+    certified whatever the photograph is.
+
+    The open poster says so in words as well as with its ring: an "Open" tag
+    under the kind tag, always in the markup and shown by the poster's open
+    class alone, which the panel module moves, so the state never reads by
+    colour alone. Assistive technology hears it from the control's
+    aria-expanded instead, so the tag is hidden from it.
+
+    At rest a poster carries no number. Under a search or a filter a pill below
+    the kind tag says how many results the area holds (in the zero colours when
+    it holds none) and describes the control. The pill is always in the
+    document, hidden at rest, and the article carries the count, the formatted
+    result count and the pill's words, because the client rewrites all of them
+    after a filter change - silently, with no live region - and puts the words
+    back on the pill when a request fails.
+
+    The control is inside the heading and the stylesheet stretches it over the
+    whole poster, so an area is one Tab stop. Without JavaScript it is a link: to
+    this page with the area's panel open, to this page without it on the open
+    poster, and to the area's own page on a poster with nothing to open, whose
+    accessible name says so. The panel module turns the first two into buttons.
+    The film's controls come after the control in the document, so the area is
+    the first stop and its three controls the next, each naming the area.
+
+    The colours travel in one style attribute on the poster: the band, the ink
+    and, on a poster with no still, the watermark's opacity and the crest it is
+    cut from. That is a CSS context, which Mustache escaping does not protect, so
+    the server builds it from a closed vocabulary alone - two hex colours, a
+    two-decimal number and a url styleurl::safe() passed (see population::mark()).
+    The watermark is written twice and the stylesheet shows one: under the text
+    for the card, in the thumbnail for the list view. It is decorative and hidden
+    from assistive technology; the crest list is what a screen reader is given.
+
+    The card element is the cover film's band (its data-region), which the film
+    module binds its hover, its observer and its playing class to; the still is
+    written first and the film second, and the stylesheet states the stack. The
+    film carries no controls attribute and preloads nothing, so a reader without
+    JavaScript sees the still and nothing half-working. The cluster and the bar
+    carry the film module's own mark and not the listing module's, because the
+    film module also runs where the listing module does not.
+
+    Every hook the client modules read is a data attribute: the poster's region,
+    its id, whether it opens, its name, and the shell a panel needs before its
+    rows arrive - the title's address and the call to action's address and label
+    - plus the control's and the trigger's regions. The trigger carries its three
+    words (open, close, and an empty poster's "no courses yet") so the client
+    swaps them without composing anything.
+
+    A poster can change whether it opens without a reload: an area with no
+    course is a link at rest and opens a panel under a criterion, and the client
+    applies filters in place. So both states are always written - the trigger's
+    words, the chevron (hidden by the stylesheet on an empty poster) and the
+    visually hidden note saying the link opens the area's page, hidden while the
+    poster opens a panel - and the client flips the class, the attribute, the
+    note and the control.
+
+    A listed but not public area, on the anonymous shell, is a text poster: its
+    colours and its name, with no still, no film, no crest and no watermark,
+    because the public file route refuses the files of a category that is not
+    public.
+
+    Example context (json):
+    {
+        "id": 7,
+        "name": "Brigada Voluntária & Resgate",
+        "url": "https://example.com/course/index.php?categoryid=7",
+        "description": "Formação continuada, cursos técnicos e eventos da organização.",
+        "hasdescription": true,
+        "style": "--dim-card-band: #070093; --dim-card-ink: #ffffff;",
+        "imageurl": "https://example.com/pluginfile.php/31/theme_dimensions/categorycover/7/abc/capa.jpg",
+        "hasimage": true,
+        "hasvideo": true,
+        "videourl": "https://example.com/pluginfile.php/31/theme_dimensions/categorycovervideo/7/def/capa.mp4",
+        "videotype": "video/mp4",
+        "badges": [
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/categorybadge1/7/abc/brasao-alfa.png", "alt": "brasao alfa"}
+        ],
+        "hasbadges": true,
+        "badgeslabel": "Instituições",
+        "hasmark": false,
+        "markfolder": false,
+        "count": 26,
+        "linkable": true,
+        "istext": false,
+        "variant": "photo",
+        "expandable": true,
+        "isopen": false,
+        "controlurl": "https://example.com/course/index.php?categoryid=3&q=resgate&open=7#dim-panel",
+        "hascontrolurl": true,
+        "shell": {"titleurl": "https://example.com/course/index.php?categoryid=7", "ctaurl": "https://example.com/course/index.php?categoryid=7&q=resgate&sort=recent", "ctalabel": "Acessar Brigada Voluntária & Resgate · mais 18 resultados", "resultlabel": "26 resultados", "resultcount": "26"},
+        "results": {"has": true, "label": "26 resultados", "count": "26", "iszero": false}
+    }
+}}
+<article class="dim-poster dim-poster--{{variant}}{{#hasvideo}} dim-poster--film{{/hasvideo}}{{^expandable}} dim-poster--empty{{/expandable}}{{#isopen}} dim-poster--open{{/isopen}}" id="dim-area-{{id}}" data-region="dim-area" data-categoryid="{{id}}" data-name="{{name}}" data-titleurl="{{shell.titleurl}}" data-ctaurl="{{shell.ctaurl}}" data-ctalabel="{{shell.ctalabel}}" data-expandable="{{#expandable}}1{{/expandable}}{{^expandable}}0{{/expandable}}" data-count="{{count}}" data-resultcount="{{results.count}}" data-resultlabel="{{results.label}}" style="{{style}}">
+    <div class="dim-poster__card" data-region="dim-cover-media">
+        <div class="dim-poster__media">
+            {{#hasimage}}
+            <img class="dim-poster__img" src="{{imageurl}}" alt="" loading="lazy" decoding="async" width="560" height="315">
+            {{/hasimage}}
+            {{#hasvideo}}
+            <video class="dim-poster__video" data-region="dim-cover-video" muted playsinline loop preload="none">
+                <source src="{{videourl}}" type="{{videotype}}">
+            </video>
+            {{/hasvideo}}
+            {{#hasmark}}
+            <span class="dim-poster__mark{{#markfolder}} dim-poster__mark--folder{{/markfolder}}" aria-hidden="true"></span>
+            {{/hasmark}}
+        </div>
+        <div class="dim-poster__top">
+            {{#hasbadges}}
+            <ul class="dim-poster__crests" role="list" aria-label="{{badgeslabel}}" data-region="dim-card-crests">
+                {{#badges}}
+                <li class="dim-poster__crest"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
+                {{/badges}}
+            </ul>
+            {{/hasbadges}}
+            {{^hasbadges}}
+            <span class="dim-poster__nocrests"></span>
+            {{/hasbadges}}
+            <span class="dim-poster__tags"><span class="dim-poster__kind">{{#str}}category_kind_category, theme_dimensions{{/str}}</span><span class="dim-poster__open" aria-hidden="true"><i class="fa-solid fa-eye" aria-hidden="true"></i>{{#str}}category_poster_open, theme_dimensions{{/str}}</span><span class="dim-poster__pill{{#results.iszero}} dim-poster__pill--zero{{/results.iszero}}" id="dim-area-results-{{id}}" data-region="dim-poster-pill"{{^results.has}} hidden{{/results.has}}>{{results.label}}</span></span>
+        </div>
+        <span class="dim-poster__veil"></span>
+        <div class="dim-poster__base">
+            {{#hasmark}}
+            <span class="dim-poster__mark{{#markfolder}} dim-poster__mark--folder{{/markfolder}}" aria-hidden="true"></span>
+            {{/hasmark}}
+            <h3 class="dim-poster__name">
+                {{#hascontrolurl}}
+                <a class="dim-poster__control" href="{{controlurl}}" data-region="dim-poster-control"{{#results.has}} aria-describedby="dim-area-results-{{id}}"{{/results.has}}><span class="dim-poster__nm">{{name}}</span><span class="visually-hidden" data-region="dim-poster-emptynote"{{#expandable}} hidden{{/expandable}}> {{#str}}category_card_nocourseslink, theme_dimensions{{/str}}</span></a>
+                {{/hascontrolurl}}
+                {{^hascontrolurl}}
+                <span class="dim-poster__control" data-region="dim-poster-control"{{#results.has}} aria-describedby="dim-area-results-{{id}}"{{/results.has}}><span class="dim-poster__nm">{{name}}</span></span>
+                {{/hascontrolurl}}
+            </h3>
+            {{#hasdescription}}
+            <p class="dim-poster__desc">{{description}}</p>
+            {{/hasdescription}}
+            <span class="dim-poster__trig" aria-hidden="true"><span class="dim-poster__trigtext" data-region="dim-poster-trigger" data-open="{{#str}}category_card_open, theme_dimensions{{/str}}" data-close="{{#str}}category_card_close, theme_dimensions{{/str}}" data-empty="{{#str}}category_card_nocourses, theme_dimensions{{/str}}">{{^expandable}}{{#str}}category_card_nocourses, theme_dimensions{{/str}}{{/expandable}}{{#expandable}}{{#isopen}}{{#str}}category_card_close, theme_dimensions{{/str}}{{/isopen}}{{^isopen}}{{#str}}category_card_open, theme_dimensions{{/str}}{{/isopen}}{{/expandable}}</span><span class="dim-poster__chev"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span></span>
+        </div>
+        {{#hasvideo}}
+        <div class="dim-poster__filmctl dim-cover-js-only" data-region="dim-cover-controls">
+            <button type="button" class="dim-poster__filmbtn" data-action="dim-cover-play" aria-pressed="false"><i class="fa-solid fa-play" data-region="dim-cover-glyph" aria-hidden="true"></i><span class="visually-hidden">{{#str}}category_cover_play, theme_dimensions, {{name}}{{/str}}</span></button>
+            <button type="button" class="dim-poster__filmbtn" data-action="dim-cover-mute" aria-pressed="true"><i class="fa-solid fa-volume-xmark" data-region="dim-cover-glyph" aria-hidden="true"></i><span class="visually-hidden">{{#str}}category_cover_mute, theme_dimensions, {{name}}{{/str}}</span></button>
+            <button type="button" class="dim-poster__filmbtn" data-action="dim-cover-fullscreen"><i class="fa-solid fa-expand" data-region="dim-cover-glyph" aria-hidden="true"></i><span class="visually-hidden">{{#str}}category_cover_fullscreen, theme_dimensions, {{name}}{{/str}}</span></button>
+        </div>
+        <div class="dim-poster__bar dim-cover-js-only" data-region="dim-cover-progress" aria-hidden="true"><span class="dim-poster__barfill" data-region="dim-cover-bar"></span></div>
+        {{/hasvideo}}
+    </div>
+</article>

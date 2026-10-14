@@ -1,0 +1,402 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Theme Dimensions - Tests for the course dialogue's own keys on the category card
+ *
+ * @package    theme_dimensions
+ * @category   test
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace theme_dimensions\output;
+
+use core_course\customfield\course_handler;
+use core_course_category;
+use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\category\cards;
+use theme_dimensions\local\category\classifier;
+use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\population;
+use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\hotsite\redirector;
+use theme_dimensions\local\hotsitefields;
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once(__DIR__ . '/../local/category/fixture.php');
+
+/**
+ * What "More information" offers, reader by reader and state by state.
+ *
+ * The secondary button is the card's own link and nothing else, so each of its destinations is asked
+ * of a reader the card's rule sends there: staff who may walk in to the course, a learner to the
+ * hotsite of a course that chose one, else to the standard enrolment page, a visitor to nothing when
+ * there is no hotsite. The primary button is the state's word over the same rule; every assertion of
+ * one state has a neighbour of another state in the same fixture, and the collapse of two buttons
+ * into one is asserted beside a pair that stays two.
+ *
+ * @package    theme_dimensions
+ * @category   test
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+#[CoversClass(category_card::class)]
+final class category_card_modal_test extends \advanced_testcase {
+    use \theme_dimensions\local\category\fixture;
+
+    /** @var string The plugin's component. */
+    private const COMPONENT = 'theme_dimensions';
+
+    /** @var array The fixture's ids, by role. */
+    private array $ids = [];
+
+    /** @var int When the dated course's window opens. */
+    private int $opens = 0;
+
+    /**
+     * Seed one category holding one course per case, and return the learner, who is enrolled in one of them.
+     *
+     * @return \stdClass The learner.
+     */
+    private function seed(): \stdClass {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        course_handler::reset_caches();
+        hotsitefields::reset_field_cache();
+        hotsitefields::ensure_fields();
+        hotsitefields::reset_field_cache();
+        $this->enable_enrol('self');
+        $this->enable_enrol('guest');
+
+        $generator = self::getDataGenerator();
+        $root = $generator->create_category(['name' => 'Brigada & Resgate']);
+        $learner = $generator->create_user();
+        $handler = course_handler::create();
+        $make = function (string $name, int $modelo, array $course = []) use ($generator, $handler, $root): int {
+            $record = $generator->create_course(['category' => $root->id, 'fullname' => $name] + $course);
+            if ($modelo > 0) {
+                $handler->instance_form_save((object) [
+                    'id' => $record->id,
+                    'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
+                ]);
+            }
+            return (int) $record->id;
+        };
+
+        $this->ids['enrolled'] = $make('Curso Inscrito', hotsitefields::MODELO_CURSO);
+        $generator->enrol_user($learner->id, $this->ids['enrolled']);
+        $this->ids['free'] = $make('Curso Livre', hotsitefields::MODELO_CURSO);
+        $this->enable_instance($this->ids['free'], 'guest');
+        $this->ids['open'] = $make('Curso Aberto', hotsitefields::MODELO_CURSO);
+        $this->enable_instance($this->ids['open'], 'self');
+        $this->ids['openplain'] = $make('Curso Aberto Sem Hotsite', 0);
+        $this->enable_instance($this->ids['openplain'], 'self');
+        $this->ids['none'] = $make('Curso Fechado', hotsitefields::MODELO_CURSO);
+        $this->ids['noneplain'] = $make('Curso Fechado Sem Hotsite', 0);
+        $this->ids['event'] = $make('Evento Futuro', hotsitefields::MODELO_EVENTO, [
+            'startdate' => time() + 5 * DAYSECS,
+            'enddate' => time() + 6 * DAYSECS,
+        ]);
+        $this->ids['held'] = $make('Evento Passado', hotsitefields::MODELO_EVENTO, [
+            'startdate' => time() - 3 * DAYSECS,
+            'enddate' => time() - 2 * DAYSECS,
+        ]);
+        $this->enable_instance($this->ids['held'], 'self');
+        // A window that opens later, the one refusal: local_unlistedcourses' batch dates it.
+        $this->opens = time() + 3 * DAYSECS;
+        $this->ids['ahead'] = $make('Curso Abre Depois', hotsitefields::MODELO_CURSO);
+        $this->enable_instance($this->ids['ahead'], 'self', ['enrolstartdate' => $this->opens, 'customint6' => 1]);
+        $this->ids['root'] = (int) $root->id;
+        return $learner;
+    }
+
+    /**
+     * The cards of the category for the current viewer, keyed by course id, through the listing itself.
+     *
+     * @return \stdClass[]
+     */
+    private function cards(): array {
+        global $PAGE;
+        $PAGE->set_url('/course/index.php', ['categoryid' => $this->ids['root']]);
+        $criteria = new criteria($this->ids['root'], ['sort' => criteria::SORT_NAME]);
+        $result = population::resolve($criteria);
+        $category = core_course_category::get($this->ids['root'], MUST_EXIST, true);
+        $listing = new category_listing($category, $criteria, $result, category_toolbar::VIEW_CARDS);
+        $cards = [];
+        foreach ($listing->export_for_template($PAGE->get_renderer('core'))->cards as $card) {
+            $cards[(int) $card->id] = $card;
+        }
+        return $cards;
+    }
+
+    /**
+     * One card built straight from the page's own row, for a state or a shell the fixture's viewer does not have.
+     *
+     * The row is read for the current viewer; a visitor's card is then exported with nobody logged in, the
+     * anonymous shell's own request, whose population would refuse a category that is not public.
+     *
+     * @param int $id The course.
+     * @param string|null $state The state to give the row, or null to keep the classifier's.
+     * @param bool $anonymous Whether the anonymous shell draws it.
+     * @return \stdClass The card context.
+     */
+    private function card(int $id, ?string $state = null, bool $anonymous = false): \stdClass {
+        global $PAGE;
+        $PAGE->set_url('/course/index.php', ['categoryid' => $this->ids['root']]);
+        $result = population::resolve(new criteria($this->ids['root'], ['sort' => criteria::SORT_NAME]));
+        $this->assertArrayHasKey($id, $result->rows, 'Precondition: the course is on the page.');
+        $row = clone $result->rows[$id];
+        if ($state !== null) {
+            $row->state = $state;
+        }
+        $courses = cards::records([$id]);
+        $values = cards::values([$id => $result->rows[$id]]);
+        if ($anonymous) {
+            $this->become(null);
+        }
+        $card = new category_card($courses[$id], $row, $values[$id], null, [], null, !$anonymous, $anonymous);
+        return $card->export_for_template($PAGE->get_renderer('core'));
+    }
+
+    /**
+     * The address of a course page, as the dialogue spells it.
+     *
+     * @param int $id The course.
+     * @return string
+     */
+    private static function course_url(int $id): string {
+        return (new \moodle_url('/course/view.php', ['id' => $id]))->out(false);
+    }
+
+    /**
+     * The address of the standard enrolment page, as the dialogue spells it.
+     *
+     * @param int $id The course.
+     * @return string
+     */
+    private static function enrol_url(int $id): string {
+        return (new \moodle_url('/enrol/index.php', ['id' => $id]))->out(false);
+    }
+
+    /**
+     * The secondary button goes where the card's own link goes, for each kind of reader the card's rule knows.
+     *
+     * Staff who may walk in are sent to the course; a learner to the hotsite of a course that chose a model and to
+     * the standard enrolment page of one that did not; a visitor to the hotsite, and to nothing at all where the
+     * course has none, whose card links nowhere either. The label names the course, or the event.
+     */
+    public function test_the_secondary_button_is_the_cards_own_link_for_every_reader(): void {
+        $learner = $this->seed();
+
+        // Staff: a manager of the category, enrolled nowhere. The course is their door.
+        $manager = $this->user_with('moodle/course:view', \core\context\coursecat::instance($this->ids['root']));
+        $this->become($manager);
+        $staff = $this->cards()[$this->ids['open']];
+        $this->assertSame(classifier::STATE_OPEN, $staff->state, 'Precondition: not enrolled, a method open.');
+        $this->assertSame(self::course_url($this->ids['open']), $staff->url, 'Precondition: the card links the course.');
+        $this->assertSame(self::course_url($this->ids['open']), $staff->modal['secondary']['url']);
+        $this->assertSame(get_string('category_modal_coursepage', self::COMPONENT), $staff->modal['secondary']['label']);
+
+        $this->become($learner);
+        $cards = $this->cards();
+        $hotsite = $cards[$this->ids['none']];
+        $this->assertSame(classifier::STATE_NONE, $hotsite->state, 'Precondition: nothing on offer.');
+        $this->assertSame(links::page($this->ids['none'])->out(false), $hotsite->modal['secondary']['url']);
+        $this->assertTrue($hotsite->modal['hassecondary']);
+        $plain = $cards[$this->ids['noneplain']];
+        $this->assertSame(self::enrol_url($this->ids['noneplain']), $plain->modal['secondary']['url']);
+        $this->assertSame($plain->url, $plain->modal['secondary']['url'], 'Exactly the card\'s own link.');
+
+        // An event says so.
+        $event = $cards[$this->ids['event']];
+        $this->assertSame(get_string('category_modal_eventpage', self::COMPONENT), $event->modal['secondary']['label']);
+        $this->assertSame(links::page($this->ids['event'])->out(false), $event->modal['secondary']['url']);
+        $this->assertSame(get_string('category_modal_coursepage', self::COMPONENT), $hotsite->modal['secondary']['label']);
+
+        // A visitor: the hotsite where there is one, and no button at all where there is none.
+        $visitor = $this->card($this->ids['none'], null, true);
+        $this->assertSame(links::page($this->ids['none'])->out(false), $visitor->modal['secondary']['url']);
+        $this->become($learner);
+        $nowhere = $this->card($this->ids['noneplain'], null, true);
+        $this->assertNull($nowhere->url, 'Precondition: the visitor\'s card links nowhere.');
+        $this->assertNull($nowhere->modal['secondary']);
+        $this->assertFalse($nowhere->modal['hassecondary']);
+        $this->assertNull($nowhere->modal['primary'], 'And nothing to press at all.');
+    }
+
+    /**
+     * The primary button says the state, and goes where the card's rule sends that state.
+     *
+     * Enrolled and free walk into the course, which is the secondary's page too, so the dialogue draws the
+     * primary alone; "Enrol" goes to the hotsite, or to the standard page of a course with no hotsite, and is
+     * likewise alone for a learner; staff who may walk in get "Enrol" AND the course page, the pair that stays two.
+     */
+    public function test_the_primary_button_follows_the_state_and_one_page_is_one_button(): void {
+        $learner = $this->seed();
+        $this->become($learner);
+        $cards = $this->cards();
+
+        $cases = [
+            'enrolled' => [classifier::STATE_ENROLLED, 'category_modal_continue', self::course_url($this->ids['enrolled'])],
+            'free' => [classifier::STATE_FREE, 'category_modal_free', self::course_url($this->ids['free'])],
+            'open' => [classifier::STATE_OPEN, 'category_modal_enrol', links::page($this->ids['open'])->out(false)],
+            'openplain' => [classifier::STATE_OPEN, 'category_modal_enrol', self::enrol_url($this->ids['openplain'])],
+        ];
+        foreach ($cases as $role => [$state, $key, $url]) {
+            $modal = $cards[$this->ids[$role]]->modal;
+            $this->assertSame($state, $cards[$this->ids[$role]]->state, "Precondition: the {$role} card.");
+            $this->assertSame(get_string($key, self::COMPONENT), $modal['primary']['label'], "The {$role} card's word.");
+            $this->assertSame($url, $modal['primary']['url'], "The {$role} card's destination.");
+            $this->assertFalse($modal['primary']['disabled']);
+            $this->assertSame($url, $cards[$this->ids[$role]]->url, "Precondition: the {$role} card links the same page.");
+            $this->assertNull($modal['secondary'], "The {$role} card's two buttons open one page: one button.");
+            $this->assertFalse($modal['hassecondary']);
+        }
+
+        // The pair that stays two: staff, for whom "Enrol" is the enrolment surface and the course their door.
+        $this->become($this->user_with('moodle/course:view', \core\context\coursecat::instance($this->ids['root'])));
+        $staff = $this->cards()[$this->ids['open']]->modal;
+        $this->assertSame(get_string('category_modal_enrol', self::COMPONENT), $staff['primary']['label']);
+        $this->assertSame(links::page($this->ids['open'])->out(false), $staff['primary']['url']);
+        $this->assertSame(self::course_url($this->ids['open']), $staff['secondary']['url']);
+        $this->assertTrue($staff['hasprimary'] && $staff['hassecondary']);
+    }
+
+    /**
+     * Every other state keeps the card's own call to action as its primary button, and nothing on offer draws none.
+     */
+    public function test_the_other_states_keep_the_cards_call_to_action(): void {
+        $learner = $this->seed();
+        $this->become($learner);
+
+        $key = $this->card($this->ids['none'], classifier::STATE_KEY);
+        $this->assertSame($key->cta['label'], $key->modal['primary']['label']);
+        $this->assertSame(get_string('category_cta_key', self::COMPONENT), $key->modal['primary']['label']);
+        $this->assertSame(redirector::standard_page($this->ids['none'])->out(false), $key->modal['primary']['url']);
+        $this->assertSame(links::page($this->ids['none'])->out(false), $key->modal['secondary']['url'], 'Two pages, two buttons.');
+
+        $pending = $this->card($this->ids['none'], classifier::STATE_PENDING);
+        $this->assertSame(get_string('category_cta_status', self::COMPONENT), $pending->modal['primary']['label']);
+
+        $none = $this->card($this->ids['none'], classifier::STATE_NONE);
+        $this->assertNull($none->cta, 'Precondition: the card offers nothing.');
+        $this->assertNull($none->modal['primary'], 'A state that enrols nobody draws no primary button.');
+        $this->assertFalse($none->modal['hasprimary']);
+        $this->assertTrue($none->modal['hassecondary'], 'The page of the course is still offered.');
+    }
+
+    /**
+     * An event already held and a visitor's card draw no primary button; the open event beside them does.
+     */
+    public function test_a_held_event_and_a_visitor_draw_no_primary_button(): void {
+        $learner = $this->seed();
+        $this->become($learner);
+        $cards = $this->cards();
+
+        $held = $cards[$this->ids['held']];
+        $this->assertSame(classifier::STATE_OPEN, $held->state, 'Precondition: its instance is still open to the classifier.');
+        $this->assertNull($held->modal['primary'], 'An event already held enrols nobody.');
+        $this->assertSame(links::page($this->ids['held'])->out(false), $held->modal['secondary']['url']);
+        $this->assertSame(get_string('category_modal_eventpage', self::COMPONENT), $held->modal['secondary']['label']);
+        // The control: the same state on a course that is no held event.
+        $this->assertNotNull($cards[$this->ids['open']]->modal['primary']);
+
+        $visitor = $this->card($this->ids['open'], null, true);
+        $this->assertNotNull($visitor->cta, 'Precondition: the visitor\'s card offers its hotsite.');
+        $this->assertNull($visitor->modal['primary'], 'A visitor\'s card knows no state to put a word to.');
+        $this->assertSame(links::page($this->ids['open'])->out(false), $visitor->modal['secondary']['url']);
+    }
+
+    /**
+     * A window that opens later is a disabled button carrying the date, which the dialogue prints nowhere else.
+     *
+     * The date is the plugin's own, through the card's opening rule, in day/month/full year; the card itself
+     * still prints its own line under the pill, and that line is the one thing the dialogue must not repeat.
+     */
+    public function test_a_later_opening_is_a_disabled_button_and_its_date_is_printed_once(): void {
+        global $PAGE;
+
+        $learner = $this->seed();
+        $this->become($learner);
+        $card = $this->cards()[$this->ids['ahead']];
+        $this->assertSame(classifier::STATE_NONE, $card->state, 'Precondition: nothing on offer yet.');
+        $this->assertTrue($card->hasopens, 'Precondition: the card dates the window.');
+
+        $date = userdate($this->opens, '%d/%m/%Y');
+        $this->assertMatchesRegularExpression('~^\d{2}/\d{2}/\d{4}$~', $date);
+        $primary = $card->modal['primary'];
+        $this->assertTrue($primary['disabled']);
+        $this->assertNull($primary['url']);
+        $this->assertSame(get_string('category_modal_opens', self::COMPONENT, $date), $primary['label']);
+        $this->assertSame(get_string('category_modal_opensnote', self::COMPONENT), $primary['note']);
+        $this->assertSame(links::page($this->ids['ahead'])->out(false), $card->modal['secondary']['url'], 'The page stays.');
+
+        $html = $PAGE->get_renderer('core')->render_from_template(
+            'theme_dimensions/category_card_modal',
+            json_decode(json_encode($card), true)
+        );
+        $this->assertSame(1, substr_count($html, $date), 'The date is on the button and nowhere else.');
+        $this->assertStringNotContainsString(s($card->openslabel), $html, 'Nor is the card\'s own opening line.');
+        $this->assertMatchesRegularExpression(
+            '~<button type="button" class="[^"]*dim-cmodal__button--closed[^"]*" aria-disabled="true"[^>]*>~',
+            $html
+        );
+        $this->assertStringNotContainsString(' disabled', preg_replace('~aria-disabled~', '', $html), 'Never disabled.');
+        $this->assertStringContainsString(
+            '<span class="visually-hidden"> ' . s(get_string('category_modal_opensnote', self::COMPONENT)) . '</span>',
+            $html,
+            'A screen reader hears why it does nothing.'
+        );
+
+        // The control: an open course draws a link, not a closed button.
+        $open = $this->cards()[$this->ids['open']];
+        $this->assertFalse($open->modal['primary']['disabled']);
+    }
+
+    /**
+     * The kicker is the course's own category on every page, the listed one included; the tiles carry icons core has.
+     */
+    public function test_the_kicker_names_the_courses_category_and_every_fact_has_an_icon(): void {
+        global $CFG;
+
+        $learner = $this->seed();
+        course_handler::create()->instance_form_save((object) [
+            'id' => $this->ids['open'],
+            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_PRESENCIAL,
+            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'São Paulo',
+            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 12,
+        ]);
+        $this->become($learner);
+        $cards = $this->cards();
+        $open = $cards[$this->ids['open']];
+        $this->assertFalse($open->hasoverline, 'Precondition: on its own category\'s page the card names no category.');
+        $this->assertSame('Brigada & Resgate', $open->modal['kicker'], 'The dialogue does, in the plain spelling.');
+        $this->assertTrue($open->modal['haskicker']);
+
+        $map = file_get_contents($CFG->dirroot . '/theme/boost/scss/fontawesome/_variables.scss');
+        $this->assertGreaterThanOrEqual(3, count($open->facts), 'Precondition: workload, mode and place.');
+        foreach ($open->facts as $fact) {
+            $this->assertMatchesRegularExpression('~^fa-[a-z0-9-]+$~', $fact['icon']);
+            $this->assertMatchesRegularExpression(
+                '~^\s*"' . preg_quote(substr($fact['icon'], 3), '~') . '":\s~m',
+                $map,
+                "Core's Font Awesome has no icon named {$fact['icon']}."
+            );
+        }
+    }
+}

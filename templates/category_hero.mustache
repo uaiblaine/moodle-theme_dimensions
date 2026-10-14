@@ -1,0 +1,198 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_hero
+
+    The page header of the category showcase, replacing core's full header on
+    that page: the band (a photograph behind the colour overlay, the solid
+    colour, or the compact title row), the trail of the category's ancestors,
+    the page's one h1 with the manager's pencil beside it, the tagline, the
+    category's own description, the panel of counts, the fold control as a GET
+    form, and the category's tabs - core's secondary navigation through the
+    core/moremenu partial - as the band's last row. The trail is the hero's own
+    because core's breadcrumb is empty on every filtered address. The header
+    keeps core's id and data attribute so everything that addresses the page
+    header still finds it.
+
+    The fold form carries the page's filters and its open panel as hidden
+    fields, so folding never closes a panel; the form and the panel's fields
+    carry regions of their own, because the client modules keep them in step
+    with the address they rewrite after this was drawn.
+
+    The right column of the band holds the category's own crests, one per
+    translucent box, on the title's line; the counts sit under the description
+    in the left column, so the two never compete for a corner. On a narrow
+    viewport the row wraps under the title and keeps its size: 80px is the
+    smallest a crest reads at. The crests are the category's own - a course card
+    carries the course's, and neither borrows the other's - and their
+    alternative text is the file name read as words (publicfiles::badge_alt()).
+
+    The layout is a class on the header; the colour is the manager's free
+    background and text pair, carried by a single inline style attribute
+    holding the custom properties the stylesheet reads: the gradient stops, the
+    tab strip's tone, the ink, the muted ink and the focus ring.
+
+    That attribute is a CSS context, which Mustache escaping does not protect:
+    the double stash keeps a value inside the attribute but not inside the
+    declaration, because a browser decodes the attribute before the CSS parser
+    reads it, so a value reaching it could close the declaration and open
+    another. It is built only by category_hero::style(), from colours
+    branding::hex() normalised, printed back through branding::stops() and
+    branding::rgba(), never from anything a request carries; a test pins the
+    shape the export may have. The stylesheet declares a default for every
+    property the attribute can carry, so a category nobody branded still paints
+    the institutional navy.
+
+    Example context (json):
+    {
+        "categoryid": 7,
+        "title": "Departamento de Brigada Regional",
+        "classes": "dim-hero--solid",
+        "style": "--dim-hero-from: #060079; --dim-hero-mid: #070093; --dim-hero-to: #251fa0; --dim-hero-strip: #070093; --dim-hero-ink: #ffffff; --dim-hero-ink-muted: rgba(255, 255, 255, 0.86); --dim-hero-ring: #ffffff;",
+        "hasimage": false,
+        "imageurl": null,
+        "hastrail": true,
+        "traillabel": "Breadcrumb",
+        "trail": [
+            {"name": "Cursos", "url": "https://example.com/course/index.php"},
+            {"name": "Organizações", "url": "https://example.com/course/index.php?categoryid=3"}
+        ],
+        "haspencil": true,
+        "pencil": {"url": "https://example.com/theme/dimensions/categoryhero.php?id=7", "label": "Personalizar categoria"},
+        "compact": false,
+        "chamada": "Formação continuada, cursos técnicos e eventos da organização.",
+        "haschamada": true,
+        "descriptionhtml": "<p>Esta é a área da organização Alfa na plataforma.</p>",
+        "hasdescription": true,
+        "stats": [
+            {"value": 14, "label": "cursos e eventos"},
+            {"value": 3, "label": "em que você está inscrito"}
+        ],
+        "hasstats": true,
+        "badges": [
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/categorybadge1/7/abc/brasao-alfa.png", "alt": "brasao alfa"},
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/categorybadge2/7/def/dimensions.svg", "alt": "dimensions"}
+        ],
+        "hasbadges": true,
+        "badgeslabel": "Instituições",
+        "hasfold": true,
+        "fold": {
+            "action": "https://example.com/course/index.php",
+            "name": "herofold",
+            "value": 1,
+            "label": "Recolher",
+            "icon": "fa-chevron-up",
+            "params": [
+                {"name": "categoryid", "value": 7, "region": ""},
+                {"name": "open", "value": 8, "region": "dim-open-field"},
+                {"name": "psort", "value": "name", "region": "dim-psort-field"}
+            ]
+        },
+        "headeractions": [],
+        "hasheaderextras": false,
+        "headerextras": [],
+        "hastabs": true,
+        "tabs": {
+            "navbarstyle": "nav-tabs",
+            "istablist": false,
+            "moremenuid": "614c104dbacfa",
+            "nodecollection": {
+                "children": [
+                    {"text": "Categoria", "action": "https://example.com/course/index.php?categoryid=7", "isactive": true},
+                    {"text": "Configurações", "action": "https://example.com/course/editcategory.php?id=7"}
+                ]
+            }
+        }
+    }
+}}
+<header id="page-header" class="header-maxwidth d-print-none dim-hero {{classes}}" style="{{style}}" data-for="page-heading" data-region="dim-hero" data-categoryid="{{categoryid}}">
+    <div class="dim-hero__band">
+        {{#hasimage}}
+        <img class="dim-hero__image" src="{{imageurl}}" alt="">
+        {{/hasimage}}
+        <div class="dim-hero__inner">
+            <div class="dim-hero__col">
+                {{#hastrail}}
+                <nav class="dim-hero__trail" aria-label="{{traillabel}}">
+                    <ol class="dim-hero__trail-list">
+                        {{#trail}}
+                        <li class="dim-hero__crumb"><a href="{{url}}">{{name}}</a></li>
+                        {{/trail}}
+                    </ol>
+                </nav>
+                {{/hastrail}}
+                <div class="dim-hero__titlerow">
+                    <h1 class="dim-hero__title">{{title}}</h1>
+                    {{#haspencil}}
+                    <a class="btn btn-sm dim-hero__pencil" href="{{pencil.url}}"><i class="fa fa-pencil" aria-hidden="true"></i> {{pencil.label}}</a>
+                    {{/haspencil}}
+                </div>
+                {{^compact}}
+                {{#haschamada}}
+                <p class="dim-hero__chamada">{{chamada}}</p>
+                {{/haschamada}}
+                {{#hasdescription}}
+                <div class="dim-hero__desc">{{{descriptionhtml}}}</div>
+                {{/hasdescription}}
+                {{#hasstats}}
+                <ul class="dim-hero__stats" role="list">
+                    {{#stats}}
+                    <li class="dim-hero__stat"><b>{{value}}</b> <span>{{label}}</span></li>
+                    {{/stats}}
+                </ul>
+                {{/hasstats}}
+                {{/compact}}
+            </div>
+            {{#hasbadges}}
+            <ul class="dim-hero__badges" role="list" aria-label="{{badgeslabel}}" data-region="dim-hero-badges">
+                {{#badges}}
+                <li class="dim-hero__badge"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
+                {{/badges}}
+            </ul>
+            {{/hasbadges}}
+        </div>
+        <div class="dim-hero__foot">
+            <div class="header-actions-container" data-region="header-actions-container">
+                {{#headeractions}}
+                <div class="header-action ms-2">{{{.}}}</div>
+                {{/headeractions}}
+            </div>
+            {{#hasfold}}
+            <form class="dim-hero__fold" method="get" action="{{fold.action}}" data-region="dim-hero-fold">
+                {{#fold.params}}
+                <input type="hidden" name="{{name}}" value="{{value}}"{{#region}} data-region="{{region}}"{{/region}}>
+                {{/fold.params}}
+                <button type="submit" class="btn btn-sm dim-hero__foldbutton" name="{{fold.name}}" value="{{fold.value}}"><i class="fa {{fold.icon}}" aria-hidden="true"></i> {{fold.label}}</button>
+            </form>
+            {{/hasfold}}
+        </div>
+    </div>
+    {{#hastabs}}
+    <div class="dim-hero__tabs">
+        {{#tabs}}
+        {{> core/moremenu}}
+        {{/tabs}}
+    </div>
+    {{/hastabs}}
+    {{#hasheaderextras}}
+    <div class="header-extras-container ms-auto" data-region="header-extras-container">
+        {{#headerextras}}
+        <div class="header-extra ms-2">{{{.}}}</div>
+        {{/headerextras}}
+    </div>
+    {{/hasheaderextras}}
+</header>

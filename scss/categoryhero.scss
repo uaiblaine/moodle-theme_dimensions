@@ -1,0 +1,463 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// ============================================================================
+// The category appearance form: colour swatches, pair preview, contrast panel
+// ============================================================================
+// Concatenated into the theme's main SCSS like scss/category.scss, so it reaches
+// every page of the site and every rule here is scoped under body.dim-categoryhero,
+// the class the appearance page adds. Apart from the pair preview, which the form
+// draws, the stylesheet only styles what the categoryhero AMD module injects;
+// without JavaScript the form is a plain moodleform with that one preview row.
+//
+// Every colour is a token read from Bootstrap's own set, so the panel follows the
+// site: light on a light page, dark on a dark one (Moodle 5.2's single dark-mode
+// mechanism moves the --bs-* tokens, so nothing here needs a second palette), and
+// branded wherever the flavour moved the primary. The tokens are declared here and
+// not in scss/category.scss, whose own block is scoped under the showcase's body
+// class and never reaches this page.
+
+body.dim-categoryhero {
+    --dim-ch-surface: var(--bs-body-bg, #fff);
+    --dim-ch-surface-alt: var(--bs-tertiary-bg, #f8f9fa);
+    --dim-ch-line: var(--bs-border-color, #dee2e6);
+    --dim-ch-ink: var(--bs-body-color, #1f1f1f);
+    --dim-ch-muted: var(--bs-secondary-color, #6a737b);
+    --dim-ch-ring: var(--focus-ring, var(--dim-ds-blue-400, #4456ff));
+    --dim-ch-radius: var(--radius-md, 8px);
+    --dim-ch-radius-sm: var(--radius-sm, 6px);
+    --dim-ch-success-edge: var(--bs-success-border-subtle, #a3cfbb);
+    --dim-ch-success-tint: var(--bs-success-bg-subtle, #d1e7dd);
+    --dim-ch-success-ink: var(--bs-success-text-emphasis, #0a3622);
+    --dim-ch-warning-edge: var(--bs-warning-border-subtle, #ffe69c);
+    --dim-ch-warning-tint: var(--bs-warning-bg-subtle, #fff3cd);
+    --dim-ch-warning-ink: var(--bs-warning-text-emphasis, #664d03);
+    --dim-ch-danger-edge: var(--bs-danger-border-subtle, #f1aeb5);
+    --dim-ch-danger-tint: var(--bs-danger-bg-subtle, #f8d7da);
+    --dim-ch-danger-ink: var(--bs-danger-text-emphasis, #58151c);
+    --dim-ch-neutral-edge: var(--bs-border-color, #dee2e6);
+    --dim-ch-neutral-tint: var(--bs-secondary-bg, #e9ecef);
+    --dim-ch-neutral-ink: var(--bs-secondary-color, #6a737b);
+}
+
+// ---- The swatch beside each hex field --------------------------------------
+// The module wraps the field in this row; the field keeps its label, its help
+// button and its error message, all of them still the form's own.
+
+body.dim-categoryhero .dim-colour-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+body.dim-categoryhero .dim-colour-row > input {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 12rem;
+    font-family: monospace;
+}
+
+body.dim-categoryhero .dim-colour-swatch {
+    position: relative;
+    flex: 0 0 auto;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-bottom: 0;
+    overflow: hidden;
+    border: 1px solid var(--dim-ch-line);
+    border-radius: var(--dim-ch-radius-sm);
+    cursor: pointer;
+}
+
+body.dim-categoryhero .dim-colour-preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+// The native colour input is the whole swatch, invisible: the click target is the
+// swatch itself, which is why the label wraps both.
+body.dim-categoryhero .dim-colour-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+// A field holding no valid hex says so by showing the chequerboard rather than a
+// colour it does not have.
+body.dim-categoryhero .dim-colour-preview--empty {
+    background-color: var(--dim-ch-surface);
+    background-image:
+        linear-gradient(45deg, var(--dim-ch-surface-alt) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--dim-ch-surface-alt) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--dim-ch-surface-alt) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--dim-ch-surface-alt) 75%);
+    background-position: 0 0, 0 0.5rem, 0.5rem -0.5rem, -0.5rem 0;
+    background-size: 1rem 1rem;
+}
+
+body.dim-categoryhero .dim-colour-swatch:focus-within {
+    outline: 2px solid var(--dim-ch-ring);
+    outline-offset: 2px;
+}
+
+// ---- The contrast panel ----------------------------------------------------
+
+body.dim-categoryhero .dim-contrast-aside {
+    max-width: 30rem;
+    margin-bottom: 1rem;
+}
+
+body.dim-categoryhero .dim-contrast {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.9375rem;
+    border: 1px solid var(--dim-ch-line);
+    border-radius: var(--dim-ch-radius);
+    background: var(--dim-ch-surface-alt);
+    color: var(--dim-ch-ink);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+body.dim-categoryhero .dim-contrast__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+body.dim-categoryhero .dim-contrast__title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+body.dim-categoryhero .dim-contrast__standard {
+    flex: 0 0 auto;
+    padding: 0.125rem 0.5625rem;
+    border: 1px solid var(--dim-ch-line);
+    border-radius: var(--radius-pill, 50rem);
+    background: var(--dim-ch-surface);
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--dim-ch-muted);
+}
+
+body.dim-categoryhero .dim-contrast__result {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+body.dim-categoryhero .dim-contrast__score {
+    flex: 0 0 auto;
+}
+
+// The ratio is the number a person comes here for: tabular figures so it does not
+// shuffle sideways as it is typed into.
+body.dim-categoryhero .dim-contrast__ratio {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+body.dim-categoryhero .dim-contrast__ratio-label {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.625rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--dim-ch-muted);
+}
+
+body.dim-categoryhero .dim-contrast__verdict {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-left: auto;
+    padding: 0.375rem 0.8125rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill, 50rem);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+body.dim-categoryhero .dim-contrast__verdict-glyph {
+    font-weight: 700;
+}
+
+body.dim-categoryhero .dim-contrast__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+body.dim-categoryhero .dim-contrast__badge {
+    display: flex;
+    flex: 1 1 10rem;
+    align-items: center;
+    gap: 0.5625rem;
+    padding: 0.5rem 0.6875rem;
+    border: 1px solid var(--dim-ch-line);
+    border-radius: var(--dim-ch-radius-sm);
+    background: var(--dim-ch-surface);
+}
+
+body.dim-categoryhero .dim-contrast__badge-glyph {
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+body.dim-categoryhero .dim-contrast__badge-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+body.dim-categoryhero .dim-contrast__badge-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+body.dim-categoryhero .dim-contrast__badge-min {
+    font-size: 0.625rem;
+    color: var(--dim-ch-muted);
+}
+
+body.dim-categoryhero .dim-contrast__sizenote {
+    margin: 0;
+    font-size: 0.625rem;
+    color: var(--dim-ch-muted);
+}
+
+// The suggestions block and the note are hidden attributes, not display none in a
+// class: the module toggles the attribute, so the display rule has to name it.
+body.dim-categoryhero .dim-contrast__suggestions {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--dim-ch-line);
+}
+
+body.dim-categoryhero .dim-contrast__suggestions:not([hidden]) {
+    display: flex;
+}
+
+body.dim-categoryhero .dim-contrast__suggestions-title {
+    font-size: 0.6875rem;
+    font-weight: 600;
+}
+
+body.dim-categoryhero .dim-contrast__suggestions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+body.dim-categoryhero .dim-contrast__suggestion {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem;
+    border: 1px solid var(--dim-ch-line);
+    border-radius: var(--dim-ch-radius-sm);
+    background: var(--dim-ch-surface);
+}
+
+body.dim-categoryhero .dim-contrast__suggestion-swatch {
+    flex: 0 0 auto;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--dim-ch-line);
+    border-radius: var(--dim-ch-radius-sm);
+}
+
+body.dim-categoryhero .dim-contrast__suggestion-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+body.dim-categoryhero .dim-contrast__suggestion-which {
+    font-size: 0.625rem;
+    color: var(--dim-ch-muted);
+}
+
+body.dim-categoryhero .dim-contrast__suggestion-meta {
+    font-family: monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+body.dim-categoryhero .dim-contrast__apply {
+    flex: 0 0 auto;
+}
+
+body.dim-categoryhero .dim-contrast__apply:focus-visible {
+    outline: 2px solid var(--dim-ch-ring);
+    outline-offset: 2px;
+}
+
+body.dim-categoryhero .dim-contrast__note {
+    align-items: flex-start;
+    gap: 0.4375rem;
+    margin: 0;
+    font-size: 0.6875rem;
+}
+
+body.dim-categoryhero .dim-contrast__note:not([hidden]) {
+    display: flex;
+}
+
+body.dim-categoryhero .dim-contrast__note-glyph {
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+// ---- The feedback tones shared by the verdict pill and the two badges -------
+
+body.dim-categoryhero .dim-contrast .is-success {
+    border-color: var(--dim-ch-success-edge);
+    background: var(--dim-ch-success-tint);
+    color: var(--dim-ch-success-ink);
+}
+
+body.dim-categoryhero .dim-contrast .is-warning {
+    border-color: var(--dim-ch-warning-edge);
+    background: var(--dim-ch-warning-tint);
+    color: var(--dim-ch-warning-ink);
+}
+
+body.dim-categoryhero .dim-contrast .is-danger {
+    border-color: var(--dim-ch-danger-edge);
+    background: var(--dim-ch-danger-tint);
+    color: var(--dim-ch-danger-ink);
+}
+
+body.dim-categoryhero .dim-contrast .is-muted {
+    border-color: var(--dim-ch-neutral-edge);
+    background: var(--dim-ch-neutral-tint);
+    color: var(--dim-ch-neutral-ink);
+}
+
+// The note is text only: its tone sets the text colour, never a filled pill.
+body.dim-categoryhero .dim-contrast__note.is-muted,
+body.dim-categoryhero .dim-contrast__note.is-danger {
+    border-color: transparent;
+    background: transparent;
+}
+
+body.dim-categoryhero .dim-contrast__note.is-muted {
+    color: var(--dim-ch-muted);
+}
+
+body.dim-categoryhero .dim-contrast__note.is-danger {
+    color: var(--dim-ch-danger-ink);
+}
+
+// ---- The pair preview, the last row of the colours section -------------------
+// The category's own name on the band in the stored pair, so a manager sees the
+// two colours together before saving. The two colours are the only thing here
+// that is not a token: they are an inline style the form writes from
+// branding::hex() and the module rewrites as the pair is typed, which is why
+// nothing below sets a colour on this box or on anything inside it - a rule of
+// ours would either fight the inline style or, worse, win over it on the caption
+// and print a fixed colour on a band a manager just repainted.
+
+body.dim-categoryhero .dim-pair-preview {
+    padding: 0.875rem 1rem;
+    border-radius: var(--dim-ch-radius-sm);
+}
+
+body.dim-categoryhero .dim-pair-preview__name {
+    display: block;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+body.dim-categoryhero .dim-pair-preview__caption {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+// ---- The colours section in two columns ---------------------------------------
+// Two columns by the form, never by JavaScript: the rows stay exactly where core
+// drew them, so no field can end up painted nowhere while still focusable, and a
+// grid over the colours fieldset's own container places them: the two colour
+// fields, the overlay and the preview in the left track, the contrast panel the
+// module appends last in the right one.
+//
+// The markup is core's and is pinned by a PHPUnit render rather than guessed
+// (categoryhero_test::test_the_colours_are_a_fieldset_whose_container_the_grid_can_place):
+// the header opens `fieldset.fitem.collapsible#id_coloursheader` and
+// lib/form/templates/element-header.mustache puts `div.fcontainer#id_coloursheadercontainer`
+// inside it, which is the box below, with every row of the section as a direct
+// child of it.
+//
+// The gate is the class, added by the module once the panel is really mounted
+// (never written by the form): with JavaScript off there is no panel, and a grid
+// switched on by the server would leave an empty right-hand track beside the
+// fields.
+//
+// A viewport query, deliberately, at the nearest Bootstrap breakpoint: the form
+// lives in #region-main, whose width the block drawer changes without changing
+// the window's, so the two-column state may hold a little longer than ideal with
+// the drawer open - accepted, because Moodle's stylelint rejects container queries
+// and the alternative (a flex basis, as the listing's shell uses) cannot place a
+// panel beside four rows.
+@media (min-width: 992px) {
+    body.dim-categoryhero fieldset.dim-colours--split > .fcontainer {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+        column-gap: 1.5rem;
+    }
+
+    // Every row of the section, and the preview beside them, keep the left track:
+    // a row added to this fieldset later lands in the column with the fields and
+    // never under the panel.
+    body.dim-categoryhero fieldset.dim-colours--split > .fcontainer > .fitem,
+    body.dim-categoryhero fieldset.dim-colours--split > .fcontainer > .dim-pair-preview {
+        grid-column: 1;
+    }
+
+    // The 1 is what puts the panel on the first line: auto-placed, an item with
+    // a column and no row lands level with the last row instead, half way down.
+    // The 8 is headroom and not a row count - the container holds six rows
+    // (own colours, the sentence under it, the two colours, the overlay and the
+    // preview), and five whenever hideIf hides the overlay, because core writes
+    // display: none on that row (lib/form/form.js, _hideElement) and a
+    // display: none box is not a grid item at all. Implicit rows nothing lands
+    // in stay at zero height, so the span may safely outrun the rows; short of
+    // them, the panel's height would inflate row one alone.
+    body.dim-categoryhero fieldset.dim-colours--split > .fcontainer > .dim-contrast-aside {
+        grid-column: 2;
+        grid-row: 1 / span 8;
+    }
+}

@@ -1,0 +1,178 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Theme Dimensions - Tests for the after_form_validation hook callback
+ *
+ * @package    theme_dimensions
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace theme_dimensions\local\hook\course;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\hotsitefields;
+
+/**
+ * The video address is refused when no enabled media player embeds it.
+ *
+ * @package    theme_dimensions
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+#[CoversClass(after_form_validation::class)]
+final class after_form_validation_test extends \advanced_testcase {
+    /**
+     * Run the callback over one submission and return the errors it added.
+     *
+     * @param array $data The submitted data.
+     * @return array Errors keyed by element name.
+     */
+    private function errors_for(array $data): array {
+        global $CFG;
+        require_once($CFG->dirroot . '/course/edit_form.php');
+
+        $hook = new \core_course\hook\after_form_validation($this->createMock(\course_edit_form::class), $data, []);
+        after_form_validation::callback($hook);
+        return $hook->get_errors();
+    }
+
+    /**
+     * A YouTube address passes, an empty field passes, and a form without the field is left alone.
+     */
+    public function test_embeddable_and_empty_addresses_pass(): void {
+        $this->resetAfterTest();
+        $element = 'customfield_' . hotsitefields::SHORTNAME_VIDEOURL;
+
+        // The precondition the pass depends on: YouTube is an enabled player on this site.
+        $this->assertContains('youtube', array_keys(\core\plugininfo\media::get_enabled_plugins()));
+
+        $this->assertSame([], $this->errors_for([$element => 'https://www.youtube.com/watch?v=Fs7Aph2027x']));
+        $this->assertSame([], $this->errors_for([$element => 'https://youtu.be/Fs7Aph2027x']));
+        $this->assertSame([], $this->errors_for([$element => '   ']));
+        $this->assertSame([], $this->errors_for(['fullname' => 'No hotsite fields in this form']));
+    }
+
+    /**
+     * An address no player embeds, and a string that is not a URL, are refused on the field.
+     */
+    public function test_other_addresses_are_refused_on_the_field(): void {
+        $this->resetAfterTest();
+        $element = 'customfield_' . hotsitefields::SHORTNAME_VIDEOURL;
+        $expected = [$element => get_string('hotsite_videourlinvalid', hotsitefields::COMPONENT)];
+
+        $this->assertSame($expected, $this->errors_for([$element => 'https://example.com/apresentacao.html']));
+        $this->assertSame($expected, $this->errors_for([$element => 'javascript:alert(1)']));
+        $this->assertSame($expected, $this->errors_for([$element => 'not an address']));
+    }
+
+    /**
+     * Disabling every player turns a pass into a refusal: the check is live, not a list of hosts.
+     *
+     * Every player has to go, not only media_youtube: media_videojs embeds YouTube
+     * addresses as well (its own "youtube" setting, on by default).
+     */
+    public function test_the_check_follows_the_enabled_players(): void {
+        $this->resetAfterTest();
+        $element = 'customfield_' . hotsitefields::SHORTNAME_VIDEOURL;
+        $url = 'https://www.youtube.com/watch?v=Fs7Aph2027x';
+
+        $this->assertSame([], $this->errors_for([$element => $url]));
+
+        \core\plugininfo\media::set_enabled_plugins('');
+        \core_media_manager::reset_caches();
+        $this->assertArrayHasKey($element, $this->errors_for([$element => $url]));
+    }
+    /**
+     * A submission of the round-6 fields, keyed as the course form posts them.
+     *
+     * @param int $modelo The page model.
+     * @param int $modalidade The modality.
+     * @param int $formato The format.
+     * @param string $total The total workload as typed.
+     * @param string $inperson The in-person workload as typed.
+     * @return array The submitted data.
+     */
+    private static function round6(int $modelo, int $modalidade, int $formato, string $total = '', string $inperson = ''): array {
+        return [
+            'customfield_' . hotsitefields::SHORTNAME_MODELO => (string) $modelo,
+            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => (string) $modalidade,
+            'customfield_' . hotsitefields::SHORTNAME_FORMATO => (string) $formato,
+            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => $total,
+            'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL => $inperson,
+        ];
+    }
+
+    /**
+     * A self-paced course that is not online is refused on the modality; online, or tutored, it passes.
+     */
+    public function test_a_self_paced_course_must_be_online(): void {
+        $this->resetAfterTest();
+        $c = hotsitefields::MODELO_CURSO;
+        $sp = hotsitefields::FORMATO_AUTOINSTRUCIONAL;
+        $tu = hotsitefields::FORMATO_TUTORIA;
+        $expected = [
+            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => get_string('hotsite_selfpacedonline', hotsitefields::COMPONENT),
+        ];
+
+        $this->assertSame($expected, $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_PRESENCIAL, $sp)));
+        $this->assertSame($expected, $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_HIBRIDO, $sp)));
+        // No model yet: the format is visible all the same, and so is the refusal.
+        $this->assertSame($expected, $this->errors_for(self::round6(0, hotsitefields::MODALIDADE_HIBRIDO, $sp)));
+
+        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_ONLINE, $sp)));
+        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_HIBRIDO, $tu)));
+        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_PRESENCIAL, 0)));
+    }
+
+    /**
+     * On an event the format is hidden, so a self-paced value it kept from before is not refused.
+     *
+     * An error on a hidden field stops the save with nothing on screen to fix; the page reads the
+     * value away instead (hotsitefields::coherent()).
+     */
+    public function test_a_hidden_format_on_an_event_is_not_refused(): void {
+        $this->resetAfterTest();
+        $data = self::round6(
+            hotsitefields::MODELO_EVENTO,
+            hotsitefields::MODALIDADE_HIBRIDO,
+            hotsitefields::FORMATO_AUTOINSTRUCIONAL
+        );
+        $this->assertSame([], $this->errors_for($data));
+    }
+
+    /**
+     * A hybrid offering's in-person hours may equal the total and may not pass it.
+     */
+    public function test_in_person_hours_fit_inside_the_total_of_a_hybrid_offering(): void {
+        $this->resetAfterTest();
+        $c = hotsitefields::MODELO_CURSO;
+        $hy = hotsitefields::MODALIDADE_HIBRIDO;
+        $tu = hotsitefields::FORMATO_TUTORIA;
+        $element = 'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL;
+
+        $errors = $this->errors_for(self::round6($c, $hy, $tu, '60', '61'));
+        $this->assertSame([$element], array_keys($errors));
+        $this->assertStringContainsString('60', $errors[$element]);
+
+        $this->assertSame([], $this->errors_for(self::round6($c, $hy, $tu, '60', '60')));
+        $this->assertSame([], $this->errors_for(self::round6($c, $hy, $tu, '60', '16')));
+        // Nothing to exceed without a total, and the hidden field of another modality is not read.
+        $this->assertSame([], $this->errors_for(self::round6($c, $hy, $tu, '', '16')));
+        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_ONLINE, $tu, '60', '61')));
+    }
+}

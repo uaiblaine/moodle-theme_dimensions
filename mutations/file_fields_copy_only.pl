@@ -1,0 +1,1 @@
+s/return FILE_INTERNAL;/return FILE_INTERNAL | FILE_REFERENCE;/;

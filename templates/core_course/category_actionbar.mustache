@@ -1,0 +1,97 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template core_course/category_actionbar
+
+    Displays the tertiary nav for the category page, overridden by Dimensions.
+
+    Modification compared to the original template:
+    * The category selector is removed. Core builds it from make_categories_list(), which names
+      every category on the site with no capability required, so on a platform where a category
+      may be unlisted the selector hands out the whole tree in one control. Removing it here
+      rather than in the renderer is what keeps the rest of core's action bar - the search box
+      and the additional options - working against two upstreams; the alternative was a copy of
+      Boost Union's course_category() to re-diff on every release. The context key the block
+      read is left in the example below, unused, so the diff against core stays readable.
+    * The example context gives additionaloptions the string the action bar really exports - a
+      rendered action menu, or the empty string (see
+      \core_course\output\category_action_bar::export_for_template()).
+      Core's own example declares an object there, which the template then triple stashes:
+      rendering it is a fatal "Object of class stdClass could not be converted to string", and the
+      plugin CI's mustache lint renders the example of every template the plugin ships, while it
+      never lints core's own copy. Do not copy the object back.
+
+    Context variables required for this template:
+    * search Object - The core/search_input context of the search box
+    * additionaloptions String - The rendered action menu HTML, or the empty string
+
+    Example context (json):
+    {
+        "categoryselect" : {
+            "formid": "url_select_f61834256d7754158",
+            "classes": "urlselect",
+            "label": "",
+            "disabled": false,
+            "title":null,
+            "id":"url_select61834256d7754159",
+            "sesskey":"LWILINyZMH",
+            "action":"http:\/\/localhost\/stable_master\/course\/jumpto.php",
+            "showbutton":null,
+            "options": [
+                {
+                    "name":"Category 1",
+                    "value":"\/course\/index.php\/?categoryid=279"
+                },
+                {
+                    "name":"Category 2",
+                    "value":"\/course\/index.php\/?categoryid=280"
+                },
+                {
+                    "name":"Category 3",
+                    "value":"\/course\/index.php\/?categoryid=281"
+                }
+            ],
+            "labelattributes":[],
+            "helpicon":false,
+            "attributes":[]
+        },
+        "search": {
+            "action": "https://moodle.local/admin/search.php",
+            "extraclasses": "my-2",
+            "inputname": "search",
+            "inform": false,
+            "searchstring": "Search settings",
+            "value": "policy",
+            "btnclass": "primary",
+            "query": "themedesigner",
+            "hiddenfields": [
+                {
+                    "name": "context",
+                    "value": "11"
+                }
+            ]
+        },
+        "additionaloptions": "<div class=\"action-menu\"><a href=\"\/course\/edit.php?category=281\">Action 1<\/a><\/div>"
+    }
+}}
+<div class="container-fluid tertiary-navigation" id="action_bar">
+    <div class="d-flex">
+        {{#search}}
+            <div class="navitem">
+                {{> core/search_input }}
+            </div>
+        {{/search}}
+        {{{additionaloptions}}}
+    </div>
+</div>

@@ -1,0 +1,91 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/categoryhero_contrast
+
+    The live WCAG contrast panel of the category appearance form, shown under the
+    background and text colour fields.
+
+    This partial is structure only: every visible label is a lang string and every
+    dynamic value is written into the data-region hooks below by the categoryhero
+    AMD module, which renders this template itself. Nothing injects it without
+    JavaScript, and the form is complete without it - the server refuses a pair
+    under the AA floor whether or not this panel was ever drawn.
+
+    Data-region hooks the module writes into (it takes no context variables):
+    * dim-contrast-result       - the polite live region around the ratio and verdict
+    * dim-contrast-ratio        - the numeric ratio, for example 4.59:1
+    * dim-contrast-verdict      - the verdict pill (tone class, glyph and label set by the module)
+    * dim-contrast-aa           - the WCAG AA badge (tone class, glyph and minimum set by the module)
+    * dim-contrast-aaa          - the WCAG AAA badge
+    * dim-contrast-suggestions  - the suggestions block, revealed when the pair fails AA
+    * dim-contrast-note         - the fallback note (an invalid hex, or a failing pair with no fix).
+      It is its own polite live region: it is the only text saying WHY the ratio is blank, and a
+      reader who cannot see the panel is otherwise told nothing when a typed value stops parsing.
+      The suggestions block above it stays silent on purpose - two regions announcing one edit
+      talk over each other, and the suggestions are reachable by tab.
+
+    @copyright  2026 Anderson Blaine
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+    Example context (json):
+    {
+    }
+}}
+<div class="dim-contrast" data-region="dim-contrast-panel" role="group" aria-labelledby="dim-contrast-title">
+    <div class="dim-contrast__header">
+        <span class="dim-contrast__title" id="dim-contrast-title">
+            {{#str}}categoryhero_contrast_heading, theme_dimensions{{/str}}
+        </span>
+        <span class="dim-contrast__standard">{{#str}}categoryhero_contrast_wcagversion, theme_dimensions{{/str}}</span>
+    </div>
+    <div class="dim-contrast__result" data-region="dim-contrast-result" aria-live="polite">
+        <div class="dim-contrast__score">
+            <span class="dim-contrast__ratio" data-region="dim-contrast-ratio">&mdash;</span>
+            <span class="dim-contrast__ratio-label">{{#str}}categoryhero_contrast_ratio, theme_dimensions{{/str}}</span>
+        </div>
+        <span class="dim-contrast__verdict is-muted" data-region="dim-contrast-verdict">
+            <span class="dim-contrast__verdict-glyph" data-region="dim-contrast-verdict-glyph" aria-hidden="true"></span>
+            <span data-region="dim-contrast-verdict-label"></span>
+        </span>
+    </div>
+    <div class="dim-contrast__badges">
+        <span class="dim-contrast__badge is-muted" data-region="dim-contrast-aa">
+            <span class="dim-contrast__badge-glyph" data-region="dim-contrast-aa-glyph" aria-hidden="true"></span>
+            <span class="dim-contrast__badge-text">
+                <span class="dim-contrast__badge-name">{{#str}}categoryhero_contrast_wcag_aa, theme_dimensions{{/str}}</span>
+                <span class="dim-contrast__badge-min" data-region="dim-contrast-aa-min"></span>
+            </span>
+        </span>
+        <span class="dim-contrast__badge is-muted" data-region="dim-contrast-aaa">
+            <span class="dim-contrast__badge-glyph" data-region="dim-contrast-aaa-glyph" aria-hidden="true"></span>
+            <span class="dim-contrast__badge-text">
+                <span class="dim-contrast__badge-name">{{#str}}categoryhero_contrast_wcag_aaa, theme_dimensions{{/str}}</span>
+                <span class="dim-contrast__badge-min" data-region="dim-contrast-aaa-min"></span>
+            </span>
+        </span>
+    </div>
+    <p class="dim-contrast__sizenote">{{#str}}categoryhero_contrast_smalltextnote, theme_dimensions{{/str}}</p>
+    <div class="dim-contrast__suggestions" data-region="dim-contrast-suggestions" hidden>
+        <span class="dim-contrast__suggestions-title" data-region="dim-contrast-suggestions-title"></span>
+        <div class="dim-contrast__suggestions-list" data-region="dim-contrast-suggestions-list"></div>
+    </div>
+    <p class="dim-contrast__note is-muted" data-region="dim-contrast-note" aria-live="polite" hidden>
+        <span class="dim-contrast__note-glyph" data-region="dim-contrast-note-glyph" aria-hidden="true"></span>
+        <span data-region="dim-contrast-note-text"></span>
+    </p>
+</div>

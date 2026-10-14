@@ -1,0 +1,70 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/opengraph
+
+    The Open Graph tags of a public page - a course's enrolment hotsite, a
+    category's public page or the root of the course index - which a messaging
+    app or social network reads when a link to the page is shared. Rendered into
+    the document head by the before_standard_head_html_generation hook callback,
+    which writes the canonical link beside them and, unless the site is open to
+    search engines, a robots noindex directive: the template lint validates a
+    fragment as body content, where a meta carrying a name and a canonical link
+    are invalid while RDFa property metas are not.
+
+    Every value arrives in the plain spelling and the double stashes escape it
+    exactly once for the attribute. The description is optional and comes only
+    from text written for the public: a course without a reviewed public
+    description gets no description tag at all, never its internal summary. The
+    image is optional too, always through the theme's own file route (a
+    course's from publicfiles::og_source(), a category's from its branding, the
+    root has none); its alt text is the title, and its width and height are
+    stated only when the route serves the 1200x630 derivative.
+
+    Example context (json):
+    {
+        "title": "Atendimento Pré-Hospitalar & Resgate",
+        "hasdescription": true,
+        "description": "Curso de 40 horas para brigadistas voluntários.",
+        "url": "https://ead.example.org/theme/dimensions/hotsite.php?id=85",
+        "sitename": "Acme",
+        "locale": "pt_BR",
+        "hasimage": true,
+        "imageurl": "https://ead.example.org/pluginfile.php/2611/theme_dimensions/ogimage/85/3f2a9c/og.jpg",
+        "imagetype": "image/jpeg",
+        "hasimagesize": true,
+        "imagewidth": 1200,
+        "imageheight": 630
+    }
+}}
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{title}}">
+{{#hasdescription}}
+<meta property="og:description" content="{{description}}">
+{{/hasdescription}}
+<meta property="og:url" content="{{url}}">
+<meta property="og:site_name" content="{{sitename}}">
+<meta property="og:locale" content="{{locale}}">
+{{#hasimage}}
+<meta property="og:image" content="{{imageurl}}">
+<meta property="og:image:type" content="{{imagetype}}">
+<meta property="og:image:alt" content="{{title}}">
+{{#hasimagesize}}
+<meta property="og:image:width" content="{{imagewidth}}">
+<meta property="og:image:height" content="{{imageheight}}">
+{{/hasimagesize}}
+{{/hasimage}}

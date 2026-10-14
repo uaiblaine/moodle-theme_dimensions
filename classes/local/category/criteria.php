@@ -1,0 +1,833 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Theme Dimensions - What a listing request asks for
+ *
+ * @package    theme_dimensions
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace theme_dimensions\local\category;
+
+/**
+ * What one request to the category showcase asks for: the category, the page, the filters.
+ *
+ * Plain data, validated once in the constructor so that every consumer of
+ * {@see population::resolve()} - the page, the web services and the tests -
+ * hands over the same shape. Nothing here is about the viewer: who is asking
+ * is read from the session by the population, because resolving for somebody
+ * else would silently lie about capabilities.
+ *
+ * The search term is normalised here and nowhere else: whitespace collapsed,
+ * and anything shorter than two characters treated as no search at all, so
+ * that a one-letter query costs no statement on any surface.
+ *
+ * The period is the authority for what the start-date filter keeps, and every
+ * other reader of it (the predicate, the web service, the client) points here.
+ * It compares one date of a course, its start date (`startdate`), and each of
+ * its two bounds is optional and independent:
+ *
+ * - `from` alone keeps every course starting on that day or later:
+ *   startdate >= midnight at the start of `from`. There is no upper bound.
+ * - `to` alone keeps every course starting on that day or earlier:
+ *   startdate < midnight at the start of the day AFTER `to`, so a course
+ *   starting at any hour of the last day is kept. There is no lower bound.
+ * - Both keep the courses that satisfy both comparisons, the two days included.
+ * - A course with no start date (0) is outside every period with a bound, a
+ *   `to` alone included: a zero is not a date ({@see population::date_sql()}).
+ * - A pair given backwards (`from` after `to`) is the same period described
+ *   from its other end, so the two are swapped here and every address minted
+ *   from this request carries them in order. The web service refuses such a
+ *   pair instead, because its one client orders them before it asks.
+ * - A malformed bound is dropped and the other one stands alone.
+ *
+ * The dates are ISO strings on the wire and timestamps in the predicate, and
+ * both resolutions are taken here so that no consumer takes a third. A bound
+ * arrives as YYYY-MM-DD - shareable, readable, and what the date input and
+ * the client's calendar both speak - and is resolved in the site timezone
+ * ({@see \core_date::get_server_timezone()}), never the viewer's: the
+ * logged-in and anonymous shells must agree about what "today" is, and a
+ * visitor has no timezone to ask. Both instants come from core's calendar
+ * arithmetic rather than from adding 86400 to a timestamp, which shifts a
+ * boundary by an hour across a daylight saving transition.
+ *
+ * A malformed sort or a malformed date is dropped, never an error: these
+ * arrive from a query string, exactly as the state chip does, and a page that
+ * refuses to render because somebody edited the address is a page that cannot
+ * be linked to.
+ *
+ * @package    theme_dimensions
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+final class criteria {
+    /** @var int The shortest search term that is searched at all, in characters. */
+    public const MIN_SEARCH_LENGTH = 2;
+
+    /** @var int The longest search term kept, in characters: what is echoed back and bound to the LIKE. */
+    public const MAX_SEARCH_LENGTH = 100;
+
+    /** @var string Query parameter: the zero-based page. */
+    public const PARAM_PAGE = 'page';
+
+    /** @var string Query parameter: a page size overriding the setting, clamped to the largest allowed. */
+    public const PARAM_PAGESIZE = 'perpage';
+
+    /** @var string Query parameter: the search term. */
+    public const PARAM_SEARCH = 'q';
+
+    /** @var string Query parameter: the state chip. */
+    public const PARAM_STATE = 'chip';
+
+    /** @var string Query parameter: how the listing is organised. */
+    public const PARAM_SORT = 'sort';
+
+    /** @var string Query parameter: the first start date kept, as YYYY-MM-DD. */
+    public const PARAM_DATEFROM = 'from';
+
+    /** @var string Query parameter: the last start date kept, as YYYY-MM-DD, inclusive to the reader. */
+    public const PARAM_DATETO = 'to';
+
+    /** @var string Query parameter: the category of the navigation tree the listing is narrowed to. */
+    public const PARAM_CAT = 'cat';
+
+    /** @var string Query parameter: the child category whose panel of courses is drawn under its poster. */
+    public const PARAM_OPEN = 'open';
+
+    /** @var string Query parameter: the order of that panel, '' for the newest first or 'name' for A-Z. */
+    public const PARAM_PSORT = 'psort';
+
+    /**
+     * @var string[] Every order a panel may be asked for. '' is the default (the newest first) and
+     *   names itself with no parameter at all, as the grouped organisation does in {@see SORTS}.
+     */
+    public const PSORTS = ['', self::SORT_NAME];
+
+    /** @var string The grouped organisation: the posters of this category's children. */
+    public const SORT_CATEGORY = 'category';
+
+    /** @var string The flat organisation by course name. */
+    public const SORT_NAME = 'name';
+
+    /** @var string The flat organisation by course start date, the newest first. */
+    public const SORT_RECENT = 'recent';
+
+    /**
+     * @var string[] Every organisation a request may ask for. '' is the same as SORT_CATEGORY -
+     *   the default - and is kept in the vocabulary because an address that names no sort at
+     *   all has to round-trip through {@see query_params()} as an address that names none.
+     */
+    public const SORTS = ['', self::SORT_CATEGORY, self::SORT_NAME, self::SORT_RECENT];
+
+    /** @var string Prefix of the query parameters carrying one custom field filter each, followed by the field id. */
+    public const PARAM_FIELD_PREFIX = 'cf_';
+
+    /** @var int The category whose subtree is listed. */
+    public int $categoryid;
+
+    /** @var int The zero-based page. */
+    public int $page = 0;
+
+    /** @var int|null The page size, or null for the site setting. */
+    public ?int $pagesize = null;
+
+    /** @var string The normalised search term, '' when there is none. */
+    public string $search = '';
+
+    /** @var string What the request typed, trimmed but not normalised: the form echoes it, the search never reads it. */
+    public string $rawsearch = '';
+
+    /** @var string|null A classifier state or the favourites chip to keep, null for all. */
+    public ?string $state = null;
+
+    /** @var array The custom field filters, fieldid => option value (int). */
+    public array $fields = [];
+
+    /**
+     * @var string How the listing is organised: one of {@see SORTS}, '' for the grouped default.
+     *
+     * The organisation IN FORCE: the one the request named, else {@see $defaultsort}. Everything
+     * that orders or shapes the page reads this; only {@see sort_params()} compares it with the
+     * default, to leave out of an address what an address naming nothing would get anyway.
+     */
+    public string $sort = '';
+
+    /**
+     * @var string The organisation an address naming none gets on this category: one of {@see SORTS}.
+     *
+     * '' is the theme's default (the grouped organisation). Given by the page's entries only
+     * ({@see from_request()}, the listing's web services through {@see rows::fetch()}), from
+     * {@see default_sort()}; every request the code builds for itself - a panel, a slice, the
+     * root - names its organisation and leaves this ''.
+     */
+    public string $defaultsort = '';
+
+    /**
+     * @var bool Whether the reader has a remembered state on this category ({@see remembered}).
+     *
+     * Set by the page's entry ({@see from_request()}) and by the listing's web service for the
+     * reader's own requests, never by a request the code builds for itself. While it is on, the
+     * bare address of the category means that state to this reader and the category's default to
+     * everybody else, so {@see sort_params()} names the organisation in every address minted from
+     * this request - the category's default and the grouped organisation included - and an address
+     * that names its organisation is read as written ({@see with_remembered()}). Whether the state
+     * filled anything in is not what this says: an address the reader followed may have named all
+     * of it.
+     */
+    public bool $remembered = false;
+
+    /** @var string The first start date kept, as YYYY-MM-DD in the site timezone, '' for no lower bound. */
+    public string $datefrom = '';
+
+    /** @var string The last start date kept, as YYYY-MM-DD in the site timezone, '' for no upper bound. */
+    public string $dateto = '';
+
+    /**
+     * @var int The category of the tree the listing is narrowed to, 0 for the whole subtree.
+     *
+     * The tree is a filter, not a navigation: pressing a category beside a flat listing narrows
+     * that listing to the subtree below it, and the page stays where it is. It is one of the
+     * filters in every respect - {@see has_filters()}, {@see filter_count()},
+     * {@see query_params()} and "clear filters" all count it - and it is dropped rather than
+     * refused wherever it does not apply, exactly as an unknown sort is: in the constructor under
+     * the grouped organisation, where the posters play the tree's part and no tree is drawn; and
+     * in {@see population::cat_ids()} when the id is not an admitted category below the page's
+     * own, the half that needs a scope.
+     */
+    public int $cat = 0;
+
+    /** @var int|null The first instant kept: midnight of datefrom in the site timezone, null for no bound. */
+    public ?int $fromtime = null;
+
+    /** @var int|null The first instant not kept: midnight after dateto in the site timezone, null for no bound. */
+    public ?int $totime = null;
+
+    /**
+     * @var bool Whether this is a panel's request: the answer carries the strip of subareas.
+     *
+     * A panel names its area's admitted direct subareas in a strip above its rail, each a link
+     * to that subarea's own page, and nothing nests ({@see population::subareas()}). Off by
+     * default, because the page's own listing draws no strip.
+     */
+    public bool $withcategories = false;
+
+    /** @var bool Whether the request comes from the anonymous shell, which lists public courses only. */
+    public bool $anonymous = false;
+
+    /**
+     * @var int The child category whose panel is drawn between the rows of posters, 0 for none.
+     *
+     * Not a filter: opening a panel hides no course, so {@see has_filters()} and
+     * {@see filter_count()} ignore it and "clear filters" keeps it ({@see keep_params()}). It is
+     * dropped at construction under a flat organisation, whose page draws no poster, and it is
+     * admitted by the population rather than here: {@see population::resolve()} sets it back to 0
+     * unless it names an expandable poster of the very page being drawn, on this object, so that an
+     * invalid value - a withheld child, a grandchild, a stale id - answers exactly what the address
+     * without it answers and the parameter is never an oracle.
+     */
+    public int $open = 0;
+
+    /** @var string The panel's order: '' (the newest first) or {@see SORT_NAME}; always '' while no panel is open. */
+    public string $psort = '';
+
+    /**
+     * @var bool Whether the answer carries the posters of the grouped page.
+     *
+     * A second switch beside {@see $withcategories}, set by the page's own
+     * requests - {@see from_request()} and {@see root_from_request()} - and never by the web
+     * service: a filter fetch repaints the accordion's numbers and not the posters, so it pays
+     * nothing for a visual it would throw away.
+     */
+    public bool $withposters = false;
+
+    /**
+     * Build a request.
+     *
+     * @param int $categoryid The category to list.
+     * @param array $options Any of page (int), pagesize (int|null), search (string), state (string|null),
+     *   fields (array fieldid => value), sort (string), datefrom (string, YYYY-MM-DD), dateto (string,
+     *   YYYY-MM-DD), cat (int, the tree's category), withcategories (bool),
+     *   anonymous (bool), open (int, the child whose panel is drawn), psort (string, the panel's
+     *   order), withposters (bool), defaultsort (string, the organisation in force when sort is ''
+     *   or unknown), remembered (bool, see {@see $remembered}). Unknown keys are refused; an
+     *   unknown state, an unknown sort or default, an unknown panel order and a malformed date are
+     *   dropped, and a pair of dates given backwards is put in order, because they arrive from a
+     *   query string. The booleans arrive from a web service or from the page, never from an
+     *   address.
+     * @throws \coding_exception On an unknown option key.
+     */
+    public function __construct(int $categoryid, array $options = []) {
+        $known = [
+            'page',
+            'pagesize',
+            'search',
+            'state',
+            'fields',
+            'sort',
+            'datefrom',
+            'dateto',
+            'cat',
+            'withcategories',
+            'anonymous',
+            'open',
+            'psort',
+            'withposters',
+            'defaultsort',
+            'remembered',
+        ];
+        $unknown = array_diff(array_keys($options), $known);
+        if ($unknown) {
+            throw new \coding_exception('Unknown listing option(s): ' . implode(', ', $unknown));
+        }
+
+        $this->categoryid = $categoryid;
+        $this->page = max(0, (int) ($options['page'] ?? 0));
+        $pagesize = $options['pagesize'] ?? null;
+        $this->pagesize = ($pagesize === null) ? null : max(1, (int) $pagesize);
+        $this->rawsearch = trim((string) ($options['search'] ?? ''));
+        $this->search = self::normalise_search($this->rawsearch);
+
+        // The chip comes from a query string: an unknown value is no chip, never a developer error.
+        $state = $options['state'] ?? null;
+        $this->state = ($state !== null && in_array((string) $state, classifier::filters(), true)) ? (string) $state : null;
+
+        $fields = [];
+        foreach ((array) ($options['fields'] ?? []) as $fieldid => $value) {
+            $fieldid = (int) $fieldid;
+            $value = (int) $value;
+            if ($fieldid > 0 && $value > 0) {
+                $fields[$fieldid] = $value;
+            }
+        }
+        $this->fields = $fields;
+
+        /* The organisation and the two bounds, all three of them from a query string: unknown is
+           none. An address naming no organisation gets the category's default, resolved HERE so
+           that every reader below - the grouped switch, the order, the tree's criterion, the panel -
+           agrees about the organisation in force. */
+        $default = (string) ($options['defaultsort'] ?? '');
+        $this->defaultsort = in_array($default, self::SORTS, true) ? $default : '';
+        $sort = (string) ($options['sort'] ?? '');
+        $sort = in_array($sort, self::SORTS, true) ? $sort : '';
+        $this->sort = $sort !== '' ? $sort : $this->defaultsort;
+        $datefrom = self::parse_date((string) ($options['datefrom'] ?? ''));
+        $dateto = self::parse_date((string) ($options['dateto'] ?? ''));
+        // A pair given backwards is the same period in order (see the class note); ISO dates sort as strings.
+        if ($datefrom !== '' && $dateto !== '' && strcmp($datefrom, $dateto) > 0) {
+            [$datefrom, $dateto] = [$dateto, $datefrom];
+        }
+        $this->datefrom = $datefrom;
+        $this->dateto = $dateto;
+        $this->fromtime = $this->datefrom === '' ? null : self::day_start($this->datefrom);
+        // Midnight after the chosen day, so the predicate keeps every hour of it (see the class note).
+        $this->totime = $this->dateto === '' ? null : self::day_start($this->dateto, 1);
+
+        /* The tree's own criterion, and the grouped organisation drops it here rather than at the
+           predicate: that page draws no tree at all, so a cat arriving with it is an address
+           nothing on screen could have written, and a filter nothing can clear is worse than no
+           filter. Dropped this early, every consumer of the request agrees about it - the count
+           on the summary, the clear link, the pager's parameters and the statement alike. */
+        $this->cat = $this->is_grouped() ? 0 : max(0, (int) ($options['cat'] ?? 0));
+
+        /* A panel's switch. It is not read from the query string: the page has no address that
+           asks for it, and a reader who typed one would get a listing whose count line, pager and
+           hero disagree with every other address of the same category. */
+        $this->withcategories = (bool) ($options['withcategories'] ?? false);
+
+        $this->anonymous = (bool) ($options['anonymous'] ?? false);
+
+        /* The panel, dropped exactly as the tree's criterion is dropped above: a flat organisation
+           draws no poster, so an open arriving with it names nothing on the page. Its order means
+           nothing without it, and an order outside the vocabulary is the default one. */
+        $this->open = $this->is_grouped() ? max(0, (int) ($options['open'] ?? 0)) : 0;
+        $psort = (string) ($options['psort'] ?? '');
+        $this->psort = ($this->open > 0 && in_array($psort, self::PSORTS, true)) ? $psort : '';
+        $this->withposters = (bool) ($options['withposters'] ?? false);
+        $this->remembered = (bool) ($options['remembered'] ?? false);
+    }
+
+    /**
+     * The panel's two parameters of the current request, and nothing else.
+     *
+     * Also half of what the root of the course index reads ({@see root_from_request()} adds its
+     * search): its posters open panels like any other page's, so it takes from the address which
+     * panel is open and in what order.
+     *
+     * @return array ['open' => int, 'psort' => string], for {@see __construct()}.
+     */
+    public static function panel_options_from_request(): array {
+        return [
+            'open' => optional_param(self::PARAM_OPEN, 0, PARAM_INT),
+            'psort' => optional_param(self::PARAM_PSORT, '', PARAM_ALPHA),
+        ];
+    }
+
+    /**
+     * What the root of the course index reads off the request: its search and its panel, and nothing else.
+     *
+     * The root draws a search box and no other control that narrows, so the term is the one
+     * criterion it honours ({@see population::resolve_root()}); a chip, a field filter, a period,
+     * a tree category, an organisation or a page size arriving on the address is dropped here,
+     * because nothing on the page could show or clear it. The panel's two are
+     * {@see panel_options_from_request()}'s.
+     *
+     * @param bool $anonymous Whether the anonymous shell is asking.
+     * @return self
+     */
+    public static function root_from_request(bool $anonymous = false): self {
+        return new self(0, [
+            'search' => optional_param(self::PARAM_SEARCH, '', PARAM_RAW_TRIMMED),
+            'anonymous' => $anonymous,
+            // The root draws its posters, and a panel may be open under one of them.
+            'withposters' => true,
+        ] + self::panel_options_from_request());
+    }
+
+    /**
+     * The organisation an address naming none gets on a category: the one seam every page entry reads.
+     *
+     * The category's own default ({@see branding::sort_choice()}'s vocabulary, stored by the
+     * appearance editor and read from the cached branding, so it costs no statement on a page that
+     * draws the hero), and '' - the theme's default, the grouped organisation - for a category that
+     * set none and at the root. It stays the same for every reader: the organisation a reader left
+     * the category in is NOT answered here but filled into the request by {@see with_remembered()},
+     * because whatever this answers is what {@see sort_params()} leaves out of the addresses the
+     * page mints, and a per-person answer would make every such address mean something different
+     * to each reader. The precedence is the address, then the reader's remembered state, then this,
+     * then the theme's default.
+     *
+     * @param int $categoryid The category, 0 for the root.
+     * @return string One of {@see SORTS}.
+     */
+    public static function default_sort(int $categoryid): string {
+        if ($categoryid <= 0) {
+            return '';
+        }
+        return (string) branding::for_category($categoryid)['defaultsort'];
+    }
+
+    /**
+     * Build a request from the query string of the current page.
+     *
+     * Reads the parameters named by this class's own PARAM_* address constants
+     * ({@see self::PARAM_SEARCH} and the rest), which the form and the pager
+     * write with too. A field filter is read only for the fields the
+     * caller allowlisted: an unknown cf_ parameter is ignored, never an error.
+     *
+     * @param int $categoryid The category to list.
+     * @param int[] $fieldids The allowlisted custom field ids (see facets::fields()).
+     * @param bool $anonymous Whether the anonymous shell is asking.
+     * @return self
+     */
+    public static function from_request(int $categoryid, array $fieldids, bool $anonymous = false): self {
+        $fields = [];
+        foreach ($fieldids as $fieldid) {
+            $value = optional_param(self::PARAM_FIELD_PREFIX . (int) $fieldid, 0, PARAM_INT);
+            if ($value > 0) {
+                $fields[(int) $fieldid] = $value;
+            }
+        }
+        $pagesize = optional_param(self::PARAM_PAGESIZE, 0, PARAM_INT);
+        $state = optional_param(self::PARAM_STATE, '', PARAM_ALPHA);
+        $options = [
+            'page' => optional_param(self::PARAM_PAGE, 0, PARAM_INT),
+            'pagesize' => $pagesize > 0 ? min($pagesize, population::MAX_PAGESIZE) : null,
+            'search' => optional_param(self::PARAM_SEARCH, '', PARAM_RAW_TRIMMED),
+            'state' => $state === '' ? null : $state,
+            'fields' => $fields,
+            'sort' => optional_param(self::PARAM_SORT, '', PARAM_ALPHA),
+            'defaultsort' => self::default_sort($categoryid),
+            /* PARAM_RAW_TRIMMED and then the strict shape below, rather than a cleaner that would
+               turn a typed date into a different, plausible date: what is not YYYY-MM-DD is no
+               bound at all. */
+            'datefrom' => optional_param(self::PARAM_DATEFROM, '', PARAM_RAW_TRIMMED),
+            'dateto' => optional_param(self::PARAM_DATETO, '', PARAM_RAW_TRIMMED),
+            'cat' => optional_param(self::PARAM_CAT, 0, PARAM_INT),
+            'anonymous' => $anonymous,
+            // The page draws its posters, and a panel may be open under one of them.
+            'withposters' => true,
+        ] + self::panel_options_from_request();
+        // A visitor remembers nothing, and neither does the guest account (remembered::can_remember()).
+        $entry = $anonymous ? null : remembered::for_category($categoryid);
+        return new self($categoryid, $entry === null ? $options : self::with_remembered($options, $entry));
+    }
+
+    /**
+     * A request's options with the reader's remembered state filled in where the address names none of it.
+     *
+     * The state is one whole: it fills in a BARE address - one that names no organisation, no panel
+     * and nothing that narrows (a term, a state, a field, a bound of the period, the tree's category)
+     * - and nothing else, so an address that names any of these is read exactly as written, with the
+     * category's default for whatever it leaves out. That is what makes an address a reader shares
+     * mean the same to whoever opens it: every address the page mints for a reader with a remembered
+     * state names its organisation ({@see $remembered}, set here whether or not anything was filled
+     * in), so it is never bare, and an address minted for anybody else means what the category's
+     * default makes of it. "Clear filters" is an address of that kind too: it names the organisation
+     * and no filter, so it clears. The page, the panel and the page size are not the state and are
+     * never filled in. The view is not a criterion at all: {@see \theme_dimensions\output\category_listing::view()}
+     * reads the remembered one beside the address's own.
+     *
+     * @param array $options The options the address gave ({@see from_request()}).
+     * @param array $entry The reader's entry for the category ({@see remembered::for_category()}).
+     * @return array The options to build the request with.
+     */
+    public static function with_remembered(array $options, array $entry): array {
+        $options['remembered'] = true;
+        $sort = (string) ($options['sort'] ?? '');
+        $named = ($sort !== '' && in_array($sort, self::SORTS, true))
+            || (int) ($options['open'] ?? 0) > 0
+            || trim((string) ($options['search'] ?? '')) !== ''
+            || ($options['state'] ?? null) !== null
+            || !empty($options['fields'])
+            || trim((string) ($options['datefrom'] ?? '')) !== ''
+            || trim((string) ($options['dateto'] ?? '')) !== ''
+            || (int) ($options['cat'] ?? 0) > 0;
+        if ($named) {
+            return $options;
+        }
+        $options['sort'] = (string) ($entry[remembered::KEY_SORT] ?? '');
+        $options['state'] = $entry[remembered::KEY_STATE] ?? null;
+        $options['fields'] = (array) ($entry[remembered::KEY_FIELDS] ?? []);
+        return $options;
+    }
+
+    /**
+     * The query parameters that reproduce this request's filters, for the pager and the form.
+     *
+     * The page is deliberately absent: a filter change starts over at the
+     * first page, and the pager adds its own.
+     *
+     * @return array name => value.
+     */
+    public function query_params(): array {
+        $params = [];
+        if ($this->search !== '') {
+            $params[self::PARAM_SEARCH] = $this->search;
+        }
+        if ($this->state !== null) {
+            $params[self::PARAM_STATE] = $this->state;
+        }
+        foreach ($this->fields as $fieldid => $value) {
+            $params[self::PARAM_FIELD_PREFIX . $fieldid] = $value;
+        }
+        if ($this->datefrom !== '') {
+            $params[self::PARAM_DATEFROM] = $this->datefrom;
+        }
+        if ($this->dateto !== '') {
+            $params[self::PARAM_DATETO] = $this->dateto;
+        }
+        if ($this->cat > 0) {
+            $params[self::PARAM_CAT] = $this->cat;
+        }
+        $params += $this->sort_params();
+        if ($this->pagesize !== null) {
+            $params[self::PARAM_PAGESIZE] = $this->pagesize;
+        }
+        /* The open panel travels with every address the page mints from here - the pager, the
+           quick dates, the hero's fold form, the forward - so none of them closes it. */
+        $params += $this->panel_params();
+        return $params;
+    }
+
+    /**
+     * The query parameters naming the open panel and its order, empty when no panel is open.
+     *
+     * @return array name => value.
+     */
+    public function panel_params(): array {
+        if ($this->open <= 0) {
+            return [];
+        }
+        $params = [self::PARAM_OPEN => $this->open];
+        if ($this->psort === self::SORT_NAME) {
+            $params[self::PARAM_PSORT] = $this->psort;
+        }
+        return $params;
+    }
+
+    /**
+     * What "clear filters" carries: the organisation and the open panel, and nothing that narrows.
+     *
+     * Opening a panel hides nothing, so clearing the filters leaves it open, for the reason
+     * {@see sort_params()} gives about the organisation.
+     *
+     * @return array name => value.
+     */
+    public function keep_params(): array {
+        return $this->sort_params() + $this->panel_params();
+    }
+
+    /**
+     * The query parameters that narrow the listing: the search, the state chip, the field filters, the period.
+     *
+     * What a panel's call to action carries to the area's own page, so that page opens on the
+     * same question. Never the tree's category (it is asked about this page's subtree, and the
+     * web service refuses one that is not below the category it lists), never the organisation
+     * nor the page size (the panel's own order replaces them), never the page and never the panel.
+     *
+     * @return array name => value.
+     */
+    public function narrowing_params(): array {
+        $params = [];
+        if ($this->search !== '') {
+            $params[self::PARAM_SEARCH] = $this->search;
+        }
+        if ($this->state !== null) {
+            $params[self::PARAM_STATE] = $this->state;
+        }
+        foreach ($this->fields as $fieldid => $value) {
+            $params[self::PARAM_FIELD_PREFIX . $fieldid] = $value;
+        }
+        if ($this->datefrom !== '') {
+            $params[self::PARAM_DATEFROM] = $this->datefrom;
+        }
+        if ($this->dateto !== '') {
+            $params[self::PARAM_DATETO] = $this->dateto;
+        }
+        return $params;
+    }
+
+    /**
+     * The query parameter naming the organisation, for an address that keeps it while dropping the filters.
+     *
+     * The default organisation names itself with no parameter at all, so
+     * "clear filters" over an unsorted listing is the bare address it always
+     * was, and over a sorted one it is that address plus the sort: clearing
+     * the filters must not silently reorganise the page.
+     *
+     * The default is the CATEGORY's ({@see $defaultsort}), so every address must round-trip
+     * against it: the category's own default may be left out, because the bare address gets it,
+     * and anything else is named - the grouped organisation included, as `sort=category`, on a
+     * category whose default is a flat order. Leaving that one out because it is the THEME's
+     * default would send the reader who pressed "By area" back to the flat order.
+     *
+     * For a reader with a remembered state on the category ({@see $remembered}) the organisation is
+     * ALWAYS named, the default included and the theme's default as `sort=category`: the bare
+     * address gets that reader's remembered state, so an address that left the organisation out
+     * would be read back as the remembered state rather than as what is on screen, and a reader it
+     * was shared with would get theirs.
+     *
+     * @return array name => value, empty for the default.
+     */
+    public function sort_params(): array {
+        if ($this->remembered) {
+            return [self::PARAM_SORT => $this->sort === '' ? self::SORT_CATEGORY : $this->sort];
+        }
+        if ($this->sort === '' || $this->sort === $this->defaultsort) {
+            return [];
+        }
+        return [self::PARAM_SORT => $this->sort];
+    }
+
+    /**
+     * Whether the listing is the grouped one: the posters of this category's children.
+     *
+     * '' and 'category' are the same request. The empty value is what an
+     * address that names no organisation carries, and the named one is what
+     * the chip posts when the reader presses the default chip itself.
+     *
+     * @return bool
+     */
+    public function is_grouped(): bool {
+        return $this->sort === '' || $this->sort === self::SORT_CATEGORY;
+    }
+
+    /**
+     * Whether anything narrows the listing: a search, a chip, a field filter, a date bound or the tree.
+     *
+     * The organisation is not one of them: reordering a listing hides nothing,
+     * so "clear filters" leaves it alone and the count line it sits beside
+     * counts the same courses before and after a chip is pressed.
+     *
+     * @return bool
+     */
+    public function has_filters(): bool {
+        return $this->search !== ''
+            || $this->state !== null
+            || !empty($this->fields)
+            || $this->datefrom !== ''
+            || $this->dateto !== ''
+            || $this->cat > 0;
+    }
+
+    /**
+     * How many filters narrow the listing, for the number the filter panel prints on itself.
+     *
+     * A date range is one filter however many of its two bounds are set: it is
+     * one control on screen and one sentence to undo. The tree's category is
+     * one filter too, for the same reason - one control, one press to undo.
+     *
+     * @return int
+     */
+    public function filter_count(): int {
+        $count = ($this->search !== '' ? 1 : 0)
+            + ($this->state !== null ? 1 : 0)
+            + ($this->cat > 0 ? 1 : 0)
+            + count($this->fields);
+        if ($this->datefrom !== '' || $this->dateto !== '') {
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
+     * The strict ISO shape, or '' for anything else.
+     *
+     * Deliberately not strtotime() and not a cleaner: "31/09" and "next
+     * tuesday" are both things a person may type, and both would be resolved
+     * into a date the reader never asked for and cannot see on the control. A
+     * calendar day that does not exist (31 September, 29 February of a common
+     * year) is refused by checkdate() for the same reason.
+     *
+     * @param string $raw What the request carried.
+     * @return string The date as YYYY-MM-DD, or '' when it is not one.
+     */
+    public static function parse_date(string $raw): string {
+        $raw = trim($raw);
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $raw, $parts)) {
+            return '';
+        }
+        if (!checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])) {
+            return '';
+        }
+        return $raw;
+    }
+
+    /**
+     * The first instant of a calendar day in the site timezone, optionally some days later.
+     *
+     * Core's own arithmetic ({@see make_timestamp()}, which is what
+     * {@see usergetmidnight()} is) rather than seconds added to a timestamp:
+     * a day is not always 86400 seconds long, and the day after a daylight
+     * saving transition would otherwise begin an hour early or an hour late -
+     * silently, and only twice a year. The day offset is handed to
+     * DateTime::setDate(), which rolls a month and a year over by itself, so
+     * the last day of December plus one is the first of January.
+     *
+     * @param string $iso A date as YYYY-MM-DD, already through {@see parse_date()}.
+     * @param int $offsetdays Whole days to add to that date.
+     * @return int|null The timestamp, or null when the date is not a date.
+     */
+    public static function day_start(string $iso, int $offsetdays = 0): ?int {
+        if (self::parse_date($iso) === '') {
+            return null;
+        }
+        [$year, $month, $day] = array_map('intval', explode('-', $iso));
+        return (int) make_timestamp($year, $month, $day + $offsetdays, 0, 0, 0, \core_date::get_server_timezone());
+    }
+
+    /**
+     * The calendar day an instant falls in, in the site timezone, as YYYY-MM-DD.
+     *
+     * The inverse of {@see day_start()}, and what the quick options of the
+     * filter panel are built from: they are ordinary links carrying the same
+     * two parameters a reader could have typed.
+     *
+     * @param int $timestamp The instant.
+     * @param int $offsetdays Whole days to add to the day it falls in.
+     * @return string The date as YYYY-MM-DD.
+     */
+    public static function iso(int $timestamp, int $offsetdays = 0): string {
+        $timezone = \core_date::get_server_timezone();
+        $parts = usergetdate($timestamp, $timezone);
+        if ($offsetdays !== 0) {
+            /* Noon rather than midnight as the anchor: a timezone whose daylight saving
+               transition happens AT midnight has no midnight on that date at all, and the
+               hour the arithmetic lands on must not be able to decide the day. */
+            $moved = make_timestamp(
+                (int) $parts['year'],
+                (int) $parts['mon'],
+                (int) $parts['mday'] + $offsetdays,
+                12,
+                0,
+                0,
+                $timezone
+            );
+            $parts = usergetdate($moved, $timezone);
+        }
+        return sprintf('%04d-%02d-%02d', (int) $parts['year'], (int) $parts['mon'], (int) $parts['mday']);
+    }
+
+    /**
+     * A calendar day some whole days after another one, both as YYYY-MM-DD in the site timezone.
+     *
+     * Goes through {@see day_start()} rather than through strtotime(), which
+     * would read the string in whatever timezone PHP's default happens to be:
+     * the whole point of these two helpers is that one timezone decides every
+     * boundary of this feature.
+     *
+     * @param string $iso A date as YYYY-MM-DD.
+     * @param int $offsetdays Whole days to add.
+     * @return string The date as YYYY-MM-DD, '' when the input is not a date.
+     */
+    public static function shift(string $iso, int $offsetdays): string {
+        $start = self::day_start($iso, $offsetdays);
+        return $start === null ? '' : self::iso($start);
+    }
+
+    /**
+     * The date the civil week the given instant falls in begins on, in the site timezone.
+     *
+     * The first weekday is the site's own ({@see \core_calendar\type_factory}),
+     * which is what every calendar on the site already starts its weeks with.
+     *
+     * @param int $timestamp The instant.
+     * @param int $offsetweeks Whole weeks to add.
+     * @return string The date as YYYY-MM-DD.
+     */
+    public static function week_start(int $timestamp, int $offsetweeks = 0): string {
+        $timezone = \core_date::get_server_timezone();
+        $parts = usergetdate($timestamp, $timezone);
+        $startday = self::week_start_day();
+        // The wday core hands back is 0 for Sunday; below is the distance back to the site's first weekday.
+        $back = ((int) $parts['wday'] - $startday + 7) % 7;
+        return self::iso($timestamp, ($offsetweeks * 7) - $back);
+    }
+
+    /**
+     * The weekday the site starts its weeks on, 0 for Sunday, as core's calendar reports it.
+     *
+     * Read here rather than in the two places that want it, so the quick
+     * option "this week" and the column the calendar of the client draws its
+     * grid under cannot disagree about which day a week begins on. The client
+     * is handed this number on the date fieldset and does no calendar
+     * configuration of its own: a week that starts on Monday in the toolbar's
+     * links and on Sunday in the popover would put the reader's own choice one
+     * column away from the range they had just followed.
+     *
+     * @return int 0 (Sunday) to 6 (Saturday).
+     */
+    public static function week_start_day(): int {
+        return (int) \core_calendar\type_factory::get_calendar_instance()->get_starting_weekday();
+    }
+
+    /**
+     * Collapse whitespace and drop a term too short to search.
+     *
+     * @param string $raw What the request carried.
+     * @return string The term to search, or '' when there is nothing to search.
+     */
+    public static function normalise_search(string $raw): string {
+        $term = trim(preg_replace('/\s+/u', ' ', $raw) ?? '');
+        $term = \core_text::substr($term, 0, self::MAX_SEARCH_LENGTH);
+        if (\core_text::strlen($term) < self::MIN_SEARCH_LENGTH) {
+            return '';
+        }
+        return $term;
+    }
+}

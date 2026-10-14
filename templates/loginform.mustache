@@ -1,0 +1,284 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/loginform
+
+    The theme's login page: the ways in, stacked, with an "or" between them.
+
+    The identity providers come first, because theirs is the shorter way and the only one without
+    a password; the CPF form follows in full, because it is the standard for everyone else; and
+    creating an account comes last, as a block of its own rather than a link in the small print.
+    Nothing is hidden behind a tab. The provider's mark is drawn from Font Awesome Brands, never
+    fetched from the provider: an iconurl is rendered only when this site serves it. From the
+    second wrong password in a row, an info alert suggests resetting it.
+
+    The form keeps every hook core, Boost Union and this theme's own CPF module rely on: the form
+    id, the username, password and submit ids, the logintoken and the anchor field.
+
+    Context variables required for this template:
+    * loginurl - Url the form posts to.
+    * logintoken - The login token.
+    * username - Username to redisplay after a failed login.
+    * canloginbyemail - Whether an email address is accepted in the username field.
+    * showloginform - Whether the local form is shown at all.
+    * forgotpasswordurl - Url of the password recovery page.
+    * cansignup - Whether self registration is on; adds the sign-up block after the form.
+    * signupurl - Url of the sign-up page.
+    * showsignupseparator - Whether something precedes the sign-up block, so a separator sits before it.
+    * hasidps - Whether any identity provider is offered.
+    * idps - The providers, each with url, label, mark (a Font Awesome Brands class, may be empty) and iconurl (may be empty).
+    * showseparator - Whether both a provider and the local form are shown, so a separator sits between them.
+    * suggestreset - Whether to suggest resetting the password, from the second wrong one in a row.
+    * canloginasguest - Whether the guest login is offered.
+    * logourl - Url of the institutional logo for the band shown below the lg breakpoint; empty shows the site name.
+    * sitename - The site's short name, the logo's alternative text and the wordmark fallback.
+    * dimensionsloginpanel - The panel's copy (kicker, title, text, foot); the kicker is shown in the band below lg.
+    * error, errortitle, info, maintenance - Core's messages, as core exports them.
+    * recaptcha - Rendered captcha, when enabled.
+    * languagemenu - The language menu, when there is more than one language.
+    * autofocusform, togglepassword, smallscreensonly - Core's flags for the page's JavaScript.
+
+    Example context (json):
+    {
+        "loginurl": "https://example.com/login/index.php",
+        "logintoken": "randomstring",
+        "username": "",
+        "canloginbyemail": false,
+        "showloginform": true,
+        "forgotpasswordurl": "https://example.com/login/forgot_password.php",
+        "cansignup": true,
+        "signupurl": "https://example.com/login/signup.php",
+        "showsignupseparator": true,
+        "suggestreset": true,
+        "hasidps": true,
+        "idps": [
+            {
+                "url": "https://example.com/auth/loginsteps/login.php?id=1",
+                "label": "Sign in with Google Workspace",
+                "mark": "fa-google",
+                "iconurl": ""
+            }
+        ],
+        "showseparator": true,
+        "canloginasguest": false,
+        "logourl": "",
+        "sitename": "Acme",
+        "dimensionsloginpanel": {
+            "kicker": "Learning platform",
+            "title": "Continuing education for those who protect society",
+            "text": "Each organisation has its own area on the platform.",
+            "foot": "Use of the platform is monitored and recorded."
+        },
+        "error": "",
+        "errortitle": "",
+        "info": "",
+        "maintenance": "",
+        "recaptcha": "",
+        "languagemenu": "",
+        "autofocusform": false,
+        "togglepassword": true,
+        "smallscreensonly": true
+    }
+}}
+<div class="loginform dimensions-login">
+    <div class="dimensions-login-hero">
+        <div class="dimensions-login-brand d-lg-none">
+            {{#logourl}}
+                <img class="dimensions-login-logo" src="{{logourl}}" alt="{{sitename}}">
+            {{/logourl}}
+            {{^logourl}}
+                <span class="dimensions-login-wordmark">{{sitename}}</span>
+            {{/logourl}}
+        </div>
+        {{#dimensionsloginpanel}}
+            <p class="dimensions-login-kicker d-lg-none">{{kicker}}</p>
+        {{/dimensionsloginpanel}}
+        <h1 class="dimensions-login-heading">{{#str}} login_heading, theme_dimensions {{/str}}</h1>
+    </div>
+    <p class="dimensions-login-intro">{{#str}} login_intro, theme_dimensions {{/str}}</p>
+
+    {{#maintenance}}
+        <div class="alert alert-danger login-maintenance">
+            {{{maintenance}}}
+        </div>
+    {{/maintenance}}
+    {{#error}}
+        <div class="alert alert-danger" id="loginerrormessage" role="alert">
+            {{#errortitle}}<strong class="d-block mb-1">{{errortitle}}</strong>{{/errortitle}}
+            {{error}}
+        </div>
+    {{/error}}
+    {{#info}}
+        <div class="alert alert-info" id="logininfomessage" role="status">{{info}}</div>
+    {{/info}}
+    {{#suggestreset}}
+        <div class="alert alert-info dimensions-login-resethint" role="status">
+            {{#str}} login_resethint, theme_dimensions {{/str}}
+            <a class="alert-link" href="{{forgotpasswordurl}}">{{#str}} login_resethint_link, theme_dimensions {{/str}}</a>
+        </div>
+    {{/suggestreset}}
+
+    {{#hasidps}}
+        <section class="dimensions-login-route dimensions-login-route-lead" aria-labelledby="dimensions-login-route-idp">
+            <div class="dimensions-login-route-head">
+                <h2 class="dimensions-login-route-who" id="dimensions-login-route-idp">{{#str}} login_route_idp_who, theme_dimensions {{/str}}</h2>
+                <span class="dimensions-login-tag">{{#str}} login_route_idp_badge, theme_dimensions {{/str}}</span>
+            </div>
+            {{#idps}}
+                <a class="btn dimensions-login-provider w-100" href="{{url}}">
+                    {{#mark}}<i class="fa-brands {{mark}} dimensions-login-mark" aria-hidden="true"></i>{{/mark}}
+                    {{#iconurl}}<img class="dimensions-login-icon" src="{{iconurl}}" alt="" width="24" height="24">{{/iconurl}}
+                    <span>{{label}}</span>
+                </a>
+            {{/idps}}
+            <p class="dimensions-login-note">{{#str}} login_route_idp_text, theme_dimensions {{/str}}</p>
+        </section>
+    {{/hasidps}}
+
+    {{#showseparator}}
+        <p class="login-separator dimensions-login-separator">{{#str}} loginseparatoror {{/str}}</p>
+    {{/showseparator}}
+
+    {{#showloginform}}
+        <section class="dimensions-login-route" aria-labelledby="dimensions-login-route-local">
+            <h2 class="dimensions-login-route-who" id="dimensions-login-route-local">{{#str}} login_route_local_who, theme_dimensions {{/str}}</h2>
+            <form class="login-form" action="{{loginurl}}" method="post" id="login">
+                <input id="anchor" type="hidden" name="anchor" value="">
+                <script>document.getElementById('anchor').value = location.hash;</script>
+                <input type="hidden" name="logintoken" value="{{logintoken}}">
+                <div class="login-form-username mb-3">
+                    <label for="username" class="form-label">
+                        {{^canloginbyemail}}
+                            {{#str}} username {{/str}}
+                        {{/canloginbyemail}}
+                        {{#canloginbyemail}}
+                            {{#str}} usernameemail {{/str}}
+                        {{/canloginbyemail}}
+                    </label>
+                    <input type="text" name="username" id="username" {{!
+                        !}}class="form-control dimensions-login-username" {{!
+                        !}}value="{{username}}" {{!
+                        !}}placeholder="{{^canloginbyemail}}{{#str}} enterusername {{/str}}{{/canloginbyemail}}{{!
+                        !}}{{#canloginbyemail}}{{#str}} loginenterusernameoremail {{/str}}{{/canloginbyemail}}" {{!
+                        !}}autocomplete="username">
+                </div>
+                <div class="login-form-password mb-3">
+                    <label for="password" class="form-label">{{#str}} password {{/str}}</label>
+                    <input type="password" name="password" id="password" value="" {{!
+                        !}}class="form-control" {{!
+                        !}}placeholder="{{#str}} loginenterpassword {{/str}}" {{!
+                        !}}autocomplete="current-password">
+                </div>
+                {{#recaptcha}}
+                    <div class="login-form-recaptcha mb-3">
+                        {{{recaptcha}}}
+                    </div>
+                {{/recaptcha}}
+                <div class="login-form-submit">
+                    <button class="btn btn-primary w-100" type="submit" id="loginbtn">{{#str}} login {{/str}}</button>
+                </div>
+                <div class="dimensions-login-links">
+                    <a href="{{forgotpasswordurl}}">{{#str}} loginforgotpassword {{/str}}</a>
+                </div>
+            </form>
+        </section>
+    {{/showloginform}}
+
+    {{#cansignup}}
+        {{#showsignupseparator}}
+            <p class="login-separator dimensions-login-separator">{{#str}} loginseparatoror {{/str}}</p>
+        {{/showsignupseparator}}
+        <div class="dimensions-login-signup">
+            <a class="btn btn-outline-primary w-100" href="{{signupurl}}">{{#str}} login_signup, theme_dimensions {{/str}}</a>
+        </div>
+    {{/cansignup}}
+
+    {{#canloginasguest}}
+        <form action="{{loginurl}}" method="post" id="guestlogin" class="dimensions-login-guest">
+            <input type="hidden" name="logintoken" value="{{logintoken}}">
+            <input type="hidden" name="username" value="guest">
+            <input type="hidden" name="password" value="guest">
+            <button class="btn btn-outline-secondary w-100" type="submit" id="loginguestbtn">{{#str}} loginguest {{/str}}</button>
+        </form>
+    {{/canloginasguest}}
+
+    {{#languagemenu}}
+        <div class="login-languagemenu d-flex justify-content-center my-4">
+            {{>core/action_menu}}
+        </div>
+    {{/languagemenu}}
+    <div class="login-cookiesnotice text-center">
+        <button type="button" class="btn btn-link p-0" {{!
+        }} data-modal="alert"{{!
+        }} data-modal-title-str='["cookiesenabled", "core"]' {{!
+        }} data-modal-content-str='["cookiesenabled_help_html", "core"]'{{!
+        }}>{{#str}} cookiesnotice {{/str}}</button>
+    </div>
+</div>
+
+{{#js}}
+    {{^error}}
+        {{#autofocusform}}
+            require(['core_form/events'], function(FormEvent) {
+                function autoFocus() {
+                    const userNameField = document.getElementById('username');
+                    const passwordField = document.getElementById('password');
+                    if (userNameField && userNameField.value.length == 0) {
+                        userNameField.focus();
+                    } else if (passwordField) {
+                        passwordField.focus();
+                    }
+                }
+                autoFocus();
+                window.addEventListener(FormEvent.eventTypes.fieldStructureChanged, autoFocus);
+            });
+        {{/autofocusform}}
+    {{/error}}
+    require(['core/pending'], function(Pending) {
+        const errorMessageDiv = document.getElementById('loginerrormessage');
+        const infoMessageDiv = document.getElementById('logininfomessage');
+        const errorMessage = errorMessageDiv?.textContent.trim();
+        const infoMessage = infoMessageDiv?.textContent.trim();
+        if (errorMessage || infoMessage) {
+            const pendingJS = new Pending('login-move-focus');
+            const usernameField = document.getElementById('username');
+            setTimeout(function() {
+                if (errorMessage && usernameField) {
+                    usernameField.focus();
+                }
+                if (errorMessage) {
+                    errorMessageDiv.innerHTML += "&nbsp;";
+                }
+                if (infoMessage) {
+                    infoMessageDiv.innerHTML += "&nbsp;";
+                }
+                pendingJS.resolve();
+            }, 500);
+        }
+    });
+    {{#togglepassword}}
+        require(['core/togglesensitive'], function(ToggleSensitive) {
+            ToggleSensitive.init("password", {{smallscreensonly}});
+        });
+    {{/togglepassword}}
+    require(['core_form/submit'], function(Submit) {
+        Submit.init("loginbtn");
+        {{#canloginasguest}}
+            Submit.init("loginguestbtn");
+        {{/canloginasguest}}
+    });
+{{/js}}

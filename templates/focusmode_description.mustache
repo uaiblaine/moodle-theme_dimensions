@@ -1,0 +1,49 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/focusmode_description
+
+    The activity description, without the box core draws around it.
+
+    Focus mode replaces the activity information render - core's whole core_course/activity_info
+    template - with this one. That render is the only place the activity description appears,
+    since Moodle 4.0 moved the intro out of every module's own page and into the activity header,
+    so blanking it would take away a forum's or a page's intro text, not chrome. This template
+    keeps the description and leaves the box, the region marker and the completion half out.
+
+    The wrapper reproduces what core writes around the same value - the activity-description
+    class and the intro id, from course/templates/activity_info.mustache - so a module's own
+    stylesheet, and anything anchoring at the intro id, keeps working. The has-automatic-completion
+    modifier core adds there is deliberately not reproduced: it exists to close the gap to the
+    completion box below the description, and in focus mode there is no box under it.
+
+    The value is triple-stashed because it is finished HTML: activity_header builds it with
+    format_module_intro(), which has already run the text through format_text().
+
+    Context variables required for this template (described without braces, because a Mustache
+    comment closes at the first pair of closing braces it meets):
+
+    * description - the activity intro, already rendered by format_module_intro(), trusted HTML
+
+    Example context (json):
+    {
+        "description": "<div class=\"no-overflow\"><p>Read the protocol before the session.</p></div>"
+    }
+}}
+<div class="activity-description dimensions-focus-description" id="intro">
+    {{{ description }}}
+</div>

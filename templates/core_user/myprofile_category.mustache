@@ -1,0 +1,102 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/core_user/myprofile_category
+
+    One card of the user profile.
+
+    Facts are label and value pairs and come first; actions are the nodes that are only a
+    link, and sit at the foot of the card under a rule. Core prints both in one flat list,
+    which gives an email address and an "Edit profile" link the same weight.
+
+    Neither the node title nor the node content is escaped, because neither is escaped by
+    core's renderer either - both are pre-built HTML by contract. See the note in
+    myprofile_renderer::node_context() for the plugin that proves the title half of that.
+
+    A fact label and its value are kept on ONE source line each. Behat's I should see is a
+    raw contains() over the element's string value with no whitespace normalisation, so a
+    label broken across source lines cannot be asserted together with its value.
+
+    Context variables required for this template:
+    * title - Card heading.
+    * classes - Extra CSS classes for the card.
+    * hasfacts - Whether there is at least one fact.
+    * facts - Array of nodes carrying content: name, title, hasurl, url, content, hasicon, iconhtml, classes.
+    * hasactions - Whether there is at least one action.
+    * actions - Array of link-only nodes: name, title, hasurl, url, hasicon, iconhtml, classes.
+
+    Example context (json):
+    {
+        "title": "Detalhes do usuario",
+        "classes": "node_category",
+        "hasfacts": true,
+        "facts": [
+            {
+                "name": "email",
+                "title": "Endereco de email",
+                "hasurl": false,
+                "url": "",
+                "content": "aluno@example.org",
+                "hasicon": false,
+                "iconhtml": "",
+                "classes": ""
+            },
+            {
+                "name": "courseprofiles",
+                "title": "Detalhes do curso",
+                "hasurl": false,
+                "url": "",
+                "content": "<ul><li>Direitos Humanos na Prática Profissional</li></ul>",
+                "hasicon": false,
+                "iconhtml": "",
+                "classes": ""
+            }
+        ],
+        "hasactions": true,
+        "actions": [
+            {
+                "name": "editprofile",
+                "title": "Editar perfil",
+                "hasurl": true,
+                "url": "https://example.org/user/edit.php",
+                "hasicon": false,
+                "iconhtml": "",
+                "classes": "editprofile"
+            }
+        ]
+    }
+}}
+<section class="dimensions-profile-card {{classes}}">
+    <h3 class="dimensions-profile-card-title">{{title}}</h3>
+    {{#hasfacts}}
+        <dl class="dimensions-profile-facts">
+            {{#facts}}
+                <div class="dimensions-profile-fact {{classes}}">
+                    <dt class="dimensions-profile-fact-label">{{#hasurl}}<a href="{{url}}">{{{title}}}</a>{{/hasurl}}{{^hasurl}}{{{title}}}{{/hasurl}}{{#hasicon}} {{{iconhtml}}}{{/hasicon}}</dt>
+                    <dd class="dimensions-profile-fact-value">{{{content}}}</dd>
+                </div>
+            {{/facts}}
+        </dl>
+    {{/hasfacts}}
+    {{#hasactions}}
+        <ul class="dimensions-profile-actions">
+            {{#actions}}
+                <li class="dimensions-profile-action {{classes}}">{{#hasurl}}<a href="{{url}}">{{{title}}}</a>{{/hasurl}}{{^hasurl}}<span>{{{title}}}</span>{{/hasurl}}{{#hasicon}} {{{iconhtml}}}{{/hasicon}}</li>
+            {{/actions}}
+        </ul>
+    {{/hasactions}}
+</section>

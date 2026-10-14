@@ -1,0 +1,338 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_listing
+
+    One page of the category showcase: the strip of the category's pages, the
+    toolbar partial (whose last row prints the live count of this page result),
+    then a two-column shell, the navigation tree on the left and the content on
+    the right. The content is the grid of card partials, or the empty state,
+    followed by core's paging bar as real links. The view is one class on the
+    container: cards or list. The category's own description is the hero's
+    (category_hero), above this listing.
+
+    The pages strip (category_pages) is drawn only when local_page is installed
+    and names a page. The page builds it and the web service never does: nothing
+    a search rewrites holds it.
+
+    The tree is a plain list of links, this category first, then every admitted
+    category below it down to the depth the site configured. It is a filter and
+    not a way out: each entry is an address of this same page carrying the
+    tree's own parameter, so following one narrows the listing to that
+    category's subtree, and the first entry - this category's address without
+    that parameter - clears it. The entry in force carries aria-current. Depth
+    travels as a number on the item, which the stylesheet indents by; an entry
+    the viewer may not open - a child merely listed on the anonymous shell - is
+    text, so the name reads as it did and cannot be chosen.
+
+    The whole tree is a native disclosure, open by default: from the
+    stylesheet's breakpoint up its summary is hidden and the list simply shows,
+    and on a phone the client closes it at load so that a long list of
+    categories does not push the courses below the fold. With no JavaScript on a
+    phone it stays open: every name is readable and the reader scrolls.
+
+    Only the flat organisations draw the tree. Under "by area" the posters name
+    the same children and open their courses, so the exporter sends no entries
+    and the shell is one column.
+
+    The grouped organisation draws two sections. The first is the areas: one
+    poster per direct child and, between their rows, the panel of the open one
+    (category_areas). The second is the courses sitting directly in this
+    category, under their own heading, holding the grid, empty state and pager;
+    the skip link beside the areas' heading lands on that heading. That section
+    is hidden - never removed, because the client repaints its grid - when
+    nothing sits directly here, under a criterion too: a narrowed page shows
+    where its results are, and the areas say so themselves when there are none
+    anywhere. With no child at all there are no posters and the page is the
+    second section alone.
+
+    The container carries the vitrine attribute, a JSON payload of the page's
+    state that the client module reads once; the page renders correctly without
+    it.
+
+    The grid and the empty state are both always in the document, one of them
+    hidden, because the client replaces a page of results with a page that may
+    have none and back again. The pager region holds three things in turn:
+    core's numbered bar, which the client hides; a "load more" button, drawn
+    only for the client and hidden until there is a next page; and a link to the
+    next numbered page, hidden until the live-page window closes and the client
+    hands paging back to the real addresses. Without JavaScript only the bar is
+    ever visible. The two client controls carry dim-live-only, which either
+    client's mark on the body reveals: the logged-in one and the visitor's.
+
+    The example draws both shells at once - a tree and the areas - so that every
+    region is rendered and linted from one context. A real request carries one or
+    the other.
+
+    Example context (json):
+    {
+        "categoryid": 7,
+        "pages": {
+            "label": "Páginas desta área",
+            "pages": [
+                {"name": "Edital 2026", "url": "https://example.com/r.php/local_page/category/7/edital-2026", "description": "Regras e prazos.", "hasdescription": true}
+            ]
+        },
+        "tree": [
+            {"id": 7, "name": "Departamento de Brigada", "depth": 0, "url": "https://example.com/course/index.php?categoryid=7", "linkable": true, "current": false},
+            {"id": 8, "name": "Brigada", "depth": 1, "url": "https://example.com/course/index.php?categoryid=7&cat=8", "linkable": true, "current": true},
+            {"id": 9, "name": "Resgate", "depth": 2, "url": "https://example.com/course/index.php?categoryid=7&cat=9", "linkable": true, "current": false},
+            {"id": 10, "name": "Proteção Civil", "depth": 1, "url": "", "linkable": false, "current": false}
+        ],
+        "hastree": true,
+        "treelabel": "Categorias",
+        "treeboxlabel": "Categorias",
+        "isgrouped": true,
+        "areas": {
+            "categoryid": 7,
+            "isroot": false,
+            "heading": "Áreas em Departamento de Brigada",
+            "hasdirectlink": true,
+            "directlinklabel": "Ir para os cursos desta categoria",
+            "isopen": false,
+            "filtered": false,
+            "elsewhere": "",
+            "hasposters": true,
+            "posters": [
+                {
+                    "id": 8,
+                    "name": "Brigada",
+                    "url": "https://example.com/course/index.php?categoryid=8",
+                    "description": "Formação continuada.",
+                    "hasdescription": true,
+                    "style": "--dim-card-band: #070093; --dim-card-ink: #ffffff; --dim-mark-a: 0.20;",
+                    "imageurl": null,
+                    "hasimage": false,
+                    "hasvideo": false,
+                    "videourl": null,
+                    "videotype": null,
+                    "badges": [],
+                    "hasbadges": false,
+                    "badgeslabel": "Instituições",
+                    "hasmark": true,
+                    "markfolder": true,
+                    "count": 6,
+                    "linkable": true,
+                    "istext": false,
+                    "variant": "band",
+                    "expandable": true,
+                    "isopen": false,
+                    "controlurl": "https://example.com/course/index.php?categoryid=7&open=8#dim-panel",
+                    "hascontrolurl": true,
+                    "shell": {"titleurl": "https://example.com/course/index.php?categoryid=8", "ctaurl": "https://example.com/course/index.php?categoryid=8&sort=recent", "ctalabel": "Acessar Brigada", "resultlabel": "", "resultcount": ""},
+                    "hidden": false,
+                    "results": {"has": false, "label": "", "count": "", "iszero": false}
+                }
+            ],
+            "hasmore": false,
+            "morehidden": false,
+            "morelabel": "",
+            "moreopen": false,
+            "postersmore": [],
+            "panelinmain": false,
+            "panelinmore": false,
+            "panelstyle": "",
+            "panel": null,
+            "hashint": true,
+            "nomatch": {"show": false, "label": "", "labelall": "", "labelless": "", "areas": []},
+            "allempty": false,
+            "clearurl": "https://example.com/course/index.php?categoryid=7",
+            "emptylabel": "Ainda não há categorias para mostrar aqui."
+        },
+        "hasareas": true,
+        "direct": {"heading": "Cursos em Departamento de Brigada", "show": true},
+        "isdirectory": false,
+        "toolbar": {
+            "action": "https://example.com/course/index.php",
+            "hidden": [{"name": "categoryid", "value": 7}],
+            "categoryid": 7,
+            "formid": "dim-vitrine-form-7",
+            "searchid": "dim-vitrine-q-7",
+            "searchname": "q",
+            "searchlabel": "Buscar cursos",
+            "searchplaceholder": "Buscar pelo nome",
+            "query": "",
+            "searchtooshort": false,
+            "searchtooshortlabel": "Digite pelo menos 2 caracteres para buscar.",
+            "sortgroup": {
+                "legend": "Organizar",
+                "name": "sort",
+                "options": [
+                    {"id": "dim-sort-7-category", "value": "category", "label": "Por categoria", "checked": true},
+                    {"id": "dim-sort-7-name", "value": "name", "label": "A-Z", "checked": false},
+                    {"id": "dim-sort-7-recent", "value": "recent", "label": "Recentes", "checked": false}
+                ]
+            },
+            "sortapplylabel": "Aplicar",
+            "statusgroup": {
+                "legend": "Situação",
+                "name": "chip",
+                "options": [
+                    {"id": "dim-chip-7-all", "value": "", "label": "Todos", "count": 14, "hascount": true, "checked": true}
+                ]
+            },
+            "hasstatusgroup": true,
+            "facets": [],
+            "hasfacets": false,
+            "datefromid": "dim-datefrom-7",
+            "datetoid": "dim-dateto-7",
+            "datefromname": "from",
+            "datetoname": "to",
+            "datefrom": "",
+            "dateto": "",
+            "datelegend": "Data de início",
+            "datefromlabel": "Início",
+            "datetolabel": "Fim",
+            "firstday": 0,
+            "datequick": [
+                {"label": "Hoje", "url": "https://example.com/course/index.php?categoryid=7&from=2026-09-17&to=2026-09-17", "from": "2026-09-17", "to": "2026-09-17", "current": false}
+            ],
+            "filtercount": 0,
+            "hasfiltercount": false,
+            "filtercountlabel": "Filtros aplicados: 0",
+            "pagesizename": "perpage",
+            "pagesize": null,
+            "haspagesize": false,
+            "viewname": "view",
+            "viewlabel": "Exibição",
+            "views": [
+                {"value": "cards", "label": "Cartões", "current": true, "icon": "fa-border-all"},
+                {"value": "list", "label": "Lista", "current": false, "icon": "fa-list"}
+            ],
+            "submitlabel": "Filtrar",
+            "filtersopen": false,
+            "hasfilters": false,
+            "clearurl": "https://example.com/course/index.php?categoryid=7",
+            "clearlabel": "Limpar filtros",
+            "manageactions": "",
+            "hasmanageactions": false
+        },
+        "islist": false,
+        "viewclass": "dim-vitrine--cards",
+        "cards": [
+            {
+                "id": 42,
+                "fullname": "Atendimento Pré-Hospitalar & Resgate",
+                "url": "https://example.com/enrol/index.php?id=42",
+                "hasurl": true,
+                "overline": "Brigada",
+                "hasoverline": true,
+                "imageurl": null,
+                "hasimage": false,
+                "isevento": false,
+                "kindlabel": "Curso",
+                "haskind": true,
+                "datetile": null,
+                "meta": "36 horas · Online",
+                "state": "open",
+                "badge": {"label": "Inscrições abertas", "classes": "dim-badge dim-badge--open"},
+                "ishidden": false,
+                "hiddenbadge": {"label": "Oculto de estudantes", "classes": "dim-badge dim-badge--hidden"},
+                "ismuted": false,
+                "cta": {"label": "Inscrever-se", "url": "https://example.com/enrol/index.php?id=42", "primary": true},
+                "hascta": true,
+                "showstar": true,
+                "favourite": false,
+                "starlabel": "Adicionar aos favoritos: Atendimento Pré-Hospitalar & Resgate",
+                "starlabeladd": "Adicionar aos favoritos: Atendimento Pré-Hospitalar & Resgate",
+                "starlabelremove": "Remover dos favoritos: Atendimento Pré-Hospitalar & Resgate",
+                "detailsid": "dim-card-details-42",
+                "detailslabel": "Mais informações",
+                "excerpt": "Curso de atendimento pré-hospitalar.",
+                "hasexcerpt": true,
+                "facts": [{"label": "Carga horária", "value": "36 horas", "icon": "fa-clock"}],
+                "hasfacts": true,
+                "learn": ["Triagem de vítimas"],
+                "haslearn": true,
+                "learnlabel": "O que você vai aprender",
+                "modal": {"kicker": "Brigada", "haskicker": true, "factslabel": "Informações do curso", "primary": {"label": "Continuar curso", "url": "https://example.com/course/view.php?id=42", "disabled": false, "note": "", "icon": "fa-play"}, "hasprimary": true, "secondary": {"label": "Página do curso", "url": "https://example.com/course/view.php?id=42"}, "hassecondary": true}
+            }
+        ],
+        "hascards": true,
+        "countnumber": "7",
+        "countline": "cursos em Departamento de Brigada",
+        "seeallurl": "",
+        "emptylabel": "Nenhum curso corresponde a estes filtros.",
+        "hasfilters": false,
+        "clearurl": "https://example.com/course/index.php?categoryid=7",
+        "clearlabel": "Limpar filtros",
+        "pager": "",
+        "hasmore": false,
+        "nexturl": "",
+        "loadmorelabel": "Carregar mais",
+        "loadinglabel": "Carregando…",
+        "continuelabel": "Continuar na próxima página",
+        "vitrine": "{\"categoryid\":7,\"page\":0,\"pagesize\":48,\"total\":1,\"hasmore\":false,\"chip\":null,\"query\":\"\",\"filters\":{},\"defaultsort\":\"\",\"view\":\"cards\",\"canpersist\":true}"
+    }
+}}
+<section class="dim-vitrine {{viewclass}}" data-region="dim-vitrine" data-categoryid="{{categoryid}}" data-vitrine="{{vitrine}}">
+    {{#pages}}
+    {{> theme_dimensions/category_pages }}
+    {{/pages}}
+    {{#toolbar}}
+    {{> theme_dimensions/category_toolbar }}
+    {{/toolbar}}
+    <div class="dim-vitrine__shell">
+        {{#hastree}}
+        <nav class="dim-vitrine__tree" data-region="dim-vitrine-tree" aria-label="{{treelabel}}">
+            <details class="dim-vitrine__treebox" data-region="dim-vitrine-treebox" open>
+                <summary class="dim-vitrine__treetoggle">{{treeboxlabel}}</summary>
+                <ul class="dim-tree" role="list">
+                    {{#tree}}
+                    <li class="dim-tree__item" data-depth="{{depth}}">
+                        {{#linkable}}<a class="dim-tree__link{{#current}} dim-tree__link--on{{/current}}" href="{{url}}" data-region="dim-tree-link" data-categoryid="{{id}}"{{#current}} aria-current="true"{{/current}}>{{name}}</a>{{/linkable}}
+                        {{^linkable}}<span class="dim-tree__text">{{name}}</span>{{/linkable}}
+                    </li>
+                    {{/tree}}
+                </ul>
+            </details>
+        </nav>
+        {{/hastree}}
+        <div class="dim-vitrine__content">
+            {{#areas}}
+            {{> theme_dimensions/category_areas }}
+            {{/areas}}
+            {{#isgrouped}}
+            <section class="dim-direct" data-region="dim-direct" aria-labelledby="dim-direct-title"{{^direct.show}} hidden{{/direct.show}}>
+                <div class="dim-direct__head">
+                    <h2 class="dim-direct__title" id="dim-direct-title" tabindex="-1">{{direct.heading}}</h2>
+                </div>
+            {{/isgrouped}}
+            <ul class="dim-vitrine__grid" role="list" data-region="dim-vitrine-grid"{{^hascards}} hidden{{/hascards}}>
+                {{#cards}}
+                <li class="dim-vitrine__item">
+                    {{> theme_dimensions/category_card }}
+                </li>
+                {{/cards}}
+            </ul>
+            <div class="dim-vitrine__empty" data-region="dim-vitrine-empty"{{#hascards}} hidden{{/hascards}}>
+                <p>{{emptylabel}}</p>
+                {{#hasfilters}}
+                <a class="btn btn-outline-primary btn-sm" href="{{clearurl}}" data-action="dim-clear">{{clearlabel}}</a>
+                {{/hasfilters}}
+            </div>
+            <div class="dim-vitrine__pager" data-region="dim-vitrine-pager">
+                <div class="dim-vitrine__pagerbar" data-region="dim-vitrine-pagerbar">{{{pager}}}</div>
+                <button type="button" class="btn btn-outline-primary btn-sm dim-vitrine__loadmore dim-live-only" data-action="dim-loadmore" data-label="{{loadmorelabel}}" data-loading="{{loadinglabel}}"{{^hasmore}} hidden{{/hasmore}}>{{loadmorelabel}}</button>
+                <a class="btn btn-outline-primary btn-sm dim-vitrine__nextpage dim-live-only" data-region="dim-vitrine-nextpage" href="{{nexturl}}" hidden>{{continuelabel}}</a>
+            </div>
+            {{#isgrouped}}
+            </section>
+            {{/isgrouped}}
+        </div>
+    </div>
+</section>

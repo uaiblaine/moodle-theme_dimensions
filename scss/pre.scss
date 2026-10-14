@@ -1,0 +1,35 @@
+// Theme Dimensions - Pre SCSS.
+//
+// Loaded after Boost's and Boost Union's own pre SCSS, so plain assignments here win over
+// Bootstrap's !default values. Only what the design system fixes is set: Boost Union's own
+// settings (brandcolor, brandedgraytones, navbarcolor) and its flavours keep their say, because
+// the flavour per organisation is the centre of this platform, not a detail.
+//
+// The values are the theme's design system's tokens, and this file and post.scss are now their
+// reference: change a value here, in one place, and derive new colours from the existing tokens.
+
+// ---- Typography ------------------------------------------------------------
+// Outfit is the institutional typeface of the brand manual. The stack falls back to the system
+// face, so the theme stays readable wherever Outfit is not installed.
+$font-family-sans-serif: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+// ---- Shape -----------------------------------------------------------------
+// 4 / 6 / 8 / 12 / 16 / pill, with the destinations the design system writes down: controls 6,
+// cards 12, hero 16. Bootstrap only carries three steps, so these are the three that map.
+$border-radius-sm: 4px;
+$border-radius: 6px;
+$border-radius-lg: 12px;
+
+// ---- Elevation -------------------------------------------------------------
+// Three levels, tinted with the institutional navy rather than pure black: a black shadow over a
+// light grey page reads as dirt, the same shadow in rgba(7,0,147,…) reads as depth.
+$box-shadow-sm: 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06);
+$box-shadow: 0 4px 12px rgba(7, 0, 147, .10);
+$box-shadow-lg: 0 12px 32px rgba(7, 0, 147, .14);
+
+// ---- Dropdown density ------------------------------------------------------
+// Bootstrap's menu is too tight for a learning plan name, which is what most of these menus hold.
+$dropdown-min-width: 16rem;
+$dropdown-font-size: .875rem;
+$dropdown-item-padding-y: .4rem;
+$dropdown-border-radius: 8px;

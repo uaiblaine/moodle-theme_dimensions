@@ -1,0 +1,295 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_panel
+
+    The panel of one area's courses, drawn between the rows of posters: a region
+    labelled by its own heading, whose header names the area and how many
+    courses it holds and offers its two orders and its Close; the strip of the
+    area's subareas; a rail of up to eight course cards, the card template
+    itself in a smaller presentation; and a footer whose call to action opens
+    the area's page in the panel's order.
+
+    One template, two renderers. The page renders it for an address carrying the
+    panel, and the panel module renders it through core/templates after asking
+    the listing's web service, from the same context, which the server builds.
+    Without JavaScript the two orders and Close are links that reload this page
+    (the orders landing on the panel, Close back on the poster); in the client's
+    copy they are buttons, the orders a radio group. Only the client reaches the
+    loading, skeleton and error states. Every number in a sentence arrives
+    composed and formatted; every sentence carrying only the area's name is a
+    string helper here, with the name as its parameter, so it renders alike on
+    both sides.
+
+    The heading is focusable (the client moves the focus there on open) and is
+    described by the line under it. Each control the client may have to put the
+    focus back on carries a focus key, and the four regions the client replaces
+    while the header stays - the subtitle, the strip, the body and the footer -
+    are always in the document, empty or hidden when they have nothing to say.
+
+    A listed but not public area on the anonymous shell has no page a visitor
+    may open, so its name is not a link, it has no strip and no call to action,
+    and its footer offers the parent's own listing narrowed to the area instead.
+
+    Under a search or a filter the sentences count results and say what they
+    answer, all composed by the server. The zero state says nothing here answers
+    and, when other areas of the page hold a result, suggests them: in the
+    server's copy each is a link reopening this page with that area's panel, in
+    the client's a button opening it in place. Both carry the same action, area
+    id and focus key, so the client converts a server-drawn link into its button
+    as it converts the orders and Close. The suggestions are page data, merged
+    by the client like the cards. A suggestion's digit is hidden from assistive
+    technology and its words ("3 results") are read in its place, so its
+    accessible name never ends in a bare number.
+
+    The rail's two arrows are a pointer convenience: hidden from assistive
+    technology, out of the tab order (the focus already brings each card into
+    view), and shown only with the panel module, from md up and for a pointer
+    that is not coarse. The "+N" tile at the rail's end is out of the tab order
+    too, because the call to action opens the same page.
+
+    Example context (json):
+    {
+        "id": 8,
+        "name": "Brigada & Resgate",
+        "titleurl": "https://example.com/course/index.php?categoryid=8",
+        "haslink": true,
+        "isd20": false,
+        "subtitle": "Mostrando 2 de 26",
+        "psortname": false,
+        "sorturlrecent": "https://example.com/course/index.php?categoryid=7&open=8#dim-panel",
+        "sorturlname": "https://example.com/course/index.php?categoryid=7&open=8&psort=name#dim-panel",
+        "closeurl": "https://example.com/course/index.php?categoryid=7#dim-area-8",
+        "also": {
+            "has": true,
+            "pills": [
+                {"id": 11, "name": "Salvamento", "url": "https://example.com/course/index.php?categoryid=11", "haslink": true, "style": "--dim-dot: #b3261e;"},
+                {"id": 12, "name": "Aeronáutica", "url": "", "haslink": false, "style": "--dim-dot: #12484f;"}
+            ],
+            "hasmore": true,
+            "morecount": "3",
+            "moreurl": "https://example.com/course/index.php?categoryid=8"
+        },
+        "hascards": true,
+        "few": false,
+        "counter": "1 / 2",
+        "tile": {"has": true, "count": "24", "label": "cursos", "url": "https://example.com/course/index.php?categoryid=8&sort=recent"},
+        "isrows": true,
+        "isempty": false,
+        "iszero": false,
+        "zero": "",
+        "suggestions": [],
+        "hassuggestions": false,
+        "cta": {"has": true, "url": "https://example.com/course/index.php?categoryid=8&sort=recent", "label": "Acessar Brigada & Resgate · mais 18 cursos"},
+        "seeaslist": {"has": false, "url": ""},
+        "jsmode": false,
+        "isloading": false,
+        "isskeleton": false,
+        "iserror": false,
+        "cards": [
+            {
+                "id": 42,
+                "fullname": "Atendimento Pré-Hospitalar & Resgate",
+                "url": "https://example.com/enrol/index.php?id=42",
+                "hasurl": true,
+                "overline": "Salvamento",
+                "hasoverline": true,
+                "imageurl": null,
+                "hasimage": false,
+                "badges": [],
+                "hasbadges": false,
+                "badgeslabel": "Instituições",
+                "isevento": false,
+                "kindlabel": "Curso",
+                "haskind": true,
+                "datetile": null,
+                "meta": "36 horas · Online",
+                "state": "open",
+                "badge": {"label": "Inscrições abertas", "classes": "dim-badge dim-badge--open"},
+                "ishidden": false,
+                "hiddenbadge": {"label": "Oculto de estudantes", "classes": "dim-badge dim-badge--hidden"},
+                "ismuted": false,
+                "cta": {"label": "Inscrever-se", "url": "https://example.com/enrol/index.php?id=42", "primary": true},
+                "hascta": true,
+                "showstar": true,
+                "favourite": false,
+                "starlabel": "Adicionar aos favoritos: Atendimento Pré-Hospitalar & Resgate",
+                "starlabeladd": "Adicionar aos favoritos: Atendimento Pré-Hospitalar & Resgate",
+                "starlabelremove": "Remover dos favoritos: Atendimento Pré-Hospitalar & Resgate",
+                "detailsid": "dim-card-details-42",
+                "detailslabel": "Mais informações",
+                "excerpt": "Curso de atendimento pré-hospitalar.",
+                "hasexcerpt": true,
+                "facts": [{"label": "Carga horária", "value": "36 horas", "icon": "fa-clock"}],
+                "hasfacts": true,
+                "learn": ["Triagem de vítimas"],
+                "haslearn": true,
+                "learnlabel": "O que você vai aprender",
+                "modal": {"kicker": "Brigada", "haskicker": true, "factslabel": "Informações do curso", "primary": {"label": "Continuar curso", "url": "https://example.com/course/view.php?id=42", "disabled": false, "note": "", "icon": "fa-play"}, "hasprimary": true, "secondary": {"label": "Página do curso", "url": "https://example.com/course/view.php?id=42"}, "hassecondary": true}
+            },
+            {
+                "id": 43,
+                "fullname": "Seminário de Salvamento Aquático",
+                "url": "https://example.com/course/view.php?id=43",
+                "hasurl": true,
+                "overline": "Brigada & Resgate",
+                "hasoverline": true,
+                "imageurl": "https://example.com/pluginfile.php/99/course/overviewfiles/capa.jpg",
+                "hasimage": true,
+                "badges": [
+                    {"url": "https://example.com/pluginfile.php/99/customfield_picture/file/5/brasao.png", "alt": "brasao"}
+                ],
+                "hasbadges": true,
+                "badgeslabel": "Instituições",
+                "isevento": true,
+                "kindlabel": "Evento",
+                "haskind": true,
+                "datetile": {"day": "12", "month": "out"},
+                "meta": "12 de outubro · Presencial · São Paulo",
+                "state": "enrolled",
+                "badge": {"label": "Inscrito", "classes": "dim-badge dim-badge--enrolled"},
+                "ishidden": false,
+                "hiddenbadge": {"label": "Oculto de estudantes", "classes": "dim-badge dim-badge--hidden"},
+                "ismuted": false,
+                "cta": {"label": "Acessar", "url": "https://example.com/course/view.php?id=43", "primary": true},
+                "hascta": true,
+                "showstar": true,
+                "favourite": true,
+                "starlabel": "Remover dos favoritos: Seminário de Salvamento Aquático",
+                "starlabeladd": "Adicionar aos favoritos: Seminário de Salvamento Aquático",
+                "starlabelremove": "Remover dos favoritos: Seminário de Salvamento Aquático",
+                "detailsid": "dim-card-details-43",
+                "detailslabel": "Mais informações",
+                "excerpt": "",
+                "hasexcerpt": false,
+                "facts": [],
+                "hasfacts": false,
+                "learn": [],
+                "haslearn": false,
+                "learnlabel": "O que você vai aprender",
+                "modal": {"kicker": "Brigada", "haskicker": true, "factslabel": "Informações do curso", "primary": {"label": "Continuar curso", "url": "https://example.com/course/view.php?id=43", "disabled": false, "note": "", "icon": "fa-play"}, "hasprimary": true, "secondary": {"label": "Página do curso", "url": "https://example.com/course/view.php?id=43"}, "hassecondary": true}
+            }
+        ]
+    }
+}}
+<section class="dim-panel__sec" role="region" aria-labelledby="dim-panel-title" data-region="dim-panel-section" data-categoryid="{{id}}">
+    <div class="dim-panel__clip">
+        <div class="dim-panel__inner">
+            <div class="dim-panel__box">
+                <div class="dim-panel__head">
+                    <div class="dim-panel__titles">
+                        <span class="dim-panel__eyebrow">{{#str}}category_panel_eyebrow, theme_dimensions{{/str}}</span>
+                        <h3 class="dim-panel__title" id="dim-panel-title" tabindex="-1" aria-describedby="dim-panel-sub" data-region="dim-panel-title" data-focuskey="title">{{#str}}category_panel_title, theme_dimensions{{/str}} {{#haslink}}<a href="{{titleurl}}">{{name}}</a>{{/haslink}}{{^haslink}}{{name}}{{/haslink}}</h3>
+                        <p class="dim-panel__sub" id="dim-panel-sub" data-region="dim-panel-subtitle">{{#isloading}}{{#str}}category_panel_loading, theme_dimensions, {{name}}{{/str}}{{/isloading}}{{#isskeleton}}{{#str}}category_panel_loading, theme_dimensions, {{name}}{{/str}}{{/isskeleton}}{{#iserror}}{{#str}}category_panel_error, theme_dimensions, {{name}}{{/str}}{{/iserror}}{{^isloading}}{{^isskeleton}}{{^iserror}}{{subtitle}}{{/iserror}}{{/isskeleton}}{{/isloading}}</p>
+                    </div>
+                    <div class="dim-panel__tools">
+                        {{#jsmode}}
+                        <div class="dim-panel__sort" role="radiogroup" aria-label="{{#str}}category_panel_sort, theme_dimensions, {{name}}{{/str}}" data-region="dim-panel-sort">
+                            <button type="button" class="dim-panel__sortopt" role="radio" data-action="dim-panel-sort" data-psort="recent" data-focuskey="psort-recent" aria-checked="{{#psortname}}false{{/psortname}}{{^psortname}}true{{/psortname}}" tabindex="{{#psortname}}-1{{/psortname}}{{^psortname}}0{{/psortname}}">{{#str}}category_sort_recent, theme_dimensions{{/str}}</button>
+                            <button type="button" class="dim-panel__sortopt" role="radio" data-action="dim-panel-sort" data-psort="name" data-focuskey="psort-name" aria-checked="{{#psortname}}true{{/psortname}}{{^psortname}}false{{/psortname}}" tabindex="{{#psortname}}0{{/psortname}}{{^psortname}}-1{{/psortname}}">{{#str}}category_sort_name, theme_dimensions{{/str}}</button>
+                        </div>
+                        <button type="button" class="dim-panel__close" data-action="dim-panel-close" data-focuskey="close" aria-label="{{#str}}category_panel_closelabel, theme_dimensions, {{name}}{{/str}}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                        {{/jsmode}}
+                        {{^jsmode}}
+                        <div class="dim-panel__sort" role="group" aria-label="{{#str}}category_panel_sort, theme_dimensions, {{name}}{{/str}}" data-region="dim-panel-sort">
+                            <a class="dim-panel__sortopt" href="{{sorturlrecent}}" data-action="dim-panel-sort" data-psort="recent" data-focuskey="psort-recent"{{^psortname}} aria-current="true"{{/psortname}}>{{#str}}category_sort_recent, theme_dimensions{{/str}}</a>
+                            <a class="dim-panel__sortopt" href="{{sorturlname}}" data-action="dim-panel-sort" data-psort="name" data-focuskey="psort-name"{{#psortname}} aria-current="true"{{/psortname}}>{{#str}}category_sort_name, theme_dimensions{{/str}}</a>
+                        </div>
+                        <a class="dim-panel__close" href="{{closeurl}}" data-action="dim-panel-close" data-focuskey="close" aria-label="{{#str}}category_panel_closelabel, theme_dimensions, {{name}}{{/str}}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></a>
+                        {{/jsmode}}
+                    </div>
+                </div>
+                <nav class="dim-panel__also" data-region="dim-panel-also"{{#also.has}} aria-labelledby="dim-panel-also-label"{{/also.has}}{{^also.has}} hidden{{/also.has}}>
+                    {{#also.has}}
+                    <span class="dim-panel__alsolabel" id="dim-panel-also-label">{{#str}}category_panel_also, theme_dimensions, {{name}}{{/str}}</span>
+                    {{#also.pills}}
+                    {{#haslink}}<a class="dim-panel__alsopill" href="{{url}}" style="{{style}}"><i class="dim-panel__dot" aria-hidden="true"></i>{{name}}</a>{{/haslink}}
+                    {{^haslink}}<span class="dim-panel__alsopill" style="{{style}}"><i class="dim-panel__dot" aria-hidden="true"></i>{{name}}</span>{{/haslink}}
+                    {{/also.pills}}
+                    {{#also.hasmore}}
+                    <a class="dim-panel__alsopill dim-panel__alsopill--more" href="{{also.moreurl}}" aria-label="{{#str}}category_panel_alsoall, theme_dimensions, {{name}}{{/str}}">+{{also.morecount}}</a>
+                    {{/also.hasmore}}
+                    {{/also.has}}
+                </nav>
+                <div class="dim-panel__body{{#isloading}} dim-panel__body--loading{{/isloading}}" data-region="dim-panel-body"{{#isloading}} aria-busy="true"{{/isloading}}>
+                    {{#isrows}}
+                    <div class="dim-panel__railwrap">
+                        {{^few}}
+                        <button type="button" class="dim-panel__arrow dim-panel__arrow--prev dim-panel__arrow--off" data-action="dim-panel-prev" aria-hidden="true" tabindex="-1" title="{{#str}}category_panel_prev, theme_dimensions{{/str}}"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                        <button type="button" class="dim-panel__arrow dim-panel__arrow--next" data-action="dim-panel-next" aria-hidden="true" tabindex="-1" title="{{#str}}category_panel_next, theme_dimensions{{/str}}"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                        {{/few}}
+                        <ul class="dim-panel__rail{{#few}} dim-panel__rail--few{{/few}}" role="list" data-region="dim-panel-rail">
+                            {{#cards}}
+                            <li class="dim-panel__item">
+                                {{> theme_dimensions/category_card }}
+                            </li>
+                            {{/cards}}
+                            {{#tile.has}}
+                            <li class="dim-panel__item dim-panel__item--tile"><a class="dim-panel__tile" href="{{tile.url}}" tabindex="-1" data-region="dim-panel-tile"><b>+{{tile.count}}</b><span>{{tile.label}}</span></a></li>
+                            {{/tile.has}}
+                        </ul>
+                    </div>
+                    {{/isrows}}
+                    {{#isskeleton}}
+                    <div class="dim-panel__railwrap">
+                        <ul class="dim-panel__rail" role="list" data-region="dim-panel-rail" aria-busy="true">
+                            <li class="dim-panel__item" aria-hidden="true"><div class="dim-panel__skel"><span class="dim-panel__skelmedia"></span><span class="dim-panel__skelbar dim-panel__skelbar--short"></span><span class="dim-panel__skelbar dim-panel__skelbar--title"></span><span class="dim-panel__skelbar"></span><span class="dim-panel__skelbar dim-panel__skelbar--short"></span></div></li>
+                            <li class="dim-panel__item" aria-hidden="true"><div class="dim-panel__skel"><span class="dim-panel__skelmedia"></span><span class="dim-panel__skelbar dim-panel__skelbar--short"></span><span class="dim-panel__skelbar dim-panel__skelbar--title"></span><span class="dim-panel__skelbar"></span><span class="dim-panel__skelbar dim-panel__skelbar--short"></span></div></li>
+                            <li class="dim-panel__item" aria-hidden="true"><div class="dim-panel__skel"><span class="dim-panel__skelmedia"></span><span class="dim-panel__skelbar dim-panel__skelbar--short"></span><span class="dim-panel__skelbar dim-panel__skelbar--title"></span><span class="dim-panel__skelbar"></span><span class="dim-panel__skelbar dim-panel__skelbar--short"></span></div></li>
+                            <li class="dim-panel__item" aria-hidden="true"><div class="dim-panel__skel"><span class="dim-panel__skelmedia"></span><span class="dim-panel__skelbar dim-panel__skelbar--short"></span><span class="dim-panel__skelbar dim-panel__skelbar--title"></span><span class="dim-panel__skelbar"></span><span class="dim-panel__skelbar dim-panel__skelbar--short"></span></div></li>
+                        </ul>
+                    </div>
+                    {{/isskeleton}}
+                    {{#iserror}}
+                    <div class="dim-panel__state dim-panel__state--error"><p><b>{{#str}}category_panel_error, theme_dimensions, {{name}}{{/str}}</b> {{#str}}category_panel_errorhint, theme_dimensions{{/str}}</p><button type="button" class="dim-panel__retry" data-action="dim-panel-retry" data-focuskey="retry">{{#str}}category_panel_retry, theme_dimensions{{/str}}</button></div>
+                    {{/iserror}}
+                    {{#isempty}}
+                    <div class="dim-panel__state"><p><b>{{#str}}category_panel_empty, theme_dimensions, {{name}}{{/str}}</b> {{#str}}category_panel_emptyhint, theme_dimensions{{/str}}</p></div>
+                    {{/isempty}}
+                    {{#iszero}}
+                    <div class="dim-panel__state">
+                        <p><b>{{zero}}</b></p>
+                        {{#hassuggestions}}
+                        <div class="dim-panel__sugg" data-region="dim-panel-suggestions"><span>{{#str}}category_panel_resultsin, theme_dimensions{{/str}}</span>
+                            {{#suggestions}}
+                            {{#jsmode}}<button type="button" class="dim-panel__suggestion" data-action="dim-panel-openarea" data-categoryid="{{id}}" data-focuskey="suggest-{{id}}">{{name}} <span class="dim-panel__suggestioncount" aria-hidden="true">{{count}}</span><span class="visually-hidden">{{countlabel}}</span></button>{{/jsmode}}
+                            {{^jsmode}}<a class="dim-panel__suggestion" href="{{url}}" data-action="dim-panel-openarea" data-categoryid="{{id}}" data-focuskey="suggest-{{id}}">{{name}} <span class="dim-panel__suggestioncount" aria-hidden="true">{{count}}</span><span class="visually-hidden">{{countlabel}}</span></a>{{/jsmode}}
+                            {{/suggestions}}
+                        </div>
+                        {{/hassuggestions}}
+                    </div>
+                    {{/iszero}}
+                </div>
+                <div class="dim-panel__foot" data-region="dim-panel-foot">
+                    {{^isloading}}
+                    {{#counter}}
+                    <span class="dim-panel__counter" data-region="dim-panel-counter" aria-hidden="true">{{counter}}</span>
+                    {{/counter}}
+                    <div class="dim-panel__footend">
+                        {{#cta.has}}
+                        <a class="dim-panel__cta" href="{{cta.url}}" data-region="dim-panel-cta" data-focuskey="cta">{{cta.label}}<i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                        {{/cta.has}}
+                        {{#seeaslist.has}}
+                        <a class="dim-panel__cta dim-panel__cta--ghost" href="{{seeaslist.url}}" data-region="dim-panel-cta" data-focuskey="cta">{{#str}}category_seeaslist, theme_dimensions{{/str}}<i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                        {{/seeaslist.has}}
+                    </div>
+                    {{/isloading}}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
