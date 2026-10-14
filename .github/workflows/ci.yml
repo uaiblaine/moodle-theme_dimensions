@@ -28,7 +28,7 @@ jobs:
   # This theme is a child of Boost Union, so Boost Union must be checked out
   # alongside it or the theme cannot be installed. The branch pinned here
   # follows $plugin->supported: Boost Union ships one stable branch per Moodle
-  # release, and MOODLE_502_STABLE is the one that matches Moodle 5.2.
+  # release; until it ships MOODLE_503_STABLE, its 5.3 port lives on upgrade-503.
   #
   # local_unlistedcourses and customfield_picture are declared dependencies in
   # version.php: the course renderer calls the first one's access predicates,
@@ -45,14 +45,14 @@ jobs:
   # suite named after the theme, never in the default one
   # (behat_config_util::get_behat_suites()), so without it every Behat job
   # collects no scenarios and still passes.
-  ci-502:
-    name: Moodle 5.02
+  ci-503:
+    name: Moodle 5.03
     uses: moodle-an-hochschulen/moodle-workflows/.github/workflows/moodle-plugin-ci.yml@main
     with:
-      moodle-core-branch: MOODLE_502_STABLE
+      moodle-core-branch: MOODLE_503_STABLE
       behat-suite: "dimensions"
       plugin-dependencies: |
-        moodle-an-hochschulen/moodle-theme_boost_union,MOODLE_502_STABLE
-        uaiblaine/moodle-local_unlistedcourses,main
-        uaiblaine/moodle-customfield_picture,master
-        uaiblaine/moodle-local_page,main
+        moodle-an-hochschulen/moodle-theme_boost_union,upgrade-503
+        uaiblaine/moodle-local_unlistedcourses,MOODLE_503_STABLE
+        uaiblaine/moodle-customfield_picture,support-503
+        uaiblaine/moodle-local_page,support-503
