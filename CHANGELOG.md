@@ -5,6 +5,21 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Family design tokens `--dimensions-*`; crests answered through block_compass's hook** (`2026100505`).
+  - `scss/post.scss` declares the 54 family tokens local_dimensions and block_dimensions will read as
+    `var(--dimensions-x, <their own chain>)`: 33 shared (surfaces, line, ink, accent, the brand, the focus
+    ring, the five tone families, shadow, scrim) and 21 read by local_dimensions alone (motion and the six
+    enrolment states, which are the category showcase's state badges in both modes). Light values on
+    `:root`, `body` and `.modal`; dark values on the same roots under `:root[data-bs-theme="dark"]`. One
+    new design system token, `--dim-ds-shadow-rgb` (the navy's channels). `docs/tokens.md` is the public
+    contract, and `tests/local/family_tokens_test.php` holds the names, the roots, the values and the
+    document against each other.
+  - block_compass asks for the crests of its cards through its own hook, `\block_compass\hook\course_badges`
+    (5.3): `classes/local/hook/block_compass/course_badges.php` answers it from
+    `theme_dimensions_course_badges()`, whose viewer filter is unchanged, and reports a fault instead of
+    throwing. The block stays optional: the registration in `db/hooks.php` is inert without it, and CI
+    installs `block_compass` (`MOODLE_503_STABLE`) only to exercise the callback. Mutation gates
+    `compass_hook_viewer_path` and `compass_hook_catch`.
 - **Landing pages, English identifiers** (`2026100504`). The theme has no install base yet, so
   `install.xml`, `install.php` and the field definitions change in place, with no upgrade step:
   - "hotsite" is "landing" in code and "landing page" in prose: `classes/local/landing/`,
