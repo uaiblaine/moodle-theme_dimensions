@@ -2943,8 +2943,9 @@ a-f, the flows and the mockup); local_unlistedcourses 5a owns the rule. What the
   methods beside it (D2), and a conditional note replaces the closed sentence only where nothing is
   open. enrol_coursecompleted is no fallback widget any more: its hook names the prerequisite to any
   reader, and the resolver asks `access::get_next_action()` for it instead.
-- **`theme_dimensions_course_badges()` is the crests' only public door** (block_compass reads
-  it through `component_callback()`), and it shares `category_card::crests()` with the card, which now
+- **`theme_dimensions_course_badges()` is the crests' only public door** (block_compass asks for
+  it through its `\block_compass\hook\course_badges` hook, answered by
+  `local\hook\block_compass\course_badges::answer()`), and it shares `category_card::crests()` with the card, which now
   draws no crest for a course with no landing page model: badge files survive a cleared model, and the
   route refuses them. It answers only for the courses the badge route would serve the reader,
   `publicfiles::viewer_may_see_many()`, which is `viewer_may_see()` read in bulk: a crest's address and
