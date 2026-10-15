@@ -1,0 +1,118 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/competency_summary
+
+    The summary of a competency, overridden by Dimensions.
+
+    Mirrors tool_lp/competency_summary of Moodle 5.3 (2026100500),
+    admin/tool/lp/templates/competency_summary.mustache. Re-diff it against that file on every core
+    upgrade. It is rendered inside the user competency summaries (as a partial) and alone, as the
+    body of the competency dialogue tool_lp/competencydialogue opens from any
+    data-action="competency-dialogue" link.
+
+    Kept from core: the heading's id competency_link_<competency id>, which template_statistics links
+    to; the class competency-heading, which tool_lp's styles.css spaces; the partials
+    tool_lp/competency_path and tool_lp/related_competencies (with their hooks); every context key,
+    with its escaping (the shortname, the framework's shortname and the description triple-stashed,
+    as core formats them in the exporter; the idnumber, the taxonomy term and the rule double-stashed).
+    Changed: the summary is a dim-comp-summary block; the idnumber is a quiet label beside the name;
+    the framework line is an eyebrow above it; the description is a div, because the exporter hands
+    formatted HTML that already holds paragraphs; the rule is a definition grid.
+
+    Context variables required for this template:
+    * competency - id, shortname, idnumber, description
+    * framework - shortname
+    * taxonomyterm - the framework's term for this level
+    * comppath - the competency_path context, or nothing
+    * showrelatedcompetencies - boolean
+    * relatedcompetencies - array, read by tool_lp/related_competencies
+    * showrule - boolean
+    * rule - outcome, type
+    * showlinks, pluginbaseurl - link the idnumber to the framework's page
+
+    Example context (json):
+    {
+        "competency": {
+            "id": 1,
+            "shortname": "Communicate clearly",
+            "idnumber": "COMM-1",
+            "description": "<p>Explains an idea so that others can act on it.</p>"
+        },
+        "framework": {
+            "shortname": "Professional skills"
+        },
+        "taxonomyterm": "Competency",
+        "comppath": {
+            "framework": {"id": "1", "name": "Professional skills"},
+            "ancestors": [
+                {"id": "2", "name": "Communication"},
+                {"id": "1", "name": "Communicate clearly", "last": true}
+            ]
+        },
+        "showrelatedcompetencies": true,
+        "relatedcompetencies": [
+            {"id": 3, "shortname": "Listen actively", "idnumber": "COMM-2"}
+        ],
+        "showrule": true,
+        "rule": {"outcome": "Complete the competency", "type": "All children are complete"}
+    }
+}}
+<div class="dim-comp-summary">
+    <div class="competency-heading dim-comp-summary__head">
+        {{#framework}}
+            <p class="dim-comp-eyebrow competency-origin">{{{framework.shortname}}} · {{taxonomyterm}}</p>
+        {{/framework}}
+        <h4 id="competency_link_{{competency.id}}" class="dim-comp-summary__title">
+            <span>{{{competency.shortname}}}</span>
+            <small class="dim-comp-idnumber">
+            {{#showlinks}}
+                <a href="{{pluginbaseurl}}/competencies.php?competencyid={{competency.id}}">{{competency.idnumber}}</a>
+            {{/showlinks}}
+            {{^showlinks}}
+                {{competency.idnumber}}
+            {{/showlinks}}
+            </small>
+        </h4>
+    </div>
+
+    {{#competency.description}}
+    <div class="dim-comp-summary__description">{{{competency.description}}}</div>
+    {{/competency.description}}
+    {{#comppath}}
+    <div class="dim-comp-section">
+        <span class="float-start">{{#str}}path, tool_lp{{/str}}&nbsp;</span>{{> tool_lp/competency_path }}
+    </div>
+    {{/comppath}}
+    {{#showrelatedcompetencies}}
+    <div class="dim-comp-section">
+        {{> tool_lp/related_competencies }}
+    </div>
+    {{/showrelatedcompetencies}}
+
+    {{#showrule}}
+    <div class="dim-comp-section">
+        <h5 class="dim-comp-summary__subtitle">{{#str}}competencyrule, tool_lp{{/str}}</h5>
+        <dl class="dim-comp-meta">
+            <dt>{{#str}}outcome, tool_lp{{/str}}</dt>
+            <dd>{{rule.outcome}}</dd>
+            <dt>{{#str}}when, tool_lp{{/str}}</dt>
+            <dd>{{rule.type}}</dd>
+        </dl>
+    </div>
+    {{/showrule}}
+</div>

@@ -1,0 +1,107 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template report_competency/user_course_navigation
+
+    Jump to another participant or filter by an activity on the breakdown report, overridden by Dimensions.
+
+    Mirrors report_competency/user_course_navigation of Moodle 5.3 (2026100500),
+    report/competency/templates/user_course_navigation.mustache. Re-diff it against that file on every
+    core upgrade.
+
+    Kept from core, because report_competency/user_course_navigation and core/form-autocomplete read
+    them: the selects' ids user-nav-<uniqid> and module-nav-<uniqid> and their labels (core's Behat
+    sets the activity filter through its label, "Filter competencies by resource or activity"), every
+    option with its value and selected state, the form's class user-competency-course-navigation
+    (which hides the selects until the autocomplete has drawn), the hidden fields user, id and mod, the
+    group selector (core's own HTML, triple-stashed) and the JavaScript itself. The names keep core's
+    double stash.
+    Changed: the panel is the theme's (dim-comp-nav); the group selector sits in a div rather than a
+    paragraph, because core's single_select markup is a form, which a paragraph cannot hold.
+    The JavaScript is core's statement for statement, with the constructor's parameter capitalised
+    (Nav) and long lines wrapped: core's copy has no example context and was never linted.
+
+    Context variables required for this template:
+    * groupselector - HTML
+    * userid, courseid, moduleid, baseurl - read by the JavaScript and the hidden fields
+    * hasusers - boolean
+    * users - array of id, selected, fullname
+    * hasmodules - boolean
+    * modules - array of id, selected, name
+
+    Example context (json):
+    {
+        "groupselector": "",
+        "userid": 3,
+        "courseid": 2,
+        "moduleid": 0,
+        "baseurl": "https://example.com/report/competency/index.php",
+        "hasusers": true,
+        "users": [
+            {"id": 3, "fullname": "Sam Student", "selected": true},
+            {"id": 4, "fullname": "Robin Learner", "selected": false}
+        ],
+        "hasmodules": true,
+        "modules": [
+            {"id": 0, "name": "All activities", "selected": true},
+            {"id": 5, "name": "Case study", "selected": false}
+        ]
+    }
+}}
+<div class="dim-comp-nav float-end">
+{{#groupselector}}
+<div class="dim-comp-nav__group">{{{groupselector}}}</div>
+{{/groupselector}}
+<form class="user-competency-course-navigation">
+<input type="hidden" name="user" value="{{userid}}">
+<input type="hidden" name="id" value="{{courseid}}">
+<input type="hidden" name="mod" value="{{moduleid}}">
+{{#hasusers}}
+<span class="dim-comp-nav__group">
+<label for="user-nav-{{uniqid}}" class="accesshide">{{#str}}jumptouser, tool_lp{{/str}}</label>
+<select id="user-nav-{{uniqid}}">
+{{#users}}
+<option value="{{id}}" {{#selected}}selected="selected"{{/selected}}>{{fullname}}</option>
+{{/users}}
+</select>
+</span>
+{{/hasusers}}
+
+{{#hasmodules}}
+<span class="dim-comp-nav__group">
+<label for="module-nav-{{uniqid}}" class="accesshide">{{#str}}filterbyactivity, tool_lp{{/str}}</label>
+<select id="module-nav-{{uniqid}}">
+{{#modules}}
+<option value="{{id}}" {{#selected}}selected="selected"{{/selected}}>{{name}}</option>
+{{/modules}}
+</select>
+</span>
+{{/hasmodules}}
+</form>
+</div>
+{{#js}}
+require(['core/form-autocomplete', 'report_competency/user_course_navigation'], function(autocomplete, Nav) {
+    (new Nav('#user-nav-{{uniqid}}', '#module-nav-{{uniqid}}',
+        '{{baseurl}}', {{userid}}, {{courseid}}, {{moduleid}}));
+{{#hasusers}}
+    autocomplete.enhance('#user-nav-{{uniqid}}', false, false, {{# quote }}{{# str }}jumptouser, tool_lp{{/ str }}{{/ quote }});
+{{/hasusers}}
+{{#hasmodules}}
+    autocomplete.enhance('#module-nav-{{uniqid}}', false, false, {{# quote }}{{# str }}filterbyactivity, tool_lp{{/ str }}{{/ quote }});
+{{/hasmodules}}
+});
+{{/js}}

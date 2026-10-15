@@ -1,0 +1,106 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/user_competency_course_navigation
+
+    Jump to another participant or another competency of a course, overridden by Dimensions.
+
+    Mirrors tool_lp/user_competency_course_navigation of Moodle 5.3 (2026100500),
+    admin/tool/lp/templates/user_competency_course_navigation.mustache. Re-diff it against that file on
+    every core upgrade.
+
+    Kept from core, because tool_lp/user_competency_course_navigation and core/form-autocomplete read
+    them: the two selects' ids user-nav-<uniqid> and competency-nav-<uniqid>, their labels and their
+    form-select class, every option with its value and selected state, the form's class
+    user-competency-course-navigation (core's tool_lp stylesheet hides the selects by it until the
+    autocomplete has drawn), the hidden fields userid, competencyid and courseid, the group selector
+    (core's own HTML, triple-stashed) and the JavaScript itself. The names keep core's escaping.
+    Changed: the panel is the theme's (dim-comp-nav); the group selector sits in a div rather than a
+    paragraph, because core's single_select markup is a form, which a paragraph cannot hold; the line
+    break between the two selects is the panel's gap.
+    The JavaScript is core's statement for statement, with the constructor's parameter capitalised
+    (Nav) and long lines wrapped: core's copy has no example context and was never linted.
+
+    Context variables required for this template:
+    * groupselector - HTML
+    * userid, competencyid, courseid, baseurl - read by the JavaScript and the hidden fields
+    * hasusers - boolean
+    * users - array of id, selected, fullname
+    * hascompetencies - boolean
+    * competencies - array of id, selected, shortname, idnumber
+
+    Example context (json):
+    {
+        "groupselector": "",
+        "userid": 3,
+        "competencyid": 1,
+        "courseid": 2,
+        "baseurl": "https://example.com/admin/tool/lp/user_competency_in_course.php",
+        "hasusers": true,
+        "users": [
+            {"id": 3, "fullname": "Sam Student", "selected": true},
+            {"id": 4, "fullname": "Robin Learner", "selected": false}
+        ],
+        "hascompetencies": true,
+        "competencies": [
+            {"id": 1, "shortname": "Communicate clearly", "idnumber": "COMM-1", "selected": true}
+        ]
+    }
+}}
+<div class="dim-comp-nav float-sm-end">
+{{#groupselector}}
+<div class="dim-comp-nav__group">{{{groupselector}}}</div>
+{{/groupselector}}
+<form class="user-competency-course-navigation">
+<input type="hidden" name="userid" value="{{userid}}">
+<input type="hidden" name="competencyid" value="{{competencyid}}">
+<input type="hidden" name="courseid" value="{{courseid}}">
+{{#hasusers}}
+<span class="dim-comp-nav__group">
+<label for="user-nav-{{uniqid}}" class="accesshide">{{#str}}jumptouser, tool_lp{{/str}}</label>
+<select id="user-nav-{{uniqid}}" class="form-select">
+{{#users}}
+<option value="{{id}}" {{#selected}}selected="selected"{{/selected}}>{{fullname}}</option>
+{{/users}}
+</select>
+</span>
+{{/hasusers}}
+{{#hascompetencies}}
+<span class="dim-comp-nav__group">
+<label for="competency-nav-{{uniqid}}" class="accesshide">{{#str}}jumptocompetency, tool_lp{{/str}}</label>
+<select id="competency-nav-{{uniqid}}" class="form-select">
+{{#competencies}}
+<option value="{{id}}" {{#selected}}selected="selected"{{/selected}}>{{{shortname}}} {{idnumber}}</option>
+{{/competencies}}
+</select>
+</span>
+{{/hascompetencies}}
+</form>
+</div>
+{{#js}}
+require(['core/form-autocomplete', 'tool_lp/user_competency_course_navigation'], function(autocomplete, Nav) {
+    (new Nav('#user-nav-{{uniqid}}', '#competency-nav-{{uniqid}}',
+        '{{baseurl}}', {{userid}}, {{competencyid}}, {{courseid}}));
+{{#hasusers}}
+    autocomplete.enhance('#user-nav-{{uniqid}}', false, false, {{# quote }}{{# str }}jumptouser, tool_lp{{/ str }}{{/ quote }});
+{{/hasusers}}
+{{#hascompetencies}}
+    autocomplete.enhance('#competency-nav-{{uniqid}}', false, false, {{# quote }}{{# str }}jumptocompetency, tool_lp{{/ str }}{{/ quote }});
+{{/hascompetencies}}
+
+});
+{{/js}}

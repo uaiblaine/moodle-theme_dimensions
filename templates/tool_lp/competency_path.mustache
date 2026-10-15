@@ -1,0 +1,89 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/competency_path
+
+    A competency's path in its framework, as a breadcrumb, overridden by Dimensions.
+
+    Mirrors tool_lp/competency_path of Moodle 5.3 (2026100500), admin/tool/lp/templates/competency_path.mustache.
+    Re-diff it against that file on every core upgrade. Core's plan page and course competencies page
+    include it after a floated "Path:" label of their own, so it prints no label of its own.
+
+    Kept from core: the nav element and its id competency-path-<uniqid>; the links to competencies.php
+    under showlinks and the plain names otherwise; the names triple-stashed, as the exporter formats
+    them; the JavaScript that arms tool_lp/competencydialogue.
+    Changed: the trail is an ordered list (dim-comp-path), the separator is drawn by the stylesheet,
+    the nav is named by the "Path:" string, and the last ancestor, the competency itself, is marked
+    aria-current.
+
+    Classes required for JS:
+    * none (tool_lp/competencydialogue delegates on the body)
+
+    Context variables required for this template:
+    * framework - id, name
+    * ancestors - array of id, name, last
+    * showlinks, pluginbaseurl, pagecontextid
+
+    Example context (json):
+    {
+        "framework": {
+            "id": "1",
+            "name": "Professional skills"
+        },
+        "ancestors": [
+            {
+                "id": "2",
+                "name": "Communication"
+            },
+            {
+                "id": "1",
+                "name": "Communicate clearly",
+                "last": true
+            }
+        ],
+        "showlinks": true,
+        "pluginbaseurl": "https://example.com/admin/tool/lp",
+        "pagecontextid": 1
+    }
+}}
+<nav id="competency-path-{{uniqid}}" class="dim-comp-path" aria-label="{{#str}}path, tool_lp{{/str}}">
+    <ol class="dim-comp-path__list">
+        <li class="dim-comp-path__item">
+            {{#showlinks}}
+            <a href="{{pluginbaseurl}}/competencies.php?competencyframeworkid={{framework.id}}&amp;pagecontextid={{pagecontextid}}">{{{framework.name}}}</a>
+            {{/showlinks}}
+            {{^showlinks}}
+            {{{framework.name}}}
+            {{/showlinks}}
+        </li>
+        {{#ancestors}}
+        <li class="dim-comp-path__item"{{#last}} aria-current="location"{{/last}}>
+            {{#showlinks}}
+            <a href="{{pluginbaseurl}}/competencies.php?competencyid={{id}}">{{{name}}}</a>
+            {{/showlinks}}
+            {{^showlinks}}
+            {{{name}}}
+            {{/showlinks}}
+        </li>
+        {{/ancestors}}
+    </ol>
+</nav>
+{{#js}}
+require(['tool_lp/competencydialogue'], function(Compdialogue) {
+    Compdialogue.init();
+});
+{{/js}}
