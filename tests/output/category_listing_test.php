@@ -1587,9 +1587,10 @@ final class category_listing_test extends \advanced_testcase {
             'A directory entry carries exactly these keys, and no count among them.'
         );
         $this->assertSame(
-            '--dim-card-band: ' . branding::DEFAULT_BG . '; --dim-card-ink: ' . branding::DEFAULT_INK . '; --dim-mark-a: 0.20;',
+            '--dim-card-band: ' . branding::DEFAULT_BG . '; --dim-card-ink: ' . branding::DEFAULT_INK . '; --dim-mark-a: 0.09;',
             $entry['style'],
-            'The default pair, and the folder watermark of a category with neither a still nor a crest.'
+            'The default pair, and the folder watermark of a category with neither a still nor a crest: Boost\'s '
+                . 'blue has room for a mark at .09 under white text, where a darker band keeps the whole .20.'
         );
         $this->assertFalse($entry['hasimage']);
         $this->assertTrue($entry['markfolder']);

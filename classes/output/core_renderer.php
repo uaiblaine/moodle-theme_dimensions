@@ -249,7 +249,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Make the navbar the institutional navy, through Boost Union's own mechanism.
+     * Make the navbar dark in the brand colour (bg-primary), through Boost Union's own mechanism.
      *
      * Boost Union's navbar include writes these two keys from its navbarcolor setting and from a
      * flavour's look_navbarcolor. Setting them here rather than recolouring the navbar with CSS is

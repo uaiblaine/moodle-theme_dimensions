@@ -107,10 +107,9 @@ function theme_dimensions_get_pre_scss($theme) {
     // And add this theme's pre SCSS file to the stack.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/pre.scss');
 
-    // Lastly, the parts which depend on this theme's settings. They belong here and not in the
-    // extra SCSS: $primary has to be assigned before Bootstrap is compiled, and an @import rule is
-    // only honoured by the browser when it precedes every other rule in the stylesheet.
-    $scss .= theme_dimensions_get_settings_scss();
+    // No brand colour is assigned here: $primary is Boost Union's (its brandcolor setting and a
+    // flavour's look_brandcolor) and core's otherwise. A settings-driven assignment would belong in
+    // this callback and not in the extra SCSS, which runs after Bootstrap has been compiled.
 
     return $scss;
 }
@@ -169,45 +168,6 @@ function theme_dimensions_get_settings_extra_scss() {
     }
 }
 ';
-}
-
-/**
- * Compose the SCSS which depends on this theme's settings.
- *
- * Kept out of scss/pre.scss because that file is static. Called from the pre SCSS callback: both
- * blocks below have to reach the compiler before Bootstrap does.
- *
- * @return string
- */
-function theme_dimensions_get_settings_scss() {
-    global $CFG, $themeboostunionappliedflavour;
-
-    $scss = '';
-
-    // The institutional navy as the brand colour, but only as a default. Boost Union maps its own
-    // brandcolor setting - and a flavour's look_brandcolor - onto $primary in its pre SCSS, which
-    // runs before this file; assigning unconditionally here would overwrite whatever the site or
-    // the flavour chose.
-    //
-    // The flavour is read from the global Boost Union's flavours/styles.php leaves behind, which is
-    // how Boost Union's own pre SCSS reads it. theme_boost_union_get_flavour_which_applies() is the
-    // wrong call here: it reads $PAGE->url, and the theme CSS is also built from the command line
-    // (Behat and PHPUnit init) where no page has set one, so Moodle emits a debugging notice from
-    // inside the SCSS compiler, which fails a moodle-plugin-ci install.
-    $brandcolor = get_config('theme_boost_union', 'brandcolor');
-    $flavourid = isset($themeboostunionappliedflavour) ? $themeboostunionappliedflavour : null;
-    if ($flavourid != null) {
-        require_once($CFG->dirroot . '/theme/boost_union/flavours/flavourslib.php');
-        $flavourbrandcolor = theme_boost_union_get_flavour_config_item_for_flavourid($flavourid, 'look_brandcolor');
-        if (!empty($flavourbrandcolor)) {
-            $brandcolor = $flavourbrandcolor;
-        }
-    }
-    if (empty($brandcolor)) {
-        $scss .= '$primary: #070093;' . "\n";
-    }
-
-    return $scss;
 }
 
 /**

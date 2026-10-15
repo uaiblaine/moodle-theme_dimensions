@@ -167,7 +167,7 @@ plugin's own rules let the reader see them.
 |---|---|
 | General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. |
 | Login page | The login page switch, the institutional panel's copy and the guest home page. |
-| Identity | The navbar style: the theme's navy with a 3px signature band, or *Leave it to Boost Union*. |
+| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
 

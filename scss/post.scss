@@ -179,7 +179,7 @@ textarea:focus-visible,
    scope there.
 
    Nothing here names a text colour by hand. The bar underneath is not one colour: this theme
-   fills in the institutional navy by default, Boost Union ships navbarcolor as bg-body, an
+   fills in a dark bar in the brand colour by default, Boost Union ships navbarcolor as bg-body, an
    administrator may set it back and a flavour may set it per organisation. So the type takes the
    brand colour the navbar's own Bootstrap colour mode already resolved, and only the hairline and
    the hover tint are chosen - through the two custom properties below, which the dark mode sets

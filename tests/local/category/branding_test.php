@@ -1915,8 +1915,8 @@ final class branding_test extends \advanced_testcase {
      *
      * The editor no longer offers them and branding no longer names them. They stay here for two
      * reasons: they are the fixed set the overlay measurements below are taken against, which
-     * must not move with the editor, and the navy one is the default pair. Nothing in production
-     * reads this table.
+     * must not move with the editor, and the default pair is measured beside them. Nothing in
+     * production reads this table.
      */
     private const REFERENCE_COLOURS = [
         'navy' => ['bg' => '#070093', 'ink' => '#ffffff'],
@@ -1926,11 +1926,13 @@ final class branding_test extends \advanced_testcase {
     ];
 
     /**
-     * The reference colours are in the one spelling, all over the floor, and the navy one is the default.
+     * The reference colours and the default pair are in the one spelling and all over the floor.
      *
-     * Nothing else holds this table to the colours the measurements below are about.
+     * Nothing else holds this table to the colours the measurements below are about. The default
+     * pair is Boost's default primary with white ink, no institution's colour: a site that never
+     * branded a category gets the same blue Boost paints its own primary in.
      */
-    public function test_the_reference_colours_are_audited_and_navy_is_the_default(): void {
+    public function test_the_reference_colours_and_the_default_pair_are_audited(): void {
         foreach (self::REFERENCE_COLOURS as $key => $pair) {
             $this->assertSame($pair['bg'], branding::hex($pair['bg']), 'Stored in the one spelling: ' . $key);
             $this->assertSame($pair['ink'], branding::hex($pair['ink']));
@@ -1940,10 +1942,14 @@ final class branding_test extends \advanced_testcase {
                 'An audited colour reads under the floor: ' . $key
             );
         }
-        $this->assertSame(
-            self::REFERENCE_COLOURS['navy']['bg'],
-            branding::DEFAULT_BG,
-            'The default pair is the navy one.'
+        $this->assertSame('#0f6cbf', branding::DEFAULT_BG, 'The default band is Boost\'s default primary.');
+        $this->assertSame('#ffffff', branding::DEFAULT_INK);
+        $this->assertSame(branding::DEFAULT_BG, branding::hex(branding::DEFAULT_BG), 'Stored in the one spelling.');
+        $this->assertEqualsWithDelta(5.36, branding::contrast(branding::DEFAULT_BG, branding::DEFAULT_INK), 0.01);
+        $this->assertGreaterThanOrEqual(
+            branding::FLOOR,
+            branding::contrast(branding::DEFAULT_BG, branding::DEFAULT_INK),
+            'The default pair reads under the floor.'
         );
     }
 
@@ -2001,6 +2007,19 @@ final class branding_test extends \advanced_testcase {
                 . 'the four transparent ones, where no colour is painted at all, and three at the '
                 . 'lightest overlay; none at the default of 78%.'
         );
+        /* The default pair is lighter than every reference colour, so the photograph shows through
+           it more: over a white picture it reads under the floor at every overlay but 90%. The
+           image layout is a manager's choice and the default layout is the solid band, where the
+           pair reads 5.36:1; a manager who picks a photograph picks the colour over it too. */
+        $defaults = [0 => 1.00, 60 => 2.56, 78 => 3.57, 90 => 4.44];
+        foreach ($defaults as $overlay => $expected) {
+            $this->assertEqualsWithDelta(
+                $expected,
+                branding::contrast(self::composite(branding::DEFAULT_BG, $overlay, $white), branding::DEFAULT_INK),
+                0.01,
+                'The default pair at ' . $overlay . '% over white'
+            );
+        }
         foreach (self::REFERENCE_COLOURS as $key => $pair) {
             $atdefault = branding::contrast(
                 self::composite($pair['bg'], branding::DEFAULT_OVERLAY, $white),

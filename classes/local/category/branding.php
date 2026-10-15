@@ -35,8 +35,8 @@ use theme_dimensions\local\hotsitefields;
  * The hero of a category: its layout, colours, overlay, tagline, public text and background image.
  *
  * One row per branded category in {theme_dimensions_cat}, and the file areas below in
- * the category's own context. A category without a row reads the defaults: the solid navy
- * band and no tagline. usermodified is the id of the user who last saved the row, kept as an
+ * the category's own context. A category without a row reads the defaults: the solid band
+ * in Boost's default primary and no tagline. usermodified is the id of the user who last saved the row, kept as an
  * authorship stamp and declared in the privacy provider; the table holds nothing about the people
  * who read the page.
  *
@@ -178,8 +178,13 @@ final class branding {
     /** @var string The layout of a category nobody branded. */
     public const DEFAULT_LAYOUT = self::LAYOUT_SOLID;
 
-    /** @var string The band colour of a category nobody branded: the institutional navy. */
-    public const DEFAULT_BG = '#070093';
+    /**
+     * @var string The band colour of a category nobody branded: Boost's default primary.
+     *
+     * A hex and not var(--bs-primary), because the stops, the watermark's alpha and the contrast
+     * audit are computed from its channels here. White ink on it reads 5.36:1, over {@see FLOOR}.
+     */
+    public const DEFAULT_BG = '#0f6cbf';
 
     /** @var string The ink of a category nobody branded. */
     public const DEFAULT_INK = '#ffffff';
@@ -689,7 +694,7 @@ final class branding {
             $payload[$key] = match ($key) {
                 /* No file area of its own, so no image of its own - but the image layout,
                    which is what makes the hero paint the site-wide fallback behind the
-                   default navy. The hero falls back to the solid band by itself when no
+                   default band colour. The hero falls back to the solid band by itself when no
                    fallback has been uploaded ({@see fallback_url()} answers null). */
                 'layout' => self::LAYOUT_IMAGE,
                 'image' => null,

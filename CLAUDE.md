@@ -451,20 +451,21 @@ already shaped decisions here:
   on navy, and the mobile toggler stayed dark. Shipped and caught in review.
   The fix is Boost Union's own mechanism: this theme's renderer writes
   `navbarcolorclasses = 'bg-primary'` and `databstheme = 'dark'` into the layout context —
-  the same two keys `layout/includes/navbar.php` writes from the navbarcolor setting — and
-  `$primary` defaults to the institutional navy. `data-bs-theme="dark"` is a *complete*
+  the same two keys `layout/includes/navbar.php` writes from the navbarcolor setting — so the bar
+  is dark in whatever `$primary` is: Boost Union's `brandcolor`, a flavour's `look_brandcolor`, or
+  Boost's own default blue. The theme assigns no `$primary` of its own (it did, the institutional
+  navy, until 2026100503). `data-bs-theme="dark"` is a *complete*
   Bootstrap colour mode, so everything nested gets a coherent palette, including the
   switch's own `--bs-form-switch-bg` (whose value is an inline SVG we could not have written
   ourselves: Moodle's stylelint forbids data URIs in CSS).
 - **Only the untouched default is filled in.** `apply_navbar_style()` returns early unless the
   context still says `bg-body` with no theme, so an admin's navbarcolor choice and a
-  flavour's `look_navbarcolor` both stand. Same shape as the `$primary` default, which checks
-  `brandcolor` *and* the applicable flavour's `look_brandcolor` before assigning.
+  flavour's `look_navbarcolor` both stand.
 - **The signature band is a `::after`, not a `border-bottom`.** Boost Union sets
   `border-bottom: none` on a dark navbar with a selector a child theme should not be
   outbidding. A pseudo-element is not in that argument at all.
-- **Settings-driven SCSS goes in the PRE callback, not the extra one.** `$primary` has to be
-  assigned before Bootstrap compiles, and an `@import` rule is only honoured when it precedes
+- **Settings-driven SCSS goes in the PRE callback, not the extra one.** A Bootstrap variable such
+  as `$primary` has to be assigned before Bootstrap compiles, and an `@import` rule is only honoured when it precedes
   every other rule in the stylesheet — the extra SCSS is appended at the end, where the
   browser ignores it.
 - **The name is shown exactly once, and it moves with the breakpoint.** From `md` up the
