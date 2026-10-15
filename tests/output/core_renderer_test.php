@@ -742,7 +742,7 @@ final class core_renderer_test extends \advanced_testcase {
         $category = $generator->create_category(['name' => 'Showcase Category']);
         $generator->create_course(['category' => $category->id]);
         $this->setAdminUser();
-        branding::save((int) $category->id, (object) ['chamada' => 'A tagline for the header']);
+        branding::save((int) $category->id, (object) ['tagline' => 'A tagline for the header']);
 
         $html = $this->category_header((int) $category->id);
 

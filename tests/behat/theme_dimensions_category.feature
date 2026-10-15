@@ -777,7 +777,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     Given I log in as "admin"
     And I am on the "PUBCAT" "theme_dimensions > Category appearance" page
     And I set the field "Public description" to "Cursos e eventos abertos ao público"
-    And I set the field "Tagline" to "Uma chamada para quem já está na página"
+    And I set the field "Tagline" to "Uma tagline para quem já está na página"
     And I press "Save changes"
     And I log out
     And the following config values are set as admin:
@@ -786,8 +786,8 @@ Feature: The category showcase lists what a person may discover, and its filters
     Then "//meta[@property='og:description'][@content='Cursos e eventos abertos ao público']" "xpath_element" should exist
     # The tagline is written for a reader who is already on the page and does not feed the
     # preview: the public description is the only source of og:description.
-    And "//meta[@property='og:description'][contains(@content, 'Uma chamada')]" "xpath_element" should not exist
-    And I should see "Uma chamada para quem já está na página" in the ".dim-hero" "css_element"
+    And "//meta[@property='og:description'][contains(@content, 'Uma tagline')]" "xpath_element" should not exist
+    And I should see "Uma tagline para quem já está na página" in the ".dim-hero" "css_element"
 
   Scenario: A visitor asking for the public page of a listed category gets the login form
     Given the following config values are set as admin:

@@ -204,12 +204,12 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame(branding::DEFAULT_BG, $row->bgcolour);
         $this->assertSame(branding::DEFAULT_INK, $row->inkcolour);
         $this->assertSame(branding::DEFAULT_OVERLAY, $row->overlay);
-        $this->assertSame('', $row->chamada);
+        $this->assertSame('', $row->tagline);
         $this->assertSame('', $row->publicsummary);
 
         $payload = branding::for_category($categoryid);
         $this->assertNull($payload['image']);
-        $this->assertSame('', $payload['chamada']);
+        $this->assertSame('', $payload['tagline']);
         $this->assertSame('', $payload['publicsummary']);
         $this->assertSame(branding::DEFAULT_LAYOUT, $payload['layout']);
     }
@@ -229,7 +229,7 @@ final class branding_test extends \advanced_testcase {
             'bgcolour' => '#12484F',
             'inkcolour' => '#FFF',
             'overlay' => 60,
-            'chamada' => '  Formação continuada & eventos  ',
+            'tagline' => '  Formação continuada & eventos  ',
             'publicsummary' => '  Cursos e eventos abertos à organização  ',
             'publicdescription_editor' => ['text' => '<p>Público</p>', 'format' => FORMAT_HTML],
         ]);
@@ -241,7 +241,7 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame((int) $row->id, (int) $events[0]->objectid);
         $this->assertSame($categoryid, (int) $events[0]->contextinstanceid);
         $this->assertStringContainsString('categoryhero.php?id=' . $categoryid, $events[0]->get_url()->out(false));
-        $this->assertSame('Formação continuada & eventos', $row->chamada, 'Trimmed, in the plain spelling.');
+        $this->assertSame('Formação continuada & eventos', $row->tagline, 'Trimmed, in the plain spelling.');
         $this->assertSame(branding::LAYOUT_IMAGE, $row->layout);
         $this->assertSame('#12484f', $row->bgcolour, 'Stored in the one spelling, whatever case was typed.');
         $this->assertSame('#ffffff', $row->inkcolour, 'The three-digit form is expanded on the way in.');
@@ -260,7 +260,7 @@ final class branding_test extends \advanced_testcase {
             'bgcolour' => '#3d2a5e',
             'inkcolour' => '#ffffff',
             'overlay' => 90,
-            'chamada' => 'Outra',
+            'tagline' => 'Outra',
         ]);
         $this->assertSame((int) $row->id, (int) $again->id);
         $this->assertSame(1, $DB->count_records(branding::TABLE, ['categoryid' => $categoryid]));
@@ -298,7 +298,7 @@ final class branding_test extends \advanced_testcase {
                 [['overlay' => ''], 'Unknown hero overlay'],
                 [['overlay' => 'transparent'], 'Unknown hero overlay'],
                 [['overlay' => '78.5'], 'Unknown hero overlay'],
-                [['chamada' => str_repeat('a', branding::CHAMADA_MAXLENGTH + 1)], 'tagline is longer'],
+                [['tagline' => str_repeat('a', branding::TAGLINE_MAXLENGTH + 1)], 'tagline is longer'],
                 [
                     ['publicsummary' => str_repeat('a', branding::PUBLICSUMMARY_MAXLENGTH + 1)],
                     'public description is longer',
@@ -357,7 +357,7 @@ final class branding_test extends \advanced_testcase {
             'bgcolour' => '#12345',
             'inkcolour' => 'white',
             'overlay' => 45,
-            'chamada' => 'Kept',
+            'tagline' => 'Kept',
             'publicdescriptionformat' => FORMAT_HTML,
         ]);
 
@@ -366,7 +366,7 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame(branding::DEFAULT_BG, $row->bgcolour);
         $this->assertSame(branding::DEFAULT_INK, $row->inkcolour);
         $this->assertSame(branding::DEFAULT_OVERLAY, $row->overlay);
-        $this->assertSame('Kept', $row->chamada);
+        $this->assertSame('Kept', $row->tagline);
 
         /* And again on the way out: the cached payload is what the hero's inline style is built
            from, so a row a migration or a direct write left poisoned must read as the default
@@ -408,8 +408,8 @@ final class branding_test extends \advanced_testcase {
 
         // A save drops the entry: the next read sees the change.
         $this->setAdminUser();
-        branding::save($categoryid, (object) ['chamada' => 'Nova']);
-        $this->assertSame('Nova', branding::for_category($categoryid)['chamada']);
+        branding::save($categoryid, (object) ['tagline' => 'Nova']);
+        $this->assertSame('Nova', branding::for_category($categoryid)['tagline']);
     }
 
     /**
@@ -473,7 +473,7 @@ final class branding_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         $categoryid = (int) self::getDataGenerator()->create_category()->id;
-        branding::save($categoryid, (object) ['chamada' => 'Adeus']);
+        branding::save($categoryid, (object) ['tagline' => 'Adeus']);
         self::store($categoryid, 'hero.png', base64_decode(self::PNG));
         $contextid = \core\context\coursecat::instance($categoryid)->id;
         $fs = get_file_storage();
@@ -487,7 +487,7 @@ final class branding_test extends \advanced_testcase {
             $fs->get_area_files($contextid, branding::COMPONENT, branding::AREA_BADGES[0], 0, 'id', false),
             'Precondition: there is a crest to leave behind.'
         );
-        $this->assertSame('Adeus', branding::for_category($categoryid)['chamada'], 'Precondition: the cache is warm.');
+        $this->assertSame('Adeus', branding::for_category($categoryid)['tagline'], 'Precondition: the cache is warm.');
         $this->assertIsArray($cache->get($categoryid));
 
         \core_course_category::get($categoryid)->delete_full(false);
@@ -901,7 +901,7 @@ final class branding_test extends \advanced_testcase {
 
         // A save that carries no badge draft at all leaves the areas exactly as they were: a
         // zero draft id is "no element was submitted", never "empty the area".
-        branding::save($categoryid, (object) ['chamada' => 'Outra']);
+        branding::save($categoryid, (object) ['tagline' => 'Outra']);
         $this->assertCount(2, branding::badges($categoryid));
 
         // And a file manager whose file was removed posts a real, empty draft: that empties it.
@@ -1004,8 +1004,8 @@ final class branding_test extends \advanced_testcase {
 
         // Zero everywhere, plus a value the save really does write, so the save is known to have run.
         $zeroes = array_fill_keys(array_keys(branding::single_file_areas()), 0);
-        branding::save($categoryid, (object) ($zeroes + ['chamada' => 'Depois do zero']));
-        $this->assertSame('Depois do zero', branding::record($categoryid)->chamada, 'Control: that save wrote nothing.');
+        branding::save($categoryid, (object) ($zeroes + ['tagline' => 'Depois do zero']));
+        $this->assertSame('Depois do zero', branding::record($categoryid)->tagline, 'Control: that save wrote nothing.');
         foreach (array_keys(branding::single_file_areas()) as $area) {
             $this->assertNotNull(branding::image($categoryid, $area), $area . ' was emptied by a zero draft id.');
         }
@@ -1480,7 +1480,7 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame('video/mp4', $payload['covervideo']['mimetype']);
 
         // A save carrying no cover draft at all leaves both areas exactly as they were.
-        branding::save($categoryid, (object) ['chamada' => 'Outra']);
+        branding::save($categoryid, (object) ['tagline' => 'Outra']);
         $this->assertNotNull(branding::image($categoryid, branding::AREA_COVER));
         $this->assertNotNull(branding::image($categoryid, branding::AREA_COVERVIDEO));
 

@@ -52,7 +52,7 @@ final class categoryhero_test extends \advanced_testcase {
             'bgcolour' => '#12484f',
             'inkcolour' => '#ffffff',
             'overlay' => 78,
-            'chamada' => 'Uma frase',
+            'tagline' => 'Uma frase',
             'publicsummary' => 'Uma descrição pública curta',
             'publicdescription_editor' => ['text' => '<p>Público</p>', 'format' => FORMAT_HTML],
             'description_editor' => ['text' => '<p>Interna</p>', 'format' => FORMAT_HTML, 'itemid' => 0],
@@ -115,7 +115,7 @@ final class categoryhero_test extends \advanced_testcase {
             [
                 'appearance' => 'header:appearanceheader',
                 'lastcrest' => 'filemanager:' . branding::AREA_BADGES[2],
-                'chamada' => 'text:chamada',
+                'tagline' => 'text:tagline',
                 'colours' => 'header:coloursheader',
                 'bg' => 'text:bgcolour',
                 'ink' => 'text:inkcolour',
@@ -136,12 +136,12 @@ final class categoryhero_test extends \advanced_testcase {
         );
         $this->assertGreaterThan(
             $positions['appearance'],
-            $positions['chamada'],
+            $positions['tagline'],
             'The tagline is no longer in the appearance section.'
         );
         $this->assertLessThan(
             $positions['colours'],
-            $positions['chamada'],
+            $positions['tagline'],
             'The tagline was declared after the colours header, so it is inside the colours section.'
         );
         foreach (['bg', 'ink', 'overlay', 'preview'] as $inside) {
@@ -209,7 +209,7 @@ final class categoryhero_test extends \advanced_testcase {
         $this->assertSame('#ffffff', $data->inkcolour);
         $this->assertSame(branding::LAYOUT_SOLID, $data->layout);
         $this->assertSame(78, (int) $data->overlay);
-        $this->assertSame('Uma frase', $data->chamada);
+        $this->assertSame('Uma frase', $data->tagline);
         $this->assertSame('Uma descrição pública curta', $data->publicsummary);
         $this->assertSame('<p>Público</p>', $data->publicdescription_editor['text']);
         $this->assertSame($categoryid, (int) $data->id);
@@ -230,7 +230,7 @@ final class categoryhero_test extends \advanced_testcase {
                 ['inkcolour' => 'rgb(1,2,3)'],
                 ['layout' => 'banner'],
                 ['overlay' => 45],
-                ['chamada' => str_repeat('a', branding::CHAMADA_MAXLENGTH + 1)],
+                ['tagline' => str_repeat('a', branding::TAGLINE_MAXLENGTH + 1)],
                 ['publicsummary' => str_repeat('a', branding::PUBLICSUMMARY_MAXLENGTH + 1)],
             ] as $bad
         ) {
@@ -432,12 +432,12 @@ final class categoryhero_test extends \advanced_testcase {
             'The pair preview is not inside the section the grid places.'
         );
         $this->assertStringNotContainsString(
-            'name="chamada"',
+            'name="tagline"',
             $fieldset,
             'The tagline is inside the colours section, where the grid would put it beside the panel.'
         );
         $this->assertStringContainsString(
-            'name="chamada"',
+            'name="tagline"',
             self::fieldset($html, 'id_appearanceheader'),
             'The tagline left the appearance section altogether.'
         );
@@ -467,7 +467,7 @@ final class categoryhero_test extends \advanced_testcase {
             'bgcolour' => '#12484f',
             'inkcolour' => '#ffffff',
             'overlay' => 78,
-            'chamada' => '',
+            'tagline' => '',
             'publicsummary' => '',
             'publicdescription_editor' => ['text' => '', 'format' => FORMAT_HTML],
         ]);

@@ -53,7 +53,7 @@ final class categoryhero_defaults_test extends \advanced_testcase {
             'bgcolour' => '#12484f',
             'inkcolour' => '#ffffff',
             'overlay' => 78,
-            'chamada' => '',
+            'tagline' => '',
             'cardsummary' => 'Texto do cartão',
             'defaultsort' => '',
             'publicsummary' => '',

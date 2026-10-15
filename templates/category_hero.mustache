@@ -74,8 +74,8 @@
         "haspencil": true,
         "pencil": {"url": "https://example.com/theme/dimensions/categoryhero.php?id=7", "label": "Personalizar categoria"},
         "compact": false,
-        "chamada": "Formação continuada, cursos técnicos e eventos da organização.",
-        "haschamada": true,
+        "tagline": "Formação continuada, cursos técnicos e eventos da organização.",
+        "hastagline": true,
         "descriptionhtml": "<p>Esta é a área da organização Alfa na plataforma.</p>",
         "hasdescription": true,
         "stats": [
@@ -142,9 +142,9 @@
                     {{/haspencil}}
                 </div>
                 {{^compact}}
-                {{#haschamada}}
-                <p class="dim-hero__chamada">{{chamada}}</p>
-                {{/haschamada}}
+                {{#hastagline}}
+                <p class="dim-hero__tagline">{{tagline}}</p>
+                {{/hastagline}}
                 {{#hasdescription}}
                 <div class="dim-hero__desc">{{{descriptionhtml}}}</div>
                 {{/hasdescription}}

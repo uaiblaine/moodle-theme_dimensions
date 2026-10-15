@@ -120,13 +120,13 @@ final class category_hero_test extends \advanced_testcase {
         $generator->enrol_user($insider->id, $hidden->id);
         $generator->enrol_user($insider->id, $one->id);
         $this->setAdminUser();
-        branding::save($categoryid, (object) ['chamada' => 'Formação continuada']);
+        branding::save($categoryid, (object) ['tagline' => 'Formação continuada']);
 
         $this->become($viewer);
         $context = $this->export($this->hero($categoryid, [], false, '<p>Descrição</p>'));
         $this->assertSame('Brigada & Resgate', $context->title, 'Plain: the template escapes.');
-        $this->assertSame('Formação continuada', $context->chamada);
-        $this->assertTrue($context->haschamada);
+        $this->assertSame('Formação continuada', $context->tagline);
+        $this->assertTrue($context->hastagline);
         $this->assertSame('<p>Descrição</p>', $context->descriptionhtml);
         $this->assertTrue($context->hasdescription);
         $this->assertSame([2, 1], array_column($context->stats, 'value'), 'Two visible courses; enrolled in one.');
@@ -141,7 +141,7 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertSame([3, 1], array_column($context->stats, 'value'));
         $hiddenlabel = get_string('categoryhero_stat_hidden', 'theme_dimensions');
         $this->assertSame($hiddenlabel, $context->stats[1]['label']);
-        $this->assertTrue($context->haschamada);
+        $this->assertTrue($context->hastagline);
 
         // A student enrolled in the hidden course and in one visible course is not admitted to the
         // hidden one, as in core: the enrolment does not count it, and "hidden from students" is a

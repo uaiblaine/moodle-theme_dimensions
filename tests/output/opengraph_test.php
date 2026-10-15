@@ -355,7 +355,7 @@ final class opengraph_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$categoryid, $category, $url] = $this->category('Brigada');
         branding::save($categoryid, (object) [
-            'chamada' => 'Formação continuada e eventos',
+            'tagline' => 'Formação continuada e eventos',
             'publicdescription_editor' => [
                 'text' => '<p>Primeiro parágrafo da página pública.</p><p>Segundo.</p>',
                 'format' => FORMAT_HTML,
@@ -363,7 +363,7 @@ final class opengraph_test extends \advanced_testcase {
         ]);
         $branding = branding::for_category($categoryid);
         // The preconditions: both of the retired sources really do hold a value here.
-        $this->assertSame('Formação continuada e eventos', $branding['chamada']);
+        $this->assertSame('Formação continuada e eventos', $branding['tagline']);
         $this->assertStringContainsString('Primeiro parágrafo', $branding['publicdescription']);
         $this->assertSame('', $branding['publicsummary']);
 

@@ -147,17 +147,17 @@ class categoryhero extends \moodleform {
             'client'
         );
 
-        $mform->addElement('text', 'chamada', get_string('categoryhero_chamada', self::COMPONENT), [
+        $mform->addElement('text', 'tagline', get_string('categoryhero_tagline', self::COMPONENT), [
             'size' => 64,
-            'maxlength' => branding::CHAMADA_MAXLENGTH,
+            'maxlength' => branding::TAGLINE_MAXLENGTH,
         ]);
-        $mform->addHelpButton('chamada', 'categoryhero_chamada', self::COMPONENT);
-        $mform->setType('chamada', PARAM_TEXT);
+        $mform->addHelpButton('tagline', 'categoryhero_tagline', self::COMPONENT);
+        $mform->setType('tagline', PARAM_TEXT);
         $mform->addRule(
-            'chamada',
-            get_string('maximumchars', '', branding::CHAMADA_MAXLENGTH),
+            'tagline',
+            get_string('maximumchars', '', branding::TAGLINE_MAXLENGTH),
             'maxlength',
-            branding::CHAMADA_MAXLENGTH,
+            branding::TAGLINE_MAXLENGTH,
             'client'
         );
 
@@ -322,8 +322,8 @@ class categoryhero extends \moodleform {
         if ($videoerror !== null) {
             $errors[branding::AREA_COVERVIDEO] = $videoerror;
         }
-        if (\core_text::strlen(trim((string) ($data['chamada'] ?? ''))) > branding::CHAMADA_MAXLENGTH) {
-            $errors['chamada'] = get_string('maximumchars', '', branding::CHAMADA_MAXLENGTH);
+        if (\core_text::strlen(trim((string) ($data['tagline'] ?? ''))) > branding::TAGLINE_MAXLENGTH) {
+            $errors['tagline'] = get_string('maximumchars', '', branding::TAGLINE_MAXLENGTH);
         }
         if (\core_text::strlen(trim((string) ($data['cardsummary'] ?? ''))) > branding::CARDSUMMARY_MAXLENGTH) {
             $errors['cardsummary'] = get_string('maximumchars', '', branding::CARDSUMMARY_MAXLENGTH);

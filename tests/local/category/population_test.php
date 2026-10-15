@@ -1893,7 +1893,7 @@ final class population_test extends \advanced_testcase {
             'bgcolour' => '#12345',
             'inkcolour' => 'white',
             'overlay' => branding::DEFAULT_OVERLAY,
-            'chamada' => '',
+            'tagline' => '',
             'publicdescriptionformat' => FORMAT_HTML,
         ]);
         /* The row above is cleaned by branding::record() on its way into the payload, so it never
@@ -2866,7 +2866,7 @@ final class population_test extends \advanced_testcase {
             'bgcolour' => '#12345',
             'inkcolour' => '#ffffff',
             'overlay' => branding::DEFAULT_OVERLAY,
-            'chamada' => '',
+            'tagline' => '',
             'publicdescriptionformat' => FORMAT_HTML,
         ]);
         branding::save((int) $listed->id, (object) ['bgcolour' => '#1E5E34', 'inkcolour' => '#ffffff']);
