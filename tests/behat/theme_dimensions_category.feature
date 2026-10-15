@@ -7,7 +7,6 @@ Feature: The category showcase lists what a person may discover, and its filters
   Background:
     Given the following config values are set as admin:
       | theme                | dimensions |                            |
-      | logincpfvalidation   | 0                    | theme_dimensions |
       | categoryfilterfields | modalidade           | theme_dimensions |
     And the following "categories" exist:
       | name                | category | idnumber |

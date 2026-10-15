@@ -5,9 +5,7 @@ Feature: The course notice on the course page
   I need the course page to show the course's public addresses, and nobody else to see them
 
   Background:
-    Given the following config values are set as admin:
-      | logincpfvalidation | 0 | theme_dimensions |
-    And the following "users" exist:
+    Given the following "users" exist:
       | username | firstname | lastname | email                |
       | teacher1 | Tea       | Cher     | teacher1@example.com |
       | student1 | Sam       | Student  | student1@example.com |

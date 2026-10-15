@@ -13,10 +13,6 @@ Feature: The user's name in the navigation bar
       | ribeiro  | Ana       | Ribeiro  | ribeiro@example.com |
     And the following config values are set as admin:
       | theme | dimensions |
-    # The CPF handling refuses letters in the username field, and these scenarios log in by
-    # username. It is switched off here so that the two features are tested apart.
-    And the following config values are set as admin:
-      | logincpfvalidation | 0 | theme_dimensions |
     # Boost Union ships this off; the scenarios which depend on it say so rather than relying on
     # a default in another plugin. Note the vocabulary: Boost Union's binary selects store
     # 'yes'/'no', while this theme's store 1/0.

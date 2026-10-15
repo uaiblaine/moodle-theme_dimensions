@@ -92,7 +92,7 @@ sh mutations/gate-fast.sh <gate>:<test file> [...]           # prove a gate (mpc
   `(cd /tmp/mpci/MOODLE_503_STABLE/moodle && npx --no-install grunt amd --root="$p")` and
   `rsync -a "$p/amd/build/" amd/build/`. Check the maps' `sourcesContent` as `amd_source_test` does.
 - **What a cloud session cannot verify here**: Behat (the theme's scenarios are the only gate that
-  executes its JavaScript - the panel, the listing client, the cover film, the CPF mask), PHP 8.4
+  executes its JavaScript - the panel, the listing client, the cover film), PHP 8.4
   and MariaDB, and anything visual - the Browser pane needs the owner's stacks. So a cloud session
   pushes its own branch, opens the pull request with `[skip ci]` on every commit, and leaves the
   merge to the owner, who runs `mdl ci moodle-theme_dimensions --matrix --behat` first.
@@ -179,7 +179,7 @@ hotsite.php                       The script entry: 303 to the route while the r
 classes/local/hotsite/shortcode.php  Six spoken letters for the public address; pure, blocklist inside.
 classes/shortlink_handler.php     Answers core's /p/{shortcode} route with links::page(). Found by name.
 classes/local/hook/course/before_course_deleted.php  Forgets a deleted course's short codes.
-classes/output/core_renderer.php  render_login() adds the AMD module; render_from_template()
+classes/output/core_renderer.php  render_login() draws the theme's page or Boost Union's; render_from_template()
                                colours the navbar, puts the name block in the user menu and sets
                                Boost Union's courserelatedhints key to the course notice.
 classes/local/coursenotice/builder.php  The course notice's decisions: Boost Union's hints item by item,
@@ -230,56 +230,24 @@ templates/core/login_panel.mustache  The institutional panel, Boost Union v5.2-r
 scss/login.scss                Everything under body.theme_dimensions-login.
 tests/output/core_renderer_test.php  Renders the real login page: no remote image, the switch, the layout;
                                and the navbar's name, through a real page header.
-amd/src/logincpf.js            The CPF mask + validation. All of the CPF logic lives here.
 db/install.php, db/upgrade.php Provision the course custom fields; upgrade.php also builds the branding table.
 scss/pre.scss, scss/post.scss  The design system's tokens; lib.php adds the settings-driven part.
-tests/behat/*_logincpf.feature The only gate that executes the CPF JavaScript.
 ```
 
 ## Architecture gotchas
 
-- **The CPF logic is client-side and cannot be anything else.** No theme code
-  runs before Moodle checks the credentials at `/login/index.php`, so there is
-  no server-side hook to validate or normalise a submitted username from here.
-  Anything which must be *enforced* belongs in the auth plugin. Do not add a PHP
-  CPF class to this theme to "mirror" the JS: it would be dead code, and the
-  fleet's phpmd notes explain what dead code costs.
-- **The masked value must never be what is submitted.** Stored usernames are the
-  bare 11 digits. `logincpf.js` strips the mask in two places on purpose — a
-  capture-phase `submit` listener on `document` (which beats every listener on
-  the form, `core_form/submit` included, because listeners on the form itself run
-  in registration order and ours would not be first) and the `formdata` event
-  (which fires even for a submission started from script, where no submit event
-  is dispatched at all). Removing either one leaves a real hole.
-- **Invalid input is refused through `setCustomValidity()`, not from a submit
-  listener.** Native constraint validation runs *before* the submit event, so
-  core_form/submit never disables the login button for a submission which is not
-  going to happen. Blocking with `preventDefault()` in a submit listener instead
-  leaves the button disabled and the user stuck on a page that looks broken.
-- **The field accepts nothing but a CPF, so the bypass parameter is load-bearing.**
-  `?nocpf=1` on the login URL (`login::BYPASS_PARAM`) is checked in `render_login()`
-  before the module is loaded, and it is the only way an account whose username is
-  not a CPF - the site admin above all - can reach a usable login form. Deleting it,
-  or moving the check into the JavaScript where it could be disarmed rather than
-  never armed, locks the admin out of any site running this theme. Its unit test
-  exists for that reason; treat a failure there as a lockout, not a lint.
-- **No `maxlength` on the field, deliberately.** The masked form is exactly 14
-  characters, so `maxlength` would work - and the browser would then swallow the
-  twelfth digit without firing an `input` event, leaving the field silently inert
-  with nothing on screen to explain it. The cap lives in the input handler, which
-  can say why.
-- **The label is core's, not ours.** Renaming it to "CPF" is tempting and wrong:
-  `*_logincpf.feature` and `*_loginpage.feature` drive the form by that label
-  (`I set the field "Username"`), and so does any suite that fills core's login
-  form. `I log in as` is not one of them: on 5.2 `behat_auth::i_log_in_as()`
-  visits `/auth/tests/behat/login.php?username=...` and never touches the form.
-  The placeholder carries the hint; a site shows "CPF" through Language
-  customisation.
+- **The CPF mask is not the theme's.** It lives in auth_loginsteps (setting
+  `auth_loginsteps/logincpfmask`, armed from that plugin's `before_footer_html_generation` hook on
+  the `login-index` page under any theme, with the `?nocpf=1` bypass read on the server). The theme
+  carried a copy until 2026100503 and dropped it with the setting `logincpfvalidation`; do not bring
+  one back. What the theme owes the mask is the form's hooks (next bullet) and core's label: the
+  mask and the Behat steps that fill the form (`I set the field "Username"`) drive the field by it,
+  so renaming it to "CPF" is wrong; a site shows "CPF" through Language customisation.
 - **`core/loginform` is NOT overridden, deliberately - the theme's login page has its own
   template.** Boost Union's `templates/core/loginform.mustache` is over 400 lines and
   changes with every release; copying it to add two attributes would mean re-diffing it
-  forever. So the CPF module binds to `form#login` / `#username`, stable in core, Boost and
-  Boost Union alike, and the theme's login page renders `templates/loginform.mustache`
+  forever. So auth_loginsteps' CPF mask binds to `form#login` / `#username`, stable in core, Boost
+  and Boost Union alike, and the theme's login page renders `templates/loginform.mustache`
   (`theme_dimensions/loginform`), which keeps those same hooks. The one core
   partial overridden is `core/login_panel`, 12 lines, with Boost Union v5.2-r8's markup in
   the off branch - re-diff it against Boost Union's copy on every Boost Union update.
@@ -342,7 +310,7 @@ The original design record (not part of this repository) holds its decisions; th
   already styles; Boost Union's `.login-divider` is not used.
 - **Failed logins are counted in `$SESSION`, never on the account.** Core's
   `login_failed_count` preference would need the typed username looked up, and a hint that
-  shows only when the lookup succeeds tells an anonymous visitor which CPFs exist. The signal
+  shows only when the lookup succeeds tells an anonymous visitor which usernames exist. The signal
   is `errortitle` on core's renderable, which `set_error()` fills for `AUTH_LOGIN_FAILED`
   alone - and **`login/index.php` folds every credential failure into that code first**
   (wrong password, unknown username, suspended, LOCKOUT: `login/index.php:288-295`), so all of
@@ -3063,7 +3031,7 @@ the original design record (not part of this repository); what follows is what a
   course whose settings form has never been saved. Above 500 courses step 2 moves into an
   adhoc task, which mtraces and returns on failure and never throws.
 - **`?focusoff=1` is the smallest kill switch and exists for support**, exactly as `?nocpf=1`
-  does on the login page. Then the course field, then the master setting, then the excluded
+  does for auth_loginsteps' mask on the login page. Then the course field, then the master setting, then the excluded
   page types textarea — which ships with `mod-quiz-attempt`, `mod-quiz-summary` and
   `mod-quiz-review` in it, because an exit control beside a running quiz timer is data loss.
 - **`focusmode::why()` is the trace, and it is CALLED, not emitted.** Its vocabulary is the
@@ -3203,25 +3171,15 @@ the original design record (not part of this repository); what follows is what a
   reported "No scenarios" while the static gates stayed green. A 5.03 leg must say
   `moodle-dev/deps/moodle-theme_boost_union-53` (a 5.02 leg said `-502`); if it names the bare
   clone, the resolver has regressed and nothing the leg says about layout or Behat is evidence.
-- `classes/local/login.php` holds every login decision, and three assertions carry
-  weight: the two "no" cases (`logincpfvalidation`, `loginpage`), because a default-on
-  setting read with a falsy fallback would report a stored `0` as enabled; and the bypass
-  case, because that is the admin's way back into the site. `tests/output/core_renderer_test.php`
+- `classes/local/login.php` holds every login decision, and the "no" case of `loginpage`
+  carries weight, because a default-on setting read with a falsy fallback would report a stored
+  `0` as enabled. `tests/output/core_renderer_test.php`
   renders the real page - the provider's favicon absent with the page on and PRESENT with it
   off, the panel in the real layout through `header()`.
-- The Behat scenarios are the **only** gate which executes the CPF JavaScript —
-  phpcs, phpdoc and the mustache lint never read `amd/src`. The "switching the
-  setting off leaves the username field alone" scenario is the control: without
-  it, a mask which never ran would pass the other scenarios by accident.
-- `529.982.247-25` is a valid CPF; `52998224724` is the same number with a broken
-  check digit. Keep both, they are what the two halves of the rule are tested on.
-- **`I log in as` never touches the login form on 5.2**: `behat_auth::i_log_in_as()` visits
-  `/auth/tests/behat/login.php?username=...`, so it logs any account in whatever the CPF setting
-  says. A scenario that FILLS the form with a username that is not a CPF must visit
-  `/login/index.php?nocpf=1` first, as the bypass scenario of `*_logincpf.feature` does.
-- The navbar name feature file (`theme_dimensions_servicename.feature`) switches
-  `logincpfvalidation` off in its Background. Its scenarios log in through `I log in as`, so the
-  switch is not what lets them in; it keeps the two features tested apart.
+- **`I log in as` never touches the login form on 5.2 and later**: `behat_auth::i_log_in_as()` visits
+  `/auth/tests/behat/login.php?username=...`. A scenario that FILLS the form on a site where
+  auth_loginsteps' CPF mask is armed must visit `/login/index.php?nocpf=1` first; the theme's own
+  features do not arm it (the plugin is not a CI dependency).
 - The Behat user generator sets `password = username` when none is given, which is what
   `I log in as` relies on; custom profile values go in as `profile_field_<shortname>`
   columns of the `users` table.

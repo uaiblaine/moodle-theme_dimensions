@@ -12,7 +12,6 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   Background:
     Given the following config values are set as admin:
       | theme                | dimensions |                            |
-      | logincpfvalidation   | 0                    | theme_dimensions |
       | categoryfilterfields | modalidade           | theme_dimensions |
     And the following "categories" exist:
       | name                | category | idnumber |

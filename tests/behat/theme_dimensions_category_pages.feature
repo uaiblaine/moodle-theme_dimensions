@@ -13,7 +13,6 @@ Feature: A category's pages sit under the showcase's hero when local_page is ins
   Background:
     Given the following config values are set as admin:
       | theme              | dimensions |                            |
-      | logincpfvalidation | 0                    | theme_dimensions |
     And the following "categories" exist:
       | name            | category | idnumber |
       | Test category   | 0        | TESTCAT  |

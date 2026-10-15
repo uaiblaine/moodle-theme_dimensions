@@ -7,7 +7,6 @@ Feature: Unlisted courses and categories are not named to people who cannot reac
   Background:
     Given the following config values are set as admin:
       | theme              | dimensions |                              |
-      | logincpfvalidation | 0                    | theme_dimensions   |
     And the following "categories" exist:
       | name                | category | idnumber |
       | Test category       | 0        | TESTCAT  |

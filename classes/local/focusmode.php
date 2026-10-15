@@ -189,7 +189,7 @@ final class focusmode {
      * settings for this theme have not been applied yet - must read as enabled.
      * Reading the config with a falsy fallback instead would switch the feature off
      * on a fresh install and leave nothing on screen to say why. Same shape as
-     * {@see login::cpf_validation_enabled()}.
+     * {@see login::page_enabled()}.
      *
      * @return bool True when focus mode is allowed to apply anywhere on this site.
      */

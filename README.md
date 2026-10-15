@@ -166,7 +166,7 @@ plugin's own rules let the reader see them.
 | Tab | What it holds |
 |---|---|
 | General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. |
-| Login page | The login page switch, the institutional panel's copy, the username field mask and the guest home page. |
+| Login page | The login page switch, the institutional panel's copy and the guest home page. |
 | Identity | The navbar style: the theme's navy with a 3px signature band, or *Leave it to Boost Union*. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
@@ -175,23 +175,10 @@ plugin's own rules let the reader see them.
 Brazil-specific today
 ---------------------
 
-The theme was built for a Brazilian site, and two things still assume one. Both will become
-optional.
-
-- **The CPF username mask** (*Login page > Accept only a CPF in the username field*, on by default)
-  turns the username field into a CPF field: it formats the digits as `000.000.000-00`, refuses a CPF
-  whose check digits do not add up, and strips the mask before the form is sent. With it on, no
-  account whose username is not a CPF can use the login form, the site administrator included; the
-  way back is
-
-  ```
-  https://<your site>/login/index.php?nocpf=1
-  ```
-
-  which loads the plain Boost Union form for that request. It is a convenience in the browser, not an
-  authentication rule. Switch the setting off on a site whose usernames are not CPFs.
-- **The login page's wording**, such as "Sign in with your CPF", is a language string; edit it through
-  *Site administration > Language > Language customisation*.
+The theme was built for a Brazilian site. The CPF username mask it once carried lives in the
+authentication plugin `auth_loginsteps` now (its setting `logincpfmask`, with the same `?nocpf=1` way
+back to a plain form): the theme draws the login page and keeps the form hooks that mask binds to,
+and nothing of the mask itself.
 
 The course custom fields of the landing pages also carry Portuguese short names (`hotsite_modelo`,
 `modalidade`, ...), which are identifiers and never shown to readers.

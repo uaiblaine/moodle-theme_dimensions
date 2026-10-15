@@ -214,28 +214,6 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting = new admin_setting_configtextarea($name, $title, $description, '', PARAM_RAW);
         $tab->add($setting);
 
-        // Create CPF heading.
-        $name = 'theme_dimensions/logincpfheading';
-        $title = get_string('logincpfheading', 'theme_dimensions', null, true);
-        $setting = new admin_setting_heading($name, $title, null);
-        $tab->add($setting);
-
-        // Setting: CPF validation in the login form.
-        // The description names the bypass URL, because an admin who has just locked themselves out
-        // of the login form will look for the way back on this page and nowhere else.
-        $bypassurl = new \core\url('/login/index.php', [login::BYPASS_PARAM => 1]);
-        $name = 'theme_dimensions/logincpfvalidation';
-        $title = get_string('logincpfvalidation', 'theme_dimensions', null, true);
-        $description = get_string('logincpfvalidation_desc', 'theme_dimensions', $bypassurl->out(), true);
-        $setting = new admin_setting_configselect(
-            $name,
-            $title,
-            $description,
-            login::SELECT_YES,
-            $yesnooption
-        );
-        $tab->add($setting);
-
         // Create guest heading.
         $name = 'theme_dimensions/guesthomepageheading';
         $title = get_string('guesthomepageheading', 'theme_dimensions', null, true);

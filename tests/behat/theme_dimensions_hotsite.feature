@@ -6,7 +6,6 @@ Feature: Course enrolment hotsite
 
   Background:
     Given the following config values are set as admin:
-      | logincpfvalidation | 0 | theme_dimensions |
       | forcelogin         | 0 |                            |
     And the following "users" exist:
       | username | firstname | lastname | email                |

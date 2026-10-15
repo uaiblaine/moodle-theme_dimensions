@@ -7,7 +7,6 @@ Feature: Focus mode on activities
   Background:
     Given the following config values are set as admin:
       | theme              | dimensions |                            |
-      | logincpfvalidation | 0                    | theme_dimensions |
     And the following "users" exist:
       | username | firstname | lastname | email                |
       | student1 | Sam       | Student  | student1@example.com |

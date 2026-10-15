@@ -15,7 +15,6 @@ Feature: A visitor's public category page narrows in place once the site opens i
   Background:
     Given the following config values are set as admin:
       | theme              | dimensions |                            |
-      | logincpfvalidation | 0                    | theme_dimensions |
     And the following "categories" exist:
       | name            | category | idnumber |
       | Public category | 0        | PUBCAT   |

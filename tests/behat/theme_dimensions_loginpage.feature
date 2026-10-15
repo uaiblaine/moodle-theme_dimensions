@@ -11,7 +11,7 @@ Feature: The custom login page
   Scenario: The login page names both ways in, beside the institutional panel
     When I visit "/login/index.php"
     Then I should see "Sign in to the learning platform"
-    And I should see "Sign in with your CPF"
+    And I should see "Sign in with your username"
     And "#login" "css_element" should exist
     And "#username" "css_element" should exist
     And "#loginbtn" "css_element" should exist

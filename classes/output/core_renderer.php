@@ -50,39 +50,15 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     /**
      * Renders the login form.
      *
-     * Two things happen here. The AMD module which turns the username field into a CPF field is
-     * added whenever the CPF handling applies, whichever page is shown; its messages are handed
-     * over as init arguments rather than fetched with a web service call, because the login page
-     * is served to users who are not logged in yet and a message which arrives late is a message
-     * nobody reads. Then the page itself: with the theme's login page switched off, Boost Union
-     * renders its form exactly as configured there; switched on, the form comes from this theme's
-     * own template, and every Boost Union login setting that shapes the form stops applying.
+     * With the theme's login page switched off, Boost Union renders its form exactly as configured
+     * there; switched on, the form comes from this theme's own template, and every Boost Union login
+     * setting that shapes the form stops applying. A username mask is not this theme's business:
+     * auth_loginsteps arms its own on core's form hooks, which the theme's template keeps.
      *
      * @param \core_auth\output\login $form The renderable.
      * @return string
      */
     public function render_login(\core_auth\output\login $form) {
-        // Read the bypass, which gives an account whose username is not a CPF - the site admin
-        // above all - a plain login form to use, and which sticks for the rest of the session so a
-        // wrong password does not bounce them back into the CPF form.
-        $bypass = login::bypass_requested();
-
-        // If the CPF handling applies, add the AMD module which applies it to the username field.
-        if (login::cpf_validation_applies($bypass)) {
-            $this->page->requires->js_call_amd(
-                'theme_dimensions/logincpf',
-                'init',
-                [
-                    [
-                        'invalid' => get_string('logincpfinvalid', 'theme_dimensions'),
-                        'digitsonly' => get_string('logincpfdigitsonly', 'theme_dimensions'),
-                        'maxdigits' => get_string('logincpfmaxdigits', 'theme_dimensions'),
-                        'placeholder' => get_string('logincpfplaceholder', 'theme_dimensions'),
-                    ],
-                ]
-            );
-        }
-
         // Boost Union's login page, exactly as it is, when this theme's page is switched off.
         if (!login::page_enabled()) {
             return parent::render_login($form);
