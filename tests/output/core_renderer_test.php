@@ -63,6 +63,18 @@ final class core_renderer_test extends \advanced_testcase {
     ];
 
     /**
+     * @var string The primary navigation as 5.3 draws it: core/primarymoremenu, a React mount around a no-JS
+     *      fallback whose nav is "moremenu observed navigation" and so never counted as a plain more menu.
+     */
+    private const PRIMARY_NAV = 'data-react-component="@moodle/lms/core/nav/PrimaryNav"';
+
+    /**
+     * @var string The band as 5.3 draws it: core/secondarymoremenu, a React mount of core's tab bar around a
+     *      no-JS fallback that is a plain "moremenu navigation" nav, as the hero's tabs are.
+     */
+    private const BAND_NAV = 'data-react-component="@moodle/lms/core/nav/Nav"';
+
+    /**
      * Build this theme's core renderer on a page of the given layout.
      *
      * @param string $url The page's url; the login page unless a test says otherwise.
@@ -679,9 +691,10 @@ final class core_renderer_test extends \advanced_testcase {
      * The category page renders the hero with the category's tabs inside it, one h1, and no band below.
      *
      * The band is the drift test: Boost Union's layout writes the secondary navigation under
-     * the key this theme switches off, and if that key is ever renamed the band comes back
-     * under the hero's own tab strip - two tab strips on one page, which this reads as more
-     * than one more menu.
+     * the key this theme switches off (secondarymoremenu, read by BU's theme_boost/drawers
+     * section around core/secondarymoremenu), and if that key is ever renamed the band comes
+     * back under the hero's own tab strip - two tab strips on one page, which this reads as the
+     * band's wrapper, core's React tab bar and a second plain more menu.
      *
      * @return void
      */
@@ -710,10 +723,13 @@ final class core_renderer_test extends \advanced_testcase {
         $this->assertSame(1, substr_count($html, '<h1'), 'Exactly one h1: the hero\'s.');
         $this->assertStringContainsString('A tagline for the header', $html);
         $this->assertStringContainsString(get_string('categoryhero_pencil', 'theme_dimensions'), $html);
-        $this->assertStringContainsString('dim-hero__tabs', $html);
-        // Two more menus on the page: the primary navigation's and the hero's - never a third, the band's.
-        $this->assertSame(2, substr_count($html, '<nav class="moremenu navigation">'));
+        // One tab row, the hero's: core/moremenu inside the hero's strip, exactly once.
+        $this->assertSame(1, substr_count($html, self::PRIMARY_NAV), 'Precondition: the primary navigation is drawn.');
+        $this->assertMatchesRegularExpression('~<div class="dim-hero__tabs">\s*<nav class="moremenu navigation">~', $html);
+        $this->assertSame(1, substr_count($html, '<nav class="moremenu navigation"'), 'The hero\'s tabs, once.');
+        // And never the band: neither its wrapper nor core's React tab bar, nor its no-JS fallback above.
         $this->assertStringNotContainsString('class="secondary-navigation', $html);
+        $this->assertStringNotContainsString(self::BAND_NAV, $html);
         // The tabs by their node keys: the category's own page and its settings, and this theme's editor.
         $this->assertStringContainsString('data-key="categorymain"', $html);
         $this->assertStringContainsString('data-key="edit"', $html);
@@ -741,7 +757,9 @@ final class core_renderer_test extends \advanced_testcase {
         $this->assertStringNotContainsString('dim-hero', $html);
         $this->assertStringContainsString('id="page-header"', $html);
         $this->assertStringContainsString('class="secondary-navigation', $html, 'Control: the band the hero switches off is live.');
-        $this->assertSame(2, substr_count($html, '<nav class="moremenu navigation">'), 'The primary navigation and the band.');
+        $this->assertSame(1, substr_count($html, self::PRIMARY_NAV), 'The primary navigation.');
+        $this->assertSame(1, substr_count($html, self::BAND_NAV), 'The band, as core\'s React tab bar.');
+        $this->assertSame(1, substr_count($html, '<nav class="moremenu navigation"'), 'The band\'s no-JS fallback, once.');
     }
 
     /**
