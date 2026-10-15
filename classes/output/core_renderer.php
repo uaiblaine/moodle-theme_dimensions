@@ -145,7 +145,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * A layout carrying the user menu gets the navbar's colour and the name block in the menu, for
      * the same reason: Boost Union's layouts build that context and render it in one call. The name
      * itself is left exactly as core wrote it - fullname($USER), from
-     * user_get_user_navigation_info() through core\navigation\output\primary::get_user_menu() - so
+     * \core\user::get_user_navigation_info() through core\navigation\output\primary::get_user_menu() - so
      * the navbar shows whatever the site's fullnamedisplay composes. The guard is the context's
      * shape rather than the template's name on purpose: it survives Boost Union renaming or
      * reorganising its layout templates, and it costs one isset() per render.
@@ -315,6 +315,15 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * turned Boost Union's setting off still gets nothing on desktop, where the navbar shows the
      * name anyway; on a phone the menu is the only place left for it.
      *
+     * Core 5.3 adds a name of its own to the toggle: the first name, in a span beside the avatar
+     * from xl up (lib/templates/user_menu.mustache, Boost Union's copy alike). This theme's
+     * core/user_menu_metadata override already shows the full name there from md up, so the key
+     * core fills it from is dropped here, and the template's section around it draws nothing.
+     * Dropped rather than hidden by the stylesheet, because the span carries d-xl-block, a
+     * Bootstrap utility whose display is !important and which no rule of this theme may outrank.
+     * The guard that called this method is the full name being in the context, which is exactly
+     * when the override draws it.
+     *
      * @param array $context The layout template context.
      * @return array
      */
@@ -322,6 +331,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if (empty($context['showfullnameinusermenu'])) {
             $context['showfullnameinusermenu'] = true;
         }
+        unset($context['usermenu']['userfirstname']);
 
         return $context;
     }
@@ -425,9 +435,22 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * restored in a finally. Never set for the whole request: a second reader of the same
      * property lives in the course format's own content class.
      *
+     * Where core draws its linear navigation, this draws nothing: from 5.3 on a format which uses
+     * it (topics and weeks, switched on by default) gets previous and next, and the manual
+     * completion button, in the sticky footer core adds from before_footer_html_generation
+     * ({@see \core_courseformat\hook_listener::add_course_navigation_sticky_footer()}). The
+     * footer is printed by footer() into the focus page as into any other, so a second row of
+     * our own would put two navigations under the text. The question is core's own predicate,
+     * asked while the layout renders: a page that later prints a sticky footer of its own loses
+     * core's linear navigation and this one alike, exactly as the ordinary page does.
+     *
      * @return string
      */
     public function focusmode_activity_navigation(): string {
+        if (\core_courseformat\local\linearnavigationsettings::show_navigation_footer($this->page)) {
+            return '';
+        }
+
         $usescourseindex = $this->page->theme->usescourseindex;
         try {
             $this->page->theme->usescourseindex = false;

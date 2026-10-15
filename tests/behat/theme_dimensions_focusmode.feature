@@ -8,7 +8,6 @@ Feature: Focus mode on activities
     Given the following config values are set as admin:
       | theme              | dimensions |                            |
       | logincpfvalidation | 0                    | theme_dimensions |
-      | activitynavigation | no                   | theme_boost_union          |
     And the following "users" exist:
       | username | firstname | lastname | email                |
       | student1 | Sam       | Student  | student1@example.com |
@@ -93,7 +92,8 @@ Feature: Focus mode on activities
     And I click on ".dimensions-focus-entry-button" "css_element"
     Then ".dimensions-focusbar" "css_element" should exist
     And I should see "Reading task" in the ".dimensions-focusbar-title" "css_element"
-    And I click on "#next-activity-link" "css_element"
+    # Core 5.3's linear navigation is the route forward on a topics course, in focus mode as anywhere.
+    And I click on "Next" "link" in the "sticky-footer" "region"
     And ".dimensions-focusbar" "css_element" should exist
     And I should see "Second task" in the ".dimensions-focusbar-title" "css_element"
     And I click on ".dimensions-focusbar-close" "css_element"

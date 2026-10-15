@@ -136,7 +136,9 @@ textarea:focus-visible,
    already reads. Setting it here would fight the mode rather than follow it. */
 /* Core renders only the avatar in the toggle; the name is added by this theme's override of
    core/user_menu_metadata. It is hidden below md because the navbar collapses there and the
-   avatar alone already identifies the session. */
+   avatar alone already identifies the session. Core 5.3's own first name beside the avatar
+   (.userfirstname, d-xl-block) is not hidden here: that utility's display is !important, so the
+   renderer drops its key instead ({@see core_renderer::apply_name_in_usermenu()}). */
 .dimensions-usermenu-name {
     margin-left: .5rem;
     max-width: 15rem;

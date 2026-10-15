@@ -16,16 +16,16 @@
 
 namespace theme_dimensions\local;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+
 /**
  * Tests for which login-layout pages stand on auth_loginsteps' shell.
- *
- * Class-level covers docblock (not the PHP attribute), as the rest of this suite.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \theme_dimensions\local\loginshell
  */
+#[CoversClass(loginshell::class)]
 final class loginshell_test extends \advanced_testcase {
     /**
      * A page of the given type.

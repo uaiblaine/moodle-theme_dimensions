@@ -26,13 +26,13 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'theme_dimensions';
-$plugin->version = 2026100500;
+$plugin->version = 2026100502;
 $plugin->release = 'v5.3-r1-dev';
-$plugin->requires = 2026042000;
-$plugin->supported = [502, 502];
+$plugin->requires = 2026100500;
+$plugin->supported = [503, 503];
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->dependencies = [
-    'theme_boost_union' => 2026042012,
-    'local_unlistedcourses' => 2026042005,
-    'customfield_picture' => 2026090500,
+    'theme_boost_union' => 2026100500,
+    'local_unlistedcourses' => 2026100505,
+    'customfield_picture' => 2026101400,
 ];

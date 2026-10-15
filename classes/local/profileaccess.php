@@ -33,7 +33,7 @@ use stdClass;
 /**
  * Narrows Moodle's profile visibility to people the viewer actually shares a course with.
  *
- * Core already refuses most strangers: user_can_view_profile() (user/lib.php) ends by asking for
+ * Core already refuses most strangers: \core\user::can_view_profile() ends by asking for
  * moodle/user:viewdetails in each of the subject's courses, a capability an unrelated viewer holds
  * in none of them. The gap is has_coursecontact_role() (lib/accesslib.php), a bare existence check
  * against {role_assignments} with no context, no course and no reference to the viewer: anyone
@@ -41,7 +41,7 @@ use stdClass;
  * from /user/profile.php, which turns the teaching staff into a directory.
  *
  * This class only ever PREVENTs, never force-allows. Core runs the profile callbacks before
- * has_coursecontact_role(), and user_process_profile_callbacks() returns PREVENT at once whatever
+ * has_coursecontact_role(), and \core\user::process_profile_callbacks() returns PREVENT at once whatever
  * any other plugin said, so the effective rule is core's own answer AND this one: the only
  * profiles that change are those core would have opened for a course contact role held somewhere
  * else. Core consults the callbacks only while $CFG->forceloginforprofiles is on (the default).
@@ -76,8 +76,8 @@ class profileaccess {
      * Decide whether this viewer must be kept away from this profile.
      *
      * Memoised per request because the callback is not called once per page: core_user::search()
-     * runs user_can_view_profile() on every row it is about to return, up to 100 of them
-     * (lib/classes/user.php:392), and the message member-info service does the same over the ids
+     * runs can_view_profile() on every row it is about to return, up to 100 of them
+     * (lib/classes/user.php:399), and the message member-info service does the same over the ids
      * it was given (message/externallib.php:3436). Without the memo one message search would cost
      * one enrolment query per candidate.
      *
@@ -199,7 +199,7 @@ class profileaccess {
     /**
      * Is there a course holding both of them, where the viewer may see the participants?
      *
-     * Built the way core builds the same question in user_can_view_profile(): enumerate the
+     * Built the way core builds the same question in \core\user::can_view_profile(): enumerate the
      * SUBJECT's courses and ask for a capability in each, rather than intersecting the two
      * enrolment sets. The difference matters - enrol_get_shared_courses() requires an active
      * enrolment row on both sides, so it cannot see a teacher who holds their course by role

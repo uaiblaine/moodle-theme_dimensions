@@ -322,8 +322,8 @@ function theme_dimensions_alter_css_urls(&$urls) {
 /**
  * Keep a profile away from an authenticated user who has no course in common with its owner.
  *
- * Registered as the core_user profile callback: user_can_view_profile() dispatches it through
- * user_process_profile_callbacks() before it consults has_coursecontact_role(), so a veto here is
+ * Registered as the core_user profile callback: \core\user::can_view_profile() dispatches it through
+ * \core\user::process_profile_callbacks() before it consults has_coursecontact_role(), so a veto here is
  * final. The rule itself, and why it is a veto and never a force-allow, is in the class docblock.
  *
  * get_plugins_with_function() reads this file for every installed theme, active or not, so the

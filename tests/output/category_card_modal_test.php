@@ -388,7 +388,7 @@ final class category_card_modal_test extends \advanced_testcase {
         $this->assertSame('Brigada & Resgate', $open->modal['kicker'], 'The dialogue does, in the plain spelling.');
         $this->assertTrue($open->modal['haskicker']);
 
-        $map = file_get_contents($CFG->dirroot . '/theme/boost/scss/fontawesome/_variables.scss');
+        $map = file_get_contents($CFG->root . '/lib/bundles/fontawesome/scss/_variables.scss');
         $this->assertGreaterThanOrEqual(3, count($open->facts), 'Precondition: workload, mode and place.');
         foreach ($open->facts as $fact) {
             $this->assertMatchesRegularExpression('~^fa-[a-z0-9-]+$~', $fact['icon']);

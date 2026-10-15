@@ -157,9 +157,10 @@ body.dim-category {
         --dim-hero-page: var(--bs-body-bg, #fff);
         --dim-hero-page-ink: var(--bs-body-color, #1f1f1f);
         // The brand ink of the page colour. It is resolved here and inherited, never read from
-        // inside the tab list: Boost Union's core/moremenu override stamps data-bs-theme="light"
-        // on the more menu's own <ul>, so every --bs-* token read below that element is the
-        // light one, and the active tab would read 1.2:1 on the dark page.
+        // inside the tab list: a theme's core/moremenu override may stamp its own data-bs-theme on
+        // the more menu's <ul> (Boost Union's stamped "light" up to its 5.2 branch), and every
+        // --bs-* token read below that element would then be that mode's - the active tab read
+        // 1.2:1 on the dark page.
         --dim-hero-page-primary-ink: var(--bs-primary-text-emphasis, var(--bs-body-color, #1f1f1f));
         --dim-hero-page-strong: var(--bs-secondary-bg, #e9ecef);
         --dim-hero-page-muted: var(--bs-secondary-color, #6a737b);

@@ -38,7 +38,10 @@
       twice, and its activity information render arrives replaced by the activity description
       alone - the box is the only place that description appears, so blanking it outright would
       take away content rather than chrome. Nothing is disabled server-side, which is what keeps
-      the manual completion button in the page's header actions and therefore in the bar.
+      the completion control in the page's header actions and therefore in the bar: the manual
+      button, or - under core's linear navigation - the status core updates when the button in
+      its sticky footer is pressed. That footer arrives with the main content, and the theme's
+      own previous and next row stays empty beside it.
     * The Boost Union footer partial, which is what emits the end of body token. Without it
       the page ships with no JavaScript at all, silently.
 
@@ -144,10 +147,8 @@
     {{#courseindex}}
         {{< theme_boost/drawer }}
             {{$id}}theme_boost-drawers-courseindex{{/id}}
-            {{$drawerheadercontent}}
-                {{> theme_boost/courseindexdrawercontrols}}
-            {{/drawerheadercontent}}
             {{$drawerheading}}{{> theme_boost/courseindexdrawerheading}}{{/drawerheading}}
+            {{$drawercontrols}}{{> theme_boost/courseindexdrawercontrols}}{{/drawercontrols}}
             {{$drawerclasses}}drawer drawer-left {{#courseindexopen}}show{{/courseindexopen}}{{/drawerclasses}}
             {{$drawercontent}}
                 {{{courseindex}}}
