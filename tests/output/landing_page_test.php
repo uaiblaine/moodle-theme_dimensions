@@ -201,10 +201,10 @@ final class landing_page_test extends \advanced_testcase {
         // The city moved out of the chips into the place block.
         $this->assertNotContains('São Paulo', $context->chips);
 
-        $plaincourse = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_INPERSON, [], [
+        $course = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_INPERSON, [], [
             'customfield_' . landingfields::SHORTNAME_CITY => 'Londrina',
         ]);
-        $context = (new landing_page($plaincourse, landingfields::values($plaincourse->id), new resolution(resolution::STATE_CLOSED), []))
+        $context = (new landing_page($course, landingfields::values($course->id), new resolution(resolution::STATE_CLOSED), []))
             ->export_for_template($renderer);
         $this->assertFalse($context->heroplace['big']);
         $this->assertSame('Londrina', $context->heroplace['city']);

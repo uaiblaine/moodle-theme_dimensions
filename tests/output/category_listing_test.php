@@ -267,7 +267,7 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertFalse($card->ismuted, 'The course is the viewer\'s: it is not drawn as unavailable.');
         $this->assertSame(get_string('category_cta_details', 'theme_dimensions'), $card->cta['label']);
         $this->assertFalse($card->cta['primary'], 'The way to the details is the quiet button.');
-        $this->assertSame(links::page((int) $course->id)->out(false), $card->cta['url'], 'To the landing page, never to the course.');
+        $this->assertSame(links::page((int) $course->id)->out(false), $card->cta['url'], 'To the landing page, not the course.');
         $this->assertStringNotContainsString('/course/view.php', $card->url);
         $this->assertSame('fa-calendar', $card->badge['icon']);
         $this->assertFalse($card->hasroute, 'No other method: no route line.');

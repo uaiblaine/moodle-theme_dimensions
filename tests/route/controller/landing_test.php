@@ -46,7 +46,7 @@ use Psr\Http\Message\ResponseInterface;
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-#[CoversClass(landing page::class)]
+#[CoversClass(landing::class)]
 #[CoversClass(request::class)]
 final class landing_test extends \core\tests\router\route_testcase {
     /**

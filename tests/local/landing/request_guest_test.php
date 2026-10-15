@@ -143,7 +143,7 @@ final class request_guest_test extends \advanced_testcase {
         $this->assertFalse(isloggedin(), 'Asking for the page logs nobody in.');
         $this->assertSame('embedded', $PAGE->pagelayout);
         $tags = opengraph::current();
-        $this->assertNotNull($tags, 'A scraper reads the landing\'s card here.');
+        $this->assertNotNull($tags, 'A scraper reads the landing page\'s card here.');
         $this->assertSame(links::page((int) $course->id)->out(false), $tags->get_url(), 'og:url and canonical: the landing page.');
         $this->assertStringContainsString('theme_dimensions/landingguest', $this->amd_calls());
 

@@ -349,7 +349,7 @@ final class builder_test extends \advanced_testcase {
 
         $this->setUser($this->member($course, 'editingteacher'));
         $notice = $this->build($this->page($course));
-        $this->assertSame(2, $this->codes($course), 'The editor\'s visit minted the landing\'s code and the guest entry\'s.');
+        $this->assertSame(2, $this->codes($course), 'The editor\'s visit minted the landing page\'s code and the guest entry\'s.');
         $this->assertStringContainsString(
             '/p/' . links::existing_code((int) $course->id),
             $notice->links[builder::KEY_LANDING]['url']

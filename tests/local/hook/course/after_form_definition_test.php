@@ -211,7 +211,7 @@ final class after_form_definition_test extends \advanced_testcase {
         $html = $hook->mform->getElement(after_form_definition::LINK_ELEMENT)->toHtml();
 
         $code = links::existing_code((int) $course->id, links::LINKTYPE_GUEST);
-        $this->assertNotNull($code, 'Building the form minted the guest entry\'s code beside the landing\'s.');
+        $this->assertNotNull($code, 'Building the form minted the guest entry\'s code beside the landing page\'s.');
         $this->assertNotSame(links::existing_code((int) $course->id), $code);
         $address = links::guest_share((int) $course->id)->out(false);
         $this->assertStringContainsString('/p/' . $code, $address);

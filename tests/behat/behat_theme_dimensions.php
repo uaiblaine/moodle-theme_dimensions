@@ -164,7 +164,7 @@ class behat_theme_dimensions extends behat_base {
      * @param string $shortname The course shortname.
      * @return void
      */
-    public function i_should_see_the_landing_address_of_course(string $shortname): void {
+    public function i_should_see_the_landing_page_address_of_course(string $shortname): void {
         global $DB;
         $courseid = (int) $DB->get_field('course', 'id', ['shortname' => $shortname], MUST_EXIST);
         $address = \theme_dimensions\local\landing\links::share($courseid)->out(false);
@@ -181,7 +181,7 @@ class behat_theme_dimensions extends behat_base {
      * @param string $shortname The course shortname.
      * @return void
      */
-    public function i_should_not_see_the_landing_address_of_course(string $shortname): void {
+    public function i_should_not_see_the_landing_page_address_of_course(string $shortname): void {
         global $DB;
         $courseid = (int) $DB->get_field('course', 'id', ['shortname' => $shortname], MUST_EXIST);
         $address = \theme_dimensions\local\landing\links::share($courseid)->out(false);
@@ -199,7 +199,7 @@ class behat_theme_dimensions extends behat_base {
      * @param string $shortname The course shortname.
      * @return void
      */
-    public function the_browser_is_on_the_landing_of_course(string $shortname): void {
+    public function the_browser_is_on_the_landing_page_of_course(string $shortname): void {
         global $DB;
         $courseid = (int) $DB->get_field('course', 'id', ['shortname' => $shortname], MUST_EXIST);
         $expected = \theme_dimensions\local\landing\links::page($courseid)->out(false);
