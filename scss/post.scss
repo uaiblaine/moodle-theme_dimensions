@@ -77,6 +77,9 @@
     --dim-ds-shadow-sm: 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06);
     --dim-ds-shadow-md: 0 4px 12px rgba(7, 0, 147, .10);
     --dim-ds-shadow-lg: 0 12px 32px rgba(7, 0, 147, .14);
+    /* The channels of --dim-ds-blue-600, the tint of every elevation above, for a shadow COLOUR at an
+       alpha of its own (the fleet's stylelint refuses color-mix()). */
+    --dim-ds-shadow-rgb: 7, 0, 147;
     --dim-ds-motion-fast: 150ms;
     --dim-ds-motion-base: 250ms;
     --dim-ds-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -100,6 +103,157 @@
     /* The 3px rule under the navbar. A Boost Union flavour overrides it in look_rawscss so each
        organisation signs its own area; the default is the highlight blue. */
     --dimensions-navbar-band: var(--dim-ds-accent-highlight);
+}
+
+/* ---- Family tokens: the contract with local_dimensions and block_dimensions ---- */
+/* The public half of docs/tokens.md: 54 names under --dimensions-, the 33 both plugins read and the
+   21 local_dimensions alone reads. A plugin reads each as var(--dimensions-x, <its own chain>), so
+   it looks the same without this theme and takes the theme's look under it. Every value is a
+   Bootstrap property (so a flavour's brand colour and the page's colour mode move it), a design
+   system token of this file, or another family token; the only literals are the dark pills' own
+   colours, which the showcase's badges already measured (scss/category.scss, at its foot) and the
+   palette has no token for. tests/local/family_tokens_test.php holds the list, the roots, the
+   values and the document.
+
+   Three roots, because a token derived from a --bs-* property is computed where it is declared:
+   :root for the page, body for anything a theme puts the colour mode on, and .modal for the
+   dialogue core/modal appends to body. The dark block repeats every name, so it reads as the whole
+   dark contract; a chain Bootstrap already flips is restated as it is. */
+:root,
+body,
+.modal {
+    /* Surfaces, line, ink, accent. */
+    --dimensions-surface: var(--bs-body-bg);
+    --dimensions-surface-alt: var(--bs-tertiary-bg);
+    --dimensions-surface-inset: var(--bs-secondary-bg);
+    --dimensions-line: var(--bs-border-color);
+    --dimensions-ink: var(--bs-body-color);
+    --dimensions-ink-strong: var(--bs-emphasis-color);
+    --dimensions-ink-muted: var(--bs-secondary-color);
+    --dimensions-ink-faint: var(--bs-tertiary-color);
+    --dimensions-accent: var(--bs-link-color);
+    --dimensions-accent-hover: var(--bs-link-hover-color);
+    /* The brand: the fill is Boost Union's brand colour or a flavour's, never a colour of this file. */
+    --dimensions-brand-fill: var(--bs-primary);
+    --dimensions-brand-ink: var(--bs-primary-text-emphasis);
+    --dimensions-brand-tint: var(--bs-primary-bg-subtle);
+    --dimensions-brand-edge: var(--bs-primary-border-subtle);
+    --dimensions-on-brand-fill: var(--dim-ds-text-inverse);
+    /* The theme's one ring, on every surface. */
+    --dimensions-focus-ring: var(--dim-ds-focus-ring);
+    /* The tone families, each Bootstrap's own subtle and emphasis triple. */
+    --dimensions-success-tint: var(--bs-success-bg-subtle);
+    --dimensions-success-edge: var(--bs-success-border-subtle);
+    --dimensions-success-ink: var(--bs-success-text-emphasis);
+    --dimensions-warning-tint: var(--bs-warning-bg-subtle);
+    --dimensions-warning-edge: var(--bs-warning-border-subtle);
+    --dimensions-warning-ink: var(--bs-warning-text-emphasis);
+    --dimensions-danger-tint: var(--bs-danger-bg-subtle);
+    --dimensions-danger-edge: var(--bs-danger-border-subtle);
+    --dimensions-danger-ink: var(--bs-danger-text-emphasis);
+    --dimensions-info-tint: var(--bs-info-bg-subtle);
+    --dimensions-info-edge: var(--bs-info-border-subtle);
+    --dimensions-info-ink: var(--bs-info-text-emphasis);
+    --dimensions-neutral-tint: var(--bs-secondary-bg-subtle);
+    --dimensions-neutral-edge: var(--bs-secondary-border-subtle);
+    --dimensions-neutral-ink: var(--bs-secondary-text-emphasis);
+    /* Two colours core has no token for: a shadow tinted with the design system's elevation, and a
+       veil of the page's own surface. */
+    --dimensions-shadow: rgba(var(--dim-ds-shadow-rgb), .1);
+    --dimensions-scrim: rgba(var(--bs-body-bg-rgb), .72);
+    /* Motion, local_dimensions alone: the design system's own. */
+    --dimensions-motion-fast: var(--dim-ds-motion-fast);
+    --dimensions-motion-base: var(--dim-ds-motion-base);
+    --dimensions-motion-ease: var(--dim-ds-motion-ease);
+    /* Enrolment states, local_dimensions alone: the pairs of the showcase's state badges, enrolled
+       the enrolled pill's, scheduled the scheduled one's, pending pending's, open open's, guest the
+       free pill's and neutral the none pill's (scss/category.scss). The pills draw no edge, so each
+       edge is its own fill. */
+    --dimensions-state-enrolled-bg: var(--dim-ds-blue-600);
+    --dimensions-state-enrolled-ink: var(--dim-ds-white);
+    --dimensions-state-enrolled-edge: var(--dimensions-state-enrolled-bg);
+    --dimensions-state-scheduled-bg: var(--dim-ds-blue-050);
+    --dimensions-state-scheduled-ink: var(--dim-ds-blue-700);
+    --dimensions-state-scheduled-edge: var(--dimensions-state-scheduled-bg);
+    --dimensions-state-pending-bg: var(--dim-ds-yellow-100);
+    --dimensions-state-pending-ink: var(--dim-ds-yellow-800);
+    --dimensions-state-pending-edge: var(--dimensions-state-pending-bg);
+    --dimensions-state-open-bg: var(--dim-ds-green-050);
+    --dimensions-state-open-ink: var(--dim-ds-green-800);
+    --dimensions-state-open-edge: var(--dimensions-state-open-bg);
+    --dimensions-state-guest-bg: var(--dim-ds-cyan-100);
+    --dimensions-state-guest-ink: var(--dim-ds-cyan-800);
+    --dimensions-state-guest-edge: var(--dimensions-state-guest-bg);
+    --dimensions-state-neutral-bg: var(--dim-ds-gray-200);
+    --dimensions-state-neutral-ink: var(--dim-ds-gray-700);
+    --dimensions-state-neutral-edge: var(--dimensions-state-neutral-bg);
+}
+
+/* The dark half. Moodle 5.3's one colour-mode signal is data-bs-theme on the html element, so the
+   attribute is read on :root and nowhere else: Boost Union writes it on its navbar too, and a
+   plugin inside that navbar must still get the page's tokens. Of the shared names, three differ from
+   the light chain: the brand ink, which Bootstrap's dark emphasis leaves at 3.28:1 on a dark card (the design
+   system's lighter stop of the hue, as the showcase reads it); the ring, which the next stop up
+   keeps over 3:1 on every dark surface; and a shadow, which a navy tint at a tenth cannot draw on a
+   dark page. */
+:root[data-bs-theme="dark"],
+:root[data-bs-theme="dark"] body,
+:root[data-bs-theme="dark"] .modal {
+    --dimensions-surface: var(--bs-body-bg);
+    --dimensions-surface-alt: var(--bs-tertiary-bg);
+    --dimensions-surface-inset: var(--bs-secondary-bg);
+    --dimensions-line: var(--bs-border-color);
+    --dimensions-ink: var(--bs-body-color);
+    --dimensions-ink-strong: var(--bs-emphasis-color);
+    --dimensions-ink-muted: var(--bs-secondary-color);
+    --dimensions-ink-faint: var(--bs-tertiary-color);
+    --dimensions-accent: var(--bs-link-color);
+    --dimensions-accent-hover: var(--bs-link-hover-color);
+    --dimensions-brand-fill: var(--bs-primary);
+    --dimensions-brand-ink: var(--dim-ds-blue-200);
+    --dimensions-brand-tint: var(--bs-primary-bg-subtle);
+    --dimensions-brand-edge: var(--bs-primary-border-subtle);
+    --dimensions-on-brand-fill: var(--dim-ds-text-inverse);
+    --dimensions-focus-ring: var(--dim-ds-blue-300);
+    --dimensions-success-tint: var(--bs-success-bg-subtle);
+    --dimensions-success-edge: var(--bs-success-border-subtle);
+    --dimensions-success-ink: var(--bs-success-text-emphasis);
+    --dimensions-warning-tint: var(--bs-warning-bg-subtle);
+    --dimensions-warning-edge: var(--bs-warning-border-subtle);
+    --dimensions-warning-ink: var(--bs-warning-text-emphasis);
+    --dimensions-danger-tint: var(--bs-danger-bg-subtle);
+    --dimensions-danger-edge: var(--bs-danger-border-subtle);
+    --dimensions-danger-ink: var(--bs-danger-text-emphasis);
+    --dimensions-info-tint: var(--bs-info-bg-subtle);
+    --dimensions-info-edge: var(--bs-info-border-subtle);
+    --dimensions-info-ink: var(--bs-info-text-emphasis);
+    --dimensions-neutral-tint: var(--bs-secondary-bg-subtle);
+    --dimensions-neutral-edge: var(--bs-secondary-border-subtle);
+    --dimensions-neutral-ink: var(--bs-secondary-text-emphasis);
+    --dimensions-shadow: rgba(var(--bs-black-rgb), .55);
+    --dimensions-scrim: rgba(var(--bs-body-bg-rgb), .72);
+    --dimensions-motion-fast: var(--dim-ds-motion-fast);
+    --dimensions-motion-base: var(--dim-ds-motion-base);
+    --dimensions-motion-ease: var(--dim-ds-motion-ease);
+    /* The showcase's dark pills, pair for pair (scss/category.scss); enrolled is the highlight blue. */
+    --dimensions-state-enrolled-bg: var(--dim-ds-blue-400);
+    --dimensions-state-enrolled-ink: var(--dim-ds-white);
+    --dimensions-state-enrolled-edge: var(--dimensions-state-enrolled-bg);
+    --dimensions-state-scheduled-bg: #1c2350;
+    --dimensions-state-scheduled-ink: #b9c1ff;
+    --dimensions-state-scheduled-edge: var(--dimensions-state-scheduled-bg);
+    --dimensions-state-pending-bg: #3a2c0c;
+    --dimensions-state-pending-ink: #f0c674;
+    --dimensions-state-pending-edge: var(--dimensions-state-pending-bg);
+    --dimensions-state-open-bg: #18330c;
+    --dimensions-state-open-ink: #a9ee55;
+    --dimensions-state-open-edge: var(--dimensions-state-open-bg);
+    --dimensions-state-guest-bg: #0c2e33;
+    --dimensions-state-guest-ink: #7fd8e4;
+    --dimensions-state-guest-edge: var(--dimensions-state-guest-bg);
+    --dimensions-state-neutral-bg: #262b3b;
+    --dimensions-state-neutral-ink: #b4bccd;
+    --dimensions-state-neutral-edge: var(--dimensions-state-neutral-bg);
 }
 
 /* ---- Focus: WCAG 2.2 AA, the same ring on white and on navy -------------- */

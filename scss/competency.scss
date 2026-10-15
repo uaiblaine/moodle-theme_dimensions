@@ -1,0 +1,714 @@
+// Theme Dimensions - The competency framework's pages and dialogues.
+//
+// Restyles what tool_lp, report_competency and block_lp draw: the learning plan and its user
+// competencies, the competency summary, the evidence list, the breakdown report, the rating dialogue
+// and the block. The markup is core's where the theme does not override a template, and the theme's
+// copy of core's where it does (templates/tool_lp, templates/report_competency, templates/block_lp,
+// each carrying the dim-comp-* classes this file paints).
+//
+// This file is concatenated into the theme's main SCSS and so reaches every page of the site. Every
+// top-level selector is therefore scoped, to one of:
+// - the body class core derives from the script's path (moodle_page::initialise_standard_body_classes()):
+//   path-admin-tool-lp for the 21 scripts of admin/tool/lp, path-report-competency for
+//   report/competency/index.php, path-blocks-lp for the block's two review pages. None of them sets
+//   its own page type, so the class is the script's directory, renamed admin directory included;
+// - .block_lp, the class core puts on the block's own root wherever the block is added;
+// - the theme's own dim-comp- prefix, which only the theme's copies of core's templates carry. The
+//   competency dialogues are YUI dialogues (tool_lp/dialogue), whose roots are the site's generic
+//   .moodle-dialogue-base: they are reached through the page class or through the dim-comp- root of
+//   the template rendered inside them, never through the dialogue's own classes.
+// tests/local/competency_scss_test.php holds the scope, the colour vocabulary and the dark pairs.
+//
+// Colours are the family tokens (--dimensions-*, scss/post.scss, docs/tokens.md) and Bootstrap's own,
+// never a literal: the tokens follow a flavour's brand colour and the page's colour mode. Every rule
+// that paints a ground states the ink that goes on it. Radius and spacing are the design system's
+// --dim-ds-radius-* and --dim-ds-space-*. Moodle 5.3's one dark mechanism is data-bs-theme on the html
+// element; the dark half is at the foot of the file.
+
+/* ---- The state pills: rated, proficient, not proficient, not rated ---------- */
+/* A pill is never colour alone: the template writes its text and an icon (templates/tool_lp,
+   templates/report_competency). Not proficient is the warning family, as in local_dimensions'
+   grade badge, not the danger one: it is a state of learning, not an error. */
+.dim-comp-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dim-ds-space-xxs);
+    max-width: 100%;
+    padding: .1875rem .625rem;
+    border: 1px solid var(--dimensions-neutral-edge);
+    border-radius: var(--dim-ds-radius-pill);
+    background-color: var(--dimensions-neutral-tint);
+    color: var(--dimensions-neutral-ink);
+    font-size: .8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    vertical-align: middle;
+    white-space: normal;
+
+    .dim-comp-pill__icon {
+        flex: none;
+        font-size: .875em;
+    }
+}
+
+.dim-comp-pill--proficient {
+    border-color: var(--dimensions-success-edge);
+    background-color: var(--dimensions-success-tint);
+    color: var(--dimensions-success-ink);
+}
+
+.dim-comp-pill--notproficient {
+    border-color: var(--dimensions-warning-edge);
+    background-color: var(--dimensions-warning-tint);
+    color: var(--dimensions-warning-ink);
+}
+
+.dim-comp-pill--rated {
+    border-color: var(--dimensions-info-edge);
+    background-color: var(--dimensions-info-tint);
+    color: var(--dimensions-info-ink);
+}
+
+.dim-comp-pill--status {
+    border-color: var(--dimensions-brand-edge);
+    background-color: var(--dimensions-brand-tint);
+    color: var(--dimensions-brand-ink);
+}
+
+.dim-comp-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--dim-ds-space-xxs);
+}
+
+/* ---- Cards: the competency summary, the statistics, the evidence ----------- */
+.dim-comp-card {
+    margin-bottom: var(--dim-ds-space-md);
+    padding: var(--dim-ds-space-md);
+    border: 1px solid var(--dimensions-line);
+    border-radius: var(--dim-ds-radius-lg);
+    background-color: var(--dimensions-surface);
+    color: var(--dimensions-ink);
+    box-shadow: 0 1px 2px var(--dimensions-shadow);
+}
+
+.dim-comp-eyebrow {
+    margin: 0 0 var(--dim-ds-space-xxs);
+    color: var(--dimensions-ink-muted);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+
+.dim-comp-summary {
+    .dim-comp-summary__head {
+        margin-bottom: var(--dim-ds-space-sm);
+    }
+
+    .dim-comp-summary__title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--dim-ds-space-xxs) var(--dim-ds-space-xs);
+        margin: 0;
+        color: var(--dimensions-ink-strong);
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .dim-comp-summary__description {
+        margin-bottom: var(--dim-ds-space-sm);
+        color: var(--dimensions-ink);
+        line-height: var(--dim-ds-leading-relaxed);
+    }
+
+    .dim-comp-summary__subtitle {
+        margin: 0 0 var(--dim-ds-space-xxs);
+        color: var(--dimensions-ink-strong);
+        font-size: 1rem;
+        font-weight: 600;
+    }
+}
+
+/* A section of a card. A flow root, so core's floated "Path:" label stays inside it. */
+.dim-comp-section {
+    display: flow-root;
+    margin-top: var(--dim-ds-space-sm);
+}
+
+/* The idnumber beside a name: quieter, never a monospace swap. */
+.dim-comp-idnumber {
+    color: var(--dimensions-ink-muted);
+    font-size: .8125rem;
+    font-style: normal;
+    font-weight: 500;
+
+    a {
+        color: var(--dimensions-accent);
+    }
+}
+
+/* ---- The definition grids: a competency's facts, a plan's, a rule ---------- */
+/* Two columns from sm up, the label column as wide as its longest label; stacked on a phone. Core's
+   own dl in the plan summary and the user competency summaries take the same grid. */
+.dim-comp-meta,
+body.path-admin-tool-lp [data-region="plan-summary"] > dl,
+body.path-admin-tool-lp [data-region="competency-summary"] > dl:not([data-region="evidence-listing"]),
+body.path-report-competency [data-region="competency-summary"] > dl:not([data-region="evidence-listing"]) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--dim-ds-space-xxs) var(--dim-ds-space-md);
+    margin: var(--dim-ds-space-sm) 0;
+
+    > dt {
+        margin: var(--dim-ds-space-xs) 0 0;
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+        font-weight: 600;
+    }
+
+    > dd {
+        margin: 0;
+        color: var(--dimensions-ink);
+    }
+
+    @media (min-width: 576px) {
+        grid-template-columns: auto 1fr;
+        align-items: baseline;
+
+        > dt {
+            margin-top: 0;
+        }
+    }
+}
+
+/* Core's proficiency badges, where the theme does not own the template (user_competency_summary_in_plan
+   and _in_course, course_competencies_page): Bootstrap's bg-* utilities are !important, so the
+   colour stays core's pair (white on success or danger) and the theme gives the badge the pill's
+   shape and an icon, so the state is not carried by the colour alone. */
+body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-success,
+body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-danger,
+body.path-admin-tool-lp [data-region="coursecompetencies"] .badge.bg-success,
+body.path-admin-tool-lp [data-region="coursecompetencies"] .badge.bg-danger,
+body.path-report-competency [data-region="competency-summary"] .badge.bg-success,
+body.path-report-competency [data-region="competency-summary"] .badge.bg-danger {
+    display: inline-flex;
+    float: none;
+    align-items: center;
+    gap: var(--dim-ds-space-xxs);
+    padding: .1875rem .625rem;
+    border-radius: var(--dim-ds-radius-pill);
+    font-size: .8125rem;
+    font-weight: 600;
+
+    &::before {
+        font: var(--fa-font-solid);
+        font-size: .875em;
+    }
+}
+
+body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-success::before,
+body.path-admin-tool-lp [data-region="coursecompetencies"] .badge.bg-success::before,
+body.path-report-competency [data-region="competency-summary"] .badge.bg-success::before {
+    content: fa-content($fa-var-circle-check);
+}
+
+body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-danger::before,
+body.path-admin-tool-lp [data-region="coursecompetencies"] .badge.bg-danger::before,
+body.path-report-competency [data-region="competency-summary"] .badge.bg-danger::before {
+    content: fa-content($fa-var-circle-exclamation);
+}
+
+/* ---- Progress ------------------------------------------------------------- */
+/* A native progress element (templates/tool_lp/progress_bar.mustache): its value is an attribute,
+   so no style attribute ever carries a number from the context. The bar's fill must reach 3:1
+   against its track (WCAG 1.4.11): the brand fill on the inset ground in light, the brand ink in
+   dark (at the foot). */
+/* The whole bar is a label wrapping its sentence and its progress element, which names the bar; a
+   label is inline-block under Bootstrap's reboot. */
+.dim-comp-progress {
+    display: block;
+    margin: var(--dim-ds-space-xs) 0;
+    font-weight: 400;
+
+    .dim-comp-progress__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--dim-ds-space-xxs) var(--dim-ds-space-sm);
+        margin-bottom: var(--dim-ds-space-xxs);
+    }
+
+    .dim-comp-progress__text {
+        color: var(--dimensions-ink);
+        font-size: .875rem;
+    }
+
+    .dim-comp-progress__value {
+        color: var(--dimensions-ink-strong);
+        font-size: .875rem;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
+
+    .dim-comp-progress__bar {
+        display: block;
+        width: 100%;
+        height: .5rem;
+        overflow: hidden;
+        border: 0;
+        border-radius: var(--dim-ds-radius-pill);
+        appearance: none;
+        background-color: var(--dimensions-surface-inset);
+        color: var(--dimensions-brand-fill);
+
+        &::-webkit-progress-bar {
+            border-radius: var(--dim-ds-radius-pill);
+            background-color: var(--dimensions-surface-inset);
+        }
+
+        &::-webkit-progress-value {
+            border-radius: var(--dim-ds-radius-pill);
+            background-color: var(--dimensions-brand-fill);
+        }
+
+        &::-moz-progress-bar {
+            border-radius: var(--dim-ds-radius-pill);
+            background-color: var(--dimensions-brand-fill);
+        }
+    }
+}
+
+/* ---- The competency path: a breadcrumb ----------------------------------- */
+/* Included by core's plan and course competency tables after their own "Path:" label, which floats:
+   the list is a flex container, so it sits beside the float rather than under it. */
+.dim-comp-path {
+    .dim-comp-path__list {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 var(--dim-ds-space-xxs);
+        margin: 0;
+        padding: 0;
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+        list-style: none;
+    }
+
+    .dim-comp-path__item + .dim-comp-path__item::before {
+        content: "/";
+        margin-right: var(--dim-ds-space-xxs);
+        color: var(--dimensions-ink-muted);
+    }
+
+    a {
+        color: var(--dimensions-accent);
+    }
+}
+
+/* ---- Related competencies and linked courses: chips and rows --------------- */
+.dim-comp-related {
+    .dim-comp-related__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--dim-ds-space-xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-comp-related__item {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--dim-ds-space-xxs);
+        padding: .25rem .5rem .25rem .75rem;
+        border: 1px solid var(--dimensions-brand-edge);
+        border-radius: var(--dim-ds-radius-pill);
+        background-color: var(--dimensions-brand-tint);
+        color: var(--dimensions-brand-ink);
+        font-size: .875rem;
+
+        a {
+            color: var(--dimensions-brand-ink);
+            font-weight: 600;
+        }
+    }
+
+    .dim-comp-related__empty {
+        margin: 0;
+        color: var(--dimensions-ink-muted);
+    }
+}
+
+.dim-comp-courses {
+    .dim-comp-courses__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-comp-courses__item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 var(--dim-ds-space-xs);
+        padding: var(--dim-ds-space-xs) 0;
+        border-bottom: 1px solid var(--dimensions-line);
+    }
+
+    .dim-comp-courses__item:last-child {
+        border-bottom: 0;
+    }
+
+    .dim-comp-courses__empty {
+        margin: 0;
+        color: var(--dimensions-ink-muted);
+    }
+}
+
+/* ---- Evidence --------------------------------------------------------------- */
+/* One card per piece of evidence, the rating it carried as a pill; the list keeps core's
+   data-region="evidence" container, which tool_lp/evidence_delete removes on deletion. */
+.dim-comp-evidence {
+    position: relative;
+    margin-bottom: var(--dim-ds-space-xs);
+    padding: var(--dim-ds-space-sm) var(--dim-ds-space-md);
+    border: 1px solid var(--dimensions-line);
+    border-inline-start: 3px solid var(--dimensions-brand-edge);
+    border-radius: var(--dim-ds-radius-md);
+    background-color: var(--dimensions-surface);
+    color: var(--dimensions-ink);
+
+    .dim-comp-evidence__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--dim-ds-space-xxs) var(--dim-ds-space-sm);
+        margin-bottom: var(--dim-ds-space-xxs);
+    }
+
+    .dim-comp-evidence__time {
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+        font-weight: 600;
+    }
+
+    .dim-comp-evidence__actions {
+        margin-inline-start: auto;
+    }
+
+    .dim-comp-evidence__description {
+        margin: var(--dim-ds-space-xxs) 0;
+    }
+
+    .dim-comp-evidence__note {
+        margin: var(--dim-ds-space-xs) 0;
+        padding: var(--dim-ds-space-xs) var(--dim-ds-space-sm);
+        border-inline-start: 3px solid var(--dimensions-line);
+        border-radius: var(--dim-ds-radius-xs);
+        background-color: var(--dimensions-surface-alt);
+        color: var(--dimensions-ink);
+        font-style: italic;
+    }
+
+    .dim-comp-evidence__url {
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+}
+
+.dim-comp-evidence-empty {
+    margin: 0;
+    color: var(--dimensions-ink-muted);
+}
+
+/* The person who acted, as a chip: avatar, name, identity fields. */
+.dim-comp-user {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--dim-ds-space-xs);
+    color: var(--dimensions-accent);
+    text-decoration: none;
+
+    .dim-comp-user__avatar {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .dim-comp-user__name {
+        font-weight: 600;
+    }
+
+    .dim-comp-user__identity {
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+    }
+}
+
+/* The evidence list of a user competency summary: its heading an eyebrow, the cards full width.
+   Core's in-plan and in-course summaries draw the same dl. */
+.dim-comp-evidence-listing,
+body.path-admin-tool-lp [data-region="evidence-listing"],
+body.path-report-competency [data-region="evidence-listing"] {
+    margin: var(--dim-ds-space-md) 0 0;
+
+    > dt {
+        margin-bottom: var(--dim-ds-space-xs);
+        color: var(--dimensions-ink-muted);
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+        text-transform: uppercase;
+    }
+
+    > dd {
+        margin: 0;
+    }
+}
+
+/* Secondary text beside a value: the reviewer beside a status. */
+.dim-comp-muted {
+    color: var(--dimensions-ink-muted);
+    font-size: .8125rem;
+}
+
+/* ---- Navigation panels: jump to a user, a competency, an activity ----------- */
+/* Core's float stays (float-end or float-sm-end, in the template) because the page beneath was
+   laid out around it; the panel is the theme's. The select is hidden by core's own
+   .user-competency-course-navigation rule until form-autocomplete has enhanced it. */
+.dim-comp-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dim-ds-space-xs);
+    margin-bottom: var(--dim-ds-space-sm);
+    padding: var(--dim-ds-space-sm);
+    border: 1px solid var(--dimensions-line);
+    border-radius: var(--dim-ds-radius-md);
+    background-color: var(--dimensions-surface-alt);
+    color: var(--dimensions-ink);
+
+    .dim-comp-nav__group {
+        margin: 0;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--dim-ds-space-xs);
+        margin: 0;
+    }
+}
+
+/* ---- Statistics ------------------------------------------------------------- */
+.dim-comp-stats {
+    .dim-comp-stats__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--dim-ds-space-xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-comp-stats__item {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--dim-ds-space-xxs);
+        padding: .25rem .75rem;
+        border: 1px solid var(--dimensions-warning-edge);
+        border-radius: var(--dim-ds-radius-pill);
+        background-color: var(--dimensions-warning-tint);
+        color: var(--dimensions-warning-ink);
+        font-size: .875rem;
+
+        a {
+            color: var(--dimensions-warning-ink);
+            font-weight: 600;
+        }
+    }
+}
+
+/* ---- The rating dialogue (tool_lp/competency_grader) ------------------------ */
+.dim-comp-grader {
+    .dim-comp-grader__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--dim-ds-space-xxs);
+        margin-bottom: var(--dim-ds-space-sm);
+
+        label {
+            margin: 0;
+            color: var(--dimensions-ink-strong);
+            font-weight: 600;
+        }
+
+        textarea {
+            min-height: 6rem;
+        }
+    }
+
+    .dim-comp-grader__footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--dim-ds-space-xs);
+        margin-top: var(--dim-ds-space-sm);
+        padding-top: var(--dim-ds-space-sm);
+        border-top: 1px solid var(--dimensions-line);
+    }
+}
+
+/* ---- The user competency summary's review buttons ------------------------- */
+.dim-comp-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--dim-ds-space-xs);
+    margin-top: var(--dim-ds-space-xxs);
+}
+
+/* ---- Tables: the breakdown report, the review lists, core's plan tables ------ */
+.dim-comp-table,
+body.path-admin-tool-lp table.managecompetencies {
+    overflow: hidden;
+    border: 1px solid var(--dimensions-line);
+    border-radius: var(--dim-ds-radius-md);
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: var(--dimensions-surface);
+    color: var(--dimensions-ink);
+
+    > thead > tr > th {
+        border-top: 0;
+        border-bottom: 1px solid var(--dimensions-line);
+        background-color: var(--dimensions-surface-alt);
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+        font-weight: 600;
+    }
+
+    > tbody > tr > td,
+    > tbody > tr > th {
+        border-top: 1px solid var(--dimensions-line);
+        vertical-align: middle;
+    }
+
+    > tbody > tr:first-child > td,
+    > tbody > tr:first-child > th {
+        border-top: 0;
+    }
+}
+
+/* The report's rating cell is the whole click target core's grading popup listens on
+   ([data-user-competency=true]); its link is the keyboard way in. */
+.dim-comp-report {
+    .dim-comp-report__rating a {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: var(--dim-ds-space-xxs);
+        text-decoration: none;
+    }
+
+    .dim-comp-report__rating a:hover .dim-comp-pill,
+    .dim-comp-report__rating a:focus .dim-comp-pill {
+        text-decoration: underline;
+    }
+}
+
+.dim-comp-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--dim-ds-space-xs);
+    margin-bottom: var(--dim-ds-space-md);
+    padding: var(--dim-ds-space-sm) var(--dim-ds-space-md);
+    border: 1px solid var(--dimensions-info-edge);
+    border-radius: var(--dim-ds-radius-md);
+    background-color: var(--dimensions-info-tint);
+    color: var(--dimensions-info-ink);
+
+    .dim-comp-callout__icon {
+        flex: none;
+        margin-top: .2em;
+    }
+}
+
+/* ---- The learning plans block ------------------------------------------------ */
+.block_lp {
+    .dim-comp-block__heading {
+        margin: var(--dim-ds-space-sm) 0 var(--dim-ds-space-xs);
+        color: var(--dimensions-ink-strong);
+        font-size: .9375rem;
+        font-weight: 600;
+    }
+
+    .dim-comp-block__heading:first-child {
+        margin-top: 0;
+    }
+
+    .dim-comp-block__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-comp-block__item {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--dim-ds-space-xxs) var(--dim-ds-space-xs);
+        padding: var(--dim-ds-space-xs) 0;
+        border-bottom: 1px solid var(--dimensions-line);
+    }
+
+    .dim-comp-block__item:last-child {
+        border-bottom: 0;
+    }
+
+    .dim-comp-block__who {
+        color: var(--dimensions-ink-muted);
+        font-size: .8125rem;
+    }
+
+    .dim-comp-block__more {
+        padding-top: var(--dim-ds-space-xs);
+        font-weight: 600;
+    }
+
+    .dim-comp-block__empty {
+        margin: 0;
+        color: var(--dimensions-ink-muted);
+    }
+}
+
+/* ---- Dark mode ------------------------------------------------------------ */
+/* The family tokens already flip with the colour mode; what is restated here is a pairing that is
+   not the same token in both modes. The bar's fill: the brand fill (Bootstrap's primary) is a navy
+   that reads about 1.2:1 on a dark inset track, so the dark bar takes the brand ink, the design
+   system's light stop of the hue (scss/post.scss), over 3:1 on every dark ground. */
+:root[data-bs-theme="dark"] .dim-comp-progress .dim-comp-progress__bar {
+    background-color: var(--dimensions-surface-inset);
+    color: var(--dimensions-brand-ink);
+
+    &::-webkit-progress-value {
+        background-color: var(--dimensions-brand-ink);
+    }
+
+    &::-moz-progress-bar {
+        background-color: var(--dimensions-brand-ink);
+    }
+}
+
+/* The brand-tinted chips: Bootstrap's dark primary tint is near the page's own ground, so the chip
+   keeps its edge as the boundary and its ink stays the dark brand ink (post.scss). */
+:root[data-bs-theme="dark"] .dim-comp-related .dim-comp-related__item,
+:root[data-bs-theme="dark"] .dim-comp-pill--status {
+    border-color: var(--dimensions-brand-ink);
+    background-color: var(--dimensions-brand-tint);
+    color: var(--dimensions-brand-ink);
+}

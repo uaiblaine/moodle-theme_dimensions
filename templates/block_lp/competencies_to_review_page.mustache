@@ -1,0 +1,62 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_lp/competencies_to_review_page
+
+    The competencies waiting for review, overridden by Dimensions.
+
+    Mirrors block_lp/competencies_to_review_page of Moodle 5.3 (2026100500), blocks/lp/templates/competencies_to_review_page.mustache.
+    Re-diff it against that file on every core upgrade. The block's review page renders it under
+    body.path-blocks-lp.
+
+    Kept from core: the wrapper's data-region="competencies-to-review", a table with a head and a body, the three
+    column headings, one row per item with its link, the competency name triple-stashed and the person and
+    the status double-stashed.
+    Changed: the table is the theme's (dim-comp-table) and the review status is a status pill.
+
+    Context variables required for this template:
+    * competencies - array of competency (shortname), user (fullname), usercompetency (url, statusname)
+
+    Example context (json):
+    {
+        "competencies": [
+            {
+                "competency": {"shortname": "Communicate clearly"}, "user": {"fullname": "Sam Student"}, "usercompetency": {"url": "https://example.com/admin/tool/lp/user_competency.php?id=7", "statusname": "Waiting for review"}
+            }
+        ]
+    }
+}}
+<div data-region="competencies-to-review">
+<table class="table generaltable dim-comp-table">
+    <thead>
+        <tr>
+            <th scope="col">{{#str}}shortname, tool_lp{{/str}}</th>
+            <th scope="col">{{#str}}user{{/str}}</th>
+            <th scope="col">{{#str}}reviewstatus, tool_lp{{/str}}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#competencies}}
+        <tr>
+            <td><a href="{{usercompetency.url}}">{{{competency.shortname}}}</a></td>
+            <td>{{user.fullname}}</td>
+            <td><span class="dim-comp-pill dim-comp-pill--status">{{usercompetency.statusname}}</span></td>
+        </tr>
+        {{/competencies}}
+    </tbody>
+</table>
+</div>

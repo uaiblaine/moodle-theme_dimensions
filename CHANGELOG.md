@@ -5,6 +5,42 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The competency framework's pages and dialogues in the theme's design** (`2026100506`).
+  - `scss/competency.scss`, concatenated by `lib.php`: every top-level selector scoped to the body classes
+    core derives for tool_lp, report_competency and block_lp's scripts (`path-admin-tool-lp`,
+    `path-report-competency`, `path-blocks-lp`), to `.block_lp` or to the theme's own `dim-comp-` classes;
+    colours from the family tokens `--dimensions-*` and Bootstrap only, radius and spacing from the design
+    system; every ground states its ink, and the progress bar's fill is restated for the dark mode (the
+    brand ink). Core's proficiency badges, where the template stays core's, get the pill's shape and an
+    icon per state.
+  - Restyled copies of twenty core templates, each naming the 5.3 file it mirrors: tool_lp's
+    `progress_bar`, `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`,
+    `linked_courses_summary`, the three navigation templates, `related_competencies`,
+    `course_competency_statistics`, `template_statistics`, `competency_grader` (the rating dialogue) and
+    `user_competency_summary`; report_competency's `report`, `user_competency_summary` and
+    `user_course_navigation`; block_lp's `summary` and its two review pages. Every data-region,
+    data-action, data-* attribute, id and form name core's AMD and Behat read is kept. Proficiency is said
+    in words with an icon (the breakdown report's green cell is gone); a progress bar is named by its own
+    sentence and prints its percentage. No renderer is overridden.
+  - One language string, `competency_notproficient`. Tests `competency_scss_test`,
+    `competency_templates_test`, `competency_render_test`, the Behat feature
+    `theme_dimensions_competency.feature`, and mutation gates `comp_grader_rate_action`,
+    `comp_evidence_delete_action` and `comp_report_cell_hook`.
+- **Family design tokens `--dimensions-*`; crests answered through block_compass's hook** (`2026100505`).
+  - `scss/post.scss` declares the 54 family tokens local_dimensions and block_dimensions will read as
+    `var(--dimensions-x, <their own chain>)`: 33 shared (surfaces, line, ink, accent, the brand, the focus
+    ring, the five tone families, shadow, scrim) and 21 read by local_dimensions alone (motion and the six
+    enrolment states, which are the category showcase's state badges in both modes). Light values on
+    `:root`, `body` and `.modal`; dark values on the same roots under `:root[data-bs-theme="dark"]`. One
+    new design system token, `--dim-ds-shadow-rgb` (the navy's channels). `docs/tokens.md` is the public
+    contract, and `tests/local/family_tokens_test.php` holds the names, the roots, the values and the
+    document against each other.
+  - block_compass asks for the crests of its cards through its own hook, `\block_compass\hook\course_badges`
+    (5.3): `classes/local/hook/block_compass/course_badges.php` answers it from
+    `theme_dimensions_course_badges()`, whose viewer filter is unchanged, and reports a fault instead of
+    throwing. The block stays optional: the registration in `db/hooks.php` is inert without it, and CI
+    installs `block_compass` (`MOODLE_503_STABLE`) only to exercise the callback. Mutation gates
+    `compass_hook_viewer_path` and `compass_hook_catch`.
 - **Landing pages, English identifiers** (`2026100504`). The theme has no install base yet, so
   `install.xml`, `install.php` and the field definitions change in place, with no upgrade step:
   - "hotsite" is "landing" in code and "landing page" in prose: `classes/local/landing/`,

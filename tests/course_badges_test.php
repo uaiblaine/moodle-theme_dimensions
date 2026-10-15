@@ -32,7 +32,7 @@ use theme_dimensions\local\landing\publicfiles;
 use theme_dimensions\local\landingfields;
 
 /**
- * Tests for theme_dimensions_course_badges(), the one entry point block_compass reads crests through.
+ * Tests for theme_dimensions_course_badges(), the answer block_compass's course_badges hook carries.
  *
  * Every rule has its control in the same test: four badges come back as three beside a course holding one, a course
  * whose model was cleared returns none beside the same files under a model, a course gets crests exactly when the
@@ -49,7 +49,7 @@ final class course_badges_test extends \advanced_testcase {
     private const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
     /**
-     * Provision the landing page fields and load the theme's library, as component_callback() would.
+     * Provision the landing page fields and load the theme's library, as the hook callback does.
      *
      * @return void
      */
@@ -117,7 +117,8 @@ final class course_badges_test extends \advanced_testcase {
     /**
      * At most three crests, in grid order, each named through the theme's own badge route with its file's words.
      *
-     * The same answer through component_callback(), which is how block_compass asks.
+     * The same answer through component_callback(): the function keeps its frankenstyle name, so a caller of that door
+     * reads what the hook carries.
      */
     public function test_a_course_gets_its_first_three_crests_in_grid_order(): void {
         $four = $this->course_with_badges(landingfields::MODEL_COURSE, ['crest-one.png', 'dois.png', 'tres_c.png', 'quatro.png']);
@@ -135,7 +136,7 @@ final class course_badges_test extends \advanced_testcase {
         $this->assertSame(
             $badges,
             component_callback('theme_dimensions', 'course_badges', [[$four, $one]], []),
-            'The callback other plugins ask answers the same.'
+            'component_callback() answers the same.'
         );
     }
 

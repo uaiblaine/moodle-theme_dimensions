@@ -1,0 +1,70 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/competency_grader
+
+    The rating dialogue's body, overridden by Dimensions.
+
+    Mirrors tool_lp/competency_grader of Moodle 5.3 (2026100500), admin/tool/lp/templates/competency_grader.mustache.
+    Re-diff it against that file on every core upgrade. tool_lp/grade_dialogue renders it into the
+    "Rate" dialogue that every inline rating button opens (the user competency summaries, the
+    breakdown report's popup).
+
+    Kept from core, because tool_lp/grade_dialogue finds them inside the dialogue's content: the
+    rate button's data-action="rate" (enabled only once a rating is chosen, and it fires the rating),
+    the cancel button's data-action="cancel", the select named rating and the textarea named comment
+    (read on rate), the regions data-region="competency-grader", "rating", "comment" and "footer",
+    the ids rating_<uniqid> and comment_<uniqid> with their labels, and the form. Kept for Behat: the
+    class competency-grader, which report_competency's feature scopes the rate button to. Every rating
+    keeps its value and selected state; the names keep core's double stash.
+    Changed: the fields are stacked with their labels above them (dim-comp-grader), the footer is a
+    right-aligned row of the two buttons above a rule, and the clearfix is gone with the float.
+
+    Data required for JS:
+    * ratings - list of value, name and selected for the valid ratings
+
+    Example context (json):
+    {
+        "ratings": [
+            {"name": "Choose a rating", "value": ""},
+            {"name": "Not yet competent", "value": 1},
+            {"name": "Competent", "value": 2, "selected": true}
+        ]
+    }
+}}
+<div class="competency-grader dim-comp-grader" data-region="competency-grader">
+    <form>
+        <div class="content">
+            <div data-region="rating" class="dim-comp-grader__field">
+                <label for="rating_{{uniqid}}">{{#str}}rating, tool_lp{{/str}}</label>
+                <select name="rating" id="rating_{{uniqid}}" class="form-select">
+                    {{#ratings}}
+                        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+                    {{/ratings}}
+                </select>
+            </div>
+            <div data-region="comment" class="dim-comp-grader__field">
+                <label for="comment_{{uniqid}}">{{#str}}ratecomment, tool_lp{{/str}}</label>
+                <textarea name="comment" id="comment_{{uniqid}}" class="form-control"></textarea>
+            </div>
+        </div>
+        <div data-region="footer" class="dim-comp-grader__footer">
+            <button data-action="rate" class="btn btn-primary">{{#str}}rate, tool_lp{{/str}}</button>
+            <button data-action="cancel" class="btn btn-secondary">{{#str}}cancel{{/str}}</button>
+        </div>
+    </form>
+</div>

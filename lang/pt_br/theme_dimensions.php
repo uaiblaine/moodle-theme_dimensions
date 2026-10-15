@@ -305,6 +305,7 @@ $string['categorytreedepth_all'] = 'Todos os níveis';
 $string['categorytreedepth_desc'] = 'Quantos níveis abaixo da categoria listada a navegação oferece: a árvore ao lado da listagem e o acordeão da organização "Por categoria". Limita o que é OFERECIDO e nunca o que é LISTADO - a página sempre lista toda a subárvore da categoria, por mais profunda que seja, e uma categoria mais abaixo é alcançada pelo botão "Acessar categoria" do ancestral oferecido mais próximo.';
 $string['categoryunavailable'] = 'Esta categoria não está disponível.';
 $string['choosereadme'] = 'O Dimensions é um tema filho do Boost Union. Ele tem a mesma aparência e o mesmo comportamento do Boost Union e acrescenta sobre ele página de acesso própria, vitrine de categorias, páginas de destino e modo foco.';
+$string['competency_notproficient'] = 'Não proficiente';
 $string['configtitle'] = 'Dimensions';
 $string['coursenotice_changediscoverability'] = 'Alterar a descobribilidade';
 $string['coursenotice_chip_guest'] = 'Visitante liberado';

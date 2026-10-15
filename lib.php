@@ -75,6 +75,12 @@ function theme_dimensions_get_main_scss_content($theme) {
     // Every rule in it is qualified with the notice's own class.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/coursenotice.scss');
 
+    // And the competency framework's pages and dialogues (tool_lp, report_competency, block_lp), scoped
+    // to the body classes core derives for those scripts, the block's root and the dim-comp- classes
+    // only the theme's copies of their templates carry. It reads Font Awesome's fa-content() and
+    // $fa-var-* from the Boost SCSS compiled above it.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/competency.scss');
+
     return $scss;
 }
 
@@ -395,11 +401,13 @@ function theme_dimensions_extend_burecommendations(): array {
 /**
  * The course's own institutional crests, for another plugin's course cards: at most three per course, in grid order.
  *
- * block_compass asks for them through component_callback('theme_dimensions', 'course_badges', [$courseids])
- * and never touches this theme's classes, which are not an API and move. The answer is what the category showcase's
- * own card draws ({@see \theme_dimensions\output\category_card::crests()}): the badges of the course's
- * landing page, named through the theme's file route. A course with no landing page model gets none, even where badge files
- * survive a model that was cleared.
+ * block_compass asks for them through its own hook, \block_compass\hook\course_badges, which this theme answers in
+ * {@see \theme_dimensions\local\hook\block_compass\course_badges::answer()} by calling this function with the hook's ids;
+ * no core callback looks it up by name any more. It stays as the hook's answer and the one place its viewer filter
+ * lives. The answer is what the category showcase's own card draws
+ * ({@see \theme_dimensions\output\category_card::crests()}): the badges of the course's landing page, named through the
+ * theme's file route. A course with no landing page model gets none, even where badge files survive a model that was
+ * cleared.
  *
  * Only for courses the route would serve the current reader
  * ({@see \theme_dimensions\local\landing\publicfiles::viewer_may_see_many()}): a crest's address and

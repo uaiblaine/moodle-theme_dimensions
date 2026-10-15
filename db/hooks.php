@@ -50,4 +50,9 @@ $callbacks = [
         'callback' => 'theme_dimensions\local\hook\output\before_standard_head_html_generation::callback',
         'priority' => 0,
     ],
+    // Optional: without block_compass this hook class does not exist and is never dispatched.
+    [
+        'hook' => \block_compass\hook\course_badges::class,
+        'callback' => \theme_dimensions\local\hook\block_compass\course_badges::class . '::answer',
+    ],
 ];

@@ -1,0 +1,75 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template tool_lp/related_competencies
+
+    The competencies cross-referenced with a competency, as chips, overridden by Dimensions.
+
+    Mirrors tool_lp/related_competencies of Moodle 5.3 (2026100500),
+    admin/tool/lp/templates/related_competencies.mustache. Re-diff it against that file on every core
+    upgrade.
+
+    Kept from core, because tool_lp/competencyactions and tool_lp/competencydialogue read them: the
+    wrapper's data-region="relatedcompetencies" (replaced whole after an add or a removal); each delete
+    link's data-action="deleterelation" and its id id-related-<competency id>, whose first eleven
+    characters the handler strips to read the id, so the prefix is exact; each name's link with
+    data-action="competency-dialogue" and data-id; and the JavaScript arming the dialogue. Kept for
+    Behat: the link's text is the shortname, a space and the idnumber ("Cakes cakes"), and the
+    region is what tool_lp's "competency page related competency" selector scopes to. The shortname
+    keeps core's triple stash, the idnumber its double stash.
+    Changed: the list is a row of chips (dim-comp-related) with the delete action inside its chip; the
+    heading is an eyebrow; the empty case is a paragraph.
+
+    Context variables required for this template:
+    * showdeleterelatedaction - boolean
+    * relatedcompetencies - array of id, shortname, idnumber
+
+    Example context (json):
+    {
+        "showdeleterelatedaction": true,
+        "relatedcompetencies": [
+            {
+                "id": 3,
+                "shortname": "Listen actively",
+                "idnumber": "COMM-2"
+            }
+        ]
+    }
+}}
+<div data-region="relatedcompetencies" class="dim-comp-related">
+    <p class="dim-comp-eyebrow">{{#str}}crossreferencedcompetencies, tool_lp{{/str}}</p>
+    {{#relatedcompetencies.0}}
+    <ul class="dim-comp-related__list">
+        {{#relatedcompetencies}}
+        <li class="dim-comp-related__item">
+            <a href="#" data-action="competency-dialogue" data-id="{{id}}">{{{shortname}}}{{#idnumber}} {{idnumber}}{{/idnumber}}</a>
+            {{#showdeleterelatedaction}}
+            <a href="#" data-action="deleterelation" id="id-related-{{id}}">{{#pix}}t/delete, core, {{#str}}delete{{/str}}{{/pix}}</a>
+            {{/showdeleterelatedaction}}
+        </li>
+        {{/relatedcompetencies}}
+    </ul>
+    {{/relatedcompetencies.0}}
+    {{^relatedcompetencies}}
+    <p class="dim-comp-related__empty">{{#str}}nocrossreferencedcompetencies, tool_lp{{/str}}</p>
+    {{/relatedcompetencies}}
+</div>
+{{#js}}
+require(['tool_lp/competencydialogue'], function(Compdialogue) {
+    Compdialogue.init();
+});
+{{/js}}
