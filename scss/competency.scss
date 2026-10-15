@@ -284,9 +284,17 @@ body.path-report-competency [data-region="competency-summary"] .badge.bg-danger:
 }
 
 /* ---- The competency path: a breadcrumb ----------------------------------- */
-/* Included by core's plan and course competency tables after their own "Path:" label, which floats:
-   the list is a flex container, so it sits beside the float rather than under it. */
+/* Included by core's plan and course competency tables after their own "Path:" label, which floats
+   left (`span.float-sm-start`). The list is set smaller than that label's line, so the float reaches
+   below the path; without the clearing ::after, whatever core prints next (the course page's
+   "Upon course completion" selector) wraps beside the label instead of starting on its own line. */
 .dim-comp-path {
+    &::after {
+        content: "";
+        display: block;
+        clear: both;
+    }
+
     .dim-comp-path__list {
         display: flex;
         flex-wrap: wrap;

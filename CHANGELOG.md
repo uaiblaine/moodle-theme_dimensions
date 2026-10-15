@@ -10,6 +10,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
     the templates' examples and the tests' numbers. The folder watermark on the default band is .20 again (was .09). A 60%
     overlay cannot reach 4.5:1 with any colour (3.27:1 here), so it stays a manager's explicit choice that D31 measures.
 
+- **The competency path clears core's floated "Path:" label** (`2026100507`): on the course competencies page the
+  "Upon course completion" selector no longer wraps beside the label.
+
 - **The competency framework's pages and dialogues in the theme's design** (`2026100506`).
   - `scss/competency.scss`, concatenated by `lib.php`: every top-level selector scoped to the body classes
     core derives for tool_lp, report_competency and block_lp's scripts (`path-admin-tool-lp`,

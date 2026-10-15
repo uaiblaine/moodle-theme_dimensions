@@ -471,6 +471,28 @@ final class competency_scss_test extends \advanced_testcase {
     }
 
     /**
+     * The path clears core's floated "Path:" label, so the next row of the page starts below it.
+     *
+     * Measured on the course competencies page: without the clearing pseudo-element, core's
+     * "Upon course completion" selector wrapped beside the label.
+     *
+     * @return void
+     */
+    public function test_the_path_clears_cores_floated_label(): void {
+        $found = 0;
+        foreach ($this->rules($this->stylesheet()) as [$chain, $own]) {
+            if (str_ends_with($chain, '.dim-comp-path | &::after')) {
+                $declarations = $this->declarations($own);
+                $this->assertSame('both', $declarations['clear'] ?? null, 'The path must clear the float.');
+                $this->assertSame('block', $declarations['display'] ?? null, 'A clearing box must be a block.');
+                $this->assertSame('""', $declarations['content'] ?? null, 'The pseudo-element needs content.');
+                $found++;
+            }
+        }
+        $this->assertSame(1, $found, 'The path has exactly one clearing pseudo-element.');
+    }
+
+    /**
      * The stylesheet wins on specificity and order, never on force.
      *
      * @return void
