@@ -238,13 +238,14 @@ final class card_markup_test extends \advanced_testcase {
      *
      * Nothing in the pipeline reads an icon name: a misspelt one renders an empty square or nothing at all, and
      * every gate stays green. So each name of the badge table is looked up in core's icon map
-     * (theme/boost/scss/fontawesome/_variables.scss, whose "$fa-icons" list is what the font answers to); the
-     * route line's arrow is checked the same way. A made-up name is the control.
+     * (lib/bundles/fontawesome/scss/_variables.scss above the public directory, which theme_boost's fontawesome.scss
+     * imports since 5.3; its "$fa-icons" list is what the font answers to); the route line's arrow is checked the same
+     * way. A made-up name is the control.
      */
     public function test_every_badge_icon_is_one_core_draws_and_is_hidden_from_readers(): void {
         global $CFG;
 
-        $map = file_get_contents($CFG->dirroot . '/theme/boost/scss/fontawesome/_variables.scss');
+        $map = file_get_contents($CFG->root . '/lib/bundles/fontawesome/scss/_variables.scss');
         $this->assertNotEmpty($map);
         $exists = static fn(string $name): bool => (bool) preg_match('~^\s*"' . preg_quote($name, '~') . '":\s~m', $map);
         $this->assertFalse($exists('route-to-nowhere'), 'Control: a name core does not have is told apart.');
