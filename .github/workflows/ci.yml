@@ -54,5 +54,5 @@ jobs:
       plugin-dependencies: |
         moodle-an-hochschulen/moodle-theme_boost_union,upgrade-503
         uaiblaine/moodle-local_unlistedcourses,MOODLE_503_STABLE
-        uaiblaine/moodle-customfield_picture,support-503
-        uaiblaine/moodle-local_page,support-503
+        uaiblaine/moodle-customfield_picture,master
+        uaiblaine/moodle-local_page,main
