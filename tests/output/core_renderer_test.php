@@ -536,6 +536,44 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
+     * The toggle carries the theme's full name and not core's first name beside it.
+     *
+     * Core 5.3 draws userfirstname in a span next to the avatar from xl up, where this theme's
+     * core/user_menu_metadata override already shows the full name from md up: two names side by
+     * side. The span's display is a Bootstrap utility (d-xl-block, !important), so the stylesheet
+     * cannot hide it and the renderer drops the key instead. The control renders core's user menu
+     * with that key and no layout around it, which the renderer's guard does not touch: the span is
+     * drawn there, so its absence from the page is the theme's doing and not a markup change.
+     *
+     * @return void
+     */
+    public function test_the_toggle_shows_the_full_name_and_not_cores_first_name(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user(['firstname' => 'Ana', 'lastname' => 'Ribeiro']));
+
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $renderer = $this->renderer('/my/', 'standard');
+        $PAGE->set_title('Dashboard');
+        $PAGE->set_heading('Dashboard');
+        $html = $renderer->header();
+
+        $this->assertStringContainsString('id="user-menu-toggle"', $html, 'Precondition: the page draws the user menu.');
+        $this->assertMatchesRegularExpression('~<span class="dimensions-usermenu-name[^"]*">\s*Ana Ribeiro\s*</span>~', $html);
+        $this->assertStringNotContainsString('class="userfirstname', $html);
+
+        $menu = $renderer->render_from_template('core/user_menu', [
+            'userfullname' => 'Ana Ribeiro',
+            'userfirstname' => 'Ana',
+            'avatardata' => [],
+            'metadata' => [],
+            'items' => [],
+            'submenus' => [],
+        ]);
+        $this->assertStringContainsString('class="userfirstname', $menu, 'Control: core draws the first name from this key.');
+    }
+
+    /**
      * A visitor who is not logged in gets the institutional navbar too.
      *
      * Core never sets usermenu.userfullname for a visitor, so a guard on that key skipped the navbar

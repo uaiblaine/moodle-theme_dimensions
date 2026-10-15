@@ -145,7 +145,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * A layout carrying the user menu gets the navbar's colour and the name block in the menu, for
      * the same reason: Boost Union's layouts build that context and render it in one call. The name
      * itself is left exactly as core wrote it - fullname($USER), from
-     * user_get_user_navigation_info() through core\navigation\output\primary::get_user_menu() - so
+     * \core\user::get_user_navigation_info() through core\navigation\output\primary::get_user_menu() - so
      * the navbar shows whatever the site's fullnamedisplay composes. The guard is the context's
      * shape rather than the template's name on purpose: it survives Boost Union renaming or
      * reorganising its layout templates, and it costs one isset() per render.
@@ -315,6 +315,15 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * turned Boost Union's setting off still gets nothing on desktop, where the navbar shows the
      * name anyway; on a phone the menu is the only place left for it.
      *
+     * Core 5.3 adds a name of its own to the toggle: the first name, in a span beside the avatar
+     * from xl up (lib/templates/user_menu.mustache, Boost Union's copy alike). This theme's
+     * core/user_menu_metadata override already shows the full name there from md up, so the key
+     * core fills it from is dropped here, and the template's section around it draws nothing.
+     * Dropped rather than hidden by the stylesheet, because the span carries d-xl-block, a
+     * Bootstrap utility whose display is !important and which no rule of this theme may outrank.
+     * The guard that called this method is the full name being in the context, which is exactly
+     * when the override draws it.
+     *
      * @param array $context The layout template context.
      * @return array
      */
@@ -322,6 +331,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if (empty($context['showfullnameinusermenu'])) {
             $context['showfullnameinusermenu'] = true;
         }
+        unset($context['usermenu']['userfirstname']);
 
         return $context;
     }
