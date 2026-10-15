@@ -5,6 +5,24 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Landing pages, English identifiers** (`2026100504`). The theme has no install base yet, so
+  `install.xml`, `install.php` and the field definitions change in place, with no upgrade step:
+  - "hotsite" is "landing" in code and "landing page" in prose: `classes/local/landing/`,
+    `landingfields`, `output\landing_page`, `output\landing_guestentry`, the route
+    `/theme_dimensions/landing/{course}` (`route\controller\landing`), the script `landing.php`, the
+    shortlink types `landing` and `landingguest`, the AMD module `landingguest`, `scss/landing.scss`
+    and its `dimensions-landing__*` classes, the lang keys `landing_*` and `landingfield_*`, the
+    recommendation `dimensions_landingaddresses`, the config key `landingcfcategoryid`. The custom
+    field category reads "Course landing page".
+  - The provisioned course custom fields have English short names prefixed `dimensions_`
+    (`dimensions_model`, `dimensions_modality`, `dimensions_workload`, `dimensions_audience`,
+    `dimensions_format`, `dimensions_liveclasses`, `dimensions_crest_1` to `_4`,
+    `dimensions_shareimage`, `dimensions_publicdescription`, ...), and every Portuguese identifier
+    of the code is English ("brasao" is "crest").
+  - The category branding column `chamada` is `tagline`.
+  - The course notice's custom properties are `--dim-notice-*`; its own page gate is the "course
+    home" (`builder::is_course_home()`).
+  - The backup elements of the picture rows are named `picture`.
 - **Structural de-brand** (`2026100503`):
   - The login page's CPF mask moved to auth_loginsteps (its setting `logincpfmask`, with the same
     `?nocpf=1` bypass). The theme drops `amd/src/logincpf.js`, the setting `logincpfvalidation` and
