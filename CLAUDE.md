@@ -18,9 +18,9 @@ so this file and `mutations/gates.conf` are what a maintainer has here. It owns 
 content, no personal data) and five user preferences, described by a `user_preference_provider`.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
 on Boost Union's `upgrade-503` branch until Boost Union tags its 5.3 release. Hard-depends on
-`theme_boost_union` (2026100500 or later), `local_unlistedcourses` (2026100505) and
-`customfield_picture` (2026101400); `auth_loginsteps` and `local_page` are optional and asked by class
-name, never declared. CI is the moodle-an-hochschulen reusable workflow, one job in
+`theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);
+`customfield_picture`, `auth_loginsteps` and `local_page` are optional and asked for at run time, never
+declared (the first through `hotsitefields::picture_type_available()`, the other two by class name). CI is the moodle-an-hochschulen reusable workflow, one job in
 `.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
 branch in `plugin-dependencies` at the same time (`upgrade-503` today, its stable branch once tagged).
 The theme is mounted on the shared stack **m503** at `theme/dimensions`; the 5.2 history below
@@ -76,7 +76,7 @@ In a Claude Code cloud session none of `mdl`, the stacks, `~/dev/CLAUDE.md` or t
 exist. The cloud environment's setup script (`moodle-dev/cloud/setup.sh`) installs
 `moodle-plugin-ci` and the `mpci` runner instead, and `mpci` reads this repo's `ci.yml`: it installs
 `MOODLE_503_STABLE` with the `plugin-dependencies` (Boost Union's `upgrade-503`, `local_unlistedcourses`,
-`customfield_picture` and the optional `local_page`, all public) by itself.
+and the optional `customfield_picture` and `local_page`, all public) by itself.
 
 ```sh
 mpci                                                         # every gate on MOODLE_503_STABLE
@@ -231,7 +231,7 @@ scss/login.scss                Everything under body.theme_dimensions-login.
 tests/output/core_renderer_test.php  Renders the real login page: no remote image, the switch, the layout;
                                and the navbar's name, through a real page header.
 db/install.php, db/upgrade.php Provision the course custom fields; upgrade.php also builds the branding table.
-scss/pre.scss, scss/post.scss  The design system's tokens; lib.php adds the settings-driven part.
+scss/pre.scss, scss/post.scss  The design system's tokens, all under --dim-ds-; lib.php assigns no $primary.
 ```
 
 ## Architecture gotchas
@@ -503,10 +503,11 @@ already shaped decisions here:
   `theme_build_css_for_themes()` — where no page has set a URL. Reading one there makes core
   emit a debugging notice from inside the compiler, and that is enough to fail
   `moodle-plugin-ci install`, which takes every gate needing an installed Moodle with it.
-  This is why the brand colour reads the flavour from `$themeboostunionappliedflavour`, the
+  A callback that ever needs the applicable flavour reads `$themeboostunionappliedflavour`, the
   global Boost Union's `flavours/styles.php` leaves behind, instead of calling
   `theme_boost_union_get_flavour_which_applies()` — Boost Union's own pre SCSS avoids that
-  call for exactly this reason, and says so in a comment.
+  call for exactly this reason, and says so in a comment. (The theme's own `$primary` default
+  read it that way until it was dropped in 2026100503.)
 - **Read the init logs, do not just check that they exited 0.** That notice was in the local
   `behat-init` output the whole time and was missed, because the init was judged by its exit
   status and its last lines. After any change to a SCSS callback:
@@ -605,8 +606,9 @@ The theme adds four items to Boost Union's recommendations overview
 (`theme/boost_union/recommendations/overview.php`): `dimensions_profileveto` (core's
 `forceloginforprofiles`, without which the profile rule above is inert), `dimensions_unlistedcourses`
 (the dependency is installed, upgraded and at the required version), `dimensions_customfieldpicture`
-(the Picture field type is enabled and every course field of `hotsitefields::definitions()` resolves;
-its fix is `ensure_fields()`) and `dimensions_hotsiteaddresses` (a notice while Moodle's router is not
+(every course field of `hotsitefields::definitions()` whose type the site has resolves - a warning
+otherwise, fixed by `ensure_fields()` - and the optional Picture type is installed and enabled - a
+notice otherwise, because the plugin is recommended, not required) and `dimensions_hotsiteaddresses` (a notice while Moodle's router is not
 configured, so every hotsite is shared under its long address). The classes are in
 `classes/recommendation/`, sharing `base`, and `theme_dimensions_extend_burecommendations()` in
 `lib.php` names them.
@@ -1161,6 +1163,15 @@ theme's first table and its cache, observer, event and uninstall. What the code 
   only - the image layout paints it translucent over a photograph and reads lower, which D31
   measures, records and deliberately does not refuse (a worst-case refusal would make three of
   the four quick colours unsaveable at the 60 % overlay).
+- **The default pair is Boost's default primary, `#0f6cbf`, with white ink** (`branding::DEFAULT_BG`,
+  the column default in `install.xml`, the fixture's first pair; 2026100503, replacing the
+  institutional navy). It is a hex and not `var(--bs-primary)` because the stops, the watermark's
+  alpha and the contrast audit are computed from its channels. It reads 5.36:1 opaque, but it is
+  lighter than every reference colour: over a WHITE photograph it reads 3.57:1 at the default 78 %
+  overlay (pinned in `branding_test`), and the folder watermark on it gets .09 rather than .20. The
+  default layout is the solid band, so that gap is met only by a manager who picks the image layout
+  without picking a colour. The stylesheet's own defaults (`--dim-hero-*` in `category.scss`, for a
+  header drawn without the attribute) are still the design system's navy.
 - **Two implementations of the same maths, held together by one fixture.**
   `tests/fixtures/contrast_pairs.json` is read by `branding_test` against `branding::contrast()`
   AND by `categoryhero_source_test` against the WCAG constants read out of
@@ -3183,6 +3194,14 @@ the original design record (not part of this repository); what follows is what a
   `/auth/tests/behat/login.php?username=...`. A scenario that FILLS the form on a site where
   auth_loginsteps' CPF mask is armed must visit `/login/index.php?nocpf=1` first; the theme's own
   features do not arm it (the plugin is not a CI dependency).
+- **customfield_picture is optional, and the suite says so test by test.** Every test that writes
+  picture data, or asserts a picture field, skips itself when `hotsitefields::picture_type_available()`
+  is false; the provisioning tests count only what the site can hold. That method reads the disk and
+  the type's own `disabled` config, never the plugin manager, whose installed list may be cached
+  earlier in the very install run that calls `ensure_fields()`. The suite cannot uninstall the
+  plugin, so a DISABLED type stands in for an absent one in the tests that pin the skip (core hides
+  a disabled type's fields too). The Behat badge scenario of `*_hotsite.feature` carries
+  `@customfield_picture`: a site without the plugin runs with `--tags '~@customfield_picture'`.
 - The Behat user generator sets `password = username` when none is given, which is what
   `I log in as` relies on; custom profile values go in as `profile_field_<shortname>`
   columns of the `users` table.

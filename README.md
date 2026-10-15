@@ -35,13 +35,13 @@ Requirements
 |---|---|---|
 | [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100500 or later, its Moodle 5.3 version (the `upgrade-503` branch until Boost Union tags its 5.3 release) | The parent theme. |
 | [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100505 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
-| [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) | 2026101400 or later | The field type of the landing pages' badges and share picture. |
 
 ### Optional plugins
 
 | Plugin | What it adds |
 |---|---|
-| auth_loginsteps | Its logo and identity provider data on the login page, and its own shell for the second factor and privileged session pages. The theme asks it by class name and never requires it. |
+| [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) (recommended) | The field type of the landing pages' four badges and their share picture. Without it, or with the Picture type disabled, those five fields are not created and nothing draws them; the theme's recommendation in Boost Union's overview says so. Install it later and use that recommendation's fix to create them. |
+| auth_loginsteps | Its logo and identity provider data on the login page, its own shell for the second factor and privileged session pages, and the CPF mask of the login form (`logincpfmask`). The theme asks it by class name and never requires it. |
 | [local_page](https://github.com/uaiblaine/moodle-local_page) | The pages strip on a category page. Without it the strip is simply not drawn. |
 
 
@@ -57,7 +57,12 @@ Appearance > Boost Union > Dimensions*.
 
 Installing the theme creates two course custom field categories, *Hotsite* (the landing page fields)
 and *Focus mode* (one checkbox). They are created once and never deleted; fields whose short names
-already exist on the site are left alone.
+already exist on the site are left alone. The five picture fields of *Hotsite* are created only where
+customfield_picture is installed and enabled.
+
+The theme assigns no brand colour of its own: the primary colour is Boost Union's (its brand colour
+setting, or a flavour's) and Boost's default blue otherwise, and a category nobody branded draws its
+band in that same default blue with white text.
 
 
 Features

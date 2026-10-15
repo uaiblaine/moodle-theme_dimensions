@@ -5,6 +5,26 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Structural de-brand** (`2026100503`):
+  - The login page's CPF mask moved to auth_loginsteps (its setting `logincpfmask`, with the same
+    `?nocpf=1` bypass). The theme drops `amd/src/logincpf.js`, the setting `logincpfvalidation` and
+    its strings, the bypass parameter and its session key, and the module arming in
+    `render_login()`; the login page, its panel, the ways in, the failed-login hint and the local
+    identity provider marks stay. The local route reads "Sign in with your username".
+  - Neutral default palette: the theme assigns no `$primary` (Boost Union's brand colour, a
+    flavour's, or Boost's default decide), and an unbranded category's band is Boost's default
+    primary `#0f6cbf` with white ink (5.36:1) instead of the institutional navy, in
+    `branding::DEFAULT_BG`, the `bgcolour` column default and the templates' examples. The navbar
+    style's "navy" option reads "Dark navbar in the brand colour".
+  - customfield_picture is optional: no longer in `$plugin->dependencies`. Without it (or with the
+    Picture type disabled) the four badges and the share picture are not provisioned and not drawn;
+    the recommendation reports the type as recommended (a notice), and the tests that need it skip
+    themselves. CI keeps installing it.
+  - Design-system tokens namespaced: the 49 unprefixed aliases declared on `:root`
+    (`--surface-page`, `--text-body`, `--text-muted`, `--radius-*`, `--space-*`, ...) and focus
+    mode's local scale are `--dim-ds-*` now.
+  - Neutral copy: "organisation" for "corporation" in both packs, and generic defaults for the
+    login panel's title and the identity provider route's audience.
 - **Ported to Moodle 5.3** (`2026100502`): requires `2026100500`, supports `[503, 503]`, on Boost
   Union's `upgrade-503` branch until Boost Union tags its 5.3 release; CI runs `MOODLE_503_STABLE`
   with customfield_picture `master` and local_page `main`.

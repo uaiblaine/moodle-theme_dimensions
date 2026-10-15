@@ -6,7 +6,8 @@ organisation's branding and a few behaviours that need no plugin of their own. I
 layout; `auth_loginsteps` draws its own screens on its own shell and gets nothing from this theme); where the navbar
 shows the user's name (the name itself is core's `fullname()`); the user profile page; the course category pages (a
 `course_renderer` override, a hero and a showcase listing); and an optional reduced "focus mode" shell for
-activities. It depends on `theme_boost_union`, `local_unlistedcourses` and `customfield_picture`. It owns one
+activities. It depends on `theme_boost_union` and `local_unlistedcourses`; `customfield_picture` (the badges' and
+the share picture's field type) is optional, asked for at run time. It owns one
 table, `theme_dimensions_cat` (the branding of a category: no personal data).
 
 ## Who is trusted
@@ -68,8 +69,8 @@ table, `theme_dimensions_cat` (the branding of a category: no personal data).
   withholds a page from the internet, the other must not strand a user who is entitled.
 - **The profile callback can only prevent** (`theme_dimensions_control_view_profile()` never returns
   force-allow); its memo key carries the viewer.
-- **The login form accepts only a CPF**, and the mask and checks live in `logincpf.js`: no server hook exists before
-  core checks credentials. `?nocpf=1` is the deliberate way in for accounts whose username is not a CPF. Failed
+- **The theme carries no username mask.** A CPF mask on the login form, if any, is `auth_loginsteps`' (with its own
+  `?nocpf=1` bypass); the theme's form keeps core's hooks (`form#login`, `#username`) for it. Failed
   logins are counted in `$SESSION`, never on the account, so no hint tells a visitor which usernames exist.
 - **No identity provider image is fetched from the provider**; only a url under the site's own wwwroot is kept.
 - **Style attributes are a CSS context.** Two sinks print a url into `style` through `styleurl::safe()`, which
