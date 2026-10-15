@@ -13,14 +13,13 @@ Feature: A category's pages sit under the showcase's hero when local_page is ins
   Background:
     Given the following config values are set as admin:
       | theme              | dimensions |                            |
-      | logincpfvalidation | 0                    | theme_dimensions |
     And the following "categories" exist:
       | name            | category | idnumber |
       | Test category   | 0        | TESTCAT  |
       | Bare category   | 0        | BARECAT  |
       | Public category | 0        | PUBCAT   |
     And the following "courses" exist:
-      | fullname          | shortname | category | customfield_hotsite_modelo |
+      | fullname          | shortname | category | customfield_dimensions_model |
       | Resgate em Altura | RESG      | TESTCAT  | 1                          |
       | Curso Sem Paginas | BARE      | BARECAT  | 1                          |
       | Curso Público     | PUBC      | PUBCAT   | 1                          |

@@ -35,9 +35,9 @@ body.dim-categoryhero {
     --dim-ch-line: var(--bs-border-color, #dee2e6);
     --dim-ch-ink: var(--bs-body-color, #1f1f1f);
     --dim-ch-muted: var(--bs-secondary-color, #6a737b);
-    --dim-ch-ring: var(--focus-ring, var(--dim-ds-blue-400, #4456ff));
-    --dim-ch-radius: var(--radius-md, 8px);
-    --dim-ch-radius-sm: var(--radius-sm, 6px);
+    --dim-ch-ring: var(--dim-ds-focus-ring, var(--dim-ds-blue-400, #4456ff));
+    --dim-ch-radius: var(--dim-ds-radius-md, 8px);
+    --dim-ch-radius-sm: var(--dim-ds-radius-sm, 6px);
     --dim-ch-success-edge: var(--bs-success-border-subtle, #a3cfbb);
     --dim-ch-success-tint: var(--bs-success-bg-subtle, #d1e7dd);
     --dim-ch-success-ink: var(--bs-success-text-emphasis, #0a3622);
@@ -156,7 +156,7 @@ body.dim-categoryhero .dim-contrast__standard {
     flex: 0 0 auto;
     padding: 0.125rem 0.5625rem;
     border: 1px solid var(--dim-ch-line);
-    border-radius: var(--radius-pill, 50rem);
+    border-radius: var(--dim-ds-radius-pill, 50rem);
     background: var(--dim-ch-surface);
     font-size: 0.625rem;
     font-weight: 600;
@@ -200,7 +200,7 @@ body.dim-categoryhero .dim-contrast__verdict {
     margin-left: auto;
     padding: 0.375rem 0.8125rem;
     border: 1px solid transparent;
-    border-radius: var(--radius-pill, 50rem);
+    border-radius: var(--dim-ds-radius-pill, 50rem);
     font-size: 0.75rem;
     font-weight: 600;
 }

@@ -48,8 +48,8 @@ function theme_dimensions_get_main_scss_content($theme) {
     // And add this theme's main SCSS file to the stack.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/post.scss');
 
-    // Then the enrolment hotsite styles, which consume the tokens post.scss declares.
-    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/hotsite.scss');
+    // Then the enrolment landing page styles, which consume the tokens post.scss declares.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/landing.scss');
 
     // And the login page, scoped to the body class the renderer adds while the custom login page is on.
     // Every sheet is named here by hand: a file added to scss/ and not listed is never served.
@@ -107,10 +107,9 @@ function theme_dimensions_get_pre_scss($theme) {
     // And add this theme's pre SCSS file to the stack.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/pre.scss');
 
-    // Lastly, the parts which depend on this theme's settings. They belong here and not in the
-    // extra SCSS: $primary has to be assigned before Bootstrap is compiled, and an @import rule is
-    // only honoured by the browser when it precedes every other rule in the stylesheet.
-    $scss .= theme_dimensions_get_settings_scss();
+    // No brand colour is assigned here: $primary is Boost Union's (its brandcolor setting and a
+    // flavour's look_brandcolor) and core's otherwise. A settings-driven assignment would belong in
+    // this callback and not in the extra SCSS, which runs after Bootstrap has been compiled.
 
     return $scss;
 }
@@ -169,45 +168,6 @@ function theme_dimensions_get_settings_extra_scss() {
     }
 }
 ';
-}
-
-/**
- * Compose the SCSS which depends on this theme's settings.
- *
- * Kept out of scss/pre.scss because that file is static. Called from the pre SCSS callback: both
- * blocks below have to reach the compiler before Bootstrap does.
- *
- * @return string
- */
-function theme_dimensions_get_settings_scss() {
-    global $CFG, $themeboostunionappliedflavour;
-
-    $scss = '';
-
-    // The institutional navy as the brand colour, but only as a default. Boost Union maps its own
-    // brandcolor setting - and a flavour's look_brandcolor - onto $primary in its pre SCSS, which
-    // runs before this file; assigning unconditionally here would overwrite whatever the site or
-    // the flavour chose.
-    //
-    // The flavour is read from the global Boost Union's flavours/styles.php leaves behind, which is
-    // how Boost Union's own pre SCSS reads it. theme_boost_union_get_flavour_which_applies() is the
-    // wrong call here: it reads $PAGE->url, and the theme CSS is also built from the command line
-    // (Behat and PHPUnit init) where no page has set one, so Moodle emits a debugging notice from
-    // inside the SCSS compiler, which fails a moodle-plugin-ci install.
-    $brandcolor = get_config('theme_boost_union', 'brandcolor');
-    $flavourid = isset($themeboostunionappliedflavour) ? $themeboostunionappliedflavour : null;
-    if ($flavourid != null) {
-        require_once($CFG->dirroot . '/theme/boost_union/flavours/flavourslib.php');
-        $flavourbrandcolor = theme_boost_union_get_flavour_config_item_for_flavourid($flavourid, 'look_brandcolor');
-        if (!empty($flavourbrandcolor)) {
-            $brandcolor = $flavourbrandcolor;
-        }
-    }
-    if (empty($brandcolor)) {
-        $scss .= '$primary: #070093;' . "\n";
-    }
-
-    return $scss;
 }
 
 /**
@@ -340,7 +300,7 @@ function theme_dimensions_control_view_profile($user, $course = null, $userconte
 }
 
 /**
- * Serve the theme's file areas: the public hotsite's and the category branding's.
+ * Serve the theme's file areas: the public landing page's and the category branding's.
  *
  * file_pluginfile() hands any component carrying an underscore to <component>_pluginfile()
  * with no login check of its own, which is what makes an anonymous image route possible
@@ -377,7 +337,7 @@ function theme_dimensions_pluginfile($course, $cm, $context, $filearea, $args, $
         $theme->setting_file_serve($filearea, $args, $forcedownload, $options);
         return;
     }
-    \theme_dimensions\local\hotsite\publicfiles::serve($context, $filearea, $args);
+    \theme_dimensions\local\landing\publicfiles::serve($context, $filearea, $args);
 }
 
 /**
@@ -428,7 +388,7 @@ function theme_dimensions_extend_burecommendations(): array {
         \theme_dimensions\recommendation\profileveto::class,
         \theme_dimensions\recommendation\unlistedcourses::class,
         \theme_dimensions\recommendation\customfieldpicture::class,
-        \theme_dimensions\recommendation\hotsiteaddresses::class,
+        \theme_dimensions\recommendation\landingaddresses::class,
     ];
 }
 
@@ -438,16 +398,16 @@ function theme_dimensions_extend_burecommendations(): array {
  * block_compass asks for them through component_callback('theme_dimensions', 'course_badges', [$courseids])
  * and never touches this theme's classes, which are not an API and move. The answer is what the category showcase's
  * own card draws ({@see \theme_dimensions\output\category_card::crests()}): the badges of the course's
- * hotsite, named through the theme's file route. A course with no hotsite model gets none, even where badge files
+ * landing page, named through the theme's file route. A course with no landing page model gets none, even where badge files
  * survive a model that was cleared.
  *
  * Only for courses the route would serve the current reader
- * ({@see \theme_dimensions\local\hotsite\publicfiles::viewer_may_see_many()}): a crest's address and
+ * ({@see \theme_dimensions\local\landing\publicfiles::viewer_may_see_many()}): a crest's address and
  * its alternative text name the file, so a course the reader may not discover - hidden, unlisted, or in a listing
  * they cannot view and are not enrolled in - gets none, whatever the caller passed. A visitor gets none.
  *
  * One statement for the courses and their contexts, one batch of local_unlistedcourses' course states, the
- * category contexts of the courses' categories, then hotsitefields::values_many() over the courses kept, which
+ * category contexts of the courses' categories, then landingfields::values_many() over the courses kept, which
  * reads the field data in one statement and each uploaded badge file through customfield_picture, one lookup per
  * badge row, its own per-row cost.
  *
@@ -476,8 +436,8 @@ function theme_dimensions_course_badges(array $courseids): array {
     foreach ($courses as $course) {
         \core\context_helper::preload_from_record($course);
     }
-    $kept = \theme_dimensions\local\hotsite\publicfiles::viewer_may_see_many($courses);
-    $values = \theme_dimensions\local\hotsitefields::values_many($kept, false);
+    $kept = \theme_dimensions\local\landing\publicfiles::viewer_may_see_many($courses);
+    $values = \theme_dimensions\local\landingfields::values_many($kept, false);
     foreach ($values as $courseid => $coursevalues) {
         $badges[(int) $courseid] = \theme_dimensions\output\category_card::crests(
             (object) ['id' => (int) $courseid],

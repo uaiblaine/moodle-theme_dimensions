@@ -204,12 +204,12 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame(branding::DEFAULT_BG, $row->bgcolour);
         $this->assertSame(branding::DEFAULT_INK, $row->inkcolour);
         $this->assertSame(branding::DEFAULT_OVERLAY, $row->overlay);
-        $this->assertSame('', $row->chamada);
+        $this->assertSame('', $row->tagline);
         $this->assertSame('', $row->publicsummary);
 
         $payload = branding::for_category($categoryid);
         $this->assertNull($payload['image']);
-        $this->assertSame('', $payload['chamada']);
+        $this->assertSame('', $payload['tagline']);
         $this->assertSame('', $payload['publicsummary']);
         $this->assertSame(branding::DEFAULT_LAYOUT, $payload['layout']);
     }
@@ -229,7 +229,7 @@ final class branding_test extends \advanced_testcase {
             'bgcolour' => '#12484F',
             'inkcolour' => '#FFF',
             'overlay' => 60,
-            'chamada' => '  Formação continuada & eventos  ',
+            'tagline' => '  Formação continuada & eventos  ',
             'publicsummary' => '  Cursos e eventos abertos à organização  ',
             'publicdescription_editor' => ['text' => '<p>Público</p>', 'format' => FORMAT_HTML],
         ]);
@@ -241,7 +241,7 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame((int) $row->id, (int) $events[0]->objectid);
         $this->assertSame($categoryid, (int) $events[0]->contextinstanceid);
         $this->assertStringContainsString('categoryhero.php?id=' . $categoryid, $events[0]->get_url()->out(false));
-        $this->assertSame('Formação continuada & eventos', $row->chamada, 'Trimmed, in the plain spelling.');
+        $this->assertSame('Formação continuada & eventos', $row->tagline, 'Trimmed, in the plain spelling.');
         $this->assertSame(branding::LAYOUT_IMAGE, $row->layout);
         $this->assertSame('#12484f', $row->bgcolour, 'Stored in the one spelling, whatever case was typed.');
         $this->assertSame('#ffffff', $row->inkcolour, 'The three-digit form is expanded on the way in.');
@@ -260,7 +260,7 @@ final class branding_test extends \advanced_testcase {
             'bgcolour' => '#3d2a5e',
             'inkcolour' => '#ffffff',
             'overlay' => 90,
-            'chamada' => 'Outra',
+            'tagline' => 'Outra',
         ]);
         $this->assertSame((int) $row->id, (int) $again->id);
         $this->assertSame(1, $DB->count_records(branding::TABLE, ['categoryid' => $categoryid]));
@@ -298,7 +298,7 @@ final class branding_test extends \advanced_testcase {
                 [['overlay' => ''], 'Unknown hero overlay'],
                 [['overlay' => 'transparent'], 'Unknown hero overlay'],
                 [['overlay' => '78.5'], 'Unknown hero overlay'],
-                [['chamada' => str_repeat('a', branding::CHAMADA_MAXLENGTH + 1)], 'tagline is longer'],
+                [['tagline' => str_repeat('a', branding::TAGLINE_MAXLENGTH + 1)], 'tagline is longer'],
                 [
                     ['publicsummary' => str_repeat('a', branding::PUBLICSUMMARY_MAXLENGTH + 1)],
                     'public description is longer',
@@ -357,7 +357,7 @@ final class branding_test extends \advanced_testcase {
             'bgcolour' => '#12345',
             'inkcolour' => 'white',
             'overlay' => 45,
-            'chamada' => 'Kept',
+            'tagline' => 'Kept',
             'publicdescriptionformat' => FORMAT_HTML,
         ]);
 
@@ -366,7 +366,7 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame(branding::DEFAULT_BG, $row->bgcolour);
         $this->assertSame(branding::DEFAULT_INK, $row->inkcolour);
         $this->assertSame(branding::DEFAULT_OVERLAY, $row->overlay);
-        $this->assertSame('Kept', $row->chamada);
+        $this->assertSame('Kept', $row->tagline);
 
         /* And again on the way out: the cached payload is what the hero's inline style is built
            from, so a row a migration or a direct write left poisoned must read as the default
@@ -387,7 +387,7 @@ final class branding_test extends \advanced_testcase {
         $this->resetAfterTest();
         $categoryid = (int) self::getDataGenerator()->create_category()->id;
         $file = self::store($categoryid, 'hero.png', base64_decode(self::PNG));
-        $badge = self::store_badge($categoryid, branding::AREA_BADGES[0], 'brasao.png', base64_decode(self::PNG));
+        $badge = self::store_badge($categoryid, branding::AREA_BADGES[0], 'crest.png', base64_decode(self::PNG));
 
         $payload = branding::for_category($categoryid);
         $this->assertSame(branding::CACHED_KEYS, array_keys($payload));
@@ -408,8 +408,8 @@ final class branding_test extends \advanced_testcase {
 
         // A save drops the entry: the next read sees the change.
         $this->setAdminUser();
-        branding::save($categoryid, (object) ['chamada' => 'Nova']);
-        $this->assertSame('Nova', branding::for_category($categoryid)['chamada']);
+        branding::save($categoryid, (object) ['tagline' => 'Nova']);
+        $this->assertSame('Nova', branding::for_category($categoryid)['tagline']);
     }
 
     /**
@@ -473,13 +473,13 @@ final class branding_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         $categoryid = (int) self::getDataGenerator()->create_category()->id;
-        branding::save($categoryid, (object) ['chamada' => 'Adeus']);
+        branding::save($categoryid, (object) ['tagline' => 'Adeus']);
         self::store($categoryid, 'hero.png', base64_decode(self::PNG));
         $contextid = \core\context\coursecat::instance($categoryid)->id;
         $fs = get_file_storage();
         $cache = \core_cache\cache::make(branding::COMPONENT, branding::CACHE);
 
-        self::store_badge($categoryid, branding::AREA_BADGES[0], 'brasao.png', base64_decode(self::PNG));
+        self::store_badge($categoryid, branding::AREA_BADGES[0], 'crest.png', base64_decode(self::PNG));
 
         $this->assertSame(1, $DB->count_records(branding::TABLE, ['categoryid' => $categoryid]), 'Precondition.');
         $this->assertNotEmpty($fs->get_area_files($contextid, branding::COMPONENT, branding::AREA_HERO, 0, 'id', false));
@@ -487,7 +487,7 @@ final class branding_test extends \advanced_testcase {
             $fs->get_area_files($contextid, branding::COMPONENT, branding::AREA_BADGES[0], 0, 'id', false),
             'Precondition: there is a crest to leave behind.'
         );
-        $this->assertSame('Adeus', branding::for_category($categoryid)['chamada'], 'Precondition: the cache is warm.');
+        $this->assertSame('Adeus', branding::for_category($categoryid)['tagline'], 'Precondition: the cache is warm.');
         $this->assertIsArray($cache->get($categoryid));
 
         \core_course_category::get($categoryid)->delete_full(false);
@@ -637,7 +637,7 @@ final class branding_test extends \advanced_testcase {
     }
 
     /**
-     * The route exists under the name file_pluginfile() dispatches to, beside the hotsite's.
+     * The route exists under the name file_pluginfile() dispatches to, beside the landing page's.
      */
     public function test_the_route_is_wired_into_core_file_serving(): void {
         global $CFG;
@@ -815,13 +815,13 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame([], branding::for_category($categoryid)['badges']);
 
         $one = self::store_badge($categoryid, $third, 'sigma.png', base64_decode(self::PNG));
-        $two = self::store_badge($categoryid, $first, 'brasao-alfa.png', base64_decode(self::PNG));
+        $two = self::store_badge($categoryid, $first, 'crest-alpha.png', base64_decode(self::PNG));
         branding::forget_all();
 
         // Stored third-then-first, read first-then-third: the AREA decides, never the upload order.
         $this->assertSame([$first, $third], array_keys(branding::badges($categoryid)));
         $this->assertSame(
-            ['brasao-alfa.png', 'sigma.png'],
+            ['crest-alpha.png', 'sigma.png'],
             array_map(static fn(\stored_file $file): string => $file->get_filename(), array_values(branding::badges($categoryid))),
             'The middle slot is empty, and the row closes the gap rather than leaving a hole.'
         );
@@ -853,13 +853,13 @@ final class branding_test extends \advanced_testcase {
         $categoryid = (int) self::getDataGenerator()->create_category()->id;
         $contextid = \core\context\coursecat::instance($categoryid)->id;
         [$first, $second] = branding::AREA_BADGES;
-        $file = self::store_badge($categoryid, $second, 'brasao-alfa.png', base64_decode(self::PNG));
+        $file = self::store_badge($categoryid, $second, 'crest-alpha.png', base64_decode(self::PNG));
 
         $payload = branding::for_category($categoryid);
         $url = branding::badge_url($categoryid, $second, $payload['badges'][$second])->out(false);
         $this->assertStringEndsWith(
             "/pluginfile.php/{$contextid}/theme_dimensions/{$second}/{$categoryid}/"
-                . $file->get_contenthash() . '/brasao-alfa.png',
+                . $file->get_contenthash() . '/crest-alpha.png',
             $url,
             'The area is the second path segment: it is what tells one badge from another.'
         );
@@ -871,7 +871,7 @@ final class branding_test extends \advanced_testcase {
 
         // What both category surfaces draw: the address and the file name read as words.
         $entries = branding::badges_for_output($categoryid, $payload['badges']);
-        $this->assertSame([['url' => $url, 'alt' => 'brasao alfa']], $entries);
+        $this->assertSame([['url' => $url, 'alt' => 'crest alpha']], $entries);
         $this->assertSame([], branding::badges_for_output($categoryid, []), 'And nothing for a category with none.');
     }
 
@@ -889,19 +889,19 @@ final class branding_test extends \advanced_testcase {
         [$first, $second] = branding::AREA_BADGES;
 
         branding::save($categoryid, (object) [
-            $first => self::draft_with('brasao-alfa.png', base64_decode(self::PNG)),
+            $first => self::draft_with('crest-alpha.png', base64_decode(self::PNG)),
             $second => self::draft_with('dimensions.png', base64_decode(self::PNG)),
         ]);
 
         $badges = branding::badges($categoryid);
         $this->assertSame([$first, $second], array_keys($badges));
-        $this->assertSame('brasao-alfa.png', $badges[$first]->get_filename());
+        $this->assertSame('crest-alpha.png', $badges[$first]->get_filename());
         $this->assertSame('dimensions.png', $badges[$second]->get_filename());
         $this->assertCount(2, branding::for_category($categoryid)['badges'], 'The cache was dropped by the save.');
 
         // A save that carries no badge draft at all leaves the areas exactly as they were: a
         // zero draft id is "no element was submitted", never "empty the area".
-        branding::save($categoryid, (object) ['chamada' => 'Outra']);
+        branding::save($categoryid, (object) ['tagline' => 'Outra']);
         $this->assertCount(2, branding::badges($categoryid));
 
         // And a file manager whose file was removed posts a real, empty draft: that empties it.
@@ -931,7 +931,7 @@ final class branding_test extends \advanced_testcase {
         branding::save($categoryid, (object) [
             branding::AREA_COVER => self::draft_with('capa.png', base64_decode(self::PNG)),
             branding::AREA_COVERVIDEO => self::draft_with('capa.mp4', self::video_bytes('cover.mp4')),
-            $firstbadge => self::draft_with('brasao.png', base64_decode(self::PNG)),
+            $firstbadge => self::draft_with('crest.png', base64_decode(self::PNG)),
         ]);
 
         $payload = branding::for_category($categoryid);
@@ -1004,8 +1004,8 @@ final class branding_test extends \advanced_testcase {
 
         // Zero everywhere, plus a value the save really does write, so the save is known to have run.
         $zeroes = array_fill_keys(array_keys(branding::single_file_areas()), 0);
-        branding::save($categoryid, (object) ($zeroes + ['chamada' => 'Depois do zero']));
-        $this->assertSame('Depois do zero', branding::record($categoryid)->chamada, 'Control: that save wrote nothing.');
+        branding::save($categoryid, (object) ($zeroes + ['tagline' => 'Depois do zero']));
+        $this->assertSame('Depois do zero', branding::record($categoryid)->tagline, 'Control: that save wrote nothing.');
         foreach (array_keys(branding::single_file_areas()) as $area) {
             $this->assertNotNull(branding::image($categoryid, $area), $area . ' was emptied by a zero draft id.');
         }
@@ -1072,7 +1072,7 @@ final class branding_test extends \advanced_testcase {
             [
                 '<p><a class="external-media-provider" href="https://www.youtube.com/watch?v=aqz-KE-bpKQ">v</a></p>',
                 '<p><a class="external-media-provider" href="https://example.org/sample-5s.mp4">s</a></p>',
-                '<p><img src="https://example.org/brasao.png" alt="Brasao"></p>',
+                '<p><img src="https://example.org/crest.png" alt="Crest"></p>',
                 '<p>Sobre data: e blob: e draftfile.php nada a declarar.</p>',
                 '<p>Uma imagem normal</p>',
             ] as $text
@@ -1099,7 +1099,7 @@ final class branding_test extends \advanced_testcase {
         $categoryid = (int) self::getDataGenerator()->create_category()->id;
         $context = \core\context\coursecat::instance($categoryid);
         [$first, $second, $third] = branding::AREA_BADGES;
-        $png = self::store_badge($categoryid, $first, 'brasao-alfa.png', base64_decode(self::PNG));
+        $png = self::store_badge($categoryid, $first, 'crest-alpha.png', base64_decode(self::PNG));
         $svg = self::store_badge(
             $categoryid,
             $second,
@@ -1125,7 +1125,7 @@ final class branding_test extends \advanced_testcase {
         );
 
         // A file core refuses as an image is refused from a badge area, as the hero area refuses it.
-        $broken = self::store_badge($categoryid, $third, 'brasao-alfa.png', 'not an image at all');
+        $broken = self::store_badge($categoryid, $third, 'crest-alpha.png', 'not an image at all');
         $this->assertFalse($broken->is_valid_image(), 'Precondition: core refuses these bytes as an image.');
         $this->assertNull(
             branding::resolve($context, self::args($categoryid, $broken), $third),
@@ -1138,7 +1138,7 @@ final class branding_test extends \advanced_testcase {
         );
 
         // A stale hash, another name, the wrong number of segments, and the wrong area.
-        $this->assertNull(branding::resolve($context, [(string) $categoryid, sha1('stale'), 'brasao-alfa.png'], $first));
+        $this->assertNull(branding::resolve($context, [(string) $categoryid, sha1('stale'), 'crest-alpha.png'], $first));
         $this->assertNull(branding::resolve($context, [(string) $categoryid, $png->get_contenthash(), 'other.png'], $first));
         $this->assertNull(branding::resolve($context, [(string) $categoryid, $png->get_contenthash()], $first));
         $this->assertNull(
@@ -1146,7 +1146,7 @@ final class branding_test extends \advanced_testcase {
             'The first badge is not served under the second badge\'s address.'
         );
         $this->assertNull(
-            branding::resolve($context, [(string) $categoryid, $png->get_contenthash(), 'brasao-alfa.png'], $third),
+            branding::resolve($context, [(string) $categoryid, $png->get_contenthash(), 'crest-alpha.png'], $third),
             'Nor under the address of a third badge that holds different bytes.'
         );
     }
@@ -1165,9 +1165,9 @@ final class branding_test extends \advanced_testcase {
         $listed = (int) $generator->create_category()->id;
         $unlisted = (int) $generator->create_category()->id;
         [$first] = branding::AREA_BADGES;
-        $publicbadge = self::store_badge($public, $first, 'brasao.png', base64_decode(self::PNG));
-        $listedbadge = self::store_badge($listed, $first, 'brasao.png', base64_decode(self::PNG));
-        $unlistedbadge = self::store_badge($unlisted, $first, 'brasao.png', base64_decode(self::PNG));
+        $publicbadge = self::store_badge($public, $first, 'crest.png', base64_decode(self::PNG));
+        $listedbadge = self::store_badge($listed, $first, 'crest.png', base64_decode(self::PNG));
+        $unlistedbadge = self::store_badge($unlisted, $first, 'crest.png', base64_decode(self::PNG));
         $this->set_category_state($public, category_discoverability::STATE_PUBLIC);
         $this->set_category_state($unlisted, category_discoverability::STATE_UNLISTED);
 
@@ -1480,7 +1480,7 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame('video/mp4', $payload['covervideo']['mimetype']);
 
         // A save carrying no cover draft at all leaves both areas exactly as they were.
-        branding::save($categoryid, (object) ['chamada' => 'Outra']);
+        branding::save($categoryid, (object) ['tagline' => 'Outra']);
         $this->assertNotNull(branding::image($categoryid, branding::AREA_COVER));
         $this->assertNotNull(branding::image($categoryid, branding::AREA_COVERVIDEO));
 
@@ -1915,8 +1915,8 @@ final class branding_test extends \advanced_testcase {
      *
      * The editor no longer offers them and branding no longer names them. They stay here for two
      * reasons: they are the fixed set the overlay measurements below are taken against, which
-     * must not move with the editor, and the navy one is the default pair. Nothing in production
-     * reads this table.
+     * must not move with the editor, and the default pair is measured beside them. Nothing in
+     * production reads this table.
      */
     private const REFERENCE_COLOURS = [
         'navy' => ['bg' => '#070093', 'ink' => '#ffffff'],
@@ -1926,11 +1926,13 @@ final class branding_test extends \advanced_testcase {
     ];
 
     /**
-     * The reference colours are in the one spelling, all over the floor, and the navy one is the default.
+     * The reference colours and the default pair are in the one spelling and all over the floor.
      *
-     * Nothing else holds this table to the colours the measurements below are about.
+     * Nothing else holds this table to the colours the measurements below are about. The default
+     * pair is Boost's default primary with white ink, no institution's colour: a site that never
+     * branded a category gets the same blue Boost paints its own primary in.
      */
-    public function test_the_reference_colours_are_audited_and_navy_is_the_default(): void {
+    public function test_the_reference_colours_and_the_default_pair_are_audited(): void {
         foreach (self::REFERENCE_COLOURS as $key => $pair) {
             $this->assertSame($pair['bg'], branding::hex($pair['bg']), 'Stored in the one spelling: ' . $key);
             $this->assertSame($pair['ink'], branding::hex($pair['ink']));
@@ -1940,10 +1942,14 @@ final class branding_test extends \advanced_testcase {
                 'An audited colour reads under the floor: ' . $key
             );
         }
-        $this->assertSame(
-            self::REFERENCE_COLOURS['navy']['bg'],
-            branding::DEFAULT_BG,
-            'The default pair is the navy one.'
+        $this->assertSame('#0f6cbf', branding::DEFAULT_BG, 'The default band is Boost\'s default primary.');
+        $this->assertSame('#ffffff', branding::DEFAULT_INK);
+        $this->assertSame(branding::DEFAULT_BG, branding::hex(branding::DEFAULT_BG), 'Stored in the one spelling.');
+        $this->assertEqualsWithDelta(5.36, branding::contrast(branding::DEFAULT_BG, branding::DEFAULT_INK), 0.01);
+        $this->assertGreaterThanOrEqual(
+            branding::FLOOR,
+            branding::contrast(branding::DEFAULT_BG, branding::DEFAULT_INK),
+            'The default pair reads under the floor.'
         );
     }
 
@@ -2001,6 +2007,19 @@ final class branding_test extends \advanced_testcase {
                 . 'the four transparent ones, where no colour is painted at all, and three at the '
                 . 'lightest overlay; none at the default of 78%.'
         );
+        /* The default pair is lighter than every reference colour, so the photograph shows through
+           it more: over a white picture it reads under the floor at every overlay but 90%. The
+           image layout is a manager's choice and the default layout is the solid band, where the
+           pair reads 5.36:1; a manager who picks a photograph picks the colour over it too. */
+        $defaults = [0 => 1.00, 60 => 2.56, 78 => 3.57, 90 => 4.44];
+        foreach ($defaults as $overlay => $expected) {
+            $this->assertEqualsWithDelta(
+                $expected,
+                branding::contrast(self::composite(branding::DEFAULT_BG, $overlay, $white), branding::DEFAULT_INK),
+                0.01,
+                'The default pair at ' . $overlay . '% over white'
+            );
+        }
         foreach (self::REFERENCE_COLOURS as $key => $pair) {
             $atdefault = branding::contrast(
                 self::composite($pair['bg'], branding::DEFAULT_OVERLAY, $white),

@@ -38,122 +38,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(login::class)]
 final class login_test extends \advanced_testcase {
     /**
-     * A site which never wrote the setting gets the documented default, which is enabled.
-     *
-     * @return void
-     */
-    public function test_cpf_validation_is_enabled_when_the_setting_was_never_written(): void {
-        $this->resetAfterTest();
-
-        unset_config('logincpfvalidation', 'theme_dimensions');
-
-        $this->assertFalse(get_config('theme_dimensions', 'logincpfvalidation'));
-        $this->assertTrue(login::cpf_validation_enabled());
-    }
-
-    /**
-     * An explicitly stored 'no' switches the feature off.
-     *
-     * This is the assertion which pins the reading of the setting: a default-on setting read with a
-     * falsy fallback would report the stored '0' as enabled and leave the feature permanently on.
-     *
-     * @return void
-     */
-    public function test_cpf_validation_is_disabled_when_the_setting_says_no(): void {
-        $this->resetAfterTest();
-
-        set_config('logincpfvalidation', login::SELECT_NO, 'theme_dimensions');
-
-        $this->assertFalse(login::cpf_validation_enabled());
-    }
-
-    /**
-     * An explicitly stored 'yes' switches the feature on.
-     *
-     * @return void
-     */
-    public function test_cpf_validation_is_enabled_when_the_setting_says_yes(): void {
-        $this->resetAfterTest();
-
-        set_config('logincpfvalidation', login::SELECT_YES, 'theme_dimensions');
-
-        $this->assertTrue(login::cpf_validation_enabled());
-    }
-
-    /**
-     * The bypass parameter takes the CPF handling off this one page load.
-     *
-     * This is the way back to a plain login form for an account whose username is not a CPF, the
-     * site admin above all. If it stops working, installing this theme locks the admin out.
-     *
-     * @return void
-     */
-    public function test_the_bypass_request_turns_the_cpf_handling_off(): void {
-        $this->resetAfterTest();
-
-        set_config('logincpfvalidation', login::SELECT_YES, 'theme_dimensions');
-
-        $this->assertTrue(login::cpf_validation_applies(false));
-        $this->assertFalse(login::cpf_validation_applies(true));
-    }
-
-    /**
-     * With the setting off, the CPF handling never applies, bypass or no bypass.
-     *
-     * @return void
-     */
-    public function test_cpf_validation_never_applies_when_the_setting_is_off(): void {
-        $this->resetAfterTest();
-
-        set_config('logincpfvalidation', login::SELECT_NO, 'theme_dimensions');
-
-        $this->assertFalse(login::cpf_validation_applies(false));
-        $this->assertFalse(login::cpf_validation_applies(true));
-    }
-
-    /**
-     * The bypass sticks for the rest of the session once it has been asked for.
-     *
-     * The login form posts with no query string, so without this a wrong password on the bypass
-     * URL would bounce the admin straight back into the CPF form.
-     *
-     * @return void
-     */
-    public function test_the_bypass_sticks_for_the_session(): void {
-        global $SESSION;
-        $this->resetAfterTest();
-
-        $this->assertFalse(login::bypass_requested());
-
-        // Ask for it once, the way the URL does.
-        $_GET[login::BYPASS_PARAM] = '1';
-        $this->assertTrue(login::bypass_requested());
-        $this->assertTrue(!empty($SESSION->{login::BYPASS_SESSION_KEY}));
-
-        // The next request carries no parameter - the form posts without one - and it still holds.
-        unset($_GET[login::BYPASS_PARAM]);
-        $this->assertTrue(login::bypass_requested());
-
-        // A session which never asked is unaffected.
-        unset($SESSION->{login::BYPASS_SESSION_KEY});
-        $this->assertFalse(login::bypass_requested());
-    }
-
-    /**
-     * An empty stored value is not a decision and falls back to the default.
-     *
-     * @return void
-     */
-    public function test_cpf_validation_falls_back_to_the_default_on_an_empty_stored_value(): void {
-        $this->resetAfterTest();
-
-        set_config('logincpfvalidation', '', 'theme_dimensions');
-
-        $this->assertSame('', get_config('theme_dimensions', 'logincpfvalidation'));
-        $this->assertTrue(login::cpf_validation_enabled());
-    }
-
-    /**
      * The theme's login page is shown on a site which never wrote the setting.
      *
      * @return void
@@ -170,8 +54,8 @@ final class login_test extends \advanced_testcase {
     /**
      * A stored 'no' hands the login page back to Boost Union.
      *
-     * The same weight as the CPF 'no' case: a default-on setting read with a falsy fallback would
-     * report the stored 0 as enabled and leave Boost Union's page unreachable.
+     * This is the assertion which pins the reading of the setting: a default-on setting read with a
+     * falsy fallback would report the stored 0 as enabled and leave Boost Union's page unreachable.
      *
      * @return void
      */
@@ -193,6 +77,20 @@ final class login_test extends \advanced_testcase {
 
         set_config('loginpage', login::SELECT_YES, 'theme_dimensions');
 
+        $this->assertTrue(login::page_enabled());
+    }
+
+    /**
+     * An empty stored value is not a decision and falls back to the default.
+     *
+     * @return void
+     */
+    public function test_an_empty_stored_value_shows_the_dimensions_page(): void {
+        $this->resetAfterTest();
+
+        set_config('loginpage', '', 'theme_dimensions');
+
+        $this->assertSame('', get_config('theme_dimensions', 'loginpage'));
         $this->assertTrue(login::page_enabled());
     }
 

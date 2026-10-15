@@ -1,0 +1,42 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/landing_offer
+
+    What one enrolment method declares about its seats and its deadline, above its button on the
+    landing page (round 6, decisions D4-D6): the configured total, never what is left, and the deadline
+    with the closing note of its last days. Every value is plain text from
+    \theme_dimensions\local\landing\offer::export(); the icons are decoration.
+
+    Example context (json):
+    {
+        "hasseats": true,
+        "seats": "40 seats",
+        "hasuntil": true,
+        "until": "Enrolment until 26/10/26",
+        "untilshort": "Enrolment until 26/10",
+        "urgent": "Closes in 2 days"
+    }
+}}
+<ul class="dimensions-landing__offer list-unstyled">
+    {{#hasseats}}
+        <li class="dimensions-landing__offerline">{{#pix}} i/users, core {{/pix}}<span>{{seats}}</span></li>
+    {{/hasseats}}
+    {{#hasuntil}}
+        <li class="dimensions-landing__offerline">{{#pix}} i/calendar, core {{/pix}}<span>{{until}}</span>{{#urgent}} <span class="dimensions-landing__urgent">{{.}}</span>{{/urgent}}</li>
+    {{/hasuntil}}
+</ul>

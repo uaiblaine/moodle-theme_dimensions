@@ -15,12 +15,11 @@ Feature: A visitor's public category page narrows in place once the site opens i
   Background:
     Given the following config values are set as admin:
       | theme              | dimensions |                            |
-      | logincpfvalidation | 0                    | theme_dimensions |
     And the following "categories" exist:
       | name            | category | idnumber |
       | Public category | 0        | PUBCAT   |
     And the following "courses" exist:
-      | fullname        | shortname | category | customfield_hotsite_modelo | startdate     |
+      | fullname        | shortname | category | customfield_dimensions_model | startdate     |
       | Curso Online    | ONLINE    | PUBCAT   | 1                          | ##yesterday## |
       | Curso Futuro    | FUTURO    | PUBCAT   | 1                          | ##+2 days##   |
       | Curso Interno   | INTERNO   | PUBCAT   | 1                          | ##+2 days##   |
@@ -71,7 +70,7 @@ Feature: A visitor's public category page narrows in place once the site opens i
       | name         | category | idnumber |
       | Area publica | PUBCAT   | PUBAREA  |
     And the following "courses" exist:
-      | fullname      | shortname | category | customfield_hotsite_modelo | startdate   |
+      | fullname      | shortname | category | customfield_dimensions_model | startdate   |
       | Curso da Area | AREACO    | PUBAREA  | 1                          | ##+2 days## |
     And the category "PUBAREA" is "public" for discoverability
     And the course "AREACO" is "public" for discoverability
@@ -99,7 +98,7 @@ Feature: A visitor's public category page narrows in place once the site opens i
       | Area publica | PUBCAT   | PUBAREA  |
       | Area listada | PUBCAT   | LISTAREA |
     And the following "courses" exist:
-      | fullname      | shortname | category | customfield_hotsite_modelo | startdate   |
+      | fullname      | shortname | category | customfield_dimensions_model | startdate   |
       | Curso da Area | AREACO    | PUBAREA  | 1                          | ##+2 days## |
       | Curso Listado | LISTCO    | LISTAREA | 1                          | ##+2 days## |
     And the category "PUBAREA" is "public" for discoverability
@@ -135,7 +134,7 @@ Feature: A visitor's public category page narrows in place once the site opens i
       | name         | category | idnumber |
       | Area publica | PUBCAT   | PUBAREA  |
     And the following "courses" exist:
-      | fullname      | shortname | category | customfield_hotsite_modelo | startdate   |
+      | fullname      | shortname | category | customfield_dimensions_model | startdate   |
       | Curso da Area | AREACO    | PUBAREA  | 1                          | ##+2 days## |
       | Outro da Area | OUTRO     | PUBAREA  | 1                          | ##+3 days## |
     And the category "PUBAREA" is "public" for discoverability
@@ -165,7 +164,7 @@ Feature: A visitor's public category page narrows in place once the site opens i
       | name         | category | idnumber |
       | Area listada | PUBCAT   | LISTAREA |
     And the following "courses" exist:
-      | fullname      | shortname | category | customfield_hotsite_modelo | startdate   |
+      | fullname      | shortname | category | customfield_dimensions_model | startdate   |
       | Curso Listado | LISTCO    | LISTAREA | 1                          | ##+2 days## |
     And the course "LISTCO" is "public" for discoverability
     When I am on the "PUBCAT" "theme_dimensions > Public category page" page

@@ -24,7 +24,7 @@
 
 namespace theme_dimensions;
 
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -52,7 +52,7 @@ final class shortlink_handler_test extends \advanced_testcase {
     }
 
     /**
-     * The guest entry's code is answered with the page asking for the guest entry, the hotsite's without it.
+     * The guest entry's code is answered with the page asking for the guest entry, the landing page's without it.
      */
     public function test_the_guest_type_answers_with_the_guest_entry(): void {
         $this->resetAfterTest();
@@ -64,11 +64,11 @@ final class shortlink_handler_test extends \advanced_testcase {
         $this->assertSame('1', $guest->param(links::GUEST_PARAM));
 
         $page = $handler->process_shortlink(links::LINKTYPE, (string) $course->id);
-        $this->assertNull($page->param(links::GUEST_PARAM), 'The hotsite code is the plain page.');
+        $this->assertNull($page->param(links::GUEST_PARAM), 'The landing page code is the plain page.');
     }
 
     /**
-     * The guest entry's code is refused for what is not a course, like the hotsite's.
+     * The guest entry's code is refused for what is not a course, like the landing page's.
      */
     public function test_the_guest_type_refuses_what_is_not_a_course(): void {
         global $DB;

@@ -33,17 +33,17 @@ $dimensions-focusbar-height: $navbar-height + 1px;
    declared in post.scss as well. */
 body.dimensions-focusmode,
 .dimensions-focusbar {
-    --layout-max: 1200px;
-    --leading-relaxed: 1.65;
-    --leading-snug: 1.25;
-    --motion-base: 250ms;
-    --text-h5: 1rem;
-    --text-small: 0.875rem;
-    --text-caption: 0.75rem;
-    --text-overline: 0.6875rem;
-    --tracking-overline: 0.12em;
-    --weight-medium: 500;
-    --weight-semibold: 600;
+    --dim-ds-layout-max: 1200px;
+    --dim-ds-leading-relaxed: 1.65;
+    --dim-ds-leading-snug: 1.25;
+    --dim-ds-motion-base: 250ms;
+    --dim-ds-text-h5: 1rem;
+    --dim-ds-text-small: 0.875rem;
+    --dim-ds-text-caption: 0.75rem;
+    --dim-ds-text-overline: 0.6875rem;
+    --dim-ds-tracking-overline: 0.12em;
+    --dim-ds-weight-medium: 500;
+    --dim-ds-weight-semibold: 600;
 }
 
 /* ---- The reading column ------------------------------------------------- */
@@ -55,7 +55,7 @@ body.dimensions-focusmode,
 body.dimensions-focusmode.limitedwidth #page.drawers .main-inner,
 body.dimensions-focusmode #page.drawers .main-inner {
     max-width: 830px;
-    transition: max-width var(--motion-base) var(--motion-ease);
+    transition: max-width var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
 
     @media (prefers-reduced-motion: reduce) {
         transition: none;
@@ -64,7 +64,7 @@ body.dimensions-focusmode #page.drawers .main-inner {
 
 body.dimensions-focusmode-expanded.limitedwidth #page.drawers .main-inner,
 body.dimensions-focusmode-expanded #page.drawers .main-inner {
-    max-width: var(--layout-max);
+    max-width: var(--dim-ds-layout-max);
 }
 
 /* ---- The bar ------------------------------------------------------------ */
@@ -83,10 +83,10 @@ body.dimensions-focusmode-expanded #page.drawers .main-inner {
 body.dimensions-focusmode .dimensions-focusbar {
     display: flex;
     flex-wrap: nowrap;
-    gap: var(--space-md);
+    gap: var(--dim-ds-space-md);
     align-items: center;
-    padding-right: var(--space-md);
-    padding-left: var(--space-md);
+    padding-right: var(--dim-ds-space-md);
+    padding-left: var(--dim-ds-space-md);
     color: var(--bs-navbar-brand-color, var(--bs-body-color));
 }
 
@@ -107,7 +107,7 @@ body.dimensions-focusmode .dimensions-focusbar-heading {
     display: flex;
     flex: 0 4 auto;
     flex-direction: column;
-    gap: var(--space-3xs);
+    gap: var(--dim-ds-space-3xs);
     justify-content: center;
     min-width: 0;
 }
@@ -125,7 +125,7 @@ body.dimensions-focusmode .dimensions-focusbar-heading {
 }
 
 /* The overline follows the bar's own colour mode instead of naming a colour. A pale blue was
-   right on the institutional navy this theme fills in by default and close to invisible on a
+   right on the dark brand-colour bar this theme fills in by default and close to invisible on a
    light bar - and a light bar is not hypothetical: Boost Union ships navbarcolor as bg-body,
    an administrator may set it back, and a flavour's look_navbarcolor may set it per organisation.
    Inheriting the bar's own text colour and dimming it reads as secondary on both, with no second
@@ -134,9 +134,9 @@ body.dimensions-focusmode .dimensions-focusbar-course {
     overflow: hidden;
     opacity: .8;
     color: inherit;
-    font-size: var(--text-overline);
-    font-weight: var(--weight-medium);
-    letter-spacing: var(--tracking-overline);
+    font-size: var(--dim-ds-text-overline);
+    font-weight: var(--dim-ds-weight-medium);
+    letter-spacing: var(--dim-ds-tracking-overline);
     text-decoration: none;
     text-overflow: ellipsis;
     text-transform: uppercase;
@@ -153,9 +153,9 @@ body.dimensions-focusmode .dimensions-focusbar-title {
     overflow: hidden;
     margin: 0;
     color: inherit;
-    font-size: var(--text-h5);
-    font-weight: var(--weight-semibold);
-    line-height: var(--leading-snug);
+    font-size: var(--dim-ds-text-h5);
+    font-weight: var(--dim-ds-weight-semibold);
+    line-height: var(--dim-ds-leading-snug);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -165,7 +165,7 @@ body.dimensions-focusmode .dimensions-focusbar-title {
 body.dimensions-focusmode .dimensions-focusbar-actions {
     display: flex;
     flex: 0 1 auto;
-    gap: var(--space-xs);
+    gap: var(--dim-ds-space-xs);
     align-items: center;
     margin-inline-start: auto;
 }
@@ -201,11 +201,11 @@ body.dimensions-focusmode .dimensions-focusbar-actions > .dimensions-focusbar-ac
 
 body.dimensions-focusmode .dimensions-focusbar-actions .btn {
     display: inline-flex;
-    gap: var(--space-xs);
+    gap: var(--dim-ds-space-xs);
     align-items: center;
     color: inherit;
-    font-size: var(--text-small);
-    font-weight: var(--weight-medium);
+    font-size: var(--dim-ds-text-small);
+    font-weight: var(--dim-ds-weight-medium);
     white-space: nowrap;
 }
 
@@ -264,7 +264,7 @@ body.dimensions-focusmode .dimensions-focusbar-width .icon {
    (a teacher's "Advanced grading", say) would push straight out of the box the rule below
    bounds - horizontally, where an overflow-y cannot help. */
 body.dimensions-focusmode .dimensions-focusbar-actions .dropdown-item {
-    font-size: var(--text-small);
+    font-size: var(--dim-ds-text-small);
     white-space: normal;
 }
 
@@ -293,10 +293,10 @@ body.dimensions-focusmode .dimensions-focusbar-more {
 body.dimensions-focusmode .dimensions-focusbar-more .dropdown-menu {
     right: auto;
     left: auto;
-    inset-inline-end: var(--space-md);
+    inset-inline-end: var(--dim-ds-space-md);
     overflow-y: auto;
-    max-width: calc(100% - var(--space-md) - var(--space-md));
-    max-height: calc(100vh - #{$dimensions-focusbar-height} - var(--space-md));
+    max-width: calc(100% - var(--dim-ds-space-md) - var(--dim-ds-space-md));
+    max-height: calc(100vh - #{$dimensions-focusbar-height} - var(--dim-ds-space-md));
 }
 
 /* ---- The bar on a phone -------------------------------------------------- */
@@ -337,8 +337,8 @@ body.dimensions-focusmode .visually-hidden-focusable:focus {
 body.dimensions-focusmode #region-main .activity-header,
 body.dimensions-focusmode #region-main .activity-description,
 body.dimensions-focusmode #region-main .no-overflow {
-    font-family: var(--font-reading);
-    line-height: var(--leading-relaxed);
+    font-family: var(--dim-ds-font-reading);
+    line-height: var(--dim-ds-leading-relaxed);
 }
 
 /* ---- The completion line at the foot of the card ------------------------ */
@@ -347,23 +347,23 @@ body.dimensions-focusmode #region-main .no-overflow {
 body.dimensions-focusmode .dimensions-focus-completion {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-xs);
+    gap: var(--dim-ds-space-xs);
     align-items: center;
-    margin-top: var(--space-lg);
-    padding-top: var(--space-sm);
-    border-top: 1px solid var(--border-subtle);
+    margin-top: var(--dim-ds-space-lg);
+    padding-top: var(--dim-ds-space-sm);
+    border-top: 1px solid var(--dim-ds-border-subtle);
 }
 
 body.dimensions-focusmode .dimensions-focus-completion-kicker {
-    color: var(--text-muted);
-    font-size: var(--text-caption);
-    font-weight: var(--weight-semibold);
+    color: var(--dim-ds-text-muted);
+    font-size: var(--dim-ds-text-caption);
+    font-weight: var(--dim-ds-weight-semibold);
 }
 
 body.dimensions-focusmode .dimensions-focus-completion-list {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-md);
+    gap: var(--dim-ds-space-md);
     align-items: center;
     margin: 0;
     padding: 0;
@@ -372,14 +372,14 @@ body.dimensions-focusmode .dimensions-focus-completion-list {
 
 body.dimensions-focusmode .dimensions-focus-completion-list li {
     display: inline-flex;
-    gap: var(--space-xxs);
+    gap: var(--dim-ds-space-xxs);
     align-items: center;
-    color: var(--text-muted);
-    font-size: var(--text-caption);
+    color: var(--dim-ds-text-muted);
+    font-size: var(--dim-ds-text-caption);
     line-height: 1.3;
 }
 
 /* ---- Previous / next activity ------------------------------------------- */
 body.dimensions-focusmode .dimensions-focus-activitynav {
-    margin-top: var(--space-lg);
+    margin-top: var(--dim-ds-space-lg);
 }

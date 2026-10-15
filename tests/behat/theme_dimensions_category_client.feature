@@ -12,8 +12,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   Background:
     Given the following config values are set as admin:
       | theme                | dimensions |                            |
-      | logincpfvalidation   | 0                    | theme_dimensions |
-      | categoryfilterfields | modalidade           | theme_dimensions |
+      | categoryfilterfields | dimensions_modality           | theme_dimensions |
     And the following "categories" exist:
       | name                | category | idnumber |
       | Test category       | 0        | TESTCAT  |
@@ -25,7 +24,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # one" assertion below would be narrowing to nothing. Every grid assertion is scoped to the
     # courses' grid by its hook: the areas' grid comes first in the page and carries the same class.
     And the following "courses" exist:
-      | fullname           | shortname | category | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname           | shortname | category | customfield_dimensions_model | customfield_dimensions_modality |
       | Resgate em Altura  | RESG      | TESTCAT  | 1                          | 2                      |
       | Curso Online       | ONLI      | TESTCAT  | 1                          | 1                      |
       | Combate a Incendio | INCEND    | OPENCAT  | 1                          | 1                      |
@@ -95,7 +94,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # synchronisation is the grid itself: a wait until it holds the rows asked for, each past its
     # fade-in class.
     Given the following "courses" exist:
-      | fullname           | shortname | category | customfield_hotsite_modelo |
+      | fullname           | shortname | category | customfield_dimensions_model |
       | Primeiros Socorros | PSOC      | TESTCAT  | 1                          |
     And I log in as "student1"
     When I am on the "TESTCAT|perpage=1" "theme_dimensions > Category showcase" page
@@ -154,7 +153,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # module registers nothing in M.util.pending_js, so Behat's after-step wait does not cover the
     # whole of an append. "I wait until" spins; a bare run of ten clicks would race the rows.
     Given the following "courses" exist:
-      | fullname          | shortname | category | customfield_hotsite_modelo |
+      | fullname          | shortname | category | customfield_dimensions_model |
       | Brigada Um        | BRIG01    | TESTCAT  | 1                          |
       | Brigada Dois      | BRIG02    | TESTCAT  | 1                          |
       | Brigada Tres      | BRIG03    | TESTCAT  | 1                          |
@@ -227,13 +226,13 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   Scenario: More information opens the course in a dialogue with its two ways in, and Escape gives the focus back
     # With JavaScript the card's "More information" opens core/modal instead of its inline panel, so no
     # disclosure opens behind it. A self enrolment enabled on the new course makes it open, and the admin may
-    # walk into any course: "Enrol" goes to the hotsite and "Course page" to the course - the pair that stays two
-    # (for a learner both would open the hotsite, and the dialogue draws one). The dialogue is found by its
+    # walk into any course: "Enrol" goes to the landing page and "Course page" to the course - the pair that stays two
+    # (for a learner both would open the landing page, and the dialogue draws one). The dialogue is found by its
     # title; the summary gets the focus back when it closes.
     Given the following config values are set as admin:
       | status | 0 | enrol_self |
     And the following "courses" exist:
-      | fullname        | shortname | category | customfield_hotsite_modelo |
+      | fullname        | shortname | category | customfield_dimensions_model |
       | Busca Terrestre | BUSCA     | TESTCAT  | 1                          |
     And I log in as "admin"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -252,7 +251,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # is a fetch. The page starts on Recent so that the two orders really are different answers:
     # the course starting tomorrow is the newest and the alphabet puts it last.
     Given the following "courses" exist:
-      | fullname     | shortname | category | customfield_hotsite_modelo | startdate  |
+      | fullname     | shortname | category | customfield_dimensions_model | startdate  |
       | Zumbi do Mar | ZUMBI     | TESTCAT  | 1                          | ##tomorrow## |
     And I log in as "student1"
     And I am on the "TESTCAT|sort=recent" "theme_dimensions > Category showcase" page
@@ -296,7 +295,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | name           | category | idnumber |
       | Other category | 0        | OTHERCAT |
     And the following "courses" exist:
-      | fullname    | shortname | category | customfield_hotsite_modelo |
+      | fullname    | shortname | category | customfield_dimensions_model |
       | Curso Outro | OUTRO     | OTHERCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -318,7 +317,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # intercepted and the two bounds it carries are used exactly as they are - the client resolves
     # no date of its own, which is why the course seeded yesterday is the control.
     Given the following "courses" exist:
-      | fullname      | shortname | category | customfield_hotsite_modelo | startdate     |
+      | fullname      | shortname | category | customfield_dimensions_model | startdate     |
       | Curso de Onte | ONTEM     | TESTCAT  | 1                          | ##yesterday## |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -341,7 +340,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # The presses apply nothing. They describe a period, the popover stays open showing it, and the
     # reader says they are finished; the address still carrying no period is the whole of that rule.
     Given the following "courses" exist:
-      | fullname      | shortname | category | customfield_hotsite_modelo | startdate     |
+      | fullname      | shortname | category | customfield_dimensions_model | startdate     |
       | Curso de Onte | ONTEM     | TESTCAT  | 1                          | ##yesterday## |
       | Curso Futuro  | FUTURO    | TESTCAT  | 1                          | ##+2 days##   |
     And I log in as "student1"
@@ -388,7 +387,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   @javascript
   Scenario: A start alone keeps the courses from that day on, and the address carries the start alone
     Given the following "courses" exist:
-      | fullname      | shortname | category | customfield_hotsite_modelo | startdate     |
+      | fullname      | shortname | category | customfield_dimensions_model | startdate     |
       | Curso de Onte | ONTEM     | TESTCAT  | 1                          | ##yesterday## |
       | Curso Futuro  | FUTURO    | TESTCAT  | 1                          | ##+2 days##   |
     And I log in as "student1"
@@ -409,7 +408,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # One popover serves both boxes. Opened from the end box, it says it is asking for the last day,
     # and its one press sets the end.
     Given the following "courses" exist:
-      | fullname      | shortname | category | customfield_hotsite_modelo | startdate     |
+      | fullname      | shortname | category | customfield_dimensions_model | startdate     |
       | Curso de Onte | ONTEM     | TESTCAT  | 1                          | ##yesterday## |
       | Curso Futuro  | FUTURO    | TESTCAT  | 1                          | ##+2 days##   |
     And I log in as "student1"
@@ -433,7 +432,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # address. The page draws the start in its box; the first fetch of the client - a facet pill -
     # carries it, and the address the client writes afterwards keeps it, alone.
     Given the following "courses" exist:
-      | fullname       | shortname | category | customfield_hotsite_modelo | customfield_modalidade | startdate               |
+      | fullname       | shortname | category | customfield_dimensions_model | customfield_dimensions_modality | startdate               |
       | Curso Distante | DISTANTE  | TESTCAT  | 1                          | 1                      | ##2031-06-15 12:00:00## |
     And I log in as "student1"
     And I am on the "TESTCAT|from=2031-01-01" "theme_dimensions > Category showcase" page
@@ -458,7 +457,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | name           | category | idnumber |
       | Inner category | OPENCAT  | INNERCAT |
     And the following "courses" exist:
-      | fullname    | shortname | category | customfield_hotsite_modelo |
+      | fullname    | shortname | category | customfield_dimensions_model |
       | Curso Fundo | FUNDO     | INNERCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -493,7 +492,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Third category  | TESTCAT  | THIRDCAT  |
       | Fourth category | TESTCAT  | FOURTHCAT |
     And the following "courses" exist:
-      | fullname       | shortname | category  | customfield_hotsite_modelo |
+      | fullname       | shortname | category  | customfield_dimensions_model |
       | Curso Segundo  | SEGU      | SECONDCAT | 1                          |
       | Curso Terceiro | TERC      | THIRDCAT  | 1                          |
       | Curso Quarto   | QUAR      | FOURTHCAT | 1                          |
@@ -634,7 +633,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Second category | TESTCAT  | SECONDCAT |
       | Empty category  | TESTCAT  | EMPTYCAT  |
     And the following "courses" exist:
-      | fullname      | shortname | category  | customfield_hotsite_modelo |
+      | fullname      | shortname | category  | customfield_dimensions_model |
       | Curso Segundo | SEGU      | SECONDCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT|q=Resgate" "theme_dimensions > Category showcase" page
@@ -679,7 +678,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | name            | category | idnumber  |
       | Second category | TESTCAT  | SECONDCAT |
     And the following "courses" exist:
-      | fullname      | shortname | category  | customfield_hotsite_modelo |
+      | fullname      | shortname | category  | customfield_dimensions_model |
       | Curso Segundo | SEGU      | SECONDCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -706,7 +705,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | name            | category | idnumber  |
       | Second category | TESTCAT  | SECONDCAT |
     And the following "courses" exist:
-      | fullname      | shortname | category  | customfield_hotsite_modelo |
+      | fullname      | shortname | category  | customfield_dimensions_model |
       | Curso Segundo | SEGU      | SECONDCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page

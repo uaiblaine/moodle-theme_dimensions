@@ -39,7 +39,7 @@ namespace theme_dimensions\local\category;
  *
  * Fails closed: when the predicate class is missing (the dependency uninstalled, a
  * broken deploy) the answer is "not public" and the visitor gets the login page.
- * {@see \theme_dimensions\local\hotsite\redirector::is_category_ghosted()}
+ * {@see \theme_dimensions\local\landing\redirector::is_category_ghosted()}
  * deliberately fails open instead, because ghosting strands a logged-in user who is
  * entitled to the category. One withholds a page from the internet, the other from
  * somebody who may be entitled to it, so do not harmonise them. Both are pinned by

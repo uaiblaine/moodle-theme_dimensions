@@ -30,7 +30,7 @@ use local_unlistedcourses\access;
 use local_unlistedcourses\category_access;
 use local_unlistedcourses\category_discoverability;
 use local_unlistedcourses\discoverability;
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 use theme_dimensions\local\styleurl;
 
 /**

@@ -26,16 +26,16 @@ namespace theme_dimensions\local\category;
 
 use local_unlistedcourses\access;
 use PHPUnit\Framework\Attributes\CoversClass;
-use theme_dimensions\local\hotsite\method;
-use theme_dimensions\local\hotsite\resolution;
-use theme_dimensions\local\hotsite\resolver;
+use theme_dimensions\local\landing\method;
+use theme_dimensions\local\landing\resolution;
+use theme_dimensions\local\landing\resolver;
 
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/fixture.php');
 
 /**
- * Tests for the classifier: a superset of the hotsite resolver, in a bounded number of statements.
+ * Tests for the classifier: a superset of the landing page resolver, in a bounded number of statements.
  *
  * The contract is one-directional and the superset test holds it shape by
  * shape: whatever the resolver calls enrolled, pending or open, the

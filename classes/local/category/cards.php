@@ -26,15 +26,15 @@ namespace theme_dimensions\local\category;
 
 use core_course_category;
 use local_unlistedcourses\access;
-use theme_dimensions\local\hotsite\publicfiles;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\publicfiles;
+use theme_dimensions\local\landingfields;
 
 /**
  * What a page of cards needs beyond its ids, read once per layer over the page slice and never per course.
  *
  * Four layers, one statement each, every one bounded by the page size:
- * the course rows themselves, the hotsite custom field values
- * ({@see hotsitefields::values_many()}), the course images, and the course
+ * the course rows themselves, the landing page custom field values
+ * ({@see landingfields::values_many()}), the course images, and the course
  * contacts. Two more are read only for the cards that need them, so a page
  * without such a card pays nothing for them: the routes beside a relationship and
  * the opening dates ({@see next_actions()}), and the prerequisite of a conditional card
@@ -90,21 +90,21 @@ final class cards {
     }
 
     /**
-     * The hotsite field values of the page, one statement, the textareas unfiltered.
+     * The landing page field values of the page, one statement, the textareas unfiltered.
      *
      * The rows, not the ids, because the reader formats every field name in
      * the course's context and would otherwise fetch one context per card:
      * the page's contexts are rebuilt from the preload columns first. The
-     * textareas skip the text filter pass ({@see hotsitefields::values_many()}
+     * textareas skip the text filter pass ({@see landingfields::values_many()}
      * says why): a card shows an excerpt, and a filter pass per course context
      * is a recordset plus whatever each active filter reads, per card.
      *
      * @param \stdClass[] $rows Population rows carrying the context preload columns, keyed by course id.
-     * @return \stdClass[] courseid => the typed values of hotsitefields::values().
+     * @return \stdClass[] courseid => the typed values of landingfields::values().
      */
     public static function values(array $rows): array {
         population::page_contexts($rows);
-        return hotsitefields::values_many(array_map('intval', array_keys($rows)), false);
+        return landingfields::values_many(array_map('intval', array_keys($rows)), false);
     }
 
     /**
@@ -115,7 +115,7 @@ final class cards {
      * area (lib/filelib.php), so the cover of a card on the public category listing loads for
      * nobody. The public shell therefore asks for the theme's own file route
      * ({@see publicfiles::cover_url()}), which carries its checks in resolve() and needs no
-     * session - the same escape the hotsite makes for its hero image. It is safe to mint here
+     * session - the same escape the landing page makes for its hero image. It is safe to mint here
      * because the public shell's page holds public courses only
      * ({@see \local_unlistedcourses\access::filter_courses_public()} runs over the page slice),
      * and it is refused anyway for a course that stops being public.

@@ -24,12 +24,12 @@
 
 namespace theme_dimensions\local\hook\course;
 
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 /**
- * Validates the hotsite fields of the course settings form.
+ * Validates the landing page fields of the course settings form.
  *
- * Three rules. The video address: the hotsite embeds it through core's
+ * Three rules. The video address: the landing page embeds it through core's
  * media manager, so an address no enabled media player handles would save
  * fine and then render as nothing. Refusing it here, with the field named,
  * is the only moment the editor is looking. The check is the same the page
@@ -40,7 +40,7 @@ use theme_dimensions\local\hotsitefields;
  * Only what the editor can see is refused. A field the form hides
  * ({@see after_form_definition::hide_inapplicable_fields()}) keeps its value and is
  * submitted with it; an error on it would stop the save with nothing on screen to fix, so
- * the page reads such values away instead ({@see hotsitefields::coherent()}).
+ * the page reads such values away instead ({@see landingfields::coherent()}).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -55,7 +55,7 @@ class after_form_validation {
      */
     public static function callback(\core_course\hook\after_form_validation $hook): void {
         $hook->add_errors(self::round6_errors($hook->get_data()));
-        $element = 'customfield_' . hotsitefields::SHORTNAME_VIDEOURL;
+        $element = 'customfield_' . landingfields::SHORTNAME_VIDEOURL;
         $data = $hook->get_data();
         if (!isset($data[$element])) {
             return;
@@ -64,7 +64,7 @@ class after_form_validation {
         if ($url === '' || self::embeddable($url)) {
             return;
         }
-        $hook->add_errors([$element => get_string('hotsite_videourlinvalid', hotsitefields::COMPONENT)]);
+        $hook->add_errors([$element => get_string('landing_videourlinvalid', landingfields::COMPONENT)]);
     }
 
     /**
@@ -80,23 +80,23 @@ class after_form_validation {
      * @return array Errors keyed by element name, empty when the submission passes.
      */
     private static function round6_errors(array $data): array {
-        $modelo = (int) ($data['customfield_' . hotsitefields::SHORTNAME_MODELO] ?? 0);
-        $modalidade = (int) ($data['customfield_' . hotsitefields::SHORTNAME_MODALIDADE] ?? 0);
-        $formato = (int) ($data['customfield_' . hotsitefields::SHORTNAME_FORMATO] ?? 0);
+        $model = (int) ($data['customfield_' . landingfields::SHORTNAME_MODEL] ?? 0);
+        $modality = (int) ($data['customfield_' . landingfields::SHORTNAME_MODALITY] ?? 0);
+        $format = (int) ($data['customfield_' . landingfields::SHORTNAME_FORMAT] ?? 0);
         $errors = [];
 
-        $notonline = in_array($modalidade, [hotsitefields::MODALIDADE_PRESENCIAL, hotsitefields::MODALIDADE_HIBRIDO], true);
-        if ($modelo !== hotsitefields::MODELO_EVENTO && $formato === hotsitefields::FORMATO_AUTOINSTRUCIONAL && $notonline) {
-            $errors['customfield_' . hotsitefields::SHORTNAME_MODALIDADE] =
-                get_string('hotsite_selfpacedonline', hotsitefields::COMPONENT);
+        $notonline = in_array($modality, [landingfields::MODALITY_INPERSON, landingfields::MODALITY_HYBRID], true);
+        if ($model !== landingfields::MODEL_EVENT && $format === landingfields::FORMAT_SELFPACED && $notonline) {
+            $errors['customfield_' . landingfields::SHORTNAME_MODALITY] =
+                get_string('landing_selfpacedonline', landingfields::COMPONENT);
         }
 
-        if ($modalidade === hotsitefields::MODALIDADE_HIBRIDO) {
-            $total = $data['customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA] ?? '';
-            $inperson = $data['customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL] ?? '';
+        if ($modality === landingfields::MODALITY_HYBRID) {
+            $total = $data['customfield_' . landingfields::SHORTNAME_WORKLOAD] ?? '';
+            $inperson = $data['customfield_' . landingfields::SHORTNAME_INPERSONWORKLOAD] ?? '';
             if (is_numeric($total) && is_numeric($inperson) && (float) $total > 0 && (float) $inperson > (float) $total) {
-                $errors['customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL] =
-                    get_string('hotsite_cargapresencialtoobig', hotsitefields::COMPONENT, format_float((float) $total, -1));
+                $errors['customfield_' . landingfields::SHORTNAME_INPERSONWORKLOAD] =
+                    get_string('landing_inpersonworkloadtoobig', landingfields::COMPONENT, format_float((float) $total, -1));
             }
         }
         return $errors;

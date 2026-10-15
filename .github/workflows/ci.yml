@@ -30,10 +30,13 @@ jobs:
   # follows $plugin->supported: Boost Union ships one stable branch per Moodle
   # release; until it ships MOODLE_503_STABLE, its 5.3 port lives on upgrade-503.
   #
-  # local_unlistedcourses and customfield_picture are declared dependencies in
-  # version.php: the course renderer calls the first one's access predicates,
-  # and the hotsite's picture fields (the four badges and the share picture)
-  # are of the second one's type.
+  # local_unlistedcourses is a declared dependency in version.php: the course
+  # renderer calls its access predicates.
+  #
+  # customfield_picture is optional and NOT in version.php: the landing page's picture
+  # fields (the four badges and the share picture) are of its type, provisioned
+  # and drawn only where it is installed and enabled. It is here so the suite
+  # exercises that integration; the tests that need it skip themselves without it.
   #
   # local_page is optional and deliberately NOT in version.php: the category
   # showcase draws a category's pages under its hero when it is installed and

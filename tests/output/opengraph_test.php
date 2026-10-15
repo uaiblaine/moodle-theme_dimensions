@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - Tests for the public hotsite's head tags
+ * Theme Dimensions - Tests for the public landing page's head tags
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -67,7 +67,7 @@ final class opengraph_test extends \advanced_testcase {
         // bootstrap renderer to initialise the theme, which sets the course to the site and
         // refuses once a theme is in place. The same recipe as core_renderer_test's helper.
         $PAGE->set_course($SITE);
-        $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => 1]);
+        $PAGE->set_url('/theme/dimensions/landing.php', ['id' => 1]);
         $PAGE->force_theme('dimensions');
         return $PAGE->get_renderer('core');
     }
@@ -83,7 +83,7 @@ final class opengraph_test extends \advanced_testcase {
         $this->resetAfterTest();
         $SITE->fullname = 'Acme & Cia';
         $course = $this->getDataGenerator()->create_course(['fullname' => 'Resgate & Salvamento']);
-        $url = new \moodle_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
+        $url = new \moodle_url('/theme/dimensions/landing.php', ['id' => $course->id]);
 
         $renderer = $this->renderer();
         $exported = opengraph::for_course($course, '   ', $url)->export_for_template($renderer);
@@ -124,7 +124,7 @@ final class opengraph_test extends \advanced_testcase {
         $this->resetAfterTest();
         $renderer = $this->renderer();
         $course = $this->getDataGenerator()->create_course(['fullname' => 'Resgate & Salvamento']);
-        $url = new \moodle_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
+        $url = new \moodle_url('/theme/dimensions/landing.php', ['id' => $course->id]);
         opengraph::set(opengraph::for_course($course, 'A & B', $url));
 
         $CFG->opentowebcrawlers = 0;
@@ -150,7 +150,7 @@ final class opengraph_test extends \advanced_testcase {
         $this->resetAfterTest();
         $renderer = $this->renderer();
         $course = $this->getDataGenerator()->create_course(['fullname' => 'Resgate & Salvamento']);
-        $url = new \moodle_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
+        $url = new \moodle_url('/theme/dimensions/landing.php', ['id' => $course->id]);
 
         $hook = new \core\hook\output\before_standard_head_html_generation($renderer);
         before_standard_head_html_generation::callback($hook);
@@ -192,7 +192,7 @@ final class opengraph_test extends \advanced_testcase {
         $this->resetAfterTest();
         $renderer = $this->renderer();
         $course = $this->getDataGenerator()->create_course(['fullname' => 'Wired & Ready']);
-        $url = new \moodle_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
+        $url = new \moodle_url('/theme/dimensions/landing.php', ['id' => $course->id]);
 
         opengraph::set(opengraph::for_course($course, null, $url));
         $hook = new \core\hook\output\before_standard_head_html_generation($renderer);
@@ -216,7 +216,7 @@ final class opengraph_test extends \advanced_testcase {
     public function test_the_image_is_the_course_image_through_the_theme_route_or_nothing(): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['fullname' => 'Resgate & Salvamento']);
-        $url = new \moodle_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
+        $url = new \moodle_url('/theme/dimensions/landing.php', ['id' => $course->id]);
         $renderer = $this->renderer();
 
         $tags = opengraph::for_course($course, null, $url);
@@ -355,7 +355,7 @@ final class opengraph_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$categoryid, $category, $url] = $this->category('Brigada');
         branding::save($categoryid, (object) [
-            'chamada' => 'Formação continuada e eventos',
+            'tagline' => 'Formação continuada e eventos',
             'publicdescription_editor' => [
                 'text' => '<p>Primeiro parágrafo da página pública.</p><p>Segundo.</p>',
                 'format' => FORMAT_HTML,
@@ -363,7 +363,7 @@ final class opengraph_test extends \advanced_testcase {
         ]);
         $branding = branding::for_category($categoryid);
         // The preconditions: both of the retired sources really do hold a value here.
-        $this->assertSame('Formação continuada e eventos', $branding['chamada']);
+        $this->assertSame('Formação continuada e eventos', $branding['tagline']);
         $this->assertStringContainsString('Primeiro parágrafo', $branding['publicdescription']);
         $this->assertSame('', $branding['publicsummary']);
 

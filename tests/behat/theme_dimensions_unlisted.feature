@@ -7,7 +7,6 @@ Feature: Unlisted courses and categories are not named to people who cannot reac
   Background:
     Given the following config values are set as admin:
       | theme              | dimensions |                              |
-      | logincpfvalidation | 0                    | theme_dimensions   |
     And the following "categories" exist:
       | name                | category | idnumber |
       | Test category       | 0        | TESTCAT  |
@@ -60,28 +59,28 @@ Feature: Unlisted courses and categories are not named to people who cannot reac
     Then I should not see "This content is not available"
     And I should see "Open One"
 
-  Scenario: Guessing the hotsite URL of an unlisted course reveals nothing about it either
-    # The course carries a hotsite model, so without the guard the hotsite itself renders and
+  Scenario: Guessing the landing page URL of an unlisted course reveals nothing about it either
+    # The course carries a landing page model, so without the guard the landing page itself renders and
     # names the course; a course without a model would be forwarded to the enrolment page and
-    # ghosted there, which would let this scenario pass against a hotsite that leaks.
+    # ghosted there, which would let this scenario pass against a landing page that leaks.
     Given the following "courses" exist:
-      | fullname           | shortname | category | customfield_hotsite_modelo |
-      | Restricted Hotsite | RESTH     | TESTCAT  | 1                          |
+      | fullname           | shortname | category | customfield_dimensions_model |
+      | Restricted Landing page | RESTH     | TESTCAT  | 1                          |
     And the course "RESTH" is "unlisted" for discoverability
-    When I am on the "RESTH" "theme_dimensions > Enrolment hotsite" page logged in as "student1"
+    When I am on the "RESTH" "theme_dimensions > Enrolment landing page" page logged in as "student1"
     Then I should see "This content is not available"
-    And I should not see "Restricted Hotsite"
+    And I should not see "Restricted Landing page"
 
-  Scenario: The hotsite of an unlisted course still serves somebody entitled to it
+  Scenario: The landing page of an unlisted course still serves somebody entitled to it
     Given the following "courses" exist:
-      | fullname           | shortname | category | customfield_hotsite_modelo |
-      | Restricted Hotsite | RESTH     | TESTCAT  | 1                          |
+      | fullname           | shortname | category | customfield_dimensions_model |
+      | Restricted Landing page | RESTH     | TESTCAT  | 1                          |
     And the course "RESTH" is "unlisted" for discoverability
     And the following "course enrolments" exist:
       | user     | course | role    |
       | student1 | RESTH  | student |
-    When I am on the "RESTH" "theme_dimensions > Enrolment hotsite" page logged in as "student1"
-    Then I should see "Restricted Hotsite"
+    When I am on the "RESTH" "theme_dimensions > Enrolment landing page" page logged in as "student1"
+    Then I should see "Restricted Landing page"
     And I should not see "This content is not available"
 
   Scenario: A user outside the cohort does not see the unlisted category on the course index

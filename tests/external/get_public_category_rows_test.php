@@ -34,7 +34,7 @@ use theme_dimensions\local\category\guard;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\category\request;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 use theme_dimensions\output\opengraph;
 
 defined('MOODLE_INTERNAL') || die();
@@ -166,9 +166,9 @@ final class get_public_category_rows_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
         $CFG->forcelogin = $forcelogin ? 1 : 0;
         $CFG->routerconfigured = false;
         $CFG->coursecontact = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
@@ -183,7 +183,7 @@ final class get_public_category_rows_test extends \advanced_testcase {
             $course = self::getDataGenerator()->create_course(['category' => $categoryid, 'fullname' => $fullname] + $extra);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
             ]);
             if ($state !== null) {
                 discoverability::set_state((int) $course->id, $state, $adminid);

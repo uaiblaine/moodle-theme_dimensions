@@ -32,14 +32,14 @@ use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\category\remembered;
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 
 /**
  * Builds the context of one page of the showcase: the navigation tree, the toolbar, the grid, the pager.
  *
  * The one listing both shells render. It is handed a resolved
  * {@see page_result} and reads what the cards need in four bulk statements
- * through {@see cards} - the course rows, the hotsite values, the images,
+ * through {@see cards} - the course rows, the landing page values, the images,
  * the contacts - then builds one {@see category_card} per row without
  * touching the database again. The toolbar comes from {@see category_toolbar}
  * and the pager is core's own paging bar over real links, so every page of

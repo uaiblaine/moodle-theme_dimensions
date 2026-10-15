@@ -28,7 +28,7 @@
  * @return bool
  */
 function xmldb_theme_dimensions_install() {
-    \theme_dimensions\local\hotsitefields::ensure_fields();
+    \theme_dimensions\local\landingfields::ensure_fields();
     \theme_dimensions\local\focusmodefields::ensure_fields();
     return true;
 }

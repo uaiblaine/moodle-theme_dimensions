@@ -12,37 +12,37 @@
 // Moodle 5.2 has one dark mechanism, data-bs-theme on the html element.
 
 .dim-coursenotice {
-    --fsn-card: var(--bs-body-bg, var(--surface-card, #fff));
-    --fsn-subtle: var(--bs-tertiary-bg, var(--surface-subtle, #f2f3f5));
-    --fsn-line: var(--bs-border-color, var(--border-default, #dee2e6));
-    --fsn-line-soft: var(--bs-border-color-translucent, var(--border-subtle, #e9ecef));
-    --fsn-ink: var(--bs-body-color, var(--text-body, #1f1f1f));
-    --fsn-muted: var(--bs-secondary-color, var(--text-muted, #505050));
-    --fsn-mark: var(--dim-ds-blue-400, #4456ff);
-    --fsn-heading: var(--text-heading, var(--bs-primary, #070093));
-    --fsn-link: var(--text-link, var(--bs-link-color, #070093));
-    --fsn-cta: var(--dim-ds-blue-600, #070093);
-    --fsn-cta-ink: var(--dim-ds-white, #fff);
-    --fsn-ring: var(--focus-ring, #4456ff);
+    --dim-notice-card: var(--bs-body-bg, var(--dim-ds-surface-card, #fff));
+    --dim-notice-subtle: var(--bs-tertiary-bg, var(--dim-ds-surface-subtle, #f2f3f5));
+    --dim-notice-line: var(--bs-border-color, var(--dim-ds-border-default, #dee2e6));
+    --dim-notice-line-soft: var(--bs-border-color-translucent, var(--dim-ds-border-subtle, #e9ecef));
+    --dim-notice-ink: var(--bs-body-color, var(--dim-ds-text-body, #1f1f1f));
+    --dim-notice-muted: var(--bs-secondary-color, var(--dim-ds-text-muted, #505050));
+    --dim-notice-mark: var(--dim-ds-blue-400, #4456ff);
+    --dim-notice-heading: var(--dim-ds-text-heading, var(--bs-primary, #0f6cbf));
+    --dim-notice-link: var(--dim-ds-text-link, var(--bs-link-color, #0f6cbf));
+    --dim-notice-cta: var(--dim-ds-blue-600, #070093);
+    --dim-notice-cta-ink: var(--dim-ds-white, #fff);
+    --dim-notice-ring: var(--dim-ds-focus-ring, #4456ff);
     // The chip and note tones: the design system's feedback hues, each with its own ink.
-    --fsn-ok-bg: var(--dim-ds-green-050, #f0fbe0);
-    --fsn-ok-fg: var(--dim-ds-green-700, #2f6b00);
-    --fsn-warn-bg: var(--dim-ds-yellow-100, #fcefdc);
-    --fsn-warn-fg: var(--dim-ds-yellow-800, #60451f);
-    --fsn-info-bg: var(--dim-ds-cyan-100, #cce6ea);
-    --fsn-info-fg: var(--dim-ds-cyan-800, #00343c);
-    --fsn-chamfer: 18px;
+    --dim-notice-ok-bg: var(--dim-ds-green-050, #f0fbe0);
+    --dim-notice-ok-fg: var(--dim-ds-green-700, #2f6b00);
+    --dim-notice-warn-bg: var(--dim-ds-yellow-100, #fcefdc);
+    --dim-notice-warn-fg: var(--dim-ds-yellow-800, #60451f);
+    --dim-notice-info-bg: var(--dim-ds-cyan-100, #cce6ea);
+    --dim-notice-info-fg: var(--dim-ds-cyan-800, #00343c);
+    --dim-notice-chamfer: 18px;
 
     position: relative;
     margin: 0 0 1rem;
-    background: var(--fsn-card);
-    color: var(--fsn-ink);
-    border: 1px solid var(--fsn-line);
+    background: var(--dim-notice-card);
+    color: var(--dim-notice-ink);
+    border: 1px solid var(--dim-notice-line);
     border-inline-start: 0;
-    border-radius: 0 0 var(--radius-md, 8px) var(--radius-md, 8px);
+    border-radius: 0 0 var(--dim-ds-radius-md, 8px) var(--dim-ds-radius-md, 8px);
     // The design's cut corner. A clip-path also clips outlines, so the bar keeps enough padding on
     // its right for the fold control's focus ring to stay inside the polygon.
-    clip-path: polygon(0 0, calc(100% - var(--fsn-chamfer)) 0, 100% var(--fsn-chamfer), 100% 100%, 0 100%);
+    clip-path: polygon(0 0, calc(100% - var(--dim-notice-chamfer)) 0, 100% var(--dim-notice-chamfer), 100% 100%, 0 100%);
     font-size: .9375rem;
 }
 
@@ -51,7 +51,7 @@
     position: absolute;
     inset: 0 auto 0 0;
     width: 4px;
-    background: var(--fsn-mark);
+    background: var(--dim-notice-mark);
 }
 
 .dim-coursenotice .icon {
@@ -73,7 +73,7 @@
     align-items: center;
     gap: 8px;
     margin-inline-end: 4px;
-    color: var(--fsn-heading);
+    color: var(--dim-notice-heading);
     font-family: var(--bs-font-sans-serif, inherit);
     font-size: .9rem;
     font-weight: 600;
@@ -95,9 +95,9 @@
     align-items: center;
     gap: 6px;
     padding: 5px 9px;
-    border-radius: var(--radius-pill, 50rem);
-    background: var(--fsn-subtle);
-    color: var(--fsn-muted);
+    border-radius: var(--dim-ds-radius-pill, 50rem);
+    background: var(--dim-notice-subtle);
+    color: var(--dim-notice-muted);
     font-size: .76rem;
     font-weight: 500;
     line-height: 1;
@@ -114,18 +114,18 @@
 }
 
 .dim-coursenotice .dim-coursenotice__chip--ok {
-    background: var(--fsn-ok-bg);
-    color: var(--fsn-ok-fg);
+    background: var(--dim-notice-ok-bg);
+    color: var(--dim-notice-ok-fg);
 }
 
 .dim-coursenotice .dim-coursenotice__chip--warn {
-    background: var(--fsn-warn-bg);
-    color: var(--fsn-warn-fg);
+    background: var(--dim-notice-warn-bg);
+    color: var(--dim-notice-warn-fg);
 }
 
 .dim-coursenotice .dim-coursenotice__chip--info {
-    background: var(--fsn-info-bg);
-    color: var(--fsn-info-fg);
+    background: var(--dim-notice-info-bg);
+    color: var(--dim-notice-info-fg);
 }
 
 .dim-coursenotice .dim-coursenotice__acts,
@@ -150,10 +150,10 @@
     align-items: center;
     gap: 6px;
     padding: 7px 10px;
-    border: 1px solid var(--fsn-line);
-    border-radius: var(--radius-sm, 6px);
-    background: var(--fsn-card);
-    color: var(--fsn-ink);
+    border: 1px solid var(--dim-notice-line);
+    border-radius: var(--dim-ds-radius-sm, 6px);
+    background: var(--dim-notice-card);
+    color: var(--dim-notice-ink);
     font-size: .8rem;
     font-weight: 500;
     line-height: 1;
@@ -162,12 +162,12 @@
 }
 
 .dim-coursenotice .dim-coursenotice__btn:hover {
-    border-color: var(--fsn-mark);
-    color: var(--fsn-heading);
+    border-color: var(--dim-notice-mark);
+    color: var(--dim-notice-heading);
 }
 
 .dim-coursenotice .dim-coursenotice__btn:focus-visible {
-    outline: var(--focus-ring-width, 3px) solid var(--fsn-ring);
+    outline: var(--dim-ds-focus-ring-width, 3px) solid var(--dim-notice-ring);
     outline-offset: 2px;
     box-shadow: none;
 }
@@ -178,9 +178,9 @@
 
 .dim-coursenotice .dim-coursenotice__btn--primary,
 .dim-coursenotice .dim-coursenotice__btn--primary:hover {
-    border-color: var(--fsn-cta);
-    background: var(--fsn-cta);
-    color: var(--fsn-cta-ink);
+    border-color: var(--dim-notice-cta);
+    background: var(--dim-notice-cta);
+    color: var(--dim-notice-cta-ink);
 }
 
 .dim-coursenotice [data-action="dim-coursenotice-toggle"] .icon {
@@ -195,7 +195,7 @@
     display: grid;
     gap: 10px;
     padding: 12px 14px 14px 18px;
-    border-top: 1px solid var(--fsn-line-soft);
+    border-top: 1px solid var(--dim-notice-line-soft);
 }
 
 .dim-coursenotice .dim-coursenotice__row {
@@ -206,7 +206,7 @@
 }
 
 .dim-coursenotice .dim-coursenotice__label {
-    color: var(--fsn-muted);
+    color: var(--dim-notice-muted);
     font-size: .8rem;
     font-weight: 600;
 }
@@ -221,9 +221,9 @@
     min-width: 0;
     padding: 7px 10px;
     overflow-x: auto;
-    border-radius: var(--radius-sm, 6px);
-    background: var(--fsn-subtle);
-    color: var(--fsn-ink);
+    border-radius: var(--dim-ds-radius-sm, 6px);
+    background: var(--dim-notice-subtle);
+    color: var(--dim-notice-ink);
     font-size: .82rem;
     white-space: nowrap;
 }
@@ -237,7 +237,7 @@
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    color: var(--fsn-muted);
+    color: var(--dim-notice-muted);
     font-size: .8rem;
 }
 
@@ -247,16 +247,16 @@
 }
 
 .dim-coursenotice .dim-coursenotice__note--warn > .icon {
-    color: var(--fsn-warn-fg);
+    color: var(--dim-notice-warn-fg);
 }
 
 .dim-coursenotice .dim-coursenotice__note strong {
-    color: var(--fsn-ink);
+    color: var(--dim-notice-ink);
     font-weight: 600;
 }
 
 .dim-coursenotice .dim-coursenotice__note a {
-    color: var(--fsn-link);
+    color: var(--dim-notice-link);
 }
 
 .dim-coursenotice .dim-coursenotice__line {
@@ -289,15 +289,15 @@ body#page-course-view-mtube .dim-coursenotice.dim-coursenotice--mtube {
 // take the dark pairs the category showcase's badges were audited with (category.scss): each over
 // the 4.5:1 floor.
 :root[data-bs-theme="dark"] .dim-coursenotice {
-    --fsn-mark: var(--dim-ds-blue-300, #7c84ff);
-    --fsn-heading: var(--dim-ds-blue-200, #adb2f0);
-    --fsn-link: var(--dim-ds-blue-200, #adb2f0);
-    --fsn-cta: var(--dim-ds-blue-400, #4456ff);
-    --fsn-ring: var(--dim-ds-blue-300, #7c84ff);
-    --fsn-ok-bg: #18330c;
-    --fsn-ok-fg: #a9ee55; // 9.9:1.
-    --fsn-warn-bg: #3a2c0c;
-    --fsn-warn-fg: #f0c674; // 8.4:1.
-    --fsn-info-bg: #0c2e33;
-    --fsn-info-fg: #7fd8e4; // 8.8:1.
+    --dim-notice-mark: var(--dim-ds-blue-300, #7c84ff);
+    --dim-notice-heading: var(--dim-ds-blue-200, #adb2f0);
+    --dim-notice-link: var(--dim-ds-blue-200, #adb2f0);
+    --dim-notice-cta: var(--dim-ds-blue-400, #4456ff);
+    --dim-notice-ring: var(--dim-ds-blue-300, #7c84ff);
+    --dim-notice-ok-bg: #18330c;
+    --dim-notice-ok-fg: #a9ee55; // 9.9:1.
+    --dim-notice-warn-bg: #3a2c0c;
+    --dim-notice-warn-fg: #f0c674; // 8.4:1.
+    --dim-notice-info-bg: #0c2e33;
+    --dim-notice-info-fg: #7fd8e4; // 8.8:1.
 }

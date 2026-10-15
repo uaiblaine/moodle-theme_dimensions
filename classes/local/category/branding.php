@@ -28,15 +28,15 @@ use core\context;
 use core_course_category;
 use local_unlistedcourses\category_access;
 use theme_dimensions\event\category_branding_updated;
-use theme_dimensions\local\hotsite\publicfiles;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\publicfiles;
+use theme_dimensions\local\landingfields;
 
 /**
  * The hero of a category: its layout, colours, overlay, tagline, public text and background image.
  *
  * One row per branded category in {theme_dimensions_cat}, and the file areas below in
- * the category's own context. A category without a row reads the defaults: the solid navy
- * band and no tagline. usermodified is the id of the user who last saved the row, kept as an
+ * the category's own context. A category without a row reads the defaults: the solid band
+ * in Boost's default primary and no tagline. usermodified is the id of the user who last saved the row, kept as an
  * authorship stamp and declared in the privacy provider; the table holds nothing about the people
  * who read the page.
  *
@@ -45,7 +45,7 @@ use theme_dimensions\local\hotsitefields;
  * {@see hex()} is the only way a value enters or leaves this class, which is what lets the hero
  * emit an inline style at all: a string that is not a hex colour becomes the default, on the way
  * in and again on the way out. And {@see validate()} refuses a pair whose {@see contrast()} is
- * under {@see FLOOR}, whatever called {@see save()} - WCAG AA for normal text, which the chamada
+ * under {@see FLOOR}, whatever called {@see save()} - WCAG AA for normal text, which the tagline
  * and the description are. The only colours this class names are the default pair.
  *
  * A category without a pair of its own takes the pair of its nearest ancestor that has one, and the
@@ -77,7 +77,7 @@ use theme_dimensions\local\hotsitefields;
  * ({@see is_valid_video()}), because core has no video validator and derives a mimetype from the
  * file name. categorybadge1..3 serve the category's own crests, one file each, under the same
  * admission and the same image check as the hero ({@see resolve()}). categoryogimage serves the
- * 1200x630 JPEG derivative a social scraper fetches - the hotsite's own derivative machinery
+ * 1200x630 JPEG derivative a social scraper fetches - the landing page's own derivative machinery
  * ({@see publicfiles}), reused unchanged - and it falls back to the site-wide image when the
  * category has none of its own, because a preview with no picture is what the fallback exists to
  * prevent. Its URL names the category's context either way: the route resolves by category id,
@@ -178,8 +178,13 @@ final class branding {
     /** @var string The layout of a category nobody branded. */
     public const DEFAULT_LAYOUT = self::LAYOUT_SOLID;
 
-    /** @var string The band colour of a category nobody branded: the institutional navy. */
-    public const DEFAULT_BG = '#070093';
+    /**
+     * @var string The band colour of a category nobody branded: Boost's default primary.
+     *
+     * A hex and not var(--bs-primary), because the stops, the watermark's alpha and the contrast
+     * audit are computed from its channels here. White ink on it reads 5.36:1, over {@see FLOOR}.
+     */
+    public const DEFAULT_BG = '#0f6cbf';
 
     /** @var string The ink of a category nobody branded. */
     public const DEFAULT_INK = '#ffffff';
@@ -187,7 +192,7 @@ final class branding {
     /**
      * @var float The contrast a stored pair must reach: WCAG 2.x AA for normal text.
      *
-     * The chamada and the public description are normal-size text on the band, so 4.5:1 is the
+     * The tagline and the public description are normal-size text on the band, so 4.5:1 is the
      * floor and not 3:1. The editor's panel shows the ratio and offers fixes; this is the
      * refusal behind it, deliberately a refusal and not a warning.
      */
@@ -214,7 +219,7 @@ final class branding {
     public const DEFAULT_OVERLAY = 78;
 
     /** @var int The longest tagline: one sentence. */
-    public const CHAMADA_MAXLENGTH = 160;
+    public const TAGLINE_MAXLENGTH = 160;
 
     /**
      * @var int The longest card text: what the card's excerpt of the description is cut at.
@@ -248,7 +253,7 @@ final class branding {
         'owncolours',
         'colourfrom',
         'overlay',
-        'chamada',
+        'tagline',
         'publicsummary',
         'cardsummary',
         'defaultsort',
@@ -494,7 +499,7 @@ final class branding {
             'owncolours' => 0,
             'colourfrom' => 0,
             'overlay' => self::DEFAULT_OVERLAY,
-            'chamada' => '',
+            'tagline' => '',
             'publicsummary' => '',
             'cardsummary' => '',
             'defaultsort' => '',
@@ -528,7 +533,7 @@ final class branding {
         $row->inkcolour = self::hex((string) $row->inkcolour) ?? self::DEFAULT_INK;
         $row->owncolours = empty($row->owncolours) ? 0 : 1;
         $row->overlay = self::overlay($row->overlay) ?? self::DEFAULT_OVERLAY;
-        $row->chamada = (string) $row->chamada;
+        $row->tagline = (string) $row->tagline;
         $row->publicsummary = trim((string) $row->publicsummary);
         $row->cardsummary = trim((string) $row->cardsummary);
         $row->defaultsort = self::sort_choice((string) $row->defaultsort) ?? '';
@@ -689,7 +694,7 @@ final class branding {
             $payload[$key] = match ($key) {
                 /* No file area of its own, so no image of its own - but the image layout,
                    which is what makes the hero paint the site-wide fallback behind the
-                   default navy. The hero falls back to the solid band by itself when no
+                   default band colour. The hero falls back to the solid band by itself when no
                    fallback has been uploaded ({@see fallback_url()} answers null). */
                 'layout' => self::LAYOUT_IMAGE,
                 'image' => null,
@@ -730,7 +735,7 @@ final class branding {
             'owncolours' => (int) $row->owncolours,
             'colourfrom' => (int) $colours['from'],
             'overlay' => $row->overlay,
-            'chamada' => $row->chamada,
+            'tagline' => $row->tagline,
             'publicsummary' => $row->publicsummary,
             'cardsummary' => $row->cardsummary,
             'defaultsort' => $row->defaultsort,
@@ -969,7 +974,7 @@ final class branding {
      * The one builder of both category surfaces - the hero and the directory card - so that a
      * crest cannot be addressed one way on one of them and another way on the other. The
      * alternative text is the file name without its extension
-     * ({@see publicfiles::badge_alt()}), which is the same rule the hotsite's badges follow and
+     * ({@see publicfiles::badge_alt()}), which is the same rule the landing page's badges follow and
      * the one thing the manager controls: there is no caption field, on purpose.
      *
      * @param int $categoryid The category.
@@ -1140,13 +1145,14 @@ final class branding {
     }
 
     /**
-     * The file manager options of one badge: one file, the hotsite's own limit and types.
+     * The file manager options of one badge: one file, the landing page's own limit and types.
      *
-     * The limit and the vocabulary are the hotsite's, read from its own constant rather than
+     * The limit and the vocabulary are the landing page's, read from its own constant rather than
      * restated: the two surfaces show the same kind of file, an institutional crest, and a
      * category manager who has one accepted on a course must not be refused it here. The
-     * hotsite's customfield_picture badge fields take exactly these two values
-     * ({@see \theme_dimensions\local\hotsitefields::BRASAO_MAXBYTES} and
+     * landing page's badge fields (customfield_picture's type, where that optional plugin is installed)
+     * take exactly these two values
+     * ({@see \theme_dimensions\local\landingfields::CREST_MAXBYTES} and
      * accepted_types web_image), which on 5.2 admits .svg - see {@see resolve()} for why an SVG
      * crest is still served.
      *
@@ -1156,7 +1162,7 @@ final class branding {
         return [
             'subdirs' => 0,
             'maxfiles' => 1,
-            'maxbytes' => hotsitefields::BRASAO_MAXBYTES,
+            'maxbytes' => landingfields::CREST_MAXBYTES,
             'accepted_types' => ['web_image'],
             'return_types' => self::copy_only(),
         ];
@@ -1284,7 +1290,7 @@ final class branding {
             'bgcolour' => $pair['bgcolour'],
             'inkcolour' => $pair['inkcolour'],
             'overlay' => $row->overlay,
-            'chamada' => $row->chamada,
+            'tagline' => $row->tagline,
             'publicsummary' => $row->publicsummary,
             'cardsummary' => $row->cardsummary,
             'defaultsort' => $row->defaultsort,
@@ -1343,7 +1349,7 @@ final class branding {
      * nothing reads it, and the category draws the pair it inherits ({@see colours()}).
      *
      * @param \stdClass $data The submission: layout, owncolours, bgcolour, inkcolour, overlay,
-     *   chamada, publicsummary, cardsummary, defaultsort, and either publicdescription_editor (an
+     *   tagline, publicsummary, cardsummary, defaultsort, and either publicdescription_editor (an
      *   editor value) or publicdescription + publicdescriptionformat.
      * @return array The column values.
      * @throws \invalid_parameter_exception For a value outside its vocabulary, a colour of its own
@@ -1382,9 +1388,9 @@ final class branding {
         if ($overlay === null) {
             throw new \invalid_parameter_exception('Unknown hero overlay: ' . (is_scalar($submitted) ? $submitted : ''));
         }
-        $chamada = trim((string) ($data->chamada ?? ''));
-        if (\core_text::strlen($chamada) > self::CHAMADA_MAXLENGTH) {
-            throw new \invalid_parameter_exception('The tagline is longer than ' . self::CHAMADA_MAXLENGTH . ' characters.');
+        $tagline = trim((string) ($data->tagline ?? ''));
+        if (\core_text::strlen($tagline) > self::TAGLINE_MAXLENGTH) {
+            throw new \invalid_parameter_exception('The tagline is longer than ' . self::TAGLINE_MAXLENGTH . ' characters.');
         }
         /* Trimmed before it is measured and before it is stored: a value of nothing but spaces
            is no description at all, and og:description is omitted for it rather than carrying
@@ -1423,7 +1429,7 @@ final class branding {
             'inkcolour' => $inkcolour,
             'owncolours' => $owncolours ? 1 : 0,
             'overlay' => $overlay,
-            'chamada' => $chamada,
+            'tagline' => $tagline,
             'publicsummary' => $publicsummary,
             'cardsummary' => $cardsummary,
             'defaultsort' => $defaultsort,
@@ -1647,8 +1653,8 @@ final class branding {
             return $video;
         }
         if (in_array($filearea, self::AREA_BADGES, true)) {
-            /* Exactly the hero's checks, is_valid_image() included, as the hotsite's own badge
-               route makes ({@see \theme_dimensions\local\hotsite\publicfiles::resolve()}):
+            /* Exactly the hero's checks, is_valid_image() included, as the landing page's own badge
+               route makes ({@see \theme_dimensions\local\landing\publicfiles::resolve()}):
                without it a same-origin .html written through the file API would be script for
                everyone who may see the category; the editor's file managers accept images only,
                and this check makes that true of the route as well. It costs no crest: core 5.2's

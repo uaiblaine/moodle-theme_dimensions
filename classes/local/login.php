@@ -36,20 +36,6 @@ namespace theme_dimensions\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class login {
-    /**
-     * @var string Request parameter which turns the CPF handling off for one page load.
-     *
-     * The CPF handling refuses every username which is not a CPF, and the site admin's username is
-     * not one. Without a way back to a plain login form, installing this theme would lock the admin
-     * out of the site. The parameter is checked here, on the server, so the module is never loaded
-     * rather than loaded and disarmed - there is nothing to protect, since client-side validation
-     * is not an authentication rule, and the plain form still has to pass the real credentials.
-     */
-    public const BYPASS_PARAM = 'nocpf';
-
-    /** @var string Session key remembering that this visitor asked for a plain login form. */
-    public const BYPASS_SESSION_KEY = 'theme_dimensions_nocpf';
-
     /** @var int Stored value of the 'yes' option in this theme's binary select settings. */
     public const SELECT_YES = 1;
 
@@ -79,67 +65,12 @@ class login {
     public const RESET_HINT_AFTER = 2;
 
     /**
-     * Whether the login form should validate a CPF typed into the username field.
-     *
-     * The setting defaults to 'yes'. A value which was never written - a site whose admin settings
-     * for this theme have not been applied yet - must therefore read as enabled. Reading the config
-     * with a falsy fallback instead would silently switch the feature off on a fresh install.
-     *
-     * @return bool True when the CPF handling should be applied to the login form.
-     */
-    public static function cpf_validation_enabled(): bool {
-        $config = get_config('theme_dimensions', 'logincpfvalidation');
-        if ($config === false || $config === '') {
-            return true;
-        }
-        return ((int) $config) === self::SELECT_YES;
-    }
-
-    /**
-     * Whether the CPF handling should be applied to the login form being rendered right now.
-     *
-     * Kept free of the request on purpose: the caller reads the parameter and passes the answer in,
-     * so this decision is a pure function and can be tested without faking a request.
-     *
-     * @param bool $bypassrequested Whether the request asked for a plain login form.
-     * @return bool True when the login form should be turned into a CPF form.
-     */
-    public static function cpf_validation_applies(bool $bypassrequested): bool {
-        return !$bypassrequested && self::cpf_validation_enabled();
-    }
-
-    /**
-     * Whether this visitor asked for a plain login form, now or earlier in this session.
-     *
-     * The parameter has to stick. The login form posts to /login/index.php with no query string,
-     * so a wrong password on the bypass URL would otherwise bounce the admin back to the CPF form
-     * with no way to retry short of retyping the URL - which is exactly the moment they are least
-     * able to work out what happened.
-     *
-     * The flag lives in the session and dies with it: logging in regenerates the session, so it
-     * does not follow anyone past the login page. There is nothing to protect either way - this
-     * turns off a convenience in the browser, not an authentication rule.
-     *
-     * @return bool
-     */
-    public static function bypass_requested(): bool {
-        global $SESSION;
-
-        if ((bool) optional_param(self::BYPASS_PARAM, 0, PARAM_BOOL)) {
-            $SESSION->{self::BYPASS_SESSION_KEY} = true;
-            return true;
-        }
-
-        return !empty($SESSION->{self::BYPASS_SESSION_KEY});
-    }
-
-    /**
      * Count one more wrong password for this visitor, and return the count.
      *
      * Counted per session, on purpose, and never per account. Reading the account's own
      * login_failed_count would mean looking the typed username up, and a hint that appears only
      * when the lookup succeeds tells an anonymous visitor which usernames exist. The session count
-     * says nothing about any account: it is the same for a CPF that exists and one that does not.
+     * says nothing about any account: it is the same for a username that exists and one that does not.
      *
      * It does not need resetting. The page is not shown while logged in, and a logout terminates
      * the session and the count with it.
@@ -168,8 +99,9 @@ class login {
     /**
      * Whether the theme's login page replaces Boost Union's.
      *
-     * Defaults to 'yes', read the same way as the CPF setting: a value which was never written is
-     * the default, and only a stored 'no' hands the page back to Boost Union.
+     * Defaults to 'yes'. A value which was never written - a site whose admin settings for this
+     * theme have not been applied yet - is the default, and only a stored 'no' hands the page back to
+     * Boost Union; reading the config with a falsy fallback would hide the page on a fresh install.
      *
      * @return bool True when this theme draws the login page itself.
      */

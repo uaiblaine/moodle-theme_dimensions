@@ -7,7 +7,6 @@ Feature: A profile is only reachable by someone with a course in common
   Background:
     Given the following config values are set as admin:
       | theme                | dimensions |                            |
-      | logincpfvalidation   | 0                    | theme_dimensions |
       | forceloginforprofiles| 1                    |                            |
     And the following "courses" exist:
       | fullname     | shortname |

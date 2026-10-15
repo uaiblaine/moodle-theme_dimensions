@@ -36,7 +36,7 @@ use theme_dimensions\local\coursenotice\notice;
  * this class decides only how it is drawn. A notice carrying the promotion section (a course editor's)
  * can be folded to its bar, where the addresses keep a copy button each; the fold is the person's
  * preference, unset meaning unfolded, written by the AMD module through core's preference service.
- * Any other notice (a learner's, or an editor's on a course without a hotsite) is short, has no fold
+ * Any other notice (a learner's, or an editor's on a course without a landing page) is short, has no fold
  * and is always open - the guest account cannot hold a preference at all, and a folded switched role
  * or hidden course hint is a hint nobody reads.
  *
@@ -107,7 +107,7 @@ class course_notice implements named_templatable, renderable {
     public function export_for_template(renderer_base $output): array {
         $component = 'theme_dimensions';
         $uniqid = self::ID_PREFIX . $this->notice->courseid;
-        $copied = get_string('hotsite_addresscopied', $component);
+        $copied = get_string('landing_addresscopied', $component);
 
         $links = [];
         foreach ($this->notice->links as $link) {

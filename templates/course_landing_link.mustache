@@ -1,0 +1,108 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/course_landing_link
+
+    A course's enrolment landing page from the course settings form: its public
+    address, shown as text so that it can be read out or copied, a button that
+    copies it, and a link opening the page.
+
+    Rendered into a static form element, so it carries no form control of its
+    own: the address is a code element, not an input, and never travels with
+    the form. The copy button follows core's copy_to_clipboard contract (the
+    data-action and data-clipboard-target attributes) and the module is
+    required at the end. When the site's router is not configured the address
+    is the page's long one and a sentence below says why.
+
+    A course whose guest access needs no password gets a second row of the same
+    shape: the guest entry's address, which skips the landing page and opens the
+    course as a guest, with its own copy button and link; on a course that is
+    not public a sentence says the address takes in logged-in readers only.
+
+    Context variables required for this template:
+    * url - Address of the course's enrolment landing page: the short public one, or the page's own.
+    * addressid - Id of the element holding the address, the copy button's target.
+    * addresslabel - Visible label of the address.
+    * copylabel - Text of the copy button.
+    * copied - Message shown once the address has been copied.
+    * label - Visible text of the link.
+    * newwindow - Announcement that the link opens a new window, for screen readers only.
+    * note - Sentence explaining that the page shows the saved state.
+    * routeroff - Sentence shown when the site's router is not configured; empty otherwise.
+    * guest - The guest entry's row, or null when the course does not offer it:
+      * url - The guest entry's address: its own short one, or the page's with guest=1.
+      * addressid - Id of the element holding the address, the copy button's target.
+      * addresslabel - Visible label of the address.
+      * addresssub - Short line under the label saying what the address does.
+      * label - Visible text of the link.
+      * notpublic - Sentence shown when the course is not public; empty otherwise.
+
+    Example context (json):
+    {
+        "url": "https://example.org/p/batepo",
+        "addressid": "theme_dimensions-landingaddress-2",
+        "addresslabel": "Public address",
+        "copylabel": "Copy address",
+        "copied": "Address copied",
+        "label": "View the enrolment landing page",
+        "newwindow": "(Opens in new window)",
+        "note": "This is the public address to share. It opens the enrolment landing page as it is saved right now, so save your changes first to see them there.",
+        "routeroff": "",
+        "guest": {
+            "url": "https://example.org/p/kabutu",
+            "addressid": "theme_dimensions-landingguestaddress-2",
+            "addresslabel": "Enter as guest",
+            "addresssub": "Skips the landing page",
+            "label": "Open the course as a guest",
+            "notpublic": ""
+        }
+    }
+}}
+<div class="dimensions-landinglink">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <span class="fw-bold">{{addresslabel}}</span>
+        <code id="{{addressid}}" class="text-break">{{url}}</code>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="copytoclipboard"
+                data-clipboard-target="#{{addressid}}" data-clipboard-success-message="{{copied}}">{{copylabel}}</button>
+    </div>
+    <a class="btn btn-outline-primary" href="{{url}}" target="_blank" rel="noopener noreferrer">
+        {{label}}<span class="visually-hidden"> {{newwindow}}</span>
+    </a>
+    <div class="form-text">{{note}}</div>
+    {{#routeroff}}
+    <div class="form-text">{{routeroff}}</div>
+    {{/routeroff}}
+    {{#guest}}
+    <div class="dimensions-landinglink__guest mt-3">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="fw-bold">{{addresslabel}} <span class="fw-normal text-muted">· {{addresssub}}</span></span>
+            <code id="{{addressid}}" class="text-break">{{url}}</code>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="copytoclipboard"
+                    data-clipboard-target="#{{addressid}}" data-clipboard-success-message="{{copied}}">{{copylabel}}</button>
+        </div>
+        <a class="btn btn-outline-primary" href="{{url}}" target="_blank" rel="noopener noreferrer">
+            {{label}}<span class="visually-hidden"> {{newwindow}}</span>
+        </a>
+        {{#notpublic}}
+        <div class="form-text">{{notpublic}}</div>
+        {{/notpublic}}
+    </div>
+    {{/guest}}
+</div>
+{{#js}}
+require(['core/copy_to_clipboard']);
+{{/js}}

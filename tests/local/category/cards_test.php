@@ -26,7 +26,7 @@ namespace theme_dimensions\local\category;
 
 use core_course\customfield\course_handler;
 use PHPUnit\Framework\Attributes\CoversClass;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -87,9 +87,9 @@ final class cards_test extends \advanced_testcase {
         $CFG->courseoverviewfileslimit = 1;
         $CFG->courseoverviewfilesext = '.jpg,.gif,.png';
         $CFG->coursecontact = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
         $generator = self::getDataGenerator();
         $category = $generator->create_category();
         $teacher = $generator->create_user();
@@ -98,9 +98,9 @@ final class cards_test extends \advanced_testcase {
             // A textarea value is the one that would cost: core's export runs the text filters per course context.
             course_handler::create()->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_EVENTO,
-                'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => "City {$i}",
-                'customfield_' . hotsitefields::SHORTNAME_PROGRAMA . '_editor' => [
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
+                'customfield_' . landingfields::SHORTNAME_CITY => "City {$i}",
+                'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
                     'text' => "<p>Programme {$i}</p>", 'format' => FORMAT_HTML,
                 ],
             ]);
@@ -130,13 +130,13 @@ final class cards_test extends \advanced_testcase {
 
         $values = cards::values($two);
         foreach ($two as $courseid => $row) {
-            $this->assertSame(hotsitefields::MODELO_EVENTO, $values[(int) $courseid]->modelo);
-            $this->assertStringStartsWith('City ', $values[(int) $courseid]->cidade);
-            $this->assertStringContainsString('Programme ', $values[(int) $courseid]->programa);
+            $this->assertSame(landingfields::MODEL_EVENT, $values[(int) $courseid]->model);
+            $this->assertStringStartsWith('City ', $values[(int) $courseid]->city);
+            $this->assertStringContainsString('Programme ', $values[(int) $courseid]->programme);
         }
-        // The card's textarea is the hotsite's minus the filter pass: same text, same cleaning.
+        // The card's textarea is the landing page's minus the filter pass: same text, same cleaning.
         $first = (int) array_key_first($two);
-        $this->assertSame(hotsitefields::values($first)->programa, $values[$first]->programa, 'No filter changes this text.');
+        $this->assertSame(landingfields::values($first)->programme, $values[$first]->programme, 'No filter changes this text.');
         $records = cards::records(array_keys($twelve));
         $this->assertSame(array_keys($twelve), array_keys($records), 'Rows come back in the order asked.');
         $this->assertObjectHasProperty('fullname', reset($records));
@@ -211,7 +211,7 @@ final class cards_test extends \advanced_testcase {
      *
      * Core's course/overviewfiles route runs require_login() while the site forces login, so the
      * cover of a visitor's card loads for nobody: the public page asks for the theme's own route,
-     * as the hotsite's hero image already did. Two controls, and the test is worth nothing without
+     * as the landing page's hero image already did. Two controls, and the test is worth nothing without
      * either: the logged-in call still gets core's URL, and core's course_image cache - read by
      * Boost Union's own cards and by the Dashboard, both behind the login - still holds core's URL
      * after the PUBLIC call, so the public page's route cannot leak onto a logged-in page.

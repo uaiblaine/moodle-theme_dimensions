@@ -24,18 +24,18 @@
 
 namespace theme_dimensions\local\hook\course;
 
-use theme_dimensions\local\hotsite\guestaccess;
-use theme_dimensions\local\hotsite\links;
-use theme_dimensions\local\hotsite\offer;
-use theme_dimensions\local\hotsite\publicaccess;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\guestaccess;
+use theme_dimensions\local\landing\links;
+use theme_dimensions\local\landing\offer;
+use theme_dimensions\local\landing\publicaccess;
+use theme_dimensions\local\landingfields;
 
 /**
- * Adjusts the hotsite part of the course settings form.
+ * Adjusts the landing page part of the course settings form.
  *
  * Three edits, about the fields this theme provisions and not expressible
  * through the custom field configuration itself: a course which already has
- * a hotsite gains its public address and a link to the page, an event whose
+ * a landing page gains its public address and a link to the page, an event whose
  * enrolment methods set no deadline is told so (round 6, decision D9), and
  * the fields that only apply to some models, modalities and formats are
  * hidden while they do not (decisions D8 and D10).
@@ -45,19 +45,19 @@ use theme_dimensions\local\hotsitefields;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class after_form_definition {
-    /** @var string Name of the static element carrying the link to the hotsite. */
-    public const LINK_ELEMENT = 'theme_dimensions_hotsitelink';
+    /** @var string Name of the static element carrying the link to the landing page. */
+    public const LINK_ELEMENT = 'theme_dimensions_landinglink';
 
     /** @var string Name of the static element warning an event that takes enrolments with no deadline. */
     public const DEADLINE_ELEMENT = 'theme_dimensions_nodeadline';
 
     /**
-     * Adjust the course form's hotsite fields.
+     * Adjust the course form's landing page fields.
      *
      * @param \core_course\hook\after_form_definition $hook The hook.
      */
     public static function callback(\core_course\hook\after_form_definition $hook): void {
-        self::add_hotsite_link($hook->formwrapper->get_course(), $hook->mform);
+        self::add_landing_link($hook->formwrapper->get_course(), $hook->mform);
         self::warn_open_ended_event($hook->formwrapper->get_course(), $hook->mform);
         self::hide_inapplicable_fields($hook->mform);
     }
@@ -66,7 +66,7 @@ class after_form_definition {
      * Warn an event whose enrolment methods set no deadline (decision D9).
      *
      * Nothing in core closes an enrolment at the course's dates, so such an event keeps taking
-     * enrolments while it is being held, and its hotsite has no deadline to print. Like the link
+     * enrolments while it is being held, and its landing page has no deadline to print. Like the link
      * above, the warning follows the STORED page model and the stored methods, never the form: it
      * describes the course as saved, and the methods are edited on their own page. It sits right
      * under the modality field, the fact an editor reads next.
@@ -78,11 +78,11 @@ class after_form_definition {
     private static function warn_open_ended_event(\stdClass $course, \MoodleQuickForm $mform): void {
         global $OUTPUT;
 
-        $anchor = 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE;
+        $anchor = 'customfield_' . landingfields::SHORTNAME_MODALITY;
         if (empty($course->id) || $course->id == SITEID || !$mform->elementExists($anchor)) {
             return;
         }
-        if (hotsitefields::values($course->id)->modelo !== hotsitefields::MODELO_EVENTO) {
+        if (landingfields::values($course->id)->model !== landingfields::MODEL_EVENT) {
             return;
         }
         $undated = offer::undated((int) $course->id);
@@ -98,7 +98,7 @@ class after_form_definition {
                 ? format_string($name, true, ['context' => $context, 'escape' => false])
                 : get_string('pluginname', 'enrol_' . $instance->enrol);
         }
-        $message = get_string('hotsite_nodeadline', hotsitefields::COMPONENT, implode(', ', $names));
+        $message = get_string('landing_nodeadline', landingfields::COMPONENT, implode(', ', $names));
         $html = $OUTPUT->notification(s($message), \core\output\notification::NOTIFY_WARNING, false);
 
         $warning = $mform->createElement('static', self::DEADLINE_ELEMENT, '', $html);
@@ -125,7 +125,7 @@ class after_form_definition {
      * total only there, and the page reads it only there.
      *
      * A hidden field keeps the value it had and is submitted with it, which is why the page
-     * reads the fields through {@see hotsitefields::coherent()} and the validation refuses only
+     * reads the fields through {@see landingfields::coherent()} and the validation refuses only
      * what the editor can see. Every rule is set on the control AND on its '_static'
      * description, the second element core adds for a field that has one; core's form script
      * hides a static element by its data-name. Values are compared as the strings the selects
@@ -135,21 +135,21 @@ class after_form_definition {
      * @return void
      */
     private static function hide_inapplicable_fields(\MoodleQuickForm $mform): void {
-        $modelo = 'customfield_' . hotsitefields::SHORTNAME_MODELO;
-        $modalidade = 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE;
-        $formato = 'customfield_' . hotsitefields::SHORTNAME_FORMATO;
-        $aovivo = 'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO;
-        $evento = (string) hotsitefields::MODELO_EVENTO;
-        $selfpaced = (string) hotsitefields::FORMATO_AUTOINSTRUCIONAL;
+        $model = 'customfield_' . landingfields::SHORTNAME_MODEL;
+        $modality = 'customfield_' . landingfields::SHORTNAME_MODALITY;
+        $format = 'customfield_' . landingfields::SHORTNAME_FORMAT;
+        $liveclasses = 'customfield_' . landingfields::SHORTNAME_LIVECLASSES;
+        $event = (string) landingfields::MODEL_EVENT;
+        $selfpaced = (string) landingfields::FORMAT_SELFPACED;
 
         $rules = [
-            [hotsitefields::SHORTNAME_FORMATO, $modelo, 'eq', $evento],
-            [hotsitefields::SHORTNAME_AULASAOVIVO, $modelo, 'eq', $evento],
-            [hotsitefields::SHORTNAME_AULASAOVIVO, $formato, 'eq', $selfpaced],
-            [hotsitefields::SHORTNAME_AULASAOVIVOQUANDO, $modelo, 'eq', $evento],
-            [hotsitefields::SHORTNAME_AULASAOVIVOQUANDO, $formato, 'eq', $selfpaced],
-            [hotsitefields::SHORTNAME_AULASAOVIVOQUANDO, $aovivo, 'notchecked', '1'],
-            [hotsitefields::SHORTNAME_ENCONTROS, $modalidade, 'neq', (string) hotsitefields::MODALIDADE_HIBRIDO],
+            [landingfields::SHORTNAME_FORMAT, $model, 'eq', $event],
+            [landingfields::SHORTNAME_LIVECLASSES, $model, 'eq', $event],
+            [landingfields::SHORTNAME_LIVECLASSES, $format, 'eq', $selfpaced],
+            [landingfields::SHORTNAME_LIVECLASSESWHEN, $model, 'eq', $event],
+            [landingfields::SHORTNAME_LIVECLASSESWHEN, $format, 'eq', $selfpaced],
+            [landingfields::SHORTNAME_LIVECLASSESWHEN, $liveclasses, 'notchecked', '1'],
+            [landingfields::SHORTNAME_MEETINGS, $modality, 'neq', (string) landingfields::MODALITY_HYBRID],
         ];
         foreach ($rules as [$shortname, $dependenton, $condition, $value]) {
             $element = 'customfield_' . $shortname;
@@ -164,9 +164,9 @@ class after_form_definition {
     }
 
     /**
-     * Offer the course's hotsite address and a link to the page once the course actually has one.
+     * Offer the course's landing page address and a link to the page once the course actually has one.
      *
-     * The page model is what turns a hotsite on - hotsite.php redirects to the
+     * The page model is what turns a landing page on - landing.php redirects to the
      * standard enrolment page without it - so it is also what decides whether
      * there is anything to look at. The value is read from the database rather
      * than from the form, which is the point: the link opens the SAVED page,
@@ -182,11 +182,11 @@ class after_form_definition {
      *
      * A course whose guest access needs no password gets a second row, the guest
      * entry's address ({@see links::guest_share()}, minted here beside the first),
-     * which skips the hotsite and opens the course as a guest. It is driven by the
+     * which skips the landing page and opens the course as a guest. It is driven by the
      * stored instances like the link by the stored model, and a course that is not
      * public is told the address only takes in readers who are already logged in:
      * an anonymous visitor of a non-public course gets the login page, as on the
-     * hotsite itself.
+     * landing page itself.
      *
      * Placement is the reason for the three calls below. QuickForm can only
      * insert ahead of a named element, and repositioning is done by removing
@@ -198,7 +198,7 @@ class after_form_definition {
      * @param \stdClass $course The course being edited (no id when it is being created).
      * @param \MoodleQuickForm $mform The course form.
      */
-    private static function add_hotsite_link(\stdClass $course, \MoodleQuickForm $mform): void {
+    private static function add_landing_link(\stdClass $course, \MoodleQuickForm $mform): void {
         global $OUTPUT;
 
         if (empty($course->id) || $course->id == SITEID) {
@@ -206,12 +206,12 @@ class after_form_definition {
         }
 
         // The anchor for the placement below, and absent for an editor who may not edit the fields.
-        $modeloelement = 'customfield_' . hotsitefields::SHORTNAME_MODELO;
-        if (!$mform->elementExists($modeloelement)) {
+        $modelelement = 'customfield_' . landingfields::SHORTNAME_MODEL;
+        if (!$mform->elementExists($modelelement)) {
             return;
         }
 
-        if (!hotsitefields::values($course->id)->modelo) {
+        if (!landingfields::values($course->id)->model) {
             return;
         }
 
@@ -220,32 +220,32 @@ class after_form_definition {
         if (guestaccess::available($course)) {
             $guest = [
                 'url' => links::guest_share((int) $course->id)->out(false),
-                'addressid' => 'theme_dimensions-hotsiteguestaddress-' . $course->id,
-                'addresslabel' => get_string('hotsite_guestaddress', hotsitefields::COMPONENT),
-                'addresssub' => get_string('hotsite_guestaddresssub', hotsitefields::COMPONENT),
-                'label' => get_string('hotsite_guestviewlink', hotsitefields::COMPONENT),
+                'addressid' => 'theme_dimensions-landingguestaddress-' . $course->id,
+                'addresslabel' => get_string('landing_guestaddress', landingfields::COMPONENT),
+                'addresssub' => get_string('landing_guestaddresssub', landingfields::COMPONENT),
+                'label' => get_string('landing_guestviewlink', landingfields::COMPONENT),
                 'notpublic' => publicaccess::is_public((int) $course->id)
                     ? ''
-                    : get_string('hotsite_guestaddressnotpublic', hotsitefields::COMPONENT),
+                    : get_string('landing_guestaddressnotpublic', landingfields::COMPONENT),
             ];
         }
-        $html = $OUTPUT->render_from_template('theme_dimensions/course_hotsite_link', [
+        $html = $OUTPUT->render_from_template('theme_dimensions/course_landing_link', [
             'guest' => $guest,
             'url' => $url->out(false),
-            'addressid' => 'theme_dimensions-hotsiteaddress-' . $course->id,
-            'addresslabel' => get_string('hotsite_address', hotsitefields::COMPONENT),
-            'copylabel' => get_string('hotsite_copyaddress', hotsitefields::COMPONENT),
-            'copied' => get_string('hotsite_addresscopied', hotsitefields::COMPONENT),
-            'label' => get_string('hotsite_viewlink', hotsitefields::COMPONENT),
+            'addressid' => 'theme_dimensions-landingaddress-' . $course->id,
+            'addresslabel' => get_string('landing_address', landingfields::COMPONENT),
+            'copylabel' => get_string('landing_copyaddress', landingfields::COMPONENT),
+            'copied' => get_string('landing_addresscopied', landingfields::COMPONENT),
+            'label' => get_string('landing_viewlink', landingfields::COMPONENT),
             'newwindow' => get_string('opensinnewwindowbracketed'),
-            'note' => get_string('hotsite_viewlinknote', hotsitefields::COMPONENT),
-            'routeroff' => links::routing_enabled() ? '' : get_string('hotsite_addressrouteroff', hotsitefields::COMPONENT),
+            'note' => get_string('landing_viewlinknote', landingfields::COMPONENT),
+            'routeroff' => links::routing_enabled() ? '' : get_string('landing_addressrouteroff', landingfields::COMPONENT),
         ]);
 
         $link = $mform->createElement('static', self::LINK_ELEMENT, '', $html);
-        $mform->insertElementBefore($link, $modeloelement);
-        $mform->insertElementBefore($mform->removeElement($modeloelement, false), self::LINK_ELEMENT);
-        $descriptionelement = $modeloelement . '_static';
+        $mform->insertElementBefore($link, $modelelement);
+        $mform->insertElementBefore($mform->removeElement($modelelement, false), self::LINK_ELEMENT);
+        $descriptionelement = $modelelement . '_static';
         if ($mform->elementExists($descriptionelement)) {
             $mform->insertElementBefore($mform->removeElement($descriptionelement, false), self::LINK_ELEMENT);
         }

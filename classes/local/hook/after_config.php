@@ -26,10 +26,10 @@ namespace theme_dimensions\local\hook;
 
 use theme_dimensions\local\category\request;
 use theme_dimensions\local\guesthome;
-use theme_dimensions\local\hotsite\redirector;
+use theme_dimensions\local\landing\redirector;
 
 /**
- * Ghosts what this user must not discover, forwards the enrolment page to the hotsite, and points the guest home.
+ * Ghosts what this user must not discover, forwards the enrolment page to the landing page, and points the guest home.
  *
  * after_config is the only moment early enough: enrol/index.php redirects on
  * its own several lines in (not-logged-in users to the login page, enrolled
@@ -39,7 +39,7 @@ use theme_dimensions\local\hotsite\redirector;
  *
  * Three request shapes are read. /enrol/index.php and /course/info.php are
  * ghosted over the COURSE they name, the first of them then forwarded to the
- * hotsite; /course/index.php?categoryid=N is forwarded for a VISITOR to the
+ * landing page; /course/index.php?categoryid=N is forwarded for a VISITOR to the
  * public page of a category the site serves anonymously, and otherwise ghosted
  * over the CATEGORY, which is what makes a guessed category URL answer the
  * same as a guessed course one. Without it the theme's renderer would withhold
@@ -71,7 +71,7 @@ use theme_dimensions\local\hotsite\redirector;
  */
 class after_config {
     /**
-     * Point the guest home, ghost an unreachable course or category, and forward /enrol/index.php to the hotsite.
+     * Point the guest home, ghost an unreachable course or category, and forward /enrol/index.php to the landing page.
      *
      * @param \core\hook\after_config $hook The hook.
      */

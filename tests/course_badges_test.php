@@ -28,8 +28,8 @@ use core_course\customfield\course_handler;
 use local_unlistedcourses\access;
 use local_unlistedcourses\discoverability;
 use PHPUnit\Framework\Attributes\CoversFunction;
-use theme_dimensions\local\hotsite\publicfiles;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\publicfiles;
+use theme_dimensions\local\landingfields;
 
 /**
  * Tests for theme_dimensions_course_badges(), the one entry point block_compass reads crests through.
@@ -49,7 +49,7 @@ final class course_badges_test extends \advanced_testcase {
     private const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
     /**
-     * Provision the hotsite fields and load the theme's library, as component_callback() would.
+     * Provision the landing page fields and load the theme's library, as component_callback() would.
      *
      * @return void
      */
@@ -61,9 +61,9 @@ final class course_badges_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
     }
 
     /**
@@ -77,25 +77,28 @@ final class course_badges_test extends \advanced_testcase {
     }
 
     /**
-     * A course with a hotsite model (or none) and badge files in some of its four picture fields.
+     * A course with a landing page model (or none) and badge files in some of its four picture fields.
      *
-     * @param int $modelo The hotsite model, 0 for none.
+     * @param int $model The landing page model, 0 for none.
      * @param string[] $files File names, one per picture field, in grid order.
      * @param array $record Extra course fields.
      * @return int The course id.
      */
-    private function course_with_badges(int $modelo, array $files, array $record = []): int {
+    private function course_with_badges(int $model, array $files, array $record = []): int {
+        if (!landingfields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $generator = self::getDataGenerator();
         /** @var \core_customfield_generator $customfields */
         $customfields = $generator->get_plugin_generator('core_customfield');
         $course = $generator->create_course($record);
         course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
+            'customfield_' . landingfields::SHORTNAME_MODEL => $model,
         ]);
         foreach (array_values($files) as $i => $filename) {
             $data = $customfields->add_instance_data(
-                hotsitefields::get_field(hotsitefields::BRASAO_SHORTNAMES[$i]),
+                landingfields::get_field(landingfields::CREST_SHORTNAMES[$i]),
                 (int) $course->id,
                 1
             );
@@ -117,13 +120,13 @@ final class course_badges_test extends \advanced_testcase {
      * The same answer through component_callback(), which is how block_compass asks.
      */
     public function test_a_course_gets_its_first_three_crests_in_grid_order(): void {
-        $four = $this->course_with_badges(hotsitefields::MODELO_CURSO, ['brasao-um.png', 'dois.png', 'tres_c.png', 'quatro.png']);
-        $one = $this->course_with_badges(hotsitefields::MODELO_EVENTO, ['so-um.png']);
+        $four = $this->course_with_badges(landingfields::MODEL_COURSE, ['crest-one.png', 'dois.png', 'tres_c.png', 'quatro.png']);
+        $one = $this->course_with_badges(landingfields::MODEL_EVENT, ['so-um.png']);
 
         $badges = theme_dimensions_course_badges([$four, $one]);
 
         $this->assertCount(3, $badges[$four], 'Four uploaded, three drawn.');
-        $this->assertSame(['brasao um', 'dois', 'tres c'], array_column($badges[$four], 'alt'), 'In grid order, the fourth cut.');
+        $this->assertSame(['crest one', 'dois', 'tres c'], array_column($badges[$four], 'alt'), 'In grid order, the fourth cut.');
         foreach ($badges[$four] as $badge) {
             $this->assertStringContainsString('/theme_dimensions/badge/' . $four . '/', $badge['url']);
         }
@@ -137,17 +140,17 @@ final class course_badges_test extends \advanced_testcase {
     }
 
     /**
-     * A course with no hotsite model gets no crest, even with badge files left from a model that was cleared.
+     * A course with no landing page model gets no crest, even with badge files left from a model that was cleared.
      *
      * The theme's route refuses a badge of a course with no model, so an address the callback named would be one nobody
      * may open. The same files under a model are the control; a course with a model and no badge, and an id with no
      * course, both answer an empty list rather than nothing.
      */
     public function test_a_course_with_no_model_gets_no_crest(): void {
-        $cleared = $this->course_with_badges(0, ['brasao.png']);
-        $modelled = $this->course_with_badges(hotsitefields::MODELO_CURSO, ['brasao.png']);
-        $bare = $this->course_with_badges(hotsitefields::MODELO_CURSO, []);
-        $this->assertCount(1, hotsitefields::badges($cleared), 'Precondition: the file is there.');
+        $cleared = $this->course_with_badges(0, ['crest.png']);
+        $modelled = $this->course_with_badges(landingfields::MODEL_COURSE, ['crest.png']);
+        $bare = $this->course_with_badges(landingfields::MODEL_COURSE, []);
+        $this->assertCount(1, landingfields::badges($cleared), 'Precondition: the file is there.');
 
         $badges = theme_dimensions_course_badges([$cleared, $modelled, $bare, 999999, 0, -3]);
 
@@ -163,7 +166,7 @@ final class course_badges_test extends \advanced_testcase {
      * The callback costs one statement of its own whatever the number of courses; the rest is what the values read.
      *
      * Courses with no crest read the same at two and at eight. Courses with crests pay customfield_picture's own
-     * lookup per badge inside hotsitefields::values_many(); the callback's slope must be exactly that one's, so it is
+     * lookup per badge inside landingfields::values_many(); the callback's slope must be exactly that one's, so it is
      * measured against values_many() over the same courses with their contexts preloaded, as the callback preloads them.
      */
     public function test_the_callback_reads_nothing_per_course_of_its_own(): void {
@@ -172,8 +175,8 @@ final class course_badges_test extends \advanced_testcase {
         $bare = [];
         $crested = [];
         for ($i = 0; $i < 8; $i++) {
-            $bare[] = $this->course_with_badges(hotsitefields::MODELO_CURSO, []);
-            $crested[] = $this->course_with_badges(hotsitefields::MODELO_CURSO, ['brasao.png']);
+            $bare[] = $this->course_with_badges(landingfields::MODEL_COURSE, []);
+            $crested[] = $this->course_with_badges(landingfields::MODEL_COURSE, ['crest.png']);
         }
         $callback = function (array $ids) use ($DB): int {
             \core\context_helper::reset_caches();
@@ -189,7 +192,7 @@ final class course_badges_test extends \advanced_testcase {
                 \core\context\course::instance($id);
             }
             $before = (int) $DB->perf_get_reads();
-            hotsitefields::values_many($ids, false);
+            landingfields::values_many($ids, false);
             return (int) $DB->perf_get_reads() - $before;
         };
         // Warm the field definitions, which a second request finds warm.
@@ -232,13 +235,13 @@ final class course_badges_test extends \advanced_testcase {
             true
         );
         $courses = [
-            'listed' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['a.png']),
-            'hidden' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['b.png'], ['visible' => 0]),
-            'hiddenmine' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['g.png'], ['visible' => 0]),
-            'unlisted' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['c.png']),
-            'unlistedmine' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['d.png']),
-            'unviewable' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['e.png'], ['category' => $closed->id]),
-            'unviewablemine' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['f.png'], ['category' => $closed->id]),
+            'listed' => $this->course_with_badges(landingfields::MODEL_COURSE, ['a.png']),
+            'hidden' => $this->course_with_badges(landingfields::MODEL_COURSE, ['b.png'], ['visible' => 0]),
+            'hiddenmine' => $this->course_with_badges(landingfields::MODEL_COURSE, ['g.png'], ['visible' => 0]),
+            'unlisted' => $this->course_with_badges(landingfields::MODEL_COURSE, ['c.png']),
+            'unlistedmine' => $this->course_with_badges(landingfields::MODEL_COURSE, ['d.png']),
+            'unviewable' => $this->course_with_badges(landingfields::MODEL_COURSE, ['e.png'], ['category' => $closed->id]),
+            'unviewablemine' => $this->course_with_badges(landingfields::MODEL_COURSE, ['f.png'], ['category' => $closed->id]),
         ];
         discoverability::set_state($courses['unlisted'], discoverability::STATE_UNLISTED);
         discoverability::set_state($courses['unlistedmine'], discoverability::STATE_UNLISTED);
@@ -251,7 +254,7 @@ final class course_badges_test extends \advanced_testcase {
         access::reset_caches();
         $badges = theme_dimensions_course_badges(array_values($courses));
         foreach ($courses as $label => $courseid) {
-            $file = hotsitefields::badges($courseid)[0];
+            $file = landingfields::badges($courseid)[0];
             access::reset_caches();
             $served = publicfiles::resolve(
                 \core\context\course::instance($courseid),

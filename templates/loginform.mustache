@@ -20,13 +20,14 @@
     The theme's login page: the ways in, stacked, with an "or" between them.
 
     The identity providers come first, because theirs is the shorter way and the only one without
-    a password; the CPF form follows in full, because it is the standard for everyone else; and
-    creating an account comes last, as a block of its own rather than a link in the small print.
+    a password; the username and password form follows in full, because it is the standard for
+    everyone else; and creating an account comes last, as a block of its own rather than a link in
+    the small print.
     Nothing is hidden behind a tab. The provider's mark is drawn from Font Awesome Brands, never
     fetched from the provider: an iconurl is rendered only when this site serves it. From the
     second wrong password in a row, an info alert suggests resetting it.
 
-    The form keeps every hook core, Boost Union and this theme's own CPF module rely on: the form
+    The form keeps every hook core, Boost Union and auth_loginsteps' CPF mask rely on: the form
     id, the username, password and submit ids, the logintoken and the anchor field.
 
     Context variables required for this template:
@@ -79,7 +80,7 @@
         "sitename": "Acme",
         "dimensionsloginpanel": {
             "kicker": "Learning platform",
-            "title": "Continuing education for those who protect society",
+            "title": "Continuing education, all in one place",
             "text": "Each organisation has its own area on the platform.",
             "foot": "Use of the platform is monitored and recorded."
         },

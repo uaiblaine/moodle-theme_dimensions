@@ -189,11 +189,11 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * The form keeps every hook core's Behat step and this theme's CPF module rely on.
+     * The form keeps every hook core's Behat step and auth_loginsteps' CPF mask rely on.
      *
      * @return void
      */
-    public function test_the_form_keeps_the_hooks_core_and_the_cpf_module_rely_on(): void {
+    public function test_the_form_keeps_the_hooks_core_and_the_cpf_mask_rely_on(): void {
         $this->resetAfterTest();
 
         $html = $this->renderer()->render_login($this->form());
@@ -742,7 +742,7 @@ final class core_renderer_test extends \advanced_testcase {
         $category = $generator->create_category(['name' => 'Showcase Category']);
         $generator->create_course(['category' => $category->id]);
         $this->setAdminUser();
-        branding::save((int) $category->id, (object) ['chamada' => 'A tagline for the header']);
+        branding::save((int) $category->id, (object) ['tagline' => 'A tagline for the header']);
 
         $html = $this->category_header((int) $category->id);
 

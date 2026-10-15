@@ -35,8 +35,8 @@ use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\category\request;
-use theme_dimensions\local\hotsite\links;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\links;
+use theme_dimensions\local\landingfields;
 use theme_dimensions\output\category_hero;
 use theme_dimensions\output\category_pages;
 use theme_dimensions\output\opengraph;
@@ -116,7 +116,7 @@ final class category_test extends \core\tests\router\route_testcase {
     /**
      * A category in a discoverability state, holding courses each in a state of its own.
      *
-     * Every course carries the hotsite page model, the way hotsite_test's make_course does,
+     * Every course carries the landing page model, the way landing_test's make_course does,
      * so that the anonymous card has the call to action the public shell offers.
      *
      * @param string $state The category's own state: 'public', 'unlisted' or 'listed'.
@@ -126,9 +126,9 @@ final class category_test extends \core\tests\router\route_testcase {
      */
     private function make_category(string $state, array $courses = [], string $name = 'Brigada & Resgate'): array {
         \core_course\customfield\course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
 
         $this->setAdminUser();
         $generator = $this->getDataGenerator();
@@ -144,7 +144,7 @@ final class category_test extends \core\tests\router\route_testcase {
             $course = $generator->create_course(['category' => $categoryid, 'fullname' => $fullname]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
             ]);
             if ($coursestate !== 'listed') {
                 discoverability::set_state((int) $course->id, self::course_state($coursestate), $adminid);
@@ -220,7 +220,7 @@ final class category_test extends \core\tests\router\route_testcase {
     }
 
     /**
-     * A visitor gets the public page: the public course, its hotsite call to action, and no star.
+     * A visitor gets the public page: the public course, its landing page call to action, and no star.
      *
      * The listed course in the same category is the control that the shell really withholds
      * rather than the fixture being empty, and the head tags name the route as canonical.
@@ -243,7 +243,7 @@ final class category_test extends \core\tests\router\route_testcase {
         $this->assertStringContainsString('Curso Publico', $body);
         $this->assertStringNotContainsString('Curso Interno', $body, 'A listed course has no place on the open internet.');
         $this->assertStringContainsString(get_string('category_state_public', self::COMPONENT), $body);
-        $this->assertStringContainsString(get_string('category_cta_hotsite', self::COMPONENT), $body);
+        $this->assertStringContainsString(get_string('category_cta_landing', self::COMPONENT), $body);
         $this->assertStringNotContainsString('dim-card__star', $body, 'A visitor has no favourites.');
 
         $canonical = links::category_page($categoryid)->out(false);

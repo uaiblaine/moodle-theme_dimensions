@@ -41,7 +41,7 @@
 require(__DIR__ . '/../../config.php');
 
 use theme_dimensions\local\category\request;
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 
 $id = required_param('id', PARAM_INT);
 

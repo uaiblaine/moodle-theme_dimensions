@@ -53,12 +53,12 @@ final class post_scss_test extends \basic_testcase {
         $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
         $this->assertGreaterThan(
             0,
-            preg_match_all('/(?<![-\w])color:\s*var\(--text-muted\)/', $scss),
+            preg_match_all('/(?<![-\w])color:\s*var\(--dim-ds-text-muted\)/', $scss),
             'Control: the muted token colours text somewhere.'
         );
         $this->assertSame(
             0,
-            preg_match_all('/(?<![-\w])color:\s*var\(--text-subtle\)/', $scss, $found),
+            preg_match_all('/(?<![-\w])color:\s*var\(--dim-ds-text-subtle\)/', $scss, $found),
             'The subtle grey colours text in: ' . implode(', ', $found[0] ?? [])
         );
     }

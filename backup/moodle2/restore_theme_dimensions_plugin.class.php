@@ -22,10 +22,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 /**
- * Puts the hotsite's pictures - the badges and the share picture - back on the rows core restored.
+ * Puts the landing page's pictures - the badges and the share picture - back on the rows core restored.
  *
  * The picture rows themselves are restored by core (the handler maps every
  * editable field), but the picture type's own file callback never runs for a
@@ -43,7 +43,7 @@ use theme_dimensions\local\hotsitefields;
  */
 class restore_theme_dimensions_plugin extends restore_theme_plugin {
     /** @var string The mapping the archived files are restored through. */
-    private const MAPPING = 'theme_dimensions_badge';
+    private const MAPPING = 'theme_dimensions_picture';
 
     /** @var int[] Old data row id keyed by field shortname, collected while the XML is read. */
     private array $oldids = [];
@@ -54,16 +54,16 @@ class restore_theme_dimensions_plugin extends restore_theme_plugin {
      * @return restore_path_element[]
      */
     protected function define_course_plugin_structure() {
-        return [new restore_path_element('badge', $this->get_pathfor('/badges/badge'))];
+        return [new restore_path_element('picture', $this->get_pathfor('/pictures/picture'))];
     }
 
     /**
-     * Remember one picture row of the archived course (the element is named "badge" for older archives' sake).
+     * Remember one picture row of the archived course.
      *
      * @param array $data The element: id and shortname.
      * @return void
      */
-    public function process_badge($data) {
+    public function process_picture($data) {
         $this->oldids[(string) $data['shortname']] = (int) $data['id'];
     }
 
@@ -77,10 +77,10 @@ class restore_theme_dimensions_plugin extends restore_theme_plugin {
 
         $courseid = (int) $this->task->get_courseid();
         foreach ($this->oldids as $shortname => $oldid) {
-            if (!in_array($shortname, hotsitefields::PICTURE_SHORTNAMES, true)) {
+            if (!in_array($shortname, landingfields::PICTURE_SHORTNAMES, true)) {
                 continue;
             }
-            $field = hotsitefields::get_field($shortname);
+            $field = landingfields::get_field($shortname);
             if ($field === null) {
                 continue;
             }

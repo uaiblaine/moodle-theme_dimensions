@@ -48,7 +48,7 @@ use core_customfield\field_controller;
  * Only select fields are facets, and only their 1-based option index is
  * stored (in intvalue, which the fieldid-intvalue index covers); the label is
  * read back from the field's configuration at render time, as
- * {@see \theme_dimensions\local\hotsitefields::option_label()}
+ * {@see \theme_dimensions\local\landingfields::option_label()}
  * already does, because an admin may have edited the option texts.
  *
  * @package    theme_dimensions

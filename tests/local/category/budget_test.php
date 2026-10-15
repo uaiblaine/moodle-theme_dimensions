@@ -27,7 +27,7 @@ namespace theme_dimensions\local\category;
 use core_course\customfield\course_handler;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 use theme_dimensions\output\category_card;
 use theme_dimensions\output\category_listing;
 
@@ -103,8 +103,8 @@ final class budget_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $categories[$i % count($categories)]->id]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => 1 + ($i % 2),
-                'customfield_' . hotsitefields::SHORTNAME_PROGRAMA . '_editor' => [
+                'customfield_' . landingfields::SHORTNAME_MODEL => 1 + ($i % 2),
+                'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
                     'text' => "<p>Programme {$i}</p>", 'format' => FORMAT_HTML,
                 ],
             ]);
@@ -215,10 +215,10 @@ final class budget_test extends \advanced_testcase {
         $CFG->courseoverviewfileslimit = 1;
         $CFG->courseoverviewfilesext = '.jpg,.gif,.png';
         $CFG->coursecontact = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODELO, 'theme_dimensions');
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL, 'theme_dimensions');
         return self::getDataGenerator()->create_user();
     }
 
@@ -323,11 +323,11 @@ final class budget_test extends \advanced_testcase {
     /**
      * The crests on a card cost no statement of their own: the files were already in hand.
      *
-     * What the card does with a crest is name a URL and read a file name, both off the hotsite
+     * What the card does with a crest is name a URL and read a file name, both off the landing page
      * values the listing reads in bulk for every row anyway - so the card's own export must
      * stay flat in the number of cards, crests or no crests. It is measured on the export alone:
      * resolving each badge file is customfield_picture's own per-row cost inside
-     * hotsitefields::values_many(), part of the bulk reads, which sit outside the meter and are
+     * landingfields::values_many(), part of the bulk reads, which sit outside the meter and are
      * recorded beside the slope rather than asserted.
      *
      * Every card measured must really carry its crest, or a fixture that quietly lost its badges
@@ -336,6 +336,9 @@ final class budget_test extends \advanced_testcase {
     public function test_the_crests_cost_no_statement_per_card(): void {
         global $PAGE;
 
+        if (!landingfields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $viewer = $this->prepare();
         $generator = self::getDataGenerator();
         /** @var \core_customfield_generator $customfields */
@@ -348,10 +351,10 @@ final class budget_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $category->id]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
             ]);
             $data = $customfields->add_instance_data(
-                hotsitefields::get_field(hotsitefields::SHORTNAME_BRASAO1),
+                landingfields::get_field(landingfields::SHORTNAME_CREST1),
                 (int) $course->id,
                 1
             );
@@ -361,7 +364,7 @@ final class budget_test extends \advanced_testcase {
                 'filearea' => 'file',
                 'itemid' => (int) $data->get('id'),
                 'filepath' => '/',
-                'filename' => 'brasao-alfa.png',
+                'filename' => 'crest-alpha.png',
             ], base64_decode(self::PNG));
         }
 

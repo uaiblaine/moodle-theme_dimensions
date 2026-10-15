@@ -35,13 +35,13 @@ Requirements
 |---|---|---|
 | [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100500 or later, its Moodle 5.3 version (the `upgrade-503` branch until Boost Union tags its 5.3 release) | The parent theme. |
 | [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100505 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
-| [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) | 2026101400 or later | The field type of the landing pages' badges and share picture. |
 
 ### Optional plugins
 
 | Plugin | What it adds |
 |---|---|
-| auth_loginsteps | Its logo and identity provider data on the login page, and its own shell for the second factor and privileged session pages. The theme asks it by class name and never requires it. |
+| [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) (recommended) | The field type of the landing pages' four badges and their share picture. Without it, or with the Picture type disabled, those five fields are not created and nothing draws them; the theme's recommendation in Boost Union's overview says so. Install it later and use that recommendation's fix to create them. |
+| auth_loginsteps | Its logo and identity provider data on the login page, its own shell for the second factor and privileged session pages, and the CPF mask of the login form (`logincpfmask`). The theme asks it by class name and never requires it. |
 | [local_page](https://github.com/uaiblaine/moodle-local_page) | The pages strip on a category page. Without it the strip is simply not drawn. |
 
 
@@ -55,9 +55,15 @@ After installation the theme looks and behaves like Boost Union. Select it in *S
 Appearance > Themes > Theme selector* to activate it; its own settings live in *Site administration >
 Appearance > Boost Union > Dimensions*.
 
-Installing the theme creates two course custom field categories, *Hotsite* (the landing page fields)
-and *Focus mode* (one checkbox). They are created once and never deleted; fields whose short names
-already exist on the site are left alone.
+Installing the theme creates two course custom field categories, *Course landing page* (the landing
+page fields, their short names prefixed `dimensions_`) and *Focus mode* (one checkbox). They are created
+once and never deleted; fields whose short names already exist on the site are left alone. The five
+picture fields of *Course landing page* are created only where customfield_picture is installed and
+enabled.
+
+The theme assigns no brand colour of its own: the primary colour is Boost Union's (its brand colour
+setting, or a flavour's) and Boost's default blue otherwise, and a category nobody branded draws its
+band in that same default blue with white text.
 
 
 Features
@@ -107,10 +113,10 @@ organised **by area** (one poster per subcategory, whose courses open in a panel
 
 ### Course landing pages
 
-Called "hotsite" in the code. A landing-style enrolment page for each course that opts in, at
-`/theme_dimensions/hotsite/<courseid>` on a site whose router is configured (and at
-`/theme/dimensions/hotsite.php?id=<courseid>` otherwise). A course opts in by choosing a page model
-(*Course* or *Event*) in the *Hotsite* custom fields of its settings, which also hold the modality,
+An enrolment page for each course that opts in, at `/theme_dimensions/landing/<courseid>` on a site
+whose router is configured (and at `/theme/dimensions/landing.php?id=<courseid>` otherwise). A course
+opts in by choosing a page model (*Course* or *Event*) in the *Course landing page* custom fields of its
+settings, which also hold the modality,
 workload, audience, programme, certification, venue, a reviewed public description, a presentation
 video address, up to four badges and a share picture. The page shows only the enrolment methods
 the current user can actually use, and `/enrol/index.php?id=N` forwards to it for a course with a
@@ -166,8 +172,8 @@ plugin's own rules let the reader see them.
 | Tab | What it holds |
 |---|---|
 | General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. |
-| Login page | The login page switch, the institutional panel's copy, the username field mask and the guest home page. |
-| Identity | The navbar style: the theme's navy with a 3px signature band, or *Leave it to Boost Union*. |
+| Login page | The login page switch, the institutional panel's copy and the guest home page. |
+| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
 
@@ -175,26 +181,10 @@ plugin's own rules let the reader see them.
 Brazil-specific today
 ---------------------
 
-The theme was built for a Brazilian site, and two things still assume one. Both will become
-optional.
-
-- **The CPF username mask** (*Login page > Accept only a CPF in the username field*, on by default)
-  turns the username field into a CPF field: it formats the digits as `000.000.000-00`, refuses a CPF
-  whose check digits do not add up, and strips the mask before the form is sent. With it on, no
-  account whose username is not a CPF can use the login form, the site administrator included; the
-  way back is
-
-  ```
-  https://<your site>/login/index.php?nocpf=1
-  ```
-
-  which loads the plain Boost Union form for that request. It is a convenience in the browser, not an
-  authentication rule. Switch the setting off on a site whose usernames are not CPFs.
-- **The login page's wording**, such as "Sign in with your CPF", is a language string; edit it through
-  *Site administration > Language > Language customisation*.
-
-The course custom fields of the landing pages also carry Portuguese short names (`hotsite_modelo`,
-`modalidade`, ...), which are identifiers and never shown to readers.
+The theme was built for a Brazilian site. The CPF username mask it once carried lives in the
+authentication plugin `auth_loginsteps` now (its setting `logincpfmask`, with the same `?nocpf=1` way
+back to a plain form): the theme draws the login page and keeps the form hooks that mask binds to,
+and nothing of the mask itself.
 
 
 Capabilities and privacy

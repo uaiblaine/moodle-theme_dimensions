@@ -1,1 +1,1 @@
-s/if \(\$modelo !== hotsitefields::MODELO_EVENTO && /if (/
+s/if \(\$model !== landingfields::MODEL_EVENT && /if (/

@@ -120,7 +120,7 @@ class categoryhero extends \moodleform {
 
            The order is the list's: the still, the film, then the crests in badge order. The
            video's limit is the site setting's and its extension list is a name check; the bytes
-           are read in validation() below. The crests' limit and vocabulary are the hotsite's
+           are read in validation() below. The crests' limit and vocabulary are the landing page's
            own, so a crest a manager may put on a course is not refused on the course's
            category - SVG among them (see branding::resolve()). */
         foreach (branding::single_file_areas() as $area => $options) {
@@ -147,17 +147,17 @@ class categoryhero extends \moodleform {
             'client'
         );
 
-        $mform->addElement('text', 'chamada', get_string('categoryhero_chamada', self::COMPONENT), [
+        $mform->addElement('text', 'tagline', get_string('categoryhero_tagline', self::COMPONENT), [
             'size' => 64,
-            'maxlength' => branding::CHAMADA_MAXLENGTH,
+            'maxlength' => branding::TAGLINE_MAXLENGTH,
         ]);
-        $mform->addHelpButton('chamada', 'categoryhero_chamada', self::COMPONENT);
-        $mform->setType('chamada', PARAM_TEXT);
+        $mform->addHelpButton('tagline', 'categoryhero_tagline', self::COMPONENT);
+        $mform->setType('tagline', PARAM_TEXT);
         $mform->addRule(
-            'chamada',
-            get_string('maximumchars', '', branding::CHAMADA_MAXLENGTH),
+            'tagline',
+            get_string('maximumchars', '', branding::TAGLINE_MAXLENGTH),
             'maxlength',
-            branding::CHAMADA_MAXLENGTH,
+            branding::TAGLINE_MAXLENGTH,
             'client'
         );
 
@@ -322,8 +322,8 @@ class categoryhero extends \moodleform {
         if ($videoerror !== null) {
             $errors[branding::AREA_COVERVIDEO] = $videoerror;
         }
-        if (\core_text::strlen(trim((string) ($data['chamada'] ?? ''))) > branding::CHAMADA_MAXLENGTH) {
-            $errors['chamada'] = get_string('maximumchars', '', branding::CHAMADA_MAXLENGTH);
+        if (\core_text::strlen(trim((string) ($data['tagline'] ?? ''))) > branding::TAGLINE_MAXLENGTH) {
+            $errors['tagline'] = get_string('maximumchars', '', branding::TAGLINE_MAXLENGTH);
         }
         if (\core_text::strlen(trim((string) ($data['cardsummary'] ?? ''))) > branding::CARDSUMMARY_MAXLENGTH) {
             $errors['cardsummary'] = get_string('maximumchars', '', branding::CARDSUMMARY_MAXLENGTH);

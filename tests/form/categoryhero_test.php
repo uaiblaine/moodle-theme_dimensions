@@ -26,7 +26,7 @@ namespace theme_dimensions\form;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\category\branding;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 /**
  * Tests of the category appearance form: the vocabulary is the form's, and nothing outside it passes.
@@ -52,7 +52,7 @@ final class categoryhero_test extends \advanced_testcase {
             'bgcolour' => '#12484f',
             'inkcolour' => '#ffffff',
             'overlay' => 78,
-            'chamada' => 'Uma frase',
+            'tagline' => 'Uma frase',
             'publicsummary' => 'Uma descrição pública curta',
             'publicdescription_editor' => ['text' => '<p>Público</p>', 'format' => FORMAT_HTML],
             'description_editor' => ['text' => '<p>Interna</p>', 'format' => FORMAT_HTML, 'itemid' => 0],
@@ -115,7 +115,7 @@ final class categoryhero_test extends \advanced_testcase {
             [
                 'appearance' => 'header:appearanceheader',
                 'lastcrest' => 'filemanager:' . branding::AREA_BADGES[2],
-                'chamada' => 'text:chamada',
+                'tagline' => 'text:tagline',
                 'colours' => 'header:coloursheader',
                 'bg' => 'text:bgcolour',
                 'ink' => 'text:inkcolour',
@@ -136,12 +136,12 @@ final class categoryhero_test extends \advanced_testcase {
         );
         $this->assertGreaterThan(
             $positions['appearance'],
-            $positions['chamada'],
+            $positions['tagline'],
             'The tagline is no longer in the appearance section.'
         );
         $this->assertLessThan(
             $positions['colours'],
-            $positions['chamada'],
+            $positions['tagline'],
             'The tagline was declared after the colours header, so it is inside the colours section.'
         );
         foreach (['bg', 'ink', 'overlay', 'preview'] as $inside) {
@@ -209,7 +209,7 @@ final class categoryhero_test extends \advanced_testcase {
         $this->assertSame('#ffffff', $data->inkcolour);
         $this->assertSame(branding::LAYOUT_SOLID, $data->layout);
         $this->assertSame(78, (int) $data->overlay);
-        $this->assertSame('Uma frase', $data->chamada);
+        $this->assertSame('Uma frase', $data->tagline);
         $this->assertSame('Uma descrição pública curta', $data->publicsummary);
         $this->assertSame('<p>Público</p>', $data->publicdescription_editor['text']);
         $this->assertSame($categoryid, (int) $data->id);
@@ -230,7 +230,7 @@ final class categoryhero_test extends \advanced_testcase {
                 ['inkcolour' => 'rgb(1,2,3)'],
                 ['layout' => 'banner'],
                 ['overlay' => 45],
-                ['chamada' => str_repeat('a', branding::CHAMADA_MAXLENGTH + 1)],
+                ['tagline' => str_repeat('a', branding::TAGLINE_MAXLENGTH + 1)],
                 ['publicsummary' => str_repeat('a', branding::PUBLICSUMMARY_MAXLENGTH + 1)],
             ] as $bad
         ) {
@@ -432,12 +432,12 @@ final class categoryhero_test extends \advanced_testcase {
             'The pair preview is not inside the section the grid places.'
         );
         $this->assertStringNotContainsString(
-            'name="chamada"',
+            'name="tagline"',
             $fieldset,
             'The tagline is inside the colours section, where the grid would put it beside the panel.'
         );
         $this->assertStringContainsString(
-            'name="chamada"',
+            'name="tagline"',
             self::fieldset($html, 'id_appearanceheader'),
             'The tagline left the appearance section altogether.'
         );
@@ -467,7 +467,7 @@ final class categoryhero_test extends \advanced_testcase {
             'bgcolour' => '#12484f',
             'inkcolour' => '#ffffff',
             'overlay' => 78,
-            'chamada' => '',
+            'tagline' => '',
             'publicsummary' => '',
             'publicdescription_editor' => ['text' => '', 'format' => FORMAT_HTML],
         ]);
@@ -729,7 +729,7 @@ final class categoryhero_test extends \advanced_testcase {
                     '<p><a class="external-media-provider" href="https://www.youtube.com/watch?v=aqz-KE-bpKQ">v</a></p>',
                 'a direct address of a film' =>
                     '<p><a class="external-media-provider" href="https://example.org/sample-5s.mp4">s</a></p>',
-                'an ordinary image published elsewhere' => '<p><img src="https://example.org/brasao.png" alt="x"></p>',
+                'an ordinary image published elsewhere' => '<p><img src="https://example.org/crest.png" alt="x"></p>',
                 'prose that merely says data: and blob:' => '<p>Sobre data: e blob: nada a declarar.</p>',
             ] as $what => $text
         ) {
@@ -746,7 +746,7 @@ final class categoryhero_test extends \advanced_testcase {
      * The name is the contract: branding::form_data() prepares a draft area under it and
      * branding::save() reads the submission back under it, so an element renamed here would
      * store a manager's crest nowhere at all, with the page still saving and the form still
-     * reopening empty. The options are the hotsite's own limit and vocabulary, read from its
+     * reopening empty. The options are the landing page's own limit and vocabulary, read from its
      * constant rather than restated, because a crest a manager may put on a course must not be
      * refused on the course's category.
      *
@@ -777,9 +777,9 @@ final class categoryhero_test extends \advanced_testcase {
             );
         }
 
-        // The options, against the hotsite's own numbers.
+        // The options, against the landing page's own numbers.
         $options = branding::badge_options();
-        $this->assertSame(hotsitefields::BRASAO_MAXBYTES, (int) $options['maxbytes']);
+        $this->assertSame(landingfields::CREST_MAXBYTES, (int) $options['maxbytes']);
         $this->assertSame(['web_image'], $options['accepted_types']);
         $this->assertSame(1, (int) $options['maxfiles'], 'One file per slot: the slot IS the position.');
 
@@ -1059,14 +1059,14 @@ final class categoryhero_test extends \advanced_testcase {
             'filearea' => 'draft',
             'itemid' => $draftitemid,
             'filepath' => '/',
-            'filename' => 'brasao.png',
+            'filename' => 'crest.png',
         ], 'the bytes do not matter here');
 
         $sink = $this->redirectEvents();
         \core_course_category::get($categoryid, MUST_EXIST, true)->update(
             (object) [
                 'description_editor' => [
-                    'text' => '<p>Para quem está logado <img src="@@PLUGINFILE@@/brasao.png" alt="Brasão"></p>',
+                    'text' => '<p>Para quem está logado <img src="@@PLUGINFILE@@/crest.png" alt="Crest"></p>',
                     'format' => FORMAT_HTML,
                     'itemid' => $draftitemid,
                 ],
@@ -1079,14 +1079,14 @@ final class categoryhero_test extends \advanced_testcase {
         $stored = \core_course_category::get($categoryid, MUST_EXIST, true);
         $this->assertStringContainsString('Para quem está logado', $stored->description);
         $this->assertStringContainsString(
-            '@@PLUGINFILE@@/brasao.png',
+            '@@PLUGINFILE@@/crest.png',
             $stored->description,
             'The embedded file was not rewritten to core\'s placeholder, so it will not serve.'
         );
         $this->assertSame((int) FORMAT_HTML, (int) $stored->descriptionformat);
         $files = $storage->get_area_files($context->id, 'coursecat', 'description', 0, 'filename', false);
         $this->assertCount(1, $files, 'The draft file did not reach the category\'s own description area.');
-        $this->assertSame('brasao.png', reset($files)->get_filename());
+        $this->assertSame('crest.png', reset($files)->get_filename());
 
         $updated = array_values(array_filter(
             $events,

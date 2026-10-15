@@ -96,7 +96,7 @@ final class colour_inheritance_test extends \advanced_testcase {
         $bottom = (int) $generator->create_category(['parent' => $middle])->id;
         $other = (int) $generator->create_category()->id;
         self::own($top, self::WINE);
-        branding::save($bottom, (object) ['owncolours' => 0, 'chamada' => 'Uma frase']);
+        branding::save($bottom, (object) ['owncolours' => 0, 'tagline' => 'Uma frase']);
 
         $this->assertSame(self::WINE, self::pair($top), 'The category with the pair draws it.');
         $this->assertSame(self::WINE, self::pair($middle), 'A category with no row inherits.');
@@ -160,7 +160,7 @@ final class colour_inheritance_test extends \advanced_testcase {
             'inkcolour' => self::SAND[1],
             'owncolours' => 0,
             'overlay' => branding::DEFAULT_OVERLAY,
-            'chamada' => '',
+            'tagline' => '',
             'defaultsort' => '',
         ]);
         // A pair of its own with a background no save could have written.
@@ -171,7 +171,7 @@ final class colour_inheritance_test extends \advanced_testcase {
             'inkcolour' => '#0a0a0a',
             'owncolours' => 1,
             'overlay' => branding::DEFAULT_OVERLAY,
-            'chamada' => '',
+            'tagline' => '',
             'defaultsort' => '',
         ]);
         branding::forget_all();
