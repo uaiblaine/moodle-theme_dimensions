@@ -395,11 +395,13 @@ function theme_dimensions_extend_burecommendations(): array {
 /**
  * The course's own institutional crests, for another plugin's course cards: at most three per course, in grid order.
  *
- * block_compass asks for them through component_callback('theme_dimensions', 'course_badges', [$courseids])
- * and never touches this theme's classes, which are not an API and move. The answer is what the category showcase's
- * own card draws ({@see \theme_dimensions\output\category_card::crests()}): the badges of the course's
- * landing page, named through the theme's file route. A course with no landing page model gets none, even where badge files
- * survive a model that was cleared.
+ * block_compass asks for them through its own hook, \block_compass\hook\course_badges, which this theme answers in
+ * {@see \theme_dimensions\local\hook\block_compass\course_badges::answer()} by calling this function with the hook's ids;
+ * no core callback looks it up by name any more. It stays as the hook's answer and the one place its viewer filter
+ * lives. The answer is what the category showcase's own card draws
+ * ({@see \theme_dimensions\output\category_card::crests()}): the badges of the course's landing page, named through the
+ * theme's file route. A course with no landing page model gets none, even where badge files survive a model that was
+ * cleared.
  *
  * Only for courses the route would serve the current reader
  * ({@see \theme_dimensions\local\landing\publicfiles::viewer_may_see_many()}): a crest's address and
