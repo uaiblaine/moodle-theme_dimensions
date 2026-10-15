@@ -54,8 +54,8 @@ final class notice {
     /** @var int The course the notice is about. */
     public int $courseid;
 
-    /** @var bool Whether the page is the course's landing page (the course page, or a single activity's page). */
-    public bool $landing;
+    /** @var bool Whether the page is the course home (the course page, or a single activity's page). */
+    public bool $coursehome;
 
     /** @var bool Whether the notice carries the promotion section (addresses), which only course editors get. */
     public bool $promote = false;
@@ -79,11 +79,11 @@ final class notice {
      * A notice about one course, empty until the builder adds items.
      *
      * @param int $courseid The course.
-     * @param bool $landing Whether the page is the course's landing page.
+     * @param bool $coursehome Whether the page is the course home.
      */
-    public function __construct(int $courseid, bool $landing) {
+    public function __construct(int $courseid, bool $coursehome) {
         $this->courseid = $courseid;
-        $this->landing = $landing;
+        $this->coursehome = $coursehome;
     }
 
     /**

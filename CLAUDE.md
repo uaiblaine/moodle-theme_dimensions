@@ -183,7 +183,7 @@ classes/output/core_renderer.php  render_login() draws the theme's page or Boost
                                colours the navbar, puts the name block in the user menu and sets
                                Boost Union's courserelatedhints key to the course notice.
 classes/local/coursenotice/builder.php  The course notice's decisions: Boost Union's hints item by item,
-                               the landing-page gate, the editors' promotion section (the only minting
+                               the course-home gate, the editors' promotion section (the only minting
                                outside the course form). notice.php is its data object.
 classes/output/course_notice.php  The notice's renderable and its fold preference.
 templates/course_notice.mustache, scss/coursenotice.scss, amd/src/coursenotice.js  Its markup, styles,
@@ -771,7 +771,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   absent, so every test sets it explicitly both ways and resets the DI container afterwards, because
   the router memoises its base path when it is built.
 - **Codes are minted in two places, both behind an editor's right**: the course form hook (an editor who
-  may edit the hotsite fields) and the course notice on the course's landing page (`coursenotice\builder`,
+  may edit the hotsite fields) and the course notice on the course home (`coursenotice\builder`,
   after its `moodle/course:update` check; gate `coursenotice_promo_cap`). Nothing a learner, a guest or a
   visitor opens may call `links::share()` or `guest_share()`. The page never needs the short address:
   canonical and `og:url` stay `links::page()`,
@@ -843,7 +843,7 @@ Boost Union parity table and the MooTube finding are in the original design reco
 - **The hints are a COPY of `theme_boost_union_get_course_related_hints()`**: same settings (compared with
   Boost Union's own constants), capabilities, strings and placeholders. Re-read that function on every
   Boost Union update and bring the copy back to parity with it. The one generalisation is the page gate:
-  `builder::is_landing()` instead of `/course/view.php` (the main activity's view page for a format
+  `builder::is_course_home()` instead of `/course/view.php` (the main activity's view page for a format
   without a view page, such as `format_singleactivity`); the forum special case and the switched role's
   absent gate are Boost Union's. Nothing is said on the site course, where Boost Union would have shown a
   switched role.

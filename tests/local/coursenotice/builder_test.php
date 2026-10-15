@@ -240,16 +240,16 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
-     * The landing page is the course page, or the single activity's own view page, and nothing else.
+     * The course home is the course page, or the single activity's own view page, and nothing else.
      *
      * @return void
      */
-    public function test_the_landing_page_follows_the_format(): void {
+    public function test_the_course_home_follows_the_format(): void {
         $topics = $this->course(0, ['format' => 'topics']);
         $page = $this->getDataGenerator()->create_module('page', ['course' => $topics->id]);
         $pagecm = get_fast_modinfo($topics)->get_cm($page->cmid);
-        $this->assertTrue(builder::is_landing($this->page($topics), $topics));
-        $this->assertFalse(builder::is_landing($this->page($topics, '/mod/page/view.php', $pagecm), $topics));
+        $this->assertTrue(builder::is_course_home($this->page($topics), $topics));
+        $this->assertFalse(builder::is_course_home($this->page($topics, '/mod/page/view.php', $pagecm), $topics));
 
         $single = $this->course(0, ['format' => 'singleactivity', 'activitytype' => 'page']);
         $main = $this->getDataGenerator()->create_module('page', ['course' => $single->id, 'section' => 0]);
@@ -260,17 +260,17 @@ final class builder_test extends \advanced_testcase {
         $othercm = $modinfo->get_cm($other->cmid);
         $this->assertSame((int) $main->cmid, (int) course_get_format($single)->get_main_activity()->id, 'Precondition.');
 
-        $this->assertTrue(builder::is_landing($this->page($single, '/mod/page/view.php', $maincm), $single));
-        $this->assertFalse(builder::is_landing($this->page($single, '/mod/forum/view.php', $othercm), $single));
+        $this->assertTrue(builder::is_course_home($this->page($single, '/mod/page/view.php', $maincm), $single));
+        $this->assertFalse(builder::is_course_home($this->page($single, '/mod/forum/view.php', $othercm), $single));
         $this->assertFalse(
-            builder::is_landing($this->page($single, '/mod/page/view.php', $modinfo->get_cm($second->cmid)), $single),
+            builder::is_course_home($this->page($single, '/mod/page/view.php', $modinfo->get_cm($second->cmid)), $single),
             'A second activity of the main type, at the same script, is not the main one.'
         );
         $this->assertFalse(
-            builder::is_landing($this->page($single, '/mod/page/other.php', $maincm), $single),
-            'The main activity\'s other pages are not the landing page.'
+            builder::is_course_home($this->page($single, '/mod/page/other.php', $maincm), $single),
+            'The main activity\'s other pages are not the course home.'
         );
-        $this->assertFalse(builder::is_landing($this->page($single), $single), 'A single activity course has no course page.');
+        $this->assertFalse(builder::is_course_home($this->page($single), $single), 'A single activity course has no course page.');
     }
 
     /**
@@ -294,11 +294,11 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
-     * Only a course editor gets the promotion section, and only on the landing page.
+     * Only a course editor gets the promotion section, and only on the course home.
      *
      * @return void
      */
-    public function test_the_promotion_section_is_for_course_editors_on_the_landing_page(): void {
+    public function test_the_promotion_section_is_for_course_editors_on_the_course_home(): void {
         $course = $this->course(hotsitefields::MODELO_EVENTO, [], hotsitefields::MODALIDADE_PRESENCIAL);
 
         $this->setUser($this->member($course, 'editingteacher'));
@@ -320,7 +320,7 @@ final class builder_test extends \advanced_testcase {
 
         $module = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
         $cm = get_fast_modinfo($course)->get_cm($module->cmid);
-        $this->assertNull($this->build($this->page($course, '/mod/page/view.php', $cm)), 'Not away from the landing page.');
+        $this->assertNull($this->build($this->page($course, '/mod/page/view.php', $cm)), 'Not away from the course home.');
 
         foreach (['student', 'teacher'] as $role) {
             $this->setUser($this->member($course, $role));
@@ -530,7 +530,7 @@ final class builder_test extends \advanced_testcase {
 
         $module = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
         $cm = get_fast_modinfo($course)->get_cm($module->cmid);
-        $this->assertNull($this->build($this->page($course, '/mod/page/view.php', $cm)), 'Only on the landing page.');
+        $this->assertNull($this->build($this->page($course, '/mod/page/view.php', $cm)), 'Only on the course home.');
 
         $studentrole = (int) $DB->get_field('role', 'id', ['shortname' => 'student']);
         role_switch($studentrole, \core\context\course::instance($course->id));
@@ -568,7 +568,7 @@ final class builder_test extends \advanced_testcase {
 
         $module = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
         $cm = get_fast_modinfo($course)->get_cm($module->cmid);
-        $this->assertNull($this->build($this->page($course, '/mod/page/view.php', $cm)), 'Only on the landing page.');
+        $this->assertNull($this->build($this->page($course, '/mod/page/view.php', $cm)), 'Only on the course home.');
 
         $this->setUser($student);
         $this->assertNull($this->build($this->page($course)), 'A student lacks the capability.');
@@ -645,7 +645,7 @@ final class builder_test extends \advanced_testcase {
         $this->setUser($editor);
         $module = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
         $cm = get_fast_modinfo($course)->get_cm($module->cmid);
-        $this->assertNull($this->build($this->page($course, '/mod/page/view.php', $cm)), 'Only on the landing page.');
+        $this->assertNull($this->build($this->page($course, '/mod/page/view.php', $cm)), 'Only on the course home.');
         $DB->set_field('course', 'visible', 0, ['id' => $course->id]);
         $this->assertNull($this->build($this->page(get_course($course->id))), 'A hidden course has no self enrolment hint.');
         $DB->set_field('course', 'visible', 1, ['id' => $course->id]);

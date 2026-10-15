@@ -44,7 +44,7 @@ use theme_dimensions\local\hotsitefields;
  *   it, and whether the course is public.
  *
  * One thing is generalised, and only one: Boost Union's page gate. Where it asks for
- * /course/view.php this class asks for the course's LANDING page ({@see is_landing()}), which is the
+ * /course/view.php this class asks for the course HOME ({@see is_course_home()}), which is the
  * course page for a format that has one and, for a format without one (format_singleactivity, whose
  * course/view.php redirects to the activity), the view page of the course's main activity. The
  * hidden course's forum special case is kept as Boost Union has it, and the switched role hint keeps
@@ -131,7 +131,7 @@ final class builder {
         require_once($CFG->dirroot . '/theme/boost_union/lib.php');
 
         $context = \core\context\course::instance((int) $course->id);
-        $notice = new notice((int) $course->id, self::is_landing($page, $course));
+        $notice = new notice((int) $course->id, self::is_course_home($page, $course));
 
         self::add_promotion($notice, $course, $context);
         self::add_hidden_hint($notice, $page, $course, $context);
@@ -144,19 +144,19 @@ final class builder {
     }
 
     /**
-     * Whether the page is the course's landing page: where Boost Union would ask for /course/view.php.
+     * Whether the page is the course home: where Boost Union would ask for /course/view.php.
      *
      * A format with a view page lands on /course/view.php. A format without one that names a main
      * activity (core_courseformat\main_activity_interface; format_singleactivity is core's) lands on
      * that activity's own view page: core's course/view.php redirects there, so that is where the
      * course actually opens. The page must be that module's page (its cm) AND its view url, so the
-     * activity's other pages - a quiz attempt, a forum discussion - are not landings.
+     * activity's other pages - a quiz attempt, a forum discussion - are not course homes.
      *
      * @param \moodle_page $page The page.
      * @param \stdClass $course The page's course.
-     * @return bool Whether the page is the landing page.
+     * @return bool Whether the page is the course home.
      */
-    public static function is_landing(\moodle_page $page, \stdClass $course): bool {
+    public static function is_course_home(\moodle_page $page, \stdClass $course): bool {
         if (!$page->has_set_url()) {
             return false;
         }
@@ -177,7 +177,7 @@ final class builder {
     /**
      * The promotion section: addresses, discoverability and the guest entry, for course editors.
      *
-     * The capability is asked FIRST, before anything that could mint, and the landing page second.
+     * The capability is asked FIRST, before anything that could mint, and the course home second.
      * The model is read through {@see hotsitefields::model()}, the cheap reader, so a course without
      * a hotsite pays nothing more; the modality only once there is a model.
      *
@@ -190,7 +190,7 @@ final class builder {
         if (!has_capability(self::CAP_UPDATE, $context)) {
             return;
         }
-        if (!$notice->landing) {
+        if (!$notice->coursehome) {
             return;
         }
         $courseid = (int) $course->id;
@@ -309,7 +309,7 @@ final class builder {
      * Boost Union's hidden course hint, and its forum notifications special case.
      *
      * Mirrors the first block of theme_boost_union_get_course_related_hints(): the setting, the
-     * capability and a hidden course; the general text on the landing page, replaced on a forum page
+     * capability and a hidden course; the general text on the course home, replaced on a forum page
      * by the forum text when that second setting is on; the settings link for a course editor.
      *
      * @param notice $notice The notice being built.
@@ -336,7 +336,7 @@ final class builder {
 
         $text = null;
         $key = self::KEY_HIDDEN;
-        if ($notice->landing) {
+        if ($notice->coursehome) {
             $text = get_string('showhintcoursehiddengeneral', self::BU);
         }
         if (
@@ -391,7 +391,7 @@ final class builder {
         if (get_config(self::BU, 'showhintcourseguestaccess') != THEME_BOOST_UNION_SETTING_SELECT_YES) {
             return;
         }
-        if (!$notice->landing || !is_guest($context, $USER->id)) {
+        if (!$notice->coursehome || !is_guest($context, $USER->id)) {
             return;
         }
         if (is_role_switched($course->id)) {
@@ -444,7 +444,7 @@ final class builder {
         if (!has_capability('theme/boost_union:viewhintcourseguestenrol', $context)) {
             return;
         }
-        if (!$notice->landing || !$course->visible) {
+        if (!$notice->coursehome || !$course->visible) {
             return;
         }
 
@@ -507,7 +507,7 @@ final class builder {
         if (!has_capability('theme/boost_union:viewhintcourseselfenrol', $context)) {
             return;
         }
-        if (!$notice->landing || !$course->visible) {
+        if (!$notice->coursehome || !$course->visible) {
             return;
         }
 
