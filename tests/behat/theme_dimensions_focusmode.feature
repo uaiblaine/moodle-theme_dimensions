@@ -8,7 +8,6 @@ Feature: Focus mode on activities
     Given the following config values are set as admin:
       | theme              | dimensions |                            |
       | logincpfvalidation | 0                    | theme_dimensions |
-      | activitynavigation | no                   | theme_boost_union          |
     And the following "users" exist:
       | username | firstname | lastname | email                |
       | student1 | Sam       | Student  | student1@example.com |
