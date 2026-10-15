@@ -1,6 +1,6 @@
 # Review context for theme_dimensions
 
-`theme_dimensions` is a Moodle 5.2 theme, a child of Boost Union (and so of Boost), carrying one
+`theme_dimensions` is a Moodle 5.3 theme, a child of Boost Union (and so of Boost), carrying one
 organisation's branding and a few behaviours that need no plugin of their own. It overrides: the login page
 (its own `loginform` template and a side panel in place of core's `core/login_panel`, on every page of the login
 layout; `auth_loginsteps` draws its own screens on its own shell and gets nothing from this theme); where the navbar

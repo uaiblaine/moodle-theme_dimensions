@@ -25,17 +25,17 @@ this theme as well.
 Requirements
 ------------
 
-- Moodle 5.2. The theme declares `$plugin->supported = [502, 502]` and is not meant to be installed
-  on any other release yet; Moodle 5.3 is next (see the roadmap).
-- PHP as Moodle 5.2 requires it.
+- Moodle 5.3. The theme requires `2026100500` and declares `$plugin->supported = [503, 503]`; it
+  is not meant to be installed on any other release.
+- PHP as Moodle 5.3 requires it.
 
 ### Required plugins
 
 | Plugin | Version | Why |
 |---|---|---|
-| [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | v5.2-r8 or later | The parent theme. |
-| [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026042005 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
-| [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) | 2026090500 or later | The field type of the landing pages' badges and share picture. |
+| [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100500 or later, its Moodle 5.3 version (the `upgrade-503` branch until Boost Union tags its 5.3 release) | The parent theme. |
+| [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100505 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
+| [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) | 2026101400 or later | The field type of the landing pages' badges and share picture. |
 
 ### Optional plugins
 
@@ -209,7 +209,8 @@ which its privacy provider describes and exports.
 Roadmap
 -------
 
-- **Moodle 5.3 as the base**, once Boost Union releases its 5.3 version.
+- **Boost Union's 5.3 release**: the theme follows Boost Union's `upgrade-503` branch until Boost Union
+  tags its 5.3 version, then pins that release.
 - **The competency framework's user experience** across the dimensions family of plugins
   (local_dimensions, block_dimensions, block_compass), with this theme as its home.
 

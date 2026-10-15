@@ -16,15 +16,15 @@ the blueprints this file cites) are that private record's and are **not part of 
 so this file and `mutations/gates.conf` are what a maintainer has here. It owns one table
 (`theme_dimensions_cat`, the branding of a category on the category showcase - institutional
 content, no personal data) and five user preferences, described by a `user_preference_provider`.
-Supports Moodle **5.2 only** today (`$plugin->requires = 2026042000`, `$plugin->supported = [502, 502]`)
-and moves to 5.3 once Boost Union releases its 5.3 branch. Hard-depends on `theme_boost_union`
-(v5.2-r8 / 2026042012 or later), `local_unlistedcourses` and `customfield_picture`; `auth_loginsteps`
-and `local_page` are optional and asked by class name, never declared. CI is the
-moodle-an-hochschulen reusable workflow, one job in `.github/workflows/ci.yml` — **update it when
-`supported` changes**, and pin the matching Boost Union branch in `plugin-dependencies` at the same
-time. **The theme is not mounted on any stack yet**: no line of `~/dev/moodle-dev/plugins.conf`
-mounts it at `theme/dimensions`, so the `mdl` commands that take a stack have nothing to run
-against until one does, and `mdl ci`, which builds its own site from the working tree, is the gate.
+Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
+on Boost Union's `upgrade-503` branch until Boost Union tags its 5.3 release. Hard-depends on
+`theme_boost_union` (2026100500 or later), `local_unlistedcourses` (2026100505) and
+`customfield_picture` (2026101400); `auth_loginsteps` and `local_page` are optional and asked by class
+name, never declared. CI is the moodle-an-hochschulen reusable workflow, one job in
+`.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
+branch in `plugin-dependencies` at the same time (`upgrade-503` today, its stable branch once tagged).
+The theme is mounted on the shared stack **m503** at `theme/dimensions`; the 5.2 history below
+(measurements on m502, the 5.02 CI legs) is the record of the release it was imported on.
 
 ## Agent orchestration budget (fleet rule, repeated here on purpose)
 
@@ -56,16 +56,18 @@ definition, and none runs on the session model.
 ## Commands
 
 ```sh
-mdl ci moodle-theme_dimensions --branch MOODLE_502_STABLE   # the gate, before any push
+mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE   # the gate, before any push
 ```
 
-Once the theme is mounted on a stack (it is not yet, see above), with `<stack>` that stack:
+On the stack the theme is mounted on, m503 (shared with other sessions: never `mdl up`, `down`,
+`restore` or `upgrade` it without asking them):
 
 ```sh
-mdl phpunit <stack> theme_dimensions    # targeted tests
-mdl behat <stack> @theme_dimensions     # Behat smoke tests
-mdl grunt <stack> theme/dimensions      # rebuild amd/build (commit with src)
-mdl purge <stack>                       # after PHP or SCSS changes
+mdl phpunit m503 theme_dimensions                                  # the whole suite
+mdl phpunit m503 theme/dimensions/tests/output/core_renderer_test.php   # one file
+mdl behat m503 @theme_dimensions                                   # Behat smoke tests
+mdl grunt m503 theme/dimensions                                    # rebuild amd/build (commit with src)
+mdl purge m503                                                     # after PHP or SCSS changes
 ```
 
 ### Working in a cloud session
@@ -73,11 +75,11 @@ mdl purge <stack>                       # after PHP or SCSS changes
 In a Claude Code cloud session none of `mdl`, the stacks, `~/dev/CLAUDE.md` or the owner's memory
 exist. The cloud environment's setup script (`moodle-dev/cloud/setup.sh`) installs
 `moodle-plugin-ci` and the `mpci` runner instead, and `mpci` reads this repo's `ci.yml`: it installs
-`MOODLE_502_STABLE` with the `plugin-dependencies` (Boost Union 5.2, `local_unlistedcourses`,
+`MOODLE_503_STABLE` with the `plugin-dependencies` (Boost Union's `upgrade-503`, `local_unlistedcourses`,
 `customfield_picture` and the optional `local_page`, all public) by itself.
 
 ```sh
-mpci                                                         # every gate on MOODLE_502_STABLE
+mpci                                                         # every gate on MOODLE_503_STABLE
 mpci --only phpcs,phpdoc,mustache,grunt                      # the static half
 mpci --reuse --only phpunit --filter category_listing_test   # iterate without reinstalling
 sh mutations/gate-fast.sh <gate>:<test file> [...]           # prove a gate (mpci here, mdl locally)
@@ -86,8 +88,8 @@ sh mutations/gate-fast.sh <gate>:<test file> [...]           # prove a gate (mpc
 - **The install is a copy of the working tree**, resynced with `--delete` by every `--reuse`. So
   `amd/build` is rebuilt inside it and copied BACK before the next `--reuse`, or the resync deletes
   the new build:
-  `p=$(grep -E '^PLUGIN_DIR=' /tmp/mpci/MOODLE_502_STABLE/mci.env | cut -d= -f2- | tr -d '"')`, then
-  `(cd /tmp/mpci/MOODLE_502_STABLE/moodle && npx --no-install grunt amd --root="$p")` and
+  `p=$(grep -E '^PLUGIN_DIR=' /tmp/mpci/MOODLE_503_STABLE/mci.env | cut -d= -f2- | tr -d '"')`, then
+  `(cd /tmp/mpci/MOODLE_503_STABLE/moodle && npx --no-install grunt amd --root="$p")` and
   `rsync -a "$p/amd/build/" amd/build/`. Check the maps' `sourcesContent` as `amd_source_test` does.
 - **What a cloud session cannot verify here**: Behat (the theme's scenarios are the only gate that
   executes its JavaScript - the panel, the listing client, the cover film, the CPF mask), PHP 8.4
@@ -96,7 +98,7 @@ sh mutations/gate-fast.sh <gate>:<test file> [...]           # prove a gate (mpc
   merge to the owner, who runs `mdl ci moodle-theme_dimensions --matrix --behat` first.
 - **What it CAN measure: computed styles and boxes, not pixels of the page.** A throwaway PHPUnit
   test copied into the `mpci` install's plugin directory (never into this repository; run with
-  `vendor/bin/phpunit` from `/tmp/mpci/MOODLE_502_STABLE/moodle`, then deleted) can write a template
+  `vendor/bin/phpunit` from `/tmp/mpci/MOODLE_503_STABLE/moodle`, then deleted) can write a template
   rendered from its example context with `theme_config::get_css_content()` and Font Awesome inlined,
   and the container's Playwright Chromium (`/opt/node22/lib/node_modules/playwright`, browsers in
   `/opt/pw-browsers`) can load that file and read each element's computed style and box. Neither
@@ -109,9 +111,9 @@ sh mutations/gate-fast.sh <gate>:<test file> [...]           # prove a gate (mpc
   setup script: attach `moodle-dev` and run `bash cloud/setup.sh` from it, as root. See
   `moodle-dev/cloud/README.md`.
 
-**`--branch MOODLE_502_STABLE` is not optional on this repo, and omitting it produces
+**`--branch MOODLE_503_STABLE` is not optional on this repo, and omitting it produces
 failures that are not real.** `mdl ci` defaults to `MOODLE_501_STABLE`, and this theme
-declares `$plugin->supported = [502, 502]` and one CI job on 5.2 — so the default leg lints
+declares `$plugin->supported = [503, 503]` and one CI job on 5.3 — so the default leg lints
 the plugin's templates against a core it never runs on. The mustache lint renders every
 template together with the core partials it includes, and those partials are *not* stable
 across branches: `core_course/completion_automatic` emits `div.badge[role="listitem"]` on
@@ -146,7 +148,7 @@ the checkout's own `node_modules` (see the stage 4 section: the install can dele
 bundles). Judge the run by the file times in the worktree's own `amd/build`, never by the exit
 status: building the wrong directory exits 0. Everything else in this section applies to the
 worktree with its own stack and repository directory in place of the main checkout's — including
-the gate, `mdl ci <worktree directory> --branch MOODLE_502_STABLE`.
+the gate, `mdl ci <worktree directory> --branch MOODLE_503_STABLE`.
 
 ## Code layout
 
@@ -462,7 +464,7 @@ already shaped decisions here:
 ## The name in the navbar
 
 - **The theme composes no name.** The user menu's name is `fullname($USER)`, written by
-  `user_get_user_navigation_info()` and carried through
+  `\core\user::get_user_navigation_info()` and carried through
   `core\navigation\output\primary::get_user_menu()` into the layout context as
   `usermenu.userfullname`; under "log in as" core puts the real user's name there instead. So the
   navbar shows whatever the site's `fullnamedisplay` composes, and the theme decides only where it
@@ -505,6 +507,13 @@ already shaped decisions here:
   Reusing Boost Union's markup and label is what avoids owning a copy of its 143-line
   `core/user_menu.mustache`. `display: none`, not a visually-hidden technique, so a screen
   reader is not read the same name twice either.
+- **Core 5.3 draws a second name in the toggle, and the renderer drops it.** `core/user_menu`
+  (and Boost Union's copy) prints `usermenu.userfirstname` beside the avatar as
+  `span.userfirstname.d-none.d-xl-block`, next to the full name this theme's metadata override
+  shows from md up. The stylesheet cannot hide it: `d-xl-block` is `display: block !important` and
+  stylelint forbids `!important`. `apply_name_in_usermenu()` unsets the key instead;
+  `test_the_toggle_shows_the_full_name_and_not_cores_first_name` and the gate
+  `usermenu_firstname_dropped` hold it.
 - **Boost Union's binary selects store `'yes'`/`'no'`; this theme's store `1`/`0`.**
   `THEME_BOOST_UNION_SETTING_SELECT_YES` is the string `'yes'`, while `login::SELECT_YES` is
   the integer `1`. Reading one plugin's setting with the other's vocabulary compares false
@@ -1137,10 +1146,14 @@ theme's first table and its cache, observer, event and uninstall. What the code 
 - **The band below the header is switched off by SHAPE.** `render_from_template()` sets
   `secondarymoremenu` to false in any array context carrying that key while a hero is armed -
   never by template name. The drift test in `core_renderer_test` renders the real page through
-  Boost Union's layout and counts the more menus: two (the primary navigation's and the hero's)
-  with the showcase on, two (the primary's and the band's) with it off. If Boost Union renames
-  the key the hero's page shows three, and that is the test to read first after a Boost Union
-  update.
+  Boost Union's layout and asserts each tab row by its component: on 5.3 the primary navigation is
+  `core/primarymoremenu` (a React `PrimaryNav` mount around a `moremenu observed navigation`
+  fallback) and the band `core/secondarymoremenu` (a React `Nav` mount around a plain
+  `moremenu navigation` fallback, the same nav the hero's `core/moremenu` draws). With a hero: the
+  PrimaryNav mount, the hero's more menu once inside `.dim-hero__tabs`, no `secondary-navigation`
+  and no `Nav` mount; with the showcase off, the band's wrapper, its mount and its fallback. If
+  Boost Union renames the key the band comes back on the hero's page, and that is the test to read
+  first after a Boost Union update.
 - **The tab labels are on their own lines.** Core's `moremenu_children` renders the text with
   whitespace around it, so `'>Settings<'` never matches; assert a tab by its node key
   (`data-key="edit"`, `data-key="categorymain"`, `data-key="categoryappearance"`), on the page
@@ -1355,9 +1368,10 @@ What a maintainer must not lose:
   overlay pseudo-element, so with everything at `z-index: auto` the photograph paints ON TOP of
   the overlay that darkens it: the overlay is dead paint and the eyebrow reads about 3:1 on a
   bare photo. Image 0, overlay 1, content 2.
-- **`--bs-primary-text-emphasis` cannot be read inside the tab list.** Core stamps
-  `data-bs-theme="light"` on the more menu's own `<ul>` (`lib/templates/moremenu.mustache`), so
-  every `--bs-*` token read below that element is the LIGHT one - the active tab came out
+- **`--bs-primary-text-emphasis` cannot be read inside the tab list.** Boost Union's 5.2
+  `core/moremenu` override stamped `data-bs-theme="light"` on the more menu's own `<ul>` (5.3 core
+  and Boost Union's `upgrade-503` do not, but any theme's override may), so every `--bs-*` token read
+  below such an element is the LIGHT one - the active tab came out
   `#03003b` on `#1d2125`, 1.2:1. Resolve such a token on `.dim-hero` and let it inherit.
 - **`.dim-hero__tabs .moremenu` must keep a FIXED height.** `height: auto` silently disables
   core's more-menu collapse everywhere on the page: `autoCollapse()` decides by comparing the
@@ -2990,9 +3004,10 @@ the original design record (not part of this repository); what follows is what a
   on `.navbar.fixed-top` in `post.scss`.
 - **Never call `$PAGE->activityheader->disable()` and never `set_hidecompletion(true)`.**
   Both sit outside / around `if (!$this->hidecompletion)` in
-  `lib/classes/output/activity_header.php:192`, which is where core queues the manual
-  completion button and the automatic status badge into the page's header actions. Take
-  either call and the bar loses those controls, silently. The `<h2>` and the activity
+  `lib/classes/output/activity_header.php:193`, which is where core queues the completion
+  control into the page's header actions: the manual button or the automatic status badge, or,
+  under linear navigation, the read-only status (below). Take either call and the bar loses
+  those controls, silently. The `<h2>` and the activity
   information box are removed by *rewriting one context key* in
   `focusmode::layout_context()`, which leaves everything else in place — including the
   `#maincontent` anchor the partial emits unconditionally.
@@ -3065,14 +3080,31 @@ the original design record (not part of this repository); what follows is what a
   theme has a course index and the format uses one, which is topics and weeks — so without
   the flip a reader in focus mode has no forward route but the drawer. It must never be set
   for the whole request: the course format's own content class reads the same property.
+- **On 5.3 core's linear navigation is the route forward, and the flip only runs without it.**
+  Topics and weeks (`enablelinearnav`, on by default) get a sticky footer on every activity page,
+  printed by `core_courseformat\hook_listener::add_course_navigation_sticky_footer()` from
+  `before_footer_html_generation`: previous, next and the manual completion button. `footer()`
+  prints it into the focus page as into any other, so `focusmode_activity_navigation()` returns
+  `''` whenever `linearnavigationsettings::show_navigation_footer()` says core draws it (gate
+  `focusmode_linearnav_defers`); otherwise the page carries two rows under the text. While the
+  footer is there, `activity_header` queues only the read-only `core_course/completion_status`
+  (`span[data-region="completion-status"]`) into the header actions, which core updates when the
+  footer's button is pressed, so that status is what the bar carries. With linear navigation off,
+  5.3 behaves as 5.2: the button in the bar, the theme's row under the text.
+  `focusmode_renderer_test` holds both cases; the Behat scenario walks forward through the footer
+  (`I click on "Next" "link" in the "sticky-footer" "region"`). Nothing measures the footer's
+  position against the focus shell: check it in a browser.
+- **The course index drawer's controls go in `{{$drawercontrols}}`**, the block 5.3's
+  `theme_boost/drawer` declares (5.2's `drawerheadercontent` is gone, and a block the parent does
+  not declare is dropped without a word). Gate `focusmode_drawercontrols_block`.
 - **Every rule of `scss/focusmode.scss` is scoped under `body.dimensions-focusmode`**, and a
   `basic_testcase` asserts it. The file is concatenated into the theme's main SCSS and
   reaches every page of the site otherwise. Its tokens are declared on the body **and** on
   `.dimensions-focusbar`, because an unresolved `var()` is an invalid declaration and not a
   fallback to the literal.
-- **The completion list wraps core's partial in a `ul` because core 5.2 does, and that is
+- **The completion list wraps core's partial in a `ul` because core 5.2 and 5.3 do, and that is
   branch-specific.** `templates/focusmode.mustache` mirrors
-  `course/templates/activity_info.mustache`, which on 5.2 puts
+  `course/templates/activity_info.mustache`, which on 5.2 and 5.3 puts
   `core_course/completion_automatic` inside `ul.activity-completion-list`; the partial emits
   an `li` there. On 5.1 the same partial emits `div.badge[role="listitem"]` and core wraps it
   in a `div[role="list"]` instead. So the wrapper is correct on the only branch this theme
@@ -3168,9 +3200,9 @@ the original design record (not part of this repository); what follows is what a
   2026-09-04 `mdl-ci` resolved `theme_boost_union` to the first `plugins.conf` line - the
   5.1 clone - on every branch, so the 5.02 legs tested this 5.2-only theme against a Boost
   Union it does not support: the `header()` layout tests failed only there, and Behat
-  reported "No scenarios" while the static gates stayed green. A 5.02 leg must say
-  `moodle-dev/deps/moodle-theme_boost_union-502`; if it names the bare clone, the
-  resolver has regressed and nothing the leg says about layout or Behat is evidence.
+  reported "No scenarios" while the static gates stayed green. A 5.03 leg must say
+  `moodle-dev/deps/moodle-theme_boost_union-53` (a 5.02 leg said `-502`); if it names the bare
+  clone, the resolver has regressed and nothing the leg says about layout or Behat is evidence.
 - `classes/local/login.php` holds every login decision, and three assertions carry
   weight: the two "no" cases (`logincpfvalidation`, `loginpage`), because a default-on
   setting read with a falsy fallback would report a stored `0` as enabled; and the bypass
@@ -3224,7 +3256,7 @@ reviews).
   key it names; an invalid file stops reviews for the repository until it is fixed, and an
   unknown key only raises a warning on the summary comment.
 - **One Moodle version per repository.** There is no per-branch mapping, so the file pins
-  `moodle.versions: ["5.2"]`. A pull request that targets another branch of this repository is reviewed against that same core.
+  `moodle.versions: ["5.3"]`. A pull request that targets another branch of this repository is reviewed against that same core.
 - `fail_on.severity` is `high`: the check fails on an open finding at or above it. Code
   quality findings never block, only security findings do.
 - The context file is project knowledge that **influences** the reviewer and is not a
