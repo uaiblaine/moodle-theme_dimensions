@@ -75,6 +75,12 @@ function theme_dimensions_get_main_scss_content($theme) {
     // Every rule in it is qualified with the notice's own class.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/coursenotice.scss');
 
+    // And the competency framework's pages and dialogues (tool_lp, report_competency, block_lp), scoped
+    // to the body classes core derives for those scripts, the block's root and the dim-comp- classes
+    // only the theme's copies of their templates carry. It reads Font Awesome's fa-content() and
+    // $fa-var-* from the Boost SCSS compiled above it.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/competency.scss');
+
     return $scss;
 }
 
