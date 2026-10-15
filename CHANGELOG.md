@@ -5,6 +5,27 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The competency framework's pages and dialogues in the theme's design** (`2026100506`).
+  - `scss/competency.scss`, concatenated by `lib.php`: every top-level selector scoped to the body classes
+    core derives for tool_lp, report_competency and block_lp's scripts (`path-admin-tool-lp`,
+    `path-report-competency`, `path-blocks-lp`), to `.block_lp` or to the theme's own `dim-comp-` classes;
+    colours from the family tokens `--dimensions-*` and Bootstrap only, radius and spacing from the design
+    system; every ground states its ink, and the progress bar's fill is restated for the dark mode (the
+    brand ink). Core's proficiency badges, where the template stays core's, get the pill's shape and an
+    icon per state.
+  - Restyled copies of twenty core templates, each naming the 5.3 file it mirrors: tool_lp's
+    `progress_bar`, `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`,
+    `linked_courses_summary`, the three navigation templates, `related_competencies`,
+    `course_competency_statistics`, `template_statistics`, `competency_grader` (the rating dialogue) and
+    `user_competency_summary`; report_competency's `report`, `user_competency_summary` and
+    `user_course_navigation`; block_lp's `summary` and its two review pages. Every data-region,
+    data-action, data-* attribute, id and form name core's AMD and Behat read is kept. Proficiency is said
+    in words with an icon (the breakdown report's green cell is gone); a progress bar is named by its own
+    sentence and prints its percentage. No renderer is overridden.
+  - One language string, `competency_notproficient`. Tests `competency_scss_test`,
+    `competency_templates_test`, `competency_render_test`, the Behat feature
+    `theme_dimensions_competency.feature`, and mutation gates `comp_grader_rate_action`,
+    `comp_evidence_delete_action` and `comp_report_cell_hook`.
 - **Family design tokens `--dimensions-*`; crests answered through block_compass's hook** (`2026100505`).
   - `scss/post.scss` declares the 54 family tokens local_dimensions and block_dimensions will read as
     `var(--dimensions-x, <their own chain>)`: 33 shared (surfaces, line, ink, accent, the brand, the focus

@@ -139,6 +139,29 @@ Boost Union settings, capabilities and texts: a bar of chips that sums the cours
 the details under it. For whoever edits the course, a course with a landing page gets a
 *Promotion* section with its public addresses and copy buttons.
 
+### Competency framework
+
+Moodle's competency pages and dialogues - the learning plans and their user competencies
+(`admin/tool/lp`), the competency breakdown report of a course (`report/competency`) and the
+learning plans block (`block_lp`) - wear the theme's design and the dimensions family's colour
+tokens, the ones local_dimensions and block_dimensions read, so the three look like one product.
+What these pages decide and show to whom is core's, unchanged: the theme restyles and re-renders,
+nothing else.
+
+- Proficiency is never said by colour alone. A rating is a pill with its name and a star; beside
+  it, *Proficient* (a check) or *Not proficient* (an exclamation) in words; *Not rated* is a pill of
+  its own. On the breakdown report this replaces core's green cell.
+- The competency summary, the evidence (one card per piece, with who acted, when, and the rating it
+  carried), progress bars that name themselves and print their percentage, the related
+  competencies as chips, the statistics of a course or a learning plan template, the rating dialogue
+  and the navigation panels are restyled copies of core's templates; every hook core's scripts and
+  tests read is kept.
+- The larger pages (the learning plan's own page, the course competencies page, the frameworks,
+  the competency trees and pickers, the rule configuration) keep core's templates and are styled
+  by the stylesheet alone.
+- Light and dark colour modes alike, from the theme's tokens and Bootstrap's own: a Boost Union
+  flavour's brand colour reaches these pages too.
+
 ### Profile access rule
 
 A person may open another person's profile only when they can see every profile, when they share a
@@ -202,7 +225,9 @@ Roadmap
 - **Boost Union's 5.3 release**: the theme follows Boost Union's `upgrade-503` branch until Boost Union
   tags its 5.3 version, then pins that release.
 - **The competency framework's user experience** across the dimensions family of plugins
-  (local_dimensions, block_dimensions, block_compass), with this theme as its home.
+  (local_dimensions, block_dimensions, block_compass), with this theme as its home. Done: the
+  family tokens, and core's competency pages and dialogues in the theme's design (above). Next: the
+  in-plan and in-course user competency summaries as templates of their own.
 
 
 Credits

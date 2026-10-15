@@ -232,6 +232,9 @@ tests/output/core_renderer_test.php  Renders the real login page: no remote imag
                                and the navbar's name, through a real page header.
 db/install.php, db/upgrade.php Provision the course custom fields; upgrade.php also builds the branding table.
 scss/pre.scss, scss/post.scss  The design system's tokens, all under --dim-ds-; lib.php assigns no $primary.
+scss/competency.scss           The competency pages and dialogues, scoped to core's page classes and dim-comp-.
+templates/tool_lp/, templates/report_competency/, templates/block_lp/  Copies of core 5.3's competency
+                               templates, restyled with every hook kept. See "Competency pages".
 ```
 
 ## Architecture gotchas
@@ -2960,6 +2963,78 @@ a-f, the flows and the mockup); local_unlistedcourses 5a owns the rule. What the
   never the plugin: those run under `mdl ci`. The resolver's and the batch's conditional tests ask the
   plugin and skip without it, as the enrol_apply ones do; the gates that need either plugin are named
   in the stage 5b block of `mutations/gates.conf`.
+
+## Competency pages
+
+The theme's reason to exist: tool_lp's pages and dialogues, report_competency's breakdown report and
+block_lp in the theme's design (phase 5B, 2026-10-15). **The decision lives in core; the theme restyles
+and re-renders and never changes what a page decides or shows to whom.** No renderer is overridden: every
+change is in a template copy or in `scss/competency.scss`. If one ever needs data a template does not get,
+the class is `theme_dimensions\output\tool_lp\renderer extends \tool_lp\output\renderer`, DERIVED by
+the renderer factory (see the profile page section), with a factory test beside it.
+
+- **Twenty templates are copies of Moodle 5.3 (2026100500) and must be re-diffed against core on every
+  core upgrade**; each docblock names its core file. `templates/tool_lp/`: `progress_bar`,
+  `competency_summary`, `competency_path`, `evidence_summary`, `user_summary`, `linked_courses_summary`,
+  `module_navigation`, `competency_plan_navigation`, `user_competency_course_navigation`,
+  `related_competencies`, `course_competency_statistics`, `template_statistics`, `competency_grader` (the
+  rating dialogue), `user_competency_summary`. `templates/report_competency/`: `report`,
+  `user_competency_summary`, `user_course_navigation`. `templates/block_lp/`: `summary`,
+  `competencies_to_review_page`, `plans_to_review_page`. **Not** copied, on purpose (large, inline JS, drag
+  and drop): `plan_page`, `plans_page`, `course_competencies_page`, the `manage_*` pages, the trees and
+  pickers, the rule configuration, and `user_competency_summary_in_plan` / `_in_course` (the next
+  candidates). Those are styled by the stylesheet alone.
+- **The hooks, by reader.** `tool_lp/evidence_delete`: `data-region="evidence"` (exactly ONE ancestor of
+  the trigger, `parents()` refuses two) with `data-id`, `data-action="delete-evidence"`.
+  `tool_lp/competencyactions`: `data-region="relatedcompetencies"` (replaced whole),
+  `data-action="deleterelation"` with `id="id-related-<id>"` (the handler does `this.id.substr(11)`, so the
+  prefix is exact). `tool_lp/competencydialogue`: `data-action="competency-dialogue"` + `data-id`,
+  delegated on the body. `tool_lp/grade_dialogue` (inside the dialogue): `data-action="rate"`,
+  `data-action="cancel"`, `[name="rating"]`, `[name="comment"]`. `tool_lp/user_competency_workflow`:
+  `data-node="user-competency"` (ONE ancestor, carrying `data-userid`/`data-competencyid`) and the four
+  review `data-action`s inside `data-region="user-competency-status"`. `tool_lp/user_competency_info`: the
+  root `data-region-id="<uniqid>"`, replaced on reload. `tool_lp/grade_user_competency_inline`:
+  `#rate_<uniqid>`. The navigation modules: the select ids `module-nav-`, `competency-nav-`, `user-nav-`
+  `<uniqid>`, and the form class `user-competency-course-navigation` (core's stylesheet hides the select by
+  it until form-autocomplete draws). `report_competency/grading_popup`: the root
+  `data-region="competency-breakdown-report"` with `data-courseid/userid/moduleid` (it re-renders
+  `report_competency/report` through core/templates and replaces the ROOT), and each rating cell's
+  `data-user-competency="true"` with `data-userid/competencyid/courseid`. Behat (tool_lp's and
+  report_competency's named selectors): a `dt` "Proficient"/"Rating" followed by a `dd` holding core's
+  words ("Yes"/"No", the rating's name); the rating is the SECOND `td` of the breakdown row, inside a link
+  titled "User competency summary"; a related competency's link text is "shortname idnumber"; the class
+  `competency-grader`; the evidence rating is a `span.badge`. `competency_templates_test` holds every hook
+  twice (the literal in core's file AND the copy, comments stripped; the element in the rendered example).
+- **The competency dialogues are YUI dialogues** (`tool_lp/dialogue`, `M.core.dialogue`), not core/modal:
+  their roots are the site's generic `.moodle-dialogue-base`, appended to `body`. The stylesheet reaches
+  them through the page's body class or through the `dim-comp-` root of the template rendered inside,
+  never through the dialogue's own classes. The family tokens are declared on `body`, so they reach it.
+- **A Mustache comment ends at the first `}}`**, so an example context with two closing braces side by
+  side (`{"a": {"b": 1}}`) is cut short and the lint reports "Example context JSON is unparsable". Break
+  nested objects over lines.
+- **The lint never read core's JavaScript in these templates**: core's copies have no example context.
+  Ours do, so `new nav(...)` (eslint `new-cap`) and lines over 132 fail; the copies capitalise the
+  callback parameter (`Nav`, `Info`, `Mod`) and wrap lines, statement for statement otherwise. Core's
+  `<time datetime="{{userdate}}">` held a formatted date, which the HTML validator refuses: the copy prints
+  a span.
+- **`{{uniqid}}` is ONE value per render**, so a template drawing several progress bars wrote the same id
+  several times; the copy of `progress_bar` names the bar with a `<label>` wrapping the sentence and the
+  `<progress>` (a labelable element) and drops core's `progress-<uniqid>` id, which nothing read.
+- **Core's proficiency badges cannot be recoloured by CSS**: Bootstrap's `bg-*`/`text-*` utilities are
+  `!important`. Where the template stays core's, the stylesheet gives them the pill's shape and a Font
+  Awesome glyph per state (`font: var(--fa-font-solid)`, `content: fa-content($fa-var-...)`, core's own
+  pattern; the variables come from the Boost SCSS compiled above the file).
+- **Proficiency states**: rated (info family, star), proficient (success, check), not proficient
+  (warning, exclamation - a state of learning, as in local_dimensions' grade badge, not an error), not
+  rated (neutral, minus). Each pill carries its words; the icon is `aria-hidden`.
+- **The scope and the palette are tested, not trusted** (`tests/local/competency_scss_test.php`): every
+  top-level selector starts with a page class, `.block_lp` or `.dim-comp-` (dark ones with
+  `:root[data-bs-theme="dark"]` first, at the foot of the file); no literal colour; a colour is read only
+  from `--dimensions-*` or `--bs-*`; every ground states its ink; the page classes are the ones
+  `moodle_page` derives for the scripts.
+- The Behat feature `theme_dimensions_competency.feature` (`@theme_dimensions_competency`) rates through
+  the breakdown report's dialogues and requests a review from the learning plan's: the only gate that runs
+  core's JavaScript against the copies.
 
 ## Focus mode
 
