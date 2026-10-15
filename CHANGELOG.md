@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Default category hero colour `#0a4a85`** (`2026100507`) (9.01:1 opaque; 5.08:1 over a white photograph at the default 78% overlay).
+  - Replaces `#0f6cbf` (5.36:1 opaque, 3.57:1 over white at 78%): `branding::DEFAULT_BG`, the `bgcolour` column default,
+    the templates' examples and the tests' numbers. The folder watermark on the default band is .20 again (was .09). A 60%
+    overlay cannot reach 4.5:1 with any colour (3.27:1 here), so it stays a manager's explicit choice that D31 measures.
+
+- **The competency path clears core's floated "Path:" label** (`2026100507`): on the course competencies page the
+  "Upon course completion" selector no longer wraps beside the label.
+
 - **The competency framework's pages and dialogues in the theme's design** (`2026100506`).
   - `scss/competency.scss`, concatenated by `lib.php`: every top-level selector scoped to the body classes
     core derives for tool_lp, report_competency and block_lp's scripts (`path-admin-tool-lp`,

@@ -62,8 +62,8 @@ picture fields of *Course landing page* are created only where customfield_pictu
 enabled.
 
 The theme assigns no brand colour of its own: the primary colour is Boost Union's (its brand colour
-setting, or a flavour's) and Boost's default blue otherwise, and a category nobody branded draws its
-band in that same default blue with white text.
+setting, or a flavour's) and Boost's default blue otherwise. A category nobody branded draws its band in its own
+dark blue, `#0a4a85`, with white text (9.01:1; 5.08:1 even over a white photograph at the default 78 % overlay).
 
 
 Features

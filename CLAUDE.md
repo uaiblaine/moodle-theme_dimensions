@@ -1166,15 +1166,16 @@ theme's first table and its cache, observer, event and uninstall. What the code 
   only - the image layout paints it translucent over a photograph and reads lower, which D31
   measures, records and deliberately does not refuse (a worst-case refusal would make three of
   the four quick colours unsaveable at the 60 % overlay).
-- **The default pair is Boost's default primary, `#0f6cbf`, with white ink** (`branding::DEFAULT_BG`,
-  the column default in `install.xml`, the fixture's first pair; 2026100503, replacing the
-  institutional navy). It is a hex and not `var(--bs-primary)` because the stops, the watermark's
-  alpha and the contrast audit are computed from its channels. It reads 5.36:1 opaque, but it is
-  lighter than every reference colour: over a WHITE photograph it reads 3.57:1 at the default 78 %
-  overlay (pinned in `branding_test`), and the folder watermark on it gets .09 rather than .20. The
-  default layout is the solid band, so that gap is met only by a manager who picks the image layout
-  without picking a colour. The stylesheet's own defaults (`--dim-hero-*` in `category.scss`, for a
-  header drawn without the attribute) are still the design system's navy.
+- **The default pair is a dark blue, `#0a4a85`, with white ink** (`branding::DEFAULT_BG`, the column
+  default in `install.xml`, the fixture's first pair; 2026100507, replacing Boost's primary `#0f6cbf`
+  of 2026100503, itself a replacement of the institutional navy). It is a hex and not
+  `var(--bs-primary)` because the stops, the watermark's alpha and the contrast audit are computed
+  from its channels. It reads 9.01:1 opaque and, over a WHITE photograph, 5.08:1 at the default 78 %
+  overlay and 6.97:1 at 90 % (pinned in `branding_test`); the folder watermark on it gets the full
+  .20. The 60 % overlay reads 3.27:1 and no colour can reach 4.5 there, so it stays a manager's
+  explicit choice that D31 measures and does not refuse. The stylesheet's own defaults
+  (`--dim-hero-*` in `category.scss`, for a header drawn without the attribute) are still the
+  design system's navy; `#0f6cbf` survives there only as Bootstrap's `var(--bs-primary, #0f6cbf)` fallback.
 - **Two implementations of the same maths, held together by one fixture.**
   `tests/fixtures/contrast_pairs.json` is read by `branding_test` against `branding::contrast()`
   AND by `categoryhero_source_test` against the WCAG constants read out of

@@ -9,7 +9,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="categoryid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The course category."/>
         <FIELD NAME="layout" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="solid" SEQUENCE="false" COMMENT="image, solid or compact."/>
-        <FIELD NAME="bgcolour" TYPE="char" LENGTH="7" NOTNULL="true" DEFAULT="#0f6cbf" SEQUENCE="false" COMMENT="The band colour, #rrggbb, lower case; Boost's default primary by default."/>
+        <FIELD NAME="bgcolour" TYPE="char" LENGTH="7" NOTNULL="true" DEFAULT="#0a4a85" SEQUENCE="false" COMMENT="The band colour, #rrggbb, lower case; the default hero blue by default."/>
         <FIELD NAME="inkcolour" TYPE="char" LENGTH="7" NOTNULL="true" DEFAULT="#ffffff" SEQUENCE="false" COMMENT="The colour of the text on the band, #rrggbb, lower case; white by default."/>
         <FIELD NAME="owncolours" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 when bgcolour and inkcolour are this category's own; 0 when the category takes the pair of its nearest ancestor that has one, or the theme's default pair."/>
         <FIELD NAME="overlay" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="78" SEQUENCE="false" COMMENT="How much of the colour covers the photograph, in percent: 0, 60, 78 or 90."/>

@@ -36,7 +36,7 @@ use theme_dimensions\local\landingfields;
  *
  * One row per branded category in {theme_dimensions_cat}, and the file areas below in
  * the category's own context. A category without a row reads the defaults: the solid band
- * in Boost's default primary and no tagline. usermodified is the id of the user who last saved the row, kept as an
+ * in the default dark blue and no tagline. usermodified is the id of the user who last saved the row, kept as an
  * authorship stamp and declared in the privacy provider; the table holds nothing about the people
  * who read the page.
  *
@@ -179,12 +179,12 @@ final class branding {
     public const DEFAULT_LAYOUT = self::LAYOUT_SOLID;
 
     /**
-     * @var string The band colour of a category nobody branded: Boost's default primary.
+     * @var string The band colour of a category nobody branded: a dark blue, 9.01:1 with white ink.
      *
      * A hex and not var(--bs-primary), because the stops, the watermark's alpha and the contrast
-     * audit are computed from its channels here. White ink on it reads 5.36:1, over {@see FLOOR}.
+     * audit are computed from its channels here. White ink on it reads 9.01:1, over {@see FLOOR}.
      */
-    public const DEFAULT_BG = '#0f6cbf';
+    public const DEFAULT_BG = '#0a4a85';
 
     /** @var string The ink of a category nobody branded. */
     public const DEFAULT_INK = '#ffffff';
