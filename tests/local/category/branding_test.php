@@ -1929,8 +1929,8 @@ final class branding_test extends \advanced_testcase {
      * The reference colours and the default pair are in the one spelling and all over the floor.
      *
      * Nothing else holds this table to the colours the measurements below are about. The default
-     * pair is Boost's default primary with white ink, no institution's colour: a site that never
-     * branded a category gets the same blue Boost paints its own primary in.
+     * pair is a dark blue with white ink, no institution's colour: a site that never branded a
+     * category gets a band that clears AAA on its own.
      */
     public function test_the_reference_colours_and_the_default_pair_are_audited(): void {
         foreach (self::REFERENCE_COLOURS as $key => $pair) {
@@ -1942,10 +1942,10 @@ final class branding_test extends \advanced_testcase {
                 'An audited colour reads under the floor: ' . $key
             );
         }
-        $this->assertSame('#0f6cbf', branding::DEFAULT_BG, 'The default band is Boost\'s default primary.');
+        $this->assertSame('#0a4a85', branding::DEFAULT_BG, 'The default band is the dark hero blue.');
         $this->assertSame('#ffffff', branding::DEFAULT_INK);
         $this->assertSame(branding::DEFAULT_BG, branding::hex(branding::DEFAULT_BG), 'Stored in the one spelling.');
-        $this->assertEqualsWithDelta(5.36, branding::contrast(branding::DEFAULT_BG, branding::DEFAULT_INK), 0.01);
+        $this->assertEqualsWithDelta(9.01, branding::contrast(branding::DEFAULT_BG, branding::DEFAULT_INK), 0.01);
         $this->assertGreaterThanOrEqual(
             branding::FLOOR,
             branding::contrast(branding::DEFAULT_BG, branding::DEFAULT_INK),
@@ -2007,11 +2007,10 @@ final class branding_test extends \advanced_testcase {
                 . 'the four transparent ones, where no colour is painted at all, and three at the '
                 . 'lightest overlay; none at the default of 78%.'
         );
-        /* The default pair is lighter than every reference colour, so the photograph shows through
-           it more: over a white picture it reads under the floor at every overlay but 90%. The
-           image layout is a manager's choice and the default layout is the solid band, where the
-           pair reads 5.36:1; a manager who picks a photograph picks the colour over it too. */
-        $defaults = [0 => 1.00, 60 => 2.56, 78 => 3.57, 90 => 4.44];
+        /* The default pair clears the floor over a white picture at 78% and 90%; at 60% no colour can
+           (3.27:1 here), which stays a manager's explicit choice that D31 measures and does not
+           refuse. The default layout is the solid band, where the pair reads 9.01:1. */
+        $defaults = [0 => 1.00, 60 => 3.27, 78 => 5.08, 90 => 6.97];
         foreach ($defaults as $overlay => $expected) {
             $this->assertEqualsWithDelta(
                 $expected,
