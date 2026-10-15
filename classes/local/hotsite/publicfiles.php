@@ -86,7 +86,12 @@ final class publicfiles {
     /** @var string A file embedded in the course summary. */
     public const AREA_SUMMARY = 'summary';
 
-    /** @var string A badge picture: a file of the customfield_picture area of one of the badge fields. */
+    /**
+     * @var string A badge picture: a file of the customfield_picture area of one of the badge fields.
+     *
+     * customfield_picture is optional: without it {@see hotsitefields::badges()} answers none and
+     * every address of this area is the same 404 as a stale hash.
+     */
     public const AREA_BADGE = 'badge';
 
     /** @var int Width of the Open Graph derivative. */
@@ -309,7 +314,8 @@ final class publicfiles {
      * course that chose no share picture always has, rather than to no image at all. The og area
      * of {@see resolve()} asks this same question, so the route serves exactly the source the
      * tags named and a URL carrying the course image's hash stops answering once a share
-     * picture takes over.
+     * picture takes over. Without customfield_picture there is no share picture, and the course
+     * image is the source.
      *
      * @param \stdClass $course The course record.
      * @param int $maxpixels Source pixels above which no derivative is attempted.

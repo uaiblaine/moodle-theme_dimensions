@@ -34,5 +34,4 @@ $plugin->maturity = MATURITY_ALPHA;
 $plugin->dependencies = [
     'theme_boost_union' => 2026100500,
     'local_unlistedcourses' => 2026100505,
-    'customfield_picture' => 2026101400,
 ];

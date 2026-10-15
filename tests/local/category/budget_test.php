@@ -336,6 +336,9 @@ final class budget_test extends \advanced_testcase {
     public function test_the_crests_cost_no_statement_per_card(): void {
         global $PAGE;
 
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $viewer = $this->prepare();
         $generator = self::getDataGenerator();
         /** @var \core_customfield_generator $customfields */

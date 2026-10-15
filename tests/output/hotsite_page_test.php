@@ -547,6 +547,9 @@ final class hotsite_page_test extends \advanced_testcase {
      */
     public function test_badges_are_exported_in_grid_order_through_the_theme_route(): void {
         global $CFG, $PAGE;
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $this->resetAfterTest();
         $this->prepare_fields();
 

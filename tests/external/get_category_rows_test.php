@@ -612,6 +612,9 @@ final class get_category_rows_test extends \advanced_testcase {
      * asserts the value really arrives, which is what a reader of page two actually gets.
      */
     public function test_a_cards_crests_arrive_through_the_returns(): void {
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();

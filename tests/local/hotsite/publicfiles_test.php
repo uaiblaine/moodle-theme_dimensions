@@ -199,6 +199,9 @@ final class publicfiles_test extends \advanced_testcase {
     private function badge(\stdClass $course, ?string $filename = null, ?string $content = null): \stored_file {
         global $CFG;
 
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $this->setAdminUser();
         hotsitefields::ensure_fields();
         /** @var \core_customfield_generator $generator */
@@ -634,6 +637,9 @@ final class publicfiles_test extends \advanced_testcase {
      * @return \stored_file The stored picture.
      */
     private function share(\stdClass $course, string $filename, string $content): \stored_file {
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $this->setAdminUser();
         hotsitefields::ensure_fields();
         /** @var \core_customfield_generator $generator */

@@ -36,7 +36,8 @@ use core_customfield\field_controller;
  * The theme owns the display, not the data: the "Hotsite" category and its
  * fields are core course custom fields (component core_course, area course;
  * the four badge fields and the share picture are of the picture type
- * customfield_picture provides, the one declared dependency the fields have),
+ * customfield_picture provides, an optional plugin: without it those five are
+ * not provisioned and nothing draws them, {@see picture_type_available()}),
  * created once so a fresh site is usable without an admin building them by
  * hand, and never deleted - they hold what course authors wrote about their
  * courses. The one exception is the retired "public enrolment page" checkbox,
@@ -432,11 +433,9 @@ class hotsitefields {
     }
 
     /**
-     * Whether the custom field type a definition needs is installed.
+     * Whether the custom field type a definition needs is usable here.
      *
-     * The badge fields need customfield_picture, a declared dependency, so this
-     * only ever refuses on a site whose dependency check was bypassed; without
-     * the guard the provisioner would throw on the whole category.
+     * Only the picture fields need a plugin of their own, and it is optional: {@see picture_type_available()}.
      *
      * @param array $definition One entry of {@see definitions()}.
      * @return bool Whether the type can be created.
@@ -445,7 +444,28 @@ class hotsitefields {
         if ($definition['type'] !== self::BRASAO_TYPE) {
             return true;
         }
-        return \core_component::get_plugin_directory('customfield', self::BRASAO_TYPE) !== null;
+        return self::picture_type_available();
+    }
+
+    /**
+     * Whether customfield_picture is installed and enabled, so the five picture fields can exist.
+     *
+     * The plugin is recommended, not required. Without it the badges and the share picture are not
+     * provisioned, and every reader of them ({@see pictures()}, {@see typed_values()}) answers
+     * "none" through its instanceof check, so the hotsite and the category listing draw without
+     * them. A DISABLED type counts as absent too: core hides its fields from the course field list,
+     * so they would read as missing, and provisioning them again would only collide with the hidden
+     * ones on their shortnames.
+     *
+     * Read from the file system and the type's own config, never through the plugin manager, whose
+     * list of installed plugins may have been cached earlier in the very install run that calls
+     * {@see ensure_fields()}.
+     *
+     * @return bool
+     */
+    public static function picture_type_available(): bool {
+        return \core_component::get_plugin_directory('customfield', self::BRASAO_TYPE) !== null
+            && empty(get_config('customfield_' . self::BRASAO_TYPE, 'disabled'));
     }
 
     /**
@@ -484,7 +504,10 @@ class hotsitefields {
      * Invoked from db/install.php, and by any upgrade step that
      * introduces fields. Guarded on the customfield tables existing, not
      * on during_initial_install() - that stays true for the whole of a fresh
-     * site install, which is exactly when db/install.php runs.
+     * site install, which is exactly when db/install.php runs. The picture
+     * fields are skipped while their type is not available, so a site without
+     * customfield_picture takes no lock and writes no debugging line on every
+     * call; installing the plugin later and running this again creates them.
      *
      * @return void
      */
@@ -521,13 +544,18 @@ class hotsitefields {
     }
 
     /**
-     * The definitions whose field does not currently resolve.
+     * The definitions whose field does not currently resolve, among those whose type is available.
+     *
+     * Public because the recommendation item asks the same question the provisioner does.
      *
      * @return array Subset of {@see definitions()}, keyed by shortname.
      */
-    private static function missing_definitions(): array {
+    public static function missing_definitions(): array {
         $missing = [];
         foreach (self::definitions() as $shortname => $definition) {
+            if (!self::type_available($definition)) {
+                continue;
+            }
             if (!self::get_field($shortname)) {
                 $missing[$shortname] = $definition;
             }
@@ -583,14 +611,6 @@ class hotsitefields {
      */
     private static function create_field(string $shortname, array $definition): void {
         $handler = course_handler::create();
-
-        if (!self::type_available($definition)) {
-            debugging(
-                self::COMPONENT . ": field type '{$definition['type']}' is not installed - '{$shortname}' not created.",
-                DEBUG_DEVELOPER
-            );
-            return;
-        }
 
         if (!api::is_shortname_unique($handler, $shortname, 0)) {
             /* A field with this shortname exists somewhere the handler can see

@@ -85,6 +85,9 @@ final class course_badges_test extends \advanced_testcase {
      * @return int The course id.
      */
     private function course_with_badges(int $modelo, array $files, array $record = []): int {
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $generator = self::getDataGenerator();
         /** @var \core_customfield_generator $customfields */
         $customfields = $generator->get_plugin_generator('core_customfield');

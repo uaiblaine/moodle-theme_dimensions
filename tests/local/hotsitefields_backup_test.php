@@ -48,6 +48,9 @@ final class hotsitefields_backup_test extends \advanced_testcase {
     public function test_a_hidden_badge_survives_a_course_copy(): void {
         global $CFG;
 
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();
@@ -103,6 +106,9 @@ final class hotsitefields_backup_test extends \advanced_testcase {
     public function test_a_hidden_share_picture_survives_a_course_copy(): void {
         global $CFG;
 
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();

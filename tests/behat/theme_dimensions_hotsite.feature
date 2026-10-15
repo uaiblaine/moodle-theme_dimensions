@@ -229,7 +229,9 @@ Feature: Course enrolment hotsite
     And "Enrol" "button" should not exist
     And "Enrol" "link" should not exist
 
-  @javascript @_file_upload
+  # The badge field is of customfield_picture's type, an optional plugin: a site without it excludes
+  # this scenario with --tags '~@customfield_picture'.
+  @javascript @_file_upload @customfield_picture
   Scenario: An editor uploads a badge and a video address and the hotsite shows both
     Given I enable "youtube" "media" plugin
     And the following "courses" exist:

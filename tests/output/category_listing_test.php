@@ -1473,6 +1473,9 @@ final class category_listing_test extends \advanced_testcase {
      * its own would pass against a card reading whichever set it liked.
      */
     public function test_a_course_card_wears_the_courses_crests_and_a_category_card_the_categorys(): void {
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
         $viewer = $this->seed();
         $generator = self::getDataGenerator();
         /** @var \core_customfield_generator $customfields */

@@ -1150,7 +1150,8 @@ final class branding {
      * The limit and the vocabulary are the hotsite's, read from its own constant rather than
      * restated: the two surfaces show the same kind of file, an institutional crest, and a
      * category manager who has one accepted on a course must not be refused it here. The
-     * hotsite's customfield_picture badge fields take exactly these two values
+     * hotsite's badge fields (customfield_picture's type, where that optional plugin is installed)
+     * take exactly these two values
      * ({@see \theme_dimensions\local\hotsitefields::BRASAO_MAXBYTES} and
      * accepted_types web_image), which on 5.2 admits .svg - see {@see resolve()} for why an SVG
      * crest is still served.

@@ -38,6 +38,30 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(hotsitefields::class)]
 final class hotsitefields_test extends \advanced_testcase {
     /**
+     * The definitions this site provisions: all of them, less the picture fields where their type is not available.
+     *
+     * @return array Subset of {@see hotsitefields::definitions()}, keyed by shortname.
+     */
+    private static function provisioned(): array {
+        return array_filter(
+            hotsitefields::definitions(),
+            static fn(array $definition): bool => $definition['type'] !== hotsitefields::BRASAO_TYPE
+                || hotsitefields::picture_type_available()
+        );
+    }
+
+    /**
+     * Skip a test that needs customfield_picture where the optional plugin is not installed and enabled.
+     *
+     * @return void
+     */
+    private function require_picture_type(): void {
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
+    }
+
+    /**
      * Remove the fields and category the PHPUnit site install already provisioned.
      *
      * The test site runs db/install.php, so every test of the creation path
@@ -79,7 +103,7 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
 
-        $definitions = hotsitefields::definitions();
+        $definitions = self::provisioned();
         foreach ($definitions as $shortname => $definition) {
             $field = hotsitefields::get_field($shortname);
             $this->assertNotNull($field, "Field '{$shortname}' was not created.");
@@ -116,7 +140,7 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
 
-        $shortnames = array_keys(hotsitefields::definitions());
+        $shortnames = array_keys(self::provisioned());
         [$insql, $params] = $DB->get_in_or_equal($shortnames);
         $this->assertSame(
             count($shortnames),
@@ -192,7 +216,7 @@ final class hotsitefields_test extends \advanced_testcase {
         $this->assertSame('text', reset($rows)->type);
 
         // Every other field was provisioned normally.
-        foreach (hotsitefields::definitions() as $shortname => $definition) {
+        foreach (self::provisioned() as $shortname => $definition) {
             if ($shortname === hotsitefields::SHORTNAME_MODALIDADE) {
                 continue;
             }
@@ -393,6 +417,7 @@ final class hotsitefields_test extends \advanced_testcase {
      */
     public function test_badge_and_video_fields_are_hidden_and_bounded(): void {
         $this->resetAfterTest();
+        $this->require_picture_type();
         $this->setAdminUser();
         course_handler::reset_caches();
         hotsitefields::reset_field_cache();
@@ -424,6 +449,7 @@ final class hotsitefields_test extends \advanced_testcase {
         global $CFG;
 
         $this->resetAfterTest();
+        $this->require_picture_type();
         $this->setAdminUser();
         course_handler::reset_caches();
         hotsitefields::reset_field_cache();
@@ -484,6 +510,7 @@ final class hotsitefields_test extends \advanced_testcase {
         global $CFG;
 
         $this->resetAfterTest();
+        $this->require_picture_type();
         $this->setAdminUser();
         course_handler::reset_caches();
         hotsitefields::reset_field_cache();
@@ -533,6 +560,7 @@ final class hotsitefields_test extends \advanced_testcase {
         global $CFG;
 
         $this->resetAfterTest();
+        $this->require_picture_type();
         $this->setAdminUser();
         course_handler::reset_caches();
         // Provisioned here, from the definitions as they stand: the site install made the field
@@ -618,5 +646,45 @@ final class hotsitefields_test extends \advanced_testcase {
         $this->assertSame([], $many[$unset]->brasoes);
         $this->assertArrayHasKey(hotsitefields::SHORTNAME_MODELO, $many[$unset]->names, 'Names come with defaults too.');
         $this->assertSame([], hotsitefields::values_many([]));
+    }
+
+    /**
+     * Without the picture type the five picture fields are skipped quietly, and enabling it provisions them.
+     *
+     * customfield_picture is optional. A disabled type stands in for an absent one here, because the
+     * suite runs where the plugin is installed: core hides a disabled type's fields, and the provisioner
+     * must neither try to create them (a debugging line and a lock on every call) nor miss them once the
+     * type is back. The control is the same call after the type is enabled again.
+     */
+    public function test_the_picture_fields_are_skipped_while_the_type_is_unavailable(): void {
+        $this->resetAfterTest();
+        $this->require_picture_type();
+        self::clear_hotsite_fields();
+
+        \core\plugininfo\customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 0);
+        $this->assertFalse(hotsitefields::picture_type_available(), 'Precondition: the type is unavailable.');
+        hotsitefields::ensure_fields();
+        $this->assertDebuggingNotCalled();
+        hotsitefields::reset_field_cache();
+
+        foreach (hotsitefields::PICTURE_SHORTNAMES as $shortname) {
+            $this->assertNull(hotsitefields::get_field($shortname), $shortname);
+        }
+        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO), 'Everything else is provisioned.');
+        $this->assertSame([], hotsitefields::missing_definitions(), 'Nothing the site can hold is missing.');
+
+        \core\plugininfo\customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 1);
+        $this->assertTrue(hotsitefields::picture_type_available());
+        hotsitefields::reset_field_cache();
+        $this->assertEqualsCanonicalizing(
+            hotsitefields::PICTURE_SHORTNAMES,
+            array_keys(hotsitefields::missing_definitions()),
+            'The control: with the type back, the five picture fields are what is missing.'
+        );
+        hotsitefields::ensure_fields();
+        hotsitefields::reset_field_cache();
+        foreach (hotsitefields::PICTURE_SHORTNAMES as $shortname) {
+            $this->assertSame(hotsitefields::BRASAO_TYPE, hotsitefields::get_field($shortname)?->get('type'), $shortname);
+        }
     }
 }

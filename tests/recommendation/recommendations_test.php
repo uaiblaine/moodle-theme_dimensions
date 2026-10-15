@@ -110,7 +110,10 @@ final class recommendations_test extends \advanced_testcase {
 
         $this->assertEquals(
             [
-                'dimensions_customfieldpicture' => recommendation::OK,
+                // Recommended, not required: a notice on a site without customfield_picture.
+                'dimensions_customfieldpicture' => hotsitefields::picture_type_available()
+                    ? recommendation::OK
+                    : recommendation::NOTICE,
                 'dimensions_hotsiteaddresses' => recommendation::NOTICE,
                 'dimensions_profileveto' => recommendation::OK,
                 'dimensions_unlistedcourses' => recommendation::OK,
@@ -187,23 +190,76 @@ final class recommendations_test extends \advanced_testcase {
     }
 
     /**
-     * The picture fields are fine when everything resolves, and a warning when the type is disabled.
+     * Skip a test that needs customfield_picture where the optional plugin is not installed and enabled.
      *
      * @return void
      */
-    public function test_the_picture_fields_warn_when_the_type_is_disabled(): void {
+    private function require_picture_type(): void {
+        if (!hotsitefields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
+    }
+
+    /**
+     * The picture type is recommended, not required: fine when it is there, a notice when it is not.
+     *
+     * A disabled type stands in for an absent one, which the suite cannot uninstall: both make
+     * hotsitefields::picture_type_available() answer false, and neither may read as a warning or offer
+     * a fix that would create the five picture fields.
+     *
+     * @return void
+     */
+    public function test_the_picture_type_is_a_notice_when_it_is_unavailable(): void {
         $this->provision();
+        $this->require_picture_type();
 
         $this->assertSame(recommendation::OK, (new customfieldpicture())->get_status());
 
         customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 0);
         $disabled = new customfieldpicture();
-        $this->assertSame(recommendation::WARNING, $disabled->get_status());
+        $this->assertSame(recommendation::NOTICE, $disabled->get_status(), 'Recommended, not required.');
+        $this->assertSame(
+            get_string('recommendation_customfieldpicture_summary_type', 'theme_dimensions'),
+            $disabled->get_summary(),
+            'No picture field is reported missing while its type is unavailable.'
+        );
         $this->assertFalse($disabled->supports_autofix(), 'Enabling a field type is the administrator\'s decision.');
         $this->assertStringContainsString('managecustomfields', $disabled->get_action_url()->out(false));
 
         customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 1);
         $this->assertSame(recommendation::OK, (new customfieldpicture())->get_status(), 'Control: enabled again.');
+    }
+
+    /**
+     * Without the picture type, a missing field of another type is still a warning, and the fix creates it alone.
+     *
+     * @return void
+     */
+    public function test_a_missing_field_warns_without_the_picture_type_and_the_fix_skips_the_pictures(): void {
+        $this->provision();
+        $this->require_picture_type();
+        customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 0);
+        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMA);
+        $this->assertNotNull($field, 'Precondition: the field exists.');
+        $field->delete();
+        course_handler::reset_caches();
+
+        $missing = new customfieldpicture();
+        $this->assertSame(recommendation::WARNING, $missing->get_status());
+        $this->assertSame(
+            get_string('recommendation_customfieldpicture_summary_missing', 'theme_dimensions', hotsitefields::SHORTNAME_PROGRAMA),
+            $missing->get_summary(),
+            'The one missing field is named, and none of the picture fields core hides.'
+        );
+        $this->assertTrue($missing->supports_autofix());
+
+        $missing->autofix();
+
+        $this->assertSame(recommendation::NOTICE, $missing->get_status(), 'Fixed, and the type is still a notice.');
+        hotsitefields::reset_field_cache();
+        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMA));
+        $this->assertDebuggingNotCalled('The fix tried to create no picture field over the hidden ones.');
+        customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 1);
     }
 
     /**
@@ -213,6 +269,7 @@ final class recommendations_test extends \advanced_testcase {
      */
     public function test_the_picture_fields_warn_when_a_field_is_missing_and_the_fix_creates_it(): void {
         $this->provision();
+        $this->require_picture_type();
         $field = hotsitefields::get_field(hotsitefields::SHORTNAME_BRASAO1);
         $this->assertNotNull($field, 'Precondition: the field exists.');
         $field->delete();
