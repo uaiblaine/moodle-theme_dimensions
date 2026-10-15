@@ -542,7 +542,10 @@ final class landingfields_test extends \advanced_testcase {
 
         $this->assertSame(landingfields::MODEL_EVENT, landingfields::model($course->id));
         $badges = landingfields::badges($course->id);
-        $this->assertSame(['crest_2.png', 'crest_4.png'], array_map(fn($f) => $f->get_filename(), $badges));
+        $this->assertSame(
+            [landingfields::SHORTNAME_CREST2 . '.png', landingfields::SHORTNAME_CREST4 . '.png'],
+            array_map(fn($f) => $f->get_filename(), $badges)
+        );
         $this->assertSame(
             array_map(fn($f) => $f->get_id(), landingfields::values($course->id)->crests),
             array_map(fn($f) => $f->get_id(), $badges)
