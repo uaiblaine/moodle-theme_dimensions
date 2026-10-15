@@ -127,7 +127,7 @@ final class profileaccess_test extends \advanced_testcase {
 
         // Control two, and the one that matters: end to end through core, which is also the only
         // assertion that fails if the callback in lib.php is renamed, moved or never registered.
-        $this->assertFalse(user_can_view_profile($subject));
+        $this->assertFalse(\core\user::can_view_profile($subject));
     }
 
     /**

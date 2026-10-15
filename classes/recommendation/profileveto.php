@@ -31,7 +31,7 @@ use theme_boost_union\recommendation\recommendation;
  * Warns when core's "Force users to log in for profiles" is off, which makes the theme's profile rule inert.
  *
  * The rule ({@see \theme_dimensions\local\profileaccess}) is a profile callback, and
- * user_can_view_profile() in core answers true for everybody before it consults any callback while
+ * \core\user::can_view_profile() answers true for everybody before it consults any callback while
  * the core setting is off. The setting is unset on a site that has not stored it, and core's default
  * is on, hence the ?? 1.
  *
