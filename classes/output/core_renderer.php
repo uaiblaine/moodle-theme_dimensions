@@ -435,9 +435,22 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * restored in a finally. Never set for the whole request: a second reader of the same
      * property lives in the course format's own content class.
      *
+     * Where core draws its linear navigation, this draws nothing: from 5.3 on a format which uses
+     * it (topics and weeks, switched on by default) gets previous and next, and the manual
+     * completion button, in the sticky footer core adds from before_footer_html_generation
+     * ({@see \core_courseformat\hook_listener::add_course_navigation_sticky_footer()}). The
+     * footer is printed by footer() into the focus page as into any other, so a second row of
+     * our own would put two navigations under the text. The question is core's own predicate,
+     * asked while the layout renders: a page that later prints a sticky footer of its own loses
+     * core's linear navigation and this one alike, exactly as the ordinary page does.
+     *
      * @return string
      */
     public function focusmode_activity_navigation(): string {
+        if (\core_courseformat\local\linearnavigationsettings::show_navigation_footer($this->page)) {
+            return '';
+        }
+
         $usescourseindex = $this->page->theme->usescourseindex;
         try {
             $this->page->theme->usescourseindex = false;

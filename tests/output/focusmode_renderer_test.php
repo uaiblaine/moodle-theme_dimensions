@@ -75,12 +75,12 @@ final class focusmode_renderer_test extends \advanced_testcase {
     private const PAGE_TITLE = 'Rendered by the focus mode test';
 
     /**
-     * Start every test with empty request caches and with Boost Union's own flip switched off.
+     * Start every test with empty request caches and completion enabled on the site.
      *
-     * Boost Union's 'activitynavigation' setting trades the course index for the activity
-     * navigation (it sets usescourseindex to false in Boost Union's layout/drawers.php). It ships
-     * off and is pinned off here, because switched on it would make
-     * test_prev_next_is_rendered_on_a_topics_course pass without this theme's flip.
+     * Nothing outside this theme flips usescourseindex any more: Boost Union's 5.2
+     * 'activitynavigation' setting, which did, is gone from its 5.3 branch. What decides whether a
+     * topics course shows previous and next on 5.3 is core's linear navigation, on by default; the
+     * tests that are about this theme's own row switch it off for topics and say so.
      *
      * @return void
      */
@@ -92,8 +92,19 @@ final class focusmode_renderer_test extends \advanced_testcase {
         require_once($CFG->libdir . '/completionlib.php');
         $this->resetAfterTest();
         focusmode::reset_caches();
-        set_config('activitynavigation', 'no', 'theme_boost_union');
         set_config('enablecompletion', 1);
+    }
+
+    /**
+     * Switch core's linear navigation off for the topics format, the courses these tests create.
+     *
+     * With it off 5.3 behaves as 5.2 did: the manual completion button is a header action, and core
+     * prints no previous and next anywhere on a format with a course index.
+     *
+     * @return void
+     */
+    private function without_linear_navigation(): void {
+        set_config(\core_courseformat\local\linearnavigationsettings::SETTING_ENABLE_LINEAR_NAV, 0, 'format_topics');
     }
 
     /**
@@ -476,7 +487,55 @@ final class focusmode_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * The manual completion button is in the bar, and it is the real one.
+     * Under core's linear navigation the bar carries the completion status and core's footer the button.
+     *
+     * Moodle 5.3 moves the manual completion button out of the page header whenever it adds its
+     * linear navigation footer (topics and weeks, on by default): the header gets the read-only
+     * status core_course/completion_status, which core updates in place when the footer's button is
+     * pressed, and the button is in the sticky footer core prints from before_footer_html_generation
+     * (lib/classes/output/activity_header.php, core_courseformat\hook_listener). The bar reads the
+     * header actions as before, so it carries that status; the footer reaches the focus page through
+     * footer() like any other, so the button is still on the page, once, under the text.
+     *
+     * The control is the same activity without completion tracking: no button anywhere and no
+     * status in the bar.
+     *
+     * @return void
+     */
+    public function test_the_bar_carries_the_status_and_cores_footer_the_button(): void {
+        $course = $this->course(true);
+        $cm = $this->activity($course, [
+            'name' => 'Tracked task',
+            'completion' => COMPLETION_TRACKING_MANUAL,
+        ]);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+        $this->assertTrue(
+            \core_courseformat\local\linearnavigationsettings::is_linear_navigation_enabled($course),
+            'Precondition: core\'s linear navigation is on for this course.'
+        );
+
+        [$header, $footer] = $this->render_halves($course, $cm);
+        $bar = $this->focus_bar($header);
+        $this->assertMatchesRegularExpression(
+            '~<span class="activity-completion-status" data-region="completion-status" data-cmid="' . $cm->id . '"~',
+            $bar
+        );
+        $this->assertStringNotContainsString('data-action="toggle-manual-completion"', $bar);
+        $this->assertStringContainsString('course-linear-navigation-footer-content', $footer);
+        $this->assertSame(1, substr_count($header . $footer, 'data-action="toggle-manual-completion"'));
+
+        // The control: the same activity without completion tracking has neither.
+        $plain = $this->activity($course, [
+            'name' => 'Untracked task',
+            'completion' => COMPLETION_TRACKING_NONE,
+        ]);
+        $html = $this->render($course, $plain);
+        $this->assertStringNotContainsString('data-action="toggle-manual-completion"', $html);
+        $this->assertStringNotContainsString('data-region="completion-status"', $this->focus_bar($html));
+    }
+
+    /**
+     * Without linear navigation the manual completion button is in the bar, and it is the real one.
      *
      * The button is not built by this theme: it arrives as one of the page's header actions,
      * which core fills while the activity header exports itself. So this pins the whole route -
@@ -485,6 +544,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_manual_completion_button_is_in_the_bar(): void {
+        $this->without_linear_navigation();
         $course = $this->course(true);
         $cm = $this->activity($course, [
             'name' => 'Tracked task',
@@ -492,8 +552,9 @@ final class focusmode_renderer_test extends \advanced_testcase {
         ]);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
-        $bar = $this->focus_bar($this->render($course, $cm));
-        $this->assertStringContainsString('data-action="toggle-manual-completion"', $bar);
+        $html = $this->render($course, $cm);
+        $this->assertStringContainsString('data-action="toggle-manual-completion"', $this->focus_bar($html));
+        $this->assertStringNotContainsString('course-linear-navigation', $html, 'Precondition: core printed no footer.');
 
         // The control: the same activity without completion tracking has no button anywhere.
         $plain = $this->activity($course, [
@@ -564,12 +625,13 @@ final class focusmode_renderer_test extends \advanced_testcase {
      * Core returns an empty string for activity_navigation() whenever the theme and the format
      * both use a course index, which on a topics course is exactly this page. The controls exist
      * here only because the renderer flips that flag around core's own call, so their presence
-     * is the flip. Boost Union's own setting which flips the same flag site-wide is switched off
-     * in setUp(), or this would pass without any of our code running.
+     * is the flip. Core's linear navigation is switched off for topics, as a site may: with it on,
+     * core's own footer is the route forward and this row is not drawn (the test below).
      *
      * @return void
      */
     public function test_prev_next_is_rendered_on_a_topics_course(): void {
+        $this->without_linear_navigation();
         $course = $this->course(true);
         $first = $this->activity($course, ['name' => 'First task']);
         $this->activity($course, ['name' => 'Second task']);
@@ -580,6 +642,33 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $this->assertStringContainsString('dimensions-focus-activitynav', $footer);
         $this->assertStringContainsString('activity-navigation', $footer);
         $this->assertStringContainsString('Second task', $footer);
+    }
+
+    /**
+     * Where core draws its linear navigation, the page carries that one row forward and not this theme's too.
+     *
+     * Core 5.3 prints previous and next in the sticky footer it adds to an activity page of topics
+     * and weeks; the focus page prints that footer as every page does, so the theme's own row would
+     * be a second navigation under the text. The control is the same page with linear navigation
+     * off, where the theme's row is the only one.
+     *
+     * @return void
+     */
+    public function test_cores_linear_navigation_stands_alone_under_the_text(): void {
+        $course = $this->course(true);
+        $first = $this->activity($course, ['name' => 'First task']);
+        $this->activity($course, ['name' => 'Second task']);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+
+        [, $footer] = $this->render_halves($course, $first);
+        $this->assertSame(1, substr_count($footer, 'course-linear-navigation-footer-content'), 'Core\'s row, once.');
+        $this->assertMatchesRegularExpression('~<div class="dimensions-focus-activitynav">\s*</div>~', $footer);
+        $this->assertStringNotContainsString('class="mt-5 mb-1 activity-navigation', $footer);
+
+        $this->without_linear_navigation();
+        [, $footer] = $this->render_halves($course, $first);
+        $this->assertStringNotContainsString('course-linear-navigation', $footer, 'Control: core printed no row.');
+        $this->assertStringContainsString('class="mt-5 mb-1 activity-navigation', $footer, 'Control: the theme\'s row is drawn.');
     }
 
     /**
