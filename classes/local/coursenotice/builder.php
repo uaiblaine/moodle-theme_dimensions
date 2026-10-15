@@ -587,7 +587,7 @@ final class builder {
      * @return void
      */
     private static function add_switched_role_hint(notice $notice, \moodle_page $page, \stdClass $course): void {
-        global $CFG, $USER;
+        global $USER;
 
         // Strict, as Boost Union compares this one setting.
         if (get_config(self::BU, 'showswitchedroleincourse') !== THEME_BOOST_UNION_SETTING_SELECT_YES) {
@@ -596,9 +596,7 @@ final class builder {
         if (!is_role_switched($course->id)) {
             return;
         }
-        require_once($CFG->dirroot . '/user/lib.php');
-
-        $info = user_get_user_navigation_info($USER, $page);
+        $info = \core\user::get_user_navigation_info($USER, $page);
         $role = $info->metadata['rolename'] ?? '';
         $url = new \core\url('/course/switchrole.php', [
             'id' => $course->id,

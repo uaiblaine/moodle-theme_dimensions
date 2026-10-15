@@ -688,6 +688,12 @@ final class builder_test extends \advanced_testcase {
         $notice = $this->build($this->page($course, '/mod/page/view.php', $cm));
         $this->assertArrayHasKey(builder::KEY_SWITCHEDROLE, $notice->chips);
         $this->assertArrayHasKey(builder::KEY_SWITCHEDROLE, $notice->notes, 'An activity page carries it too.');
+        // The role is named as core's user navigation names it (\core\user::get_user_navigation_info()).
+        $rolename = role_get_name($DB->get_record('role', ['id' => $studentrole]), \core\context\course::instance($course->id));
+        $this->assertSame(
+            [get_string('switchedroleto', builder::BU, ['role' => $rolename])],
+            $notice->notes[builder::KEY_SWITCHEDROLE]['lines']
+        );
         $action = $notice->actions[builder::KEY_SWITCHEDROLE];
         $this->assertSame(get_string('switchrolereturn'), $action['label']);
         $this->assertStringContainsString('/course/switchrole.php?id=' . $course->id, $action['url']);
