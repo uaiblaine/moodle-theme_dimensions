@@ -50,6 +50,7 @@ final class brand_neutrality_test extends \basic_testcase {
         $needles = [
             'fund' . 'aseg',
             'f' . 'sg-',
+            'f' . 'sn-',
             '--f' . 's-',
             'cbm' . 'pr',
             'pm' . 'pr',
