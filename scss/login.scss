@@ -24,7 +24,7 @@ body.theme_dimensions-login {
        clip-path on an ancestor of a sticky element clips it as it travels. */
     .login-layout-left {
         padding: 2.75rem 2.5rem;
-        color: var(--text-inverse);
+        color: var(--dim-ds-text-inverse);
         clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px));
     }
 
@@ -53,7 +53,7 @@ body.theme_dimensions-login {
         height: 100%;
         flex-direction: column;
         justify-content: space-between;
-        gap: var(--space-xl);
+        gap: var(--dim-ds-space-xl);
     }
 
     /* 2.75rem is 44px: the brand manual's minimum digital height for the logotype is 40px. */
@@ -67,7 +67,7 @@ body.theme_dimensions-login {
 
     .dimensions-login-wordmark {
         margin: 0;
-        color: var(--text-inverse);
+        color: var(--dim-ds-text-inverse);
         font-size: 1.125rem;
         font-weight: 800;
         letter-spacing: .02em;
@@ -80,7 +80,7 @@ body.theme_dimensions-login {
         margin: 0 0 .5rem;
         align-items: center;
         gap: .625rem;
-        color: var(--accent-progress);
+        color: var(--dim-ds-accent-progress);
         font-size: .6875rem;
         font-weight: 600;
         letter-spacing: .12em;
@@ -89,14 +89,14 @@ body.theme_dimensions-login {
         &::before {
             width: 18px;
             height: 3px;
-            background: var(--accent-progress);
+            background: var(--dim-ds-accent-progress);
             content: "";
         }
     }
 
     .dimensions-login-panel-title {
         margin: 0 0 .75rem;
-        color: var(--text-inverse);
+        color: var(--dim-ds-text-inverse);
         font-size: 1.75rem;
         font-weight: 800;
         letter-spacing: -.02em;
@@ -107,14 +107,14 @@ body.theme_dimensions-login {
     .dimensions-login-panel-text {
         max-width: 32ch;
         margin: 0;
-        color: var(--text-inverse-muted);
+        color: var(--dim-ds-text-inverse-muted);
     }
 
     /* The notice may carry a paragraph and a link from format_text(); both keep the notice's own
        colour, and the link stays recognisable by its underline. */
     .dimensions-login-panel-foot {
         margin: 0;
-        color: var(--text-inverse-muted);
+        color: var(--dim-ds-text-inverse-muted);
         font-size: .75rem;
 
         p {
@@ -141,11 +141,11 @@ body.theme_dimensions-login {
             padding: 1.5rem 1.25rem 1.75rem;
             gap: .75rem;
             background-image: linear-gradient(150deg, var(--dim-ds-blue-800), var(--dim-ds-blue-600) 60%, var(--dim-ds-blue-500));
-            color: var(--text-inverse);
+            color: var(--dim-ds-text-inverse);
             clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px));
 
             .dimensions-login-heading {
-                color: var(--text-inverse);
+                color: var(--dim-ds-text-inverse);
             }
 
             .dimensions-login-logo {
@@ -167,7 +167,7 @@ body.theme_dimensions-login {
 
     .dimensions-login-heading {
         margin: 0;
-        color: var(--text-heading);
+        color: var(--dim-ds-text-heading);
         font-size: 1.5rem;
         font-weight: 700;
         letter-spacing: -.01em;
@@ -175,7 +175,7 @@ body.theme_dimensions-login {
 
     .dimensions-login-intro {
         margin: -.75rem 0 0;
-        color: var(--text-muted);
+        color: var(--dim-ds-text-muted);
         font-size: .875rem;
     }
 
@@ -185,14 +185,14 @@ body.theme_dimensions-login {
         display: flex;
         flex-direction: column;
         gap: .625rem;
-        padding: var(--space-md) 1.125rem;
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-lg);
+        padding: var(--dim-ds-space-md) 1.125rem;
+        border: 1px solid var(--dim-ds-border-default);
+        border-radius: var(--dim-ds-radius-lg);
     }
 
     .dimensions-login-route-lead {
         border-color: var(--dim-ds-blue-200);
-        background: var(--interactive-primary-tint);
+        background: var(--dim-ds-interactive-primary-tint);
     }
 
     .dimensions-login-route-head {
@@ -205,7 +205,7 @@ body.theme_dimensions-login {
 
     .dimensions-login-route-who {
         margin: 0;
-        color: var(--text-muted);
+        color: var(--dim-ds-text-muted);
         font-size: .8125rem;
         font-weight: 600;
     }
@@ -222,8 +222,8 @@ body.theme_dimensions-login {
         padding: 3px 10px;
         align-items: center;
         gap: .375rem;
-        border-radius: var(--radius-pill);
-        background: var(--accent-progress);
+        border-radius: var(--dim-ds-radius-pill);
+        background: var(--dim-ds-accent-progress);
         color: var(--dim-ds-green-800);
         font-size: .75rem;
         font-weight: 600;
@@ -232,7 +232,7 @@ body.theme_dimensions-login {
 
     .dimensions-login-note {
         margin: 0;
-        color: var(--text-muted);
+        color: var(--dim-ds-text-muted);
         font-size: .8125rem;
     }
 
@@ -241,14 +241,14 @@ body.theme_dimensions-login {
        mark and not as a painted logo. Bootstrap 5.3 reads the button's palette from these custom
        properties, which is what lets the hover and active states be set without fighting .btn. */
     .dimensions-login-provider {
-        --bs-btn-bg: var(--surface-card);
-        --bs-btn-color: var(--text-body);
-        --bs-btn-border-color: var(--border-strong);
-        --bs-btn-hover-bg: var(--surface-subtle);
-        --bs-btn-hover-color: var(--text-body);
+        --bs-btn-bg: var(--dim-ds-surface-card);
+        --bs-btn-color: var(--dim-ds-text-body);
+        --bs-btn-border-color: var(--dim-ds-border-strong);
+        --bs-btn-hover-bg: var(--dim-ds-surface-subtle);
+        --bs-btn-hover-color: var(--dim-ds-text-body);
         --bs-btn-hover-border-color: var(--dim-ds-gray-500);
-        --bs-btn-active-bg: var(--surface-strong);
-        --bs-btn-active-color: var(--text-body);
+        --bs-btn-active-bg: var(--dim-ds-surface-strong);
+        --bs-btn-active-color: var(--dim-ds-text-body);
         --bs-btn-active-border-color: var(--dim-ds-gray-500);
 
         display: flex;
@@ -269,22 +269,22 @@ body.theme_dimensions-login {
     /* The kit's inputs are white with the strong border; core paints the login inputs grey.
        Two classes deep on both sides because that is how deep core's own rule is. */
     .login-container .login-form .form-control {
-        border-color: var(--border-strong);
-        background-color: var(--surface-card);
+        border-color: var(--dim-ds-border-strong);
+        background-color: var(--dim-ds-surface-card);
 
         &:hover {
-            background-color: var(--surface-card);
+            background-color: var(--dim-ds-surface-card);
         }
 
         &:focus {
-            background-color: var(--surface-card);
+            background-color: var(--dim-ds-surface-card);
         }
     }
 
     .login-container .login-form .toggle-sensitive-wrapper .toggle-sensitive-btn {
-        --bs-btn-bg: var(--surface-card);
-        --bs-btn-hover-bg: var(--surface-card);
-        --bs-btn-active-bg: var(--surface-card);
+        --bs-btn-bg: var(--dim-ds-surface-card);
+        --bs-btn-hover-bg: var(--dim-ds-surface-card);
+        --bs-btn-active-bg: var(--dim-ds-surface-card);
     }
 
     /* The mask reads as a number, so the digits line up under each other as one is typed -
@@ -303,7 +303,7 @@ body.theme_dimensions-login {
         font-size: .8125rem;
 
         a {
-            color: var(--text-link);
+            color: var(--dim-ds-text-link);
         }
     }
 

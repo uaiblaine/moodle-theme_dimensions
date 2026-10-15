@@ -798,7 +798,7 @@ final class category_scss_test extends \basic_testcase {
      * .linkbtn, .tb__panel, .fgroup legend), each design token mapped onto the one this file
      * already reads: --btn is --dim-cta, --btn-ink white, --control-line --dim-control-line,
      * --surface --dim-surface, --text --dim-ink, --tint --dim-tint, --tint-ink and --link
-     * --dim-primary-ink, --radius-pill and --radius-sm the theme's own. The design has no kebab,
+     * --dim-primary-ink, --dim-ds-radius-pill and --dim-ds-radius-sm the theme's own. The design has no kebab,
      * no calendar and no quick options; they take the same language, the quick options as chips.
      *
      * The chosen chip, the quick option in force and the calendar's two ends use the call to
@@ -920,7 +920,7 @@ final class category_scss_test extends \basic_testcase {
 
         $panel = $this->rule_body($scss, '.dim-toolbar__panel');
         $this->assertMatchesRegularExpression('~padding:\s*14px 16px;~', $panel);
-        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--radius-md, 8px\);~', $panel);
+        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-ds-radius-md, 8px\);~', $panel);
         $legend = $this->rule_body($scss, '.dim-toolbar__grouplabel');
         $this->assertMatchesRegularExpression('~margin:\s*0 0 6px;~', $legend);
         $this->assertMatchesRegularExpression('~font-size:\s*\.72rem;~', $legend);
@@ -1224,7 +1224,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertIsInt($at, 'The pan has no media query of its own any more.');
         $block = $this->block_at($scss, $at + strlen($query));
         $this->assertMatchesRegularExpression(
-            '~animation:\s*dim-poster-pan-in 600ms var\(--motion-ease\) 180ms forwards,\s*'
+            '~animation:\s*dim-poster-pan-in 600ms var\(--dim-ds-motion-ease\) 180ms forwards,\s*'
                 . 'dim-poster-pan 12s linear 780ms infinite alternate;~',
             $block,
             'The lead-in waits 180ms, lasts 600ms, and the pan runs 12s each way from 780ms.'
@@ -1496,7 +1496,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~padding:\s*28px 20px;~', $empty);
         $suggestion = $this->rule_body($scss, '.dim-panel__suggestion');
         $this->assertMatchesRegularExpression('~min-height:\s*34px;~', $suggestion);
-        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--radius-pill, 50rem\);~', $suggestion);
+        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-ds-radius-pill, 50rem\);~', $suggestion);
 
         $mark = $this->rule_body($scss, 'mark.dim-mark');
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-mark-bg\);~', $mark);
@@ -1520,7 +1520,7 @@ final class category_scss_test extends \basic_testcase {
     public function test_the_open_area_wears_its_own_colour_on_the_ring_and_the_panel(): void {
         $scss = $this->stylesheet('category.scss');
         $this->assertMatchesRegularExpression(
-            '~box-shadow:\s*0 0 0 3px var\(--dim-card-band\), 0 0 0 4px var\(--dim-area-edge\), var\(--shadow-lg\);~',
+            '~box-shadow:\s*0 0 0 3px var\(--dim-card-band\), 0 0 0 4px var\(--dim-area-edge\), var\(--dim-ds-shadow-lg\);~',
             $this->rule_body($scss, '.dim-poster--open .dim-poster__card'),
             'The open poster\'s ring is its own band with the edge outside it.'
         );
@@ -1599,9 +1599,12 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~opacity:\s*0;~', $vignette, 'Transparent at rest.');
         $this->assertMatchesRegularExpression('~pointer-events:\s*none;~', $vignette, 'The poster under it still opens.');
         $this->assertMatchesRegularExpression('~z-index:\s*2;~', $vignette, 'Over the text and the stretched control.');
-        $this->assertMatchesRegularExpression('~transition:\s*opacity var\(--motion-base\) var\(--motion-ease\);~', $vignette);
         $this->assertMatchesRegularExpression(
-            '~filter var\(--motion-base\) var\(--motion-ease\)~',
+            '~transition:\s*opacity var\(--dim-ds-motion-base\) var\(--dim-ds-motion-ease\);~',
+            $vignette
+        );
+        $this->assertMatchesRegularExpression(
+            '~filter var\(--dim-ds-motion-base\) var\(--dim-ds-motion-ease\)~',
             $this->rule_body($scss, '.dim-poster__card'),
             'The grey eases in and out with the card.'
         );

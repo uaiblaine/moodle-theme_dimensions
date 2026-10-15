@@ -1,12 +1,12 @@
 // Theme Dimensions - SCSS.
 //
-// Added on top of Boost Union's compiled SCSS. Token names are the theme's design system's,
-// including the unprefixed semantic aliases (--surface-page, --text-body); keep them as they are,
-// because a rename breaks every stylesheet and the markup tests that name them.
+// Added on top of Boost Union's compiled SCSS. Token names are the theme's design system's, all
+// under --dim-ds- (the semantic aliases too: --dim-ds-surface-page, --dim-ds-text-body): this
+// :root is shared with every plugin on the page, so an unprefixed name would be anyone's.
 
 /* ---- Tokens ------------------------------------------------------------- */
 :root {
-    /* Primitives - brand blues (brand manual: #070093 institutional, #4456FF highlight). */
+    /* Primitives - the design system's blues (#070093 its navy, #4456FF its highlight). */
     --dim-ds-blue-050: #edeefb;
     --dim-ds-blue-100: #d6d8f7;
     --dim-ds-blue-200: #adb2f0;
@@ -44,62 +44,62 @@
     --dim-ds-red-800: #51140d;
 
     /* Semantic aliases - components consume only these. */
-    --surface-page: var(--dim-ds-gray-050);
-    --surface-card: var(--dim-ds-white);
-    --surface-subtle: var(--dim-ds-gray-100);
-    --surface-strong: var(--dim-ds-gray-200);
-    --surface-inverse: var(--dim-ds-blue-600);
-    --surface-inverse-deep: var(--dim-ds-blue-800);
-    --text-body: var(--dim-ds-gray-900);
-    --text-muted: var(--dim-ds-gray-700);
-    --text-subtle: var(--dim-ds-gray-500);
-    --text-inverse: var(--dim-ds-white);
-    --text-inverse-muted: var(--dim-ds-blue-100);
-    --text-heading: var(--dim-ds-blue-600);
-    --text-link: var(--dim-ds-blue-600);
-    --text-link-hover: var(--dim-ds-blue-700);
-    --border-default: var(--dim-ds-gray-300);
-    --border-subtle: var(--dim-ds-gray-200);
-    --border-strong: var(--dim-ds-gray-400);
-    --border-inverse: rgba(255, 255, 255, .24);
-    --interactive-primary: var(--dim-ds-blue-600);
-    --interactive-primary-tint: var(--dim-ds-blue-050);
-    --accent-highlight: var(--dim-ds-blue-400);
-    --accent-progress: var(--dim-ds-green-400);
-    --focus-ring: var(--dim-ds-blue-400);
-    --focus-ring-width: 3px;
-    --radius-xs: 4px;
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    --radius-pill: 50rem;
-    --shadow-sm: 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06);
-    --shadow-md: 0 4px 12px rgba(7, 0, 147, .10);
-    --shadow-lg: 0 12px 32px rgba(7, 0, 147, .14);
-    --motion-fast: 150ms;
-    --motion-base: 250ms;
-    --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --dim-ds-surface-page: var(--dim-ds-gray-050);
+    --dim-ds-surface-card: var(--dim-ds-white);
+    --dim-ds-surface-subtle: var(--dim-ds-gray-100);
+    --dim-ds-surface-strong: var(--dim-ds-gray-200);
+    --dim-ds-surface-inverse: var(--dim-ds-blue-600);
+    --dim-ds-surface-inverse-deep: var(--dim-ds-blue-800);
+    --dim-ds-text-body: var(--dim-ds-gray-900);
+    --dim-ds-text-muted: var(--dim-ds-gray-700);
+    --dim-ds-text-subtle: var(--dim-ds-gray-500);
+    --dim-ds-text-inverse: var(--dim-ds-white);
+    --dim-ds-text-inverse-muted: var(--dim-ds-blue-100);
+    --dim-ds-text-heading: var(--dim-ds-blue-600);
+    --dim-ds-text-link: var(--dim-ds-blue-600);
+    --dim-ds-text-link-hover: var(--dim-ds-blue-700);
+    --dim-ds-border-default: var(--dim-ds-gray-300);
+    --dim-ds-border-subtle: var(--dim-ds-gray-200);
+    --dim-ds-border-strong: var(--dim-ds-gray-400);
+    --dim-ds-border-inverse: rgba(255, 255, 255, .24);
+    --dim-ds-interactive-primary: var(--dim-ds-blue-600);
+    --dim-ds-interactive-primary-tint: var(--dim-ds-blue-050);
+    --dim-ds-accent-highlight: var(--dim-ds-blue-400);
+    --dim-ds-accent-progress: var(--dim-ds-green-400);
+    --dim-ds-focus-ring: var(--dim-ds-blue-400);
+    --dim-ds-focus-ring-width: 3px;
+    --dim-ds-radius-xs: 4px;
+    --dim-ds-radius-sm: 6px;
+    --dim-ds-radius-md: 8px;
+    --dim-ds-radius-lg: 12px;
+    --dim-ds-radius-xl: 16px;
+    --dim-ds-radius-pill: 50rem;
+    --dim-ds-shadow-sm: 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06);
+    --dim-ds-shadow-md: 0 4px 12px rgba(7, 0, 147, .10);
+    --dim-ds-shadow-lg: 0 12px 32px rgba(7, 0, 147, .14);
+    --dim-ds-motion-fast: 150ms;
+    --dim-ds-motion-base: 250ms;
+    --dim-ds-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Spacing scale and the reading measure, named as in the design system. */
-    --space-3xs: 2px;
-    --space-xxs: 4px;
-    --space-xs: 8px;
-    --space-sm: 12px;
-    --space-md: 16px;
-    --space-lg: 20px;
-    --space-xl: 32px;
-    --layout-max: 1200px;
-    --layout-narrow: 720px;
+    --dim-ds-space-3xs: 2px;
+    --dim-ds-space-xxs: 4px;
+    --dim-ds-space-xs: 8px;
+    --dim-ds-space-sm: 12px;
+    --dim-ds-space-md: 16px;
+    --dim-ds-space-lg: 20px;
+    --dim-ds-space-xl: 32px;
+    --dim-ds-layout-max: 1200px;
+    --dim-ds-layout-narrow: 720px;
 
     /* Noto Sans for long-form learning content, the one documented exception to Outfit. The
        fallbacks keep the text readable wherever Outfit or Noto Sans is not installed. */
-    --font-reading: 'Noto Sans', 'Outfit', system-ui, -apple-system, sans-serif;
-    --leading-relaxed: 1.65;
+    --dim-ds-font-reading: 'Noto Sans', 'Outfit', system-ui, -apple-system, sans-serif;
+    --dim-ds-leading-relaxed: 1.65;
 
     /* The 3px rule under the navbar. A Boost Union flavour overrides it in look_rawscss so each
        organisation signs its own area; the default is the highlight blue. */
-    --dimensions-navbar-band: var(--accent-highlight);
+    --dimensions-navbar-band: var(--dim-ds-accent-highlight);
 }
 
 /* ---- Focus: WCAG 2.2 AA, the same ring on white and on navy -------------- */
@@ -109,7 +109,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-    outline: var(--focus-ring-width) solid var(--focus-ring);
+    outline: var(--dim-ds-focus-ring-width) solid var(--dim-ds-focus-ring);
     outline-offset: 2px;
 }
 
@@ -155,15 +155,15 @@ textarea:focus-visible,
 /* Boost Union pins the user menu to data-bs-theme="light"; these custom properties sit on the
    menu itself, which is where Bootstrap 5.3 reads them from, so they win without !important. */
 .navbar .dropdown-menu {
-    --bs-dropdown-bg: var(--surface-inverse-deep);
-    --bs-dropdown-color: var(--text-inverse);
-    --bs-dropdown-link-color: var(--text-inverse);
+    --bs-dropdown-bg: var(--dim-ds-surface-inverse-deep);
+    --bs-dropdown-color: var(--dim-ds-text-inverse);
+    --bs-dropdown-link-color: var(--dim-ds-text-inverse);
     --bs-dropdown-link-hover-bg: rgba(255, 255, 255, .12);
-    --bs-dropdown-link-hover-color: var(--text-inverse);
-    --bs-dropdown-link-active-bg: var(--accent-highlight);
-    --bs-dropdown-link-active-color: var(--text-inverse);
-    --bs-dropdown-border-color: var(--border-inverse);
-    --bs-dropdown-divider-bg: var(--border-inverse);
+    --bs-dropdown-link-hover-color: var(--dim-ds-text-inverse);
+    --bs-dropdown-link-active-bg: var(--dim-ds-accent-highlight);
+    --bs-dropdown-link-active-color: var(--dim-ds-text-inverse);
+    --bs-dropdown-border-color: var(--dim-ds-border-inverse);
+    --bs-dropdown-divider-bg: var(--dim-ds-border-inverse);
     --bs-dropdown-header-color: var(--dim-ds-blue-100);
     --bs-dropdown-link-disabled-color: var(--dim-ds-blue-200);
 }
@@ -199,11 +199,11 @@ textarea:focus-visible,
    decided in focusmode.scss, at the breakpoint where the label goes. */
 @mixin dimensions-navbar-pill {
     display: inline-flex;
-    gap: var(--space-xs);
+    gap: var(--dim-ds-space-xs);
     align-items: center;
     padding: .25rem .75rem;
-    border: 1px solid var(--dimensions-pill-border, var(--border-default));
-    border-radius: var(--radius-pill);
+    border: 1px solid var(--dimensions-pill-border, var(--dim-ds-border-default));
+    border-radius: var(--dim-ds-radius-pill);
     color: var(--bs-navbar-brand-color, var(--bs-body-color));
     font-size: .875rem;
     font-weight: 500;
@@ -213,7 +213,7 @@ textarea:focus-visible,
 
     &:hover,
     &:focus {
-        background-color: var(--dimensions-pill-hover, var(--surface-subtle));
+        background-color: var(--dimensions-pill-hover, var(--dim-ds-surface-subtle));
         color: var(--bs-navbar-brand-color, var(--bs-body-color));
     }
 }
@@ -234,7 +234,7 @@ textarea:focus-visible,
    from the same layout context key. A light navbar has no attribute, leaves them unset, and the
    mixin's own fallbacks apply - which is the whole light-bar case, in two lines. */
 .navbar[data-bs-theme="dark"] {
-    --dimensions-pill-border: var(--border-inverse);
+    --dimensions-pill-border: var(--dim-ds-border-inverse);
     --dimensions-pill-hover: rgba(255, 255, 255, .12);
 }
 
@@ -253,13 +253,13 @@ textarea:focus-visible,
 .calendarwrapper {
     .calendar-controls {
         padding: 6px 6px 6px 1.25rem;
-        border-radius: var(--radius-pill);
-        background: var(--surface-subtle);
+        border-radius: var(--dim-ds-radius-pill);
+        background: var(--dim-ds-surface-subtle);
     }
 
     .calendarmonth {
         th.header {
-            color: var(--text-muted);
+            color: var(--dim-ds-text-muted);
             font-size: .6875rem;
             font-weight: 600;
             letter-spacing: .12em;
@@ -267,7 +267,7 @@ textarea:focus-visible,
         }
 
         td.weekend {
-            background: var(--surface-page);
+            background: var(--dim-ds-surface-page);
         }
 
         td.day .day-number-circle {
@@ -276,12 +276,12 @@ textarea:focus-visible,
             height: 30px;
             align-items: center;
             justify-content: center;
-            border-radius: var(--radius-sm);
+            border-radius: var(--dim-ds-radius-sm);
         }
 
         td.day.today .day-number-circle {
-            background: var(--interactive-primary);
-            color: var(--text-inverse);
+            background: var(--dim-ds-interactive-primary);
+            color: var(--dim-ds-text-inverse);
         }
     }
 
@@ -325,13 +325,13 @@ textarea:focus-visible,
 .theme_dimensions-unavailable {
     .dimensions-unavailable-card {
         max-width: 34rem;
-        background-color: var(--surface-card);
-        border-color: var(--border-default);
-        color: var(--text-body);
+        background-color: var(--dim-ds-surface-card);
+        border-color: var(--dim-ds-border-default);
+        color: var(--dim-ds-text-body);
     }
 
     .dimensions-unavailable-card h1 {
-        color: var(--text-heading);
+        color: var(--dim-ds-text-heading);
     }
 }
 
@@ -354,15 +354,15 @@ textarea:focus-visible,
    the window's. */
 .userprofile {
     .page-context-header {
-        margin-bottom: var(--space-xl);
+        margin-bottom: var(--dim-ds-space-xl);
 
         .page-header-image img {
-            border-radius: var(--radius-pill);
-            box-shadow: var(--shadow-sm);
+            border-radius: var(--dim-ds-radius-pill);
+            box-shadow: var(--dim-ds-shadow-sm);
         }
 
         .page-header-headings h1 {
-            color: var(--text-heading);
+            color: var(--dim-ds-text-heading);
             font-weight: 700;
             letter-spacing: -.02em;
         }
@@ -371,10 +371,10 @@ textarea:focus-visible,
     /* Long-form text the person wrote about themselves: the reading face and the reading
        measure, both from the design system, rather than the interface face at full width. */
     .description {
-        max-width: var(--layout-narrow);
-        margin-bottom: var(--space-xl);
-        color: var(--text-muted);
-        font-family: var(--font-reading);
+        max-width: var(--dim-ds-layout-narrow);
+        margin-bottom: var(--dim-ds-space-xl);
+        color: var(--dim-ds-text-muted);
+        font-family: var(--dim-ds-font-reading);
         line-height: 1.65;
     }
 
@@ -382,7 +382,7 @@ textarea:focus-visible,
         display: flex;
         column-count: auto;
         flex-wrap: wrap;
-        gap: var(--space-md);
+        gap: var(--dim-ds-space-md);
     }
 }
 
@@ -391,23 +391,23 @@ textarea:focus-visible,
     min-width: 19rem;
     flex: 1 1 45%;
     flex-direction: column;
-    padding: var(--space-lg);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-    background: var(--surface-card);
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow var(--motion-fast) var(--motion-ease);
+    padding: var(--dim-ds-space-lg);
+    border: 1px solid var(--dim-ds-border-default);
+    border-radius: var(--dim-ds-radius-lg);
+    background: var(--dim-ds-surface-card);
+    box-shadow: var(--dim-ds-shadow-sm);
+    transition: box-shadow var(--dim-ds-motion-fast) var(--dim-ds-motion-ease);
 
     &:hover {
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--dim-ds-shadow-md);
     }
 }
 
 /* The card heading: the navy for the type and the highlight blue as a rule rather than as a
    fill, because the design system never uses #4456FF as a surface. */
 .dimensions-profile-card-title {
-    margin: 0 0 var(--space-md);
-    color: var(--text-heading);
+    margin: 0 0 var(--dim-ds-space-md);
+    color: var(--dim-ds-text-heading);
     font-size: .9375rem;
     font-weight: 600;
     letter-spacing: .01em;
@@ -419,8 +419,8 @@ textarea:focus-visible,
         display: block;
         width: 2.25rem;
         height: 3px;
-        margin-top: var(--space-xs);
-        background: var(--accent-highlight);
+        margin-top: var(--dim-ds-space-xs);
+        background: var(--dim-ds-accent-highlight);
         content: "";
     }
 }
@@ -429,19 +429,19 @@ textarea:focus-visible,
     margin: 0;
 
     .dimensions-profile-fact + .dimensions-profile-fact {
-        margin-top: var(--space-md);
+        margin-top: var(--dim-ds-space-md);
     }
 }
 
 /* Label above value, not beside it. A course name, an email address and a list of roles have
    nothing like a common width, and a two-column definition list either truncates them or leaves
    a ragged gutter. Uppercased small type separates the label without needing a second colour. */
-/* --text-muted, not --text-subtle. The subtle grey is #969696, which is 2.96:1 on the white
+/* --dim-ds-text-muted, not --dim-ds-text-subtle. The subtle grey is #969696, which is 2.96:1 on the white
    card and fails WCAG AA for text of any size; at the 11px this label is set in it is not a
    borderline call. The muted grey is 8.06:1 and still reads as secondary next to the value. */
 .dimensions-profile-fact-label {
-    margin: 0 0 var(--space-3xs);
-    color: var(--text-muted);
+    margin: 0 0 var(--dim-ds-space-3xs);
+    color: var(--dim-ds-text-muted);
     font-size: .6875rem;
     font-weight: 600;
     letter-spacing: .08em;
@@ -450,7 +450,7 @@ textarea:focus-visible,
 
 .dimensions-profile-fact-value {
     margin: 0;
-    color: var(--text-body);
+    color: var(--dim-ds-text-body);
 
     /* Several nodes hand over a whole <ul> as their content - the course list and the group
        list among them - built with html_writer by core. They are values, not navigation. */
@@ -461,7 +461,7 @@ textarea:focus-visible,
     }
 
     li + li {
-        margin-top: var(--space-3xs);
+        margin-top: var(--dim-ds-space-3xs);
     }
 }
 
@@ -469,13 +469,13 @@ textarea:focus-visible,
    the person's email address for the same attention. margin-top:auto pins them to the bottom of
    whichever card in the row is taller. */
 .dimensions-profile-actions {
-    margin: var(--space-lg) 0 0;
-    padding: var(--space-sm) 0 0;
-    border-top: 1px solid var(--border-subtle);
+    margin: var(--dim-ds-space-lg) 0 0;
+    padding: var(--dim-ds-space-sm) 0 0;
+    border-top: 1px solid var(--dim-ds-border-subtle);
     list-style: none;
 
     .dimensions-profile-action + .dimensions-profile-action {
-        margin-top: var(--space-xs);
+        margin-top: var(--dim-ds-space-xs);
     }
 
     /* .btn-link as well as a real link: a node may hand over a rendered control instead of a
@@ -483,13 +483,13 @@ textarea:focus-visible,
        this card it should read like the actions beside it, not like a form submit. */
     a,
     .btn-link {
-        color: var(--text-link);
+        color: var(--dim-ds-text-link);
         font-weight: 500;
         text-decoration: none;
 
         &:hover,
         &:focus {
-            color: var(--text-link-hover);
+            color: var(--dim-ds-text-link-hover);
             text-decoration: underline;
         }
     }
@@ -524,7 +524,7 @@ textarea:focus-visible,
     .dimensions-profile-facts {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--space-lg);
+        gap: var(--dim-ds-space-lg);
 
         .dimensions-profile-fact {
             min-width: 16rem;

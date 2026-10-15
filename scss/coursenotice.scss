@@ -12,18 +12,18 @@
 // Moodle 5.2 has one dark mechanism, data-bs-theme on the html element.
 
 .dim-coursenotice {
-    --fsn-card: var(--bs-body-bg, var(--surface-card, #fff));
-    --fsn-subtle: var(--bs-tertiary-bg, var(--surface-subtle, #f2f3f5));
-    --fsn-line: var(--bs-border-color, var(--border-default, #dee2e6));
-    --fsn-line-soft: var(--bs-border-color-translucent, var(--border-subtle, #e9ecef));
-    --fsn-ink: var(--bs-body-color, var(--text-body, #1f1f1f));
-    --fsn-muted: var(--bs-secondary-color, var(--text-muted, #505050));
+    --fsn-card: var(--bs-body-bg, var(--dim-ds-surface-card, #fff));
+    --fsn-subtle: var(--bs-tertiary-bg, var(--dim-ds-surface-subtle, #f2f3f5));
+    --fsn-line: var(--bs-border-color, var(--dim-ds-border-default, #dee2e6));
+    --fsn-line-soft: var(--bs-border-color-translucent, var(--dim-ds-border-subtle, #e9ecef));
+    --fsn-ink: var(--bs-body-color, var(--dim-ds-text-body, #1f1f1f));
+    --fsn-muted: var(--bs-secondary-color, var(--dim-ds-text-muted, #505050));
     --fsn-mark: var(--dim-ds-blue-400, #4456ff);
-    --fsn-heading: var(--text-heading, var(--bs-primary, #070093));
-    --fsn-link: var(--text-link, var(--bs-link-color, #070093));
+    --fsn-heading: var(--dim-ds-text-heading, var(--bs-primary, #070093));
+    --fsn-link: var(--dim-ds-text-link, var(--bs-link-color, #070093));
     --fsn-cta: var(--dim-ds-blue-600, #070093);
     --fsn-cta-ink: var(--dim-ds-white, #fff);
-    --fsn-ring: var(--focus-ring, #4456ff);
+    --fsn-ring: var(--dim-ds-focus-ring, #4456ff);
     // The chip and note tones: the design system's feedback hues, each with its own ink.
     --fsn-ok-bg: var(--dim-ds-green-050, #f0fbe0);
     --fsn-ok-fg: var(--dim-ds-green-700, #2f6b00);
@@ -39,7 +39,7 @@
     color: var(--fsn-ink);
     border: 1px solid var(--fsn-line);
     border-inline-start: 0;
-    border-radius: 0 0 var(--radius-md, 8px) var(--radius-md, 8px);
+    border-radius: 0 0 var(--dim-ds-radius-md, 8px) var(--dim-ds-radius-md, 8px);
     // The design's cut corner. A clip-path also clips outlines, so the bar keeps enough padding on
     // its right for the fold control's focus ring to stay inside the polygon.
     clip-path: polygon(0 0, calc(100% - var(--fsn-chamfer)) 0, 100% var(--fsn-chamfer), 100% 100%, 0 100%);
@@ -95,7 +95,7 @@
     align-items: center;
     gap: 6px;
     padding: 5px 9px;
-    border-radius: var(--radius-pill, 50rem);
+    border-radius: var(--dim-ds-radius-pill, 50rem);
     background: var(--fsn-subtle);
     color: var(--fsn-muted);
     font-size: .76rem;
@@ -151,7 +151,7 @@
     gap: 6px;
     padding: 7px 10px;
     border: 1px solid var(--fsn-line);
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--dim-ds-radius-sm, 6px);
     background: var(--fsn-card);
     color: var(--fsn-ink);
     font-size: .8rem;
@@ -167,7 +167,7 @@
 }
 
 .dim-coursenotice .dim-coursenotice__btn:focus-visible {
-    outline: var(--focus-ring-width, 3px) solid var(--fsn-ring);
+    outline: var(--dim-ds-focus-ring-width, 3px) solid var(--fsn-ring);
     outline-offset: 2px;
     box-shadow: none;
 }
@@ -221,7 +221,7 @@
     min-width: 0;
     padding: 7px 10px;
     overflow-x: auto;
-    border-radius: var(--radius-sm, 6px);
+    border-radius: var(--dim-ds-radius-sm, 6px);
     background: var(--fsn-subtle);
     color: var(--fsn-ink);
     font-size: .82rem;

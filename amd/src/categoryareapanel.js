@@ -130,10 +130,10 @@ const MOTION = '(prefers-reduced-motion: reduce)';
 /** @type {String} A pointer that hovers and is precise: the rail's arrows are for it alone. */
 const FINE = '(hover: hover) and (pointer: fine)';
 
-/** @type {Number} The stylesheet's --motion-base: the panel opens and closes over it. */
+/** @type {Number} The stylesheet's --dim-ds-motion-base: the panel opens and closes over it. */
 const MOTION_BASE = 250;
 
-/** @type {Number} The stylesheet's --motion-fast: the content crossfades over it. */
+/** @type {Number} The stylesheet's --dim-ds-motion-fast: the content crossfades over it. */
 const MOTION_FAST = 150;
 
 /** @type {Number} Milliseconds past the opening before the scroll rule looks at the panel. */

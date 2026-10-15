@@ -351,7 +351,7 @@ The original design record (not part of this repository) holds its decisions; th
   `format_string()`-escaped names, core's and this theme's templates double-stash them, and
   un-escaping is non-injective. Fix at the plugin (`escape => false` in
   `loginpage_idp_list()`), never with `html_entity_decode()` here.
-- **`--border-strong` and `--text-inverse-muted` were missing from `post.scss` on the first
+- **`--dim-ds-border-strong` and `--dim-ds-text-inverse-muted` were missing from `post.scss` on the first
   pass**, so two `var()` reads resolved to nothing - the whole declaration invalid, not the
   fallback. Every token `login.scss` reads must exist in `post.scss`; the review found it by
   listing the `var(--...)` names and grepping each.
@@ -411,10 +411,12 @@ Two of the three carry a url, and both ask `classes/local/styleurl.php`:
 Every colour, radius, shadow and spacing value in `scss/` (`pre.scss`, `post.scss`)
 came from the theme's design system, a design project export that is no longer part of the
 workspace. The tokens in `scss/` are now the reference: **change a value there, in one place,
-and never invent a colour; derive it from the existing `--dim-ds-*` palette tokens.** The token
-*names* were copied verbatim, including the unprefixed semantic aliases (`--surface-page`,
-`--text-body`), and stay as they are: a rename would break every stylesheet and the design-system
-markup tests that name them.
+and never invent a colour; derive it from the existing `--dim-ds-*` palette tokens.** Every
+token, the semantic aliases included (`--dim-ds-surface-page`, `--dim-ds-text-body`), is named
+under `--dim-ds-`: the theme shares `:root` with every plugin on the page, and the design system's
+unprefixed names (`--surface-page`, `--text-muted`, `--radius-sm`, ...) were anyone's. They were
+renamed in 2026100503; a new token takes the prefix too, and its name must not already be one of
+the palette primitives (`--dim-ds-blue-600` and friends).
 
 Rules from the design system's readme which this theme has to keep honouring, and which have
 already shaped decisions here:
@@ -550,8 +552,8 @@ The theme reads no profile fields: the navbar shows what `fullname()` composes (
   `user/profile.php` and `user/view.php` print those themselves before handing the tree over,
   and only `hiddenuserfields` reaches the description (`user/profile.php:237-254`). They are
   styled here through core's own classes; their visibility is configuration.
-- **`--text-subtle` (#969696) is 2.96:1 on a white card and fails WCAG AA for text of any
-  size.** It is fine for a rule or an icon, not for a label. Use `--text-muted` (8.06:1); the
+- **`--dim-ds-text-subtle` (#969696) is 2.96:1 on a white card and fails WCAG AA for text of any
+  size.** It is fine for a rule or an icon, not for a label. Use `--dim-ds-text-muted` (8.06:1); the
   calendar block's `th.header` uses it, pinned by `tests/local/post_scss_test.php`.
 - **Two columns come from flex, not from `column-count` and not from a grid.** Boost sets
   `column-count: 2` on `.profile_tree`, which flows cards down one column and up the next and
@@ -2367,7 +2369,7 @@ maintainer must not lose.
   on four rules at once.
 - **The design's 15px is not the theme's 16px.** Boost Union's body is 1rem; the design's frame is
   15px in its reading face with the brand face only where it says so. `.dim-areas` states both
-  (`font-size: .9375rem`, `font-family: var(--font-reading)`) and names the brand stack
+  (`font-size: .9375rem`, `font-family: var(--dim-ds-font-reading)`) and names the brand stack
   (`--bs-font-sans-serif`) on exactly the design's brand elements. Without it every inherited size
   and every line strut drifts: the call to action wrapped at 390 and the panel's heading sat 2px low.
 - **Match what the design RENDERS, not what its sheet says.** Its `.panel__title { margin: 2px 0 0 }`

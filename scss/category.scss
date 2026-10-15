@@ -148,12 +148,12 @@ body.dim-category {
         // where the three stops above turn translucent and the ink on them would vanish.
         --dim-hero-strip: var(--dim-ds-blue-600, #070093);
         --dim-hero-ink: #fff;
-        --dim-hero-ink-muted: var(--text-inverse-muted, #d6d8f7);
+        --dim-hero-ink-muted: var(--dim-ds-text-inverse-muted, #d6d8f7);
         --dim-hero-ring: #fff;
-        --dim-hero-radius: var(--radius-md, 8px);
-        --dim-hero-radius-lg: var(--radius-lg, 12px);
+        --dim-hero-radius: var(--dim-ds-radius-md, 8px);
+        --dim-hero-radius-lg: var(--dim-ds-radius-lg, 12px);
         --dim-hero-chamfer: 18px;
-        --dim-hero-band: var(--dimensions-navbar-band, var(--accent-highlight, #4456ff));
+        --dim-hero-band: var(--dimensions-navbar-band, var(--dim-ds-accent-highlight, #4456ff));
         --dim-hero-page: var(--bs-body-bg, #fff);
         --dim-hero-page-ink: var(--bs-body-color, #1f1f1f);
         // The brand ink of the page colour. It is resolved here and inherited, never read from
@@ -323,7 +323,7 @@ body.dim-category {
     .dim-hero__foldbutton {
         padding: 6px 12px;
         border: 1px solid rgba(255, 255, 255, .3);
-        border-radius: var(--radius-sm, 6px);
+        border-radius: var(--dim-ds-radius-sm, 6px);
         background: rgba(255, 255, 255, .12);
         color: var(--dim-hero-ink);
         font-size: .8125rem;
@@ -347,7 +347,7 @@ body.dim-category {
 
     .dim-hero__desc {
         max-width: 66ch;
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .9375rem;
         line-height: 1.6;
         color: var(--dim-hero-ink-muted);
@@ -433,7 +433,7 @@ body.dim-category {
 
     .dim-hero--compact .dim-hero__badge {
         padding: 3px;
-        border-radius: var(--radius-sm, 6px);
+        border-radius: var(--dim-ds-radius-sm, 6px);
 
         img {
             width: 36px;
@@ -543,7 +543,7 @@ body.dim-category {
         }
 
         // The active tab is the page colour, so its ink is the ONE brand ink that follows the
-        // colour mode: --text-heading is navy in both and would be navy on a dark tab.
+        // colour mode: --dim-ds-text-heading is navy in both and would be navy on a dark tab.
         .nav-link.active {
             border: 0;
             background: var(--dim-hero-page);
@@ -606,7 +606,7 @@ body.dim-category {
 
             .nav-link {
                 padding: 7px 14px;
-                border-radius: var(--radius-pill, 50rem);
+                border-radius: var(--dim-ds-radius-pill, 50rem);
                 background: var(--dim-hero-page-strong);
                 color: var(--dim-hero-page-muted);
                 white-space: nowrap;
@@ -637,30 +637,30 @@ body.dim-category {
         // The primary as TEXT. --dim-primary is the institutional navy, which is a fill: on a
         // dark card it is unreadable, and this is the one brand ink that follows the mode.
         --dim-primary-ink: var(--bs-primary-text-emphasis, var(--dim-primary));
-        --dim-accent: var(--dimensions-navbar-band, var(--accent-highlight, #4456ff));
+        --dim-accent: var(--dimensions-navbar-band, var(--dim-ds-accent-highlight, #4456ff));
         // The focus ring is a FILL, so it does not take the ink above - but the institutional
         // navy reads 1.10:1 on a dark card, under WCAG 1.4.11's 3:1 floor.
         // The theme's own ring colour is the one blue that clears it on both grounds: 5.2:1 on
         // the white card, 3.1:1 on the dark one, and it is what every other focus ring of the
         // site already is.
-        --dim-ring: var(--focus-ring, var(--dim-ds-blue-400, #4456ff));
-        --dim-fallback: var(--surface-inverse, var(--dim-ds-blue-600, #070093));
-        --dim-radius: var(--radius-lg, 12px);
-        --dim-radius-sm: var(--radius-sm, 6px);
-        --dim-radius-pill: var(--radius-pill, 50rem);
+        --dim-ring: var(--dim-ds-focus-ring, var(--dim-ds-blue-400, #4456ff));
+        --dim-fallback: var(--dim-ds-surface-inverse, var(--dim-ds-blue-600, #070093));
+        --dim-radius: var(--dim-ds-radius-lg, 12px);
+        --dim-radius-sm: var(--dim-ds-radius-sm, 6px);
+        --dim-radius-pill: var(--dim-ds-radius-pill, 50rem);
         // The brand face, which the design names on its controls and its titles; its running text is
         // the reading face. Declared on the roots so the toolbar reads it as well as the areas: the
         // theme's body face is the brand one, and the toolbar has both.
         --dim-font-brand: var(--bs-font-sans-serif);
-        --dim-shadow: var(--shadow-sm, 0 1px 2px rgba(3, 0, 80, .08));
-        --dim-shadow-lift: var(--shadow-md, 0 6px 18px rgba(3, 0, 80, .14));
+        --dim-shadow: var(--dim-ds-shadow-sm, 0 1px 2px rgba(3, 0, 80, .08));
+        --dim-shadow-lift: var(--dim-ds-shadow-md, 0 6px 18px rgba(3, 0, 80, .14));
         // The site's own fixed navbar, which the sticky sidebar has to clear. It is Boost's own
         // $navbar-height, in scope because this file is compiled into the theme's main SCSS after
         // Boost's variables (scss/focusmode.scss reads it the same way). Declared here because two
         // rules need it, the offset and the height the tree may take, and they must not drift.
         --dim-navbar: #{$navbar-height};
-        --dim-motion: var(--motion-fast, 150ms);
-        --dim-ease: var(--motion-ease, ease-out);
+        --dim-motion: var(--dim-ds-motion-fast, 150ms);
+        --dim-ease: var(--dim-ds-motion-ease, ease-out);
         // The state badges. Every state names a background AND an ink, both from the design
         // system's primitives, because nothing else in the page states the badge's text
         // colour: Bootstrap's .badge would, and forces white. The contrast of each pair is
@@ -704,7 +704,7 @@ body.dim-category {
         // melt into the page.
         --dim-cta: var(--dim-primary);
         --dim-cta-hover: var(--dim-ds-blue-700, #050073);
-        --dim-tint: var(--interactive-primary-tint, #edeefb);
+        --dim-tint: var(--dim-ds-interactive-primary-tint, #edeefb);
         --dim-open-ring: var(--dim-primary);
         --dim-poster-edge: transparent;
         // The open area's colour (round I). The open poster's ring and the panel's rail, head and
@@ -881,7 +881,7 @@ body.dim-category {
 
     .dim-pages__label {
         color: var(--dim-muted);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .88rem;
 
         &::after {
@@ -1024,7 +1024,7 @@ body.dim-category {
         height: 44px;
         padding-left: 40px;
         border-radius: var(--dim-radius-sm);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .9375rem;
 
         &::placeholder {
@@ -1049,7 +1049,7 @@ body.dim-category {
         border-radius: var(--dim-radius-sm);
         background: var(--dim-badge-pending-bg);
         color: var(--dim-badge-pending-fg);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .85rem;
     }
 
@@ -1103,7 +1103,7 @@ body.dim-category {
         margin: 0;
         padding: 0;
         color: var(--dim-muted);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .88rem;
         font-weight: 400;
         letter-spacing: normal;
@@ -1443,7 +1443,7 @@ body.dim-category {
         margin-top: 10px;
         padding: 14px 16px;
         border: 1px solid var(--dim-line);
-        border-radius: var(--radius-md, 8px);
+        border-radius: var(--dim-ds-radius-md, 8px);
         background: var(--dim-surface-subtle);
     }
 
@@ -1692,7 +1692,7 @@ body.dim-category {
         max-width: calc(100vw - 2rem);
         padding: 10px;
         border: 1px solid var(--dim-line);
-        border-radius: var(--radius-md, 8px);
+        border-radius: var(--dim-ds-radius-md, 8px);
         background: var(--dim-surface);
         box-shadow: var(--dim-shadow);
     }
@@ -1928,7 +1928,7 @@ body.dim-category {
         gap: 4px 14px;
         margin: 2px 0 4px;
         color: var(--dim-muted);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .92rem;
     }
 
@@ -2438,7 +2438,7 @@ body.dim-category {
     // paragraphs change face the moment they are hovered.
     .dim-card__panel p,
     .dim-card__peek p {
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
     }
 
     .dim-card__excerpt {
@@ -2709,7 +2709,7 @@ body.dim-category {
     .dim-areas {
         position: relative;
         min-width: 0;
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .9375rem;
     }
 
@@ -2769,7 +2769,7 @@ body.dim-category {
 
     .dim-areas__skip {
         color: var(--dim-primary-ink);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .88rem;
         text-decoration: underline;
     }
@@ -2786,7 +2786,7 @@ body.dim-category {
         gap: 8px;
         margin: 14px 0 0;
         color: var(--dim-muted);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .88rem;
 
         .fa-solid {
@@ -2821,14 +2821,14 @@ body.dim-category {
     .dim-areas__nomatch {
         margin-top: 16px;
         border: 1px solid var(--dim-line);
-        border-radius: var(--radius-lg, 12px);
+        border-radius: var(--dim-ds-radius-lg, 12px);
         background: var(--dim-surface-subtle);
         scroll-margin-top: calc(var(--dim-navbar) + 48px);
     }
 
     .dim-areas__nomatchsummary {
         padding: 12px 16px;
-        border-radius: var(--radius-lg, 12px);
+        border-radius: var(--dim-ds-radius-lg, 12px);
         color: var(--dim-ink);
         font-weight: 600;
         cursor: pointer;
@@ -2863,7 +2863,7 @@ body.dim-category {
         gap: 10px;
         padding: 28px 20px;
         border: 1.5px dashed var(--dim-control-line);
-        border-radius: var(--radius-lg, 12px);
+        border-radius: var(--dim-ds-radius-lg, 12px);
         color: var(--dim-muted);
         text-align: center;
 
@@ -2894,7 +2894,7 @@ body.dim-category {
         min-height: 38px;
         padding: 4px 12px;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--radius-sm, 6px);
+        border-radius: var(--dim-ds-radius-sm, 6px);
         background: var(--dim-surface);
         color: var(--dim-ink);
         font-size: .85rem;
@@ -2950,16 +2950,16 @@ body.dim-category {
         flex-direction: column;
         justify-content: flex-end;
         height: var(--dim-poster-h);
-        border-radius: var(--radius-lg, 12px);
+        border-radius: var(--dim-ds-radius-lg, 12px);
         background: var(--dim-card-band);
         color: var(--dim-card-ink);
-        box-shadow: var(--shadow-sm), 0 0 0 1px var(--dim-poster-edge);
+        box-shadow: var(--dim-ds-shadow-sm), 0 0 0 1px var(--dim-poster-edge);
         overflow: hidden;
         transition:
-            box-shadow var(--motion-base) var(--motion-ease),
-            transform var(--motion-base) var(--motion-ease),
-            opacity var(--motion-base) var(--motion-ease),
-            filter var(--motion-base) var(--motion-ease);
+            box-shadow var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+            transform var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+            opacity var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+            filter var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
     }
 
     // The spotlight's vignette, transparent at rest: over the image AND the text (the card's last
@@ -2974,7 +2974,7 @@ body.dim-category {
         background: radial-gradient(ellipse 80% 70% at 50% 42%, rgba(0, 0, 0, .06), rgba(0, 0, 0, .42) 70%, rgba(0, 0, 0, .62));
         opacity: 0;
         pointer-events: none;
-        transition: opacity var(--motion-base) var(--motion-ease);
+        transition: opacity var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
     }
 
     .dim-poster__media {
@@ -2992,7 +2992,9 @@ body.dim-category {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform var(--motion-base) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
+        transition:
+            transform var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+            opacity var(--dim-ds-motion-fast) var(--dim-ds-motion-ease);
     }
 
     .dim-poster__video {
@@ -3109,7 +3111,7 @@ body.dim-category {
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
         overflow: hidden;
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .87rem;
         line-height: 1.4;
     }
@@ -3134,7 +3136,7 @@ body.dim-category {
         width: 28px;
         height: 28px;
         border-radius: 50%;
-        transition: transform var(--motion-base) var(--motion-ease);
+        transition: transform var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
 
         &::before {
             content: "";
@@ -3201,7 +3203,7 @@ body.dim-category {
     // It sits on a photograph, so it states its own plate and ink in both colour modes.
     .dim-poster__kind {
         padding: 4px 9px;
-        border-radius: var(--radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-pill, 50rem);
         background: rgba(255, 255, 255, .94);
         color: var(--dim-ds-blue-700, #050073);
         font-size: .68rem;
@@ -3219,7 +3221,7 @@ body.dim-category {
     .dim-poster__pill {
         min-width: 3.2em;
         padding: 4px 10px;
-        border-radius: var(--radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-pill, 50rem);
         background: var(--dim-pill-bg);
         color: var(--dim-pill-ink);
         box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
@@ -3240,7 +3242,7 @@ body.dim-category {
 
     @media (hover: hover) and (pointer: fine) {
         .dim-poster__card:hover {
-            box-shadow: var(--shadow-md), 0 0 0 1px var(--dim-poster-edge);
+            box-shadow: var(--dim-ds-shadow-md), 0 0 0 1px var(--dim-poster-edge);
         }
 
         .dim-poster--photo .dim-poster__card:hover .dim-poster__img {
@@ -3251,7 +3253,7 @@ body.dim-category {
     // The open poster's ring is its own area colour, three pixels of the band with the one-pixel
     // edge outside it (the tokens say why), continuous with the panel's rail below.
     .dim-poster--open .dim-poster__card {
-        box-shadow: 0 0 0 3px var(--dim-card-band), 0 0 0 4px var(--dim-area-edge), var(--shadow-lg);
+        box-shadow: 0 0 0 3px var(--dim-card-band), 0 0 0 4px var(--dim-area-edge), var(--dim-ds-shadow-lg);
     }
 
     // The open state in words, never by the ring's colour or the chevron alone: "Open" under the
@@ -3264,7 +3266,7 @@ body.dim-category {
         align-items: center;
         gap: 4px;
         padding: 4px 10px 4px 8px;
-        border-radius: var(--radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-pill, 50rem);
         background: var(--dim-pill-bg);
         color: var(--dim-pill-ink);
         box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
@@ -3282,7 +3284,7 @@ body.dim-category {
     // that dimmed only their images and never their text "to keep the pair the editor certified":
     // the owner decided in round I that a dimmed poster's text may read lower while a panel is
     // open, because the hover and the focus restore it. Enter and exit are the card's own
-    // transitions (--motion-base), so closing the panel plays them in reverse.
+    // transitions (--dim-ds-motion-base), so closing the panel plays them in reverse.
     .dim-vitrine--cards .dim-areas--open .dim-poster:not(.dim-poster--open) .dim-poster__card {
         filter: grayscale(.85);
     }
@@ -3330,7 +3332,7 @@ body.dim-category {
         z-index: 3;
         gap: 6px;
         opacity: 0;
-        transition: opacity var(--motion-fast) var(--motion-ease);
+        transition: opacity var(--dim-ds-motion-fast) var(--dim-ds-motion-ease);
     }
 
     .dim-poster__card:hover .dim-poster__filmctl,
@@ -3396,7 +3398,7 @@ body.dim-category {
     @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
         .dim-vitrine--cards .dim-poster--photo:not(.dim-poster--film) .dim-poster__card:hover .dim-poster__img {
             animation:
-                dim-poster-pan-in 600ms var(--motion-ease) 180ms forwards,
+                dim-poster-pan-in 600ms var(--dim-ds-motion-ease) 180ms forwards,
                 dim-poster-pan 12s linear 780ms infinite alternate;
         }
     }
@@ -3438,7 +3440,7 @@ body.dim-category {
         opacity: var(--dim-mark-a, .2);
         transform: translate(16%, 14%) rotate(-8deg);
         pointer-events: none;
-        transition: opacity var(--motion-base) var(--motion-ease);
+        transition: opacity var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
 
         &::before,
         &::after {
@@ -3553,7 +3555,9 @@ body.dim-category {
         border-width: 1px 0 0 1px;
         background: var(--dim-surface-subtle);
         transform: rotate(45deg);
-        transition: left var(--motion-base) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
+        transition:
+            left var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+            opacity var(--dim-ds-motion-fast) var(--dim-ds-motion-ease);
     }
 
     .dim-vitrine--list .dim-panel::before {
@@ -3575,7 +3579,9 @@ body.dim-category {
         opacity: var(--dim-area-tint);
         transform: rotate(45deg);
         pointer-events: none;
-        transition: left var(--motion-base) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
+        transition:
+            left var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+            opacity var(--dim-ds-motion-fast) var(--dim-ds-motion-ease);
     }
 
     .dim-vitrine--list .dim-panel::after {
@@ -3601,7 +3607,7 @@ body.dim-category {
         margin-bottom: -16px;
         padding-bottom: 16px;
         overflow: hidden;
-        transition: opacity var(--motion-fast) var(--motion-ease);
+        transition: opacity var(--dim-ds-motion-fast) var(--dim-ds-motion-ease);
     }
 
     // The glow: the area's band, blurred, under the bottom of the box - a box-shadow cannot be the
@@ -3614,16 +3620,16 @@ body.dim-category {
         bottom: 4px;
         left: 28px;
         z-index: -1;
-        border-radius: var(--radius-xl, 16px);
+        border-radius: var(--dim-ds-radius-xl, 16px);
         background: var(--dim-area-bg);
         opacity: .35;
         filter: blur(12px);
         pointer-events: none;
-        transition: opacity var(--motion-base) var(--motion-ease);
+        transition: opacity var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
     }
 
     &.dim-panel-js .dim-panel__clip {
-        transition: grid-template-rows var(--motion-base) var(--motion-ease);
+        transition: grid-template-rows var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
     }
 
     .dim-panel--shut .dim-panel__clip {
@@ -3663,7 +3669,7 @@ body.dim-category {
         padding: 18px 22px;
         border: 1px solid var(--dim-line);
         border-inline-start: 6px solid var(--dim-area-bg);
-        border-radius: var(--radius-xl, 16px);
+        border-radius: var(--dim-ds-radius-xl, 16px);
         background: var(--dim-surface-subtle);
     }
 
@@ -3689,8 +3695,8 @@ body.dim-category {
         bottom: -1px;
         inset-inline-start: -6px;
         width: 6px;
-        border-start-start-radius: var(--radius-xl, 16px);
-        border-end-start-radius: var(--radius-xl, 16px);
+        border-start-start-radius: var(--dim-ds-radius-xl, 16px);
+        border-end-start-radius: var(--dim-ds-radius-xl, 16px);
         background: var(--dim-ds-white, #fff);
         opacity: var(--dim-area-lift);
         pointer-events: none;
@@ -3747,7 +3753,7 @@ body.dim-category {
         min-height: 1.4em;
         margin: 3px 0 0;
         color: var(--dim-muted);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .9rem;
         font-variant-numeric: tabular-nums;
     }
@@ -3764,7 +3770,7 @@ body.dim-category {
         gap: 2px;
         padding: 3px;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-pill, 50rem);
         background: var(--dim-surface);
     }
 
@@ -3774,7 +3780,7 @@ body.dim-category {
         min-height: 36px;
         padding: 0 13px;
         border: 0;
-        border-radius: var(--radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-pill, 50rem);
         background: transparent;
         color: var(--dim-ink);
         font-size: .8rem;
@@ -3857,7 +3863,7 @@ body.dim-category {
 
     .dim-panel__alsolabel {
         color: var(--dim-muted);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .85rem;
     }
 
@@ -3869,10 +3875,10 @@ body.dim-category {
         min-height: 32px;
         padding: 5px 12px;
         border: 1px solid var(--dim-line);
-        border-radius: var(--radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-pill, 50rem);
         background: var(--dim-surface);
         color: var(--dim-ink);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .82rem;
         text-decoration: none;
         white-space: nowrap;
@@ -3990,10 +3996,10 @@ body.dim-category {
         border-radius: 50%;
         background: var(--dim-surface);
         color: var(--dim-ink);
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--dim-ds-shadow-md);
         font-size: .875rem;
         cursor: pointer;
-        transition: opacity var(--motion-fast) var(--motion-ease);
+        transition: opacity var(--dim-ds-motion-fast) var(--dim-ds-motion-ease);
     }
 
     .dim-panel__arrow--prev {
@@ -4024,7 +4030,7 @@ body.dim-category {
         width: 100%;
         padding: 16px;
         border: 1.5px dashed var(--dim-control-line);
-        border-radius: var(--radius-md, 8px);
+        border-radius: var(--dim-ds-radius-md, 8px);
         background: var(--dim-tint);
         color: var(--dim-primary-ink);
         text-align: center;
@@ -4059,9 +4065,9 @@ body.dim-category {
         min-width: 0;
         padding-bottom: 12px;
         border: 1px solid var(--dim-line);
-        border-radius: var(--radius-md, 8px);
+        border-radius: var(--dim-ds-radius-md, 8px);
         background: var(--dim-surface);
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--dim-ds-shadow-sm);
         overflow: hidden;
     }
 
@@ -4112,9 +4118,9 @@ body.dim-category {
         gap: 10px;
         padding: 18px;
         border: 1px solid var(--dim-line);
-        border-radius: var(--radius-lg, 12px);
+        border-radius: var(--dim-ds-radius-lg, 12px);
         background: var(--dim-surface);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
 
         p {
             max-width: 70ch;
@@ -4144,7 +4150,7 @@ body.dim-category {
         min-height: 34px;
         padding: 6px 12px;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-pill, 50rem);
         background: var(--dim-surface);
         color: var(--dim-ink);
         font-size: .82rem;
@@ -4176,7 +4182,7 @@ body.dim-category {
         min-height: 38px;
         padding: 4px 12px;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--radius-sm, 6px);
+        border-radius: var(--dim-ds-radius-sm, 6px);
         background: var(--dim-surface);
         color: var(--dim-ink);
         font-size: .85rem;
@@ -4201,7 +4207,7 @@ body.dim-category {
     .dim-panel__counter {
         display: none;
         color: var(--dim-muted);
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .86rem;
         font-variant-numeric: tabular-nums;
     }
@@ -4228,7 +4234,7 @@ body.dim-category {
         min-height: 44px;
         padding: 10px 18px;
         border: 0;
-        border-radius: var(--radius-sm, 6px);
+        border-radius: var(--dim-ds-radius-sm, 6px);
         background: var(--dim-cta);
         color: #fff;
         font-weight: 600;
@@ -4272,12 +4278,12 @@ body.dim-category {
         --dim-card-crest-w: 40px;
         --dim-card-crest-h: 44px;
         min-width: 0;
-        border-radius: var(--radius-md, 8px);
-        box-shadow: var(--shadow-sm);
+        border-radius: var(--dim-ds-radius-md, 8px);
+        box-shadow: var(--dim-ds-shadow-sm);
         overflow: hidden;
 
         &:hover {
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--dim-ds-shadow-sm);
         }
     }
 
@@ -4314,7 +4320,7 @@ body.dim-category {
         bottom: 8px;
         left: 8px;
         padding: 4px 8px;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--dim-ds-shadow-sm);
 
         b {
             font-size: 1.08rem;
@@ -4387,7 +4393,7 @@ body.dim-category {
     }
 
     .dim-panel__rail .dim-card__meta {
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         font-size: .8rem;
     }
 
@@ -4422,7 +4428,7 @@ body.dim-category {
             content: "";
             flex: 1;
             height: 4px;
-            border-radius: var(--radius-pill, 50rem);
+            border-radius: var(--dim-ds-radius-pill, 50rem);
             background: linear-gradient(to right, var(--dim-primary) var(--dim-progress), var(--dim-surface-strong) 0);
         }
     }
@@ -4500,7 +4506,7 @@ body.dim-category {
         flex: 0 0 56px;
         width: 56px;
         height: 56px;
-        border-radius: var(--radius-md, 8px);
+        border-radius: var(--dim-ds-radius-md, 8px);
     }
 
     .dim-vitrine--list .dim-poster__veil {
@@ -4633,7 +4639,7 @@ body.dim-category {
         width: 96px;
         height: auto;
         min-height: 0;
-        border-radius: var(--radius-sm, 6px);
+        border-radius: var(--dim-ds-radius-sm, 6px);
     }
 
     .dim-vitrine--list .dim-panel__rail .dim-card__kind,
@@ -4843,12 +4849,12 @@ body.dim-category {
             box-shadow: none;
 
             &:first-child {
-                border-radius: var(--radius-sm, 6px) 0 0 var(--radius-sm, 6px);
+                border-radius: var(--dim-ds-radius-sm, 6px) 0 0 var(--dim-ds-radius-sm, 6px);
             }
 
             &:last-child {
                 margin-left: -1px;
-                border-radius: 0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0;
+                border-radius: 0 var(--dim-ds-radius-sm, 6px) var(--dim-ds-radius-sm, 6px) 0;
             }
 
             &[aria-pressed="true"] {
@@ -5200,13 +5206,13 @@ body.dim-category {
     // the signature band under it, and the dialogue's own surface on the dark one. The root is named
     // with core's own class beside the plugin's, which keeps it apart from the token roots above.
     .dim-cmodal.modal {
-        --dim-cmodal-radius: var(--radius-xl, 16px);
+        --dim-cmodal-radius: var(--dim-ds-radius-xl, 16px);
         --dim-cmodal-cover: 280px;
         --dim-cmodal-pad: 28px;
         --dim-cmodal-cover-end: var(--dim-ds-blue-700, #050073);
         --dim-cmodal-wash: var(--dim-ds-blue-800, #030050);
         --dim-cmodal-shade: rgba(0, 0, 0, .28);
-        --dim-cmodal-signature: var(--accent-progress, #69e000);
+        --dim-cmodal-signature: var(--dim-ds-accent-progress, #69e000);
         --dim-cmodal-on-media: #fff;
         --dim-cmodal-on-media-muted: var(--dim-ds-blue-100, #d6d8f7);
         --dim-cmodal-tile: var(--dim-surface-subtle);
@@ -5374,7 +5380,7 @@ body.dim-category {
 
     .dim-cmodal__summary {
         margin: 0;
-        font-family: var(--font-reading);
+        font-family: var(--dim-ds-font-reading);
         line-height: 1.55;
     }
 
@@ -5435,7 +5441,7 @@ body.dim-category {
         justify-content: center;
         width: 36px;
         height: 36px;
-        border-radius: var(--radius-md, 8px);
+        border-radius: var(--dim-ds-radius-md, 8px);
         background: var(--dim-cmodal-icon-bg);
         color: var(--dim-cmodal-icon);
     }
