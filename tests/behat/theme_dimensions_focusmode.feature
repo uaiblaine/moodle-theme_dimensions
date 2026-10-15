@@ -93,7 +93,8 @@ Feature: Focus mode on activities
     And I click on ".dimensions-focus-entry-button" "css_element"
     Then ".dimensions-focusbar" "css_element" should exist
     And I should see "Reading task" in the ".dimensions-focusbar-title" "css_element"
-    And I click on "#next-activity-link" "css_element"
+    # Core 5.3's linear navigation is the route forward on a topics course, in focus mode as anywhere.
+    And I click on "Next" "link" in the "sticky-footer" "region"
     And ".dimensions-focusbar" "css_element" should exist
     And I should see "Second task" in the ".dimensions-focusbar-title" "css_element"
     And I click on ".dimensions-focusbar-close" "css_element"
