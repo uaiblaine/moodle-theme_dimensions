@@ -144,7 +144,7 @@ final class category_test extends \core\tests\router\route_testcase {
             $course = $generator->create_course(['category' => $categoryid, 'fullname' => $fullname]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
             ]);
             if ($coursestate !== 'listed') {
                 discoverability::set_state((int) $course->id, self::course_state($coursestate), $adminid);

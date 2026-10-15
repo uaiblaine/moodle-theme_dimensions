@@ -79,12 +79,12 @@ final class course_badges_test extends \advanced_testcase {
     /**
      * A course with a hotsite model (or none) and badge files in some of its four picture fields.
      *
-     * @param int $modelo The hotsite model, 0 for none.
+     * @param int $model The hotsite model, 0 for none.
      * @param string[] $files File names, one per picture field, in grid order.
      * @param array $record Extra course fields.
      * @return int The course id.
      */
-    private function course_with_badges(int $modelo, array $files, array $record = []): int {
+    private function course_with_badges(int $model, array $files, array $record = []): int {
         if (!hotsitefields::picture_type_available()) {
             $this->markTestSkipped('customfield_picture is not installed or not enabled.');
         }
@@ -94,11 +94,11 @@ final class course_badges_test extends \advanced_testcase {
         $course = $generator->create_course($record);
         course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
         ]);
         foreach (array_values($files) as $i => $filename) {
             $data = $customfields->add_instance_data(
-                hotsitefields::get_field(hotsitefields::BRASAO_SHORTNAMES[$i]),
+                hotsitefields::get_field(hotsitefields::CREST_SHORTNAMES[$i]),
                 (int) $course->id,
                 1
             );
@@ -120,13 +120,13 @@ final class course_badges_test extends \advanced_testcase {
      * The same answer through component_callback(), which is how block_compass asks.
      */
     public function test_a_course_gets_its_first_three_crests_in_grid_order(): void {
-        $four = $this->course_with_badges(hotsitefields::MODELO_CURSO, ['brasao-um.png', 'dois.png', 'tres_c.png', 'quatro.png']);
-        $one = $this->course_with_badges(hotsitefields::MODELO_EVENTO, ['so-um.png']);
+        $four = $this->course_with_badges(hotsitefields::MODEL_COURSE, ['crest-one.png', 'dois.png', 'tres_c.png', 'quatro.png']);
+        $one = $this->course_with_badges(hotsitefields::MODEL_EVENT, ['so-um.png']);
 
         $badges = theme_dimensions_course_badges([$four, $one]);
 
         $this->assertCount(3, $badges[$four], 'Four uploaded, three drawn.');
-        $this->assertSame(['brasao um', 'dois', 'tres c'], array_column($badges[$four], 'alt'), 'In grid order, the fourth cut.');
+        $this->assertSame(['crest one', 'dois', 'tres c'], array_column($badges[$four], 'alt'), 'In grid order, the fourth cut.');
         foreach ($badges[$four] as $badge) {
             $this->assertStringContainsString('/theme_dimensions/badge/' . $four . '/', $badge['url']);
         }
@@ -147,9 +147,9 @@ final class course_badges_test extends \advanced_testcase {
      * course, both answer an empty list rather than nothing.
      */
     public function test_a_course_with_no_model_gets_no_crest(): void {
-        $cleared = $this->course_with_badges(0, ['brasao.png']);
-        $modelled = $this->course_with_badges(hotsitefields::MODELO_CURSO, ['brasao.png']);
-        $bare = $this->course_with_badges(hotsitefields::MODELO_CURSO, []);
+        $cleared = $this->course_with_badges(0, ['crest.png']);
+        $modelled = $this->course_with_badges(hotsitefields::MODEL_COURSE, ['crest.png']);
+        $bare = $this->course_with_badges(hotsitefields::MODEL_COURSE, []);
         $this->assertCount(1, hotsitefields::badges($cleared), 'Precondition: the file is there.');
 
         $badges = theme_dimensions_course_badges([$cleared, $modelled, $bare, 999999, 0, -3]);
@@ -175,8 +175,8 @@ final class course_badges_test extends \advanced_testcase {
         $bare = [];
         $crested = [];
         for ($i = 0; $i < 8; $i++) {
-            $bare[] = $this->course_with_badges(hotsitefields::MODELO_CURSO, []);
-            $crested[] = $this->course_with_badges(hotsitefields::MODELO_CURSO, ['brasao.png']);
+            $bare[] = $this->course_with_badges(hotsitefields::MODEL_COURSE, []);
+            $crested[] = $this->course_with_badges(hotsitefields::MODEL_COURSE, ['crest.png']);
         }
         $callback = function (array $ids) use ($DB): int {
             \core\context_helper::reset_caches();
@@ -235,13 +235,13 @@ final class course_badges_test extends \advanced_testcase {
             true
         );
         $courses = [
-            'listed' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['a.png']),
-            'hidden' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['b.png'], ['visible' => 0]),
-            'hiddenmine' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['g.png'], ['visible' => 0]),
-            'unlisted' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['c.png']),
-            'unlistedmine' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['d.png']),
-            'unviewable' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['e.png'], ['category' => $closed->id]),
-            'unviewablemine' => $this->course_with_badges(hotsitefields::MODELO_CURSO, ['f.png'], ['category' => $closed->id]),
+            'listed' => $this->course_with_badges(hotsitefields::MODEL_COURSE, ['a.png']),
+            'hidden' => $this->course_with_badges(hotsitefields::MODEL_COURSE, ['b.png'], ['visible' => 0]),
+            'hiddenmine' => $this->course_with_badges(hotsitefields::MODEL_COURSE, ['g.png'], ['visible' => 0]),
+            'unlisted' => $this->course_with_badges(hotsitefields::MODEL_COURSE, ['c.png']),
+            'unlistedmine' => $this->course_with_badges(hotsitefields::MODEL_COURSE, ['d.png']),
+            'unviewable' => $this->course_with_badges(hotsitefields::MODEL_COURSE, ['e.png'], ['category' => $closed->id]),
+            'unviewablemine' => $this->course_with_badges(hotsitefields::MODEL_COURSE, ['f.png'], ['category' => $closed->id]),
         ];
         discoverability::set_state($courses['unlisted'], discoverability::STATE_UNLISTED);
         discoverability::set_state($courses['unlistedmine'], discoverability::STATE_UNLISTED);

@@ -38,7 +38,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(after_form_definition::class)]
 final class after_form_definition_test extends \advanced_testcase {
     /** @var string Form element name of the page model select. */
-    private const MODELO = 'customfield_' . hotsitefields::SHORTNAME_MODELO;
+    private const MODEL = 'customfield_' . hotsitefields::SHORTNAME_MODEL;
 
     /**
      * Leave no router built under this test's setting behind.
@@ -76,8 +76,8 @@ final class after_form_definition_test extends \advanced_testcase {
 
         $mform = new \MoodleQuickForm('testform', 'post', '/');
         $mform->addElement('header', 'category_hotsite', 'Hotsite');
-        $mform->addElement('select', self::MODELO, 'Enrolment page model', [0 => '', 1 => 'Course', 2 => 'Event']);
-        $mform->addElement('static', self::MODELO . '_static', '', 'Which model the hotsite uses.');
+        $mform->addElement('select', self::MODEL, 'Enrolment page model', [0 => '', 1 => 'Course', 2 => 'Event']);
+        $mform->addElement('static', self::MODEL . '_static', '', 'Which model the hotsite uses.');
         $mform->addElement('text', 'shortname', 'Short name');
 
         $formwrapper = $this->createMock(\course_edit_form::class);
@@ -88,10 +88,10 @@ final class after_form_definition_test extends \advanced_testcase {
     /**
      * Create a course, optionally opted into a hotsite model.
      *
-     * @param int $modelo The page model select value (0 = none).
+     * @param int $model The page model select value (0 = none).
      * @return \stdClass The course record.
      */
-    private function create_course_with_model(int $modelo): \stdClass {
+    private function create_course_with_model(int $model): \stdClass {
         \core_course\customfield\course_handler::reset_caches();
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
@@ -99,11 +99,11 @@ final class after_form_definition_test extends \advanced_testcase {
 
         $this->setAdminUser();
         $course = self::getDataGenerator()->create_course();
-        if ($modelo) {
+        if ($model) {
             $handler = \core_course\customfield\course_handler::create();
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
             ]);
         }
         return $course;
@@ -132,7 +132,7 @@ final class after_form_definition_test extends \advanced_testcase {
     public function test_link_is_added_for_a_course_with_a_model(): void {
         $this->resetAfterTest();
         $this->set_router(true);
-        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
         $this->assertNull(links::existing_code((int) $course->id), 'Nothing minted before the form is built.');
 
         $hook = $this->make_hook($course);
@@ -158,8 +158,8 @@ final class after_form_definition_test extends \advanced_testcase {
         // It lands after the model select and after the sentence describing it, not before either.
         $order = $this->element_order($hook->mform);
         $this->assertSame(
-            [self::MODELO, self::MODELO . '_static', after_form_definition::LINK_ELEMENT],
-            array_slice($order, array_search(self::MODELO, $order, true), 3)
+            [self::MODEL, self::MODEL . '_static', after_form_definition::LINK_ELEMENT],
+            array_slice($order, array_search(self::MODEL, $order, true), 3)
         );
     }
 
@@ -170,7 +170,7 @@ final class after_form_definition_test extends \advanced_testcase {
         global $DB;
         $this->resetAfterTest();
         $this->set_router(false);
-        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
 
         $hook = $this->make_hook($course);
         after_form_definition::callback($hook);
@@ -195,7 +195,7 @@ final class after_form_definition_test extends \advanced_testcase {
         // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         $this->set_router(true);
-        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
         $guestlabel = get_string('hotsite_guestaddress', hotsitefields::COMPONENT);
 
         // Control first: the generator leaves guest access disabled.
@@ -245,7 +245,7 @@ final class after_form_definition_test extends \advanced_testcase {
      */
     public function test_link_is_absent_while_the_course_is_being_created(): void {
         $this->resetAfterTest();
-        $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $this->create_course_with_model(hotsitefields::MODEL_COURSE);
 
         $hook = $this->make_hook();
         after_form_definition::callback($hook);
@@ -261,11 +261,11 @@ final class after_form_definition_test extends \advanced_testcase {
      */
     public function test_link_is_absent_when_the_model_field_is_not_in_the_form(): void {
         $this->resetAfterTest();
-        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
 
         $hook = $this->make_hook($course);
-        $hook->mform->removeElement(self::MODELO);
-        $hook->mform->removeElement(self::MODELO . '_static');
+        $hook->mform->removeElement(self::MODEL);
+        $hook->mform->removeElement(self::MODEL . '_static');
         after_form_definition::callback($hook);
 
         $this->assertFalse($hook->mform->elementExists(after_form_definition::LINK_ELEMENT));
@@ -276,16 +276,16 @@ final class after_form_definition_test extends \advanced_testcase {
      */
     public function test_link_is_placed_without_a_field_description(): void {
         $this->resetAfterTest();
-        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
 
         $hook = $this->make_hook($course);
-        $hook->mform->removeElement(self::MODELO . '_static');
+        $hook->mform->removeElement(self::MODEL . '_static');
         after_form_definition::callback($hook);
 
         $order = $this->element_order($hook->mform);
         $this->assertSame(
-            [self::MODELO, after_form_definition::LINK_ELEMENT],
-            array_slice($order, array_search(self::MODELO, $order, true), 2)
+            [self::MODEL, after_form_definition::LINK_ELEMENT],
+            array_slice($order, array_search(self::MODEL, $order, true), 2)
         );
     }
     /**
@@ -295,7 +295,7 @@ final class after_form_definition_test extends \advanced_testcase {
      * @return void
      */
     private static function add_round6_elements(\MoodleQuickForm $mform): void {
-        $mform->addElement('select', 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE, 'Modality', [0 => '', 1 => 'Online']);
+        $mform->addElement('select', 'customfield_' . hotsitefields::SHORTNAME_MODALITY, 'Modality', [0 => '', 1 => 'Online']);
         foreach (hotsitefields::ROUND6_SHORTNAMES as $shortname) {
             $mform->addElement('text', 'customfield_' . $shortname, $shortname);
             $mform->addElement('static', 'customfield_' . $shortname . '_static', '', 'Description.');
@@ -339,33 +339,33 @@ final class after_form_definition_test extends \advanced_testcase {
 
         $this->assertSame(
             $pair(
-                hotsitefields::SHORTNAME_FORMATO,
-                hotsitefields::SHORTNAME_AULASAOVIVO,
-                hotsitefields::SHORTNAME_AULASAOVIVOQUANDO
+                hotsitefields::SHORTNAME_FORMAT,
+                hotsitefields::SHORTNAME_LIVECLASSES,
+                hotsitefields::SHORTNAME_LIVECLASSESWHEN
             ),
-            self::hidden_by($hook->mform, self::MODELO, 'eq', (string) hotsitefields::MODELO_EVENTO)
+            self::hidden_by($hook->mform, self::MODEL, 'eq', (string) hotsitefields::MODEL_EVENT)
         );
         $this->assertSame(
-            $pair(hotsitefields::SHORTNAME_AULASAOVIVO, hotsitefields::SHORTNAME_AULASAOVIVOQUANDO),
+            $pair(hotsitefields::SHORTNAME_LIVECLASSES, hotsitefields::SHORTNAME_LIVECLASSESWHEN),
             self::hidden_by(
                 $hook->mform,
-                'customfield_' . hotsitefields::SHORTNAME_FORMATO,
+                'customfield_' . hotsitefields::SHORTNAME_FORMAT,
                 'eq',
-                (string) hotsitefields::FORMATO_AUTOINSTRUCIONAL
+                (string) hotsitefields::FORMAT_SELFPACED
             )
         );
         $this->assertSame(
-            $pair(hotsitefields::SHORTNAME_AULASAOVIVOQUANDO),
-            self::hidden_by($hook->mform, 'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO, 'notchecked', '1')
+            $pair(hotsitefields::SHORTNAME_LIVECLASSESWHEN),
+            self::hidden_by($hook->mform, 'customfield_' . hotsitefields::SHORTNAME_LIVECLASSES, 'notchecked', '1')
         );
         // The in-person workload is never hidden: a hideIf on its float element breaks the save.
         $this->assertSame(
-            $pair(hotsitefields::SHORTNAME_ENCONTROS),
+            $pair(hotsitefields::SHORTNAME_MEETINGS),
             self::hidden_by(
                 $hook->mform,
-                'customfield_' . hotsitefields::SHORTNAME_MODALIDADE,
+                'customfield_' . hotsitefields::SHORTNAME_MODALITY,
                 'neq',
-                (string) hotsitefields::MODALIDADE_HIBRIDO
+                (string) hotsitefields::MODALITY_HYBRID
             )
         );
     }
@@ -377,7 +377,7 @@ final class after_form_definition_test extends \advanced_testcase {
         $this->resetAfterTest();
         $hook = $this->make_hook();
         after_form_definition::callback($hook);
-        $this->assertSame([], self::hidden_by($hook->mform, self::MODELO, 'eq', (string) hotsitefields::MODELO_EVENTO));
+        $this->assertSame([], self::hidden_by($hook->mform, self::MODEL, 'eq', (string) hotsitefields::MODEL_EVENT));
     }
     /**
      * A course's self enrolment instance, enabled, with the given fields.
@@ -401,9 +401,9 @@ final class after_form_definition_test extends \advanced_testcase {
      */
     private function hook_with_modality(?\stdClass $course): \core_course\hook\after_form_definition {
         $hook = $this->make_hook($course);
-        $modalidade = 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE;
-        $hook->mform->addElement('select', $modalidade, 'Modality', [0 => '', 1 => 'Online']);
-        $hook->mform->addElement('static', $modalidade . '_static', '', 'Whether the offering is online.');
+        $modality = 'customfield_' . hotsitefields::SHORTNAME_MODALITY;
+        $hook->mform->addElement('select', $modality, 'Modality', [0 => '', 1 => 'Online']);
+        $hook->mform->addElement('static', $modality . '_static', '', 'Whether the offering is online.');
         return $hook;
     }
 
@@ -412,7 +412,7 @@ final class after_form_definition_test extends \advanced_testcase {
      */
     public function test_an_event_with_an_undated_method_is_warned(): void {
         $this->resetAfterTest();
-        $course = $this->create_course_with_model(hotsitefields::MODELO_EVENTO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_EVENT);
         self::self_instance($course, ['name' => 'Presencial', 'enrolenddate' => 0, 'customint6' => 1]);
 
         $hook = $this->hook_with_modality($course);
@@ -424,11 +424,11 @@ final class after_form_definition_test extends \advanced_testcase {
             s(get_string('hotsite_nodeadline', 'theme_dimensions', 'Presencial')),
             $html
         );
-        $modalidade = 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE;
+        $modality = 'customfield_' . hotsitefields::SHORTNAME_MODALITY;
         $order = $this->element_order($hook->mform);
         $this->assertSame(
-            [$modalidade, $modalidade . '_static', after_form_definition::DEADLINE_ELEMENT],
-            array_values(array_intersect($order, [$modalidade, $modalidade . '_static', after_form_definition::DEADLINE_ELEMENT]))
+            [$modality, $modality . '_static', after_form_definition::DEADLINE_ELEMENT],
+            array_values(array_intersect($order, [$modality, $modality . '_static', after_form_definition::DEADLINE_ELEMENT]))
         );
     }
 
@@ -437,7 +437,7 @@ final class after_form_definition_test extends \advanced_testcase {
      */
     public function test_no_warning_where_a_deadline_is_set_or_none_is_needed(): void {
         $this->resetAfterTest();
-        $event = $this->create_course_with_model(hotsitefields::MODELO_EVENTO);
+        $event = $this->create_course_with_model(hotsitefields::MODEL_EVENT);
         $instance = self::self_instance($event, ['enrolenddate' => time() + WEEKSECS, 'customint6' => 1]);
         $hook = $this->hook_with_modality($event);
         after_form_definition::callback($hook);
@@ -448,9 +448,9 @@ final class after_form_definition_test extends \advanced_testcase {
         after_form_definition::callback($hook);
         $this->assertFalse($hook->mform->elementExists(after_form_definition::DEADLINE_ELEMENT));
 
-        $curso = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
-        self::self_instance($curso, ['enrolenddate' => 0, 'customint6' => 1]);
-        $hook = $this->hook_with_modality($curso);
+        $plaincourse = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
+        self::self_instance($plaincourse, ['enrolenddate' => 0, 'customint6' => 1]);
+        $hook = $this->hook_with_modality($plaincourse);
         after_form_definition::callback($hook);
         $this->assertFalse($hook->mform->elementExists(after_form_definition::DEADLINE_ELEMENT));
 

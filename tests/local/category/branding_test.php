@@ -387,7 +387,7 @@ final class branding_test extends \advanced_testcase {
         $this->resetAfterTest();
         $categoryid = (int) self::getDataGenerator()->create_category()->id;
         $file = self::store($categoryid, 'hero.png', base64_decode(self::PNG));
-        $badge = self::store_badge($categoryid, branding::AREA_BADGES[0], 'brasao.png', base64_decode(self::PNG));
+        $badge = self::store_badge($categoryid, branding::AREA_BADGES[0], 'crest.png', base64_decode(self::PNG));
 
         $payload = branding::for_category($categoryid);
         $this->assertSame(branding::CACHED_KEYS, array_keys($payload));
@@ -479,7 +479,7 @@ final class branding_test extends \advanced_testcase {
         $fs = get_file_storage();
         $cache = \core_cache\cache::make(branding::COMPONENT, branding::CACHE);
 
-        self::store_badge($categoryid, branding::AREA_BADGES[0], 'brasao.png', base64_decode(self::PNG));
+        self::store_badge($categoryid, branding::AREA_BADGES[0], 'crest.png', base64_decode(self::PNG));
 
         $this->assertSame(1, $DB->count_records(branding::TABLE, ['categoryid' => $categoryid]), 'Precondition.');
         $this->assertNotEmpty($fs->get_area_files($contextid, branding::COMPONENT, branding::AREA_HERO, 0, 'id', false));
@@ -815,13 +815,13 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame([], branding::for_category($categoryid)['badges']);
 
         $one = self::store_badge($categoryid, $third, 'sigma.png', base64_decode(self::PNG));
-        $two = self::store_badge($categoryid, $first, 'brasao-alfa.png', base64_decode(self::PNG));
+        $two = self::store_badge($categoryid, $first, 'crest-alpha.png', base64_decode(self::PNG));
         branding::forget_all();
 
         // Stored third-then-first, read first-then-third: the AREA decides, never the upload order.
         $this->assertSame([$first, $third], array_keys(branding::badges($categoryid)));
         $this->assertSame(
-            ['brasao-alfa.png', 'sigma.png'],
+            ['crest-alpha.png', 'sigma.png'],
             array_map(static fn(\stored_file $file): string => $file->get_filename(), array_values(branding::badges($categoryid))),
             'The middle slot is empty, and the row closes the gap rather than leaving a hole.'
         );
@@ -853,13 +853,13 @@ final class branding_test extends \advanced_testcase {
         $categoryid = (int) self::getDataGenerator()->create_category()->id;
         $contextid = \core\context\coursecat::instance($categoryid)->id;
         [$first, $second] = branding::AREA_BADGES;
-        $file = self::store_badge($categoryid, $second, 'brasao-alfa.png', base64_decode(self::PNG));
+        $file = self::store_badge($categoryid, $second, 'crest-alpha.png', base64_decode(self::PNG));
 
         $payload = branding::for_category($categoryid);
         $url = branding::badge_url($categoryid, $second, $payload['badges'][$second])->out(false);
         $this->assertStringEndsWith(
             "/pluginfile.php/{$contextid}/theme_dimensions/{$second}/{$categoryid}/"
-                . $file->get_contenthash() . '/brasao-alfa.png',
+                . $file->get_contenthash() . '/crest-alpha.png',
             $url,
             'The area is the second path segment: it is what tells one badge from another.'
         );
@@ -871,7 +871,7 @@ final class branding_test extends \advanced_testcase {
 
         // What both category surfaces draw: the address and the file name read as words.
         $entries = branding::badges_for_output($categoryid, $payload['badges']);
-        $this->assertSame([['url' => $url, 'alt' => 'brasao alfa']], $entries);
+        $this->assertSame([['url' => $url, 'alt' => 'crest alpha']], $entries);
         $this->assertSame([], branding::badges_for_output($categoryid, []), 'And nothing for a category with none.');
     }
 
@@ -889,13 +889,13 @@ final class branding_test extends \advanced_testcase {
         [$first, $second] = branding::AREA_BADGES;
 
         branding::save($categoryid, (object) [
-            $first => self::draft_with('brasao-alfa.png', base64_decode(self::PNG)),
+            $first => self::draft_with('crest-alpha.png', base64_decode(self::PNG)),
             $second => self::draft_with('dimensions.png', base64_decode(self::PNG)),
         ]);
 
         $badges = branding::badges($categoryid);
         $this->assertSame([$first, $second], array_keys($badges));
-        $this->assertSame('brasao-alfa.png', $badges[$first]->get_filename());
+        $this->assertSame('crest-alpha.png', $badges[$first]->get_filename());
         $this->assertSame('dimensions.png', $badges[$second]->get_filename());
         $this->assertCount(2, branding::for_category($categoryid)['badges'], 'The cache was dropped by the save.');
 
@@ -931,7 +931,7 @@ final class branding_test extends \advanced_testcase {
         branding::save($categoryid, (object) [
             branding::AREA_COVER => self::draft_with('capa.png', base64_decode(self::PNG)),
             branding::AREA_COVERVIDEO => self::draft_with('capa.mp4', self::video_bytes('cover.mp4')),
-            $firstbadge => self::draft_with('brasao.png', base64_decode(self::PNG)),
+            $firstbadge => self::draft_with('crest.png', base64_decode(self::PNG)),
         ]);
 
         $payload = branding::for_category($categoryid);
@@ -1072,7 +1072,7 @@ final class branding_test extends \advanced_testcase {
             [
                 '<p><a class="external-media-provider" href="https://www.youtube.com/watch?v=aqz-KE-bpKQ">v</a></p>',
                 '<p><a class="external-media-provider" href="https://example.org/sample-5s.mp4">s</a></p>',
-                '<p><img src="https://example.org/brasao.png" alt="Brasao"></p>',
+                '<p><img src="https://example.org/crest.png" alt="Crest"></p>',
                 '<p>Sobre data: e blob: e draftfile.php nada a declarar.</p>',
                 '<p>Uma imagem normal</p>',
             ] as $text
@@ -1099,7 +1099,7 @@ final class branding_test extends \advanced_testcase {
         $categoryid = (int) self::getDataGenerator()->create_category()->id;
         $context = \core\context\coursecat::instance($categoryid);
         [$first, $second, $third] = branding::AREA_BADGES;
-        $png = self::store_badge($categoryid, $first, 'brasao-alfa.png', base64_decode(self::PNG));
+        $png = self::store_badge($categoryid, $first, 'crest-alpha.png', base64_decode(self::PNG));
         $svg = self::store_badge(
             $categoryid,
             $second,
@@ -1125,7 +1125,7 @@ final class branding_test extends \advanced_testcase {
         );
 
         // A file core refuses as an image is refused from a badge area, as the hero area refuses it.
-        $broken = self::store_badge($categoryid, $third, 'brasao-alfa.png', 'not an image at all');
+        $broken = self::store_badge($categoryid, $third, 'crest-alpha.png', 'not an image at all');
         $this->assertFalse($broken->is_valid_image(), 'Precondition: core refuses these bytes as an image.');
         $this->assertNull(
             branding::resolve($context, self::args($categoryid, $broken), $third),
@@ -1138,7 +1138,7 @@ final class branding_test extends \advanced_testcase {
         );
 
         // A stale hash, another name, the wrong number of segments, and the wrong area.
-        $this->assertNull(branding::resolve($context, [(string) $categoryid, sha1('stale'), 'brasao-alfa.png'], $first));
+        $this->assertNull(branding::resolve($context, [(string) $categoryid, sha1('stale'), 'crest-alpha.png'], $first));
         $this->assertNull(branding::resolve($context, [(string) $categoryid, $png->get_contenthash(), 'other.png'], $first));
         $this->assertNull(branding::resolve($context, [(string) $categoryid, $png->get_contenthash()], $first));
         $this->assertNull(
@@ -1146,7 +1146,7 @@ final class branding_test extends \advanced_testcase {
             'The first badge is not served under the second badge\'s address.'
         );
         $this->assertNull(
-            branding::resolve($context, [(string) $categoryid, $png->get_contenthash(), 'brasao-alfa.png'], $third),
+            branding::resolve($context, [(string) $categoryid, $png->get_contenthash(), 'crest-alpha.png'], $third),
             'Nor under the address of a third badge that holds different bytes.'
         );
     }
@@ -1165,9 +1165,9 @@ final class branding_test extends \advanced_testcase {
         $listed = (int) $generator->create_category()->id;
         $unlisted = (int) $generator->create_category()->id;
         [$first] = branding::AREA_BADGES;
-        $publicbadge = self::store_badge($public, $first, 'brasao.png', base64_decode(self::PNG));
-        $listedbadge = self::store_badge($listed, $first, 'brasao.png', base64_decode(self::PNG));
-        $unlistedbadge = self::store_badge($unlisted, $first, 'brasao.png', base64_decode(self::PNG));
+        $publicbadge = self::store_badge($public, $first, 'crest.png', base64_decode(self::PNG));
+        $listedbadge = self::store_badge($listed, $first, 'crest.png', base64_decode(self::PNG));
+        $unlistedbadge = self::store_badge($unlisted, $first, 'crest.png', base64_decode(self::PNG));
         $this->set_category_state($public, category_discoverability::STATE_PUBLIC);
         $this->set_category_state($unlisted, category_discoverability::STATE_UNLISTED);
 

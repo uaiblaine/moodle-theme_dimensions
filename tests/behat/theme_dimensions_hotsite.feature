@@ -13,7 +13,7 @@ Feature: Course enrolment hotsite
 
   Scenario: A logged-in user sees the hotsite of a course with a page model
     Given the following "courses" exist:
-      | fullname       | shortname | summary                  | customfield_hotsite_modelo | customfield_modalidade | customfield_carga_horaria | customfield_local_cidade |
+      | fullname       | shortname | summary                  | customfield_dimensions_model | customfield_dimensions_modality | customfield_dimensions_workload | customfield_dimensions_city |
       | Hotsite Course | HC1       | <p>About the course.</p> | 1                          | 2                      | 36                        | São Paulo                 |
     When I am on the "HC1" "theme_dimensions > Enrolment hotsite" page logged in as "student1"
     Then I should see "Hotsite Course"
@@ -28,7 +28,7 @@ Feature: Course enrolment hotsite
       | username | firstname | lastname | email                |
       | student2 | Sue       | Student  | student2@example.com |
     And the following "courses" exist:
-      | fullname         | shortname | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname         | shortname | customfield_dimensions_model | customfield_dimensions_modality |
       | Scheduled Course | SC1       | 1                          | 1                      |
     And the following "course enrolments" exist:
       | user     | course | role    | timestart   |
@@ -50,7 +50,7 @@ Feature: Course enrolment hotsite
       | student2 | Sue       | Student  | student2@example.com |
       | student3 | Tom       | Student  | student3@example.com |
     And the following "courses" exist:
-      | fullname        | shortname | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname        | shortname | customfield_dimensions_model | customfield_dimensions_modality |
       | Paused Course   | PC1       | 1                          | 1                      |
     And the following "course enrolments" exist:
       | user     | course | role    | status    | timestart    | timeend     |
@@ -74,7 +74,7 @@ Feature: Course enrolment hotsite
     Given the following config values are set as admin:
       | forcelogin | 1 |
     And the following "courses" exist:
-      | fullname   | shortname | customfield_hotsite_modelo | customfield_descricao_publica |
+      | fullname   | shortname | customfield_dimensions_model | customfield_dimensions_publicdescription |
       | Open Event | OE1       | 2                          | Curso aberto & gratuito       |
     And the course "OE1" is "public" for discoverability
     # A login leads somewhere only where a method would take the learner in.
@@ -92,7 +92,7 @@ Feature: Course enrolment hotsite
 
   Scenario: A visitor of a course whose only way in is guest access is led in as a guest, not to the login
     Given the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname     | shortname | customfield_dimensions_model | customfield_dimensions_modality |
       | Guest Course | GA1       | 1                          | 1                      |
     And the course "GA1" is "public" for discoverability
     And I am on the "Guest Course" "enrolment methods" page logged in as "admin"
@@ -113,7 +113,7 @@ Feature: Course enrolment hotsite
       | forcelogin       | 1 |
       | guestloginbutton | 1 |
     And the following "courses" exist:
-      | fullname       | shortname | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname       | shortname | customfield_dimensions_model | customfield_dimensions_modality |
       | Visitor Course | VG1       | 1                          | 1                      |
     And the course "VG1" is "public" for discoverability
     And I am on the "Visitor Course" "enrolment methods" page logged in as "admin"
@@ -130,7 +130,7 @@ Feature: Course enrolment hotsite
     Given the following config values are set as admin:
       | forcelogin | 1 |
     And the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo |
+      | fullname     | shortname | customfield_dimensions_model |
       | Imaged Event | IE1       | 2                          |
     And the course "IE1" has a course image
     And the course "IE1" is "public" for discoverability
@@ -145,7 +145,7 @@ Feature: Course enrolment hotsite
     Given the following config values are set as admin:
       | forcelogin | 1 |
     And the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo |
+      | fullname     | shortname | customfield_dimensions_model |
       | Closed Event | CE1       | 2                          |
     When I am on the "CE1" "theme_dimensions > Enrolment hotsite" page
     Then "Username" "field" should exist
@@ -161,7 +161,7 @@ Feature: Course enrolment hotsite
     Given the following config values are set as admin:
       | forcelogin | 1 |
     And the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo |
+      | fullname     | shortname | customfield_dimensions_model |
       | Public Curso | PU1       | 1                          |
     And the course "PU1" is "public" for discoverability
     When I am on the "PU1" "theme_dimensions > Enrolment hotsite" page logged in as "student1"
@@ -178,7 +178,7 @@ Feature: Course enrolment hotsite
 
   Scenario: The standard enrolment page forwards to the hotsite when a model is set
     Given the following "courses" exist:
-      | fullname       | shortname | customfield_hotsite_modelo | customfield_carga_horaria |
+      | fullname       | shortname | customfield_dimensions_model | customfield_dimensions_workload |
       | Forward Course | FC1       | 1                          | 36                        |
     When I am on the "FC1" "theme_dimensions > Standard enrolment page" page logged in as "student1"
     Then I should see "36 hours"
@@ -203,7 +203,7 @@ Feature: Course enrolment hotsite
 
   Scenario: A configured course offers its public address and a link to its hotsite from the course settings
     Given the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo |
+      | fullname     | shortname | customfield_dimensions_model |
       | Linked Curso | LC1       | 1                          |
     When I am on the "LC1" "course editing" page logged in as "admin"
     Then "View the enrolment hotsite" "link" should exist
@@ -221,7 +221,7 @@ Feature: Course enrolment hotsite
 
   Scenario: A past event shows the held seal instead of any enrolment action
     Given the following "courses" exist:
-      | fullname   | shortname | startdate       | enddate        | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname   | shortname | startdate       | enddate        | customfield_dimensions_model | customfield_dimensions_modality |
       | Past Event | PE1       | ##10 days ago## | ##3 days ago## | 2                          | 1                      |
     When I am on the "PE1" "theme_dimensions > Enrolment hotsite" page logged in as "student1"
     Then I should see "Held on"
@@ -235,7 +235,7 @@ Feature: Course enrolment hotsite
   Scenario: An editor uploads a badge and a video address and the hotsite shows both
     Given I enable "youtube" "media" plugin
     And the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo |
+      | fullname     | shortname | customfield_dimensions_model |
       | Badge Course | BC1       | 1                          |
     When I am on the "BC1" "course editing" page logged in as "admin"
     And I click on "Expand all" "link" in the "region-main" "region"
@@ -249,7 +249,7 @@ Feature: Course enrolment hotsite
 
   Scenario: A video address no media player embeds is refused on the course form
     Given the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo |
+      | fullname     | shortname | customfield_dimensions_model |
       | Video Course | VC1       | 1                          |
     When I am on the "VC1" "course editing" page logged in as "admin"
     And I set the field "Presentation video (address)" to "https://example.com/video.html"
@@ -259,30 +259,30 @@ Feature: Course enrolment hotsite
   @javascript
   Scenario: The course form shows the study format, the live classes and the hybrid fields only where they apply
     Given the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo |
+      | fullname     | shortname | customfield_dimensions_model |
       | Format Curso | FC1       | 1                          |
     When I am on the "FC1" "course editing" page logged in as "admin"
     And I click on "Expand all" "link" in the "region-main" "region"
-    Then "customfield_encontros_presenciais" "field" should not be visible
+    Then "customfield_dimensions_meetings" "field" should not be visible
     And I should not see "Hybrid offerings only: a short line about the in-person meetings"
-    And I set the field "customfield_modalidade" to "Hybrid"
-    And "customfield_encontros_presenciais" "field" should be visible
+    And I set the field "customfield_dimensions_modality" to "Hybrid"
+    And "customfield_dimensions_meetings" "field" should be visible
     And I should see "Hybrid offerings only: a short line about the in-person meetings"
-    And I set the field "customfield_formato" to "Self-paced"
-    And "id_customfield_aulas_aovivo" "field" should not be visible
-    And I set the field "customfield_formato" to "Tutored"
-    And "id_customfield_aulas_aovivo" "field" should be visible
-    And "customfield_aulas_aovivo_quando" "field" should not be visible
-    And I set the field "id_customfield_aulas_aovivo" to "1"
-    And "customfield_aulas_aovivo_quando" "field" should be visible
-    And I set the field "customfield_hotsite_modelo" to "Event"
-    And "customfield_formato" "field" should not be visible
-    And "id_customfield_aulas_aovivo" "field" should not be visible
+    And I set the field "customfield_dimensions_format" to "Self-paced"
+    And "id_customfield_dimensions_liveclasses" "field" should not be visible
+    And I set the field "customfield_dimensions_format" to "Tutored"
+    And "id_customfield_dimensions_liveclasses" "field" should be visible
+    And "customfield_dimensions_liveclasseswhen" "field" should not be visible
+    And I set the field "id_customfield_dimensions_liveclasses" to "1"
+    And "customfield_dimensions_liveclasseswhen" "field" should be visible
+    And I set the field "customfield_dimensions_model" to "Event"
+    And "customfield_dimensions_format" "field" should not be visible
+    And "id_customfield_dimensions_liveclasses" "field" should not be visible
     And I should not see "Courses only: whether participants study alone"
 
   Scenario: A self enrolment with a cap shows its seats on the hotsite
     Given the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname     | shortname | customfield_dimensions_model | customfield_dimensions_modality |
       | Seats Course | SC1       | 1                          | 1                      |
     And I log in as "admin"
     And I add "Self enrolment" enrolment method in "Seats Course" with:
@@ -295,7 +295,7 @@ Feature: Course enrolment hotsite
 
   Scenario: An event whose enrolment method sets no deadline is warned on its settings
     Given the following "courses" exist:
-      | fullname      | shortname | customfield_hotsite_modelo |
+      | fullname      | shortname | customfield_dimensions_model |
       | Undated Event | UE1       | 2                          |
     And I log in as "admin"
     And I add "Self enrolment" enrolment method in "Undated Event" with:
@@ -305,18 +305,18 @@ Feature: Course enrolment hotsite
 
   Scenario: A self-paced course that is not online is refused on the course form
     Given the following "courses" exist:
-      | fullname        | shortname | customfield_hotsite_modelo |
+      | fullname        | shortname | customfield_dimensions_model |
       | Self-paced Mix  | SP1       | 1                          |
     When I am on the "SP1" "course editing" page logged in as "admin"
     And I set the following fields to these values:
-      | customfield_modalidade | Hybrid     |
-      | customfield_formato    | Self-paced |
+      | customfield_dimensions_modality | Hybrid     |
+      | customfield_dimensions_format    | Self-paced |
     And I press "Save and display"
     Then I should see "A self-paced course is always online."
 
   Scenario: The public address opens the hotsite
     Given the following "courses" exist:
-      | fullname      | shortname | customfield_hotsite_modelo |
+      | fullname      | shortname | customfield_dimensions_model |
       | Shared Course | SC1       | 1                          |
     When I am on the "SC1" "theme_dimensions > Hotsite short address" page logged in as "student1"
     Then I should see "Shared Course"
@@ -326,7 +326,7 @@ Feature: Course enrolment hotsite
     Given the following config values are set as admin:
       | forcelogin | 1 |
     And the following "courses" exist:
-      | fullname      | shortname | customfield_hotsite_modelo |
+      | fullname      | shortname | customfield_dimensions_model |
       | Closed Course | CC1       | 1                          |
     When I am on the "CC1" "theme_dimensions > Hotsite short address" page
     Then "Username" "field" should exist
@@ -334,7 +334,7 @@ Feature: Course enrolment hotsite
 
   Scenario: The old address of the hotsite keeps answering, on the page's canonical address
     Given the following "courses" exist:
-      | fullname      | shortname | customfield_hotsite_modelo |
+      | fullname      | shortname | customfield_dimensions_model |
       | Moved Course  | MC1       | 1                          |
     When I am on the "MC1" "theme_dimensions > Legacy hotsite address" page logged in as "student1"
     Then I should see "Moved Course"
@@ -342,7 +342,7 @@ Feature: Course enrolment hotsite
 
   Scenario: The routed address of the hotsite answers through r.php on any web server
     Given the following "courses" exist:
-      | fullname      | shortname | customfield_hotsite_modelo |
+      | fullname      | shortname | customfield_dimensions_model |
       | Routed Course | RC1       | 1                          |
     When I am on the "RC1" "theme_dimensions > Routed hotsite address" page logged in as "student1"
     Then I should see "Routed Course"
@@ -352,7 +352,7 @@ Feature: Course enrolment hotsite
     Given the following config values are set as admin:
       | forcelogin | 1 |
     And the following "courses" exist:
-      | fullname     | shortname | customfield_hotsite_modelo | customfield_descricao_publica |
+      | fullname     | shortname | customfield_dimensions_model | customfield_dimensions_publicdescription |
       | Routed Event | RE1       | 2                          | Evento aberto                 |
     And the course "RE1" is "public" for discoverability
     # A login leads somewhere only where a method would take the learner in.

@@ -98,9 +98,9 @@ final class cards_test extends \advanced_testcase {
             // A textarea value is the one that would cost: core's export runs the text filters per course context.
             course_handler::create()->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_EVENTO,
-                'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => "City {$i}",
-                'customfield_' . hotsitefields::SHORTNAME_PROGRAMA . '_editor' => [
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+                'customfield_' . hotsitefields::SHORTNAME_CITY => "City {$i}",
+                'customfield_' . hotsitefields::SHORTNAME_PROGRAMME . '_editor' => [
                     'text' => "<p>Programme {$i}</p>", 'format' => FORMAT_HTML,
                 ],
             ]);
@@ -130,13 +130,13 @@ final class cards_test extends \advanced_testcase {
 
         $values = cards::values($two);
         foreach ($two as $courseid => $row) {
-            $this->assertSame(hotsitefields::MODELO_EVENTO, $values[(int) $courseid]->modelo);
-            $this->assertStringStartsWith('City ', $values[(int) $courseid]->cidade);
-            $this->assertStringContainsString('Programme ', $values[(int) $courseid]->programa);
+            $this->assertSame(hotsitefields::MODEL_EVENT, $values[(int) $courseid]->model);
+            $this->assertStringStartsWith('City ', $values[(int) $courseid]->city);
+            $this->assertStringContainsString('Programme ', $values[(int) $courseid]->programme);
         }
         // The card's textarea is the hotsite's minus the filter pass: same text, same cleaning.
         $first = (int) array_key_first($two);
-        $this->assertSame(hotsitefields::values($first)->programa, $values[$first]->programa, 'No filter changes this text.');
+        $this->assertSame(hotsitefields::values($first)->programme, $values[$first]->programme, 'No filter changes this text.');
         $records = cards::records(array_keys($twelve));
         $this->assertSame(array_keys($twelve), array_keys($records), 'Rows come back in the order asked.');
         $this->assertObjectHasProperty('fullname', reset($records));

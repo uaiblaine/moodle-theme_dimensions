@@ -85,7 +85,7 @@ final class request_guest_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course(['fullname' => 'Gestão de Riscos & Barragens']);
         \core_course\customfield\course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
         ]);
         if ($public) {
             \local_unlistedcourses\discoverability::set_state(

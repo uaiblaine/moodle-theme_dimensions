@@ -46,15 +46,15 @@ final class facets_test extends \advanced_testcase {
     /**
      * Provision the hotsite fields and return the two select ones.
      *
-     * @return array The modelo field at 0 and the modalidade field at 1.
+     * @return array The model field at 0 and the modality field at 1.
      */
     private function hotsite_selects(): array {
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
         return [
-            hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO),
-            hotsitefields::get_field(hotsitefields::SHORTNAME_MODALIDADE),
+            hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL),
+            hotsitefields::get_field(hotsitefields::SHORTNAME_MODALITY),
         ];
     }
 
@@ -78,8 +78,8 @@ final class facets_test extends \advanced_testcase {
      */
     public function test_fields_reads_the_allowlist_in_order_capped_at_four_select_fields(): void {
         $this->resetAfterTest();
-        [$modelo, $modalidade] = $this->hotsite_selects();
-        $categoryid = (int) $modelo->get('categoryid');
+        [$model, $modality] = $this->hotsite_selects();
+        $categoryid = (int) $model->get('categoryid');
         $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
         $extra = [];
         for ($i = 1; $i <= 3; $i++) {
@@ -99,10 +99,10 @@ final class facets_test extends \advanced_testcase {
         set_config(
             facets::SETTING,
             implode(',', [
-                hotsitefields::SHORTNAME_MODALIDADE,
-                hotsitefields::SHORTNAME_CARGAHORARIA,
+                hotsitefields::SHORTNAME_MODALITY,
+                hotsitefields::SHORTNAME_WORKLOAD,
                 'nosuchfield',
-                hotsitefields::SHORTNAME_MODELO,
+                hotsitefields::SHORTNAME_MODEL,
                 'extra1',
                 'extra2',
                 'extra3',
@@ -111,11 +111,11 @@ final class facets_test extends \advanced_testcase {
         );
         $fields = facets::fields();
         $this->assertSame(
-            [(int) $modalidade->get('id'), (int) $modelo->get('id'), (int) $extra[0]->get('id'), (int) $extra[1]->get('id')],
+            [(int) $modality->get('id'), (int) $model->get('id'), (int) $extra[0]->get('id'), (int) $extra[1]->get('id')],
             array_keys($fields),
             'Configured order, number field and unknown shortname skipped, capped at four.'
         );
-        $this->assertSame(hotsitefields::SHORTNAME_MODALIDADE, reset($fields)->get('shortname'));
+        $this->assertSame(hotsitefields::SHORTNAME_MODALITY, reset($fields)->get('shortname'));
     }
 
     /**
@@ -123,7 +123,7 @@ final class facets_test extends \advanced_testcase {
      */
     public function test_values_is_one_statement_over_the_admitted_categories(): void {
         $this->resetAfterTest();
-        [$modelo, $modalidade] = $this->hotsite_selects();
+        [$model, $modality] = $this->hotsite_selects();
         $generator = self::getDataGenerator();
         $inside = $generator->create_category();
         $also = $generator->create_category();
@@ -133,14 +133,14 @@ final class facets_test extends \advanced_testcase {
         $c = $generator->create_course(['category' => $inside->id]);
         $out = $generator->create_course(['category' => $outside->id]);
         $this->store((int) $a->id, [
-            hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_EVENTO,
-            hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_ONLINE,
+            hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+            hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_ONLINE,
         ]);
-        $this->store((int) $b->id, [hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO]);
-        $this->store((int) $out->id, [hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO]);
+        $this->store((int) $b->id, [hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE]);
+        $this->store((int) $out->id, [hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE]);
         $this->assertNotEmpty($c);
 
-        $fieldids = [(int) $modelo->get('id'), (int) $modalidade->get('id')];
+        $fieldids = [(int) $model->get('id'), (int) $modality->get('id')];
         $values = [];
         $reads = $this->reads(function () use ($fieldids, $inside, $also, &$values) {
             $values = facets::values($fieldids, [(int) $inside->id, (int) $also->id]);
@@ -148,10 +148,10 @@ final class facets_test extends \advanced_testcase {
         $this->assertSame(1, $reads);
         // A keyed map: the statement carries no ORDER BY, so the engine picks the row order.
         $this->assertEquals(
-            [(int) $a->id => hotsitefields::MODELO_EVENTO, (int) $b->id => hotsitefields::MODELO_CURSO],
+            [(int) $a->id => hotsitefields::MODEL_EVENT, (int) $b->id => hotsitefields::MODEL_COURSE],
             $values[$fieldids[0]]
         );
-        $this->assertSame([(int) $a->id => hotsitefields::MODALIDADE_ONLINE], $values[$fieldids[1]]);
+        $this->assertSame([(int) $a->id => hotsitefields::MODALITY_ONLINE], $values[$fieldids[1]]);
         $this->assertArrayNotHasKey((int) $out->id, $values[$fieldids[0]], 'Another category is not read.');
 
         $this->assertSame([], facets::values([], [(int) $inside->id]));
@@ -163,10 +163,10 @@ final class facets_test extends \advanced_testcase {
      */
     public function test_groups_count_over_the_post_filter_list_with_the_other_groups_applied(): void {
         $this->resetAfterTest();
-        [$modelo, $modalidade] = $this->hotsite_selects();
-        $m = (int) $modelo->get('id');
-        $d = (int) $modalidade->get('id');
-        $fields = [$m => $modelo, $d => $modalidade];
+        [$model, $modality] = $this->hotsite_selects();
+        $m = (int) $model->get('id');
+        $d = (int) $modality->get('id');
+        $fields = [$m => $model, $d => $modality];
         $values = [
             $m => [1 => 1, 2 => 2, 3 => 2, 4 => 1, 9 => 2],
             $d => [1 => 1, 2 => 1, 3 => 2, 9 => 1],
@@ -178,10 +178,10 @@ final class facets_test extends \advanced_testcase {
         $this->assertSame([1 => 2, 2 => 2], array_map(fn($o) => $o['count'], $groups[$m]['options']));
         $this->assertSame([1 => 2, 2 => 1], array_map(fn($o) => $o['count'], $groups[$d]['options']));
         $this->assertSame(
-            get_string('hotsitefield_modelo_curso', 'theme_dimensions'),
+            get_string('hotsitefield_model_course', 'theme_dimensions'),
             $groups[$m]['options'][1]['label']
         );
-        $this->assertSame(get_string('hotsitefield_modelo', 'theme_dimensions'), $groups[$m]['name']);
+        $this->assertSame(get_string('hotsitefield_model', 'theme_dimensions'), $groups[$m]['name']);
 
         // Modality online picked: the model group counts online courses only; the modality group ignores its own filter.
         $groups = facets::groups($fields, $values, $ids, [$d => 1]);
@@ -199,10 +199,10 @@ final class facets_test extends \advanced_testcase {
      */
     public function test_option_labels_are_one_based_and_plain(): void {
         $this->resetAfterTest();
-        [$modelo] = $this->hotsite_selects();
+        [$model] = $this->hotsite_selects();
         $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
         $field = $generator->create_field([
-            'categoryid' => (int) $modelo->get('categoryid'),
+            'categoryid' => (int) $model->get('categoryid'),
             'type' => 'select',
             'shortname' => 'ampersand',
             'name' => 'Ampersand',

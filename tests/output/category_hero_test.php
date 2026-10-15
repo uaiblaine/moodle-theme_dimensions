@@ -177,21 +177,21 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertFalse($context->hasbadges);
 
         // The parent is branded and the child is not: nothing is inherited.
-        self::store_badge($parent, branding::AREA_BADGES[0], 'brasao-alfa.png');
+        self::store_badge($parent, branding::AREA_BADGES[0], 'crest-alpha.png');
         branding::forget_all();
         $this->assertSame([], $this->export($this->hero($child))->badges, 'And nothing comes down from the parent.');
 
         /* Now the child's own, in the first and third slots: the order is the editor's and the
            gap closes, and the alternative text is the file name read as words. */
         self::store_badge($child, branding::AREA_BADGES[2], 'sigma.svg');
-        self::store_badge($child, branding::AREA_BADGES[0], 'brasao_alfa.png');
+        self::store_badge($child, branding::AREA_BADGES[0], 'crest_alpha.png');
         branding::forget_all();
         $context = $this->export($this->hero($child));
 
         $this->assertTrue($context->hasbadges);
-        $this->assertSame(['brasao alfa', 'sigma'], array_column($context->badges, 'alt'));
+        $this->assertSame(['crest alpha', 'sigma'], array_column($context->badges, 'alt'));
         $this->assertStringContainsString('/categorybadge1/' . $child . '/', $context->badges[0]['url']);
-        $this->assertStringContainsString('/brasao_alfa.png', $context->badges[0]['url']);
+        $this->assertStringContainsString('/crest_alpha.png', $context->badges[0]['url']);
         $this->assertStringContainsString('/categorybadge3/' . $child . '/', $context->badges[1]['url']);
         $this->assertNotEmpty($context->badgeslabel, 'The list is labelled, because its items are images.');
 
@@ -200,7 +200,7 @@ final class category_hero_test extends \advanced_testcase {
         $folded = $this->export($this->hero($child, [], true));
         $this->assertTrue($folded->compact, 'Precondition: this is the folded band.');
         $this->assertTrue($folded->hasbadges, 'A folded hero keeps its crests.');
-        $this->assertSame(['brasao alfa', 'sigma'], array_column($folded->badges, 'alt'));
+        $this->assertSame(['crest alpha', 'sigma'], array_column($folded->badges, 'alt'));
         $this->assertSame(array_column($context->badges, 'url'), array_column($folded->badges, 'url'));
         $this->assertNotEmpty($folded->badgeslabel);
     }
@@ -224,19 +224,19 @@ final class category_hero_test extends \advanced_testcase {
             'inkcolour' => '#ffffff',
             'owncolours' => 1,
         ]);
-        self::store_badge($categoryid, branding::AREA_BADGES[1], 'brasao-beta.png');
+        self::store_badge($categoryid, branding::AREA_BADGES[1], 'crest-beta.png');
         branding::forget_all();
 
         $hero = $this->hero($categoryid);
         $context = $this->export($hero);
         $this->assertTrue($context->compact, 'Precondition: the compact layout.');
-        $this->assertSame(['brasao beta'], array_column($context->badges, 'alt'));
+        $this->assertSame(['crest beta'], array_column($context->badges, 'alt'));
 
         $html = $PAGE->get_renderer('core')->render_from_template('theme_dimensions/category_hero', $context);
         $this->assertStringContainsString('dim-hero--compact', $html);
         $this->assertMatchesRegularExpression(
             '~<ul class="dim-hero__badges"[^>]*data-region="dim-hero-badges"[^>]*>\s*<li class="dim-hero__badge"><img src="[^"]+"'
-                . ' alt="brasao beta"~',
+                . ' alt="crest beta"~',
             $html
         );
     }

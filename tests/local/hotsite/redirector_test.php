@@ -39,10 +39,10 @@ final class redirector_test extends \advanced_testcase {
     /**
      * Create a course, optionally opted into a hotsite model.
      *
-     * @param int $modelo The page model select value (0 = none).
+     * @param int $model The page model select value (0 = none).
      * @return \stdClass The course record.
      */
-    private function create_course_with_model(int $modelo): \stdClass {
+    private function create_course_with_model(int $model): \stdClass {
         \core_course\customfield\course_handler::reset_caches();
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
@@ -50,11 +50,11 @@ final class redirector_test extends \advanced_testcase {
 
         $this->setAdminUser();
         $course = self::getDataGenerator()->create_course();
-        if ($modelo) {
+        if ($model) {
             $handler = \core_course\customfield\course_handler::create();
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
             ]);
         }
         return $course;
@@ -65,7 +65,7 @@ final class redirector_test extends \advanced_testcase {
      */
     public function test_model_course_forwards(): void {
         $this->resetAfterTest();
-        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
 
         $this->setUser(self::getDataGenerator()->create_user());
         $target = redirector::enrol_page_target((int) $course->id, '', false);
@@ -82,7 +82,7 @@ final class redirector_test extends \advanced_testcase {
      */
     public function test_requests_the_standard_page_owns_are_left_alone(): void {
         $this->resetAfterTest();
-        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
         $this->setUser(self::getDataGenerator()->create_user());
 
         // The action=enrol request is enrol_self's own enrolment flow.
@@ -110,7 +110,7 @@ final class redirector_test extends \advanced_testcase {
      */
     public function test_enrolled_users_are_not_forwarded(): void {
         $this->resetAfterTest();
-        $course = $this->create_course_with_model(hotsitefields::MODELO_CURSO);
+        $course = $this->create_course_with_model(hotsitefields::MODEL_COURSE);
         $user = self::getDataGenerator()->create_user();
         self::getDataGenerator()->enrol_user($user->id, $course->id);
 

@@ -186,7 +186,7 @@ final class publicfiles {
      * The URL of a badge picture through this route.
      *
      * @param \stdClass $course The course record.
-     * @param \stored_file $file The badge ({@see hotsitefields::values()} brasoes).
+     * @param \stored_file $file The badge ({@see hotsitefields::values()} crests).
      * @return \core\url The URL, carrying the course id and the content hash.
      */
     public static function badge_url(\stdClass $course, \stored_file $file): \core\url {
@@ -197,7 +197,7 @@ final class publicfiles {
      * The alternative text of a badge: its file name without the extension, read as words.
      *
      * Hyphens and underscores become spaces and runs of whitespace collapse, so
-     * "brasao-alfa.png" is announced as "brasao alfa" rather than as a slug. The editor
+     * "crest-alpha.png" is announced as "crest alpha" rather than as a slug. The editor
      * names the file; the field's description and the category editor's help both say so.
      *
      * One spelling for every badge of this theme: the hotsite's grid, the course card of the

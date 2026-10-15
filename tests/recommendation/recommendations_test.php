@@ -215,7 +215,7 @@ final class recommendations_test extends \advanced_testcase {
 
         $this->assertSame(recommendation::OK, (new customfieldpicture())->get_status());
 
-        customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 0);
+        customfield::enable_plugin(hotsitefields::PICTURE_TYPE, 0);
         $disabled = new customfieldpicture();
         $this->assertSame(recommendation::NOTICE, $disabled->get_status(), 'Recommended, not required.');
         $this->assertSame(
@@ -226,7 +226,7 @@ final class recommendations_test extends \advanced_testcase {
         $this->assertFalse($disabled->supports_autofix(), 'Enabling a field type is the administrator\'s decision.');
         $this->assertStringContainsString('managecustomfields', $disabled->get_action_url()->out(false));
 
-        customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 1);
+        customfield::enable_plugin(hotsitefields::PICTURE_TYPE, 1);
         $this->assertSame(recommendation::OK, (new customfieldpicture())->get_status(), 'Control: enabled again.');
     }
 
@@ -238,8 +238,8 @@ final class recommendations_test extends \advanced_testcase {
     public function test_a_missing_field_warns_without_the_picture_type_and_the_fix_skips_the_pictures(): void {
         $this->provision();
         $this->require_picture_type();
-        customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 0);
-        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMA);
+        customfield::enable_plugin(hotsitefields::PICTURE_TYPE, 0);
+        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMME);
         $this->assertNotNull($field, 'Precondition: the field exists.');
         $field->delete();
         course_handler::reset_caches();
@@ -247,7 +247,7 @@ final class recommendations_test extends \advanced_testcase {
         $missing = new customfieldpicture();
         $this->assertSame(recommendation::WARNING, $missing->get_status());
         $this->assertSame(
-            get_string('recommendation_customfieldpicture_summary_missing', 'theme_dimensions', hotsitefields::SHORTNAME_PROGRAMA),
+            get_string('recommendation_customfieldpicture_summary_missing', 'theme_dimensions', hotsitefields::SHORTNAME_PROGRAMME),
             $missing->get_summary(),
             'The one missing field is named, and none of the picture fields core hides.'
         );
@@ -257,9 +257,9 @@ final class recommendations_test extends \advanced_testcase {
 
         $this->assertSame(recommendation::NOTICE, $missing->get_status(), 'Fixed, and the type is still a notice.');
         hotsitefields::reset_field_cache();
-        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMA));
+        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMME));
         $this->assertDebuggingNotCalled('The fix tried to create no picture field over the hidden ones.');
-        customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 1);
+        customfield::enable_plugin(hotsitefields::PICTURE_TYPE, 1);
     }
 
     /**
@@ -270,14 +270,14 @@ final class recommendations_test extends \advanced_testcase {
     public function test_the_picture_fields_warn_when_a_field_is_missing_and_the_fix_creates_it(): void {
         $this->provision();
         $this->require_picture_type();
-        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_BRASAO1);
+        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_CREST1);
         $this->assertNotNull($field, 'Precondition: the field exists.');
         $field->delete();
         course_handler::reset_caches();
 
         $missing = new customfieldpicture();
         $this->assertSame(recommendation::WARNING, $missing->get_status());
-        $this->assertStringContainsString(hotsitefields::SHORTNAME_BRASAO1, $missing->get_summary());
+        $this->assertStringContainsString(hotsitefields::SHORTNAME_CREST1, $missing->get_summary());
         $this->assertTrue($missing->supports_autofix());
 
         $missing->autofix();
@@ -285,7 +285,7 @@ final class recommendations_test extends \advanced_testcase {
         $this->assertSame(recommendation::OK, $missing->get_status(), 'The same instance reads the site again.');
         $this->assertFalse($missing->supports_autofix());
         hotsitefields::reset_field_cache();
-        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_BRASAO1));
+        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_CREST1));
         $this->assertSame(recommendation::OK, (new customfieldpicture())->get_status());
     }
 }

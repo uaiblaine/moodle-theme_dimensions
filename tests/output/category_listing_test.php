@@ -82,7 +82,7 @@ final class category_listing_test extends \advanced_testcase {
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODALIDADE, 'theme_dimensions');
+        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODALITY, 'theme_dimensions');
         $this->enable_enrol('self');
         $this->enable_enrol('guest');
 
@@ -94,7 +94,7 @@ final class category_listing_test extends \advanced_testcase {
 
         $make = function (array $course, array $fields = []) use ($generator, $handler): int {
             $record = $generator->create_course($course);
-            $data = ['id' => $record->id, 'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO];
+            $data = ['id' => $record->id, 'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE];
             foreach ($fields as $shortname => $value) {
                 $data['customfield_' . $shortname] = $value;
             }
@@ -104,10 +104,10 @@ final class category_listing_test extends \advanced_testcase {
 
         $this->ids['enrolled'] = $make(['category' => $root->id, 'fullname' => 'Resgate & Salvamento',
             'summary' => '<p>Resumo do <b>curso</b>.</p>', 'summaryformat' => FORMAT_HTML], [
-            hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_PRESENCIAL,
-            hotsitefields::SHORTNAME_LOCALCIDADE => 'São Paulo',
-            hotsitefields::SHORTNAME_CARGAHORARIA => 36,
-            hotsitefields::SHORTNAME_PROGRAMA . '_editor' => [
+            hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_INPERSON,
+            hotsitefields::SHORTNAME_CITY => 'São Paulo',
+            hotsitefields::SHORTNAME_WORKLOAD => 36,
+            hotsitefields::SHORTNAME_PROGRAMME . '_editor' => [
                 'text' => '<p>Um</p><p>Dois</p><ul><li>Três</li></ul>',
                 'format' => FORMAT_HTML,
             ],
@@ -115,7 +115,7 @@ final class category_listing_test extends \advanced_testcase {
         $generator->enrol_user($viewer->id, $this->ids['enrolled']);
 
         $this->ids['open'] = $make(['category' => $child->id, 'fullname' => 'Curso Aberto'], [
-            hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_ONLINE,
+            hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_ONLINE,
         ]);
         $this->enable_instance($this->ids['open'], 'self');
 
@@ -132,7 +132,7 @@ final class category_listing_test extends \advanced_testcase {
         ])->id;
         $handler->instance_form_save((object) [
             'id' => $this->ids['held'],
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_EVENTO,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
         ]);
         $this->enable_instance($this->ids['held'], 'self');
 
@@ -231,7 +231,7 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertSame(get_string('category_state_held', 'theme_dimensions'), $held->badge['label']);
         $this->assertNull($held->cta, 'An event already held enrols nobody, whatever its instance says.');
         $this->assertTrue($held->ismuted);
-        $this->assertTrue($held->isevento);
+        $this->assertTrue($held->isevent);
         $this->assertNotNull($held->datetile);
     }
 
@@ -250,7 +250,7 @@ final class category_listing_test extends \advanced_testcase {
         $course = $generator->create_course(['category' => $this->ids['root'], 'fullname' => 'Curso Agendado']);
         $handler->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
         ]);
         $start = time() + 6 * DAYSECS;
         $generator->enrol_user($viewer->id, $course->id, 'student', 'manual', $start, 0);
@@ -298,7 +298,7 @@ final class category_listing_test extends \advanced_testcase {
         $keyed = (int) $course->id;
         course_handler::create()->instance_form_save((object) [
             'id' => $keyed,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
         ]);
         $this->enable_instance($keyed, 'guest', ['password' => 'chave']);
 
@@ -345,7 +345,7 @@ final class category_listing_test extends \advanced_testcase {
             if ($model) {
                 $handler->instance_form_save((object) [
                     'id' => $course->id,
-                    'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+                    'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
                 ]);
             }
             if ($route) {
@@ -1151,7 +1151,7 @@ final class category_listing_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $categoryid, 'fullname' => $fullname]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
             ]);
             if ($public) {
                 \local_unlistedcourses\discoverability::set_state(
@@ -1496,7 +1496,7 @@ final class category_listing_test extends \advanced_testcase {
            order so the assertion below reads the fields' order and not the upload's, with the
            third slot empty so the gap has to close. */
         $coursecontext = \core\context\course::instance($this->ids['enrolled']);
-        $files = [hotsitefields::SHORTNAME_BRASAO4 => 'quarto.png', hotsitefields::SHORTNAME_BRASAO2 => 'segundo.png'];
+        $files = [hotsitefields::SHORTNAME_CREST4 => 'quarto.png', hotsitefields::SHORTNAME_CREST2 => 'segundo.png'];
         foreach ($files as $shortname => $filename) {
             $data = $customfields->add_instance_data(hotsitefields::get_field($shortname), $this->ids['enrolled'], 1);
             get_file_storage()->create_file_from_string([
@@ -2596,7 +2596,7 @@ final class category_listing_test extends \advanced_testcase {
         $fieldid = array_key_first(facets::fields());
         $cases = [
             'a state' => ['state' => classifier::STATE_ENROLLED],
-            'a field' => ['fields' => [$fieldid => hotsitefields::MODALIDADE_ONLINE]],
+            'a field' => ['fields' => [$fieldid => hotsitefields::MODALITY_ONLINE]],
             'a start' => ['datefrom' => '2026-01-01'],
             'an end' => ['dateto' => '2026-12-31'],
         ];

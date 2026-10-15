@@ -262,8 +262,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
             // A conditional card names its prerequisite or is no conditional card: nothing to name, nothing on offer.
             $state = classifier::STATE_NONE;
         }
-        $isevento = $this->values->modelo === hotsitefields::MODELO_EVENTO;
-        $held = $isevento && (int) $this->course->enddate > 0 && (int) $this->course->enddate < time();
+        $isevent = $this->values->model === hotsitefields::MODEL_EVENT;
+        $held = $isevent && (int) $this->course->enddate > 0 && (int) $this->course->enddate < time();
         $enrolled = $state === classifier::STATE_ENROLLED;
         $heldonly = !$this->anonymous && $held && !$enrolled;
 
@@ -285,9 +285,9 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $openslabel = $this->opens_label($state, $mayenter, $heldonly);
         $cta = ($held && !$mayenter) ? null : $this->cta($state, $url, $mayenter, $hasroute);
         $favourite = !$this->anonymous && !empty($this->row->favourite);
-        $kindkey = $this->values->modelo === hotsitefields::MODELO_CURSO ? 'hotsitefield_modelo_curso'
-            : ($isevento ? 'hotsitefield_modelo_evento' : null);
-        $facts = $this->facts($isevento);
+        $kindkey = $this->values->model === hotsitefields::MODEL_COURSE ? 'hotsitefield_model_course'
+            : ($isevent ? 'hotsitefield_model_event' : null);
+        $facts = $this->facts($isevent);
         $learn = $this->learn();
         $excerpt = $this->excerpt($context);
         $badges = $this->badges();
@@ -304,11 +304,11 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'badges' => $badges,
             'hasbadges' => !empty($badges),
             'badgeslabel' => get_string('category_badges', self::COMPONENT),
-            'isevento' => $isevento,
+            'isevent' => $isevent,
             'kindlabel' => $kindkey ? get_string($kindkey, self::COMPONENT) : null,
             'haskind' => $kindkey !== null,
-            'datetile' => $this->datetile($isevento),
-            'meta' => $this->meta($isevento),
+            'datetile' => $this->datetile($isevent),
+            'meta' => $this->meta($isevent),
             'state' => $state ?? '',
             'badge' => ['label' => $badgelabel, 'classes' => $badgeclasses, 'icon' => $badgeicon],
             'hasroute' => $hasroute,
@@ -337,7 +337,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'learn' => $learn,
             'haslearn' => !empty($learn),
             'learnlabel' => get_string('category_learn', self::COMPONENT),
-            'modal' => $this->modal($state, $url, $held, $openslabel, $isevento, $cta),
+            'modal' => $this->modal($state, $url, $held, $openslabel, $isevent, $cta),
         ];
     }
 
@@ -357,14 +357,14 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @param \moodle_url|null $url The card's link ({@see url()}).
      * @param bool $held Whether this is an event already held.
      * @param string $openslabel The card's opening line ({@see opens_label()}), '' where it prints none.
-     * @param bool $isevento Whether the course chose the event model.
+     * @param bool $isevent Whether the course chose the event model.
      * @param array|null $cta The card's call to action ({@see cta()}).
      * @return array The `modal` keys of the card context.
      */
-    private function modal(?string $state, ?\moodle_url $url, bool $held, string $openslabel, bool $isevento, ?array $cta): array {
+    private function modal(?string $state, ?\moodle_url $url, bool $held, string $openslabel, bool $isevent, ?array $cta): array {
         $primary = $this->modal_primary($state, $url, $held, $openslabel, $cta);
         $secondary = $url === null ? null : [
-            'label' => get_string($isevento ? 'category_modal_eventpage' : 'category_modal_coursepage', self::COMPONENT),
+            'label' => get_string($isevent ? 'category_modal_eventpage' : 'category_modal_coursepage', self::COMPONENT),
             'url' => $url->out(false),
         ];
         if ($primary !== null && !$primary['disabled'] && $secondary !== null && $primary['url'] === $secondary['url']) {
@@ -522,11 +522,11 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @return array Entries of ['url' => string, 'alt' => string], in grid order, plain spelling.
      */
     public static function crests(\stdClass $course, \stdClass $values): array {
-        if ($values->modelo <= 0) {
+        if ($values->model <= 0) {
             return [];
         }
         $badges = [];
-        foreach (array_slice($values->brasoes, 0, self::MAX_BADGES) as $file) {
+        foreach (array_slice($values->crests, 0, self::MAX_BADGES) as $file) {
             $badges[] = [
                 'url' => publicfiles::badge_url($course, $file)->out(false),
                 'alt' => publicfiles::badge_alt($file->get_filename()),
@@ -555,7 +555,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         if ($mayenter) {
             return new \moodle_url('/course/view.php', ['id' => $courseid]);
         }
-        if ($this->values->modelo > 0) {
+        if ($this->values->model > 0) {
             return links::page($courseid);
         }
         if ($this->anonymous) {
@@ -628,7 +628,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
      */
     private function cta(?string $state, ?\moodle_url $url, bool $mayenter, bool $hasroute = false): ?array {
         if ($this->anonymous) {
-            if (!$this->values->modelo) {
+            if (!$this->values->model) {
                 return null;
             }
             return [
@@ -647,7 +647,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             /* The route, where the plugin's batch reports one; else the details, which live on the hotsite: without
                one there is nothing to open that would not offer an enrolment. */
             classifier::STATE_SCHEDULED => $hasroute ? 'category_cta_enrolnow'
-                : ($this->values->modelo > 0 ? 'category_cta_details' : null),
+                : ($this->values->model > 0 ? 'category_cta_details' : null),
             classifier::STATE_SUSPENDED, classifier::STATE_EXPIRED => $hasroute ? 'category_cta_enrolnow' : null,
             classifier::STATE_KEY => 'category_cta_key',
             classifier::STATE_CONDITIONAL => 'category_cta_prerequisite',
@@ -679,12 +679,12 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * The event's date tile: day over month, in the user's timezone.
      *
-     * @param bool $isevento Whether the course chose the event model.
+     * @param bool $isevent Whether the course chose the event model.
      * @return array|null ['day' => string, 'month' => string], or null off an event with a start date.
      */
-    private function datetile(bool $isevento): ?array {
+    private function datetile(bool $isevent): ?array {
         $start = (int) $this->course->startdate;
-        if (!$isevento || !$start) {
+        if (!$isevent || !$start) {
             return null;
         }
         return ['day' => userdate($start, '%d'), 'month' => userdate($start, '%b')];
@@ -693,25 +693,25 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * The meta line under the title: the date or the workload, the modality, the city of an in-person offering.
      *
-     * @param bool $isevento Whether the course chose the event model.
+     * @param bool $isevent Whether the course chose the event model.
      * @return string The parts joined with a middle dot, plain spelling; '' when there is nothing.
      */
-    private function meta(bool $isevento): string {
+    private function meta(bool $isevent): string {
         $parts = [];
-        if ($isevento) {
+        if ($isevent) {
             $dateline = $this->dateline();
             if ($dateline !== null) {
                 $parts[] = $dateline;
             }
-        } else if ($this->values->cargahoraria !== null) {
+        } else if ($this->values->workload !== null) {
             $parts[] = $this->hours_label();
         }
-        $modalidade = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALIDADE, $this->values->modalidade);
-        if ($modalidade !== null) {
-            $parts[] = $modalidade;
+        $modality = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALITY, $this->values->modality);
+        if ($modality !== null) {
+            $parts[] = $modality;
         }
-        if ($this->values->modalidade === hotsitefields::MODALIDADE_PRESENCIAL && $this->values->cidade !== null) {
-            $parts[] = $this->values->cidade;
+        if ($this->values->modality === hotsitefields::MODALITY_INPERSON && $this->values->city !== null) {
+            $parts[] = $this->values->city;
         }
         return implode(' · ', $parts);
     }
@@ -719,37 +719,37 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * The panel's fact rows, labelled with the stored field names as the hotsite's card does.
      *
-     * @param bool $isevento Whether the course chose the event model.
+     * @param bool $isevent Whether the course chose the event model.
      * @return array Rows of ['label' => plain, 'value' => plain, 'icon' => the dialogue tile's decorative icon].
      */
-    private function facts(bool $isevento): array {
+    private function facts(bool $isevent): array {
         $names = $this->values->names;
         $facts = [];
-        if ($isevento) {
+        if ($isevent) {
             $dateline = $this->dateline();
             if ($dateline !== null) {
                 $facts[] = ['label' => get_string('date'), 'value' => $dateline, 'icon' => self::FACT_ICONS['date']];
             }
-        } else if ($this->values->cargahoraria !== null && isset($names[hotsitefields::SHORTNAME_CARGAHORARIA])) {
+        } else if ($this->values->workload !== null && isset($names[hotsitefields::SHORTNAME_WORKLOAD])) {
             $facts[] = [
-                'label' => $names[hotsitefields::SHORTNAME_CARGAHORARIA],
+                'label' => $names[hotsitefields::SHORTNAME_WORKLOAD],
                 'value' => $this->hours_label(),
                 'icon' => self::FACT_ICONS['hours'],
             ];
         }
-        $modalidade = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALIDADE, $this->values->modalidade);
-        if ($modalidade !== null && isset($names[hotsitefields::SHORTNAME_MODALIDADE])) {
+        $modality = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALITY, $this->values->modality);
+        if ($modality !== null && isset($names[hotsitefields::SHORTNAME_MODALITY])) {
             $facts[] = [
-                'label' => $names[hotsitefields::SHORTNAME_MODALIDADE],
-                'value' => $modalidade,
+                'label' => $names[hotsitefields::SHORTNAME_MODALITY],
+                'value' => $modality,
                 'icon' => self::FACT_ICONS['mode'],
             ];
         }
-        if ($this->values->modalidade === hotsitefields::MODALIDADE_PRESENCIAL) {
-            $place = array_filter([$this->values->localnome, $this->values->cidade]);
-            if ($place && isset($names[hotsitefields::SHORTNAME_LOCALCIDADE])) {
+        if ($this->values->modality === hotsitefields::MODALITY_INPERSON) {
+            $place = array_filter([$this->values->venue, $this->values->city]);
+            if ($place && isset($names[hotsitefields::SHORTNAME_CITY])) {
                 $facts[] = [
-                    'label' => $names[hotsitefields::SHORTNAME_LOCALCIDADE],
+                    'label' => $names[hotsitefields::SHORTNAME_CITY],
                     'value' => implode(' · ', $place),
                     'icon' => self::FACT_ICONS['place'],
                 ];
@@ -795,7 +795,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @return string
      */
     private function hours_label(): string {
-        $hours = format_float($this->values->cargahoraria, 1, true, true);
+        $hours = format_float($this->values->workload, 1, true, true);
         return get_string('hotsite_hours', self::COMPONENT, $hours);
     }
 
@@ -833,11 +833,11 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @return string[] Up to LEARN_LINES plain lines.
      */
     private function learn(): array {
-        $programa = $this->values->programa;
-        if ($programa === null || trim((string) $programa) === '') {
+        $programme = $this->values->programme;
+        if ($programme === null || trim((string) $programme) === '') {
             return [];
         }
-        return array_slice(self::lines((string) $programa), 0, self::LEARN_LINES);
+        return array_slice(self::lines((string) $programme), 0, self::LEARN_LINES);
     }
 
     /**

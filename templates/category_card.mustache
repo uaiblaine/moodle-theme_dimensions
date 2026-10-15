@@ -84,12 +84,12 @@
         "imageurl": "https://example.com/pluginfile.php/31/course/overviewfiles/capa.jpg",
         "hasimage": true,
         "badges": [
-            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc/brasao-alfa.png", "alt": "brasao alfa"},
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc/crest-alpha.png", "alt": "crest alpha"},
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/def/dimensions.svg", "alt": "dimensions"}
         ],
         "hasbadges": true,
         "badgeslabel": "Instituições",
-        "isevento": false,
+        "isevent": false,
         "kindlabel": "Curso",
         "haskind": true,
         "datetile": null,
@@ -143,7 +143,7 @@
         <span class="dim-card__datetile"><b>{{day}}</b><span>{{month}}</span></span>
         {{/datetile}}
         {{#haskind}}
-        <span class="dim-card__kind{{#isevento}} dim-card__kind--event{{/isevento}}"><i class="fa {{#isevento}}fa-calendar-day{{/isevento}}{{^isevento}}fa-graduation-cap{{/isevento}}" aria-hidden="true"></i><span class="dim-card__kindlabel">{{kindlabel}}</span></span>
+        <span class="dim-card__kind{{#isevent}} dim-card__kind--event{{/isevent}}"><i class="fa {{#isevent}}fa-calendar-day{{/isevent}}{{^isevent}}fa-graduation-cap{{/isevent}}" aria-hidden="true"></i><span class="dim-card__kindlabel">{{kindlabel}}</span></span>
         {{/haskind}}
     </div>
     <div class="dim-card__body">

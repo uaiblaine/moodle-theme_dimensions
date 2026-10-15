@@ -85,12 +85,12 @@ final class hotsite_test extends \core\tests\router\route_testcase {
     /**
      * A course, optionally with a hotsite model and a discoverability state.
      *
-     * @param int $modelo The page model (0 for none).
+     * @param int $model The page model (0 for none).
      * @param string|null $state 'public', 'unlisted' or null for the default.
      * @param array $options Extra course options.
      * @return \stdClass The course.
      */
-    private function make_course(int $modelo, ?string $state = null, array $options = []): \stdClass {
+    private function make_course(int $model, ?string $state = null, array $options = []): \stdClass {
         \core_course\customfield\course_handler::reset_caches();
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
@@ -98,11 +98,11 @@ final class hotsite_test extends \core\tests\router\route_testcase {
 
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course($options);
-        if ($modelo) {
+        if ($model) {
             \core_course\customfield\course_handler::create()->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
-                'customfield_' . hotsitefields::SHORTNAME_DESCRICAOPUBLICA => 'Curso aberto & gratuito',
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
+                'customfield_' . hotsitefields::SHORTNAME_PUBLICDESCRIPTION => 'Curso aberto & gratuito',
             ]);
         }
         if ($state !== null) {
@@ -143,7 +143,7 @@ final class hotsite_test extends \core\tests\router\route_testcase {
         global $CFG;
         $this->resetAfterTest();
         $this->production_shape();
-        $course = $this->make_course(hotsitefields::MODELO_CURSO, 'public', ['fullname' => 'Resgate & Salvamento']);
+        $course = $this->make_course(hotsitefields::MODEL_COURSE, 'public', ['fullname' => 'Resgate & Salvamento']);
         $this->setUser(null);
 
         $response = $this->request((string) $course->id);
@@ -165,7 +165,7 @@ final class hotsite_test extends \core\tests\router\route_testcase {
     public function test_the_route_answers_a_post(): void {
         $this->resetAfterTest();
         $this->production_shape();
-        $course = $this->make_course(hotsitefields::MODELO_CURSO, 'public');
+        $course = $this->make_course(hotsitefields::MODEL_COURSE, 'public');
         $this->setUser(null);
 
         $response = $this->request((string) $course->id, 'POST');
@@ -184,10 +184,10 @@ final class hotsite_test extends \core\tests\router\route_testcase {
     public function test_a_filtered_textarea_is_read_with_the_page_context_set(): void {
         global $PAGE;
         $this->resetAfterTest();
-        $course = $this->make_course(hotsitefields::MODELO_CURSO, 'public');
+        $course = $this->make_course(hotsitefields::MODEL_COURSE, 'public');
         \core_course\customfield\course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_PUBLICOALVO . '_editor' => [
+            'customfield_' . hotsitefields::SHORTNAME_AUDIENCE . '_editor' => [
                 'text' => '<p>Open to everyone :-)</p>',
                 'format' => FORMAT_HTML,
             ],
@@ -211,7 +211,7 @@ final class hotsite_test extends \core\tests\router\route_testcase {
         global $SESSION;
         $this->resetAfterTest();
         $this->production_shape();
-        $course = $this->make_course(hotsitefields::MODELO_CURSO);
+        $course = $this->make_course(hotsitefields::MODEL_COURSE);
         $this->setUser(null);
 
         $response = $this->request((string) $course->id);
@@ -281,7 +281,7 @@ final class hotsite_test extends \core\tests\router\route_testcase {
     public function test_a_ghosted_user_gets_the_unavailable_page(): void {
         $this->resetAfterTest();
         $this->production_shape();
-        $course = $this->make_course(hotsitefields::MODELO_CURSO, 'unlisted');
+        $course = $this->make_course(hotsitefields::MODEL_COURSE, 'unlisted');
         $this->setUser($this->getDataGenerator()->create_user());
 
         $response = $this->request((string) $course->id);
@@ -296,7 +296,7 @@ final class hotsite_test extends \core\tests\router\route_testcase {
     public function test_an_enrolled_user_gets_a_non_public_course_without_head_tags(): void {
         $this->resetAfterTest();
         $this->production_shape();
-        $course = $this->make_course(hotsitefields::MODELO_CURSO, null, ['fullname' => 'Curso Interno']);
+        $course = $this->make_course(hotsitefields::MODEL_COURSE, null, ['fullname' => 'Curso Interno']);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
         $response = $this->request((string) $course->id);
@@ -324,7 +324,7 @@ final class hotsite_test extends \core\tests\router\route_testcase {
         // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         $this->production_shape();
-        $course = $this->make_course(hotsitefields::MODELO_CURSO, 'public', ['fullname' => 'Curso Aberto']);
+        $course = $this->make_course(hotsitefields::MODEL_COURSE, 'public', ['fullname' => 'Curso Aberto']);
         $DB->set_field('enrol', 'status', ENROL_INSTANCE_ENABLED, ['courseid' => $course->id, 'enrol' => 'guest']);
         $this->setUser(null);
 
@@ -350,7 +350,7 @@ final class hotsite_test extends \core\tests\router\route_testcase {
         // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         $this->production_shape();
-        $course = $this->make_course(hotsitefields::MODELO_CURSO, 'public');
+        $course = $this->make_course(hotsitefields::MODEL_COURSE, 'public');
         $DB->set_field('enrol', 'status', ENROL_INSTANCE_ENABLED, ['courseid' => $course->id, 'enrol' => 'guest']);
         $this->setUser($this->getDataGenerator()->create_user());
 

@@ -131,7 +131,7 @@ final class request {
         $PAGE->set_context($context->get_parent_context());
 
         $values = hotsitefields::values($course->id);
-        if (!$values->modelo) {
+        if (!$values->model) {
             return self::redirect_to(new \core\url('/enrol/index.php', ['id' => $course->id]));
         }
 
@@ -228,7 +228,7 @@ final class request {
            last, right before the header: the head hook fires from the error page as well, and a
            throw in the enrol hooks above would otherwise put this course's tags on it. */
         if ($ispublic) {
-            opengraph::set(opengraph::for_course($course, $values->descricaopublica, $hotsiteurl));
+            opengraph::set(opengraph::for_course($course, $values->publicdescription, $hotsiteurl));
         }
 
         return self::render($page);
@@ -268,7 +268,7 @@ final class request {
 
         // The hotsite's rule, armed last for the hotsite's reason: tags for a public course only.
         if (publicaccess::is_public((int) $course->id)) {
-            opengraph::set(opengraph::for_course($course, $values->descricaopublica, $hotsiteurl));
+            opengraph::set(opengraph::for_course($course, $values->publicdescription, $hotsiteurl));
         }
 
         return self::render($page);

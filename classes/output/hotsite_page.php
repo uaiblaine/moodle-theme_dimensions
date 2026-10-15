@@ -126,13 +126,13 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
         /* The tracks of a hybrid event (D3): two or more ways to enrol in one event are its two ways to take
            part, each headed by its instance's own name. Read off the methods as they will be drawn, after a
            held event or an empty fallback has emptied them. */
-        $istracks = $state === resolution::STATE_OPEN && $this->is_evento() && $this->is_hybrid() && count($methods) >= 2;
+        $istracks = $state === resolution::STATE_OPEN && $this->is_event() && $this->is_hybrid() && count($methods) >= 2;
         if ($istracks) {
             $methods = $this->name_tracks($methods);
         }
 
         $badges = $this->badges();
-        $haslivechip = $this->values->aovivo;
+        $haslivechip = $this->values->liveclasses;
         $exported = (object) [
             'courseid' => $this->course->id,
             'fullname' => $this->plain($this->course->fullname, $context),
@@ -306,7 +306,7 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      * @return bool Whether the event was held.
      */
     private function event_held(): bool {
-        return $this->is_evento()
+        return $this->is_event()
             && (int) $this->course->enddate > 0
             && (int) $this->course->enddate < time();
     }
@@ -320,7 +320,7 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      * @return array|null Block of datebig/sub/countdown, or null off the online-event scenario.
      */
     private function hero_date(): ?array {
-        if (!$this->is_evento() || $this->is_presencial() || $this->is_hybrid()) {
+        if (!$this->is_event() || $this->is_inperson() || $this->is_hybrid()) {
             return null;
         }
         $start = (int) $this->course->startdate;
@@ -347,14 +347,14 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      *   null off the hybrid event or without a start date.
      */
     private function hero_ticket(): ?array {
-        if (!$this->is_evento() || !$this->is_hybrid()) {
+        if (!$this->is_event() || !$this->is_hybrid()) {
             return null;
         }
         $start = (int) $this->course->startdate;
         if (!$start) {
             return null;
         }
-        $city = $this->values->cidade;
+        $city = $this->values->city;
         $weekday = userdate($start, get_string('hotsite_fmtweekday', self::COMPONENT));
         return [
             'datebig' => userdate($start, get_string('hotsite_fmtdatebig', self::COMPONENT)),
@@ -363,7 +363,7 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
             'site' => $city !== null
                 ? get_string('hotsite_ticketsitein', self::COMPONENT, $city)
                 : get_string('hotsite_ticketsite', self::COMPONENT),
-            'venue' => $this->values->localnome,
+            'venue' => $this->values->venue,
             'live' => get_string('hotsite_ticketlive', self::COMPONENT),
             'livesub' => get_string('hotsite_ticketlivesub', self::COMPONENT),
         ];
@@ -380,9 +380,9 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      * @return array|null Keys online, inperson and total (hours, float), or null.
      */
     private function hours_split(): ?array {
-        $total = $this->values->cargahoraria;
-        $inperson = $this->values->cargapresencial;
-        if ($this->is_evento() || !$this->is_hybrid() || $total === null || $inperson === null) {
+        $total = $this->values->workload;
+        $inperson = $this->values->inpersonworkload;
+        if ($this->is_event() || !$this->is_hybrid() || $total === null || $inperson === null) {
             return null;
         }
         if ($inperson > $total) {
@@ -432,8 +432,8 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      * @return string|null The meetings "in" the city, either half alone, or null when neither is known.
      */
     private function meetings_line(): ?string {
-        $meetings = $this->values->encontros;
-        $city = $this->values->cidade;
+        $meetings = $this->values->meetings;
+        $city = $this->values->city;
         if ($meetings !== null && $city !== null) {
             return get_string('hotsite_compmeetingsin', self::COMPONENT, (object) ['meetings' => $meetings, 'city' => $city]);
         }
@@ -455,20 +455,20 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      * @return array|null Block of city/venue/dateline/meetings/big, or null off the in-person scenarios.
      */
     private function hero_place(): ?array {
-        $hybridcourse = !$this->is_evento() && $this->is_hybrid();
-        if ((!$this->is_presencial() && !$hybridcourse) || $this->values->cidade === null) {
+        $hybridcourse = !$this->is_event() && $this->is_hybrid();
+        if ((!$this->is_inperson() && !$hybridcourse) || $this->values->city === null) {
             return null;
         }
         if ($hybridcourse && $this->hero_comp() !== null) {
             return null;
         }
-        $isevento = $this->is_evento();
+        $isevent = $this->is_event();
         return [
-            'city' => $this->values->cidade,
-            'venue' => $this->values->localnome,
-            'dateline' => $isevento ? $this->event_dateline() : null,
-            'meetings' => $hybridcourse ? $this->values->encontros : null,
-            'big' => $isevento,
+            'city' => $this->values->city,
+            'venue' => $this->values->venue,
+            'dateline' => $isevent ? $this->event_dateline() : null,
+            'meetings' => $hybridcourse ? $this->values->meetings : null,
+            'big' => $isevent,
         ];
     }
 
@@ -535,10 +535,10 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
     /**
      * Whether the course picked the event page model.
      *
-     * @return bool Whether modelo holds the event option.
+     * @return bool Whether the model field holds the event option.
      */
-    private function is_evento(): bool {
-        return $this->values->modelo === hotsitefields::MODELO_EVENTO;
+    private function is_event(): bool {
+        return $this->values->model === hotsitefields::MODEL_EVENT;
     }
 
     /**
@@ -563,16 +563,16 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      */
     private function chips(): array {
         $chips = [];
-        $modalidade = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALIDADE, $this->values->modalidade);
-        if ($modalidade !== null) {
-            $chips[] = $modalidade;
+        $modality = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALITY, $this->values->modality);
+        if ($modality !== null) {
+            $chips[] = $modality;
         }
-        if ($this->values->cargahoraria !== null) {
+        if ($this->values->workload !== null) {
             $chips[] = $this->hours_label();
         }
-        $formato = hotsitefields::option_label(hotsitefields::SHORTNAME_FORMATO, $this->values->formato);
-        if ($formato !== null) {
-            $chips[] = $formato;
+        $format = hotsitefields::option_label(hotsitefields::SHORTNAME_FORMAT, $this->values->format);
+        if ($format !== null) {
+            $chips[] = $format;
         }
         return $chips;
     }
@@ -589,58 +589,58 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
     private function facts(): array {
         $names = $this->values->names;
         $facts = [];
-        if ($this->is_evento()) {
+        if ($this->is_event()) {
             $dateline = $this->event_dateline();
             if ($dateline !== null) {
                 $facts[] = $this->fact(get_string('date'), $dateline);
             }
         }
-        $modalidade = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALIDADE, $this->values->modalidade);
-        if ($modalidade !== null && isset($names[hotsitefields::SHORTNAME_MODALIDADE])) {
-            $facts[] = $this->fact($names[hotsitefields::SHORTNAME_MODALIDADE], $modalidade);
+        $modality = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALITY, $this->values->modality);
+        if ($modality !== null && isset($names[hotsitefields::SHORTNAME_MODALITY])) {
+            $facts[] = $this->fact($names[hotsitefields::SHORTNAME_MODALITY], $modality);
         }
-        $formato = hotsitefields::option_label(hotsitefields::SHORTNAME_FORMATO, $this->values->formato);
-        if ($formato !== null && isset($names[hotsitefields::SHORTNAME_FORMATO])) {
+        $format = hotsitefields::option_label(hotsitefields::SHORTNAME_FORMAT, $this->values->format);
+        if ($format !== null && isset($names[hotsitefields::SHORTNAME_FORMAT])) {
             // A self-paced course gives immediate access and a pace of the learner's own (D8).
-            $selfpaced = $this->values->formato === hotsitefields::FORMATO_AUTOINSTRUCIONAL;
+            $selfpaced = $this->values->format === hotsitefields::FORMAT_SELFPACED;
             $note = $selfpaced ? get_string('hotsite_selfpacednote', self::COMPONENT) : null;
-            $facts[] = $this->fact($names[hotsitefields::SHORTNAME_FORMATO], $formato, $note);
+            $facts[] = $this->fact($names[hotsitefields::SHORTNAME_FORMAT], $format, $note);
         }
         // A tutored course starts with its class, on the course's own start date (D8).
-        if ($this->values->formato === hotsitefields::FORMATO_TUTORIA && (int) $this->course->startdate > 0) {
+        if ($this->values->format === hotsitefields::FORMAT_TUTORED && (int) $this->course->startdate > 0) {
             $facts[] = $this->fact(
                 get_string('hotsite_factstart', self::COMPONENT),
                 userdate((int) $this->course->startdate, $this->format_date())
             );
         }
-        if ($this->values->aovivo && isset($names[hotsitefields::SHORTNAME_AULASAOVIVO])) {
+        if ($this->values->liveclasses && isset($names[hotsitefields::SHORTNAME_LIVECLASSES])) {
             $facts[] = $this->fact(
-                $names[hotsitefields::SHORTNAME_AULASAOVIVO],
-                $this->values->aovivoquando ?? get_string('yes')
+                $names[hotsitefields::SHORTNAME_LIVECLASSES],
+                $this->values->liveclasseswhen ?? get_string('yes')
             );
         }
-        if ($this->values->encontros !== null && isset($names[hotsitefields::SHORTNAME_ENCONTROS])) {
-            $facts[] = $this->fact($names[hotsitefields::SHORTNAME_ENCONTROS], $this->values->encontros);
+        if ($this->values->meetings !== null && isset($names[hotsitefields::SHORTNAME_MEETINGS])) {
+            $facts[] = $this->fact($names[hotsitefields::SHORTNAME_MEETINGS], $this->values->meetings);
         }
-        if ($this->values->cargahoraria !== null && isset($names[hotsitefields::SHORTNAME_CARGAHORARIA])) {
+        if ($this->values->workload !== null && isset($names[hotsitefields::SHORTNAME_WORKLOAD])) {
             $split = $this->hours_split();
             $note = $split === null ? null : get_string('hotsite_workloadsplit', self::COMPONENT, (object) [
                 'online' => $this->hours_number($split['online']),
                 'inperson' => $this->hours_number($split['inperson']),
             ]);
-            $facts[] = $this->fact($names[hotsitefields::SHORTNAME_CARGAHORARIA], $this->hours_label(), $note);
+            $facts[] = $this->fact($names[hotsitefields::SHORTNAME_WORKLOAD], $this->hours_label(), $note);
         }
-        if ($this->is_presencial() || $this->is_hybrid()) {
-            if ($this->values->localnome !== null && isset($names[hotsitefields::SHORTNAME_LOCALNOME])) {
-                $facts[] = $this->fact($names[hotsitefields::SHORTNAME_LOCALNOME], $this->values->localnome);
+        if ($this->is_inperson() || $this->is_hybrid()) {
+            if ($this->values->venue !== null && isset($names[hotsitefields::SHORTNAME_VENUE])) {
+                $facts[] = $this->fact($names[hotsitefields::SHORTNAME_VENUE], $this->values->venue);
             }
-            if ($this->values->cidade !== null && isset($names[hotsitefields::SHORTNAME_LOCALCIDADE])) {
-                $facts[] = $this->fact($names[hotsitefields::SHORTNAME_LOCALCIDADE], $this->values->cidade);
+            if ($this->values->city !== null && isset($names[hotsitefields::SHORTNAME_CITY])) {
+                $facts[] = $this->fact($names[hotsitefields::SHORTNAME_CITY], $this->values->city);
             }
             // The street address is for whoever goes there once, on a date: not for a hybrid course's meetings.
-            $withaddress = !$this->is_hybrid() || $this->is_evento();
-            if ($withaddress && $this->values->endereco !== null && isset($names[hotsitefields::SHORTNAME_LOCALENDERECO])) {
-                $facts[] = $this->fact($names[hotsitefields::SHORTNAME_LOCALENDERECO], $this->values->endereco);
+            $withaddress = !$this->is_hybrid() || $this->is_event();
+            if ($withaddress && $this->values->address !== null && isset($names[hotsitefields::SHORTNAME_ADDRESS])) {
+                $facts[] = $this->fact($names[hotsitefields::SHORTNAME_ADDRESS], $this->values->address);
             }
         }
         return $facts;
@@ -669,9 +669,9 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
     private function sections(): array {
         $sections = [];
         $order = [
-            hotsitefields::SHORTNAME_PUBLICOALVO => $this->values->publicoalvo,
-            hotsitefields::SHORTNAME_PROGRAMA => $this->values->programa,
-            hotsitefields::SHORTNAME_CERTIFICACAO => $this->values->certificacao,
+            hotsitefields::SHORTNAME_AUDIENCE => $this->values->audience,
+            hotsitefields::SHORTNAME_PROGRAMME => $this->values->programme,
+            hotsitefields::SHORTNAME_CERTIFICATION => $this->values->certification,
         ];
         foreach ($order as $shortname => $html) {
             if ($html !== null && trim((string) $html) !== '' && isset($this->values->names[$shortname])) {
@@ -815,19 +815,19 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
     /**
      * Whether the course is configured as an in-person offering.
      *
-     * @return bool Whether modalidade holds the in-person option.
+     * @return bool Whether the modality field holds the in-person option.
      */
-    private function is_presencial(): bool {
-        return $this->values->modalidade === hotsitefields::MODALIDADE_PRESENCIAL;
+    private function is_inperson(): bool {
+        return $this->values->modality === hotsitefields::MODALITY_INPERSON;
     }
 
     /**
      * Whether the course is configured as a hybrid offering: on site and online at once.
      *
-     * @return bool Whether modalidade holds the hybrid option.
+     * @return bool Whether the modality field holds the hybrid option.
      */
     private function is_hybrid(): bool {
-        return $this->values->modalidade === hotsitefields::MODALIDADE_HIBRIDO;
+        return $this->values->modality === hotsitefields::MODALITY_HYBRID;
     }
 
     /**
@@ -845,7 +845,7 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      * @return string The localised label.
      */
     private function hours_label(): string {
-        return get_string('hotsite_hours', self::COMPONENT, $this->hours_number($this->values->cargahoraria));
+        return get_string('hotsite_hours', self::COMPONENT, $this->hours_number($this->values->workload));
     }
 
     /**
@@ -948,7 +948,7 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
      */
     private function badges(): array {
         $badges = [];
-        foreach ($this->values->brasoes as $file) {
+        foreach ($this->values->crests as $file) {
             $badges[] = [
                 'url' => publicfiles::badge_url($this->course, $file)->out(false),
                 'alt' => publicfiles::badge_alt($file->get_filename()),
@@ -985,7 +985,7 @@ class hotsite_page implements \core\output\named_templatable, \core\output\rende
         }
         if ($isheld) {
             $caption = get_string('hotsite_videorecording', self::COMPONENT);
-        } else if ($this->is_evento()) {
+        } else if ($this->is_event()) {
             $caption = get_string('hotsite_videoevent', self::COMPONENT);
         } else {
             $caption = get_string('hotsite_videocourse', self::COMPONENT);

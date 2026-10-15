@@ -1152,7 +1152,7 @@ final class branding {
      * category manager who has one accepted on a course must not be refused it here. The
      * hotsite's badge fields (customfield_picture's type, where that optional plugin is installed)
      * take exactly these two values
-     * ({@see \theme_dimensions\local\hotsitefields::BRASAO_MAXBYTES} and
+     * ({@see \theme_dimensions\local\hotsitefields::CREST_MAXBYTES} and
      * accepted_types web_image), which on 5.2 admits .svg - see {@see resolve()} for why an SVG
      * crest is still served.
      *
@@ -1162,7 +1162,7 @@ final class branding {
         return [
             'subdirs' => 0,
             'maxfiles' => 1,
-            'maxbytes' => hotsitefields::BRASAO_MAXBYTES,
+            'maxbytes' => hotsitefields::CREST_MAXBYTES,
             'accepted_types' => ['web_image'],
             'return_types' => self::copy_only(),
         ];

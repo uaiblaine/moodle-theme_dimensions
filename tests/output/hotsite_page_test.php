@@ -65,10 +65,10 @@ final class hotsite_page_test extends \advanced_testcase {
         $handler = \core_course\customfield\course_handler::create();
         $handler->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_ONLINE,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 36,
-            'customfield_' . hotsitefields::SHORTNAME_PROGRAMA . '_editor' => [
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_ONLINE,
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 36,
+            'customfield_' . hotsitefields::SHORTNAME_PROGRAMME . '_editor' => [
                 'text' => '<p>Módulo 1.</p>',
                 'format' => FORMAT_HTML,
             ],
@@ -100,7 +100,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertStringContainsString('sesskey=', $methodcontext['enrolurl']);
 
         $this->assertContains(
-            get_string('hotsitefield_modalidade_online', 'theme_dimensions'),
+            get_string('hotsitefield_modality_online', 'theme_dimensions'),
             $context->chips
         );
         $this->assertContains(get_string('hotsite_hours', 'theme_dimensions', '36'), $context->chips);
@@ -125,20 +125,20 @@ final class hotsite_page_test extends \advanced_testcase {
     /**
      * Create a course configured as a hotsite offering.
      *
-     * @param int $modelo The page model select value.
-     * @param int $modalidade The modality select value.
+     * @param int $model The page model select value.
+     * @param int $modality The modality select value.
      * @param array $courserecord Extra course record fields.
      * @param array $customfields Extra customfield_<shortname> form properties.
      * @return \stdClass The course record.
      */
-    private function create_offering(int $modelo, int $modalidade, array $courserecord = [], array $customfields = []): \stdClass {
+    private function create_offering(int $model, int $modality, array $courserecord = [], array $customfields = []): \stdClass {
         $this->setAdminUser();
         $course = self::getDataGenerator()->create_course($courserecord);
         $handler = \core_course\customfield\course_handler::create();
         $handler->instance_form_save((object) ($customfields + [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => $modalidade,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => $modality,
         ]));
         return $course;
     }
@@ -152,7 +152,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->prepare_fields();
 
         $start = time() + (10 * DAYSECS);
-        $course = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_ONLINE, [
+        $course = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_ONLINE, [
             'startdate' => $start,
             'enddate' => $start + (2 * HOURSECS),
         ]);
@@ -182,11 +182,11 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
 
-        $event = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_PRESENCIAL, [
+        $event = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_INPERSON, [
             'startdate' => time() + (30 * DAYSECS),
         ], [
-            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'São Paulo',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALNOME => 'Teatro da Reitoria',
+            'customfield_' . hotsitefields::SHORTNAME_CITY => 'São Paulo',
+            'customfield_' . hotsitefields::SHORTNAME_VENUE => 'Teatro da Reitoria',
         ]);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $event->id]);
         $renderer = $PAGE->get_renderer('core');
@@ -201,10 +201,10 @@ final class hotsite_page_test extends \advanced_testcase {
         // The city moved out of the chips into the place block.
         $this->assertNotContains('São Paulo', $context->chips);
 
-        $curso = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_PRESENCIAL, [], [
-            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'Londrina',
+        $plaincourse = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_INPERSON, [], [
+            'customfield_' . hotsitefields::SHORTNAME_CITY => 'Londrina',
         ]);
-        $context = (new hotsite_page($curso, hotsitefields::values($curso->id), new resolution(resolution::STATE_CLOSED), []))
+        $context = (new hotsite_page($plaincourse, hotsitefields::values($plaincourse->id), new resolution(resolution::STATE_CLOSED), []))
             ->export_for_template($renderer);
         $this->assertFalse($context->heroplace['big']);
         $this->assertSame('Londrina', $context->heroplace['city']);
@@ -219,7 +219,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
 
-        $course = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_ONLINE, [
+        $course = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_ONLINE, [
             'startdate' => time() - (10 * DAYSECS),
             'enddate' => time() - (3 * DAYSECS),
         ]);
@@ -258,7 +258,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
 
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $values = hotsitefields::values($course->id);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
         $renderer = $PAGE->get_renderer('core');
@@ -285,7 +285,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
 
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $values = hotsitefields::values($course->id);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
         $renderer = $PAGE->get_renderer('core');
@@ -321,7 +321,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
 
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $prerequisite = self::getDataGenerator()->create_course(['fullname' => 'Base & Prática']);
         $values = hotsitefields::values($course->id);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
@@ -467,13 +467,13 @@ final class hotsite_page_test extends \advanced_testcase {
         $course = self::getDataGenerator()->create_course();
         \core_course\customfield\course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_PROGRAMA . '_editor' => [
+            'customfield_' . hotsitefields::SHORTNAME_PROGRAMME . '_editor' => [
                 'text' => '<p>Módulo 1.</p><script>alert(1)</script>',
                 'format' => FORMAT_HTML,
             ],
         ]);
         $values = hotsitefields::values($course->id);
-        $this->assertStringContainsString('<script', (string) $values->programa, 'Precondition: the value is trusted.');
+        $this->assertStringContainsString('<script', (string) $values->programme, 'Precondition: the value is trusted.');
         $resolution = resolver::resolve($course);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
         $renderer = $PAGE->get_renderer('core');
@@ -553,13 +553,13 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
 
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         /** @var \core_customfield_generator $generator */
         $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
         $context = \core\context\course::instance($course->id);
         $uploads = [
-            hotsitefields::SHORTNAME_BRASAO3 => 'brasao-beta.png',
-            hotsitefields::SHORTNAME_BRASAO1 => 'brasao-alfa.png',
+            hotsitefields::SHORTNAME_CREST3 => 'crest-beta.png',
+            hotsitefields::SHORTNAME_CREST1 => 'crest-alpha.png',
         ];
         foreach ($uploads as $shortname => $filename) {
             $data = $generator->add_instance_data(hotsitefields::get_field($shortname), (int) $course->id, 1);
@@ -582,9 +582,9 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertTrue($exported->hasbadges);
         $this->assertCount(2, $exported->badges);
         // The file name without its extension, hyphens read as spaces.
-        $this->assertSame('brasao alfa', $exported->badges[0]['alt']);
-        $this->assertSame('brasao beta', $exported->badges[1]['alt']);
-        foreach ($values->brasoes as $i => $file) {
+        $this->assertSame('crest alpha', $exported->badges[0]['alt']);
+        $this->assertSame('crest beta', $exported->badges[1]['alt']);
+        foreach ($values->crests as $i => $file) {
             $expected = publicfiles::badge_url($course, $file)->out(false);
             $this->assertStringContainsString(
                 "/theme_dimensions/badge/{$course->id}/{$file->get_contenthash()}/{$file->get_filename()}",
@@ -594,7 +594,7 @@ final class hotsite_page_test extends \advanced_testcase {
         }
 
         // Control: a course with no badges exports an empty grid, not the two rows above by accident.
-        $other = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $other = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $othercontext = (new hotsite_page(
             $other,
             hotsitefields::values($other->id),
@@ -623,7 +623,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertContains('youtube', array_keys(\core\plugininfo\media::get_enabled_plugins()));
 
         $url = 'https://www.youtube.com/watch?v=jNQXAC9IVRw';
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [
             'fullname' => 'Resgate & Salvamento',
         ], [
             'customfield_' . hotsitefields::SHORTNAME_VIDEOURL => $url,
@@ -651,7 +651,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertStringNotContainsString('&amp;amp;', $context->video['html']);
 
         // The same address on an event: a different caption, the same embed.
-        $event = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_ONLINE, [], [
+        $event = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_ONLINE, [], [
             'customfield_' . hotsitefields::SHORTNAME_VIDEOURL => $url,
         ]);
         $eventcontext = (new hotsite_page(
@@ -663,7 +663,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertSame(get_string('hotsite_videoevent', 'theme_dimensions'), $eventcontext->video['caption']);
 
         // The same address on an event already held: the recording caption wins over the event one.
-        $held = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_ONLINE, [
+        $held = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_ONLINE, [
             'startdate' => time() - (10 * DAYSECS),
             'enddate' => time() - (3 * DAYSECS),
         ], [
@@ -679,7 +679,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertSame(get_string('hotsite_videorecording', 'theme_dimensions'), $heldcontext->video['caption']);
 
         // A course with no video address exports no video.
-        $silent = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $silent = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $silentcontext = (new hotsite_page(
             $silent,
             hotsitefields::values($silent->id),
@@ -702,7 +702,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->prepare_fields();
         $this->assertContains('youtube', array_keys(\core\plugininfo\media::get_enabled_plugins()));
 
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [], [
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [], [
             'customfield_' . hotsitefields::SHORTNAME_VIDEOURL => 'https://example.com/video.html',
         ]);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
@@ -716,7 +716,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertNull($context->video);
 
         // Control: the same construction with a YouTube address exports a video.
-        $control = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [], [
+        $control = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [], [
             'customfield_' . hotsitefields::SHORTNAME_VIDEOURL => 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
         ]);
         $controlcontext = (new hotsite_page(
@@ -741,7 +741,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->prepare_fields();
         $this->assertSame(['videojs', 'youtube'], array_keys(\core\plugininfo\media::get_enabled_plugins()));
 
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [], [
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [], [
             'customfield_' . hotsitefields::SHORTNAME_VIDEOURL => 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
         ]);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
@@ -789,7 +789,7 @@ final class hotsite_page_test extends \advanced_testcase {
         cohort_add_member($cohort->id, $member->id);
         $outsider = $generator->create_user();
 
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [
             'category' => $category->id,
         ]);
         $values = hotsitefields::values($course->id);
@@ -808,7 +808,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertSame('Restricted Category', $context->categoryname, 'Control: the cohort member sees the name.');
 
         // Control: a guest in an ordinary, listed category keeps the pre-existing behaviour.
-        $listedcourse = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $listedcourse = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $listedvalues = hotsitefields::values($listedcourse->id);
         $this->setGuestUser();
         \local_unlistedcourses\category_access::reset_caches();
@@ -880,7 +880,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
 
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $contextid = \core\context\course::instance($course->id)->id;
         $values = hotsitefields::values($course->id);
         $resolution = resolver::resolve($course);
@@ -934,7 +934,7 @@ final class hotsite_page_test extends \advanced_testcase {
         global $PAGE;
         $this->resetAfterTest();
         $this->prepare_fields();
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $values = hotsitefields::values($course->id);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
         $renderer = $PAGE->get_renderer('core');
@@ -973,20 +973,20 @@ final class hotsite_page_test extends \advanced_testcase {
         global $PAGE;
         $this->resetAfterTest();
         $this->prepare_fields();
-        $course = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_HIBRIDO);
+        $course = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_HYBRID);
         $values = hotsitefields::values($course->id);
         $PAGE->set_url('/theme/dimensions/hotsite.php', ['id' => $course->id]);
         $renderer = $PAGE->get_renderer('core');
 
         $deadline = time() + 30 * DAYSECS;
-        $presencial = (object) [
+        $inperson = (object) [
             'id' => 61, 'enrol' => 'self', 'name' => 'Presencial', 'customint3' => 120, 'enrolenddate' => $deadline,
         ];
         $online = (object) [
             'id' => 62, 'enrol' => 'self', 'name' => 'Online, ao vivo', 'customint3' => 0, 'enrolenddate' => $deadline,
         ];
 
-        $two = (new hotsite_page($course, $values, new resolution(resolution::STATE_VISITOR, offers: [$presencial, $online]), []))
+        $two = (new hotsite_page($course, $values, new resolution(resolution::STATE_VISITOR, offers: [$inperson, $online]), []))
             ->export_for_template($renderer);
         $this->assertTrue($two->hasoffers);
         $this->assertSame(['Presencial', 'Online, ao vivo'], array_column($two->offers, 'name'));
@@ -996,12 +996,12 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertStringContainsString(get_string('hotsite_offerseats', 'theme_dimensions', 120), $html);
 
         // One method needs no name: the card already says what it is.
-        $one = (new hotsite_page($course, $values, new resolution(resolution::STATE_VISITOR, offers: [$presencial]), []))
+        $one = (new hotsite_page($course, $values, new resolution(resolution::STATE_VISITOR, offers: [$inperson]), []))
             ->export_for_template($renderer);
         $this->assertSame([null], array_column($one->offers, 'name'));
 
         // A logged-in reader is never handed the visitor's list.
-        $open = (new hotsite_page($course, $values, new resolution(resolution::STATE_OPEN, offers: [$presencial]), []))
+        $open = (new hotsite_page($course, $values, new resolution(resolution::STATE_OPEN, offers: [$inperson]), []))
             ->export_for_template($renderer);
         $this->assertFalse($open->hasoffers);
     }
@@ -1016,7 +1016,7 @@ final class hotsite_page_test extends \advanced_testcase {
     public function test_a_guest_only_course_leads_a_visitor_with_access_as_guest(): void {
         $this->resetAfterTest();
         $this->prepare_fields();
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $guest = method::for_guest((object) ['id' => 71, 'enrol' => 'guest', 'password' => '', 'name' => ''], false);
         $guestbutton = get_string('hotsite_guestbutton', 'theme_dimensions');
         $loginbutton = get_string('hotsite_loginbutton', 'theme_dimensions');
@@ -1064,7 +1064,7 @@ final class hotsite_page_test extends \advanced_testcase {
     public function test_a_visitor_with_no_way_in_is_told_enrolment_is_closed(): void {
         $this->resetAfterTest();
         $this->prepare_fields();
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
 
         [$context, $renderer] = $this->export_page($course, new resolution(resolution::STATE_VISITOR, loginwayin: false));
         $this->assertTrue($context->isvisitor);
@@ -1091,7 +1091,7 @@ final class hotsite_page_test extends \advanced_testcase {
     public function test_guest_access_is_primary_on_an_open_card_with_nothing_else(): void {
         $this->resetAfterTest();
         $this->prepare_fields();
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $guest = method::for_guest((object) ['id' => 71, 'enrol' => 'guest', 'password' => '', 'name' => ''], false);
         $self = method::for_self((object) ['id' => 55, 'enrol' => 'self', 'password' => '', 'name' => ''], false);
 
@@ -1126,7 +1126,7 @@ final class hotsite_page_test extends \advanced_testcase {
         set_config('autologinguests', 1);
         $CFG->routerconfigured = false;
         $this->prepare_fields();
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE);
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE);
         $instance = $DB->get_record('enrol', ['courseid' => $course->id, 'enrol' => 'guest'], '*', MUST_EXIST);
         $guest = method::for_guest($instance, false);
         $resolution = new resolution(resolution::STATE_VISITOR, [$guest], loginwayin: false);
@@ -1176,7 +1176,7 @@ final class hotsite_page_test extends \advanced_testcase {
     private function render_with_four_badges(\stdClass $context, \core\output\renderer_base $renderer): string {
         $context->badges = [];
         foreach ([1, 2, 3, 4] as $n) {
-            $context->badges[] = ['url' => "https://example.com/brasao-{$n}.png", 'alt' => "brasao {$n}"];
+            $context->badges[] = ['url' => "https://example.com/crest-{$n}.png", 'alt' => "crest {$n}"];
         }
         $context->hasbadges = true;
         $html = $renderer->render_from_template('theme_dimensions/hotsite_page', $context);
@@ -1214,13 +1214,13 @@ final class hotsite_page_test extends \advanced_testcase {
         $component = 'theme_dimensions';
         $start = time() + (10 * DAYSECS);
         $place = [
-            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'São Paulo',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALNOME => 'Teatro da Reitoria',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALENDERECO => 'Rua XV de Novembro, 1299',
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 8,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL => 6,
+            'customfield_' . hotsitefields::SHORTNAME_CITY => 'São Paulo',
+            'customfield_' . hotsitefields::SHORTNAME_VENUE => 'Teatro da Reitoria',
+            'customfield_' . hotsitefields::SHORTNAME_ADDRESS => 'Rua XV de Novembro, 1299',
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 8,
+            'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD => 6,
         ];
-        $event = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_HIBRIDO, [
+        $event = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_HYBRID, [
             'startdate' => $start,
             'enddate' => $start + (2 * HOURSECS),
         ], $place);
@@ -1239,11 +1239,11 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertSame(get_string('hotsite_ticketlive', $component), $ticket['live']);
 
         $names = hotsitefields::values($event->id)->names;
-        $this->assertSame('Teatro da Reitoria', $this->fact_row($context, $names[hotsitefields::SHORTNAME_LOCALNOME])['value']);
-        $this->assertSame('São Paulo', $this->fact_row($context, $names[hotsitefields::SHORTNAME_LOCALCIDADE])['value']);
+        $this->assertSame('Teatro da Reitoria', $this->fact_row($context, $names[hotsitefields::SHORTNAME_VENUE])['value']);
+        $this->assertSame('São Paulo', $this->fact_row($context, $names[hotsitefields::SHORTNAME_CITY])['value']);
         $this->assertSame(
             'Rua XV de Novembro, 1299',
-            $this->fact_row($context, $names[hotsitefields::SHORTNAME_LOCALENDERECO])['value'],
+            $this->fact_row($context, $names[hotsitefields::SHORTNAME_ADDRESS])['value'],
             'An event is somewhere on one date: its address is told.'
         );
 
@@ -1253,14 +1253,14 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertStringContainsString(s(get_string('hotsite_ticketlivesub', $component)), $html);
 
         // Without a city the site way still reads, unnamed.
-        $nocity = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_HIBRIDO, [
+        $nocity = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_HYBRID, [
             'startdate' => $start,
         ]);
         [$nocitycontext] = $this->export_page($nocity, new resolution(resolution::STATE_CLOSED));
         $this->assertSame(get_string('hotsite_ticketsite', $component), $nocitycontext->heroticket['site']);
 
         // Control: an online event keeps its date block and has no ticket.
-        $online = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_ONLINE, [
+        $online = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_ONLINE, [
             'startdate' => $start,
         ]);
         [$onlinecontext] = $this->export_page($online, new resolution(resolution::STATE_CLOSED));
@@ -1268,7 +1268,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertNull($onlinecontext->heroticket);
 
         // Control: a hybrid course has no ticket.
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_HIBRIDO, [
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_HYBRID, [
             'startdate' => $start,
         ], $place);
         [$coursecontext] = $this->export_page($course, new resolution(resolution::STATE_CLOSED));
@@ -1285,12 +1285,12 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
         $component = 'theme_dimensions';
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_HIBRIDO, [], [
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_TUTORIA,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 60,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL => 24,
-            'customfield_' . hotsitefields::SHORTNAME_ENCONTROS => '2 encontros aos sábados',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'Londrina',
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_HYBRID, [], [
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_TUTORED,
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 60,
+            'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD => 24,
+            'customfield_' . hotsitefields::SHORTNAME_MEETINGS => '2 encontros aos sábados',
+            'customfield_' . hotsitefields::SHORTNAME_CITY => 'Londrina',
         ]);
         [$context, $renderer] = $this->export_page($course, new resolution(resolution::STATE_CLOSED));
 
@@ -1332,13 +1332,13 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
         $fields = [
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_TUTORIA,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 60,
-            'customfield_' . hotsitefields::SHORTNAME_ENCONTROS => '2 encontros aos sábados',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'Londrina',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALNOME => 'Sede regional',
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_TUTORED,
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 60,
+            'customfield_' . hotsitefields::SHORTNAME_MEETINGS => '2 encontros aos sábados',
+            'customfield_' . hotsitefields::SHORTNAME_CITY => 'Londrina',
+            'customfield_' . hotsitefields::SHORTNAME_VENUE => 'Sede regional',
         ];
-        $nohours = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_HIBRIDO, [], $fields);
+        $nohours = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_HYBRID, [], $fields);
         [$context] = $this->export_page($nohours, new resolution(resolution::STATE_CLOSED));
         $this->assertNull($context->herocomp);
         $this->assertNotNull($context->heroplace);
@@ -1347,8 +1347,8 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertSame('2 encontros aos sábados', $context->heroplace['meetings']);
         $this->assertFalse($context->heroplace['big']);
 
-        $toomany = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_HIBRIDO, [], [
-            'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL => 80,
+        $toomany = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_HYBRID, [], [
+            'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD => 80,
         ] + $fields);
         [$toomanycontext] = $this->export_page($toomany, new resolution(resolution::STATE_CLOSED));
         $this->assertNull($toomanycontext->herocomp, 'Eighty hours in person out of sixty is no split.');
@@ -1362,12 +1362,12 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
         $component = 'theme_dimensions';
-        $tutored = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [], [
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_TUTORIA,
-            'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO => 1,
+        $tutored = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [], [
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_TUTORED,
+            'customfield_' . hotsitefields::SHORTNAME_LIVECLASSES => 1,
         ]);
         [$context, $renderer] = $this->export_page($tutored, new resolution(resolution::STATE_CLOSED));
-        $this->assertContains(get_string('hotsitefield_formato_tutoria', $component), $context->chips);
+        $this->assertContains(get_string('hotsitefield_format_tutored', $component), $context->chips);
         $this->assertTrue($context->haslivechip);
         $this->assertTrue($context->haschips);
         $html = $renderer->render_from_template('theme_dimensions/hotsite_page', $context);
@@ -1375,11 +1375,11 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertStringContainsString(get_string('hotsite_livechip', $component), $html);
 
         // Control: a self-paced course says so, and has no live chip.
-        $selfpaced = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [], [
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_AUTOINSTRUCIONAL,
+        $selfpaced = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [], [
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_SELFPACED,
         ]);
         [$selfcontext] = $this->export_page($selfpaced, new resolution(resolution::STATE_CLOSED));
-        $this->assertContains(get_string('hotsitefield_formato_autoinstrucional', $component), $selfcontext->chips);
+        $this->assertContains(get_string('hotsitefield_format_selfpaced', $component), $selfcontext->chips);
         $this->assertFalse($selfcontext->haslivechip);
         $html = $renderer->render_from_template('theme_dimensions/hotsite_page', $selfcontext);
         $this->assertStringNotContainsString('dimensions-hotsite__chip--live', $html);
@@ -1399,17 +1399,17 @@ final class hotsite_page_test extends \advanced_testcase {
         $start = time() + (20 * DAYSECS);
         $startlabel = get_string('hotsite_factstart', $component);
 
-        $selfpaced = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [
+        $selfpaced = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [
             'startdate' => $start,
         ], [
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_AUTOINSTRUCIONAL,
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_SELFPACED,
         ]);
         $names = hotsitefields::values($selfpaced->id)->names;
-        $formatlabel = $names[hotsitefields::SHORTNAME_FORMATO];
-        $livelabel = $names[hotsitefields::SHORTNAME_AULASAOVIVO];
+        $formatlabel = $names[hotsitefields::SHORTNAME_FORMAT];
+        $livelabel = $names[hotsitefields::SHORTNAME_LIVECLASSES];
         [$context, $renderer] = $this->export_page($selfpaced, new resolution(resolution::STATE_CLOSED));
         $format = $this->fact_row($context, $formatlabel);
-        $this->assertSame(get_string('hotsitefield_formato_autoinstrucional', $component), $format['value']);
+        $this->assertSame(get_string('hotsitefield_format_selfpaced', $component), $format['value']);
         $this->assertSame(get_string('hotsite_selfpacednote', $component), $format['note']);
         $this->assertNull($this->fact_row($context, $startlabel), 'A self-paced course starts when the learner does.');
         $this->assertNull($this->fact_row($context, $livelabel));
@@ -1419,16 +1419,16 @@ final class hotsite_page_test extends \advanced_testcase {
             $html
         );
 
-        $tutored = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [
+        $tutored = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [
             'startdate' => $start,
         ], [
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_TUTORIA,
-            'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO => 1,
-            'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVOQUANDO => 'Quartas, 19h',
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_TUTORED,
+            'customfield_' . hotsitefields::SHORTNAME_LIVECLASSES => 1,
+            'customfield_' . hotsitefields::SHORTNAME_LIVECLASSESWHEN => 'Quartas, 19h',
         ]);
         [$tutoredcontext] = $this->export_page($tutored, new resolution(resolution::STATE_CLOSED));
         $format = $this->fact_row($tutoredcontext, $formatlabel);
-        $this->assertSame(get_string('hotsitefield_formato_tutoria', $component), $format['value']);
+        $this->assertSame(get_string('hotsitefield_format_tutored', $component), $format['value']);
         $this->assertNull($format['note']);
         $this->assertSame(
             userdate($start, get_string('strftimedatefullshort', 'langconfig')),
@@ -1437,9 +1437,9 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->assertSame('Quartas, 19h', $this->fact_row($tutoredcontext, $livelabel)['value']);
 
         // Live classes with no "when" still say there are some.
-        $unsaid = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [], [
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_TUTORIA,
-            'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO => 1,
+        $unsaid = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [], [
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_TUTORED,
+            'customfield_' . hotsitefields::SHORTNAME_LIVECLASSES => 1,
         ]);
         [$unsaidcontext] = $this->export_page($unsaid, new resolution(resolution::STATE_CLOSED));
         $this->assertSame(get_string('yes'), $this->fact_row($unsaidcontext, $livelabel)['value']);
@@ -1455,36 +1455,36 @@ final class hotsite_page_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->prepare_fields();
         $component = 'theme_dimensions';
-        $course = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_HIBRIDO, [], [
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_TUTORIA,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 60,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL => 24,
-            'customfield_' . hotsitefields::SHORTNAME_ENCONTROS => '2 encontros aos sábados',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'Londrina',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALNOME => 'Sede regional',
-            'customfield_' . hotsitefields::SHORTNAME_LOCALENDERECO => 'Avenida Higienópolis, 100',
+        $course = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_HYBRID, [], [
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_TUTORED,
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 60,
+            'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD => 24,
+            'customfield_' . hotsitefields::SHORTNAME_MEETINGS => '2 encontros aos sábados',
+            'customfield_' . hotsitefields::SHORTNAME_CITY => 'Londrina',
+            'customfield_' . hotsitefields::SHORTNAME_VENUE => 'Sede regional',
+            'customfield_' . hotsitefields::SHORTNAME_ADDRESS => 'Avenida Higienópolis, 100',
         ]);
         $names = hotsitefields::values($course->id)->names;
         [$context] = $this->export_page($course, new resolution(resolution::STATE_CLOSED));
 
-        $meetings = $this->fact_row($context, $names[hotsitefields::SHORTNAME_ENCONTROS]);
+        $meetings = $this->fact_row($context, $names[hotsitefields::SHORTNAME_MEETINGS]);
         $this->assertSame('2 encontros aos sábados', $meetings['value']);
-        $workload = $this->fact_row($context, $names[hotsitefields::SHORTNAME_CARGAHORARIA]);
+        $workload = $this->fact_row($context, $names[hotsitefields::SHORTNAME_WORKLOAD]);
         $this->assertSame(get_string('hotsite_hours', $component, '60'), $workload['value']);
         $this->assertSame(
             get_string('hotsite_workloadsplit', $component, (object) ['online' => '36', 'inperson' => '24']),
             $workload['note']
         );
-        $this->assertSame('Sede regional', $this->fact_row($context, $names[hotsitefields::SHORTNAME_LOCALNOME])['value']);
-        $this->assertSame('Londrina', $this->fact_row($context, $names[hotsitefields::SHORTNAME_LOCALCIDADE])['value']);
-        $this->assertNull($this->fact_row($context, $names[hotsitefields::SHORTNAME_LOCALENDERECO]));
+        $this->assertSame('Sede regional', $this->fact_row($context, $names[hotsitefields::SHORTNAME_VENUE])['value']);
+        $this->assertSame('Londrina', $this->fact_row($context, $names[hotsitefields::SHORTNAME_CITY])['value']);
+        $this->assertNull($this->fact_row($context, $names[hotsitefields::SHORTNAME_ADDRESS]));
 
         // Control: an online course's workload has no split under it.
-        $online = $this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE, [], [
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 60,
+        $online = $this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE, [], [
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 60,
         ]);
         [$onlinecontext] = $this->export_page($online, new resolution(resolution::STATE_CLOSED));
-        $this->assertNull($this->fact_row($onlinecontext, $names[hotsitefields::SHORTNAME_CARGAHORARIA])['note']);
+        $this->assertNull($this->fact_row($onlinecontext, $names[hotsitefields::SHORTNAME_WORKLOAD])['note']);
     }
 
     /**
@@ -1501,7 +1501,7 @@ final class hotsite_page_test extends \advanced_testcase {
         $unnamed = method::for_self((object) ['id' => 62, 'enrol' => 'self', 'password' => '', 'name' => ''], false);
         $two = new resolution(resolution::STATE_OPEN, [$onsite, $unnamed]);
 
-        $event = $this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_HIBRIDO);
+        $event = $this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_HYBRID);
         [$context, $renderer] = $this->export_page($event, $two);
         $this->assertSame(get_string('hotsite_tracksheading', $component), $context->tracksheading);
         $this->assertSame(
@@ -1516,9 +1516,9 @@ final class hotsite_page_test extends \advanced_testcase {
 
         $controls = [
             'one method' => [$event, new resolution(resolution::STATE_OPEN, [$onsite])],
-            'an online course' => [$this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_ONLINE), $two],
-            'an online event' => [$this->create_offering(hotsitefields::MODELO_EVENTO, hotsitefields::MODALIDADE_ONLINE), $two],
-            'a hybrid course' => [$this->create_offering(hotsitefields::MODELO_CURSO, hotsitefields::MODALIDADE_HIBRIDO), $two],
+            'an online course' => [$this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_ONLINE), $two],
+            'an online event' => [$this->create_offering(hotsitefields::MODEL_EVENT, hotsitefields::MODALITY_ONLINE), $two],
+            'a hybrid course' => [$this->create_offering(hotsitefields::MODEL_COURSE, hotsitefields::MODALITY_HYBRID), $two],
         ];
         foreach ($controls as $case => [$course, $resolution]) {
             [$control] = $this->export_page($course, $resolution);

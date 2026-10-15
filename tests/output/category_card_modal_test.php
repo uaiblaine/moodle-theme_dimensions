@@ -87,39 +87,39 @@ final class category_card_modal_test extends \advanced_testcase {
         $root = $generator->create_category(['name' => 'Brigada & Resgate']);
         $learner = $generator->create_user();
         $handler = course_handler::create();
-        $make = function (string $name, int $modelo, array $course = []) use ($generator, $handler, $root): int {
+        $make = function (string $name, int $model, array $course = []) use ($generator, $handler, $root): int {
             $record = $generator->create_course(['category' => $root->id, 'fullname' => $name] + $course);
-            if ($modelo > 0) {
+            if ($model > 0) {
                 $handler->instance_form_save((object) [
                     'id' => $record->id,
-                    'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
+                    'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
                 ]);
             }
             return (int) $record->id;
         };
 
-        $this->ids['enrolled'] = $make('Curso Inscrito', hotsitefields::MODELO_CURSO);
+        $this->ids['enrolled'] = $make('Curso Inscrito', hotsitefields::MODEL_COURSE);
         $generator->enrol_user($learner->id, $this->ids['enrolled']);
-        $this->ids['free'] = $make('Curso Livre', hotsitefields::MODELO_CURSO);
+        $this->ids['free'] = $make('Curso Livre', hotsitefields::MODEL_COURSE);
         $this->enable_instance($this->ids['free'], 'guest');
-        $this->ids['open'] = $make('Curso Aberto', hotsitefields::MODELO_CURSO);
+        $this->ids['open'] = $make('Curso Aberto', hotsitefields::MODEL_COURSE);
         $this->enable_instance($this->ids['open'], 'self');
         $this->ids['openplain'] = $make('Curso Aberto Sem Hotsite', 0);
         $this->enable_instance($this->ids['openplain'], 'self');
-        $this->ids['none'] = $make('Curso Fechado', hotsitefields::MODELO_CURSO);
+        $this->ids['none'] = $make('Curso Fechado', hotsitefields::MODEL_COURSE);
         $this->ids['noneplain'] = $make('Curso Fechado Sem Hotsite', 0);
-        $this->ids['event'] = $make('Evento Futuro', hotsitefields::MODELO_EVENTO, [
+        $this->ids['event'] = $make('Evento Futuro', hotsitefields::MODEL_EVENT, [
             'startdate' => time() + 5 * DAYSECS,
             'enddate' => time() + 6 * DAYSECS,
         ]);
-        $this->ids['held'] = $make('Evento Passado', hotsitefields::MODELO_EVENTO, [
+        $this->ids['held'] = $make('Evento Passado', hotsitefields::MODEL_EVENT, [
             'startdate' => time() - 3 * DAYSECS,
             'enddate' => time() - 2 * DAYSECS,
         ]);
         $this->enable_instance($this->ids['held'], 'self');
         // A window that opens later, the one refusal: local_unlistedcourses' batch dates it.
         $this->opens = time() + 3 * DAYSECS;
-        $this->ids['ahead'] = $make('Curso Abre Depois', hotsitefields::MODELO_CURSO);
+        $this->ids['ahead'] = $make('Curso Abre Depois', hotsitefields::MODEL_COURSE);
         $this->enable_instance($this->ids['ahead'], 'self', ['enrolstartdate' => $this->opens, 'customint6' => 1]);
         $this->ids['root'] = (int) $root->id;
         return $learner;
@@ -377,9 +377,9 @@ final class category_card_modal_test extends \advanced_testcase {
         $learner = $this->seed();
         course_handler::create()->instance_form_save((object) [
             'id' => $this->ids['open'],
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_PRESENCIAL,
-            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'São Paulo',
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 12,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_INPERSON,
+            'customfield_' . hotsitefields::SHORTNAME_CITY => 'São Paulo',
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 12,
         ]);
         $this->become($learner);
         $cards = $this->cards();

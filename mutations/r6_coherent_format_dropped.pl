@@ -1,1 +1,1 @@
-s/if \(\$evento \|\| \(\$selfpaced && \$notonline\)\) \{/if (\$evento) {/
+s/if \(\$event \|\| \(\$selfpaced && \$notonline\)\) \{/if (\$event) {/

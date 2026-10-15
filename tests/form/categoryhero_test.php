@@ -729,7 +729,7 @@ final class categoryhero_test extends \advanced_testcase {
                     '<p><a class="external-media-provider" href="https://www.youtube.com/watch?v=aqz-KE-bpKQ">v</a></p>',
                 'a direct address of a film' =>
                     '<p><a class="external-media-provider" href="https://example.org/sample-5s.mp4">s</a></p>',
-                'an ordinary image published elsewhere' => '<p><img src="https://example.org/brasao.png" alt="x"></p>',
+                'an ordinary image published elsewhere' => '<p><img src="https://example.org/crest.png" alt="x"></p>',
                 'prose that merely says data: and blob:' => '<p>Sobre data: e blob: nada a declarar.</p>',
             ] as $what => $text
         ) {
@@ -779,7 +779,7 @@ final class categoryhero_test extends \advanced_testcase {
 
         // The options, against the hotsite's own numbers.
         $options = branding::badge_options();
-        $this->assertSame(hotsitefields::BRASAO_MAXBYTES, (int) $options['maxbytes']);
+        $this->assertSame(hotsitefields::CREST_MAXBYTES, (int) $options['maxbytes']);
         $this->assertSame(['web_image'], $options['accepted_types']);
         $this->assertSame(1, (int) $options['maxfiles'], 'One file per slot: the slot IS the position.');
 
@@ -1059,14 +1059,14 @@ final class categoryhero_test extends \advanced_testcase {
             'filearea' => 'draft',
             'itemid' => $draftitemid,
             'filepath' => '/',
-            'filename' => 'brasao.png',
+            'filename' => 'crest.png',
         ], 'the bytes do not matter here');
 
         $sink = $this->redirectEvents();
         \core_course_category::get($categoryid, MUST_EXIST, true)->update(
             (object) [
                 'description_editor' => [
-                    'text' => '<p>Para quem está logado <img src="@@PLUGINFILE@@/brasao.png" alt="Brasão"></p>',
+                    'text' => '<p>Para quem está logado <img src="@@PLUGINFILE@@/crest.png" alt="Crest"></p>',
                     'format' => FORMAT_HTML,
                     'itemid' => $draftitemid,
                 ],
@@ -1079,14 +1079,14 @@ final class categoryhero_test extends \advanced_testcase {
         $stored = \core_course_category::get($categoryid, MUST_EXIST, true);
         $this->assertStringContainsString('Para quem está logado', $stored->description);
         $this->assertStringContainsString(
-            '@@PLUGINFILE@@/brasao.png',
+            '@@PLUGINFILE@@/crest.png',
             $stored->description,
             'The embedded file was not rewritten to core\'s placeholder, so it will not serve.'
         );
         $this->assertSame((int) FORMAT_HTML, (int) $stored->descriptionformat);
         $files = $storage->get_area_files($context->id, 'coursecat', 'description', 0, 'filename', false);
         $this->assertCount(1, $files, 'The draft file did not reach the category\'s own description area.');
-        $this->assertSame('brasao.png', reset($files)->get_filename());
+        $this->assertSame('crest.png', reset($files)->get_filename());
 
         $updated = array_values(array_filter(
             $events,

@@ -64,7 +64,7 @@ Feature: Unlisted courses and categories are not named to people who cannot reac
     # names the course; a course without a model would be forwarded to the enrolment page and
     # ghosted there, which would let this scenario pass against a hotsite that leaks.
     Given the following "courses" exist:
-      | fullname           | shortname | category | customfield_hotsite_modelo |
+      | fullname           | shortname | category | customfield_dimensions_model |
       | Restricted Hotsite | RESTH     | TESTCAT  | 1                          |
     And the course "RESTH" is "unlisted" for discoverability
     When I am on the "RESTH" "theme_dimensions > Enrolment hotsite" page logged in as "student1"
@@ -73,7 +73,7 @@ Feature: Unlisted courses and categories are not named to people who cannot reac
 
   Scenario: The hotsite of an unlisted course still serves somebody entitled to it
     Given the following "courses" exist:
-      | fullname           | shortname | category | customfield_hotsite_modelo |
+      | fullname           | shortname | category | customfield_dimensions_model |
       | Restricted Hotsite | RESTH     | TESTCAT  | 1                          |
     And the course "RESTH" is "unlisted" for discoverability
     And the following "course enrolments" exist:

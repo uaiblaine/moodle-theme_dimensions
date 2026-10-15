@@ -100,20 +100,20 @@ final class after_form_validation_test extends \advanced_testcase {
     /**
      * A submission of the round-6 fields, keyed as the course form posts them.
      *
-     * @param int $modelo The page model.
-     * @param int $modalidade The modality.
-     * @param int $formato The format.
+     * @param int $model The page model.
+     * @param int $modality The modality.
+     * @param int $format The format.
      * @param string $total The total workload as typed.
      * @param string $inperson The in-person workload as typed.
      * @return array The submitted data.
      */
-    private static function round6(int $modelo, int $modalidade, int $formato, string $total = '', string $inperson = ''): array {
+    private static function round6(int $model, int $modality, int $format, string $total = '', string $inperson = ''): array {
         return [
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => (string) $modelo,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => (string) $modalidade,
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => (string) $formato,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => $total,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL => $inperson,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => (string) $model,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => (string) $modality,
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => (string) $format,
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => $total,
+            'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD => $inperson,
         ];
     }
 
@@ -122,21 +122,21 @@ final class after_form_validation_test extends \advanced_testcase {
      */
     public function test_a_self_paced_course_must_be_online(): void {
         $this->resetAfterTest();
-        $c = hotsitefields::MODELO_CURSO;
-        $sp = hotsitefields::FORMATO_AUTOINSTRUCIONAL;
-        $tu = hotsitefields::FORMATO_TUTORIA;
+        $c = hotsitefields::MODEL_COURSE;
+        $sp = hotsitefields::FORMAT_SELFPACED;
+        $tu = hotsitefields::FORMAT_TUTORED;
         $expected = [
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => get_string('hotsite_selfpacedonline', hotsitefields::COMPONENT),
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => get_string('hotsite_selfpacedonline', hotsitefields::COMPONENT),
         ];
 
-        $this->assertSame($expected, $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_PRESENCIAL, $sp)));
-        $this->assertSame($expected, $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_HIBRIDO, $sp)));
+        $this->assertSame($expected, $this->errors_for(self::round6($c, hotsitefields::MODALITY_INPERSON, $sp)));
+        $this->assertSame($expected, $this->errors_for(self::round6($c, hotsitefields::MODALITY_HYBRID, $sp)));
         // No model yet: the format is visible all the same, and so is the refusal.
-        $this->assertSame($expected, $this->errors_for(self::round6(0, hotsitefields::MODALIDADE_HIBRIDO, $sp)));
+        $this->assertSame($expected, $this->errors_for(self::round6(0, hotsitefields::MODALITY_HYBRID, $sp)));
 
-        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_ONLINE, $sp)));
-        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_HIBRIDO, $tu)));
-        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_PRESENCIAL, 0)));
+        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALITY_ONLINE, $sp)));
+        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALITY_HYBRID, $tu)));
+        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALITY_INPERSON, 0)));
     }
 
     /**
@@ -148,9 +148,9 @@ final class after_form_validation_test extends \advanced_testcase {
     public function test_a_hidden_format_on_an_event_is_not_refused(): void {
         $this->resetAfterTest();
         $data = self::round6(
-            hotsitefields::MODELO_EVENTO,
-            hotsitefields::MODALIDADE_HIBRIDO,
-            hotsitefields::FORMATO_AUTOINSTRUCIONAL
+            hotsitefields::MODEL_EVENT,
+            hotsitefields::MODALITY_HYBRID,
+            hotsitefields::FORMAT_SELFPACED
         );
         $this->assertSame([], $this->errors_for($data));
     }
@@ -160,10 +160,10 @@ final class after_form_validation_test extends \advanced_testcase {
      */
     public function test_in_person_hours_fit_inside_the_total_of_a_hybrid_offering(): void {
         $this->resetAfterTest();
-        $c = hotsitefields::MODELO_CURSO;
-        $hy = hotsitefields::MODALIDADE_HIBRIDO;
-        $tu = hotsitefields::FORMATO_TUTORIA;
-        $element = 'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL;
+        $c = hotsitefields::MODEL_COURSE;
+        $hy = hotsitefields::MODALITY_HYBRID;
+        $tu = hotsitefields::FORMAT_TUTORED;
+        $element = 'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD;
 
         $errors = $this->errors_for(self::round6($c, $hy, $tu, '60', '61'));
         $this->assertSame([$element], array_keys($errors));
@@ -173,6 +173,6 @@ final class after_form_validation_test extends \advanced_testcase {
         $this->assertSame([], $this->errors_for(self::round6($c, $hy, $tu, '60', '16')));
         // Nothing to exceed without a total, and the hidden field of another modality is not read.
         $this->assertSame([], $this->errors_for(self::round6($c, $hy, $tu, '', '16')));
-        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALIDADE_ONLINE, $tu, '60', '61')));
+        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALITY_ONLINE, $tu, '60', '61')));
     }
 }

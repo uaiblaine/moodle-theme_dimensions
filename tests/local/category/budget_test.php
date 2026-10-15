@@ -103,8 +103,8 @@ final class budget_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $categories[$i % count($categories)]->id]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => 1 + ($i % 2),
-                'customfield_' . hotsitefields::SHORTNAME_PROGRAMA . '_editor' => [
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => 1 + ($i % 2),
+                'customfield_' . hotsitefields::SHORTNAME_PROGRAMME . '_editor' => [
                     'text' => "<p>Programme {$i}</p>", 'format' => FORMAT_HTML,
                 ],
             ]);
@@ -218,7 +218,7 @@ final class budget_test extends \advanced_testcase {
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODELO, 'theme_dimensions');
+        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODEL, 'theme_dimensions');
         return self::getDataGenerator()->create_user();
     }
 
@@ -351,10 +351,10 @@ final class budget_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $category->id]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
             ]);
             $data = $customfields->add_instance_data(
-                hotsitefields::get_field(hotsitefields::SHORTNAME_BRASAO1),
+                hotsitefields::get_field(hotsitefields::SHORTNAME_CREST1),
                 (int) $course->id,
                 1
             );
@@ -364,7 +364,7 @@ final class budget_test extends \advanced_testcase {
                 'filearea' => 'file',
                 'itemid' => (int) $data->get('id'),
                 'filepath' => '/',
-                'filename' => 'brasao-alfa.png',
+                'filename' => 'crest-alpha.png',
             ], base64_decode(self::PNG));
         }
 

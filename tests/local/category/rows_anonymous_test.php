@@ -146,7 +146,7 @@ final class rows_anonymous_test extends \advanced_testcase {
             $course = self::getDataGenerator()->create_course(['category' => $categoryid, 'fullname' => $fullname] + $extra);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
             ]);
             if ($state !== null) {
                 discoverability::set_state((int) $course->id, $state, $adminid);

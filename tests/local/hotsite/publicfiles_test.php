@@ -151,7 +151,7 @@ final class publicfiles_test extends \advanced_testcase {
         hotsitefields::reset_field_cache();
         \core_course\customfield\course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
         ]);
     }
 
@@ -206,7 +206,7 @@ final class publicfiles_test extends \advanced_testcase {
         hotsitefields::ensure_fields();
         /** @var \core_customfield_generator $generator */
         $generator = $this->getDataGenerator()->get_plugin_generator('core_customfield');
-        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_BRASAO1);
+        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_CREST1);
         $data = $generator->add_instance_data($field, (int) $course->id, 1);
         $record = [
             'contextid' => \core\context\course::instance($course->id)->id,
@@ -214,7 +214,7 @@ final class publicfiles_test extends \advanced_testcase {
             'filearea' => 'file',
             'itemid' => (int) $data->get('id'),
             'filepath' => '/',
-            'filename' => $filename ?? 'brasao-alfa.png',
+            'filename' => $filename ?? 'crest-alpha.png',
         ];
         if ($content !== null) {
             return get_file_storage()->create_file_from_string($record, $content);
@@ -315,9 +315,9 @@ final class publicfiles_test extends \advanced_testcase {
         $this->setAdminUser();
         \core_course\customfield\course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => 0,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => 0,
         ]);
-        $this->assertSame(0, hotsitefields::values($course->id)->modelo, 'Precondition: the model is gone.');
+        $this->assertSame(0, hotsitefields::values($course->id)->model, 'Precondition: the model is gone.');
         $this->setUser(null);
         $this->assertNull(publicfiles::resolve($context, 'hero', self::args($course, $file)));
     }
@@ -345,9 +345,9 @@ final class publicfiles_test extends \advanced_testcase {
         $this->setAdminUser();
         \core_course\customfield\course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => 0,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => 0,
         ]);
-        $this->assertSame(0, hotsitefields::values($course->id)->modelo, 'Precondition: the model is gone.');
+        $this->assertSame(0, hotsitefields::values($course->id)->model, 'Precondition: the model is gone.');
         $this->setUser(null);
 
         $found = publicfiles::resolve($context, publicfiles::AREA_COVER, $args);
@@ -644,7 +644,7 @@ final class publicfiles_test extends \advanced_testcase {
         hotsitefields::ensure_fields();
         /** @var \core_customfield_generator $generator */
         $generator = $this->getDataGenerator()->get_plugin_generator('core_customfield');
-        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_IMAGEMPUBLICA);
+        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_SHAREIMAGE);
         $data = $generator->add_instance_data($field, (int) $course->id, 1);
         return get_file_storage()->create_file_from_string([
             'contextid' => \core\context\course::instance($course->id)->id,
@@ -761,7 +761,7 @@ final class publicfiles_test extends \advanced_testcase {
         $this->resetAfterTest();
         [$course] = $this->course();
         [$control] = $this->course();
-        $html = $this->badge($course, 'brasao.html', '<script>alert(1)</script>');
+        $html = $this->badge($course, 'crest.html', '<script>alert(1)</script>');
         $image = $this->badge($control);
         $this->setUser(null);
 
@@ -897,9 +897,9 @@ final class publicfiles_test extends \advanced_testcase {
         $this->setAdminUser();
         \core_course\customfield\course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => 0,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => 0,
         ]);
-        $this->assertSame(0, hotsitefields::values($course->id)->modelo, 'Precondition: the model is gone.');
+        $this->assertSame(0, hotsitefields::values($course->id)->model, 'Precondition: the model is gone.');
         $this->setUser(null);
         $this->assertNull(publicfiles::resolve($context, publicfiles::AREA_BADGE, $args));
     }
@@ -918,7 +918,7 @@ final class publicfiles_test extends \advanced_testcase {
         $base = "/pluginfile.php/{$context->id}/theme_dimensions/";
 
         $url = publicfiles::badge_url($course, $badge)->out(false);
-        $this->assertStringEndsWith("{$base}badge/{$course->id}/{$hash}/brasao-alfa.png", $url);
+        $this->assertStringEndsWith("{$base}badge/{$course->id}/{$hash}/crest-alpha.png", $url);
     }
 
     /**

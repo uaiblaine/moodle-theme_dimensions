@@ -78,11 +78,11 @@ class after_form_definition {
     private static function warn_open_ended_event(\stdClass $course, \MoodleQuickForm $mform): void {
         global $OUTPUT;
 
-        $anchor = 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE;
+        $anchor = 'customfield_' . hotsitefields::SHORTNAME_MODALITY;
         if (empty($course->id) || $course->id == SITEID || !$mform->elementExists($anchor)) {
             return;
         }
-        if (hotsitefields::values($course->id)->modelo !== hotsitefields::MODELO_EVENTO) {
+        if (hotsitefields::values($course->id)->model !== hotsitefields::MODEL_EVENT) {
             return;
         }
         $undated = offer::undated((int) $course->id);
@@ -135,21 +135,21 @@ class after_form_definition {
      * @return void
      */
     private static function hide_inapplicable_fields(\MoodleQuickForm $mform): void {
-        $modelo = 'customfield_' . hotsitefields::SHORTNAME_MODELO;
-        $modalidade = 'customfield_' . hotsitefields::SHORTNAME_MODALIDADE;
-        $formato = 'customfield_' . hotsitefields::SHORTNAME_FORMATO;
-        $aovivo = 'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO;
-        $evento = (string) hotsitefields::MODELO_EVENTO;
-        $selfpaced = (string) hotsitefields::FORMATO_AUTOINSTRUCIONAL;
+        $model = 'customfield_' . hotsitefields::SHORTNAME_MODEL;
+        $modality = 'customfield_' . hotsitefields::SHORTNAME_MODALITY;
+        $format = 'customfield_' . hotsitefields::SHORTNAME_FORMAT;
+        $liveclasses = 'customfield_' . hotsitefields::SHORTNAME_LIVECLASSES;
+        $event = (string) hotsitefields::MODEL_EVENT;
+        $selfpaced = (string) hotsitefields::FORMAT_SELFPACED;
 
         $rules = [
-            [hotsitefields::SHORTNAME_FORMATO, $modelo, 'eq', $evento],
-            [hotsitefields::SHORTNAME_AULASAOVIVO, $modelo, 'eq', $evento],
-            [hotsitefields::SHORTNAME_AULASAOVIVO, $formato, 'eq', $selfpaced],
-            [hotsitefields::SHORTNAME_AULASAOVIVOQUANDO, $modelo, 'eq', $evento],
-            [hotsitefields::SHORTNAME_AULASAOVIVOQUANDO, $formato, 'eq', $selfpaced],
-            [hotsitefields::SHORTNAME_AULASAOVIVOQUANDO, $aovivo, 'notchecked', '1'],
-            [hotsitefields::SHORTNAME_ENCONTROS, $modalidade, 'neq', (string) hotsitefields::MODALIDADE_HIBRIDO],
+            [hotsitefields::SHORTNAME_FORMAT, $model, 'eq', $event],
+            [hotsitefields::SHORTNAME_LIVECLASSES, $model, 'eq', $event],
+            [hotsitefields::SHORTNAME_LIVECLASSES, $format, 'eq', $selfpaced],
+            [hotsitefields::SHORTNAME_LIVECLASSESWHEN, $model, 'eq', $event],
+            [hotsitefields::SHORTNAME_LIVECLASSESWHEN, $format, 'eq', $selfpaced],
+            [hotsitefields::SHORTNAME_LIVECLASSESWHEN, $liveclasses, 'notchecked', '1'],
+            [hotsitefields::SHORTNAME_MEETINGS, $modality, 'neq', (string) hotsitefields::MODALITY_HYBRID],
         ];
         foreach ($rules as [$shortname, $dependenton, $condition, $value]) {
             $element = 'customfield_' . $shortname;
@@ -206,12 +206,12 @@ class after_form_definition {
         }
 
         // The anchor for the placement below, and absent for an editor who may not edit the fields.
-        $modeloelement = 'customfield_' . hotsitefields::SHORTNAME_MODELO;
-        if (!$mform->elementExists($modeloelement)) {
+        $modelelement = 'customfield_' . hotsitefields::SHORTNAME_MODEL;
+        if (!$mform->elementExists($modelelement)) {
             return;
         }
 
-        if (!hotsitefields::values($course->id)->modelo) {
+        if (!hotsitefields::values($course->id)->model) {
             return;
         }
 
@@ -243,9 +243,9 @@ class after_form_definition {
         ]);
 
         $link = $mform->createElement('static', self::LINK_ELEMENT, '', $html);
-        $mform->insertElementBefore($link, $modeloelement);
-        $mform->insertElementBefore($mform->removeElement($modeloelement, false), self::LINK_ELEMENT);
-        $descriptionelement = $modeloelement . '_static';
+        $mform->insertElementBefore($link, $modelelement);
+        $mform->insertElementBefore($mform->removeElement($modelelement, false), self::LINK_ELEMENT);
+        $descriptionelement = $modelelement . '_static';
         if ($mform->elementExists($descriptionelement)) {
             $mform->insertElementBefore($mform->removeElement($descriptionelement, false), self::LINK_ELEMENT);
         }

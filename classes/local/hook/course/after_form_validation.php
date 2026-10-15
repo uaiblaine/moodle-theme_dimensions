@@ -80,23 +80,23 @@ class after_form_validation {
      * @return array Errors keyed by element name, empty when the submission passes.
      */
     private static function round6_errors(array $data): array {
-        $modelo = (int) ($data['customfield_' . hotsitefields::SHORTNAME_MODELO] ?? 0);
-        $modalidade = (int) ($data['customfield_' . hotsitefields::SHORTNAME_MODALIDADE] ?? 0);
-        $formato = (int) ($data['customfield_' . hotsitefields::SHORTNAME_FORMATO] ?? 0);
+        $model = (int) ($data['customfield_' . hotsitefields::SHORTNAME_MODEL] ?? 0);
+        $modality = (int) ($data['customfield_' . hotsitefields::SHORTNAME_MODALITY] ?? 0);
+        $format = (int) ($data['customfield_' . hotsitefields::SHORTNAME_FORMAT] ?? 0);
         $errors = [];
 
-        $notonline = in_array($modalidade, [hotsitefields::MODALIDADE_PRESENCIAL, hotsitefields::MODALIDADE_HIBRIDO], true);
-        if ($modelo !== hotsitefields::MODELO_EVENTO && $formato === hotsitefields::FORMATO_AUTOINSTRUCIONAL && $notonline) {
-            $errors['customfield_' . hotsitefields::SHORTNAME_MODALIDADE] =
+        $notonline = in_array($modality, [hotsitefields::MODALITY_INPERSON, hotsitefields::MODALITY_HYBRID], true);
+        if ($model !== hotsitefields::MODEL_EVENT && $format === hotsitefields::FORMAT_SELFPACED && $notonline) {
+            $errors['customfield_' . hotsitefields::SHORTNAME_MODALITY] =
                 get_string('hotsite_selfpacedonline', hotsitefields::COMPONENT);
         }
 
-        if ($modalidade === hotsitefields::MODALIDADE_HIBRIDO) {
-            $total = $data['customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA] ?? '';
-            $inperson = $data['customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL] ?? '';
+        if ($modality === hotsitefields::MODALITY_HYBRID) {
+            $total = $data['customfield_' . hotsitefields::SHORTNAME_WORKLOAD] ?? '';
+            $inperson = $data['customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD] ?? '';
             if (is_numeric($total) && is_numeric($inperson) && (float) $total > 0 && (float) $inperson > (float) $total) {
-                $errors['customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL] =
-                    get_string('hotsite_cargapresencialtoobig', hotsitefields::COMPONENT, format_float((float) $total, -1));
+                $errors['customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD] =
+                    get_string('hotsite_inpersonworkloadtoobig', hotsitefields::COMPONENT, format_float((float) $total, -1));
             }
         }
         return $errors;

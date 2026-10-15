@@ -276,9 +276,9 @@ final class builder {
      * @return string Plain text.
      */
     private static function hotsite_chip(int $courseid, int $model): string {
-        $modellabel = hotsitefields::option_label(hotsitefields::SHORTNAME_MODELO, $model) ?? '';
-        $modality = (int) (hotsitefields::values_many([$courseid], false)[$courseid]->modalidade ?? 0);
-        $modalitylabel = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALIDADE, $modality);
+        $modellabel = hotsitefields::option_label(hotsitefields::SHORTNAME_MODEL, $model) ?? '';
+        $modality = (int) (hotsitefields::values_many([$courseid], false)[$courseid]->modality ?? 0);
+        $modalitylabel = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALITY, $modality);
         if ($modalitylabel === null) {
             return get_string('coursenotice_chip_hotsite', self::COMPONENT, $modellabel);
         }

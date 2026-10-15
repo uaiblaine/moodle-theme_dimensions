@@ -476,18 +476,18 @@ final class get_category_rows_test extends \advanced_testcase {
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
-        $fieldid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODALIDADE)->get('id');
+        $fieldid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODALITY)->get('id');
         $online = $generator->create_course(['category' => $category->id]);
         $inperson = $generator->create_course(['category' => $category->id]);
         course_handler::create()->instance_form_save((object) [
             'id' => $online->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => 1,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => 1,
         ]);
         course_handler::create()->instance_form_save((object) [
             'id' => $inperson->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => 2,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => 2,
         ]);
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODALIDADE, 'theme_dimensions');
+        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODALITY, 'theme_dimensions');
         $this->become($generator->create_user());
         $id = (int) $category->id;
 
@@ -628,13 +628,13 @@ final class get_category_rows_test extends \advanced_testcase {
         // A crest is drawn for a course carrying a hotsite model only: the badge route serves no other.
         course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
         ]);
-        $bare = $generator->create_course(['category' => $category->id, 'fullname' => 'Sem brasao']);
+        $bare = $generator->create_course(['category' => $category->id, 'fullname' => 'Sem crest']);
         /** @var \core_customfield_generator $customfields */
         $customfields = $generator->get_plugin_generator('core_customfield');
         $data = $customfields->add_instance_data(
-            hotsitefields::get_field(hotsitefields::SHORTNAME_BRASAO1),
+            hotsitefields::get_field(hotsitefields::SHORTNAME_CREST1),
             (int) $course->id,
             1
         );
@@ -644,14 +644,14 @@ final class get_category_rows_test extends \advanced_testcase {
             'filearea' => 'file',
             'itemid' => (int) $data->get('id'),
             'filepath' => '/',
-            'filename' => 'brasao-alfa.png',
+            'filename' => 'crest-alpha.png',
         ], base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='));
 
         $this->become($generator->create_user());
         $cards = array_column($this->data(['categoryid' => (int) $category->id])['cards'], null, 'id');
 
         $this->assertTrue($cards[(int) $course->id]['hasbadges']);
-        $this->assertSame('brasao alfa', $cards[(int) $course->id]['badges'][0]['alt']);
+        $this->assertSame('crest alpha', $cards[(int) $course->id]['badges'][0]['alt']);
         $this->assertStringContainsString(
             '/theme_dimensions/badge/' . $course->id . '/',
             $cards[(int) $course->id]['badges'][0]['url'],

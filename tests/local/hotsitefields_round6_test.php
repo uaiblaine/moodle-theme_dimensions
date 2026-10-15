@@ -68,7 +68,7 @@ final class hotsitefields_round6_test extends \advanced_testcase {
      */
     private static function field_order(): array {
         global $DB;
-        $categoryid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO)->get('categoryid');
+        $categoryid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL)->get('categoryid');
         return array_values($DB->get_fieldset_select(
             'customfield_field',
             'shortname',
@@ -97,11 +97,11 @@ final class hotsitefields_round6_test extends \advanced_testcase {
         self::provision_fresh();
 
         $types = [
-            hotsitefields::SHORTNAME_FORMATO => 'select',
-            hotsitefields::SHORTNAME_AULASAOVIVO => 'checkbox',
-            hotsitefields::SHORTNAME_AULASAOVIVOQUANDO => 'text',
-            hotsitefields::SHORTNAME_CARGAPRESENCIAL => 'number',
-            hotsitefields::SHORTNAME_ENCONTROS => 'text',
+            hotsitefields::SHORTNAME_FORMAT => 'select',
+            hotsitefields::SHORTNAME_LIVECLASSES => 'checkbox',
+            hotsitefields::SHORTNAME_LIVECLASSESWHEN => 'text',
+            hotsitefields::SHORTNAME_INPERSONWORKLOAD => 'number',
+            hotsitefields::SHORTNAME_MEETINGS => 'text',
         ];
         foreach ($types as $shortname => $type) {
             $field = hotsitefields::get_field($shortname);
@@ -110,18 +110,18 @@ final class hotsitefields_round6_test extends \advanced_testcase {
         }
 
         $order = self::field_order();
-        $workload = array_search(hotsitefields::SHORTNAME_CARGAHORARIA, $order, true);
+        $workload = array_search(hotsitefields::SHORTNAME_WORKLOAD, $order, true);
         $this->assertSame(
-            array_merge([hotsitefields::SHORTNAME_CARGAHORARIA], hotsitefields::ROUND6_SHORTNAMES),
+            array_merge([hotsitefields::SHORTNAME_WORKLOAD], hotsitefields::ROUND6_SHORTNAMES),
             array_slice($order, $workload, 6)
         );
         $this->assertSame(
             [
-                get_string('hotsitefield_modalidade_online', hotsitefields::COMPONENT),
-                get_string('hotsitefield_modalidade_presencial', hotsitefields::COMPONENT),
-                get_string('hotsitefield_modalidade_hibrido', hotsitefields::COMPONENT),
+                get_string('hotsitefield_modality_online', hotsitefields::COMPONENT),
+                get_string('hotsitefield_modality_inperson', hotsitefields::COMPONENT),
+                get_string('hotsitefield_modality_hybrid', hotsitefields::COMPONENT),
             ],
-            self::options(hotsitefields::SHORTNAME_MODALIDADE)
+            self::options(hotsitefields::SHORTNAME_MODALITY)
         );
     }
 
@@ -137,27 +137,27 @@ final class hotsitefields_round6_test extends \advanced_testcase {
         $course = self::getDataGenerator()->create_course();
         $handler->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_HIBRIDO,
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_AUTOINSTRUCIONAL,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_HYBRID,
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_SELFPACED,
         ]);
         $other = self::getDataGenerator()->create_course();
         $handler->instance_form_save((object) [
             'id' => $other->id,
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_TUTORIA,
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_TUTORED,
         ]);
 
         $exported = $handler->export_instance_data_object($course->id, true);
         $this->assertSame(
-            get_string('hotsitefield_modalidade_hibrido', hotsitefields::COMPONENT),
-            $exported->{hotsitefields::SHORTNAME_MODALIDADE}
+            get_string('hotsitefield_modality_hybrid', hotsitefields::COMPONENT),
+            $exported->{hotsitefields::SHORTNAME_MODALITY}
         );
         $this->assertSame(
-            get_string('hotsitefield_formato_autoinstrucional', hotsitefields::COMPONENT),
-            $exported->{hotsitefields::SHORTNAME_FORMATO}
+            get_string('hotsitefield_format_selfpaced', hotsitefields::COMPONENT),
+            $exported->{hotsitefields::SHORTNAME_FORMAT}
         );
         $this->assertSame(
-            get_string('hotsitefield_formato_tutoria', hotsitefields::COMPONENT),
-            $handler->export_instance_data_object($other->id, true)->{hotsitefields::SHORTNAME_FORMATO}
+            get_string('hotsitefield_format_tutored', hotsitefields::COMPONENT),
+            $handler->export_instance_data_object($other->id, true)->{hotsitefields::SHORTNAME_FORMAT}
         );
     }
 
@@ -176,10 +176,10 @@ final class hotsitefields_round6_test extends \advanced_testcase {
         self::provision_fresh();
         $fresh = self::field_order();
 
-        $modalidade = hotsitefields::get_field(hotsitefields::SHORTNAME_MODALIDADE);
-        $config = (array) $modalidade->get('configdata');
+        $modality = hotsitefields::get_field(hotsitefields::SHORTNAME_MODALITY);
+        $config = (array) $modality->get('configdata');
         $config['options'] = "Online\nPresencial";
-        $DB->set_field('customfield_field', 'configdata', json_encode($config), ['id' => $modalidade->get('id')]);
+        $DB->set_field('customfield_field', 'configdata', json_encode($config), ['id' => $modality->get('id')]);
         foreach (hotsitefields::ROUND6_SHORTNAMES as $shortname) {
             api::delete_field_configuration(hotsitefields::get_field($shortname));
         }
@@ -188,7 +188,7 @@ final class hotsitefields_round6_test extends \advanced_testcase {
         $course = self::getDataGenerator()->create_course();
         course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_PRESENCIAL,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_INPERSON,
         ]);
 
         hotsitefields::ensure_fields();
@@ -198,16 +198,16 @@ final class hotsitefields_round6_test extends \advanced_testcase {
 
         $this->assertTrue(hotsitefields::add_hybrid_option());
         $this->assertSame(
-            ['Online', 'Presencial', get_string('hotsitefield_modalidade_hibrido', hotsitefields::COMPONENT)],
-            self::options(hotsitefields::SHORTNAME_MODALIDADE)
+            ['Online', 'Presencial', get_string('hotsitefield_modality_hybrid', hotsitefields::COMPONENT)],
+            self::options(hotsitefields::SHORTNAME_MODALITY)
         );
         $this->assertFalse(hotsitefields::add_hybrid_option());
-        $this->assertCount(3, self::options(hotsitefields::SHORTNAME_MODALIDADE));
+        $this->assertCount(3, self::options(hotsitefields::SHORTNAME_MODALITY));
 
         hotsitefields::place_format_fields();
         $this->assertSame($fresh, self::field_order());
 
-        $this->assertSame(hotsitefields::MODALIDADE_PRESENCIAL, hotsitefields::values($course->id)->modalidade);
+        $this->assertSame(hotsitefields::MODALITY_INPERSON, hotsitefields::values($course->id)->modality);
     }
 
     /**
@@ -218,13 +218,13 @@ final class hotsitefields_round6_test extends \advanced_testcase {
         $this->resetAfterTest();
         self::provision_fresh();
 
-        $modalidade = hotsitefields::get_field(hotsitefields::SHORTNAME_MODALIDADE);
-        $config = (array) $modalidade->get('configdata');
+        $modality = hotsitefields::get_field(hotsitefields::SHORTNAME_MODALITY);
+        $config = (array) $modality->get('configdata');
         $config['options'] = "Online\nPresencial\nSemipresencial";
-        $DB->set_field('customfield_field', 'configdata', json_encode($config), ['id' => $modalidade->get('id')]);
+        $DB->set_field('customfield_field', 'configdata', json_encode($config), ['id' => $modality->get('id')]);
 
         $this->assertFalse(hotsitefields::add_hybrid_option());
-        $this->assertSame(['Online', 'Presencial', 'Semipresencial'], self::options(hotsitefields::SHORTNAME_MODALIDADE));
+        $this->assertSame(['Online', 'Presencial', 'Semipresencial'], self::options(hotsitefields::SHORTNAME_MODALITY));
     }
 
     /**
@@ -239,36 +239,36 @@ final class hotsitefields_round6_test extends \advanced_testcase {
         $course = self::getDataGenerator()->create_course();
         $handler->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_HIBRIDO,
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_TUTORIA,
-            'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO => 1,
-            'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVOQUANDO => 'Quartas & sábados, 19h',
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 60,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAPRESENCIAL => 16,
-            'customfield_' . hotsitefields::SHORTNAME_ENCONTROS => '2 encontros aos sábados',
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_HYBRID,
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_TUTORED,
+            'customfield_' . hotsitefields::SHORTNAME_LIVECLASSES => 1,
+            'customfield_' . hotsitefields::SHORTNAME_LIVECLASSESWHEN => 'Quartas & sábados, 19h',
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 60,
+            'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD => 16,
+            'customfield_' . hotsitefields::SHORTNAME_MEETINGS => '2 encontros aos sábados',
         ]);
         $values = hotsitefields::values($course->id);
-        $this->assertSame(hotsitefields::FORMATO_TUTORIA, $values->formato);
-        $this->assertTrue($values->aovivo);
-        $this->assertSame('Quartas & sábados, 19h', $values->aovivoquando);
-        $this->assertSame(16.0, $values->cargapresencial);
-        $this->assertSame('2 encontros aos sábados', $values->encontros);
+        $this->assertSame(hotsitefields::FORMAT_TUTORED, $values->format);
+        $this->assertTrue($values->liveclasses);
+        $this->assertSame('Quartas & sábados, 19h', $values->liveclasseswhen);
+        $this->assertSame(16.0, $values->inpersonworkload);
+        $this->assertSame('2 encontros aos sábados', $values->meetings);
 
         // The same live classes on a self-paced course are read away: values() goes through coherent().
         $selfpaced = self::getDataGenerator()->create_course();
         $handler->instance_form_save((object) [
             'id' => $selfpaced->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_CURSO,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_ONLINE,
-            'customfield_' . hotsitefields::SHORTNAME_FORMATO => hotsitefields::FORMATO_AUTOINSTRUCIONAL,
-            'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVO => 1,
-            'customfield_' . hotsitefields::SHORTNAME_AULASAOVIVOQUANDO => 'Quartas, 19h',
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_ONLINE,
+            'customfield_' . hotsitefields::SHORTNAME_FORMAT => hotsitefields::FORMAT_SELFPACED,
+            'customfield_' . hotsitefields::SHORTNAME_LIVECLASSES => 1,
+            'customfield_' . hotsitefields::SHORTNAME_LIVECLASSESWHEN => 'Quartas, 19h',
         ]);
         $values = hotsitefields::values($selfpaced->id);
-        $this->assertSame(hotsitefields::FORMATO_AUTOINSTRUCIONAL, $values->formato);
-        $this->assertFalse($values->aovivo);
-        $this->assertNull($values->aovivoquando);
+        $this->assertSame(hotsitefields::FORMAT_SELFPACED, $values->format);
+        $this->assertFalse($values->liveclasses);
+        $this->assertNull($values->liveclasseswhen);
     }
 
     /**
@@ -277,13 +277,13 @@ final class hotsitefields_round6_test extends \advanced_testcase {
      * @return array Name => [stored values, expected values], each over the round-6 keys.
      */
     public static function coherence_cases(): array {
-        $c = hotsitefields::MODELO_CURSO;
-        $e = hotsitefields::MODELO_EVENTO;
-        $on = hotsitefields::MODALIDADE_ONLINE;
-        $pr = hotsitefields::MODALIDADE_PRESENCIAL;
-        $hy = hotsitefields::MODALIDADE_HIBRIDO;
-        $sp = hotsitefields::FORMATO_AUTOINSTRUCIONAL;
-        $tu = hotsitefields::FORMATO_TUTORIA;
+        $c = hotsitefields::MODEL_COURSE;
+        $e = hotsitefields::MODEL_EVENT;
+        $on = hotsitefields::MODALITY_ONLINE;
+        $pr = hotsitefields::MODALITY_INPERSON;
+        $hy = hotsitefields::MODALITY_HYBRID;
+        $sp = hotsitefields::FORMAT_SELFPACED;
+        $tu = hotsitefields::FORMAT_TUTORED;
         $all = [true, 'Quartas', 16.0, '2 encontros'];
         return [
             'tutored hybrid course keeps everything' => [[$c, $hy, $tu, ...$all], [$tu, ...$all]],
@@ -321,26 +321,26 @@ final class hotsitefields_round6_test extends \advanced_testcase {
     /**
      * coherent() empties exactly what contradicts the rest, and nothing else.
      *
-     * @param array $stored modelo, modalidade, formato, aovivo, aovivoquando, cargapresencial, encontros.
-     * @param array $expected formato, aovivo, aovivoquando, cargapresencial, encontros as read.
+     * @param array $stored model, modality, format, liveclasses, liveclasseswhen, inpersonworkload, meetings.
+     * @param array $expected format, liveclasses, liveclasseswhen, inpersonworkload, meetings as read.
      */
     #[DataProvider('coherence_cases')]
     public function test_coherent_reads_without_contradiction(array $stored, array $expected): void {
-        [$modelo, $modalidade, $formato, $aovivo, $quando, $presencial, $encontros] = $stored;
+        [$model, $modality, $format, $liveclasses, $when, $inperson, $meetings] = $stored;
         $values = hotsitefields::coherent((object) [
-            'modelo' => $modelo,
-            'modalidade' => $modalidade,
-            'formato' => $formato,
-            'aovivo' => $aovivo,
-            'aovivoquando' => $quando,
-            'cargapresencial' => $presencial,
-            'encontros' => $encontros,
+            'model' => $model,
+            'modality' => $modality,
+            'format' => $format,
+            'liveclasses' => $liveclasses,
+            'liveclasseswhen' => $when,
+            'inpersonworkload' => $inperson,
+            'meetings' => $meetings,
         ]);
         $this->assertSame(
             $expected,
-            [$values->formato, $values->aovivo, $values->aovivoquando, $values->cargapresencial, $values->encontros]
+            [$values->format, $values->liveclasses, $values->liveclasseswhen, $values->inpersonworkload, $values->meetings]
         );
         // The model and the modality are facts the rule reads, never ones it rewrites.
-        $this->assertSame([$modelo, $modalidade], [$values->modelo, $values->modalidade]);
+        $this->assertSame([$model, $modality], [$values->model, $values->modality]);
     }
 }

@@ -587,7 +587,7 @@ class get_category_rows extends external_api {
             ),
             'hasbadges' => new external_value(PARAM_BOOL, 'Whether there are badges to draw.'),
             'badgeslabel' => new external_value(PARAM_TEXT, 'The label of the badge list.'),
-            'isevento' => new external_value(PARAM_BOOL, 'Whether the course chose the event model.'),
+            'isevent' => new external_value(PARAM_BOOL, 'Whether the course chose the event model.'),
             'kindlabel' => new external_value(
                 PARAM_TEXT,
                 'The model label, null where no model was chosen.',

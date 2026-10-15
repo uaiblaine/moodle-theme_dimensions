@@ -45,7 +45,7 @@ final class hotsitefields_test extends \advanced_testcase {
     private static function provisioned(): array {
         return array_filter(
             hotsitefields::definitions(),
-            static fn(array $definition): bool => $definition['type'] !== hotsitefields::BRASAO_TYPE
+            static fn(array $definition): bool => $definition['type'] !== hotsitefields::PICTURE_TYPE
                 || hotsitefields::picture_type_available()
         );
     }
@@ -121,11 +121,11 @@ final class hotsitefields_test extends \advanced_testcase {
         $this->assertSame(count($definitions), $DB->count_records('customfield_field', ['categoryid' => $categoryid]));
 
         // The public description is configured invisible and capped; the page model stays visible to all.
-        $descricao = hotsitefields::get_field(hotsitefields::SHORTNAME_DESCRICAOPUBLICA);
-        $this->assertEquals(course_handler::NOTVISIBLE, $descricao->get_configdata_property('visibility'));
-        $this->assertEquals(200, $descricao->get_configdata_property('maxlength'));
-        $modelo = hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO);
-        $this->assertEquals(course_handler::VISIBLETOALL, $modelo->get_configdata_property('visibility'));
+        $description = hotsitefields::get_field(hotsitefields::SHORTNAME_PUBLICDESCRIPTION);
+        $this->assertEquals(course_handler::NOTVISIBLE, $description->get_configdata_property('visibility'));
+        $this->assertEquals(200, $description->get_configdata_property('maxlength'));
+        $model = hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL);
+        $this->assertEquals(course_handler::VISIBLETOALL, $model->get_configdata_property('visibility'));
     }
 
     /**
@@ -156,17 +156,17 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::reset_field_cache();
 
         $categoryid = (int) get_config(hotsitefields::COMPONENT, hotsitefields::CATEGORYID_CONFIG);
-        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMA);
+        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMME);
         $this->assertNotNull($field);
 
         api::delete_field_configuration($field);
         hotsitefields::reset_field_cache();
-        $this->assertNull(hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMA));
+        $this->assertNull(hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMME));
 
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
 
-        $restored = hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMA);
+        $restored = hotsitefields::get_field(hotsitefields::SHORTNAME_PROGRAMME);
         $this->assertNotNull($restored);
         $this->assertSame($categoryid, (int) $restored->get('categoryid'));
     }
@@ -182,7 +182,7 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
 
-        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO));
+        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL));
         $newid = (int) get_config(hotsitefields::COMPONENT, hotsitefields::CATEGORYID_CONFIG);
         $this->assertGreaterThan(0, $newid);
         $this->assertNotSame(999999, $newid);
@@ -201,7 +201,7 @@ final class hotsitefields_test extends \advanced_testcase {
         $category = $generator->create_category(['name' => 'Handmade']);
         $generator->create_field([
             'categoryid' => $category->get('id'),
-            'shortname' => hotsitefields::SHORTNAME_MODALIDADE,
+            'shortname' => hotsitefields::SHORTNAME_MODALITY,
             'type' => 'text',
         ]);
 
@@ -211,13 +211,13 @@ final class hotsitefields_test extends \advanced_testcase {
         $this->resetDebugging();
 
         // Still exactly one field with that shortname, and it is the foreign text one.
-        $rows = $DB->get_records('customfield_field', ['shortname' => hotsitefields::SHORTNAME_MODALIDADE]);
+        $rows = $DB->get_records('customfield_field', ['shortname' => hotsitefields::SHORTNAME_MODALITY]);
         $this->assertCount(1, $rows);
         $this->assertSame('text', reset($rows)->type);
 
         // Every other field was provisioned normally.
         foreach (self::provisioned() as $shortname => $definition) {
-            if ($shortname === hotsitefields::SHORTNAME_MODALIDADE) {
+            if ($shortname === hotsitefields::SHORTNAME_MODALITY) {
                 continue;
             }
             $rows = $DB->get_records('customfield_field', ['shortname' => $shortname]);
@@ -227,7 +227,7 @@ final class hotsitefields_test extends \advanced_testcase {
     }
 
     /**
-     * The MODELO and MODALIDADE constants match the provisioned option order.
+     * The MODEL and MODALITY constants match the provisioned option order.
      *
      * Select values are stored as a 1-based index into the options list, so a
      * reordering of the options strings would silently change what every
@@ -247,25 +247,25 @@ final class hotsitefields_test extends \advanced_testcase {
         $handler = course_handler::create();
         $handler->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_EVENTO,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_PRESENCIAL,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_INPERSON,
         ]);
 
-        $modelofield = hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO);
+        $modelfield = hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL);
         $stored = $DB->get_record('customfield_data', [
-            'fieldid' => $modelofield->get('id'),
+            'fieldid' => $modelfield->get('id'),
             'instanceid' => $course->id,
         ], '*', MUST_EXIST);
-        $this->assertSame(hotsitefields::MODELO_EVENTO, (int) $stored->intvalue);
+        $this->assertSame(hotsitefields::MODEL_EVENT, (int) $stored->intvalue);
 
         $exported = $handler->export_instance_data_object($course->id, true);
         $this->assertSame(
-            get_string('hotsitefield_modelo_evento', hotsitefields::COMPONENT),
-            $exported->{hotsitefields::SHORTNAME_MODELO}
+            get_string('hotsitefield_model_event', hotsitefields::COMPONENT),
+            $exported->{hotsitefields::SHORTNAME_MODEL}
         );
         $this->assertSame(
-            get_string('hotsitefield_modalidade_presencial', hotsitefields::COMPONENT),
-            $exported->{hotsitefields::SHORTNAME_MODALIDADE}
+            get_string('hotsitefield_modality_inperson', hotsitefields::COMPONENT),
+            $exported->{hotsitefields::SHORTNAME_MODALITY}
         );
     }
 
@@ -288,34 +288,34 @@ final class hotsitefields_test extends \advanced_testcase {
         $handler = course_handler::create();
         $handler->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_EVENTO,
-            'customfield_' . hotsitefields::SHORTNAME_MODALIDADE => hotsitefields::MODALIDADE_PRESENCIAL,
-            'customfield_' . hotsitefields::SHORTNAME_CARGAHORARIA => 36,
-            'customfield_' . hotsitefields::SHORTNAME_PUBLICOALVO . '_editor' => [
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_INPERSON,
+            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 36,
+            'customfield_' . hotsitefields::SHORTNAME_AUDIENCE . '_editor' => [
                 'text' => '<p>Brigadistas voluntários</p>',
                 'format' => FORMAT_HTML,
             ],
-            'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => 'São Paulo & Região',
-            'customfield_' . hotsitefields::SHORTNAME_DESCRICAOPUBLICA => 'Curso aberto & gratuito',
+            'customfield_' . hotsitefields::SHORTNAME_CITY => 'São Paulo & Região',
+            'customfield_' . hotsitefields::SHORTNAME_PUBLICDESCRIPTION => 'Curso aberto & gratuito',
         ]);
 
         $values = hotsitefields::values($course->id);
-        $this->assertSame(hotsitefields::MODELO_EVENTO, $values->modelo);
-        $this->assertSame(hotsitefields::MODALIDADE_PRESENCIAL, $values->modalidade);
-        $this->assertSame(36.0, $values->cargahoraria);
+        $this->assertSame(hotsitefields::MODEL_EVENT, $values->model);
+        $this->assertSame(hotsitefields::MODALITY_INPERSON, $values->modality);
+        $this->assertSame(36.0, $values->workload);
         // The textarea arrives as final HTML for a triple-stash sink.
-        $this->assertStringContainsString('<p>', $values->publicoalvo);
-        $this->assertStringContainsString('Brigadistas voluntários', $values->publicoalvo);
+        $this->assertStringContainsString('<p>', $values->audience);
+        $this->assertStringContainsString('Brigadistas voluntários', $values->audience);
         // The text field arrives in the plain spelling: the bare ampersand survives unescaped.
-        $this->assertSame('São Paulo & Região', $values->cidade);
-        $this->assertSame('Curso aberto & gratuito', $values->descricaopublica);
+        $this->assertSame('São Paulo & Região', $values->city);
+        $this->assertSame('Curso aberto & gratuito', $values->publicdescription);
         // Untouched fields read as absent, not as empty strings.
-        $this->assertNull($values->programa);
-        $this->assertNull($values->localnome);
+        $this->assertNull($values->programme);
+        $this->assertNull($values->venue);
         // Field names travel along for the page's labels.
         $this->assertSame(
-            get_string('hotsitefield_localcidade', hotsitefields::COMPONENT),
-            $values->names[hotsitefields::SHORTNAME_LOCALCIDADE]
+            get_string('hotsitefield_city', hotsitefields::COMPONENT),
+            $values->names[hotsitefields::SHORTNAME_CITY]
         );
     }
 
@@ -329,15 +329,15 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::reset_field_cache();
 
         $this->assertSame(
-            get_string('hotsitefield_modelo_curso', hotsitefields::COMPONENT),
-            hotsitefields::option_label(hotsitefields::SHORTNAME_MODELO, hotsitefields::MODELO_CURSO)
+            get_string('hotsitefield_model_course', hotsitefields::COMPONENT),
+            hotsitefields::option_label(hotsitefields::SHORTNAME_MODEL, hotsitefields::MODEL_COURSE)
         );
         $this->assertSame(
-            get_string('hotsitefield_modalidade_presencial', hotsitefields::COMPONENT),
-            hotsitefields::option_label(hotsitefields::SHORTNAME_MODALIDADE, hotsitefields::MODALIDADE_PRESENCIAL)
+            get_string('hotsitefield_modality_inperson', hotsitefields::COMPONENT),
+            hotsitefields::option_label(hotsitefields::SHORTNAME_MODALITY, hotsitefields::MODALITY_INPERSON)
         );
-        $this->assertNull(hotsitefields::option_label(hotsitefields::SHORTNAME_MODELO, 0));
-        $this->assertNull(hotsitefields::option_label(hotsitefields::SHORTNAME_MODELO, 99));
+        $this->assertNull(hotsitefields::option_label(hotsitefields::SHORTNAME_MODEL, 0));
+        $this->assertNull(hotsitefields::option_label(hotsitefields::SHORTNAME_MODEL, 99));
     }
 
     /**
@@ -357,15 +357,15 @@ final class hotsitefields_test extends \advanced_testcase {
         $handler = course_handler::create();
         $handler->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_DESCRICAOPUBLICA => 'Para o público externo',
+            'customfield_' . hotsitefields::SHORTNAME_PUBLICDESCRIPTION => 'Para o público externo',
         ]);
 
         $visible = [];
         foreach ($handler->get_instance_data($course->id) as $data) {
             $visible[] = $data->get_field()->get('shortname');
         }
-        $this->assertNotContains(hotsitefields::SHORTNAME_DESCRICAOPUBLICA, $visible);
-        $this->assertSame('Para o público externo', hotsitefields::values($course->id)->descricaopublica);
+        $this->assertNotContains(hotsitefields::SHORTNAME_PUBLICDESCRIPTION, $visible);
+        $this->assertSame('Para o público externo', hotsitefields::values($course->id)->publicdescription);
     }
 
     /**
@@ -388,28 +388,28 @@ final class hotsitefields_test extends \advanced_testcase {
         $categoryid = (int) get_config(hotsitefields::COMPONENT, hotsitefields::CATEGORYID_CONFIG);
         $retired = $generator->create_field([
             'categoryid' => $categoryid,
-            'shortname' => hotsitefields::SHORTNAME_RETIRED_PUBLICO,
+            'shortname' => hotsitefields::SHORTNAME_RETIRED_PUBLIC,
             'name' => 'Public enrolment page',
             'type' => 'checkbox',
         ]);
         $course = self::getDataGenerator()->create_course();
         $generator->add_instance_data($retired, (int) $course->id, 1);
-        $modelo = hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO);
-        $generator->add_instance_data($modelo, (int) $course->id, hotsitefields::MODELO_CURSO);
+        $model = hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL);
+        $generator->add_instance_data($model, (int) $course->id, hotsitefields::MODEL_COURSE);
 
         hotsitefields::retire_public_field();
 
         $this->assertFalse($DB->record_exists('customfield_field', ['id' => $retired->get('id')]));
         $this->assertFalse($DB->record_exists('customfield_data', ['fieldid' => $retired->get('id')]));
         // Control: the other fields, their data and the category are untouched.
-        $this->assertTrue($DB->record_exists('customfield_field', ['id' => $modelo->get('id')]));
-        $this->assertTrue($DB->record_exists('customfield_data', ['fieldid' => $modelo->get('id')]));
+        $this->assertTrue($DB->record_exists('customfield_field', ['id' => $model->get('id')]));
+        $this->assertTrue($DB->record_exists('customfield_data', ['fieldid' => $model->get('id')]));
         $this->assertTrue($DB->record_exists('customfield_category', ['id' => $categoryid]));
-        $this->assertSame(hotsitefields::MODELO_CURSO, hotsitefields::values($course->id)->modelo);
+        $this->assertSame(hotsitefields::MODEL_COURSE, hotsitefields::values($course->id)->model);
 
         // A second call finds nothing and is harmless.
         hotsitefields::retire_public_field();
-        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO));
+        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL));
     }
 
     /**
@@ -424,12 +424,12 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
 
-        foreach (hotsitefields::BRASAO_SHORTNAMES as $shortname) {
+        foreach (hotsitefields::CREST_SHORTNAMES as $shortname) {
             $field = hotsitefields::get_field($shortname);
             $this->assertNotNull($field, $shortname);
-            $this->assertSame(hotsitefields::BRASAO_TYPE, $field->get('type'), $shortname);
+            $this->assertSame(hotsitefields::PICTURE_TYPE, $field->get('type'), $shortname);
             $this->assertEquals(course_handler::NOTVISIBLE, $field->get_configdata_property('visibility'), $shortname);
-            $this->assertEquals(hotsitefields::BRASAO_MAXBYTES, $field->get_configdata_property('maximumbytes'), $shortname);
+            $this->assertEquals(hotsitefields::CREST_MAXBYTES, $field->get_configdata_property('maximumbytes'), $shortname);
         }
         $video = hotsitefields::get_field(hotsitefields::SHORTNAME_VIDEOURL);
         $this->assertNotNull($video);
@@ -469,7 +469,7 @@ final class hotsitefields_test extends \advanced_testcase {
         $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
         $context = \core\context\course::instance($course->id);
         $hashes = [];
-        $uploads = [hotsitefields::SHORTNAME_BRASAO3 => 'gd-logo.png', hotsitefields::SHORTNAME_BRASAO1 => 'testimage.svg'];
+        $uploads = [hotsitefields::SHORTNAME_CREST3 => 'gd-logo.png', hotsitefields::SHORTNAME_CREST1 => 'testimage.svg'];
         foreach ($uploads as $shortname => $fixture) {
             $data = $generator->add_instance_data(hotsitefields::get_field($shortname), (int) $course->id, 1);
             $path = $fixture === 'gd-logo.png'
@@ -489,14 +489,14 @@ final class hotsitefields_test extends \advanced_testcase {
         $values = hotsitefields::values($course->id);
         // The plain spelling: the ampersand of the query string survives as typed.
         $this->assertSame('https://www.youtube.com/watch?v=Fs7Aph2027x&t=3', $values->videourl);
-        $this->assertCount(2, $values->brasoes);
-        $this->assertContainsOnlyInstancesOf(\stored_file::class, $values->brasoes);
-        $this->assertSame($hashes[hotsitefields::SHORTNAME_BRASAO1], $values->brasoes[0]->get_contenthash());
-        $this->assertSame($hashes[hotsitefields::SHORTNAME_BRASAO3], $values->brasoes[1]->get_contenthash());
+        $this->assertCount(2, $values->crests);
+        $this->assertContainsOnlyInstancesOf(\stored_file::class, $values->crests);
+        $this->assertSame($hashes[hotsitefields::SHORTNAME_CREST1], $values->crests[0]->get_contenthash());
+        $this->assertSame($hashes[hotsitefields::SHORTNAME_CREST3], $values->crests[1]->get_contenthash());
 
         // A course with nothing uploaded reads as an empty grid and no address.
         $other = self::getDataGenerator()->create_course();
-        $this->assertSame([], hotsitefields::values($other->id)->brasoes);
+        $this->assertSame([], hotsitefields::values($other->id)->crests);
         $this->assertNull(hotsitefields::values($other->id)->videourl);
     }
 
@@ -523,12 +523,12 @@ final class hotsitefields_test extends \advanced_testcase {
 
         course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODELO => hotsitefields::MODELO_EVENTO,
+            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
         ]);
         /** @var \core_customfield_generator $generator */
         $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
         $context = \core\context\course::instance($course->id);
-        foreach ([hotsitefields::SHORTNAME_BRASAO4, hotsitefields::SHORTNAME_BRASAO2] as $shortname) {
+        foreach ([hotsitefields::SHORTNAME_CREST4, hotsitefields::SHORTNAME_CREST2] as $shortname) {
             $data = $generator->add_instance_data(hotsitefields::get_field($shortname), (int) $course->id, 1);
             get_file_storage()->create_file_from_pathname([
                 'contextid' => $context->id,
@@ -540,11 +540,11 @@ final class hotsitefields_test extends \advanced_testcase {
             ], $CFG->dirroot . '/lib/tests/fixtures/gd-logo.png');
         }
 
-        $this->assertSame(hotsitefields::MODELO_EVENTO, hotsitefields::model($course->id));
+        $this->assertSame(hotsitefields::MODEL_EVENT, hotsitefields::model($course->id));
         $badges = hotsitefields::badges($course->id);
-        $this->assertSame(['brasao_2.png', 'brasao_4.png'], array_map(fn($f) => $f->get_filename(), $badges));
+        $this->assertSame(['crest_2.png', 'crest_4.png'], array_map(fn($f) => $f->get_filename(), $badges));
         $this->assertSame(
-            array_map(fn($f) => $f->get_id(), hotsitefields::values($course->id)->brasoes),
+            array_map(fn($f) => $f->get_id(), hotsitefields::values($course->id)->crests),
             array_map(fn($f) => $f->get_id(), $badges)
         );
     }
@@ -569,13 +569,13 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
 
-        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_IMAGEMPUBLICA);
+        $field = hotsitefields::get_field(hotsitefields::SHORTNAME_SHAREIMAGE);
         $this->assertNotNull($field);
-        $this->assertSame(hotsitefields::BRASAO_TYPE, $field->get('type'));
+        $this->assertSame(hotsitefields::PICTURE_TYPE, $field->get('type'));
         $this->assertEquals(course_handler::NOTVISIBLE, $field->get_configdata_property('visibility'));
-        $this->assertEquals(hotsitefields::IMAGEMPUBLICA_MAXBYTES, $field->get_configdata_property('maximumbytes'));
+        $this->assertEquals(hotsitefields::SHAREIMAGE_MAXBYTES, $field->get_configdata_property('maximumbytes'));
         $this->assertSame(
-            array_merge(hotsitefields::BRASAO_SHORTNAMES, [hotsitefields::SHORTNAME_IMAGEMPUBLICA]),
+            array_merge(hotsitefields::CREST_SHORTNAMES, [hotsitefields::SHORTNAME_SHAREIMAGE]),
             hotsitefields::PICTURE_SHORTNAMES,
             'The backup carries every picture field, and only those.'
         );
@@ -586,7 +586,7 @@ final class hotsitefields_test extends \advanced_testcase {
         /** @var \core_customfield_generator $generator */
         $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
         $context = \core\context\course::instance($course->id);
-        $uploads = [hotsitefields::SHORTNAME_BRASAO1 => 'brasao.png', hotsitefields::SHORTNAME_IMAGEMPUBLICA => 'partilha.png'];
+        $uploads = [hotsitefields::SHORTNAME_CREST1 => 'crest.png', hotsitefields::SHORTNAME_SHAREIMAGE => 'partilha.png'];
         foreach ($uploads as $shortname => $filename) {
             $data = $generator->add_instance_data(hotsitefields::get_field($shortname), (int) $course->id, 1);
             get_file_storage()->create_file_from_pathname([
@@ -600,8 +600,8 @@ final class hotsitefields_test extends \advanced_testcase {
         }
 
         $this->assertSame('partilha.png', hotsitefields::share_picture($course->id)?->get_filename());
-        $this->assertSame(['brasao.png'], array_map(fn($f) => $f->get_filename(), hotsitefields::badges($course->id)));
-        $this->assertSame(['brasao.png'], array_map(fn($f) => $f->get_filename(), hotsitefields::values($course->id)->brasoes));
+        $this->assertSame(['crest.png'], array_map(fn($f) => $f->get_filename(), hotsitefields::badges($course->id)));
+        $this->assertSame(['crest.png'], array_map(fn($f) => $f->get_filename(), hotsitefields::values($course->id)->crests));
     }
 
     /**
@@ -616,11 +616,11 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::reset_field_cache();
         $handler = course_handler::create();
         $courses = [];
-        foreach ([hotsitefields::MODELO_CURSO, hotsitefields::MODELO_EVENTO, 0] as $i => $modelo) {
+        foreach ([hotsitefields::MODEL_COURSE, hotsitefields::MODEL_EVENT, 0] as $i => $model) {
             $course = self::getDataGenerator()->create_course();
-            $data = ['id' => $course->id, 'customfield_' . hotsitefields::SHORTNAME_LOCALCIDADE => "Town & {$i}"];
-            if ($modelo) {
-                $data['customfield_' . hotsitefields::SHORTNAME_MODELO] = $modelo;
+            $data = ['id' => $course->id, 'customfield_' . hotsitefields::SHORTNAME_CITY => "Town & {$i}"];
+            if ($model) {
+                $data['customfield_' . hotsitefields::SHORTNAME_MODEL] = $model;
             }
             $handler->instance_form_save((object) $data);
             $courses[] = (int) $course->id;
@@ -639,12 +639,12 @@ final class hotsitefields_test extends \advanced_testcase {
         foreach ($courses as $courseid) {
             $this->assertEquals(hotsitefields::values($courseid), $many[$courseid], "Course {$courseid}");
         }
-        $this->assertSame(hotsitefields::MODELO_EVENTO, $many[$courses[1]]->modelo);
-        $this->assertSame('Town & 1', $many[$courses[1]]->cidade);
-        $this->assertSame(0, $many[$unset]->modelo);
-        $this->assertNull($many[$unset]->cidade);
-        $this->assertSame([], $many[$unset]->brasoes);
-        $this->assertArrayHasKey(hotsitefields::SHORTNAME_MODELO, $many[$unset]->names, 'Names come with defaults too.');
+        $this->assertSame(hotsitefields::MODEL_EVENT, $many[$courses[1]]->model);
+        $this->assertSame('Town & 1', $many[$courses[1]]->city);
+        $this->assertSame(0, $many[$unset]->model);
+        $this->assertNull($many[$unset]->city);
+        $this->assertSame([], $many[$unset]->crests);
+        $this->assertArrayHasKey(hotsitefields::SHORTNAME_MODEL, $many[$unset]->names, 'Names come with defaults too.');
         $this->assertSame([], hotsitefields::values_many([]));
     }
 
@@ -661,7 +661,7 @@ final class hotsitefields_test extends \advanced_testcase {
         $this->require_picture_type();
         self::clear_hotsite_fields();
 
-        \core\plugininfo\customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 0);
+        \core\plugininfo\customfield::enable_plugin(hotsitefields::PICTURE_TYPE, 0);
         $this->assertFalse(hotsitefields::picture_type_available(), 'Precondition: the type is unavailable.');
         hotsitefields::ensure_fields();
         $this->assertDebuggingNotCalled();
@@ -670,10 +670,10 @@ final class hotsitefields_test extends \advanced_testcase {
         foreach (hotsitefields::PICTURE_SHORTNAMES as $shortname) {
             $this->assertNull(hotsitefields::get_field($shortname), $shortname);
         }
-        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_MODELO), 'Everything else is provisioned.');
+        $this->assertNotNull(hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL), 'Everything else is provisioned.');
         $this->assertSame([], hotsitefields::missing_definitions(), 'Nothing the site can hold is missing.');
 
-        \core\plugininfo\customfield::enable_plugin(hotsitefields::BRASAO_TYPE, 1);
+        \core\plugininfo\customfield::enable_plugin(hotsitefields::PICTURE_TYPE, 1);
         $this->assertTrue(hotsitefields::picture_type_available());
         hotsitefields::reset_field_cache();
         $this->assertEqualsCanonicalizing(
@@ -684,7 +684,7 @@ final class hotsitefields_test extends \advanced_testcase {
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
         foreach (hotsitefields::PICTURE_SHORTNAMES as $shortname) {
-            $this->assertSame(hotsitefields::BRASAO_TYPE, hotsitefields::get_field($shortname)?->get('type'), $shortname);
+            $this->assertSame(hotsitefields::PICTURE_TYPE, hotsitefields::get_field($shortname)?->get('type'), $shortname);
         }
     }
 }

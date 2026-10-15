@@ -65,7 +65,7 @@ final class hotsitefields_backup_test extends \advanced_testcase {
            register core's own and let this test pass for the wrong reason. */
         foreach (api::get_categories_with_fields('core_course', 'course', 0) as $category) {
             foreach ($category->get_fields() as $field) {
-                if ($field->get('type') === hotsitefields::BRASAO_TYPE) {
+                if ($field->get('type') === hotsitefields::PICTURE_TYPE) {
                     $visibility = $field->get_configdata_property('visibility');
                     $this->assertEquals(course_handler::NOTVISIBLE, $visibility, $field->get('shortname'));
                 }
@@ -75,23 +75,23 @@ final class hotsitefields_backup_test extends \advanced_testcase {
         $course = self::getDataGenerator()->create_course();
         /** @var \core_customfield_generator $generator */
         $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
-        $data = $generator->add_instance_data(hotsitefields::get_field(hotsitefields::SHORTNAME_BRASAO2), (int) $course->id, 1);
+        $data = $generator->add_instance_data(hotsitefields::get_field(hotsitefields::SHORTNAME_CREST2), (int) $course->id, 1);
         $file = get_file_storage()->create_file_from_pathname([
             'contextid' => \core\context\course::instance($course->id)->id,
             'component' => 'customfield_picture',
             'filearea' => 'file',
             'itemid' => (int) $data->get('id'),
             'filepath' => '/',
-            'filename' => 'brasao.png',
+            'filename' => 'crest.png',
         ], $CFG->dirroot . '/lib/tests/fixtures/gd-logo.png');
-        $this->assertCount(1, hotsitefields::values($course->id)->brasoes);
+        $this->assertCount(1, hotsitefields::values($course->id)->crests);
 
         $newcourseid = $this->restore_course($this->backup_course($course), $course, '_copy');
 
-        $badges = hotsitefields::values($newcourseid)->brasoes;
+        $badges = hotsitefields::values($newcourseid)->crests;
         $this->assertCount(1, $badges);
         $this->assertSame($file->get_contenthash(), $badges[0]->get_contenthash());
-        $this->assertSame('brasao.png', $badges[0]->get_filename());
+        $this->assertSame('crest.png', $badges[0]->get_filename());
         // The copy holds its own file, in its own context, not a pointer to the original.
         $this->assertNotEquals($file->get_contextid(), $badges[0]->get_contextid());
     }
@@ -121,7 +121,7 @@ final class hotsitefields_backup_test extends \advanced_testcase {
         $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
         $context = \core\context\course::instance($course->id);
         $files = [];
-        $uploads = [hotsitefields::SHORTNAME_IMAGEMPUBLICA => 'partilha.png', hotsitefields::SHORTNAME_BRASAO1 => 'brasao.png'];
+        $uploads = [hotsitefields::SHORTNAME_SHAREIMAGE => 'partilha.png', hotsitefields::SHORTNAME_CREST1 => 'crest.png'];
         foreach ($uploads as $shortname => $filename) {
             $data = $generator->add_instance_data(hotsitefields::get_field($shortname), (int) $course->id, 1);
             $files[$shortname] = get_file_storage()->create_file_from_pathname([
@@ -140,10 +140,10 @@ final class hotsitefields_backup_test extends \advanced_testcase {
         $share = hotsitefields::share_picture($newcourseid);
         $this->assertNotNull($share, 'The share picture came back.');
         $this->assertSame('partilha.png', $share->get_filename());
-        $this->assertSame($files[hotsitefields::SHORTNAME_IMAGEMPUBLICA]->get_contenthash(), $share->get_contenthash());
+        $this->assertSame($files[hotsitefields::SHORTNAME_SHAREIMAGE]->get_contenthash(), $share->get_contenthash());
         $this->assertNotEquals($context->id, $share->get_contextid(), 'In the copy, not a pointer to the original.');
         $this->assertSame(
-            ['brasao.png'],
+            ['crest.png'],
             array_map(fn($f) => $f->get_filename(), hotsitefields::badges($newcourseid)),
             'And the badge came back onto its own field, alone in the grid.'
         );

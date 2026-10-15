@@ -7,7 +7,7 @@ Feature: The category showcase lists what a person may discover, and its filters
   Background:
     Given the following config values are set as admin:
       | theme                | dimensions |                            |
-      | categoryfilterfields | modalidade           | theme_dimensions |
+      | categoryfilterfields | dimensions_modality           | theme_dimensions |
     And the following "categories" exist:
       | name                | category | idnumber |
       | Test category       | 0        | TESTCAT  |
@@ -16,7 +16,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | Public category     | 0        | PUBCAT   |
     # Modality 1 is online, 2 is in-person: the option index the select field stores.
     And the following "courses" exist:
-      | fullname           | shortname | category | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname           | shortname | category | customfield_dimensions_model | customfield_dimensions_modality |
       | Resgate em Altura  | RESG      | TESTCAT  | 1                          | 2                      |
       | Combate a Incendio | INCEND    | OPENCAT  | 1                          | 1                      |
       | Restricted One     | REST1     | TESTCAT  | 1                          | 1                      |
@@ -124,7 +124,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | name           | category | idnumber |
       | Inner category | OPENCAT  | INNERCAT |
     And the following "courses" exist:
-      | fullname    | shortname | category | customfield_hotsite_modelo |
+      | fullname    | shortname | category | customfield_dimensions_model |
       | Curso Fundo | FUNDO     | INNERCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -172,7 +172,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | Second category | TESTCAT  | SECONDCAT |
       | Third category  | TESTCAT  | THIRDCAT  |
     And the following "courses" exist:
-      | fullname       | shortname | category  | customfield_hotsite_modelo |
+      | fullname       | shortname | category  | customfield_dimensions_model |
       | Curso Segundo  | SEGU      | SECONDCAT | 1                          |
       | Curso Terceiro | TERC      | THIRDCAT  | 1                          |
     And I log in as "student1"
@@ -217,7 +217,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | Area 24    | BIGCAT   | AREA24   |
       | Area 25    | BIGCAT   | AREA25   |
     And the following "courses" exist:
-      | fullname    | shortname | category | customfield_hotsite_modelo |
+      | fullname    | shortname | category | customfield_dimensions_model |
       | Curso Vinte | VINTE     | AREA25   | 1                          |
     And I log in as "student1"
     And I am on the "BIGCAT" "theme_dimensions > Category showcase" page
@@ -242,7 +242,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     # alphabet puts Combate first and the start date puts the course of tomorrow first. Asserting
     # only one of them would pass against a page that never reordered anything.
     Given the following "courses" exist:
-      | fullname   | shortname | category | customfield_hotsite_modelo | startdate    |
+      | fullname   | shortname | category | customfield_dimensions_model | startdate    |
       | Zulu Curso | ZULU      | TESTCAT  | 1                          | ##tomorrow## |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -260,7 +260,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     # no JavaScript at all. The two courses of the background start today, so they are the control:
     # a filter that narrowed nothing would leave all three on the page.
     Given the following "courses" exist:
-      | fullname        | shortname | category | customfield_hotsite_modelo | startdate    |
+      | fullname        | shortname | category | customfield_dimensions_model | startdate    |
       | Curso de Amanha | AMANHA    | TESTCAT  | 1                          | ##tomorrow## |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -299,7 +299,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | name           | category | idnumber |
       | Withheld topic | 0        | HIDECAT  |
     And the following "courses" exist:
-      | fullname     | shortname | category | customfield_hotsite_modelo |
+      | fullname     | shortname | category | customfield_dimensions_model |
       | Curso Oculto | HIDC      | HIDECAT  | 1                          |
     And the category "HIDECAT" is "unlisted" for discoverability
     And I log in as "student1"
@@ -354,7 +354,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     # subcategory is behind its poster whatever the filter says, so it cannot be the control for
     # a filter that removes it.
     Given the following "courses" exist:
-      | fullname     | shortname | category | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname     | shortname | category | customfield_dimensions_model | customfield_dimensions_modality |
       | Curso Online | ONLI      | TESTCAT  | 1                          | 1                      |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -374,7 +374,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     # that holds the result says how many on its poster.
     # A search alone leaves the filter disclosure closed: the term is visible in its own box.
     Given the following "courses" exist:
-      | fullname            | shortname | category | customfield_hotsite_modelo |
+      | fullname            | shortname | category | customfield_dimensions_model |
       | Salvamento Aquatico | SALV      | TESTCAT  | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -401,7 +401,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | name            | category | idnumber  |
       | Second category | TESTCAT  | SECONDCAT |
     And the following "courses" exist:
-      | fullname      | shortname | category  | customfield_hotsite_modelo |
+      | fullname      | shortname | category  | customfield_dimensions_model |
       | Curso Segundo | SEGU      | SECONDCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -432,7 +432,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | name            | category | idnumber  |
       | Second category | TESTCAT  | SECONDCAT |
     And the following "courses" exist:
-      | fullname      | shortname | category  | customfield_hotsite_modelo |
+      | fullname      | shortname | category  | customfield_dimensions_model |
       | Curso Segundo | SEGU      | SECONDCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -460,7 +460,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     # are two of this category's own; core lists the newest of a category first. The count line
     # counts the whole subtree at rest, so what is asserted is the rows paged.
     Given the following "courses" exist:
-      | fullname            | shortname | category | customfield_hotsite_modelo |
+      | fullname            | shortname | category | customfield_dimensions_model |
       | Salvamento Aquatico | SALV      | TESTCAT  | 1                          |
     And I log in as "student1"
     When I am on the "TESTCAT|perpage=1" "theme_dimensions > Category showcase" page
@@ -719,7 +719,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | name         | category | idnumber  |
       | Listed child | PUBCAT   | LISTCHILD |
     And the following "courses" exist:
-      | fullname      | shortname | category  | customfield_hotsite_modelo |
+      | fullname      | shortname | category  | customfield_dimensions_model |
       | Curso Aberto  | ABERTO    | LISTCHILD | 1                          |
       | Curso Fechado | FECHADO   | LISTCHILD | 1                          |
     And the course "ABERTO" is "public" for discoverability
@@ -747,7 +747,7 @@ Feature: The category showcase lists what a person may discover, and its filters
       | Listed area | PUBCAT   | LISTAREA |
       | Empty area  | PUBCAT   | EMPTYAR  |
     And the following "courses" exist:
-      | fullname         | shortname | category | customfield_hotsite_modelo |
+      | fullname         | shortname | category | customfield_dimensions_model |
       | Curso Aberto Um  | ABERTO1   | PUBAREA  | 1                          |
       | Curso Silencioso | SILENC    | QUIETCAT | 1                          |
       | Curso Listado    | LISTADO   | LISTAREA | 1                          |

@@ -19,7 +19,7 @@ Feature: A category's pages sit under the showcase's hero when local_page is ins
       | Bare category   | 0        | BARECAT  |
       | Public category | 0        | PUBCAT   |
     And the following "courses" exist:
-      | fullname          | shortname | category | customfield_hotsite_modelo |
+      | fullname          | shortname | category | customfield_dimensions_model |
       | Resgate em Altura | RESG      | TESTCAT  | 1                          |
       | Curso Sem Paginas | BARE      | BARECAT  | 1                          |
       | Curso Público     | PUBC      | PUBCAT   | 1                          |

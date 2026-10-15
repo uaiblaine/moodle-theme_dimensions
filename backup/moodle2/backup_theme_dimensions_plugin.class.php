@@ -74,7 +74,7 @@ class backup_theme_dimensions_plugin extends backup_theme_plugin {
               WHERE d.instanceid = ?
                 AND d.component = 'core_course'
                 AND d.area = 'course'
-                AND f.type = '" . \theme_dimensions\local\hotsitefields::BRASAO_TYPE . "'
+                AND f.type = '" . \theme_dimensions\local\hotsitefields::PICTURE_TYPE . "'
                 AND f.shortname IN (" . implode(', ', $shortnames) . ")",
             [backup::VAR_COURSEID]
         );

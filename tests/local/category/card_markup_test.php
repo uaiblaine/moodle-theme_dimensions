@@ -1298,7 +1298,7 @@ final class card_markup_test extends \advanced_testcase {
     public function test_the_watermark_is_written_twice_and_the_text_poster_draws_none(): void {
         $this->resetAfterTest();
         $base = $this->example_context('category_directory_card');
-        $mark = "https://example.com/pluginfile.php/31/theme_dimensions/categorybadge1/7/abc/brasao.png";
+        $mark = "https://example.com/pluginfile.php/31/theme_dimensions/categorybadge1/7/abc/crest.png";
         $banded = $this->render_context('category_directory_card', [
             'hasimage' => false,
             'imageurl' => null,

@@ -59,32 +59,32 @@ class hotsitefields {
     /** @var string Plugin config key remembering the provisioned category id. */
     public const CATEGORYID_CONFIG = 'hotsitecfcategoryid';
 
-    /** @var string Shortname of the page model select (curso/evento). */
-    public const SHORTNAME_MODELO = 'hotsite_modelo';
+    /** @var string Shortname of the page model select (course/event). */
+    public const SHORTNAME_MODEL = 'dimensions_model';
 
-    /** @var string Shortname of the modality select (online/presencial/hibrido). */
-    public const SHORTNAME_MODALIDADE = 'modalidade';
+    /** @var string Shortname of the modality select (online/in-person/hybrid). */
+    public const SHORTNAME_MODALITY = 'dimensions_modality';
 
     /** @var string Shortname of the workload number field. */
-    public const SHORTNAME_CARGAHORARIA = 'carga_horaria';
+    public const SHORTNAME_WORKLOAD = 'dimensions_workload';
 
     /** @var string Shortname of the target audience textarea. */
-    public const SHORTNAME_PUBLICOALVO = 'publico_alvo';
+    public const SHORTNAME_AUDIENCE = 'dimensions_audience';
 
     /** @var string Shortname of the format select (self-paced/tutored), courses only. */
-    public const SHORTNAME_FORMATO = 'formato';
+    public const SHORTNAME_FORMAT = 'dimensions_format';
 
     /** @var string Shortname of the live classes checkbox, tutored courses only. */
-    public const SHORTNAME_AULASAOVIVO = 'aulas_aovivo';
+    public const SHORTNAME_LIVECLASSES = 'dimensions_liveclasses';
 
     /** @var string Shortname of the text saying when the live classes happen. */
-    public const SHORTNAME_AULASAOVIVOQUANDO = 'aulas_aovivo_quando';
+    public const SHORTNAME_LIVECLASSESWHEN = 'dimensions_liveclasseswhen';
 
     /** @var string Shortname of the in-person workload number field, hybrid offerings only. */
-    public const SHORTNAME_CARGAPRESENCIAL = 'carga_presencial';
+    public const SHORTNAME_INPERSONWORKLOAD = 'dimensions_inpersonworkload';
 
     /** @var string Shortname of the in-person meetings text field, hybrid offerings only. */
-    public const SHORTNAME_ENCONTROS = 'encontros_presenciais';
+    public const SHORTNAME_MEETINGS = 'dimensions_meetings';
 
     /**
      * @var string[] The fields of round 6, in the order they sit right after the workload.
@@ -95,62 +95,62 @@ class hotsitefields {
      * order as a fresh one.
      */
     public const ROUND6_SHORTNAMES = [
-        self::SHORTNAME_FORMATO,
-        self::SHORTNAME_AULASAOVIVO,
-        self::SHORTNAME_AULASAOVIVOQUANDO,
-        self::SHORTNAME_CARGAPRESENCIAL,
-        self::SHORTNAME_ENCONTROS,
+        self::SHORTNAME_FORMAT,
+        self::SHORTNAME_LIVECLASSES,
+        self::SHORTNAME_LIVECLASSESWHEN,
+        self::SHORTNAME_INPERSONWORKLOAD,
+        self::SHORTNAME_MEETINGS,
     ];
 
     /** @var string Shortname of the programme textarea. */
-    public const SHORTNAME_PROGRAMA = 'programa';
+    public const SHORTNAME_PROGRAMME = 'dimensions_programme';
 
     /** @var string Shortname of the certification textarea. */
-    public const SHORTNAME_CERTIFICACAO = 'certificacao';
+    public const SHORTNAME_CERTIFICATION = 'dimensions_certification';
 
     /** @var string Shortname of the city text field (free text). */
-    public const SHORTNAME_LOCALCIDADE = 'local_cidade';
+    public const SHORTNAME_CITY = 'dimensions_city';
 
     /** @var string Shortname of the venue name text field. */
-    public const SHORTNAME_LOCALNOME = 'local_nome';
+    public const SHORTNAME_VENUE = 'dimensions_venue';
 
     /** @var string Shortname of the venue address text field. */
-    public const SHORTNAME_LOCALENDERECO = 'local_endereco';
+    public const SHORTNAME_ADDRESS = 'dimensions_address';
 
     /** @var string Shortname of the public description text field (never displayed; read for the Open Graph tags). */
-    public const SHORTNAME_DESCRICAOPUBLICA = 'descricao_publica';
+    public const SHORTNAME_PUBLICDESCRIPTION = 'dimensions_publicdescription';
 
     /** @var string Shortname of the video URL text field (YouTube or Vimeo, embedded by the page). */
-    public const SHORTNAME_VIDEOURL = 'video_url';
+    public const SHORTNAME_VIDEOURL = 'dimensions_videourl';
 
     /** @var string Shortname of the first badge picture field. */
-    public const SHORTNAME_BRASAO1 = 'brasao_1';
+    public const SHORTNAME_CREST1 = 'dimensions_crest_1';
 
     /** @var string Shortname of the second badge picture field. */
-    public const SHORTNAME_BRASAO2 = 'brasao_2';
+    public const SHORTNAME_CREST2 = 'dimensions_crest_2';
 
     /** @var string Shortname of the third badge picture field. */
-    public const SHORTNAME_BRASAO3 = 'brasao_3';
+    public const SHORTNAME_CREST3 = 'dimensions_crest_3';
 
     /** @var string Shortname of the fourth badge picture field. */
-    public const SHORTNAME_BRASAO4 = 'brasao_4';
+    public const SHORTNAME_CREST4 = 'dimensions_crest_4';
 
     /** @var string[] The badge fields in display order: the hero's grid reads left to right, top to bottom. */
-    public const BRASAO_SHORTNAMES = [
-        self::SHORTNAME_BRASAO1,
-        self::SHORTNAME_BRASAO2,
-        self::SHORTNAME_BRASAO3,
-        self::SHORTNAME_BRASAO4,
+    public const CREST_SHORTNAMES = [
+        self::SHORTNAME_CREST1,
+        self::SHORTNAME_CREST2,
+        self::SHORTNAME_CREST3,
+        self::SHORTNAME_CREST4,
     ];
 
     /** @var int Largest badge file accepted, in bytes: a 784px PNG with alpha is about 300 KB, an SVG far less. */
-    public const BRASAO_MAXBYTES = 2097152;
+    public const CREST_MAXBYTES = 2097152;
 
     /** @var string The custom field type of the badge fields, provided by customfield_picture. */
-    public const BRASAO_TYPE = 'picture';
+    public const PICTURE_TYPE = 'picture';
 
     /** @var string Shortname of the share picture field (never displayed; the source of the hotsite's og:image). */
-    public const SHORTNAME_IMAGEMPUBLICA = 'imagem_publica';
+    public const SHORTNAME_SHAREIMAGE = 'dimensions_shareimage';
 
     /**
      * @var int Largest share picture accepted, in bytes.
@@ -160,7 +160,7 @@ class hotsitefields {
      * making one. So the cap only has to admit a photo straight from a camera, which the badges'
      * 2 MB does not.
      */
-    public const IMAGEMPUBLICA_MAXBYTES = 8388608;
+    public const SHAREIMAGE_MAXBYTES = 8388608;
 
     /**
      * @var string[] Every picture field of the theme, the badges and the share picture.
@@ -169,36 +169,36 @@ class hotsitefields {
      * theme's backup and restore plugin classes carry the rows and the files of exactly this list.
      */
     public const PICTURE_SHORTNAMES = [
-        self::SHORTNAME_BRASAO1,
-        self::SHORTNAME_BRASAO2,
-        self::SHORTNAME_BRASAO3,
-        self::SHORTNAME_BRASAO4,
-        self::SHORTNAME_IMAGEMPUBLICA,
+        self::SHORTNAME_CREST1,
+        self::SHORTNAME_CREST2,
+        self::SHORTNAME_CREST3,
+        self::SHORTNAME_CREST4,
+        self::SHORTNAME_SHAREIMAGE,
     ];
 
     /** @var string Shortname of the retired "public hotsite" checkbox, kept only so the upgrade can find it. */
-    public const SHORTNAME_RETIRED_PUBLICO = 'hotsite_publico';
+    public const SHORTNAME_RETIRED_PUBLIC = 'dimensions_public';
 
     /** @var int Stored value of the page model select for "course". */
-    public const MODELO_CURSO = 1;
+    public const MODEL_COURSE = 1;
 
     /** @var int Stored value of the page model select for "event". */
-    public const MODELO_EVENTO = 2;
+    public const MODEL_EVENT = 2;
 
     /** @var int Stored value of the modality select for "online". */
-    public const MODALIDADE_ONLINE = 1;
+    public const MODALITY_ONLINE = 1;
 
     /** @var int Stored value of the modality select for "in-person". */
-    public const MODALIDADE_PRESENCIAL = 2;
+    public const MODALITY_INPERSON = 2;
 
     /** @var int Stored value of the modality select for "hybrid", the line appended in round 6. */
-    public const MODALIDADE_HIBRIDO = 3;
+    public const MODALITY_HYBRID = 3;
 
     /** @var int Stored value of the format select for "self-paced". */
-    public const FORMATO_AUTOINSTRUCIONAL = 1;
+    public const FORMAT_SELFPACED = 1;
 
     /** @var int Stored value of the format select for "tutored". */
-    public const FORMATO_TUTORIA = 2;
+    public const FORMAT_TUTORED = 2;
 
     /** @var array|null Request cache of resolved field controllers keyed by shortname (null = missing). */
     private static ?array $fieldcache = null;
@@ -212,8 +212,8 @@ class hotsitefields {
      * type-specific configdata.
      *
      * Select values are stored as a 1-based index into the options list
-     * (core prepends an empty choice at index 0), so the MODELO_*,
-     * MODALIDADE_* and FORMATO_* constants are bound to the ORDER of the lines
+     * (core prepends an empty choice at index 0), so the MODEL_*,
+     * MODALITY_* and FORMAT_* constants are bound to the ORDER of the lines
      * in the 'options' strings below. Never reorder them; a new option goes at
      * the end, and a site provisioned before it needs an upgrade step that
      * appends it, as {@see add_hybrid_option()} does for the hybrid modality.
@@ -222,28 +222,28 @@ class hotsitefields {
      */
     public static function definitions(): array {
         return [
-            self::SHORTNAME_MODELO => [
+            self::SHORTNAME_MODEL => [
                 'type' => 'select',
-                'stringkey' => 'hotsitefield_modelo',
+                'stringkey' => 'hotsitefield_model',
                 'config' => [
-                    'options' => get_string('hotsitefield_modelo_curso', self::COMPONENT) . "\n" .
-                        get_string('hotsitefield_modelo_evento', self::COMPONENT),
+                    'options' => get_string('hotsitefield_model_course', self::COMPONENT) . "\n" .
+                        get_string('hotsitefield_model_event', self::COMPONENT),
                     'defaultvalue' => '',
                 ],
             ],
-            self::SHORTNAME_MODALIDADE => [
+            self::SHORTNAME_MODALITY => [
                 'type' => 'select',
-                'stringkey' => 'hotsitefield_modalidade',
+                'stringkey' => 'hotsitefield_modality',
                 'config' => [
-                    'options' => get_string('hotsitefield_modalidade_online', self::COMPONENT) . "\n" .
-                        get_string('hotsitefield_modalidade_presencial', self::COMPONENT) . "\n" .
-                        get_string('hotsitefield_modalidade_hibrido', self::COMPONENT),
+                    'options' => get_string('hotsitefield_modality_online', self::COMPONENT) . "\n" .
+                        get_string('hotsitefield_modality_inperson', self::COMPONENT) . "\n" .
+                        get_string('hotsitefield_modality_hybrid', self::COMPONENT),
                     'defaultvalue' => '',
                 ],
             ],
-            self::SHORTNAME_CARGAHORARIA => [
+            self::SHORTNAME_WORKLOAD => [
                 'type' => 'number',
-                'stringkey' => 'hotsitefield_cargahoraria',
+                'stringkey' => 'hotsitefield_workload',
                 'config' => [
                     'decimalplaces' => 0,
                     'minimumvalue' => 0,
@@ -253,25 +253,25 @@ class hotsitefields {
                     'fieldtype' => '',
                 ],
             ],
-            self::SHORTNAME_FORMATO => [
+            self::SHORTNAME_FORMAT => [
                 'type' => 'select',
-                'stringkey' => 'hotsitefield_formato',
+                'stringkey' => 'hotsitefield_format',
                 'config' => [
-                    'options' => get_string('hotsitefield_formato_autoinstrucional', self::COMPONENT) . "\n" .
-                        get_string('hotsitefield_formato_tutoria', self::COMPONENT),
+                    'options' => get_string('hotsitefield_format_selfpaced', self::COMPONENT) . "\n" .
+                        get_string('hotsitefield_format_tutored', self::COMPONENT),
                     'defaultvalue' => '',
                 ],
             ],
-            self::SHORTNAME_AULASAOVIVO => [
+            self::SHORTNAME_LIVECLASSES => [
                 'type' => 'checkbox',
-                'stringkey' => 'hotsitefield_aulasaovivo',
+                'stringkey' => 'hotsitefield_liveclasses',
                 'config' => [
                     'checkbydefault' => 0,
                 ],
             ],
-            self::SHORTNAME_AULASAOVIVOQUANDO => [
+            self::SHORTNAME_LIVECLASSESWHEN => [
                 'type' => 'text',
-                'stringkey' => 'hotsitefield_aulasaovivoquando',
+                'stringkey' => 'hotsitefield_liveclasseswhen',
                 'config' => [
                     'displaysize' => 50,
                     'maxlength' => 120,
@@ -280,9 +280,9 @@ class hotsitefields {
                     'linktarget' => '',
                 ],
             ],
-            self::SHORTNAME_CARGAPRESENCIAL => [
+            self::SHORTNAME_INPERSONWORKLOAD => [
                 'type' => 'number',
-                'stringkey' => 'hotsitefield_cargapresencial',
+                'stringkey' => 'hotsitefield_inpersonworkload',
                 'config' => [
                     'decimalplaces' => 0,
                     'minimumvalue' => 0,
@@ -292,9 +292,9 @@ class hotsitefields {
                     'fieldtype' => '',
                 ],
             ],
-            self::SHORTNAME_ENCONTROS => [
+            self::SHORTNAME_MEETINGS => [
                 'type' => 'text',
-                'stringkey' => 'hotsitefield_encontros',
+                'stringkey' => 'hotsitefield_meetings',
                 'config' => [
                     'displaysize' => 50,
                     'maxlength' => 120,
@@ -303,33 +303,33 @@ class hotsitefields {
                     'linktarget' => '',
                 ],
             ],
-            self::SHORTNAME_PUBLICOALVO => [
+            self::SHORTNAME_AUDIENCE => [
                 'type' => 'textarea',
-                'stringkey' => 'hotsitefield_publicoalvo',
+                'stringkey' => 'hotsitefield_audience',
                 'config' => [
                     'defaultvalue' => '',
                     'defaultvalueformat' => FORMAT_HTML,
                 ],
             ],
-            self::SHORTNAME_PROGRAMA => [
+            self::SHORTNAME_PROGRAMME => [
                 'type' => 'textarea',
-                'stringkey' => 'hotsitefield_programa',
+                'stringkey' => 'hotsitefield_programme',
                 'config' => [
                     'defaultvalue' => '',
                     'defaultvalueformat' => FORMAT_HTML,
                 ],
             ],
-            self::SHORTNAME_CERTIFICACAO => [
+            self::SHORTNAME_CERTIFICATION => [
                 'type' => 'textarea',
-                'stringkey' => 'hotsitefield_certificacao',
+                'stringkey' => 'hotsitefield_certification',
                 'config' => [
                     'defaultvalue' => '',
                     'defaultvalueformat' => FORMAT_HTML,
                 ],
             ],
-            self::SHORTNAME_LOCALCIDADE => [
+            self::SHORTNAME_CITY => [
                 'type' => 'text',
-                'stringkey' => 'hotsitefield_localcidade',
+                'stringkey' => 'hotsitefield_city',
                 'config' => [
                     'displaysize' => 50,
                     'maxlength' => 120,
@@ -338,9 +338,9 @@ class hotsitefields {
                     'linktarget' => '',
                 ],
             ],
-            self::SHORTNAME_LOCALNOME => [
+            self::SHORTNAME_VENUE => [
                 'type' => 'text',
-                'stringkey' => 'hotsitefield_localnome',
+                'stringkey' => 'hotsitefield_venue',
                 'config' => [
                     'displaysize' => 50,
                     'maxlength' => 255,
@@ -349,9 +349,9 @@ class hotsitefields {
                     'linktarget' => '',
                 ],
             ],
-            self::SHORTNAME_LOCALENDERECO => [
+            self::SHORTNAME_ADDRESS => [
                 'type' => 'text',
-                'stringkey' => 'hotsitefield_localendereco',
+                'stringkey' => 'hotsitefield_address',
                 'config' => [
                     'displaysize' => 50,
                     'maxlength' => 255,
@@ -360,9 +360,9 @@ class hotsitefields {
                     'linktarget' => '',
                 ],
             ],
-            self::SHORTNAME_DESCRICAOPUBLICA => [
+            self::SHORTNAME_PUBLICDESCRIPTION => [
                 'type' => 'text',
-                'stringkey' => 'hotsitefield_descricaopublica',
+                'stringkey' => 'hotsitefield_publicdescription',
                 'config' => [
                     'displaysize' => 50,
                     /* Open Graph descriptions are cut at about 200 characters by every
@@ -392,11 +392,11 @@ class hotsitefields {
                 ],
             ],
             // Last, so that a fresh site and an upgraded one list the fields in the same order.
-            self::SHORTNAME_IMAGEMPUBLICA => [
-                'type' => self::BRASAO_TYPE,
-                'stringkey' => 'hotsitefield_imagempublica',
+            self::SHORTNAME_SHAREIMAGE => [
+                'type' => self::PICTURE_TYPE,
+                'stringkey' => 'hotsitefield_shareimage',
                 'config' => [
-                    'maximumbytes' => self::IMAGEMPUBLICA_MAXBYTES,
+                    'maximumbytes' => self::SHAREIMAGE_MAXBYTES,
                     /* Never displayed on the platform - it exists for the og:image of the public
                        hotsite, the pair of the public description above. */
                     'visibility' => course_handler::NOTVISIBLE,
@@ -419,12 +419,12 @@ class hotsitefields {
      */
     private static function badge_definitions(): array {
         $definitions = [];
-        foreach (self::BRASAO_SHORTNAMES as $position => $shortname) {
+        foreach (self::CREST_SHORTNAMES as $position => $shortname) {
             $definitions[$shortname] = [
-                'type' => self::BRASAO_TYPE,
-                'stringkey' => 'hotsitefield_brasao' . ($position + 1),
+                'type' => self::PICTURE_TYPE,
+                'stringkey' => 'hotsitefield_crest' . ($position + 1),
                 'config' => [
-                    'maximumbytes' => self::BRASAO_MAXBYTES,
+                    'maximumbytes' => self::CREST_MAXBYTES,
                     'visibility' => course_handler::NOTVISIBLE,
                 ],
             ];
@@ -441,7 +441,7 @@ class hotsitefields {
      * @return bool Whether the type can be created.
      */
     private static function type_available(array $definition): bool {
-        if ($definition['type'] !== self::BRASAO_TYPE) {
+        if ($definition['type'] !== self::PICTURE_TYPE) {
             return true;
         }
         return self::picture_type_available();
@@ -464,8 +464,8 @@ class hotsitefields {
      * @return bool
      */
     public static function picture_type_available(): bool {
-        return \core_component::get_plugin_directory('customfield', self::BRASAO_TYPE) !== null
-            && empty(get_config('customfield_' . self::BRASAO_TYPE, 'disabled'));
+        return \core_component::get_plugin_directory('customfield', self::PICTURE_TYPE) !== null
+            && empty(get_config('customfield_' . self::PICTURE_TYPE, 'disabled'));
     }
 
     /**
@@ -674,10 +674,10 @@ class hotsitefields {
      * {@see coherent()}): a page never has to ask whether a format, a live class or an
      * in-person figure may be shown beside the model and the modality it was saved with.
      *
-     * @return \stdClass Typed values: modelo/modalidade/formato (int, 0 = unset), cargahoraria/
-     *   cargapresencial (float|null), aovivo (bool), publicoalvo/programa/certificacao (HTML
-     *   string|null), cidade/localnome/endereco/descricaopublica/videourl/aovivoquando/encontros
-     *   (plain string|null), brasoes (array of \stored_file in grid order), names (array of
+     * @return \stdClass Typed values: model/modality/format (int, 0 = unset), workload/
+     *   inpersonworkload (float|null), liveclasses (bool), audience/programme/certification (HTML
+     *   string|null), city/venue/address/publicdescription/videourl/liveclasseswhen/meetings
+     *   (plain string|null), crests (array of \stored_file in grid order), names (array of
      *   shortname => plain field name).
      */
     public static function values(int $courseid): \stdClass {
@@ -772,23 +772,23 @@ class hotsitefields {
      */
     private static function typed_values(int $courseid, array $controllers, array $definitions, bool $filters): \stdClass {
         $values = (object) [
-            'modelo' => 0,
-            'modalidade' => 0,
-            'formato' => 0,
-            'aovivo' => false,
-            'aovivoquando' => null,
-            'cargahoraria' => null,
-            'cargapresencial' => null,
-            'encontros' => null,
-            'publicoalvo' => null,
-            'programa' => null,
-            'certificacao' => null,
-            'cidade' => null,
-            'localnome' => null,
-            'endereco' => null,
-            'descricaopublica' => null,
+            'model' => 0,
+            'modality' => 0,
+            'format' => 0,
+            'liveclasses' => false,
+            'liveclasseswhen' => null,
+            'workload' => null,
+            'inpersonworkload' => null,
+            'meetings' => null,
+            'audience' => null,
+            'programme' => null,
+            'certification' => null,
+            'city' => null,
+            'venue' => null,
+            'address' => null,
+            'publicdescription' => null,
             'videourl' => null,
-            'brasoes' => [],
+            'crests' => [],
             'names' => [],
         ];
         $badges = [];
@@ -806,58 +806,58 @@ class hotsitefields {
             ]);
 
             switch ($shortname) {
-                case self::SHORTNAME_MODELO:
-                    $values->modelo = (int) $data->get_value();
+                case self::SHORTNAME_MODEL:
+                    $values->model = (int) $data->get_value();
                     break;
-                case self::SHORTNAME_MODALIDADE:
-                    $values->modalidade = (int) $data->get_value();
+                case self::SHORTNAME_MODALITY:
+                    $values->modality = (int) $data->get_value();
                     break;
-                case self::SHORTNAME_CARGAHORARIA:
-                    $values->cargahoraria = self::hours_value($data->get_value());
+                case self::SHORTNAME_WORKLOAD:
+                    $values->workload = self::hours_value($data->get_value());
                     break;
-                case self::SHORTNAME_FORMATO:
-                    $values->formato = (int) $data->get_value();
+                case self::SHORTNAME_FORMAT:
+                    $values->format = (int) $data->get_value();
                     break;
-                case self::SHORTNAME_AULASAOVIVO:
-                    $values->aovivo = (bool) $data->get_value();
+                case self::SHORTNAME_LIVECLASSES:
+                    $values->liveclasses = (bool) $data->get_value();
                     break;
-                case self::SHORTNAME_AULASAOVIVOQUANDO:
-                    $values->aovivoquando = self::plain_text_value($data->get_value(), $context);
+                case self::SHORTNAME_LIVECLASSESWHEN:
+                    $values->liveclasseswhen = self::plain_text_value($data->get_value(), $context);
                     break;
-                case self::SHORTNAME_CARGAPRESENCIAL:
-                    $values->cargapresencial = self::hours_value($data->get_value());
+                case self::SHORTNAME_INPERSONWORKLOAD:
+                    $values->inpersonworkload = self::hours_value($data->get_value());
                     break;
-                case self::SHORTNAME_ENCONTROS:
-                    $values->encontros = self::plain_text_value($data->get_value(), $context);
+                case self::SHORTNAME_MEETINGS:
+                    $values->meetings = self::plain_text_value($data->get_value(), $context);
                     break;
-                case self::SHORTNAME_PUBLICOALVO:
-                    $values->publicoalvo = self::textarea_value($data, $context, $filters);
+                case self::SHORTNAME_AUDIENCE:
+                    $values->audience = self::textarea_value($data, $context, $filters);
                     break;
-                case self::SHORTNAME_PROGRAMA:
-                    $values->programa = self::textarea_value($data, $context, $filters);
+                case self::SHORTNAME_PROGRAMME:
+                    $values->programme = self::textarea_value($data, $context, $filters);
                     break;
-                case self::SHORTNAME_CERTIFICACAO:
-                    $values->certificacao = self::textarea_value($data, $context, $filters);
+                case self::SHORTNAME_CERTIFICATION:
+                    $values->certification = self::textarea_value($data, $context, $filters);
                     break;
-                case self::SHORTNAME_LOCALCIDADE:
-                    $values->cidade = self::plain_text_value($data->get_value(), $context);
+                case self::SHORTNAME_CITY:
+                    $values->city = self::plain_text_value($data->get_value(), $context);
                     break;
-                case self::SHORTNAME_LOCALNOME:
-                    $values->localnome = self::plain_text_value($data->get_value(), $context);
+                case self::SHORTNAME_VENUE:
+                    $values->venue = self::plain_text_value($data->get_value(), $context);
                     break;
-                case self::SHORTNAME_LOCALENDERECO:
-                    $values->endereco = self::plain_text_value($data->get_value(), $context);
+                case self::SHORTNAME_ADDRESS:
+                    $values->address = self::plain_text_value($data->get_value(), $context);
                     break;
-                case self::SHORTNAME_DESCRICAOPUBLICA:
-                    $values->descricaopublica = self::plain_text_value($data->get_value(), $context);
+                case self::SHORTNAME_PUBLICDESCRIPTION:
+                    $values->publicdescription = self::plain_text_value($data->get_value(), $context);
                     break;
                 case self::SHORTNAME_VIDEOURL:
                     $values->videourl = self::plain_text_value($data->get_value(), $context);
                     break;
-                case self::SHORTNAME_BRASAO1:
-                case self::SHORTNAME_BRASAO2:
-                case self::SHORTNAME_BRASAO3:
-                case self::SHORTNAME_BRASAO4:
+                case self::SHORTNAME_CREST1:
+                case self::SHORTNAME_CREST2:
+                case self::SHORTNAME_CREST3:
+                case self::SHORTNAME_CREST4:
                     // The customfield_picture controller knows where its file is; a foreign 'picture' type would not.
                     if ($data instanceof \customfield_picture\data_controller) {
                         $badges[$shortname] = $data->get_file();
@@ -865,9 +865,9 @@ class hotsitefields {
                     break;
             }
         }
-        foreach (self::BRASAO_SHORTNAMES as $shortname) {
+        foreach (self::CREST_SHORTNAMES as $shortname) {
             if (!empty($badges[$shortname])) {
-                $values->brasoes[] = $badges[$shortname];
+                $values->crests[] = $badges[$shortname];
             }
         }
         return self::coherent($values);
@@ -892,23 +892,23 @@ class hotsitefields {
      * @return \stdClass The same object, with what contradicts the rest emptied.
      */
     public static function coherent(\stdClass $values): \stdClass {
-        $evento = $values->modelo === self::MODELO_EVENTO;
-        $selfpaced = $values->formato === self::FORMATO_AUTOINSTRUCIONAL;
-        $hybrid = $values->modalidade === self::MODALIDADE_HIBRIDO;
-        $notonline = in_array($values->modalidade, [self::MODALIDADE_PRESENCIAL, self::MODALIDADE_HIBRIDO], true);
+        $event = $values->model === self::MODEL_EVENT;
+        $selfpaced = $values->format === self::FORMAT_SELFPACED;
+        $hybrid = $values->modality === self::MODALITY_HYBRID;
+        $notonline = in_array($values->modality, [self::MODALITY_INPERSON, self::MODALITY_HYBRID], true);
 
-        if ($evento || $selfpaced) {
-            $values->aovivo = false;
+        if ($event || $selfpaced) {
+            $values->liveclasses = false;
         }
-        if (!$values->aovivo) {
-            $values->aovivoquando = null;
+        if (!$values->liveclasses) {
+            $values->liveclasseswhen = null;
         }
         if (!$hybrid || $selfpaced) {
-            $values->cargapresencial = null;
-            $values->encontros = null;
+            $values->inpersonworkload = null;
+            $values->meetings = null;
         }
-        if ($evento || ($selfpaced && $notonline)) {
-            $values->formato = 0;
+        if ($event || ($selfpaced && $notonline)) {
+            $values->format = 0;
         }
         return $values;
     }
@@ -930,13 +930,13 @@ class hotsitefields {
      *
      * What the file route needs per badge request: values() also formats every
      * name and runs the textareas through format_text(), which an image request
-     * has no use for. Same source, same order as values()->brasoes.
+     * has no use for. Same source, same order as values()->crests.
      *
      * @param int $courseid The course id.
      * @return \stored_file[] The badges in grid order, gaps closed.
      */
     public static function badges(int $courseid): array {
-        return array_values(self::pictures($courseid, self::BRASAO_SHORTNAMES));
+        return array_values(self::pictures($courseid, self::CREST_SHORTNAMES));
     }
 
     /**
@@ -949,7 +949,7 @@ class hotsitefields {
      * @return \stored_file|null The picture, or null when none was uploaded.
      */
     public static function share_picture(int $courseid): ?\stored_file {
-        return self::pictures($courseid, [self::SHORTNAME_IMAGEMPUBLICA])[self::SHORTNAME_IMAGEMPUBLICA] ?? null;
+        return self::pictures($courseid, [self::SHORTNAME_SHAREIMAGE])[self::SHORTNAME_SHAREIMAGE] ?? null;
     }
 
     /**
@@ -971,7 +971,7 @@ class hotsitefields {
             $shortname = $field->get('shortname');
             if (
                 in_array($shortname, $shortnames, true)
-                && $field->get('type') === self::BRASAO_TYPE
+                && $field->get('type') === self::PICTURE_TYPE
                 && $data instanceof \customfield_picture\data_controller
             ) {
                 $found[$shortname] = $data->get_file();
@@ -987,7 +987,7 @@ class hotsitefields {
     }
 
     /**
-     * The page model of a course (MODELO_*), 0 when unset - read alone, without formatting anything.
+     * The page model of a course (MODEL_*), 0 when unset - read alone, without formatting anything.
      *
      * @param int $courseid The course id.
      * @return int The stored model value.
@@ -995,7 +995,7 @@ class hotsitefields {
     public static function model(int $courseid): int {
         foreach (course_handler::create()->get_instance_data($courseid, true) as $data) {
             $field = $data->get_field();
-            if ($field->get('shortname') === self::SHORTNAME_MODELO && $field->get('type') === 'select') {
+            if ($field->get('shortname') === self::SHORTNAME_MODEL && $field->get('type') === 'select') {
                 return (int) $data->get_value();
             }
         }
@@ -1113,7 +1113,7 @@ class hotsitefields {
         global $DB;
 
         self::reset_field_cache();
-        $field = self::get_field(self::SHORTNAME_MODALIDADE);
+        $field = self::get_field(self::SHORTNAME_MODALITY);
         if (!$field) {
             return false;
         }
@@ -1123,7 +1123,7 @@ class hotsitefields {
         if (count(array_filter($lines, 'strlen')) !== 2) {
             return false;
         }
-        $lines[] = get_string('hotsitefield_modalidade_hibrido', self::COMPONENT);
+        $lines[] = get_string('hotsitefield_modality_hybrid', self::COMPONENT);
         $config['options'] = implode("\n", $lines);
         $DB->update_record('customfield_field', (object) [
             'id' => $field->get('id'),
@@ -1148,7 +1148,7 @@ class hotsitefields {
      */
     public static function place_format_fields(): void {
         self::reset_field_cache();
-        $anchor = self::get_field(self::SHORTNAME_PUBLICOALVO);
+        $anchor = self::get_field(self::SHORTNAME_AUDIENCE);
         if (!$anchor) {
             return;
         }
@@ -1194,7 +1194,7 @@ class hotsitefields {
         $fieldids = $DB->get_fieldset_sql($sql, [
             'component' => 'core_course',
             'area' => 'course',
-            'shortname' => self::SHORTNAME_RETIRED_PUBLICO,
+            'shortname' => self::SHORTNAME_RETIRED_PUBLIC,
             'type' => 'checkbox',
         ]);
         foreach ($fieldids as $fieldid) {

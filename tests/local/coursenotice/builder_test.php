@@ -111,12 +111,12 @@ final class builder_test extends \advanced_testcase {
     /**
      * A course, optionally opted into a hotsite model with a modality.
      *
-     * @param int $modelo The page model (0 = none).
+     * @param int $model The page model (0 = none).
      * @param array $options Extra options for the course generator.
-     * @param int $modalidade The modality (0 = none).
+     * @param int $modality The modality (0 = none).
      * @return \stdClass The course record.
      */
-    private function course(int $modelo = 0, array $options = [], int $modalidade = 0): \stdClass {
+    private function course(int $model = 0, array $options = [], int $modality = 0): \stdClass {
         \core_course\customfield\course_handler::reset_caches();
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
@@ -126,10 +126,10 @@ final class builder_test extends \advanced_testcase {
         // edit. Every test sets the user it needs afterwards.
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course($options);
-        if ($modelo) {
-            $data = (object) ['id' => $course->id, 'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo];
-            if ($modalidade) {
-                $data->{'customfield_' . hotsitefields::SHORTNAME_MODALIDADE} = $modalidade;
+        if ($model) {
+            $data = (object) ['id' => $course->id, 'customfield_' . hotsitefields::SHORTNAME_MODEL => $model];
+            if ($modality) {
+                $data->{'customfield_' . hotsitefields::SHORTNAME_MODALITY} = $modality;
             }
             \core_course\customfield\course_handler::create()->instance_form_save($data);
         }
@@ -279,7 +279,7 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_single_activity_course_is_promoted_on_its_activity_page(): void {
-        $single = $this->course(hotsitefields::MODELO_CURSO, ['format' => 'singleactivity', 'activitytype' => 'page']);
+        $single = $this->course(hotsitefields::MODEL_COURSE, ['format' => 'singleactivity', 'activitytype' => 'page']);
         $main = $this->getDataGenerator()->create_module('page', ['course' => $single->id, 'section' => 0]);
         $other = $this->getDataGenerator()->create_module('forum', ['course' => $single->id, 'section' => 0]);
         $modinfo = get_fast_modinfo($single);
@@ -299,7 +299,7 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_promotion_section_is_for_course_editors_on_the_course_home(): void {
-        $course = $this->course(hotsitefields::MODELO_EVENTO, [], hotsitefields::MODALIDADE_PRESENCIAL);
+        $course = $this->course(hotsitefields::MODEL_EVENT, [], hotsitefields::MODALITY_INPERSON);
 
         $this->setUser($this->member($course, 'editingteacher'));
         $notice = $this->build($this->page($course));
@@ -310,8 +310,8 @@ final class builder_test extends \advanced_testcase {
             'A course that is not public says so first, then names its hotsite.'
         );
         $expected = get_string('coursenotice_chip_hotsitemodality', hotsitefields::COMPONENT, (object) [
-            'model' => get_string('hotsitefield_modelo_evento', hotsitefields::COMPONENT),
-            'modality' => \core_text::strtolower(get_string('hotsitefield_modalidade_presencial', hotsitefields::COMPONENT)),
+            'model' => get_string('hotsitefield_model_event', hotsitefields::COMPONENT),
+            'modality' => \core_text::strtolower(get_string('hotsitefield_modality_inperson', hotsitefields::COMPONENT)),
         ]);
         $this->assertSame($expected, $notice->chips[builder::KEY_HOTSITE]['label']);
         $this->assertSame(links::share((int) $course->id)->out(false), $notice->links[builder::KEY_HOTSITE]['url']);
@@ -334,7 +334,7 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_notice_mints_for_an_editor_and_never_for_anybody_else(): void {
-        $course = $this->course(hotsitefields::MODELO_CURSO);
+        $course = $this->course(hotsitefields::MODEL_COURSE);
         $this->enable_guest($course);
         $this->assertSame(0, $this->codes($course), 'Precondition: nothing minted yet.');
 
@@ -381,7 +381,7 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_guest_entry_is_offered_only_where_the_course_has_it(): void {
-        $course = $this->course(hotsitefields::MODELO_CURSO);
+        $course = $this->course(hotsitefields::MODEL_COURSE);
         $this->setUser($this->member($course, 'editingteacher'));
 
         $notice = $this->build($this->page($course));
@@ -406,7 +406,7 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_public_course_is_said_to_be_public(): void {
-        $course = $this->course(hotsitefields::MODELO_CURSO);
+        $course = $this->course(hotsitefields::MODEL_COURSE);
         $this->setAdminUser();
 
         $notice = $this->build($this->page($course));
@@ -431,7 +431,7 @@ final class builder_test extends \advanced_testcase {
      */
     public function test_without_the_router_nothing_is_minted_and_a_note_says_why(): void {
         $this->set_router(false);
-        $course = $this->course(hotsitefields::MODELO_CURSO);
+        $course = $this->course(hotsitefields::MODEL_COURSE);
         $this->setUser($this->member($course, 'editingteacher'));
 
         $notice = $this->build($this->page($course));
@@ -596,7 +596,7 @@ final class builder_test extends \advanced_testcase {
      */
     public function test_the_guest_enrolment_chip_is_not_repeated_beside_the_guest_entry(): void {
         set_config('showhintcourseguestenrol', THEME_BOOST_UNION_SETTING_GUESTACCESSHINT_WITHOUTPASSWORD, builder::BU);
-        $course = $this->course(hotsitefields::MODELO_CURSO);
+        $course = $this->course(hotsitefields::MODEL_COURSE);
         $this->enable_guest($course);
         $this->setUser($this->member($course, 'editingteacher'));
 

@@ -78,21 +78,21 @@ final class course_notice_test extends \advanced_testcase {
     /**
      * A course, optionally opted into a hotsite model.
      *
-     * @param int $modelo The page model (0 = none).
+     * @param int $model The page model (0 = none).
      * @param array $options Extra options for the course generator.
      * @return \stdClass The course record.
      */
-    private function course(int $modelo = 0, array $options = []): \stdClass {
+    private function course(int $model = 0, array $options = []): \stdClass {
         \core_course\customfield\course_handler::reset_caches();
         hotsitefields::reset_field_cache();
         hotsitefields::ensure_fields();
         hotsitefields::reset_field_cache();
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course($options);
-        if ($modelo) {
+        if ($model) {
             \core_course\customfield\course_handler::create()->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODELO => $modelo,
+                'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
             ]);
         }
         return get_course($course->id);
@@ -182,7 +182,7 @@ final class course_notice_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_promotion_section_is_drawn_unfolded_by_default(): void {
-        $course = $this->course(hotsitefields::MODELO_CURSO);
+        $course = $this->course(hotsitefields::MODEL_COURSE);
         $this->log_in_as($course, 'editingteacher');
         $html = $this->renderer($course)->course_notice();
 
@@ -204,7 +204,7 @@ final class course_notice_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_folded_promotion_section_keeps_its_bar(): void {
-        $course = $this->course(hotsitefields::MODELO_CURSO);
+        $course = $this->course(hotsitefields::MODEL_COURSE);
         $this->log_in_as($course, 'editingteacher');
         set_user_preference(course_notice::PREFERENCE_COLLAPSED, 1);
         $html = $this->renderer($course)->course_notice();

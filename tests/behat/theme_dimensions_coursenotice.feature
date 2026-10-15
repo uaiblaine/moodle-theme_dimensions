@@ -10,7 +10,7 @@ Feature: The course notice on the course page
       | teacher1 | Tea       | Cher     | teacher1@example.com |
       | student1 | Sam       | Student  | student1@example.com |
     And the following "courses" exist:
-      | fullname      | shortname | customfield_hotsite_modelo | customfield_modalidade |
+      | fullname      | shortname | customfield_dimensions_model | customfield_dimensions_modality |
       | Notice Course | NC1       | 1                          | 1                      |
     And the following "course enrolments" exist:
       | user     | course | role           |

@@ -185,9 +185,6 @@ authentication plugin `auth_loginsteps` now (its setting `logincpfmask`, with th
 back to a plain form): the theme draws the login page and keeps the form hooks that mask binds to,
 and nothing of the mask itself.
 
-The course custom fields of the landing pages also carry Portuguese short names (`hotsite_modelo`,
-`modalidade`, ...), which are identifiers and never shown to readers.
-
 
 Capabilities and privacy
 ------------------------

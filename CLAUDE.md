@@ -632,7 +632,7 @@ touches the course edit form. Two facts about that form, both of which cost a bu
   named `customfield_<shortname>_static`
   (`\core_customfield\handler::instance_form_definition()`). Removing only the first
   hides the control and leaves the sentence describing it on the page — which is
-  exactly what the forced-login hiding of `hotsite_publico` shipped as. Anything that
+  exactly what the forced-login hiding of `dimensions_public` shipped as. Anything that
   removes, moves or hides a custom field element has to handle the pair.
 - **QuickForm can only insert BEFORE a named element.** There is no `insertElementAfter`,
   and the documented way to place something after X is to insert it before X and then
@@ -673,7 +673,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   `output\opengraph` before `$OUTPUT->header()` and the hook callback renders it; nothing
   overrides the renderer. Values travel in the PLAIN spelling and the template's double
   stashes escape once - the fixture is a course name with a bare ampersand.
-- **`og:description` is the reviewed `descricao_publica` field or nothing.** Never the
+- **`og:description` is the reviewed `dimensions_publicdescription` field or nothing.** Never the
   course summary, which was written for an internal audience. `og:site_name` is the site
   name; `og:locale` is the current language in Open Graph's spelling (`pt_BR`, not Moodle's `pt_br`). The page is `noindex` unless the site is
   open to search engines (`$CFG->opentowebcrawlers`, "Open to search engines" under Site
@@ -692,7 +692,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
 - **The registry of head tags is armed last, right before `$OUTPUT->header()`.** The head
   hook fires from the fatal-error page too, and a throw in the enrol hooks would otherwise
   put the course's `og:` tags on an error page.
-- **The `hotsite_publico` checkbox is retired**, and the upgrade deletes it: a checkbox any
+- **The `dimensions_public` checkbox is retired**, and the upgrade deletes it: a checkbox any
   course editor could tick would be a way around the publish capability. Nothing is
   migrated - a course is published by somebody who may.
 - **Flavours brand the anonymous page only halfway** (measured): the flavour CSS - brand
@@ -735,7 +735,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   cropped, peaks 200 MB over the request's baseline. Quality 82 holds a 1200x630 of pure
   noise at 519 KB, under the 600 KB WhatsApp accepts; both numbers are pinned by tests.
 - **The og image has ONE source, `publicfiles::og_source()`, and two readers must agree on it**
-  (T1, stage 16). The share picture (`imagem_publica`) wins only when its derivative can be made;
+  (T1, stage 16). The share picture (`dimensions_shareimage`) wins only when its derivative can be made;
   otherwise the course image, as before - a vector file passes the picture field's check and GD
   cannot draw it, and the answer must be the course image, never no image. `ogimage()` (the tags)
   and the og area of `resolve()` (the route) both ask it: a route still reading `hero_file()` 404s
