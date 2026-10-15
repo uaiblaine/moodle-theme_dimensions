@@ -523,6 +523,8 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $html = $this->render($course, $cm);
         $this->assertStringContainsString('theme_boost-drawers-courseindex', $html);
         $this->assertStringContainsString(self::BAR, $html);
+        // Its controls too, in the block 5.3's theme_boost/drawer names drawercontrols.
+        $this->assertStringContainsString('id="courseindexdrawercontrols"', $html);
 
         $social = $this->course(true, ['format' => 'social']);
         $socialcm = $this->activity($social);
