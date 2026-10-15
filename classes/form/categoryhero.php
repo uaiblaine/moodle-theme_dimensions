@@ -120,7 +120,7 @@ class categoryhero extends \moodleform {
 
            The order is the list's: the still, the film, then the crests in badge order. The
            video's limit is the site setting's and its extension list is a name check; the bytes
-           are read in validation() below. The crests' limit and vocabulary are the hotsite's
+           are read in validation() below. The crests' limit and vocabulary are the landing page's
            own, so a crest a manager may put on a course is not refused on the course's
            category - SVG among them (see branding::resolve()). */
         foreach (branding::single_file_areas() as $area => $options) {

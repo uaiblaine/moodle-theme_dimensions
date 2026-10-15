@@ -24,17 +24,17 @@
 
 namespace theme_dimensions;
 
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 
 /**
  * Resolves this theme's short codes for core's /p/{shortcode} route.
  *
  * Core finds this class by name (\core\shortlink::get_shortlink_handler() asks the
  * dependency injection container for "<component>\shortlink_handler"), so nothing
- * registers it. It answers the two link types this theme mints: the hotsite's, with the
+ * registers it. It answers the two link types this theme mints: the landing page's, with the
  * page's canonical address, and the guest entry's, with that address asking for the guest
  * entry (links::guest_page()). Rows hold a course id, never an address, so a code keeps
- * resolving whether the page is served by hotsite.php or by the route.
+ * resolving whether the page is served by landing.php or by the route.
  *
  * A code whose course is gone answers null, which the route turns into a not-found page.
  * This is the fallback behind the course deletion hook, which forgets a course's codes.

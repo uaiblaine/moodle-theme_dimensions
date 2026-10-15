@@ -1,1 +1,1 @@
-s/&& \$format === hotsitefields::FORMAT_SELFPACED && \$notonline\)/&& \$format === hotsitefields::FORMAT_SELFPACED && false)/
+s/&& \$format === landingfields::FORMAT_SELFPACED && \$notonline\)/&& \$format === landingfields::FORMAT_SELFPACED && false)/

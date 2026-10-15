@@ -28,8 +28,8 @@ use local_unlistedcourses\category_discoverability;
 use local_unlistedcourses\discoverability;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
-use theme_dimensions\local\hotsite\links;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\links;
+use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -1137,11 +1137,11 @@ final class population_test extends \advanced_testcase {
     public function test_the_facet_counts_are_taken_after_the_date_filter(bool $statesort): void {
         $this->resetAfterTest();
         $this->mode($statesort);
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODEL, 'theme_dimensions');
-        $fieldid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL)->get('id');
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL, 'theme_dimensions');
+        $fieldid = (int) landingfields::get_field(landingfields::SHORTNAME_MODEL)->get('id');
 
         $generator = self::getDataGenerator();
         $root = $generator->create_category();
@@ -1151,7 +1151,7 @@ final class population_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $root->id, 'startdate' => $startdate]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
             ]);
         }
 
@@ -1159,7 +1159,7 @@ final class population_test extends \advanced_testcase {
         $all = population::resolve(new criteria($root->id));
         $this->assertSame(
             2,
-            $all->facets[$fieldid]['options'][hotsitefields::MODEL_EVENT]['count'],
+            $all->facets[$fieldid]['options'][landingfields::MODEL_EVENT]['count'],
             'The control: both events are counted while nothing narrows the page.'
         );
 
@@ -1168,7 +1168,7 @@ final class population_test extends \advanced_testcase {
         $this->assertSame(1, $narrowed->total);
         $this->assertSame(
             1,
-            $narrowed->facets[$fieldid]['options'][hotsitefields::MODEL_EVENT]['count'],
+            $narrowed->facets[$fieldid]['options'][landingfields::MODEL_EVENT]['count'],
             'The facet counts what the date filter left, not what the category holds.'
         );
     }
@@ -1301,11 +1301,11 @@ final class population_test extends \advanced_testcase {
     ): void {
         $this->resetAfterTest();
         $this->mode($statesort);
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODEL, 'theme_dimensions');
-        $fieldid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL)->get('id');
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL, 'theme_dimensions');
+        $fieldid = (int) landingfields::get_field(landingfields::SHORTNAME_MODEL)->get('id');
         $handler = \core_course\customfield\course_handler::create();
 
         $generator = self::getDataGenerator();
@@ -1323,7 +1323,7 @@ final class population_test extends \advanced_testcase {
         // absence from the population.
         $handler->instance_form_save((object) [
             'id' => $intensive->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
         ]);
 
         $this->become($generator->create_user());
@@ -1344,7 +1344,7 @@ final class population_test extends \advanced_testcase {
         );
         $this->assertSame(
             1,
-            $grouped->facets[$fieldid]['options'][hotsitefields::MODEL_EVENT]['count'],
+            $grouped->facets[$fieldid]['options'][landingfields::MODEL_EVENT]['count'],
             'The facet counts the control, which sits in a child and is on no page of this listing.'
         );
 
@@ -1385,11 +1385,11 @@ final class population_test extends \advanced_testcase {
     public function test_the_tree_criterion_narrows_the_population_to_the_chosen_subtree(bool $statesort): void {
         $this->resetAfterTest();
         $this->mode($statesort);
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODEL, 'theme_dimensions');
-        $fieldid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL)->get('id');
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL, 'theme_dimensions');
+        $fieldid = (int) landingfields::get_field(landingfields::SHORTNAME_MODEL)->get('id');
         $handler = \core_course\customfield\course_handler::create();
 
         $generator = self::getDataGenerator();
@@ -1404,7 +1404,7 @@ final class population_test extends \advanced_testcase {
         // The control wears the facet value, so what happens to the number beside the pill is visible.
         $handler->instance_form_save((object) [
             'id' => $prosthesis->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
         ]);
 
         $this->become($generator->create_user());
@@ -1413,7 +1413,7 @@ final class population_test extends \advanced_testcase {
         $this->assertContains((int) $prosthesis->id, $all->ids());
         $this->assertSame(
             1,
-            $all->facets[$fieldid]['options'][hotsitefields::MODEL_EVENT]['count'],
+            $all->facets[$fieldid]['options'][landingfields::MODEL_EVENT]['count'],
             'And the pill beside it counts that course.'
         );
 
@@ -1431,7 +1431,7 @@ final class population_test extends \advanced_testcase {
         $this->assertSame(2, $narrowed->counts['total'], 'The hero and the "all" pill count what is left too.');
         $this->assertSame(
             0,
-            $narrowed->facets[$fieldid]['options'][hotsitefields::MODEL_EVENT]['count'] ?? 0,
+            $narrowed->facets[$fieldid]['options'][landingfields::MODEL_EVENT]['count'] ?? 0,
             'The facet was counted AFTER the criterion: the pill no longer promises a course this page cannot show.'
         );
         $this->assertSame((int) $nursing->id, $criteria->cat, 'An admitted category is kept, and is a filter.');
@@ -1558,11 +1558,11 @@ final class population_test extends \advanced_testcase {
     public function test_a_field_filter_narrows_rows_and_counts(bool $statesort): void {
         $this->resetAfterTest();
         $this->mode($statesort);
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODEL, 'theme_dimensions');
-        $model = hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL);
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL, 'theme_dimensions');
+        $model = landingfields::get_field(landingfields::SHORTNAME_MODEL);
         $fieldid = (int) $model->get('id');
 
         $generator = self::getDataGenerator();
@@ -1573,20 +1573,20 @@ final class population_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $root->id]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
             ]);
             $events[] = (int) $course->id;
         }
         $plaincourse = $generator->create_course(['category' => $root->id]);
         $handler->instance_form_save((object) [
             'id' => $plaincourse->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
         ]);
         $unset = $generator->create_course(['category' => $root->id]);
         $withheld = $generator->create_course(['category' => $root->id]);
         $handler->instance_form_save((object) [
             'id' => $withheld->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
         ]);
         $this->set_course_state((int) $withheld->id, discoverability::STATE_UNLISTED);
         $this->assertNotEmpty($unset);
@@ -1594,15 +1594,15 @@ final class population_test extends \advanced_testcase {
         $this->become($generator->create_user());
         $all = population::resolve(new criteria($root->id));
         $this->assertSame(4, $all->total);
-        $eventcount = $all->facets[$fieldid]['options'][hotsitefields::MODEL_EVENT]['count'];
+        $eventcount = $all->facets[$fieldid]['options'][landingfields::MODEL_EVENT]['count'];
         $this->assertSame(2, $eventcount, 'The withheld event is not counted.');
-        $this->assertSame(1, $all->facets[$fieldid]['options'][hotsitefields::MODEL_COURSE]['count']);
+        $this->assertSame(1, $all->facets[$fieldid]['options'][landingfields::MODEL_COURSE]['count']);
 
-        $filtered = population::resolve(new criteria($root->id, ['fields' => [$fieldid => hotsitefields::MODEL_EVENT]]));
+        $filtered = population::resolve(new criteria($root->id, ['fields' => [$fieldid => landingfields::MODEL_EVENT]]));
         $this->assertEqualsCanonicalizing($events, $filtered->ids());
         $this->assertSame(2, $filtered->total);
         $this->assertSame(2, $filtered->counts['total']);
-        $this->assertSame(2, $filtered->facets[$fieldid]['options'][hotsitefields::MODEL_EVENT]['count']);
+        $this->assertSame(2, $filtered->facets[$fieldid]['options'][landingfields::MODEL_EVENT]['count']);
     }
 
     /**
@@ -2118,11 +2118,11 @@ final class population_test extends \advanced_testcase {
     public function test_the_root_honours_no_filter_and_builds_no_listing(bool $statesort): void {
         $this->resetAfterTest();
         $this->mode($statesort);
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODEL, 'theme_dimensions');
-        $fieldid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODEL)->get('id');
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL, 'theme_dimensions');
+        $fieldid = (int) landingfields::get_field(landingfields::SHORTNAME_MODEL)->get('id');
 
         $generator = self::getDataGenerator();
         $branch = $generator->create_category(['name' => 'Branch']);
@@ -2131,7 +2131,7 @@ final class population_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $branch->id, 'fullname' => $name]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
             ]);
         }
 
@@ -2142,7 +2142,7 @@ final class population_test extends \advanced_testcase {
 
         // A field filter, a chip and a page that would narrow a category page leave the directory alone.
         $filtered = population::resolve(new criteria(0, [
-            'fields' => [$fieldid => hotsitefields::MODEL_COURSE],
+            'fields' => [$fieldid => landingfields::MODEL_COURSE],
             'state' => classifier::CHIP_FAVOURITES,
             'page' => 7,
         ]));
@@ -2154,7 +2154,7 @@ final class population_test extends \advanced_testcase {
         );
 
         // The control: the same field filter does narrow the category below, in both modes.
-        $narrowed = population::resolve(new criteria((int) $branch->id, ['fields' => [$fieldid => hotsitefields::MODEL_COURSE]]));
+        $narrowed = population::resolve(new criteria((int) $branch->id, ['fields' => [$fieldid => landingfields::MODEL_COURSE]]));
         $this->assertSame(0, $narrowed->total, 'The filter is a real one: it empties the category page.');
 
         // The term is the one criterion the root reads: it narrows, and still builds no listing.

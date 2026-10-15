@@ -32,16 +32,16 @@ class behat_theme_dimensions extends behat_base {
      * Convert page names to URLs for steps like 'When I am on the "identifier" "type" page'.
      *
      * Recognised page types, with the identifier each one expects:
-     * - 'Enrolment hotsite' (course shortname): the theme's hotsite page.
-     * - 'Hotsite short address' (course shortname): the page's public address, the short one on a
+     * - 'Enrolment landing page' (course shortname): the theme's landing page.
+     * - 'Landing page short address' (course shortname): the page's public address, the short one on a
      *   site whose router is configured and the page's own elsewhere, minted here if need be.
-     * - 'Legacy hotsite address' (course shortname): the script, hotsite.php?id=N, whatever the
+     * - 'Legacy landing page address' (course shortname): the script, landing.php?id=N, whatever the
      *   router's state; on a site whose router is configured it redirects to the route.
-     * - 'Routed hotsite address' (course shortname): the route spelled through r.php, which every
+     * - 'Routed landing page address' (course shortname): the route spelled through r.php, which every
      *   web server answers, rewrite or not - the way to reach the controller without the rewrite.
      * - 'Standard enrolment page' (course shortname): core's enrol/index.php, to exercise the
      *   forwarding.
-     * - 'Hotsite guest entry' (course shortname): the hotsite asking for the guest entry
+     * - 'Landing page guest entry' (course shortname): the landing page asking for the guest entry
      *   (links::guest_page()), the route or the script as links::page() is.
      * - 'Activity with focus mode off' (activity name): a mod_page view carrying the support
      *   parameter, which is the only way a scenario can reach a URL built from a course module
@@ -62,21 +62,21 @@ class behat_theme_dimensions extends behat_base {
         global $DB;
 
         switch (strtolower($type)) {
-            case 'enrolment hotsite':
+            case 'enrolment landing page':
                 $courseid = $DB->get_field('course', 'id', ['shortname' => $identifier], MUST_EXIST);
-                return \theme_dimensions\local\hotsite\links::page($courseid);
-            case 'hotsite short address':
+                return \theme_dimensions\local\landing\links::page($courseid);
+            case 'landing page short address':
                 $courseid = $DB->get_field('course', 'id', ['shortname' => $identifier], MUST_EXIST);
-                return \theme_dimensions\local\hotsite\links::share((int) $courseid);
-            case 'legacy hotsite address':
+                return \theme_dimensions\local\landing\links::share((int) $courseid);
+            case 'legacy landing page address':
                 $courseid = $DB->get_field('course', 'id', ['shortname' => $identifier], MUST_EXIST);
-                return \theme_dimensions\local\hotsite\links::legacy((int) $courseid);
-            case 'routed hotsite address':
+                return \theme_dimensions\local\landing\links::legacy((int) $courseid);
+            case 'routed landing page address':
                 $courseid = $DB->get_field('course', 'id', ['shortname' => $identifier], MUST_EXIST);
-                return new moodle_url('/r.php/theme_dimensions/hotsite/' . (int) $courseid);
-            case 'hotsite guest entry':
+                return new moodle_url('/r.php/theme_dimensions/landing/' . (int) $courseid);
+            case 'landing page guest entry':
                 $courseid = $DB->get_field('course', 'id', ['shortname' => $identifier], MUST_EXIST);
-                return \theme_dimensions\local\hotsite\links::guest_page((int) $courseid);
+                return \theme_dimensions\local\landing\links::guest_page((int) $courseid);
             case 'standard enrolment page':
                 $courseid = $DB->get_field('course', 'id', ['shortname' => $identifier], MUST_EXIST);
                 return new moodle_url('/enrol/index.php', ['id' => $courseid]);
@@ -93,7 +93,7 @@ class behat_theme_dimensions extends behat_base {
                 [$idnumber, $query] = array_pad(explode('|', $identifier, 2), 2, '');
                 $categoryid = $DB->get_field('course_categories', 'id', ['idnumber' => $idnumber], MUST_EXIST);
                 parse_str($query, $params);
-                return \theme_dimensions\local\hotsite\links::category_page((int) $categoryid, $params);
+                return \theme_dimensions\local\landing\links::category_page((int) $categoryid, $params);
             case 'category appearance':
                 $categoryid = $DB->get_field('course_categories', 'id', ['idnumber' => $identifier], MUST_EXIST);
                 return new moodle_url('/theme/dimensions/categoryhero.php', ['id' => $categoryid]);
@@ -124,7 +124,7 @@ class behat_theme_dimensions extends behat_base {
     protected function resolve_page_url(string $page): moodle_url {
         switch (strtolower($page)) {
             case 'public category root':
-                return \theme_dimensions\local\hotsite\links::category_page(0);
+                return \theme_dimensions\local\landing\links::category_page(0);
             default:
                 throw new Exception('Unrecognised theme_dimensions page type "' . $page . '"');
         }
@@ -155,58 +155,58 @@ class behat_theme_dimensions extends behat_base {
     }
 
     /**
-     * Assert that the page shows the public address of a course's hotsite, as text.
+     * Assert that the page shows the public address of a course's landing page, as text.
      *
      * The expected address is built by the code the course form uses, so on a site whose
      * router is configured it is the short one and elsewhere the page's own: exact either way.
      *
-     * @Then /^I should see the hotsite address of course "(?P<shortname>(?:[^"]|\\")*)"$/
+     * @Then /^I should see the landing page address of course "(?P<shortname>(?:[^"]|\\")*)"$/
      * @param string $shortname The course shortname.
      * @return void
      */
-    public function i_should_see_the_hotsite_address_of_course(string $shortname): void {
+    public function i_should_see_the_landing_address_of_course(string $shortname): void {
         global $DB;
         $courseid = (int) $DB->get_field('course', 'id', ['shortname' => $shortname], MUST_EXIST);
-        $address = \theme_dimensions\local\hotsite\links::share($courseid)->out(false);
+        $address = \theme_dimensions\local\landing\links::share($courseid)->out(false);
         $this->execute('behat_general::assert_page_contains_text', [$address]);
     }
 
     /**
-     * Assert that the page does not show the public address of a course's hotsite.
+     * Assert that the page does not show the public address of a course's landing page.
      *
      * The address is spelled as the positive step spells it; run this after an editor's visit has
      * minted the code, or the step would mint it from the CLI process itself.
      *
-     * @Then /^I should not see the hotsite address of course "(?P<shortname>(?:[^"]|\\")*)"$/
+     * @Then /^I should not see the landing page address of course "(?P<shortname>(?:[^"]|\\")*)"$/
      * @param string $shortname The course shortname.
      * @return void
      */
-    public function i_should_not_see_the_hotsite_address_of_course(string $shortname): void {
+    public function i_should_not_see_the_landing_address_of_course(string $shortname): void {
         global $DB;
         $courseid = (int) $DB->get_field('course', 'id', ['shortname' => $shortname], MUST_EXIST);
-        $address = \theme_dimensions\local\hotsite\links::share($courseid)->out(false);
+        $address = \theme_dimensions\local\landing\links::share($courseid)->out(false);
         $this->execute('behat_general::assert_page_not_contains_text', [$address]);
     }
 
     /**
-     * Assert that the browser ended up on the canonical address of a course's hotsite.
+     * Assert that the browser ended up on the canonical address of a course's landing page.
      *
      * The expected address is links::page(), the route on a site whose router is configured
      * and the script elsewhere - so the step proves the script's redirect where the router is
      * configured and still holds where it is not.
      *
-     * @Then /^the browser is on the hotsite of course "(?P<shortname>(?:[^"]|\\")*)"$/
+     * @Then /^the browser is on the landing page of course "(?P<shortname>(?:[^"]|\\")*)"$/
      * @param string $shortname The course shortname.
      * @return void
      */
-    public function the_browser_is_on_the_hotsite_of_course(string $shortname): void {
+    public function the_browser_is_on_the_landing_of_course(string $shortname): void {
         global $DB;
         $courseid = (int) $DB->get_field('course', 'id', ['shortname' => $shortname], MUST_EXIST);
-        $expected = \theme_dimensions\local\hotsite\links::page($courseid)->out(false);
+        $expected = \theme_dimensions\local\landing\links::page($courseid)->out(false);
         $actual = $this->getSession()->getCurrentUrl();
         if ($actual !== $expected) {
             throw new \Behat\Mink\Exception\ExpectationException(
-                "The browser is on \"$actual\", not on the hotsite \"$expected\".",
+                "The browser is on \"$actual\", not on the landing page \"$expected\".",
                 $this->getSession()
             );
         }

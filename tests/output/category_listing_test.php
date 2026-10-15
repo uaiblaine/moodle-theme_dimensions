@@ -37,8 +37,8 @@ use theme_dimensions\local\category\facets;
 use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
-use theme_dimensions\local\hotsite\links;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\links;
+use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -79,10 +79,10 @@ final class category_listing_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODALITY, 'theme_dimensions');
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODALITY, 'theme_dimensions');
         $this->enable_enrol('self');
         $this->enable_enrol('guest');
 
@@ -94,7 +94,7 @@ final class category_listing_test extends \advanced_testcase {
 
         $make = function (array $course, array $fields = []) use ($generator, $handler): int {
             $record = $generator->create_course($course);
-            $data = ['id' => $record->id, 'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE];
+            $data = ['id' => $record->id, 'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE];
             foreach ($fields as $shortname => $value) {
                 $data['customfield_' . $shortname] = $value;
             }
@@ -104,10 +104,10 @@ final class category_listing_test extends \advanced_testcase {
 
         $this->ids['enrolled'] = $make(['category' => $root->id, 'fullname' => 'Resgate & Salvamento',
             'summary' => '<p>Resumo do <b>curso</b>.</p>', 'summaryformat' => FORMAT_HTML], [
-            hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_INPERSON,
-            hotsitefields::SHORTNAME_CITY => 'São Paulo',
-            hotsitefields::SHORTNAME_WORKLOAD => 36,
-            hotsitefields::SHORTNAME_PROGRAMME . '_editor' => [
+            landingfields::SHORTNAME_MODALITY => landingfields::MODALITY_INPERSON,
+            landingfields::SHORTNAME_CITY => 'São Paulo',
+            landingfields::SHORTNAME_WORKLOAD => 36,
+            landingfields::SHORTNAME_PROGRAMME . '_editor' => [
                 'text' => '<p>Um</p><p>Dois</p><ul><li>Três</li></ul>',
                 'format' => FORMAT_HTML,
             ],
@@ -115,7 +115,7 @@ final class category_listing_test extends \advanced_testcase {
         $generator->enrol_user($viewer->id, $this->ids['enrolled']);
 
         $this->ids['open'] = $make(['category' => $child->id, 'fullname' => 'Curso Aberto'], [
-            hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_ONLINE,
+            landingfields::SHORTNAME_MODALITY => landingfields::MODALITY_ONLINE,
         ]);
         $this->enable_instance($this->ids['open'], 'self');
 
@@ -132,7 +132,7 @@ final class category_listing_test extends \advanced_testcase {
         ])->id;
         $handler->instance_form_save((object) [
             'id' => $this->ids['held'],
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_EVENT,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
         ]);
         $this->enable_instance($this->ids['held'], 'self');
 
@@ -204,7 +204,7 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertTrue($enrolled->cta['primary']);
         $this->assertFalse($enrolled->ismuted);
         $this->assertNull($enrolled->overline, 'A course in the listed root has no overline.');
-        $hours = get_string('hotsite_hours', 'theme_dimensions', '36');
+        $hours = get_string('landing_hours', 'theme_dimensions', '36');
         $this->assertSame($hours . ' · In-person · São Paulo', $enrolled->meta);
         $this->assertSame('Resumo do curso.', $enrolled->excerpt);
         $this->assertSame(['Um', 'Dois', 'Três'], $enrolled->learn);
@@ -214,7 +214,7 @@ final class category_listing_test extends \advanced_testcase {
         $open = $cards[$this->ids['open']];
         $this->assertSame('dim-badge dim-badge--open', $open->badge['classes']);
         $this->assertSame(get_string('category_cta_enrol', 'theme_dimensions'), $open->cta['label']);
-        $this->assertStringContainsString('hotsite', $open->cta['url'], 'A course with a model enrols on its hotsite.');
+        $this->assertStringContainsString('landing', $open->cta['url'], 'A course with a model enrols on its landing page.');
         $this->assertSame('Brigada', $open->overline, 'A course in a child names it.');
 
         $free = $cards[$this->ids['free']];
@@ -239,7 +239,7 @@ final class category_listing_test extends \advanced_testcase {
      * A course the viewer is enrolled in from a later date draws its own badge with the date, and a counted chip.
      *
      * It is the viewer's course but not yet open to them: the card is not muted, offers no way in, and the details
-     * button goes to the hotsite. The controls are the cards of the same page that are not scheduled. The course
+     * button goes to the landing page. The controls are the cards of the same page that are not scheduled. The course
      * offers no other method, so there is no route line (the route is
      * test_a_relationship_card_prints_a_route_only_where_the_batch_reports_one's subject).
      */
@@ -250,7 +250,7 @@ final class category_listing_test extends \advanced_testcase {
         $course = $generator->create_course(['category' => $this->ids['root'], 'fullname' => 'Curso Agendado']);
         $handler->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
         ]);
         $start = time() + 6 * DAYSECS;
         $generator->enrol_user($viewer->id, $course->id, 'student', 'manual', $start, 0);
@@ -267,7 +267,7 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertFalse($card->ismuted, 'The course is the viewer\'s: it is not drawn as unavailable.');
         $this->assertSame(get_string('category_cta_details', 'theme_dimensions'), $card->cta['label']);
         $this->assertFalse($card->cta['primary'], 'The way to the details is the quiet button.');
-        $this->assertSame(links::page((int) $course->id)->out(false), $card->cta['url'], 'To the hotsite, never to the course.');
+        $this->assertSame(links::page((int) $course->id)->out(false), $card->cta['url'], 'To the landing page, never to the course.');
         $this->assertStringNotContainsString('/course/view.php', $card->url);
         $this->assertSame('fa-calendar', $card->badge['icon']);
         $this->assertFalse($card->hasroute, 'No other method: no route line.');
@@ -287,8 +287,8 @@ final class category_listing_test extends \advanced_testcase {
     /**
      * Guest access behind a key wears its own pill and sends the reader to the key form, never into the course.
      *
-     * The key is asked by enrol_guest's widget on the standard enrolment page, which the hotsite does not draw, so the
-     * call to action goes there with the hotsite forward bypassed, even for a course that chose a hotsite model. The
+     * The key is asked by enrol_guest's widget on the standard enrolment page, which the landing page does not draw, so the
+     * call to action goes there with the landing page forward bypassed, even for a course that chose a landing page model. The
      * control is the free course of the same page: guest access with no password keeps its free badge and its
      * "Access" to the course.
      */
@@ -298,7 +298,7 @@ final class category_listing_test extends \advanced_testcase {
         $keyed = (int) $course->id;
         course_handler::create()->instance_form_save((object) [
             'id' => $keyed,
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
         ]);
         $this->enable_instance($keyed, 'guest', ['password' => 'chave']);
 
@@ -313,9 +313,9 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertSame(get_string('category_cta_key', 'theme_dimensions'), $card->cta['label']);
         $this->assertTrue($card->cta['primary']);
         $this->assertSame(
-            (new \moodle_url('/enrol/index.php', ['id' => $keyed, 'hotsite' => 0]))->out(false),
+            (new \moodle_url('/enrol/index.php', ['id' => $keyed, 'landing' => 0]))->out(false),
             $card->cta['url'],
-            'The key form, past the hotsite forward.'
+            'The key form, past the landing page forward.'
         );
         $this->assertStringNotContainsString('/course/view.php', $card->url);
         $this->assertFalse($card->ismuted);
@@ -333,7 +333,7 @@ final class category_listing_test extends \advanced_testcase {
      * Decision D2 of the enrolment matrix, core's default kept: a viewer whose enrolment starts later, was suspended or
      * ended may be told that a method would take them now. Each card with a route has a twin without one - the same
      * relationship on a course offering no method - and the route's destination is the card's own enrolment surface,
-     * the hotsite where the course has a model. Staff, who may walk in, get "Access" and no route on the same course.
+     * the landing page where the course has a model. Staff, who may walk in, get "Access" and no route on the same course.
      */
     public function test_a_relationship_card_prints_a_route_only_where_the_batch_reports_one(): void {
         $viewer = $this->seed();
@@ -345,7 +345,7 @@ final class category_listing_test extends \advanced_testcase {
             if ($model) {
                 $handler->instance_form_save((object) [
                     'id' => $course->id,
-                    'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+                    'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
                 ]);
             }
             if ($route) {
@@ -1133,9 +1133,9 @@ final class category_listing_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
         // The public page is the one surface that exists while the site forces login, and the
         // router is declared off so that the addresses below are the script's, spelled exactly.
         $CFG->forcelogin = 1;
@@ -1151,7 +1151,7 @@ final class category_listing_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $categoryid, 'fullname' => $fullname]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
             ]);
             if ($public) {
                 \local_unlistedcourses\discoverability::set_state(
@@ -1168,7 +1168,7 @@ final class category_listing_test extends \advanced_testcase {
         $this->ids['public'] = $make((int) $root->id, 'Curso Publico', true);
         $this->ids['childpublic'] = $make((int) $child->id, 'Curso do Filho', true);
         $this->ids['listed'] = $make((int) $root->id, 'Curso Interno', false);
-        // A public course that chose no hotsite model, and a teacher on the public one: what a
+        // A public course that chose no landing page model, and a teacher on the public one: what a
         // visitor's card must NOT link to and must NOT name.
         $nomodel = $generator->create_course(['category' => $root->id, 'fullname' => 'Curso Sem Modelo']);
         \local_unlistedcourses\discoverability::set_state(
@@ -1259,14 +1259,14 @@ final class category_listing_test extends \advanced_testcase {
 
         $this->assertFalse($context->cards[0]->showstar, 'A visitor has no favourites.');
 
-        // The whole page, unpaged: the modelled public course links to its hotsite and offers it as
+        // The whole page, unpaged: the modelled public course links to its landing page and offers it as
         // the call to action, the one without a model links nowhere at all (the enrolment page would
         // answer a visitor with the login form), and no card names a course contact to the internet.
         $cards = $this->cards($this->export(['anonymous' => true]));
         $card = $cards[$this->ids['public']];
         $this->assertFalse($card->showstar);
         $this->assertSame(get_string('category_state_public', 'theme_dimensions'), $card->badge['label']);
-        $this->assertSame(get_string('category_cta_hotsite', 'theme_dimensions'), $card->cta['label']);
+        $this->assertSame(get_string('category_cta_landing', 'theme_dimensions'), $card->cta['label']);
         $this->assertSame(links::page((int) $card->id)->out(false), $card->cta['url']);
         $this->assertTrue($card->cta['primary']);
         $contactlabel = get_string('category_contact', 'theme_dimensions');
@@ -1303,7 +1303,7 @@ final class category_listing_test extends \advanced_testcase {
      *
      * Under forcelogin, core's course/overviewfiles route answers a visitor with a redirect to the
      * login page (file_pluginfile() calls require_login() for that area), so a visitor's card
-     * mints the theme's own cover route, as the hotsite does for its hero image. PHPUnit fetches
+     * mints the theme's own cover route, as the landing page does for its hero image. PHPUnit fetches
      * no image, so the address is what is asserted.
      *
      * The logged-in export at the end is the control, and it makes the route a choice rather than
@@ -1352,10 +1352,10 @@ final class category_listing_test extends \advanced_testcase {
      * The badge is about the course and the link is about the viewer. A manager reading the
      * listing holds `moodle/course:view` at the category, so core's own `can_access_course()`
      * lets them walk into every course under it; the enrolment surface, for a course with a
-     * hotsite model a page asking them to apply, is the wrong place to send them.
+     * landing page model a page asking them to apply, is the wrong place to send them.
      *
      * Three cards carry it: the course open for enrolment (whose enrolment surface is its
-     * hotsite), the course nobody may join (otherwise muted, with no link and no call to action)
+     * landing page), the course nobody may join (otherwise muted, with no link and no call to action)
      * and the event already held (otherwise muted, with nothing to press). Every badge is asserted
      * beside the link, because the rule changes the link and never the badge: an event that
      * finished is still an event that finished.
@@ -1418,7 +1418,7 @@ final class category_listing_test extends \advanced_testcase {
      * rescued a hidden course on the capability alone would hand out a link the course itself
      * then refuses. The listing's own gate admits a hidden course to viewhiddencourses and to
      * nothing else, so this pair is built by hand: the same course, the same viewer, the same
-     * hotsite values, and one flipped column between them.
+     * landing page values, and one flipped column between them.
      *
      * Changes that must make it fail: category_card::may_enter() admitting a hidden course
      * without moodle/course:viewhiddencourses.
@@ -1467,13 +1467,13 @@ final class category_listing_test extends \advanced_testcase {
      * A course card wears the course's crests; a directory card wears the category's; never crossed.
      *
      * The two sets are stored in different places by different people: a course's are the
-     * hotsite's four picture fields, a category's are the three areas of its own appearance
+     * landing page's four picture fields, a category's are the three areas of its own appearance
      * editor. The fixture gives the category one crest and one of its courses two others, and
      * each surface is asserted to carry its own and not the other's - an assertion naming only
      * its own would pass against a card reading whichever set it liked.
      */
     public function test_a_course_card_wears_the_courses_crests_and_a_category_card_the_categorys(): void {
-        if (!hotsitefields::picture_type_available()) {
+        if (!landingfields::picture_type_available()) {
             $this->markTestSkipped('customfield_picture is not installed or not enabled.');
         }
         $viewer = $this->seed();
@@ -1492,13 +1492,13 @@ final class category_listing_test extends \advanced_testcase {
         ], base64_decode(self::PNG));
         branding::forget_all();
 
-        /* The course's own, in the hotsite's fourth and second badge fields: stored in that
+        /* The course's own, in the landing page's fourth and second badge fields: stored in that
            order so the assertion below reads the fields' order and not the upload's, with the
            third slot empty so the gap has to close. */
         $coursecontext = \core\context\course::instance($this->ids['enrolled']);
-        $files = [hotsitefields::SHORTNAME_CREST4 => 'quarto.png', hotsitefields::SHORTNAME_CREST2 => 'segundo.png'];
+        $files = [landingfields::SHORTNAME_CREST4 => 'quarto.png', landingfields::SHORTNAME_CREST2 => 'segundo.png'];
         foreach ($files as $shortname => $filename) {
-            $data = $customfields->add_instance_data(hotsitefields::get_field($shortname), $this->ids['enrolled'], 1);
+            $data = $customfields->add_instance_data(landingfields::get_field($shortname), $this->ids['enrolled'], 1);
             get_file_storage()->create_file_from_string([
                 'contextid' => $coursecontext->id,
                 'component' => 'customfield_picture',
@@ -2596,7 +2596,7 @@ final class category_listing_test extends \advanced_testcase {
         $fieldid = array_key_first(facets::fields());
         $cases = [
             'a state' => ['state' => classifier::STATE_ENROLLED],
-            'a field' => ['fields' => [$fieldid => hotsitefields::MODALITY_ONLINE]],
+            'a field' => ['fields' => [$fieldid => landingfields::MODALITY_ONLINE]],
             'a start' => ['datefrom' => '2026-01-01'],
             'an end' => ['dateto' => '2026-12-31'],
         ];

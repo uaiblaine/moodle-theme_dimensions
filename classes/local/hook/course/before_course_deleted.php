@@ -24,10 +24,10 @@
 
 namespace theme_dimensions\local\hook\course;
 
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 
 /**
- * Forgets a course's hotsite short address when the course is deleted.
+ * Forgets a course's landing page short address when the course is deleted.
  *
  * Core never cleans the shortlink table, so without this a deleted course would
  * leave a code answering a not-found page for ever.
@@ -50,7 +50,7 @@ class before_course_deleted {
         } catch (\Throwable $exception) {
             // A short address left behind must never stop a course from being deleted.
             debugging(
-                'theme_dimensions: the hotsite short address of course ' . $courseid
+                'theme_dimensions: the landing page short address of course ' . $courseid
                     . ' could not be forgotten: ' . $exception->getMessage(),
                 DEBUG_DEVELOPER
             );

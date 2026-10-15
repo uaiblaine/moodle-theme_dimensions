@@ -24,7 +24,7 @@
 
 namespace theme_dimensions\local\hook\course;
 
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**

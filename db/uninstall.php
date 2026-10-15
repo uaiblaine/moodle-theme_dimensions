@@ -28,7 +28,7 @@
  * Core's uninstall_plugin() already drops the theme's table through XMLDB and every file
  * of the theme's component - the category hero images and the site-wide fallback among
  * them. Those images are institutional content, and deleting them with the theme is
- * correct; this theme's other precedent (the hotsite custom fields, which hold what people
+ * correct; this theme's other precedent (the landing page custom fields, which hold what people
  * typed about their courses) points the other way and is left alone on purpose. Favourites
  * are core's rows and core_favourites owns them.
  *

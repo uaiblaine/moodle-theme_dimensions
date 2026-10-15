@@ -27,7 +27,7 @@ namespace theme_dimensions\output;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\category\population;
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 
 /**
  * The context of one area's panel: its header, the strip of its subareas, its rail and its footer.

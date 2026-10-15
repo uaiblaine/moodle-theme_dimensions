@@ -34,7 +34,7 @@ use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\category\request;
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 
 /**
  * The page header of the category showcase: branding, counts, the category's tabs, the fold control.
@@ -49,7 +49,7 @@ use theme_dimensions\local\hotsite\links;
  * What the hero prints about the category comes from {@see branding} (cached across requests,
  * viewer-independent); what it prints about the viewer - the counts, the pencil, the tabs -
  * is computed per request and never cached. The crests on the title's line are the CATEGORY's
- * own, from that same payload: a course card shows the COURSE's hotsite badges and a category
+ * own, from that same payload: a course card shows the COURSE's landing page badges and a category
  * surface shows the category's, and neither ever borrows the other's.
  * The tabs are core's own secondary navigation, exported through core's more_menu into the
  * hero's template; the band Boost Union's layout would render under the header is switched

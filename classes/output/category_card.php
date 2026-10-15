@@ -25,17 +25,17 @@
 namespace theme_dimensions\output;
 
 use theme_dimensions\local\category\classifier;
-use theme_dimensions\local\hotsite\links;
-use theme_dimensions\local\hotsite\publicfiles;
-use theme_dimensions\local\hotsite\redirector;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\links;
+use theme_dimensions\local\landing\publicfiles;
+use theme_dimensions\local\landing\redirector;
+use theme_dimensions\local\landingfields;
 
 /**
  * Builds the template context of one course card, the same markup for the card and the list view.
  *
  * Everything a card says about a course is decided here from data the
  * listing already read in bulk: the population row (state, favourite,
- * visibility), the course row, the hotsite values, the image and the
+ * visibility), the course row, the landing page values, the image and the
  * contacts. Nothing in this class queries the database - a page of forty-eight
  * cards builds forty-eight of these and must cost no statement for it - and
  * the one context it asks for was preloaded by the population. With filterall
@@ -47,8 +47,8 @@ use theme_dimensions\local\hotsitefields;
  * summary and the programme are reduced to text, because a card shows an
  * excerpt and a checklist, not a document.
  *
- * The crests over the image are the COURSE's own hotsite badges and never the
- * category's ({@see badges()}); a course without a hotsite model shows none.
+ * The crests over the image are the COURSE's own landing page badges and never the
+ * category's ({@see badges()}); a course without a landing page model shows none.
  *
  * The eleven classifier states and what each one prints: the state pill of the
  * enrolment matrix's shared state area, one icon and one sentence. The pill is
@@ -61,12 +61,12 @@ use theme_dimensions\local\hotsitefields;
  * | state       | pill class             | call to action                                          |
  * |-------------|------------------------|---------------------------------------------------------|
  * | enrolled    | dim-badge--enrolled    | access the course                                       |
- * | scheduled   | dim-badge--scheduled   | the route when there is one, else the hotsite's details |
+ * | scheduled   | dim-badge--scheduled   | the route when there is one, else the landing page's details |
  * | pending     | dim-badge--pending     | view the application (outline)                          |
  * | waitlisted  | dim-badge--waitlisted  | view the application (outline)                          |
  * | suspended   | dim-badge--suspended   | the route when there is one, else none                  |
  * | expired     | dim-badge--expired     | the route when there is one, else none                  |
- * | open        | dim-badge--open        | enrol, on the hotsite when there is one                 |
+ * | open        | dim-badge--open        | enrol, on the landing page when there is one                 |
  * | free        | dim-badge--free        | access the course                                       |
  * | key         | dim-badge--key         | enter with the key, on the standard enrolment page      |
  * | conditional | dim-badge--conditional | view the prerequisite course (outline)                  |
@@ -97,7 +97,7 @@ use theme_dimensions\local\hotsitefields;
  * {@see can_access_course()} would let in through {@see is_viewing()} - is
  * sent to the course by every card, whatever the badge says: the row of the
  * table decides the WORD, {@see may_enter()} decides the DESTINATION, so such
- * a viewer is never sent to the hotsite, the page for somebody who has to
+ * a viewer is never sent to the landing page, the page for somebody who has to
  * enrol.
  *
  * The star carries THREE labels, not one. starlabel is the label of its
@@ -113,8 +113,8 @@ use theme_dimensions\local\hotsitefields;
  * nothing to press, unless the viewer may enter the course, in which case it
  * stays reachable with its badge unchanged. The anonymous shell
  * prints "public access" - a property of the course, not of the viewer - and
- * its one call to action is the course's own hotsite, which is the page a
- * visitor may actually read; a public course that chose no hotsite model has
+ * its one call to action is the course's own landing page, which is the page a
+ * visitor may actually read; a public course that chose no landing page model has
  * nothing to send a visitor to, so it gets no call to action at all.
  *
  * "More information" opens a dialogue with JavaScript (round I, lot C2), whose
@@ -168,7 +168,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * @var int How many of the course's badges a card draws.
      *
-     * The hotsite's grid holds four; a card's corner holds three. The geometry decides it: at
+     * The landing page's grid holds four; a card's corner holds three. The geometry decides it: at
      * 80px each, the smallest size the crests are legible at, three of them and their gaps already
      * run most of the width of a card in the three-column grid, and a fourth would reach the kind
      * tag on the other side.
@@ -207,7 +207,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
      *
      * @param \stdClass $course The course row ({@see \theme_dimensions\local\category\cards::records()}).
      * @param \stdClass $row The population row: state and favourite for a logged-in viewer, visible, category.
-     * @param \stdClass $values The course's hotsite values ({@see hotsitefields::values()} shape, filters off).
+     * @param \stdClass $values The course's landing page values ({@see landingfields::values()} shape, filters off).
      * @param \moodle_url|null $image The card image, or null for the flat fallback.
      * @param array $contacts userid => ['fullname' => plain, 'rolename' => plain].
      * @param string|null $overline The course's own subcategory, plain, or null when it sits in the listed root.
@@ -223,7 +223,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         private readonly \stdClass $course,
         /** @var \stdClass The population row. */
         private readonly \stdClass $row,
-        /** @var \stdClass The hotsite values. */
+        /** @var \stdClass The landing page values. */
         private readonly \stdClass $values,
         /** @var \moodle_url|null The card image. */
         private readonly ?\moodle_url $image,
@@ -262,7 +262,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             // A conditional card names its prerequisite or is no conditional card: nothing to name, nothing on offer.
             $state = classifier::STATE_NONE;
         }
-        $isevent = $this->values->model === hotsitefields::MODEL_EVENT;
+        $isevent = $this->values->model === landingfields::MODEL_EVENT;
         $held = $isevent && (int) $this->course->enddate > 0 && (int) $this->course->enddate < time();
         $enrolled = $state === classifier::STATE_ENROLLED;
         $heldonly = !$this->anonymous && $held && !$enrolled;
@@ -285,8 +285,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $openslabel = $this->opens_label($state, $mayenter, $heldonly);
         $cta = ($held && !$mayenter) ? null : $this->cta($state, $url, $mayenter, $hasroute);
         $favourite = !$this->anonymous && !empty($this->row->favourite);
-        $kindkey = $this->values->model === hotsitefields::MODEL_COURSE ? 'hotsitefield_model_course'
-            : ($isevent ? 'hotsitefield_model_event' : null);
+        $kindkey = $this->values->model === landingfields::MODEL_COURSE ? 'landingfield_model_course'
+            : ($isevent ? 'landingfield_model_event' : null);
         $facts = $this->facts($isevent);
         $learn = $this->learn();
         $excerpt = $this->excerpt($context);
@@ -345,8 +345,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * The dialogue's own keys: the kicker, the label of the fact tiles and its two buttons.
      *
      * The SECONDARY button is the card's own link, whatever it is ({@see url()} with {@see may_enter()}): the
-     * course for somebody who may walk in, else the hotsite of a course that chose a model, else the standard
-     * enrolment page - and nothing on the anonymous shell for a course with no hotsite, whose card links
+     * course for somebody who may walk in, else the landing page of a course that chose a model, else the standard
+     * enrolment page - and nothing on the anonymous shell for a course with no landing page, whose card links
      * nowhere either. It names the course or the event.
      *
      * The PRIMARY button is {@see modal_primary()}. When it would open the very page the secondary one opens -
@@ -490,7 +490,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
     }
 
     /**
-     * The crests over the card image: the COURSE's own hotsite badges, up to {@see MAX_BADGES}.
+     * The crests over the card image: the COURSE's own landing page badges, up to {@see MAX_BADGES}.
      *
      * The card shows the course's badges and never the category's ({@see crests()} says which).
      *
@@ -501,16 +501,16 @@ class category_card implements \core\output\renderable, \core\output\templatable
     }
 
     /**
-     * A course's crests: its own hotsite badges, up to {@see MAX_BADGES}, named through the theme's file route.
+     * A course's crests: its own landing page badges, up to {@see MAX_BADGES}, named through the theme's file route.
      *
      * The badges of the COURSE and never of the category it sits in, whose own crests belong to the
      * category's hero and to its directory card: the two sets are stored in different places by
      * different people and mean different things, these being the institutions running the course.
-     * A course with no hotsite model shows none, even where badge files survive a model that was
+     * A course with no landing page model shows none, even where badge files survive a model that was
      * cleared, because the route serves a badge only while the course carries a model
      * ({@see publicfiles::resolve()}) and an address nobody may open is no crest.
      *
-     * They cost no statement: {@see \theme_dimensions\local\hotsitefields::values_many()}
+     * They cost no statement: {@see \theme_dimensions\local\landingfields::values_many()}
      * already read the badge files, so this only names files in hand. Always the theme's own file
      * route, whoever is looking: the picture fields are visible to nobody, so the picture type's own
      * URL refuses them to everybody, and that route's badge branch serves a visitor a public course's
@@ -518,7 +518,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * theme_dimensions_course_badges(), the callback other plugins' cards ask.
      *
      * @param \stdClass $course The course row; only its id is read.
-     * @param \stdClass $values The course's hotsite values ({@see hotsitefields::values()} shape).
+     * @param \stdClass $values The course's landing page values ({@see landingfields::values()} shape).
      * @return array Entries of ['url' => string, 'alt' => string], in grid order, plain spelling.
      */
     public static function crests(\stdClass $course, \stdClass $values): array {
@@ -538,13 +538,13 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * The card's one real link: into the course for somebody who may enter it, onto the enrolment surface otherwise.
      *
-     * The hotsite is the enrolment surface of a course that chose a model; the
+     * The landing page is the enrolment surface of a course that chose a model; the
      * standard enrolment page is everybody else's. Both are the pages the
      * after_config forwarding already lands people on, so the card points at
      * the destination directly rather than at a redirect.
      *
      * On the anonymous shell the standard enrolment page is no destination at all: it answers a
-     * visitor with the login form, so a public course that chose no hotsite model gets no link,
+     * visitor with the login form, so a public course that chose no landing page model gets no link,
      * and its title is plain text.
      *
      * @param bool $mayenter Whether this viewer may enter the course without enrolling ({@see may_enter()}).
@@ -632,7 +632,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
                 return null;
             }
             return [
-                'label' => get_string('category_cta_hotsite', self::COMPONENT),
+                'label' => get_string('category_cta_landing', self::COMPONENT),
                 'url' => links::page((int) $this->course->id)->out(false),
                 'primary' => true,
             ];
@@ -644,7 +644,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $key = $mayenter ? 'category_cta_access' : match ($state) {
             classifier::STATE_OPEN => 'category_cta_enrol',
             classifier::STATE_PENDING, classifier::STATE_WAITLISTED => 'category_cta_status',
-            /* The route, where the plugin's batch reports one; else the details, which live on the hotsite: without
+            /* The route, where the plugin's batch reports one; else the details, which live on the landing page: without
                one there is nothing to open that would not offer an enrolment. */
             classifier::STATE_SCHEDULED => $hasroute ? 'category_cta_enrolnow'
                 : ($this->values->model > 0 ? 'category_cta_details' : null),
@@ -654,7 +654,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             default => null,
         };
         $target = match ($key) {
-            // The key form is enrol_guest's widget on the standard page, which the hotsite does not draw.
+            // The key form is enrol_guest's widget on the standard page, which the landing page does not draw.
             'category_cta_key' => redirector::standard_page((int) $this->course->id),
             // The classifier names the prerequisite only to a viewer actively enrolled in it: a safe link.
             'category_cta_prerequisite' => new \moodle_url('/course/view.php', ['id' => (int) $this->prerequisite->id]),
@@ -706,18 +706,18 @@ class category_card implements \core\output\renderable, \core\output\templatable
         } else if ($this->values->workload !== null) {
             $parts[] = $this->hours_label();
         }
-        $modality = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALITY, $this->values->modality);
+        $modality = landingfields::option_label(landingfields::SHORTNAME_MODALITY, $this->values->modality);
         if ($modality !== null) {
             $parts[] = $modality;
         }
-        if ($this->values->modality === hotsitefields::MODALITY_INPERSON && $this->values->city !== null) {
+        if ($this->values->modality === landingfields::MODALITY_INPERSON && $this->values->city !== null) {
             $parts[] = $this->values->city;
         }
         return implode(' · ', $parts);
     }
 
     /**
-     * The panel's fact rows, labelled with the stored field names as the hotsite's card does.
+     * The panel's fact rows, labelled with the stored field names as the landing page's card does.
      *
      * @param bool $isevent Whether the course chose the event model.
      * @return array Rows of ['label' => plain, 'value' => plain, 'icon' => the dialogue tile's decorative icon].
@@ -730,32 +730,32 @@ class category_card implements \core\output\renderable, \core\output\templatable
             if ($dateline !== null) {
                 $facts[] = ['label' => get_string('date'), 'value' => $dateline, 'icon' => self::FACT_ICONS['date']];
             }
-        } else if ($this->values->workload !== null && isset($names[hotsitefields::SHORTNAME_WORKLOAD])) {
+        } else if ($this->values->workload !== null && isset($names[landingfields::SHORTNAME_WORKLOAD])) {
             $facts[] = [
-                'label' => $names[hotsitefields::SHORTNAME_WORKLOAD],
+                'label' => $names[landingfields::SHORTNAME_WORKLOAD],
                 'value' => $this->hours_label(),
                 'icon' => self::FACT_ICONS['hours'],
             ];
         }
-        $modality = hotsitefields::option_label(hotsitefields::SHORTNAME_MODALITY, $this->values->modality);
-        if ($modality !== null && isset($names[hotsitefields::SHORTNAME_MODALITY])) {
+        $modality = landingfields::option_label(landingfields::SHORTNAME_MODALITY, $this->values->modality);
+        if ($modality !== null && isset($names[landingfields::SHORTNAME_MODALITY])) {
             $facts[] = [
-                'label' => $names[hotsitefields::SHORTNAME_MODALITY],
+                'label' => $names[landingfields::SHORTNAME_MODALITY],
                 'value' => $modality,
                 'icon' => self::FACT_ICONS['mode'],
             ];
         }
-        if ($this->values->modality === hotsitefields::MODALITY_INPERSON) {
+        if ($this->values->modality === landingfields::MODALITY_INPERSON) {
             $place = array_filter([$this->values->venue, $this->values->city]);
-            if ($place && isset($names[hotsitefields::SHORTNAME_CITY])) {
+            if ($place && isset($names[landingfields::SHORTNAME_CITY])) {
                 $facts[] = [
-                    'label' => $names[hotsitefields::SHORTNAME_CITY],
+                    'label' => $names[landingfields::SHORTNAME_CITY],
                     'value' => implode(' · ', $place),
                     'icon' => self::FACT_ICONS['place'],
                 ];
             }
         }
-        // The course contacts are named to a logged-in reader only: the hotsite, the theme's
+        // The course contacts are named to a logged-in reader only: the landing page, the theme's
         // other anonymous surface, names nobody to the internet either.
         if ($this->contacts && !$this->anonymous) {
             $people = [];
@@ -790,20 +790,20 @@ class category_card implements \core\output\renderable, \core\output\templatable
     }
 
     /**
-     * The workload text, the hotsite's spelling.
+     * The workload text, the landing page's spelling.
      *
      * @return string
      */
     private function hours_label(): string {
         $hours = format_float($this->values->workload, 1, true, true);
-        return get_string('hotsite_hours', self::COMPONENT, $hours);
+        return get_string('landing_hours', self::COMPONENT, $hours);
     }
 
     /**
      * The summary reduced to one paragraph of text.
      *
-     * Formatted with the text filters OFF, like the hotsite textareas of a
-     * listing ({@see hotsitefields::values_many()} says why: a filtered
+     * Formatted with the text filters OFF, like the landing page textareas of a
+     * listing ({@see landingfields::values_many()} says why: a filtered
      * format_text() in each course's context is a recordset plus every
      * active filter's own reads, per card). The pluginfile rewrite is kept so
      * nothing in the text refers to a draft area.

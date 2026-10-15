@@ -226,8 +226,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   Scenario: More information opens the course in a dialogue with its two ways in, and Escape gives the focus back
     # With JavaScript the card's "More information" opens core/modal instead of its inline panel, so no
     # disclosure opens behind it. A self enrolment enabled on the new course makes it open, and the admin may
-    # walk into any course: "Enrol" goes to the hotsite and "Course page" to the course - the pair that stays two
-    # (for a learner both would open the hotsite, and the dialogue draws one). The dialogue is found by its
+    # walk into any course: "Enrol" goes to the landing page and "Course page" to the course - the pair that stays two
+    # (for a learner both would open the landing page, and the dialogue draws one). The dialogue is found by its
     # title; the summary gets the focus back when it closes.
     Given the following config values are set as admin:
       | status | 0 | enrol_self |

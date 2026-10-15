@@ -637,7 +637,7 @@ final class branding_test extends \advanced_testcase {
     }
 
     /**
-     * The route exists under the name file_pluginfile() dispatches to, beside the hotsite's.
+     * The route exists under the name file_pluginfile() dispatches to, beside the landing page's.
      */
     public function test_the_route_is_wired_into_core_file_serving(): void {
         global $CFG;

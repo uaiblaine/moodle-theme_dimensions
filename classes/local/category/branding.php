@@ -28,8 +28,8 @@ use core\context;
 use core_course_category;
 use local_unlistedcourses\category_access;
 use theme_dimensions\event\category_branding_updated;
-use theme_dimensions\local\hotsite\publicfiles;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\publicfiles;
+use theme_dimensions\local\landingfields;
 
 /**
  * The hero of a category: its layout, colours, overlay, tagline, public text and background image.
@@ -77,7 +77,7 @@ use theme_dimensions\local\hotsitefields;
  * ({@see is_valid_video()}), because core has no video validator and derives a mimetype from the
  * file name. categorybadge1..3 serve the category's own crests, one file each, under the same
  * admission and the same image check as the hero ({@see resolve()}). categoryogimage serves the
- * 1200x630 JPEG derivative a social scraper fetches - the hotsite's own derivative machinery
+ * 1200x630 JPEG derivative a social scraper fetches - the landing page's own derivative machinery
  * ({@see publicfiles}), reused unchanged - and it falls back to the site-wide image when the
  * category has none of its own, because a preview with no picture is what the fallback exists to
  * prevent. Its URL names the category's context either way: the route resolves by category id,
@@ -974,7 +974,7 @@ final class branding {
      * The one builder of both category surfaces - the hero and the directory card - so that a
      * crest cannot be addressed one way on one of them and another way on the other. The
      * alternative text is the file name without its extension
-     * ({@see publicfiles::badge_alt()}), which is the same rule the hotsite's badges follow and
+     * ({@see publicfiles::badge_alt()}), which is the same rule the landing page's badges follow and
      * the one thing the manager controls: there is no caption field, on purpose.
      *
      * @param int $categoryid The category.
@@ -1145,14 +1145,14 @@ final class branding {
     }
 
     /**
-     * The file manager options of one badge: one file, the hotsite's own limit and types.
+     * The file manager options of one badge: one file, the landing page's own limit and types.
      *
-     * The limit and the vocabulary are the hotsite's, read from its own constant rather than
+     * The limit and the vocabulary are the landing page's, read from its own constant rather than
      * restated: the two surfaces show the same kind of file, an institutional crest, and a
      * category manager who has one accepted on a course must not be refused it here. The
-     * hotsite's badge fields (customfield_picture's type, where that optional plugin is installed)
+     * landing page's badge fields (customfield_picture's type, where that optional plugin is installed)
      * take exactly these two values
-     * ({@see \theme_dimensions\local\hotsitefields::CREST_MAXBYTES} and
+     * ({@see \theme_dimensions\local\landingfields::CREST_MAXBYTES} and
      * accepted_types web_image), which on 5.2 admits .svg - see {@see resolve()} for why an SVG
      * crest is still served.
      *
@@ -1162,7 +1162,7 @@ final class branding {
         return [
             'subdirs' => 0,
             'maxfiles' => 1,
-            'maxbytes' => hotsitefields::CREST_MAXBYTES,
+            'maxbytes' => landingfields::CREST_MAXBYTES,
             'accepted_types' => ['web_image'],
             'return_types' => self::copy_only(),
         ];
@@ -1653,8 +1653,8 @@ final class branding {
             return $video;
         }
         if (in_array($filearea, self::AREA_BADGES, true)) {
-            /* Exactly the hero's checks, is_valid_image() included, as the hotsite's own badge
-               route makes ({@see \theme_dimensions\local\hotsite\publicfiles::resolve()}):
+            /* Exactly the hero's checks, is_valid_image() included, as the landing page's own badge
+               route makes ({@see \theme_dimensions\local\landing\publicfiles::resolve()}):
                without it a same-origin .html written through the file API would be script for
                everyone who may see the category; the editor's file managers accept images only,
                and this check makes that true of the route as well. It costs no crest: core 5.2's

@@ -25,7 +25,7 @@
 namespace theme_dimensions\local\hook\course;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 /**
  * The video address is refused when no enabled media player embeds it.
@@ -56,7 +56,7 @@ final class after_form_validation_test extends \advanced_testcase {
      */
     public function test_embeddable_and_empty_addresses_pass(): void {
         $this->resetAfterTest();
-        $element = 'customfield_' . hotsitefields::SHORTNAME_VIDEOURL;
+        $element = 'customfield_' . landingfields::SHORTNAME_VIDEOURL;
 
         // The precondition the pass depends on: YouTube is an enabled player on this site.
         $this->assertContains('youtube', array_keys(\core\plugininfo\media::get_enabled_plugins()));
@@ -64,7 +64,7 @@ final class after_form_validation_test extends \advanced_testcase {
         $this->assertSame([], $this->errors_for([$element => 'https://www.youtube.com/watch?v=Fs7Aph2027x']));
         $this->assertSame([], $this->errors_for([$element => 'https://youtu.be/Fs7Aph2027x']));
         $this->assertSame([], $this->errors_for([$element => '   ']));
-        $this->assertSame([], $this->errors_for(['fullname' => 'No hotsite fields in this form']));
+        $this->assertSame([], $this->errors_for(['fullname' => 'No landing page fields in this form']));
     }
 
     /**
@@ -72,8 +72,8 @@ final class after_form_validation_test extends \advanced_testcase {
      */
     public function test_other_addresses_are_refused_on_the_field(): void {
         $this->resetAfterTest();
-        $element = 'customfield_' . hotsitefields::SHORTNAME_VIDEOURL;
-        $expected = [$element => get_string('hotsite_videourlinvalid', hotsitefields::COMPONENT)];
+        $element = 'customfield_' . landingfields::SHORTNAME_VIDEOURL;
+        $expected = [$element => get_string('landing_videourlinvalid', landingfields::COMPONENT)];
 
         $this->assertSame($expected, $this->errors_for([$element => 'https://example.com/apresentacao.html']));
         $this->assertSame($expected, $this->errors_for([$element => 'javascript:alert(1)']));
@@ -88,7 +88,7 @@ final class after_form_validation_test extends \advanced_testcase {
      */
     public function test_the_check_follows_the_enabled_players(): void {
         $this->resetAfterTest();
-        $element = 'customfield_' . hotsitefields::SHORTNAME_VIDEOURL;
+        $element = 'customfield_' . landingfields::SHORTNAME_VIDEOURL;
         $url = 'https://www.youtube.com/watch?v=Fs7Aph2027x';
 
         $this->assertSame([], $this->errors_for([$element => $url]));
@@ -109,11 +109,11 @@ final class after_form_validation_test extends \advanced_testcase {
      */
     private static function round6(int $model, int $modality, int $format, string $total = '', string $inperson = ''): array {
         return [
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => (string) $model,
-            'customfield_' . hotsitefields::SHORTNAME_MODALITY => (string) $modality,
-            'customfield_' . hotsitefields::SHORTNAME_FORMAT => (string) $format,
-            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => $total,
-            'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD => $inperson,
+            'customfield_' . landingfields::SHORTNAME_MODEL => (string) $model,
+            'customfield_' . landingfields::SHORTNAME_MODALITY => (string) $modality,
+            'customfield_' . landingfields::SHORTNAME_FORMAT => (string) $format,
+            'customfield_' . landingfields::SHORTNAME_WORKLOAD => $total,
+            'customfield_' . landingfields::SHORTNAME_INPERSONWORKLOAD => $inperson,
         ];
     }
 
@@ -122,35 +122,35 @@ final class after_form_validation_test extends \advanced_testcase {
      */
     public function test_a_self_paced_course_must_be_online(): void {
         $this->resetAfterTest();
-        $c = hotsitefields::MODEL_COURSE;
-        $sp = hotsitefields::FORMAT_SELFPACED;
-        $tu = hotsitefields::FORMAT_TUTORED;
+        $c = landingfields::MODEL_COURSE;
+        $sp = landingfields::FORMAT_SELFPACED;
+        $tu = landingfields::FORMAT_TUTORED;
         $expected = [
-            'customfield_' . hotsitefields::SHORTNAME_MODALITY => get_string('hotsite_selfpacedonline', hotsitefields::COMPONENT),
+            'customfield_' . landingfields::SHORTNAME_MODALITY => get_string('landing_selfpacedonline', landingfields::COMPONENT),
         ];
 
-        $this->assertSame($expected, $this->errors_for(self::round6($c, hotsitefields::MODALITY_INPERSON, $sp)));
-        $this->assertSame($expected, $this->errors_for(self::round6($c, hotsitefields::MODALITY_HYBRID, $sp)));
+        $this->assertSame($expected, $this->errors_for(self::round6($c, landingfields::MODALITY_INPERSON, $sp)));
+        $this->assertSame($expected, $this->errors_for(self::round6($c, landingfields::MODALITY_HYBRID, $sp)));
         // No model yet: the format is visible all the same, and so is the refusal.
-        $this->assertSame($expected, $this->errors_for(self::round6(0, hotsitefields::MODALITY_HYBRID, $sp)));
+        $this->assertSame($expected, $this->errors_for(self::round6(0, landingfields::MODALITY_HYBRID, $sp)));
 
-        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALITY_ONLINE, $sp)));
-        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALITY_HYBRID, $tu)));
-        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALITY_INPERSON, 0)));
+        $this->assertSame([], $this->errors_for(self::round6($c, landingfields::MODALITY_ONLINE, $sp)));
+        $this->assertSame([], $this->errors_for(self::round6($c, landingfields::MODALITY_HYBRID, $tu)));
+        $this->assertSame([], $this->errors_for(self::round6($c, landingfields::MODALITY_INPERSON, 0)));
     }
 
     /**
      * On an event the format is hidden, so a self-paced value it kept from before is not refused.
      *
      * An error on a hidden field stops the save with nothing on screen to fix; the page reads the
-     * value away instead (hotsitefields::coherent()).
+     * value away instead (landingfields::coherent()).
      */
     public function test_a_hidden_format_on_an_event_is_not_refused(): void {
         $this->resetAfterTest();
         $data = self::round6(
-            hotsitefields::MODEL_EVENT,
-            hotsitefields::MODALITY_HYBRID,
-            hotsitefields::FORMAT_SELFPACED
+            landingfields::MODEL_EVENT,
+            landingfields::MODALITY_HYBRID,
+            landingfields::FORMAT_SELFPACED
         );
         $this->assertSame([], $this->errors_for($data));
     }
@@ -160,10 +160,10 @@ final class after_form_validation_test extends \advanced_testcase {
      */
     public function test_in_person_hours_fit_inside_the_total_of_a_hybrid_offering(): void {
         $this->resetAfterTest();
-        $c = hotsitefields::MODEL_COURSE;
-        $hy = hotsitefields::MODALITY_HYBRID;
-        $tu = hotsitefields::FORMAT_TUTORED;
-        $element = 'customfield_' . hotsitefields::SHORTNAME_INPERSONWORKLOAD;
+        $c = landingfields::MODEL_COURSE;
+        $hy = landingfields::MODALITY_HYBRID;
+        $tu = landingfields::FORMAT_TUTORED;
+        $element = 'customfield_' . landingfields::SHORTNAME_INPERSONWORKLOAD;
 
         $errors = $this->errors_for(self::round6($c, $hy, $tu, '60', '61'));
         $this->assertSame([$element], array_keys($errors));
@@ -173,6 +173,6 @@ final class after_form_validation_test extends \advanced_testcase {
         $this->assertSame([], $this->errors_for(self::round6($c, $hy, $tu, '60', '16')));
         // Nothing to exceed without a total, and the hidden field of another modality is not read.
         $this->assertSame([], $this->errors_for(self::round6($c, $hy, $tu, '', '16')));
-        $this->assertSame([], $this->errors_for(self::round6($c, hotsitefields::MODALITY_ONLINE, $tu, '60', '61')));
+        $this->assertSame([], $this->errors_for(self::round6($c, landingfields::MODALITY_ONLINE, $tu, '60', '61')));
     }
 }

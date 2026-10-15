@@ -1,0 +1,502 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/landing_page
+
+    The course enrolment landing page: navy hero with the course image behind it and,
+    beside the title, the grid of up to four institutional badges (below the
+    text on narrow viewports); a reading column opening with the presentation
+    video's media card when there is one, then the summary and the textarea
+    sections; and the sticky enrolment card holding the fact rows and the
+    enrolment area for the resolved state.
+
+    The hero's emphasis block follows the scenario: the big date of an online
+    event, the place of an in-person offering, the double ticket of a hybrid
+    event (the date, then the two ways to take part) and the composition bar of
+    a hybrid course (its workload split into online and in-person hours). The
+    bar's two widths are integers from 0 to 100 made by
+    landing_page::hero_comp(), because a style attribute is a CSS context. The
+    hero's icons are decoration. A hybrid event offering two or more methods
+    draws each one as a track, headed by the instance's own name.
+
+    The hero image's url is printed into a style attribute, a CSS context the
+    double stash does not protect, because a browser decodes the attribute
+    before the CSS parser reads it; landing_page::hero_image_url() therefore
+    answers null for any url styleurl::safe() refuses.
+
+    The badge URLs go through the theme's own file route and the alt texts are
+    plain spellings. The video's html is the markup of whichever enabled media
+    player takes the address first (see landing_page::video()), inserted raw
+    inside the 16:9 player box.
+
+    The enrolment buttons carry the markup contracts of the plugins' own AMD
+    modules, which the page arms before output: the self-enrolment key button
+    and the application button carry data-id, data-instance, data-form and
+    data-title attributes read by enrol_self/enrol_page and
+    enrol_apply/enrol_page (the apply form's action is the no-JavaScript
+    transport); the payment button carries the data attributes read by
+    core_payment/gateways_modal (action, component, paymentarea, itemid, cost,
+    successurl, description). Fallback widget HTML comes from third-party
+    enrol plugins' own page hooks and is inserted raw, as core's enrolment
+    page does.
+
+    A visitor is asked to log in only where a login could lead somewhere
+    (showlogin). Where guest access is the only way in, its button is the
+    primary action under the access heading, with a quiet login link for a
+    learner already enrolled; with neither, the card carries
+    the closed sentence. Guest access is primary for a logged-in reader too
+    when nothing else on the card enrols.
+
+    Example context (json):
+    {
+        "courseid": 42,
+        "fullname": "Atendimento Pré-Hospitalar & Resgate",
+        "categoryname": "Alfa",
+        "heroimageurl": "https://example.com/pluginfile.php/31/course/overviewfiles/capa.jpg",
+        "badges": [
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc123/crest-alpha.png", "alt": "crest-alpha"},
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/def456/crest-beta.svg", "alt": "crest-beta"}
+        ],
+        "hasbadges": true,
+        "video": {
+            "html": "<span class=\"mediaplugin mediaplugin_youtube\"><iframe title=\"Atendimento\" width=\"640\" height=\"360\" src=\"https://www.youtube-nocookie.com/embed/x\"></iframe></span>",
+            "caption": "Apresentação do curso",
+            "host": "youtube.com"
+        },
+        "summaryhtml": "<p>Curso de atendimento pré-hospitalar para brigadistas voluntários.</p>",
+        "chips": ["Híbrido", "60 horas", "Com tutoria"],
+        "haschips": true,
+        "haslivechip": true,
+        "facts": [
+            {"label": "Modalidade", "value": "Híbrido", "note": null},
+            {"label": "Formato de estudo", "value": "Autoinstrucional", "note": "no seu ritmo"},
+            {"label": "Carga horária", "value": "60 horas", "note": "36 online + 24 presencial"}
+        ],
+        "hasfacts": true,
+        "sections": [
+            {"title": "Público-alvo", "html": "<p>Agentes de segurança pública do estado.</p>"}
+        ],
+        "herodate": {
+            "datebig": "12 mar 2027",
+            "sub": "19h00–21h00 · Transmissão ao vivo",
+            "countdown": "faltam 196 dias"
+        },
+        "heroticket": {
+            "datebig": "12 mar 2027",
+            "sub": "sexta-feira · 19h00–21h00",
+            "countdown": "faltam 196 dias",
+            "site": "No local, em São Paulo",
+            "venue": "Campus Central · Salão Principal",
+            "live": "Ao vivo, de onde estiver",
+            "livesub": "Transmissão pela plataforma"
+        },
+        "herocomp": {
+            "total": "60 horas",
+            "onlinelabel": "36h online",
+            "inpersonlabel": "24h presencial",
+            "onlinepct": 60,
+            "inpersonpct": 40,
+            "meetings": "2 encontros aos sábados em Londrina",
+            "arialabel": "36 horas online e 24 horas presenciais"
+        },
+        "heroplace": {
+            "city": "São Paulo",
+            "venue": "Campus Central · Salão Principal",
+            "dateline": "12/03/27 · 09h00–18h00",
+            "meetings": "2 encontros aos sábados",
+            "big": true
+        },
+        "isheld": false,
+        "isheldonly": false,
+        "heldon": null,
+        "isvisitor": false,
+        "showlogin": false,
+        "isguestaccess": false,
+        "isenrolled": false,
+        "ispending": false,
+        "iswaitlisted": false,
+        "issuspended": false,
+        "isexpired": true,
+        "expiredon": "30/09/2026",
+        "isconditional": false,
+        "prerequisite": null,
+        "isscheduled": false,
+        "scheduledfrom": "12/11/2026",
+        "scheduleduntil": "12/02/2027",
+        "isopen": true,
+        "tracksheading": "Escolha como participar",
+        "isclosed": false,
+        "showclosed": false,
+        "loginurl": "https://example.com/login/index.php",
+        "courseurl": "https://example.com/course/view.php?id=42",
+        "appliedon": null,
+        "bar": {
+            "url": "#dimensions-landing-card",
+            "label": "Inscrever-se",
+            "note": "Inscrições até 26/10"
+        },
+        "offers": [
+            {
+                "name": "Presencial",
+                "hasseats": true,
+                "seats": "120 vagas",
+                "hasuntil": true,
+                "until": "Inscrições até 05/11/26",
+                "untilshort": "Inscrições até 05/11",
+                "urgent": null
+            }
+        ],
+        "hasoffers": true,
+        "methods": [
+            {
+                "instanceid": 3,
+                "isself": true,
+                "isapply": false,
+                "isfee": false,
+                "isguest": false,
+                "isfallback": false,
+                "primary": true,
+                "trackname": "Presencial",
+                "offer": {
+                    "hasseats": true,
+                    "seats": "40 vagas",
+                    "hasuntil": true,
+                    "until": "Inscrições até 26/10/26",
+                    "untilshort": "Inscrições até 26/10",
+                    "urgent": "Encerra em 2 dias"
+                },
+                "requirespassword": false,
+                "enrolurl": "https://example.com/enrol/index.php?id=42&amp;action=enrol&amp;sesskey=x",
+                "pageurl": "https://example.com/theme/dimensions/landing.php?id=42",
+                "dataform": "enrol_self\\form\\enrol_form",
+                "datatitle": "Autoinscrição"
+            },
+            {
+                "instanceid": 4,
+                "isself": false,
+                "isapply": false,
+                "isfee": false,
+                "isguest": true,
+                "isfallback": false,
+                "primary": false,
+                "guestnote": false,
+                "trackname": "Online, ao vivo",
+                "guesturl": "https://example.com/course/view.php?id=42"
+            }
+        ],
+        "hasmethods": true
+    }
+}}
+<div class="dimensions-landing{{#bar}} dimensions-landing--hasbar{{/bar}}" data-region="dimensions-landing" data-courseid="{{courseid}}">
+    <header class="dimensions-landing__hero">
+        {{#heroimageurl}}
+            <div class="dimensions-landing__hero-media" style="background-image: url('{{heroimageurl}}');" aria-hidden="true"></div>
+        {{/heroimageurl}}
+        <div class="dimensions-landing__hero-content{{#hasbadges}} dimensions-landing__hero-content--badges{{/hasbadges}}">
+            <div class="dimensions-landing__hero-text">
+            {{#categoryname}}
+                <span class="dimensions-landing__kicker">{{categoryname}}</span>
+            {{/categoryname}}
+            <h1 class="dimensions-landing__title">{{fullname}}</h1>
+            {{#haschips}}
+                <ul class="dimensions-landing__chips list-unstyled m-0">
+                    {{#chips}}
+                        <li class="dimensions-landing__chip">{{.}}</li>
+                    {{/chips}}
+                    {{#haslivechip}}
+                        <li class="dimensions-landing__chip dimensions-landing__chip--live"><span class="dimensions-landing__livedot" aria-hidden="true"></span>{{#str}} landing_livechip, theme_dimensions {{/str}}</li>
+                    {{/haslivechip}}
+                </ul>
+            {{/haschips}}
+            {{#herodate}}
+                <div class="dimensions-landing__em dimensions-landing__em--big">
+                    <span class="dimensions-landing__em-main">{{datebig}}</span>
+                    <span class="dimensions-landing__em-sub">{{sub}}</span>
+                    {{#countdown}}
+                        <span class="dimensions-landing__em-chip">{{countdown}}</span>
+                    {{/countdown}}
+                </div>
+            {{/herodate}}
+            {{#heroticket}}
+                <div class="dimensions-landing__ticket">
+                    <div class="dimensions-landing__ticket-date">
+                        <span class="dimensions-landing__em-main">{{datebig}}</span>
+                        <span class="dimensions-landing__em-sub">{{sub}}</span>
+                        {{#countdown}}
+                            <span class="dimensions-landing__em-chip">{{.}}</span>
+                        {{/countdown}}
+                    </div>
+                    <div class="dimensions-landing__ticket-cut" aria-hidden="true"></div>
+                    <ul class="dimensions-landing__ticket-ways list-unstyled m-0">
+                        <li class="dimensions-landing__way">
+                            {{#pix}} i/location, core {{/pix}}
+                            <span class="dimensions-landing__way-text">
+                                <span class="dimensions-landing__way-main">{{site}}</span>
+                                {{#venue}}
+                                    <span class="dimensions-landing__way-sub">{{.}}</span>
+                                {{/venue}}
+                            </span>
+                        </li>
+                        <li class="dimensions-landing__way">
+                            {{#pix}} t/play, core {{/pix}}
+                            <span class="dimensions-landing__way-text">
+                                <span class="dimensions-landing__way-main">{{live}}</span>
+                                <span class="dimensions-landing__way-sub">{{livesub}}</span>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            {{/heroticket}}
+            {{#herocomp}}
+                <div class="dimensions-landing__comp">
+                    <div class="dimensions-landing__comp-head">
+                        <span class="dimensions-landing__comp-total">{{total}}</span>
+                        {{#meetings}}
+                            <span class="dimensions-landing__comp-meetings">{{.}}</span>
+                        {{/meetings}}
+                    </div>
+                    <div class="dimensions-landing__comp-bar" role="img" aria-label="{{arialabel}}">
+                        <span class="dimensions-landing__comp-online" style="width: {{onlinepct}}%"></span>
+                        <span class="dimensions-landing__comp-inperson" style="width: {{inpersonpct}}%"></span>
+                    </div>
+                    <div class="dimensions-landing__comp-legend" aria-hidden="true">
+                        <span class="dimensions-landing__comp-key"><span class="dimensions-landing__comp-swatch dimensions-landing__comp-swatch--online"></span>{{onlinelabel}}</span>
+                        <span class="dimensions-landing__comp-key"><span class="dimensions-landing__comp-swatch dimensions-landing__comp-swatch--inperson"></span>{{inpersonlabel}}</span>
+                    </div>
+                </div>
+            {{/herocomp}}
+            {{#heroplace}}
+                <div class="dimensions-landing__em {{#big}}dimensions-landing__em--big{{/big}}">
+                    <span class="dimensions-landing__em-main">{{city}}</span>
+                    {{#venue}}
+                        <span class="dimensions-landing__em-sub">{{venue}}</span>
+                    {{/venue}}
+                    {{#dateline}}
+                        <span class="dimensions-landing__em-sub">{{dateline}}</span>
+                    {{/dateline}}
+                    {{#meetings}}
+                        <span class="dimensions-landing__em-sub">{{.}}</span>
+                    {{/meetings}}
+                </div>
+            {{/heroplace}}
+            </div>
+            {{#hasbadges}}
+                <ul class="dimensions-landing__badges" role="list" aria-label="{{#str}} landing_badges, theme_dimensions {{/str}}">
+                    {{#badges}}
+                        <li class="dimensions-landing__badge" role="listitem"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
+                    {{/badges}}
+                </ul>
+            {{/hasbadges}}
+        </div>
+    </header>
+    <div class="dimensions-landing__columns">
+        <div class="dimensions-landing__content">
+            {{#video}}
+                <div class="dimensions-landing__media" data-region="dimensions-landing-video">
+                    <div class="dimensions-landing__player">{{{html}}}</div>
+                    <div class="dimensions-landing__mediacaption">
+                        <span class="dimensions-landing__mediatitle">{{caption}}</span>
+                        <span class="dimensions-landing__mediahost" aria-hidden="true">{{host}}</span>
+                    </div>
+                </div>
+            {{/video}}
+            {{#summaryhtml}}
+                <section class="dimensions-landing__section">
+                    {{{summaryhtml}}}
+                </section>
+            {{/summaryhtml}}
+            {{#sections}}
+                <section class="dimensions-landing__section">
+                    <h2 class="dimensions-landing__sectiontitle">{{title}}</h2>
+                    {{{html}}}
+                </section>
+            {{/sections}}
+        </div>
+        <aside class="dimensions-landing__aside">
+            <div class="dimensions-landing__card" id="dimensions-landing-card">
+                {{#hasfacts}}
+                    <dl class="dimensions-landing__facts">
+                        {{#facts}}
+                            <div class="dimensions-landing__fact">
+                                <dt>{{label}}</dt>
+                                <dd>{{value}}{{#note}}<small class="dimensions-landing__factnote">{{.}}</small>{{/note}}</dd>
+                            </div>
+                        {{/facts}}
+                    </dl>
+                {{/hasfacts}}
+                <div class="dimensions-landing__enrol">
+                    {{#isheldonly}}
+                        <h2 class="dimensions-landing__cardtitle">{{#str}} landing_enrolheading, theme_dimensions {{/str}}</h2>
+                        <p class="dimensions-landing__held">{{#str}} landing_heldon, theme_dimensions, {{heldon}} {{/str}}</p>
+                        <p class="dimensions-landing__note">{{#str}} landing_heldnote, theme_dimensions {{/str}}</p>
+                    {{/isheldonly}}
+                    {{#isenrolled}}
+                        <h2 class="dimensions-landing__cardtitle">{{#str}} landing_alreadyenrolled, theme_dimensions {{/str}}</h2>
+                        <a class="btn btn-primary dimensions-landing__btn" href="{{courseurl}}">
+                            {{#str}} landing_accesscourse, theme_dimensions {{/str}}
+                        </a>
+                    {{/isenrolled}}
+                    {{#ispending}}
+                        <h2 class="dimensions-landing__cardtitle">{{#str}} landing_pendingheading, theme_dimensions {{/str}}</h2>
+                        <p class="dimensions-landing__pending">{{#str}} landing_pendingnote, theme_dimensions, {{appliedon}} {{/str}}</p>
+                    {{/ispending}}
+                    {{#iswaitlisted}}
+                        <h2 class="dimensions-landing__cardtitle">{{#str}} landing_waitlistedheading, theme_dimensions {{/str}}</h2>
+                        <p class="dimensions-landing__pending">{{#str}} landing_pendingnote, theme_dimensions, {{appliedon}} {{/str}}</p>
+                    {{/iswaitlisted}}
+                    {{#isscheduled}}
+                        <h2 class="dimensions-landing__cardtitle">{{#str}} landing_scheduledheading, theme_dimensions, {{scheduledfrom}} {{/str}}</h2>
+                        <p class="dimensions-landing__pending">{{#str}} landing_schedulednote, theme_dimensions {{/str}}</p>
+                        {{#scheduleduntil}}
+                            <p class="dimensions-landing__note">{{#str}} landing_scheduledend, theme_dimensions, {{scheduleduntil}} {{/str}}</p>
+                        {{/scheduleduntil}}
+                    {{/isscheduled}}
+                    {{#isvisitor}}
+                        <h2 class="dimensions-landing__cardtitle">{{#isguestaccess}}{{#str}} landing_accessheading, theme_dimensions {{/str}}{{/isguestaccess}}{{^isguestaccess}}{{#str}} landing_enrolheading, theme_dimensions {{/str}}{{/isguestaccess}}</h2>
+                        {{#hasoffers}}
+                            <ul class="dimensions-landing__offers list-unstyled">
+                                {{#offers}}
+                                    <li>
+                                        {{#name}}<span class="dimensions-landing__offername">{{.}}</span>{{/name}}
+                                        {{> theme_dimensions/landing_offer }}
+                                    </li>
+                                {{/offers}}
+                            </ul>
+                        {{/hasoffers}}
+                        {{#showlogin}}
+                            <a class="btn btn-primary dimensions-landing__btn" href="{{loginurl}}">
+                                {{#str}} landing_loginbutton, theme_dimensions {{/str}}
+                            </a>
+                            <p class="dimensions-landing__note">{{#str}} landing_loginnote, theme_dimensions {{/str}}</p>
+                        {{/showlogin}}
+                    {{/isvisitor}}
+                    {{#isopen}}
+                        <h2 class="dimensions-landing__cardtitle">{{#tracksheading}}{{.}}{{/tracksheading}}{{^tracksheading}}{{#str}} landing_enrolheading, theme_dimensions {{/str}}{{/tracksheading}}</h2>
+                    {{/isopen}}
+                    {{#isclosed}}
+                        <h2 class="dimensions-landing__cardtitle">{{#str}} landing_enrolheading, theme_dimensions {{/str}}</h2>
+                    {{/isclosed}}
+                    {{#issuspended}}
+                        <p class="dimensions-landing__pending">{{#str}} landing_suspendednote, theme_dimensions {{/str}}</p>
+                    {{/issuspended}}
+                    {{#isexpired}}
+                        <p class="dimensions-landing__pending">{{#str}} landing_expirednote, theme_dimensions, {{expiredon}} {{/str}}</p>
+                    {{/isexpired}}
+                    {{#isconditional}}
+                        <p class="dimensions-landing__pending">{{#str}} landing_conditionalnote, theme_dimensions, {{prerequisite.name}} {{/str}}</p>
+                        <a class="btn btn-outline-primary dimensions-landing__btn" href="{{prerequisite.url}}">
+                            {{#str}} landing_prerequisitebutton, theme_dimensions {{/str}}
+                        </a>
+                    {{/isconditional}}
+                    {{#showclosed}}
+                        <p class="dimensions-landing__closed">{{#str}} landing_closed, theme_dimensions {{/str}}</p>
+                    {{/showclosed}}
+                    {{#isenrolled}}{{#isheld}}
+                        <p class="dimensions-landing__note">{{#str}} landing_heldon, theme_dimensions, {{heldon}} {{/str}}</p>
+                    {{/isheld}}{{/isenrolled}}
+                    {{#methods}}
+                        <div class="dimensions-landing__methodentry{{#trackname}} dimensions-landing__track{{/trackname}}">
+                            {{#trackname}}
+                                <h3 class="dimensions-landing__trackname">{{.}}</h3>
+                            {{/trackname}}
+                            {{#offer}}
+                                {{> theme_dimensions/landing_offer }}
+                            {{/offer}}
+                            {{#isself}}
+                                {{#requirespassword}}
+                                    <form method="get" action="{{pageurl}}" class="dimensions-landing__method">
+                                        <button type="submit"
+                                                class="btn {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}} dimensions-landing__btn"
+                                                data-id="{{courseid}}"
+                                                data-instance="{{instanceid}}"
+                                                data-form="{{dataform}}"
+                                                data-title="{{datatitle}}">
+                                            {{#str}} landing_enrolbutton, theme_dimensions {{/str}}
+                                        </button>
+                                        <p class="dimensions-landing__note">{{#str}} landing_keynote, theme_dimensions {{/str}}</p>
+                                    </form>
+                                {{/requirespassword}}
+                                {{^requirespassword}}
+                                    <div class="dimensions-landing__method">
+                                        <a class="btn {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}} dimensions-landing__btn"
+                                           href="{{enrolurl}}">
+                                            {{#str}} landing_enrolbutton, theme_dimensions {{/str}}
+                                        </a>
+                                        <p class="dimensions-landing__note">{{#str}} landing_selfnote, theme_dimensions {{/str}}</p>
+                                    </div>
+                                {{/requirespassword}}
+                            {{/isself}}
+                            {{#isapply}}
+                                <form method="get" action="{{applyurl}}" class="dimensions-landing__method">
+                                    <input type="hidden" name="instance" value="{{instanceid}}">
+                                    <button type="submit"
+                                            class="btn {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}} dimensions-landing__btn"
+                                            data-id="{{courseid}}"
+                                            data-instance="{{instanceid}}"
+                                            data-form="{{dataform}}"
+                                            data-title="{{datatitle}}">
+                                        {{#str}} landing_applybutton, theme_dimensions {{/str}}
+                                    </button>
+                                    <p class="dimensions-landing__note">{{#str}} landing_applynote, theme_dimensions {{/str}}</p>
+                                </form>
+                            {{/isapply}}
+                            {{#isfee}}
+                                <form method="post" action="{{pageurl}}" class="dimensions-landing__method">
+                                    <div class="dimensions-landing__cost">{{costdisplay}}</div>
+                                    <button type="submit"
+                                            class="btn {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}} dimensions-landing__btn"
+                                            data-action="core_payment/triggerPayment"
+                                            data-component="enrol_fee"
+                                            data-paymentarea="fee"
+                                            data-itemid="{{instanceid}}"
+                                            data-cost="{{datacost}}"
+                                            data-successurl="{{successurl}}"
+                                            data-description="{{description}}">
+                                        {{#str}} landing_enrolbutton, theme_dimensions {{/str}}
+                                    </button>
+                                </form>
+                            {{/isfee}}
+                            {{#isguest}}
+                                <div class="dimensions-landing__method dimensions-landing__method--guest">
+                                    <a class="btn {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-secondary{{/primary}} dimensions-landing__btn"
+                                       href="{{guesturl}}">
+                                        {{#str}} landing_guestbutton, theme_dimensions {{/str}}
+                                    </a>
+                                    {{#guestnote}}
+                                        <p class="dimensions-landing__note">{{#str}} landing_guestnote, theme_dimensions {{/str}}</p>
+                                        <p class="dimensions-landing__note"><a href="{{loginurl}}">{{#str}} landing_enrolledlogin, theme_dimensions {{/str}}</a></p>
+                                    {{/guestnote}}
+                                </div>
+                            {{/isguest}}
+                            {{#isfallback}}
+                                <div class="dimensions-landing__method dimensions-landing__widget">
+                                    {{{widgethtml}}}
+                                </div>
+                            {{/isfallback}}
+                        </div>
+                    {{/methods}}
+                </div>
+            </div>
+        </aside>
+    </div>
+    {{#bar}}
+        <div class="dimensions-landing__bar">
+            <a class="btn btn-primary dimensions-landing__btn" href="{{url}}">{{label}}</a>
+            {{#note}}<p class="dimensions-landing__barnote">{{.}}</p>{{/note}}
+        </div>
+    {{/bar}}
+</div>

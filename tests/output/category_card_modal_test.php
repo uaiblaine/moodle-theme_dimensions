@@ -32,9 +32,9 @@ use theme_dimensions\local\category\cards;
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\population;
-use theme_dimensions\local\hotsite\links;
-use theme_dimensions\local\hotsite\redirector;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\links;
+use theme_dimensions\local\landing\redirector;
+use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -45,8 +45,8 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  *
  * The secondary button is the card's own link and nothing else, so each of its destinations is asked
  * of a reader the card's rule sends there: staff who may walk in to the course, a learner to the
- * hotsite of a course that chose one, else to the standard enrolment page, a visitor to nothing when
- * there is no hotsite. The primary button is the state's word over the same rule; every assertion of
+ * landing page of a course that chose one, else to the standard enrolment page, a visitor to nothing when
+ * there is no landing page. The primary button is the state's word over the same rule; every assertion of
  * one state has a neighbour of another state in the same fixture, and the collapse of two buttons
  * into one is asserted beside a pair that stays two.
  *
@@ -77,9 +77,9 @@ final class category_card_modal_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
         $this->enable_enrol('self');
         $this->enable_enrol('guest');
 
@@ -92,34 +92,34 @@ final class category_card_modal_test extends \advanced_testcase {
             if ($model > 0) {
                 $handler->instance_form_save((object) [
                     'id' => $record->id,
-                    'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
+                    'customfield_' . landingfields::SHORTNAME_MODEL => $model,
                 ]);
             }
             return (int) $record->id;
         };
 
-        $this->ids['enrolled'] = $make('Curso Inscrito', hotsitefields::MODEL_COURSE);
+        $this->ids['enrolled'] = $make('Curso Inscrito', landingfields::MODEL_COURSE);
         $generator->enrol_user($learner->id, $this->ids['enrolled']);
-        $this->ids['free'] = $make('Curso Livre', hotsitefields::MODEL_COURSE);
+        $this->ids['free'] = $make('Curso Livre', landingfields::MODEL_COURSE);
         $this->enable_instance($this->ids['free'], 'guest');
-        $this->ids['open'] = $make('Curso Aberto', hotsitefields::MODEL_COURSE);
+        $this->ids['open'] = $make('Curso Aberto', landingfields::MODEL_COURSE);
         $this->enable_instance($this->ids['open'], 'self');
-        $this->ids['openplain'] = $make('Curso Aberto Sem Hotsite', 0);
+        $this->ids['openplain'] = $make('Curso Aberto Sem Landing page', 0);
         $this->enable_instance($this->ids['openplain'], 'self');
-        $this->ids['none'] = $make('Curso Fechado', hotsitefields::MODEL_COURSE);
-        $this->ids['noneplain'] = $make('Curso Fechado Sem Hotsite', 0);
-        $this->ids['event'] = $make('Evento Futuro', hotsitefields::MODEL_EVENT, [
+        $this->ids['none'] = $make('Curso Fechado', landingfields::MODEL_COURSE);
+        $this->ids['noneplain'] = $make('Curso Fechado Sem Landing page', 0);
+        $this->ids['event'] = $make('Evento Futuro', landingfields::MODEL_EVENT, [
             'startdate' => time() + 5 * DAYSECS,
             'enddate' => time() + 6 * DAYSECS,
         ]);
-        $this->ids['held'] = $make('Evento Passado', hotsitefields::MODEL_EVENT, [
+        $this->ids['held'] = $make('Evento Passado', landingfields::MODEL_EVENT, [
             'startdate' => time() - 3 * DAYSECS,
             'enddate' => time() - 2 * DAYSECS,
         ]);
         $this->enable_instance($this->ids['held'], 'self');
         // A window that opens later, the one refusal: local_unlistedcourses' batch dates it.
         $this->opens = time() + 3 * DAYSECS;
-        $this->ids['ahead'] = $make('Curso Abre Depois', hotsitefields::MODEL_COURSE);
+        $this->ids['ahead'] = $make('Curso Abre Depois', landingfields::MODEL_COURSE);
         $this->enable_instance($this->ids['ahead'], 'self', ['enrolstartdate' => $this->opens, 'customint6' => 1]);
         $this->ids['root'] = (int) $root->id;
         return $learner;
@@ -196,8 +196,8 @@ final class category_card_modal_test extends \advanced_testcase {
     /**
      * The secondary button goes where the card's own link goes, for each kind of reader the card's rule knows.
      *
-     * Staff who may walk in are sent to the course; a learner to the hotsite of a course that chose a model and to
-     * the standard enrolment page of one that did not; a visitor to the hotsite, and to nothing at all where the
+     * Staff who may walk in are sent to the course; a learner to the landing page of a course that chose a model and to
+     * the standard enrolment page of one that did not; a visitor to the landing page, and to nothing at all where the
      * course has none, whose card links nowhere either. The label names the course, or the event.
      */
     public function test_the_secondary_button_is_the_cards_own_link_for_every_reader(): void {
@@ -214,10 +214,10 @@ final class category_card_modal_test extends \advanced_testcase {
 
         $this->become($learner);
         $cards = $this->cards();
-        $hotsite = $cards[$this->ids['none']];
-        $this->assertSame(classifier::STATE_NONE, $hotsite->state, 'Precondition: nothing on offer.');
-        $this->assertSame(links::page($this->ids['none'])->out(false), $hotsite->modal['secondary']['url']);
-        $this->assertTrue($hotsite->modal['hassecondary']);
+        $landing = $cards[$this->ids['none']];
+        $this->assertSame(classifier::STATE_NONE, $landing->state, 'Precondition: nothing on offer.');
+        $this->assertSame(links::page($this->ids['none'])->out(false), $landing->modal['secondary']['url']);
+        $this->assertTrue($landing->modal['hassecondary']);
         $plain = $cards[$this->ids['noneplain']];
         $this->assertSame(self::enrol_url($this->ids['noneplain']), $plain->modal['secondary']['url']);
         $this->assertSame($plain->url, $plain->modal['secondary']['url'], 'Exactly the card\'s own link.');
@@ -226,9 +226,9 @@ final class category_card_modal_test extends \advanced_testcase {
         $event = $cards[$this->ids['event']];
         $this->assertSame(get_string('category_modal_eventpage', self::COMPONENT), $event->modal['secondary']['label']);
         $this->assertSame(links::page($this->ids['event'])->out(false), $event->modal['secondary']['url']);
-        $this->assertSame(get_string('category_modal_coursepage', self::COMPONENT), $hotsite->modal['secondary']['label']);
+        $this->assertSame(get_string('category_modal_coursepage', self::COMPONENT), $landing->modal['secondary']['label']);
 
-        // A visitor: the hotsite where there is one, and no button at all where there is none.
+        // A visitor: the landing page where there is one, and no button at all where there is none.
         $visitor = $this->card($this->ids['none'], null, true);
         $this->assertSame(links::page($this->ids['none'])->out(false), $visitor->modal['secondary']['url']);
         $this->become($learner);
@@ -243,7 +243,7 @@ final class category_card_modal_test extends \advanced_testcase {
      * The primary button says the state, and goes where the card's rule sends that state.
      *
      * Enrolled and free walk into the course, which is the secondary's page too, so the dialogue draws the
-     * primary alone; "Enrol" goes to the hotsite, or to the standard page of a course with no hotsite, and is
+     * primary alone; "Enrol" goes to the landing page, or to the standard page of a course with no landing page, and is
      * likewise alone for a learner; staff who may walk in get "Enrol" AND the course page, the pair that stays two.
      */
     public function test_the_primary_button_follows_the_state_and_one_page_is_one_button(): void {
@@ -317,7 +317,7 @@ final class category_card_modal_test extends \advanced_testcase {
         $this->assertNotNull($cards[$this->ids['open']]->modal['primary']);
 
         $visitor = $this->card($this->ids['open'], null, true);
-        $this->assertNotNull($visitor->cta, 'Precondition: the visitor\'s card offers its hotsite.');
+        $this->assertNotNull($visitor->cta, 'Precondition: the visitor\'s card offers its landing page.');
         $this->assertNull($visitor->modal['primary'], 'A visitor\'s card knows no state to put a word to.');
         $this->assertSame(links::page($this->ids['open'])->out(false), $visitor->modal['secondary']['url']);
     }
@@ -377,9 +377,9 @@ final class category_card_modal_test extends \advanced_testcase {
         $learner = $this->seed();
         course_handler::create()->instance_form_save((object) [
             'id' => $this->ids['open'],
-            'customfield_' . hotsitefields::SHORTNAME_MODALITY => hotsitefields::MODALITY_INPERSON,
-            'customfield_' . hotsitefields::SHORTNAME_CITY => 'São Paulo',
-            'customfield_' . hotsitefields::SHORTNAME_WORKLOAD => 12,
+            'customfield_' . landingfields::SHORTNAME_MODALITY => landingfields::MODALITY_INPERSON,
+            'customfield_' . landingfields::SHORTNAME_CITY => 'São Paulo',
+            'customfield_' . landingfields::SHORTNAME_WORKLOAD => 12,
         ]);
         $this->become($learner);
         $cards = $this->cards();

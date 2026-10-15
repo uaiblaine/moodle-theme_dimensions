@@ -26,7 +26,7 @@ namespace theme_dimensions\output;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\coursenotice\builder;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 /**
  * Tests for the course notice as a page draws it: in place of Boost Union's hints, folded or not.
@@ -76,7 +76,7 @@ final class course_notice_test extends \advanced_testcase {
     }
 
     /**
-     * A course, optionally opted into a hotsite model.
+     * A course, optionally opted into a landing page model.
      *
      * @param int $model The page model (0 = none).
      * @param array $options Extra options for the course generator.
@@ -84,15 +84,15 @@ final class course_notice_test extends \advanced_testcase {
      */
     private function course(int $model = 0, array $options = []): \stdClass {
         \core_course\customfield\course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course($options);
         if ($model) {
             \core_course\customfield\course_handler::create()->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODEL => $model,
+                'customfield_' . landingfields::SHORTNAME_MODEL => $model,
             ]);
         }
         return get_course($course->id);
@@ -182,7 +182,7 @@ final class course_notice_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_promotion_section_is_drawn_unfolded_by_default(): void {
-        $course = $this->course(hotsitefields::MODEL_COURSE);
+        $course = $this->course(landingfields::MODEL_COURSE);
         $this->log_in_as($course, 'editingteacher');
         $html = $this->renderer($course)->course_notice();
 
@@ -192,10 +192,10 @@ final class course_notice_test extends \advanced_testcase {
         $this->assertStringContainsString('aria-controls="' . $uniqid . '-detail"', $html);
         $this->assertMatchesRegularExpression('~id="' . $uniqid . '-detail" data-region="dim-coursenotice-detail">~', $html);
         $this->assertMatchesRegularExpression('~data-region="dim-coursenotice-quick" hidden>~', $html);
-        $this->assertStringContainsString('id="' . $uniqid . '-hotsite"', $html);
-        $this->assertStringContainsString('data-clipboard-target="#' . $uniqid . '-hotsite"', $html);
+        $this->assertStringContainsString('id="' . $uniqid . '-landing"', $html);
+        $this->assertStringContainsString('data-clipboard-target="#' . $uniqid . '-landing"', $html);
         $this->assertStringContainsString('data-canpersist="1"', $html);
-        $this->assertStringContainsString(get_string('coursenotice_promotitle', hotsitefields::COMPONENT), $html);
+        $this->assertStringContainsString(get_string('coursenotice_promotitle', landingfields::COMPONENT), $html);
     }
 
     /**
@@ -204,7 +204,7 @@ final class course_notice_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_folded_promotion_section_keeps_its_bar(): void {
-        $course = $this->course(hotsitefields::MODEL_COURSE);
+        $course = $this->course(landingfields::MODEL_COURSE);
         $this->log_in_as($course, 'editingteacher');
         set_user_preference(course_notice::PREFERENCE_COLLAPSED, 1);
         $html = $this->renderer($course)->course_notice();
@@ -230,6 +230,6 @@ final class course_notice_test extends \advanced_testcase {
         $this->assertStringContainsString('data-key="' . builder::KEY_HIDDEN . '"', $html, 'Control: the notice is drawn.');
         $this->assertStringNotContainsString('dim-coursenotice-toggle', $html);
         $this->assertStringNotContainsString(' hidden>', $html);
-        $this->assertStringContainsString(get_string('coursenotice_title', hotsitefields::COMPONENT), $html);
+        $this->assertStringContainsString(get_string('coursenotice_title', landingfields::COMPONENT), $html);
     }
 }

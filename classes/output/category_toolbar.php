@@ -27,7 +27,7 @@ namespace theme_dimensions\output;
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\page_result;
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 
 /**
  * Builds the template context of the toolbar: search, the state chips, the facet groups, the view toggle.

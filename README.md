@@ -55,10 +55,11 @@ After installation the theme looks and behaves like Boost Union. Select it in *S
 Appearance > Themes > Theme selector* to activate it; its own settings live in *Site administration >
 Appearance > Boost Union > Dimensions*.
 
-Installing the theme creates two course custom field categories, *Hotsite* (the landing page fields)
-and *Focus mode* (one checkbox). They are created once and never deleted; fields whose short names
-already exist on the site are left alone. The five picture fields of *Hotsite* are created only where
-customfield_picture is installed and enabled.
+Installing the theme creates two course custom field categories, *Course landing page* (the landing
+page fields, their short names prefixed `dimensions_`) and *Focus mode* (one checkbox). They are created
+once and never deleted; fields whose short names already exist on the site are left alone. The five
+picture fields of *Course landing page* are created only where customfield_picture is installed and
+enabled.
 
 The theme assigns no brand colour of its own: the primary colour is Boost Union's (its brand colour
 setting, or a flavour's) and Boost's default blue otherwise, and a category nobody branded draws its
@@ -112,10 +113,10 @@ organised **by area** (one poster per subcategory, whose courses open in a panel
 
 ### Course landing pages
 
-Called "hotsite" in the code. A landing-style enrolment page for each course that opts in, at
-`/theme_dimensions/hotsite/<courseid>` on a site whose router is configured (and at
-`/theme/dimensions/hotsite.php?id=<courseid>` otherwise). A course opts in by choosing a page model
-(*Course* or *Event*) in the *Hotsite* custom fields of its settings, which also hold the modality,
+An enrolment page for each course that opts in, at `/theme_dimensions/landing/<courseid>` on a site
+whose router is configured (and at `/theme/dimensions/landing.php?id=<courseid>` otherwise). A course
+opts in by choosing a page model (*Course* or *Event*) in the *Course landing page* custom fields of its
+settings, which also hold the modality,
 workload, audience, programme, certification, venue, a reviewed public description, a presentation
 video address, up to four badges and a share picture. The page shows only the enrolment methods
 the current user can actually use, and `/enrol/index.php?id=N` forwards to it for a course with a

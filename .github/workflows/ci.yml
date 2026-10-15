@@ -33,7 +33,7 @@ jobs:
   # local_unlistedcourses is a declared dependency in version.php: the course
   # renderer calls its access predicates.
   #
-  # customfield_picture is optional and NOT in version.php: the hotsite's picture
+  # customfield_picture is optional and NOT in version.php: the landing page's picture
   # fields (the four badges and the share picture) are of its type, provisioned
   # and drawn only where it is installed and enabled. It is here so the suite
   # exercises that integration; the tests that need it skip themselves without it.

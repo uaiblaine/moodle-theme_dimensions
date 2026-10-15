@@ -7,7 +7,7 @@ repeat them here. This file keeps only what is true for this plugin.
 
 Plugin context: `theme_dimensions` ("Dimensions", repository `moodle-theme_dimensions`), a
 community Moodle **theme** — a grandchild of Boost, child of Boost Union — carrying its own login
-page, category showcase, course landing pages ("hotsite" in the code), focus mode and course notice
+page, category showcase, course landing pages, focus mode and course notice
 on top of Boost Union. It is meant to grow around the user experience of the owner's other plugins,
 Moodle's competency framework first, beside its siblings `local_dimensions`, `block_dimensions` and
 `block_compass`. It was imported from a private theme with the same feature set on Moodle 5.2; the
@@ -20,7 +20,7 @@ Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->suppor
 on Boost Union's `upgrade-503` branch until Boost Union tags its 5.3 release. Hard-depends on
 `theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);
 `customfield_picture`, `auth_loginsteps` and `local_page` are optional and asked for at run time, never
-declared (the first through `hotsitefields::picture_type_available()`, the other two by class name). CI is the moodle-an-hochschulen reusable workflow, one job in
+declared (the first through `landingfields::picture_type_available()`, the other two by class name). CI is the moodle-an-hochschulen reusable workflow, one job in
 `.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
 branch in `plugin-dependencies` at the same time (`upgrade-503` today, its stable branch once tagged).
 The theme is mounted on the shared stack **m503** at `theme/dimensions`; the 5.2 history below
@@ -163,20 +163,20 @@ classes/local/loginshell.php   Which login-layout pages (the second factor, the 
                                auth_loginsteps' shell; layout/login.php draws them, templates/loginshell.mustache
                                is their bare page, scss/loginshell.scss lays core's form into the column.
 classes/local/styleurl.php     The one vocabulary for a url printed inside url('...') in a style
-                               attribute: the hotsite hero's and the poster watermark's. Pure, no DB.
+                               attribute: the landing page hero's and the poster watermark's. Pure, no DB.
 classes/local/profileaccess.php   Who may reach another user's profile. Only ever PREVENTs.
 classes/recommendation/*.php   The theme's items in Boost Union's recommendations overview.
-classes/local/hotsite/publicfiles.php  The file route of the public hotsite: every check is in resolve().
-classes/local/hotsite/links.php   The one place a hotsite address is spelled: page(), share(), legacy(),
-                               and the guest entry's guest_page() and guest_share() (link type hotsiteguest).
-classes/local/hotsite/guestaccess.php  The guest entry: who is offered it (enabled, passwordless
+classes/local/landing/publicfiles.php  The file route of the public landing page: every check is in resolve().
+classes/local/landing/links.php   The one place a landing page address is spelled: page(), share(), legacy(),
+                               and the guest entry's guest_page() and guest_share() (link type landingguest).
+classes/local/landing/guestaccess.php  The guest entry: who is offered it (enabled, passwordless
                                enrol_guest), where it leads, and the guest login it performs.
-classes/output/hotsite_guestentry.php  The entry's interstitial: the hotsite's head tags and one POST form.
+classes/output/landing_guestentry.php  The entry's interstitial: the landing page's head tags and one POST form.
 classes/local/guesthome.php    The guest account's home page: an in-memory defaulthomepage, from after_config.
-classes/local/hotsite/request.php The whole hotsite decision, once, for both entries: a redirect or a page.
-classes/route/controller/hotsite.php  The route /theme_dimensions/hotsite/{course}: request → response.
-hotsite.php                       The script entry: 303 to the route while the router is configured, else serves.
-classes/local/hotsite/shortcode.php  Six spoken letters for the public address; pure, blocklist inside.
+classes/local/landing/request.php The whole landing page decision, once, for both entries: a redirect or a page.
+classes/route/controller/landing.php  The route /theme_dimensions/landing/{course}: request → response.
+landing.php                       The script entry: 303 to the route while the router is configured, else serves.
+classes/local/landing/shortcode.php  Six spoken letters for the public address; pure, blocklist inside.
 classes/shortlink_handler.php     Answers core's /p/{shortcode} route with links::page(). Found by name.
 classes/local/hook/course/before_course_deleted.php  Forgets a deleted course's short codes.
 classes/output/core_renderer.php  render_login() draws the theme's page or Boost Union's; render_from_template()
@@ -369,10 +369,10 @@ Two of the three carry a url, and both ask `classes/local/styleurl.php`:
 
 | sink | what it writes | guard |
 |---|---|---|
-| the hotsite hero (`hotsite_page::hero_image_url()`) | `background-image: url('…')`, double stash | `styleurl::safe()` |
+| the landing page hero (`landing_page::hero_image_url()`) | `background-image: url('…')`, double stash | `styleurl::safe()` |
 | the poster's watermark (`population::mark()`) | `--dim-mark: url('…')`, double stash | `styleurl::safe()` |
 | the category hero / directory band (`category_hero::style()`, `branding::hex()`) | colour channels | its own vocabulary: every value is parsed into integers and printed back |
-| the hotsite's workload bar (`hotsite_page::hero_comp()`) | `width: N%` on two spans | an integer from `(int) round()`, clamped to 0..100 in PHP |
+| the landing page's workload bar (`landing_page::hero_comp()`) | `width: N%` on two spans | an integer from `(int) round()`, clamped to 0..100 in PHP |
 
 - **The refusal is on the AMPERSAND, and that is the rule a relaxation would lose.** `&apos;` and
   `&rpar;` are a quote and a parenthesis to the CSS engine once the attribute is decoded, in a
@@ -384,7 +384,7 @@ Two of the three carry a url, and both ask `classes/local/styleurl.php`:
   the CSS parser reads the declaration - and `s()` deliberately does NOT re-escape a numeric
   reference the value already held (the `preg_replace` at its end restores `&amp;#39;` to `&#39;`),
   so that spelling survives too. Measured 2026-09-21 in a browser on the exact attribute string
-  `hotsite_page.mustache` emits for `https://example.com/a');background:red;x.png` - a url
+  `landing_page.mustache` emits for `https://example.com/a');background:red;x.png` - a url
   `clean_param(…, PARAM_URL)` hands back unchanged: `getAttribute('style')` came back already
   decoded, computed `backgroundColor` was `rgb(255, 0, 0)` and computed `backgroundImage` was
   `none`, against a control that stayed transparent and kept its image.
@@ -396,7 +396,7 @@ Two of the three carry a url, and both ask `classes/local/styleurl.php`:
   because a guard whose price is "the hero has no picture" must be known not to be charging it.
 - **Three gates, and one of them is a call site.** `login_logo_style_refused` and
   `login_logo_style_entities` keep the names they were written under (for the login band, gone with
-  the stepped registration's skin) and break the shared vocabulary (they redden the hotsite and
+  the stepped registration's skin) and break the shared vocabulary (they redden the landing page and
   guard tests at once); `hero_style_url_wired` breaks the hero's one line, which nothing else can
   see - the sink is in a template, so a method that quietly stopped asking would error nowhere and
   look right until the url that was built to be printed there arrived.
@@ -606,10 +606,10 @@ The theme adds four items to Boost Union's recommendations overview
 (`theme/boost_union/recommendations/overview.php`): `dimensions_profileveto` (core's
 `forceloginforprofiles`, without which the profile rule above is inert), `dimensions_unlistedcourses`
 (the dependency is installed, upgraded and at the required version), `dimensions_customfieldpicture`
-(every course field of `hotsitefields::definitions()` whose type the site has resolves - a warning
+(every course field of `landingfields::definitions()` whose type the site has resolves - a warning
 otherwise, fixed by `ensure_fields()` - and the optional Picture type is installed and enabled - a
-notice otherwise, because the plugin is recommended, not required) and `dimensions_hotsiteaddresses` (a notice while Moodle's router is not
-configured, so every hotsite is shared under its long address). The classes are in
+notice otherwise, because the plugin is recommended, not required) and `dimensions_landingaddresses` (a notice while Moodle's router is not
+configured, so every landing page is shared under its long address). The classes are in
 `classes/recommendation/`, sharing `base`, and `theme_dimensions_extend_burecommendations()` in
 `lib.php` names them.
 
@@ -622,7 +622,7 @@ configured, so every hotsite is shared under its long address). The classes are 
   manager builds new instances on every call, and a static would carry the last answer across the
   assertions of a test.
 
-## The hotsite fields in the course settings form
+## The landing page fields in the course settings form
 
 `classes/local/hook/course/after_form_definition.php` is the only place this theme
 touches the course edit form. Two facts about that form, both of which cost a bug:
@@ -638,9 +638,9 @@ touches the course edit form. Two facts about that form, both of which cost a bu
   and the documented way to place something after X is to insert it before X and then
   move X back over it —
   `$form->insertElementBefore($form->removeElement('foo', false), 'bar')`
-  (`lib/pear/HTML/QuickForm.php:643`). That is what the three calls placing the hotsite
+  (`lib/pear/HTML/QuickForm.php:643`). That is what the three calls placing the landing page
   link are; deleting the last two silently moves the link above the field it belongs to,
-  which is why `hotsite_link_place` is in the mutation spec.
+  which is why `landing_link_place` is in the mutation spec.
 
 The link itself is deliberately driven by the **stored** page model, never by the form:
 it opens the saved page, and the note under it says so, because an editor reading it as
@@ -649,9 +649,9 @@ inside `definition()` is fine — core does the same in `course/editsection_form
 `course/edit.php` is the form's only consumer, with every `$PAGE` call that would object
 to an early theme init already made before the form is built.
 
-## The public hotsite
+## The public landing page
 
-`hotsite.php` serves a course in local_unlistedcourses' PUBLIC state to visitors who are
+`landing.php` serves a course in local_unlistedcourses' PUBLIC state to visitors who are
 not logged in, with `forcelogin` left on. The facts that shape it:
 
 - **`forcelogin` is not an ambient gate.** It is a set of explicit reads in core, and this
@@ -669,7 +669,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   a visitor with the login page, before the course is looked up; a different answer per
   case would let an anonymous client enumerate course ids. The `wantsurl` brings somebody
   entitled back after logging in.
-- **The head tags go through `before_standard_head_html_generation`.** `hotsite.php` builds an
+- **The head tags go through `before_standard_head_html_generation`.** `landing.php` builds an
   `output\opengraph` before `$OUTPUT->header()` and the hook callback renders it; nothing
   overrides the renderer. Values travel in the PLAIN spelling and the template's double
   stashes escape once - the fixture is a course name with a bare ampersand.
@@ -677,7 +677,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   course summary, which was written for an internal audience. `og:site_name` is the site
   name; `og:locale` is the current language in Open Graph's spelling (`pt_BR`, not Moodle's `pt_br`). The page is `noindex` unless the site is
   open to search engines (`$CFG->opentowebcrawlers`, "Open to search engines" under Site
-  security settings): the owner's rule for every public page of the theme, the hotsite and the
+  security settings): the owner's rule for every public page of the theme, the landing page and the
   public category page alike, decided once for the site and never per page.
 - **`noclean` is off on a public course**, whoever is looking: the flag skips HTMLPurifier
   unconditionally, past even the trusted-author gate, and `moodle/course:update` is
@@ -705,7 +705,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   branches call `require_login()` under forcelogin (`lib/filelib.php` ~4964). So a public
   page mints URLs under `theme_dimensions` - areas `hero`, `summary`, `ogimage` -
   and `theme_dimensions_pluginfile()` hands them to `publicfiles::serve()`. Every
-  check is in `publicfiles::resolve()`: public NOW and carrying a hotsite model (the page
+  check is in `publicfiles::resolve()`: public NOW and carrying a landing page model (the page
   that minted the URL is not trusted, and the route is reachable exactly when the page is),
   the course id in the path is the context's own instance - the summary area looks its file
   up by the CONTEXT, so that is the sink where a mismatch would hand one course's files to a
@@ -742,10 +742,10 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   the very address the page printed, and nothing but `og_route_follows_source` sees that, because
   the page itself looks right. The hero area keeps the course image - the page shows that one.
 - **Every picture field of the theme is hidden, so the theme carries their files through a backup
-  itself, over `hotsitefields::PICTURE_SHORTNAMES`.** Core backs a picture file up only through the
+  itself, over `landingfields::PICTURE_SHORTNAMES`.** Core backs a picture file up only through the
   controllers of fields the acting user can view. A new picture field that is not in that list
-  restores as a row with no file, silently; the archive's element is still named `badge` so an
-  archive made before the share picture restores unchanged. Gates `backup_picture_rows`,
+  restores as a row with no file, silently. The archive names one `picture` element per row (there is
+  no older archive to read). Gates `backup_picture_rows`,
   `restore_picture_rows`.
 - **A test of a provisioned field's DEFINITION must provision the field itself.** The PHPUnit site's
   install already created every field, and `ensure_fields()` creates only the missing ones - so a
@@ -771,7 +771,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   absent, so every test sets it explicitly both ways and resets the DI container afterwards, because
   the router memoises its base path when it is built.
 - **Codes are minted in two places, both behind an editor's right**: the course form hook (an editor who
-  may edit the hotsite fields) and the course notice on the course home (`coursenotice\builder`,
+  may edit the landing page fields) and the course notice on the course home (`coursenotice\builder`,
   after its `moodle/course:update` check; gate `coursenotice_promo_cap`). Nothing a learner, a guest or a
   visitor opens may call `links::share()` or `guest_share()`. The page never needs the short address:
   canonical and `og:url` stay `links::page()`,
@@ -779,7 +779,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   would only add a redirect to every scrape.
 - **The page's decision is one block, `request::handle()`, and its order is a security property.** Visitor
   refusal before the course lookup, then the front page, the ghost, the model, the standard page's guards.
-  Both entries call it; neither decides anything itself. Extend the page there, never in `hotsite.php` or
+  Both entries call it; neither decides anything itself. Extend the page there, never in `landing.php` or
   the controller, or the two addresses drift apart.
 - **The route's shape is three decisions, each pinned by a mutation gate**: `method: ['GET', 'POST']`
   (the enrolment widgets and the no-JS transports post to `$FULLME`, which under the router is the
@@ -787,11 +787,11 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   `path_parameter(type: param::INT)`: core's `path_course` resolves id, `idnumber:` and `name:<shortname>`
   and throws not_found BEFORE the controller, a 404 for a missing course against a redirect for a real
   one, which is the existence oracle the visitor gate exists to close.
-- **`hotsite.php` answers 303, not 301, while the router is configured.** A browser caches a 301, and a
+- **`landing.php` answers 303, not 301, while the router is configured.** A browser caches a 301, and a
   router switched off later would strand every cached visitor on a route nothing answers. The redirect
   is issued before the course is looked up, so it reveals nothing about the id.
 - **Under the router `$SCRIPT` is `/r.php`**: core would derive the page type from it, so the shared
-  request spells `theme-dimensions-hotsite` (the value the script always had), and the theme's
+  request spells `theme-dimensions-landing` (the value the script always had), and the theme's
   `after_config` callback, which matches `$SCRIPT` against real scripts, is inert on the route - intended,
   the page ghosts itself. `opengraph::$current` is static: a route test that renders a public page resets
   it in `tearDown()`, or the tags leak onto the next test's page.
@@ -805,7 +805,7 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   two ids cost a round). Expected addresses are fine to spell AFTER the request, through the same router.
 - **Under PHPUnit `$OUTPUT->header()` renders nothing**, so a route test cannot read the head tags from
   the response body; the controller guards the write like core's `restricted_module` does, and
-  `hotsite_test` reads `opengraph::current()`, the registry the shared request arms, while
+  `landing_test` reads `opengraph::current()`, the registry the shared request arms, while
   `opengraph_test` pins the hook's rendering. The live check is a curl of the route.
 - **`local_unlistedcourses` memoises per course id in static arrays, and PHPUnit restores the
   sequences between tests**, so the first course of every test has the same id and one test's state
@@ -813,15 +813,15 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   ghosted. Reset the three memos in `setUp()` (`discoverability`, `access` and `category_access`, each
   with `reset_caches()`) in any test that sets a discoverability state.
 - **`I should see` cannot read an input's value**, so the address is a `<code>` element, not a readonly
-  input; core's `copy_to_clipboard` copies from either. The Behat step "I should see the hotsite address
+  input; core's `copy_to_clipboard` copies from either. The Behat step "I should see the landing page address
   of course" builds the expected text with `links::share()` in the CLI process, which is the short
   address on the stacks and the page's own under `mdl ci` (`php -S`, no rewrite, no `routerconfigured`).
 - **The guest entry logs a visitor in only from a POST carrying the session key**, never from a GET:
   link previewers and prefetchers fetch the shared address, and a GET that logged in would open a guest
-  session per scrape. The GET answers a 200 interstitial with the hotsite's own head tags (og:url and
-  canonical stay `links::page()`), whose form the module `hotsiteguest` submits - except on a history
+  session per scrape. The GET answers a 200 interstitial with the landing page's own head tags (og:url and
+  canonical stay `links::page()`), whose form the module `landingguest` submits - except on a history
   traversal, or Back from the course would bounce straight into it again. A missing or stale key is the
-  plain hotsite, never an error page. The branch sits after every guard of `request::handle()`, so an
+  plain landing page, never an error page. The branch sits after every guard of `request::handle()`, so an
   anonymous visitor reaches it only for a public course. **The route declares `guest` as a query
   parameter**: core's validator strips every undeclared one from the request the controller is handed.
   Under forcelogin the guest account still opens the course: `require_login()` reads no forcelogin,
@@ -905,7 +905,7 @@ facts the code rests on.
   context declares `additionaloptions` as an object where `category_action_bar` exports a
   rendered string, and this pipeline lints a plugin's templates while core's never are. The
   override's example carries a string; do not copy the object back.
-- **The hotsite kicker keeps `alwaysreturnhidden = true` for the anonymous visitor of a public
+- **The landing page kicker keeps `alwaysreturnhidden = true` for the anonymous visitor of a public
   course** and adds a guard for a LOGGED-IN viewer only; the plugin's `is_public()` already
   refuses a public course under an unlisted category, so nothing reaches the visitor path that
   it may not be told.
@@ -931,7 +931,7 @@ posters with the panel between their rows (round EL-1, 2026-09-24), search and f
 posters (round EL-2, 2026-09-25), the toolbar's controls in the design's skin (round EL-S,
 2026-09-26), search at the root (round EL-3, 2026-09-27), the pages strip (round T2,
 2026-09-27) and the visitor's live client with its web service and the cache decision (stages S1
-to S4, 2026-10-04 and 05); the enrolment matrix's state area on the card and the hotsite (stage 5b,
+to S4, 2026-10-04 and 05); the enrolment matrix's state area on the card and the landing page (stage 5b,
 2026-10-06) has a section of its own after them. They hold what a maintainer has to know before touching
 the code, and nothing else: read the section for the layer you are in. **The sections are by LAYER, not by round**, which is why round E2 - the
 public root of the course index and the directory's cut at twenty-five (2026-09-18) - has no section
@@ -986,13 +986,13 @@ renders. The facts the code rests on, in the order they bite:
   reads, so `population::page_contexts()` can rebuild the page's contexts with zero statements.
   `cards::values()` takes ROWS, not ids, for that reason: the first draft took ids and paid one
   context statement per card, which the P-slope budget test caught (20 reads at P=4, 64 at P=48).
-- **A filtered `format_text()` costs statements per new context, and three hotsite fields are
+- **A filtered `format_text()` costs statements per new context, and three landing page fields are
   textareas.** The first `format_text()` in a context runs `filter_get_active_in_context()` (a
   recordset: 3 reads on PostgreSQL) and then every active filter, `filter_activitynames` reading
   the course record per context; a page of 48 cards paid 94 reads against 18 for a page of 4, and
   a fixture without a textarea value never shows it. So a listing asks `values_many(..., false)`:
   the textareas are rewritten and cleaned exactly as core's `export_value()` does but with the
-  filter pass off, and only the hotsite (`values()`) runs the filters. `fixture::reads()` resets
+  filter pass off, and only the landing page (`values()`) runs the filters. `fixture::reads()` resets
   `$FILTERLIB_PRIVATE` and `filter_manager` before metering, as core's PHPUnit reset does; a
   budget test that skips that reset measures a warm cache, not the code.
 - **A chip is a filter; a link only where the page exists.** Under D20 the anonymous shell names
@@ -1003,7 +1003,7 @@ renders. The facts the code rests on, in the order they bite:
   And `create_course()` HIDES a course created inside a hidden category, so a fixture testing the
   category clamp passes `visible => 1` explicitly.
 - **The classifier may only err towards "open".** Its docblock names the per-plugin methods it
-  must agree with; the superset test runs it beside `hotsite\resolver` shape by shape. The one
+  must agree with; the superset test runs it beside `landing\resolver` shape by shape. The one
   grouped count uses enrol_apply's shape (non-expired rows), which can only make a full
   enrol_self instance look open, never an open one look full - pinned by a test of its own.
 - **Guest access behind a key reads key, for a real user and for the guest account alike** (enrolment
@@ -1014,11 +1014,11 @@ renders. The facts the code rests on, in the order they bite:
   for every enabled instance. enrol_coursecompleted reads conditional for a viewer actively enrolled in
   the course `customint1` names, read off the viewer's own enrolments map at no statement, and nothing
   for anybody else; see the stage 5b section below.
-- **The hotsite's pending application is enrol_apply's queue predicate** (`ue.status` not active, and
+- **The landing page's pending application is enrol_apply's queue predicate** (`ue.status` not active, and
   `timeend` 0 or ahead) over the viewer's rows on every apply instance of the course, enabled or not,
   with the plugin enabled or not; the queue reads neither. The card's pending and waitlisted come from
   `access::classify_enrolment()` in local_unlistedcourses, which applies the same rule since its 5a
-  release, and the hotsite tells the waiting list apart through the same plugin's relationship. The
+  release, and the landing page tells the waiting list apart through the same plugin's relationship. The
   design record is the fleet's `moodle-dev/docs/enrolment-status-matrix/` (findings M4, M6, M8, M9).
 - **Facets are counted in PHP over one O(N)-row statement (D22)**, each group with the other
   groups' filters applied; the `GROUP BY` with capped exception lists survives only in the
@@ -1053,7 +1053,7 @@ What the code rests on, beyond the stage-2 facts above:
   hand; the card's context comes from the population's preload columns, its subcategory name from
   `page_result::$categorynames` (filled from the scope's rows in both page-cutting modes), the
   summary excerpt and the programme lines from a light tag-to-lines reduction with the text
-  filters OFF - the same rule as the hotsite textareas of a listing. The render-level budget in
+  filters OFF - the same rule as the landing page textareas of a listing. The render-level budget in
   `course_renderer_test` is 18 statements flat in N and in P; the two above the decision layer's
   16 are the root's context before the population preloads it and the filter load of the
   category description.
@@ -1232,7 +1232,7 @@ theme's first table and its cache, observer, event and uninstall. What the code 
 ## The category showcase: the anonymous shell (stage 5)
 
 Stage 5 built `category.php`, `classes/route/controller/category.php`, `classes/local/category/{request,publicaccess}.php`,
-the address helpers in `hotsite/links.php`, `redirector::category_page_target()`, the `after_config`
+the address helpers in `landing/links.php`, `redirector::category_page_target()`, the `after_config`
 forward, `opengraph::for_category()`, the public branch and the og area of `branding`. What the code rests on:
 
 - **One decision, `request::handle()`, in an order that is a security property**: a logged-in session
@@ -1274,14 +1274,14 @@ forward, `opengraph::for_category()`, the public branch and the og area of `bran
   everyone instead, which the visitor tests read. Apply every new gate to a copy and ask which
   test reddens BEFORE trusting the sweep's count.
 - **A visitor's card has no link to a page that answers a visitor with the login form.** A public
-  course without a hotsite model has nowhere a visitor may go: the title is plain text
+  course without a landing page model has nowhere a visitor may go: the title is plain text
   (`hasurl`), the CTA absent; the course contacts are named to a logged-in reader only, as the
-  hotsite names nobody to the internet, while the summary excerpt is shown as the hotsite shows it.
+  landing page names nobody to the internet, while the summary excerpt is shown as the landing page shows it.
 - **Every image a PUBLIC page emits goes through the theme's own file route, never core's.** Core's
   `course/overviewfiles` and `course/summary` run `require_login()` inside `file_pluginfile()` while
   the site forces login, so a visitor's browser fetches the LOGIN PAGE where a picture should be -
-  303, `text/html`, and a card with no cover. The hotsite knew (its `hero_image_url()` docblock and
-  `hotsite_page_test` both say so); the category listing did not, because `cards::images()` was
+  303, `text/html`, and a card with no cover. The landing page knew (its `hero_image_url()` docblock and
+  `landing_page_test` both say so); the category listing did not, because `cards::images()` was
   written for the logged-in page and reused unchanged, and it shipped through stage 6 with a green
   suite. **That is the shape to look for: a builder written for the logged-in shell, called by the
   public one.** Nothing catches it locally - every browser session is logged in and PHPUnit fetches
@@ -1634,7 +1634,7 @@ recorded in the original design record (not part of this repository) under **Rou
   failed against code that was already correct.
 - **`og:description` has exactly one source, and the shape of its defect is a preview that
   WORKS.** `opengraph::for_category()` reads `publicsummary` and nothing else, as `for_course()`
-  reads the hotsite's reviewed field. Reading the tagline again - which is what the gate
+  reads the landing page's reviewed field. Reading the tagline again - which is what the gate
   `og_category_from_summary` writes - puts a line under every shared link of every category that
   has a tagline, and nothing on any screen says it was not reviewed for that audience. With the
   fallback gone, `for_category()` no longer calls `format_text()` at all, so the stage-5 rule that
@@ -1682,8 +1682,8 @@ these are the facts a maintainer must not lose.
 
 - **A course card wears the COURSE's badges, a category surface the CATEGORY's, and neither ever
   borrows the other's.** They are different files, uploaded by different people, in different
-  places: a course's are the hotsite's four `customfield_picture` fields, a category's are the
-  three file areas of `branding`. A course with no hotsite model shows no crest and inherits
+  places: a course's are the landing page's four `customfield_picture` fields, a category's are the
+  three file areas of `branding`. A course with no landing page model shows no crest and inherits
   nothing from its category; a child category inherits nothing from its parent. The rule reads
   like a nicety and is the one thing in this round that can go wrong while every page still looks
   deliberate, which is why it has three gates (`card_badges_are_the_courses`,
@@ -1702,19 +1702,19 @@ these are the facts a maintainer must not lose.
   getimagesize()-based and answers false for an SVG, so keeping it would 404 every crest.
   Measured here: core's `file_system::get_imageinfo_from_path()` PARSES an SVG for its `viewBox`
   instead, so a parseable SVG passes that check. The decision stands because it matches the
-  hotsite byte for byte; what it really costs is that a badge area serves whatever reached it,
+  landing page byte for byte; what it really costs is that a badge area serves whatever reached it,
   which `branding_test` asserts with a file core refuses as an image beside the hero area
   refusing the same bytes. **Whoever revisits this has the choice the analysis thought it did not
   have.** **REVERTED BY THE OWNER ON 2026-09-18 (round D2): the badge branch runs
   `is_valid_image()` exactly as the hero branch does.** The paragraph above stands as the record of
   why it was ever skipped; what changed is only the verdict on it - the exemption admitted nothing a
   browser can draw, and a file area serving a same-origin `.html` is the cost nobody was buying
-  anything with. The hotsite's own badge route runs the same check (and the same ghost rule as its page),
+  anything with. The landing page's own badge route runs the same check (and the same ghost rule as its page),
   pinned by the gates `files_badge_valid_image` and `files_badge_ghost`; `badge_route_valid_image`
   is the category route's.
 - **Core forces `Content-Disposition: attachment` on every SVG it sends** (`send_file()`, unless
-  the caller passes `dontforcesvgdownload`, which neither this route nor the hotsite's does). Not
-  measured in a browser this round; it is the same code path the hotsite's badges have always
+  the caller passes `dontforcesvgdownload`, which neither this route nor the landing page's does). Not
+  measured in a browser this round; it is the same code path the landing page's badges have always
   taken.
 - **The crests live in the card's BADGE ROW, not in the media band**, although the card view
   paints them over the image: one markup serves both views, and the list view moves them into the
@@ -1734,7 +1734,7 @@ these are the facts a maintainer must not lose.
 - **The crests cost no statement per card, and the statement they DO cost is not this round's.**
   Measured on m502: exporting a page of cards with a crest each costs **0 reads** at four cards
   and at twenty-four, while the four bulk reads go from 15 to 35 over the same two sizes - one
-  `{files}` statement per stored badge, inside `hotsitefields::values_many()`, which the listing
+  `{files}` statement per stored badge, inside `landingfields::values_many()`, which the listing
   has paid since stage 3 for badges nothing was showing. `budget_test` meters the export alone
   and primes the page's course contexts inside the meter, because `fixture::reads()` empties the
   context cache a real request still holds at that point and would otherwise charge each card a
@@ -2799,7 +2799,7 @@ status block, the design, the HTTP facts, the numbers and the cache verdicts. Wh
 - **The budget is a fixture's.** `get_public_category_rows_test` records 17 reads (PHP cut) or 19
   (SQL cut), flat in N and in P, and 1 for a refusal. Its fixture stores no crest: on m502's data flat
   12 reads 27 and flat 48 reads 51, one `{files}` statement per stored crest inside
-  `hotsitefields::values_many()` (round E1), so "flat in P" holds for a catalogue without crests only.
+  `landingfields::values_many()` (round E1), so "flat in P" holds for a catalogue without crests only.
 - **Proving a JavaScript mutation builds**: Moodle's eslint override for AMD applies to
   `**/amd/src/*.js` only, so a mutated copy is linted under such a path, in a scratch copy mounted at
   the plugin's mount point. Never mount a scratch directory BELOW `~/dev/moodle-502/public/...`:
@@ -2931,21 +2931,21 @@ a-f, the flows and the mockup); local_unlistedcourses 5a owns the rule. What the
 - **Suspended and expired rescue nothing.** The enrolments map keeps its flags for the population's
   rescue exactly as before (waitlisted sets pending) and carries the best `type` beside them for the
   card; the plugin's allow-list keeps no unlisted course discoverable for those two.
-- **Key goes to the standard enrolment page past the hotsite forward** (`redirector::standard_page()`):
-  the key form is enrol_guest's widget there, which the hotsite does not draw, so the card's own link
+- **Key goes to the standard enrolment page past the landing page forward** (`redirector::standard_page()`):
+  the key form is enrol_guest's widget there, which the landing page does not draw, so the card's own link
   would cost a redirect and a second click.
 - **The prerequisite's name is read once per page with its context** (`cards::prerequisites()`) and
   formatted in the plain spelling for the pill's double stash; `badge.label` stays `PARAM_TEXT`, which
   `format_string()`'s tag stripping already satisfies. The classifier names a prerequisite only to a
   viewer actively enrolled in it, so "View prerequisite" opens a course the reader may enter.
-- **The hotsite carries the relationship on `resolution`, not as new states**: the methods and the
+- **The landing page carries the relationship on `resolution`, not as new states**: the methods and the
   mobile bar of an open area survive a suspension or an end, a scheduled enrolment now lists the
   methods beside it (D2), and a conditional note replaces the closed sentence only where nothing is
   open. enrol_coursecompleted is no fallback widget any more: its hook names the prerequisite to any
   reader, and the resolver asks `access::get_next_action()` for it instead.
 - **`theme_dimensions_course_badges()` is the crests' only public door** (block_compass reads
   it through `component_callback()`), and it shares `category_card::crests()` with the card, which now
-  draws no crest for a course with no hotsite model: badge files survive a cleared model, and the
+  draws no crest for a course with no landing page model: badge files survive a cleared model, and the
   route refuses them. It answers only for the courses the badge route would serve the reader,
   `publicfiles::viewer_may_see_many()`, which is `viewer_may_see()` read in bulk: a crest's address and
   alt text name the file, so a caller that passes unfiltered ids must learn nothing about a hidden or
@@ -3195,12 +3195,12 @@ the original design record (not part of this repository); what follows is what a
   auth_loginsteps' CPF mask is armed must visit `/login/index.php?nocpf=1` first; the theme's own
   features do not arm it (the plugin is not a CI dependency).
 - **customfield_picture is optional, and the suite says so test by test.** Every test that writes
-  picture data, or asserts a picture field, skips itself when `hotsitefields::picture_type_available()`
+  picture data, or asserts a picture field, skips itself when `landingfields::picture_type_available()`
   is false; the provisioning tests count only what the site can hold. That method reads the disk and
   the type's own `disabled` config, never the plugin manager, whose installed list may be cached
   earlier in the very install run that calls `ensure_fields()`. The suite cannot uninstall the
   plugin, so a DISABLED type stands in for an absent one in the tests that pin the skip (core hides
-  a disabled type's fields too). The Behat badge scenario of `*_hotsite.feature` carries
+  a disabled type's fields too). The Behat badge scenario of `*_landing.feature` carries
   `@customfield_picture`: a site without the plugin runs with `--tags '~@customfield_picture'`.
 - The Behat user generator sets `password = username` when none is given, which is what
   `I log in as` relies on; custom profile values go in as `profile_field_<shortname>`

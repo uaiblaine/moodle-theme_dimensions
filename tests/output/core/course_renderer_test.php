@@ -37,7 +37,7 @@ use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\facets;
 use theme_dimensions\local\category\fixture;
 use theme_dimensions\local\category\population;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 use theme_dimensions\output\category_hero;
 use theme_dimensions\output\category_toolbar;
 use theme_dimensions\output\category_listing;
@@ -711,10 +711,10 @@ final class course_renderer_test extends \advanced_testcase {
         $CFG->courseoverviewfileslimit = 1;
         $CFG->courseoverviewfilesext = '.jpg,.gif,.png';
         $CFG->coursecontact = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODEL, 'theme_dimensions');
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL, 'theme_dimensions');
         return self::getDataGenerator()->create_user();
     }
 
@@ -742,8 +742,8 @@ final class course_renderer_test extends \advanced_testcase {
             $course = $generator->create_course(['category' => $categories[$i % count($categories)]->id]);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODEL => 1 + ($i % 2),
-                'customfield_' . hotsitefields::SHORTNAME_PROGRAMME . '_editor' => [
+                'customfield_' . landingfields::SHORTNAME_MODEL => 1 + ($i % 2),
+                'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
                     'text' => "<p>Programme {$i}</p>", 'format' => FORMAT_HTML,
                 ],
             ]);

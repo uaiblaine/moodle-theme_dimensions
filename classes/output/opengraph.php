@@ -25,18 +25,18 @@
 namespace theme_dimensions\output;
 
 use theme_dimensions\local\category\branding;
-use theme_dimensions\local\hotsite\publicfiles;
+use theme_dimensions\local\landing\publicfiles;
 
 /**
  * The head tags of a public page: Open Graph, canonical link and robots directive.
  *
- * Three pages carry them, and all three are anonymous surfaces of this theme: a course's hotsite
+ * Three pages carry them, and all three are anonymous surfaces of this theme: a course's landing page
  * ({@see for_course()}), a category's public page ({@see for_category()}) and the root of the
  * course index ({@see for_root()}). One class and one template for all of them, because a social
  * scraper reads the same tags either way; what differs is only where each value is read from -
  * the category's are in its branding, and the root's are the site's own, it having none.
  *
- * Built by the page's request (\theme_dimensions\local\hotsite\request and
+ * Built by the page's request (\theme_dimensions\local\landing\request and
  * \theme_dimensions\local\category\request) before output starts, registered with
  * {@see set()}, and rendered into the document head by the before_standard_head_html_generation
  * hook callback. Every value is held in the plain spelling and the template's double stashes
@@ -95,11 +95,11 @@ class opengraph implements \core\output\named_templatable, \core\output\renderab
     }
 
     /**
-     * The tags for a course's hotsite.
+     * The tags for a course's landing page.
      *
      * @param \stdClass $course The course record.
      * @param string|null $description The course's public description in the plain spelling, or null.
-     * @param \moodle_url $url The hotsite's own URL.
+     * @param \moodle_url $url The landing page's own URL.
      * @return opengraph The tags.
      */
     public static function for_course(\stdClass $course, ?string $description, \moodle_url $url): opengraph {
@@ -128,7 +128,7 @@ class opengraph implements \core\output\named_templatable, \core\output\renderab
      * The title is the category's name in the plain spelling. The description is the branding's
      * own public description and nothing else - the short field written for exactly this, capped
      * at {@see branding::PUBLICSUMMARY_MAXLENGTH} characters, as {@see for_course()} reads the
-     * hotsite's reviewed field. A category whose field is empty gets no og:description at all,
+     * landing page's reviewed field. A category whose field is empty gets no og:description at all,
      * because an empty tag is worse for a preview than none. The tagline does not feed it: it is
      * written for the reader already on the page, not reviewed for a shared link. The image is
      * the 1200x630 derivative the branding route serves, or nothing.

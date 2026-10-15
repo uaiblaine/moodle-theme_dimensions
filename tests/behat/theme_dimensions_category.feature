@@ -705,7 +705,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     # The cover goes through the theme's own file route: core's own answers a visitor with the
     # login page while forcelogin is on, which is what this scenario has switched on. This scenario
     # runs without a browser and loads no image, so the address is what is pinned here.
-    # Proved on a course that has a hotsite model (the Background gives PUBC one); the model-less
+    # Proved on a course that has a landing page model (the Background gives PUBC one); the model-less
     # course, which the cover area exists for, is pinned at resolve() level by publicfiles_test -
     # the address a card mints does not depend on the model.
     And the "src" attribute of "img.dim-card__image" "css_element" should contain "/theme_dimensions/cover/"

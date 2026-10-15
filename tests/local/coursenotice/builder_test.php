@@ -25,8 +25,8 @@
 namespace theme_dimensions\local\coursenotice;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-use theme_dimensions\local\hotsite\links;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landing\links;
+use theme_dimensions\local\landingfields;
 
 /**
  * Tests for the course notice's decisions: every Boost Union hint, the promotion section and the page gate.
@@ -109,7 +109,7 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
-     * A course, optionally opted into a hotsite model with a modality.
+     * A course, optionally opted into a landing page model with a modality.
      *
      * @param int $model The page model (0 = none).
      * @param array $options Extra options for the course generator.
@@ -118,18 +118,18 @@ final class builder_test extends \advanced_testcase {
      */
     private function course(int $model = 0, array $options = [], int $modality = 0): \stdClass {
         \core_course\customfield\course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
 
         // Saved as the administrator: instance_form_save() drops the fields the current user may not
         // edit. Every test sets the user it needs afterwards.
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course($options);
         if ($model) {
-            $data = (object) ['id' => $course->id, 'customfield_' . hotsitefields::SHORTNAME_MODEL => $model];
+            $data = (object) ['id' => $course->id, 'customfield_' . landingfields::SHORTNAME_MODEL => $model];
             if ($modality) {
-                $data->{'customfield_' . hotsitefields::SHORTNAME_MODALITY} = $modality;
+                $data->{'customfield_' . landingfields::SHORTNAME_MODALITY} = $modality;
             }
             \core_course\customfield\course_handler::create()->instance_form_save($data);
         }
@@ -184,14 +184,14 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
-     * The hotsite's short codes of a course, both types.
+     * The landing page's short codes of a course, both types.
      *
      * @param \stdClass $course The course.
      * @return int How many rows core's shortlink table holds for it.
      */
     private function codes(\stdClass $course): int {
         global $DB;
-        return $DB->count_records('shortlink', ['component' => hotsitefields::COMPONENT, 'identifier' => (string) $course->id]);
+        return $DB->count_records('shortlink', ['component' => landingfields::COMPONENT, 'identifier' => (string) $course->id]);
     }
 
     /**
@@ -279,7 +279,7 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_single_activity_course_is_promoted_on_its_activity_page(): void {
-        $single = $this->course(hotsitefields::MODEL_COURSE, ['format' => 'singleactivity', 'activitytype' => 'page']);
+        $single = $this->course(landingfields::MODEL_COURSE, ['format' => 'singleactivity', 'activitytype' => 'page']);
         $main = $this->getDataGenerator()->create_module('page', ['course' => $single->id, 'section' => 0]);
         $other = $this->getDataGenerator()->create_module('forum', ['course' => $single->id, 'section' => 0]);
         $modinfo = get_fast_modinfo($single);
@@ -288,7 +288,7 @@ final class builder_test extends \advanced_testcase {
         $notice = $this->build($this->page($single, '/mod/page/view.php', $modinfo->get_cm($main->cmid)));
         $this->assertNotNull($notice);
         $this->assertTrue($notice->promote);
-        $this->assertArrayHasKey(builder::KEY_HOTSITE, $notice->links);
+        $this->assertArrayHasKey(builder::KEY_LANDING, $notice->links);
 
         $this->assertNull($this->build($this->page($single, '/mod/forum/view.php', $modinfo->get_cm($other->cmid))));
     }
@@ -299,22 +299,22 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_promotion_section_is_for_course_editors_on_the_course_home(): void {
-        $course = $this->course(hotsitefields::MODEL_EVENT, [], hotsitefields::MODALITY_INPERSON);
+        $course = $this->course(landingfields::MODEL_EVENT, [], landingfields::MODALITY_INPERSON);
 
         $this->setUser($this->member($course, 'editingteacher'));
         $notice = $this->build($this->page($course));
         $this->assertTrue($notice->promote);
         $this->assertSame(
-            ['loginonly', 'hotsite'],
+            ['loginonly', 'landing'],
             array_keys($notice->chips),
-            'A course that is not public says so first, then names its hotsite.'
+            'A course that is not public says so first, then names its landing page.'
         );
-        $expected = get_string('coursenotice_chip_hotsitemodality', hotsitefields::COMPONENT, (object) [
-            'model' => get_string('hotsitefield_model_event', hotsitefields::COMPONENT),
-            'modality' => \core_text::strtolower(get_string('hotsitefield_modality_inperson', hotsitefields::COMPONENT)),
+        $expected = get_string('coursenotice_chip_landingmodality', landingfields::COMPONENT, (object) [
+            'model' => get_string('landingfield_model_event', landingfields::COMPONENT),
+            'modality' => \core_text::strtolower(get_string('landingfield_modality_inperson', landingfields::COMPONENT)),
         ]);
-        $this->assertSame($expected, $notice->chips[builder::KEY_HOTSITE]['label']);
-        $this->assertSame(links::share((int) $course->id)->out(false), $notice->links[builder::KEY_HOTSITE]['url']);
+        $this->assertSame($expected, $notice->chips[builder::KEY_LANDING]['label']);
+        $this->assertSame(links::share((int) $course->id)->out(false), $notice->links[builder::KEY_LANDING]['url']);
         $this->assertArrayHasKey(builder::KEY_LOGINONLY, $notice->notes);
         $this->assertNull($notice->notes[builder::KEY_LOGINONLY]['link'], 'An editing teacher may not publish.');
 
@@ -334,7 +334,7 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_notice_mints_for_an_editor_and_never_for_anybody_else(): void {
-        $course = $this->course(hotsitefields::MODEL_COURSE);
+        $course = $this->course(landingfields::MODEL_COURSE);
         $this->enable_guest($course);
         $this->assertSame(0, $this->codes($course), 'Precondition: nothing minted yet.');
 
@@ -349,10 +349,10 @@ final class builder_test extends \advanced_testcase {
 
         $this->setUser($this->member($course, 'editingteacher'));
         $notice = $this->build($this->page($course));
-        $this->assertSame(2, $this->codes($course), 'The editor\'s visit minted the hotsite\'s code and the guest entry\'s.');
+        $this->assertSame(2, $this->codes($course), 'The editor\'s visit minted the landing\'s code and the guest entry\'s.');
         $this->assertStringContainsString(
             '/p/' . links::existing_code((int) $course->id),
-            $notice->links[builder::KEY_HOTSITE]['url']
+            $notice->links[builder::KEY_LANDING]['url']
         );
         $this->assertStringContainsString(
             '/p/' . links::existing_code((int) $course->id, links::LINKTYPE_GUEST),
@@ -364,7 +364,7 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
-     * A course without a hotsite model has no promotion section and mints nothing, even for its editor.
+     * A course without a landing page model has no promotion section and mints nothing, even for its editor.
      *
      * @return void
      */
@@ -381,11 +381,11 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_guest_entry_is_offered_only_where_the_course_has_it(): void {
-        $course = $this->course(hotsitefields::MODEL_COURSE);
+        $course = $this->course(landingfields::MODEL_COURSE);
         $this->setUser($this->member($course, 'editingteacher'));
 
         $notice = $this->build($this->page($course));
-        $this->assertArrayHasKey(builder::KEY_HOTSITE, $notice->links, 'Control: the section is drawn.');
+        $this->assertArrayHasKey(builder::KEY_LANDING, $notice->links, 'Control: the section is drawn.');
         $this->assertArrayNotHasKey(builder::KEY_GUEST, $notice->links, 'Guest access is off by default.');
         $this->assertArrayNotHasKey(builder::KEY_GUEST, $notice->chips);
 
@@ -406,7 +406,7 @@ final class builder_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_public_course_is_said_to_be_public(): void {
-        $course = $this->course(hotsitefields::MODEL_COURSE);
+        $course = $this->course(landingfields::MODEL_COURSE);
         $this->setAdminUser();
 
         $notice = $this->build($this->page($course));
@@ -431,11 +431,11 @@ final class builder_test extends \advanced_testcase {
      */
     public function test_without_the_router_nothing_is_minted_and_a_note_says_why(): void {
         $this->set_router(false);
-        $course = $this->course(hotsitefields::MODEL_COURSE);
+        $course = $this->course(landingfields::MODEL_COURSE);
         $this->setUser($this->member($course, 'editingteacher'));
 
         $notice = $this->build($this->page($course));
-        $this->assertSame(links::page((int) $course->id)->out(false), $notice->links[builder::KEY_HOTSITE]['url']);
+        $this->assertSame(links::page((int) $course->id)->out(false), $notice->links[builder::KEY_LANDING]['url']);
         $this->assertArrayHasKey(builder::KEY_ROUTEROFF, $notice->notes);
         $this->assertSame(0, $this->codes($course));
     }
@@ -596,7 +596,7 @@ final class builder_test extends \advanced_testcase {
      */
     public function test_the_guest_enrolment_chip_is_not_repeated_beside_the_guest_entry(): void {
         set_config('showhintcourseguestenrol', THEME_BOOST_UNION_SETTING_GUESTACCESSHINT_WITHOUTPASSWORD, builder::BU);
-        $course = $this->course(hotsitefields::MODEL_COURSE);
+        $course = $this->course(landingfields::MODEL_COURSE);
         $this->enable_guest($course);
         $this->setUser($this->member($course, 'editingteacher'));
 

@@ -23,9 +23,9 @@
  */
 
 /**
- * Carries the hotsite's pictures - the four badges and the share picture - through course backups.
+ * Carries the landing page's pictures - the four badges and the share picture - through course backups.
  *
- * The five picture fields are custom fields visible to nobody - the hotsite
+ * The five picture fields are custom fields visible to nobody - the landing page
  * and its shared link are their only display - and core's custom field handler runs the
  * picture type's backup AND restore callbacks only for fields the acting user
  * can view (customfield/classes/handler.php: backup_define_structure() and
@@ -37,9 +37,8 @@
  * the customfield_picture area of the course, and records the id and shortname
  * of every picture data row, which is what the restore side
  * ({@see restore_theme_dimensions_plugin}) needs to map the archived
- * files onto the rows core recreated. The elements keep the name
- * "badge" they had before the share picture joined them, so an archive made
- * then restores unchanged.
+ * files onto the rows core recreated. The elements are named "picture", one
+ * per picture data row, the crests and the share picture alike.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -57,24 +56,24 @@ class backup_theme_dimensions_plugin extends backup_theme_plugin {
         $pluginwrapper = new backup_nested_element($this->get_recommended_name());
         $plugin->add_child($pluginwrapper);
 
-        $badges = new backup_nested_element('badges');
-        $badge = new backup_nested_element('badge', ['id'], ['shortname']);
-        $pluginwrapper->add_child($badges);
-        $badges->add_child($badge);
+        $pictures = new backup_nested_element('pictures');
+        $picture = new backup_nested_element('picture', ['id'], ['shortname']);
+        $pluginwrapper->add_child($pictures);
+        $pictures->add_child($picture);
 
         // The shortnames are the theme's own constants, never user input.
         $shortnames = array_map(
             static fn(string $shortname): string => "'" . $shortname . "'",
-            \theme_dimensions\local\hotsitefields::PICTURE_SHORTNAMES
+            \theme_dimensions\local\landingfields::PICTURE_SHORTNAMES
         );
-        $badge->set_source_sql(
+        $picture->set_source_sql(
             "SELECT d.id, f.shortname
                FROM {customfield_data} d
                JOIN {customfield_field} f ON f.id = d.fieldid
               WHERE d.instanceid = ?
                 AND d.component = 'core_course'
                 AND d.area = 'course'
-                AND f.type = '" . \theme_dimensions\local\hotsitefields::PICTURE_TYPE . "'
+                AND f.type = '" . \theme_dimensions\local\landingfields::PICTURE_TYPE . "'
                 AND f.shortname IN (" . implode(', ', $shortnames) . ")",
             [backup::VAR_COURSEID]
         );

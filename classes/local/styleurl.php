@@ -27,8 +27,8 @@ namespace theme_dimensions\local;
 /**
  * The one sanitiser for a url this theme prints inside url('...') in an inline style.
  *
- * Its callers are the hotsite hero's background-image
- * ({@see \theme_dimensions\output\hotsite_page::hero_image_url()}) and the crest watermark
+ * Its callers are the landing page hero's background-image
+ * ({@see \theme_dimensions\output\landing_page::hero_image_url()}) and the crest watermark
  * of a category poster ({@see category\population::mark()}), each printed through a DOUBLE stash
  * inside a style attribute of the theme's own template. One class serves them both so that the
  * rule exists once.
@@ -49,7 +49,7 @@ namespace theme_dimensions\local;
  * and a browser's agreeing.
  *
  * The cost is that a url with a second query parameter is refused too, and a refusal means no
- * image at all (the hotsite hero shows the navy, the poster's watermark the theme's folder).
+ * image at all (the landing page hero shows the navy, the poster's watermark the theme's folder).
  * Today that costs nothing: every wired source builds through core's pluginfile url factory,
  * which rawurlencode()s each path segment
  * (core\url::set_slashargument()), so a file name holding a quote, a parenthesis, a space or an

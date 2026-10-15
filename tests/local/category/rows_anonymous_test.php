@@ -31,7 +31,7 @@ use local_unlistedcourses\discoverability;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use theme_dimensions\external\get_category_rows;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 use theme_dimensions\output\category_listing;
 use theme_dimensions\output\opengraph;
 
@@ -130,9 +130,9 @@ final class rows_anonymous_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
         $CFG->forcelogin = $forcelogin ? 1 : 0;
         $CFG->routerconfigured = false;
         $CFG->coursecontact = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
@@ -146,7 +146,7 @@ final class rows_anonymous_test extends \advanced_testcase {
             $course = self::getDataGenerator()->create_course(['category' => $categoryid, 'fullname' => $fullname] + $extra);
             $handler->instance_form_save((object) [
                 'id' => $course->id,
-                'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
             ]);
             if ($state !== null) {
                 discoverability::set_state((int) $course->id, $state, $adminid);

@@ -26,7 +26,7 @@ namespace theme_dimensions\form;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\category\branding;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 /**
  * Tests of the category appearance form: the vocabulary is the form's, and nothing outside it passes.
@@ -746,7 +746,7 @@ final class categoryhero_test extends \advanced_testcase {
      * The name is the contract: branding::form_data() prepares a draft area under it and
      * branding::save() reads the submission back under it, so an element renamed here would
      * store a manager's crest nowhere at all, with the page still saving and the form still
-     * reopening empty. The options are the hotsite's own limit and vocabulary, read from its
+     * reopening empty. The options are the landing page's own limit and vocabulary, read from its
      * constant rather than restated, because a crest a manager may put on a course must not be
      * refused on the course's category.
      *
@@ -777,9 +777,9 @@ final class categoryhero_test extends \advanced_testcase {
             );
         }
 
-        // The options, against the hotsite's own numbers.
+        // The options, against the landing page's own numbers.
         $options = branding::badge_options();
-        $this->assertSame(hotsitefields::CREST_MAXBYTES, (int) $options['maxbytes']);
+        $this->assertSame(landingfields::CREST_MAXBYTES, (int) $options['maxbytes']);
         $this->assertSame(['web_image'], $options['accepted_types']);
         $this->assertSame(1, (int) $options['maxfiles'], 'One file per slot: the slot IS the position.');
 

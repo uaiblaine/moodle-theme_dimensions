@@ -1,1 +1,1 @@
-s/->model !== hotsitefields::MODEL_EVENT\) \{/->model === -1) {/
+s/->model !== landingfields::MODEL_EVENT\) \{/->model === -1) {/

@@ -447,7 +447,7 @@ final class card_markup_test extends \advanced_testcase {
             );
         }
 
-        /* A visitor's card of a public course with no hotsite model draws its title as plain text,
+        /* A visitor's card of a public course with no landing page model draws its title as plain text,
            with no link and so no dim-card-titlelink: the heading still names itself, which is why
            the search term is marked there - a hook on the link alone would leave those titles
            unmarked in a visitor's panel. */

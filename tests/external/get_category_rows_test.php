@@ -36,7 +36,7 @@ use theme_dimensions\local\category\facets;
 use theme_dimensions\local\category\guard;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\rows;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -473,21 +473,21 @@ final class get_category_rows_test extends \advanced_testcase {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $category = $generator->create_category();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
-        $fieldid = (int) hotsitefields::get_field(hotsitefields::SHORTNAME_MODALITY)->get('id');
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        $fieldid = (int) landingfields::get_field(landingfields::SHORTNAME_MODALITY)->get('id');
         $online = $generator->create_course(['category' => $category->id]);
         $inperson = $generator->create_course(['category' => $category->id]);
         course_handler::create()->instance_form_save((object) [
             'id' => $online->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODALITY => 1,
+            'customfield_' . landingfields::SHORTNAME_MODALITY => 1,
         ]);
         course_handler::create()->instance_form_save((object) [
             'id' => $inperson->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODALITY => 2,
+            'customfield_' . landingfields::SHORTNAME_MODALITY => 2,
         ]);
-        set_config(facets::SETTING, hotsitefields::SHORTNAME_MODALITY, 'theme_dimensions');
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODALITY, 'theme_dimensions');
         $this->become($generator->create_user());
         $id = (int) $category->id;
 
@@ -612,29 +612,29 @@ final class get_category_rows_test extends \advanced_testcase {
      * asserts the value really arrives, which is what a reader of page two actually gets.
      */
     public function test_a_cards_crests_arrive_through_the_returns(): void {
-        if (!hotsitefields::picture_type_available()) {
+        if (!landingfields::picture_type_available()) {
             $this->markTestSkipped('customfield_picture is not installed or not enabled.');
         }
         $this->resetAfterTest();
         $this->setAdminUser();
         course_handler::reset_caches();
-        hotsitefields::reset_field_cache();
-        hotsitefields::ensure_fields();
-        hotsitefields::reset_field_cache();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
 
         $generator = self::getDataGenerator();
         $category = $generator->create_category();
         $course = $generator->create_course(['category' => $category->id]);
-        // A crest is drawn for a course carrying a hotsite model only: the badge route serves no other.
+        // A crest is drawn for a course carrying a landing page model only: the badge route serves no other.
         course_handler::create()->instance_form_save((object) [
             'id' => $course->id,
-            'customfield_' . hotsitefields::SHORTNAME_MODEL => hotsitefields::MODEL_COURSE,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
         ]);
         $bare = $generator->create_course(['category' => $category->id, 'fullname' => 'Sem crest']);
         /** @var \core_customfield_generator $customfields */
         $customfields = $generator->get_plugin_generator('core_customfield');
         $data = $customfields->add_instance_data(
-            hotsitefields::get_field(hotsitefields::SHORTNAME_CREST1),
+            landingfields::get_field(landingfields::SHORTNAME_CREST1),
             (int) $course->id,
             1
         );
@@ -1000,7 +1000,7 @@ final class get_category_rows_test extends \advanced_testcase {
         $this->assertSame((int) $nursing->id, $panel['id']);
         $this->assertSame('Enfermagem & Cia', $panel['name'], 'Plain: the sink escapes it.');
         $this->assertSame(
-            \theme_dimensions\local\hotsite\links::showcase((int) $nursing->id, [], false)->out(false),
+            \theme_dimensions\local\landing\links::showcase((int) $nursing->id, [], false)->out(false),
             $panel['titleurl'],
             'The title opens the area in its default organisation.'
         );
@@ -1106,7 +1106,7 @@ final class get_category_rows_test extends \advanced_testcase {
         /* The shell a panel draws before its rows arrive: the call to action under this request,
            in the newest-first order, labelled with the poster's own count. */
         $this->assertSame(
-            \theme_dimensions\local\hotsite\links::showcase((int) $nursing->id, ['sort' => 'recent'], false)->out(false),
+            \theme_dimensions\local\landing\links::showcase((int) $nursing->id, ['sort' => 'recent'], false)->out(false),
             $grouped['accordion'][0]['ctaurl']
         );
         $this->assertSame(
@@ -1144,7 +1144,7 @@ final class get_category_rows_test extends \advanced_testcase {
         $generator->create_course(['category' => $surgery->id, 'fullname' => 'Sutura']);
         $this->become($generator->create_user());
         $str = static fn(string $key, $a = null): string => get_string($key, 'theme_dimensions', $a);
-        $links = \theme_dimensions\local\hotsite\links::class;
+        $links = \theme_dimensions\local\landing\links::class;
         $pills = static fn(array $data): array => array_map(
             static fn(array $entry): array => [$entry['name'], $entry['resultlabel'], $entry['resultcount'], $entry['expandable']],
             $data['accordion']
@@ -1242,7 +1242,7 @@ final class get_category_rows_test extends \advanced_testcase {
         $generator->create_course(['category' => $surgery->id, 'fullname' => 'Sutura']);
         $this->become($generator->create_user());
         $str = static fn(string $key, $a = null): string => get_string($key, 'theme_dimensions', $a);
-        $links = \theme_dimensions\local\hotsite\links::class;
+        $links = \theme_dimensions\local\landing\links::class;
 
         $grouped = $this->data(['categoryid' => (int) $root->id, 'query' => '<3']);
         $this->assertSame('courses for “<3”: 17 in 1 area', $grouped['countline'], 'The count line carries the term.');

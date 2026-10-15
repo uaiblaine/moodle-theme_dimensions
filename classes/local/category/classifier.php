@@ -38,7 +38,7 @@ use local_unlistedcourses\access;
  * course), or nothing on offer.
  *
  * The next action is an approximation that may only err towards "open". The authoritative answer
- * is {@see \theme_dimensions\local\hotsite\resolver}, which the card links to and which
+ * is {@see \theme_dimensions\local\landing\resolver}, which the card links to and which
  * asks each enrol plugin its own question, one course at a time and with queries per instance; a
  * listing of thousands cannot pay that, so this class reproduces the SQL-expressible half of each
  * plugin's rule from a handful of bulk statements and leaves the rest to the page the card opens.

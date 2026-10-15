@@ -26,17 +26,17 @@ namespace theme_dimensions\recommendation;
 
 use core\url;
 use theme_boost_union\recommendation\recommendation;
-use theme_dimensions\local\hotsitefields;
+use theme_dimensions\local\landingfields;
 
 /**
  * Recommends the picture field type, and warns when one of the theme's course fields is missing.
  *
- * The hotsite badges, the share picture and the rest of the hotsite are course custom fields that
- * {@see hotsitefields::ensure_fields()} provisions. customfield_picture is recommended, not
+ * The landing page badges, the share picture and the rest of the landing page are course custom fields that
+ * {@see landingfields::ensure_fields()} provisions. customfield_picture is recommended, not
  * required: without it (or with it disabled) the five picture fields are not provisioned and not
  * drawn, everything else works, and the item is a notice. A missing field of a type the site HAS
  * is a warning. The check only reads: the fields resolve through
- * {@see hotsitefields::missing_definitions()}, after the request cache is dropped so a field
+ * {@see landingfields::missing_definitions()}, after the request cache is dropped so a field
  * deleted since the page began is seen. Creating the missing fields is safe to offer as a fix,
  * because the provisioner is idempotent and serialised under a lock and skips a type the site does
  * not have; installing or enabling a field type is a decision of the administrator's and is not
@@ -104,10 +104,10 @@ class customfieldpicture extends base {
      * @return string
      */
     protected function evaluate(): string {
-        $this->usable = hotsitefields::picture_type_available();
+        $this->usable = landingfields::picture_type_available();
 
-        hotsitefields::reset_field_cache();
-        $this->missing = array_keys(hotsitefields::missing_definitions());
+        landingfields::reset_field_cache();
+        $this->missing = array_keys(landingfields::missing_definitions());
 
         if ($this->missing !== []) {
             return recommendation::WARNING;
@@ -156,7 +156,7 @@ class customfieldpicture extends base {
      * @return void
      */
     public function autofix(): void {
-        hotsitefields::ensure_fields();
+        landingfields::ensure_fields();
         $this->forget_status();
     }
 }

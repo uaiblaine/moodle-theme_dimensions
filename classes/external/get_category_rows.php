@@ -88,7 +88,7 @@ use theme_dimensions\local\category\rows;
  * clean_returnvalue() throws invalid_response_exception - for the whole
  * response, not the row - whenever strip_tags() would change the value, which a
  * bare "<" followed by a non-space does. The card's excerpt and programme lines
- * are html_entity_decode()d out of the course summary and the hotsite
+ * are html_entity_decode()d out of the course summary and the landing page
  * textareas, so a course whose summary holds "&lt;3" decodes to "<3" and would
  * fail the page for everyone. So every string composed from a language string
  * is PARAM_TEXT, and every string carrying a course's own name or content is
@@ -583,7 +583,7 @@ class get_category_rows extends external_api {
                     'url' => new external_value(PARAM_URL, 'The badge image, through the theme\'s own file route.'),
                     'alt' => new external_value(PARAM_RAW, 'Its alternative text: the file name, as the editor named it.'),
                 ]),
-                'The course\'s own hotsite badges, in grid order; empty for a course with none.'
+                'The course\'s own landing page badges, in grid order; empty for a course with none.'
             ),
             'hasbadges' => new external_value(PARAM_BOOL, 'Whether there are badges to draw.'),
             'badgeslabel' => new external_value(PARAM_TEXT, 'The label of the badge list.'),

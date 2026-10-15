@@ -36,7 +36,7 @@ use core_customfield\field_controller;
  * The switch is a core course custom field of type checkbox rather than a table of
  * this theme's own, so it backs up, restores and bulk-uploads with no plugin code -
  * tool_uploadcourse writes it through its customfield_<shortname> column. Modelled
- * on {@see hotsitefields}: idempotent, serialised under a core Lock API lock,
+ * on {@see landingfields}: idempotent, serialised under a core Lock API lock,
  * guarded on the customfield tables existing, called from db/install.php.
  *
  * The field is created once and never deleted: it holds what course authors decided
@@ -131,7 +131,7 @@ final class focusmodefields {
      * Invoked from db/install.php, and by any upgrade step that introduces
      * the field. Guarded on the customfield tables existing, not on during_initial_install() -
      * that stays true for the whole of a fresh site install, which is exactly when
-     * db/install.php runs (the same reasoning as {@see hotsitefields::ensure_fields()}).
+     * db/install.php runs (the same reasoning as {@see landingfields::ensure_fields()}).
      *
      * @return void
      */

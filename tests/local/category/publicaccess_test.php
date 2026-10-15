@@ -211,7 +211,7 @@ final class publicaccess_test extends \advanced_testcase {
     /**
      * Without the predicate class nothing is public: the adapter fails closed.
      *
-     * The opposite of {@see \theme_dimensions\local\hotsite\redirector::is_category_ghosted()},
+     * The opposite of {@see \theme_dimensions\local\landing\redirector::is_category_ghosted()},
      * on purpose. The control is the same category through the real predicate, which says yes.
      *
      * @return void

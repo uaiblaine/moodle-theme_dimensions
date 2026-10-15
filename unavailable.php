@@ -18,7 +18,7 @@
  * Theme Dimensions - Generic "not available" page
  *
  * Where a viewer who must not learn that a course or a category exists is sent
- * ({@see \theme_dimensions\local\hotsite\redirector::ghost_url()}).
+ * ({@see \theme_dimensions\local\landing\redirector::ghost_url()}).
  * It takes no parameters on purpose: an id in the URL would carry exactly the
  * fact the redirect exists to withhold, and would let the page be probed by
  * changing it. Nothing on this page is derived from the request.

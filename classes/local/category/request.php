@@ -24,7 +24,7 @@
 
 namespace theme_dimensions\local\category;
 
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 use theme_dimensions\output\category_hero;
 use theme_dimensions\output\category_listing;
 use theme_dimensions\output\category_pages;

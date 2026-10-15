@@ -30,7 +30,7 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\fixture;
 use theme_dimensions\local\category\population;
-use theme_dimensions\local\hotsite\links;
+use theme_dimensions\local\landing\links;
 
 defined('MOODLE_INTERNAL') || die();
 
