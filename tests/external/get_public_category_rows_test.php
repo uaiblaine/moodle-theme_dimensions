@@ -518,6 +518,11 @@ final class get_public_category_rows_test extends \advanced_testcase {
             'flat by name' => [['sort' => 'name'], ['sort' => 'name']],
             'flat by date under a search' => [['sort' => 'recent', 'query' => 'Curso'], ['sort' => 'recent', 'q' => 'Curso']],
             'grouped under a search' => [['query' => 'Curso'], ['q' => 'Curso']],
+            // A chip in the row under the line: the period's, from the toolbar's one builder.
+            'flat by name over a period' => [
+                ['sort' => 'name', 'datefrom' => '2020-01-01'],
+                ['sort' => 'name', 'from' => '2020-01-01'],
+            ],
             'second page of two' => [
                 ['sort' => 'name', 'perpage' => 2, 'page' => 1],
                 ['sort' => 'name', 'perpage' => 2, 'page' => 1],
@@ -538,6 +543,9 @@ final class get_public_category_rows_test extends \advanced_testcase {
                 $this->assertSame($context->$key, $answer[$key], "{$case}: {$key}.");
             }
             $this->assertSame($context->toolbar->filtercount, $answer['filtercount'], $case);
+            $this->assertSame($clean('chips', $context->toolbar->chips), $answer['chips'], $case . ': the chips, one builder.');
+            $this->assertSame($context->toolbar->clearall, $answer['clearall'], $case);
+            $this->assertNotContains('chip', array_column($answer['chips'], 'param'), $case . ': never a state chip.');
             $this->assertSame($clean('facets', $context->toolbar->facets), $answer['facets'], $case);
             $this->assertSame($clean('areas', $context->results), $answer['areas'], $case . ': the areas.');
             $posters = $context->areas === null ? [] : array_merge($context->areas['posters'], $context->areas['postersmore']);

@@ -451,10 +451,11 @@ final class categorypanel_source_test extends \basic_testcase {
     }
 
     /**
-     * The three other holders of the open panel follow every write of the address.
+     * The other holders of the open panel follow every write of the address.
      *
-     * The toolbar form (its no-JavaScript submit), the hero's fold form and the clear link: each
-     * would otherwise reload the page with the panel it had when it loaded.
+     * The toolbar form (its no-JavaScript submit), the hero's fold form, the clear link and the
+     * chips under the filter line: each would otherwise reload the page with the panel it had when
+     * it loaded.
      */
     public function test_the_three_holders_of_the_panel_follow_it(): void {
         $this->assertMatchesRegularExpression('~\n    syncHolders\(\);\n$~', "\n" . $this->body('writeAddress') . "\n");
@@ -465,12 +466,17 @@ final class categorypanel_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString('syncField(form, SELECTORS.openfield, PARAM.open, open);', $holders);
         $this->assertStringContainsString('syncField(form, SELECTORS.psortfield, PARAM.psort, psort);', $holders);
-        $this->assertStringContainsString('const clear = document.querySelector(SELECTORS.clear);', $holders);
-        $this->assertStringContainsString('clear.href = url.toString();', $holders);
+        $this->assertStringContainsString(
+            'const links = [document.querySelector(SELECTORS.clear)]'
+                . '.concat(Array.from(document.querySelectorAll(SELECTORS.chip)));',
+            $holders
+        );
+        $this->assertStringContainsString('link.href = url.toString();', $holders);
         $source = $this->source(self::SHARED);
         foreach (['dim-open-field', 'dim-psort-field', 'dim-hero-fold', 'dim-vitrine-clear', 'dim-vitrine-toolbar'] as $hook) {
             $this->assertStringContainsString('[data-region="' . $hook . '"]', $source, $hook . ' is a hook of this module.');
         }
+        $this->assertStringContainsString("chip: '[data-action=\"dim-chip-remove\"]',", $source, 'And every chip, by its action.');
     }
 
     /**

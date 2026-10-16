@@ -5,6 +5,33 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The toolbar is one filter line** (`2026100509`): the filter-line redesign's stage T2.
+  - The three rows (narrow, organise, count) become ONE server-drawn line in the contract's slot order: the scope
+    (the state chip's All, My courses, Open for enrolment and Scheduled as counted cells of a platter, for a logged-in
+    reader with the state sort on), the pill search with an eraser ("Clear text", shown with JavaScript while the field
+    holds text), the favourites star, Filters (sliders icon, the word "Filters", the badge), Organise (a menu holding the
+    sort chips and the no-JavaScript Apply), the view toggle (icons only, List first) and the managers' menu. The line
+    wraps where it does not fit; every control still submits without JavaScript, and the name-less default submit is
+    still the form's first.
+  - Under review and Free access are the panel's "More statuses", the same radio group as the scope, so one
+    choice holds across both; `criteria::SCOPE` is the split, mirrored as `SCOPE` in the shared client.
+  - The Filters panel is closed on load and is a popover under the line from 576px (inline below). Its badge counts
+    what the panel holds: each custom field, the period as one and a "More statuses" state - no longer the search, a
+    scope value, the star or the tree.
+  - A second row (`dim-line-chips`) shows while anything narrows: the count sentence (kept visually hidden at rest as
+    the live region), one chip per criterion the line does not show - each field, the period, a "More statuses" state,
+    the tree's category - each a link dropping that one criterion, "Clear all" from two criteria up, "See all as a list"
+    and the automatic opening's note. The chips are built by one server builder for the page and both web services
+    (`chips`, `clearall` in the rows answer), and the calendar no longer writes a pill of its own.
+  - The phone's copy of the view toggle is gone.
+  - Fix: the Filters panel no longer scrolls inside itself (no `max-height`, no `overflow-y`), so the date calendar that
+    opens inside it is never clipped at any width.
+  - Fix: on a phone the hero's "More" menu opened hidden: the tab rail was a scroll container (`overflow-x: auto` below
+    768px, which clips the dropdown to the rail's 50px) and the filter line (`z-index: 30`) painted over it; the rail
+    is no longer a scroll container and stacks at 31.
+  - Fix: a scope cell that was absent and came back was appended at the end of the line; the shared painter now keeps
+    the cells in `SCOPE`'s order (and "More statuses" in the answer's), moving only what is out of place.
+
 - **Favourites are a toggle of their own, combined with the state** (`2026100508`): the filter-line redesign's stage T1.
   - The favourites stop being a value of the state chip and become a boolean criterion, `fav=1`, ANDed with the state:
     "my favourites among the courses I am enrolled in" is one request now. It is read only for a real account (never a

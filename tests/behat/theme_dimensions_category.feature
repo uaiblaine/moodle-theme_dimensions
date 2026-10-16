@@ -50,7 +50,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     And I should not see "Restricted Inner"
     # At rest the count line counts the whole subtree, the hero's own number; the partition is
     # what the two sections below it are for.
-    And I should see "2 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '2 courses in Test category')]" "xpath_element" should exist
     And I should see "2 courses and events" in the ".dim-hero__stats" "css_element"
     # The areas name a subcategory the learner may browse; an unlisted one is not among them.
     # (The tree is drawn for the flat orders alone: on this grouped page the posters name the
@@ -79,7 +79,7 @@ Feature: The category showcase lists what a person may discover, and its filters
     # still counts all four.
     And I should not see "Restricted Inner"
     And I should see "Restricted category" in the "[data-region='dim-areas']" "css_element"
-    And I should see "4 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     And I should see "4 courses and events" in the ".dim-hero__stats" "css_element"
 
   Scenario: The tree narrows the listing in place, and the grouped organisation draws none
@@ -108,8 +108,9 @@ Feature: The category showcase lists what a person may discover, and its filters
     # A flat order counts its courses in the tree's chosen category.
     And I should see "1 course in Open category" in the "[data-region='dim-vitrine-count']" "css_element"
     And "//nav[@data-region='dim-vitrine-tree']//a[@aria-current='true'][contains(., 'Open category')]" "xpath_element" should exist
-    # It is a filter like the others, so the way out of it is offered and the first entry is it.
-    And I should see "Clear filters"
+    # It is a filter like the others, so the way out of it is offered and the first entry is it; one criterion alone
+    # is undone by its chip, not by a clear-all link.
+    And "//a[@data-action='dim-chip-remove'][@data-param='cat']" "xpath_element" should exist
     When I click on "Test category" "link" in the ".dim-vitrine__tree" "css_element"
     Then I should see "Resgate em Altura" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should see "Combate a Incendio" in the "[data-region='dim-vitrine-grid']" "css_element"
@@ -264,31 +265,30 @@ Feature: The category showcase lists what a person may discover, and its filters
       | Curso de Amanha | AMANHA    | TESTCAT  | 1                          | ##tomorrow## |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    And I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     When I click on "Tomorrow" "link"
     # Under a criterion the line says what the page draws and where.
     Then I should see "1 course with these filters: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "Curso de Amanha" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Resgate em Altura"
-    And I should see "Clear filters"
+    And "//a[@data-region='dim-vitrine-clear'][@hidden]" "xpath_element" should exist
+    And "//*[@data-region='dim-line-chips']//a[@data-action='dim-chip-remove'][@data-param='period']" "xpath_element" should exist
 
   Scenario: Every control that narrows the listing is inside the filter disclosure
-    # Row one is the search box and one disclosure holding the status pills, the facet groups and
-    # the date range. It is a native details, so it opens and closes with no script; a request that
-    # arrives with a filter set inside it renders it open, because a page narrowed from behind a
-    # closed control is a page whose reader cannot see why it is short. (A search alone leaves it
-    # closed: the term is in its own box, on the same row.)
+    # The line is the search box, the scope, the star and one disclosure holding the facet groups
+    # and the date range. It is a native details, so it opens and closes with no script; it is
+    # closed on load always, and the chips row under the line says what narrows.
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     Then "//details[@data-region='dim-filters']//fieldset[@data-region='dim-vitrine-group']" "xpath_element" should exist
     And "//details[@data-region='dim-filters']//fieldset[@data-region='dim-date']//input[@type='date']" "xpath_element" should exist
     And "//details[@data-region='dim-filters'][not(@open)]" "xpath_element" should exist
-    # The toolbar's order: the search line, then the organisation, then the count line.
-    And "//form[@data-region='dim-vitrine-toolbar']/div[contains(@class, 'dim-toolbar__row--narrow')]/following-sibling::div[contains(@class, 'dim-toolbar__row--organise')]/following-sibling::div[contains(@class, 'dim-toolbar__row--count')]" "xpath_element" should exist
+    # The toolbar's order: the one line, then the notice, then the chips row.
+    And "//form[@data-region='dim-vitrine-toolbar']/div[@data-region='dim-line']/following-sibling::p[@data-region='dim-toolbar-notice']/following-sibling::div[@data-region='dim-line-chips']" "xpath_element" should exist
     When I set the field "In-person" to "1"
     And I press "Filter"
     Then I should see "1 course with these filters: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
-    And "//details[@data-region='dim-filters'][@open]" "xpath_element" should exist
+    And "//details[@data-region='dim-filters'][not(@open)]" "xpath_element" should exist
 
   Scenario: The course index draws every top-level category a learner may discover as a card
     # A course can never sit in the top-level pseudo-category, so at the root "there is no
@@ -359,13 +359,13 @@ Feature: The category showcase lists what a person may discover, and its filters
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     And I should see "In-person" in the ".dim-toolbar" "css_element"
-    And I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     When I set the field "In-person" to "1"
     And I press "Filter"
     Then I should see "1 course with these filters: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "Resgate em Altura" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Curso Online"
-    And I should see "Clear filters"
+    And "//*[@data-region='dim-line-chips']//a[@data-action='dim-chip-remove'][starts-with(@data-param,'cf_')]" "xpath_element" should exist
 
   Scenario: The search box narrows the listing, and the page shows where its results are
     # Two halves. The first is the search itself, over two courses of this category so that one of
@@ -415,9 +415,10 @@ Feature: The category showcase lists what a person may discover, and its filters
     And I should see "Nothing for “Incendio” in one other area" in the "[data-region='dim-nomatch-summary']" "css_element"
     And the "href" attribute of "//ul[@data-region='dim-nomatch-list']//a[normalize-space(.)='Second category']" "xpath_element" should contain "categoryid="
     And the "href" attribute of "//ul[@data-region='dim-nomatch-list']//a[normalize-space(.)='Second category']" "xpath_element" should not contain "q="
-    And I should see "1 course for “Incendio”: 1 in 1 area · See all as a list" in the "[data-region='dim-vitrine-count']" "css_element"
+    And I should see "1 course for “Incendio”: 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//*[@data-region='dim-line-chips']//span[@data-region='dim-vitrine-seeall']/a" "xpath_element" should exist
     And the "href" attribute of "//span[@data-region='dim-vitrine-seeall']/a" "xpath_element" should contain "sort=recent"
-    When I click on "See all as a list" "link" in the "[data-region='dim-vitrine-count']" "css_element"
+    When I click on "See all as a list" "link" in the "[data-region='dim-line-chips']" "css_element"
     Then I should see "1 course for “Incendio” in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "Combate a Incendio" in the "[data-region='dim-vitrine-grid']" "css_element"
     And "[data-region='dim-areas']" "css_element" should not exist

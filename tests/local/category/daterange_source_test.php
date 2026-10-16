@@ -205,9 +205,9 @@ final class daterange_source_test extends \basic_testcase {
      *
      * Every change of the period in force goes through apply(), which is the one place the listing
      * is told and which tells it only of a change, so clearing a bound that is not set does not
-     * fetch the page again. A press outside applies only while the popover is open: the pill of the
-     * count row is outside the control too, and repainting it between its pointerdown and its click
-     * would take the click away from it.
+     * fetch the page again. A press outside applies only while the popover is open: the period's
+     * chip under the filter line is outside the control too, and applying a draft on every such
+     * press would fetch a page between the chip's pointerdown and its click.
      *
      * Changes that must make it fail: the change guard in apply() made always false ("Done" would
      * close the popover and apply nothing); the draft reset deleted from close() (a period dismissed
@@ -225,8 +225,7 @@ final class daterange_source_test extends \basic_testcase {
         $this->assertStringContainsString('const changed = start !== from || end !== to;', $apply);
         $this->assertMatchesRegularExpression('~from = start;\s*to = end;\s*draftfrom = start;\s*draftto = end;~', $apply);
         $this->assertMatchesRegularExpression(
-            '~if \(!changed\) \{\s*return;\s*\}\s*paintPill\(\)\.catch\(Notification\.exception\);\s*'
-                . 'if \(onpick\) \{\s*onpick\(from, to\);~',
+            '~if \(!changed\) \{\s*return;\s*\}\s*if \(onpick\) \{\s*onpick\(from, to\);~',
             $apply,
             'The listing is told, once and only of a change, by the one place a period leaves this module.'
         );
@@ -266,7 +265,7 @@ final class daterange_source_test extends \basic_testcase {
     }
 
     /**
-     * Each box's clearing control drops its own bound; the footer's and the pill drop the period.
+     * Each box's clearing control drops its own bound; the footer's drops the period.
      *
      * One action and one handler for all of them, told apart by data-bound. A box's control applies
      * at once - it is a one-press intent, like a quick option - and leaves the other bound as the
@@ -296,12 +295,13 @@ final class daterange_source_test extends \basic_testcase {
             '~const clear = target\.closest\(SELECTORS\.clear\);\s*if \(clear\) \{\s*'
                 . 'event\.preventDefault\(\);\s*onClear\(clear\);~',
             $click,
-            'Clearing is matched by the ACTION, so the boxes\' controls, the footer\'s and the pill are one rule.'
+            'Clearing is matched by the ACTION, so the boxes\' controls and the footer\'s are one rule.'
         );
-        // The pill of the count row carries the action and no bound: it states, and drops, the whole period.
-        $pill = $this->body('paintPill');
-        $this->assertStringContainsString("pill.dataset.action = 'dim-daterange-clear';", $pill);
-        $this->assertStringNotContainsString('dataset.bound', $pill);
+        /* The period's chip under the filter line is the server's (category_toolbar::chips()) and the
+           listing's to paint from every answer: this module draws none, so no second writer of that
+           region composes a sentence the server did not. */
+        $this->assertStringNotContainsString('paintPill', $this->source());
+        $this->assertStringNotContainsString('dim-daterange-pill', $this->source());
     }
 
     /**
@@ -310,7 +310,7 @@ final class daterange_source_test extends \basic_testcase {
      * period() is criteria's rule in the client: a bound that is not a calendar day is dropped and
      * the other stands alone, and a pair given backwards is the same period in order. The listing's
      * module and the panel's read the address through it, because the web service refuses a pair
-     * given backwards. The pill names the three shapes a period takes in three language strings.
+     * given backwards. The sentence naming a period is the server's chip's, never this module's.
      *
      * Changes that must make it fail: the swap deleted from period(); the month-length check dropped
      * from parse() (the 31st of September reaching a service that refuses it).
@@ -333,10 +333,11 @@ final class daterange_source_test extends \basic_testcase {
             $this->assertStringContainsString('period(', $this->body($entry), $entry . '() reads its period through period().');
         }
 
-        $sentence = $this->body('sentence');
-        foreach (['category_daterangepill', 'category_daterangepillfrom', 'category_daterangepillto'] as $key) {
-            $this->assertStringContainsString("'" . $key . "'", $sentence, 'The pill says ' . $key . '.');
-        }
+        $this->assertStringNotContainsString(
+            'category_daterangepill',
+            $this->source(),
+            'The period\'s sentence is written by the server, in the site timezone, and nowhere here.'
+        );
     }
 
     /**
@@ -494,7 +495,6 @@ final class daterange_source_test extends \basic_testcase {
         );
         $build = (string) file_get_contents($this->plugin_root() . '/amd/build/daterange.min.js');
         $this->assertStringContainsString('theme_dimensions/category_daterange', $build);
-        $this->assertStringContainsString('category_daterangepill', $build);
-        $this->assertStringContainsString('category_daterangepillfrom', $build, 'The build knows a start alone.');
+        $this->assertStringNotContainsString('category_daterangepill', $build, 'The build composes no period sentence.');
     }
 }

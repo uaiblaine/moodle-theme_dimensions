@@ -18,7 +18,8 @@
     @template theme_dimensions/category_listing
 
     One page of the category showcase: the strip of the category's pages, the
-    toolbar partial (whose last row prints the live count of this page result),
+    toolbar partial (whose row under the filter line prints the live count of
+    this page result),
     then a two-column shell, the navigation tree on the left and the content on
     the right. The content is the grid of card partials, or the empty state,
     followed by core's paging bar as real links. The view is one class on the
@@ -165,7 +166,9 @@
             "searchname": "q",
             "searchlabel": "Buscar cursos",
             "searchplaceholder": "Buscar pelo nome",
+            "searchclearlabel": "Limpar texto",
             "query": "",
+            "hasquery": false,
             "searchtooshort": false,
             "searchtooshortlabel": "Digite pelo menos 2 caracteres para buscar.",
             "sortgroup": {
@@ -177,15 +180,19 @@
                     {"id": "dim-sort-7-recent", "value": "recent", "label": "Recentes", "checked": false}
                 ]
             },
+            "sortlabel": "Organizar",
             "sortapplylabel": "Aplicar",
-            "statusgroup": {
+            "scope": {
                 "legend": "Situação",
                 "name": "chip",
+                "hasoptions": true,
                 "options": [
                     {"id": "dim-chip-7-all", "value": "", "label": "Todos", "count": 14, "hascount": true, "checked": true}
                 ]
             },
-            "hasstatusgroup": true,
+            "hasscope": true,
+            "more": {"legend": "Mais situações", "name": "chip", "hasoptions": false, "options": []},
+            "hasmorestatuses": true,
             "facets": [],
             "hasfacets": false,
             "datefromid": "dim-datefrom-7",
@@ -201,6 +208,7 @@
             "datequick": [
                 {"label": "Hoje", "url": "https://example.com/course/index.php?categoryid=7&from=2026-09-17&to=2026-09-17", "from": "2026-09-17", "to": "2026-09-17", "current": false}
             ],
+            "filterslabel": "Filtros",
             "filtercount": 0,
             "hasfiltercount": false,
             "filtercountlabel": "Filtros aplicados: 0",
@@ -210,14 +218,16 @@
             "viewname": "view",
             "viewlabel": "Exibição",
             "views": [
-                {"value": "cards", "label": "Cartões", "current": true, "icon": "fa-border-all"},
-                {"value": "list", "label": "Lista", "current": false, "icon": "fa-list"}
+                {"value": "list", "label": "Lista", "current": false, "icon": "fa-list"},
+                {"value": "cards", "label": "Cartões", "current": true, "icon": "fa-border-all"}
             ],
             "submitlabel": "Filtrar",
-            "filtersopen": false,
             "hasfilters": false,
+            "chips": [],
+            "haschips": false,
+            "clearall": false,
             "clearurl": "https://example.com/course/index.php?categoryid=7",
-            "clearlabel": "Limpar filtros",
+            "clearlabel": "Limpar tudo",
             "manageactions": "",
             "hasmanageactions": false
         },

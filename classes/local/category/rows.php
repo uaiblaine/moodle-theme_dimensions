@@ -229,6 +229,11 @@ final class rows {
                the label is the localised sentence a screen reader is read. */
             'filtercount' => $toolbar->filtercount,
             'filtercountlabel' => $toolbar->filtercountlabel,
+            /* The row under the filter line: one chip per criterion the line does not show and
+               whether "Clear all" is offered, from the toolbar's own builder, so the client paints
+               the chips the page would have drawn and composes none. */
+            'chips' => self::chips($toolbar->chips),
+            'clearall' => $toolbar->clearall,
             'searchtooshort' => $toolbar->searchtooshort,
             'cards' => array_map(static fn(\stdClass $card): array => (array) $card, $context->cards),
             // Always a group, even where the toolbar offers none, so the client has one shape to paint.
@@ -347,6 +352,8 @@ final class rows {
             'hasfilters' => $criteria->has_filters(),
             'filtercount' => 0,
             'filtercountlabel' => '',
+            'chips' => [],
+            'clearall' => false,
             'searchtooshort' => $criteria->rawsearch !== '' && $criteria->search === '',
             'cards' => [],
             'statusgroup' => ['options' => []],
@@ -355,6 +362,21 @@ final class rows {
             'accordion' => self::accordion($criteria, $result, true),
             'areas' => category_listing::results($result, $criteria, 0),
         ];
+    }
+
+    /**
+     * The chips of an answer, key for key what the web service declares.
+     *
+     * @param array $chips The toolbar's chips ({@see category_toolbar::chips()}).
+     * @return array Entries of ['param', 'label', 'url', 'removelabel'].
+     */
+    private static function chips(array $chips): array {
+        return array_map(static fn(array $chip): array => [
+            'param' => $chip['param'],
+            'label' => $chip['label'],
+            'url' => $chip['url'],
+            'removelabel' => $chip['removelabel'],
+        ], $chips);
     }
 
     /**

@@ -56,6 +56,7 @@ const SELECTORS = {
     filterbadgenumber: '[data-region="dim-filtercount-number"]',
     filterbadgelabel: '[data-region="dim-filtercount-label"]',
     count: '[data-region="dim-vitrine-count"]',
+    clear: '[data-region="dim-vitrine-clear"]',
     countnumber: '[data-region="dim-vitrine-countnumber"]',
     counttext: '[data-region="dim-vitrine-counttext"]',
     seeall: '[data-region="dim-vitrine-seeall"]',
@@ -72,6 +73,9 @@ const SELECTORS = {
     daterange: '[data-region="dim-daterange"]',
     dateinputs: '[data-region="dim-dateinputs"]',
     rangepill: '[data-region="dim-daterange-pill"]',
+    chiprow: '[data-region="dim-line-chips"]',
+    chiplist: '[data-region="dim-line-chiplist"]',
+    eraser: '[data-action="dim-search-clear"]',
     treelink: '[data-region="dim-vitrine-tree"] a[data-region="dim-tree-link"]',
     treebox: '[data-region="dim-vitrine-treebox"]',
     area: '[data-region="dim-area"]',
@@ -107,6 +111,17 @@ export const PARAM = {
  */
 const FOLD_PARAMS = [PARAM.query, PARAM.chip, PARAM.fav, PARAM.from, PARAM.to, PARAM.cat, PARAM.sort, PARAM.perpage,
     PARAM.open, PARAM.psort];
+
+/**
+ * @type {String[]} The state chip's values the filter line draws as its scope, the empty string ("all")
+ * first: the server's criteria::SCOPE, which category_listing_markup_test holds equal to this list.
+ * Every other value of the state chip is an option of the panel's "More statuses", the same radio
+ * group by name, and an answer's status group is split between the two by this list.
+ */
+export const SCOPE = ['', 'enrolled', 'open', 'scheduled'];
+
+/** @type {String} A chip's data-param for the period, whose two bounds it drops together: the server's CHIP_PERIOD. */
+const CHIP_PERIOD = 'period';
 
 /**
  * @type {String} The value the state chip carried for the favourites before they were a toggle: an
@@ -519,11 +534,10 @@ export const filterArgs = (state) => Object.keys(state.filters).map((fieldid) =>
 }));
 
 /**
- * Paint the view onto the container and the toggle buttons of both copies. No preference, no address.
+ * Paint the view onto the container and the toggle's two buttons. No preference, no address.
  *
- * The toolbar writes the toggle twice - once in the organisation row and once on the phone's search
- * line - and the stylesheet shows one per width, so both are painted. The panel module is told,
- * because the panel's row is a different line of the grid in the list view.
+ * The toggle is the filter line's one group of two icon buttons. The panel module is told, because
+ * the panel's row is a different line of the grid in the list view.
  *
  * @param {HTMLElement} root The listing section.
  * @param {String} view Either cards or list.
@@ -623,6 +637,24 @@ export const paintFavToggle = (root, on) => {
 };
 
 /**
+ * Show the search's eraser exactly while the field holds text.
+ *
+ * The eraser is a client's control (dim-live-only) and the server draws it hidden on an empty
+ * field; from then on the text in the field decides, whoever put it there: a keystroke, the
+ * history, or a clear.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @return {void}
+ */
+export const paintEraser = (root) => {
+    const search = root.querySelector(SELECTORS.search);
+    const eraser = root.querySelector(SELECTORS.eraser);
+    if (search && eraser) {
+        eraser.hidden = search.value === '';
+    }
+};
+
+/**
  * Put a state back onto the controls, after the reader moved through their history.
  *
  * @param {HTMLElement} root The listing section.
@@ -634,6 +666,7 @@ export const paintControls = (root, state) => {
     if (search) {
         search.value = state.query;
     }
+    paintEraser(root);
     root.querySelectorAll(SELECTORS.group).forEach((fieldset) => {
         const name = fieldset.dataset.name || '';
         const current = name === PARAM.chip
@@ -686,8 +719,8 @@ export const paintFavourites = (root, response) => {
  * Rewrite the badge on the Filter summary, the one number a collapsed panel still shows.
  *
  * Both halves of it move together and neither is computed here. The digit is what the server
- * counts as a filter ({@see criteria::filter_count()}: a term, a state, the tree's category, each
- * custom field, and the whole period as one) and the sentence beside it is that number in the
+ * counts as a filter held by the panel ({@see criteria::filter_count()}: each custom field, the
+ * whole period as one, and a state from "More statuses") and the sentence beside it is that number in the
  * reader's own language. Painting the digit alone would leave a screen reader being read the
  * count the page was loaded with.
  *
@@ -715,11 +748,12 @@ export const paintFilterBadge = (root, response) => {
 /**
  * Rewrite the live count, in a way a screen reader announces even when the sentence repeats.
  *
- * The line is four regions of one paragraph, all written by the server's answer and none composed
- * here: the number, set in bold; the sentence after it; the flat list of every result, offered only
- * when the page is narrowed and something matched; and the note an automatic opening adds, which
- * every new answer takes away again. Nothing else of the paragraph is touched, so none of its
- * regions is lost to a repaint of another.
+ * The count is two regions of one paragraph - the number, set in bold, and the sentence after it -
+ * and two more follow it in the row under the filter line: the flat list of every result, offered
+ * only when the page is narrowed and something matched, and the note an automatic opening adds,
+ * which every new answer takes away again. All four are written by the server's answer and none is
+ * composed here; nothing else of the paragraph is touched, so none of its regions is lost to a
+ * repaint of another.
  *
  * A live region only speaks when its text changes, and "2 courses in Brigada" after a filter that
  * happened to leave the same numbers is the case a reader most needs told. The counter appended
@@ -747,7 +781,8 @@ export const paintCount = (root, response) => {
         marker.textContent = '​'.repeat((announcements % 3) + 1);
         text.replaceChildren(document.createTextNode(response.countline || ''), marker);
     }
-    const seeall = line.querySelector(SELECTORS.seeall);
+    // "See all as a list" and the automatic opening's note follow the chips in the row, outside the sentence.
+    const seeall = root.querySelector(SELECTORS.seeall);
     const url = response.seeallurl || '';
     if (seeall) {
         const link = seeall.querySelector('a');
@@ -756,7 +791,7 @@ export const paintCount = (root, response) => {
         }
         seeall.hidden = url === '';
     }
-    const note = line.querySelector(SELECTORS.countnote);
+    const note = root.querySelector(SELECTORS.countnote);
     if (note) {
         note.hidden = true;
     }
@@ -813,6 +848,7 @@ const paintGroup = (fieldset, name, options) => {
     track.querySelectorAll('input[type="radio"]').forEach((input) => inputs.set(input.value, input));
     track.querySelectorAll('label').forEach((label) => labels.set(label.htmlFor, label));
     const seen = new Set();
+    const ordered = [];
     options.forEach((option) => {
         const value = String(option.value);
         seen.add(value);
@@ -826,11 +862,23 @@ const paintGroup = (fieldset, name, options) => {
         input.hidden = false;
         input.checked = Boolean(option.checked);
         label.hidden = false;
+        ordered.push(input, label);
         const count = label.querySelector(SELECTORS.pillcount);
         if (count) {
             count.textContent = option.hascount ? String(option.count) : '';
             count.hidden = !option.hascount;
         }
+    });
+    /* A pill that was absent and comes back is created last, and the group is drawn in the answer's
+       order: move only what is out of place, so the focused radio is never detached. */
+    let previous = null;
+    let expected = Array.from(track.children).find((child) => child.matches('input[type="radio"], label')) || null;
+    ordered.forEach((node) => {
+        expected = previous ? previous.nextSibling : expected;
+        if (node !== expected) {
+            track.insertBefore(node, expected);
+        }
+        previous = node;
     });
     inputs.forEach((input, value) => {
         if (seen.has(value)) {
@@ -846,6 +894,47 @@ const paintGroup = (fieldset, name, options) => {
 };
 
 /**
+ * Split the answer's status group between the line's scope and the panel's "More statuses", and paint both.
+ *
+ * The split is SCOPE, the server's own list, so a value is drawn where the server would have drawn
+ * it. The status group's "all" is one of its options, with the value the empty string, and belongs
+ * to the scope. An answer with no option at all is a page whose state sort was switched off under
+ * it, and leaves both as they are (paintGroup()); an answer whose options are all scope values
+ * empties "More statuses", which then hides, as the server draws it hidden with nothing to offer.
+ *
+ * @param {HTMLElement|null} scope The scope's fieldset, or null when the line draws none.
+ * @param {HTMLElement|null} more The "More statuses" fieldset, or null.
+ * @param {Array} options The status group's options of this request.
+ * @return {void}
+ */
+const paintStatus = (scope, more, options) => {
+    if (!options.length) {
+        return;
+    }
+    const isScope = (option) => SCOPE.indexOf(String(option.value)) >= 0;
+    // The scope is drawn in SCOPE's order whatever order the answer lists it in.
+    const rank = (option) => SCOPE.indexOf(String(option.value));
+    paintGroup(scope, PARAM.chip, options.filter(isScope).sort((a, b) => rank(a) - rank(b)));
+    if (!more) {
+        return;
+    }
+    const others = options.filter((option) => !isScope(option));
+    if (others.length) {
+        paintGroup(more, PARAM.chip, others);
+    } else {
+        more.querySelectorAll('input[type="radio"]').forEach((input) => {
+            input.hidden = true;
+            input.checked = false;
+            const label = more.querySelector('label[for="' + input.id + '"]');
+            if (label) {
+                label.hidden = true;
+            }
+        });
+    }
+    more.hidden = others.length === 0;
+};
+
+/**
  * Bring every group of the toolbar in line with the response.
  *
  * @param {HTMLElement} root The listing section.
@@ -854,10 +943,14 @@ const paintGroup = (fieldset, name, options) => {
  */
 export const paintGroups = (root, response) => {
     const groups = new Map();
-    root.querySelectorAll(SELECTORS.group).forEach((fieldset) => groups.set(fieldset.dataset.name || '', fieldset));
+    root.querySelectorAll(SELECTORS.group).forEach((fieldset) => {
+        // The state chip is two fieldsets of one radio group: the line's scope and the panel's "More statuses".
+        const name = fieldset.dataset.name || '';
+        groups.set(name === PARAM.chip ? name + ':' + (fieldset.dataset.role || '') : name, fieldset);
+    });
     if (response.statusgroup) {
-        // The status group's "all" is one of its options, with the value the empty string.
-        paintGroup(groups.get(PARAM.chip) || null, PARAM.chip, response.statusgroup.options || []);
+        paintStatus(groups.get(PARAM.chip + ':scope') || null, groups.get(PARAM.chip + ':more') || null,
+            response.statusgroup.options || []);
     }
     (response.facets || []).forEach((facet) => {
         // A facet's "all" is not in its options - it is the anyid/anylabel/anychecked triple
@@ -873,6 +966,97 @@ export const paintGroups = (root, response) => {
         };
         paintGroup(groups.get(facet.name) || null, facet.name, [any].concat(facet.options || []));
     });
+};
+
+/**
+ * Build one chip of the row under the filter line, with the markup the server's category_chip writes.
+ *
+ * Every part of it is the answer's: the label, the address dropping that one criterion (with the
+ * address bar's open panel, which a rows request does not carry), what it drops, and the words
+ * that name the press.
+ *
+ * @param {Object} chip The answer's chip: param, label, url and removelabel.
+ * @return {HTMLElement} The link.
+ */
+const createChip = (chip) => {
+    const link = document.createElement('a');
+    link.className = 'dim-chip';
+    link.href = withPanel(chip.url);
+    link.dataset.action = 'dim-chip-remove';
+    link.dataset.param = chip.param;
+    link.append(document.createTextNode(chip.label + ' '));
+    const cross = document.createElement('i');
+    cross.className = 'fa fa-xmark';
+    cross.setAttribute('aria-hidden', 'true');
+    const name = document.createElement('span');
+    name.className = 'visually-hidden';
+    name.textContent = chip.removelabel || '';
+    link.append(cross, name);
+    return link;
+};
+
+/**
+ * Bring the row under the filter line in line with an answer: whether it shows, its chips, "Clear all".
+ *
+ * The row shows while anything narrows the page (the answer's hasfilters, the server's own
+ * has_filters()); at rest it keeps the count sentence alone, visually hidden, because that sentence
+ * is the page's live region and must stay in the document. The chips are the answer's, painted
+ * where the server draws them - the period's in the calendar's own region of the row, the rest in
+ * the list - and "Clear all" shows from two criteria up, the answer's clearall. The clear link's
+ * address is the caller's to repaint, since it carries the open panel the same way.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {Object} response The rows response.
+ * @return {void}
+ */
+export const paintChips = (root, response) => {
+    const row = root.querySelector(SELECTORS.chiprow);
+    if (!row) {
+        return;
+    }
+    const narrowed = Boolean(response.hasfilters);
+    row.classList.toggle('dim-line__chips--rest', !narrowed);
+    const count = row.querySelector(SELECTORS.count);
+    if (count) {
+        count.classList.toggle('visually-hidden', !narrowed);
+    }
+    const chips = response.chips || [];
+    const list = row.querySelector(SELECTORS.chiplist);
+    if (list) {
+        list.replaceChildren(...chips.filter((chip) => chip.param !== CHIP_PERIOD).map(createChip));
+    }
+    const period = row.querySelector(SELECTORS.rangepill);
+    if (period) {
+        period.replaceChildren(...chips.filter((chip) => chip.param === CHIP_PERIOD).map(createChip));
+    }
+    const clear = row.querySelector(SELECTORS.clear);
+    if (clear) {
+        clear.hidden = !response.clearall;
+    }
+};
+
+/**
+ * Drop from a state the one criterion a chip names, as the server's address for that chip drops it.
+ *
+ * @param {Object} state The calling module's state.
+ * @param {String} param The chip's data-param: a field's parameter, chip, cat, or period.
+ * @return {Boolean} Whether the chip named a criterion this state can drop.
+ */
+export const dropCriterion = (state, param) => {
+    if (param === PARAM.chip) {
+        state.chip = '';
+    } else if (param === PARAM.cat) {
+        state.cat = 0;
+    } else if (param === CHIP_PERIOD) {
+        state.datefrom = '';
+        state.dateto = '';
+    } else if (param && param.startsWith(PARAM.fieldprefix)) {
+        delete state.filters[param.slice(PARAM.fieldprefix.length)];
+    } else {
+        return false;
+    }
+    state.page = 0;
+    return true;
 };
 
 /**
@@ -1109,7 +1293,6 @@ export const mountCalendar = async(root, state, onpick) => {
         today: fieldset.dataset.today,
         from: state.datefrom,
         to: state.dateto,
-        pill: root.querySelector(SELECTORS.rangepill),
         onpick: onpick,
     });
     if (!mounted) {

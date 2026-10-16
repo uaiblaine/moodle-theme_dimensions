@@ -935,7 +935,7 @@ final class population_test extends \advanced_testcase {
         $this->assertSame(2, $both->counts[classifier::STATE_NONE]);
         $this->assertSame(1, $both->counts[classifier::CHIP_FAVOURITES]);
         $this->assertTrue($criteria->has_filters());
-        $this->assertSame(2, $criteria->filter_count(), 'Two filters on the badge.');
+        $this->assertSame(2, $criteria->narrowing_count(), 'Two criteria narrow the page.');
     }
 
     /**
@@ -1538,7 +1538,7 @@ final class population_test extends \advanced_testcase {
         );
         $this->assertSame((int) $nursing->id, $criteria->cat, 'An admitted category is kept, and is a filter.');
         $this->assertTrue($criteria->has_filters());
-        $this->assertSame(1, $criteria->filter_count());
+        $this->assertSame(1, $criteria->narrowing_count());
     }
 
     /**
@@ -1592,7 +1592,7 @@ final class population_test extends \advanced_testcase {
             $this->assertSame($control, $result->ids(), 'The listing is untouched by ' . $what . '.');
             $this->assertSame(0, $criteria->cat, 'And the request stops claiming ' . $what . ' narrows it.');
             $this->assertFalse($criteria->has_filters(), 'So nothing offers to clear a filter nobody set.');
-            $this->assertSame(0, $criteria->filter_count());
+            $this->assertSame(0, $criteria->narrowing_count());
         }
     }
 

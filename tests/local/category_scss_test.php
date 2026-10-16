@@ -927,11 +927,11 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~letter-spacing:\s*\.1em;~', $legend);
         $this->assertMatchesRegularExpression('~text-transform:\s*uppercase;~', $legend);
 
-        $row = $this->rule_body($scss, '.dim-toolbar__row--count');
+        $row = $this->rule_body($scss, '.dim-line__chips');
         $this->assertMatchesRegularExpression(
-            '~margin:\s*2px 0 4px;~',
+            '~margin:\s*-3px -5px -1px;\s*padding:\s*5px;~',
             $row,
-            'The design\'s 12px above and 18px below, less the gaps already there (10px and 14px).'
+            'The design\'s 12px above and 18px below, less the gaps already there (10px and 14px), less 5px of ring room.'
         );
         $this->assertMatchesRegularExpression('~gap:\s*14px;~', $this->rule_body($scss, '.dim-vitrine'), 'The 14px it counts on.');
     }
@@ -977,56 +977,102 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * The Filter control shares the search line, and the panel it opens is the whole row.
+     * The filter line is one wrapping row of 40px controls, and the Filters panel is a popover from sm up.
      *
-     * The summary is taken out of the flow and placed at the end of the first line; what is left
-     * of the disclosure in the flow is its panel, which is the row. The row is therefore the
-     * positioned ancestor (the disclosure is a box of a different height), and the search box
-     * reserves the control's width with a padding rather than being sized against it, so neither
-     * moves when the panel opens or closes, however tall the panel is.
+     * The line wraps where it does not fit, which is its whole narrow behaviour without
+     * JavaScript, and is the positioned ancestor of the panel, which opens under the LINE (not under
+     * its own control) from the sm breakpoint up, scrolls inside itself and stays in the flow below
+     * it. The scope is a platter: a grey track, the chosen cell raised in the page's surface. The
+     * row under the line is no box at rest - display: contents, so it takes no gap of the toolbar's
+     * column - and everything in it but the count sentence goes. Every control of the line is 40px,
+     * 44px on a phone.
      *
-     * The word on the control goes at the phone's width and the reserve shrinks with it. It is
-     * hidden from the picture and not from the document: it is the summary's accessible name.
-     *
-     * The line is the toolbar's first row, 44px tall at every width: the search box and the
-     * summary are both held to it outside any media query.
-     *
-     * Changes that must make it fail: `position: relative` deleted from the row (the summary is
-     * then placed against whichever positioned ancestor comes next); the search box's padding
-     * deleted (a typed term runs under the control).
+     * Changes that must make it fail: the wrap dropped from the line; the line not positioned (the
+     * panel is then placed against the page); the popover's absolute position or its inner scroll
+     * dropped; the row at rest kept as a box; a chip shorter than a control.
      */
-    public function test_the_filter_control_shares_the_search_line_at_every_width(): void {
+    public function test_the_filter_line_wraps_and_its_panel_is_a_popover_from_sm(): void {
         $scss = $this->stylesheet('category.scss');
 
-        $row = [1 => $this->rule_body($scss, '.dim-toolbar__row--narrow')];
-        $this->assertMatchesRegularExpression('~position:\s*relative;~', $row[1], 'The row is what the summary is placed in.');
+        $line = $this->rule_body($scss, '.dim-line');
+        $this->assertMatchesRegularExpression('~position:\s*relative;~', $line, 'The panel is placed against the line.');
+        $this->assertMatchesRegularExpression('~display:\s*flex;\s*flex-wrap:\s*wrap;~', $line, 'One row that wraps.');
+        $this->assertMatchesRegularExpression('~gap:\s*10px;~', $line);
         $this->assertMatchesRegularExpression(
-            '~row-gap:\s*0;~',
-            $row[1],
-            'A closed disclosure is a zero-height line, and a row gap would leave a strip under the search box.'
+            '~flex:\s*1 1 14rem;\s*min-width:\s*0;~',
+            $this->rule_body($scss, '.dim-toolbar__search'),
+            'The search is what grows and shrinks, and never sets the line\'s width.'
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '~padding-right~',
+            $this->rule_body($scss, '.dim-toolbar__search'),
+            'Nothing is lifted out of the line any more, so the search reserves no room for it.'
+        );
+        $this->assertMatchesRegularExpression('~height:\s*40px;~', $this->rule_body($scss, '.dim-toolbar__input'));
+        $this->assertDoesNotMatchRegularExpression(
+            '~overflow|max-height~',
+            $this->rule_body($scss, '.dim-toolbar__panel'),
+            'The panel is no scroll container: the date calendar opens inside it and would be clipped.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~position:\s*relative;\s*z-index:\s*31;~',
+            $this->rule_body($scss, '.dim-hero__tabs'),
+            'The tab rail stacks above the filter line (30), so its More menu is not hidden behind it.'
+        );
+        $this->assertMatchesRegularExpression('~min-height:\s*40px;~', $this->rule_body($scss, '.dim-toolbar__filterstoggle'));
+        $icon = $this->rule_body($scss, '.dim-line__iconbtn');
+        $this->assertMatchesRegularExpression('~width:\s*40px;\s*min-height:\s*40px;~', $icon);
+        $this->assertMatchesRegularExpression('~&:focus-visible \{\s*outline:\s*3px solid var\(--dim-ring\);~', $icon);
+        $this->assertDoesNotMatchRegularExpression(
+            '~position:\s*absolute~',
+            $this->rule_body($scss, '.dim-toolbar__filterstoggle'),
+            'The Filters summary is an item of the line, never lifted out of it.'
         );
 
-        $summary = [1 => $this->rule_body($scss, '.dim-toolbar__filterstoggle')];
-        $this->assertMatchesRegularExpression('~position:\s*absolute;~', $summary[1]);
-        $this->assertMatchesRegularExpression('~right:\s*0;~', $summary[1], 'At the end of the line.');
         $this->assertMatchesRegularExpression(
-            '~&:hover \{\s*background:~',
-            $summary[1],
-            'And it hovers like the button it is drawn as (item 3).'
+            '~background:\s*var\(--dim-surface-strong\);~',
+            $this->rule_body($scss, '.dim-line__cells'),
+            'The scope\'s grey track.'
+        );
+        $cell = $this->rule_body($scss, '.dim-line__scope .dim-pill__input:checked + .dim-pill');
+        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-surface\);~', $cell, 'The chosen cell is raised.');
+        $this->assertMatchesRegularExpression('~box-shadow:\s*var\(--dim-ds-shadow-sm\);~', $cell);
+        $this->assertDoesNotMatchRegularExpression(
+            '~overflow~',
+            $this->rule_body($scss, '.dim-line__cells'),
+            'The platter wraps rather than scrolls: a scroll container would clip the cells\' ring.'
         );
 
-        $search = [1 => $this->rule_body($scss, '.dim-toolbar__search')];
-        $this->assertMatchesRegularExpression(
-            '~padding-right:\s*8\.5rem;~',
-            $search[1],
-            'The search box reserves the control\'s width instead of being laid out against it.'
+        $found = preg_match('~@media \(min-width: 576px\) \{\s*\.dim-toolbar__panel \{([^}]*)\}~', $scss, $popover);
+        $this->assertSame(1, $found, 'From sm up the panel has a rule of its own.');
+        $this->assertMatchesRegularExpression('~position:\s*absolute;~', $popover[1]);
+        $this->assertMatchesRegularExpression('~top:\s*calc\(100% \+ 6px\);~', $popover[1], 'Under the line.');
+        $this->assertMatchesRegularExpression('~max-width:\s*100%;~', $popover[1], 'Never wider than the line.');
+        $this->assertDoesNotMatchRegularExpression(
+            '~overflow|max-height~',
+            $popover[1],
+            'It grows with its content: a scroll container would clip the date calendar that opens inside it.'
         );
         $this->assertMatchesRegularExpression(
-            '~height:\s*44px;~',
-            $this->rule_body($scss, '.dim-toolbar__input'),
-            'The search box is 44px tall at every width, not on the phone alone.'
+            '~@media \(max-width: 575\.98px\) \{\s*\.dim-toolbar__filters\[open\] \{\s*flex:\s*1 1 100%;~',
+            $scss,
+            'Below sm the open disclosure takes a line of its own, its panel in the flow.'
         );
-        $this->assertMatchesRegularExpression('~min-height:\s*44px;~', $summary[1], 'And so is the Filter summary beside it.');
+
+        $rest = $this->rule_body($scss, '.dim-line__chips--rest');
+        $this->assertMatchesRegularExpression('~display:\s*contents;~', $rest, 'At rest the row is no box and takes no gap.');
+        $this->assertMatchesRegularExpression(
+            '~> :not\(\.dim-vitrine__count\) \{\s*display:\s*none;~',
+            $rest,
+            'Everything but the count sentence goes, and the sentence stays the live region.'
+        );
+        $row = $this->rule_body($scss, '.dim-line__chips');
+        $this->assertMatchesRegularExpression('~flex-wrap:\s*nowrap;~', $row, 'One line under the line.');
+        $this->assertMatchesRegularExpression('~overflow-x:\s*auto;~', $row, 'That scrolls rather than widening the page.');
+        $this->assertMatchesRegularExpression('~max-width:\s*calc\(100% \+ 10px\);~', $row);
+        $chip = $this->rule_body($scss, '.dim-chip');
+        $this->assertMatchesRegularExpression('~min-height:\s*40px;~', $chip, 'A chip is a control at full height.');
+        $this->assertMatchesRegularExpression('~&:focus-visible \{\s*outline:\s*3px solid var\(--dim-ring\);~', $chip);
 
         $phone = $this->phone_block($scss);
         $this->assertMatchesRegularExpression(
@@ -1039,13 +1085,11 @@ final class category_scss_test extends \basic_testcase {
             $phone,
             'display:none would take the control\'s name away from a screen reader with it.'
         );
-        /* On a phone the view toggle shares the line: the reserve is the summary, the toggle and a
-           gap before each (44 + 10 + 87 + 10), and wider while the count badge shows, when the
-           summary is 72px (72 + 10 + 87 + 10). */
-        $this->assertMatchesRegularExpression('~\.dim-toolbar__search \{[^}]*padding-right:\s*151px;~', $phone);
+        $this->assertMatchesRegularExpression('~\.dim-toolbar__input \{\s*height:\s*44px;~', $phone);
         $this->assertMatchesRegularExpression(
-            '~:has\(\[data-region="dim-filtercount"\]:not\(\[hidden\]\)\) \.dim-toolbar__search \{[^}]*padding-right:\s*179px;~',
-            $phone
+            '~\.dim-line__iconbtn,\s*\.dim-toolbar__filterstoggle,\s*\.dim-chip \{\s*min-height:\s*44px;~',
+            $phone,
+            'Every control of the line is 44px on a phone.'
         );
     }
 
@@ -1285,62 +1329,15 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * The two copies of the view toggle swap at 575.98px, one copy per width.
+     * The organisation reads "Organise:" inline before its track, and the row under the line follows the design.
      *
-     * display:none on the idle copy keeps it out of the tab order and the accessibility tree, and
-     * the number is the grid's own phone breakpoint.
-     */
-    public function test_the_phone_copy_of_the_view_toggle_swaps_with_the_organisation_rows(): void {
-        $scss = $this->stylesheet('category.scss');
-        $this->assertMatchesRegularExpression(
-            '~display:\s*none;~',
-            $this->rule_body($scss, '.dim-toolbar__view.dim-toolbar__view--phone'),
-            'From 576px up the phone copy is out of the document\'s tabs.'
-        );
-        $found = 0;
-        $query = '@media (max-width: 575.98px) {';
-        $offset = 0;
-        while (($at = strpos($scss, $query, $offset)) !== false) {
-            $offset = $at + strlen($query);
-            $part = $this->block_at($scss, $offset);
-            if (!str_contains($part, 'dim-toolbar__view--phone')) {
-                continue;
-            }
-            $found++;
-            $this->assertMatchesRegularExpression(
-                '~\.dim-toolbar__row--organise \.dim-toolbar__view \{\s*display:\s*none;~',
-                $part,
-                'Below 576px the organisation row\'s copy goes.'
-            );
-            $this->assertMatchesRegularExpression(
-                '~\.dim-toolbar__view\.dim-toolbar__view--phone \{[^}]*display:\s*inline-flex;~',
-                $part,
-                'And the phone copy comes.'
-            );
-            $this->assertMatchesRegularExpression(
-                '~\.dim-toolbar__view\.dim-toolbar__view--phone \{[^}]*border:\s*0;[^}]*overflow:\s*visible;~',
-                $part,
-                'The row copy is one segment that clips; the phone copy is a boundary per button, and takes neither.'
-            );
-            $this->assertMatchesRegularExpression(
-                '~\.dim-toolbar__filterstoggle \{\s*right:\s*97px;~',
-                $part,
-                'The summary sits the toggle\'s 87px and the design\'s 10px gap from the end of the line.'
-            );
-        }
-        $this->assertSame(1, $found, 'One phone block holds the swap.');
-    }
-
-    /**
-     * The organisation row reads "Organise:" inline before its track, and the count row follows the design.
-     *
-     * The sort group is a flex row, and its legend is floated: a floated legend is not the
-     * fieldset's rendered legend, so it lays out as a flex item beside the track instead of above
-     * it. Bootstrap's reboot gives every legend the whole width, which would put the label on its
-     * own line, so the width is reset too. The colon is the stylesheet's, so the string stays the
-     * group's name. The count row sits on one baseline with the design's gaps and the clear link
-     * right after the sentence rather than pushed to the far end; an empty range-pill region is
-     * out of the row, or its two gaps would double the distance. On a phone every pill and quick
+     * The sort group (in the Organise menu) is a flex row, and its legend is floated: a floated
+     * legend is not the fieldset's rendered legend, so it lays out as a flex item beside the track
+     * instead of above it. Bootstrap's reboot gives every legend the whole width, which would put
+     * the label on its own line, so the width is reset too. The colon is the stylesheet's, so the
+     * string stays the group's name. The row under the line centres its controls with the design's
+     * gaps and the clear link right after the chips rather than pushed to the far end; an empty
+     * period region is out of the row, or its two gaps would double the distance. On a phone every pill and quick
      * option of the toolbar is 44px tall.
      */
     public function test_the_organise_row_labels_itself_inline_and_the_count_row_follows_the_design(): void {
@@ -1365,8 +1362,8 @@ final class category_scss_test extends \basic_testcase {
             'The rule is for the class the template writes on the sort group.'
         );
 
-        $row = $this->rule_body($scss, '.dim-toolbar__row--count');
-        $this->assertMatchesRegularExpression('~align-items:\s*baseline;~', $row);
+        $row = $this->rule_body($scss, '.dim-line__chips');
+        $this->assertMatchesRegularExpression('~align-items:\s*center;~', $row);
         $this->assertMatchesRegularExpression('~gap:\s*4px 14px;~', $row);
         $this->assertDoesNotMatchRegularExpression(
             '~margin-left:\s*auto~',

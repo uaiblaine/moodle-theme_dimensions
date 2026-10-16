@@ -36,7 +36,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   Scenario: Choosing a filter pill narrows the listing and its count without pressing Filter
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    And I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     # Every control that narrows the listing lives inside one native disclosure, which a request
     # with no filter set renders closed - so a real pointer opens it before it can reach a pill,
     # and so must this. The summary is the button.
@@ -54,16 +54,16 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # "should be visible", never "should exist": the repaint hides a pill it did not recognise
     # rather than removing it, so an existence check passes over the very defect this guards.
     And "//fieldset[starts-with(@data-name,'cf_')]//label[normalize-space(.)='All']" "xpath_element" should be visible
-    # And the way out of every filter at once appears - which needs both halves: the link has to
-    # be in the document at all, and the client has to un-hide it after a filter it applied.
-    And "//a[@data-region='dim-vitrine-clear']" "xpath_element" should be visible
-    And I should see "Clear filters" in the ".dim-toolbar" "css_element"
+    # One criterion in force: the clear-all link stays hidden and the field's chip undoes it. The chip
+    # has to be in the document and the client has to un-hide the row after a filter it applied.
+    And "//a[@data-region='dim-vitrine-clear'][@hidden]" "xpath_element" should exist
+    And "//*[@data-region='dim-line-chips']//a[@data-action='dim-chip-remove'][starts-with(@data-param,'cf_')]" "xpath_element" should be visible
 
   @javascript
   Scenario: Typing in the search box narrows the listing where it stands
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    And I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     When I set the field "Search courses" to "Online"
     Then I should see "1 course for “Online”: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "Curso Online" in the "[data-region='dim-vitrine-grid']" "css_element"
@@ -86,7 +86,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Then the "aria-pressed" attribute of "[data-region='dim-line-star']" "css_element" should contain "true"
     And I should see "Resgate em Altura" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Curso Online" in the "[data-region='dim-vitrine-grid']" "css_element"
-    And "//*[@data-region='dim-filtercount'][not(@hidden)]//*[@data-region='dim-filtercount-number'][normalize-space(text())='1']" "xpath_element" should exist
+    # The badge counts what the Filters panel holds, and the star is on the line.
+    And "//*[@data-region='dim-filtercount'][@hidden]" "xpath_element" should exist
     When I click on "[data-region='dim-line-star']" "css_element"
     Then the "aria-pressed" attribute of "[data-region='dim-line-star']" "css_element" should contain "false"
     And I should see "Curso Online" in the "[data-region='dim-vitrine-grid']" "css_element"
@@ -106,7 +107,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Primeiros Socorros | PSOC      | TESTCAT  | 1                          |
     And I log in as "student1"
     When I am on the "TESTCAT|perpage=1" "theme_dimensions > Category showcase" page
-    Then I should see "4 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     And I should see "1" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
     When I click on "Load more" "button"
     # Two cards, not three and not four: the page that was asked for is the page after this one,
@@ -128,10 +129,9 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT|perpage=1" "theme_dimensions > Category showcase" page
     And ".dim-vitrine.dim-vitrine--cards" "css_element" should exist
-    # The organisation row's copy of the toggle names each view in words, and it comes after the
-    # phone's copy in the document (hidden at this width), so it is scoped by its own hook.
-    And I should see "List" in the "[data-region='dim-view-row']" "css_element"
-    And I should see "Cards" in the "[data-region='dim-view-row']" "css_element"
+    # The toggle is one icon-only group whose words are visually hidden.
+    And "//*[@data-region='dim-view-row']/button[@value='list']" "xpath_element" should exist
+    And "//*[@data-region='dim-view-row']/button[@value='cards']" "xpath_element" should exist
     # The appended page is state that lives in this document and nowhere else, which is what
     # makes the assertions after the toggle able to tell a class swap from a page load: the view
     # buttons are real submits, so without this module the click would reload and lose it.
@@ -174,7 +174,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Brigada Dez       | BRIG10    | TESTCAT  | 1                          |
     And I log in as "student1"
     When I am on the "TESTCAT|perpage=1" "theme_dimensions > Category showcase" page
-    Then I should see "13 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '13 courses in Test category')]" "xpath_element" should exist
     And I wait until "//ul[@data-region='dim-vitrine-grid'][count(li[not(contains(@class, 'dim-vitrine__item--enter'))]) = 1]" "xpath_element" exists
     When I click on "Load more" "button"
     Then I wait until "//ul[@data-region='dim-vitrine-grid'][count(li[not(contains(@class, 'dim-vitrine__item--enter'))]) = 2]" "xpath_element" exists
@@ -219,13 +219,13 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # listing is how a reader concludes the filter is broken.
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    And I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     When I set the field "Search courses" to "Online"
     Then I should see "1 course for “Online”: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should see "1" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
     And the url should match "[?&]q=Online"
     When I press the "back" button in the browser
-    Then I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     And I should see "2" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
     And the field "Search courses" matches value ""
     And the url should match "^(?!.*[?&]q=)"
@@ -266,11 +266,12 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # Four, the whole subtree: a flat organisation lists all of it, where the grouped page lists
     # only the direct courses. And no posters: the areas are the grouped organisation's, and "By
     # area" brings them back.
-    And I should see "4 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     And I should see "Zumbi do Mar" in the "//ul[@data-region='dim-vitrine-grid']/li[1]" "xpath_element"
-    When I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='A-Z']" "xpath_element"
+    When I click on "[data-region='dim-organise'] > summary" "css_element"
+    And I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='A-Z']" "xpath_element"
     Then I should see "Combate a Incendio" in the "//ul[@data-region='dim-vitrine-grid']/li[1]" "xpath_element"
-    And I should see "4 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     And the url should match "[?&]sort=name(&|$)"
     # The shell did not change, so the areas are still absent - which is what says this was a
     # fetch into the flat page and not a navigation back into the grouped one.
@@ -284,7 +285,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Given I log in as "student1"
     And I am on the "TESTCAT|sort=name" "theme_dimensions > Category showcase" page
     And "[data-region='dim-areas']" "css_element" should not exist
-    When I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='By area']" "xpath_element"
+    When I click on "[data-region='dim-organise'] > summary" "css_element"
+    And I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='By area']" "xpath_element"
     Then "[data-region='dim-areas']" "css_element" should exist
     And I should see "Open category" in the "[data-region='dim-areas']" "css_element"
     And I should see "Courses in Test category" in the "[data-region='dim-direct']" "css_element"
@@ -308,7 +310,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     And "[data-region='dim-areas']" "css_element" should exist
-    When I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='A-Z']" "xpath_element"
+    When I click on "[data-region='dim-organise'] > summary" "css_element"
+    And I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='A-Z']" "xpath_element"
     Then "[data-region='dim-areas']" "css_element" should not exist
     And the url should match "[?&]sort=name(&|$)"
     When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
@@ -329,7 +332,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Curso de Onte | ONTEM     | TESTCAT  | 1                          | ##yesterday## |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    And I should see "4 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
     And I click on "Today" "link"
     Then I should see "3 courses with these filters: 2 in this category and 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
@@ -353,7 +356,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Curso Futuro  | FUTURO    | TESTCAT  | 1                          | ##+2 days##   |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    And I should see "5 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '5 courses in Test category')]" "xpath_element" should exist
     When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
     And I click on "//button[@data-action='dim-daterange-open'][@data-bound='from']" "xpath_element"
     Then "//*[@data-region='dim-daterange-pop'][not(@hidden)]" "xpath_element" should exist
@@ -361,7 +364,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I click on "//button[@data-region='dim-daterange-day'][@aria-current='date']" "xpath_element"
     Then "//*[@data-region='dim-daterange-pop'][not(@hidden)]" "xpath_element" should exist
     And the url should match "^(?!.*[?&](from|to)=)"
-    And I should see "5 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '5 courses in Test category')]" "xpath_element" should exist
     # And now the reader says they are done with it.
     When I click on "//button[@data-action='dim-daterange-done']" "xpath_element"
     Then I should see "3 courses with these filters: 2 in this category and 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
@@ -369,7 +372,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I should not see "Curso Futuro"
     And the url should match "[?&]from=[0-9]{4}-[0-9]{2}-[0-9]{2}"
     And the url should match "[?&]to=[0-9]{4}-[0-9]{2}-[0-9]{2}"
-    # The badge on the Filter summary counts the period once, in both of its halves: it is the only
+    # The badge on the Filters summary counts the period once, in both of its halves: it is the only
     # number of this toolbar a reader who shuts the panel can still see, and the second half is
     # the sentence a screen reader is read, which is where the digit alone would have been right.
     And "//*[@data-region='dim-filtercount'][not(@hidden)]//*[@data-region='dim-filtercount-number'][normalize-space(text())='1']" "xpath_element" should exist
@@ -383,10 +386,13 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And the url should match "[?&]to=[0-9]{4}-[0-9]{2}-[0-9]{2}"
     And the url should match "^(?!.*[?&]from=)"
     # The period is stated where a reader who shuts the panel can still see it, and that statement
-    # is a control: pressing it drops the period and the whole listing comes back.
-    And "//*[@data-region='dim-daterange-pill']//button[starts-with(normalize-space(.), 'Until ')]" "xpath_element" should be visible
-    When I click on "//*[@data-region='dim-daterange-pill']//button" "xpath_element"
-    Then I should see "5 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    # is a control: pressing it drops the period and the whole listing comes back. The panel is a
+    # popover over the row under the line from the sm breakpoint up, so the reader shuts it first.
+    When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
+    Then "//details[@data-region='dim-filters'][not(@open)]" "xpath_element" should exist
+    And "//*[@data-region='dim-daterange-pill']//a[starts-with(normalize-space(.), 'Until ')]" "xpath_element" should be visible
+    When I click on "//*[@data-region='dim-daterange-pill']//a" "xpath_element"
+    Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '5 courses in Test category')]" "xpath_element" should exist
     And the url should match "^(?!.*[?&](from|to)=)"
     # And the badge goes back with it, which is what makes the assertions above a measurement of
     # this request rather than of a number that happened to be painted once.
@@ -409,7 +415,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I should not see "Curso de Onte"
     And the url should match "[?&]from=[0-9]{4}-[0-9]{2}-[0-9]{2}"
     And the url should match "^(?!.*[?&]to=)"
-    And "//*[@data-region='dim-daterange-pill']//button[starts-with(normalize-space(.), 'From ')]" "xpath_element" should be visible
+    And "//*[@data-region='dim-daterange-pill']//a[starts-with(normalize-space(.), 'From ')]" "xpath_element" should be visible
 
   @javascript
   Scenario: The end box opens the same calendar, and an end alone keeps the courses up to that day
@@ -448,7 +454,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I should see "Curso Distante" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "Curso Online"
     And "//button[@data-bound='from']//*[@data-region='dim-daterange-value'][normalize-space(.)!='']" "xpath_element" should exist
-    When I click on "//label[contains(@class, 'dim-pill')][contains(normalize-space(.), 'Online')]" "xpath_element"
+    When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
+    And I click on "//label[contains(@class, 'dim-pill')][contains(normalize-space(.), 'Online')]" "xpath_element"
     Then I should see "1 course with these filters: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
     And I should not see "Curso Online"
     And the url should match "[?&]from=2031-01-01(&|$)"
@@ -469,7 +476,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Curso Fundo | FUNDO     | INNERCAT | 1                          |
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    And I should see "4 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     # A poster says it is an area, and carries no number at rest.
     And I should see "Category" in the "//article[@data-name='Open category']//span[contains(@class, 'dim-poster__kind')]" "xpath_element"
     And "//li[@data-region='dim-panel'][@hidden]" "xpath_element" should exist
@@ -482,7 +489,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And the url should match "[?&]open=[0-9]+"
     # The panel's own subtitle counts its two courses; the page's count line is the subtree's still.
     And I should see "2 courses" in the "[data-region='dim-panel-subtitle']" "css_element"
-    And I should see "4 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
 
   @javascript
   Scenario: The panel follows the last poster of its row, one area at a time, at every width
@@ -571,7 +578,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # panel says so in the server's zero sentence.
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    And I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     When I click on "//article[@data-name='Open category']//button[@data-region='dim-poster-control']" "xpath_element"
     Then I should see "Combate a Incendio" in the "[data-region='dim-panel-rail']" "css_element"
     When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
@@ -586,14 +593,13 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "//li[@data-region='dim-panel'][not(@hidden)]" "xpath_element" should exist
 
   @javascript
-  Scenario: On a phone the view toggle joins the search line
-    # The toolbar writes the toggle twice and the stylesheet shows one per width.
+  Scenario: On a phone the view toggle stays on the line
+    # The toggle is written once and shown at every width.
     Given I change viewport size to "390x844"
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    Then "[data-region='dim-view-phone']" "css_element" should be visible
-    And ".dim-toolbar__row--organise .dim-toolbar__view" "css_element" should not be visible
-    When I click on "List" "button" in the "[data-region='dim-view-phone']" "css_element"
+    Then "[data-region='dim-view-row']" "css_element" should be visible
+    When I click on "List" "button" in the "[data-region='dim-view-row']" "css_element"
     Then ".dim-vitrine.dim-vitrine--list" "css_element" should exist
 
   @javascript
@@ -607,7 +613,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "[data-region='dim-areas']" "css_element" should exist
     When I am on the "TESTCAT|sort=name" "theme_dimensions > Category showcase" page
     # Three, which is the flat listing of the whole subtree: two direct courses and the child's.
-    Then I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     And "//nav[@data-region='dim-vitrine-tree']//a[@data-region='dim-tree-link'][@data-categoryid]" "xpath_element" should exist
     When I click on "//nav[@data-region='dim-vitrine-tree']//a[normalize-space(.)='Open category']" "xpath_element"
     Then I should see "1 course in Open category" in the "[data-region='dim-vitrine-count']" "css_element"
@@ -615,17 +621,18 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I should not see "Resgate em Altura"
     # It was a fetch and not a navigation: the address changed under the page that was already
     # there. The criterion is one of the filters in every respect, so the way out of all of them
-    # is offered and the badge counts it.
+    # is offered; the category is one criterion, so its chip is the way out and the badge, which
+    # counts only what the Filters panel holds, stays hidden.
     And the url should match "[?&]cat=[0-9]+"
-    And "//a[@data-region='dim-vitrine-clear']" "xpath_element" should be visible
-    And "//*[@data-region='dim-filtercount'][not(@hidden)]//*[@data-region='dim-filtercount-number'][normalize-space(text())='1']" "xpath_element" should exist
+    And "//*[@data-region='dim-line-chips']//a[@data-action='dim-chip-remove'][@data-param='cat']" "xpath_element" should be visible
+    And "//*[@data-region='dim-filtercount'][@hidden]" "xpath_element" should exist
     # Exactly one entry is marked, and it is the one pressed - the count predicate is the
     # assertion, because "the pressed one is marked" passes while the previous one still is too.
     And "//nav[@data-region='dim-vitrine-tree'][count(.//a[@aria-current='true']) = 1]" "xpath_element" should exist
     And "//a[@data-region='dim-tree-link'][@aria-current='true'][normalize-space(.)='Open category']" "xpath_element" should exist
     # And the page's own entry, the first one, is what puts the whole subtree back.
     When I click on "//nav[@data-region='dim-vitrine-tree']//a[normalize-space(.)='Test category']" "xpath_element"
-    Then I should see "3 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
     And the url should match "^(?!.*[?&]cat=)"
     And "//a[@data-region='dim-tree-link'][@aria-current='true'][normalize-space(.)='Test category']" "xpath_element" should exist
 
@@ -649,8 +656,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "//article[@data-name='Second category']" "xpath_element" should not be visible
     And I should see "Nothing for “Resgate” in 3 other areas" in the "[data-region='dim-nomatch-summary']" "css_element"
     And "//article[@data-name='Empty category']//button[@data-region='dim-poster-control']" "xpath_element" should exist
-    When I click on "Clear filters" "link" in the ".dim-toolbar__row--count" "css_element"
-    Then I should see "4 courses in Test category" in the "[data-region='dim-vitrine-count']" "css_element"
+    When I click on "Clear text" "button" in the "[data-region='dim-line-search']" "css_element"
+    Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '4 courses in Test category')]" "xpath_element" should exist
     And the focused element is "Search courses" "field"
     And the url should match "^(?!.*[?&]q=)"
     And "//article[@data-name='Second category']" "xpath_element" should be visible
@@ -670,7 +677,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     When I click on "Search courses" "field"
     And I type "Incendio"
-    Then I should see "Only Open category has results; its courses are open below." in the "[data-region='dim-vitrine-count']" "css_element"
+    Then I should see "Only Open category has results; its courses are open below." in the "[data-region='dim-line-chips']" "css_element"
     And I should see "Combate a Incendio" in the "[data-region='dim-panel-rail']" "css_element"
     And "//article[@data-name='Open category']//button[@data-region='dim-poster-control'][@aria-expanded='true']" "xpath_element" should exist
     And the focused element is "Search courses" "field"

@@ -316,14 +316,57 @@ final class criteria_test extends \advanced_testcase {
             (new criteria(7, ['datefrom' => '2026-09-17', 'dateto' => '2026-09-19']))->filter_count(),
             'Two bounds of one control are one filter.'
         );
-        $this->assertSame(
-            3,
-            (new criteria(7, [
-                'search' => 'resgate',
-                'fields' => [4 => 1],
-                'datefrom' => '2026-09-17',
-            ]))->filter_count()
-        );
+        $mixed = new criteria(7, [
+            'search' => 'resgate',
+            'fields' => [4 => 1],
+            'datefrom' => '2026-09-17',
+        ]);
+        $this->assertSame(2, $mixed->filter_count(), 'The field and the period are in the panel; the term is in its own box.');
+        $this->assertSame(3, $mixed->narrowing_count(), 'All three narrow the listing.');
+    }
+
+    /**
+     * The Filters badge counts what the panel holds; "Clear all" counts everything that narrows.
+     *
+     * The panel holds the custom fields, the period and "More statuses" - the state chip's values
+     * outside criteria::SCOPE. The scope's own values are cells on the line, the term is in its
+     * box, the favourites are the star and the tree's category is the tree: each is visible where
+     * it is set, so the badge leaves them out, while narrowing_count() (what "Clear all" is offered
+     * from) counts every one of them.
+     *
+     * Changes that must make it fail: a scope value counted by the badge (the second assertion); a
+     * "More statuses" value left out of it (the third); the search counted by it (the fourth).
+     */
+    public function test_the_badge_counts_what_the_panel_holds_and_clear_all_counts_everything(): void {
+        $this->resetAfterTest();
+        $this->assertSame(['', 'enrolled', 'open', 'scheduled'], criteria::SCOPE);
+        foreach ([classifier::STATE_ENROLLED, classifier::STATE_OPEN, classifier::STATE_SCHEDULED] as $state) {
+            $scope = new criteria(7, ['state' => $state]);
+            $this->assertTrue(criteria::is_scope($state));
+            $this->assertSame(0, $scope->filter_count(), $state . ' is a cell of the line, not a filter of the panel.');
+            $this->assertSame(1, $scope->narrowing_count());
+        }
+        foreach ([classifier::STATE_PENDING, classifier::STATE_FREE] as $state) {
+            $more = new criteria(7, ['state' => $state]);
+            $this->assertFalse(criteria::is_scope($state));
+            $this->assertSame(1, $more->filter_count(), $state . ' is one of the panel\'s "More statuses".');
+            $this->assertSame(1, $more->narrowing_count());
+        }
+        $this->assertTrue(criteria::is_scope(null), 'No state is the scope\'s "all".');
+        $everything = new criteria(7, [
+            'sort' => criteria::SORT_NAME,
+            'search' => 'resgate',
+            'state' => classifier::STATE_PENDING,
+            'favourites' => true,
+            'fields' => [4 => 1, 5 => 2],
+            'datefrom' => '2026-09-17',
+            'dateto' => '2026-09-20',
+            'cat' => 9,
+        ]);
+        $this->assertSame(4, $everything->filter_count(), 'Two fields, the period and the state: what the panel holds.');
+        $this->assertSame(7, $everything->narrowing_count(), 'And the term, the star and the tree beside them.');
+        $shown = new criteria(7, ['search' => 'resgate', 'favourites' => true, 'sort' => 'name', 'cat' => 9]);
+        $this->assertSame(0, $shown->filter_count(), 'Nothing the line or the tree shows is on the badge.');
     }
 
     /**
@@ -377,7 +420,8 @@ final class criteria_test extends \advanced_testcase {
         $flat = new criteria(7, ['sort' => criteria::SORT_NAME, 'cat' => 9]);
         $this->assertSame(9, $flat->cat);
         $this->assertTrue($flat->has_filters(), 'The tree narrows the listing, so it is something to clear.');
-        $this->assertSame(1, $flat->filter_count(), 'And it is one filter, like the period and the term.');
+        $this->assertSame(1, $flat->narrowing_count(), 'And it is one criterion, like the period and the term.');
+        $this->assertSame(0, $flat->filter_count(), 'The tree shows it, so the Filters badge does not count it.');
         $this->assertSame(9, $flat->query_params()[criteria::PARAM_CAT], 'It travels in the address.');
         $this->assertSame(
             3,
@@ -386,7 +430,7 @@ final class criteria_test extends \advanced_testcase {
                 'search' => 'resgate',
                 'datefrom' => '2026-09-17',
                 'cat' => 9,
-            ]))->filter_count(),
+            ]))->narrowing_count(),
             'Beside the others it counts once, and the period still counts once for its two bounds.'
         );
 
@@ -620,17 +664,19 @@ final class criteria_test extends \advanced_testcase {
         $this->resetAfterTest();
         $off = new criteria(7, ['state' => classifier::STATE_ENROLLED]);
         $this->assertFalse($off->favourites);
-        $this->assertSame(1, $off->filter_count());
+        $this->assertSame(1, $off->narrowing_count());
+        $this->assertSame(0, $off->filter_count(), 'A scope value is a cell of the line, not on the badge.');
         $this->assertArrayNotHasKey(criteria::PARAM_FAVOURITES, $off->query_params());
         $this->assertArrayNotHasKey(criteria::PARAM_FAVOURITES, $off->narrowing_params());
 
         $alone = new criteria(7, ['favourites' => true]);
         $this->assertTrue($alone->has_filters(), 'The favourites alone narrow the listing.');
-        $this->assertSame(1, $alone->filter_count());
+        $this->assertSame(1, $alone->narrowing_count());
+        $this->assertSame(0, $alone->filter_count(), 'The star shows them, so the badge does not.');
 
         $both = new criteria(7, ['state' => classifier::STATE_ENROLLED, 'favourites' => true, 'sort' => criteria::SORT_NAME]);
         $this->assertSame(classifier::STATE_ENROLLED, $both->state, 'They combine with the chip, never replace it.');
-        $this->assertSame(2, $both->filter_count(), 'Two filters on the badge.');
+        $this->assertSame(2, $both->narrowing_count(), 'Two criteria, so "Clear all" is offered.');
         $this->assertSame(1, $both->query_params()[criteria::PARAM_FAVOURITES]);
         $this->assertSame(classifier::STATE_ENROLLED, $both->query_params()[criteria::PARAM_STATE]);
         $this->assertSame(1, $both->narrowing_params()[criteria::PARAM_FAVOURITES], 'A panel\'s call to action carries them.');

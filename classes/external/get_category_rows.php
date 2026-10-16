@@ -349,8 +349,21 @@ class get_category_rows extends external_api {
             'nexturl' => new external_value(PARAM_URL, 'The address of the next page, empty on the last one.'),
             'clearurl' => new external_value(PARAM_URL, 'The address of the listing with no filter at all.'),
             'hasfilters' => new external_value(PARAM_BOOL, 'Whether anything narrows this listing.'),
-            'filtercount' => new external_value(PARAM_INT, 'How many filters narrow this listing, for the summary badge.'),
+            'filtercount' => new external_value(PARAM_INT, 'How many filters the panel holds, for the Filters badge.'),
             'filtercountlabel' => new external_value(PARAM_TEXT, 'The same number as the sentence a screen reader is read.'),
+            'chips' => new external_multiple_structure(
+                new external_single_structure([
+                    'param' => new external_value(
+                        PARAM_ALPHANUMEXT,
+                        'What the chip drops: a field\'s parameter (cf_<id>), chip, cat, or period for both bounds.'
+                    ),
+                    'label' => new external_value(PARAM_RAW, 'The chip\'s label, plain: the sink escapes it.'),
+                    'url' => new external_value(PARAM_URL, 'The listing with that one criterion dropped and the rest kept.'),
+                    'removelabel' => new external_value(PARAM_TEXT, 'The words that make the chip\'s name say what a press does.'),
+                ]),
+                'One chip per criterion in force that the filter line does not show, in the row under it.'
+            ),
+            'clearall' => new external_value(PARAM_BOOL, 'Whether "Clear all" is offered: two criteria or more narrow it.'),
             'searchtooshort' => new external_value(PARAM_BOOL, 'Whether a term was sent that is too short to search.'),
             'cards' => new external_multiple_structure(self::card_structure(), 'The cards of this page, in order.'),
             'statusgroup' => new external_single_structure([

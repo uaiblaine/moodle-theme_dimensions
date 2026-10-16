@@ -141,6 +141,23 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
+     * A cell that was absent and comes back is drawn where the order puts it, not at the end.
+     *
+     * Changes that must make it fail: dropping the ordered insertion in paintGroup() (a returning
+     * cell is appended last, "All, Open, My courses"); handing the scope over in the answer's
+     * order instead of SCOPE's.
+     */
+    public function test_a_returning_cell_keeps_its_place_in_the_order(): void {
+        $group = $this->body('paintGroup');
+        $this->assertStringContainsString('ordered.push(input, label);', $group);
+        $this->assertStringContainsString('track.insertBefore(node, expected);', $group);
+        $this->assertStringContainsString('if (node !== expected) {', $group, 'Only what is out of place moves.');
+        $status = $this->body('paintStatus');
+        $this->assertStringContainsString('options.filter(isScope).sort((a, b) => rank(a) - rank(b))', $status);
+        $this->assertStringContainsString('const rank = (option) => SCOPE.indexOf(String(option.value));', $status);
+    }
+
+    /**
      * The body of the module's one exported function.
      *
      * @return string
@@ -232,7 +249,8 @@ final class amd_source_test extends \basic_testcase {
             $this->body('listen')
         );
         $this->assertMatchesRegularExpression(
-            '~^    cancelSearch\(\);\n    const token = new Pending\(\'theme_dimensions/categoryvitrine:search\'\);\n'
+            '~^    cancelSearch\(\);\n    paintEraser\(\);\n'
+                . '    const token = new Pending\(\'theme_dimensions/categoryvitrine:search\'\);\n'
                 . '    searchpending = token;\n    searchtimer = window\.setTimeout\(async\(\) => \{\n'
                 . '        searchpending = null;\n        try \{\n            await onSearch\(search\.value\);\n'
                 . '        \} finally \{\n            token\.resolve\(\);\n        \}\n    \}, SEARCH_DEBOUNCE\);$~',
@@ -789,8 +807,9 @@ final class amd_source_test extends \basic_testcase {
     /**
      * The count line is four regions of the server's, and every answer writes the four.
      *
-     * The count line is the number in bold, the sentence after it, "See all as a list" when the
-     * server offers one, and the automatic opening's note, which a new answer always takes away.
+     * The count line is the number in bold and the sentence after it; "See all as a list" when the
+     * server offers one and the automatic opening's note, which a new answer always takes away,
+     * follow the chips in the row under the filter line.
      * Writing the whole paragraph's text would wipe the other regions. Nothing is composed: the
      * number and the sentence arrive formatted, and the note is the answer's own sentence, shown
      * only once the panel's module says it opened the area.
@@ -806,7 +825,7 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString("const url = response.seeallurl || '';", $count);
         $this->assertStringContainsString("seeall.hidden = url === '';", $count);
         $this->assertMatchesRegularExpression(
-            '~const note = line\.querySelector\(SELECTORS\.countnote\);\s*if \(note\) \{\s*note\.hidden = true;~',
+            '~const note = root\.querySelector\(SELECTORS\.countnote\);\s*if \(note\) \{\s*note\.hidden = true;~',
             $count,
             'Every answer takes the automatic opening\'s note away.'
         );
@@ -1456,5 +1475,74 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('theme_dimensions_get_card_details', $build);
         $this->assertStringContainsString('theme_dimensions/categorystar', $build);
         $this->assertStringNotContainsString('core_course_set_favourite_courses', $build);
+    }
+
+    /**
+     * The row under the filter line is painted from the answer, and a chip drops its one criterion.
+     *
+     * Nothing of a chip is composed here: its label, its address, what it drops and the words that
+     * name the press are the answer's (category_toolbar::chips()), painted with the markup of the
+     * server's category_chip. The row shows while the answer says something narrows, and keeps
+     * only its visually hidden count sentence at rest; "Clear all" follows the answer's clearall.
+     * The state's status group is split between the scope and "More statuses" by SCOPE, the
+     * server's own list. A pressed chip drops in the state exactly what its address drops, and the
+     * eraser empties the search and asks again.
+     *
+     * Changes that must make it fail: the rest class or the count's visually-hidden toggled on
+     * anything but the answer's hasfilters; the clear link shown on hasfilters again; a chip whose
+     * address loses the open panel; the period dropping one bound only; the chip press not
+     * intercepted; the split read from anything but SCOPE.
+     */
+    public function test_the_row_under_the_line_is_painted_from_the_answer(): void {
+        $chips = $this->body('paintChips');
+        $this->assertStringContainsString('const narrowed = Boolean(response.hasfilters);', $chips);
+        $this->assertStringContainsString("row.classList.toggle('dim-line__chips--rest', !narrowed);", $chips);
+        $this->assertStringContainsString("count.classList.toggle('visually-hidden', !narrowed);", $chips);
+        $this->assertStringContainsString('clear.hidden = !response.clearall;', $chips);
+        $this->assertStringContainsString('chips.filter((chip) => chip.param !== CHIP_PERIOD).map(createChip)', $chips);
+        $this->assertStringContainsString('chips.filter((chip) => chip.param === CHIP_PERIOD).map(createChip)', $chips);
+        $create = $this->body('createChip');
+        $this->assertStringContainsString('link.href = withPanel(chip.url);', $create, 'The open panel rides along.');
+        $this->assertStringContainsString("link.dataset.action = 'dim-chip-remove';", $create);
+        $this->assertStringContainsString('link.dataset.param = chip.param;', $create);
+        $this->assertStringContainsString("document.createTextNode(chip.label + ' ')", $create);
+        $this->assertStringContainsString("name.textContent = chip.removelabel || '';", $create);
+        $this->assertStringNotContainsString('getString', $this->shared(), 'The shared listing composes no sentence.');
+
+        $drop = $this->body('dropCriterion');
+        $this->assertMatchesRegularExpression(
+            "~\} else if \(param === CHIP_PERIOD\) \{\s*state\.datefrom = '';\s*state\.dateto = '';~",
+            $drop,
+            'The period\'s chip drops both bounds, as its address does.'
+        );
+        $this->assertStringContainsString('delete state.filters[param.slice(PARAM.fieldprefix.length)];', $drop);
+        $this->assertStringContainsString("const CHIP_PERIOD = 'period';", $this->shared());
+        $this->assertSame(\theme_dimensions\output\category_toolbar::CHIP_PERIOD, 'period', 'The server\'s spelling.');
+
+        $status = $this->body('paintStatus');
+        $this->assertStringContainsString('const isScope = (option) => SCOPE.indexOf(String(option.value)) >= 0;', $status);
+        $this->assertStringContainsString('more.hidden = others.length === 0;', $status);
+
+        $apply = $this->body('applyResponse');
+        $this->assertStringContainsString('paintChips(response);', $apply);
+        $this->assertStringNotContainsString('response.hasfilters', $apply, 'The clear link\'s visibility is paintChips\'.');
+        $listen = $this->body('listen');
+        $this->assertMatchesRegularExpression(
+            '~const chip = closestOf\(event, SELECTORS\.chipremove\);\s*if \(chip && onChipRemove\(chip\)\) \{\s*'
+                . '(?://[^\n]*\s*)?event\.preventDefault\(\);~',
+            $listen,
+            'A chip is a fetch with JavaScript, and its link otherwise.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~if \(closestOf\(event, SELECTORS\.eraser\)\) \{\s*event\.preventDefault\(\);\s*onErase\(\)~',
+            $listen
+        );
+        $remove = $this->body('onChipRemove');
+        $this->assertMatchesRegularExpression('~remember\(false\);\s*writeUrl\(true\);\s*requestRows\(0, false\);~', $remove);
+        $erase = $this->body('onErase');
+        $this->assertMatchesRegularExpression("~search\.value = '';\s*search\.focus\(\{preventScroll: true\}\);~", $erase);
+        $this->assertStringContainsString("await onSearch('');", $erase);
+        $this->assertStringContainsString("eraser.hidden = search.value === '';", $this->body('paintEraser'));
+        $this->assertStringContainsString('paintEraser(root);', $this->body('paintControls'));
     }
 }
