@@ -483,19 +483,31 @@ final class card_markup_test extends \advanced_testcase {
                 '//*[@data-region="dim-filtercount"]//*[@data-region="dim-filtercount-label"]',
             'dim-vitrine-count' => '//*[@data-region="dim-vitrine-count"][@role="status"]',
             'dim-vitrine-clear' => '//a[@data-region="dim-vitrine-clear"]',
-            /* The count paragraph's five parts, each rewritten by the client; the clear link's
-               action, shared by every "clear filters" of the page; and the row copy of the view
-               toggle, which Behat and the stylesheet address because the phone copy comes first in
-               the document. */
+            /* The count paragraph's two parts and the two that follow the chips in the row under
+               the line, each rewritten by the client; the clear link's action, shared by every
+               "clear filters" of the page; and the view toggle, one group on the line. */
             'dim-vitrine-countnumber' => '//*[@data-region="dim-vitrine-count"]/b[@data-region="dim-vitrine-countnumber"]',
             'dim-vitrine-counttext' => '//*[@data-region="dim-vitrine-count"]/span[@data-region="dim-vitrine-counttext"]',
-            'dim-vitrine-seeall' => '//*[@data-region="dim-vitrine-count"]/span[@data-region="dim-vitrine-seeall"]/a[@href]',
-            'dim-vitrine-countnote' => '//*[@data-region="dim-vitrine-count"]/span[@data-region="dim-vitrine-countnote"][@hidden]',
+            'dim-vitrine-seeall' => '//*[@data-region="dim-line-chips"]/span[@data-region="dim-vitrine-seeall"]/a[@href]',
+            'dim-vitrine-countnote' => '//*[@data-region="dim-line-chips"]/span[@data-region="dim-vitrine-countnote"][@hidden]',
             'dim-vitrine-countnotetext' => '//*[@data-region="dim-vitrine-countnote"]//*[@data-region="dim-vitrine-countnotetext"]',
             'dim-clear on the clear link' => '//a[@data-region="dim-vitrine-clear"][@data-action="dim-clear"]',
-            'dim-view-row' => '//*[' . self::has_class('dim-toolbar__row--organise') . ']'
-                . '/*[@data-region="dim-view-row"][@role="group"]',
-            /* The favourites toggle on the search line, right before the filter disclosure, with
+            'dim-view-row' => '//*[@data-region="dim-line"]/*[@data-region="dim-view-row"][@role="group"]',
+            /* The filter line and what the clients address on it and under it: the line, the search
+               pill and its eraser, the Organise menu, the scope and "More statuses" halves of the
+               state group, the row under the line, its list of chips and each chip's action. */
+            'dim-line' => '//form[@data-region="dim-vitrine-toolbar"]/div[@data-region="dim-line"]',
+            'dim-line-search' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-search"]//input[@type="search"]',
+            'dim-search-clear' => '//*[@data-region="dim-line-search"]/button[@type="button"][@data-action="dim-search-clear"]',
+            'dim-organise' => '//*[@data-region="dim-line"]/details[@data-region="dim-organise"]/summary',
+            'dim-vitrine-group scope' => '//*[@data-region="dim-line"]/fieldset[@data-region="dim-vitrine-group"]'
+                . '[@data-name="chip"][@data-role="scope"]//*[@data-region="dim-pill-track"]',
+            'dim-vitrine-group more' => '//details[@data-region="dim-filters"]//fieldset[@data-region="dim-vitrine-group"]'
+                . '[@data-name="chip"][@data-role="more"]//*[@data-region="dim-pill-track"]',
+            'dim-line-chips' => '//form[@data-region="dim-vitrine-toolbar"]/div[@data-region="dim-line-chips"]',
+            'dim-line-chiplist' => '//*[@data-region="dim-line-chips"]/*[@data-region="dim-line-chiplist"]',
+            'dim-chip-remove' => '//*[@data-region="dim-line-chiplist"]/a[@data-action="dim-chip-remove"][@data-param][@href]',
+            /* The favourites toggle on the line, right before the filter disclosure, with
                the action the client intercepts, the number the client rewrites in its name and the
                hidden field the client enables while it is on. */
             'dim-line-star' => '//details[@data-region="dim-filters"]'
@@ -510,37 +522,31 @@ final class card_markup_test extends \advanced_testcase {
                 "The toolbar no longer writes the {$hook} hook the client module addresses."
             );
         }
-        /* Both view buttons, because the module addresses them as a pair and swaps aria-pressed -
-           and twice: the row's pair and the phone's copy on the search line, the same two named
-           submits with the same values, so the module's one delegated listener and its one paint
-           serve both. */
-        $this->assertSame(
-            4,
-            $toolbar->query('//button[@data-action="dim-view"][@name="view"]')->length,
-            'The view toggle is two named submits in each of its two copies, addressed by data-action.'
-        );
-        $phone = $toolbar->query(
-            '//details[@data-region="dim-filters"]/following-sibling::*[@data-region="dim-view-phone"][@role="group"]'
-        );
-        $this->assertSame(1, $phone->length, 'The phone copy sits on the search line, right after the filter disclosure.');
-        $this->assertSame(
-            1,
-            $toolbar->query('//*[@data-region="dim-view-phone"]/following::*[@data-region="dim-view-row"]')->length,
-            'And precedes the row copy in the document, since the search line is the first row.'
-        );
+        /* Both view buttons, because the module addresses them as a pair and swaps aria-pressed:
+           ONE group of two named submits, List first, each named by a visually hidden word and a
+           tooltip. The phone's copy of the toggle is gone with the rows it swapped between. */
         $this->assertSame(
             2,
-            $toolbar->query('//*[@data-region="dim-view-row"]/button[@data-action="dim-view"][@name="view"]')->length,
-            'The row copy is the same pair.'
+            $toolbar->query('//button[@data-action="dim-view"][@name="view"]')->length,
+            'The view toggle is two named submits, addressed by data-action.'
+        );
+        $this->assertSame(0, $toolbar->query('//*[@data-region="dim-view-phone"]')->length, 'There is no phone copy.');
+        $views = iterator_to_array(
+            $toolbar->query('//*[@data-region="dim-view-row"]/button[@data-action="dim-view"][@name="view"]')
         );
         $this->assertSame(
-            ['cards', 'list'],
-            array_map(
-                static fn(\DOMElement $button): string => $button->getAttribute('value'),
-                iterator_to_array($toolbar->query('.//button[@data-action="dim-view"][@name="view"]', $phone->item(0)))
-            ),
-            'With the same two values as the first row\'s pair.'
+            ['list', 'cards'],
+            array_map(static fn(\DOMElement $button): string => $button->getAttribute('value'), $views),
+            'List first, as the filter line draws it.'
         );
+        foreach ($views as $button) {
+            $this->assertNotSame('', $button->getAttribute('title'), 'An icon button has a tooltip.');
+            $this->assertSame(
+                1,
+                $toolbar->query('./span[' . self::has_class('visually-hidden') . ']', $button)->length,
+                'And its word is its accessible name, out of the picture.'
+            );
+        }
         /* The open panel, carried by two hidden fields the panel module keeps in step with the
            address it rewrites, each by its own region. */
         foreach (['open' => 'dim-open-field', 'psort' => 'dim-psort-field'] as $name => $region) {
@@ -818,9 +824,13 @@ final class card_markup_test extends \advanced_testcase {
             $toolbar->query('//*[@data-region="dim-dateinputs"]/*[' . self::has_class('dim-toolbar__datefield') . ']')->length,
             'Each label and its field are ONE item of that row, so the pair wraps as a unit.'
         );
-        $pill = $toolbar->query('//*[' . self::has_class('dim-toolbar__row--count') . ']//*[@data-region="dim-daterange-pill"]');
-        $this->assertSame(1, $pill->length, 'The period pill mounts in the count row.');
-        $this->assertSame('', trim($pill->item(0)->textContent), 'And that region is empty without the client.');
+        $pill = $toolbar->query('//*[@data-region="dim-line-chips"]/*[@data-region="dim-daterange-pill"]');
+        $this->assertSame(1, $pill->length, 'The period\'s chip has its region in the row under the line.');
+        $this->assertSame(
+            1,
+            $toolbar->query('./a[@data-action="dim-chip-remove"][@data-param="period"]', $pill->item(0))->length,
+            'And the server draws the period\'s chip in it: the calendar draws none of its own.'
+        );
 
         /* The covervideo module, whose SELECTORS are all eight of these. It addresses nothing by
            class name, so this is the whole surface between the template and the client: the band
@@ -924,7 +934,7 @@ final class card_markup_test extends \advanced_testcase {
     }
 
     /**
-     * The favourites toggle is the card's own star on the search line, and no pill of the state group wears one.
+     * The favourites toggle is the card's own star on the filter line, and no pill of the state group wears one.
      *
      * The favourites combine with the state rather than being one of its values, so the toggle is a
      * submit button of its own beside the Filter control: aria-pressed says whether it is on, the
@@ -956,8 +966,8 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertTrue($field->hasAttribute('disabled'), 'Released, the hidden field carries nothing.');
         $this->assertSame(
             1,
-            $toolbar->query('//form[' . self::has_class('dim-toolbar--hasstar') . ']')->length,
-            'The form says the line holds a toggle, so the stylesheet makes room for it.'
+            $toolbar->query('//*[@data-region="dim-line-search"]/following-sibling::*[1][@data-region="dim-line-star"]')->length,
+            'The star follows the search on the line, as the contract orders the slots.'
         );
 
         $group = $toolbar->query('//fieldset[@data-region="dim-vitrine-group"][@data-name="chip"]')->item(0);

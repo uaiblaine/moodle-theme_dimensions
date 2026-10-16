@@ -50,9 +50,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Notification from 'core/notification';
 import Templates from 'core/templates';
-import {getString, getStrings} from 'core/str';
+import {getStrings} from 'core/str';
 
 /** @type {Object} Every hook this module reads, all of them written by its own template. */
 const SELECTORS = {
@@ -99,7 +98,7 @@ const NAME_WEEK = '2026-01-04';
  */
 const WIDE = '(min-width: 768px)';
 
-/** @type {Object} The Intl options every date of the boxes and the pill is written with. */
+/** @type {Object} The Intl options every date of the boxes is written with. */
 const MEDIUM = {dateStyle: 'medium'};
 
 /** @type {HTMLElement|null} The mounted control. */
@@ -117,11 +116,9 @@ let field = null;
 /** @type {MediaQueryList|null} Whether the popover is wide enough for two months. */
 let wide = null;
 
-/** @type {HTMLElement|null} The region of the count row the removable pill is written into. */
-let pillregion = null;
 
 /** @type {Object} The strings this module writes itself, fetched once at mount. */
-let strings = {clear: '', choosefrom: '', chooseto: ''};
+let strings = {choosefrom: '', chooseto: ''};
 
 /** @type {String} The first day of the period in force, YYYY-MM-DD, or the empty string. */
 let from = '';
@@ -311,31 +308,6 @@ const say = (iso, options) => {
 const isOpen = () => Boolean(pop) && !pop.hidden;
 
 /**
- * A period in the reader's own language, which is what the pill of the count row prints.
- *
- * Three sentences, one per shape a period may take, each a language string: a range, a start
- * alone ("From 17 Sep 2026") and an end alone ("Until 24 Sep 2026").
- *
- * @param {String} start The first day, YYYY-MM-DD, or the empty string.
- * @param {String} end The last day, YYYY-MM-DD, or the empty string.
- * @return {Promise} Resolving to the sentence, or to the empty string when there is no period.
- */
-const sentence = async(start, end) => {
-    const first = say(start, MEDIUM);
-    const last = say(end, MEDIUM);
-    if (first !== '' && last !== '') {
-        return getString('category_daterangepill', COMPONENT, {from: first, to: last});
-    }
-    if (first !== '') {
-        return getString('category_daterangepillfrom', COMPONENT, first);
-    }
-    if (last !== '') {
-        return getString('category_daterangepillto', COMPONENT, last);
-    }
-    return '';
-};
-
-/**
  * Write both boxes from the period they show: the date, the label, the clearing control, the mode.
  *
  * A box's label is its name while it is empty and leaves the picture once it holds a date; it
@@ -362,40 +334,6 @@ const paintBoxes = () => {
         box.classList.toggle('dim-daterange__field--active', isOpen() && bound === mode);
     });
     root.classList.toggle('dim-daterange--set', draftfrom !== '' || draftto !== '');
-};
-
-/**
- * Write the removable pill of the count row from the period in force.
- *
- * The pill is the same period in the one row a reader who collapsed the filter panel can still
- * see, and it is a control rather than a label because the period it names is the one filter
- * with nowhere else to drop it from once the panel is shut. It states the period in force, never
- * a draft: it is where a reader who shut the panel reads what the listing is narrowed by.
- *
- * @return {Promise} Resolving when the pill has been written.
- */
-const paintPill = async() => {
-    if (!pillregion) {
-        return;
-    }
-    const applied = await sentence(from, to);
-    if (applied === '') {
-        pillregion.replaceChildren();
-        return;
-    }
-    const pill = document.createElement('button');
-    pill.type = 'button';
-    pill.className = 'dim-rangepill';
-    pill.dataset.action = 'dim-daterange-clear';
-    pill.append(document.createTextNode(applied + ' '));
-    const cross = document.createElement('i');
-    cross.className = 'fa fa-xmark';
-    cross.setAttribute('aria-hidden', 'true');
-    const name = document.createElement('span');
-    name.className = 'visually-hidden';
-    name.textContent = strings.clear;
-    pill.append(cross, name);
-    pillregion.replaceChildren(pill);
 };
 
 /**
@@ -693,8 +631,8 @@ const close = (restore) => {
  * Make a period the one in force, and tell the listing when it changed.
  *
  * The one place the period in force changes from inside this control and the one place it leaves
- * it: "Done", a press outside, each box's clearing control, the footer's and the pill all come
- * through here. A period equal to the one in force asks for nothing, so clearing a bound that is
+ * it: "Done", a press outside, each box's clearing control and the footer's all come through
+ * here. A period equal to the one in force asks for nothing, so clearing a bound that is
  * not set does not fetch the same page again.
  *
  * @param {String} start The first day, YYYY-MM-DD, or the empty string.
@@ -714,7 +652,6 @@ const apply = (start, end) => {
     if (!changed) {
         return;
     }
-    paintPill().catch(Notification.exception);
     if (onpick) {
         onpick(from, to);
     }
@@ -777,7 +714,7 @@ const commit = (restore) => {
  * Drop one bound, or the whole period, from what the boxes show, and apply the rest at once.
  *
  * Each box's clearing control drops its own bound and leaves the other one as the boxes show it;
- * the footer's control and the pill drop both. A clearing control is a one-press intent, like a
+ * the footer's control drops both. A clearing control is a one-press intent, like a
  * quick option, so it applies rather than drafting.
  *
  * @param {String} bound FROM, TO, or the empty string for the whole period.
@@ -924,9 +861,9 @@ const onClick = (event) => {
     if (!target) {
         return;
     }
-    /* Matched by the action, not by an element: each box's control, the popover's footer and the
-       count row's pill all carry it, and a handler bound to one of them would leave the others
-       dead. Which bound goes is the control's data-bound, and none means the whole period. */
+    /* Matched by the action, not by an element: each box's control and the popover's footer
+       carry it, and a handler bound to one of them would leave the others dead. Which bound goes
+       is the control's data-bound, and none means the whole period. */
     const clear = target.closest(SELECTORS.clear);
     if (clear) {
         event.preventDefault();
@@ -965,17 +902,14 @@ const onClick = (event) => {
 const listen = () => {
     root.addEventListener('click', onClick);
     root.addEventListener('keydown', onKey);
-    if (pillregion) {
-        pillregion.addEventListener('click', onClick);
-    }
 
     /* Anything pressed outside the open control closes it, and nothing is trapped: this is a
        disclosure and not a dialogue. The event is pointerdown rather than click, so that a press
        meant for a control elsewhere does not have to travel through a popover still on top of it.
        A press outside applies the draft, as "Done" would: the pointer's way out says "that will
        do", while Escape and the keyboard's walk-away say "never mind". Only while it is open: a
-       press on the pill of the count row is outside the control too, and repainting that pill
-       between its pointerdown and its click would take the click away from it. */
+       press on the period's chip under the filter line is outside the control too, and applying
+       a draft on every such press would fetch a page between the chip's pointerdown and its click. */
     document.addEventListener('pointerdown', (event) => {
         if (isOpen() && event.target instanceof Node && !root.contains(event.target)) {
             commit(false);
@@ -1024,7 +958,6 @@ export const set = (start, end) => {
     draftfrom = from;
     draftto = to;
     paintBoxes();
-    paintPill().catch(Notification.exception);
     if (isOpen()) {
         paintGrid();
     }
@@ -1035,7 +968,7 @@ export const set = (start, end) => {
  *
  * @param {HTMLElement} region The region to mount into.
  * @param {Object} options What the server resolved and the client may not compute: id, firstday,
- *   today, from, to, the pill region of the count row, and the onpick callback taking the two
+ *   today, from, to, and the onpick callback taking the two
  *   bounds of the period whenever it changes, either of them the empty string when it is not set.
  * @return {Promise} Resolving to true when the control is mounted, false when it is not.
  */
@@ -1057,14 +990,12 @@ export const mount = async(region, options) => {
     draftto = to;
     mode = FROM;
     focused = '';
-    pillregion = options.pill || null;
     onpick = typeof options.onpick === 'function' ? options.onpick : null;
-    const [clear, choosefrom, chooseto] = await getStrings([
-        {key: 'category_dateclear', component: COMPONENT},
+    const [choosefrom, chooseto] = await getStrings([
         {key: 'category_datechoosefrom', component: COMPONENT},
         {key: 'category_datechooseto', component: COMPONENT},
     ]);
-    strings = {clear: clear, choosefrom: choosefrom, chooseto: chooseto};
+    strings = {choosefrom: choosefrom, chooseto: chooseto};
     const {html, js} = await Templates.renderForPromise(TEMPLATE, {
         fromid: 'dim-daterange-' + options.id + '-' + FROM,
         toid: 'dim-daterange-' + options.id + '-' + TO,
@@ -1093,7 +1024,6 @@ export const mount = async(region, options) => {
     const start = parse(from || to || today);
     cursor = {y: start.y, m: start.m};
     paintBoxes();
-    await paintPill();
     listen();
     return true;
 };

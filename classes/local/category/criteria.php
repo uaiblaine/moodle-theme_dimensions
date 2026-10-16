@@ -143,6 +143,16 @@ final class criteria {
      */
     public const SORTS = ['', self::SORT_CATEGORY, self::SORT_NAME, self::SORT_RECENT];
 
+    /**
+     * @var string[] The state chip's values the filter line draws as its scope, in the line's order; '' is "all".
+     *
+     * The reader's relationship with the courses: every other value of {@see classifier::filters()} is
+     * a "More statuses" option of the filter panel, the same radio group by name, so one choice holds
+     * across both. The client splits the web service's status group by the same list, mirrored as
+     * SCOPE in amd/src/categorylisting.js; category_listing_markup_test pins the two equal.
+     */
+    public const SCOPE = ['', classifier::STATE_ENROLLED, classifier::STATE_OPEN, classifier::STATE_SCHEDULED];
+
     /** @var string Prefix of the query parameters carrying one custom field filter each, followed by the field id. */
     public const PARAM_FIELD_PREFIX = 'cf_';
 
@@ -167,8 +177,9 @@ final class criteria {
     /**
      * @var bool Whether only the reader's favourite courses are kept, ANDed with the state chip.
      *
-     * One of the filters in every respect - {@see has_filters()}, {@see filter_count()},
-     * {@see query_params()}, {@see narrowing_params()} and "clear filters" all count it. It is
+     * One of the filters in every respect - {@see has_filters()}, {@see narrowing_count()},
+     * {@see query_params()}, {@see narrowing_params()} and "clear filters" all count it; the Filters
+     * badge does not ({@see filter_count()}), because the star on the line shows it. It is
      * honoured where the state chip is, on a logged-in page cut in PHP, and dropped on the request
      * object everywhere else ({@see population::resolve()}); the address only carries it for a real
      * account ({@see from_request()}).
@@ -222,7 +233,7 @@ final class criteria {
      *
      * The tree is a filter, not a navigation: pressing a category beside a flat listing narrows
      * that listing to the subtree below it, and the page stays where it is. It is one of the
-     * filters in every respect - {@see has_filters()}, {@see filter_count()},
+     * filters in every respect - {@see has_filters()}, {@see narrowing_count()},
      * {@see query_params()} and "clear filters" all count it - and it is dropped rather than
      * refused wherever it does not apply, exactly as an unknown sort is: in the constructor under
      * the grouped organisation, where the posters play the tree's part and no tree is drawn; and
@@ -720,15 +731,47 @@ final class criteria {
     }
 
     /**
-     * How many filters narrow the listing, for the number the filter panel prints on itself.
+     * Whether a state chip is one the filter line draws as its scope rather than one the panel holds.
      *
-     * A date range is one filter however many of its two bounds are set: it is
-     * one control on screen and one sentence to undo. The tree's category is
-     * one filter too, for the same reason - one control, one press to undo.
+     * @param string|null $state A state chip, null for none (which is the scope's "all").
+     * @return bool
+     */
+    public static function is_scope(?string $state): bool {
+        return in_array($state ?? '', self::SCOPE, true);
+    }
+
+    /**
+     * How many filters the panel holds, for the number the Filters control prints on itself.
+     *
+     * The badge counts what is behind it and nothing the line already shows: each custom field,
+     * the period as one however many of its two bounds are set (one control, one sentence to
+     * undo), and a state chosen among "More statuses". The search (in its own field), the scope
+     * (its cells), the favourites (the star) and the tree's category (the tree, and its chip) are
+     * all visible where they are set, so counting them here would announce twice what the reader
+     * can already see. {@see narrowing_count()} counts everything.
      *
      * @return int
      */
     public function filter_count(): int {
+        $count = count($this->fields)
+            + ($this->state !== null && !self::is_scope($this->state) ? 1 : 0);
+        if ($this->datefrom !== '' || $this->dateto !== '') {
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
+     * How many criteria narrow the listing, wherever they are drawn: what "Clear all" undoes.
+     *
+     * A term, a state chip, the favourites, each custom field, the period as one and the tree's
+     * category as one: one control and one press to undo each. "Clear all" is offered from two of
+     * them up ({@see \theme_dimensions\output\category_toolbar}); a single criterion is undone by
+     * its own control.
+     *
+     * @return int
+     */
+    public function narrowing_count(): int {
         $count = ($this->search !== '' ? 1 : 0)
             + ($this->state !== null ? 1 : 0)
             + ($this->favourites ? 1 : 0)

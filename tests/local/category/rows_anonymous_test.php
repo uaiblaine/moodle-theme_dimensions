@@ -326,6 +326,11 @@ final class rows_anonymous_test extends \advanced_testcase {
             $this->assertSame($context->clearurl, $answer['clearurl'], $case);
             $this->assertSame($context->hasfilters, $answer['hasfilters'], $case);
             $this->assertSame($context->toolbar->filtercount, $answer['filtercount'], $case);
+            $this->assertSame(
+                array_map(static fn(array $chip): array => array_diff_key($chip, ['isperiod' => true]), $context->toolbar->chips),
+                $answer['chips'],
+                $case . ': the chips, from the toolbar\'s one builder.'
+            );
             $this->assertSame(json_decode(json_encode($context->toolbar->facets), true), $answer['facets'], $case);
             $this->assert_no_logged_in_address($answer, $case);
         }

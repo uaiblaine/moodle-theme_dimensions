@@ -73,6 +73,8 @@ const SELECTORS = {
     notice: '[data-region="dim-toolbar-notice"]',
     clear: '[data-region="dim-vitrine-clear"]',
     clearaction: '[data-action="dim-clear"]',
+    chipremove: '[data-action="dim-chip-remove"]',
+    eraser: '[data-action="dim-search-clear"]',
     pagerbar: '[data-region="dim-vitrine-pagerbar"]',
     loadmore: '[data-action="dim-loadmore"]',
     search: 'input[type="search"]',
@@ -454,14 +456,12 @@ const applyResponse = async(response, append, ticket) => {
         notice.hidden = !response.searchtooshort;
     }
     const clear = root.querySelector(SELECTORS.clear);
-    if (clear) {
-        if (response.clearurl) {
-            clear.href = Listing.withPanel(response.clearurl);
-        }
-        clear.hidden = !response.hasfilters;
+    if (clear && response.clearurl) {
+        clear.href = Listing.withPanel(response.clearurl);
     }
     Listing.paintFilterBadge(root, response);
     Listing.paintCount(root, response);
+    Listing.paintChips(root, response);
     Listing.paintGroups(root, response);
     Listing.paintPager(root, response, append, items.length ? items[0] : null);
     if (!append) {
@@ -583,6 +583,7 @@ const cancelSearch = () => {
  */
 const onSearchInput = (search) => {
     cancelSearch();
+    Listing.paintEraser(root);
     const pending = new Pending('theme_dimensions/categorypublic:search');
     searchpending = pending;
     searchtimer = window.setTimeout(async() => {
@@ -723,6 +724,45 @@ const onClear = () => {
 };
 
 /**
+ * Drop the one criterion a chip of the row under the filter line names, in place, as the logged-in client does.
+ *
+ * The chip is a real address without this module; here the state drops the same criterion and the
+ * page is asked again. The focus goes to the search box, because the chip pressed leaves the row.
+ *
+ * @param {HTMLElement} chip The chip pressed.
+ * @return {Boolean} Whether the chip was handled; a chip naming nothing this state holds is left to its link.
+ */
+const onChipRemove = (chip) => {
+    if (!Listing.dropCriterion(state, chip.dataset.param || '')) {
+        return false;
+    }
+    publicOnly();
+    Listing.paintControls(root, state);
+    apply();
+    const search = root.querySelector(SELECTORS.search);
+    if (search) {
+        search.focus({preventScroll: true});
+    }
+    return true;
+};
+
+/**
+ * Empty the search box with its eraser, search again for nothing, and keep the focus in the box.
+ *
+ * @return {Promise} Resolving when the answer has been painted.
+ */
+const onErase = async() => {
+    cancelSearch();
+    const search = root.querySelector(SELECTORS.search);
+    if (search) {
+        search.value = '';
+        search.focus({preventScroll: true});
+    }
+    Listing.paintEraser(root);
+    await onSearch('');
+};
+
+/**
  * Wire every listener of the listing.
  *
  * @return {void}
@@ -750,6 +790,17 @@ const listen = () => {
         if (clear) {
             event.preventDefault();
             onClear();
+            return;
+        }
+        const chip = Listing.closestOf(event, SELECTORS.chipremove);
+        if (chip && onChipRemove(chip)) {
+            event.preventDefault();
+            return;
+        }
+        if (Listing.closestOf(event, SELECTORS.eraser)) {
+            event.preventDefault();
+            // A failed request already loads the address it asked for (requestRows()), so nothing is left to report.
+            onErase().catch(() => null);
             return;
         }
         const quick = Listing.closestOf(event, SELECTORS.quick);

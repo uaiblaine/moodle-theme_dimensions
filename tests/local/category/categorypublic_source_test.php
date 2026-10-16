@@ -503,7 +503,8 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString("search.addEventListener('input', () => onSearchInput(search));", $listen);
         $this->assertStringContainsString("form.addEventListener('submit', (event) => event.preventDefault());", $listen);
         $this->assertMatchesRegularExpression(
-            '~^    cancelSearch\(\);\n    const pending = new Pending\(\'theme_dimensions/categorypublic:search\'\);\n'
+            '~^    cancelSearch\(\);\n    Listing\.paintEraser\(root\);\n'
+                . '    const pending = new Pending\(\'theme_dimensions/categorypublic:search\'\);\n'
                 . '    searchpending = pending;\n    searchtimer = window\.setTimeout\(async\(\) => \{\n'
                 . '        searchpending = null;\n        try \{\n            await onSearch\(search\.value\);\n'
                 . '        \} finally \{\n            pending\.resolve\(\);\n        \}\n    \}, SEARCH_DEBOUNCE\);$~',
@@ -735,5 +736,35 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString('theme_dimensions/categorylisting', $this->build());
         $this->assertStringContainsString('theme_dimensions/categoryposters', $this->build());
         $this->assertStringContainsString('theme_dimensions/' . self::PANEL, $this->build());
+    }
+
+    /**
+     * The visitor's client paints the row under the line from the answer and drops a chip's criterion in place.
+     *
+     * The same shared painter as the logged-in client's, so a chip on one shell is the chip on the
+     * other; the press and the eraser are intercepted as the logged-in client intercepts them, and
+     * the clear link's visibility is the answer's clearall, painted there.
+     *
+     * Changes that must make it fail: the painter not called; the chip press or the eraser left to
+     * the browser; the clear link shown on hasfilters again.
+     */
+    public function test_the_row_under_the_line_is_the_shared_painters(): void {
+        $apply = $this->body('applyResponse');
+        $this->assertStringContainsString('Listing.paintChips(root, response);', $apply);
+        $this->assertStringNotContainsString('response.hasfilters', $apply);
+        $listen = $this->body('listen');
+        $this->assertMatchesRegularExpression(
+            '~const chip = Listing\.closestOf\(event, SELECTORS\.chipremove\);\s*if \(chip && onChipRemove\(chip\)\) \{\s*'
+                . 'event\.preventDefault\(\);~',
+            $listen
+        );
+        $this->assertMatchesRegularExpression(
+            '~if \(Listing\.closestOf\(event, SELECTORS\.eraser\)\) \{\s*event\.preventDefault\(\);~',
+            $listen
+        );
+        $remove = $this->body('onChipRemove');
+        $this->assertStringContainsString("if (!Listing.dropCriterion(state, chip.dataset.param || '')) {", $remove);
+        $this->assertMatchesRegularExpression('~publicOnly\(\);\s*Listing\.paintControls\(root, state\);\s*apply\(\);~', $remove);
+        $this->assertStringContainsString("await onSearch('');", $this->body('onErase'));
     }
 }

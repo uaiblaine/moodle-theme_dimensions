@@ -1397,10 +1397,11 @@ What a maintainer must not lose:
   (`category_hero::trail()`, from the category's path), never core's navbar restyled: the first
   version of this stage did exactly that and lost the eyebrow on the first click. A visitor's trail
   names only public ancestors (D14); the gate `hero_trail_visitor_public_only` pins it.
-- **At 390 the tab rail clips its own "More" dropdown** (a 423px menu inside a 50px scroll box,
-  because the rail is `overflow-x: auto` and Popper positions the menu inside it). There is no
-  CSS-only escape; it wants a fixed positioning strategy or a rail that does not scroll-clip, and
-  it belongs with the client of stage 6.
+- **At 390 the tab rail clipped its own "More" dropdown** (a 423px menu inside a 50px scroll box,
+  because the rail was `overflow-x: auto` and Popper positions the menu inside it). Fixed with the
+  filter line (stage T2): the rail is no scroll container at any width - core's more-menu already
+  collapses what does not fit, so it has nothing to scroll - and it stacks at `z-index: 31`, above the
+  toolbar's 30. See the filter line's section.
 - **A control's boundary is not a card's line.** WCAG 1.4.11 asks 3:1 of the visual information
   that identifies a control, and the design's line token (`--bs-border-color`) reads 1.30:1 light
   and 1.98:1 dark. The search field and the quiet summary button use `--dim-control-line`
@@ -1796,21 +1797,25 @@ these are the facts a maintainer must not lose.
   flat one ran first in the process and paid every cold cache - so the accordion's cost came out at
   minus twenty-three and the assertion passed while proving nothing. `fixture::reads()` resets what
   a new REQUEST starts without, not what a new PROCESS does. Warm both, then meter.
-- **The filter disclosure is closed on a page nothing narrows, which changes what Selenium can
-  reach.** Every control that narrows the listing lives inside one native `<details>`; a
-  `@javascript` scenario must open the summary before it can click a pill or read a chip's number,
-  and a non-JavaScript scenario need not, because BrowserKit reads the DOM rather than what is
-  painted. Two client scenarios were failing for exactly that and now open it first.
+- **The filter disclosure is closed on load, which changes what Selenium can reach.** Since the
+  filter line (stage T2) it is closed on EVERY page, a narrowed one included - the row under the line
+  says what narrows - where it used to open on the server for a criterion it held. What lives inside
+  the native `<details>` is "More statuses", the custom fields and the period (the scope cells, the
+  search and the star are on the line); a `@javascript` scenario must open the summary before it
+  can click one of those pills or read its number, and a non-JavaScript scenario need not, because
+  BrowserKit reads the DOM rather than what is painted.
 - **The visible group label IS the legend.** The previous shape named every group twice - a
   `visually-hidden` `<legend>` for assistive technology and an `aria-hidden` span repeating it for
   the eye - and `category_listing_markup_test` now asserts that no such span exists, which is the
-  only thing standing between that arrangement and its quiet return.
+  only thing standing between that arrangement and its quiet return. The scope on the line is the
+  one group whose legend is visually hidden: its cells are what the eye reads.
 - **"Clear filters" keeps the organisation, and it is built in TWO places.** It drops everything
   that narrows and nothing that orders: `criteria::sort_params()` is what it carries, and
   `has_filters()` deliberately does not count the sort. A control that silently put the page back
   into the grouped default would send a reader looking for the chip they had just pressed.
-  `category_toolbar` builds the one on the count row and `category_listing` builds a second for the
-  empty state, and the second one shipped this round carrying an empty array - correct before the
+  `category_toolbar` builds the one in the row under the filter line (labelled "Clear all" since
+  stage T2, and drawn only from two criteria up) and `category_listing` builds a second, still
+  "Clear filters", for the empty state, and the second one shipped this round carrying an empty array - correct before the
   sort existed, and invisible afterwards, because the only page that draws it is the page with no
   rows on it to show that the order had changed. Two builders of one rule need a gate on the
   quieter one: `listing_clear_keeps_sort`.
@@ -1952,7 +1957,10 @@ are the facts a maintainer must not lose.
   is `[open]`, `align-items: flex-start` on the row, one `.dim-toolbar__datefield` per label-and-
   field pair, and the auto margin moved from the kebab to the view toggle so the two right-hand
   controls are one cluster. Measured in the browser pane at both widths, before and after; the
-  numbers are in the plan's D2-18.
+  numbers are in the plan's D2-18. Of the four, the date field pairs stand; the filter line (stage
+  T2) replaced the rest: the panel is a popover under the line from 576px and takes a line of its own
+  (`flex: 1 1 100%` while open) only below it, the line centres its controls, and no control carries
+  an auto margin.
 - **`category_scss_test`'s scanner reads `amd/src/category*.js`, and the calendar is not called
   that.** `daterange.js` writes more class names than either module the glob reaches, so it is
   named explicitly in `markup_files()` and in the membership test beside it. A file the scanner
@@ -1964,10 +1972,12 @@ are the facts a maintainer must not lose.
   `filtercount` and `filtercountlabel` are in the payload now and `paintFilterBadge()` writes BOTH
   halves - the digit and the sentence a screen reader is read - because a repaint of the digit
   alone passes every assertion anybody thinks to write. Neither is composed in the browser: what
-  counts as one filter is `criteria::filter_count()`'s rule (a term, a state, each custom field,
-  and the whole period as one) and the sentence is a language string. Anything added to this
-  toolbar that narrows the listing has to say where it states itself once the panel is shut: that
-  badge, or the pill in the count row.
+  counts as one filter is `criteria::filter_count()`'s rule and the sentence is a language string.
+  Since stage T2 the badge counts what the PANEL holds - each custom field, the period as one and a
+  state from "More statuses" - and no longer the term, a scope value, the star or the tree, which
+  the line or the tree already shows; `narrowing_count()` counts everything, for "Clear all".
+  Anything added to this toolbar that narrows the listing has to say where it states itself once
+  the panel is shut: on the line, in that badge, or as a chip in the row under the line.
 
 - **A PHP single-quoted string keeps the backslash in `{\$a}`.** Round D1 shipped
   `category_filtercount` that way in both packs, so `get_string()` had no placeholder to
@@ -2042,22 +2052,22 @@ the decisions first, then the listing, the web service, the client and the style
   does a press outside the control, whatever the draft holds (`commit()` from the `pointerdown`
   listener), while Escape - or the keyboard walking out - DISCARDS it and leaves the period that was
   in force. The discard lives in `close()` rather than at each caller, so there is one place a draft
-  can outlive the popover. The boxes show the draft; the pill in the count row shows only what has
-  been applied, because that pill is a statement about the listing.
-- **Four controls carry `data-action="dim-daterange-clear"`**: each box's own (`data-bound="from"`
-  or `"to"`, which drops that bound alone), the footer's and the count row's pill (no bound: the
-  whole period). The handler matches by the ACTION and reads the bound off the control, and
+  can outlive the popover. The boxes show the draft; the period's chip in the row under the line
+  shows only what has been applied, because that chip is a statement about the listing.
+- **Three controls carry `data-action="dim-daterange-clear"`**: each box's own (`data-bound="from"`
+  or `"to"`, which drops that bound alone) and the footer's (no bound: the whole period). The count
+  row's pill was a fourth until stage T2; the period is now a server chip (`dim-chip-remove`,
+  `data-param="period"`, both bounds), written by the chip builder alone and no longer by the
+  calendar. The handler matches by the ACTION and reads the bound off the control, and
   `paintBoxes()` hides each box's control by its `data-bound` - never by position or by the first
   match, because a `querySelector` on the action resolves to whichever the template writes first and
   nothing in PHPUnit says which. A clearing control is a one-press intent and applies at once.
-- **The `<summary>` of the filter disclosure is positioned out of the row, which is what puts it on
-  the search line.** Row 2 is `position: relative`, the disclosure is `flex: 1 1 100%` open or
-  shut - so what is left of it in the flow is its panel, which is the row - and the summary sits at
-  `right: 0` of the line with the search box reserving that width through `padding-right`. The
-  row's `row-gap` is nought, because a shut disclosure is a zero-height flex line and a gap would
-  leave a strip under the search box. DOM order is untouched, so the keyboard walks them in the
-  order they are read, and none of it needs JavaScript. The reserve is measured per width (8.5rem,
-  and 5rem where the word is hidden), never guessed.
+- **The `<summary>` of the filter disclosure is an ordinary item of the filter line** (stage T2). It
+  used to be positioned out of row 2 onto the search line, with the search box reserving its width
+  through `padding-right` (8.5rem, and on a phone 151px, or 179px while the badge showed); the
+  row, the reserves and the out-of-flow summary are gone. The line (`.dim-line`) is one
+  wrapping flex row in DOM order, the search is the item that grows and shrinks, and the line is the
+  positioned ancestor the panel opens under. None of it needs JavaScript.
 - **A flex item's automatic minimum is its CONTENT, and that is how one pill track made the
   document wider than the phone.** The track laid its options out at 529px inside a 343px toolbar;
   the width travelled up through the disclosure, whose `min-width` was `auto`, and the document
@@ -2410,7 +2420,8 @@ maintainer must not lose.
   shows its minis without a star.
 - **The panel's address is replaced, never pushed, and three other holders follow it.** Every
   write of `open`/`psort` goes through `replaceState` and then rewrites the toolbar form's and the
-  hero fold form's hidden `open`/`psort` fields and the clear link's href. And `categoryvitrine`
+  hero fold form's hidden `open`/`psort` fields and the clear link's href (and, since stage T2, every
+  chip's under the filter line: `categoryareapanel`'s `syncHolders()`). And `categoryvitrine`
   rewrites ALL the fold form's criteria from the address after each of its own writes: the fold
   form is drawn with the server render's criteria, so a fold after a filter applied in place used
   to reload with the old filters (blueprint section 11, fixed in this round).
@@ -2425,9 +2436,10 @@ maintainer must not lose.
 - **Behat of a panel: the poster's control is an `<a>` without JavaScript and a `<button>` with it.**
   The no-JavaScript feature clicks `//article[@data-name='...']//a[@data-region='dim-poster-control']`
   and the client feature the same path with `button`; a visitor's poster stays an `<a>` with the module
-  too (`role="button"`), so the public client feature clicks the `a` path. Visibility of the phone copy of the view
-  toggle is a stylesheet fact, so the Behat site's CSS must be rebuilt (`mdl behat-init`) after any
-  SCSS change before it is believed. At the root the poster's name is a link too, so
+  too (`role="button"`), so the public client feature clicks the `a` path. Visibility of a toolbar
+  control (the row under the filter line at rest, for one; the phone copy of the view toggle was
+  another until stage T2 removed it) is a stylesheet fact, so the Behat site's CSS must be rebuilt
+  (`mdl behat-init`) after any SCSS change before it is believed. At the root the poster's name is a link too, so
   `I follow "<area>"` from the course index opens that area's panel in place and does NOT reach the
   category page: follow the panel's title link (`[data-region='dim-panel-title']`) for that. Its call
   to action is the area's FLAT order (`sort=recent`), not the grouped page.
@@ -2485,12 +2497,12 @@ are the facts a maintainer must not lose.
   after it), because the design sets the number apart. It holds for the two languages this theme
   ships; a third language putting the number elsewhere needs one string per sentence. At rest a
   grouped page counts the whole SUBTREE (the hero's number); under a criterion, what the page draws.
-  `categoryvitrine`'s `paintCount()` writes four regions of the paragraph and never the paragraph
-  itself - the old whole-text repaint would wipe "See all as a list" and the automatic opening's note.
-- **The phone copy of the view toggle now comes BEFORE the row copy in the document** (row 1 is the
-  search line since EL-2). At a desktop width `.dim-toolbar__view` resolves to the hidden phone copy
-  first, so Behat scopes the visible one by `[data-region='dim-view-row']`, and the phone scenario by
-  `dim-view-phone`.
+  The shared `paintCount()` (`categorylisting`) writes the number's and the sentence's regions and
+  never the paragraph itself. Since stage T2 the paragraph is the first item of the row under the
+  filter line, visually hidden at rest and never removed (it is the live region), and "See all as a
+  list" and the automatic opening's note are its siblings in that row, outside the sentence.
+- **The phone copy of the view toggle is gone** (stage T2): there is one view toggle, icons only and
+  List first, on the line, `[data-region='dim-view-row']`; `dim-view-phone` no longer exists.
 - **The "Organise:" label is a floated legend with `width: auto`.** A floated legend is not the
   fieldset's rendered legend, so it lays out as a flex item of the group beside its track; Bootstrap's
   reboot already floats every legend but gives it the whole width, which is what put the label on a
@@ -2515,15 +2527,20 @@ are the facts a maintainer must not lose.
 - **The automatic opening is the client's decision on the server's data** (`areas.autoopen`): it
   opens with the focus left in the search box, never over a panel the READER opened
   (`state.openedby`), and nothing ever closes a panel on its own. It tells the listing's module
-  (`dim-panel:autoopened`), which adds the answer's sentence to the count line.
+  (`dim-panel:autoopened`), which adds the answer's sentence to the row under the filter line (the
+  count line until stage T2).
 - **"Clear filters" is a fetch with JavaScript**, intercepted on `data-action="dim-clear"` (three
-  controls carry it), and the focus goes to the search box because the pressed control hides itself.
+  controls carry it: the row's "Clear all" since stage T2, the empty state's and the areas' summary's
+  "Clear filters"), and the focus goes to the search box because the pressed control hides itself.
+  Each chip under the line is a fetch the same way, intercepted on `data-action="dim-chip-remove"`.
 - **`<mark>` is painted by `categorymark`, on the TEXT of the card title's heading
   (`data-region="dim-card-title"`), never on the link's hook**: a visitor's card of a course with no
   page to open draws its title as a plain span, and the panel of a visitor's page is made of exactly
   those. The helper unmarks before it marks, so it is idempotent.
-- **An empty range-pill region is `display: none`** in the count row: a flex item of no width still
-  takes a gap on each side, which doubled the distance between the sentence and "Clear filters".
+- **An empty range-pill region is `display: none`** in the row under the filter line (and so is an
+  empty chip list): a flex item of no width still takes a gap on each side, which doubled the
+  distance between the sentence and "Clear filters". Since stage T2 that region holds the period's
+  server chip.
 - **eslint's `complexity` (20) is a warning, and a plain `grunt amd` prints none of its warnings.**
   `openArea()` passed the build and failed `eslint --max-warnings 0` at 24; run eslint with
   `--max-warnings 0` on the modules after every edit, not only grunt.
@@ -2568,10 +2585,12 @@ departures and every measured number, is under **Round EL-S** in the original de
 - **The Bootstrap 4 scanner reads `border-left` in the SCSS as a class name** and fails the build; a
   divider or an edge written in this file takes the logical property (`border-inline-start`), which is
   also the one that is right in RTL.
-- **The toolbar is no card, so its rhythm with the page is ONE rule.** Row 3 carries `margin: 2px 0 4px`
-  because the design's count row is 12px under the organisation and 18px over the listing and the
-  toolbar's 10px gap and `.dim-vitrine`'s 14px are already there. Change either gap and the count row
-  moves; the skin test asserts all three numbers together.
+- **The toolbar is no card, so its rhythm with the page is ONE rule.** The last row carries
+  `margin: 2px 0 4px` because the design's count row is 12px under the controls and 18px over the
+  listing and the toolbar's 10px gap and `.dim-vitrine`'s 14px are already there. Since stage T2
+  that row is the row under the filter line (`.dim-line__chips`), whose margin is `-3px -5px -1px`:
+  the same 2px 0 4px less the 5px of focus-ring room it keeps on every side as a scroll container.
+  Change either gap and the row moves; the skin test asserts the numbers together.
 - **A chosen face is `--dim-cta` with white, never `--dim-primary` with the page's surface.** The Filter
   badge's dark-mode defect of EL-2 was still in the quick date option in force and the calendar's two
   ends; the chosen chip joined them (gates `toolbar_chip_checked_pair`, `toolbar_quick_on_pair`).
@@ -2830,9 +2849,9 @@ remembered state); section 5.2 of the original design record (not part of this r
 the design and what is not verified. These are the facts a maintainer must not lose.
 
 - **A remembered state is ONE WHOLE and fills in a BARE address only** (`criteria::with_remembered()`):
-  an address that names an organisation, a panel, a term, a chip, a field, a bound or the tree is read
-  as written, with the category's default for what it leaves out. That, and `criteria::$remembered`
-  making `sort_params()` name the organisation in every address minted for a reader with a state on
+  an address that names an organisation, a panel, a term, a chip, the favourites (`fav`, since stage
+  T1), a field, a bound or the tree is read as written, with the category's default for what it
+  leaves out. That, and `criteria::$remembered` making `sort_params()` name the organisation in every address minted for a reader with a state on
   the category (the client's `buildUrl()` likewise, and the landing address rewritten in full), is
   what keeps a shared link meaning the same to whoever opens it. `default_sort()` stays per category
   and never per person: whatever it answers is what `sort_params()` leaves out.
@@ -2902,6 +2921,70 @@ the round I mockups). Files: `amd/src/categorycoursemodal.js`,
 - **The backdrop is core's single shared element**, so it is tinted only while this dialogue is open
   (`:has(.dim-cmodal.show) .modal-backdrop`) and goes back to core's the moment it closes; the footer
   gets a shadow only while the sheet has more to scroll.
+
+## The category showcase: the filter line (T1 and T2, 2026-10-16)
+
+The toolbar's three rows became ONE line in the fleet contract's slot order (scope, search, star,
+Filters, Organise, view, the managers' menu) and a row under it that shows only while something
+narrows; the favourites left the state chip and became a toggle of their own. The contract and the
+plan, with the decisions taken while briefing, are `moodle-dev/docs/filter-line/CONTRACT.md` and
+`THEME-PLAN.md`; `CHANGELOG.md` has the stage entries. These are the facts a maintainer must not lose.
+
+- **`fav` is read only for a real logged-in account, never a visitor nor the guest**
+  (`criteria::can_favourite()`): favourites are rows of the reader's own, and core keeps none for the
+  guest. The toolbar draws the star on the same answer, and the visitor's service declares no `fav`.
+- **Older spellings of the favourites are read as the toggle with no state**: `chip=favourites` on an
+  address (`criteria::from_request()`) and a remembered entry holding the favourites as its state
+  (`remembered::entry()`). Bookmarks and shared links from before T1 must keep opening on the
+  reader's favourites. The anonymous shell reads no remembered entry at all, so it never restores one.
+- **`fav` is dropped on the request wherever the state chip is** (`population::resolve()`: a
+  visitor's page and the SQL cut, which classify nothing). Kept, it would put the page in result
+  mode over a listing nothing narrowed, with no control to show or clear it.
+- **The state and `fav` are each counted with the other applied**, as the facets are: a scope cell's
+  number is what pressing it would leave under the favourites in force, the star's what pressing it
+  would leave under the state in force. Both are taken before either narrows the ids
+  (`population`'s PHP cut).
+- **The star posts without JavaScript through a submit button carrying the NEXT value** (`value` 1
+  while released, 0 while pressed), plus a hidden `fav=1` field EARLIER in the form, enabled only
+  while pressed, so every other submission (Enter in the search, the view toggle, "Filter") keeps the
+  favourites. Turning it off posts both and PHP's last value wins, which is the button's; the client
+  enables and disables the field as it toggles. The name-less default submit stays the form's first
+  submit, before the star and the view buttons (`toolbar_default_submit`; stage 3's rule).
+  `card_markup_test::test_the_favourites_toggle_posts_without_javascript` reads the form as a browser
+  builds the query and as PHP reads it.
+- **A layout state the server knows is a class, not a `:has()`.** The `:has()` written for T1's star
+  made scssphp warn ("Array to string conversion"), so T1 put `dim-toolbar--hasstar` on the form
+  instead; the one state left on the line is `dim-line__chips--rest`, written by the server on the
+  row and toggled by `paintChips()` from the answer's `hasfilters`. Other `:has()` rules of this file
+  compile, so a new one is tried against a real compile (the `get_css_content()` one-liner of the
+  visual refinement's section) before it is believed.
+- **The scope (All, My courses, Open, Scheduled) and "More statuses" (Under review, Free access) are
+  ONE radio name, `chip`, across the line and the panel**, so one choice holds across both. The split
+  is `criteria::SCOPE`, mirrored as `SCOPE` in `categorylisting.js`, and
+  `category_listing_markup_test::test_the_scope_holds_the_scope_values_and_more_statuses_the_rest`
+  pins the two lists equal: change both or neither. The client inserts a returning cell in `SCOPE`'s
+  order (`paintGroup()` moves only what is out of place, so the focused radio is never detached); a
+  cell appended at the end, "All, Open, My courses", was a real defect of this stage.
+- **The chips under the line are built by ONE server builder, `category_toolbar::chips()`, for the
+  page and both web services** (`chips` and `clearall` in the rows answer, through `rows.php`); the
+  browser composes none, as no other sentence or number of the showcase is composed there. Each chip
+  is a link dropping exactly its criterion and keeping everything else - the organisation, the page
+  size and the open panel included - and the period's chip drops both bounds. "Clear all" is drawn
+  from two criteria up (`criteria::narrowing_count()`). The search, the scope and the star are on the
+  line and get no chip.
+- **The Filters panel's popover is NOT a scroll container**: no `max-height`, no `overflow`. With them
+  it clipped the date calendar, which opens inside the panel. `category_scss_test` asserts the
+  absence on the base rule and the 576px popover rule alike.
+- **The hero's tab rail is no scroll container on a phone, and stacks at `z-index: 31`.** Its
+  `overflow-x: auto` turned it into a 50px scroll box that clipped core's More menu, and the toolbar's
+  stacking context (`.dim-toolbar`, `z-index: 30`) painted over what was left. Core's more-menu
+  already collapses the tabs that do not fit, so the rail has nothing to scroll. The 31 must stay
+  above the toolbar's number; `category_scss_test` pins it.
+- **Write the `version.php` bump at commit time, and ask before upgrading the stacks.** This checkout
+  is mounted live on m503 and m503b (`plugins.conf`), shared with other sessions; a bump on disk makes
+  both wait for an upgrade - cron suspended, administrators redirected to the upgrade page - under
+  everyone using them. The stage's number goes in `CHANGELOG.md` while it is worked on, and the stacks
+  are upgraded after asking the other sessions.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

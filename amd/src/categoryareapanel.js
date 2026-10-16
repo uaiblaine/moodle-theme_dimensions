@@ -95,6 +95,7 @@ const SELECTORS = {
     toolbar: '[data-region="dim-vitrine-toolbar"]',
     fold: '[data-region="dim-hero-fold"]',
     clear: '[data-region="dim-vitrine-clear"]',
+    chip: '[data-action="dim-chip-remove"]',
     openfield: '[data-region="dim-open-field"]',
     psortfield: '[data-region="dim-psort-field"]',
     direct: '[data-region="dim-direct"]',
@@ -568,8 +569,9 @@ const syncField = (form, selector, name, value) => {
  * Keep the three other holders of the panel in step with the address.
  *
  * The toolbar's form (its no-JavaScript submit), the hero's fold form (folding keeps the panel)
- * and the clear link (clearing the filters keeps the panel, as the server's own does). Each would
- * otherwise reload the page with the panel the reader had when it loaded.
+ * and the clear link and the chips under the filter line (clearing the filters, or one of them,
+ * keeps the panel, as the server's own addresses do). Each would otherwise reload the page with the
+ * panel the reader had when it loaded.
  *
  * @return {void}
  */
@@ -580,9 +582,12 @@ const syncHolders = () => {
         syncField(form, SELECTORS.openfield, PARAM.open, open);
         syncField(form, SELECTORS.psortfield, PARAM.psort, psort);
     });
-    const clear = document.querySelector(SELECTORS.clear);
-    if (clear && clear.getAttribute('href')) {
-        const url = new URL(clear.getAttribute('href'), window.location.href);
+    const links = [document.querySelector(SELECTORS.clear)].concat(Array.from(document.querySelectorAll(SELECTORS.chip)));
+    links.forEach((link) => {
+        if (!link || !link.getAttribute('href')) {
+            return;
+        }
+        const url = new URL(link.getAttribute('href'), window.location.href);
         if (open !== '') {
             url.searchParams.set(PARAM.open, open);
         } else {
@@ -593,8 +598,8 @@ const syncHolders = () => {
         } else {
             url.searchParams.delete(PARAM.psort);
         }
-        clear.href = url.toString();
-    }
+        link.href = url.toString();
+    });
 };
 
 /**

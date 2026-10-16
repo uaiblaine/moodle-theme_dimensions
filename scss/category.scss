@@ -498,8 +498,14 @@ body.dim-category {
     // list can never be taller than itself and nothing is ever moved into "More" - the tabs wrap
     // onto several lines instead. For the same reason the list keeps Bootstrap's flex-wrap:
     // wrapping is the signal the collapse reads, not a layout accident.
+    // The strip is a stacking context of its own ABOVE the filter line (.dim-toolbar, 30) that follows
+    // the hero in the document: its "More" menu overflows the strip downwards, and under the line the
+    // menu opened hidden. It must not be a scroll container either (overflow-x other than visible
+    // computes overflow-y to auto), which would clip the menu to the strip's own height; core's
+    // more-menu already collapses what does not fit, so the rail has nothing to scroll.
     .dim-hero__tabs {
         position: relative;
+        z-index: 31;
         padding: 0 $dim-bleed;
         background: var(--dim-hero-strip);
 
@@ -601,8 +607,6 @@ body.dim-category {
         .dim-hero__tabs {
             padding: 10px 16px 0;
             background: transparent;
-            overflow-x: auto;
-            scrollbar-width: none;
 
             .nav-link {
                 padding: 7px 14px;
@@ -940,9 +944,10 @@ body.dim-category {
     // this page; the site's fixed navbar (1030) covers the menu when it flips upward into it,
     // with or without this rule.
     //
-    // The toolbar is no card: the design's toolbar is a column of rows 10px apart with no
-    // border, no surface and no padding, so the controls sit on the page itself. Every value
-    // below that names the design is what the browser computes for it (15px body, rem at 16px).
+    // The toolbar is no card: the filter line, the notice and the row under the line are a column
+    // 10px apart with no border, no surface and no padding, so the controls sit on the page
+    // itself. Every value below that names the design is what the browser computes for it (15px
+    // body, rem at 16px).
     .dim-toolbar {
         position: relative;
         z-index: 30;
@@ -958,41 +963,171 @@ body.dim-category {
         gap: 10px;
     }
 
-    .dim-toolbar__row--organise {
-        align-items: center;
-    }
-
-    // With the filter panel open, a centred row would float the search box to the middle of a
-    // much taller neighbour; the two are a top-aligned pair, whatever the taller one is doing.
-    //
-    // The search box and the Filter control are ONE line at every width, and the panel opens
-    // full width beneath them. The disclosure is the whole line, so its panel always is; its
-    // SUMMARY is lifted out of the flow to the end of the first line, where the search box
-    // reserves its width with a padding rather than by being a flex item sized against it -
-    // which makes the two independent of the panel's height and of whether it is open at all.
-    // The row is the positioned ancestor, so the summary is placed against the line and not
-    // against the disclosure, which is a box of a different height. The row gap is nought
-    // because the panel carries its own top margin: with a gap the closed disclosure - a
-    // zero-height line of its own - would leave a blank strip under the search box on every page
-    // nothing narrows. DOM order is untouched: search, summary, panel.
-    .dim-toolbar__row--narrow {
+    // ---- The filter line -----------------------------------------------------------------------
+    // ONE row in the contract's slot order (moodle-dev/docs/filter-line/CONTRACT.md): scope,
+    // search, star, Filters, Organise, view, the managers' menu. It wraps where it does not fit -
+    // which is the whole of its narrow behaviour without JavaScript - and the search is the item
+    // that grows and shrinks, so the other controls keep their size. It is the positioned ancestor
+    // of the Filters panel, which opens under the LINE rather than under its own control.
+    .dim-line {
         position: relative;
-        align-items: flex-start;
-        row-gap: 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
     }
 
     .dim-toolbar__search {
         position: relative;
-        flex: 1 1 18rem;
+        flex: 1 1 14rem;
         min-width: 0;
-        padding-right: 8.5rem;
     }
 
-    // The root's toolbar is its search line alone: no Filter summary sits on the line,
-    // so the box keeps no reserve for one, at any width - the modifier outranks the phone's reserve
-    // below by its second class, whatever the order.
-    .dim-toolbar--searchonly .dim-toolbar__search {
-        padding-right: 0;
+    // The scope: one radio group drawn as a platter, a grey track holding counted cells, the
+    // chosen one raised in the page's surface. It wraps inside itself on a narrow line rather
+    // than scrolling: a scroll container would clip the cells' focus ring, which is outside them.
+    .dim-line__scope {
+        flex: 0 1 auto;
+    }
+
+    .dim-line__cells {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px;
+        padding: 3px;
+        border-radius: var(--dim-radius-sm);
+        background: var(--dim-surface-strong);
+    }
+
+    .dim-line__scope .dim-pill {
+        min-height: 34px;
+        padding: 4px 12px;
+        border-color: transparent;
+        border-radius: var(--dim-radius-sm);
+        background: transparent;
+        color: var(--dim-muted);
+
+        &:hover {
+            background: var(--dim-surface);
+            color: var(--dim-ink);
+        }
+    }
+
+    // The chosen cell is the raised one, in the page's surface and ink: the platter's own way of
+    // saying which, where every other chosen chip of the toolbar is filled.
+    .dim-line__scope .dim-pill__input:checked + .dim-pill {
+        border-color: var(--dim-control-line);
+        background: var(--dim-surface);
+        color: var(--dim-ink);
+        box-shadow: var(--dim-ds-shadow-sm);
+    }
+
+    // The search is a pill, its magnifier at the start and its eraser at the end. The eraser is
+    // a client's control (dim-live-only) and the field keeps its room whether or not it shows.
+    .dim-line__search .dim-toolbar__input {
+        padding-right: 40px;
+        border-radius: var(--dim-radius-pill);
+    }
+
+    .dim-line__eraser {
+        position: absolute;
+        top: 50%;
+        right: 4px;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        border-radius: var(--dim-radius-pill);
+        background: transparent;
+        color: var(--dim-muted);
+        transform: translateY(-50%);
+        cursor: pointer;
+
+        &:hover {
+            background: var(--dim-surface-strong);
+            color: var(--dim-ink);
+        }
+
+        &:focus-visible {
+            outline: 3px solid var(--dim-ring);
+            outline-offset: 2px;
+        }
+    }
+
+    // Where the eraser is armed it is the field's one way to empty itself: the browser's own cross
+    // goes, because the contract's eraser is never a cross.
+    &.dim-js .dim-line__search .dim-toolbar__input::-webkit-search-cancel-button,
+    &.dim-public-js .dim-line__search .dim-toolbar__input::-webkit-search-cancel-button {
+        display: none;
+    }
+
+    // The line's icon buttons - the star, the Organise menu's summary - are 40px squares on a
+    // field's corners and boundary, the same face as the Filters control beside them.
+    .dim-line__iconbtn {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        min-height: 40px;
+        padding: 0;
+        border: 1px solid var(--dim-control-line);
+        border-radius: var(--dim-radius-sm);
+        background: var(--dim-surface);
+        color: var(--dim-ink);
+        cursor: pointer;
+        list-style: none;
+        transition: background var(--dim-motion) var(--dim-ease), color var(--dim-motion) var(--dim-ease);
+
+        &::-webkit-details-marker {
+            display: none;
+        }
+
+        &:hover {
+            background: var(--dim-surface-strong);
+        }
+
+        &:focus-visible {
+            outline: 3px solid var(--dim-ring);
+            outline-offset: 2px;
+        }
+    }
+
+    // The Organise menu: a native disclosure whose content is a small popover under its summary,
+    // at the end of the line; open, the summary wears the pressed face of every open control here.
+    .dim-line__organise {
+        position: relative;
+        flex: none;
+    }
+
+    .dim-line__organise[open] > .dim-line__iconbtn {
+        border-color: var(--dim-open-ring);
+        background: var(--dim-tint);
+        color: var(--dim-primary-ink);
+    }
+
+    .dim-line__menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        width: max-content;
+        padding: 12px 14px;
+        border: 1px solid var(--dim-line);
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: var(--dim-surface);
+        box-shadow: var(--dim-shadow);
+    }
+
+    .dim-line__view {
+        flex: none;
     }
 
     // Where the design PAINTS its magnifier. Its icon is an 18px box 13px in from the
@@ -1014,14 +1149,13 @@ body.dim-category {
     // which is --bs-gray-500 and reads 3.0:1 on the light ground and 5.4:1 on the dark one.
     // The design's line token is 1.3:1 and 2.0:1 - under WCAG 1.4.11's 3:1 for the visual
     // information that identifies a text field, whose placeholder goes the moment it is used.
-    // The search line is 44px tall at every width, the box and the Filter summary beside it
-    // alike, as the design's first row is.
+    // The box is 40px tall, as every control of the filter line is (44px on a phone).
     // The typed text starts where the design's does - 41px from the outer edge (its 1px
     // border, 12px of padding, the 18px icon, an 8px gap and the input's own 2px) - in the design's
     // reading face; and focus is the design's ring round the whole box, 3px at 2px, where Boost's
     // own is a halo and a recoloured border.
     .dim-toolbar__input {
-        height: 44px;
+        height: 40px;
         padding-left: 40px;
         border-radius: var(--dim-radius-sm);
         font-family: var(--dim-ds-font-reading);
@@ -1191,9 +1325,7 @@ body.dim-category {
         opacity: 1;
     }
 
-    // Row two reads: the organisation chips at the left, then the view toggle and the kebab as
-    // ONE cluster at the right, which is what the design draws. The auto margin is on the FIRST
-    // of the pair, so the two stay together when the chips wrap onto their own line.
+    // The view toggle and the kebab end the line, after the search that grows between.
     //
     // The design's segmented control: one 1px boundary round both buttons, at the corners of a
     // field. The boundary clips the buttons' corners, so the focus ring is drawn INSIDE the
@@ -1201,17 +1333,13 @@ body.dim-category {
     .dim-toolbar__view {
         display: inline-flex;
         flex: none;
-        margin-left: auto;
         border: 1px solid var(--dim-control-line);
         border-radius: var(--dim-radius-sm);
         overflow: hidden;
     }
 
-    // The two views name themselves: the design shows the icon AND the word, in the chips' type,
-    // so the toggle and the chips beside it read as one family of controls. The row's copy shows
-    // its word (.dim-toolbar__viewlabel, plain text beside the glyph); the phone's copy keeps it
-    // visually hidden, at a width where the word would take the search box's room. The glyph's
-    // box is the design's icon box (1em), which keeps each button the design's width.
+    // The two views are icons on the line, each named by a visually hidden word and a tooltip.
+    // The glyph's box is the design's icon box (1em).
     .dim-toolbar__viewbtn {
         display: inline-flex;
         align-items: center;
@@ -1327,31 +1455,27 @@ body.dim-category {
     }
 
     // ---- The filter panel -----------------------------------------------------------------------
-    // One native disclosure holding every control that NARROWS the listing, with the number of
-    // active filters on its own summary so that a reader who closed it can still see the page is
-    // narrowed. The marker is removed because the summary is drawn as a button; the element
-    // keeps every behaviour it had, which is the whole reason it is a details and not a div.
-    // It is the whole line, open or shut: the summary is positioned out of it (see
-    // .dim-toolbar__row--narrow), so what is left in the flow is the panel, and a panel is the
-    // row - sized by its own content it would wrap the groups in a column narrower than the
-    // toolbar. min-width keeps a pill track's own content from setting this element's width: a
-    // flex item's automatic minimum is its content, which would push the panel, and the whole
-    // document, wider than a phone.
+    // One native disclosure holding the filters the line does not show, with the number of them
+    // on its own summary. The marker is removed because the summary is drawn as a button; the
+    // element keeps every behaviour it had, which is the whole reason it is a details and not a
+    // div. It is an item of the line like any other; its panel is a popover under the line from
+    // the sm breakpoint up (positioned against .dim-line, so the element itself is not a
+    // positioned box) and inline below it, where the open disclosure takes a line of its own.
+    // min-width keeps a pill track's own content from setting this element's width: a flex item's
+    // automatic minimum is its content, which would push the panel, and the whole document, wider
+    // than a phone.
     .dim-toolbar__filters {
-        flex: 1 1 100%;
+        flex: none;
         min-width: 0;
     }
 
-    // The design's Filter button: a field's corners and boundary, 44px, the brand face at 15px
-    // and 600, its glyph a 1em box.
+    // The design's Filter button: a field's corners and boundary, 40px like every control of the
+    // line, the brand face at 15px and 600, its glyph a 1em box.
     .dim-toolbar__filterstoggle {
-        position: absolute;
-        top: 0;
-        right: 0;
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        min-height: 44px;
+        min-height: 40px;
         padding: 0 14px;
         border: 1px solid var(--dim-control-line);
         border-radius: var(--dim-radius-sm);
@@ -1380,37 +1504,11 @@ body.dim-category {
         }
     }
 
-    // The favourites toggle: the card's star on a field's corners and boundary, 44px square, the
-    // same face as the Filter control beside it. It is in the flow at the end of the search line,
-    // so the Filter summary, lifted out of the flow to the end of that line, moves left by the
-    // toggle's 44px and the row's 10px gap while one is drawn (the form says so with
-    // dim-toolbar--hasstar, a class rather than :has(), which scssphp's extend matching chokes
-    // on); the search box grows from nothing then, so the three share one line however narrow the
-    // screen. Pressed, it wears the open filter control's pressed face and the card star's gold.
+    // The favourites toggle: the card's star as one of the line's icon buttons (.dim-line__iconbtn
+    // carries the box). Pressed, it wears the open filter control's pressed face and the card
+    // star's gold.
     .dim-toolbar__star {
-        display: inline-flex;
-        flex: 0 0 auto;
-        align-items: center;
-        justify-content: center;
-        width: 44px;
-        min-height: 44px;
-        padding: 0;
-        border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-sm);
-        background: var(--dim-surface);
-        color: var(--dim-ink);
         font-size: 1.125rem;
-        cursor: pointer;
-        transition: background var(--dim-motion) var(--dim-ease), color var(--dim-motion) var(--dim-ease);
-
-        &:hover {
-            background: var(--dim-surface-strong);
-        }
-
-        &:focus-visible {
-            outline: 3px solid var(--dim-ring);
-            outline-offset: 2px;
-        }
 
         &[aria-pressed="true"] {
             border-color: var(--dim-open-ring);
@@ -1420,14 +1518,6 @@ body.dim-category {
                 color: var(--dim-star-on);
             }
         }
-    }
-
-    .dim-toolbar--hasstar .dim-toolbar__search {
-        flex-basis: 0;
-    }
-
-    .dim-toolbar--hasstar .dim-toolbar__filterstoggle {
-        right: 54px;
     }
 
     // The word on that control, which the phone width hides. It is the summary's
@@ -1470,6 +1560,7 @@ body.dim-category {
     // content-sized groups, because equal columns wrap a wide facet inside its track while leaving
     // others empty. The design's panel skin: 14px by 16px of padding, a card's line at 8px
     // corners, the subtle surface, and 14px between the groups (30px across them, in the md query).
+    // From the sm breakpoint up it is a popover under the line (the sm media query below).
     .dim-toolbar__panel {
         display: flex;
         flex-direction: column;
@@ -1907,10 +1998,59 @@ body.dim-category {
         font-weight: 600;
     }
 
-    // The period again, in the one row a reader who shut the filter panel can still see. It is
-    // a control: the panel is closed, so there is nowhere else to drop the period from. Empty, it
-    // is out of the row altogether: a flex item of no width still takes a gap on each side, which
-    // would push the clear link a second 14px away from the sentence it follows.
+    // ---- The row under the line ------------------------------------------------------------------
+    // It exists while something narrows: the count sentence, then one chip per criterion the line
+    // does not show, "Clear all", "See all as a list" and the automatic opening's note, RIGHT
+    // AFTER one another so they read as controls of what the sentence says. One line at full
+    // control height that scrolls sideways and never widens the page; the scroll container would
+    // clip the chips' focus ring, which is outside them, so the row keeps 5px of room for it and
+    // takes the same 5px back as a negative margin, as the pill tracks do.
+    //
+    // The design's count row is its own block, 12px under the line and 18px over what follows, in
+    // the reading face at .92rem and the muted ink. It is the toolbar's last row, so it takes the
+    // difference between those and the gaps already around it: the toolbar's 10px above (2 more)
+    // and the listing's 14px below (4 more). Change either gap and this row moves. The margin is
+    // that 2px 0 4px less the 5px of ring room on every side.
+    .dim-line__chips {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 4px 14px;
+        max-width: calc(100% + 10px);
+        margin: -3px -5px -1px;
+        padding: 5px;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        color: var(--dim-muted);
+        font-family: var(--dim-ds-font-reading);
+        font-size: .92rem;
+
+        > * {
+            flex: none;
+        }
+    }
+
+    // At rest the row is no box at all, so it takes no gap of the toolbar's column: what is left
+    // of it is the count sentence, visually hidden (absolutely placed) and still the live region.
+    .dim-line__chips--rest {
+        display: contents;
+
+        > :not(.dim-vitrine__count) {
+            display: none;
+        }
+    }
+
+    .dim-line__chiplist {
+        display: flex;
+        gap: 6px;
+
+        &:empty {
+            display: none;
+        }
+    }
+
+    // The period's chip sits in the calendar's own region of the row. Empty, it is out of the row
+    // altogether: a flex item of no width still takes a gap on each side.
     .dim-toolbar__pillbar {
         display: flex;
         flex-wrap: wrap;
@@ -1921,14 +2061,15 @@ body.dim-category {
         }
     }
 
-    // A chip in the brand face, whose line is the open poster's ring - the navy on the light page
-    // and the light violet on the dark one, where a navy line would be 1.1:1 - and focus is the
-    // design's ring.
-    .dim-rangepill {
+    // A chip: a link in the brand face at full control height, whose line is the open poster's
+    // ring - the navy on the light page and the light violet on the dark one, where a navy line
+    // would be 1.1:1 - with its cross after the label, and focus the design's ring.
+    .dim-chip {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 3px 12px;
+        min-height: 40px;
+        padding: 0 12px;
         border: 1px solid var(--dim-open-ring);
         border-radius: var(--dim-radius-pill);
         background: var(--dim-surface);
@@ -1936,10 +2077,14 @@ body.dim-category {
         font-family: var(--dim-font-brand);
         font-size: .8125rem;
         font-weight: 600;
-        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background var(--dim-motion) var(--dim-ease);
 
         &:hover {
             background: var(--dim-surface-strong);
+            color: var(--dim-primary-ink);
+            text-decoration: none;
         }
 
         &:focus-visible {
@@ -1948,26 +2093,7 @@ body.dim-category {
         }
     }
 
-    // Row three is the design's count row: the sentence, then the period's pill and the clear link
-    // RIGHT AFTER it, 14px on, so they read as controls of what the sentence says rather than of
-    // the toolbar. The items sit on one baseline, because the sentence is text and the link is a
-    // small button.
-    //
-    // The design's count row is its own block, 12px under the organisation row and 18px over
-    // what follows, in the reading face at .92rem and the muted ink. Here it is the toolbar's last
-    // row, so it takes the difference between those and the gaps already around it: the toolbar's
-    // 10px above (2 more) and the listing's 14px below (4 more). Change either gap and this row
-    // moves.
-    .dim-toolbar__row--count {
-        align-items: baseline;
-        gap: 4px 14px;
-        margin: 2px 0 4px;
-        color: var(--dim-muted);
-        font-family: var(--dim-ds-font-reading);
-        font-size: .92rem;
-    }
-
-    // "Clear filters" is the design's text button: the link ink, underlined 2px off the text, in
+    // "Clear all" is the design's text button: the link ink, underlined 2px off the text, in
     // the sentence's own type - no glyph and no button box beside a line of text. It is still a
     // link, so it works with no script.
     .dim-toolbar__clear {
@@ -4840,92 +4966,35 @@ body.dim-category {
         }
     }
 
-    // ---- On a phone the view toggle joins the search line ----------------------------------------
-    // The toolbar writes the toggle twice - in the organisation row and after the filter
-    // disclosure - so the order in the document is the order on the screen at every width, and
-    // display:none keeps the idle copy out of the tab order and the accessibility tree. The phone
-    // copy is lifted to the end of the search line exactly as the Filter summary is, the summary
-    // moves left by the group's width and a gap, and the search box reserves both.
-    .dim-toolbar__view.dim-toolbar__view--phone {
-        display: none;
+    // ---- The Filters panel as a popover --------------------------------------------------------
+    // From the sm breakpoint up the panel opens UNDER THE LINE, at its end, over what follows: the
+    // line is its positioned ancestor, it is as wide as its content up to the line (and 40rem
+    // where the line is wider). It grows with its content and never scrolls inside itself: the date
+    // calendar opens inside the panel and a scroll container would clip it.
+    // Below sm it stays in the flow, and the open disclosure takes a line of its own.
+    @media (min-width: 576px) {
+        .dim-toolbar__panel {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            z-index: 2;
+            width: max-content;
+            max-width: 100%;
+            margin-top: 0;
+            background: var(--dim-surface);
+            box-shadow: var(--dim-shadow);
+        }
+    }
+
+    @media (min-width: 992px) {
+        .dim-toolbar__panel {
+            max-width: 40rem;
+        }
     }
 
     @media (max-width: 575.98px) {
-        .dim-toolbar__row--organise .dim-toolbar__view {
-            display: none;
-        }
-
-        // The row's copy draws one boundary round both buttons and clips them to it; the phone's
-        // copy draws a boundary per button instead, as the design's small toggle does, so it takes
-        // neither.
-        .dim-toolbar__view.dim-toolbar__view--phone {
-            position: absolute;
-            top: 0;
-            right: 0;
-            display: inline-flex;
-            gap: 0;
-            margin: 0;
-            padding: 0;
-            border: 0;
-            border-radius: 0;
-            background: none;
-            overflow: visible;
-        }
-
-        .dim-toolbar__view--phone .dim-toolbar__viewbtn {
-            justify-content: center;
-            width: 44px;
-            min-height: 44px;
-            padding: 0;
-            border: 1px solid var(--dim-control-line);
-            border-radius: 0;
-            background: var(--dim-surface);
-            color: var(--dim-ink);
-            box-shadow: none;
-
-            &:first-child {
-                border-radius: var(--dim-ds-radius-sm, 6px) 0 0 var(--dim-ds-radius-sm, 6px);
-            }
-
-            &:last-child {
-                margin-left: -1px;
-                border-radius: 0 var(--dim-ds-radius-sm, 6px) var(--dim-ds-radius-sm, 6px) 0;
-            }
-
-            &[aria-pressed="true"] {
-                background: var(--dim-tint);
-                color: var(--dim-primary-ink);
-                box-shadow: none;
-            }
-
-            .fa {
-                font-size: 18px;
-            }
-        }
-
-        // The summary sits the toggle's 87px and the design's 10px gap (its row's own) from the end
-        // of the line, and its glyph is the design's 18px box at this width, which makes the
-        // control 44px alone and 72px with the count, the design's two widths.
-        .dim-toolbar__filterstoggle {
-            right: 97px;
-            justify-content: center;
-            min-width: 44px;
-            padding: 0 12px;
-
-            .fa {
-                font-size: 18px;
-            }
-        }
-
-        // The favourites toggle is in the flow at the end of the line, so the two controls lifted
-        // out of it move left by its 44px and a 10px gap: the view toggle from the end, the Filter
-        // summary from beside the view toggle.
-        .dim-toolbar--hasstar .dim-toolbar__view.dim-toolbar__view--phone {
-            right: 54px;
-        }
-
-        .dim-toolbar--hasstar .dim-toolbar__filterstoggle {
-            right: 151px;
+        .dim-toolbar__filters[open] {
+            flex: 1 1 100%;
         }
     }
 
@@ -5174,11 +5243,12 @@ body.dim-category {
         }
     }
 
-    // ---- The phone's own half of the one line ------------------------------------------------
-    // The word goes and the icon and its number stay, so the control is the same control at a
-    // width where naming it would take the search box's room. It is taken out of the PICTURE and
-    // not out of the document: it is the summary's accessible name, and the technique is the one
-    // that keeps text available to a screen reader while it paints nowhere.
+    // ---- The phone's own half of the filter line ---------------------------------------------
+    // The Filters word goes and the icon and its number stay, so the control is the same control
+    // at a width where naming it would take the search box's room (the contract's second folding
+    // step, which the client's folding takes at any width once it measures the line). It is taken
+    // out of the PICTURE and not out of the document: it is the summary's accessible name, and the
+    // technique is the one that keeps text available to a screen reader while it paints nowhere.
     @media (max-width: 575.98px) {
         .dim-toolbar__filterslabel {
             position: absolute;
@@ -5189,15 +5259,24 @@ body.dim-category {
             clip-path: inset(50%);
         }
 
-        // The line holds the Filter summary (44px with the word gone), the view toggle (87px) and
-        // the design's 10px gap before each, and the reserve is all four: 151px. While the count
-        // badge shows, the summary grows to 72px and the reserve to 179px.
-        .dim-toolbar__search {
-            padding-right: 151px;
+        // Every control of the line is 44px on a phone: the search, the icon buttons, the Filters
+        // summary, the scope's cells inside their platter, and the chips under the line.
+        .dim-toolbar__input {
+            height: 44px;
         }
 
-        .dim-toolbar__row--narrow:has([data-region="dim-filtercount"]:not([hidden])) .dim-toolbar__search {
-            padding-right: 179px;
+        .dim-line__iconbtn,
+        .dim-toolbar__filterstoggle,
+        .dim-chip {
+            min-height: 44px;
+        }
+
+        .dim-line__iconbtn {
+            width: 44px;
+        }
+
+        .dim-line__scope .dim-pill {
+            min-height: 38px;
         }
 
         // Every control of the toolbar is 44px on a phone: the pills of the organisation and of
@@ -5214,9 +5293,8 @@ body.dim-category {
             min-height: 44px;
         }
 
-        // The row's copy of the view toggle is not drawn here, so the kebab is the row's right end,
-        // and it is a control of the toolbar like the pills: 44px, its glyph kept centred by the
-        // icon button's own flex box.
+        // The kebab is the line's right end, and it is a control of the toolbar like the pills:
+        // 44px, its glyph kept centred by the icon button's own flex box.
         .dim-toolbar__manage {
             margin-left: auto;
         }

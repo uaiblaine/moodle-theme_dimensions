@@ -26,9 +26,10 @@
     It is the category toolbar's first line in everything a reader and the
     listing's module meet: the same GET form and hook, the same name-less
     default submit first (see category_toolbar), the same box and the same
-    too-short notice. With the listing's module armed - a real account - the
-    search is live; without it the visible "Search" button submits, and the
-    listing's module hides that button.
+    too-short notice, the same pill with its eraser (dim-search-clear, a
+    client's control shown while the field holds text). With the listing's
+    module armed - a real account - the search is live; without it the visible
+    "Search" button submits, and the listing's module hides that button.
 
     The open panel travels in hidden fields, as on the category toolbar: the
     panel's module keeps them in step with the address.
@@ -42,7 +43,9 @@
         "searchname": "q",
         "searchlabel": "Buscar cursos",
         "searchplaceholder": "Buscar pelo nome",
+        "searchclearlabel": "Limpar texto",
         "query": "incêndio",
+        "hasquery": true,
         "searchtooshort": false,
         "searchtooshortlabel": "Digite pelo menos 2 caracteres para buscar.",
         "openfields": [
@@ -58,10 +61,11 @@
     {{/openfields}}
     <button type="submit" class="visually-hidden dim-toolbar__defaultsubmit" tabindex="-1">{{submitlabel}}</button>
     <div class="dim-toolbar__row">
-        <div class="dim-toolbar__search">
+        <div class="dim-toolbar__search dim-line__search" data-region="dim-line-search">
             <label class="visually-hidden" for="{{searchid}}">{{searchlabel}}</label>
             <i class="fa fa-magnifying-glass dim-toolbar__searchicon" aria-hidden="true"></i>
             <input class="form-control dim-toolbar__input" type="search" id="{{searchid}}" name="{{searchname}}" value="{{query}}" placeholder="{{searchplaceholder}}" autocomplete="off">
+            <button type="button" class="dim-line__eraser dim-live-only" data-action="dim-search-clear" aria-label="{{searchclearlabel}}" title="{{searchclearlabel}}"{{^hasquery}} hidden{{/hasquery}}><i class="fa fa-eraser" aria-hidden="true"></i></button>
         </div>
         <button type="submit" class="dim-toolbar__submit dim-nojs-only">{{submitlabel}}</button>
     </div>

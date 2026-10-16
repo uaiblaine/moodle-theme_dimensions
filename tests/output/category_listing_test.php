@@ -968,12 +968,15 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertStringContainsString('perpage=2', $context->pager);
         $this->assertTrue($context->toolbar->hasfilters);
         $this->assertSame('Curso', $context->toolbar->query);
-        /* The number of active filters is printed twice on the summary of the filter disclosure:
-           once for the eye and once, as this label, for a screen reader, the only one that says
-           what the number means. The label must hold the number and no unsubstituted placeholder:
-           in a single-quoted language string, a backslash before the dollar of {$a} survives and
-           get_string() then has no placeholder to substitute. */
-        $this->assertTrue($context->toolbar->hasfiltercount);
+        $this->assertFalse($context->toolbar->hasfiltercount, 'The term is in its own box, not behind the Filters badge.');
+        /* The number of filters the panel holds is printed twice on the summary of the filter
+           disclosure: once for the eye and once, as this label, for a screen reader, the only one
+           that says what the number means. The label must hold the number and no unsubstituted
+           placeholder: in a single-quoted language string, a backslash before the dollar of {$a}
+           survives and get_string() then has no placeholder to substitute. */
+        $context = $this->export(['search' => 'Curso', 'sort' => criteria::SORT_NAME, 'datefrom' => '2020-01-01']);
+        $this->assertTrue($context->toolbar->hasfiltercount, 'The period is in the panel.');
+        $this->assertSame(1, $context->toolbar->filtercount);
         $this->assertStringContainsString(
             (string) $context->toolbar->filtercount,
             $context->toolbar->filtercountlabel,
@@ -997,7 +1000,7 @@ final class category_listing_test extends \advanced_testcase {
         $context = $this->export(['state' => classifier::STATE_ENROLLED], category_toolbar::VIEW_LIST);
         $this->assertSame([$this->ids['enrolled']], array_keys($this->cards($context)));
         $this->assertSame('dim-vitrine--list', $context->viewclass);
-        $this->assertTrue($context->toolbar->views[1]['current']);
+        $this->assertTrue($context->toolbar->views[0]['current'], 'List, the first of the pair.');
     }
 
     /**
@@ -2591,30 +2594,33 @@ final class category_listing_test extends \advanced_testcase {
     }
 
     /**
-     * The filter panel opens on the server for a filter it holds, and not for a search alone.
+     * The filter panel is closed on load whatever narrows the page, and its badge counts what it holds.
      *
-     * A search shows in its own box on the row above, so the page never reads as narrowed from
-     * behind a closed control; a state, a field or a period does not show anywhere else. The clear
-     * link follows every filter, the search included, which is the control.
+     * The row under the line says what narrows - every criterion the line does not show is a chip
+     * there - so the panel needs no opening to say it, and the toolbar's context carries no such
+     * switch. The badge counts the field and the period, which live in the panel, and not the
+     * term (its box) nor a scope value (a cell of the line); the row shows for every one of them.
      */
-    public function test_the_filter_panel_opens_for_the_filters_it_holds_and_not_for_a_search(): void {
+    public function test_the_filter_panel_is_closed_on_load_and_its_badge_counts_what_it_holds(): void {
         $viewer = $this->seed();
         $this->become($viewer);
-        $this->assertFalse($this->export()->toolbar->filtersopen, 'At rest it is closed.');
-        self::forget();
-        $search = $this->export(['search' => 'Curso'])->toolbar;
-        $this->assertFalse($search->filtersopen, 'A search alone leaves it closed.');
-        $this->assertTrue($search->hasfilters, 'While the clear link follows it.');
+        $rest = $this->export()->toolbar;
+        $this->assertObjectNotHasProperty('filtersopen', $rest, 'Nothing opens the panel on the server.');
+        $this->assertFalse($rest->hasfilters, 'At rest the row under the line is the count sentence alone.');
         $fieldid = array_key_first(facets::fields());
         $cases = [
-            'a state' => ['state' => classifier::STATE_ENROLLED],
-            'a field' => ['fields' => [$fieldid => landingfields::MODALITY_ONLINE]],
-            'a start' => ['datefrom' => '2026-01-01'],
-            'an end' => ['dateto' => '2026-12-31'],
+            'a search' => [['search' => 'Curso'], 0],
+            'a scope value' => [['state' => classifier::STATE_ENROLLED], 0],
+            'a field' => [['fields' => [$fieldid => landingfields::MODALITY_ONLINE]], 1],
+            'a start' => [['datefrom' => '2026-01-01'], 1],
+            'an end' => [['dateto' => '2026-12-31'], 1],
         ];
-        foreach ($cases as $what => $options) {
+        foreach ($cases as $what => [$options, $badge]) {
             self::forget();
-            $this->assertTrue($this->export($options)->toolbar->filtersopen, $what . ' lives inside the panel, which opens on it.');
+            $toolbar = $this->export($options)->toolbar;
+            $this->assertObjectNotHasProperty('filtersopen', $toolbar, $what);
+            $this->assertSame($badge, $toolbar->filtercount, $what . ' on the badge.');
+            $this->assertTrue($toolbar->hasfilters, $what . ' shows the row under the line.');
         }
     }
 
@@ -2698,8 +2704,9 @@ final class category_listing_test extends \advanced_testcase {
      *
      * Only a logged-in page cut in PHP classifies its courses, and only its toolbar offers the state
      * group. A visitor's page and the SQL cut narrow nothing by a chip on the address, so the page
-     * must not say that anything narrows it: no pill on any poster, no result mode, the filter panel
-     * shut, the count line at rest, no clear control, and no chip handed to the client to send back.
+     * must not say that anything narrows it: no pill on any poster, no result mode, the row under
+     * the filter line at rest, the count line at rest, no clear control, and no chip handed to the
+     * client to send back.
      * Each case is compared with the same page without the chip; the logged-in page with the state
      * sort on is the control, where the same chip really narrows the page and every one of those
      * flips.
@@ -2732,7 +2739,7 @@ final class category_listing_test extends \advanced_testcase {
             'count line' => [$chip->countnumber, $chip->countline, $chip->seeallurl],
             'pills' => $pills,
             'result mode' => $chip->areas['filtered'],
-            'filter panel open' => $chip->toolbar->filtersopen,
+            'row under the line' => $chip->toolbar->hasfilters,
             'clear control' => $chip->hasfilters,
             'chip for the client' => json_decode($chip->vitrine)->chip,
         ];
@@ -2740,7 +2747,7 @@ final class category_listing_test extends \advanced_testcase {
             'count line' => [$rest->countnumber, $rest->countline, ''],
             'pills' => array_fill(0, count($pills), false),
             'result mode' => false,
-            'filter panel open' => false,
+            'row under the line' => false,
             'clear control' => false,
             'chip for the client' => null,
         ];
@@ -2751,5 +2758,197 @@ final class category_listing_test extends \advanced_testcase {
         foreach ($drawn as $what => $value) {
             $this->assertNotSame($atrest[$what], $value, "Control: the chip narrows this page, so the {$what} says so.");
         }
+    }
+
+    /**
+     * The query of a chip's address, as name => value.
+     *
+     * @param string $url The chip's address.
+     * @return array
+     */
+    private static function chip_query(string $url): array {
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+        ksort($query);
+        return $query;
+    }
+
+    /**
+     * Each chip's address drops its one criterion and keeps every other part of the request.
+     *
+     * One chip per criterion the line does not show - the field, the period, a "More statuses"
+     * state, the tree's category - and none for the term, the scope or the favourites, which the
+     * line draws itself. Each address is the request's own query less that one criterion: the
+     * other criteria, the organisation and the page size stay, and so does the open panel, as
+     * "Clear all" keeps it. The period's two bounds go together.
+     *
+     * Changes that must make it fail: a chip address dropping a second criterion or keeping its own;
+     * the organisation or the open panel lost; a chip for a scope value; the period losing one bound.
+     */
+    public function test_each_chip_drops_its_one_criterion_and_keeps_everything_else(): void {
+        $viewer = $this->seed();
+        $this->become($viewer);
+        $fieldid = (int) array_key_first(facets::fields());
+        $options = [
+            'sort' => criteria::SORT_NAME,
+            'pagesize' => 2,
+            'search' => 'Curso',
+            'state' => classifier::STATE_FREE,
+            'favourites' => true,
+            'fields' => [$fieldid => landingfields::MODALITY_ONLINE],
+            'datefrom' => '2020-01-01',
+            'dateto' => '2030-12-31',
+            'cat' => $this->ids['child'],
+        ];
+        $context = $this->export($options);
+        $criteria = new criteria($this->ids['root'], $options);
+        $chips = $context->toolbar->chips;
+        $field = criteria::PARAM_FIELD_PREFIX . $fieldid;
+        $this->assertSame(
+            [$field, category_toolbar::CHIP_PERIOD, criteria::PARAM_STATE, criteria::PARAM_CAT],
+            array_column($chips, 'param'),
+            'The field, the period, the "More statuses" state and the tree\'s category, and nothing the line shows.'
+        );
+        $drops = [
+            $field => [$field],
+            category_toolbar::CHIP_PERIOD => [criteria::PARAM_DATEFROM, criteria::PARAM_DATETO],
+            criteria::PARAM_STATE => [criteria::PARAM_STATE],
+            criteria::PARAM_CAT => [criteria::PARAM_CAT],
+        ];
+        $all = array_map('strval', $criteria->query_params());
+        $this->assertArrayHasKey(criteria::PARAM_SORT, $all, 'Precondition: the request names its organisation.');
+        $this->assertArrayHasKey(criteria::PARAM_FAVOURITES, $all, 'And the favourites, which no chip may drop.');
+        foreach ($chips as $chip) {
+            $expected = $all;
+            foreach ($drops[$chip['param']] as $name) {
+                unset($expected[$name]);
+            }
+            $expected['categoryid'] = (string) $this->ids['root'];
+            ksort($expected);
+            $this->assertSame($expected, self::chip_query($chip['url']), $chip['param'] . ' drops exactly its criterion.');
+            $this->assertSame(get_string('category_removefilter', 'theme_dimensions'), $chip['removelabel']);
+        }
+        $labels = array_column($chips, 'label', 'param');
+        $this->assertSame(get_string('category_chip_free', 'theme_dimensions'), $labels[criteria::PARAM_STATE]);
+        $this->assertSame('Brigada', $labels[criteria::PARAM_CAT], 'The category as the tree names it.');
+        $format = get_string('strftimedate', 'langconfig');
+        $timezone = \core_date::get_server_timezone();
+        $this->assertSame(
+            get_string('category_daterangepill', 'theme_dimensions', (object) [
+                'from' => userdate((int) criteria::day_start('2020-01-01'), $format, $timezone),
+                'to' => userdate((int) criteria::day_start('2030-12-31'), $format, $timezone),
+            ]),
+            $labels[category_toolbar::CHIP_PERIOD],
+            'The period in the site timezone, as criteria resolves it.'
+        );
+        /* The other criteria leave no course with that option, so the facet no longer offers it:
+           the chip still names the option, as the field defines it, and never the field alone. */
+        $definition = facets::option_labels(facets::fields()[$fieldid]);
+        $this->assertSame($definition[landingfields::MODALITY_ONLINE], $labels[$field], 'The option\'s label.');
+        self::forget();
+        $offered = $this->export(['sort' => criteria::SORT_NAME, 'fields' => [$fieldid => landingfields::MODALITY_ONLINE]]);
+        $facet = array_values(array_filter($offered->toolbar->facets, static fn(array $group): bool => $group['name'] === $field));
+        $picked = array_values(array_filter($facet[0]['options'], static fn(array $option): bool => $option['checked']));
+        $this->assertSame(
+            $picked[0]['label'],
+            $offered->toolbar->chips[0]['label'],
+            'Where the facet offers it, the label its facet carries.'
+        );
+        $this->assertTrue($context->toolbar->clearall, 'Seven criteria: "Clear all" is offered.');
+
+        // The open panel rides along on a grouped page, as it does on "Clear all".
+        self::forget();
+        $grouped = ['fields' => [$fieldid => landingfields::MODALITY_ONLINE], 'open' => $this->ids['child']];
+        $panelcontext = $this->export($grouped);
+        $this->assertSame(
+            [$field],
+            array_column($panelcontext->toolbar->chips, 'param'),
+            'Precondition: one chip.'
+        );
+        $query = self::chip_query($panelcontext->toolbar->chips[0]['url']);
+        $this->assertSame((string) $this->ids['child'], $query[criteria::PARAM_OPEN] ?? null, 'The open panel stays open.');
+        $this->assertArrayNotHasKey($field, $query);
+        $this->assertFalse($panelcontext->toolbar->clearall, 'One criterion: its chip undoes it, and "Clear all" waits.');
+
+        // A scope value and the search are on the line: no chip for either.
+        self::forget();
+        $line = $this->export(['state' => classifier::STATE_ENROLLED, 'search' => 'Curso']);
+        $this->assertSame([], $line->toolbar->chips);
+        $this->assertTrue($line->toolbar->hasfilters, 'The row under the line still shows, with the count sentence.');
+    }
+
+    /**
+     * The chips are one builder's: the page and both web services hand back the same ones for one request.
+     *
+     * The client paints the chips of an answer and composes none, so a chip drawn on the page and
+     * the same chip after a fetch must be the same label and the same address. A visitor's page
+     * honours no state chip and has no favourites, so neither ever becomes a chip there, whatever
+     * the request says.
+     *
+     * Changes that must make it fail: the web service building its chips apart from the toolbar; a
+     * visitor handed a state chip.
+     */
+    public function test_the_chips_are_the_same_from_the_page_and_both_services(): void {
+        global $PAGE;
+        $viewer = $this->seed();
+        $this->become($viewer);
+        $fieldid = (int) array_key_first(facets::fields());
+        $category = core_course_category::get($this->ids['root'], MUST_EXIST, true);
+        $page = $this->export([
+            'sort' => criteria::SORT_NAME,
+            'search' => 'Curso',
+            'state' => classifier::STATE_FREE,
+            'fields' => [$fieldid => landingfields::MODALITY_ONLINE],
+            'datefrom' => '2020-01-01',
+            'cat' => $this->ids['child'],
+        ]);
+        $this->assertCount(4, $page->toolbar->chips, 'Precondition: a chip of every kind.');
+        self::forget();
+        // A request of its own, as the web service is: the page's context was set by the export above.
+        $PAGE = new \moodle_page();
+        $answer = \theme_dimensions\local\category\rows::fetch($category, [
+            'sort' => criteria::SORT_NAME,
+            'query' => 'Curso',
+            'chip' => classifier::STATE_FREE,
+            'filters' => [$fieldid => landingfields::MODALITY_ONLINE],
+            'datefrom' => '2020-01-01',
+            'cat' => $this->ids['child'],
+        ]);
+        $strip = static fn(array $chips): array => array_map(
+            static fn(array $chip): array => array_diff_key($chip, ['isperiod' => true]),
+            $chips
+        );
+        $this->assertSame($strip($page->toolbar->chips), $answer['chips'], 'The logged-in service answers the page\'s chips.');
+        $this->assertSame($page->toolbar->clearall, $answer['clearall']);
+
+        // The visitor's shell: the page and the visitor's service, and never a state chip.
+        $this->seed_public();
+        $this->become(null);
+        $public = core_course_category::get($this->ids['root'], MUST_EXIST, true);
+        $options = [
+            'anonymous' => true,
+            'sort' => criteria::SORT_NAME,
+            'state' => classifier::STATE_PENDING,
+            'favourites' => true,
+            'datefrom' => '2020-01-01',
+            'cat' => $this->ids['child'],
+        ];
+        $visitor = $this->export($options);
+        $this->assertSame(
+            [category_toolbar::CHIP_PERIOD, criteria::PARAM_CAT],
+            array_column($visitor->toolbar->chips, 'param'),
+            'The period and the tree, and no state chip for a visitor.'
+        );
+        $this->assertNull($visitor->toolbar->favourites, 'And no star.');
+        self::forget();
+        $PAGE = new \moodle_page();
+        $answer = \theme_dimensions\local\category\rows::fetch($public, [
+            'anonymous' => true,
+            'sort' => criteria::SORT_NAME,
+            'chip' => classifier::STATE_PENDING,
+            'datefrom' => '2020-01-01',
+            'cat' => $this->ids['child'],
+        ]);
+        $this->assertSame($strip($visitor->toolbar->chips), $answer['chips'], 'The visitor\'s service answers the same chips.');
+        $this->assertNotContains(criteria::PARAM_STATE, array_column($answer['chips'], 'param'));
     }
 }

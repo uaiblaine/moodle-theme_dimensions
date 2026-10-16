@@ -78,6 +78,8 @@ const SELECTORS = {
     countnotetext: '[data-region="dim-vitrine-countnotetext"]',
     clear: '[data-region="dim-vitrine-clear"]',
     clearaction: '[data-action="dim-clear"]',
+    chipremove: '[data-action="dim-chip-remove"]',
+    eraser: '[data-action="dim-search-clear"]',
     pagerbar: '[data-region="dim-vitrine-pagerbar"]',
     loadmore: '[data-action="dim-loadmore"]',
     card: '[data-region="dim-card"]',
@@ -277,6 +279,9 @@ const paintDates = () => Listing.paintDates(root, state);
 const paintFilterBadge = (response) => Listing.paintFilterBadge(root, response);
 const paintCount = (response) => Listing.paintCount(root, response);
 const paintGroups = (response) => Listing.paintGroups(root, response);
+const paintChips = (response) => Listing.paintChips(root, response);
+const paintEraser = () => Listing.paintEraser(root);
+const dropCriterion = (param) => Listing.dropCriterion(state, param);
 const renderCards = (cards) => Listing.renderCards(cards);
 const restoreMore = (more) => Listing.restoreMore(more);
 const paintPager = (response, append, first) => Listing.paintPager(root, response, append, first);
@@ -686,14 +691,12 @@ const applyResponse = async(response, append, ticket) => {
         notice.hidden = !response.searchtooshort;
     }
     const clear = root.querySelector(SELECTORS.clear);
-    if (clear) {
-        if (response.clearurl) {
-            clear.href = withPanel(response.clearurl);
-        }
-        clear.hidden = !response.hasfilters;
+    if (clear && response.clearurl) {
+        clear.href = withPanel(response.clearurl);
     }
     paintFilterBadge(response);
     paintCount(response);
+    paintChips(response);
     paintGroups(response);
     paintFavourites(response);
     attachCards(items.map((item) => item.querySelector(SELECTORS.card)).filter((card) => card !== null));
@@ -831,6 +834,7 @@ const cancelSearch = () => {
  */
 const onSearchInput = (search) => {
     cancelSearch();
+    paintEraser();
     const token = new Pending('theme_dimensions/categoryvitrine:search');
     searchpending = token;
     searchtimer = window.setTimeout(async() => {
@@ -1029,6 +1033,48 @@ const onClear = () => {
 };
 
 /**
+ * Drop the one criterion a chip of the row under the filter line names, in place.
+ *
+ * The chip is a real address for a reader without this module (the server's, with that one
+ * criterion dropped and everything else kept); here the state drops the same criterion, the
+ * controls are repainted from it and the page is asked again, as any filter press does. The focus
+ * goes to the search box because the chip pressed is about to leave the row.
+ *
+ * @param {HTMLElement} chip The chip pressed.
+ * @return {Boolean} Whether the chip was handled; a chip naming nothing this state holds is left to its link.
+ */
+const onChipRemove = (chip) => {
+    if (!dropCriterion(chip.dataset.param || '')) {
+        return false;
+    }
+    paintControls();
+    remember(false);
+    writeUrl(true);
+    requestRows(0, false);
+    const search = root.querySelector(SELECTORS.search);
+    if (search) {
+        search.focus({preventScroll: true});
+    }
+    return true;
+};
+
+/**
+ * Empty the search box with its eraser, search again for nothing, and keep the focus in the box.
+ *
+ * @return {Promise} Resolving when the answer has been painted.
+ */
+const onErase = async() => {
+    cancelSearch();
+    const search = root.querySelector(SELECTORS.search);
+    if (search) {
+        search.value = '';
+        search.focus({preventScroll: true});
+    }
+    paintEraser();
+    await onSearch('');
+};
+
+/**
  * Wire every listener of the listing.
  *
  * @return {void}
@@ -1058,6 +1104,17 @@ const listen = () => {
             // A real address for a reader without this module; the filters cleared in place here.
             event.preventDefault();
             onClear();
+            return;
+        }
+        const chip = closestOf(event, SELECTORS.chipremove);
+        if (chip && onChipRemove(chip)) {
+            // A real address for a reader without this module; that one criterion dropped in place here.
+            event.preventDefault();
+            return;
+        }
+        if (closestOf(event, SELECTORS.eraser)) {
+            event.preventDefault();
+            onErase().catch(Notification.exception);
             return;
         }
         const quick = closestOf(event, SELECTORS.quick);

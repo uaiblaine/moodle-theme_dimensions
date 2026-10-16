@@ -26,34 +26,40 @@ namespace theme_dimensions\output;
 
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\facets;
 use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\landing\links;
 
 /**
- * Builds the template context of the toolbar: search, the favourites, the state chips, the facet groups, the view toggle.
+ * Builds the template context of the toolbar: the filter line, its panel, and the row of what narrows.
  *
  * The toolbar is a real GET form and every control in it works with
  * JavaScript off: the same parameter names serve the form, the address bar
- * and the web services. The chips are radio inputs with pill-shaped labels -
- * a native radio group already moves with the arrow keys and announces
- * itself, so no roving tabindex is needed.
- * A "Filter" submit is drawn for the no-JavaScript reader and hidden once
- * the listing's client module marks the body; the view toggle is a pair of
- * submit buttons carrying the view parameter, so a choice made without
- * JavaScript still reaches the server and is remembered.
+ * and the web services. The scope cells and the panel's options are radio
+ * inputs with labels drawn as cells or pills - a native radio group already
+ * moves with the arrow keys and announces itself, so no roving tabindex is
+ * needed. A "Filter" submit at the foot of the panel and an "Apply" submit in
+ * the Organise menu are drawn for the no-JavaScript reader and hidden once a
+ * listing client marks the body; the view toggle is a pair of submit buttons
+ * carrying the view parameter, so a choice made without JavaScript still
+ * reaches the server and is remembered.
  *
- * Two rows and a count line, and which control sits in which is a statement
- * about what it does. Row one NARROWS: the search box, the favourites toggle
- * and one disclosure holding every other filter there is - the state pills, the
- * facet groups and the start-date range - with the number of active filters printed on the
- * disclosure itself, so a reader who collapsed it can still see that
- * something is narrowing the page. Row two ORGANISES: the three sort chips,
- * the card/list toggle and the category's own management menu, none of which
- * hides a course. The count line comes third. The disclosure is a native
- * `details`, which is why the panel opens, closes, announces itself and
- * keyboards without a line of script. It is drawn open for a filter that
- * lives inside it - a state, a field, a period - and not for a search alone,
- * which the reader can see in its own box.
+ * ONE line, in the filter line's slot order (moodle-dev/docs/filter-line/CONTRACT.md):
+ * the scope (the state chip's values {@see criteria::SCOPE}, counted, for a
+ * logged-in reader with the state sort on), the search, the favourites star,
+ * the Filters disclosure, the Organise menu, the view toggle and the managers'
+ * menu. Under it a second row exists only while something narrows: the count
+ * sentence, then one chip per criterion the line does not show ({@see chips()}),
+ * "Clear all" from two criteria up, "See all as a list" and the automatic
+ * opening's note. At rest the row draws nothing but the count sentence, kept
+ * in the document visually hidden because it is the page's live region.
+ *
+ * The Filters disclosure is a native `details`, closed on load: the chips row
+ * says what narrows, so a narrowed page never needs the panel open to say so.
+ * Its badge counts what the panel holds ({@see criteria::filter_count()}). The
+ * panel holds "More statuses" (the state chip's values that are not the
+ * scope, the same radio name), one group per allowlisted custom field and the
+ * start-date range.
  *
  * The quick date options are ordinary links, computed here from the site
  * timezone's own calendar, carrying the same `from` and `to` a reader could
@@ -68,18 +74,17 @@ use theme_dimensions\local\landing\links;
  * and nothing else, and a skeleton drawn here would be a control that never
  * becomes one.
  *
- * The favourites toggle is a submit button of its own on that row, beside the
- * Filter control and outside its panel, because it combines with the state
- * rather than being one of its values: pressing it posts `fav` with the value
- * it would turn the toggle to, and while it is on a hidden field earlier in the
- * form carries `fav=1`, so every other submission keeps it. A press that turns
- * it off posts both, and the button's comes last, which is the one PHP reads.
- * It is drawn where the state group is and only for a reader who has
- * favourites ({@see criteria::can_favourite()}).
+ * The favourites toggle is a submit button of its own on the line, because it
+ * combines with the state rather than being one of its values: pressing it
+ * posts `fav` with the value it would turn the toggle to, and while it is on a
+ * hidden field earlier in the form carries `fav=1`, so every other submission
+ * keeps it. A press that turns it off posts both, and the button's comes last,
+ * which is the one PHP reads. It is drawn where the scope is and only for a
+ * reader who has favourites ({@see criteria::can_favourite()}).
  *
  * Every number printed here is post-filter, read from the page result and
- * never recomputed. A state chip whose count is zero is not offered, save
- * the one currently picked, so the strip does not lengthen with states the
+ * never recomputed. A state option whose count is zero is not offered, save
+ * the one currently picked, so the line does not lengthen with states the
  * viewer has no course in. A facet option whose count the SQL-cut mode could
  * not produce prints its label alone, never a zero.
  *
@@ -114,17 +119,21 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     ];
 
     /**
-     * @var array The state chips in display order, chip value => label string key.
+     * @var array The state chips in display order, chip value => label string key: the scope's
+     *   ({@see criteria::SCOPE}) first, in the line's order, then the panel's "More statuses".
      *
      * A chip value is not a state: {@see classifier::chip()} says which states each one counts and keeps.
      */
     private const CHIPS = [
         classifier::STATE_ENROLLED => 'category_chip_enrolled',
+        classifier::STATE_OPEN => 'category_chip_open',
         classifier::STATE_SCHEDULED => 'category_chip_scheduled',
         classifier::STATE_PENDING => 'category_chip_pending',
-        classifier::STATE_OPEN => 'category_chip_open',
         classifier::STATE_FREE => 'category_chip_free',
     ];
+
+    /** @var string The chip's data-param for the period, whose two bounds go together. */
+    public const CHIP_PERIOD = 'period';
 
     /**
      * Constructor.
@@ -164,9 +173,11 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      */
     public function export_for_template(\core\output\renderer_base $output): \stdClass {
         $statusgroup = $this->showstates ? $this->status_group() : null;
+        [$scope, $more] = self::split_status($statusgroup);
         $favourites = $this->favourites_toggle();
         $facets = $this->facet_groups();
-        /* "Clear filters" keeps the ORGANISATION and the open panel, and drops everything that
+        $chips = $this->chips();
+        /* "Clear all" keeps the ORGANISATION and the open panel, and drops everything that
            narrows: reordering hides no course and neither does a panel, and a control that
            silently put the page back into the grouped default, or shut the panel the reader was
            reading, would send them looking for what they had just pressed. */
@@ -176,6 +187,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
            id travels as a hidden field or in the route's own path, never in the action. The
            category id only reaches the ids of the controls below. */
         $form = links::showcase_form($this->categoryid, $this->anonymous);
+        $sortgroup = $this->sort_group();
         return (object) [
             'action' => $form['action'],
             'hidden' => $form['hidden'],
@@ -184,11 +196,19 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'searchname' => criteria::PARAM_SEARCH,
             'searchlabel' => get_string('category_search', self::COMPONENT),
             'searchplaceholder' => get_string('category_searchplaceholder', self::COMPONENT),
+            'searchclearlabel' => get_string('category_searchclear', self::COMPONENT),
             'query' => $this->criteria->rawsearch,
+            'hasquery' => $this->criteria->rawsearch !== '',
             'searchtooshort' => $this->criteria->rawsearch !== '' && $this->criteria->search === '',
             'searchtooshortlabel' => get_string('category_searchtooshort', self::COMPONENT, criteria::MIN_SEARCH_LENGTH),
+            /* The whole state group, which the web services hand back for the client to split by
+               criteria::SCOPE exactly as the two halves below are split here. */
             'statusgroup' => $statusgroup,
             'hasstatusgroup' => $statusgroup !== null,
+            'scope' => $scope,
+            'hasscope' => $scope !== null,
+            'more' => $more,
+            'hasmorestatuses' => $more !== null,
             'favourites' => $favourites,
             'hasfavourites' => $favourites !== null,
             'facets' => $facets,
@@ -197,7 +217,8 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'pagesize' => $this->criteria->pagesize,
             'haspagesize' => $this->criteria->pagesize !== null,
             'openfields' => self::open_fields($this->criteria),
-            'sortgroup' => $this->sort_group(),
+            'sortgroup' => $sortgroup,
+            'sortlabel' => $sortgroup['legend'],
             'sortapplylabel' => get_string('category_apply', self::COMPONENT),
             'datefromid' => 'dim-datefrom-' . $this->categoryid,
             'datetoid' => 'dim-dateto-' . $this->categoryid,
@@ -221,39 +242,189 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
                and both wrong on the same page whose quick options say otherwise. */
             'today' => criteria::iso(time()),
             'datequick' => $this->quick_dates(),
+            'filterslabel' => get_string('category_filters', self::COMPONENT),
             'filtercount' => $this->criteria->filter_count(),
             'hasfiltercount' => $this->criteria->filter_count() > 0,
             'filtercountlabel' => get_string('category_filtercount', self::COMPONENT, $this->criteria->filter_count()),
             'viewname' => self::PARAM_VIEW,
             'viewlabel' => get_string('category_view', self::COMPONENT),
+            // List first, as the filter line's contract draws it.
             'views' => [
-                [
-                    'value' => self::VIEW_CARDS,
-                    'label' => get_string('category_view_cards', self::COMPONENT),
-                    'current' => $this->view === self::VIEW_CARDS,
-                    'icon' => 'fa-border-all',
-                ],
                 [
                     'value' => self::VIEW_LIST,
                     'label' => get_string('category_view_list', self::COMPONENT),
                     'current' => $this->view === self::VIEW_LIST,
                     'icon' => 'fa-list',
                 ],
+                [
+                    'value' => self::VIEW_CARDS,
+                    'label' => get_string('category_view_cards', self::COMPONENT),
+                    'current' => $this->view === self::VIEW_CARDS,
+                    'icon' => 'fa-border-all',
+                ],
             ],
             'submitlabel' => get_string('category_filter', self::COMPONENT),
-            /* The disclosure opens on the server for what it holds, and a search is not inside it:
-               the term is visible in its own box, so the page never reads as narrowed from behind a
-               closed control. The clear link still follows every filter, the search included. */
-            'filtersopen' => $this->criteria->state !== null
-                || $this->criteria->fields !== []
-                || $this->criteria->datefrom !== ''
-                || $this->criteria->dateto !== '',
+            // Whether the row under the line is drawn: something narrows, the search included.
             'hasfilters' => $this->criteria->has_filters(),
+            'chips' => $chips,
+            'haschips' => $chips !== [],
+            'clearall' => $this->criteria->narrowing_count() >= 2,
             'clearurl' => $clearurl->out(false),
-            'clearlabel' => get_string('category_clearfilters', self::COMPONENT),
+            'clearlabel' => get_string('category_clearall', self::COMPONENT),
             'manageactions' => $this->manageactions,
             'hasmanageactions' => $this->manageactions !== '',
         ];
+    }
+
+    /**
+     * The state group cut in two by {@see criteria::SCOPE}: the line's scope cells and the panel's "More statuses".
+     *
+     * Both halves keep the group's radio name, so one choice holds across them. The scope is drawn
+     * whenever the group is; "More statuses" too, hidden while it has no option to offer, because
+     * a client repaints its options from every answer and needs the group to paint them into.
+     *
+     * @param array|null $statusgroup The whole group ({@see status_group()}), or null where none is drawn.
+     * @return array [scope|null, more|null], each ['legend', 'name', 'options', 'hasoptions'].
+     */
+    private static function split_status(?array $statusgroup): array {
+        if ($statusgroup === null) {
+            return [null, null];
+        }
+        $scope = [];
+        $more = [];
+        foreach ($statusgroup['options'] as $option) {
+            if (criteria::is_scope((string) $option['value'])) {
+                $scope[] = $option;
+            } else {
+                $more[] = $option;
+            }
+        }
+        return [
+            [
+                'legend' => $statusgroup['legend'],
+                'name' => $statusgroup['name'],
+                'options' => $scope,
+                'hasoptions' => $scope !== [],
+            ],
+            [
+                'legend' => get_string('category_morestatuses', self::COMPONENT),
+                'name' => $statusgroup['name'],
+                'options' => $more,
+                'hasoptions' => $more !== [],
+            ],
+        ];
+    }
+
+    /**
+     * The chips of the row under the line: one per criterion in force that the line does not show.
+     *
+     * The one builder of them: the page draws what this answers and both web services hand it
+     * back ({@see \theme_dimensions\local\category\rows}), so the client composes no chip. In
+     * order: each custom field (the option's label as its facet carries it, or as the field
+     * defines it when the facet no longer offers it), the period (its
+     * sentence in the site timezone, as {@see criteria} resolves it), a state chosen among "More
+     * statuses" (a logged-in reader's only: a visitor's page honours no state chip) and the
+     * tree's category (named as the tree names it). The search, the scope and the favourites are
+     * drawn on the line itself and get none.
+     *
+     * Each chip is a link to this listing with that one criterion dropped and every other part of
+     * the request kept - the other criteria, the organisation, the page size and the open panel,
+     * as "Clear all" keeps them - so it works with no JavaScript; `param` names what it drops: a
+     * field's parameter, {@see criteria::PARAM_STATE}, {@see criteria::PARAM_CAT} or
+     * {@see CHIP_PERIOD} for both bounds of the period.
+     *
+     * @return array Entries of ['param' => string, 'label' => plain string, 'url' => string,
+     *   'removelabel' => plain string, 'isperiod' => bool].
+     */
+    public function chips(): array {
+        $chips = [];
+        $fields = null;
+        foreach ($this->criteria->fields as $fieldid => $value) {
+            $facet = $this->result->facets[$fieldid] ?? null;
+            $label = $facet['options'][$value]['label'] ?? null;
+            if ($label === null) {
+                /* The facet offers only the options the other criteria leave a course in, so the
+                   picked one may be missing from it; its label is then the field's own. */
+                $fields ??= facets::fields();
+                $label = isset($fields[$fieldid]) ? (facets::option_labels($fields[$fieldid])[$value] ?? null) : null;
+            }
+            if ($label === null) {
+                continue;
+            }
+            $name = criteria::PARAM_FIELD_PREFIX . $fieldid;
+            $chips[] = $this->chip($name, (string) $label, [$name]);
+        }
+        if ($this->criteria->datefrom !== '' || $this->criteria->dateto !== '') {
+            $chips[] = $this->chip(
+                self::CHIP_PERIOD,
+                self::period_label($this->criteria),
+                [criteria::PARAM_DATEFROM, criteria::PARAM_DATETO]
+            );
+        }
+        $state = $this->criteria->state;
+        if ($this->showstates && $state !== null && !criteria::is_scope($state) && isset(self::CHIPS[$state])) {
+            $chips[] = $this->chip(
+                criteria::PARAM_STATE,
+                get_string(self::CHIPS[$state], self::COMPONENT),
+                [criteria::PARAM_STATE]
+            );
+        }
+        if ($this->criteria->cat > 0) {
+            foreach ($this->result->subcategories as $entry) {
+                if ((int) $entry['id'] === $this->criteria->cat) {
+                    $chips[] = $this->chip(criteria::PARAM_CAT, (string) $entry['name'], [criteria::PARAM_CAT]);
+                    break;
+                }
+            }
+        }
+        return $chips;
+    }
+
+    /**
+     * One chip: its label and the address of this listing without the parameters it names.
+     *
+     * @param string $param What the chip drops, as its data-param says it.
+     * @param string $label The chip's label, plain.
+     * @param string[] $drop The query parameters the address leaves out.
+     * @return array ['param', 'label', 'url', 'removelabel', 'isperiod'].
+     */
+    private function chip(string $param, string $label, array $drop): array {
+        $params = $this->criteria->query_params();
+        foreach ($drop as $name) {
+            unset($params[$name]);
+        }
+        return [
+            'param' => $param,
+            'label' => $label,
+            'url' => links::showcase($this->categoryid, $params, $this->anonymous)->out(false),
+            'removelabel' => get_string('category_removefilter', self::COMPONENT),
+            // The period's chip is drawn in the calendar's own region of the row (dim-daterange-pill).
+            'isperiod' => $param === self::CHIP_PERIOD,
+        ];
+    }
+
+    /**
+     * The period as one sentence, its days written in the site timezone, as criteria resolved them.
+     *
+     * The three shapes a period takes have a language string each: a range, a start alone and an
+     * end alone. The days are the instants {@see criteria::day_start()} computed, printed in the
+     * SITE timezone, so the chip names the days the predicate keeps whoever reads it.
+     *
+     * @param criteria $criteria The request, with a period.
+     * @return string Plain text.
+     */
+    private static function period_label(criteria $criteria): string {
+        $timezone = \core_date::get_server_timezone();
+        $format = get_string('strftimedate', 'langconfig');
+        $from = $criteria->datefrom === '' ? '' : userdate((int) criteria::day_start($criteria->datefrom), $format, $timezone);
+        $to = $criteria->dateto === '' ? '' : userdate((int) criteria::day_start($criteria->dateto), $format, $timezone);
+        if ($from !== '' && $to !== '') {
+            return get_string('category_daterangepill', self::COMPONENT, (object) ['from' => $from, 'to' => $to]);
+        }
+        if ($from !== '') {
+            return get_string('category_daterangepillfrom', self::COMPONENT, $from);
+        }
+        return get_string('category_daterangepillto', self::COMPONENT, $to);
     }
 
     /**
@@ -281,7 +452,9 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'searchname' => criteria::PARAM_SEARCH,
             'searchlabel' => get_string('category_search', self::COMPONENT),
             'searchplaceholder' => get_string('category_searchplaceholder', self::COMPONENT),
+            'searchclearlabel' => get_string('category_searchclear', self::COMPONENT),
             'query' => $criteria->rawsearch,
+            'hasquery' => $criteria->rawsearch !== '',
             'searchtooshort' => $criteria->rawsearch !== '' && $criteria->search === '',
             'searchtooshortlabel' => get_string('category_searchtooshort', self::COMPONENT, criteria::MIN_SEARCH_LENGTH),
             'openfields' => self::open_fields($criteria),

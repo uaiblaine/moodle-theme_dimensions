@@ -18,107 +18,97 @@
     @template theme_dimensions/category_toolbar
 
     The toolbar of the category showcase: a real GET form that works with
-    JavaScript off, in two rows and a count line. Row one narrows: the search
-    box, the favourites toggle, and one disclosure holding every other filter
-    there is - the state group, one group per allowlisted custom field, and the
-    start-date range with its quick options. Row two organises: the three sort chips as a radio group whose
-    legend reads inline before them, the card/list toggle (two submit buttons
-    carrying the view parameter) and core's own action menu for the category's
-    managers. The count line comes third: its number in bold, the sentence,
-    "see all as a list" when a narrowed page spreads its results over areas, and
-    the way out of every filter right after it.
+    JavaScript off, drawn as ONE line in the filter line's slot order
+    (moodle-dev/docs/filter-line/CONTRACT.md), then the too-short notice, then a
+    second row that shows only while something narrows.
 
-    Each group names itself once: the legend is both what a screen reader
-    announces for the fieldset and what the design shows beside the pills.
+    The line (dim-line) holds, in order: the scope - the state chip's values
+    criteria::SCOPE names, as counted cells of one radio group, legend visually
+    hidden, for a logged-in reader with the state sort on; the pill search
+    (dim-line-search) with its eraser; the favourites star (dim-line-star); the
+    Filters disclosure (dim-filters); the Organise menu (dim-organise); the view
+    toggle (dim-view-row, icons only, List first); core's action menu for the
+    category's managers. With no JavaScript the line wraps where it does not fit
+    and every control still submits.
 
-    The filter disclosure is a native details element, so it opens, closes and
-    announces itself with no script. It is rendered open when a filter it holds
-    narrows the listing - not for a search alone, which shows in its own box -
-    and the number of active filters is printed on its summary, because a
-    reader who collapses it has to see that the page is still narrowed. The
-    summary's word has a span of its own because at a phone's width the
-    stylesheet hides that span alone, keeping the icon, the count badge and the
-    accessible name.
+    The scope fieldset and the panel's "More statuses" fieldset are ONE radio
+    group by name (chip), so a choice holds across both; each carries
+    data-region dim-vitrine-group, data-name chip and a data-role (scope, more),
+    which is how the client splits the web service's status group between them.
+    "More statuses" is drawn hidden while it has no option, so the client has a
+    group to paint an option into when an answer brings one.
+
+    The eraser (dim-search-clear) empties the field and searches again. It is a
+    client's control (dim-live-only, which both client marks reveal) and is
+    hidden while the field is empty; the client shows it as the reader types.
+
+    The favourites toggle combines with the state rather than being one of its
+    values, so it is a submit button of its own: it posts fav with the value a
+    press turns it to, and aria-pressed says whether it is on. While it is on, a
+    hidden field (dim-fav-field) earlier in the form carries fav=1, so every
+    other submission keeps it; a press that turns it off posts both, and the
+    button's value comes last, which is the one the server reads. The client
+    enables and disables that field as it toggles the button (dim-fav). The
+    glyph is the course card's own star, solid when pressed; the word and the
+    number of favourites are the button's accessible name (dim-fav-count) and
+    its tooltip names it.
+
+    The Filters disclosure is a native details element, closed on load: the
+    chips row says what narrows. Its summary is the sliders glyph, the word
+    (dim-line__label, which the client's folding takes away at narrow widths)
+    and the badge (dim-filtercount), which counts what the panel holds and
+    nothing the line shows; each of the badge's halves - the digit sighted
+    readers see and the sentence a screen reader is read - carries a region,
+    because the client rewrites both after every request. The panel holds "More
+    statuses", one group per allowlisted custom field, the start-date range
+    with its quick options, and the no-JavaScript "Filter" submit.
 
     The quick date options are ordinary links carrying the two parameters the
     date fields carry, computed on the server in the site's timezone. Either
     date field may be left empty: each bound narrows on its own. The calendar
     is the client's (category_daterange) and speaks the same parameters: it
-    mounts its start and end boxes into the empty dim-daterange region, hides the native
-    fields (dim-dateinputs) and reads three facts off this markup rather than
-    computing them - the first weekday and today's date from the date fieldset,
-    and each quick option's bounds from its link - so the client does no
-    timezone arithmetic. The range it holds is also drawn as a removable pill in
-    the count row, the one part of the toolbar a reader who collapsed the
-    filters can still see: it mounts into the empty dim-daterange-pill region.
+    mounts its start and end boxes into the empty dim-daterange region, hides the
+    native fields (dim-dateinputs) and reads three facts off this markup rather
+    than computing them - the first weekday and today's date from the date
+    fieldset, and each quick option's bounds from its link - so the client does
+    no timezone arithmetic.
 
-    The count is a live region the client rewrites in place. It is rendered here
-    so the design's count row exists, and Mustache resolves its values up the
-    context stack from the listing that includes this partial. It is written on
-    one source line, because Behat's text assertions do not normalise
-    whitespace, and each of its parts carries a region the client rewrites - the
-    number, the sentence, the "see all as a list" link and the note the
-    automatic opening of an area appends. The number is never hidden on the
-    server: it is always a formatted number, and a zero is a string an inverted
-    section would treat as empty.
+    The Organise menu is a native details too: its summary is a glyph whose name
+    is a visually hidden word, with a tooltip; inside are the three sort chips
+    (dim-sort) and the no-JavaScript "Apply" submit.
 
-    The badge on the Filter summary (dim-filtercount) counts the applied filters
-    and is the only number of this toolbar visible while the panel is shut. Each
-    of its two halves - the digit sighted readers see and the sentence a screen
-    reader is read - carries a region, because the client rewrites both after
-    every request; the badge is hidden while the number is zero.
+    The second row (dim-line-chips) is in the document at every moment and
+    carries dim-line__chips--rest while nothing narrows, which takes everything
+    in it out of the picture but the count sentence - itself visually hidden
+    then and never removed, because it is the page's live region. In it: the
+    count (its number in bold, the sentence; Mustache resolves both up the
+    context stack from the listing that includes this partial, written on one
+    source line because Behat's text assertions do not normalise whitespace);
+    one chip per criterion the line does not show, each a link that drops that
+    one criterion (dim-chip-remove, data-param naming it), the period's inside
+    the dim-daterange-pill region; the "Clear all" link (dim-vitrine-clear,
+    dim-clear), drawn from two criteria up; "See all as a list" and the note the
+    automatic opening of an area writes.
 
     Every element the client updates in place is always in the document, hidden
     when it has nothing to say, so the client need not know how to build it: a
     pill's count (dim-pill-count; post-filter, and an option without a count
     shows its label alone, never a zero), the too-short-search notice
-    (dim-toolbar-notice) and the "clear filters" link (dim-vitrine-clear), which
-    stays a link so it works with the module switched off and carries the
-    dim-clear action every "clear filters" control of the page shares. Each
-    filter group's fieldset repeats its radio group's name in a data attribute,
-    so the client finds the group a returned option belongs to without parsing
-    an id, and the pill track is named dim-pill-track so a pill the client
-    creates lands inside it. The view buttons carry the dim-view action, by
-    which the client suppresses their submit and swaps a class. The organisation
-    group, the filter disclosure and the date fieldset are dim-sort, dim-filters
-    and dim-date.
+    (dim-toolbar-notice) and the clear link. Each filter group's fieldset
+    repeats its radio group's name in a data attribute, so the client finds the
+    group a returned option belongs to without parsing an id, and the pill track
+    is named dim-pill-track so a pill the client creates lands inside it.
 
     The submit buttons stay inside the form because the template lint renders
     this partial on its own. The first submit of the form is a name-less,
     visually hidden one: Enter in the search box presses the form's first
     submit, and the view buttons carry a name and a value that would otherwise
-    flip the reader's view. Two more submits are hidden once the client module
-    runs - one beside the organisation chips, one inside the filter panel -
-    because a reader without that module has to be able to commit a choice made
-    in either row.
+    flip the reader's view.
 
     While a panel of the areas is open, hidden fields carry it (open, and psort
     when the panel is in name order), so a filter or a view submitted without
     JavaScript keeps the panel open; each names its own region, because the
     client modules keep them in step with the address.
-
-    On a phone the view toggle joins the search line: the two view buttons are
-    written twice, on the search line after the filter disclosure
-    (dim-view-phone, icon-only, the word visually hidden) and in the organising
-    row (dim-view-row, glyph and word), so the document order is the screen
-    order at every width. The stylesheet shows one copy per breakpoint and hides
-    the other entirely, out of the tab order and the accessibility tree. The
-    phone copy comes first in the document, so anything addressing the visible
-    toggle at a desktop width scopes to dim-view-row.
-
-    The favourites toggle (dim-line-star) sits on the search line right before
-    the filter disclosure, drawn only for a reader who has favourites. It
-    combines with the state rather than being one of its values, so it is a
-    submit button of its own: it posts fav with the value a press turns it to,
-    and aria-pressed says whether it is on. While it is on, a hidden field
-    (dim-fav-field) earlier in the form carries fav=1, so every other submission
-    keeps it; a press that turns it off posts both, and the button's value comes
-    last, which is the one the server reads. The client enables and disables
-    that field as it toggles the button (dim-fav). The glyph is the course card's
-    own star, solid when pressed; the word and the number of favourites are the
-    button's accessible name (dim-fav-count) and its tooltip names it. The form
-    carries dim-toolbar--hasstar while it is drawn, so the stylesheet can make
-    room for it on the line.
 
     The hidden list carries whatever identifies the category on the shell that
     is drawing, and may be empty: a GET submission replaces the action's query
@@ -135,7 +125,9 @@
         "searchname": "q",
         "searchlabel": "Buscar cursos",
         "searchplaceholder": "Buscar pelo nome",
+        "searchclearlabel": "Limpar texto",
         "query": "resgate",
+        "hasquery": true,
         "searchtooshort": false,
         "searchtooshortlabel": "Digite pelo menos 2 caracteres para buscar.",
         "sortgroup": {
@@ -147,16 +139,27 @@
                 {"id": "dim-sort-7-recent", "value": "recent", "label": "Recentes", "checked": false}
             ]
         },
+        "sortlabel": "Organizar",
         "sortapplylabel": "Aplicar",
-        "statusgroup": {
+        "scope": {
             "legend": "Situação",
             "name": "chip",
+            "hasoptions": true,
             "options": [
-                {"id": "dim-chip-7-all", "value": "", "label": "Todos", "count": 14, "hascount": true, "checked": true},
+                {"id": "dim-chip-7-all", "value": "", "label": "Todos", "count": 14, "hascount": true, "checked": false},
                 {"id": "dim-chip-7-enrolled", "value": "enrolled", "label": "Meus cursos", "count": 3, "hascount": true, "checked": false}
             ]
         },
-        "hasstatusgroup": true,
+        "hasscope": true,
+        "more": {
+            "legend": "Mais situações",
+            "name": "chip",
+            "hasoptions": true,
+            "options": [
+                {"id": "dim-chip-7-pending", "value": "pending", "label": "Em análise", "count": 1, "hascount": true, "checked": true}
+            ]
+        },
+        "hasmorestatuses": true,
         "favourites": {"name": "fav", "value": 1, "pressed": false, "count": 2, "label": "Favoritos"},
         "hasfavourites": true,
         "facets": [
@@ -165,9 +168,9 @@
                 "name": "cf_12",
                 "anyid": "dim-cf-12-any",
                 "anylabel": "Todos",
-                "anychecked": true,
+                "anychecked": false,
                 "options": [
-                    {"id": "dim-cf-12-1", "value": 1, "label": "Online", "count": 9, "hascount": true, "checked": false},
+                    {"id": "dim-cf-12-1", "value": 1, "label": "Online", "count": 9, "hascount": true, "checked": true},
                     {"id": "dim-cf-12-2", "value": 2, "label": "Presencial", "count": 5, "hascount": true, "checked": false}
                 ]
             }
@@ -188,9 +191,10 @@
             {"label": "Hoje", "url": "https://example.com/course/index.php?categoryid=7&from=2026-09-17&to=2026-09-17", "from": "2026-09-17", "to": "2026-09-17", "current": false},
             {"label": "Esta semana", "url": "https://example.com/course/index.php?categoryid=7&from=2026-09-14&to=2026-09-20", "from": "2026-09-14", "to": "2026-09-20", "current": true}
         ],
-        "filtercount": 2,
+        "filterslabel": "Filtros",
+        "filtercount": 3,
         "hasfiltercount": true,
-        "filtercountlabel": "Filtros aplicados: 2",
+        "filtercountlabel": "Filtros aplicados: 3",
         "pagesizename": "perpage",
         "pagesize": 24,
         "haspagesize": true,
@@ -201,22 +205,28 @@
         "viewname": "view",
         "viewlabel": "Exibição",
         "views": [
-            {"value": "cards", "label": "Cartões", "current": true, "icon": "fa-border-all"},
-            {"value": "list", "label": "Lista", "current": false, "icon": "fa-list"}
+            {"value": "list", "label": "Lista", "current": false, "icon": "fa-list"},
+            {"value": "cards", "label": "Cartões", "current": true, "icon": "fa-border-all"}
         ],
         "submitlabel": "Filtrar",
-        "filtersopen": true,
         "countnumber": "16",
         "countline": "cursos para “resgate”: 2 nesta categoria e 14 em 4 áreas",
         "seeallurl": "https://example.com/course/index.php?categoryid=7&q=resgate&sort=recent",
         "hasfilters": true,
+        "chips": [
+            {"param": "cf_12", "label": "Online", "url": "https://example.com/course/index.php?categoryid=7&q=resgate&chip=pending&from=2026-09-17&to=2026-09-24", "removelabel": "Remover filtro", "isperiod": false},
+            {"param": "period", "label": "17 setembro 2026 a 24 setembro 2026", "url": "https://example.com/course/index.php?categoryid=7&q=resgate&chip=pending&cf_12=1", "removelabel": "Remover filtro", "isperiod": true},
+            {"param": "chip", "label": "Em análise", "url": "https://example.com/course/index.php?categoryid=7&q=resgate&cf_12=1&from=2026-09-17&to=2026-09-24", "removelabel": "Remover filtro", "isperiod": false}
+        ],
+        "haschips": true,
+        "clearall": true,
         "clearurl": "https://example.com/course/index.php?categoryid=7",
-        "clearlabel": "Limpar filtros",
+        "clearlabel": "Limpar tudo",
         "manageactions": "<div class=\"action-menu\"><a href=\"#\">Manage courses</a></div>",
         "hasmanageactions": true
     }
 }}
-<form class="dim-toolbar{{#hasfavourites}} dim-toolbar--hasstar{{/hasfavourites}}" id="{{formid}}" method="get" action="{{action}}" data-region="dim-vitrine-toolbar">
+<form class="dim-toolbar" id="{{formid}}" method="get" action="{{action}}" data-region="dim-vitrine-toolbar">
     {{#hidden}}<input type="hidden" name="{{name}}" value="{{value}}">{{/hidden}}
     {{#haspagesize}}
     <input type="hidden" name="{{pagesizename}}" value="{{pagesize}}">
@@ -228,20 +238,32 @@
     <input type="hidden" name="{{name}}" value="1" data-region="dim-fav-field"{{^pressed}} disabled{{/pressed}}>
     {{/favourites}}
     <button type="submit" class="visually-hidden dim-toolbar__defaultsubmit" tabindex="-1">{{submitlabel}}</button>
-    <div class="dim-toolbar__row dim-toolbar__row--narrow">
-        <div class="dim-toolbar__search">
+    <div class="dim-line" data-region="dim-line">
+        {{#scope}}
+        <fieldset class="dim-toolbar__group dim-line__scope" data-region="dim-vitrine-group" data-name="{{name}}" data-role="scope">
+            <legend class="visually-hidden">{{legend}}</legend>
+            <div class="dim-line__cells" data-region="dim-pill-track">
+                {{#options}}
+                <input class="dim-pill__input visually-hidden" type="radio" name="{{name}}" id="{{id}}" value="{{value}}"{{#checked}} checked{{/checked}}>
+                <label class="dim-pill" for="{{id}}">{{label}} <span class="dim-pill__count" data-region="dim-pill-count"{{^hascount}} hidden{{/hascount}}>{{count}}</span></label>
+                {{/options}}
+            </div>
+        </fieldset>
+        {{/scope}}
+        <div class="dim-toolbar__search dim-line__search" data-region="dim-line-search">
             <label class="visually-hidden" for="{{searchid}}">{{searchlabel}}</label>
             <i class="fa fa-magnifying-glass dim-toolbar__searchicon" aria-hidden="true"></i>
             <input class="form-control dim-toolbar__input" type="search" id="{{searchid}}" name="{{searchname}}" value="{{query}}" placeholder="{{searchplaceholder}}" autocomplete="off">
+            <button type="button" class="dim-line__eraser dim-live-only" data-action="dim-search-clear" aria-label="{{searchclearlabel}}" title="{{searchclearlabel}}"{{^hasquery}} hidden{{/hasquery}}><i class="fa fa-eraser" aria-hidden="true"></i></button>
         </div>
         {{#favourites}}
-        <button type="submit" class="dim-toolbar__star" name="{{name}}" value="{{value}}" aria-pressed="{{#pressed}}true{{/pressed}}{{^pressed}}false{{/pressed}}" title="{{label}}" data-action="dim-fav" data-region="dim-line-star"><i class="{{#pressed}}fa-solid{{/pressed}}{{^pressed}}fa-regular{{/pressed}} fa-star" aria-hidden="true"></i><span class="visually-hidden">{{label}} <span data-region="dim-fav-count">{{count}}</span></span></button>
+        <button type="submit" class="dim-toolbar__star dim-line__iconbtn" name="{{name}}" value="{{value}}" aria-pressed="{{#pressed}}true{{/pressed}}{{^pressed}}false{{/pressed}}" title="{{label}}" data-action="dim-fav" data-region="dim-line-star"><i class="{{#pressed}}fa-solid{{/pressed}}{{^pressed}}fa-regular{{/pressed}} fa-star" aria-hidden="true"></i><span class="visually-hidden">{{label}} <span data-region="dim-fav-count">{{count}}</span></span></button>
         {{/favourites}}
-        <details class="dim-toolbar__filters" data-region="dim-filters"{{#filtersopen}} open{{/filtersopen}}>
-            <summary class="dim-toolbar__filterstoggle"><i class="fa fa-filter" aria-hidden="true"></i> <span class="dim-toolbar__filterslabel">{{submitlabel}}</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount"{{^hasfiltercount}} hidden{{/hasfiltercount}}><span aria-hidden="true" data-region="dim-filtercount-number">{{filtercount}}</span><span class="visually-hidden" data-region="dim-filtercount-label">{{filtercountlabel}}</span></span></summary>
+        <details class="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
+            <summary class="dim-toolbar__filterstoggle"><i class="fa fa-sliders" aria-hidden="true"></i> <span class="dim-line__label dim-toolbar__filterslabel">{{filterslabel}}</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount"{{^hasfiltercount}} hidden{{/hasfiltercount}}><span aria-hidden="true" data-region="dim-filtercount-number">{{filtercount}}</span><span class="visually-hidden" data-region="dim-filtercount-label">{{filtercountlabel}}</span></span></summary>
             <div class="dim-toolbar__panel">
-                {{#statusgroup}}
-                <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="{{name}}">
+                {{#more}}
+                <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="{{name}}" data-role="more"{{^hasoptions}} hidden{{/hasoptions}}>
                     <legend class="dim-toolbar__grouplabel">{{legend}}</legend>
                     <div class="dim-toolbar__pills" data-region="dim-pill-track">
                         {{#options}}
@@ -250,7 +272,7 @@
                         {{/options}}
                     </div>
                 </fieldset>
-                {{/statusgroup}}
+                {{/more}}
                 {{#facets}}
                 <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="{{name}}">
                     <legend class="dim-toolbar__grouplabel">{{legend}}</legend>
@@ -288,38 +310,39 @@
                 </div>
             </div>
         </details>
-        <div class="dim-toolbar__view dim-toolbar__view--phone" role="group" aria-label="{{viewlabel}}" data-region="dim-view-phone">
+        <details class="dim-line__organise" data-region="dim-organise">
+            <summary class="dim-line__iconbtn dim-line__organisetoggle" title="{{sortlabel}}"><i class="fa fa-arrow-down-wide-short" aria-hidden="true"></i><span class="visually-hidden">{{sortlabel}}</span></summary>
+            <div class="dim-line__menu">
+                {{#sortgroup}}
+                <fieldset class="dim-toolbar__group dim-toolbar__group--sort" data-region="dim-sort" data-name="{{name}}">
+                    <legend class="dim-toolbar__grouplabel">{{legend}}</legend>
+                    <div class="dim-toolbar__pills">
+                        {{#options}}
+                        <input class="dim-pill__input visually-hidden" type="radio" name="{{name}}" id="{{id}}" value="{{value}}"{{#checked}} checked{{/checked}}>
+                        <label class="dim-pill" for="{{id}}">{{label}}</label>
+                        {{/options}}
+                    </div>
+                </fieldset>
+                {{/sortgroup}}
+                <button type="submit" class="dim-toolbar__sortsubmit dim-nojs-only">{{sortapplylabel}}</button>
+            </div>
+        </details>
+        <div class="dim-toolbar__view dim-line__view" role="group" aria-label="{{viewlabel}}" data-region="dim-view-row">
             {{#views}}
             <button type="submit" class="dim-toolbar__viewbtn" data-action="dim-view" name="{{viewname}}" value="{{value}}" aria-pressed="{{#current}}true{{/current}}{{^current}}false{{/current}}" title="{{label}}"><i class="fa {{icon}}" aria-hidden="true"></i><span class="visually-hidden">{{label}}</span></button>
-            {{/views}}
-        </div>
-    </div>
-    <p class="dim-toolbar__notice" role="status" data-region="dim-toolbar-notice"{{^searchtooshort}} hidden{{/searchtooshort}}>{{searchtooshortlabel}}</p>
-    <div class="dim-toolbar__row dim-toolbar__row--organise">
-        {{#sortgroup}}
-        <fieldset class="dim-toolbar__group dim-toolbar__group--sort" data-region="dim-sort" data-name="{{name}}">
-            <legend class="dim-toolbar__grouplabel">{{legend}}</legend>
-            <div class="dim-toolbar__pills">
-                {{#options}}
-                <input class="dim-pill__input visually-hidden" type="radio" name="{{name}}" id="{{id}}" value="{{value}}"{{#checked}} checked{{/checked}}>
-                <label class="dim-pill" for="{{id}}">{{label}}</label>
-                {{/options}}
-            </div>
-        </fieldset>
-        {{/sortgroup}}
-        <button type="submit" class="dim-toolbar__sortsubmit dim-nojs-only">{{sortapplylabel}}</button>
-        <div class="dim-toolbar__view" role="group" aria-label="{{viewlabel}}" data-region="dim-view-row">
-            {{#views}}
-            <button type="submit" class="dim-toolbar__viewbtn" data-action="dim-view" name="{{viewname}}" value="{{value}}" aria-pressed="{{#current}}true{{/current}}{{^current}}false{{/current}}"><i class="fa {{icon}}" aria-hidden="true"></i><span class="dim-toolbar__viewlabel">{{label}}</span></button>
             {{/views}}
         </div>
         {{#hasmanageactions}}
         <div class="dim-toolbar__manage">{{{manageactions}}}</div>
         {{/hasmanageactions}}
     </div>
-    <div class="dim-toolbar__row dim-toolbar__row--count">
-        <p class="dim-vitrine__count" role="status" aria-live="polite" data-region="dim-vitrine-count"><b class="dim-vitrine__countnumber" data-region="dim-vitrine-countnumber">{{countnumber}}</b> <span data-region="dim-vitrine-counttext">{{countline}}</span><span class="dim-vitrine__seeall" data-region="dim-vitrine-seeall"{{^seeallurl}} hidden{{/seeallurl}}> · <a href="{{seeallurl}}">{{#str}}category_seeaslist, theme_dimensions{{/str}}</a></span><span class="dim-vitrine__countnote" data-region="dim-vitrine-countnote" hidden>. <span data-region="dim-vitrine-countnotetext"></span></span></p>
-        <div class="dim-toolbar__pillbar" data-region="dim-daterange-pill"></div>
-        <a class="dim-toolbar__clear" href="{{clearurl}}" data-region="dim-vitrine-clear" data-action="dim-clear"{{^hasfilters}} hidden{{/hasfilters}}>{{clearlabel}}</a>
+    <p class="dim-toolbar__notice" role="status" data-region="dim-toolbar-notice"{{^searchtooshort}} hidden{{/searchtooshort}}>{{searchtooshortlabel}}</p>
+    <div class="dim-line__chips{{^hasfilters}} dim-line__chips--rest{{/hasfilters}}" data-region="dim-line-chips">
+        <p class="dim-vitrine__count{{^hasfilters}} visually-hidden{{/hasfilters}}" role="status" aria-live="polite" data-region="dim-vitrine-count"><b class="dim-vitrine__countnumber" data-region="dim-vitrine-countnumber">{{countnumber}}</b> <span data-region="dim-vitrine-counttext">{{countline}}</span></p>
+        <div class="dim-line__chiplist" data-region="dim-line-chiplist">{{#chips}}{{^isperiod}}{{> theme_dimensions/category_chip }}{{/isperiod}}{{/chips}}</div>
+        <div class="dim-toolbar__pillbar" data-region="dim-daterange-pill">{{#chips}}{{#isperiod}}{{> theme_dimensions/category_chip }}{{/isperiod}}{{/chips}}</div>
+        <a class="dim-toolbar__clear" href="{{clearurl}}" data-region="dim-vitrine-clear" data-action="dim-clear"{{^clearall}} hidden{{/clearall}}>{{clearlabel}}</a>
+        <span class="dim-vitrine__seeall" data-region="dim-vitrine-seeall"{{^seeallurl}} hidden{{/seeallurl}}><a href="{{seeallurl}}">{{#str}}category_seeaslist, theme_dimensions{{/str}}</a></span>
+        <span class="dim-vitrine__countnote" data-region="dim-vitrine-countnote" role="status" hidden><span data-region="dim-vitrine-countnotetext"></span></span>
     </div>
 </form>

@@ -633,7 +633,9 @@ final class get_category_rows_test extends \advanced_testcase {
         $this->assertSame([(int) $starred->id], array_column($favourites['cards'], 'id'));
         $this->assertSame(['available' => true, 'pressed' => true, 'count' => 1], $favourites['favourites']);
         $this->assertTrue($favourites['hasfilters']);
-        $this->assertSame(1, $favourites['filtercount']);
+        $this->assertSame(0, $favourites['filtercount'], 'The star shows them; the Filters badge does not count them.');
+        $this->assertSame([], $favourites['chips'], 'And no chip: the star on the line already says so.');
+        $this->assertFalse($favourites['clearall'], 'One criterion: its own control undoes it.');
         $pills = array_column($favourites['statusgroup']['options'], 'count', 'value');
         $this->assertSame(1, $pills[''], '"All" counted under the favourites.');
         $this->assertSame(1, $pills[classifier::STATE_ENROLLED], 'And the enrolled pill too.');
@@ -646,7 +648,8 @@ final class get_category_rows_test extends \advanced_testcase {
             'fav' => true,
         ]);
         $this->assertSame([(int) $starred->id], array_column($both['cards'], 'id'), 'The chip and the toggle combine.');
-        $this->assertSame(2, $both['filtercount']);
+        $this->assertSame(0, $both['filtercount'], 'A scope value and the star are on the line, not behind the badge.');
+        $this->assertTrue($both['clearall'], 'Two criteria: "Clear all" is offered.');
         $this->assertSame(1, $both['favourites']['count'], 'The favourites under the chip in force.');
 
         $this->newpage();
@@ -877,11 +880,11 @@ final class get_category_rows_test extends \advanced_testcase {
             'dateto' => '2026-09-17',
         ]);
         $this->assertSame(
-            2,
+            1,
             $narrowed['filtercount'],
-            'The term is one filter and the whole period is the other.'
+            'The whole period is one filter of the panel; the term is in its own box.'
         );
-        $this->assertStringContainsString('2', $narrowed['filtercountlabel'], 'The sentence carries the same number.');
+        $this->assertStringContainsString('1', $narrowed['filtercountlabel'], 'The sentence carries the same number.');
         $this->assertStringNotContainsString(
             '$a',
             $narrowed['filtercountlabel'],
@@ -893,8 +896,8 @@ final class get_category_rows_test extends \advanced_testcase {
      * The tree's category narrows a request.
      *
      * A cat naming a category below the listed one is a filter: the payload is narrowed, its
-     * total follows and the summary's badge counts it, exactly as the term and the period are
-     * counted. What the function does with a cat that is not such a category is the next test's.
+     * total follows and the row under the line names it in a chip. What the function does with a
+     * cat that is not such a category is the next test's.
      *
      * The sibling's course is the control, and it is asserted from both sides
      * in one run - present without the criterion, absent with it - so a service
@@ -935,8 +938,16 @@ final class get_category_rows_test extends \advanced_testcase {
         );
         $this->assertNotContains((int) $prosthesis->id, $ids, 'And the sibling\'s course is gone.');
         $this->assertSame(2, $narrowed['total'], 'The number the count line prints follows.');
-        $this->assertSame(1, $narrowed['filtercount'], 'And the badge on the summary counts it as one filter.');
-        $this->assertTrue($narrowed['hasfilters'], 'So the way out of it is offered.');
+        $this->assertSame(0, $narrowed['filtercount'], 'The tree shows it, so the Filters badge does not count it.');
+        $this->assertTrue($narrowed['hasfilters'], 'So the row under the line shows.');
+        $this->assertSame(
+            [['param' => criteria::PARAM_CAT, 'label' => 'Enfermagem']],
+            array_map(
+                static fn(array $chip): array => ['param' => $chip['param'], 'label' => $chip['label']],
+                $narrowed['chips']
+            ),
+            'And its chip names the category, as the tree names it, so the way out of it is offered.'
+        );
     }
 
     /**
@@ -1017,7 +1028,8 @@ final class get_category_rows_test extends \advanced_testcase {
         $narrowed = json_decode($ask(['cat' => (int) $visible->id]), true);
         $this->assertSame(['Curso visivel'], array_column($narrowed['cards'], 'fullname'));
         $this->assertLessThan($answer['total'], $narrowed['total']);
-        $this->assertSame(1, $narrowed['filtercount']);
+        $this->assertSame(0, $narrowed['filtercount'], 'The tree is not behind the badge.');
+        $this->assertSame([criteria::PARAM_CAT], array_column($narrowed['chips'], 'param'));
         $this->assertTrue($narrowed['hasfilters']);
     }
 

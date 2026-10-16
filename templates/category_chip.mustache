@@ -1,0 +1,40 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/category_chip
+
+    One chip of the filter line's second row: a criterion in force that the line
+    does not show, as a link to the listing with that one criterion dropped and
+    every other part of the request kept, so it works with no JavaScript. The
+    listing's clients intercept it by its action (dim-chip-remove) and read what
+    it drops from data-param: a custom field's parameter (cf_<id>), chip, cat,
+    or period for both bounds of the start-date range. The label and the address
+    are the server's (category_toolbar::chips()); a client paints the chips of
+    every answer with the same markup and composes neither. The cross is drawn,
+    and the visually hidden words after it make the link's name say what a
+    press does.
+
+    Example context (json):
+    {
+        "param": "cf_12",
+        "label": "Online",
+        "url": "https://example.com/course/index.php?categoryid=7&q=resgate",
+        "removelabel": "Remover filtro",
+        "isperiod": false
+    }
+}}
+<a class="dim-chip" href="{{url}}" data-action="dim-chip-remove" data-param="{{param}}">{{label}} <i class="fa fa-xmark" aria-hidden="true"></i><span class="visually-hidden">{{removelabel}}</span></a>
