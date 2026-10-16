@@ -514,6 +514,21 @@ final class card_markup_test extends \advanced_testcase {
                 . '/preceding-sibling::*[1][self::button][@data-region="dim-line-star"][@data-action="dim-fav"]',
             'dim-fav-count' => '//button[@data-region="dim-line-star"]//*[@data-region="dim-fav-count"]',
             'dim-fav-field' => '//form//input[@type="hidden"][@name="fav"][@data-region="dim-fav-field"]',
+            /* What the filter line's client (categoryline) drives and nothing else draws: the search's
+               icon, pointing at the field it opens; the button that closes the search over the line;
+               the listbox, hidden, carrying its id and its two headings; the Filters panel and the
+               Organise menu it places under the line; and the menu's "Show as", whose buttons carry
+               the view toggle's own action, so the clients' view handler serves them. */
+            'dim-search-open' => '//*[@data-region="dim-line"]/button[@type="button"][@data-action="dim-search-open"]'
+                . '[@aria-controls="dim-vitrine-q-7"][@aria-expanded="false"]',
+            'dim-search-close' => '//*[@data-region="dim-line"]/button[@type="button"][@data-action="dim-search-close"]'
+                . '[@aria-label]',
+            'dim-line-suggest' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-suggest"][@id="dim-vitrine-suggest-7"]'
+                . '[@data-label-filters][@data-label-start][@hidden]',
+            'dim-filters-panel' => '//details[@data-region="dim-filters"]/div[@data-region="dim-filters-panel"]',
+            'dim-organise-menu' => '//details[@data-region="dim-organise"]/div[@data-region="dim-organise-menu"]',
+            'dim-showas' => '//*[@data-region="dim-organise-menu"]/*[@data-region="dim-showas"][@role="group"]'
+                . '/button[@type="button"][@data-action="dim-view"][@value][@aria-pressed]',
         ];
         foreach ($toolbarhooks as $hook => $query) {
             $this->assertGreaterThan(
@@ -966,8 +981,11 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertTrue($field->hasAttribute('disabled'), 'Released, the hidden field carries nothing.');
         $this->assertSame(
             1,
-            $toolbar->query('//*[@data-region="dim-line-search"]/following-sibling::*[1][@data-region="dim-line-star"]')->length,
-            'The star follows the search on the line, as the contract orders the slots.'
+            $toolbar->query(
+                '//*[@data-region="dim-line-search"]/following-sibling::*[not(@data-action="dim-search-open")][1]'
+                    . '[@data-region="dim-line-star"]'
+            )->length,
+            'The star follows the search (and the icon the client folds it into) on the line, as the contract orders the slots.'
         );
 
         $group = $toolbar->query('//fieldset[@data-region="dim-vitrine-group"][@data-name="chip"]')->item(0);
@@ -1533,6 +1551,31 @@ final class card_markup_test extends \advanced_testcase {
             0,
             $preview->query('//*[@role="img"]')->length,
             'The preview is text on a coloured box and must not claim to be a picture.'
+        );
+    }
+
+    /**
+     * Every cell of the scope is written, and a cell with nothing to offer carries the hidden attribute.
+     *
+     * The filter line's client measures the line with every cell drawn, so the step it takes follows
+     * the width and the language and never the counts; it unhides an absent cell for the measure and
+     * hides it again, which needs the cell in the document. Hidden, the cell and its radio are out of
+     * the picture, of the accessibility tree and of the radio group's arrow keys.
+     *
+     * Changes that must make it fail: an absent cell left visible; an absent cell not written at all.
+     */
+    public function test_an_absent_scope_cell_is_written_hidden(): void {
+        $this->resetAfterTest();
+        $toolbar = $this->render('category_toolbar');
+        $scope = '//*[@data-region="dim-line"]/fieldset[@data-role="scope"]';
+        $this->assertSame(1, $toolbar->query($scope . '//input[@value="open"][@hidden]')->length, 'The radio, hidden.');
+        $this->assertSame(1, $toolbar->query($scope . '//label[@for="dim-chip-7-open"][@hidden]')->length, 'Its label, hidden.');
+        $this->assertSame(
+            0,
+            $toolbar->query(
+                $scope . '//input[@value="enrolled"][@hidden] | ' . $scope . '//label[@for="dim-chip-7-enrolled"][@hidden]'
+            )->length,
+            'A cell with something to offer is drawn as ever.'
         );
     }
 }

@@ -1039,11 +1039,14 @@ export const paintChips = (root, response) => {
  * Drop from a state the one criterion a chip names, as the server's address for that chip drops it.
  *
  * @param {Object} state The calling module's state.
- * @param {String} param The chip's data-param: a field's parameter, chip, cat, or period.
+ * @param {String} param The chip's data-param: q (the search's, shown where the field is folded away), a
+ *   field's parameter, chip, cat, or period.
  * @return {Boolean} Whether the chip named a criterion this state can drop.
  */
 export const dropCriterion = (state, param) => {
-    if (param === PARAM.chip) {
+    if (param === PARAM.query) {
+        state.query = '';
+    } else if (param === PARAM.chip) {
         state.chip = '';
     } else if (param === PARAM.cat) {
         state.cat = 0;

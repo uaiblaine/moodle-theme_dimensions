@@ -202,6 +202,7 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertContains('categoryposters', $this->graph(self::PANEL), 'The panel module paints the posters too.');
         $graph = $this->graph(self::MODULE);
         $this->assertContains(self::PANEL, $graph, 'The panels are opened through the shared panel module.');
+        $this->assertContains('categoryline', $graph, 'The filter line\'s behaviour is the shared line module\'s.');
         foreach (array_merge($listing, $this->graph('categoryposters'), $this->graph(self::PANEL)) as $module) {
             $this->assertContains($module, $graph, $module . ' is reached through a shared module and the walk lost it.');
         }
@@ -726,7 +727,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * The committed builds of the module and of the three it paints with were made from the sources beside them.
      */
     public function test_the_committed_builds_were_made_from_the_committed_sources(): void {
-        foreach ([self::MODULE, 'categorylisting', 'categoryposters', self::PANEL] as $module) {
+        foreach ([self::MODULE, 'categorylisting', 'categoryposters', self::PANEL, 'categoryline'] as $module) {
             $this->assertSame(
                 $this->source($module),
                 $this->built_from($module),
@@ -736,6 +737,7 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString('theme_dimensions/categorylisting', $this->build());
         $this->assertStringContainsString('theme_dimensions/categoryposters', $this->build());
         $this->assertStringContainsString('theme_dimensions/' . self::PANEL, $this->build());
+        $this->assertStringContainsString('theme_dimensions/categoryline', $this->build());
     }
 
     /**

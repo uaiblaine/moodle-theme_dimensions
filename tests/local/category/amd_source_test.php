@@ -984,10 +984,10 @@ final class amd_source_test extends \basic_testcase {
             $this->assertStringContainsString($step, $clear, 'Clearing no longer runs ' . $step);
         }
         $this->assertMatchesRegularExpression(
-            '~const search = root\.querySelector\(SELECTORS\.search\);\s*if \(search\) \{\s*'
+            '~const search = Line\.focusTarget\(root\.querySelector\(SELECTORS\.search\)\);\s*if \(search\) \{\s*'
                 . 'search\.focus\(\{preventScroll: true\}\);~',
             $clear,
-            'The focus goes to the search box, without a scroll.'
+            'The focus goes to the search box, without a scroll - or to its icon where the line folded the field away.'
         );
         $this->assertLessThan(
             (int) strpos($clear, 'search.focus('),
@@ -1516,6 +1516,11 @@ final class amd_source_test extends \basic_testcase {
             'The period\'s chip drops both bounds, as its address does.'
         );
         $this->assertStringContainsString('delete state.filters[param.slice(PARAM.fieldprefix.length)];', $drop);
+        $this->assertMatchesRegularExpression(
+            "~if \(param === PARAM\.query\) \{\s*state\.query = '';~",
+            $drop,
+            'The search\'s chip, shown where the line folded the field away, drops the term.'
+        );
         $this->assertStringContainsString("const CHIP_PERIOD = 'period';", $this->shared());
         $this->assertSame(\theme_dimensions\output\category_toolbar::CHIP_PERIOD, 'period', 'The server\'s spelling.');
 

@@ -61,6 +61,7 @@ import {getString} from 'core/str';
 import * as AreaPanel from 'theme_dimensions/categoryareapanel';
 import * as CategoryMark from 'theme_dimensions/categorymark';
 import * as DateRange from 'theme_dimensions/daterange';
+import * as Line from 'theme_dimensions/categoryline';
 import * as Listing from 'theme_dimensions/categorylisting';
 import * as Posters from 'theme_dimensions/categoryposters';
 
@@ -468,6 +469,8 @@ const applyResponse = async(response, append, ticket) => {
         Listing.paintDirect(root, response);
         paintAreas(response);
     }
+    // The suggestions read the counts just painted, and the line's step follows what is on it.
+    Line.repaint();
 };
 
 /**
@@ -717,7 +720,8 @@ const onClear = () => {
     }
     Listing.paintControls(root, state);
     apply();
-    const search = root.querySelector(SELECTORS.search);
+    // The field, or its icon where the line folded it away: a folded field cannot take the focus.
+    const search = Line.focusTarget(root.querySelector(SELECTORS.search));
     if (search) {
         search.focus({preventScroll: true});
     }
@@ -739,11 +743,30 @@ const onChipRemove = (chip) => {
     publicOnly();
     Listing.paintControls(root, state);
     apply();
-    const search = root.querySelector(SELECTORS.search);
+    // The field, or its icon where the line folded it away: a folded field cannot take the focus.
+    const search = Line.focusTarget(root.querySelector(SELECTORS.search));
     if (search) {
         search.focus({preventScroll: true});
     }
     return true;
+};
+
+/**
+ * Take the typed term out of the state, for a suggestion of the filter line about to apply its filter.
+ *
+ * The line empties the field and presses the suggestion's control, whose handler here makes the one
+ * request, which then carries no term; a term still waiting for its debounce is never sent after it.
+ *
+ * @return {void}
+ */
+const dropTerm = () => {
+    cancelSearch();
+    state.query = '';
+    const notice = root.querySelector(SELECTORS.notice);
+    if (notice) {
+        notice.hidden = true;
+    }
+    Listing.paintEraser(root);
 };
 
 /**
@@ -919,4 +942,7 @@ export const init = (categoryid) => {
 
     Listing.armTreebox(root);
     listen();
+
+    // The filter line folds to its width, opens its search over itself and suggests the page's filters.
+    Line.arm(root, {dropTerm: dropTerm});
 };

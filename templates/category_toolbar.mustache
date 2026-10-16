@@ -42,6 +42,24 @@
     client's control (dim-live-only, which both client marks reveal) and is
     hidden while the field is empty; the client shows it as the reader types.
 
+    Four parts of the line are the client's alone (categoryline, for both
+    listing clients), and the stylesheet draws none of them until that client
+    has folded the line into one of its steps (dim-line--s1 to s4), so a page
+    without JavaScript never shows them: the search's icon button
+    (dim-search-open), which stands for the field once the line is too narrow
+    for it; the button that closes the search where it has grown over the line
+    (dim-search-close), the line's last control; the listbox of suggestions
+    (dim-line-suggest, given its role and name by the client, which fills it),
+    carrying its id and its two headings so the client
+    composes no word of it; and the Organise menu's "Show as" section
+    (dim-showas), the view toggle's place when the line takes two lines, whose
+    buttons carry the view toggle's own action (dim-view) and so reach the
+    clients' existing handler. Every cell of the scope is written, a cell with
+    nothing to offer carrying the hidden attribute (absent), because the client
+    measures the line with every cell drawn. The Filters panel and the Organise
+    menu each name a region (dim-filters-panel, dim-organise-menu): the client
+    places every floating layer under the line's real bottom.
+
     The favourites toggle combines with the state rather than being one of its
     values, so it is a submit button of its own: it posts fav with the value a
     press turns it to, and aria-pressed says whether it is on. While it is on, a
@@ -126,6 +144,10 @@
         "searchlabel": "Buscar cursos",
         "searchplaceholder": "Buscar pelo nome",
         "searchclearlabel": "Limpar texto",
+        "searchcloselabel": "Fechar busca",
+        "suggestid": "dim-vitrine-suggest-7",
+        "suggestfilterslabel": "Filtros",
+        "suggeststartlabel": "Comece por um filtro",
         "query": "resgate",
         "hasquery": true,
         "searchtooshort": false,
@@ -147,7 +169,8 @@
             "hasoptions": true,
             "options": [
                 {"id": "dim-chip-7-all", "value": "", "label": "Todos", "count": 14, "hascount": true, "checked": false},
-                {"id": "dim-chip-7-enrolled", "value": "enrolled", "label": "Meus cursos", "count": 3, "hascount": true, "checked": false}
+                {"id": "dim-chip-7-enrolled", "value": "enrolled", "label": "Meus cursos", "count": 3, "hascount": true, "checked": false},
+                {"id": "dim-chip-7-open", "value": "open", "label": "Abertos", "count": 0, "hascount": true, "checked": false, "absent": true}
             ]
         },
         "hasscope": true,
@@ -204,6 +227,7 @@
         ],
         "viewname": "view",
         "viewlabel": "Exibição",
+        "showaslabel": "Exibir como",
         "views": [
             {"value": "list", "label": "Lista", "current": false, "icon": "fa-list"},
             {"value": "cards", "label": "Cartões", "current": true, "icon": "fa-border-all"}
@@ -244,8 +268,8 @@
             <legend class="visually-hidden">{{legend}}</legend>
             <div class="dim-line__cells" data-region="dim-pill-track">
                 {{#options}}
-                <input class="dim-pill__input visually-hidden" type="radio" name="{{name}}" id="{{id}}" value="{{value}}"{{#checked}} checked{{/checked}}>
-                <label class="dim-pill" for="{{id}}">{{label}} <span class="dim-pill__count" data-region="dim-pill-count"{{^hascount}} hidden{{/hascount}}>{{count}}</span></label>
+                <input class="dim-pill__input visually-hidden" type="radio" name="{{name}}" id="{{id}}" value="{{value}}"{{#checked}} checked{{/checked}}{{#absent}} hidden{{/absent}}>
+                <label class="dim-pill" for="{{id}}"{{#absent}} hidden{{/absent}}>{{label}} <span class="dim-pill__count" data-region="dim-pill-count"{{^hascount}} hidden{{/hascount}}>{{count}}</span></label>
                 {{/options}}
             </div>
         </fieldset>
@@ -256,12 +280,13 @@
             <input class="form-control dim-toolbar__input" type="search" id="{{searchid}}" name="{{searchname}}" value="{{query}}" placeholder="{{searchplaceholder}}" autocomplete="off">
             <button type="button" class="dim-line__eraser dim-live-only" data-action="dim-search-clear" aria-label="{{searchclearlabel}}" title="{{searchclearlabel}}"{{^hasquery}} hidden{{/hasquery}}><i class="fa fa-eraser" aria-hidden="true"></i></button>
         </div>
+        <button type="button" class="dim-line__iconbtn dim-line__searchopen" data-action="dim-search-open" aria-controls="{{searchid}}" aria-expanded="false" title="{{searchlabel}}"><i class="fa fa-magnifying-glass" aria-hidden="true"></i><span class="visually-hidden">{{searchlabel}}</span></button>
         {{#favourites}}
         <button type="submit" class="dim-toolbar__star dim-line__iconbtn" name="{{name}}" value="{{value}}" aria-pressed="{{#pressed}}true{{/pressed}}{{^pressed}}false{{/pressed}}" title="{{label}}" data-action="dim-fav" data-region="dim-line-star"><i class="{{#pressed}}fa-solid{{/pressed}}{{^pressed}}fa-regular{{/pressed}} fa-star" aria-hidden="true"></i><span class="visually-hidden">{{label}} <span data-region="dim-fav-count">{{count}}</span></span></button>
         {{/favourites}}
         <details class="dim-toolbar__filters dim-line__filters" data-region="dim-filters">
             <summary class="dim-toolbar__filterstoggle"><i class="fa fa-sliders" aria-hidden="true"></i> <span class="dim-line__label dim-toolbar__filterslabel">{{filterslabel}}</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount"{{^hasfiltercount}} hidden{{/hasfiltercount}}><span aria-hidden="true" data-region="dim-filtercount-number">{{filtercount}}</span><span class="visually-hidden" data-region="dim-filtercount-label">{{filtercountlabel}}</span></span></summary>
-            <div class="dim-toolbar__panel">
+            <div class="dim-toolbar__panel" data-region="dim-filters-panel">
                 {{#more}}
                 <fieldset class="dim-toolbar__group" data-region="dim-vitrine-group" data-name="{{name}}" data-role="more"{{^hasoptions}} hidden{{/hasoptions}}>
                     <legend class="dim-toolbar__grouplabel">{{legend}}</legend>
@@ -312,7 +337,7 @@
         </details>
         <details class="dim-line__organise" data-region="dim-organise">
             <summary class="dim-line__iconbtn dim-line__organisetoggle" title="{{sortlabel}}"><i class="fa fa-arrow-down-wide-short" aria-hidden="true"></i><span class="visually-hidden">{{sortlabel}}</span></summary>
-            <div class="dim-line__menu">
+            <div class="dim-line__menu" data-region="dim-organise-menu">
                 {{#sortgroup}}
                 <fieldset class="dim-toolbar__group dim-toolbar__group--sort" data-region="dim-sort" data-name="{{name}}">
                     <legend class="dim-toolbar__grouplabel">{{legend}}</legend>
@@ -325,6 +350,12 @@
                 </fieldset>
                 {{/sortgroup}}
                 <button type="submit" class="dim-toolbar__sortsubmit dim-nojs-only">{{sortapplylabel}}</button>
+                <div class="dim-line__showas" role="group" aria-labelledby="{{formid}}-showas" data-region="dim-showas">
+                    <span class="dim-toolbar__grouplabel" id="{{formid}}-showas">{{showaslabel}}</span>
+                    {{#views}}
+                    <button type="button" class="dim-line__showasbtn" data-action="dim-view" value="{{value}}" aria-pressed="{{#current}}true{{/current}}{{^current}}false{{/current}}"><i class="fa {{icon}}" aria-hidden="true"></i> {{label}}</button>
+                    {{/views}}
+                </div>
             </div>
         </details>
         <div class="dim-toolbar__view dim-line__view" role="group" aria-label="{{viewlabel}}" data-region="dim-view-row">
@@ -335,6 +366,10 @@
         {{#hasmanageactions}}
         <div class="dim-toolbar__manage">{{{manageactions}}}</div>
         {{/hasmanageactions}}
+        <button type="button" class="dim-line__iconbtn dim-line__searchclose" data-action="dim-search-close" aria-label="{{searchcloselabel}}" title="{{searchcloselabel}}"><i class="fa fa-xmark" aria-hidden="true"></i></button>
+        {{#suggestid}}
+        <div class="dim-line__suggest" id="{{suggestid}}" data-region="dim-line-suggest" data-label-filters="{{suggestfilterslabel}}" data-label-start="{{suggeststartlabel}}" hidden></div>
+        {{/suggestid}}
     </div>
     <p class="dim-toolbar__notice" role="status" data-region="dim-toolbar-notice"{{^searchtooshort}} hidden{{/searchtooshort}}>{{searchtooshortlabel}}</p>
     <div class="dim-line__chips{{^hasfilters}} dim-line__chips--rest{{/hasfilters}}" data-region="dim-line-chips">

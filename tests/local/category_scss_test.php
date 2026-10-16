@@ -1739,6 +1739,124 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
+     * The filter line's steps, its morph, its sheet and its search chip are the client's classes alone.
+     *
+     * The client (categoryline) writes a step on the line (dim-line--s1 to s4), dim-line--folded where
+     * the field gives way to its icon, dim-line--searching while the search is open over the line and
+     * dim-line--measuring while it measures; the stylesheet does everything else, and without the
+     * client none of it applies.
+     *
+     * Changes that must make it fail: the measure left to wrap or to shrink the controls; the Filters
+     * word put out of the document (display: none) rather than out of the picture; the field kept on a
+     * folded line; the view toggle left on the two-line step; a slid-out control left in the focus
+     * order; a transition outside the no-preference query, or running while the client measures; the
+     * sheet given no fixed foot, no cap or no scroll of its own; the calendar left a popover inside it;
+     * the search chip shown while the field is.
+     */
+    public function test_the_filter_lines_steps_morph_sheet_and_search_chip(): void {
+        $scss = $this->stylesheet('category.scss');
+
+        // What only the client draws is hidden until a step asks for it.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line__searchopen,\s*\.dim-line__searchclose,\s*\.dim-line__showas \{\s*display:\s*none;\s*\}~',
+            $scss
+        );
+        // The measure: one row, no control shrinking but the search, every cell on one line.
+        $measuring = $this->rule_body($scss, '.dim-line--measuring');
+        $this->assertMatchesRegularExpression('~^\s*flex-wrap:\s*nowrap;~', $measuring);
+        $this->assertMatchesRegularExpression('~> \* \{\s*flex-shrink:\s*0;\s*\}~', $measuring);
+        $this->assertMatchesRegularExpression('~> \.dim-line__search \{\s*flex-shrink:\s*1;\s*\}~', $measuring);
+        $this->assertMatchesRegularExpression('~\.dim-line__cells \{\s*flex-wrap:\s*nowrap;\s*\}~', $measuring);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line--measuring\.dim-line--s4 > \.dim-line__scope \{\s*display:\s*none;\s*\}~',
+            $scss,
+            'The scope of the two-line step has a line of its own and is out of the measure.'
+        );
+        // The second step: the word out of the picture and never out of the document.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line--s2,\s*\.dim-line--s3,\s*\.dim-line--s4 \{\s*\.dim-toolbar__filterslabel \{\s*position:\s*absolute;'
+                . '.*?clip-path:\s*inset\(50%\);\s*\}~s',
+            $scss
+        );
+        // The third: the field gives way to its icon.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line--folded > \.dim-line__search \{\s*display:\s*none;\s*\}\s*'
+                . '\.dim-line--folded > \.dim-line__searchopen \{\s*display:\s*inline-flex;\s*\}~',
+            $scss
+        );
+        // The fourth: two lines, the view in the Organise menu, the scope scrolling with room for its ring.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line--s4 \{\s*> \.dim-line__search \{[^}]*\}\s*> \.dim-line__view \{\s*display:\s*none;\s*\}\s*'
+                . '> \.dim-line__scope \{\s*flex:\s*0 0 calc\(100% \+ 10px\);\s*min-width:\s*0;\s*max-width:\s*none;\s*'
+                . 'margin:\s*-5px;\s*padding:\s*5px;\s*overflow-x:\s*auto;~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression('~\.dim-line__showas \{\s*display:\s*flex;\s*\}~', $scss);
+
+        // The morph: a slid-out control is out of the focus order, and the motion is gated.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line--searching \{\s*&\.dim-line--s3 > :not\(\.dim-line__search\):not\(\.dim-line__searchclose\)'
+                . ':not\(\.dim-line__suggest\),\s*&\.dim-line--s4 > [^{]*:not\(\.dim-line__scope\) \{[^}]*max-width:\s*0;'
+                . '[^}]*opacity:\s*0;\s*visibility:\s*hidden;\s*pointer-events:\s*none;\s*\}~',
+            $scss
+        );
+        $motion = null;
+        $offset = 0;
+        while (($at = strpos($scss, '@media (prefers-reduced-motion: no-preference) {', $offset)) !== false) {
+            $block = $this->block_at($scss, $at + strlen('@media (prefers-reduced-motion: no-preference) {'));
+            if (str_contains($block, 'dim-line--s3')) {
+                $motion = $block;
+                break;
+            }
+            $offset = $at + 1;
+        }
+        $this->assertNotNull($motion, 'The slide lives in a no-preference query: none under reduced motion.');
+        $this->assertStringContainsString('.dim-line--s3:not(.dim-line--measuring)', $motion, 'And never while measuring.');
+        $this->assertMatchesRegularExpression('~max-width 220ms ease,~', $motion);
+        $this->assertMatchesRegularExpression('~opacity 160ms ease~', $motion);
+        $this->assertMatchesRegularExpression('~visibility 0s linear 220ms;~', $motion, 'Hidden once the slide is over.');
+        $outside = str_replace($motion, '', $scss);
+        $this->assertStringNotContainsString('visibility 0s linear 220ms', $outside);
+        $this->assertStringNotContainsString('max-width 220ms', $outside);
+
+        // The suggestions: a layer under the line, scrolling inside itself; the active option ringed inside.
+        $suggest = $this->rule_body($scss, '.dim-line__suggest');
+        $this->assertMatchesRegularExpression('~position:\s*absolute;~', $suggest);
+        $this->assertMatchesRegularExpression('~overflow-y:\s*auto;~', $suggest);
+        $this->assertMatchesRegularExpression(
+            '~outline:\s*3px solid var\(--dim-ring\);\s*outline-offset:\s*-3px;~',
+            $this->rule_body($scss, '.dim-line__option--active')
+        );
+
+        // The sheet of the two-line step, and the calendar in its flow.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line--s4 \{\s*\.dim-toolbar__filters\[open\] \{\s*flex:\s*none;\s*\}\s*\.dim-toolbar__panel \{\s*'
+                . 'position:\s*fixed;\s*top:\s*auto;\s*right:\s*0;\s*bottom:\s*0;\s*left:\s*0;[^}]*max-height:\s*80vh;'
+                . '[^}]*overflow-y:\s*auto;[^}]*border-radius:\s*var\(--dim-radius\) var\(--dim-radius\) 0 0;[^}]*\}\s*'
+                . '\.dim-daterange \{\s*flex-wrap:\s*wrap;\s*\}\s*'
+                . '\.dim-daterange__pop \{\s*position:\s*static;\s*flex:\s*1 1 100%;~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression('~\.dim-toolbar--sheet \{\s*z-index:\s*1029;\s*\}~', $scss);
+        // At the one-line steps the panel is a popover, and still no scroll container.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line--s1,\s*\.dim-line--s2,\s*\.dim-line--s3 \{\s*\.dim-toolbar__filters\[open\] \{\s*flex:\s*none;\s*\}\s*'
+                . '\.dim-toolbar__panel \{(?:(?!overflow|max-height)[^}])*\}~',
+            $scss
+        );
+
+        // The fades, and the search's chip shown only where the field is folded away and not open.
+        $this->assertMatchesRegularExpression('~\.dim-scroll--fade-left \{\s*mask-image:\s*linear-gradient\(~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-scroll--fade-right \{\s*mask-image:\s*linear-gradient\(~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-chip\[data-param="q"\] \{\s*display:\s*none;\s*\}~', $scss);
+        $this->assertMatchesRegularExpression(
+            '#\.dim-line--folded:not\(\.dim-line--searching\) ~ \.dim-line__chips \.dim-chip\[data-param="q"\] \{\s*'
+                . 'display:\s*inline-flex;\s*\}#',
+            $scss
+        );
+    }
+
+    /**
      * The body of the block that opens at an offset: from there to its matching closing brace.
      *
      * @param string $scss The stylesheet, comments already removed.
