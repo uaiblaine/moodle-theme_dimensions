@@ -495,6 +495,13 @@ final class card_markup_test extends \advanced_testcase {
             'dim-clear on the clear link' => '//a[@data-region="dim-vitrine-clear"][@data-action="dim-clear"]',
             'dim-view-row' => '//*[' . self::has_class('dim-toolbar__row--organise') . ']'
                 . '/*[@data-region="dim-view-row"][@role="group"]',
+            /* The favourites toggle on the search line, right before the filter disclosure, with
+               the action the client intercepts, the number the client rewrites in its name and the
+               hidden field the client enables while it is on. */
+            'dim-line-star' => '//details[@data-region="dim-filters"]'
+                . '/preceding-sibling::*[1][self::button][@data-region="dim-line-star"][@data-action="dim-fav"]',
+            'dim-fav-count' => '//button[@data-region="dim-line-star"]//*[@data-region="dim-fav-count"]',
+            'dim-fav-field' => '//form//input[@type="hidden"][@name="fav"][@data-region="dim-fav-field"]',
         ];
         foreach ($toolbarhooks as $hook => $query) {
             $this->assertGreaterThan(
@@ -917,27 +924,64 @@ final class card_markup_test extends \advanced_testcase {
     }
 
     /**
-     * The favourites option of the state group wears the card's own star, and no other option does.
+     * The favourites toggle is the card's own star on the search line, and no pill of the state group wears one.
      *
-     * The star is decorative - the label names the option - so it is hidden from assistive
-     * technology, and it is the very glyph the course card's favourite button draws when pressed,
-     * not a second star of this toolbar's own.
+     * The favourites combine with the state rather than being one of its values, so the toggle is a
+     * submit button of its own beside the Filter control: aria-pressed says whether it is on, the
+     * glyph is the very star the course card's favourite button draws (solid when pressed), and the
+     * word and the number are its accessible name, hidden from the eye, with the word as its tooltip.
      */
-    public function test_the_favourites_option_wears_the_cards_star_and_no_other_option_does(): void {
+    public function test_the_favourites_toggle_is_the_cards_star_beside_the_filter_control(): void {
         $this->resetAfterTest();
         $toolbar = $this->render('category_toolbar');
+        $stars = $toolbar->query('//button[@data-region="dim-line-star"]');
+        $this->assertSame(1, $stars->length, 'One toggle.');
+        $star = $stars->item(0);
+        $this->assertSame('submit', $star->getAttribute('type'));
+        $this->assertSame('fav', $star->getAttribute('name'));
+        $this->assertSame('1', $star->getAttribute('value'), 'Released, a press turns it on.');
+        $this->assertSame('false', $star->getAttribute('aria-pressed'));
+        $this->assertSame('Favoritos', $star->getAttribute('title'), 'Its tooltip names it.');
+        $glyph = $toolbar->query('./i[' . self::has_class('fa-star') . ']', $star)->item(0);
+        $this->assertNotNull($glyph);
+        $this->assertStringContainsString('fa-regular', $glyph->getAttribute('class'), 'The card\'s released star.');
+        $this->assertSame('true', $glyph->getAttribute('aria-hidden'), 'Decorative: the name is the words beside it.');
+        $this->assertSame('Favoritos 2', trim(preg_replace('/\s+/', ' ', $star->textContent)), 'The word and the number.');
+        $this->assertSame(
+            1,
+            $toolbar->query('./span[' . self::has_class('visually-hidden') . ']//*[@data-region="dim-fav-count"]', $star)->length,
+            'The number is in the name, out of the picture.'
+        );
+        $field = $toolbar->query('//input[@data-region="dim-fav-field"]')->item(0);
+        $this->assertTrue($field->hasAttribute('disabled'), 'Released, the hidden field carries nothing.');
+        $this->assertSame(
+            1,
+            $toolbar->query('//form[' . self::has_class('dim-toolbar--hasstar') . ']')->length,
+            'The form says the line holds a toggle, so the stylesheet makes room for it.'
+        );
+
         $group = $toolbar->query('//fieldset[@data-region="dim-vitrine-group"][@data-name="chip"]')->item(0);
         $this->assertNotNull($group, 'Precondition: the state group is drawn.');
-        $stars = $toolbar->query('.//i[' . self::has_class('fa-star') . ']', $group);
-        $this->assertSame(1, $stars->length, 'One star in the whole state group.');
-        $star = $stars->item(0);
-        $this->assertSame('true', $star->getAttribute('aria-hidden'), 'Decorative: the label names the option.');
-        $this->assertStringContainsString('fa-solid', $star->getAttribute('class'), 'The card\'s pressed star, solid.');
-        $label = $star->parentNode;
-        $this->assertSame('label', $label->nodeName);
-        $input = $toolbar->query('.//input[@id="' . $label->getAttribute('for') . '"]', $group)->item(0);
-        $this->assertSame(classifier::CHIP_FAVOURITES, $input->getAttribute('value'), 'And it is inside the favourites pill.');
-        $this->assertTrue($star->isSameNode($label->firstChild), 'Before the label\'s words.');
+        $this->assertSame(
+            0,
+            $toolbar->query('.//i[' . self::has_class('fa-star') . ']', $group)->length,
+            'No star in the state group.'
+        );
+        $this->assertSame(0, $toolbar->query('.//input[@value="favourites"]', $group)->length, 'And no favourites pill.');
+
+        $context = $this->example_context('category_toolbar');
+        $context['favourites'] = ['pressed' => true, 'value' => 0] + $context['favourites'];
+        $pressed = $this->render_context('category_toolbar', $context);
+        $star = $pressed->query('//button[@data-region="dim-line-star"]')->item(0);
+        $this->assertSame('true', $star->getAttribute('aria-pressed'));
+        $this->assertSame('0', $star->getAttribute('value'), 'Pressed, a press turns it off.');
+        $this->assertSame(
+            1,
+            $pressed->query('./i[' . self::has_class('fa-solid') . '][' . self::has_class('fa-star') . ']', $star)->length,
+            'The card\'s pressed star.'
+        );
+        $field = $pressed->query('//input[@data-region="dim-fav-field"]')->item(0);
+        $this->assertFalse($field->hasAttribute('disabled'), 'Pressed, the hidden field carries the toggle.');
 
         $card = $this->render_context('category_card', ['favourite' => true] + $this->example_context('category_card'));
         $this->assertSame(
@@ -947,6 +991,81 @@ final class card_markup_test extends \advanced_testcase {
             )->length,
             'The control: the card\'s pressed star is the same two classes.'
         );
+
+        $context['favourites'] = null;
+        $context['hasfavourites'] = false;
+        $none = $this->render_context('category_toolbar', $context);
+        $this->assertSame(0, $none->query('//*[@data-region="dim-line-star"]')->length, 'No toggle where none is offered.');
+        $this->assertSame(0, $none->query('//input[@name="fav"]')->length, 'And no field to carry one.');
+        $this->assertSame(0, $none->query('//form[' . self::has_class('dim-toolbar--hasstar') . ']')->length, 'Nor room for one.');
+    }
+
+    /**
+     * The favourites toggle works with JavaScript off: what a GET submission of the form carries.
+     *
+     * The query string is built as a browser builds it - every enabled control in document order,
+     * and of the submit buttons only the one pressed - and read as PHP reads it, where the last of
+     * two values of one name wins. Pressing the released toggle asks for the favourites; pressing the
+     * pressed one asks for them off although the hidden field still says on, because the button
+     * comes later; and any other submission keeps what the toggle says, which is the hidden field's
+     * whole job - the control without it loses the favourites on Enter in the search box.
+     */
+    public function test_the_favourites_toggle_posts_without_javascript(): void {
+        $this->resetAfterTest();
+        $context = $this->example_context('category_toolbar');
+        $released = $this->render_context('category_toolbar', $context);
+        $this->assertSame('1', $this->submitted($released, '[@data-region="dim-line-star"]')['fav'] ?? null);
+        $this->assertArrayNotHasKey('fav', $this->submitted($released, '[' . self::has_class('dim-toolbar__defaultsubmit') . ']'));
+
+        $context['favourites'] = ['pressed' => true, 'value' => 0] + $context['favourites'];
+        $pressed = $this->render_context('category_toolbar', $context);
+        $this->assertSame('0', $this->submitted($pressed, '[@data-region="dim-line-star"]')['fav'] ?? null);
+        $enter = $this->submitted($pressed, '[' . self::has_class('dim-toolbar__defaultsubmit') . ']');
+        $this->assertSame('1', $enter['fav'] ?? null, 'Enter in the search box keeps the favourites on.');
+        $this->assertSame('resgate', $enter['q'] ?? null, 'Precondition: the form really was read.');
+        $view = $this->submitted($pressed, '[@data-region="dim-view-row"]/button[@value="list"]', true);
+        $this->assertSame('1', $view['fav'] ?? null, 'And so does the view toggle.');
+
+        $field = $pressed->query('//input[@data-region="dim-fav-field"]')->item(0);
+        $field->parentNode->removeChild($field);
+        $this->assertArrayNotHasKey(
+            'fav',
+            $this->submitted($pressed, '[' . self::has_class('dim-toolbar__defaultsubmit') . ']'),
+            'The control: without the hidden field the favourites are lost.'
+        );
+    }
+
+    /**
+     * What a GET submission of the toolbar form carries, read as PHP reads a query string.
+     *
+     * @param \DOMXPath $xpath The rendered toolbar.
+     * @param string $submitter An XPath predicate (or a step, with $descendant) naming the submit button pressed.
+     * @param bool $descendant Whether $submitter is a path below an element rather than a predicate on the button.
+     * @return array name => value, the last value of a repeated name winning.
+     */
+    private function submitted(\DOMXPath $xpath, string $submitter, bool $descendant = false): array {
+        $form = $xpath->query('//form[@data-region="dim-vitrine-toolbar"]')->item(0);
+        $pressed = $descendant
+            ? $xpath->query('.//*' . $submitter, $form)->item(0)
+            : $xpath->query('.//button' . $submitter, $form)->item(0);
+        $this->assertNotNull($pressed, 'Precondition: the submit button exists.');
+        $pairs = [];
+        foreach ($xpath->query('.//input|.//button', $form) as $control) {
+            if ($control->hasAttribute('disabled') || !$control->hasAttribute('name')) {
+                continue;
+            }
+            $type = strtolower($control->getAttribute('type'));
+            if ($control->nodeName === 'button' || $type === 'submit') {
+                if (!$control->isSameNode($pressed)) {
+                    continue;
+                }
+            } else if (in_array($type, ['radio', 'checkbox'], true) && !$control->hasAttribute('checked')) {
+                continue;
+            }
+            $pairs[] = rawurlencode($control->getAttribute('name')) . '=' . rawurlencode($control->getAttribute('value'));
+        }
+        parse_str(implode('&', $pairs), $parsed);
+        return $parsed;
     }
 
     /**

@@ -30,7 +30,7 @@ use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\landing\links;
 
 /**
- * Builds the template context of the toolbar: search, the state chips, the facet groups, the view toggle.
+ * Builds the template context of the toolbar: search, the favourites, the state chips, the facet groups, the view toggle.
  *
  * The toolbar is a real GET form and every control in it works with
  * JavaScript off: the same parameter names serve the form, the address bar
@@ -43,9 +43,9 @@ use theme_dimensions\local\landing\links;
  * JavaScript still reaches the server and is remembered.
  *
  * Two rows and a count line, and which control sits in which is a statement
- * about what it does. Row one NARROWS: the search box and one disclosure
- * holding every filter there is - the state pills, the facet groups and the
- * start-date range - with the number of active filters printed on the
+ * about what it does. Row one NARROWS: the search box, the favourites toggle
+ * and one disclosure holding every other filter there is - the state pills, the
+ * facet groups and the start-date range - with the number of active filters printed on the
  * disclosure itself, so a reader who collapsed it can still see that
  * something is narrowing the page. Row two ORGANISES: the three sort chips,
  * the card/list toggle and the category's own management menu, none of which
@@ -67,6 +67,15 @@ use theme_dimensions\local\landing\links;
  * in - empty because a page without JavaScript must show the two native inputs
  * and nothing else, and a skeleton drawn here would be a control that never
  * becomes one.
+ *
+ * The favourites toggle is a submit button of its own on that row, beside the
+ * Filter control and outside its panel, because it combines with the state
+ * rather than being one of its values: pressing it posts `fav` with the value
+ * it would turn the toggle to, and while it is on a hidden field earlier in the
+ * form carries `fav=1`, so every other submission keeps it. A press that turns
+ * it off posts both, and the button's comes last, which is the one PHP reads.
+ * It is drawn where the state group is and only for a reader who has
+ * favourites ({@see criteria::can_favourite()}).
  *
  * Every number printed here is post-filter, read from the page result and
  * never recomputed. A state chip whose count is zero is not offered, save
@@ -115,7 +124,6 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
         classifier::STATE_PENDING => 'category_chip_pending',
         classifier::STATE_OPEN => 'category_chip_open',
         classifier::STATE_FREE => 'category_chip_free',
-        classifier::CHIP_FAVOURITES => 'category_chip_favourites',
     ];
 
     /**
@@ -125,7 +133,8 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      * @param criteria $criteria The request.
      * @param page_result $result The resolved page: its counts and facets feed the chips.
      * @param string $view The view in force, VIEW_CARDS or VIEW_LIST.
-     * @param bool $showstates Whether the state group is offered (a logged-in viewer with the state sort on).
+     * @param bool $showstates Whether the state group is offered (a logged-in viewer with the state sort on),
+     *   and with it the favourites toggle for a reader who has favourites.
      * @param string $manageactions Core's rendered action menu for the category's managers, or ''.
      * @param bool $anonymous Whether the anonymous shell is drawing, which posts the form elsewhere.
      */
@@ -155,6 +164,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      */
     public function export_for_template(\core\output\renderer_base $output): \stdClass {
         $statusgroup = $this->showstates ? $this->status_group() : null;
+        $favourites = $this->favourites_toggle();
         $facets = $this->facet_groups();
         /* "Clear filters" keeps the ORGANISATION and the open panel, and drops everything that
            narrows: reordering hides no course and neither does a panel, and a control that
@@ -179,6 +189,8 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'searchtooshortlabel' => get_string('category_searchtooshort', self::COMPONENT, criteria::MIN_SEARCH_LENGTH),
             'statusgroup' => $statusgroup,
             'hasstatusgroup' => $statusgroup !== null,
+            'favourites' => $favourites,
+            'hasfavourites' => $favourites !== null,
             'facets' => $facets,
             'hasfacets' => !empty($facets),
             'pagesizename' => criteria::PARAM_PAGESIZE,
@@ -381,7 +393,32 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     }
 
     /**
-     * The state group: "all", then every state the viewer holds a course in, then the favourites.
+     * The favourites toggle, or null where none is drawn.
+     *
+     * Drawn beside the state group and on the same condition, and only for a reader who has
+     * favourites at all: the guest account's and a visitor's would narrow to nothing, and the
+     * population drops the criterion for them anyway. Its number is counted under the state chip in
+     * force ({@see page_result::$counts}), and it is part of the button's accessible name.
+     *
+     * @return array|null ['name', 'value' (what a press posts: 1 to turn it on, 0 to turn it off),
+     *   'pressed' (bool), 'count' (int), 'label' (plain)], or null.
+     */
+    private function favourites_toggle(): ?array {
+        if (!$this->showstates || !criteria::can_favourite($this->anonymous)) {
+            return null;
+        }
+        $pressed = $this->criteria->favourites;
+        return [
+            'name' => criteria::PARAM_FAVOURITES,
+            'value' => $pressed ? 0 : 1,
+            'pressed' => $pressed,
+            'count' => (int) ($this->result->counts[classifier::CHIP_FAVOURITES] ?? 0),
+            'label' => get_string('category_favourites', self::COMPONENT),
+        ];
+    }
+
+    /**
+     * The state group: "all", then every state the viewer holds a course in.
      *
      * @return array ['legend' => plain, 'name' => string, 'options' => [...]] with one radio per option.
      */
@@ -395,7 +432,6 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'count' => (int) ($counts['total'] ?? 0),
             'hascount' => isset($counts['total']),
             'checked' => $current === null,
-            'isfavourites' => false,
         ]];
         foreach (self::CHIPS as $value => $key) {
             $count = isset($counts[$value]) ? (int) $counts[$value] : null;
@@ -409,8 +445,6 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
                 'count' => $count,
                 'hascount' => $count !== null,
                 'checked' => $current === $value,
-                // The favourites pill wears the card's own star, so it is found at a glance.
-                'isfavourites' => $value === classifier::CHIP_FAVOURITES,
             ];
         }
         return [

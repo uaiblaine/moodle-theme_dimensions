@@ -702,16 +702,22 @@ final class category_listing_test extends \advanced_testcase {
         $this->seed();
         $this->setAdminUser();
         self::forget();
-        $cards = $this->cards($this->export());
+        $context = $this->export();
+        $cards = $this->cards($context);
         $this->assertArrayHasKey($this->ids['hidden'], $cards);
         $this->assertTrue($cards[$this->ids['hidden']]->ishidden);
         $this->assertFalse($cards[$this->ids['none']]->ishidden, 'Control: a visible course carries no hidden badge.');
+        $this->assertTrue($context->toolbar->hasfavourites, 'Control: a real account gets the favourites toggle.');
 
         $this->setGuestUser();
         self::forget();
-        $cards = $this->cards($this->export());
+        $context = $this->export();
+        $cards = $this->cards($context);
         $this->assertArrayNotHasKey($this->ids['hidden'], $cards);
         $this->assertFalse($cards[$this->ids['none']]->showstar, 'No star for the guest account.');
+        $this->assertTrue($context->toolbar->hasstatusgroup, 'Precondition: the guest account is offered the states.');
+        $this->assertFalse($context->toolbar->hasfavourites, 'And no favourites toggle: the guest account has no favourites.');
+        $this->assertNull($context->toolbar->favourites);
     }
 
     /**
@@ -729,13 +735,19 @@ final class category_listing_test extends \advanced_testcase {
             $options[$option['value']] = $option['count'];
         }
         // All, then the states with a course: open counts the held event, whose instance is still
-        // enabled (the classifier may only err towards open); scheduled, pending and the favourites
-        // chip are not offered at zero, and "none" has no chip at all.
+        // enabled (the classifier may only err towards open); scheduled and pending are not offered
+        // at zero, "none" has no chip at all, and the favourites are a toggle of their own.
         $this->assertSame(
             ['' => 5, classifier::STATE_ENROLLED => 1, classifier::STATE_OPEN => 2, classifier::STATE_FREE => 1],
             $options
         );
         $this->assertTrue($toolbar->statusgroup['options'][0]['checked']);
+        $this->assertTrue($toolbar->hasfavourites);
+        $this->assertSame(
+            ['name' => 'fav', 'value' => 1, 'pressed' => false, 'count' => 0, 'label' => 'Favourites'],
+            $toolbar->favourites,
+            'Released and drawn even at zero, a press turning it on.'
+        );
 
         $this->assertTrue($toolbar->hasfacets);
         $this->assertCount(1, $toolbar->facets);

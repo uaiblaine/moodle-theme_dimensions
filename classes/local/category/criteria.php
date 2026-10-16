@@ -71,6 +71,12 @@ namespace theme_dimensions\local\category;
  * refuses to render because somebody edited the address is a page that cannot
  * be linked to.
  *
+ * The favourites filter is a criterion of its own beside the state chip, and the two combine: a
+ * reader may ask for their favourites among the courses they are enrolled in. It is a reader's own
+ * rows, so only a real account reads it off an address ({@see can_favourite()}), and an older
+ * address that spelled it as a value of the state chip is read as it with no state
+ * ({@see from_request()}).
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -93,6 +99,9 @@ final class criteria {
 
     /** @var string Query parameter: the state chip. */
     public const PARAM_STATE = 'chip';
+
+    /** @var string Query parameter: the favourites toggle, 1 when on and absent otherwise. */
+    public const PARAM_FAVOURITES = 'fav';
 
     /** @var string Query parameter: how the listing is organised. */
     public const PARAM_SORT = 'sort';
@@ -152,8 +161,19 @@ final class criteria {
     /** @var string What the request typed, trimmed but not normalised: the form echoes it, the search never reads it. */
     public string $rawsearch = '';
 
-    /** @var string|null A classifier state or the favourites chip to keep, null for all. */
+    /** @var string|null A state chip to keep ({@see classifier::filters()}), null for all. */
     public ?string $state = null;
+
+    /**
+     * @var bool Whether only the reader's favourite courses are kept, ANDed with the state chip.
+     *
+     * One of the filters in every respect - {@see has_filters()}, {@see filter_count()},
+     * {@see query_params()}, {@see narrowing_params()} and "clear filters" all count it. It is
+     * honoured where the state chip is, on a logged-in page cut in PHP, and dropped on the request
+     * object everywhere else ({@see population::resolve()}); the address only carries it for a real
+     * account ({@see from_request()}).
+     */
+    public bool $favourites = false;
 
     /** @var array The custom field filters, fieldid => option value (int). */
     public array $fields = [];
@@ -260,7 +280,7 @@ final class criteria {
      *
      * @param int $categoryid The category to list.
      * @param array $options Any of page (int), pagesize (int|null), search (string), state (string|null),
-     *   fields (array fieldid => value), sort (string), datefrom (string, YYYY-MM-DD), dateto (string,
+     *   favourites (bool), fields (array fieldid => value), sort (string), datefrom (string, YYYY-MM-DD), dateto (string,
      *   YYYY-MM-DD), cat (int, the tree's category), withcategories (bool),
      *   anonymous (bool), open (int, the child whose panel is drawn), psort (string, the panel's
      *   order), withposters (bool), defaultsort (string, the organisation in force when sort is ''
@@ -277,6 +297,7 @@ final class criteria {
             'pagesize',
             'search',
             'state',
+            'favourites',
             'fields',
             'sort',
             'datefrom',
@@ -305,6 +326,7 @@ final class criteria {
         // The chip comes from a query string: an unknown value is no chip, never a developer error.
         $state = $options['state'] ?? null;
         $this->state = ($state !== null && in_array((string) $state, classifier::filters(), true)) ? (string) $state : null;
+        $this->favourites = (bool) ($options['favourites'] ?? false);
 
         $fields = [];
         foreach ((array) ($options['fields'] ?? []) as $fieldid => $value) {
@@ -444,11 +466,20 @@ final class criteria {
         }
         $pagesize = optional_param(self::PARAM_PAGESIZE, 0, PARAM_INT);
         $state = optional_param(self::PARAM_STATE, '', PARAM_ALPHA);
+        $favourites = (bool) optional_param(self::PARAM_FAVOURITES, 0, PARAM_BOOL);
+        /* An address written while the favourites were a value of the state chip - a bookmark, a
+           shared link - still opens on the reader's favourites, with no state chip. */
+        if ($state === classifier::CHIP_FAVOURITES) {
+            $state = '';
+            $favourites = true;
+        }
         $options = [
             'page' => optional_param(self::PARAM_PAGE, 0, PARAM_INT),
             'pagesize' => $pagesize > 0 ? min($pagesize, population::MAX_PAGESIZE) : null,
             'search' => optional_param(self::PARAM_SEARCH, '', PARAM_RAW_TRIMMED),
             'state' => $state === '' ? null : $state,
+            // A reader's own rows: never a visitor's nor the guest account's, whatever the address says.
+            'favourites' => $favourites && self::can_favourite($anonymous),
             'fields' => $fields,
             'sort' => optional_param(self::PARAM_SORT, '', PARAM_ALPHA),
             'defaultsort' => self::default_sort($categoryid),
@@ -468,10 +499,24 @@ final class criteria {
     }
 
     /**
+     * Whether the session's reader has favourites a listing can be narrowed to: a real account, never the guest.
+     *
+     * Favourites are rows of the reader's own, so a visitor (the anonymous shell) and the guest
+     * account - whose favourites core does not keep - have none, and an address asking for them is
+     * read as an address that does not. The toolbar draws the toggle on the same answer.
+     *
+     * @param bool $anonymous Whether the anonymous shell is asking.
+     * @return bool
+     */
+    public static function can_favourite(bool $anonymous = false): bool {
+        return !$anonymous && isloggedin() && !isguestuser();
+    }
+
+    /**
      * A request's options with the reader's remembered state filled in where the address names none of it.
      *
      * The state is one whole: it fills in a BARE address - one that names no organisation, no panel
-     * and nothing that narrows (a term, a state, a field, a bound of the period, the tree's category)
+     * and nothing that narrows (a term, a state, the favourites, a field, a bound of the period, the tree's category)
      * - and nothing else, so an address that names any of these is read exactly as written, with the
      * category's default for whatever it leaves out. That is what makes an address a reader shares
      * mean the same to whoever opens it: every address the page mints for a reader with a remembered
@@ -493,6 +538,7 @@ final class criteria {
             || (int) ($options['open'] ?? 0) > 0
             || trim((string) ($options['search'] ?? '')) !== ''
             || ($options['state'] ?? null) !== null
+            || !empty($options['favourites'])
             || !empty($options['fields'])
             || trim((string) ($options['datefrom'] ?? '')) !== ''
             || trim((string) ($options['dateto'] ?? '')) !== ''
@@ -502,6 +548,7 @@ final class criteria {
         }
         $options['sort'] = (string) ($entry[remembered::KEY_SORT] ?? '');
         $options['state'] = $entry[remembered::KEY_STATE] ?? null;
+        $options['favourites'] = !empty($entry[remembered::KEY_FAVOURITES]);
         $options['fields'] = (array) ($entry[remembered::KEY_FIELDS] ?? []);
         return $options;
     }
@@ -521,6 +568,9 @@ final class criteria {
         }
         if ($this->state !== null) {
             $params[self::PARAM_STATE] = $this->state;
+        }
+        if ($this->favourites) {
+            $params[self::PARAM_FAVOURITES] = 1;
         }
         foreach ($this->fields as $fieldid => $value) {
             $params[self::PARAM_FIELD_PREFIX . $fieldid] = $value;
@@ -573,7 +623,7 @@ final class criteria {
     }
 
     /**
-     * The query parameters that narrow the listing: the search, the state chip, the field filters, the period.
+     * The query parameters that narrow the listing: the search, the state chip, the favourites, the field filters, the period.
      *
      * What a panel's call to action carries to the area's own page, so that page opens on the
      * same question. Never the tree's category (it is asked about this page's subtree, and the
@@ -589,6 +639,9 @@ final class criteria {
         }
         if ($this->state !== null) {
             $params[self::PARAM_STATE] = $this->state;
+        }
+        if ($this->favourites) {
+            $params[self::PARAM_FAVOURITES] = 1;
         }
         foreach ($this->fields as $fieldid => $value) {
             $params[self::PARAM_FIELD_PREFIX . $fieldid] = $value;
@@ -648,7 +701,7 @@ final class criteria {
     }
 
     /**
-     * Whether anything narrows the listing: a search, a chip, a field filter, a date bound or the tree.
+     * Whether anything narrows the listing: a search, a chip, the favourites, a field filter, a date bound or the tree.
      *
      * The organisation is not one of them: reordering a listing hides nothing,
      * so "clear filters" leaves it alone and the count line it sits beside
@@ -659,6 +712,7 @@ final class criteria {
     public function has_filters(): bool {
         return $this->search !== ''
             || $this->state !== null
+            || $this->favourites
             || !empty($this->fields)
             || $this->datefrom !== ''
             || $this->dateto !== ''
@@ -677,6 +731,7 @@ final class criteria {
     public function filter_count(): int {
         $count = ($this->search !== '' ? 1 : 0)
             + ($this->state !== null ? 1 : 0)
+            + ($this->favourites ? 1 : 0)
             + ($this->cat > 0 ? 1 : 0)
             + count($this->fields);
         if ($this->datefrom !== '' || $this->dateto !== '') {

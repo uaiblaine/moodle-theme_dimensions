@@ -70,7 +70,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I should not see "Resgate em Altura"
 
   @javascript
-  Scenario: The star round-trips: it relabels itself, survives a reload and reaches the favourites chip
+  Scenario: The star round-trips: it relabels itself, survives a reload and reaches the favourites toggle
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
     When I click on "Add to favourites: Resgate em Altura" "button"
@@ -78,10 +78,18 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Then the "aria-pressed" attribute of "Remove from favourites: Resgate em Altura" "button" should contain "true"
     When I reload the page
     Then the "aria-pressed" attribute of "Remove from favourites: Resgate em Altura" "button" should contain "true"
-    # The status pills are inside the filter disclosure, closed on a page nothing narrows: the
-    # chip's number is read after it is opened, which is where a reader would read it too.
-    When I click on "//details[@data-region='dim-filters']/summary" "xpath_element"
-    Then I should see "Favourites 1" in the ".dim-toolbar" "css_element"
+    # The favourites toggle sits on the search line, outside the filter disclosure: its number is in
+    # its accessible name, and pressing it narrows the listing in place.
+    And the "aria-pressed" attribute of "[data-region='dim-line-star']" "css_element" should contain "false"
+    And "//*[@data-region='dim-fav-count'][normalize-space(.)='1']" "xpath_element" should exist
+    When I click on "[data-region='dim-line-star']" "css_element"
+    Then the "aria-pressed" attribute of "[data-region='dim-line-star']" "css_element" should contain "true"
+    And I should see "Resgate em Altura" in the "[data-region='dim-vitrine-grid']" "css_element"
+    And I should not see "Curso Online" in the "[data-region='dim-vitrine-grid']" "css_element"
+    And "//*[@data-region='dim-filtercount'][not(@hidden)]//*[@data-region='dim-filtercount-number'][normalize-space(text())='1']" "xpath_element" should exist
+    When I click on "[data-region='dim-line-star']" "css_element"
+    Then the "aria-pressed" attribute of "[data-region='dim-line-star']" "css_element" should contain "false"
+    And I should see "Curso Online" in the "[data-region='dim-vitrine-grid']" "css_element"
 
   @javascript
   Scenario: Load more appends the NEXT page, one page at a time, and keeps the focus

@@ -50,7 +50,9 @@ use theme_dimensions\local\category\rows;
  * 2. The cheap vocabulary and shape checks, before login - a negative page, a
  *    chip or sort outside its vocabulary, a date that is not one or a pair of
  *    them given backwards, anything but the term at the root, two filters
- *    naming one field.
+ *    naming one field. The chip's vocabulary is the state chips alone: the
+ *    favourites are `fav`, and the older spelling of them as a chip is read
+ *    only off an address ({@see criteria::from_request()}), never here.
  * 3. require_login() and the guest account's refusal, which is the same
  *    refusal every miss carries, so a guest learns nothing by asking.
  * 4-7. The guard: the non-throwing context, validate_context(), core's gate,
@@ -175,6 +177,13 @@ class get_category_rows extends external_api {
                 VALUE_DEFAULT,
                 false
             ),
+            // Last, because the framework hands the parameters to execute() in this order.
+            'fav' => new external_value(
+                PARAM_BOOL,
+                'Whether only the reader\'s favourite courses are kept, combined with the state chip.',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -192,6 +201,7 @@ class get_category_rows extends external_api {
      * @param string $dateto The last start date kept, as YYYY-MM-DD, '' for no bound.
      * @param int $cat The category of the tree the listing is narrowed to, 0 for the whole subtree.
      * @param bool $withcategories Whether this is a panel's request, answered with the panel's context.
+     * @param bool $fav Whether only the reader's favourite courses are kept.
      * @return array The page: its numbers, its cards and the option lists of its toolbar.
      * @throws \invalid_parameter_exception On a malformed request.
      * @throws \moodle_exception The one refusal, for every category this viewer may not list.
@@ -207,7 +217,8 @@ class get_category_rows extends external_api {
         string $datefrom = '',
         string $dateto = '',
         int $cat = 0,
-        bool $withcategories = false
+        bool $withcategories = false,
+        bool $fav = false
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
@@ -221,6 +232,7 @@ class get_category_rows extends external_api {
             'dateto' => $dateto,
             'cat' => $cat,
             'withcategories' => $withcategories,
+            'fav' => $fav,
         ]);
 
         /* The cheap checks, before login: a malformed request is malformed for anybody, and
@@ -262,7 +274,8 @@ class get_category_rows extends external_api {
                 || $params['datefrom'] !== ''
                 || $params['dateto'] !== ''
                 || $params['cat'] !== 0
-                || $params['withcategories'];
+                || $params['withcategories']
+                || $params['fav'];
             if ($unused) {
                 throw new \invalid_parameter_exception('The root of the course index reads its search alone.');
             }
@@ -308,6 +321,7 @@ class get_category_rows extends external_api {
             'dateto' => (string) $params['dateto'],
             'cat' => (int) $params['cat'],
             'withcategories' => (bool) $params['withcategories'],
+            'fav' => (bool) $params['fav'],
         ]);
     }
 
@@ -341,10 +355,15 @@ class get_category_rows extends external_api {
             'cards' => new external_multiple_structure(self::card_structure(), 'The cards of this page, in order.'),
             'statusgroup' => new external_single_structure([
                 'options' => new external_multiple_structure(
-                    self::option_structure(PARAM_ALPHA, 'the state chip', true),
+                    self::option_structure(PARAM_ALPHA, 'the state chip'),
                     'The state pills the toolbar would draw, the "all" one first.'
                 ),
             ], 'The state group; its options are empty where the toolbar offers no state group.'),
+            'favourites' => new external_single_structure([
+                'available' => new external_value(PARAM_BOOL, 'Whether the toolbar draws the favourites toggle for this reader.'),
+                'pressed' => new external_value(PARAM_BOOL, 'Whether the toggle is on: only favourites are kept.'),
+                'count' => new external_value(PARAM_INT, 'How many favourites the state chip in force leaves, 0 where not drawn.'),
+            ], 'The favourites toggle, which combines with the state chip.'),
             'facets' => new external_multiple_structure(
                 new external_single_structure([
                     'name' => new external_value(PARAM_ALPHANUMEXT, 'The form name of the group, cf_<fieldid>.'),
@@ -517,11 +536,10 @@ class get_category_rows extends external_api {
      *
      * @param string $valuetype The parameter type of the option's value.
      * @param string $what What the value names, for the descriptions.
-     * @param bool $states Whether the pill is one of the state group's, which says whether it is the favourites one.
      * @return external_single_structure
      */
-    private static function option_structure(string $valuetype, string $what, bool $states = false): external_single_structure {
-        $keys = [
+    private static function option_structure(string $valuetype, string $what): external_single_structure {
+        return new external_single_structure([
             'id' => new external_value(PARAM_ALPHANUMEXT, 'The element id of the radio input.'),
             'value' => new external_value($valuetype, 'The value of ' . $what . ', empty or zero for all of them.'),
             'label' => new external_value(PARAM_RAW, 'The label of the pill.'),
@@ -534,12 +552,7 @@ class get_category_rows extends external_api {
             ),
             'hascount' => new external_value(PARAM_BOOL, 'Whether there is a count to print.'),
             'checked' => new external_value(PARAM_BOOL, 'Whether this option is the one in force.'),
-        ];
-        if ($states) {
-            // The favourites pill wears the course card's star, so a pill the client creates must too.
-            $keys['isfavourites'] = new external_value(PARAM_BOOL, 'Whether the option is the favourites chip.');
-        }
-        return new external_single_structure($keys);
+        ]);
     }
 
     /**

@@ -27,6 +27,7 @@ namespace theme_dimensions\external;
 use core_external\external_api;
 use local_unlistedcourses\category_discoverability;
 use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\facets;
 use theme_dimensions\local\category\remembered;
@@ -95,16 +96,17 @@ final class remember_category_state_test extends \advanced_testcase {
             'sort' => criteria::SORT_NAME,
             'view' => 'list',
             'chip' => 'open',
+            'fav' => true,
             'filters' => [['fieldid' => $fieldid, 'value' => 2]],
         ]);
         $this->assertFalse($response['error'], $response['exception']->message ?? '');
         $this->assertTrue($response['data']['remembered']);
         $this->assertSame(
-            ['s' => 'name', 'v' => 'list', 't' => 'open', 'f' => [$fieldid => 2]],
+            ['s' => 'name', 'v' => 'list', 't' => 'open', 'fav' => true, 'f' => [$fieldid => 2]],
             remembered::for_category($categoryid)
         );
 
-        // The clear control: the organisation and the view stay, the chip and the fields go.
+        // The clear control: the organisation and the view stay, the chip, the favourites and the fields go.
         $response = $this->call(['categoryid' => $categoryid, 'sort' => criteria::SORT_NAME]);
         $this->assertFalse($response['error'], $response['exception']->message ?? '');
         $this->assertSame(['s' => 'name', 'v' => 'list'], remembered::for_category($categoryid));
@@ -112,6 +114,47 @@ final class remember_category_state_test extends \advanced_testcase {
         // The theme's default organisation is remembered as the grouped one it is, and a bad value is dropped.
         $this->call(['categoryid' => $categoryid, 'sort' => '', 'chip' => 'nosuchchip', 'view' => 'grid']);
         $this->assertSame(['s' => criteria::SORT_CATEGORY, 'v' => 'list'], remembered::for_category($categoryid));
+    }
+
+    /**
+     * The favourites are a boolean of their own: the older chip spelling of them is never stored, and no
+     * value outside the boolean reaches the function at all.
+     *
+     * fav=true is the control; the favourites sent as a chip are refused like any chip outside the
+     * vocabulary, so nothing turns the toggle on; and a value that is not a boolean is refused by the
+     * framework before the function runs.
+     */
+    public function test_the_favourites_are_a_boolean_and_never_a_chip(): void {
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->become(self::getDataGenerator()->create_user());
+
+        $response = $this->call(['categoryid' => $categoryid, 'chip' => classifier::CHIP_FAVOURITES]);
+        $this->assertFalse($response['error'], $response['exception']->message ?? '');
+        $this->assertSame(
+            ['s' => criteria::SORT_CATEGORY],
+            remembered::for_category($categoryid),
+            'The organisation is stored, and nothing of the favourites as a chip: neither a chip nor the toggle.'
+        );
+
+        $response = $this->call(['categoryid' => $categoryid, 'sort' => criteria::SORT_NAME, 'fav' => 'sometimes']);
+        $this->assertTrue($response['error'], 'A value that is not a boolean is refused.');
+        $this->assertSame('invalidparameter', $response['exception']->errorcode);
+        $this->assertSame(['s' => criteria::SORT_CATEGORY], remembered::for_category($categoryid), 'Before anything is written.');
+
+        $response = $this->call(['categoryid' => $categoryid, 'fav' => true]);
+        $this->assertFalse($response['error'], $response['exception']->message ?? '');
+        $this->assertSame(
+            ['s' => criteria::SORT_CATEGORY, 'fav' => true],
+            remembered::for_category($categoryid),
+            'The control: the toggle is stored.'
+        );
+        $this->call(['categoryid' => $categoryid, 'fav' => false]);
+        $this->assertSame(
+            ['s' => criteria::SORT_CATEGORY],
+            remembered::for_category($categoryid),
+            'Switched off, the key is forgotten.'
+        );
     }
 
     /**

@@ -87,6 +87,7 @@ const SELECTORS = {
     progress: '[data-region="dim-card-progress"]',
     search: 'input[type="search"]',
     viewbutton: '[data-action="dim-view"]',
+    fav: '[data-action="dim-fav"]',
     quick: '[data-action="dim-quick"]',
     tree: '[data-region="dim-vitrine-tree"]',
     treelink: '[data-region="dim-vitrine-tree"] a[data-region="dim-tree-link"]',
@@ -270,6 +271,8 @@ const filterArgs = () => Listing.filterArgs(state);
 const paintView = (view) => Listing.paintView(root, view);
 const markTree = () => Listing.markTree(root, state);
 const paintControls = () => Listing.paintControls(root, state);
+const paintFavToggle = () => Listing.paintFavToggle(root, state.fav);
+const paintFavourites = (response) => Listing.paintFavourites(root, response);
 const paintDates = () => Listing.paintDates(root, state);
 const paintFilterBadge = (response) => Listing.paintFilterBadge(root, response);
 const paintCount = (response) => Listing.paintCount(root, response);
@@ -297,6 +300,7 @@ const rowsArgs = (page) => {
         page: page,
         query: state.query,
         chip: state.chip,
+        fav: state.fav,
         perpage: state.pagesize,
         filters: filterArgs(),
         sort: state.sort,
@@ -307,7 +311,7 @@ const rowsArgs = (page) => {
 };
 
 /**
- * The state this category is remembered in: the organisation, the view and the two kinds of filter.
+ * The state this category is remembered in: the organisation, the view, the state and the favourites, and the fields.
  *
  * The search, the period and the tree's category are not part of it (the server's remembered says why).
  *
@@ -318,6 +322,7 @@ const rememberArgs = () => ({
     sort: state.sort,
     view: state.view,
     chip: state.chip,
+    fav: state.fav,
     filters: filterArgs(),
 });
 
@@ -690,6 +695,7 @@ const applyResponse = async(response, append, ticket) => {
     paintFilterBadge(response);
     paintCount(response);
     paintGroups(response);
+    paintFavourites(response);
     attachCards(items.map((item) => item.querySelector(SELECTORS.card)).filter((card) => card !== null));
     paintPager(response, append, items.length ? items[0] : null);
     if (!append) {
@@ -967,6 +973,24 @@ const onChoose = (input) => {
 };
 
 /**
+ * Deal with the favourites toggle being pressed: a filter that combines with the state chip.
+ *
+ * The toggle is a submit button for a reader without this module, posting what a press turns it
+ * to; here the press is a fetch with a history entry, exactly as a chip is, and the toggle is
+ * repainted at once rather than after the answer, because aria-pressed is what was pressed.
+ *
+ * @return {void}
+ */
+const onFav = () => {
+    state.fav = !state.fav;
+    state.page = 0;
+    paintFavToggle();
+    remember(false);
+    writeUrl(true);
+    requestRows(0, false);
+};
+
+/**
  * Clear every filter in place, and give the focus to the search box.
  *
  * The three controls that clear - the count row's link, the areas' "nothing matches" box and the
@@ -983,6 +1007,7 @@ const onClear = () => {
     cancelSearch();
     state.query = '';
     state.chip = '';
+    state.fav = false;
     state.filters = {};
     state.datefrom = '';
     state.dateto = '';
@@ -1045,6 +1070,12 @@ const listen = () => {
         if (view) {
             event.preventDefault();
             setView(view.value === 'list' ? 'list' : 'cards');
+            return;
+        }
+        if (closestOf(event, SELECTORS.fav)) {
+            // A submit button for a reader without this module; a fetch with a history entry here.
+            event.preventDefault();
+            onFav();
             return;
         }
         const branch = closestOf(event, SELECTORS.treelink);
@@ -1124,6 +1155,8 @@ export const init = () => {
         hasmore: Boolean(payload.hasmore),
         query: typeof payload.query === 'string' ? payload.query : '',
         chip: typeof payload.chip === 'string' ? payload.chip : '',
+        // The server read an older address's favourites chip as the toggle already.
+        fav: payload.fav === true,
         filters: payload.filters && typeof payload.filters === 'object' ? Object.assign({}, payload.filters) : {},
         /* The organisation and the period come from the address and not from the payload, which
            is where the server put them in the first place: the toolbar is a GET form, so the

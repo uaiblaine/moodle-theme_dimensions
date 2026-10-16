@@ -719,8 +719,8 @@ body.dim-category {
         --dim-area-edge: rgba(0, 0, 0, .4);
         --dim-area-lift: 0;
         --dim-area-tint: .1;
-        // The favourite star's gold when pressed: the card's star and the Favourites pill's glyph
-        // are one colour by construction.
+        // The favourite star's gold when pressed: the card's star and the toolbar's favourites
+        // toggle are one colour by construction.
         --dim-star-on: #b8860b;
         // A poster's result pill is the institutional navy with its lightest tint as
         // the ink (12.7:1), and its zero spelling a graphite pair: both sit on a photograph or a
@@ -1191,21 +1191,6 @@ body.dim-category {
         opacity: 1;
     }
 
-    // The Favourites pill carries the card star's own glyph, so that the option is found at a
-    // glance. The card star's gold at rest, the pill's own ink once it is chosen; the label
-    // already names the option, so the glyph is hidden from assistive technology. The size is
-    // the star the design PAINTS (11 x 10.4px inside its 14px box), not the box: a font glyph
-    // fills its em, so 10px draws the design's star. The chip's own 6px gap separates it from the
-    // label.
-    .dim-pill__star {
-        color: var(--dim-star-on);
-        font-size: .625rem;
-    }
-
-    .dim-pill__input:checked + .dim-pill .dim-pill__star {
-        color: currentcolor;
-    }
-
     // Row two reads: the organisation chips at the left, then the view toggle and the kebab as
     // ONE cluster at the right, which is what the design draws. The auto margin is on the FIRST
     // of the pair, so the two stay together when the chips wrap onto their own line.
@@ -1393,6 +1378,56 @@ body.dim-category {
             outline: 3px solid var(--dim-ring);
             outline-offset: 2px;
         }
+    }
+
+    // The favourites toggle: the card's star on a field's corners and boundary, 44px square, the
+    // same face as the Filter control beside it. It is in the flow at the end of the search line,
+    // so the Filter summary, lifted out of the flow to the end of that line, moves left by the
+    // toggle's 44px and the row's 10px gap while one is drawn (the form says so with
+    // dim-toolbar--hasstar, a class rather than :has(), which scssphp's extend matching chokes
+    // on); the search box grows from nothing then, so the three share one line however narrow the
+    // screen. Pressed, it wears the open filter control's pressed face and the card star's gold.
+    .dim-toolbar__star {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        min-height: 44px;
+        padding: 0;
+        border: 1px solid var(--dim-control-line);
+        border-radius: var(--dim-radius-sm);
+        background: var(--dim-surface);
+        color: var(--dim-ink);
+        font-size: 1.125rem;
+        cursor: pointer;
+        transition: background var(--dim-motion) var(--dim-ease), color var(--dim-motion) var(--dim-ease);
+
+        &:hover {
+            background: var(--dim-surface-strong);
+        }
+
+        &:focus-visible {
+            outline: 3px solid var(--dim-ring);
+            outline-offset: 2px;
+        }
+
+        &[aria-pressed="true"] {
+            border-color: var(--dim-open-ring);
+            background: var(--dim-tint);
+
+            .fa-star {
+                color: var(--dim-star-on);
+            }
+        }
+    }
+
+    .dim-toolbar--hasstar .dim-toolbar__search {
+        flex-basis: 0;
+    }
+
+    .dim-toolbar--hasstar .dim-toolbar__filterstoggle {
+        right: 54px;
     }
 
     // The word on that control, which the phone width hides. It is the summary's
@@ -4880,6 +4915,17 @@ body.dim-category {
             .fa {
                 font-size: 18px;
             }
+        }
+
+        // The favourites toggle is in the flow at the end of the line, so the two controls lifted
+        // out of it move left by its 44px and a 10px gap: the view toggle from the end, the Filter
+        // summary from beside the view toggle.
+        .dim-toolbar--hasstar .dim-toolbar__view.dim-toolbar__view--phone {
+            right: 54px;
+        }
+
+        .dim-toolbar--hasstar .dim-toolbar__filterstoggle {
+            right: 151px;
         }
     }
 

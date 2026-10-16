@@ -403,12 +403,14 @@ final class population {
         if ($criteria->cat > 0 && !self::cat_ids($scope, $criteria)) {
             $criteria->cat = 0;
         }
-        /* The state chip, for the same reason: only a logged-in page cut in PHP classifies its
-           courses, so a visitor's page and the SQL cut narrow nothing by it (resolve_sql()) and draw
-           no state control. Kept on the request, it would put the page in result mode over a listing
-           nothing narrowed, with a filter no control on the page can show or clear. */
+        /* The state chip and the favourites, for the same reason: only a logged-in page cut in PHP
+           classifies its courses, so a visitor's page and the SQL cut narrow nothing by either
+           (resolve_sql()) and draw neither control. Kept on the request, either would put the page in
+           result mode over a listing nothing narrowed, with a filter no control on the page can show
+           or clear. */
         if ($scope->anonymous || !self::state_sort()) {
             $criteria->state = null;
+            $criteria->favourites = false;
         }
         if ($scope->rootid === 0) {
             return self::resolve_root($scope, $criteria);
@@ -434,7 +436,11 @@ final class population {
         $values = facets::values(array_keys($fields), $scope->population_categories());
         $ids = facets::apply($values, array_keys($kept), $criteria->fields);
 
-        // The state histogram is taken before the state chip so the chips can print their numbers.
+        /* The state chip and the favourites are two criteria that combine, and each is counted with
+           the other applied, as the facets are: a chip's number is what pressing it would leave under
+           the favourites in force, and the favourites' number what pressing the toggle would leave
+           under the chip in force. Both are taken before either narrows the ids, so the chips can
+           print their numbers. */
         $counts = ['total' => count($ids)];
         $result->hidden = count(array_filter($ids, static function (int $courseid) use ($kept): bool {
             return empty($kept[$courseid]->visible);
@@ -444,19 +450,27 @@ final class population {
             foreach (classifier::chips() as $chip) {
                 $counts[$chip] = 0;
             }
+            $counts['total'] = 0;
             $counts[classifier::CHIP_FAVOURITES] = 0;
             foreach ($ids as $courseid) {
-                $counts[classifier::chip($verdicts[$courseid]['state'])]++;
-                if ($verdicts[$courseid]['favourite']) {
+                $chip = classifier::chip($verdicts[$courseid]['state']);
+                $favourite = $verdicts[$courseid]['favourite'];
+                if ($favourite || !$criteria->favourites) {
+                    $counts['total']++;
+                    $counts[$chip]++;
+                }
+                if ($favourite && ($criteria->state === null || $chip === $criteria->state)) {
                     $counts[classifier::CHIP_FAVOURITES]++;
                 }
             }
             if ($criteria->state !== null) {
                 $ids = array_values(array_filter($ids, static function (int $courseid) use ($verdicts, $criteria): bool {
-                    if ($criteria->state === classifier::CHIP_FAVOURITES) {
-                        return $verdicts[$courseid]['favourite'];
-                    }
                     return classifier::chip($verdicts[$courseid]['state']) === $criteria->state;
+                }));
+            }
+            if ($criteria->favourites) {
+                $ids = array_values(array_filter($ids, static function (int $courseid) use ($verdicts): bool {
+                    return $verdicts[$courseid]['favourite'];
                 }));
             }
         }
@@ -1714,6 +1728,7 @@ final class population {
         $options = [
             'search' => $page->search,
             'state' => $page->state,
+            'favourites' => $page->favourites,
             'fields' => $page->fields,
             'datefrom' => $page->datefrom,
             'dateto' => $page->dateto,

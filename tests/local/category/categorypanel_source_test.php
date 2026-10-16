@@ -183,7 +183,8 @@ final class categorypanel_source_test extends \basic_testcase {
         $this->assertStringContainsString('sort: psort === PSORT_NAME ? SORT.name : SORT.recent,', $args);
         $criteria = [
             'query: params.get(PARAM.query)',
-            'chip: params.get(PARAM.chip)',
+            "chip: chip === LEGACY_FAVOURITES ? '' : chip,",
+            "fav: params.get(PARAM.fav) === '1' || chip === LEGACY_FAVOURITES,",
             'filters: filters,',
             'datefrom: period.from,',
             'dateto: period.to,',

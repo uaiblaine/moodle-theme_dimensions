@@ -67,7 +67,7 @@ use local_unlistedcourses\access;
  * 4. the viewer's cohort ids, driven by userid;
  * 5. the viewer's favourite courses, driven by userid - resolved here, over
  *    the whole population and before any page is cut, so that the favourites
- *    chip and the star are one statement and the chip can filter.
+ *    toggle and the card's star are one statement and the toggle can filter.
  *
  * Which of each plugin's checks are reproduced, and which are dropped
  * (dropped means: the classifier says open where the plugin might say no,
@@ -165,7 +165,14 @@ final class classifier {
     /** @var string Nothing this viewer could use. Shown, with less emphasis. */
     public const STATE_NONE = 'none';
 
-    /** @var string The favourites chip - not a state, but a filter the same control offers. */
+    /**
+     * @var string The favourites filter's key in the counts, and the state chip value an older address still carries.
+     *
+     * Not a state and no longer a chip: the favourites filter is a criterion of its own that combines
+     * with the state ({@see criteria::$favourites}). An address or a remembered state written while it
+     * was a value of the state chip is read as that criterion with no state ({@see criteria::from_request()},
+     * {@see remembered::entry()}); nothing else accepts it as a chip.
+     */
     public const CHIP_FAVOURITES = 'favourites';
 
     /**
@@ -284,12 +291,15 @@ final class classifier {
     }
 
     /**
-     * Every value the state chip may carry: the six chip values and the favourites chip.
+     * Every value the state chip may carry: the six chip values, and nothing else.
+     *
+     * The favourites filter is not one of them: it combines with a state rather than replacing it
+     * ({@see criteria::$favourites}).
      *
      * @return string[]
      */
     public static function filters(): array {
-        return array_merge(self::chips(), [self::CHIP_FAVOURITES]);
+        return self::chips();
     }
 
     /**

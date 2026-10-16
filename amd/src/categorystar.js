@@ -71,7 +71,7 @@ const paintStar = (button, on) => {
 /**
  * Flip a star optimistically, then tell the server - and put it back if the server refused.
  *
- * The favourites chip's count is not refreshed here: it is one number the reader has just
+ * The favourites toggle's count is not refreshed here: it is one number the reader has just
  * changed themselves, and it comes right with the next listing request.
  *
  * @param {HTMLElement} button The star button.

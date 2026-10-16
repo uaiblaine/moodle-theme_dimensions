@@ -92,6 +92,13 @@ class remember_category_state extends external_api {
                 VALUE_DEFAULT,
                 []
             ),
+            // Last, because the framework hands the parameters to execute() in this order.
+            'fav' => new external_value(
+                PARAM_BOOL,
+                'Whether the favourites toggle is on, combined with the state chip.',
+                VALUE_DEFAULT,
+                false
+            ),
         ]);
     }
 
@@ -103,6 +110,7 @@ class remember_category_state extends external_api {
      * @param string $view The view, '' to keep the remembered one.
      * @param string $chip The state chip, '' for none.
      * @param array $filters The custom field filters, as fieldid and value pairs.
+     * @param bool $fav Whether the favourites toggle is on.
      * @return array Whether the category is remembered now.
      * @throws \invalid_parameter_exception For the root, which remembers nothing.
      * @throws \moodle_exception The one refusal, for the guest and for every category this reader may not discover.
@@ -112,7 +120,8 @@ class remember_category_state extends external_api {
         string $sort = '',
         string $view = '',
         string $chip = '',
-        array $filters = []
+        array $filters = [],
+        bool $fav = false
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'categoryid' => $categoryid,
@@ -120,6 +129,7 @@ class remember_category_state extends external_api {
             'view' => $view,
             'chip' => $chip,
             'filters' => $filters,
+            'fav' => $fav,
         ]);
         if ($params['categoryid'] <= 0) {
             // A shape check, alike for every reader: the root reads its search alone and remembers nothing.
@@ -141,6 +151,8 @@ class remember_category_state extends external_api {
             // The empty organisation is the grouped one, and is remembered as such.
             remembered::KEY_SORT => $params['sort'] === '' ? criteria::SORT_CATEGORY : $params['sort'],
             remembered::KEY_STATE => $params['chip'] === '' ? null : $params['chip'],
+            // The toggle's one stored value is true; off is the key forgotten.
+            remembered::KEY_FAVOURITES => $params['fav'] ? true : null,
             remembered::KEY_FIELDS => $fields ?: null,
         ];
         if ($params['view'] !== '') {

@@ -176,6 +176,18 @@ final class get_category_rows_test extends \advanced_testcase {
             $this->refusal(['categoryid' => $id, 'chip' => 'nosuchchip'])->errorcode,
             'A chip outside the classifier vocabulary.'
         );
+        /* The favourites are fav and never a chip here: the older spelling of them as a chip is read
+           off an address alone (criteria::from_request()), and this function's one client never sends it. */
+        $this->assertSame(
+            'invalidparameter',
+            $this->refusal(['categoryid' => $id, 'chip' => classifier::CHIP_FAVOURITES])->errorcode,
+            'The favourites as a chip.'
+        );
+        $this->assertSame(
+            'invalidparameter',
+            $this->refusal(['categoryid' => $id, 'fav' => 'sometimes'])->errorcode,
+            'The favourites toggle is a boolean.'
+        );
         $this->assertSame(
             'invalidparameter',
             $this->refusal(['categoryid' => $id, 'filters' => [
@@ -214,6 +226,8 @@ final class get_category_rows_test extends \advanced_testcase {
         );
         $this->newpage();
         $this->data(['categoryid' => $id, 'datefrom' => '2026-09-17', 'dateto' => '2026-09-17']);
+        $this->newpage();
+        $this->data(['categoryid' => $id, 'fav' => true]);
     }
 
     /**
@@ -252,6 +266,7 @@ final class get_category_rows_test extends \advanced_testcase {
         $this->assertTrue($data['areas']['filtered']);
         $this->assertSame(0, $data['areas']['autoopen'], 'No area opens by itself at the root.');
         $this->assertSame(['', '', []], [$data['countnumber'], $data['countline'], $data['cards']], 'No listing.');
+        $this->assertSame(['available' => false, 'pressed' => false, 'count' => 0], $data['favourites'], 'And no toggle.');
 
         $rest = $this->data(['categoryid' => 0]);
         $this->assertSame([], $rest['accordion'], 'At rest the root counts nothing.');
@@ -265,6 +280,7 @@ final class get_category_rows_test extends \advanced_testcase {
             'a page' => ['page' => 1],
             'a page size' => ['perpage' => 6],
             'a panel\'s request' => ['withcategories' => true],
+            'the favourites' => ['fav' => true],
         ];
         foreach ($unread as $case => $args) {
             $this->assertSame(
@@ -568,18 +584,77 @@ final class get_category_rows_test extends \advanced_testcase {
         $this->assertTrue($bystate['']['checked'], 'With no chip asked for, "all" is the checked pill.');
         $this->assertSame(1, $bystate[classifier::STATE_ENROLLED]['count']);
         $this->assertTrue($bystate[classifier::STATE_ENROLLED]['hascount']);
-        // A state pill says whether it is the favourites one, so a pill the client creates wears the star too.
         $declared = array_keys(get_category_rows::execute_returns()->keys['statusgroup']->keys['options']->content->keys);
         $exported = array_keys($options[0]);
         sort($declared);
         sort($exported);
         $this->assertSame($declared, $exported, 'The state pill and its declaration are the same set.');
-        $this->assertFalse($bystate['']['isfavourites']);
+        $this->assertNotContains(classifier::CHIP_FAVOURITES, $values, 'The favourites are no pill of the state group.');
 
         $picked = $this->data(['categoryid' => (int) $category->id, 'chip' => classifier::STATE_ENROLLED]);
         $checked = array_column($picked['statusgroup']['options'], 'checked', 'value');
         $this->assertTrue($checked[classifier::STATE_ENROLLED], 'The asked-for chip comes back checked.');
         $this->assertFalse($checked['']);
+    }
+
+    /**
+     * The favourites toggle reaches the listing, combines with the chip, and comes back for the client to repaint.
+     *
+     * The answer carries the toggle as the toolbar would draw it - offered, pressed, and the number of
+     * favourites the chip in force leaves - and every state pill counted under it. The request without
+     * the toggle is the control; the SQL cut, which honours no favourites, offers none.
+     */
+    public function test_the_favourites_toggle_reaches_the_listing_and_comes_back(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $mine = $generator->create_course(['category' => $category->id]);
+        $starred = $generator->create_course(['category' => $category->id]);
+        $generator->create_course(['category' => $category->id]);
+        $viewer = $generator->create_user();
+        $generator->enrol_user($viewer->id, $mine->id);
+        $generator->enrol_user($viewer->id, $starred->id);
+        \core_favourites\service_factory::get_service_for_user_context(\core\context\user::instance($viewer->id))->create_favourite(
+            'core_course',
+            'courses',
+            $starred->id,
+            \core\context\course::instance($starred->id)
+        );
+        $this->become($viewer);
+        $id = (int) $category->id;
+
+        $plain = $this->data(['categoryid' => $id, 'sort' => criteria::SORT_NAME]);
+        $this->assertSame(3, $plain['total'], 'The control: nothing narrows.');
+        $this->assertSame(['available' => true, 'pressed' => false, 'count' => 1], $plain['favourites']);
+        $this->assertFalse($plain['hasfilters']);
+
+        $this->newpage();
+        $favourites = $this->data(['categoryid' => $id, 'sort' => criteria::SORT_NAME, 'fav' => true]);
+        $this->assertSame([(int) $starred->id], array_column($favourites['cards'], 'id'));
+        $this->assertSame(['available' => true, 'pressed' => true, 'count' => 1], $favourites['favourites']);
+        $this->assertTrue($favourites['hasfilters']);
+        $this->assertSame(1, $favourites['filtercount']);
+        $pills = array_column($favourites['statusgroup']['options'], 'count', 'value');
+        $this->assertSame(1, $pills[''], '"All" counted under the favourites.');
+        $this->assertSame(1, $pills[classifier::STATE_ENROLLED], 'And the enrolled pill too.');
+
+        $this->newpage();
+        $both = $this->data([
+            'categoryid' => $id,
+            'sort' => criteria::SORT_NAME,
+            'chip' => classifier::STATE_ENROLLED,
+            'fav' => true,
+        ]);
+        $this->assertSame([(int) $starred->id], array_column($both['cards'], 'id'), 'The chip and the toggle combine.');
+        $this->assertSame(2, $both['filtercount']);
+        $this->assertSame(1, $both['favourites']['count'], 'The favourites under the chip in force.');
+
+        $this->newpage();
+        set_config(population::SETTING_STATESORT, 0, 'theme_dimensions');
+        $sqlcut = $this->data(['categoryid' => $id, 'sort' => criteria::SORT_NAME, 'fav' => true]);
+        $this->assertSame(3, $sqlcut['total'], 'The SQL cut honours no favourites.');
+        $this->assertSame(['available' => false, 'pressed' => false, 'count' => 0], $sqlcut['favourites'], 'And offers none.');
+        $this->assertFalse($sqlcut['hasfilters']);
     }
 
     /**

@@ -548,7 +548,8 @@ final class classifier_test extends \advanced_testcase {
             classifier::chips(),
             'The six chips the toolbar always had, in its order.'
         );
-        $this->assertSame([...classifier::chips(), classifier::CHIP_FAVOURITES], classifier::filters());
+        $this->assertSame(classifier::chips(), classifier::filters(), 'The favourites are a criterion of their own.');
+        $this->assertNotContains(classifier::CHIP_FAVOURITES, classifier::filters());
         $this->assertEqualsCanonicalizing(classifier::states(), array_keys(classifier::RANK), 'Every state is ranked.');
         foreach (classifier::states() as $state) {
             $this->assertSame(
