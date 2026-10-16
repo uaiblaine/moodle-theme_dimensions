@@ -355,7 +355,8 @@ class get_category_rows extends external_api {
                 new external_single_structure([
                     'param' => new external_value(
                         PARAM_ALPHANUMEXT,
-                        'What the chip drops: a field\'s parameter (cf_<id>), chip, cat, or period for both bounds.'
+                        'What the chip drops: q for the search, a field\'s parameter (cf_<id>), chip, cat, '
+                            . 'or period for both bounds.'
                     ),
                     'label' => new external_value(PARAM_RAW, 'The chip\'s label, plain: the sink escapes it.'),
                     'url' => new external_value(PARAM_URL, 'The listing with that one criterion dropped and the rest kept.'),

@@ -65,6 +65,7 @@ import {setUserPreference} from 'core_user/repository';
 import * as CategoryMark from 'theme_dimensions/categorymark';
 import * as CategoryStar from 'theme_dimensions/categorystar';
 import * as DateRange from 'theme_dimensions/daterange';
+import * as Line from 'theme_dimensions/categoryline';
 import * as Listing from 'theme_dimensions/categorylisting';
 
 /** @type {Object} Every hook this module reads, all of them written by the showcase's templates. */
@@ -705,6 +706,8 @@ const applyResponse = async(response, append, ticket) => {
         paintDirect(response);
         paintShells(response);
     }
+    // A scope cell came back or went, and the suggestions read the counts just painted.
+    Line.repaint();
 };
 
 /**
@@ -1026,7 +1029,8 @@ const onClear = () => {
     remember(false);
     writeUrl(true);
     requestRows(0, false);
-    const search = root.querySelector(SELECTORS.search);
+    // The field, or its icon where the line folded it away: a folded field cannot take the focus.
+    const search = Line.focusTarget(root.querySelector(SELECTORS.search));
     if (search) {
         search.focus({preventScroll: true});
     }
@@ -1051,11 +1055,30 @@ const onChipRemove = (chip) => {
     remember(false);
     writeUrl(true);
     requestRows(0, false);
-    const search = root.querySelector(SELECTORS.search);
+    const search = Line.focusTarget(root.querySelector(SELECTORS.search));
     if (search) {
         search.focus({preventScroll: true});
     }
     return true;
+};
+
+/**
+ * Take the typed term out of the state, for a suggestion of the filter line about to apply its filter.
+ *
+ * The filter line empties the field and then presses the suggestion's control, whose handler here
+ * makes the one request: with the term gone from the state first, that request carries none, and a
+ * term still waiting for its debounce is never sent after it.
+ *
+ * @return {void}
+ */
+const dropTerm = () => {
+    cancelSearch();
+    state.query = '';
+    const notice = root.querySelector(SELECTORS.notice);
+    if (notice) {
+        notice.hidden = true;
+    }
+    paintEraser();
 };
 
 /**
@@ -1287,6 +1310,9 @@ export const init = () => {
     // The tree is a disclosure on a phone and a list at every width above it.
     armTreebox();
     listen();
+
+    // The filter line folds to its width, opens its search over itself and suggests the page's filters.
+    Line.arm(root, {dropTerm: dropTerm});
 
     /* The page was drawn with the reader's remembered state wherever the address named none: the
        address is written out in full now, so a reload, Back or a copied address names what is on

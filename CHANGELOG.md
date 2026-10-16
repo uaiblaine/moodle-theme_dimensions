@@ -5,6 +5,30 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The filter line folds, searches over itself and suggests filters** (`2026100510`): the filter-line redesign's
+  stage T3, for both the logged-in and the visitor's live client, through one shared module (`categoryline`).
+  - The line measures its own width (never the viewport's) and takes the first step at which it fits: full; Filters
+    keeps its icon and badge and loses its word (still its accessible name); the search becomes an icon button
+    ("Search courses"); two lines, the scope on the second at full control height, scrolling sideways with a fade on a
+    hidden side, and the view toggle moved into the Organise menu as "Show as". It measures with every cell of the scope
+    drawn (the server now writes a cell with nothing to offer, hidden) and with no transition, so the step follows the
+    width and the language and never the counts. Without JavaScript nothing of this applies and the line wraps as before.
+  - From the third step the search grows over the line: the other controls slide out (none under reduced motion), a
+    "Close search" button takes the last place, Escape closes it and the focus returns to the control that opened it.
+    A term left in force while the field is folded away shows as a chip under the line, built by the server's one chip
+    builder (labelled with the term, its address dropping `q` alone) and shown by the stylesheet only then.
+  - Suggestions: one listbox under the line (the field is its combobox): every scope cell, the favourites star, every
+    option of the Filters panel and its quick dates whose label or group matches the typed text, accent- and
+    case-insensitively, word starts first and then by count, each with its group and count; up to five filters with
+    the highest counts while the field is empty ("Start with a filter"). Choosing one applies it as pressing that
+    control does, the term dropped in the same request, and keeps the search open. The counts are the last answer
+    given while the field held no term (the server's, never the browser's).
+  - Every floating layer (suggestions, the Filters panel, the Organise menu) is placed under the line's measured
+    bottom; on the two-line step the Filters panel is a bottom sheet (full width, at most 80% of the screen, scrolling
+    inside itself, the date calendar opening whole in its flow). A half-hidden item of a row that scrolls sideways (the
+    scope's line, the chips under the line) scrolls itself into view when pressed or focused. `/` focuses the search
+    while the line is on screen and the focus is in no field.
+
 - **The toolbar is one filter line** (`2026100509`): the filter-line redesign's stage T2.
   - The three rows (narrow, organise, count) become ONE server-drawn line in the contract's slot order: the scope
     (the state chip's All, My courses, Open for enrolment and Scheduled as counted cells of a platter, for a logged-in

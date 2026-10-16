@@ -174,6 +174,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     public function export_for_template(\core\output\renderer_base $output): \stdClass {
         $statusgroup = $this->showstates ? $this->status_group() : null;
         [$scope, $more] = self::split_status($statusgroup);
+        $scope = $this->scope_cells($scope);
         $favourites = $this->favourites_toggle();
         $facets = $this->facet_groups();
         $chips = $this->chips();
@@ -197,10 +198,17 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'searchlabel' => get_string('category_search', self::COMPONENT),
             'searchplaceholder' => get_string('category_searchplaceholder', self::COMPONENT),
             'searchclearlabel' => get_string('category_searchclear', self::COMPONENT),
+            'searchcloselabel' => get_string('category_searchclose', self::COMPONENT),
             'query' => $this->criteria->rawsearch,
             'hasquery' => $this->criteria->rawsearch !== '',
             'searchtooshort' => $this->criteria->rawsearch !== '' && $this->criteria->search === '',
             'searchtooshortlabel' => get_string('category_searchtooshort', self::COMPONENT, criteria::MIN_SEARCH_LENGTH),
+            /* The suggestions under the line are the client's (categoryline), drawn from the
+               controls already on the page: the server gives them an id for the combobox to point
+               at and their two headings, so the browser composes no word of them. */
+            'suggestid' => 'dim-vitrine-suggest-' . $this->categoryid,
+            'suggestfilterslabel' => get_string('category_suggestfilters', self::COMPONENT),
+            'suggeststartlabel' => get_string('category_suggeststart', self::COMPONENT),
             /* The whole state group, which the web services hand back for the client to split by
                criteria::SCOPE exactly as the two halves below are split here. */
             'statusgroup' => $statusgroup,
@@ -248,6 +256,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'filtercountlabel' => get_string('category_filtercount', self::COMPONENT, $this->criteria->filter_count()),
             'viewname' => self::PARAM_VIEW,
             'viewlabel' => get_string('category_view', self::COMPONENT),
+            'showaslabel' => get_string('category_showas', self::COMPONENT),
             // List first, as the filter line's contract draws it.
             'views' => [
                 [
@@ -316,28 +325,81 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     }
 
     /**
+     * The scope with every one of its cells drawn: a cell with nothing to offer is drawn hidden.
+     *
+     * A zero cell is not shown unless it is the chosen one ({@see status_group()}), but it is
+     * still WRITTEN, carrying `absent`, which the template turns into the hidden attribute: the
+     * client's folding (categoryline) measures the line with every cell of the scope drawn, so
+     * the step a line takes follows its width and its language and never what the counts happen
+     * to be, and a cell an answer brings back is found in place by its value
+     * (categorylisting's paintGroup()). The cells are in {@see criteria::SCOPE}'s order. Every
+     * option carries the key, so the template never reads it off an outer context.
+     *
+     * @param array|null $scope The scope half of {@see split_status()}, or null where none is drawn.
+     * @return array|null The same group with one option per value of {@see criteria::SCOPE}.
+     */
+    private function scope_cells(?array $scope): ?array {
+        if ($scope === null) {
+            return null;
+        }
+        $drawn = [];
+        foreach ($scope['options'] as $option) {
+            $drawn[(string) $option['value']] = $option + ['absent' => false];
+        }
+        $cells = [];
+        foreach (criteria::SCOPE as $value) {
+            if (isset($drawn[$value])) {
+                $cells[] = $drawn[$value];
+            } else if (isset(self::CHIPS[$value])) {
+                $cells[] = [
+                    'id' => 'dim-chip-' . $this->categoryid . '-' . $value,
+                    'value' => $value,
+                    'label' => get_string(self::CHIPS[$value], self::COMPONENT),
+                    'count' => 0,
+                    'hascount' => true,
+                    'checked' => false,
+                    'absent' => true,
+                ];
+            }
+        }
+        $scope['options'] = $cells;
+        $scope['hasoptions'] = $cells !== [];
+        return $scope;
+    }
+
+    /**
      * The chips of the row under the line: one per criterion in force that the line does not show.
      *
      * The one builder of them: the page draws what this answers and both web services hand it
      * back ({@see \theme_dimensions\local\category\rows}), so the client composes no chip. In
-     * order: each custom field (the option's label as its facet carries it, or as the field
+     * order: the search in force, then each custom field (the option's label as its facet carries it, or as the field
      * defines it when the facet no longer offers it), the period (its
      * sentence in the site timezone, as {@see criteria} resolves it), a state chosen among "More
      * statuses" (a logged-in reader's only: a visitor's page honours no state chip) and the
-     * tree's category (named as the tree names it). The search, the scope and the favourites are
-     * drawn on the line itself and get none.
+     * tree's category (named as the tree names it). The scope and the favourites are drawn on the
+     * line itself and get none.
+     *
+     * The search's chip, labelled with the term in force, is the one the stylesheet keeps out of
+     * the picture until the client folds the search into an icon and the field is not open over
+     * the line: a term left in force must still say so where the field no longer shows it
+     * (moodle-dev/docs/filter-line/CONTRACT.md, section 3). It is built here, like every other
+     * chip, so the browser composes none; without the client the field always shows, and so
+     * the chip never does.
      *
      * Each chip is a link to this listing with that one criterion dropped and every other part of
      * the request kept - the other criteria, the organisation, the page size and the open panel,
-     * as "Clear all" keeps them - so it works with no JavaScript; `param` names what it drops: a
-     * field's parameter, {@see criteria::PARAM_STATE}, {@see criteria::PARAM_CAT} or
-     * {@see CHIP_PERIOD} for both bounds of the period.
+     * as "Clear all" keeps them - so it works with no JavaScript; `param` names what it drops:
+     * {@see criteria::PARAM_SEARCH}, a field's parameter, {@see criteria::PARAM_STATE},
+     * {@see criteria::PARAM_CAT} or {@see CHIP_PERIOD} for both bounds of the period.
      *
      * @return array Entries of ['param' => string, 'label' => plain string, 'url' => string,
      *   'removelabel' => plain string, 'isperiod' => bool].
      */
     public function chips(): array {
         $chips = [];
+        if ($this->criteria->search !== '') {
+            $chips[] = $this->chip(criteria::PARAM_SEARCH, $this->criteria->search, [criteria::PARAM_SEARCH]);
+        }
         $fields = null;
         foreach ($this->criteria->fields as $fieldid => $value) {
             $facet = $this->result->facets[$fieldid] ?? null;

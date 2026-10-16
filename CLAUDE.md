@@ -2922,7 +2922,7 @@ the round I mockups). Files: `amd/src/categorycoursemodal.js`,
   (`:has(.dim-cmodal.show) .modal-backdrop`) and goes back to core's the moment it closes; the footer
   gets a shadow only while the sheet has more to scroll.
 
-## The category showcase: the filter line (T1 and T2, 2026-10-16)
+## The category showcase: the filter line (T1 to T3, 2026-10-16)
 
 The toolbar's three rows became ONE line in the fleet contract's slot order (scope, search, star,
 Filters, Organise, view, the managers' menu) and a row under it that shows only while something
@@ -2980,6 +2980,17 @@ plan, with the decisions taken while briefing, are `moodle-dev/docs/filter-line/
   stacking context (`.dim-toolbar`, `z-index: 30`) painted over what was left. Core's more-menu
   already collapses the tabs that do not fit, so the rail has nothing to scroll. The 31 must stay
   above the toolbar's number; `category_scss_test` pins it.
+- **The line's client behaviour is ONE shared module, `categoryline`, for both clients** (T3). It imports only
+  `core/pending`, so it belongs to the visitor's import graph and `categorypublic_source_test` walks it. Both clients
+  call `repaint()` after every answer; nothing else of the line is painted elsewhere.
+- **The step is measured on the line's own width with every scope cell drawn**: the server writes a cell with nothing
+  to offer as `absent` (hidden), the measure unhides them under the `measuring` class, with no transition. Digit widths
+  still move the step at a boundary (measured: 1024 flips s3 to s1 when counts drop to one digit).
+- **Suggestion counts come from the last answer given while the field held no term**, or a typed word would zero
+  every option. The search opens only on the reader's own focus (a press, Tab, typing), never on a focus a client or
+  WebDriver moves there, which keeps the older Behat scenarios unobstructed.
+- **A term in force while the field is folded is a server chip** (`param=q`, dropping `q` alone), shown by the
+  stylesheet only then; at steps 1 and 2 the field itself says it.
 - **Write the `version.php` bump at commit time, and ask before upgrading the stacks.** This checkout
   is mounted live on m503 and m503b (`plugins.conf`), shared with other sessions; a bump on disk makes
   both wait for an upgrade - cron suspended, administrators redirected to the upgrade page - under

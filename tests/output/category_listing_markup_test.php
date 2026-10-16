@@ -462,13 +462,16 @@ final class category_listing_markup_test extends \advanced_testcase {
             if (self::has_token($node->getAttribute('class'), 'dim-toolbar__manage')) {
                 $slots[] = 'manage';
             } else {
-                $slots[] = $node->getAttribute('data-role') ?: $node->getAttribute('data-region');
+                $slots[] = $node->getAttribute('data-role')
+                    ?: ($node->getAttribute('data-region') ?: $node->getAttribute('data-action'));
             }
         }
         $this->assertSame(
-            ['scope', 'dim-line-search', 'dim-line-star', 'dim-filters', 'dim-organise', 'dim-view-row', 'manage'],
+            ['scope', 'dim-line-search', 'dim-search-open', 'dim-line-star', 'dim-filters', 'dim-organise', 'dim-view-row',
+                'manage', 'dim-search-close', 'dim-line-suggest'],
             $slots,
-            'Scope, search, star, Filters, Organise, view, the managers\' menu: the contract\'s order.'
+            'Scope, search (and the icon the client folds it into), star, Filters, Organise, view, the managers\' menu: the '
+                . 'contract\'s order, then the close button and the listbox, which only the client draws.'
         );
 
         // The scope's legend names the group for assistive technology; the cells are what the eye reads.

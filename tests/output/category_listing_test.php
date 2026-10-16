@@ -2775,11 +2775,12 @@ final class category_listing_test extends \advanced_testcase {
     /**
      * Each chip's address drops its one criterion and keeps every other part of the request.
      *
-     * One chip per criterion the line does not show - the field, the period, a "More statuses"
-     * state, the tree's category - and none for the term, the scope or the favourites, which the
-     * line draws itself. Each address is the request's own query less that one criterion: the
-     * other criteria, the organisation and the page size stay, and so does the open panel, as
-     * "Clear all" keeps it. The period's two bounds go together.
+     * One chip per criterion the line does not show - the search (drawn by the stylesheet only where
+     * the line's client folds the field away), the field, the period, a "More statuses" state, the
+     * tree's category - and none for the scope or the favourites, which the line draws itself. Each
+     * address is the request's own query less that one criterion: the other criteria, the
+     * organisation and the page size stay, and so does the open panel, as "Clear all" keeps it. The
+     * period's two bounds go together.
      *
      * Changes that must make it fail: a chip address dropping a second criterion or keeping its own;
      * the organisation or the open panel lost; a chip for a scope value; the period losing one bound.
@@ -2804,11 +2805,12 @@ final class category_listing_test extends \advanced_testcase {
         $chips = $context->toolbar->chips;
         $field = criteria::PARAM_FIELD_PREFIX . $fieldid;
         $this->assertSame(
-            [$field, category_toolbar::CHIP_PERIOD, criteria::PARAM_STATE, criteria::PARAM_CAT],
+            [criteria::PARAM_SEARCH, $field, category_toolbar::CHIP_PERIOD, criteria::PARAM_STATE, criteria::PARAM_CAT],
             array_column($chips, 'param'),
-            'The field, the period, the "More statuses" state and the tree\'s category, and nothing the line shows.'
+            'The search, the field, the period, the "More statuses" state and the tree\'s category, and nothing the line shows.'
         );
         $drops = [
+            criteria::PARAM_SEARCH => [criteria::PARAM_SEARCH],
             $field => [$field],
             category_toolbar::CHIP_PERIOD => [criteria::PARAM_DATEFROM, criteria::PARAM_DATETO],
             criteria::PARAM_STATE => [criteria::PARAM_STATE],
@@ -2829,6 +2831,7 @@ final class category_listing_test extends \advanced_testcase {
         }
         $labels = array_column($chips, 'label', 'param');
         $this->assertSame(get_string('category_chip_free', 'theme_dimensions'), $labels[criteria::PARAM_STATE]);
+        $this->assertSame('Curso', $labels[criteria::PARAM_SEARCH], 'The term in force, plain.');
         $this->assertSame('Brigada', $labels[criteria::PARAM_CAT], 'The category as the tree names it.');
         $format = get_string('strftimedate', 'langconfig');
         $timezone = \core_date::get_server_timezone();
@@ -2869,10 +2872,10 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertArrayNotHasKey($field, $query);
         $this->assertFalse($panelcontext->toolbar->clearall, 'One criterion: its chip undoes it, and "Clear all" waits.');
 
-        // A scope value and the search are on the line: no chip for either.
+        // A scope value is on the line: no chip for it; the search's is its only chip.
         self::forget();
         $line = $this->export(['state' => classifier::STATE_ENROLLED, 'search' => 'Curso']);
-        $this->assertSame([], $line->toolbar->chips);
+        $this->assertSame([criteria::PARAM_SEARCH], array_column($line->toolbar->chips, 'param'));
         $this->assertTrue($line->toolbar->hasfilters, 'The row under the line still shows, with the count sentence.');
     }
 
@@ -2901,7 +2904,7 @@ final class category_listing_test extends \advanced_testcase {
             'datefrom' => '2020-01-01',
             'cat' => $this->ids['child'],
         ]);
-        $this->assertCount(4, $page->toolbar->chips, 'Precondition: a chip of every kind.');
+        $this->assertCount(5, $page->toolbar->chips, 'Precondition: a chip of every kind.');
         self::forget();
         // A request of its own, as the web service is: the page's context was set by the export above.
         $PAGE = new \moodle_page();
@@ -2927,6 +2930,7 @@ final class category_listing_test extends \advanced_testcase {
         $options = [
             'anonymous' => true,
             'sort' => criteria::SORT_NAME,
+            'search' => 'Curso',
             'state' => classifier::STATE_PENDING,
             'favourites' => true,
             'datefrom' => '2020-01-01',
@@ -2934,9 +2938,9 @@ final class category_listing_test extends \advanced_testcase {
         ];
         $visitor = $this->export($options);
         $this->assertSame(
-            [category_toolbar::CHIP_PERIOD, criteria::PARAM_CAT],
+            [criteria::PARAM_SEARCH, category_toolbar::CHIP_PERIOD, criteria::PARAM_CAT],
             array_column($visitor->toolbar->chips, 'param'),
-            'The period and the tree, and no state chip for a visitor.'
+            'The search, the period and the tree, and no state chip for a visitor.'
         );
         $this->assertNull($visitor->toolbar->favourites, 'And no star.');
         self::forget();
@@ -2944,11 +2948,81 @@ final class category_listing_test extends \advanced_testcase {
         $answer = \theme_dimensions\local\category\rows::fetch($public, [
             'anonymous' => true,
             'sort' => criteria::SORT_NAME,
+            'query' => 'Curso',
             'chip' => classifier::STATE_PENDING,
             'datefrom' => '2020-01-01',
             'cat' => $this->ids['child'],
         ]);
         $this->assertSame($strip($visitor->toolbar->chips), $answer['chips'], 'The visitor\'s service answers the same chips.');
         $this->assertNotContains(criteria::PARAM_STATE, array_column($answer['chips'], 'param'));
+    }
+
+    /**
+     * A search in force is one chip, built by the toolbar's one builder, whose address drops the term alone.
+     *
+     * The line's client folds the field into an icon on a narrow line, and a term left in force must
+     * still say so: the server draws it as a chip under the line (the stylesheet shows it only while
+     * the field is folded away), labelled with the term, linking to the listing without it and with
+     * everything else kept. A term under the search's floor is no criterion and gets no chip; no term,
+     * no chip.
+     *
+     * Changes that must make it fail: no chip for the term; its address dropping a second criterion or
+     * keeping the term; a chip for a term too short to search.
+     */
+    public function test_a_search_in_force_is_one_chip_that_drops_the_term_alone(): void {
+        $viewer = $this->seed();
+        $this->become($viewer);
+        $fieldid = (int) array_key_first(facets::fields());
+        $options = [
+            'sort' => criteria::SORT_NAME,
+            'search' => 'Curso',
+            'fields' => [$fieldid => landingfields::MODALITY_ONLINE],
+        ];
+        $chips = $this->export($options)->toolbar->chips;
+        $this->assertSame(criteria::PARAM_SEARCH, $chips[0]['param'], 'The search\'s chip comes first.');
+        $this->assertSame('Curso', $chips[0]['label']);
+        $expected = array_map('strval', (new criteria($this->ids['root'], $options))->query_params());
+        $this->assertSame('Curso', $expected[criteria::PARAM_SEARCH] ?? null, 'Precondition: the request carries the term.');
+        unset($expected[criteria::PARAM_SEARCH]);
+        $expected['categoryid'] = (string) $this->ids['root'];
+        ksort($expected);
+        $this->assertSame($expected, self::chip_query($chips[0]['url']), 'The term alone is dropped, the rest kept.');
+        $this->assertSame(1, count(array_keys(array_column($chips, 'param'), criteria::PARAM_SEARCH)), 'One chip.');
+
+        self::forget();
+        $short = $this->export(['sort' => criteria::SORT_NAME, 'search' => 'C']);
+        $this->assertNotContains(criteria::PARAM_SEARCH, array_column($short->toolbar->chips, 'param'), 'Too short to search.');
+        self::forget();
+        $none = $this->export(['sort' => criteria::SORT_NAME]);
+        $this->assertSame([], $none->toolbar->chips, 'Nothing narrows: no chip at all.');
+    }
+
+    /**
+     * Every cell of the scope is in the toolbar's context, a cell with nothing to offer marked absent.
+     *
+     * The filter line's client measures the line with every cell of the scope drawn, so the template
+     * writes them all, an absent one hidden. The web services' status group is untouched: a client
+     * repaints a cell from an answer that offers it and hides one an answer leaves out.
+     *
+     * Changes that must make it fail: an absent cell left out of the context; one drawn without the
+     * mark; the absent cells reaching the status group the services hand back.
+     */
+    public function test_every_scope_cell_is_drawn_and_a_cell_with_nothing_to_offer_is_absent(): void {
+        $viewer = $this->seed();
+        $this->become($viewer);
+        $toolbar = $this->export(['sort' => criteria::SORT_NAME])->toolbar;
+        $cells = $toolbar->scope['options'];
+        $this->assertSame(criteria::SCOPE, array_map(static fn(array $cell): string => (string) $cell['value'], $cells));
+        $absent = array_values(array_filter($cells, static fn(array $cell): bool => $cell['absent']));
+        $this->assertSame([classifier::STATE_SCHEDULED], array_column($absent, 'value'), 'The fixture holds nothing scheduled.');
+        $this->assertSame(0, $absent[0]['count']);
+        $this->assertFalse($absent[0]['checked']);
+        $offered = array_map(static fn(array $option): string => (string) $option['value'], $toolbar->statusgroup['options']);
+        $this->assertNotContains(classifier::STATE_SCHEDULED, $offered, 'The services\' status group offers no absent cell.');
+        foreach ($cells as $cell) {
+            if (!$cell['absent']) {
+                $this->assertContains((string) $cell['value'], $offered, 'Every cell drawn is one the group offers.');
+            }
+        }
     }
 }

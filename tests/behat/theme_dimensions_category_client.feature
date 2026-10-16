@@ -593,14 +593,41 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "//li[@data-region='dim-panel'][not(@hidden)]" "xpath_element" should exist
 
   @javascript
-  Scenario: On a phone the view toggle stays on the line
-    # The toggle is written once and shown at every width.
+  Scenario: On a phone the line folds to two lines and the view toggle moves into the Organise menu
+    # The filter line measures its own width and takes its two-line step on a phone: the scope has a
+    # line of its own, and the view toggle is the Organise menu's "Show as", whose buttons are served
+    # by the same handler as the toggle on the line.
     Given I change viewport size to "390x844"
     And I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    Then "[data-region='dim-view-row']" "css_element" should be visible
-    When I click on "List" "button" in the "[data-region='dim-view-row']" "css_element"
+    Then "//div[@data-region='dim-line'][contains(concat(' ', @class, ' '), ' dim-line--s4 ')]" "xpath_element" should exist
+    And "[data-region='dim-view-row']" "css_element" should not be visible
+    When I click on "//details[@data-region='dim-organise']/summary" "xpath_element"
+    And I click on "List" "button" in the "[data-region='dim-showas']" "css_element"
     Then ".dim-vitrine.dim-vitrine--list" "css_element" should exist
+
+  @javascript
+  Scenario: On a phone the search opens over the line and a suggestion applies its filter in place
+    # Pressing the field opens the search over the line, with a button that closes it. Typing suggests
+    # the page's own filters; choosing one applies it with the term dropped in the same request and
+    # keeps the search open for the next pick. Escape closes it.
+    Given I change viewport size to "390x844"
+    And I log in as "student1"
+    And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    When I click on "Search courses" "field"
+    Then "//div[@data-region='dim-line'][contains(concat(' ', @class, ' '), ' dim-line--searching ')]" "xpath_element" should exist
+    And "Close search" "button" should be visible
+    When I type "In-p"
+    Then I should see "In-person" in the "[data-region='dim-line-suggest']" "css_element"
+    When I click on "//*[@data-region='dim-line-suggest']//*[@role='option'][contains(., 'In-person')]" "xpath_element"
+    Then I should see "1 course with these filters: 1 in this category" in the "[data-region='dim-vitrine-count']" "css_element"
+    And the field "Search courses" matches value ""
+    And the url should match "[?&]cf_[0-9]+=2"
+    And the url should match "^(?!.*[?&]q=)"
+    And "//*[@data-region='dim-line-chips']//a[@data-action='dim-chip-remove'][starts-with(@data-param,'cf_')]" "xpath_element" should exist
+    And the focused element is "Search courses" "field"
+    When I press the escape key
+    Then "//div[@data-region='dim-line'][contains(concat(' ', @class, ' '), ' dim-line--searching ')]" "xpath_element" should not exist
 
   @javascript
   Scenario: The tree narrows the flat listing where it stands, and the grouped organisation draws none
