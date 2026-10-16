@@ -136,7 +136,7 @@ let root = null;
 /** @type {HTMLElement|null} The areas section, on a grouped page and at the root. */
 let areas = null;
 
-/** @type {Object|null} The request this page is showing: categorylisting's state, with no state chip. */
+/** @type {Object|null} The request this page is showing: categorylisting's state, with no state chip and no favourites. */
 let state = null;
 
 /** @type {Number} Monotonic ticket: a response whose ticket is not the current one is discarded. */
@@ -155,16 +155,18 @@ let searchtimer = null;
 let searchpending = null;
 
 /**
- * Drop from the state what a visitor's page never honours: the state chip.
+ * Drop from the state what a visitor's page never honours: the state chip and the favourites.
  *
- * The visitor's population classifies nothing, so the server drops a chip from the request and the
- * service does not declare one; a chip read off a hand-edited address would otherwise be counted as
- * a filter the page has no control for, and written back into every address.
+ * The visitor's population classifies nothing and a visitor has no favourites, so the server drops
+ * both from the request and the service declares neither; either read off a hand-edited address
+ * would otherwise be counted as a filter the page has no control for, and written back into every
+ * address.
  *
  * @return {void}
  */
 const publicOnly = () => {
     state.chip = '';
+    state.fav = false;
     Listing.rootOnly(state);
 };
 
@@ -820,6 +822,7 @@ export const init = (categoryid) => {
         hasmore: Boolean(payload.hasmore),
         query: typeof payload.query === 'string' ? payload.query : '',
         chip: '',
+        fav: false,
         filters: payload.filters && typeof payload.filters === 'object' ? Object.assign({}, payload.filters) : {},
         // The organisation, the period and the tree's category are the address's: the toolbar is a GET form.
         defaultsort: defaultsort,

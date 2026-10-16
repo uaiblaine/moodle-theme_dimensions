@@ -28,13 +28,15 @@ namespace theme_dimensions\local\category;
  * The organisation, the view and the filters a reader left each category's listing in.
  *
  * One user preference holds a JSON object keyed by category id, the least recently written entry
- * first. An entry has up to four keys, each optional: `s` the organisation (one of
+ * first. An entry has up to five keys, each optional: `s` the organisation (one of
  * {@see criteria::SORTS} but the empty one, which is stored as the grouped organisation it means),
- * `v` the view (cards or list), `t` the state chip ({@see classifier::filters()}) and `f` the custom
- * field filters (field id => option value, over the site's filter fields, {@see facets::fields()}).
- * The search term, the period and the tree's category are not remembered: the owner named the
- * organisation, the view and the filters (the custom fields and the state), and a period such as
- * "this week" is a different period the next time.
+ * `v` the view (cards or list), `t` the state chip ({@see classifier::filters()}), `fav` the
+ * favourites toggle (true, or absent for off) and `f` the custom field filters (field id => option
+ * value, over the site's filter fields, {@see facets::fields()}). The search term, the period and the
+ * tree's category are not remembered: the owner named the organisation, the view and the filters
+ * (the custom fields, the state and the favourites), and a period such as "this week" is a different
+ * period the next time. An entry written while the favourites were a value of the state chip
+ * (`t` = favourites) is read as the toggle with no state ({@see entry()}).
  *
  * Remembered PER CATEGORY is what answers the rule this listing kept from its first stage, that a
  * filter is stored nowhere because a filter carried into another category is how a person
@@ -79,6 +81,9 @@ final class remembered {
 
     /** @var string Key of an entry: the state chip. */
     public const KEY_STATE = 't';
+
+    /** @var string Key of an entry: the favourites toggle, stored as true and absent when off. */
+    public const KEY_FAVOURITES = 'fav';
 
     /** @var string Key of an entry: the custom field filters. */
     public const KEY_FIELDS = 'f';
@@ -125,7 +130,8 @@ final class remembered {
      * Each key of $changes replaces the entry's own and a null removes it; a key absent is kept as
      * it was. A value outside its vocabulary is refused and the entry keeps what it held for that
      * key (of a set of field filters, the valid ones are kept), and an entry left with nothing in it
-     * is removed. Nothing happens for a reader who remembers nothing, nor for the root.
+     * is removed. The favourites toggle is switched off with a null, as every key is forgotten: its
+     * one stored value is true. Nothing happens for a reader who remembers nothing, nor for the root.
      *
      * @param int $categoryid The category.
      * @param array $changes Any of the KEY_* keys: a value, or null to forget it.
@@ -138,7 +144,7 @@ final class remembered {
         $map = self::map();
         $entry = $map[$categoryid] ?? [];
         $options = self::field_options();
-        foreach ([self::KEY_SORT, self::KEY_VIEW, self::KEY_STATE, self::KEY_FIELDS] as $key) {
+        foreach ([self::KEY_SORT, self::KEY_VIEW, self::KEY_STATE, self::KEY_FAVOURITES, self::KEY_FIELDS] as $key) {
             if (!array_key_exists($key, $changes)) {
                 continue;
             }
@@ -148,7 +154,10 @@ final class remembered {
             }
             // A value outside its vocabulary is refused, and the entry keeps what it held.
             $valid = self::entry([$key => $changes[$key]], $options);
-            if ($valid !== null) {
+            /* Read by its own key: the older spelling of the favourites as a state validates to the
+               toggle's key and not to this one, so a write of it is refused like any value outside
+               the vocabulary. Only a stored entry is read in that spelling. */
+            if ($valid !== null && isset($valid[$key])) {
                 $entry[$key] = $valid[$key];
             }
         }
@@ -227,6 +236,12 @@ final class remembered {
         $state = $raw[self::KEY_STATE] ?? null;
         if (is_string($state) && in_array($state, classifier::filters(), true)) {
             $entry[self::KEY_STATE] = $state;
+        }
+        /* The toggle is a boolean and only its true is stored: a string, a number or a false is no
+           toggle at all. An entry from before the toggle held the favourites as its state chip, and is
+           read as the toggle with no state, which is what that page showed. */
+        if (($raw[self::KEY_FAVOURITES] ?? null) === true || $state === classifier::CHIP_FAVOURITES) {
+            $entry[self::KEY_FAVOURITES] = true;
         }
         $fields = [];
         foreach ((array) ($raw[self::KEY_FIELDS] ?? []) as $fieldid => $value) {

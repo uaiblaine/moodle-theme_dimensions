@@ -575,6 +575,7 @@ final class criteria_test extends \advanced_testcase {
             'q' => 'resgate',
             'cf_5' => '2',
             'chip' => classifier::STATE_ENROLLED,
+            'fav' => '1',
             'sort' => 'recent',
             'from' => '2026-09-01',
             'to' => '2026-09-30',
@@ -592,6 +593,7 @@ final class criteria_test extends \advanced_testcase {
             [$root->state, $root->fields, $root->sort, $root->datefrom, $root->dateto, $root->cat, $root->pagesize, $root->page],
             'And nothing else the address says.'
         );
+        $this->assertFalse($root->favourites, 'Not even the favourites.');
         $this->assertSame(['q' => 'resgate', 'open' => 9, 'psort' => 'name'], $root->query_params(), 'What its forms carry.');
         $this->assertFalse($root->anonymous);
         $this->assertTrue(criteria::root_from_request(true)->anonymous, 'The anonymous shell says so.');
@@ -605,5 +607,101 @@ final class criteria_test extends \advanced_testcase {
 
         $this->assertFalse((new criteria(7))->withposters, 'Off unless asked for, which is what the web service gets.');
         $this->assertSame([], (new criteria(7, ['withposters' => true]))->query_params(), 'It travels in no address.');
+    }
+
+    /**
+     * The favourites are one filter beside the state chip, and travel in every address that narrows.
+     *
+     * They combine with the chip, so a request holds both and counts two; the pager, the quick dates
+     * and a panel's call to action carry them as fav=1, and "clear filters", which keeps only the
+     * organisation and the panel, drops them. Off, they travel nowhere: that is the control.
+     */
+    public function test_the_favourites_are_a_filter_that_travels_beside_the_chip(): void {
+        $this->resetAfterTest();
+        $off = new criteria(7, ['state' => classifier::STATE_ENROLLED]);
+        $this->assertFalse($off->favourites);
+        $this->assertSame(1, $off->filter_count());
+        $this->assertArrayNotHasKey(criteria::PARAM_FAVOURITES, $off->query_params());
+        $this->assertArrayNotHasKey(criteria::PARAM_FAVOURITES, $off->narrowing_params());
+
+        $alone = new criteria(7, ['favourites' => true]);
+        $this->assertTrue($alone->has_filters(), 'The favourites alone narrow the listing.');
+        $this->assertSame(1, $alone->filter_count());
+
+        $both = new criteria(7, ['state' => classifier::STATE_ENROLLED, 'favourites' => true, 'sort' => criteria::SORT_NAME]);
+        $this->assertSame(classifier::STATE_ENROLLED, $both->state, 'They combine with the chip, never replace it.');
+        $this->assertSame(2, $both->filter_count(), 'Two filters on the badge.');
+        $this->assertSame(1, $both->query_params()[criteria::PARAM_FAVOURITES]);
+        $this->assertSame(classifier::STATE_ENROLLED, $both->query_params()[criteria::PARAM_STATE]);
+        $this->assertSame(1, $both->narrowing_params()[criteria::PARAM_FAVOURITES], 'A panel\'s call to action carries them.');
+        $this->assertSame([criteria::PARAM_SORT => criteria::SORT_NAME], $both->keep_params(), 'Clearing drops them.');
+        $this->assertSame('fav', criteria::PARAM_FAVOURITES);
+    }
+
+    /**
+     * An address asks for the favourites only for a real account, and an older favourites chip is read as them.
+     *
+     * Favourites are rows of the reader's own: the guest account, a visitor and the anonymous shell
+     * read the address as if it did not ask. An address written while the favourites were a value of
+     * the state chip - a bookmark, a shared link - opens on the favourites with no state chip. The
+     * real account reading fav=1 is the control for every refusal.
+     */
+    public function test_an_address_asks_for_the_favourites_only_for_a_real_account(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $_GET = ['fav' => '1'];
+        $this->assertTrue(criteria::from_request(7, [])->favourites, 'The control: a real account reads the toggle.');
+        $this->assertFalse(criteria::from_request(7, [], true)->favourites, 'Never on the anonymous shell.');
+
+        $_GET = ['chip' => classifier::CHIP_FAVOURITES];
+        $legacy = criteria::from_request(7, []);
+        $this->assertTrue($legacy->favourites, 'The older spelling is the toggle.');
+        $this->assertNull($legacy->state, 'With no state chip.');
+        $this->assertSame([criteria::PARAM_FAVOURITES => 1], $legacy->query_params(), 'And every address it mints says so anew.');
+
+        $_GET = ['chip' => classifier::STATE_OPEN];
+        $chip = criteria::from_request(7, []);
+        $this->assertSame(classifier::STATE_OPEN, $chip->state, 'Any other chip is a chip.');
+        $this->assertFalse($chip->favourites);
+
+        $_GET = ['fav' => '0'];
+        $this->assertFalse(criteria::from_request(7, [])->favourites, 'Off is off.');
+
+        $this->setGuestUser();
+        $_GET = ['fav' => '1'];
+        $this->assertFalse(criteria::from_request(7, [])->favourites, 'The guest account has no favourites.');
+        $_GET = ['chip' => classifier::CHIP_FAVOURITES];
+        $guest = criteria::from_request(7, []);
+        $this->assertFalse($guest->favourites, 'Nor in the older spelling.');
+        $this->assertNull($guest->state);
+
+        $this->setUser(null);
+        $_GET = ['fav' => '1'];
+        $this->assertFalse(criteria::from_request(7, [], true)->favourites, 'And a visitor has none.');
+        $this->assertFalse(criteria::from_request(7, [])->favourites, 'Whichever shell asks for nobody.');
+    }
+
+    /**
+     * The anonymous shell restores nothing a session left behind, favourites included.
+     *
+     * A real account that left a category on its favourites opens on them again (the control); the
+     * same session asking through the anonymous shell reads no entry at all, so neither the toggle
+     * nor any other remembered criterion comes back.
+     */
+    public function test_the_anonymous_shell_restores_no_remembered_favourites(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        remembered::record(7, [
+            remembered::KEY_FAVOURITES => true,
+            remembered::KEY_STATE => classifier::STATE_OPEN,
+        ]);
+        $_GET = [];
+        $control = criteria::from_request(7, []);
+        $this->assertTrue($control->favourites, 'The control: the page restores the favourites it left.');
+        $this->assertSame(classifier::STATE_OPEN, $control->state);
+
+        $shell = criteria::from_request(7, [], true);
+        $this->assertFalse($shell->favourites, 'The anonymous shell restores no favourites.');
+        $this->assertNull($shell->state, 'Nor anything else the session left.');
     }
 }

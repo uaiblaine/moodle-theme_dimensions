@@ -263,6 +263,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
                 'total' => $this->result->total,
                 'hasmore' => $this->result->hasmore,
                 'chip' => $this->criteria->state,
+                // The favourites toggle as the request holds it, a legacy chip already read as it.
+                'fav' => $this->criteria->favourites,
                 'query' => $this->criteria->search,
                 'filters' => (object) $this->criteria->fields,
                 /* The organisation an address naming none gets here: the client reads the

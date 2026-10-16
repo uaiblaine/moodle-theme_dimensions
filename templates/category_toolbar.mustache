@@ -19,9 +19,9 @@
 
     The toolbar of the category showcase: a real GET form that works with
     JavaScript off, in two rows and a count line. Row one narrows: the search
-    box and one disclosure holding every filter there is - the state group, one
-    group per allowlisted custom field, and the start-date range with its quick
-    options. Row two organises: the three sort chips as a radio group whose
+    box, the favourites toggle, and one disclosure holding every other filter
+    there is - the state group, one group per allowlisted custom field, and the
+    start-date range with its quick options. Row two organises: the three sort chips as a radio group whose
     legend reads inline before them, the card/list toggle (two submit buttons
     carrying the view parameter) and core's own action menu for the category's
     managers. The count line comes third: its number in bold, the sentence,
@@ -104,9 +104,21 @@
     order at every width. The stylesheet shows one copy per breakpoint and hides
     the other entirely, out of the tab order and the accessibility tree. The
     phone copy comes first in the document, so anything addressing the visible
-    toggle at a desktop width scopes to dim-view-row. The favourites option of
-    the state group wears the course card's star before its label, hidden from
-    assistive technology, since the label already names it.
+    toggle at a desktop width scopes to dim-view-row.
+
+    The favourites toggle (dim-line-star) sits on the search line right before
+    the filter disclosure, drawn only for a reader who has favourites. It
+    combines with the state rather than being one of its values, so it is a
+    submit button of its own: it posts fav with the value a press turns it to,
+    and aria-pressed says whether it is on. While it is on, a hidden field
+    (dim-fav-field) earlier in the form carries fav=1, so every other submission
+    keeps it; a press that turns it off posts both, and the button's value comes
+    last, which is the one the server reads. The client enables and disables
+    that field as it toggles the button (dim-fav). The glyph is the course card's
+    own star, solid when pressed; the word and the number of favourites are the
+    button's accessible name (dim-fav-count) and its tooltip names it. The form
+    carries dim-toolbar--hasstar while it is drawn, so the stylesheet can make
+    room for it on the line.
 
     The hidden list carries whatever identifies the category on the shell that
     is drawing, and may be empty: a GET submission replaces the action's query
@@ -140,12 +152,13 @@
             "legend": "Situação",
             "name": "chip",
             "options": [
-                {"id": "dim-chip-7-all", "value": "", "label": "Todos", "count": 14, "hascount": true, "checked": true, "isfavourites": false},
-                {"id": "dim-chip-7-enrolled", "value": "enrolled", "label": "Meus cursos", "count": 3, "hascount": true, "checked": false, "isfavourites": false},
-                {"id": "dim-chip-7-favourites", "value": "favourites", "label": "Favoritos", "count": 2, "hascount": true, "checked": false, "isfavourites": true}
+                {"id": "dim-chip-7-all", "value": "", "label": "Todos", "count": 14, "hascount": true, "checked": true},
+                {"id": "dim-chip-7-enrolled", "value": "enrolled", "label": "Meus cursos", "count": 3, "hascount": true, "checked": false}
             ]
         },
         "hasstatusgroup": true,
+        "favourites": {"name": "fav", "value": 1, "pressed": false, "count": 2, "label": "Favoritos"},
+        "hasfavourites": true,
         "facets": [
             {
                 "legend": "Modalidade",
@@ -203,7 +216,7 @@
         "hasmanageactions": true
     }
 }}
-<form class="dim-toolbar" id="{{formid}}" method="get" action="{{action}}" data-region="dim-vitrine-toolbar">
+<form class="dim-toolbar{{#hasfavourites}} dim-toolbar--hasstar{{/hasfavourites}}" id="{{formid}}" method="get" action="{{action}}" data-region="dim-vitrine-toolbar">
     {{#hidden}}<input type="hidden" name="{{name}}" value="{{value}}">{{/hidden}}
     {{#haspagesize}}
     <input type="hidden" name="{{pagesizename}}" value="{{pagesize}}">
@@ -211,6 +224,9 @@
     {{#openfields}}
     <input type="hidden" name="{{name}}" value="{{value}}" data-region="{{region}}">
     {{/openfields}}
+    {{#favourites}}
+    <input type="hidden" name="{{name}}" value="1" data-region="dim-fav-field"{{^pressed}} disabled{{/pressed}}>
+    {{/favourites}}
     <button type="submit" class="visually-hidden dim-toolbar__defaultsubmit" tabindex="-1">{{submitlabel}}</button>
     <div class="dim-toolbar__row dim-toolbar__row--narrow">
         <div class="dim-toolbar__search">
@@ -218,6 +234,9 @@
             <i class="fa fa-magnifying-glass dim-toolbar__searchicon" aria-hidden="true"></i>
             <input class="form-control dim-toolbar__input" type="search" id="{{searchid}}" name="{{searchname}}" value="{{query}}" placeholder="{{searchplaceholder}}" autocomplete="off">
         </div>
+        {{#favourites}}
+        <button type="submit" class="dim-toolbar__star" name="{{name}}" value="{{value}}" aria-pressed="{{#pressed}}true{{/pressed}}{{^pressed}}false{{/pressed}}" title="{{label}}" data-action="dim-fav" data-region="dim-line-star"><i class="{{#pressed}}fa-solid{{/pressed}}{{^pressed}}fa-regular{{/pressed}} fa-star" aria-hidden="true"></i><span class="visually-hidden">{{label}} <span data-region="dim-fav-count">{{count}}</span></span></button>
+        {{/favourites}}
         <details class="dim-toolbar__filters" data-region="dim-filters"{{#filtersopen}} open{{/filtersopen}}>
             <summary class="dim-toolbar__filterstoggle"><i class="fa fa-filter" aria-hidden="true"></i> <span class="dim-toolbar__filterslabel">{{submitlabel}}</span> <span class="dim-toolbar__filtercount" data-region="dim-filtercount"{{^hasfiltercount}} hidden{{/hasfiltercount}}><span aria-hidden="true" data-region="dim-filtercount-number">{{filtercount}}</span><span class="visually-hidden" data-region="dim-filtercount-label">{{filtercountlabel}}</span></span></summary>
             <div class="dim-toolbar__panel">
@@ -227,7 +246,7 @@
                     <div class="dim-toolbar__pills" data-region="dim-pill-track">
                         {{#options}}
                         <input class="dim-pill__input visually-hidden" type="radio" name="{{name}}" id="{{id}}" value="{{value}}"{{#checked}} checked{{/checked}}>
-                        <label class="dim-pill" for="{{id}}">{{#isfavourites}}<i class="fa-solid fa-star dim-pill__star" aria-hidden="true"></i>{{/isfavourites}}{{label}} <span class="dim-pill__count" data-region="dim-pill-count"{{^hascount}} hidden{{/hascount}}>{{count}}</span></label>
+                        <label class="dim-pill" for="{{id}}">{{label}} <span class="dim-pill__count" data-region="dim-pill-count"{{^hascount}} hidden{{/hascount}}>{{count}}</span></label>
                         {{/options}}
                     </div>
                 </fieldset>

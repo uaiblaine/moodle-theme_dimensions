@@ -836,9 +836,9 @@ final class population_test extends \advanced_testcase {
     }
 
     /**
-     * The state chip and the favourites chip filter the whole population before the page is cut.
+     * The state chip and the favourites filter the whole population before the page is cut.
      */
-    public function test_state_chip_and_favourites_chip_filter_before_paging(): void {
+    public function test_state_chip_and_favourites_filter_before_paging(): void {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
         $root = $generator->create_category();
@@ -857,17 +857,119 @@ final class population_test extends \advanced_testcase {
         );
 
         $this->become($viewer);
-        $favourites = population::resolve(new criteria($root->id, ['pagesize' => 2, 'state' => classifier::CHIP_FAVOURITES]));
+        $favourites = population::resolve(new criteria($root->id, ['pagesize' => 2, 'favourites' => true]));
         $this->assertSame([(int) $courses[4]->id], $favourites->ids(), 'The favourite past the first page is on page one.');
         $this->assertSame(1, $favourites->total);
         $this->assertTrue($favourites->rows[(int) $courses[4]->id]->favourite);
-        $this->assertSame(5, $favourites->counts['total'], 'The histogram is taken before the chip.');
+        $this->assertSame(1, $favourites->counts['total'], 'The "all" chip counts what it would leave under the favourites.');
         $this->assertSame(1, $favourites->counts[classifier::CHIP_FAVOURITES]);
 
         $enrolled = population::resolve(new criteria($root->id, ['pagesize' => 2, 'state' => classifier::STATE_ENROLLED]));
         $this->assertSame([(int) $courses[3]->id], $enrolled->ids());
         $this->assertSame(1, $enrolled->counts[classifier::STATE_ENROLLED]);
         $this->assertSame(4, $enrolled->counts[classifier::STATE_NONE]);
+        $this->assertSame(5, $enrolled->counts['total'], 'The histogram is taken before the chip.');
+    }
+
+    /**
+     * The favourites and a state chip combine, and each is counted with the other applied.
+     *
+     * Two enrolled courses, three favourites, one course both: the favourites keep three, the chip
+     * keeps two, both keep the one. Every chip's number is what pressing it would leave under the
+     * favourites in force, and the favourites' number what pressing the toggle would leave under the
+     * chip in force - so the numbers never promise a course the press then hides. The request with
+     * neither is the control: every number is the population's own.
+     */
+    public function test_the_favourites_and_a_state_chip_combine_and_count_with_each_other_applied(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $root = $generator->create_category();
+        $courses = [];
+        for ($i = 0; $i < 5; $i++) {
+            $courses[] = $generator->create_course(['category' => $root->id]);
+        }
+        $viewer = $generator->create_user();
+        $generator->enrol_user($viewer->id, $courses[0]->id);
+        $generator->enrol_user($viewer->id, $courses[1]->id);
+        $service = \core_favourites\service_factory::get_service_for_user_context(\core\context\user::instance($viewer->id));
+        foreach ([1, 2, 4] as $index) {
+            $service->create_favourite(
+                'core_course',
+                'courses',
+                $courses[$index]->id,
+                \core\context\course::instance($courses[$index]->id)
+            );
+        }
+        $ids = static fn(array $indexes): array => array_map(static fn(int $index): int => (int) $courses[$index]->id, $indexes);
+        $this->become($viewer);
+
+        $plain = population::resolve(new criteria($root->id, ['sort' => criteria::SORT_NAME]));
+        $this->assertSame(5, $plain->total, 'The control: nothing narrows.');
+        $this->assertSame(5, $plain->counts['total']);
+        $this->assertSame(2, $plain->counts[classifier::STATE_ENROLLED]);
+        $this->assertSame(3, $plain->counts[classifier::CHIP_FAVOURITES]);
+
+        $favourites = population::resolve(new criteria($root->id, ['sort' => criteria::SORT_NAME, 'favourites' => true]));
+        $this->assertEqualsCanonicalizing($ids([1, 2, 4]), $favourites->ids());
+        $this->assertSame(3, $favourites->counts['total'], 'All of them, under the favourites.');
+        $this->assertSame(1, $favourites->counts[classifier::STATE_ENROLLED], 'The enrolled favourite.');
+        $this->assertSame(2, $favourites->counts[classifier::STATE_NONE], 'The others.');
+        $this->assertSame(3, $favourites->counts[classifier::CHIP_FAVOURITES], 'No chip in force: every favourite.');
+
+        $enrolled = population::resolve(
+            new criteria($root->id, ['sort' => criteria::SORT_NAME, 'state' => classifier::STATE_ENROLLED])
+        );
+        $this->assertEqualsCanonicalizing($ids([0, 1]), $enrolled->ids());
+        $this->assertSame(2, $enrolled->counts[classifier::STATE_ENROLLED], 'No favourites in force: every enrolment.');
+        $this->assertSame(1, $enrolled->counts[classifier::CHIP_FAVOURITES], 'The favourites among the enrolled.');
+
+        $criteria = new criteria($root->id, [
+            'sort' => criteria::SORT_NAME,
+            'state' => classifier::STATE_ENROLLED,
+            'favourites' => true,
+        ]);
+        $both = population::resolve($criteria);
+        $this->assertSame($ids([1]), $both->ids(), 'Both criteria at once: the one course that is both.');
+        $this->assertSame(1, $both->total);
+        $this->assertSame(1, $both->counts[classifier::STATE_ENROLLED]);
+        $this->assertSame(2, $both->counts[classifier::STATE_NONE]);
+        $this->assertSame(1, $both->counts[classifier::CHIP_FAVOURITES]);
+        $this->assertTrue($criteria->has_filters());
+        $this->assertSame(2, $criteria->filter_count(), 'Two filters on the badge.');
+    }
+
+    /**
+     * The favourites are dropped from the request wherever nothing honours them: a visitor's page and the SQL cut.
+     *
+     * Only a logged-in page cut in PHP classifies its courses. Kept on the request elsewhere, the
+     * toggle would put the page in result mode over a listing it did not narrow, with no control on
+     * the page to show or clear it. The PHP cut is the control: the same request keeps them.
+     */
+    public function test_the_favourites_are_dropped_where_nothing_honours_them(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $root = $generator->create_category();
+        $course = $generator->create_course(['category' => $root->id]);
+        $generator->create_course(['category' => $root->id]);
+        $viewer = $generator->create_user();
+        \core_favourites\service_factory::get_service_for_user_context(\core\context\user::instance($viewer->id))->create_favourite(
+            'core_course',
+            'courses',
+            $course->id,
+            \core\context\course::instance($course->id)
+        );
+        $this->become($viewer);
+
+        $kept = new criteria($root->id, ['favourites' => true]);
+        $this->assertSame(1, population::resolve($kept)->counts['total']);
+        $this->assertTrue($kept->favourites, 'The control: the PHP cut honours them.');
+
+        $this->mode(false);
+        $dropped = new criteria($root->id, ['favourites' => true]);
+        $result = population::resolve($dropped);
+        $this->assertSame(2, $result->total, 'The SQL cut narrows nothing by them.');
+        $this->assertFalse($dropped->favourites, 'And drops them on the request.');
+        $this->assertFalse($dropped->has_filters(), 'So nothing downstream counts a filter.');
     }
 
     /**
@@ -1738,7 +1840,10 @@ final class population_test extends \advanced_testcase {
 
         // A chip value comes from the query string: an unknown one is no chip, never a developer error.
         $this->assertNull((new criteria(3, ['state' => 'bogus']))->state);
-        $this->assertSame(classifier::CHIP_FAVOURITES, (new criteria(3, ['state' => 'favourites']))->state);
+        // The favourites are a criterion of their own, never a value of the chip.
+        $this->assertNull((new criteria(3, ['state' => classifier::CHIP_FAVOURITES]))->state);
+        $this->assertFalse((new criteria(3, ['state' => classifier::CHIP_FAVOURITES]))->favourites);
+        $this->assertTrue((new criteria(3, ['favourites' => true]))->favourites);
         // The sort and the two date bounds are known keys, and an unknown sort value is dropped.
         $carried = new criteria(3, ['sort' => 'name', 'datefrom' => '2026-09-17', 'dateto' => '2026-09-18']);
         $this->assertSame('name', $carried->sort);
@@ -2143,7 +2248,8 @@ final class population_test extends \advanced_testcase {
         // A field filter, a chip and a page that would narrow a category page leave the directory alone.
         $filtered = population::resolve(new criteria(0, [
             'fields' => [$fieldid => landingfields::MODEL_COURSE],
-            'state' => classifier::CHIP_FAVOURITES,
+            'state' => classifier::STATE_ENROLLED,
+            'favourites' => true,
             'page' => 7,
         ]));
         $this->assertSame($plain->total, $filtered->total, 'The root ignores a filter it offers no control for.');

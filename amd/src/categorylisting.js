@@ -26,7 +26,8 @@
  * (categorypublic_source_test walks the import graph).
  *
  * The state every function is handed is the calling module's own object: categoryid, page, total,
- * hasmore, query, chip, filters, sort (the organisation in force), defaultsort (the one an address
+ * hasmore, query, chip, fav (the favourites toggle, which combines with the chip), filters, sort
+ * (the organisation in force), defaultsort (the one an address
  * naming none gets on this category, from the server's payload), remembered (whether the reader left a
  * state on this category, so that every address names its organisation), datefrom, dateto, cat, view,
  * viewchosen (whether the view in the address was chosen) and pagesize. Two counters belong to the document rather than to a
@@ -77,12 +78,16 @@ const SELECTORS = {
     direct: '[data-region="dim-direct"]',
     directskip: '[data-region="dim-direct-skip"]',
     fold: '[data-region="dim-hero-fold"]',
+    star: '[data-region="dim-line-star"]',
+    favfield: '[data-region="dim-fav-field"]',
+    favcount: '[data-region="dim-fav-count"]',
 };
 
 /** @type {Object} The request parameter names, the same ones the form and the server use. */
 export const PARAM = {
     query: 'q',
     chip: 'chip',
+    fav: 'fav',
     page: 'page',
     perpage: 'perpage',
     view: 'view',
@@ -100,8 +105,14 @@ export const PARAM = {
  * server's criteria::query_params(), which never holds the page or the view. The custom-field
  * filters are matched by their prefix.
  */
-const FOLD_PARAMS = [PARAM.query, PARAM.chip, PARAM.from, PARAM.to, PARAM.cat, PARAM.sort, PARAM.perpage,
+const FOLD_PARAMS = [PARAM.query, PARAM.chip, PARAM.fav, PARAM.from, PARAM.to, PARAM.cat, PARAM.sort, PARAM.perpage,
     PARAM.open, PARAM.psort];
+
+/**
+ * @type {String} The value the state chip carried for the favourites before they were a toggle: an
+ * address that still says so is read as the toggle with no state, as the server's criteria reads it.
+ */
+const LEGACY_FAVOURITES = 'favourites';
 
 /** @type {Object} The one event this module sends: the view changed, which moves the panel's row. */
 const EVENTS = {
@@ -182,6 +193,7 @@ export const rootOnly = (state) => {
         return;
     }
     state.chip = '';
+    state.fav = false;
     state.filters = {};
     state.sort = '';
     state.datefrom = '';
@@ -265,6 +277,28 @@ export const catOf = (params, sort) => {
 export const periodOf = (params) => DateRange.period(params.get(PARAM.from), params.get(PARAM.to));
 
 /**
+ * The state chip as the address states it, the older spelling of the favourites left out.
+ *
+ * @param {URLSearchParams} params The query string to read.
+ * @return {String} The chip, or the empty string.
+ */
+export const chipOf = (params) => {
+    const chip = params.get(PARAM.chip) || '';
+    return chip === LEGACY_FAVOURITES ? '' : chip;
+};
+
+/**
+ * Whether the address asks for the favourites: the toggle, or the chip that spelled them before it.
+ *
+ * Whether the reader has favourites at all is the server's question; the toggle is drawn only for one
+ * who has, and an answer that does not honour it says so (paintFavourites()).
+ *
+ * @param {URLSearchParams} params The query string to read.
+ * @return {Boolean}
+ */
+export const favOf = (params) => params.get(PARAM.fav) === '1' || params.get(PARAM.chip) === LEGACY_FAVOURITES;
+
+/**
  * The address a state is at: the same parameter names the form posts.
  *
  * Everything else in the query string is left alone - the page size above all, which the server
@@ -283,13 +317,16 @@ export const buildUrl = (state) => {
     Array.from(params.keys())
         .filter((key) => key.startsWith(PARAM.fieldprefix))
         .forEach((key) => params.delete(key));
-    [PARAM.query, PARAM.chip, PARAM.page, PARAM.view, PARAM.sort, PARAM.from, PARAM.to, PARAM.cat]
+    [PARAM.query, PARAM.chip, PARAM.fav, PARAM.page, PARAM.view, PARAM.sort, PARAM.from, PARAM.to, PARAM.cat]
         .forEach((key) => params.delete(key));
     if (state.query !== '') {
         params.set(PARAM.query, state.query);
     }
     if (state.chip !== '') {
         params.set(PARAM.chip, state.chip);
+    }
+    if (state.fav) {
+        params.set(PARAM.fav, '1');
     }
     /* For a reader who left a state on this category the organisation is ALWAYS written, the
        default too and the theme's own as category, exactly as the server's sort_params() does
@@ -431,7 +468,8 @@ export const writeUrl = (state, push) => {
 export const readUrl = (state) => {
     const params = new URL(window.location.href).searchParams;
     state.query = params.get(PARAM.query) || '';
-    state.chip = params.get(PARAM.chip) || '';
+    state.chip = chipOf(params);
+    state.fav = favOf(params);
     state.sort = sortOf(params, state.defaultsort);
     const period = periodOf(params);
     state.datefrom = period.from;
@@ -456,7 +494,7 @@ export const readUrl = (state) => {
 /**
  * Whether a state narrows the page: the server's has_filters().
  *
- * A term, a state, a custom field or a period, which narrows with either of its bounds; the tree's
+ * A term, a state, the favourites, a custom field or a period, which narrows with either of its bounds; the tree's
  * category never counts here, because the one organisation that has areas draws no tree.
  *
  * @param {Object} state The calling module's state.
@@ -464,6 +502,7 @@ export const readUrl = (state) => {
  */
 export const narrows = (state) => state.query !== ''
     || state.chip !== ''
+    || Boolean(state.fav)
     || Object.keys(state.filters).length > 0
     || state.datefrom !== ''
     || state.dateto !== '';
@@ -555,6 +594,35 @@ export const paintDates = (root, state) => {
 };
 
 /**
+ * Put the favourites toggle in a pressed or released state: its attribute, its glyph and its field.
+ *
+ * The glyph is the course card's own star, solid when pressed, as the template draws it. The hidden
+ * field is what carries the toggle through a submission of the form by any other control, so it is
+ * kept in step for the moment the module is gone; and the button posts what a press would turn it to.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {Boolean} on Whether the toggle is on.
+ * @return {void}
+ */
+export const paintFavToggle = (root, on) => {
+    const star = root.querySelector(SELECTORS.star);
+    if (!star) {
+        return;
+    }
+    star.setAttribute('aria-pressed', on ? 'true' : 'false');
+    star.value = on ? '0' : '1';
+    const glyph = star.querySelector('.fa-star');
+    if (glyph) {
+        glyph.classList.toggle('fa-solid', on);
+        glyph.classList.toggle('fa-regular', !on);
+    }
+    const field = root.querySelector(SELECTORS.favfield);
+    if (field) {
+        field.disabled = !on;
+    }
+};
+
+/**
  * Put a state back onto the controls, after the reader moved through their history.
  *
  * @param {HTMLElement} root The listing section.
@@ -585,9 +653,33 @@ export const paintControls = (root, state) => {
                 : input.value === state.sort;
         });
     }
+    paintFavToggle(root, state.fav);
     paintDates(root, state);
     markTree(root, state);
     paintView(root, state.view);
+};
+
+/**
+ * Bring the favourites toggle in line with an answer: whether it is pressed, and the number in its name.
+ *
+ * Both come from the server, which honours the toggle only for a reader who has favourites on a page
+ * that classifies its courses; a toggle the answer says is not available is left as it is, because a
+ * page drawn without one has nothing to repaint.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {Object} response The rows response.
+ * @return {void}
+ */
+export const paintFavourites = (root, response) => {
+    const toggle = response.favourites;
+    if (!toggle || !toggle.available) {
+        return;
+    }
+    paintFavToggle(root, Boolean(toggle.pressed));
+    const count = root.querySelector(SELECTORS.favcount);
+    if (count) {
+        count.textContent = String(Number(toggle.count) || 0);
+    }
 };
 
 /**
@@ -688,13 +780,6 @@ const createPill = (track, name, option) => {
     const label = document.createElement('label');
     label.className = 'dim-pill';
     label.htmlFor = option.id;
-    // The favourites pill wears the card star's glyph, as the toolbar template draws it.
-    if (option.isfavourites) {
-        const star = document.createElement('i');
-        star.className = 'fa-solid fa-star dim-pill__star';
-        star.setAttribute('aria-hidden', 'true');
-        label.append(star);
-    }
     label.append(document.createTextNode(option.label + ' '));
     const count = document.createElement('span');
     count.className = 'dim-pill__count';

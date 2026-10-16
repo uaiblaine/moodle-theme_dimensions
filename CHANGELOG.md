@@ -5,6 +5,25 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Favourites are a toggle of their own, combined with the state** (`2026100508`): the filter-line redesign's stage T1.
+  - The favourites stop being a value of the state chip and become a boolean criterion, `fav=1`, ANDed with the state:
+    "my favourites among the courses I am enrolled in" is one request now. It is read only for a real account (never a
+    visitor nor the guest), honoured where the state chip is (a logged-in page cut in PHP) and dropped on the request
+    elsewhere, counted as one filter on the badge, carried by the pager, the quick dates and a panel's call to action, and
+    dropped by "Clear filters".
+  - Each criterion is counted with the other applied: every state pill under the favourites in force, the favourites
+    under the state chip in force.
+  - The toolbar draws a star toggle on the search line, right before the Filter control (`data-region="dim-line-star"`,
+    `aria-pressed`, the course card's own star, its accessible name "Favourites" with the number), only for a real
+    account where the state group is offered. Without JavaScript it is a submit button posting `fav` with the value a
+    press turns it to, and a hidden field carries `fav=1` through every other submission while it is on. The
+    favourites pill of the state group, its star and the web service's `isfavourites` key are gone.
+  - `get_category_rows` and `remember_category_state` take `fav` (a boolean); `chip` no longer accepts `favourites`.
+    The rows answer carries the toggle (`favourites`: `available`, `pressed`, `count`); the visitor's service declares
+    no `fav`. The remembered state stores the toggle under its own key (`fav`, true or absent).
+  - Older addresses and remembered states keep working: `chip=favourites` on an address, and a remembered entry holding
+    the favourites as its state, are read as the toggle with no state.
+
 - **Default category hero colour `#0a4a85`** (`2026100507`) (9.01:1 opaque; 5.08:1 over a white photograph at the default 78% overlay).
   - Replaces `#0f6cbf` (5.36:1 opaque, 3.57:1 over white at 78%): `branding::DEFAULT_BG`, the `bgcolour` column default,
     the templates' examples and the tests' numbers. The folder watermark on the default band is .20 again (was .09). A 60%

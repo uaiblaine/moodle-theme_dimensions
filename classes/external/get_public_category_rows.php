@@ -99,7 +99,8 @@ class get_public_category_rows extends external_api {
     /**
      * The parameters of the function.
      *
-     * The logged-in function's, less the state chip, which a visitor's listing never draws, plus
+     * The logged-in function's, less the state chip and the favourites toggle, which a visitor's
+     * listing never draws (a visitor has no favourites), plus
      * the slice of a merely listed child and the language of the page that asks.
      *
      * @return external_function_parameters

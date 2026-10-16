@@ -66,8 +66,10 @@ final class page_result {
     public bool $hasmore = false;
 
     /**
-     * @var array Histogram of the population before the state chip is applied: 'total' and, for a
-     *   logged-in viewer with the state sort on, one entry per classifier state plus 'favourites'.
+     * @var array Histogram of the population before the state chip and the favourites are applied:
+     *   'total' and, for a logged-in viewer with the state sort on, one entry per state chip plus
+     *   'favourites'. Each criterion is counted with the other applied: 'total' and every chip under
+     *   the favourites in force, 'favourites' under the chip in force.
      *   Always the whole subtree, grouped or not: the hero's total and the status pills must not
      *   move when the reader changes how the page is organised, which is why they are counted
      *   here and never taken from $total.

@@ -79,8 +79,8 @@ final class rows {
      * @param \core_course_category $category The category the guard already admitted and resolved:
      *   this method does not look it up again, so no MUST_EXIST lookup below the guard can raise
      *   dml_missing_record_exception in place of the guard's refusal.
-     * @param array $args Any of page (int), query (string), chip (string, '' for none),
-     *   pagesize (int|null, the address's own perpage), filters (array fieldid => option value),
+     * @param array $args Any of page (int), query (string), chip (string, '' for none), fav (bool, the
+     *   favourites toggle), pagesize (int|null, the address's own perpage), filters (array fieldid => option value),
      *   sort (string), datefrom (string, YYYY-MM-DD), dateto (string, YYYY-MM-DD), cat (int, the
      *   category of the navigation tree the listing is narrowed to), withcategories (bool, a panel's
      *   request: the panel's own context and the strip of the category's admitted direct
@@ -115,6 +115,8 @@ final class rows {
             'pagesize' => $pagesize === null ? null : (int) $pagesize,
             'search' => (string) ($args['query'] ?? ''),
             'state' => $chip === '' ? null : $chip,
+            // Never a visitor's: the visitor's service declares no such parameter, and the population drops it anyway.
+            'favourites' => !$anonymous && !empty($args['fav']),
             'fields' => (array) ($args['filters'] ?? []),
             'sort' => (string) ($args['sort'] ?? ''),
             /* The page's own fallback when the request names no organisation, exactly as the
@@ -231,6 +233,10 @@ final class rows {
             'cards' => array_map(static fn(\stdClass $card): array => (array) $card, $context->cards),
             // Always a group, even where the toolbar offers none, so the client has one shape to paint.
             'statusgroup' => ['options' => $toolbar->statusgroup['options'] ?? []],
+            /* The favourites toggle as the toolbar would draw it for this request, so the client
+               repaints its pressed state and the number in its name; never drawn where it is not
+               available, and then neither pressed nor counted. */
+            'favourites' => self::favourites($toolbar->favourites),
             'facets' => $toolbar->facets,
             /* The accordion's entries, so a client that has just narrowed the page can repaint
                what each poster knows before its panel is opened - its number, its pill, whether
@@ -344,10 +350,24 @@ final class rows {
             'searchtooshort' => $criteria->rawsearch !== '' && $criteria->search === '',
             'cards' => [],
             'statusgroup' => ['options' => []],
+            'favourites' => self::favourites(null),
             'facets' => [],
             'accordion' => self::accordion($criteria, $result, true),
             'areas' => category_listing::results($result, $criteria, 0),
         ];
+    }
+
+    /**
+     * The favourites toggle of an answer, in the one shape the client paints.
+     *
+     * @param array|null $toggle The toolbar's toggle ({@see category_toolbar}), null where none is drawn.
+     * @return array ['available' => bool, 'pressed' => bool, 'count' => int].
+     */
+    private static function favourites(?array $toggle): array {
+        if ($toggle === null) {
+            return ['available' => false, 'pressed' => false, 'count' => 0];
+        }
+        return ['available' => true, 'pressed' => (bool) $toggle['pressed'], 'count' => (int) $toggle['count']];
     }
 
     /**

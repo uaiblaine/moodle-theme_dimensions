@@ -51,7 +51,7 @@ final class remembered_test extends \advanced_testcase {
      * @return void
      */
     protected function tearDown(): void {
-        foreach (['sort', 'chip', 'q', 'open', 'from', 'to', 'cat', 'view'] as $name) {
+        foreach (['sort', 'chip', 'fav', 'q', 'open', 'from', 'to', 'cat', 'view'] as $name) {
             unset($_GET[$name]);
         }
         foreach (array_keys($_GET) as $name) {
@@ -221,7 +221,8 @@ final class remembered_test extends \advanced_testcase {
             $map[900000 + $i] = [
                 remembered::KEY_SORT => criteria::SORT_RECENT,
                 remembered::KEY_VIEW => category_toolbar::VIEW_CARDS,
-                remembered::KEY_STATE => classifier::CHIP_FAVOURITES,
+                remembered::KEY_STATE => classifier::STATE_ENROLLED,
+                remembered::KEY_FAVOURITES => true,
                 remembered::KEY_FIELDS => [100001 => 1, 100002 => 2, 100003 => 3, 100004 => 4],
             ];
         }
@@ -232,7 +233,7 @@ final class remembered_test extends \advanced_testcase {
         $kept = array_map('intval', array_keys(json_decode($json, true)));
         $this->assertNotEmpty($kept);
         $this->assertSame(array_slice(array_keys($map), -count($kept)), $kept, 'The newest are the ones kept.');
-        $this->assertSame(['s', 'v', 't', 'f'], array_keys(json_decode($json, true)[(string) end($kept)]), 'Kept whole.');
+        $this->assertSame(['s', 'v', 't', 'fav', 'f'], array_keys(json_decode($json, true)[(string) end($kept)]), 'Kept whole.');
     }
 
     /**
@@ -284,15 +285,17 @@ final class remembered_test extends \advanced_testcase {
         remembered::record($categoryid, [
             remembered::KEY_SORT => criteria::SORT_NAME,
             remembered::KEY_STATE => 'open',
+            remembered::KEY_FAVOURITES => true,
             remembered::KEY_FIELDS => [$fieldid => 2],
         ]);
         $criteria = self::request($categoryid, [], [$fieldid]);
         $this->assertTrue($criteria->remembered);
         $this->assertSame(criteria::SORT_NAME, $criteria->sort);
         $this->assertSame('open', $criteria->state);
+        $this->assertTrue($criteria->favourites);
         $this->assertSame([$fieldid => 2], $criteria->fields);
         $this->assertSame(
-            ['chip' => 'open', 'cf_' . $fieldid => 2, 'sort' => criteria::SORT_NAME],
+            ['chip' => 'open', 'fav' => 1, 'cf_' . $fieldid => 2, 'sort' => criteria::SORT_NAME],
             $criteria->query_params(),
             'Every address minted from it names the whole state.'
         );
@@ -306,6 +309,7 @@ final class remembered_test extends \advanced_testcase {
         $elsewhere = self::request($other, [], [$fieldid]);
         $this->assertFalse($elsewhere->remembered);
         $this->assertNull($elsewhere->state);
+        $this->assertFalse($elsewhere->favourites);
         $this->assertSame([], $elsewhere->fields);
 
         // And the anonymous shell never reads it, even in a session that has it.
@@ -342,7 +346,7 @@ final class remembered_test extends \advanced_testcase {
         $this->assertNull($filtered->state);
 
         // A term, a period, a panel: each makes the address one to read as written.
-        foreach ([['q' => 'resgate'], ['from' => '2026-01-01'], ['open' => '12'], ['chip' => 'free']] as $get) {
+        foreach ([['q' => 'resgate'], ['from' => '2026-01-01'], ['open' => '12'], ['chip' => 'free'], ['fav' => '1']] as $get) {
             $request = self::request($categoryid, $get, [$fieldid]);
             $this->assertSame([], $request->fields, 'Named ' . key($get) . ': no remembered field.');
             $this->assertNotSame(criteria::SORT_NAME, $request->sort, 'Named ' . key($get) . ': no remembered organisation.');
@@ -352,6 +356,66 @@ final class remembered_test extends \advanced_testcase {
         $grouped = self::request($categoryid, ['sort' => criteria::SORT_CATEGORY], [$fieldid]);
         $this->assertSame(['sort' => criteria::SORT_CATEGORY], $grouped->sort_params());
         $this->assertSame(['sort' => criteria::SORT_CATEGORY], (new criteria($categoryid, ['remembered' => true]))->sort_params());
+    }
+
+    /**
+     * The favourites toggle is remembered as a boolean, and an entry holding the older favourites chip reads as it.
+     *
+     * The toggle's one stored value is true, and anything else - a string, a number, a false - is no
+     * toggle: refused on the way in, with the entry keeping what it held, and dropped on the way out.
+     * An entry written while the favourites were a value of the state chip is read as the toggle with
+     * no state, which is what that page showed. A real true stored by hand is the control.
+     */
+    public function test_the_favourites_are_remembered_as_a_boolean_and_an_older_chip_as_them(): void {
+        $this->resetAfterTest();
+        $categoryid = (int) self::getDataGenerator()->create_category()->id;
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        remembered::record($categoryid, [remembered::KEY_STATE => 'open', remembered::KEY_FAVOURITES => true]);
+        $this->assertSame(
+            [remembered::KEY_STATE => 'open', remembered::KEY_FAVOURITES => true],
+            remembered::for_category($categoryid),
+            'Control: the toggle is stored beside the chip.'
+        );
+        foreach (['yes', 1, '1', false, []] as $invalid) {
+            remembered::record($categoryid, [remembered::KEY_FAVOURITES => $invalid]);
+            $this->assertTrue(
+                remembered::for_category($categoryid)[remembered::KEY_FAVOURITES],
+                'Refused, the entry keeps what it held: ' . var_export($invalid, true)
+            );
+        }
+        // The older spelling is never written: it is a chip outside the vocabulary.
+        remembered::record($categoryid, [remembered::KEY_STATE => classifier::CHIP_FAVOURITES]);
+        $this->assertSame('open', remembered::for_category($categoryid)[remembered::KEY_STATE]);
+        remembered::record($categoryid, [remembered::KEY_FAVOURITES => null]);
+        $this->assertSame([remembered::KEY_STATE => 'open'], remembered::for_category($categoryid), 'A null switches it off.');
+
+        set_user_preference(remembered::PREFERENCE, json_encode([
+            (string) $categoryid => ['t' => 'favourites', 's' => 'name'],
+            '901' => ['fav' => 1, 's' => 'name'],
+            '902' => ['fav' => 'true', 's' => 'name'],
+            '903' => ['fav' => true],
+        ]));
+        $this->assertSame([
+            $categoryid => ['s' => 'name', 'fav' => true],
+            901 => ['s' => 'name'],
+            902 => ['s' => 'name'],
+            903 => ['fav' => true],
+        ], remembered::map(), 'The older chip read as the toggle; anything but a true dropped; a true kept.');
+
+        // The bare address opens on the favourites the older entry stood for.
+        $criteria = self::request($categoryid);
+        $this->assertTrue($criteria->favourites);
+        $this->assertNull($criteria->state);
+        $this->assertSame(
+            [criteria::PARAM_FAVOURITES => 1, criteria::PARAM_SORT => criteria::SORT_NAME],
+            $criteria->query_params()
+        );
+
+        // An address naming the older chip names a criterion, so the remembered organisation stays out.
+        $named = self::request($categoryid, ['chip' => classifier::CHIP_FAVOURITES]);
+        $this->assertTrue($named->favourites);
+        $this->assertNotSame(criteria::SORT_NAME, $named->sort, 'Read as written.');
     }
 
     /**

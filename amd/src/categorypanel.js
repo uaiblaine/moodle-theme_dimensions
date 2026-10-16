@@ -53,10 +53,17 @@ const PANEL_SIZE = 8;
 const PARAM = {
     query: 'q',
     chip: 'chip',
+    fav: 'fav',
     from: 'from',
     to: 'to',
     fieldprefix: 'cf_',
 };
+
+/**
+ * @type {String} The value the state chip carried for the favourites before they were a toggle: an
+ * address that still says so asks for the toggle and no chip, as the server's criteria reads it.
+ */
+const LEGACY_FAVOURITES = 'favourites';
 
 /** @type {String} The one order a panel can be asked for besides its default. */
 const PSORT_NAME = 'name';
@@ -117,13 +124,15 @@ const panelArgs = (id, psort) => {
         }
     });
     const period = DateRange.period(params.get(PARAM.from), params.get(PARAM.to));
+    const chip = params.get(PARAM.chip) || '';
     return {
         categoryid: id,
         page: 0,
         perpage: PANEL_SIZE,
         sort: psort === PSORT_NAME ? SORT.name : SORT.recent,
         query: params.get(PARAM.query) || '',
-        chip: params.get(PARAM.chip) || '',
+        chip: chip === LEGACY_FAVOURITES ? '' : chip,
+        fav: params.get(PARAM.fav) === '1' || chip === LEGACY_FAVOURITES,
         filters: filters,
         datefrom: period.from,
         dateto: period.to,

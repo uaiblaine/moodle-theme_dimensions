@@ -293,8 +293,8 @@ final class categorypublic_source_test extends \basic_testcase {
      *
      * The request carries no session, so the reader's language - a choice from the language menu is
      * kept in the session - would be lost, and the answer would speak the site's or the browser's.
-     * The service declares no state chip and refuses an undeclared key, and refuses the root anything
-     * but its term and the language.
+     * The service declares no state chip and no favourites toggle (a visitor has no favourites) and
+     * refuses an undeclared key, and refuses the root anything but its term and the language.
      */
     public function test_it_sends_the_pages_language_and_the_root_its_term_alone(): void {
         $this->assertStringContainsString("import Config from 'core/config';", $this->source());
@@ -306,6 +306,9 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertSame(2, substr_count($args, 'lang: Config.language'), 'Both shapes carry the language.');
         $this->assertDoesNotMatchRegularExpression('~\bchip\b~', $args, 'The visitor\'s service declares no state chip.');
         $this->assertStringContainsString("state.chip = '';", $this->body('publicOnly'), 'And the state never holds one.');
+        $this->assertDoesNotMatchRegularExpression('~\bfav\b~', $args, 'Nor the favourites toggle.');
+        $this->assertStringContainsString('state.fav = false;', $this->body('publicOnly'), 'Which the state never holds either.');
+        $this->assertMatchesRegularExpression('~chip: \'\',\s*fav: false,~', $this->source(), 'Not even at load.');
     }
 
     /**
@@ -568,7 +571,7 @@ final class categorypublic_source_test extends \basic_testcase {
             $keys[1],
             'A slice carries no cat, page or panel request.'
         );
-        foreach (['cat:', 'chip:'] as $never) {
+        foreach (['cat:', 'chip:', 'fav:'] as $never) {
             $this->assertStringNotContainsString($never, $args, 'A panel never sends ' . $never);
         }
 

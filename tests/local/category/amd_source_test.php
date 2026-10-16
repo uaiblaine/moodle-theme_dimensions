@@ -497,33 +497,90 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * A favourites pill the client creates wears the card star's glyph, as the server's does.
+     * The favourites toggle is a fetch with a history entry, sent with every request and remembered.
      *
-     * The toolbar leaves the favourites option out while its count is 0 and it is not in force, and
-     * starring a course does not refresh the chip, so a reader with no favourites who stars one and
-     * then filters meets the option for the first time in a response - and paintGroup() creates the
-     * pill. The web service returns `isfavourites` for exactly this; the glyph is the toolbar
-     * template's own markup, placed before the label, hidden from assistive technology.
+     * The toggle combines with the state chip, so it rides beside it in the rows request and in the
+     * remembered state, is written into the address as fav=1 and read back from it - an older
+     * address's favourites chip read as the toggle with no chip, as the server reads it - and is
+     * repainted from every answer. The press is intercepted, because the toggle is a submit button
+     * for a reader without this module.
+     *
+     * Changes that must make it fail: dropping fav from either set of arguments; deleting the
+     * interception or the toggle in onFav(); writing the address without fav; reading the legacy chip
+     * as a chip; not repainting the toggle from an answer.
      */
-    public function test_a_favourites_pill_the_client_creates_wears_the_star(): void {
-        $pill = $this->body('createPill');
+    public function test_the_favourites_toggle_is_a_fetch_sent_with_every_request(): void {
+        $this->assertMatchesRegularExpression('~chip: state\.chip,\s*fav: state\.fav,~', $this->body('rowsArgs'));
         $this->assertMatchesRegularExpression(
-            "~if \\(option\\.isfavourites\\) \\{\\s*const star = document\\.createElement\\('i'\\);\\s*"
-                . "star\\.className = 'fa-solid fa-star dim-pill__star';\\s*"
-                . "star\\.setAttribute\\('aria-hidden', 'true'\\);\\s*label\\.append\\(star\\);\\s*\\}~",
-            $pill
+            '~view: state\.view,\s*chip: state\.chip,\s*fav: state\.fav,\s*filters: filterArgs\(\),~',
+            $this->source(),
+            'The remembered state carries the toggle beside the chip.'
         );
-        $this->assertLessThan(
-            (int) strpos($pill, "label.append(document.createTextNode(option.label + ' '));"),
-            (int) strpos($pill, 'label.append(star);'),
-            'The star comes before the label, as the template writes it.'
+        $this->assertStringContainsString("fav: '[data-action=\"dim-fav\"]',", $this->source());
+        $this->assertMatchesRegularExpression(
+            '~if \(closestOf\(event, SELECTORS\.fav\)\) \{[^}]*?event\.preventDefault\(\);\s*onFav\(\);~s',
+            $this->body('listen')
         );
-        $template = (string) file_get_contents($this->plugin_root() . '/templates/category_toolbar.mustache');
+        $fav = $this->body('onFav');
+        $steps = [
+            'state.fav = !state.fav;',
+            'state.page = 0;',
+            'paintFavToggle();',
+            'remember(false);',
+            'writeUrl(true);',
+            'requestRows(0, false);',
+        ];
+        foreach ($steps as $step) {
+            $this->assertStringContainsString($step, $fav);
+        }
+        $this->assertStringContainsString('paintFavourites(response);', $this->body('applyResponse'));
+        $this->assertMatchesRegularExpression(
+            "~if \(state\.fav\) \{\s*params\.set\(PARAM\.fav, '1'\);\s*\}~",
+            $this->body('buildUrl')
+        );
+        $read = $this->body('readUrl');
+        $this->assertStringContainsString('state.chip = chipOf(params);', $read);
+        $this->assertStringContainsString('state.fav = favOf(params);', $read);
         $this->assertStringContainsString(
-            '{{#isfavourites}}<i class="fa-solid fa-star dim-pill__star" aria-hidden="true"></i>{{/isfavourites}}{{label}}',
-            $template,
-            'The client builds the same glyph the server draws.'
+            "export const favOf = (params) => params.get(PARAM.fav) === '1' || params.get(PARAM.chip) === LEGACY_FAVOURITES;",
+            $this->shared()
         );
+        $this->assertMatchesRegularExpression(
+            "~const chip = params\.get\(PARAM\.chip\) \|\| '';\s*return chip === LEGACY_FAVOURITES \? '' : chip;~",
+            $this->body('chipOf')
+        );
+        $this->assertStringContainsString("const LEGACY_FAVOURITES = 'favourites';", $this->shared());
+        $this->assertStringContainsString('PARAM.fav', $this->body('buildUrl'));
+        $this->assertStringContainsString("fav: payload.fav === true,", $this->init_body());
+    }
+
+    /**
+     * The toggle is repainted whole - attribute, glyph, value and hidden field - and the pill's star is gone.
+     *
+     * The favourites were a pill of the state group, and a pill the client created wore the card's
+     * star; they are a toggle of their own now, so no pill wears one, in the source or in the build.
+     *
+     * Changes that must make it fail: dropping any of the four repaints of paintFavToggle(); painting an
+     * answer that does not offer the toggle; leaving the pill's star in the module.
+     */
+    public function test_the_favourites_toggle_is_repainted_whole_and_no_pill_wears_the_star(): void {
+        $star = $this->body('paintFavToggle');
+        $this->assertStringContainsString("star.setAttribute('aria-pressed', on ? 'true' : 'false');", $star);
+        $this->assertStringContainsString("star.value = on ? '0' : '1';", $star);
+        $this->assertStringContainsString("glyph.classList.toggle('fa-solid', on);", $star);
+        $this->assertStringContainsString("glyph.classList.toggle('fa-regular', !on);", $star);
+        $this->assertStringContainsString('field.disabled = !on;', $star);
+        $this->assertStringContainsString("star: '[data-region=\"dim-line-star\"]',", $this->shared());
+        $this->assertStringContainsString("favfield: '[data-region=\"dim-fav-field\"]',", $this->shared());
+        $this->assertMatchesRegularExpression(
+            '~if \(!toggle \|\| !toggle\.available\) \{\s*return;\s*\}~',
+            $this->body('paintFavourites')
+        );
+        $this->assertStringContainsString('paintFavToggle(root, state.fav);', $this->body('paintControls'));
+        foreach (['isfavourites', 'dim-pill__star'] as $gone) {
+            $this->assertStringNotContainsString($gone, $this->sources());
+            $this->assertStringNotContainsString($gone, $this->build('categorylisting'));
+        }
     }
 
     /**
@@ -608,7 +665,8 @@ final class amd_source_test extends \basic_testcase {
     public function test_the_address_carries_the_organisation_and_the_period(): void {
         $build = $this->body('buildUrl');
         $this->assertMatchesRegularExpression(
-            '~\[PARAM\.query, PARAM\.chip, PARAM\.page, PARAM\.view, PARAM\.sort, PARAM\.from, PARAM\.to, PARAM\.cat\]~',
+            '~\[PARAM\.query, PARAM\.chip, PARAM\.fav, PARAM\.page, PARAM\.view, PARAM\.sort, PARAM\.from, '
+                . 'PARAM\.to, PARAM\.cat\]~',
             $build,
             'Every parameter this module owns is cleared before it is written, the tree\'s category included.'
         );
@@ -791,7 +849,8 @@ final class amd_source_test extends \basic_testcase {
         );
         $this->assertMatchesRegularExpression(
             "~export const narrows = \(state\) => state\.query !== ''\s*\|\| state\.chip !== ''\s*"
-                . "\|\| Object\.keys\(state\.filters\)\.length > 0\s*\|\| state\.datefrom !== ''\s*\|\| state\.dateto !== '';~",
+                . "\|\| Boolean\(state\.fav\)\s*\|\| Object\.keys\(state\.filters\)\.length > 0\s*"
+                . "\|\| state\.datefrom !== ''\s*\|\| state\.dateto !== '';~",
             $this->shared()
         );
         $this->assertStringContainsString('const narrows = () => Listing.narrows(state);', $this->source());
@@ -892,6 +951,7 @@ final class amd_source_test extends \basic_testcase {
         $steps = [
             "state.query = '';",
             "state.chip = '';",
+            'state.fav = false;',
             'state.filters = {};',
             "state.datefrom = '';",
             "state.dateto = '';",
@@ -1340,7 +1400,14 @@ final class amd_source_test extends \basic_testcase {
             'The root asks for its term and nothing else.'
         );
         $only = $this->body('rootOnly');
-        $dropped = ['state.chip = \'\';', 'state.filters = {};', 'state.sort = \'\';', 'state.cat = 0;', 'state.pagesize = 0;'];
+        $dropped = [
+            'state.chip = \'\';',
+            'state.fav = false;',
+            'state.filters = {};',
+            'state.sort = \'\';',
+            'state.cat = 0;',
+            'state.pagesize = 0;',
+        ];
         foreach ($dropped as $line) {
             $this->assertStringContainsString($line, $only);
         }
