@@ -521,6 +521,14 @@ final class population {
         $result->hasmore = ($result->page + 1) * $result->pagesize < $result->total;
         foreach ($slice as $courseid) {
             $row = $kept[$courseid];
+            /* Each filter field's value, 0 where the course holds none: the facts the filter line's preview
+               decides a field option on. The map is already in hand, so this costs nothing; which of them a
+               card may state is the card's decision (category_card::field_values()). The SQL cut reads no
+               such map and its rows carry none, so its cards preview no field option. */
+            $row->fieldvalues = [];
+            foreach ($values as $fieldid => $map) {
+                $row->fieldvalues[(int) $fieldid] = (int) ($map[$courseid] ?? 0);
+            }
             if (!$scope->anonymous) {
                 $row->state = $verdicts[$courseid]['state'];
                 $row->favourite = $verdicts[$courseid]['favourite'];

@@ -24,7 +24,9 @@
 
 namespace theme_dimensions\output;
 
+use core_course\customfield\course_handler;
 use theme_dimensions\local\category\classifier;
+use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\publicfiles;
 use theme_dimensions\local\landing\redirector;
@@ -125,6 +127,15 @@ use theme_dimensions\local\landingfields;
  * {@see may_enter()}), the primary one the state's word over that same rule,
  * and where both would open one page only the primary is drawn.
  *
+ * The card also carries the facts the filter line's preview decides a criterion on (contract section 6,
+ * amd/src/categorypreview.js): the state chip the course counts under (`chip`, the classifier's
+ * {@see classifier::chip()} of the row's own state, exactly what the scope's filter keeps it by), the value
+ * of each filter field ({@see field_values()}) and the start day in the site's timezone (`startday`, the
+ * day {@see criteria::day_start()} compares a period's bounds with). The favourite is the star's own
+ * aria-pressed, which the star module keeps live. Each is what the card already shows its reader, and a
+ * visitor's card states less: no chip and no star (it knows no viewer), only the fields a visitor may see,
+ * and a start day only where the card prints one, an event's date tile. Nothing of it costs a statement.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -175,6 +186,13 @@ class category_card implements \core\output\renderable, \core\output\templatable
      */
     public const MAX_BADGES = 3;
 
+    /**
+     * @var string[] The filter fields whose value the card prints whatever the field's visibility: the model
+     *   (the kind tag over the image) and the modality (the meta line). Every other field is stated only where
+     *   core lets the reader see it ({@see field_values()}).
+     */
+    private const PRINTED_FIELDS = [landingfields::SHORTNAME_MODEL, landingfields::SHORTNAME_MODALITY];
+
     /** @var int How many characters of the summary the panel shows. */
     public const EXCERPT_LENGTH = 240;
 
@@ -217,6 +235,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @param \stdClass|null $prerequisite The course a conditional card waits for, {id, fullname}, context preloaded.
      * @param int|null $opens When a method refusing this viewer only for its window opens, per the same batch.
      * @param string|null $kicker The course's own category, plain, or null where it may not be named (the dialogue's kicker).
+     * @param \core_customfield\field_controller[] $fields The page's filter fields, fieldid => field ({@see field_values()}).
      */
     public function __construct(
         /** @var \stdClass The course row. */
@@ -243,6 +262,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
         private readonly ?int $opens = null,
         /** @var string|null The course's own category name, plain: the dialogue's kicker. */
         private readonly ?string $kicker = null,
+        /** @var \core_customfield\field_controller[] The page's filter fields, fieldid => field. */
+        private readonly array $fields = [],
     ) {
     }
 
@@ -291,6 +312,9 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $learn = $this->learn();
         $excerpt = $this->excerpt($context);
         $badges = $this->badges();
+        $start = (int) $this->course->startdate;
+        // A visitor's card states a start day only where it prints one: an event's date tile.
+        $hasstartday = !$this->anonymous || ($isevent && $start > 0);
 
         return (object) [
             'id' => $courseid,
@@ -310,6 +334,10 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'datetile' => $this->datetile($isevent),
             'meta' => $this->meta($isevent),
             'state' => $state ?? '',
+            'chip' => $this->anonymous ? '' : classifier::chip((string) ($this->row->state ?? classifier::STATE_NONE)),
+            'fieldvalues' => $this->field_values(),
+            'hasstartday' => $hasstartday,
+            'startday' => $hasstartday && $start > 0 ? criteria::iso($start) : '',
             'badge' => ['label' => $badgelabel, 'classes' => $badgeclasses, 'icon' => $badgeicon],
             'hasroute' => $hasroute,
             'routelabel' => $hasroute ? get_string('category_route_enrol', self::COMPONENT) : '',
@@ -339,6 +367,38 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'learnlabel' => get_string('category_learn', self::COMPONENT),
             'modal' => $this->modal($state, $url, $held, $openslabel, $isevent, $cta),
         ];
+    }
+
+    /**
+     * The filter fields' values this card states, for the filter line's preview: `fieldid:value` pairs, space-separated.
+     *
+     * A field is stated when the card prints it ({@see PRINTED_FIELDS}) or when core lets this reader see it
+     * ({@see course_handler::can_view()}: everybody for a field visible to all, the course's editors for one
+     * visible to teachers, nobody for a hidden one), so a visitor's card never says more than a visitor may
+     * see. Every stated field has a pair, `:0` where the course holds no value, and a field the card does not
+     * state has none, which the preview reads as a fact it does not know. A row without the population's
+     * values (the page cut in SQL) states none. The capability is answered from the access data the request
+     * already holds, at the context the population preloaded: no statement.
+     *
+     * @return string The pairs, '' for none.
+     */
+    private function field_values(): string {
+        $values = $this->row->fieldvalues ?? null;
+        if (!is_array($values) || !$this->fields) {
+            return '';
+        }
+        $handler = course_handler::create();
+        $pairs = [];
+        foreach ($this->fields as $fieldid => $field) {
+            if (!array_key_exists((int) $fieldid, $values)) {
+                continue;
+            }
+            $printed = in_array($field->get('shortname'), self::PRINTED_FIELDS, true);
+            if ($printed || $handler->can_view($field, (int) $this->course->id)) {
+                $pairs[] = (int) $fieldid . ':' . (int) $values[(int) $fieldid];
+            }
+        }
+        return implode(' ', $pairs);
     }
 
     /**

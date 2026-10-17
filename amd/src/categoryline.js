@@ -57,6 +57,10 @@
  * when it is pressed or focused ({@see reveal}), and a hidden side of such a row fades
  * ({@see fades}).
  *
+ * Pointing at a filter, or walking the suggestions with the arrows, lights the cards it would keep: the
+ * preview is categorypreview's, armed here over the same form, and told which control the active
+ * suggestion names ({@see activate}).
+ *
  * Nothing here calls a web service, reads the session or composes a word: the visitor's module
  * imports it (categorypublic_source_test walks that graph). Every label, legend and count it shows
  * is read off the controls the server drew and the answers repaint, and its two headings are the
@@ -68,6 +72,7 @@
  */
 
 import Pending from 'core/pending';
+import * as Preview from 'theme_dimensions/categorypreview';
 
 /** @type {Object} Every hook this module reads, all of them written by the toolbar's template. */
 const SELECTORS = {
@@ -752,6 +757,8 @@ const activate = (index) => {
     } else {
         field.removeAttribute('aria-activedescendant');
     }
+    // The active suggestion is the keyboard's focus on the control it names: preview that control.
+    Preview.show(state.active >= 0 ? state.items[state.active].control : null);
 };
 
 /**
@@ -760,6 +767,9 @@ const activate = (index) => {
  * @return {void}
  */
 const closeList = () => {
+    if (state.active >= 0) {
+        Preview.clear();
+    }
     state.open = false;
     state.items = [];
     state.active = -1;
@@ -780,6 +790,10 @@ const closeList = () => {
 const render = () => {
     if (!state.open) {
         return;
+    }
+    if (state.active >= 0) {
+        // The active suggestion goes with the list it was in.
+        Preview.clear();
     }
     const typed = normalise(field.value).length >= MIN_TERM;
     const term = typed ? normalise(field.value) : '';
@@ -1107,7 +1121,8 @@ export const focusTarget = (search) => {
 };
 
 /**
- * Bring the line in line with a repainted answer: its step (a cell came back or went) and its suggestions.
+ * Bring the line in line with a repainted answer: its step (a cell came back or went), its suggestions and
+ * the preview, whose cards the answer replaced.
  *
  * @return {void}
  */
@@ -1118,6 +1133,7 @@ export const repaint = () => {
     remember();
     fit();
     render();
+    Preview.refresh();
 };
 
 /**
@@ -1167,6 +1183,12 @@ export const arm = (root, options) => {
     listenSearch();
     listenLayers();
     listenRows();
+    Preview.arm(root, form, {
+        controlOf: (option) => {
+            const item = state.items[Number(option.dataset.index)];
+            return item ? item.control : null;
+        },
+    });
     remember();
     fit();
     // The line's own width, never the viewport's: a drawer opening changes the one and not the other.

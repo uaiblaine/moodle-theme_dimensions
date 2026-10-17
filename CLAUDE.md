@@ -2922,7 +2922,7 @@ the round I mockups). Files: `amd/src/categorycoursemodal.js`,
   (`:has(.dim-cmodal.show) .modal-backdrop`) and goes back to core's the moment it closes; the footer
   gets a shadow only while the sheet has more to scroll.
 
-## The category showcase: the filter line (T1 to T3, 2026-10-16)
+## The category showcase: the filter line (T1 to T4, 2026-10-16 and 17)
 
 The toolbar's three rows became ONE line in the fleet contract's slot order (scope, search, star,
 Filters, Organise, view, the managers' menu) and a row under it that shows only while something
@@ -2991,6 +2991,31 @@ plan, with the decisions taken while briefing, are `moodle-dev/docs/filter-line/
   WebDriver moves there, which keeps the older Behat scenarios unobstructed.
 - **A term in force while the field is folded is a server chip** (`param=q`, dropping `q` alone), shown by the
   stylesheet only then; at steps 1 and 2 the field itself says it.
+- **The preview (T4) decides from facts the card states and never asks the server** (`categorypreview`, armed by
+  `categoryline`, so it is in the visitor's graph and imports nothing). The facts are `data-chip`, `data-fields`
+  (`fieldid:value` pairs, `:0` for none) and `data-start` (the site timezone's day, `criteria::iso()`) on the
+  article, decided by `category_card` and declared in `get_category_rows::card_structure()` - a fact left out of the
+  returns reaches the page's cards and never a client-rendered one. The favourite is the card star's
+  `aria-pressed`, not a data attribute: `categorystar` keeps that one live and a `data-fav` would go stale on the
+  first press.
+- **A card states what its reader may already see on it, and a fact a card does not state stands the preview
+  down.** A visitor's card has no chip and no star, a field only where `course_handler::can_view()` says yes or the
+  card prints it (`category_card::PRINTED_FIELDS`: the model is the kind tag, the modality the meta line) and a start
+  day only on an event. A missing fact is "not known", never "goes": the module lights nothing rather than dim a card
+  it cannot judge. The field values come from the population's map, free in the PHP cut; the SQL cut reads no map,
+  so its cards state no field and a field option previews nothing there. Adding a statement for it would move
+  `budget_test`'s SQL-cut numbers.
+- **A preview previews a control that would NARROW**: a pill or the star already in force, an "All" or a field's
+  "Any" previews nothing, or a filter applied by keyboard would leave every card lit on the answer. Pointer previews
+  are a mouse's or a pen's (`pointerType`); a finger brackets every tap with an over and an out. Keyboard previews
+  need `:focus-visible`, because a click on a pill's label focuses its radio. The listeners are delegated
+  `pointerover`/`pointerout` on the form (enter does not bubble, and the line's pills are recreated by every
+  repaint); `categoryline.repaint()` calls `Preview.refresh()`, since the answer replaced the cards.
+- **A receding card remaps tokens, never opacity**: its surface, inks, line, every coloured pill (fill with ink, to
+  the none pair), the star's gold, the call to action through `--bs-btn-*`, and `--dim-card-film`, a layer over the
+  band drawn only under `dim-vitrine--previewing` at z-index 3 inside the band's stacking context. The lit ring is
+  2px INSIDE the card (`outline-offset: -2px`): the panel's rail is a scroll container and would clip an outside one.
+  The receding values and their dark half are tokens on the roots (`--dim-preview-ring`, `--dim-recede-*`).
 - **Write the `version.php` bump at commit time, and ask before upgrading the stacks.** This checkout
   is mounted live on m503 and m503b (`plugins.conf`), shared with other sessions; a bump on disk makes
   both wait for an upgrade - cron suspended, administrators redirected to the upgrade page - under

@@ -738,6 +738,19 @@ body.dim-category {
         // its dark half, so the mark follows the colour mode without a rule of ours.
         --dim-mark-bg: var(--bs-highlight-bg, #fff3cd);
         --dim-mark-ink: var(--bs-highlight-color, var(--dim-ink));
+        // The filter line's preview (categorypreview, contract section 6): the ring a card the pointed filter
+        // would keep wears, and the receding values a card that would go takes for its own tokens. Every fill is
+        // named with its ink: the receding surface with the receding ink (4.6:1), the receding pill with its
+        // ink (the none pair, 6.8:1), the film over the image with nothing over it but the band's own tag and
+        // tile, which keep their pair. The ring is the accent (5.2:1 on the page, 5.0:1 on the receding surface).
+        // Each has its dark value at the foot of this file.
+        --dim-preview-ring: var(--dim-accent);
+        --dim-recede-surface: var(--bs-tertiary-bg, #f8f9fa);
+        --dim-recede-ink: var(--bs-secondary-color, #6a737b);
+        --dim-recede-line: var(--bs-border-color, #dee2e6);
+        --dim-recede-pill-bg: var(--dim-badge-none-bg);
+        --dim-recede-pill-fg: var(--dim-badge-none-fg);
+        --dim-recede-film: rgba(255, 255, 255, .6);
     }
 
     .dim-vitrine {
@@ -2176,6 +2189,8 @@ body.dim-category {
         --dim-card-media: 150px;
         --dim-card-crest-w: 80px;
         --dim-card-crest-h: 88px;
+        // The film over the image while the filter line previews: nothing on a card that stays (see the preview below).
+        --dim-card-film: transparent;
         position: relative;
         display: flex;
         flex-direction: column;
@@ -2719,6 +2734,77 @@ body.dim-category {
 
     .dim-card--muted .dim-card__title a {
         color: var(--dim-muted);
+    }
+
+    // ---- The filter line's preview (stage T4) ---------------------------------------------------------
+    // Pointing at a filter (categorypreview) marks the listing previewing, every card the filter would keep lit
+    // and every other dim. A lit card wears a 2px ring in the accent, drawn inside its edge so a rail that
+    // scrolls never clips it, and narrower than the 3px focus ring so the two are never mistaken. A dim card
+    // recedes by remapping its own tokens - surface, inks, line, the state pills, the star, the call to action
+    // and the film over its image - and never by opacity, which would also fade the focus ring of anything inside
+    // it and read as disabled. The film is the card's own token (--dim-card-film), transparent on a card that
+    // stays; the pseudo-element is drawn only while the listing previews, over the band's still, film and tag (0 to 2),
+    // inside the band's stacking context.
+    .dim-vitrine--previewing .dim-card--lit {
+        outline: 2px solid var(--dim-preview-ring);
+        outline-offset: -2px;
+    }
+
+    .dim-vitrine--previewing .dim-card--dim {
+        --dim-surface: var(--dim-recede-surface);
+        --dim-ink: var(--dim-recede-ink);
+        --dim-muted: var(--dim-recede-ink);
+        --dim-primary-ink: var(--dim-recede-ink);
+        --dim-line: var(--dim-recede-line);
+        --dim-star-on: var(--dim-recede-ink);
+        --dim-card-film: var(--dim-recede-film);
+        --dim-badge-enrolled-bg: var(--dim-recede-pill-bg);
+        --dim-badge-enrolled-fg: var(--dim-recede-pill-fg);
+        --dim-badge-scheduled-bg: var(--dim-recede-pill-bg);
+        --dim-badge-scheduled-fg: var(--dim-recede-pill-fg);
+        --dim-badge-pending-bg: var(--dim-recede-pill-bg);
+        --dim-badge-pending-fg: var(--dim-recede-pill-fg);
+        --dim-badge-waitlisted-bg: var(--dim-recede-pill-bg);
+        --dim-badge-waitlisted-fg: var(--dim-recede-pill-fg);
+        --dim-badge-open-bg: var(--dim-recede-pill-bg);
+        --dim-badge-open-fg: var(--dim-recede-pill-fg);
+        --dim-badge-free-bg: var(--dim-recede-pill-bg);
+        --dim-badge-free-fg: var(--dim-recede-pill-fg);
+        --dim-badge-key-bg: var(--dim-recede-pill-bg);
+        --dim-badge-key-fg: var(--dim-recede-pill-fg);
+        --dim-badge-conditional-bg: var(--dim-recede-pill-bg);
+        --dim-badge-conditional-fg: var(--dim-recede-pill-fg);
+        --dim-badge-public-bg: var(--dim-recede-pill-bg);
+        --dim-badge-public-fg: var(--dim-recede-pill-fg);
+        --dim-badge-hidden-bg: var(--dim-recede-pill-bg);
+        --dim-badge-hidden-fg: var(--dim-recede-pill-fg);
+
+        // The call to action stays a Bootstrap button, so it is re-pointed through its own variables.
+        .dim-card__cta {
+            --bs-btn-bg: var(--dim-recede-pill-bg);
+            --bs-btn-color: var(--dim-recede-pill-fg);
+            --bs-btn-border-color: var(--dim-recede-pill-bg);
+        }
+    }
+
+    .dim-vitrine--previewing .dim-card__media::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 3;
+        background: var(--dim-card-film);
+        pointer-events: none;
+    }
+
+    // The change eases where motion is welcome, and is instant under reduced motion (the reduce block below
+    // takes the card's transition away).
+    @media (prefers-reduced-motion: no-preference) {
+        .dim-card {
+            transition: box-shadow var(--dim-motion) var(--dim-ease), background-color var(--dim-motion) var(--dim-ease);
+        }
     }
 
     // ---- List view: same DOM, one class on the container ------------------------------------
@@ -6377,4 +6463,18 @@ body.dim-category {
 // dark page; the signature band stays, as the design draws it in both modes.
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
     --dim-cmodal-cover-end: var(--dim-surface);
+}
+
+// ---- The filter line's preview in the dark mode -----------------------------------------------------------
+// The ring is the design system's dark ring (4.8:1 on the dark page), where the accent reads under 3:1 beside a
+// grey ground; a receding card keeps the page's surface and takes the secondary ink (7.3:1 on it), its pills the
+// none pair's dark half through the badge tokens it reads (7.4:1), and its film is the dark surface at the
+// light film's weight.
+:root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
+:root[data-bs-theme="dark"] body.dim-category .dim-card__panel,
+:root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
+    --dim-preview-ring: var(--dim-ds-blue-300, #7c84ff);
+    --dim-recede-surface: var(--bs-body-bg, #212529);
+    --dim-recede-ink: var(--bs-secondary-color, #afb3b7);
+    --dim-recede-film: rgba(33, 37, 41, .6);
 }

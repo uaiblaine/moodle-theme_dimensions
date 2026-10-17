@@ -5,6 +5,27 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The filter line previews what a filter would keep** (`2026100511`): the filter-line redesign's stage T4 (contract
+  section 6), for both the logged-in and the visitor's live client, through a module of its own (`categorypreview`)
+  that the shared line module arms.
+  - Pointing a mouse or a pen at a scope cell, the favourites star, an option of the Filters panel (a state, a field's
+    value, a quick date) or a suggestion of the search - or reaching one with the keyboard, the arrows included in the
+    suggestions - lights the cards on screen it would keep with a 2px ring in the accent and lets the others recede;
+    leaving or blurring takes every mark away. A finger never previews (a tap is a press), a filter already in force
+    or one that narrows nothing previews nothing, and no request is made: a list the server pages lights only what it
+    has drawn.
+  - What a filter would keep is decided from facts the server now writes on every card, on the page and in the rows
+    answer (so a card the client renders carries them too): the state chip the course counts under, each filter
+    field's value and the start day in the site's timezone; the favourite is the card's own star. A card states only
+    what its reader may already see on it: a visitor's card carries no chip and no star, only the fields core shows a
+    visitor (plus the model and the modality, which the card prints) and a start day only on an event, whose date tile
+    prints it. A card that does not state the fact a filter is decided on makes the preview stand down. With the page
+    cut in SQL (`categorystatesort` off) the cards state no field. The facts cost no statement (`budget_test`, flat at
+    11 reads for four cards and for twenty-four with a field of each visibility).
+  - A receding card remaps its own tokens - surface, inks, line, state pills, star, call to action and a film over its
+    image - never its opacity, with every fill named with its ink and dark values of its own; the surface eases only
+    where motion is welcome.
+
 - **The filter line folds, searches over itself and suggests filters** (`2026100510`): the filter-line redesign's
   stage T3, for both the logged-in and the visitor's live client, through one shared module (`categoryline`).
   - The line measures its own width (never the viewport's) and takes the first step at which it fits: full; Filters

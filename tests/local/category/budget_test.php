@@ -538,6 +538,77 @@ final class budget_test extends \advanced_testcase {
     }
 
     /**
+     * The preview's facts cost no statement per card: the field values come with the population and their
+     * visibility is answered from access data the request already holds.
+     *
+     * The filter fields are one of each visibility a card has to decide: visible to all, to nobody and to the
+     * course's editors, the last asked of core's capability check on every card. The reader holds
+     * moodle/course:update over the category, so every card answers that check with a yes and states the
+     * teachers' field; each measured closure asserts it, or a fixture whose field lost its values would measure a
+     * slope of zero over a question never asked.
+     */
+    public function test_the_preview_facts_cost_no_statement_per_card(): void {
+        global $PAGE;
+
+        $this->prepare();
+        $generator = self::getDataGenerator();
+        $customfields = $generator->get_plugin_generator('core_customfield');
+        $fieldcategory = $customfields->create_category(['name' => 'Vitrine']);
+        $visibilities = [
+            'dimbudgetall' => course_handler::VISIBLETOALL,
+            'dimbudgetnone' => course_handler::NOTVISIBLE,
+            'dimbudgetstaff' => course_handler::VISIBLETOTEACHERS,
+        ];
+        $staffid = 0;
+        foreach ($visibilities as $shortname => $visibility) {
+            $field = $customfields->create_field([
+                'categoryid' => $fieldcategory->get('id'),
+                'shortname' => $shortname,
+                'name' => $shortname,
+                'type' => 'select',
+                'configdata' => ['options' => "Alfa\nBeta", 'defaultvalue' => '', 'visibility' => $visibility],
+            ]);
+            $staffid = $shortname === 'dimbudgetstaff' ? (int) $field->get('id') : $staffid;
+        }
+        course_handler::reset_caches();
+        set_config(facets::SETTING, implode(',', array_keys($visibilities)), 'theme_dimensions');
+        $category = $generator->create_category();
+        $handler = course_handler::create();
+        for ($i = 0; $i < 24; $i++) {
+            $course = $generator->create_course(['category' => $category->id, 'fullname' => sprintf('Curso %02d', $i)]);
+            $form = ['id' => $course->id];
+            foreach (array_keys($visibilities) as $shortname) {
+                $form['customfield_' . $shortname] = 1 + ($i % 2);
+            }
+            $handler->instance_form_save((object) $form);
+        }
+        $editor = $this->user_with('moodle/course:update', \core\context\coursecat::instance((int) $category->id));
+
+        $this->become($editor);
+        $categoryid = (int) $category->id;
+        $renderer = $PAGE->get_renderer('core');
+        $exported = function (int $pagesize) use ($categoryid, $renderer, $staffid): void {
+            $result = population::resolve(new criteria($categoryid, ['pagesize' => $pagesize, 'sort' => criteria::SORT_NAME]));
+            $cards = category_listing::export_cards($result, $categoryid, false, $renderer);
+            $this->assertCount($pagesize, $cards, 'The page really holds the cards being measured.');
+            $staff = array_filter($cards, static fn(\stdClass $card): bool => str_contains($card->fieldvalues, $staffid . ':'));
+            $this->assertCount($pagesize, $staff, 'Every card asked the capability and states the teachers\' field.');
+        };
+        // Warm what a second request would find warm.
+        $exported(4);
+        $exported(24);
+
+        $four = $this->reads(fn() => $exported(4));
+        $twentyfour = $this->reads(fn() => $exported(24));
+        $this->record('preview facts exported', ['reads at P=4' => $four, 'reads at P=24' => $twentyfour]);
+        $this->assertSame(
+            $four,
+            $twentyfour,
+            "{$four} reads for four cards against {$twentyfour} for twenty-four: a preview fact reads per card."
+        );
+    }
+
+    /**
      * The two page-cutting modes.
      *
      * @return array

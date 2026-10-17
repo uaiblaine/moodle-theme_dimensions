@@ -74,6 +74,9 @@ final class category_scss_test extends \basic_testcase {
      */
     private const DARK_PREFIX = ':root[data-bs-theme="dark"] ';
 
+    /** @var string The card's transition while motion is welcome: its shadow, and the surface a preview recedes. */
+    private const PREVIEW_EASE = 'box-shadow var(--dim-motion) var(--dim-ease), background-color var(--dim-motion) var(--dim-ease)';
+
     /**
      * Absolute path to the theme root.
      *
@@ -1854,6 +1857,122 @@ final class category_scss_test extends \basic_testcase {
                 . 'display:\s*inline-flex;\s*\}#',
             $scss
         );
+    }
+
+    /**
+     * The filter line's preview lights a kept card with a 2px ring and lets the others recede by their own tokens.
+     *
+     * Contract section 6, drawn as block_compass's calendar strip draws it: the ring is the accent, 2px and
+     * inside the card's edge (a rail that scrolls would clip an outside one), a pixel narrower than the 3px focus
+     * ring; a dim card remaps its surface, its inks, its line, every state pill's fill WITH its ink, the call to
+     * action and the film over its image, and nothing of it is opacity or a filter, which would fade the focus
+     * ring of whatever is inside it. The change eases only where motion is welcome. Each of the tokens has its
+     * dark value in a block at the foot of the file, where the badge test reads the dark half.
+     *
+     * Changes that must make it fail: the ring 3px or outside the card; an opacity or a filter on a dim card; a
+     * pill's fill remapped without its ink; the film drawn outside the preview or over the pointer; the easing
+     * outside the no-preference query; a token without its dark value.
+     */
+    public function test_the_preview_lights_with_a_ring_and_recedes_by_its_own_tokens(): void {
+        $scss = $this->stylesheet('category.scss');
+
+        $lit = $this->rule_body($scss, '.dim-vitrine--previewing .dim-card--lit');
+        $this->assertMatchesRegularExpression('~outline:\s*2px solid var\(--dim-preview-ring\);\s*outline-offset:\s*-2px;~', $lit);
+
+        $dim = $this->rule_body($scss, '.dim-vitrine--previewing .dim-card--dim');
+        $remapped = [
+            '--dim-surface' => '--dim-recede-surface',
+            '--dim-ink' => '--dim-recede-ink',
+            '--dim-muted' => '--dim-recede-ink',
+            '--dim-primary-ink' => '--dim-recede-ink',
+            '--dim-line' => '--dim-recede-line',
+            '--dim-star-on' => '--dim-recede-ink',
+            '--dim-card-film' => '--dim-recede-film',
+        ];
+        foreach ($remapped as $token => $receding) {
+            $this->assertMatchesRegularExpression(
+                '~' . preg_quote($token, '~') . ':\s*var\(' . preg_quote($receding, '~') . '\);~',
+                $dim,
+                "{$token} recedes."
+            );
+        }
+        $this->assertSame(0, preg_match_all('~(?<![\w-])(?:opacity|filter)\s*:~', $dim), 'No opacity, no filter.');
+        // Every pill not already the receding pair (none's) recedes, its fill with its ink.
+        $tokens = $this->rule_body(substr($scss, 0, (int) strpos($scss, ':root[data-bs-theme="dark"]')), '.dim-vitrine,'
+            . "\n" . '    .dim-card__panel,' . "\n" . '    .dim-cmodal');
+        preg_match_all('~--dim-badge-([a-z]+)-bg:\s*([^;]+);~', $tokens, $declared, PREG_SET_ORDER);
+        $none = array_column($declared, 2, 1)['none'] ?? '';
+        $coloured = array_filter($declared, static fn(array $badge): bool => $badge[2] !== $none);
+        $this->assertGreaterThanOrEqual(10, count($coloured), 'Precondition: the coloured states are read off the roots.');
+        foreach ($coloured as $badge) {
+            $this->assertStringContainsString("--dim-badge-{$badge[1]}-bg: var(--dim-recede-pill-bg);", $dim);
+            $this->assertStringContainsString(
+                "--dim-badge-{$badge[1]}-fg: var(--dim-recede-pill-fg);",
+                $dim,
+                "The {$badge[1]} pill's fill recedes with its ink."
+            );
+        }
+        $this->assertMatchesRegularExpression(
+            '~\.dim-card__cta \{\s*--bs-btn-bg:\s*var\(--dim-recede-pill-bg\);\s*--bs-btn-color:\s*var\(--dim-recede-pill-fg\);~',
+            $dim,
+            'The call to action is re-pointed through its own variables, fill with ink.'
+        );
+
+        $this->assertMatchesRegularExpression('~--dim-card-film:\s*transparent;~', $this->rule_body($scss, '.dim-card'));
+        $film = $this->rule_body($scss, '.dim-vitrine--previewing .dim-card__media::after');
+        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-card-film\);~', $film);
+        $this->assertMatchesRegularExpression('~z-index:\s*3;~', $film, 'Over the still, the film and the tag of the band.');
+        $this->assertMatchesRegularExpression('~pointer-events:\s*none;~', $film);
+
+        $motion = null;
+        $offset = 0;
+        while (($at = strpos($scss, '@media (prefers-reduced-motion: no-preference) {', $offset)) !== false) {
+            $block = $this->block_at($scss, $at + strlen('@media (prefers-reduced-motion: no-preference) {'));
+            if (str_contains($block, self::PREVIEW_EASE)) {
+                $motion = $block;
+                break;
+            }
+            $offset = $at + 1;
+        }
+        $this->assertNotNull($motion, 'The receding surface eases inside a no-preference query.');
+        $this->assertMatchesRegularExpression('~^\s*\.dim-card \{\s*transition:~', $motion);
+        $this->assertSame(1, substr_count($scss, self::PREVIEW_EASE), 'And nowhere outside it.');
+        $this->assertMatchesRegularExpression(
+            '~transition:\s*box-shadow var\(--dim-motion\) var\(--dim-ease\);~',
+            $this->rule_body($scss, '.dim-card'),
+            'The card\'s own rule eases its shadow alone, so under reduced motion the change is instant.'
+        );
+
+        $split = strpos($scss, ':root[data-bs-theme="dark"]');
+        $this->assertNotFalse($split);
+        $light = substr($scss, 0, $split);
+        $darkhalf = substr($scss, $split);
+        $roots = $this->rule_body($light, '.dim-vitrine,' . "\n" . '    .dim-card__panel,' . "\n" . '    .dim-cmodal');
+        $tokens = [
+            '--dim-preview-ring',
+            '--dim-recede-surface',
+            '--dim-recede-ink',
+            '--dim-recede-line',
+            '--dim-recede-pill-bg',
+            '--dim-recede-pill-fg',
+            '--dim-recede-film',
+        ];
+        foreach ($tokens as $token) {
+            $this->assertMatchesRegularExpression(
+                '~' . preg_quote($token, '~') . ':~',
+                $roots,
+                "{$token} is declared on the roots."
+            );
+        }
+        $this->assertMatchesRegularExpression('~--dim-recede-pill-bg:\s*var\(--dim-badge-none-bg\);~', $roots);
+        $this->assertMatchesRegularExpression('~--dim-recede-pill-fg:\s*var\(--dim-badge-none-fg\);~', $roots);
+        $dark = ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-vitrine,\s*'
+            . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-card__panel,\s*'
+            . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-cmodal \{([^}]*)\}';
+        $this->assertSame(1, preg_match('~' . $dark . '\s*$~', $darkhalf, $last), 'The preview\'s dark block closes the file.');
+        foreach (['--dim-preview-ring', '--dim-recede-surface', '--dim-recede-ink', '--dim-recede-film'] as $token) {
+            $this->assertMatchesRegularExpression('~' . preg_quote($token, '~') . ':~', $last[1], "{$token} has its dark value.");
+        }
     }
 
     /**
