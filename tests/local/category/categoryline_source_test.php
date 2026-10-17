@@ -420,6 +420,41 @@ final class categoryline_source_test extends \basic_testcase {
             'amd/build/categoryline is not this source: rebuild it with grunt amd and commit the build.'
         );
         preg_match_all("~^import [^\n]* from '([^']+)';$~m", $this->source(), $imports);
-        $this->assertSame(['core/pending'], $imports[1], 'It imports core\'s pending tracker and nothing else.');
+        $this->assertSame(
+            ['core/pending', 'theme_dimensions/categorypreview'],
+            $imports[1],
+            'It imports core\'s pending tracker and the preview, and nothing else.'
+        );
+    }
+
+    /**
+     * The line arms the preview over its form, previews the active suggestion's control and refreshes after an answer.
+     *
+     * The active suggestion is the keyboard's focus on the control it names (the focus itself stays in the field,
+     * the combobox), so walking the list with the arrows previews each filter in turn, and taking the list down or
+     * rebuilding it under a typed text takes the preview its option gave. A pointer on an option is the preview
+     * module's own listener, told the option's control by the hook armed here.
+     *
+     * Changes that must make it fail: the preview not armed; the active option not previewed; the list's preview
+     * left on the cards once the list goes; no refresh after a repaint, which leaves a mark on cards the answer
+     * replaced.
+     */
+    public function test_the_line_previews_the_active_suggestion_and_refreshes_after_an_answer(): void {
+        $arm = $this->body('arm');
+        $this->assertMatchesRegularExpression(
+            '~Preview\.arm\(root, form, \{\s*controlOf: \(option\) => \{\s*'
+                . 'const item = state\.items\[Number\(option\.dataset\.index\)\];\s*return item \? item\.control : null;~',
+            $arm
+        );
+        $this->assertStringContainsString(
+            'Preview.show(state.active >= 0 ? state.items[state.active].control : null);',
+            $this->body('activate')
+        );
+        $this->assertMatchesRegularExpression('~if \(state\.active >= 0\) \{\s*Preview\.clear\(\);~', $this->body('closeList'));
+        $this->assertMatchesRegularExpression(
+            '~if \(state\.active >= 0\) \{\s*// [^\n]*\n\s*Preview\.clear\(\);~',
+            $this->body('render')
+        );
+        $this->assertMatchesRegularExpression('~render\(\);\s*Preview\.refresh\(\);~', $this->body('repaint'));
     }
 }

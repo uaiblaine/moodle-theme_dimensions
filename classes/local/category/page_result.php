@@ -41,8 +41,9 @@ final class page_result {
      * @var \stdClass[] The page slice, in display order, keyed by course id. Each row carries id,
      *   category, sortorder, visible, fullname, startdate, liststate (the discoverability state)
      *   and - for a logged-in viewer - state (a classifier constant), favourite (bool), startsat
-     *   and endsat (int). The context preload columns are kept on the row so a per-page reader can
-     *   rebuild the course context without a statement.
+     *   and endsat (int). With the page cut in PHP each row also carries fieldvalues (filter field id =>
+     *   option value, 0 for none), which the filter line's preview reads. The context preload columns are
+     *   kept on the row so a per-page reader can rebuild the course context without a statement.
      */
     public array $rows = [];
 

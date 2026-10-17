@@ -28,6 +28,7 @@ use core_course_category;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\cards;
 use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\facets;
 use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
@@ -321,6 +322,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
         $prerequisites = $result->anonymous ? [] : cards::prerequisites($rows);
 
         $showstar = !$result->anonymous && isloggedin() && !isguestuser();
+        // The filter fields, for the facts the filter line's preview reads off each card: read once, cached by core.
+        $fields = facets::fields();
         $cardcontexts = [];
         foreach ($ids as $courseid) {
             if (!isset($courses[$courseid])) {
@@ -343,7 +346,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
                 $prerequisites[(int) ($row->prerequisiteid ?? 0)] ?? null,
                 $nextactions[$courseid]['opens'] ?? null,
                 // The dialogue's kicker names the course's own category on every page, the listed one included.
-                $result->categorynames[(int) $row->category] ?? null
+                $result->categorynames[(int) $row->category] ?? null,
+                $fields
             );
             $cardcontexts[] = $card->export_for_template($output);
         }

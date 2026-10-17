@@ -60,6 +60,27 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And "//*[@data-region='dim-line-chips']//a[@data-action='dim-chip-remove'][starts-with(@data-param,'cf_')]" "xpath_element" should be visible
 
   @javascript
+  Scenario: Pointing at a scope cell lights the cards it would keep and lets the others recede
+    # The filter line's preview: a mouse over a scope cell marks the cards on screen that cell would keep
+    # and dims the rest, asking the server nothing; moving off the line takes every mark away. The two
+    # direct courses are the grid's, one of them the reader's own, so "My courses" keeps one and dims one.
+    Given the following "course enrolments" exist:
+      | user     | course | role    |
+      | student1 | RESG   | student |
+    And I log in as "student1"
+    And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    When I hover "//fieldset[@data-role='scope']//label[starts-with(normalize-space(.), 'My courses')]" "xpath_element"
+    Then "//section[contains(@class, 'dim-vitrine--previewing')]" "xpath_element" should exist
+    And "//article[contains(@class, 'dim-card--lit')][.//h3[normalize-space(.)='Resgate em Altura']]" "xpath_element" should exist
+    And "//article[contains(@class, 'dim-card--dim')][.//h3[normalize-space(.)='Curso Online']]" "xpath_element" should exist
+    And "//article[contains(@class, 'dim-card--dim')][.//h3[normalize-space(.)='Resgate em Altura']]" "xpath_element" should not exist
+    # Nothing was applied: the count still counts every course.
+    And "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
+    When I hover "//h1" "xpath_element"
+    Then "//article[contains(@class, 'dim-card--dim')]" "xpath_element" should not exist
+    And "//section[contains(@class, 'dim-vitrine--previewing')]" "xpath_element" should not exist
+
+  @javascript
   Scenario: Typing in the search box narrows the listing where it stands
     Given I log in as "student1"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page

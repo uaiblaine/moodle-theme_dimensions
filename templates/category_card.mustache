@@ -40,6 +40,14 @@
 
     Every text value arrives in the plain spelling and is escaped here.
 
+    The article also carries the facts the filter line's preview decides a
+    criterion on (categorypreview): data-chip, the state chip the course counts
+    under (empty on a visitor's card); data-fields, the filter fields the card
+    may state as fieldid:value pairs, 0 for no value, a field the card may not
+    state left out; and data-start, the start day in the site's timezone, empty
+    for a course with none and absent where the card may not state it. The
+    favourite is the star's own aria-pressed. category_card decides each.
+
     The client modules address this template through data attributes only,
     never a class: a class is presentation and moves with the design, and a
     renamed hook reddens the markup test instead of silently disarming a
@@ -95,6 +103,10 @@
         "datetile": null,
         "meta": "36 horas · Presencial · São Paulo",
         "state": "scheduled",
+        "chip": "scheduled",
+        "fieldvalues": "12:1 14:0",
+        "hasstartday": true,
+        "startday": "2026-11-12",
         "badge": {"label": "Acesso a partir de 12/11/2026", "classes": "dim-badge dim-badge--scheduled", "icon": "fa-calendar"},
         "hasroute": true,
         "routelabel": "Você também pode se inscrever agora",
@@ -134,7 +146,7 @@
         }
     }
 }}
-<article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}">
+<article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}>
     <div class="dim-card__media{{#hasimage}} dim-card__media--image{{/hasimage}}">
         {{#hasimage}}
         <img class="dim-card__image" src="{{imageurl}}" alt="" loading="lazy" decoding="async" width="320" height="150">

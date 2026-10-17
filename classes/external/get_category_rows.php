@@ -629,6 +629,16 @@ class get_category_rows extends external_api {
             ], 'The event\'s date tile, null off an event with a start date.', VALUE_REQUIRED, null, NULL_ALLOWED),
             'meta' => new external_value(PARAM_RAW, 'The line under the title: date or workload, modality, city.'),
             'state' => new external_value(PARAM_ALPHA, 'The classifier state, empty on an anonymous card.'),
+            'chip' => new external_value(PARAM_ALPHA, 'The state chip the course counts under, empty on an anonymous card.'),
+            'fieldvalues' => new external_value(
+                PARAM_TEXT,
+                'The filter fields this card may state, as space-separated fieldid:value pairs (0 for no value).'
+            ),
+            'hasstartday' => new external_value(PARAM_BOOL, 'Whether the card states its start day.'),
+            'startday' => new external_value(
+                PARAM_ALPHANUMEXT,
+                'The start day in the site timezone, YYYY-MM-DD; empty for a course with no start date.'
+            ),
             'badge' => new external_single_structure([
                 'label' => new external_value(
                     PARAM_TEXT,
