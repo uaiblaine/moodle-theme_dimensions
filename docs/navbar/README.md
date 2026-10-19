@@ -1,8 +1,8 @@
 # Navbar and navigation drawer: design record
 
-Status: phase 1 merged (#9, 28c5fb4); phase 2 merged (#10, fee54c5, version 2026100513); phase 3 built on branch
-`navbar-phase3-reading` (2026-10-19, uncommitted, next version 2026100514; what was and was not verified is at the end
-of its section). Brainstorm:
+Status: phase 1 merged (#9, 28c5fb4); phase 2 merged (#10, fee54c5, version 2026100513); phase 3 merged (#11, 82913e5,
+version 2026100514); phase 4 built on branch `navbar-phase4-tablet-sheets` (2026-10-19, uncommitted, next version
+2026100515; what was and was not verified is at the end of its section). Brainstorm:
 `brainstorm.html` (pt-BR, published as a private artifact). States canvas: `canvas/` (Design canvas sources,
 14 artboards, one row per phase).
 
@@ -264,6 +264,121 @@ browser (the swap, the slide, the thresholds' feel, the track's contrast on a li
 colours on the navy bar, a real phone), the Behat feature (written, not run; the Behat site's CSS needs `behat-init`
 first), the mutation sweep, and the matrix.
 
+## Phase 4 as built: tablet and sheets
+
+Built on branch `navbar-phase4-tablet-sheets` (2026-10-19, uncommitted, next version 2026100515; what was and was not
+verified is at the end of this section).
+
+| Idea | What ships |
+|---|---|
+| B5 | Between md and xl, while core's primary navigation sends more than two items into its "More" menu, the navbar takes the phone's pattern: core's hamburger, the brand, the right cluster; the primary navigation is hidden and the mobile drawer (phase 2) holds the navigation. Setting `navbarcompact`, on by default. |
+| D2 | Below sm, message_popup's notifications popover opens as a bottom sheet: fixed to the bottom edge, full width, rounded top corners, a grab handle, 70vh with the list scrolling inside, never over the navbar, and a scrim. CSS only. |
+| D3 | Below sm, Boost Union's user menu opens as the same kind of sheet, with the full name at the top and 44px rows. CSS only. |
+| D5 | A reader core lets edit the page (`$PAGE->user_allowed_editing()`) finds core's edit mode switch at the end of the context layer, which covers the navbar's own switch while it is shown. Students get nothing new. |
+
+### B5: what is measured, and how
+
+- **The count is core's own.** Core's React navigation (`core/nav/Nav`, mounted as `core/nav/PrimaryNav`, and Boost
+  Union's copy for smart menus) renders one `li` per visible pill in `ul.more-nav` and one `li.dropdownmoremenu`, and
+  writes its `measuredclass` (`primarynav-measured`) on the mount point once its first split has converged. Its
+  overflow count is `rest.length - visible`, where `rest` is the top-level items that are neither dividers nor forced
+  into "More". `amd/src/compactnav.js` reads exactly that: the candidates from the mount point's `data-react-props`
+  (the same rule as `compactnav::candidates()` on the server), less the pills it still draws. A forced item is in
+  "More" at every width and is no sign of overflow. Nothing is read before the measured class is there.
+- **What triggers a decision.** A `ResizeObserver` on the navbar's `.container-fluid` (the room changes) and a
+  `MutationObserver` on the mount point (core commits a new split from its own observers; a width change can be read
+  before it has), plus the `change` of the range's media query. Each only books one animation frame, under core's
+  pending tracker; the frame reads the count and the range, then writes. No timer.
+- **No flip-flop.** Compact hides the primary navigation with `visibility: hidden`, never `display: none`: its box
+  stays, so core goes on measuring the same room with the hamburger shown. With `display: none` core reads a 0-high
+  container, sends nothing to "More", and the module would read that as a fit and leave the mode, every frame. Since
+  the hamburger only takes room, an overflow that sent the bar compact can only grow while it is compact, and leaving
+  it needs a fit with the hamburger present, which stays a fit once the hamburger goes.
+- **The hamburger is shown by the module, not by the stylesheet.** Core's toggler is `d-md-none`, which compiles to
+  `display: none !important` (measured in the compiled sheet of m503); no selector outranks an `!important` utility
+  without `!important` of its own, which the fleet forbids. So the module takes `d-md-none` off the toggler while
+  compact and puts it back after; the brand stays (`d-none d-md-flex`). The range check is in the module
+  (`RANGE`, `(min-width: 768px) and (max-width: 1199.98px)`, the stylesheet's `media-breakpoint-between(md, xl)`;
+  `compactnav_source_test` holds the two together) and every rule of `scss/compactnav.scss` sits inside it.
+- **Before the first paint.** Decided on the server where it can be: a navigation with two candidates or fewer can
+  never cross the line, so such a page gets nothing (no class, no module, no hold) - `compactnav::arms()`, reading the
+  layout context's `primarymoremenu`. Where it can, the server splices `dimensions-navcompact-armed` into the layout's
+  body attributes (Boost Union builds them before the one `render_from_template()` call that carries the primary
+  navigation, so the login page's splice is reused) and arms the module. Between md and xl the stylesheet holds the
+  primary navigation back (`visibility: hidden`) under `body.jsenabled:not(.dimensions-navcompact-measured)` until
+  the module has decided: core writes `jsenabled` at the top of the body, before the first paint, so without JavaScript
+  the navbar is core's; and core itself already hides the navigation (`opacity: 0`) until its own measurement. So the
+  first paint never shows items about to go. What can still move at load is the brand, by the hamburger's width, when
+  the decision is compact. A fail-open animation lets the navigation show after two seconds if the module never runs,
+  instead of losing it with its hamburger hidden.
+- **The drawer at tablet width.** Core's `drawercloseonresize` only acts below md (`isSmall()` in `closeOnResizeListener`),
+  so it does not close the drawer at tablet widths; what core withholds there is everything else a phone gets: the
+  backdrop, the press outside that closes, and closing the other drawers from lg up. While compact the theme gives it
+  a scrim (the drawer's own `box-shadow`, painted under the navbar as core's backdrop is), a stack above the docked
+  course index and blocks drawer (`$zindex-sticky + 2`, under the navbar), a press outside that closes it (on the page
+  the press is the scrim's and goes no further; on the navbar it goes on to its control, as core lets it on a phone),
+  another drawer opening that closes it, and the bar leaving the mode closing it unless the focus is inside (its
+  hamburger is about to go).
+- Off in the Moodle app; focus mode keeps its own bar (its template prints no navbar, and `compactnav::applies()` says
+  no there); never on the login, embedded, maintenance and other layouts without the navbar (`guestnav::EXCLUDED_LAYOUTS`).
+
+### D2 and D3: what was measured first
+
+Measured on 2026-10-19 on main (82913e5), an editing teacher on an activity page, the header rendered through Boost
+Union's layout on m503's PHPUnit site and the theme's compiled sheet loaded in headless Chromium at 390x844 (and 360,
+320, 500, 575, 700 as controls):
+
+- **Nothing overflows sideways at 390.** The bar fits (`#usernavigation` 108.6 to 378 of 390; still fits at 320, edge to
+  edge with the hamburger), the notifications popover is 0 to 390 and the user menu 143 to 378.
+- **The popover's real defect at 390 is vertical.** Core's rule below 481px pins it `position: fixed; top: 46px; bottom:
+  0`, written for a 46px navbar: its first 15px lie over the 61px navbar and its band, across the bottom of the bar's
+  controls, and the base rule's `max-height: 80vh` stops it at 721px of 844, leaving 123px of page uncovered below
+  it, with no scrim. From 481px to 767px core keeps the 380px dropdown (`right: -70px`), which fits at 500, 575 and 700.
+- After: the notifications sheet is 0 to 390 by 253 to 844 (70vh), its header actions and footer 44px; the user menu
+  sheet is 0 to 390 by 366 to 844, its name block first, every row 44px. Core's `max-width: calc(100vw - 1rem)` for the
+  user menu below sm is overridden (`max-width: none`).
+
+Both are CSS only (`scss/sheets.scss`), scoped to `.navbar.fixed-top .popover-region-notifications` and
+`.navbar.fixed-top .usermenu`, every rule under `media-breakpoint-down(sm)`. The scrim is the sheet's own `box-shadow`,
+so a press outside reaches core's handlers: the popover region controller's document click (and Escape) for the
+popover, Bootstrap's outside click (and Escape, with the focus back on the toggle) for the user menu. The popover rises
+by core's own height transition, dropped under `prefers-reduced-motion: reduce`; the user menu rises by an animation
+that exists only under `no-preference`.
+
+### D5
+
+`readingbar::edit_applies()` is core's predicate, the one `core_renderer::edit_switch()` asks; `context()` carries it as
+`canedit`, and the renderer adds `edit_switch()`'s output as `editswitch` (trusted, triple-stashed). `edit_switch()`
+mints a new random id per call, so the layer's switch is a second form with its own React mount and its own
+`core/edit_switch` binding, and both work. The navbar's switch comes first in the document, so a lookup by the
+"Edit mode" label (Behat's `I turn editing mode on`) still finds that one.
+
+### Tests and gates
+
+`tests/local/compactnav_test.php` (the setting's default and an explicit `'0'`, the app, focus mode, the layouts, the
+candidates, the threshold, the splice), `tests/output/compactnav_render_test.php` (the real header: armed with four
+custom menu items, nothing with a short navigation, with the setting off, in the app and in focus mode, each beside its
+control), `tests/local/compactnav_source_test.php` (the module by spelling: the armed guard, the observers and no timer,
+the frame, the count, the range, the toggler, the press outside, the build), `tests/local/compactnav_scss_test.php` and
+`tests/local/sheets_scss_test.php` (scopes, ranges, no `!important`, reduced motion, the sheets' parts and 44px
+targets), the D5 cases in `readingbar_test` and `readingbar_render_test`; the Behat feature
+`tests/behat/theme_dimensions_navcompact.feature` (`@theme_dimensions_navcompact`, with the theme's step `the site
+navigation has "N" custom menu items`); twenty mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`,
+`scss_sheets_*`, `readingbar_edit_*`), dry-matched; `readingbar_layer_appended` repointed at the renderer's new line.
+
+**Not verified**: anything in a real browser driving the module (the compact mode's decision against core's React
+navigation, the drawer's scrim and press outside, the sheets' motion), the Behat feature (written, not run), the
+mutation sweep, and the matrix. The compact states, the hold and the sheets' geometry were measured on static renders
+(the real header and the compiled sheet in headless Chromium, the module's class writes applied by hand), not with the
+module running.
+
+### Later
+
+- **Notifications and messages as one control** (the canvas's D2 shows one bell carrying both counts, and a sheet with
+  two tabs). Not in this phase: the messages toggle opens core's message drawer (`core_message/message_popover`), not
+  a popover, and one control would need core's notification and conversation services behind it, and the drawer's
+  own state, from a template of the theme's. To be decided as its own piece.
+
 ## The brand on dark surfaces (owner's request, 2026-10-18)
 
 Where the site name stands as the brand, an uploaded logo must have a version for dark surfaces.
@@ -306,8 +421,8 @@ names a dark logo), so the theme adds it until Boost Union does.
 - Phase 2, the drawer: shipped, see its section above.
 - Phase 3, reading: built, see "Phase 3 as built" above (the offset variable is `--dimensions-navbar-offset`, and core's
   anchor offset is `scroll-margin-top`, not `scroll-padding-top`). Sticky course tabs (C5) were left out of it.
-- Phase 4: tablet compact mode (B5), notifications and messages as one control with a bottom sheet
-  on phones (D2), the user menu as a sheet (D3), role shortcuts in the course context bar (D5).
+- Phase 4: built, see "Phase 4 as built" above. The merge of notifications and messages into one control is left
+  for later (its section says why).
 
 Practices every phase keeps: never hide the bar while focus or an open menu is inside it; Escape,
 focus trap and focus return on every drawer and sheet, with `inert` behind; `prefers-reduced-motion`

@@ -27,7 +27,7 @@ namespace theme_dimensions\local;
 /**
  * Where the navbar follows the reading, and what it says while it does: phase 3 of the navbar.
  *
- * Three features share one page predicate and live here, so the renderer only asks:
+ * The features share one page predicate and live here, so the renderer only asks:
  *
  * - The band as progress (C3, {@see applies()}): on an activity page the 3px signature band fills from the left as
  *   the page is scrolled; on the course page it shows the reader's completion of the course, computed here
@@ -36,6 +36,8 @@ namespace theme_dimensions\local;
  *   the same 60px carrying the activity's (or the course's) name, the course and its completion, a read-only
  *   status of the activity and, where the course index exists, a control that opens it with core's own toggler
  *   attributes. On by default ({@see SETTING_CONTEXT}).
+ * - The role shortcut (D5, {@see edit_applies()}): a reader core lets edit the page gets core's edit mode switch in
+ *   the layer, since the layer covers the navbar's own.
  * - Auto-hide (C1, {@see autohide_applies()}): the navbar slides up on scroll down and returns on the first scroll
  *   up, its 3px band left at the top. Off by default: an administrator picks the page kinds
  *   ({@see SETTING_AUTOHIDE}).
@@ -297,9 +299,11 @@ final class readingbar {
      * - The status of the activity, read-only: on 5.3 core's linear navigation footer owns the manual completion
      *   button, and a status cannot duplicate it. Read from core's own cm_completion_details, never computed here.
      * - The course index control, only where the drawer exists ({@see has_course_index()}).
+     * - Whether the reader gets core's edit mode switch in the layer ({@see edit_applies()}); the renderer adds the
+     *   switch itself, core's edit_switch() output, as editswitch.
      *
      * @param \moodle_page $page The page being rendered; {@see context_applies()} said yes.
-     * @return array kind, isactivity, title, subline, hasindex, drawerid, hasstatus, cmid, state, complete.
+     * @return array kind, isactivity, title, subline, hasindex, drawerid, hasstatus, cmid, state, complete, canedit.
      */
     public static function context(\moodle_page $page): array {
         $kind = self::kind($page);
@@ -323,6 +327,7 @@ final class readingbar {
             'cmid' => 0,
             'state' => '',
             'complete' => false,
+            'canedit' => self::edit_applies($page),
         ];
 
         if ($kind === self::KIND_ACTIVITY) {
@@ -345,6 +350,20 @@ final class readingbar {
         $data['subline'] = implode(' · ', $parts);
 
         return $data;
+    }
+
+    /**
+     * Whether the reader gets core's edit mode switch in the context layer (D5).
+     *
+     * Core's own predicate, the one core_renderer::edit_switch() asks before it draws the switch in the navbar: the
+     * layer covers that switch while it is shown, so a reader who may edit the page finds it again there. A student
+     * gets nothing new; core's linear footer already carries "Next".
+     *
+     * @param \moodle_page $page The page being rendered.
+     * @return bool
+     */
+    public static function edit_applies(\moodle_page $page): bool {
+        return $page->user_allowed_editing();
     }
 
     /**

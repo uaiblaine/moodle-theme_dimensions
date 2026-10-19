@@ -5,6 +5,26 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Tablet and sheets** (phase 4 of the navbar; 2026100515). Between tablet and desktop
+  widths, when the site's navigation would send more than two items into its "More" menu, the navbar takes the phone's
+  layout: core's menu button, the logo and the icons on the right, with the navigation in the side menu (B5). The
+  decision is the browser's, read from what core's own navigation measured, and the navigation is held back until it
+  is made, so the first paint never shows items about to go; at tablet width the side menu then gets a scrim, closes
+  on a press outside it and stacks above the docked drawers. On phones the notifications popover (D2) and the user menu
+  (D3) open as bottom sheets: full width, rounded top, a grab handle, scrolling inside, a scrim, 44px rows, rising only
+  without `prefers-reduced-motion`. In the context bar a reader who may edit the page finds core's edit mode switch
+  again (D5). Never in the Moodle app; focus mode keeps its own bar. Notifications and messages are not merged into one
+  control yet.
+  - Setting `navbarcompact` (Identity tab), a checkbox that ships on and reads as on until an explicit `0` is stored.
+  - Every decision of B5 is `classes/local/compactnav.php`; the renderer splices `dimensions-navcompact-armed` into the
+    layout's body attributes and arms the new `amd/src/compactnav.js`, which writes `dimensions-navcompact-measured`,
+    `dimensions-nav-compact` and takes `d-md-none` off core's toggler while compact. New `scss/compactnav.scss` and
+    `scss/sheets.scss`. D5 is `readingbar::edit_applies()`, core's `user_allowed_editing()`, with core's
+    `edit_switch()` rendered into `theme_dimensions/navbar_readingbar`.
+  - Twenty mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`, `scss_sheets_*`,
+    `readingbar_edit_*`), dry-matched; `readingbar_layer_appended` follows the renderer's new line. Behat feature
+    `theme_dimensions_navcompact.feature` and the step `the site navigation has "N" custom menu items`.
+
 - **The bar that follows the reading** (phase 3 of the navbar; 2026100514). On activity pages and the course page the 3px band is the reading progress: it fills from the left as an
   activity page is scrolled, and shows the reader's completion of the course on the course page (computed on the
   server); a faint track shows behind it, and every other page keeps the full band. Past the page header the navbar's

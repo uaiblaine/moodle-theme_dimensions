@@ -362,6 +362,38 @@ final class readingbar_render_test extends \advanced_testcase {
     }
 
     /**
+     * An editing teacher finds core's edit mode switch again in the layer, a second one with its own id, after the
+     * navbar's own; a student gets the layer and no switch.
+     *
+     * @return void
+     */
+    public function test_the_layer_carries_cores_edit_switch_for_a_reader_who_may_edit(): void {
+        [$course, $cm] = $this->course();
+        $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $plain = $this->navbar($this->activity_header($course, $cm));
+        $this->assertStringContainsString(self::LAYER, $plain, 'Control: the student gets the layer.');
+        $this->assertStringNotContainsString('dimensions-ctxbar-edit', $plain);
+        $this->assertStringNotContainsString('editmode-switch-form', $plain, 'Nor core\'s switch: a student edits nothing.');
+
+        $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'editingteacher'));
+        $navbar = $this->navbar($this->activity_header($course, $cm));
+
+        $this->assertSame(2, substr_count($navbar, 'editmode-switch-form'), 'The navbar\'s switch and the layer\'s.');
+        $this->assertMatchesRegularExpression(
+            '~data-region="dimensions-ctxbar-edit"><form [^>]*class="[^"]*editmode-switch-form~',
+            $navbar
+        );
+        $this->assertLessThan(
+            strpos($navbar, self::LAYER),
+            strpos($navbar, 'editmode-switch-form'),
+            'The navbar\'s own switch comes first, so a lookup by its label finds it.'
+        );
+        preg_match_all('~id="(editingswitch[^"]+)"~', $navbar, $ids);
+        $this->assertCount(2, array_unique($ids[1]), 'Two switches, two ids.');
+    }
+
+    /**
      * The template's own example renders the two words of the status and the control with core's toggler attributes.
      *
      * @return void

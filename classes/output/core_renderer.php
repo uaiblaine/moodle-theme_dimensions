@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\output;
 
+use theme_dimensions\local\compactnav;
 use theme_dimensions\local\coursenotice\builder as coursenotice_builder;
 use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
@@ -144,6 +145,11 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * core writes for a logged-in account - mobileprimarynav beside usermenu.avatardata - for the reason
      * given above; any other template's context is left as it came.
      *
+     * A layout whose primary navigation can overflow by more than {@see compactnav::MAXHIDDEN} items gets
+     * {@see compactnav::BODY_ARMED} spliced into its body attributes and the compact navbar's module armed, while
+     * {@see compactnav::arms()} says so. Guarded by the SHAPE - bodyattributes beside primarymoremenu - because
+     * Boost Union's layouts build both before the one call that renders them, and the count is only in the latter.
+     *
      * The two layouts that print Boost Union's course related hints get this theme's course notice
      * in their place, under the same key: Boost Union's include writes the key only when it has a
      * hint, so the value is SET here whatever the include did, and an empty string when the notice
@@ -202,6 +208,21 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
            the drift test in core_renderer_test reads as two tab strips on one page. */
         if (is_array($context) && array_key_exists('secondarymoremenu', $context) && category_hero::current() !== null) {
             $context['secondarymoremenu'] = false;
+        }
+
+        /* The compact navbar on tablets (B5), armed only where the primary navigation can overflow by more than
+           compactnav::MAXHIDDEN items at all. Guarded by the SHAPE of a layout's context - its body attributes beside
+           the primary navigation's more menu, both of which Boost Union's layouts build before this one call - for the
+           reason the docblock gives. The module is armed here because this is where the decision is made. */
+        if (
+            is_array($context)
+            && isset($context['bodyattributes'], $context['primarymoremenu'])
+            && is_string($context['bodyattributes'])
+            && is_array($context['primarymoremenu'])
+            && compactnav::arms($this->page, $context['primarymoremenu'])
+        ) {
+            $context['bodyattributes'] = compactnav::body_attributes($context['bodyattributes']);
+            $this->page->requires->js_call_amd('theme_dimensions/compactnav', 'init', [compactnav::client_config()]);
         }
 
         if (is_array($context) && in_array($templatename, self::HINT_LAYOUTS, true)) {
@@ -427,7 +448,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * matter: scss/readingbar.scss lays it over the whole nav, the nearest positioned ancestor (nothing
      * between #usernavigation and the nav is positioned, in core or in Boost Union). The client module
      * that runs the band, the swap and auto-hide is armed here too, on every reading page, with or
-     * without the layer: on the course page it is what paints the reader's completion on the band.
+     * without the layer: on the course page it is what paints the reader's completion on the band. A reader core
+     * lets edit the page ({@see readingbar::edit_applies()}) gets core's edit mode switch in the layer, rendered
+     * again by core's own edit_switch(): the navbar's switch is hidden under the layer while it is shown (D5).
      *
      * @return string
      */
@@ -451,7 +474,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
 
         if (readingbar::applies($this->page)) {
             if (readingbar::context_applies($this->page)) {
-                $output .= $this->render_from_template('theme_dimensions/navbar_readingbar', readingbar::context($this->page));
+                $layer = readingbar::context($this->page);
+                if ($layer['canedit']) {
+                    // Core's own switch, rendered again: a second id, its own form and its own module (D5).
+                    $layer['editswitch'] = (string) $this->edit_switch();
+                }
+                $output .= $this->render_from_template('theme_dimensions/navbar_readingbar', $layer);
             }
             $this->page->requires->js_call_amd('theme_dimensions/readingbar', 'init', [readingbar::client_config($this->page)]);
         }
