@@ -79,6 +79,11 @@ function theme_dimensions_get_main_scss_content($theme) {
     // nested under the drawer's own class, and it reads the family tokens post.scss declares.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/drawer.scss');
 
+    // And the navbar that follows the reading (classes/local/readingbar.php): the band's track, the context layer
+    // and auto-hide. Every rule is scoped to a body class the renderer adds or to the navbar's own class, and it
+    // reads the navbar pill mixin and the tokens post.scss declares.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/readingbar.scss');
+
     // And the competency framework's pages and dialogues (tool_lp, report_competency, block_lp), scoped
     // to the body classes core derives for those scripts, the block's root and the dim-comp- classes
     // only the theme's copies of their templates carry. It reads Font Awesome's fa-content() and

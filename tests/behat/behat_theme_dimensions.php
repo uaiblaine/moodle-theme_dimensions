@@ -349,4 +349,28 @@ class behat_theme_dimensions extends behat_base {
 
         \theme_dimensions\local\focusmode::reset_caches();
     }
+
+    /**
+     * Show the navbar's context layer, as amd/src/readingbar.js does once the page header has scrolled away.
+     *
+     * The Behat site never swaps the bar with the scroll (readingbar::client_config() hands the module its flag): a
+     * scenario that scrolled would find the global bar's controls out of reach. So this step writes the one class
+     * the module's setContext() writes, on the main navbar, and waits for the fade, after which Selenium sees the
+     * layer as displayed. On the Behat site the course index control keeps core's toggler attribute throughout.
+     *
+     * @Given /^I show the context bar of the navbar$/
+     * @return void
+     * @throws \Behat\Mink\Exception\ExpectationException When the page has no context layer to show.
+     */
+    public function i_show_the_context_bar_of_the_navbar(): void {
+        $this->require_javascript();
+        $layer = 'document.querySelector(\'nav.navbar.fixed-top:not(.boost-union-menubar) [data-region="dimensions-ctxbar"]\')';
+        if (!$this->evaluate_script("return {$layer} !== null;")) {
+            throw new \Behat\Mink\Exception\ExpectationException('The navbar has no context layer.', $this->getSession());
+        }
+        $this->execute_script(
+            "document.querySelector('nav.navbar.fixed-top:not(.boost-union-menubar)').classList.add('dimensions-ctx-on');"
+        );
+        $this->getSession()->wait(self::get_timeout() * 1000, "window.getComputedStyle({$layer}).opacity === '1'");
+    }
 }

@@ -34,6 +34,7 @@ use theme_dimensions\local\focusmode;
 use theme_dimensions\local\guesthome;
 use theme_dimensions\local\guestnav;
 use theme_dimensions\local\login;
+use theme_dimensions\local\readingbar;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -302,6 +303,21 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $title = get_string('navbardrawer', 'theme_dimensions', null, true);
         $description = get_string('navbardrawer_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: The context bar on activity pages and the course page. Default on, and read as on unless an
+        // explicit '0' was stored ({@see readingbar::context_enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . readingbar::SETTING_CONTEXT;
+        $title = get_string('navbarcontextbar', 'theme_dimensions', null, true);
+        $description = get_string('navbarcontextbar_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: The page kinds whose navbar hides on scroll down. None by default ({@see readingbar::autohide_kinds()}).
+        $name = 'theme_dimensions/' . readingbar::SETTING_AUTOHIDE;
+        $title = get_string('navbarautohide', 'theme_dimensions', null, true);
+        $description = get_string('navbarautohide_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configmulticheckbox($name, $title, $description, [], readingbar::kinds());
         $tab->add($setting);
 
         // Setting: The full logo's variant for dark surfaces, the partner of Boost Union's logo ({@see darklogo}).

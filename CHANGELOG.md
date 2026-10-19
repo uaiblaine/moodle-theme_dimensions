@@ -5,6 +5,30 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The bar that follows the reading** (phase 3 of the navbar; 2026100514). On activity pages and the course page the 3px band is the reading progress: it fills from the left as an
+  activity page is scrolled, and shows the reader's completion of the course on the course page (computed on the
+  server); a faint track shows behind it, and every other page keeps the full band. Past the page header the navbar's
+  content swaps, at the same height, for a context layer: the activity's (or the course's) name, the course and
+  "X of Y completed", a read-only "Pending" / "Completed" chip read from core's completion data (core's linear footer
+  keeps the button) and a control that opens the course index (B1) where the course format has one. Scrolling up
+  brings the global bar back. Optionally the navbar hides on the way down and returns on the first way up, its band
+  left at the top, with the drawers, their togglers, anchors, the quiz timer and the grading table moving up with it.
+  The swap and the slide animate only without `prefers-reduced-motion`; nothing changes while the focus is in the bar,
+  one of its menus is open or a drawer lies over the page. Never in focus mode, on the front page, in the Moodle app,
+  or for a visitor while the visitor's actions are shown; auto-hide never on a Behat site or beside Boost Union's menu
+  bar. Sticky course tabs (C5) are not part of it.
+  - Setting `navbarcontextbar` (Identity tab), a checkbox that ships on and reads as on until an explicit `0` is stored.
+  - Setting `navbarautohide` (Identity tab), the page kinds whose navbar hides (activity pages, the course page); none
+    by default.
+  - Every decision is `classes/local/readingbar.php`; the renderer appends `theme_dimensions/navbar_readingbar` to
+    `navbar_plugin_output()` (no copy of Boost Union's navbar), arms `amd/src/readingbar.js` and adds the body classes
+    `dimensions-readingbar` and `dimensions-autohide`. New `scss/readingbar.scss`; the band in `scss/post.scss` reads
+    `--dimensions-band-progress`. New theme-owned properties `--dimensions-band-progress` and
+    `--dimensions-navbar-offset`.
+  - Twenty-one mutation gates (`readingbar_*`, `js_readingbar_*`, `scss_readingbar_reduced_motion`, `scss_band_scale`),
+    dry-matched; the sweep is still owed. Behat feature `theme_dimensions_readingbar.feature` and the step
+    `I show the context bar of the navbar`.
+
 - **The mobile drawer of a logged-in account** (phase 2 of the navbar; 2026100513). On a phone, the side menu of a
   logged-in account (not a visitor, not the guest account, not the Moodle app) opens on who is logged in - core's
   avatar, name and metadata, and a role line ("Site administrator", and the number of courses in progress) - then a

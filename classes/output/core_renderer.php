@@ -29,6 +29,7 @@ use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
 use theme_dimensions\local\guestnav;
 use theme_dimensions\local\login;
+use theme_dimensions\local\readingbar;
 
 /**
  * Core renderer of this theme, extending the one of Boost Union.
@@ -354,7 +355,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Returns HTML attributes to use within the body tag, adding the focus mode and the dark logo classes.
+     * Returns HTML attributes to use within the body tag, adding the focus mode, dark logo and reading classes.
      *
      * Boost Union calls this from inside its layout file, with the page's cm already set,
      * which is why focus mode needs no hook for the class and never meets
@@ -384,6 +385,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $additionalclasses,
             darklogo::body_classes($this->page->theme, $this->darklogo_flavour())
         );
+
+        // The navbar that follows the reading: the band's track, and auto-hide's offsets where it is on.
+        $additionalclasses = array_merge($additionalclasses, readingbar::body_classes($this->page));
 
         return parent::body_attributes($additionalclasses);
     }
@@ -419,6 +423,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * immediately before the user menu, which render_from_template() empties for the same visitors,
      * so the end of this string is the right end of the navbar.
      *
+     * The context bar ({@see readingbar}) is appended after them, and its place in the string does not
+     * matter: scss/readingbar.scss lays it over the whole nav, the nearest positioned ancestor (nothing
+     * between #usernavigation and the nav is positioned, in core or in Boost Union). The client module
+     * that runs the band, the swap and auto-hide is armed here too, on every reading page, with or
+     * without the layer: on the course page it is what paints the reader's completion on the band.
+     *
      * @return string
      */
     public function navbar_plugin_output() {
@@ -437,6 +447,13 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
 
         if (guestnav::applies($this->page)) {
             $output .= $this->render_from_template('theme_dimensions/navbar_guest', guestnav::context());
+        }
+
+        if (readingbar::applies($this->page)) {
+            if (readingbar::context_applies($this->page)) {
+                $output .= $this->render_from_template('theme_dimensions/navbar_readingbar', readingbar::context($this->page));
+            }
+            $this->page->requires->js_call_amd('theme_dimensions/readingbar', 'init', [readingbar::client_config($this->page)]);
         }
 
         return $output;
