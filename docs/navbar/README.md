@@ -1,7 +1,9 @@
 # Navbar and navigation drawer: design record
 
-Status: phase 1 in implementation (2026-10-18). Brainstorm: `brainstorm.html` (pt-BR, published as a
-private artifact). States canvas: `canvas/` (Design canvas sources, 14 artboards, one row per phase).
+Status: phase 1 merged (#9, 28c5fb4); phase 2 in review on branch `navbar-phase2-drawer` (2026-10-19, version
+2026100513; what was verified is at the end of the phase 2 section). Brainstorm:
+`brainstorm.html` (pt-BR, published as a private artifact). States canvas: `canvas/` (Design canvas sources,
+14 artboards, one row per phase).
 
 ## Goal
 
@@ -69,6 +71,91 @@ Mechanism:
   at the start of the drawer content. Re-diff it against Boost Union's copy on every Boost Union
   update.
 
+## Phase 2: the drawer of a logged-in account
+
+| Idea | What ships |
+|---|---|
+| B2 | The mobile drawer of a logged-in real account (not a visitor, not the guest account, not the Moodle app) is the theme's own: the identity, labelled sections with icons, the current page marked (`aria-current="page"`, a tint and a 3px mark), and a footer with appearance and language. |
+| B3 | A row with children opens a sub-panel that slides in, with a back control naming the parent. Three levels and more. |
+| B4 | "Continue where you left off": the first block, filled the first time the drawer is shown. |
+| D4 | Light, Dark and System in the footer, through core's own colour mode machinery. |
+| B1 | Deferred to phase 3 (below). |
+
+Visitors and the guest account keep Boost Union's list with the "New here?" card of phase 1, unchanged. Giving
+them the sections and the sub-panels too (as the A4 artboard draws) is an open decision of the owner's.
+
+Mechanism:
+
+- One class decides and builds, `classes/local/drawernav.php`, renderer-free: the setting `navbardrawer` (default
+  on; only a stored `'0'` is off), a logged-in real account, guestnav's excluded layouts, not the Moodle app. Its
+  `context()` reads only what core and Boost Union already put in the layout context - `mobileprimarynav` and
+  `usermenu` - plus three cheap facts of the session.
+- `render_from_template()`, guarded by the SHAPE of a logged-in account's layout (`mobileprimarynav` beside
+  `usermenu.avatardata`), writes `dimensionsdrawer`. The override of `theme_boost/primary-drawer-mobile` draws
+  `theme_dimensions/drawer_nav` while that key is set and Boost Union's list otherwise; Boost Union's child partial,
+  navbar and drawers stay theirs, uncopied.
+- The identity is core's: the avatars, `usermenu.userfullname` and the metadata lines (under "log in as", the real
+  user's name with core's "You are logged in as" line), printed as core's `user_menu_metadata` prints them. The
+  theme composes no name and reads no profile field.
+- **The role line's rule**: "Site administrator" while `is_siteadmin()` (a read of `$CFG->siteadmins`, no statement)
+  at render time, and the number of courses in progress added when the drawer is first shown, from the deferred
+  call - core's own timeline classification, the "In progress" filter of My courses
+  (`course_filter_courses_by_timeline_classification()`). A per-course role ("Student") is not a site fact and is
+  not shown.
+- **Sections**: core's primary nodes and the custom menu are "Browse"; each Boost Union smart menu in submenu mode
+  is a section of its own, labelled with the menu's title, its items as the rows (inline smart menus are already
+  merged into the top level by Boost Union). **Icons**: a key-to-Font Awesome map for core's nodes (`home` house,
+  `myhome` gauge, `mycourses` graduation cap, `siteadminnode` gear, `calendar` calendar - the glyphs core's own pix
+  icons map to), a smart menu item's own icon (already in its text, so no second glyph), `fa-circle-dot` otherwise;
+  a sub-panel's rows carry no default glyph.
+- **No-JavaScript fallback**: every panel is server-rendered, flat, after the root, as a block with an anchor of its
+  own; a row with children is a link to that anchor and the back control a link to the parent's. Without
+  `amd/src/drawer.js` every level is reachable by scrolling or following the links (the drawer itself needs Boost's
+  JavaScript to open, so this is the case of the theme's module failing). The module turns the blocks into layers:
+  the current one visible, every other one `inert`, moved aside and hidden once its slide has ended; the focus goes
+  to the new panel's back control and returns to the row that opened it; Escape inside a sub-panel goes back one
+  level; closing the drawer puts it back on the root. The slide exists only under
+  `prefers-reduced-motion: no-preference`.
+- **"Continue where you left off"** is one web service, `theme_dimensions_get_drawer_summary`
+  (`classes/external/get_drawer_summary.php`, read-only, `readonlysession`, no parameter, the session's own user
+  only, the guest refused), asked once per page on Boost's `theme_boost/drawers:shown` for
+  `theme_boost-drawers-primary`, never on page load. Its delegate, `classes/local/drawersummary.php`: the most
+  recent item of `block_recentlyaccesseditems` while that block is installed and enabled, decided again on the course
+  module it links (`uservisible` now, in a course the reader can access); else the course entered last (core's
+  `course_get_recent_courses()`); else no card. Either way "X of Y completed" while completion is enabled and the
+  person is tracked, from the counts core's progress percentage divides. The helper records nothing under "log in
+  as", so that session gets the course card. A skeleton while loading; a failure removes the card quietly.
+- The stylesheet is `scss/drawer.scss`, every rule nested under `.dimensions-drawer`, colours from the family tokens
+  with Bootstrap's as the fallback, every control a 44px target with the theme's 3px ring.
+
+**The colour mode finding.** Core 5.3's `\theme_boost\colour_mode` is public: `can_choose_mode()` (the experimental
+`theme_boost/enablecolourmodes`, off by default, and a session that can store a preference), `get_current_mode()`,
+`get_modes()`, `get_cookie_attributes()` and the preference `theme_boost_colourmode`, which
+`theme_boost_user_preferences()` declares so the preference web service may write it. Core's AMD
+`theme_boost/colourmode` listens on the document for `[data-action="set-colourmode"]` and writes `data-bs-theme`,
+`aria-checked` and `.active` in every `[data-region="colourmode-menu"]` (which must carry
+`data-cookieattributes`), the preference and the cookie; it registers only after `init()`. So the drawer's switch is
+a radio group carrying those hooks, drawn only while `can_choose_mode()`, and the theme writes nothing: the arrow keys
+press core's option. Language follows `\core\output\language_menu` (the `langmenu` setting, a course that forces its
+language, fewer than two languages) with the addresses it builds.
+
+**B1 is deferred to phase 3.** The course index already has core's trigger, the floating toggle at the page's left
+edge (`drawer-toggles` in Boost Union's `theme_boost/drawers`). Its place in this design is the context bar (C2),
+which phase 3 builds as a layer swap of the same 60px bar. A trigger now would be a third position, to be moved
+again in phase 3, or a copy of Boost Union's navbar or drawers. And there is no room for it: a logged-in learner's
+bar on an activity page at phone width (Boost Union's `theme_boost/navbar` markup, and the Behat capture at Selenium's
+mobile size) already carries the drawer toggle, then in `#usernavigation` the colour mode menu (when enabled), the focus
+mode entry, the notification bell, the messages toggle and the avatar, with dividers between the groups.
+
+Verified on 2026-10-19: the Behat feature `tests/behat/theme_dimensions_drawer.feature` (2 scenarios, 39 steps) on m503;
+captures of the drawer at mobile size taken from throwaway Behat scenarios (the root in light and dark, a sub-panel),
+which found one defect, fixed: a sub-panel shorter than the drawer ended in a band of the drawer's grey; the thirteen
+`drawer_*` and `js_drawer_*` gates swept with `mdl mutate --fast` on PostgreSQL and MariaDB, each reddening its named
+test on both. Not verified: the slide's motion itself (a capture shows a settled state) and a real phone.
+
+Boost Union's "Dynamic courses" smart menu item with no condition lists the site course too (its query selects every
+row of `{course}`); the drawer shows what Boost Union hands it, so that is Boost Union's to filter.
+
 ## The brand on dark surfaces (owner's request, 2026-10-18)
 
 Where the site name stands as the brand, an uploaded logo must have a version for dark surfaces.
@@ -108,11 +195,10 @@ names a dark logo), so the theme adds it until Boost Union does.
 
 ## Later phases (from the canvas)
 
-- Phase 2, the drawer: identity header, "Continue where you left off" (recently accessed items, loaded
-  when the drawer opens), sections with labels and icons, slide-in sub-levels with a back control,
-  appearance and language in the footer; the course index drawer gets its trigger in the context bar.
+- Phase 2, the drawer: shipped, see its section above.
 - Phase 3, reading: the band becomes a reading progress line (C3) first; then the context bar (C2,
-  same 60px, layer swap, read-only completion status beside core's linear footer); then auto-hide
+  same 60px, layer swap, read-only completion status beside core's linear footer), with the course index
+  drawer's trigger in it (B1, deferred from phase 2); then auto-hide
   (C1) behind a `--dim-navbar-offset` variable that drawers, anchors and `scroll-padding-top` read,
   with the band pinned at the top while the bar is away; sticky course tabs (C5) if needed.
 - Phase 4: tablet compact mode (B5), notifications and messages as one control with a bottom sheet

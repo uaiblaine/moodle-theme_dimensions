@@ -1,0 +1,426 @@
+// Theme Dimensions - The mobile drawer of a logged-in account.
+//
+// templates/drawer_nav.mustache and templates/drawer_item.mustache, drawn inside Boost's primary drawer
+// by this theme's override of theme_boost/primary-drawer-mobile (theme_dimensions\local\drawernav).
+// This file is concatenated into the theme's main SCSS and so reaches every page of the site: every rule
+// is nested under the drawer's own class, which nothing core or Boost Union ships carries, and the dark
+// half at the foot names :root[data-bs-theme="dark"] before it, Moodle 5.3's one colour-mode signal.
+//
+// The drawer's tokens are declared on its root and read the theme's family tokens, each with Bootstrap's
+// own as the fallback, so the colour mode and a flavour's brand colour move them; no literal colour is
+// written here. Every painted background states the ink it pairs with.
+//
+// Without amd/src/drawer.js the panels are sections one under the other; the module adds
+// dimensions-drawer-js and they become layers in one viewport. Only the current one is visible: the
+// others are inert, moved off to the side, and hidden once their slide has ended. The motion exists only
+// under prefers-reduced-motion: no-preference; otherwise the panels swap at once.
+
+.dimensions-drawer {
+    --dim-drawer-surface: var(--dimensions-surface, var(--bs-body-bg));
+    --dim-drawer-ink: var(--dimensions-ink, var(--bs-body-color));
+    --dim-drawer-muted: var(--dimensions-ink-muted, var(--bs-secondary-color));
+    --dim-drawer-line: var(--dimensions-line, var(--bs-border-color));
+    --dim-drawer-tint: var(--dimensions-surface-alt, var(--bs-tertiary-bg));
+    --dim-drawer-current: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle));
+    --dim-drawer-current-ink: var(--dimensions-ink-strong, var(--bs-emphasis-color));
+    --dim-drawer-mark: var(--dimensions-brand-fill, var(--bs-primary));
+    --dim-drawer-glyph: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis));
+    --dim-drawer-brand: var(--dimensions-brand-fill, var(--bs-primary));
+    --dim-drawer-on-brand: var(--dimensions-on-brand-fill, var(--dim-ds-text-inverse));
+    --dim-drawer-rail: var(--dim-ds-border-inverse);
+    --dim-drawer-bar: var(--dim-ds-accent-highlight);
+    --dim-drawer-ring: var(--dim-ds-focus-ring);
+    // A flex item of Boost's .drawercontent column: grown to its height, or a sub-panel shorter than the
+    // drawer ends in a band of the drawer's own grey under it.
+    flex: 1 0 auto;
+    background-color: var(--dim-drawer-surface);
+    color: var(--dim-drawer-ink);
+    font-size: .9375rem;
+
+    @keyframes dimensions-drawer-pulse {
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .55;
+        }
+    }
+
+    // ---- Panels ------------------------------------------------------------------------------------
+    // The padding is the panel's, not the drawer's: the viewport clips what slides, and the 3px ring at
+    // its 2px offset must stay inside it.
+    .dimensions-drawer-panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--dim-ds-space-md);
+        padding: var(--dim-ds-space-sm) var(--dim-ds-space-sm) var(--dim-ds-space-lg);
+        background-color: var(--dim-drawer-surface);
+        color: var(--dim-drawer-ink);
+    }
+
+    &.dimensions-drawer-js {
+        .dimensions-drawer-viewport {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dimensions-drawer-panel[data-state="before"],
+        .dimensions-drawer-panel[data-state="after"] {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            visibility: hidden;
+        }
+
+        .dimensions-drawer-panel[data-state="before"] {
+            transform: translateX(-100%);
+        }
+
+        .dimensions-drawer-panel[data-state="after"] {
+            transform: translateX(100%);
+        }
+
+        .dimensions-drawer-panel[data-state="current"] {
+            position: relative;
+            transform: none;
+            visibility: visible;
+        }
+
+        // The card loads only through the module: without it, it would be a skeleton for ever.
+        .dimensions-drawer-resume {
+            display: block;
+        }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        &.dimensions-drawer-js .dimensions-drawer-panel {
+            transition:
+                transform var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+                visibility 0s linear var(--dim-ds-motion-base);
+        }
+
+        &.dimensions-drawer-js .dimensions-drawer-panel[data-state="current"] {
+            transition:
+                transform var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+                visibility 0s;
+        }
+
+        .dimensions-drawer-resume[aria-busy="true"] .dimensions-drawer-resume-link {
+            animation: dimensions-drawer-pulse 1.2s ease-in-out infinite;
+        }
+    }
+
+    // ---- Identity ----------------------------------------------------------------------------------
+    .dimensions-drawer-who {
+        display: flex;
+        gap: var(--dim-ds-space-sm);
+        align-items: center;
+        padding: var(--dim-ds-space-3xs) var(--dim-ds-space-xs);
+    }
+
+    .dimensions-drawer-avatars {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+
+        .userpicture,
+        .userinitials {
+            width: 2.75rem;
+            height: 2.75rem;
+        }
+
+        // Core's second avatar under "log in as": the real user's, overlapping the one being viewed as.
+        .avatar.realuser {
+            margin-left: -.75rem;
+
+            .userpicture,
+            .userinitials {
+                width: 1.75rem;
+                height: 1.75rem;
+            }
+        }
+    }
+
+    .dimensions-drawer-whotext {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.3;
+    }
+
+    .dimensions-drawer-name {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .dimensions-drawer-meta,
+    .dimensions-drawer-role {
+        color: var(--dim-drawer-muted);
+        font-size: .8125rem;
+    }
+
+    .dimensions-drawer-role:empty {
+        display: none;
+    }
+
+    // ---- "Continue where you left off" -----------------------------------------------------------
+    .dimensions-drawer-resume {
+        display: none;
+    }
+
+    .dimensions-drawer-resume-link {
+        display: flex;
+        flex-direction: column;
+        gap: var(--dim-ds-space-xxs);
+        padding: var(--dim-ds-space-sm) var(--dim-ds-space-md);
+        border-radius: var(--dim-ds-radius-lg);
+        background-color: var(--dim-drawer-brand);
+        color: var(--dim-drawer-on-brand);
+        text-decoration: none;
+
+        &:hover,
+        &:focus {
+            background-color: var(--dim-drawer-brand);
+            color: var(--dim-drawer-on-brand);
+            text-decoration: none;
+        }
+    }
+
+    .dimensions-drawer-resume-kicker {
+        font-size: .6875rem;
+        font-weight: 700;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+    }
+
+    .dimensions-drawer-resume-title {
+        font-size: .9375rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .dimensions-drawer-resume-sub {
+        font-size: .8125rem;
+    }
+
+    .dimensions-drawer-resume-rail {
+        display: block;
+        height: 5px;
+        margin-top: var(--dim-ds-space-xxs);
+        overflow: hidden;
+        border-radius: var(--dim-ds-radius-xs);
+        background-color: var(--dim-drawer-rail);
+    }
+
+    .dimensions-drawer-resume-bar {
+        display: block;
+        width: 0;
+        height: 100%;
+        background-color: var(--dim-drawer-bar);
+    }
+
+    .dimensions-drawer-resume--norail .dimensions-drawer-resume-rail {
+        display: none;
+    }
+
+    .dimensions-drawer-resume[aria-busy="true"] {
+        .dimensions-drawer-resume-title,
+        .dimensions-drawer-resume-sub {
+            display: block;
+            height: .875rem;
+            border-radius: var(--dim-ds-radius-xs);
+            background-color: var(--dim-drawer-rail);
+        }
+
+        .dimensions-drawer-resume-title {
+            width: 70%;
+            height: 1rem;
+        }
+
+        .dimensions-drawer-resume-sub {
+            width: 45%;
+        }
+    }
+
+    // ---- Sections and rows -------------------------------------------------------------------------
+    .dimensions-drawer-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--dim-ds-space-3xs);
+    }
+
+    .dimensions-drawer-label {
+        margin: 0;
+        padding: var(--dim-ds-space-xxs) var(--dim-ds-space-xs);
+        color: var(--dim-drawer-muted);
+        font-size: .6875rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .dimensions-drawer-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--dim-ds-space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dimensions-drawer-item {
+        display: flex;
+        gap: var(--dim-ds-space-sm);
+        align-items: center;
+        min-height: 2.75rem;
+        padding: var(--dim-ds-space-xxs) var(--dim-ds-space-sm);
+        border-radius: var(--dim-ds-radius-md);
+        background-color: transparent;
+        color: var(--dim-drawer-ink);
+        text-decoration: none;
+
+        &:hover {
+            background-color: var(--dim-drawer-tint);
+            color: var(--dim-drawer-ink);
+            text-decoration: none;
+        }
+    }
+
+    .dimensions-drawer-item.is-current {
+        background-color: var(--dim-drawer-current);
+        box-shadow: inset 3px 0 0 var(--dim-drawer-mark);
+        color: var(--dim-drawer-current-ink);
+        font-weight: 600;
+    }
+
+    .dimensions-drawer-icon {
+        flex: 0 0 auto;
+        margin: 0;
+        color: var(--dim-drawer-glyph);
+    }
+
+    .dimensions-drawer-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow-wrap: anywhere;
+
+        .icon {
+            color: var(--dim-drawer-glyph);
+        }
+    }
+
+    .dimensions-drawer-chevron {
+        flex: 0 0 auto;
+        margin: 0;
+        color: var(--dim-drawer-muted);
+    }
+
+    // ---- A sub-panel's head and foot ---------------------------------------------------------------
+    .dimensions-drawer-back {
+        display: inline-flex;
+        gap: var(--dim-ds-space-xxs);
+        align-items: center;
+        align-self: flex-start;
+        min-height: 2.75rem;
+        padding: 0 var(--dim-ds-space-xs);
+        border-radius: var(--dim-ds-radius-md);
+        color: var(--dim-drawer-glyph);
+        font-weight: 700;
+        text-decoration: none;
+
+        .icon {
+            margin: 0;
+        }
+
+        &:hover {
+            background-color: var(--dim-drawer-tint);
+            color: var(--dim-drawer-glyph);
+        }
+    }
+
+    .dimensions-drawer-title {
+        margin: 0;
+        padding: 0 var(--dim-ds-space-xs);
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .dimensions-drawer-openparent {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        padding: 0 var(--dim-ds-space-md);
+        border: 1.5px solid var(--dim-drawer-glyph);
+        border-radius: var(--dim-ds-radius-md);
+        background-color: var(--dim-drawer-surface);
+        color: var(--dim-drawer-glyph);
+        font-weight: 700;
+        text-decoration: none;
+
+        &:hover {
+            background-color: var(--dim-drawer-tint);
+            color: var(--dim-drawer-glyph);
+        }
+    }
+
+    // ---- Appearance --------------------------------------------------------------------------------
+    // Core's colourmode module marks the chosen option with aria-checked and .active; both read here.
+    .dimensions-drawer-modes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--dim-ds-space-3xs);
+        padding: 3px;
+        border-radius: var(--dim-ds-radius-pill);
+        background-color: var(--dim-drawer-tint);
+        color: var(--dim-drawer-ink);
+    }
+
+    .dimensions-drawer-mode {
+        display: inline-flex;
+        gap: var(--dim-ds-space-xxs);
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        padding: 0 var(--dim-ds-space-xxs);
+        border: 0;
+        border-radius: var(--dim-ds-radius-pill);
+        background-color: transparent;
+        color: var(--dim-drawer-ink);
+        font-size: .8125rem;
+
+        .icon {
+            margin: 0;
+        }
+
+        &[aria-checked="true"] {
+            background-color: var(--dim-drawer-brand);
+            color: var(--dim-drawer-on-brand);
+            font-weight: 700;
+        }
+    }
+
+    // ---- The theme's ring, on every control the drawer draws ---------------------------------------
+    .dimensions-drawer-item,
+    .dimensions-drawer-back,
+    .dimensions-drawer-openparent,
+    .dimensions-drawer-resume-link,
+    .dimensions-drawer-mode {
+        &:focus-visible {
+            outline: var(--dim-ds-focus-ring-width) solid var(--dim-drawer-ring);
+            outline-offset: 2px;
+        }
+    }
+}
+
+// ---- The dark half ------------------------------------------------------------------------------------
+// The surfaces and inks follow Bootstrap's dark tokens through the family tokens already. The current
+// row's mark is the brand fill, which a navy brand turns into a line nobody sees on a dark surface: it
+// takes the highlight blue instead.
+:root[data-bs-theme="dark"] .dimensions-drawer {
+    --dim-drawer-mark: var(--dim-ds-accent-highlight);
+}

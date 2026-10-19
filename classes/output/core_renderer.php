@@ -26,6 +26,7 @@ namespace theme_dimensions\output;
 
 use theme_dimensions\local\coursenotice\builder as coursenotice_builder;
 use theme_dimensions\local\darklogo;
+use theme_dimensions\local\drawernav;
 use theme_dimensions\local\guestnav;
 use theme_dimensions\local\login;
 
@@ -135,6 +136,13 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * dimensionsguest, for this theme's override of theme_boost/primary-drawer-mobile, which the navbar
      * includes with the layout context.
      *
+     * A layout drawn for a logged-in real account gets the theme's mobile drawer while
+     * {@see drawernav::applies()}: its template data goes into the context as dimensionsdrawer, from the
+     * primary navigation and the user menu core already put there, and the same override of
+     * theme_boost/primary-drawer-mobile draws it in place of Boost Union's list. Guarded by the SHAPE
+     * core writes for a logged-in account - mobileprimarynav beside usermenu.avatardata - for the reason
+     * given above; any other template's context is left as it came.
+     *
      * The two layouts that print Boost Union's course related hints get this theme's course notice
      * in their place, under the same key: Boost Union's include writes the key only when it has a
      * hint, so the value is SET here whatever the include did, and an empty string when the notice
@@ -168,6 +176,21 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if (is_array($context) && isset($context['usermenu']['unauthenticateduser']) && guestnav::applies($this->page)) {
             $context['usermenu'] = false;
             $context['dimensionsguest'] = guestnav::context();
+        }
+
+        /* The drawer of a logged-in account, keyed on the shape of the context that carries both of its
+           sources: a visitor's user menu has no avatars, so this and the block above never meet. */
+        if (
+            is_array($context)
+            && isset($context['mobileprimarynav'], $context['usermenu']['avatardata'])
+            && drawernav::applies($this->page)
+        ) {
+            $context['dimensionsdrawer'] = drawernav::context(
+                (array) $context['mobileprimarynav'],
+                (array) $context['usermenu'],
+                $this->page,
+                $this
+            );
         }
 
         /* The category showcase's hero draws the category's tabs itself, so the band the layout

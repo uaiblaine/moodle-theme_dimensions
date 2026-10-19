@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests that the showcase's reads declared read-only leave the session as they found it.
+ * Tests that the theme's reads declared read-only leave the session as they found it.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -38,7 +38,8 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  * Core's contract for a read-only session is the one write_close() checks
  * (lib/classes/session/manager.php, the array_session_diff() of $SESSION taken at session start
  * and at close): no $SESSION key added, removed or changed. That is what is asserted here around
- * the showcase's two logged-in reads, the way the client makes them. $USER is not compared, as core
+ * the showcase's two logged-in reads and the mobile drawer's summary, the way the clients make them.
+ * $USER is not compared, as core
  * does not compare it. The page's own preference writes (category_listing::view(),
  * category_hero::fold(), remembered::record()) are page code and the remember_category_state write
  * service; no read reaches them.
@@ -53,6 +54,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  */
 #[CoversClass(get_category_rows::class)]
 #[CoversClass(get_card_details::class)]
+#[CoversClass(get_drawer_summary::class)]
 final class readonly_session_test extends \advanced_testcase {
     use \theme_dimensions\local\category\fixture;
 
@@ -83,6 +85,7 @@ final class readonly_session_test extends \advanced_testcase {
         return [
             'theme_dimensions_get_category_rows' => ['categoryid' => $categoryid],
             'theme_dimensions_get_card_details' => ['courseids' => [$courseid]],
+            'theme_dimensions_get_drawer_summary' => [],
         ];
     }
 
@@ -212,6 +215,9 @@ final class readonly_session_test extends \advanced_testcase {
             // The control: the call found the fixture's course, so its whole path ran.
             if ($name === 'theme_dimensions_get_category_rows') {
                 $this->assertSame(1, (int) $result['data']['total'], $name);
+            } else if ($name === 'theme_dimensions_get_drawer_summary') {
+                // The reader is enrolled nowhere and opened nothing: the whole path ran to "no card".
+                $this->assertFalse($result['data']['resume']['hasitem'], $name);
             } else {
                 $this->assertSame([(int) $course->id], array_map('intval', array_column($result['data']['details'], 'id')), $name);
             }
