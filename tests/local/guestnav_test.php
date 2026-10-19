@@ -86,6 +86,26 @@ final class guestnav_test extends \advanced_testcase {
     }
 
     /**
+     * An administrator logged in as somebody keeps the user menu: the session holds a real account.
+     *
+     * The user menu is also where core puts the way back from "log in as", so emptying it here would
+     * strand the administrator; the guard reads the live session, never the page's shape alone.
+     *
+     * @return void
+     */
+    public function test_a_login_as_session_keeps_the_user_menu(): void {
+        $this->resetAfterTest();
+        $page = $this->page();
+        $student = self::getDataGenerator()->create_user();
+
+        $this->setAdminUser();
+        \core\session\manager::loginas((int) $student->id, \context_system::instance());
+        $this->assertTrue(\core\session\manager::is_loggedinas(), 'Precondition: the session is a login-as one.');
+
+        $this->assertFalse(guestnav::applies($page));
+    }
+
+    /**
      * Only an explicit '0' switches it off; a site that never saved the setting has it on.
      *
      * @return void
