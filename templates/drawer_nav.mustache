@@ -1,0 +1,301 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/drawer_nav
+
+    The mobile primary drawer of a logged-in account, drawn by this theme's override of
+    theme_boost/primary-drawer-mobile from the layout context key dimensionsdrawer, which the core
+    renderer writes from theme_dimensions\local\drawernav::context().
+
+    The root panel holds the identity, the "Continue where you left off" card, the sections and the
+    footer; every sub-panel follows it, flat, in the order a parent comes before its children. Without
+    amd/src/drawer.js the panels are sections one under the other and every row with children is a link
+    to its panel's anchor, so each level stays reachable; the module turns them into sliding panels
+    (inert while hidden, Escape goes back one level, the focus follows) and fills the card and the role
+    line from theme_dimensions_get_drawer_summary the first time the drawer is shown. The card is shown
+    by the stylesheet only once the module has armed the drawer: without it, it would load for ever.
+
+    The avatars and the metadata lines are printed raw, as core's user_menu_metadata prints them; core
+    wrote that HTML. The appearance switch carries core's colour mode hooks (data-region="colourmode-menu"
+    with data-cookieattributes, and the data-action="set-colourmode" options), which core's
+    theme_boost/colourmode module answers: it writes the mode, the preference and the cookie.
+
+    Context variables required for this template (described without braces, because a Mustache comment
+    closes at the first pair of closing braces it meets):
+
+    * rootid - The root panel's id
+    * identity - avatars (content, classes), fullname, metadata (content, classes), roleline
+    * sections - id, label, items (see theme_dimensions/drawer_item)
+    * panels - id, parentid, level, title, backlabel, backaria, items, hasurl, url, openlabel
+    * appearance - false, or cookieattributes and modes (mode, label, icon, togglelabel, isactive, tabindex)
+    * language - false, or panelid, parentid, backlabel, backaria, current and items (text, url, lang, iscurrent)
+
+    Example context (json):
+    {
+        "rootid": "dimensions-drawer-panel-root",
+        "identity": {
+            "avatars": [
+                {
+                    "content": "<span class=\"userinitials size-35\">AB</span>",
+                    "classes": "current"
+                }
+            ],
+            "fullname": "Ana Beatriz Souza",
+            "metadata": [
+                {
+                    "content": "1 failed login attempt",
+                    "classes": "loginfailures"
+                }
+            ],
+            "roleline": "Site administrator"
+        },
+        "sections": [
+            {
+                "id": "dimensions-drawer-section-1",
+                "label": "Browse",
+                "items": [
+                    {
+                        "text": "Dashboard",
+                        "url": "https://example.com/my/",
+                        "icon": "fa fa-gauge",
+                        "iscurrent": false,
+                        "haschildren": false,
+                        "panelid": "",
+                        "tooltip": "",
+                        "attributes": []
+                    },
+                    {
+                        "text": "My courses",
+                        "url": "https://example.com/my/courses.php",
+                        "icon": "fa fa-graduation-cap",
+                        "iscurrent": true,
+                        "haschildren": false,
+                        "panelid": "",
+                        "tooltip": "",
+                        "attributes": []
+                    }
+                ]
+            },
+            {
+                "id": "dimensions-drawer-section-2",
+                "label": "Help",
+                "items": [
+                    {
+                        "text": "Help centre",
+                        "url": "#",
+                        "icon": "fa fa-circle-dot",
+                        "iscurrent": false,
+                        "haschildren": true,
+                        "panelid": "dimensions-drawer-panel-1",
+                        "tooltip": "",
+                        "attributes": []
+                    }
+                ]
+            }
+        ],
+        "panels": [
+            {
+                "id": "dimensions-drawer-panel-1",
+                "parentid": "dimensions-drawer-panel-root",
+                "level": 1,
+                "title": "Help centre",
+                "backlabel": "Navigation",
+                "backaria": "Back to Navigation",
+                "items": [
+                    {
+                        "text": "Frequently asked questions",
+                        "url": "https://example.com/faq",
+                        "icon": "",
+                        "iscurrent": false,
+                        "haschildren": false,
+                        "panelid": "",
+                        "tooltip": "",
+                        "attributes": []
+                    }
+                ],
+                "hasurl": true,
+                "url": "https://example.com/help",
+                "openlabel": "Go to Help centre"
+            }
+        ],
+        "appearance": {
+            "cookieattributes": "; Max-Age=31536000; Path=/; SameSite=Lax",
+            "modes": [
+                {
+                    "mode": "light",
+                    "label": "Light",
+                    "icon": "fa-sun",
+                    "togglelabel": "Colour mode: Light",
+                    "isactive": false,
+                    "tabindex": -1
+                },
+                {
+                    "mode": "dark",
+                    "label": "Dark",
+                    "icon": "fa-moon",
+                    "togglelabel": "Colour mode: Dark",
+                    "isactive": false,
+                    "tabindex": -1
+                },
+                {
+                    "mode": "auto",
+                    "label": "System",
+                    "icon": "fa-circle-half-stroke",
+                    "togglelabel": "Colour mode: System",
+                    "isactive": true,
+                    "tabindex": 0
+                }
+            ]
+        },
+        "language": {
+            "panelid": "dimensions-drawer-panel-lang",
+            "parentid": "dimensions-drawer-panel-root",
+            "backlabel": "Navigation",
+            "backaria": "Back to Navigation",
+            "current": "English",
+            "items": [
+                {
+                    "text": "English",
+                    "url": "#",
+                    "lang": "",
+                    "iscurrent": true
+                },
+                {
+                    "text": "Português - Brasil",
+                    "url": "https://example.com/my/courses.php?lang=pt_br",
+                    "lang": "pt-BR",
+                    "iscurrent": false
+                }
+            ]
+        }
+    }
+}}
+<div class="dimensions-drawer" id="dimensions-drawer" data-region="dimensions-drawer">
+    <div class="dimensions-drawer-viewport">
+        <div class="dimensions-drawer-panel" id="{{rootid}}" data-region="dimensions-drawer-panel" data-level="0">
+            {{#identity}}
+            <div class="dimensions-drawer-who" data-region="dimensions-drawer-identity">
+                <span class="avatars dimensions-drawer-avatars">
+                    {{#avatars}}<span class="avatar {{classes}}">{{{content}}}</span>{{/avatars}}
+                </span>
+                <span class="dimensions-drawer-whotext">
+                    <span class="dimensions-drawer-name">{{fullname}}</span>
+                    {{#metadata}}<span class="dimensions-drawer-meta {{classes}}">{{{content}}}</span>{{/metadata}}
+                    <span class="dimensions-drawer-role" data-region="dimensions-drawer-role">{{roleline}}</span>
+                </span>
+            </div>
+            {{/identity}}
+            <div class="dimensions-drawer-resume" data-region="dimensions-drawer-resume" aria-busy="true">
+                <a class="dimensions-drawer-resume-link" data-region="dimensions-drawer-resume-link">
+                    <span class="dimensions-drawer-resume-kicker">{{#str}} drawer_resume, theme_dimensions {{/str}}</span>
+                    <span class="dimensions-drawer-resume-title" data-region="dimensions-drawer-resume-title">
+                        <span class="visually-hidden">{{#str}} loading, core {{/str}}</span>
+                    </span>
+                    <span class="dimensions-drawer-resume-sub" data-region="dimensions-drawer-resume-sub"></span>
+                    <span class="dimensions-drawer-resume-rail" aria-hidden="true">
+                        <span class="dimensions-drawer-resume-bar" data-region="dimensions-drawer-resume-bar"></span>
+                    </span>
+                </a>
+            </div>
+            {{#sections}}
+            <div class="dimensions-drawer-section">
+                <p class="dimensions-drawer-label" id="{{id}}">{{label}}</p>
+                <ul class="dimensions-drawer-list" aria-labelledby="{{id}}">
+                    {{#items}}<li class="dimensions-drawer-row">{{> theme_dimensions/drawer_item }}</li>{{/items}}
+                </ul>
+            </div>
+            {{/sections}}
+            {{#appearance}}
+            <div class="dimensions-drawer-section">
+                <p class="dimensions-drawer-label" id="dimensions-drawer-appearance">{{#str}} appearance, core {{/str}}</p>
+                <div class="dimensions-drawer-modes" role="radiogroup" aria-labelledby="dimensions-drawer-appearance" data-region="colourmode-menu" data-cookieattributes="{{cookieattributes}}">
+                    {{#modes}}
+                    <button type="button" class="dimensions-drawer-mode{{#isactive}} active{{/isactive}}" role="radio" aria-checked="{{#isactive}}true{{/isactive}}{{^isactive}}false{{/isactive}}" tabindex="{{tabindex}}" data-action="set-colourmode" data-colourmode="{{mode}}" data-icon="{{icon}}" data-togglelabel="{{togglelabel}}">
+                        <i class="icon fa {{icon}} fa-fw" aria-hidden="true"></i>
+                        <span>{{label}}</span>
+                    </button>
+                    {{/modes}}
+                </div>
+            </div>
+            {{/appearance}}
+            {{#language}}
+            <ul class="dimensions-drawer-list dimensions-drawer-language">
+                <li class="dimensions-drawer-row">
+                    <a class="dimensions-drawer-item" href="#{{panelid}}" data-action="dimensions-drawer-open" data-target="{{panelid}}">
+                        <i class="icon fa fa-language fa-fw dimensions-drawer-icon" aria-hidden="true"></i>
+                        <span class="dimensions-drawer-text"><span class="visually-hidden">{{#str}} language, core {{/str}}: </span>{{current}}</span>
+                        <i class="icon fa fa-chevron-right fa-fw dimensions-drawer-chevron" aria-hidden="true"></i>
+                    </a>
+                </li>
+            </ul>
+            {{/language}}
+        </div>
+        {{#panels}}
+        <div class="dimensions-drawer-panel" id="{{id}}" data-region="dimensions-drawer-panel" data-level="{{level}}" data-parent="{{parentid}}">
+            <a class="dimensions-drawer-back" href="#{{parentid}}" data-action="dimensions-drawer-back" aria-label="{{backaria}}">
+                <i class="icon fa fa-chevron-left fa-fw" aria-hidden="true"></i>
+                <span>{{backlabel}}</span>
+            </a>
+            <p class="dimensions-drawer-title" id="{{id}}-title">{{title}}</p>
+            <ul class="dimensions-drawer-list" aria-labelledby="{{id}}-title">
+                {{#items}}<li class="dimensions-drawer-row">{{> theme_dimensions/drawer_item }}</li>{{/items}}
+            </ul>
+            {{#hasurl}}
+            <a class="dimensions-drawer-openparent" href="{{{url}}}">{{openlabel}}</a>
+            {{/hasurl}}
+        </div>
+        {{/panels}}
+        {{#language}}
+        <div class="dimensions-drawer-panel" id="{{panelid}}" data-region="dimensions-drawer-panel" data-level="1" data-parent="{{parentid}}">
+            <a class="dimensions-drawer-back" href="#{{parentid}}" data-action="dimensions-drawer-back" aria-label="{{backaria}}">
+                <i class="icon fa fa-chevron-left fa-fw" aria-hidden="true"></i>
+                <span>{{backlabel}}</span>
+            </a>
+            <p class="dimensions-drawer-title" id="{{panelid}}-title">{{#str}} language, core {{/str}}</p>
+            <ul class="dimensions-drawer-list" aria-labelledby="{{panelid}}-title">
+                {{#items}}
+                <li class="dimensions-drawer-row">
+                    {{#iscurrent}}
+                    <span class="dimensions-drawer-item is-current" aria-current="true">
+                        <span class="dimensions-drawer-text">{{text}}</span>
+                        <i class="icon fa fa-check fa-fw dimensions-drawer-chevron" aria-hidden="true"></i>
+                    </span>
+                    {{/iscurrent}}
+                    {{^iscurrent}}
+                    <a class="dimensions-drawer-item" href="{{url}}"{{#lang}} lang="{{lang}}"{{/lang}}>
+                        <span class="dimensions-drawer-text">{{text}}</span>
+                    </a>
+                    {{/iscurrent}}
+                </li>
+                {{/items}}
+            </ul>
+        </div>
+        {{/language}}
+    </div>
+</div>
+{{#js}}
+require(['theme_dimensions/drawer'], function(Drawer) {
+    Drawer.init('dimensions-drawer');
+});
+{{/js}}
+{{#appearance}}
+{{#js}}
+require(['theme_boost/colourmode'], function(ColourMode) {
+    ColourMode.init();
+});
+{{/js}}
+{{/appearance}}

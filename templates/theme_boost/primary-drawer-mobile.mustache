@@ -61,13 +61,18 @@
 {{!
     theme_dimensions: this is Boost Union's override of theme_boost/primary-drawer-mobile, copied
     verbatim from Boost Union's upgrade-503 branch (templates/theme_boost/primary-drawer-mobile.mustache,
-    2026-10-14, release v5.2-r12, version 2026100500), with ONE modification:
+    2026-10-14, release v5.2-r12, version 2026100500), with TWO modifications:
 
     * The visitor's "New here?" card (theme_dimensions/navbar_guest_card) at the start of the drawer's
       content, drawn from the layout context key dimensionsguest, which this theme's core renderer
       writes only while theme_dimensions\local\guestnav applies.
+    * The drawer of a logged-in account (theme_dimensions/drawer_nav) in place of Boost Union's list,
+      drawn from the layout context key dimensionsdrawer, which the core renderer writes only while
+      theme_dimensions\local\drawernav applies. Boost Union's list below is untouched and is what
+      every other session gets, the visitor's card included.
 
-    Re-diff it against Boost Union's copy on every Boost Union update and carry their changes over.
+    Re-diff it against Boost Union's copy on every Boost Union update and carry their changes over:
+    the list inside the inverted section is Boost Union's markup, line for line.
 }}
 {{< theme_boost/drawer }}
     {{$id}}theme_boost-drawers-primary{{/id}}
@@ -90,6 +95,8 @@
     {{/drawerheading}}
     {{$drawercontent}}
         {{#dimensionsguest}}{{> theme_dimensions/navbar_guest_card }}{{/dimensionsguest}}
+        {{#dimensionsdrawer}}{{> theme_dimensions/drawer_nav }}{{/dimensionsdrawer}}
+        {{^dimensionsdrawer}}
         <div class="list-group">
             {{#mobileprimarynav}}
                 {{#haschildren}}
@@ -102,6 +109,7 @@
                 {{/haschildren}}
             {{/mobileprimarynav}}
         </div>
+        {{/dimensionsdrawer}}
     {{/drawercontent}}
     {{$drawerstate}}show-drawer-primary{{/drawerstate}}
 {{/ theme_boost/drawer}}

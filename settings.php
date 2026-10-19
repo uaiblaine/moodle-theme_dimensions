@@ -29,6 +29,7 @@ use theme_dimensions\local\category\filterfields_setting;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\darklogo;
+use theme_dimensions\local\drawernav;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\guesthome;
 use theme_dimensions\local\guestnav;
@@ -292,6 +293,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $name = 'theme_dimensions/' . guestnav::SETTING;
         $title = get_string('navbarguestactions', 'theme_dimensions', null, true);
         $description = get_string('navbarguestactions_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: The mobile drawer of a logged-in account. Default on, and read as on unless an explicit
+        // '0' was stored ({@see drawernav::enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . drawernav::SETTING;
+        $title = get_string('navbardrawer', 'theme_dimensions', null, true);
+        $description = get_string('navbardrawer_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
         $tab->add($setting);
 

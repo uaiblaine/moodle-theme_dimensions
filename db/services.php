@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - External functions of the category showcase.
+ * Theme Dimensions - External functions of the category showcase and the mobile drawer.
  *
  * The first four answer the logged-in showcase's client module over core/ajax:
  * loginrequired, ajax, no capability of their own - every refusal is decided inside the
@@ -23,7 +23,9 @@
  * state of a category and nothing else. The fifth answers a visitor over
  * lib/ajax/service-nologin.php and so is not loginrequired: it serves only a public
  * category's listing, refuses every logged-in session, and is closed until the site opens it
- * (publicaccess::client_enabled()). None is part of a service such as the mobile one.
+ * (publicaccess::client_enabled()). The sixth answers the mobile drawer of a logged-in account
+ * when it is first shown, about the session's own user only. None is part of a service such as the
+ * mobile one.
  * Registered on upgrade, so any change here ships with a version bump.
  *
  * @package    theme_dimensions
@@ -65,6 +67,15 @@ $functions = [
         'description' => 'Remember the organisation, the view and the filters the reader left one category\'s listing in.',
         'type' => 'write',
         'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
+    'theme_dimensions_get_drawer_summary' => [
+        'classname' => 'theme_dimensions\external\get_drawer_summary',
+        'description' => 'The mobile drawer\'s deferred summary: what to continue and how many courses are in progress.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
         'loginrequired' => true,
         'capabilities' => '',
     ],

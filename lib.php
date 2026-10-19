@@ -75,6 +75,10 @@ function theme_dimensions_get_main_scss_content($theme) {
     // Every rule in it is qualified with the notice's own class.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/coursenotice.scss');
 
+    // And the mobile drawer of a logged-in account (classes/local/drawernav.php). Every rule in it is
+    // nested under the drawer's own class, and it reads the family tokens post.scss declares.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/drawer.scss');
+
     // And the competency framework's pages and dialogues (tool_lp, report_competency, block_lp), scoped
     // to the body classes core derives for those scripts, the block's root and the dim-comp- classes
     // only the theme's copies of their templates carry. It reads Font Awesome's fa-content() and

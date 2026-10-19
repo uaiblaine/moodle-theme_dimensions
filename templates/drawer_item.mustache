@@ -1,0 +1,70 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/drawer_item
+
+    The link of one row of the mobile drawer (theme_dimensions/drawer_nav, which draws the list item
+    around it), built by theme_dimensions\local\drawernav. A row with children is a link to its
+    sub-panel's anchor, which amd/src/drawer.js turns into a sliding panel; without the module the link
+    still reaches the panel, drawn below the root. A row without children is the node's own link.
+
+    The text and the address are printed raw, as Boost Union's and core's drawers print them: core's node
+    text, the custom menu's escaped label, or Boost Union's smart menu markup, and addresses already in
+    their escaped spelling. Every other value is printed escaped.
+
+    Context variables required for this template (described without braces, because a Mustache comment
+    closes at the first pair of closing braces it meets):
+
+    * text - The node's label, HTML
+    * url - The node's address, escaped spelling
+    * icon - The Font Awesome classes of the leading glyph, empty for none
+    * iscurrent - Whether the row is the page being shown
+    * haschildren - Whether the row opens a sub-panel
+    * panelid - The id of that sub-panel, empty without children
+    * tooltip - The node's tooltip, empty for none
+    * attributes - The link attributes kept, each with name and value
+
+    Example context (json):
+    {
+        "text": "My courses",
+        "url": "https://example.com/my/courses.php",
+        "icon": "fa fa-graduation-cap",
+        "iscurrent": true,
+        "haschildren": false,
+        "panelid": "",
+        "tooltip": "",
+        "attributes": [
+            {
+                "name": "target",
+                "value": "_self"
+            }
+        ]
+    }
+}}
+{{#haschildren}}
+<a class="dimensions-drawer-item" href="#{{panelid}}" data-action="dimensions-drawer-open" data-target="{{panelid}}"{{#tooltip}} title="{{.}}"{{/tooltip}}>
+    {{#icon}}<i class="icon {{icon}} fa-fw dimensions-drawer-icon" aria-hidden="true"></i>{{/icon}}
+    <span class="dimensions-drawer-text">{{{text}}}</span>
+    <i class="icon fa fa-chevron-right fa-fw dimensions-drawer-chevron" aria-hidden="true"></i>
+</a>
+{{/haschildren}}
+{{^haschildren}}
+<a class="dimensions-drawer-item{{#iscurrent}} is-current{{/iscurrent}}" href="{{{url}}}"{{#iscurrent}} aria-current="page"{{/iscurrent}}{{#tooltip}} title="{{.}}"{{/tooltip}}{{#attributes}} {{name}}="{{value}}"{{/attributes}}>
+    {{#icon}}<i class="icon {{icon}} fa-fw dimensions-drawer-icon" aria-hidden="true"></i>{{/icon}}
+    <span class="dimensions-drawer-text">{{{text}}}</span>
+</a>
+{{/haschildren}}

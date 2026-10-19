@@ -1,0 +1,429 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Theme Dimensions - Tests for the mobile drawer's decision and template data
+ *
+ * @package    theme_dimensions
+ * @category   test
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace theme_dimensions\local;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+
+/**
+ * Tests for the mobile drawer's decision and template data.
+ *
+ * Every clause is tested by a case that fails it beside a control that passes it in the same test, as
+ * guestnav_test does: a "false" asserted alone stays green after the predicate is replaced by
+ * "return false".
+ *
+ * @package    theme_dimensions
+ * @category   test
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+#[CoversClass(drawernav::class)]
+final class drawernav_test extends \advanced_testcase {
+    /**
+     * Put the user agent back: core_useragent is a singleton.
+     *
+     * @return void
+     */
+    protected function tearDown(): void {
+        \core_useragent::instance(true);
+        parent::tearDown();
+    }
+
+    /**
+     * A page of the given layout, as the renderer would ask about it.
+     *
+     * @param string $layout The page layout.
+     * @return \moodle_page
+     */
+    private function page(string $layout = 'standard'): \moodle_page {
+        $page = new \moodle_page();
+        $page->set_context(\context_system::instance());
+        $page->set_url('/my/courses.php');
+        $page->set_pagelayout($layout);
+
+        return $page;
+    }
+
+    /**
+     * The template data for the given nodes, with an empty user menu.
+     *
+     * @param array $nodes The mobile primary navigation.
+     * @param array $usermenu The user menu.
+     * @return array
+     */
+    private function context(array $nodes, array $usermenu = []): array {
+        return drawernav::context($nodes, $usermenu, $this->page(), $this->core_renderer());
+    }
+
+    /**
+     * A core renderer, for the language menu's export.
+     *
+     * @return
+enderer_base
+     */
+    private function core_renderer(): \renderer_base {
+        global $PAGE;
+
+        return $PAGE->get_renderer('core');
+    }
+
+    /**
+     * A smart menu in submenu mode as Boost Union builds it: an object carrying its record, children as arrays.
+     *
+     * @param string $title The menu's title.
+     * @param array $children Its items.
+     * @return \stdClass
+     */
+    private function smartmenu(string $title, array $children): \stdClass {
+        return (object) [
+            'menudata' => (object) ['id' => 1, 'title' => $title],
+            'title' => '',
+            'url' => null,
+            'text' => $title,
+            'key' => 1,
+            'haschildren' => true,
+            'children' => $children,
+            'sort' => 'abc',
+        ];
+    }
+
+    /**
+     * A smart menu item as Boost Union builds it.
+     *
+     * @param string $title The item's title.
+     * @param string $url Its address.
+     * @param array $children Its children.
+     * @param string $menuicon Its own icon, empty for none.
+     * @return array
+     */
+    private function smartitem(string $title, string $url, array $children = [], string $menuicon = ''): array {
+        $text = '<div class="d-flex flex-column"><span class="boost-union-smartmenu-firstline">' . $title . '</span></div>';
+        if ($menuicon !== '') {
+            $text = '<i class="icon fa fa-star" title="' . $title . '"></i>' . $text;
+        }
+
+        return [
+            'itemdata' => (object) ['id' => 7, 'menuicon' => $menuicon, 'classes' => []],
+            'url' => $url,
+            'key' => 'item-7',
+            'text' => $text,
+            'title' => '',
+            'tooltip' => '',
+            'haschildren' => $children ? 1 : 0,
+            'children' => $children,
+            'attributes' => [['name' => 'target', 'value' => '__blank'], ['name' => 'onclick', 'value' => 'alert(1)']],
+        ];
+    }
+
+    /**
+     * A logged-in account gets the drawer; a visitor and the guest account do not.
+     *
+     * @return void
+     */
+    public function test_it_applies_to_a_logged_in_account_and_not_to_a_visitor_or_the_guest(): void {
+        $this->resetAfterTest();
+        $page = $this->page();
+
+        $this->setUser(self::getDataGenerator()->create_user());
+        $this->assertTrue(drawernav::applies($page), 'Control: a real account.');
+
+        $this->setUser(null);
+        $this->assertFalse(isloggedin(), 'Precondition: nobody is logged in.');
+        $this->assertFalse(drawernav::applies($page));
+
+        $this->setGuestUser();
+        $this->assertFalse(drawernav::applies($page));
+    }
+
+    /**
+     * An administrator logged in as somebody holds a real account, and keeps the drawer.
+     *
+     * @return void
+     */
+    public function test_a_login_as_session_keeps_the_drawer(): void {
+        $this->resetAfterTest();
+        $student = self::getDataGenerator()->create_user();
+        $this->setAdminUser();
+        \core\session\manager::loginas((int) $student->id, \context_system::instance());
+        $this->assertTrue(\core\session\manager::is_loggedinas(), 'Precondition: a login-as session.');
+
+        $this->assertTrue(drawernav::applies($this->page()));
+    }
+
+    /**
+     * Only an explicit '0' switches it off; a site that never saved the setting has it on.
+     *
+     * @return void
+     */
+    public function test_only_an_explicit_zero_switches_it_off(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $page = $this->page();
+
+        unset_config(drawernav::SETTING, drawernav::COMPONENT);
+        $this->assertFalse(get_config(drawernav::COMPONENT, drawernav::SETTING), 'Precondition: never written.');
+        $this->assertTrue(drawernav::applies($page));
+
+        set_config(drawernav::SETTING, '0', drawernav::COMPONENT);
+        $this->assertFalse(drawernav::enabled());
+        $this->assertFalse(drawernav::applies($page));
+
+        set_config(drawernav::SETTING, '1', drawernav::COMPONENT);
+        $this->assertTrue(drawernav::applies($page));
+    }
+
+    /**
+     * The layouts without the navbar, and the Moodle app, are left alone.
+     *
+     * @return void
+     */
+    public function test_the_layouts_without_the_navbar_and_the_app_are_left_alone(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $this->assertTrue(drawernav::applies($this->page('standard')), 'Control: an ordinary layout.');
+        $this->assertFalse(drawernav::applies($this->page('login')));
+        $this->assertFalse(drawernav::applies($this->page('embedded')));
+
+        \core_useragent::instance(true, 'Mozilla/5.0 (Linux; Android 10) MoodleMobile 4.5.0');
+        $this->assertTrue(\core_useragent::is_moodle_app(), 'Precondition: the user agent is the app.');
+        $this->assertFalse(drawernav::applies($this->page('standard')));
+    }
+
+    /**
+     * Core's nodes go to "Browse" with the mapped glyph, the current one marked, a node with no map the default.
+     *
+     * @return void
+     */
+    public function test_core_nodes_are_browse_with_their_glyphs_and_the_current_one_marked(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $context = $this->context([
+            ['key' => 'home', 'text' => 'Home', 'url' => new \moodle_url('/'), 'isactive' => false, 'haschildren' => 0,
+                'children' => []],
+            ['key' => 'mycourses', 'text' => 'My courses', 'url' => new \moodle_url('/my/courses.php', ['a' => 1, 'b' => 2]),
+                'isactive' => true, 'haschildren' => 0, 'children' => []],
+            ['divider' => true],
+            (object) ['sort' => 3, 'text' => 'Custom', 'url' => 'https://example.com/x', 'isactive' => false,
+                'haschildren' => 0, 'children' => []],
+        ]);
+
+        $this->assertCount(1, $context['sections']);
+        $browse = $context['sections'][0];
+        $this->assertSame(get_string('drawer_browse', 'theme_dimensions'), $browse['label']);
+        $this->assertSame(drawernav::SECTION_PREFIX . '1', $browse['id']);
+        $this->assertCount(3, $browse['items'], 'The divider is dropped.');
+        [$home, $mycourses, $custom] = $browse['items'];
+        $this->assertSame('fa fa-house', $home['icon']);
+        $this->assertFalse($home['iscurrent']);
+        $this->assertSame('fa fa-graduation-cap', $mycourses['icon']);
+        $this->assertTrue($mycourses['iscurrent']);
+        $this->assertSame(
+            (new \moodle_url('/my/courses.php', ['a' => 1, 'b' => 2]))->out(),
+            $mycourses['url'],
+            'A moodle_url is spelled escaped, as the template prints it raw.'
+        );
+        $this->assertSame(drawernav::DEFAULT_ICON, $custom['icon']);
+        $this->assertSame([], $context['panels']);
+    }
+
+    /**
+     * A smart menu is a section of its own, its items the rows, an item's own icon left in its text.
+     *
+     * @return void
+     */
+    public function test_a_smart_menu_is_a_section_of_its_own(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $context = $this->context([
+            ['key' => 'home', 'text' => 'Home', 'url' => new \moodle_url('/'), 'haschildren' => 0, 'children' => []],
+            $this->smartmenu('Help &amp; support', [
+                $this->smartitem('FAQ', 'https://example.com/faq', [], 'core:i/star'),
+                $this->smartitem('Contact', 'https://example.com/contact'),
+                ['divider' => true],
+            ]),
+        ]);
+
+        $this->assertCount(2, $context['sections']);
+        $this->assertSame(get_string('drawer_browse', 'theme_dimensions'), $context['sections'][0]['label'], 'Browse first.');
+        $help = $context['sections'][1];
+        $this->assertSame('Help & support', $help['label'], 'The label is plain; the template escapes it.');
+        $this->assertSame(drawernav::SECTION_PREFIX . '2', $help['id']);
+        $this->assertCount(2, $help['items']);
+        [$faq, $contact] = $help['items'];
+        $this->assertSame('', $faq['icon'], 'An item with its own icon carries it in its text.');
+        $this->assertStringContainsString('fa-star', $faq['text']);
+        $this->assertSame(drawernav::DEFAULT_ICON, $contact['icon'], 'Control: an item without one gets the default.');
+        $this->assertSame([['name' => 'target', 'value' => '__blank']], $contact['attributes'], 'Only the allowlisted attributes.');
+    }
+
+    /**
+     * Children open sub-panels, three levels deep, flat in the order a parent comes before its children.
+     *
+     * @return void
+     */
+    public function test_children_open_sub_panels_three_levels_deep(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $leaf = $this->smartitem('Leaf', 'https://example.com/leaf');
+        $leaf['isactive'] = true;
+        $middle = $this->smartitem('Middle', '#', [$leaf]);
+        $top = $this->smartitem('Top', 'https://example.com/top', [$middle, $this->smartitem('Sibling', 'https://example.com/s')]);
+        $context = $this->context([$this->smartmenu('Menu', [$top])]);
+
+        $row = $context['sections'][0]['items'][0];
+        $this->assertTrue($row['haschildren']);
+        $this->assertFalse($row['iscurrent'], 'A row that opens a panel is never the current page.');
+        $this->assertCount(2, $context['panels']);
+        [$first, $second] = $context['panels'];
+
+        $this->assertSame($row['panelid'], $first['id']);
+        $this->assertSame(drawernav::ROOT, $first['parentid']);
+        $this->assertSame(1, $first['level']);
+        $this->assertSame('Top', $first['title']);
+        $this->assertSame(get_string('navigation'), $first['backlabel']);
+        $this->assertTrue($first['hasurl'], 'Top has an address of its own.');
+        $this->assertSame(get_string('drawer_openparent', 'theme_dimensions', 'Top'), $first['openlabel']);
+        $this->assertCount(2, $first['items']);
+        $this->assertSame('', $first['items'][1]['icon'], 'A sub-panel row has no default glyph.');
+
+        $this->assertSame($first['items'][0]['panelid'], $second['id']);
+        $this->assertSame($first['id'], $second['parentid']);
+        $this->assertSame(2, $second['level']);
+        $this->assertSame('Top', $second['backlabel']);
+        $this->assertFalse($second['hasurl'], 'A "#" address is no page to open.');
+        $this->assertTrue($second['items'][0]['iscurrent'], 'The current page three levels down is marked.');
+    }
+
+    /**
+     * The identity is core's: avatars, the name and the metadata lines, and the role line for an administrator alone.
+     *
+     * @return void
+     */
+    public function test_the_identity_is_cores_and_the_role_line_names_an_administrator(): void {
+        $this->resetAfterTest();
+        $usermenu = [
+            'avatardata' => [['content' => '<img src="x" class="userpicture">', 'classes' => 'current']],
+            'userfullname' => 'Ana & Bia',
+            'metadata' => [['content' => 'You are logged in as X', 'classes' => 'viewingas']],
+        ];
+
+        $this->setUser(self::getDataGenerator()->create_user());
+        $identity = drawernav::identity($usermenu);
+        $this->assertSame('Ana & Bia', $identity['fullname']);
+        $this->assertSame($usermenu['avatardata'], $identity['avatars']);
+        $this->assertSame($usermenu['metadata'], $identity['metadata']);
+        $this->assertSame('', $identity['roleline'], 'Control: an ordinary account has no render-time role.');
+
+        $this->setAdminUser();
+        $this->assertSame(get_string('drawer_siteadmin', 'theme_dimensions'), drawernav::identity($usermenu)['roleline']);
+    }
+
+    /**
+     * The appearance switch exists only while core lets this person choose a colour mode.
+     *
+     * @return void
+     */
+    public function test_the_appearance_switch_follows_cores_colour_modes(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        set_config('enablecolourmodes', 0, 'theme_boost');
+        $this->assertFalse(\theme_boost\colour_mode::can_choose_mode(), 'Precondition: colour modes are off.');
+        $this->assertNull(drawernav::appearance());
+
+        set_config('enablecolourmodes', 1, 'theme_boost');
+        set_user_preference(\theme_boost\colour_mode::PREFERENCE, 'dark');
+        $appearance = drawernav::appearance();
+        $this->assertNotNull($appearance);
+        $this->assertSame(\theme_boost\colour_mode::get_cookie_attributes(), $appearance['cookieattributes']);
+        $this->assertSame(['light', 'dark', 'auto'], array_column($appearance['modes'], 'mode'));
+        $this->assertSame([false, true, false], array_column($appearance['modes'], 'isactive'));
+        $this->assertSame([-1, 0, -1], array_column($appearance['modes'], 'tabindex'), 'Only the chosen one is in the tab order.');
+        $this->assertSame(get_string('colourmode:auto', 'theme_boost'), $appearance['modes'][2]['label']);
+
+        $this->setGuestUser();
+        $this->assertNull(drawernav::appearance(), 'The guest cannot store a preference.');
+    }
+
+    /**
+     * The language row exists only while core's language menu offers more than one language.
+     *
+     * @return void
+     */
+    public function test_the_language_row_follows_cores_language_menu(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $page = $this->page();
+        $output = $this->core_renderer();
+
+        $this->assertCount(1, get_string_manager()->get_list_of_translations(), 'Precondition: English alone.');
+        $this->assertNull(drawernav::language($page, $output));
+
+        $folder = $CFG->dataroot . '/lang/xx';
+        check_dir_exists($folder);
+        file_put_contents(
+            $folder . '/langconfig.php',
+            "<?php\n\$string['thislanguage'] = 'Xx';\n\$string['parentlanguage'] = '';\n"
+        );
+        get_string_manager()->reset_caches();
+        $this->assertCount(2, get_string_manager()->get_list_of_translations(), 'Precondition: two languages.');
+
+        $language = drawernav::language($page, $output);
+        $this->assertNotNull($language);
+        $this->assertSame(drawernav::LANGUAGE, $language['panelid']);
+        $this->assertSame(drawernav::ROOT, $language['parentid']);
+        $bylang = array_column($language['items'], null, 'lang');
+        $this->assertArrayHasKey('xx', $bylang, 'The other language carries its lang attribute.');
+        $this->assertStringStartsWith('Xx', $bylang['xx']['text']);
+        $this->assertFalse($bylang['xx']['iscurrent']);
+        $this->assertSame((new \moodle_url('/my/courses.php', ['lang' => 'xx']))->out(false), $bylang['xx']['url']);
+        $current = array_values(array_filter($language['items'], fn($item) => $item['iscurrent']));
+        $this->assertCount(1, $current, 'The current language is marked.');
+
+        $CFG->langmenu = 0;
+        $this->assertNull(drawernav::language($page, $output), 'The site switched the language menu off.');
+    }
+
+    /**
+     * Every key of every row is set, so the template's context stack never reaches the layout around it.
+     *
+     * @return void
+     */
+    public function test_every_row_key_is_always_set(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $context = $this->context([(object) ['text' => 'Bare']]);
+        $this->assertSame(
+            ['text', 'url', 'icon', 'iscurrent', 'haschildren', 'panelid', 'tooltip', 'attributes'],
+            array_keys($context['sections'][0]['items'][0])
+        );
+    }
+}

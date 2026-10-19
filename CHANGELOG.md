@@ -5,6 +5,25 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The mobile drawer of a logged-in account** (phase 2 of the navbar; 2026100513). On a phone, the side menu of a
+  logged-in account (not a visitor, not the guest account, not the Moodle app) opens on who is logged in - core's
+  avatar, name and metadata, and a role line ("Site administrator", and the number of courses in progress) - then a
+  "Continue where you left off" card (the last activity opened, else the last course entered, with "X of Y
+  completed"), the site's navigation under "Browse" and each Boost Union smart menu as a section of its own, with
+  icons and the current page marked. A row with children opens a sub-panel that slides in, with a back control; the
+  focus follows both ways, Escape goes back one level, hidden panels are inert, and reduced motion swaps without a
+  slide. The footer carries Light, Dark and System while core's colour modes let the person choose (core's own
+  `theme_boost/colourmode` writes the mode), and the language while core's language menu offers more than one.
+  Visitors and the guest account keep Boost Union's menu with the "New here?" card. The course index trigger (B1)
+  moves to phase 3's context bar.
+  - Setting `navbardrawer` (Identity tab), a checkbox that ships on and reads as on until an explicit `0` is stored.
+  - Every decision is `classes/local/drawernav.php`; the renderer writes `dimensionsdrawer` by the context's shape
+    (`mobileprimarynav` beside `usermenu.avatardata`) and the override of `theme_boost/primary-drawer-mobile` draws
+    `theme_dimensions/drawer_nav` (re-diff note updated). `amd/src/drawer.js` runs the panels; `scss/drawer.scss`.
+  - New web service `theme_dimensions_get_drawer_summary` (read-only, `readonlysession`, asked once per page when
+    the primary drawer is first shown), delegate `classes/local/drawersummary.php`.
+  - Thirteen mutation gates (`drawer_*`, `js_drawer_*`), each reddening its named test on PostgreSQL and MariaDB.
+
 - **The visitor's navbar: "Log in" and "Create account"** (phase 1; 2026100512). A visitor
   who is not logged in, and the guest account, no longer see core's "Log in" link and "You are currently using
   guest access" in the navbar: two actions stand at its right end instead, "Log in" (an outline pill) and
