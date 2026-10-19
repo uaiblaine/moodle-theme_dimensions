@@ -65,8 +65,9 @@ final class family_tokens_test extends \basic_testcase {
     ];
 
     /**
-     * @var string[] The theme's own names under the same prefix, outside the contract: the navbar's band and pills, and the
-     *      logo variants for dark surfaces (their sources, which the extra SCSS callback overrides, and what a surface reads).
+     * @var string[] The theme's own names under the same prefix, outside the contract: the navbar's band and pills, the
+     *      logo variants for dark surfaces (their sources, which the extra SCSS callback overrides, and what a surface reads),
+     *      and the reading bar's band progress and navbar offset (scss/readingbar.scss).
      */
     private const OWN = [
         '--dimensions-navbar-band',
@@ -81,6 +82,8 @@ final class family_tokens_test extends \basic_testcase {
         '--dimensions-logo-shift',
         '--dimensions-logo-compact-dark',
         '--dimensions-logo-compact-shift',
+        '--dimensions-band-progress',
+        '--dimensions-navbar-offset',
     ];
 
     /** @var string[] The three roots of the light block, in order. */

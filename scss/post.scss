@@ -272,7 +272,13 @@ textarea:focus-visible,
    `border-bottom: none` on a dark navbar - deliberately, because a light hairline looks wrong
    there - with a selector more specific than anything a child theme should be writing to outbid.
    A pseudo-element is not in that argument at all, and it survives whatever Boost Union does to
-   the navbar's borders and shadows in a future release. */
+   the navbar's borders and shadows in a future release.
+
+   The band is also the reading progress (C3, scss/readingbar.scss): scaled from the left by
+   --dimensions-band-progress, a fraction amd/src/readingbar.js writes on the nav of an activity page
+   (how far it is scrolled) and of the course page (the reader's completion of the course). Unset, it
+   is 1 and the band is full, which is every other page. Scaled, never resized: a transform moves no
+   layout. The origin is the left, which the RTL build flips with the rest of the sheet. */
 .navbar.fixed-top {
     &::after {
         position: absolute;
@@ -282,6 +288,8 @@ textarea:focus-visible,
         height: 3px;
         background: var(--dimensions-navbar-band);
         content: "";
+        transform: scaleX(var(--dimensions-band-progress, 1));
+        transform-origin: left center;
     }
 }
 

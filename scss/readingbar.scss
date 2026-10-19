@@ -1,0 +1,249 @@
+/* The navbar that follows the reading (phase 3 of the navbar): the band's track, the context layer and
+   auto-hide. Every decision is classes/local/readingbar.php's and amd/src/readingbar.js runs the scroll;
+   this file only draws. The band's fill is post.scss's ::after, scaled by --dimensions-band-progress.
+
+   Every top-level selector is scoped, because lib.php concatenates this file into the theme's main SCSS
+   and it reaches every page of the site: the reading body class, the auto-hide body class, or the
+   navbar's own class with a class only the module writes (tests/local/readingbar_scss_test.php). The
+   motion exists only under prefers-reduced-motion: no-preference; otherwise every change is a swap. */
+
+/* ---- C3: the track behind the band's fill ---------------------------------- */
+/* The band's own colour at a fraction of it, so a flavour's --dimensions-navbar-band moves both. Opacity on
+   a pseudo-element of its own, because the palette has no tint of the band and stylelint refuses
+   color-mix(). Drawn only on reading pages, and on the main navbar only: Boost Union's menu bar is a
+   .navbar.fixed-top too, and it carries no progress. Under a full band it is not seen. */
+body.dimensions-readingbar {
+    .navbar.fixed-top:not(.boost-union-menubar)::before {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: var(--dimensions-navbar-band);
+        opacity: .28;
+        content: "";
+    }
+
+    /* The swap is the whole animation: the global bar's items fade out as the layer fades in, and back.
+       Visibility goes with the opacity, so the hidden half leaves the tab order and the accessibility
+       tree once its fade is over and is in both from the first frame of its fade in. */
+    @media (prefers-reduced-motion: no-preference) {
+        .navbar.fixed-top .dimensions-ctxbar,
+        .navbar.fixed-top > .container-fluid > *,
+        .navbar.fixed-top #usernavigation > * {
+            transition:
+                opacity var(--dim-ds-motion-fast) var(--dim-ds-motion-ease),
+                visibility var(--dim-ds-motion-fast);
+        }
+    }
+}
+
+/* ---- C2: the context layer ----------------------------------------------- */
+/* templates/navbar_readingbar.mustache, printed inside #usernavigation and laid over the whole nav: the
+   nav is fixed, so it is the containing block, and nothing between the two is positioned (core's and
+   Boost Union's compiled sheets set no position on #usernavigation, .navbar-nav or .container-fluid).
+   It keeps off the band's 3px. Transparent: the nav's own fill shows through, whatever the navbar
+   colour, and the type takes the brand colour the navbar's colour mode resolved, never inherit
+   (the focus bar's lesson: the nav sets no colour of its own). */
+.navbar.fixed-top .dimensions-ctxbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 3px;
+    left: 0;
+    display: flex;
+    gap: var(--dim-ds-space-xs);
+    align-items: center;
+    padding: 0 var(--dim-ds-space-md) 0 var(--dim-ds-space-xs);
+    color: var(--bs-navbar-brand-color, var(--bs-body-color));
+    visibility: hidden;
+    opacity: 0;
+}
+
+.navbar.fixed-top .dimensions-ctxbar-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.navbar.fixed-top .dimensions-ctxbar-title {
+    overflow: hidden;
+    font-size: .9375rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.navbar.fixed-top .dimensions-ctxbar-sub {
+    overflow: hidden;
+    font-size: .75rem;
+    opacity: .82;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The course index control (B1): the focus entry's pill with no room for a label, at the 44px of a
+   touch target. Core's global .icon margin is a spacer for a label this control has not, and
+   Bootstrap's .btn writes outline 0 on focus-visible over the theme's global ring, so both are
+   restated here. */
+.navbar.fixed-top .dimensions-ctxbar-index {
+    @include dimensions-navbar-pill;
+    @include dimensions-navbar-pill-icon;
+    flex: 0 0 auto;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+
+    .icon {
+        margin: 0;
+    }
+
+    &:focus-visible {
+        outline: var(--dim-ds-focus-ring-width) solid var(--dim-ds-focus-ring);
+        outline-offset: 2px;
+    }
+}
+
+/* The activity's status, read-only. Both words are in the markup and data-state shows one, so the module
+   flips an attribute and composes no text. "Completed" wears the family's success pair, a ground that
+   states its ink; "Pending" is the navbar's outline pill. */
+.navbar.fixed-top .dimensions-ctxbar-status {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: .25rem;
+    align-items: center;
+    min-height: 1.875rem;
+    padding: .25rem .75rem;
+    border: 1px solid var(--dimensions-pill-border, var(--dim-ds-border-default));
+    border-radius: var(--dim-ds-radius-pill);
+    color: var(--bs-navbar-brand-color, var(--bs-body-color));
+    font-size: .8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+
+    .icon {
+        margin: 0;
+    }
+
+    &[data-state="complete"] {
+        border-color: var(--dimensions-success-edge, var(--bs-success-border-subtle));
+        background-color: var(--dimensions-success-tint, var(--bs-success-bg-subtle));
+        color: var(--dimensions-success-ink, var(--bs-success-text-emphasis));
+    }
+
+    &[data-state="complete"] .dimensions-ctxbar-status-pending,
+    &[data-state="pending"] .dimensions-ctxbar-status-complete {
+        display: none;
+    }
+}
+
+/* The swap. The module writes dimensions-ctx-on on the nav past the page header and takes it away on the
+   way back; the global bar's items are hidden in place (visibility keeps their boxes, so nothing in the
+   bar reflows), the layer is shown over them. */
+.navbar.fixed-top.dimensions-ctx-on {
+    .dimensions-ctxbar {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    > .container-fluid > :not(#usernavigation),
+    #usernavigation > :not(.dimensions-ctxbar) {
+        visibility: hidden;
+        opacity: 0;
+    }
+}
+
+/* ---- C1: auto-hide ------------------------------------------------------- */
+/* Armed by a body class the server writes only where an administrator ticked the page kind, and never on
+   the Behat site. Standing down while Boost Union's menu bar is on the page: its rules move the navbar,
+   the page and the drawers by the bar's height at a specificity these would outrank, and folding that
+   height in here would mean writing a zero length (stylelint's length-zero-no-unit) for every page
+   without one.
+
+   --dimensions-navbar-offset is the height the navbar takes from the top of the screen: 60px at rest, none
+   while the module has put dimensions-navbar-away on the body. Every fixed or sticky element core and Boost
+   Union place under the navbar on these pages reads it here, each rule a copy of core's with the offset in
+   place of $navbar-height (theme/boost/scss/moodle/drawer.scss, layout.scss, modules.scss): the drawers
+   below lg and from lg, the anchored drawers of the course page and the limited-width activity pages, their
+   togglers, the message drawer, the quiz timer and the assignment's grading table. #page keeps its margin:
+   the content must not jump. The zero is written as a product because a bare zero needs a unit in calc()
+   and stylelint warns on one; the sticky footer's fallback is core's own spelling, carried in a string
+   for the same reason, as Boost Union carries it. */
+$dimensions-anchored-gap: "#{$drawer-anchored-top-gap} - #{$drawer-anchored-header-padding}";
+$dimensions-anchored-top: "calc(var(--dimensions-navbar-offset) + #{$dimensions-anchored-gap})";
+$dimensions-anchored-below: "(#{$drawer-anchored-bottom-gap} + var(--sticky-footer-total-height, 0px))";
+
+body.dimensions-autohide:not(:has(.navbar.boost-union-menubar)) {
+    --dimensions-navbar-offset: #{$navbar-height};
+
+    /* The navbar leaves upwards, and its last 3px - the band, still showing the progress - stay on the
+       screen. A transform, so nothing under it moves; set only while away, because a transform makes the
+       nav the containing block of every fixed element inside it. */
+    &.dimensions-navbar-away {
+        --dimensions-navbar-offset: calc(#{$navbar-height} * 0);
+
+        .navbar.fixed-top {
+            transform: translateY(calc(3px - 100%));
+        }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .navbar.fixed-top {
+            transition: transform var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
+        }
+    }
+
+    :target,
+    :focus {
+        scroll-margin-top: calc(var(--dimensions-navbar-offset) + 10px);
+    }
+
+    [data-region="right-hand-drawer"].drawer {
+        top: var(--dimensions-navbar-offset);
+        height: calc(100vh - var(--dimensions-navbar-offset));
+    }
+
+    #quiz-timer-wrapper {
+        top: calc(var(--dimensions-navbar-offset) + 5px);
+    }
+
+    &.path-mod-assign .gradingtable thead tr {
+        top: var(--dimensions-navbar-offset);
+    }
+
+    @include media-breakpoint-down(lg) {
+        .drawer {
+            top: var(--dimensions-navbar-offset);
+            height: calc(100vh - var(--dimensions-navbar-offset));
+        }
+    }
+
+    @include media-breakpoint-up(md) {
+        .drawer-toggles .drawer-toggler {
+            top: calc(var(--dimensions-navbar-offset) + 1rem);
+        }
+    }
+
+    @include media-breakpoint-up(lg) {
+        .drawer-left,
+        .drawer-right {
+            top: var(--dimensions-navbar-offset);
+            height: calc(100vh - var(--dimensions-navbar-offset));
+        }
+
+        &.pagelayout-standard,
+        &.limitedwidth {
+            .drawer.drawer-left,
+            .drawer.drawer-right {
+                top: #{$dimensions-anchored-top};
+                max-height: calc(100vh - #{$dimensions-anchored-top} - #{$dimensions-anchored-below});
+            }
+
+            .drawer-toggles .drawer-toggler {
+                top: calc(var(--dimensions-navbar-offset) + #{$drawer-anchored-top-gap});
+            }
+        }
+    }
+}

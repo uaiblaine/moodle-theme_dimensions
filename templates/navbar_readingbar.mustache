@@ -1,0 +1,84 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/navbar_readingbar
+
+    The context bar (C2): the layer the navbar swaps to once the reader has scrolled past the page header,
+    at the same 60px. The theme's core renderer appends it to navbar_plugin_output(), which Boost Union's
+    navbar prints inside #usernavigation; scss/readingbar.scss positions it over the whole nav (nothing
+    between the two is positioned) and hides it until amd/src/readingbar.js puts dimensions-ctx-on on the
+    nav. Every decision is theme_dimensions\local\readingbar's.
+
+    The left control opens the course index drawer with core's own toggler attributes, so Boost's
+    drawers module does the work and remembers it as the last used toggle; it is drawn only where the
+    drawer exists. The status is read-only: on 5.3 core's linear navigation footer owns the manual
+    completion button, and the module follows its toggle event. Both labels are in the markup and the
+    stylesheet shows the one data-state names, so the client composes no text. It is not core's
+    data-region="completion-status": core's header module replaces the FIRST such element of the page,
+    which would be this one.
+
+    Context variables required for this template (described without braces, because a Mustache
+    comment closes at the first pair of closing braces it meets):
+
+    * kind - activity or course
+    * isactivity - Whether the page is an activity's
+    * title - The activity's name, or the course's on the course page, plain
+    * subline - The course's name and the reader's completion of it, plain; may be empty
+    * hasindex - Whether the course index drawer exists on the page
+    * drawerid - The course index drawer's id
+    * hasstatus - Whether the reader's completion status of the activity is shown
+    * cmid - The activity's course module id
+    * state - complete or pending
+    * complete - Whether the state is complete
+
+    Example context (json):
+    {
+        "kind": "activity",
+        "isactivity": true,
+        "title": "Reading 2: Competency maps",
+        "subline": "Competency management · 4 of 9 completed",
+        "hasindex": true,
+        "drawerid": "theme_boost-drawers-courseindex",
+        "hasstatus": true,
+        "cmid": 42,
+        "state": "pending",
+        "complete": false
+    }
+}}
+<div class="dimensions-ctxbar" data-region="dimensions-ctxbar" data-kind="{{kind}}">
+    {{#hasindex}}
+    <button type="button" class="btn dimensions-ctxbar-index" data-region="dimensions-ctxbar-index"
+        data-toggler="drawers" data-action="toggle" data-target="{{drawerid}}"
+        aria-label="{{#str}} opendrawerindex, core {{/str}}" title="{{#str}} opendrawerindex, core {{/str}}">
+        <i class="icon fa fa-list-ul fa-fw" aria-hidden="true"></i>
+    </button>
+    {{/hasindex}}
+    <div class="dimensions-ctxbar-text">
+        <span class="dimensions-ctxbar-title" data-region="dimensions-ctxbar-title">{{title}}</span>
+        {{#subline}}
+        <span class="dimensions-ctxbar-sub" data-region="dimensions-ctxbar-sub">{{subline}}</span>
+        {{/subline}}
+    </div>
+    {{#hasstatus}}
+    <span class="dimensions-ctxbar-status" data-region="dimensions-ctxbar-status" data-cmid="{{cmid}}" data-state="{{state}}">
+        <span class="dimensions-ctxbar-status-complete">
+            <i class="icon fa fa-check fa-fw" aria-hidden="true"></i>{{#str}} readingbar_status_complete, theme_dimensions {{/str}}
+        </span>
+        <span class="dimensions-ctxbar-status-pending">{{#str}} readingbar_status_pending, theme_dimensions {{/str}}</span>
+    </span>
+    {{/hasstatus}}
+</div>

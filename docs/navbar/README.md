@@ -1,7 +1,8 @@
 # Navbar and navigation drawer: design record
 
-Status: phase 1 merged (#9, 28c5fb4); phase 2 in review on branch `navbar-phase2-drawer` (2026-10-19, version
-2026100513; what was verified is at the end of the phase 2 section). Brainstorm:
+Status: phase 1 merged (#9, 28c5fb4); phase 2 merged (#10, fee54c5, version 2026100513); phase 3 built on branch
+`navbar-phase3-reading` (2026-10-19, uncommitted, next version 2026100514; what was and was not verified is at the end
+of its section). Brainstorm:
 `brainstorm.html` (pt-BR, published as a private artifact). States canvas: `canvas/` (Design canvas sources,
 14 artboards, one row per phase).
 
@@ -156,6 +157,113 @@ test on both. Not verified: the slide's motion itself (a capture shows a settled
 Boost Union's "Dynamic courses" smart menu item with no condition lists the site course too (its query selects every
 row of `{course}`); the drawer shows what Boost Union hands it, so that is Boost Union's to filter.
 
+## Phase 3 as built: the bar that follows the reading
+
+| Idea | What ships |
+|---|---|
+| C3 | The 3px band is the reading progress. On an activity page it fills from the left with the share of the page scrolled; on the course page it shows the reader's completion of the course, static and computed on the server; everywhere else it stays full, as before. A faint track (the band's own colour at 28 %) shows behind the fill on those two kinds of page. |
+| C2 | The context bar, on by default: past the page header the navbar's content swaps, at the same 60px, for a layer carrying the activity's name (the course's on the course page), then "course name · X of Y completed", a read-only status chip ("Pending" / "Completed") and, where the course index exists, a control that opens it (B1). Scrolling up restores the global bar. |
+| C1 | Auto-hide, off by default: an administrator ticks the page kinds (activity pages, the course page). There the navbar slides up on the way down and comes back on the first way up; its 3px band stays at the top, still showing the progress, and every offset under the bar moves with it. |
+| C5 | Out of this phase. |
+
+Mechanism:
+
+- **One class decides, `classes/local/readingbar.php`, renderer-free.** `kind()` names the two page kinds: an activity
+  page (the incourse layout, a module context and the course module set, as focus mode anchors it) and the course page
+  (the course layout under a `course-view-*` page type, so `course/section.php` is left alone); never the site course,
+  whose activities and home belong to the front page. `applies()` is the base of all three (the band): a page kind, not
+  the Moodle app, not focus mode. `context_applies()` adds the setting `navbarcontextbar` (only a stored `'0'` is off)
+  and refuses a visitor while `guestnav::applies()`: the layer would cover the "Log in" and "Create account" the bar is
+  there for, and the decision is guestnav's own, so a site with those actions off gives its visitors the layer.
+  `autohide_applies()` reads `navbarautohide` (an `admin_setting_configmulticheckbox`, empty by default; an unknown key
+  is dropped) and is false on the Behat site. `body_classes()`, `client_config()` and `context()` are what the renderer
+  hands on. The category showcase is excluded by `kind()` (its layout is `coursecategory`).
+- **The layer is not a copy of Boost Union's navbar.** `navbar_plugin_output()` appends
+  `theme_dimensions/navbar_readingbar` after the visitor's actions, so it is printed inside `#usernavigation`, and
+  `scss/readingbar.scss` positions it absolutely over the whole nav. That works because nothing between
+  `#usernavigation` and the nav is positioned: verified on the compiled sheet of m503 (core, Boost Union and the
+  theme set no `position` on `#usernavigation`, `.navbar-nav` or `.container-fluid`), and the nav itself is fixed, so
+  it is the containing block. The layer is transparent (the nav's own fill shows through, whatever the navbar colour)
+  and keeps off the band's 3px.
+- **The swap is one class on the nav, `dimensions-ctx-on`, written by `amd/src/readingbar.js`.** The global bar's items
+  (`.container-fluid`'s children but `#usernavigation`, and `#usernavigation`'s children but the layer) get
+  `visibility: hidden; opacity: 0` in place, so nothing reflows; the layer gets the reverse. The transition (opacity
+  and visibility, `--dim-ds-motion-fast`) exists only under `prefers-reduced-motion: no-preference`; otherwise it is a
+  swap. Visibility goes with the opacity, so the hidden half leaves the tab order and the accessibility tree.
+- **The module.** One passive `scroll` listener (and `resize`) that only books an animation frame; `decide()` reads the
+  layout first (the scroll, the page header's box, whether the bar is busy) and writes after. Thresholds by distance
+  and direction: down travel past `#page-header` of 24px swaps to the layer, 96px hides the bar (auto-hide), 16px up
+  restores the global bar and brings a hidden bar back; above the page header the global bar always stands. The travel
+  resets when the direction flips. Nothing changes while the focus is in the nav, an element of the nav is
+  `aria-expanded="true"` or a `.dropdown-menu.show` is in it, the message drawer is open, or a fixed drawer lies over the
+  page (any one below `lg`; from `lg` the course index and block drawers are docked and are no reason, the others still
+  are). The keyboard reaching a hidden bar (`focusin` on the nav) brings it back. The band's fill is
+  `--dimensions-band-progress` on the nav, the one style the module writes.
+- **The band**: `scss/post.scss`'s `::after` reads `transform: scaleX(var(--dimensions-band-progress, 1))` with the origin
+  at the left (the RTL build flips it), so an unset property is the full band of every other page; `--dimensions-navbar-band`
+  is still the colour. The track is a `::before` of the main navbar (never Boost Union's menu bar, also a
+  `.navbar.fixed-top`) under `body.dimensions-readingbar`, the band's colour at `opacity: .28` (the palette has no tint of
+  it and stylelint refuses `color-mix()`).
+- **The status chip is read-only and core's.** `readingbar::activity_status()` asks `cm_completion_details` (as core's
+  activity header does): pending or complete for a tracked logged-in account, nothing for a visitor, the guest account,
+  an activity without completion or a person completion does not track. It is shown whether or not linear navigation is
+  on: a read-only status cannot duplicate the footer's button. The module follows core's own
+  `core_course:manualcompletiontoggled` event for the same cmid and flips `data-state`; both words are in the markup and
+  the stylesheet shows one, so the client composes no text. **It must not carry core's `data-region="completion-status"`**:
+  core's `activity_header` module replaces the FIRST such element of the page with `querySelector`, and the navbar comes
+  before the page header, so core would overwrite the chip with its own indicator. The "X of Y completed" of the sub line
+  is the server's and is not updated in place.
+- **B1, the course index control**, carries core's toggler attributes (`data-toggler="drawers" data-action="toggle"
+  data-target="theme_boost-drawers-courseindex"`) and is drawn only where `readingbar::has_course_index()` holds:
+  `core_course_drawer()`'s clauses (the page did not hide the index, and `course_format::uses_course_index()`).
+  **The module removes `data-toggler` while the layer is hidden and puts it back when the layer shows.** Boost's
+  `drawers.js` finds a drawer's toggle with `querySelector` (`getDrawerOpenButton()`), the first in the document - this
+  control, the navbar coming first - and focuses it when the drawer closes; hidden, the control cannot take the focus,
+  which would be lost (closing the course index with Escape on a phone after opening it from the floating toggle).
+  Without the attribute Boost finds its own floating toggle. On the Behat site, where the layer never swaps, the control
+  keeps the attribute.
+- **C1's offsets.** `--dimensions-navbar-offset` is declared under `body.dimensions-autohide` (written by the server only
+  where the setting allows, never on the Behat site): 60px at rest (`$navbar-height`), none while the module has put
+  `dimensions-navbar-away` on the body. Away, the nav takes `transform: translateY(calc(3px - 100%))`, so its last 3px -
+  the band - stay on the screen; the transform is set only while away, because a transform makes the nav the containing
+  block of every fixed element inside it. Every `$navbar-height` consumer of core's `drawer.scss`, `layout.scss` and
+  `modules.scss` that sits under the bar on these pages reads the property, each rule a copy of core's with the offset in
+  place of the height: the drawers below `lg` and from `lg`, the anchored drawers of `limitedwidth` and
+  `pagelayout-standard` (the course page and most activity pages are `limitedwidth`) and their togglers (from `md`; below
+  `md` core puts them at the bottom), the message drawer, `#quiz-timer-wrapper` and `.path-mod-assign .gradingtable thead
+  tr`. **Core has no `scroll-padding-top`**: it spells the anchor offset as `scroll-margin-top` on `:target, :focus`
+  (`drawer.scss`), so that is what reads the property. `#page`'s margin does not change: the content must not jump. Plugin
+  CSS precedence: the scope `body.dimensions-autohide:not(:has(.navbar.boost-union-menubar))` is (0,3,1) before the rule's
+  own selector, above every core rule it copies and Boost Union's menu-bar rules; no `!important`. The zero is
+  `calc($navbar-height * 0)` because a bare zero needs a unit in `calc()` and stylelint warns on `0px`.
+- **Auto-hide stands down while Boost Union's menu bar is on the page** (the CSS scope's `:not(:has(...))` and the
+  module's check alike): Boost Union moves the navbar, the page and the drawers down by the menu bar's height under
+  `.theme-boost-union-smartmenu`, and folding that height into these rules would mean a `0px` fallback stylelint warns on.
+- **Off on the Behat site, in two places.** The server never writes `dimensions-autohide` there
+  (`readingbar::autohide_applies()`, which takes the answer as a parameter so PHPUnit can test both sides), and the
+  module never swaps or hides with the scroll when `config.behat` is set: a scenario that scrolled past the page header
+  would otherwise find the global bar's controls (the edit switch, the user menu) hidden under the layer. The Behat
+  feature shows the layer with the theme's step `I show the context bar of the navbar`, which writes the class the
+  module writes. The band still follows the scroll there; it moves nothing.
+
+Tests: `tests/local/readingbar_test.php` (every clause with its control: page kinds, the setting's default and explicit
+`'0'`, focus mode, the app, the site course, the visitor, auto-hide's kinds and the Behat switch, the body classes,
+`uses_course_index`, the status from core, the title and sub line, the course page's floored percentage);
+`tests/output/readingbar_render_test.php` (the real header through Boost Union's layout for an activity page and the
+course page: the layer inside `#usernavigation`, the body classes, the module's arguments read from the requirements
+manager; the setting off, a visitor, focus mode, auto-hide on one kind); `tests/local/readingbar_source_test.php` (the
+module's invariants by spelling and the build's currency); `tests/local/readingbar_scss_test.php` (scopes, no literal
+colour, reduced motion, the swap, the band's scale, every offset reading one property); the Behat feature
+`tests/behat/theme_dimensions_readingbar.feature` (`@theme_dimensions_readingbar`: the layer's markup on an activity page
+and its control opening the course index, at mobile size); twenty-one mutation gates (`readingbar_*`, `js_readingbar_*`,
+`scss_readingbar_reduced_motion`, `scss_band_scale`), dry-matched, not swept.
+
+Verified on 2026-10-19: the PHPUnit files above and the neighbouring ones on m503, the static gates, and an in-process
+compile of the theme's CSS on m503 (the rules above read back from the compiled sheet). **Not verified**: anything in a
+browser (the swap, the slide, the thresholds' feel, the track's contrast on a light navbar and in dark mode, the chip's
+colours on the navy bar, a real phone), the Behat feature (written, not run; the Behat site's CSS needs `behat-init`
+first), the mutation sweep, and the matrix.
+
 ## The brand on dark surfaces (owner's request, 2026-10-18)
 
 Where the site name stands as the brand, an uploaded logo must have a version for dark surfaces.
@@ -196,11 +304,8 @@ names a dark logo), so the theme adds it until Boost Union does.
 ## Later phases (from the canvas)
 
 - Phase 2, the drawer: shipped, see its section above.
-- Phase 3, reading: the band becomes a reading progress line (C3) first; then the context bar (C2,
-  same 60px, layer swap, read-only completion status beside core's linear footer), with the course index
-  drawer's trigger in it (B1, deferred from phase 2); then auto-hide
-  (C1) behind a `--dim-navbar-offset` variable that drawers, anchors and `scroll-padding-top` read,
-  with the band pinned at the top while the bar is away; sticky course tabs (C5) if needed.
+- Phase 3, reading: built, see "Phase 3 as built" above (the offset variable is `--dimensions-navbar-offset`, and core's
+  anchor offset is `scroll-margin-top`, not `scroll-padding-top`). Sticky course tabs (C5) were left out of it.
 - Phase 4: tablet compact mode (B5), notifications and messages as one control with a bottom sheet
   on phones (D2), the user menu as a sheet (D3), role shortcuts in the course context bar (D5).
 
