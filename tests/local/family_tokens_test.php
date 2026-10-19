@@ -64,8 +64,24 @@ final class family_tokens_test extends \basic_testcase {
         'scheduled' => 'scheduled',
     ];
 
-    /** @var string[] The theme's own names under the same prefix, outside the contract: the navbar's band and pill. */
-    private const OWN = ['--dimensions-navbar-band', '--dimensions-pill-border', '--dimensions-pill-hover'];
+    /**
+     * @var string[] The theme's own names under the same prefix, outside the contract: the navbar's band and pills, and the
+     *      logo variants for dark surfaces (their sources, which the extra SCSS callback overrides, and what a surface reads).
+     */
+    private const OWN = [
+        '--dimensions-navbar-band',
+        '--dimensions-pill-border',
+        '--dimensions-pill-hover',
+        '--dimensions-pill-filled-ink',
+        '--dimensions-logo-dark-src',
+        '--dimensions-logo-dark-shift',
+        '--dimensions-logo-compact-dark-src',
+        '--dimensions-logo-compact-dark-shift',
+        '--dimensions-logo-dark',
+        '--dimensions-logo-shift',
+        '--dimensions-logo-compact-dark',
+        '--dimensions-logo-compact-shift',
+    ];
 
     /** @var string[] The three roots of the light block, in order. */
     private const LIGHT_ROOTS = [':root', 'body', '.modal'];

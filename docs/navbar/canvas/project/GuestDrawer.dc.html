@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Gaveta do visitante</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+  <nav class="nav" aria-hidden="true" style="padding: 0 10px 0 6px;">
+    <span class="ibtn"></span>
+    <span class="brand" style="font-size: 18px;">Dimensions</span>
+    <span class="grow"></span>
+    <span class="pill sm">Entrar</span>
+  </nav>
+  <div class="wrapc" aria-hidden="true">
+    <span class="title">Leitura 2 · Mapas de competência</span>
+    <div class="fig"></div>
+  </div>
+  <div class="scrim"></div>
+
+  <nav class="drawer" aria-label="Navegação" style="width: 330px;">
+    <div class="dhead">
+      <span class="brand">Dimensions</span>
+      <span class="grow"></span>
+      <button class="ibtn" type="button" aria-label="Fechar navegação" style="color: #1d2033;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="dbody">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 0 6px; font-size: 13px; color: #5d6180;">
+        <span class="visit" style="background: #e9fbf2; color: #17694a;"><i style="background: #17694a;"></i>Visitante</span>
+        Você está acessando como visitante
+      </div>
+      <section class="join" aria-labelledby="joinh">
+        <h3 id="joinh">Novo por aqui?</h3>
+        <ul>
+          <li>Inscreva-se nos cursos abertos</li>
+          <li>Guarde o seu progresso</li>
+          <li>Receba os seus certificados</li>
+        </ul>
+        <sc-if value="{{showSignup}}" hint-placeholder-val="{{ true }}">
+          <a class="btn primary block" href="#">Criar conta</a>
+        </sc-if>
+        <a class="btn line block" href="#">Entrar</a>
+      </section>
+      <div class="dsec">
+        <span class="lab">Navegar</span>
+        <a class="ditem cur" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 11l9-7 9 7v9H3z"/></svg>Página inicial</a>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Catálogo<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="dsec">
+        <span class="lab">Idioma</span>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg>Português (Brasil)<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </nav>
+  <span class="tagid" style="left: 270px; top: 150px;">A4</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"signup":{"editor":"enum","default":"loginsteps","options":["loginsteps","core","off"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      brand: this.props.brand ?? '#070093',
+      showSignup: (this.props.signup ?? 'loginsteps') !== 'off'
+    };
+  }
+}
+</script>
+</body>
+</html>

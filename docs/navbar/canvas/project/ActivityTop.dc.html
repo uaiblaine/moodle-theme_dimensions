@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Atividade no topo</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+  <nav class="nav track" aria-label="Navegação do site" style="padding: 0 10px 0 6px;">
+    <button class="ibtn" type="button" aria-label="Abrir navegação"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="brand" style="font-size: 18px;">Dimensions</span>
+    <span class="grow"></span>
+    <button class="ibtn" type="button" aria-label="Notificações, 2 novas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="count">2</span></button>
+    <span class="avatar">AB</span>
+    <span class="bandfill" style="width: {{bandWidth}};" aria-hidden="true"></span>
+  </nav>
+
+  <div class="wrapc">
+    <span class="crumb">Gestão por competências › Unidade 2</span>
+    <span class="title">Leitura 2 · Mapas de competência</span>
+    <span class="done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg>Marcar como concluída</span>
+    <p class="para">Um mapa de competências organiza o que se espera de uma pessoa em níveis observáveis. Nesta leitura você vai ver como os quadros do Moodle descrevem cada competência, como as evidências se acumulam e como o plano de aprendizagem conecta tudo isso aos cursos.</p>
+    <div class="fig">figura 1 · quadro de competências</div>
+    <p class="para">Comece pelo quadro. Ele é a árvore que dá nome às coisas: domínios no topo, competências nas folhas. Cada competência pode ter uma escala própria, e é a escala que decide quando alguém foi considerado proficiente.</p>
+    <p class="para">Depois vem o plano. Um plano reúne as competências que uma pessoa precisa desenvolver num período e mostra, para cada uma, o que já foi avaliado e o que ainda falta.</p>
+  </div>
+  <span class="tagid" style="left: 16px; top: 70px;">C3</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"progress":{"editor":"range","default":6,"min":0,"max":100,"step":1,"unit":"%"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props.progress ?? 6;
+    return {
+      brand: this.props.brand ?? '#070093',
+      bandWidth: Math.max(0, Math.min(100, p)) + '%'
+    };
+  }
+}
+</script>
+</body>
+</html>

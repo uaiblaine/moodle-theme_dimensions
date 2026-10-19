@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Curso aberto depois de rolar</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 1280px; height: 560px; --dim-nav: {{brand}};">
+  <nav class="nav ctx" aria-label="Barra de contexto do curso">
+    <span class="brand" style="font-size: 17px; opacity: 0.9;">Dimensions</span>
+    <span style="width: 1px; height: 28px; background: rgba(255,255,255,0.25); margin: 0 10px;"></span>
+    <span class="ctxt grow"><b>Gestão por competências</b><span>Curso aberto · 9 atividades · 6 horas</span></span>
+    <a class="pill" href="#">Entrar</a>
+    <a class="pill fill" href="#">{{cta}}</a>
+  </nav>
+
+  <div style="display: flex; gap: 28px; padding: 28px 40px; align-items: flex-start;">
+    <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+      <span class="crumb">Catálogo › Gestão e liderança</span>
+      <h2 style="font-size: 24px;">O que você vai aprender</h2>
+      <p class="para">Como um quadro de competências descreve o que se espera de cada pessoa, como as evidências se acumulam e como o plano de aprendizagem liga tudo isso aos cursos.</p>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+        <div class="notice"><b>Unidade 1</b><span class="para">Quadros e escalas</span></div>
+        <div class="notice"><b>Unidade 2</b><span class="para">Planos de aprendizagem</span></div>
+        <div class="notice"><b>Unidade 3</b><span class="para">Evidências e avaliação</span></div>
+      </div>
+      <div class="fig" style="height: 170px;">vídeo de apresentação do curso</div>
+    </div>
+    <aside class="notice" style="width: 320px; flex: none; gap: 12px;" aria-label="Inscrição">
+      <b>Inscrição livre</b>
+      <span class="para">Entre na sua conta para se inscrever. Sem conta? O cadastro leva menos de dois minutos.</span>
+      <a class="btn primary block" href="#">{{cta}}</a>
+      <a class="btn line block" href="#">Entrar</a>
+    </aside>
+  </div>
+  <span class="tagid" style="left: 1060px; top: 70px;">A3</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"offer":{"editor":"enum","default":"selfenrol","options":["selfenrol","signuponly"]},"$preview":{"width":1280,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const offer = this.props.offer ?? 'selfenrol';
+    return {
+      brand: this.props.brand ?? '#070093',
+      cta: offer === 'selfenrol' ? 'Inscrever-se no curso' : 'Criar conta'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Curso no desktop</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 1280px; height: 640px; --dim-nav: {{brand}};">
+  <nav class="nav ctx track" aria-label="Barra de contexto do curso" style="gap: 12px;">
+    <button class="ibtn" type="button" aria-label="Índice do curso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h3M4 12h3M4 18h3M10 6h10M10 12h10M10 18h10"/></svg></button>
+    <svg class="ring" viewBox="0 0 36 36" role="img" aria-label="44% do curso concluído"><circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="#9fa8ff" stroke-width="4" stroke-linecap="round" stroke-dasharray="41.5 94.2" transform="rotate(-90 18 18)"/></svg>
+    <span class="ctxt grow"><b>Gestão por competências</b><span>{{subline}}</span></span>
+    <sc-if value="{{isTeacher}}" hint-placeholder-val="{{ false }}">
+      <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px;">Modo de edição
+        <span aria-hidden="true" style="width: 40px; height: 22px; border-radius: 11px; background: rgba(255,255,255,0.3); position: relative; display: inline-block;"><span style="position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff;"></span></span>
+      </span>
+      <a class="pill" href="#">Avaliar agora<span style="background: #fff; color: #070093; border-radius: 9px; padding: 0 7px; font-size: 12px;">12</span></a>
+    </sc-if>
+    <sc-if value="{{isStudent}}" hint-placeholder-val="{{ true }}">
+      <a class="pill fill" href="#">Continuar: Leitura 2</a>
+    </sc-if>
+    <span class="avatar">{{initials}}</span>
+    <span class="bandfill" style="width: 44%;" aria-hidden="true"></span>
+  </nav>
+
+  <div class="ctabs" style="margin-top: 3px;">
+    <span class="on">Curso</span>
+    <sc-if value="{{isTeacher}}" hint-placeholder-val="{{ false }}">
+      <span>Configurações</span><span>Participantes</span><span>Notas</span><span>Relatórios</span><span>Mais</span>
+    </sc-if>
+    <sc-if value="{{isStudent}}" hint-placeholder-val="{{ true }}">
+      <span>Notas</span><span>Competências</span>
+    </sc-if>
+    <span class="grow"></span>
+    <span style="font-size: 13.5px; color: #5d6180;">{{tabsRight}}</span>
+  </div>
+
+  <div style="display: flex; gap: 0; height: 529px;">
+    <aside style="width: 285px; flex: none; background: #fff; border-right: 1px solid #e1e3ef; padding: 12px;" aria-label="Índice do curso">
+      <div class="cidx">
+        <div class="sect"><span>Unidade 1 · Quadros e escalas</span><span style="color: #17694a;">3/3</span></div>
+        <div class="act"><span class="ck y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg></span>Boas-vindas</div>
+        <div class="act"><span class="ck y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg></span>Leitura 1</div>
+        <div class="sect"><span>Unidade 2 · Planos</span><span style="color: #5d6180;">1/3</span></div>
+        <div class="act"><span class="ck y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg></span>Vídeo · Planos na prática</div>
+        <div class="act cur"><span class="ck"></span>Leitura 2 · Mapas</div>
+        <div class="act"><span class="ck"></span>Atividade 2.3</div>
+        <div class="sect"><span>Unidade 3 · Evidências</span><span style="color: #5d6180;">0/3</span></div>
+      </div>
+    </aside>
+    <main style="flex: 1 1 0; min-width: 0; padding: 22px 40px; display: flex; flex-direction: column; gap: 14px;">
+      <h2 style="font-size: 22px;">Unidade 2 · Planos de aprendizagem</h2>
+      <div class="notice" style="flex-direction: row; align-items: center; gap: 14px;"><span class="ck y act" style="padding: 0;"></span><span class="para" style="flex: 1 1 auto;">Vídeo · Planos na prática</span><span style="font-size: 13px; color: #17694a; font-weight: 700;">Concluída</span></div>
+      <div class="notice" style="flex-direction: row; align-items: center; gap: 14px; box-shadow: inset 3px 0 0 #070093;"><span class="para" style="flex: 1 1 auto; font-weight: 700;">Leitura 2 · Mapas de competência</span><span style="font-size: 13px; color: #5d6180;">Você parou aqui</span></div>
+      <div class="notice" style="flex-direction: row; align-items: center; gap: 14px;"><span class="para" style="flex: 1 1 auto;">Atividade 2.3 · Monte o seu quadro</span><span style="font-size: 13px; color: #5d6180;">Entrega sexta, 24/10</span></div>
+    </main>
+  </div>
+  <span class="tagid" style="left: 112px; top: 6px;">C2</span>
+  <span class="tagid" style="left: 24px; top: 70px;">C5</span>
+  <span class="tagid" style="left: 1040px; top: 6px;">D5</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"role":{"editor":"enum","default":"student","options":["student","teacher"]},"$preview":{"width":1280,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const teacher = (this.props.role ?? 'student') === 'teacher';
+    return {
+      brand: this.props.brand ?? '#070093',
+      isTeacher: teacher,
+      isStudent: !teacher,
+      initials: teacher ? 'CM' : 'AB',
+      subline: teacher ? '38 participantes · 12 envios para avaliar' : 'Unidade 2 · 4 de 9 concluídas',
+      tabsRight: teacher ? 'Turma A · 2026' : '4 de 9 concluídas'
+    };
+  }
+}
+</script>
+</body>
+</html>

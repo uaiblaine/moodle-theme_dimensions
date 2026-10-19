@@ -30,8 +30,9 @@ namespace theme_dimensions\local;
  * Its callers are the landing page hero's background-image
  * ({@see \theme_dimensions\output\landing_page::hero_image_url()}) and the crest watermark
  * of a category poster ({@see category\population::mark()}), each printed through a DOUBLE stash
- * inside a style attribute of the theme's own template. One class serves them both so that the
- * rule exists once.
+ * inside a style attribute of the theme's own template, and the logo variants for dark surfaces
+ * ({@see darklogo::url()}), printed by the extra SCSS callback into the stylesheet itself. One class
+ * serves them all so that the rule exists once.
  *
  * The stash decides nothing: a browser HTML-decodes an attribute value BEFORE the CSS parser reads
  * it, and Mustache's escaping is an HTML escaping, never a CSS one. Through a triple stash a url

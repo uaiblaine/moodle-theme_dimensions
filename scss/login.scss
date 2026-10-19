@@ -158,6 +158,25 @@ body.theme_dimensions-login {
         }
     }
 
+    /* ---- The brand on dark surfaces ------------------------------------- */
+    /* The panel and the band below lg are navy in either colour mode, so they take the compact logo's
+       dark variant whatever data-bs-theme says (post.scss has the mechanism). Their logo is Boost
+       Union's compact one whenever the site has it (login::logo_url() asks it first), which is the only
+       time the body class can be armed. The image is drawn at the left of its box. */
+    &.dimensions-darklogo-compact {
+        .dimensions-login-panel,
+        .dimensions-login-brand {
+            --dimensions-logo-compact-dark: var(--dimensions-logo-compact-dark-src, none);
+            --dimensions-logo-compact-shift: var(--dimensions-logo-compact-dark-shift, 0%);
+        }
+
+        .dimensions-login-logo {
+            overflow: hidden;
+            background: var(--dimensions-logo-compact-dark, none) left center / contain no-repeat;
+            object-position: calc(0% + var(--dimensions-logo-compact-shift, 0%)) 50%;
+        }
+    }
+
     /* ---- The form column ------------------------------------------------ */
     .dimensions-login {
         display: flex;

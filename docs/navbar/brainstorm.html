@@ -1,0 +1,840 @@
+<title>Navbar e gaveta Dimensions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: a working brainstorm. Left column reads like a design record; one live phone prototype
+   sits beside the scroll ideas; idea cards carry two chips (cost, distance from core). */
+:root {
+  --bg: #f5f6fb;
+  --surface: #ffffff;
+  --surface-2: #eceefa;
+  --fg: #12142b;
+  --muted: #565a7a;
+  --line: #d8dbef;
+  --accent: #2a31c9;
+  --accent-soft: #e3e5ff;
+  --ok: #17694a;
+  --ok-soft: #dcf3e8;
+  --warn: #8a5300;
+  --warn-soft: #fbedd5;
+  --risk: #9b1c3a;
+  --risk-soft: #fbe1e7;
+  /* Mockup palette: the theme's own light defaults, fixed in both page themes. */
+  --m-navy: #030050;
+  --m-navy-2: #070093;
+  --m-band: #4456ff;
+  --m-paper: #ffffff;
+  --m-ink: #1d2033;
+  --m-mute: #6b6f8a;
+  --m-line: #e3e5f0;
+  --m-tint: #f2f3fa;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c0e1f; --surface: #15182e; --surface-2: #1d2140; --fg: #e8e9f6; --muted: #a2a6c6;
+    --line: #2c3156; --accent: #8f96ff; --accent-soft: #252a5c; --ok: #6fd3a6; --ok-soft: #173a2d;
+    --warn: #f2bf6b; --warn-soft: #3d2d10; --risk: #ff8fa8; --risk-soft: #401a25; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c0e1f; --surface: #15182e; --surface-2: #1d2140; --fg: #e8e9f6; --muted: #a2a6c6;
+  --line: #2c3156; --accent: #8f96ff; --accent-soft: #252a5c; --ok: #6fd3a6; --ok-soft: #173a2d;
+  --warn: #f2bf6b; --warn-soft: #3d2d10; --risk: #ff8fa8; --risk-soft: #401a25; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+}
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 80px;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.12rem; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--surface-2); padding: 0.05em 0.35em; border-radius: 4px; }
+a { color: var(--accent); }
+.eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+header.top { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+header.top .lede { font-size: 1.15rem; color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.88rem; color: var(--muted); }
+section { padding-top: 48px; display: grid; gap: 18px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card ul, .plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+.fact { font-variant-numeric: tabular-nums; }
+.src { font-size: 0.82rem; color: var(--muted); }
+.constraints { counter-reset: none; display: grid; gap: 8px; margin: 0; padding-left: 1.1em; }
+
+/* Idea cards */
+.ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.idea { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.idea .head { display: flex; gap: 10px; align-items: baseline; }
+.idea .id { font-family: var(--font-display); font-weight: 800; color: var(--accent); font-size: 0.95rem; flex: none; font-variant-numeric: tabular-nums; }
+.idea p { font-size: 0.95rem; }
+.idea .how { font-size: 0.86rem; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 0.74rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; letter-spacing: 0.02em; }
+.c-s { background: var(--ok-soft); color: var(--ok); }
+.c-m { background: var(--warn-soft); color: var(--warn); }
+.c-l { background: var(--risk-soft); color: var(--risk); }
+.c-core { background: var(--accent-soft); color: var(--accent); }
+.idea.star { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 0.84rem; color: var(--muted); align-items: center; }
+
+/* Ladder */
+.ladder { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.rung { padding: 16px; background: var(--surface); border-right: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+.rung:last-child { border-right: 0; }
+.rung .lvl { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; }
+.rung .bar { height: 6px; border-radius: 3px; background: var(--accent); }
+.rung p { font-size: 0.9rem; }
+
+/* Prototype */
+.proto { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: start; }
+@media (max-width: 860px) { .proto { grid-template-columns: 1fr; justify-items: center; } }
+.controls { display: grid; gap: 16px; min-width: 0; width: 100%; }
+fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin: 0; background: var(--surface); }
+legend { font-weight: 700; font-size: 0.9rem; padding: 0 6px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 0.9rem; background: var(--bg); }
+.seg input { accent-color: var(--accent); }
+.seg label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); color: var(--fg); }
+.seg label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.readout { font-size: 0.9rem; color: var(--muted); min-height: 3em; }
+
+.phone { width: 360px; max-width: 100%; height: 680px; border-radius: 34px; padding: 10px; background: #1b1d2e; box-shadow: 0 20px 50px rgba(10, 12, 40, 0.28); flex: none; }
+.screen { position: relative; width: 100%; height: 100%; border-radius: 26px; overflow: hidden; background: var(--m-paper); color: var(--m-ink); font-family: var(--font-body); font-size: 13px; line-height: 1.45; }
+.scroller { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; }
+.scroller::-webkit-scrollbar { display: none; }
+.pad { padding: 72px 16px 40px; display: grid; gap: 12px; }
+
+.mbar { position: absolute; left: 0; right: 0; top: 0; height: 56px; z-index: 5; color: #fff; background: var(--m-navy); transition: transform 250ms ease-in-out; }
+.mbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: var(--m-band); transform-origin: left; transform: scaleX(var(--band, 1)); transition: transform 120ms linear; }
+.mbar.hidden { transform: translateY(-62px); }
+.layer { position: absolute; inset: 0; display: flex; align-items: center; gap: 10px; padding: 0 10px 0 6px; transition: opacity 200ms ease, transform 250ms ease; }
+.layer.ctx { opacity: 0; transform: translateY(10px); pointer-events: none; background: var(--m-navy-2); }
+.mbar.ctxon .layer.main { opacity: 0; transform: translateY(-10px); pointer-events: none; }
+.mbar.ctxon .layer.ctx { opacity: 1; transform: none; pointer-events: auto; }
+.ibtn { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: transparent; border: 0; color: inherit; cursor: pointer; flex: none; }
+.ibtn:focus-visible, .pill:focus-visible, .d-item:focus-visible { outline: 3px solid var(--m-band); outline-offset: 2px; }
+.ibtn svg { width: 22px; height: 22px; }
+.logo { font-family: var(--font-display); font-weight: 800; font-size: 16px; letter-spacing: -0.01em; }
+.grow { flex: 1; min-width: 0; }
+.pill { border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 12px; border: 1.5px solid rgba(255, 255, 255, 0.7); color: #fff; background: transparent; cursor: pointer; white-space: nowrap; }
+.pill.fill { background: #fff; color: var(--m-navy); border-color: #fff; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #8f96ff, #4456ff); display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+.ctxtitle { display: grid; line-height: 1.2; min-width: 0; }
+.ctxtitle b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctxtitle span { font-size: 11px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.crumb { color: var(--m-mute); font-size: 11.5px; }
+.atitle { font-family: var(--font-display); font-size: 21px; font-weight: 700; line-height: 1.2; color: var(--m-ink); }
+.done { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--m-navy-2); color: var(--m-navy-2); border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 12px; justify-self: start; background: #fff; }
+.para { color: #3a3e58; }
+.figure { height: 120px; border-radius: 10px; background: linear-gradient(135deg, #e3e5ff, #f2f3fa); display: grid; place-items: center; color: var(--m-mute); font-size: 11px; }
+.guestnote { border: 1px solid var(--m-line); background: var(--m-tint); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: 12px; }
+.guestnote b { color: var(--m-navy); }
+.nextprev { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--m-navy-2); font-weight: 700; padding-top: 6px; border-top: 1px solid var(--m-line); }
+.visit { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; padding: 2px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); white-space: nowrap; }
+
+.scrim { position: absolute; inset: 0; background: rgba(5, 6, 25, 0.45); opacity: 0; pointer-events: none; transition: opacity 220ms ease; z-index: 8; }
+.drawer { position: absolute; top: 0; bottom: 0; left: 0; width: 86%; background: var(--m-paper); z-index: 9; transform: translateX(-102%); transition: transform 260ms cubic-bezier(.2, .8, .2, 1); display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+.screen.dopen .drawer { transform: none; }
+.screen.dopen .scrim { opacity: 1; pointer-events: auto; }
+.dhead { display: flex; align-items: center; gap: 10px; padding: 14px 10px 12px 16px; border-bottom: 1px solid var(--m-line); }
+.dhead .logo { color: var(--m-navy); }
+.dhead .ibtn { color: var(--m-ink); }
+.panes { position: relative; overflow: hidden; }
+.pane { position: absolute; inset: 0; overflow-y: auto; padding: 12px 12px 24px; display: grid; gap: 12px; align-content: start; transition: transform 260ms cubic-bezier(.2, .8, .2, 1); }
+.pane.sub { transform: translateX(100%); background: var(--m-paper); }
+.panes.drill .pane.root { transform: translateX(-30%); }
+.panes.drill .pane.sub { transform: none; }
+.who { display: flex; gap: 10px; align-items: center; padding: 4px 4px 8px; }
+.who .avatar { width: 38px; height: 38px; color: #fff; }
+.who small { display: block; color: var(--m-mute); font-size: 11px; }
+.resume { border-radius: 12px; background: var(--m-navy); color: #fff; padding: 12px; display: grid; gap: 4px; }
+.resume small { opacity: 0.75; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+.resume .rail { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); overflow: hidden; }
+.resume .rail i { display: block; height: 100%; width: 62%; background: var(--m-band); }
+.dsec { display: grid; gap: 2px; }
+.dsec > span { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--m-mute); font-weight: 700; padding: 4px 6px; }
+.d-item { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 8px; background: transparent; border: 0; width: 100%; text-align: left; font: inherit; color: var(--m-ink); cursor: pointer; min-height: 40px; }
+.d-item:hover { background: var(--m-tint); }
+.d-item svg { width: 18px; height: 18px; color: var(--m-navy-2); flex: none; }
+.d-item .chev { margin-left: auto; color: var(--m-mute); }
+.d-item.cur { background: var(--m-tint); font-weight: 700; }
+.seg2 { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--m-tint); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg2 span { text-align: center; padding: 5px 0; border-radius: 999px; font-size: 11.5px; }
+.seg2 span.on { background: var(--m-navy); color: #fff; font-weight: 700; }
+.join { border-radius: 12px; border: 1px solid var(--m-line); padding: 12px; display: grid; gap: 8px; background: linear-gradient(180deg, var(--m-tint), #fff); }
+.join b { font-family: var(--font-display); font-size: 15px; color: var(--m-navy); }
+.join .row { display: flex; gap: 8px; }
+.join .row button { flex: 1; border-radius: 8px; padding: 8px; font-weight: 700; font-size: 12px; cursor: pointer; }
+.btn-fill { background: var(--m-navy); color: #fff; border: 0; }
+.btn-line { background: #fff; color: var(--m-navy); border: 1.5px solid var(--m-navy); }
+.back { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--m-navy-2); background: none; border: 0; padding: 6px 4px; cursor: pointer; font: inherit; }
+
+/* Sketch boxes for static mockups */
+.sketch { border: 1px dashed var(--line); border-radius: var(--radius); padding: 14px; background: var(--surface); display: grid; gap: 10px; min-width: 0; }
+.sk-bar { display: flex; align-items: center; gap: 8px; background: var(--m-navy); color: #fff; padding: 8px 10px; border-radius: 6px; font-size: 12px; flex-wrap: wrap; position: relative; }
+.sk-bar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px; background: var(--m-band); border-radius: 0 0 3px 3px; }
+.sk-bar .sp { flex: 1; }
+.sk-old { background: #fff; color: var(--m-ink); border: 1px solid var(--m-line); }
+.sk-old::after { display: none; }
+.sk-note { font-size: 0.82rem; color: var(--muted); }
+.strike { text-decoration: line-through; opacity: 0.7; }
+.tablet { display: grid; grid-template-columns: 56px 1fr; gap: 0; border: 1px solid var(--m-line); border-radius: 8px; overflow: hidden; background: #fff; min-height: 150px; color: var(--m-ink); font-size: 11px; }
+.rail { background: var(--m-tint); display: grid; gap: 4px; padding: 8px 4px; align-content: start; justify-items: center; }
+.rail i { width: 26px; height: 26px; border-radius: 8px; background: #fff; border: 1px solid var(--m-line); display: block; }
+.rail i.on { background: var(--m-navy); border-color: var(--m-navy); }
+.tcontent { padding: 10px; display: grid; gap: 6px; align-content: start; }
+.tline { height: 8px; border-radius: 4px; background: var(--m-line); }
+
+.qs { display: grid; gap: 10px; margin: 0; padding-left: 1.4em; }
+.qs li { padding-left: 4px; }
+.qs b { font-family: var(--font-display); }
+.phase { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.phase:last-child { border-bottom: 0; }
+.phase .n { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .mbar, .layer, .drawer, .pane, .scrim, .mbar::after { transition: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">theme_dimensions · Moodle 5.3 · brainstorm · 18 out 2026</span>
+    <h1>Navbar e gaveta de navegação</h1>
+    <p class="lede">Uma barra que convida o visitante, uma gaveta móvel com identidade própria e uma navegação que sai do caminho quando a pessoa está lendo. Tudo perto do core do Moodle onde dá; longe dele onde vale a pena.</p>
+    <div class="meta">
+      <span>Benchmarks medidos no navegador: Fandom Community Central (desktop e perfil móvel), Domestika (sessão autenticada)</span>
+      <span>Base: core 5.3+ (Build 20261013), Boost Union <code>upgrade-503</code> @ 54c8a4ab</span>
+    </div>
+  </header>
+
+  <section id="hoje">
+    <span class="eyebrow">Ponto de partida</span>
+    <h2>O que existe hoje e o que não pode quebrar</h2>
+    <div class="cols">
+      <div class="card">
+        <h3>Navbar</h3>
+        <ul>
+          <li>O tema não copia <code>navbar</code>, <code>drawers</code> nem <code>user_menu</code>: muda o contexto em <code>render_from_template()</code> e insere o botão do modo foco em <code>navbar_plugin_output()</code>.</li>
+          <li>No desktop a navegação primária do 5.3 é React (<code>core/nav/PrimaryNav</code>), com fallback Mustache. Só a gaveta móvel (<code>primary-drawer-mobile</code>) continua Mustache.</li>
+          <li class="fact">Altura fixa: <code>$navbar-height</code> = 60px (+1px). Gavetas, âncoras e o grader derivam dela; a faixa de 3px é <code>.navbar.fixed-top::after</code>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Visitante</h3>
+        <ul>
+          <li>O core escreve “Você está acessando como visitante” e um link “Acessar” (strings <code>loggedinasguest</code>, <code>login</code>) a partir de <code>usermenu.unauthenticateduser</code>.</li>
+          <li>Nenhum botão de cadastro existe na navbar, nem no core nem no tema. O ponto de extensão natural é esse mesmo contexto.</li>
+          <li>O seletor de idioma do core só aparece para visitante e anônimo.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Rolagem e foco</h3>
+        <ul>
+          <li>Nada no tema, no Boost Union ou no core reage à rolagem na navbar. O Boost Union tem só o “voltar ao topo” (aparece após 220px).</li>
+          <li>O modo foco troca a barra inteira por <code>.dimensions-focusbar</code>, que mantém <code>navbar fixed-top</code> e a mesma altura.</li>
+          <li>Entre 768 e 991px as gavetas sobrepõem a página; não há regra própria de tablet.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="benchmarks">
+    <span class="eyebrow">O que os benchmarks ensinam</span>
+    <h2>Três padrões medidos, não só vistos</h2>
+    <div class="cols">
+      <div class="card">
+        <h3>Fandom, desktop</h3>
+        <ul>
+          <li>Visitante vê <b>“Sign in”</b> (contorno) ao lado de <b>“Create a free account”</b> (preenchido). Nada diz “você é visitante”.</li>
+          <li>Trilho vertical fixo à esquerda: Home, Explore, Saved, Progress, History, Utilities.</li>
+          <li class="fact">Ao rolar, a barra global dá lugar à barra da comunidade (46px, <code>transform 0.5s</code>), com os menus locais, busca compacta e o CTA de cadastro.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Fandom, perfil móvel</h3>
+        <ul>
+          <li>Dois andares: barra global (menu, logo, busca, sino, avatar) e barra da comunidade (ícone de índice, nome, salvar).</li>
+          <li class="fact">Ao rolar, os dois andares viram uma barra só de 56px com o título da página sobre o nome da comunidade.</li>
+          <li>Duas gavetas com papéis distintos: a global (navegação pessoal, aparência Claro/Escuro/Padrão do wiki, cartão “Novo no Fandom?”) e a da comunidade (seções recolhíveis com subníveis que entram deslizando, com “‹ voltar”).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Domestika, autenticada</h3>
+        <ul>
+          <li class="fact">Padrão <i>headroom</i>: a navbar sai com <code>translateY</code> ao rolar para baixo e volta ao primeiro gesto para cima (<code>transform 0.25s ease-in-out</code>).</li>
+          <li>Nas páginas de aula a barra some por completo; o resumo do curso fica fixo na lateral.</li>
+          <li>Abas do curso (Apresentação, Conteúdo, Comunidade, Projetos) com “2 de 4 concluída(s)”. No celular viram dois seletores: seção e unidade.</li>
+          <li>CTA de retomada: “Ir para a unidade 3” no topo do curso.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="prototipo">
+    <span class="eyebrow">Protótipo</span>
+    <h2>Experimente rolar a página da atividade</h2>
+    <p>Um celular de 360px com uma página de atividade. Troque o comportamento da barra, o tipo de usuário e abra a gaveta. A faixa de 3px vira barra de leitura quando ligada.</p>
+    <div class="proto">
+      <div class="controls">
+        <fieldset>
+          <legend>Comportamento ao rolar</legend>
+          <div class="seg" role="radiogroup">
+            <label><input type="radio" name="mode" id="mode-fixed" value="fixed"> Fixa (core)</label>
+            <label><input type="radio" name="mode" id="mode-hide" value="hide"> Auto-ocultar (C1)</label>
+            <label><input type="radio" name="mode" id="mode-ctx" value="ctx" checked> Barra de contexto (C2)</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Quem está vendo</legend>
+          <div class="seg" role="radiogroup">
+            <label><input type="radio" name="who" id="who-user" value="user" checked> Estudante</label>
+            <label><input type="radio" name="who" id="who-guest" value="guest"> Visitante (A1)</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Faixa de 3px</legend>
+          <div class="seg">
+            <label><input type="checkbox" id="band-progress" checked> Progresso de leitura (C3)</label>
+          </div>
+        </fieldset>
+        <p class="readout" id="readout" aria-live="polite">Role a tela do celular.</p>
+        <ul class="plain src">
+          <li>Limiar: só reage depois de 120px e a partir de 8px de deslocamento, para não piscar com o tremor do dedo.</li>
+          <li>Nunca esconde com a gaveta, um menu ou o foco do teclado dentro da barra.</li>
+          <li>Com “reduzir movimento” ligado no sistema, troca sem animação.</li>
+        </ul>
+      </div>
+
+      <div class="phone" aria-label="Protótipo de celular">
+        <div class="screen" id="screen">
+          <div class="mbar" id="mbar">
+            <div class="layer main">
+              <button class="ibtn" id="open-drawer" aria-label="Abrir navegação">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+              </button>
+              <span class="logo">Dimensions</span>
+              <span class="grow"></span>
+              <span class="userbits" id="userbits">
+                <span style="display:flex;align-items:center;gap:4px">
+                  <button class="ibtn" aria-label="Notificações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
+                  <span class="avatar">AB</span>
+                </span>
+              </span>
+              <span class="guestbits" id="guestbits" hidden>
+                <span style="display:flex;align-items:center;gap:6px">
+                  <button class="pill">Entrar</button>
+                  <button class="pill fill">Criar conta</button>
+                </span>
+              </span>
+            </div>
+            <div class="layer ctx" aria-hidden="true">
+              <button class="ibtn" aria-label="Índice do curso" tabindex="-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h3M4 12h3M4 18h3M10 6h10M10 12h10M10 18h10"/></svg>
+              </button>
+              <span class="ctxtitle grow"><b>Leitura 2 · Mapas de competência</b><span id="ctxsub">Gestão por competências · 4 de 9</span></span>
+              <button class="pill fill" id="ctxcta" tabindex="-1">Concluir</button>
+            </div>
+          </div>
+
+          <div class="scroller" id="scroller">
+            <div class="pad">
+              <span class="crumb">Gestão por competências › Unidade 2</span>
+              <span class="atitle">Leitura 2 · Mapas de competência</span>
+              <span class="done" id="donebtn">✓ Marcar como concluída</span>
+              <div class="guestnote" id="guestnote" hidden>
+                <b>Você está vendo este curso como visitante</b>
+                <span>Dá para ler os materiais. Para entregar atividades e guardar seu progresso, entre ou crie uma conta.</span>
+              </div>
+              <p class="para">Um mapa de competências organiza o que se espera de uma pessoa em níveis observáveis. Nesta leitura você vai ver como os quadros do Moodle descrevem cada competência, como as evidências se acumulam e como o plano de aprendizagem conecta tudo isso aos cursos.</p>
+              <div class="figure">figura 1 · quadro de competências</div>
+              <p class="para">Comece pelo quadro. Ele é a árvore que dá nome às coisas: domínios no topo, competências nas folhas. Cada competência pode ter uma escala própria, e é a escala que decide quando alguém foi considerado proficiente.</p>
+              <p class="para">Depois vem o plano. Um plano reúne as competências que uma pessoa precisa desenvolver num período e mostra, para cada uma, o que já foi avaliado e o que ainda falta. O plano não ensina nada sozinho: ele aponta para cursos e atividades.</p>
+              <div class="figure">figura 2 · plano de aprendizagem</div>
+              <p class="para">As evidências chegam por caminhos diferentes. Uma atividade concluída pode marcar uma competência; um professor pode avaliar diretamente; a própria pessoa pode anexar uma prova do que fez fora da plataforma.</p>
+              <p class="para">Quando a evidência basta, a competência fica proficiente no curso. Se o plano está ativo, a avaliação sobe para o plano. É esse caminho que o painel de competências mostra em uma linha por competência.</p>
+              <div class="figure">figura 3 · do curso ao plano</div>
+              <p class="para">Na próxima leitura vamos montar um quadro pequeno do zero, com três competências e uma escala de quatro níveis, e ligar uma atividade a cada uma delas.</p>
+              <div class="nextprev"><span>‹ Leitura 1</span><span>Atividade 2.3 ›</span></div>
+            </div>
+          </div>
+
+          <div class="scrim" id="scrim"></div>
+          <nav class="drawer" id="drawer" aria-label="Navegação">
+            <div class="dhead">
+              <span class="logo">Dimensions</span>
+              <span class="grow"></span>
+              <button class="ibtn" id="close-drawer" aria-label="Fechar navegação">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </button>
+            </div>
+            <div class="panes" id="panes">
+              <div class="pane root">
+                <div class="who" id="d-who">
+                  <span class="avatar">AB</span>
+                  <span>Ana Beatriz<small>Estudante · 3 cursos ativos</small></span>
+                </div>
+                <div class="resume" id="d-resume">
+                  <small>Continuar de onde parou</small>
+                  <b>Leitura 2 · Mapas de competência</b>
+                  <span class="rail"><i></i></span>
+                </div>
+                <div class="join" id="d-join" hidden>
+                  <b>Novo por aqui?</b>
+                  <span>Crie sua conta para se inscrever nos cursos, guardar seu progresso e receber certificados.</span>
+                  <div class="row"><button class="btn-fill">Criar conta</button><button class="btn-line">Entrar</button></div>
+                </div>
+                <div class="dsec">
+                  <span>Navegar</span>
+                  <button class="d-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9H3z"/></svg>Página inicial</button>
+                  <button class="d-item cur" id="d-courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M4 9h16"/></svg>Meus cursos</button>
+                  <button class="d-item" id="drill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Catálogo<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+                  <button class="d-item" id="d-competency"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l3 6 6 1-4.5 4 1 6L12 17l-5.5 3 1-6L3 10l6-1z"/></svg>Minhas competências</button>
+                </div>
+                <div class="dsec">
+                  <span>Aparência</span>
+                  <div class="seg2"><span>Claro</span><span>Escuro</span><span class="on">Sistema</span></div>
+                </div>
+                <div class="dsec">
+                  <span>Idioma</span>
+                  <button class="d-item">Português (Brasil)<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+                </div>
+              </div>
+              <div class="pane sub" aria-hidden="true">
+                <button class="back" id="drill-back" tabindex="-1">‹ Navegação</button>
+                <div class="dsec">
+                  <span>Catálogo</span>
+                  <button class="d-item" tabindex="-1">Gestão e liderança</button>
+                  <button class="d-item" tabindex="-1">Tecnologia educacional</button>
+                  <button class="d-item" tabindex="-1">Saúde e segurança</button>
+                  <button class="d-item" tabindex="-1">Todos os cursos</button>
+                </div>
+              </div>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ideias">
+    <span class="eyebrow">Ideias</span>
+    <h2>Quatro frentes, 22 ideias</h2>
+    <div class="legend">
+      <span>Custo:</span><span class="chip c-s">P</span><span class="chip c-m">M</span><span class="chip c-l">G</span>
+      <span>Distância do core:</span><span class="chip c-core">contexto</span> só muda dados de um template existente;
+      <span class="chip c-core">override</span> copia um template; <span class="chip c-core">JS+CSS</span> comportamento novo; <span class="chip c-core">fora</span> não existe no Moodle.
+      Cartões com borda azul são as recomendações.
+    </div>
+
+    <h3>A · Visitante propositivo</h3>
+    <div class="ideas">
+      <article class="idea star">
+        <div class="head"><span class="id">A1</span><h3>Entrar + Criar conta no lugar do aviso</h3></div>
+        <p>“Entrar” em contorno e “Criar conta” preenchido à direita da barra, como no Fandom. “Criar conta” só aparece quando o cadastro está ligado.</p>
+        <p class="how">Trocar o template quando o contexto tem <code>usermenu.unauthenticateduser</code>, do mesmo jeito que o tema já faz com <code>navbarcolorclasses</code>. A URL de cadastro sai de <code>signup_is_enabled()</code>; o auth_loginsteps decide para onde ela leva.</p>
+        <div class="chips"><span class="chip c-s">P</span><span class="chip c-core">contexto</span></div>
+      </article>
+      <article class="idea star">
+        <div class="head"><span class="id">A2</span><h3>Selo “Visitante” no lugar da frase</h3></div>
+        <p>A frase do core vira um selo pequeno ao lado do logo, com um popover que explica o que dá para fazer como visitante. A referência do core continua lá, sem ocupar a barra.</p>
+        <p class="how">Usa a string <code>loggedinasguest</code> do core como texto do popover. Abaixo de 576px o selo some e a explicação vai para a gaveta.</p>
+        <div class="chips"><span class="chip c-s">P</span><span class="chip c-core">contexto</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">A3</span><h3>CTA que muda com a página</h3></div>
+        <p>Em curso público o botão principal vira “Inscrever-se no curso”; na vitrine de categoria, “Ver cursos abertos”; no restante, “Criar conta”. A barra fala do que a página oferece.</p>
+        <p class="how">Decisão no servidor com <code>enrol_selfenrol_available()</code> e o aviso de visitante que o tema já tem (<code>course_notice</code>), para não repetir a mesma chamada em dois lugares.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">contexto</span></div>
+      </article>
+      <article class="idea star">
+        <div class="head"><span class="id">A4</span><h3>Cartão “Novo por aqui?” na gaveta</h3></div>
+        <p>O visitante abre a gaveta e encontra, no topo, três benefícios em uma frase e os dois botões. No celular é onde ele mais vai procurar.</p>
+        <p class="how">Parte da gaveta nova (B2). Texto configurável por setting, com padrão neutro.</p>
+        <div class="chips"><span class="chip c-s">P</span><span class="chip c-core">override</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">A5</span><h3>Lembrar o motivo do login</h3></div>
+        <p>Quem clica em “Entrar” numa atividade volta exatamente para ela, com um toast “Pronto, agora você pode entregar”. O core já guarda <code>wantsurl</code>; falta dizer à pessoa por que ela entrou.</p>
+        <div class="chips"><span class="chip c-s">P</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+    </div>
+
+    <h3>B · Gaveta móvel e tablet</h3>
+    <div class="ideas">
+      <article class="idea star">
+        <div class="head"><span class="id">B1</span><h3>Duas gavetas, dois papéis</h3></div>
+        <p>A do hambúrguer é do site (você, navegação, aparência, idioma). A do índice do curso é do contexto, e ganha um gatilho com o nome do curso na barra de contexto, como a barra da comunidade no Fandom.</p>
+        <p class="how">A gaveta do índice já existe no core (<code>theme_boost-drawers-courseindex</code>); muda só o gatilho e o rótulo.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">override</span></div>
+      </article>
+      <article class="idea star">
+        <div class="head"><span class="id">B2</span><h3>Gaveta com identidade</h3></div>
+        <p>Cabeçalho com a pessoa (avatar, nome, papel), seções com rótulo, ícones nos itens, item atual marcado e o rodapé com aparência e idioma. É o que o protótipo mostra.</p>
+        <p class="how">Override de <code>theme_boost/primary-drawer-mobile</code> (Mustache, não React). Os smart menus do Boost Union entram como seção própria.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">override</span></div>
+      </article>
+      <article class="idea star">
+        <div class="head"><span class="id">B3</span><h3>Subníveis que entram deslizando</h3></div>
+        <p>Menus com filhos abrem um painel novo com “‹ voltar”, em vez de acordeões aninhados. Funciona melhor com três níveis de smart menu e mantém o polegar no mesmo lugar.</p>
+        <p class="how">Foco vai para o “voltar” ao entrar e volta ao item de origem ao sair; painel oculto recebe <code>inert</code>.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea star">
+        <div class="head"><span class="id">B4</span><h3>“Continuar de onde parou”</h3></div>
+        <p>O primeiro bloco da gaveta, para quem está logado, é a última atividade aberta com o progresso do curso. É a versão de bolso do “Ir para a unidade 3” da Domestika.</p>
+        <p class="how">Itens recentes do core (<code>block_recentlyaccesseditems</code>) e a conclusão do curso. Carregado sob demanda ao abrir a gaveta, para não pesar em toda página.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">B5</span><h3>Modo compacto no tablet</h3></div>
+        <p>Entre 768 e 1199px, quando a navegação primária manda mais de dois itens para “Mais”, a barra troca para hambúrguer + gaveta. Hoje o core decide só pela largura; a ideia é decidir pelo que cabe.</p>
+        <p class="how"><code>ResizeObserver</code> na navegação primária liga a classe <code>dimensions-nav-compact</code> no body. O CSS precisa vencer o <code>d-md-none</code> do core por especificidade, sem <code>!important</code>.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">B6</span><h3>Trilho de ícones no tablet</h3></div>
+        <p>Alternativa a B5: um trilho vertical de 56px com Início, Meus cursos, Competências, Calendário, como o trilho do Fandom no desktop. Sempre visível, sem abrir nada.</p>
+        <p class="how">Briga por espaço com a gaveta do índice do curso, que também mora à esquerda. Exige rever o offset das gavetas.</p>
+        <div class="chips"><span class="chip c-l">G</span><span class="chip c-core">fora</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">B7</span><h3>Barra inferior no celular</h3></div>
+        <p>Quatro abas na zona do polegar (Início, Cursos, Competências, Você), como nos apps de aprendizagem. É o mais distante do Moodle e conflita com o app oficial; fica como opção desligada por padrão.</p>
+        <div class="chips"><span class="chip c-l">G</span><span class="chip c-core">fora</span></div>
+      </article>
+    </div>
+
+    <h3>C · Rolagem</h3>
+    <div class="ideas">
+      <article class="idea star">
+        <div class="head"><span class="id">C1</span><h3>Auto-ocultar em páginas de conteúdo</h3></div>
+        <p>O padrão da Domestika: some ao rolar para baixo, volta ao primeiro gesto para cima. Só em páginas de leitura (atividade, livro, página, fórum longo), nunca no painel ou na administração.</p>
+        <p class="how">Uma variável <code>--dim-navbar-offset</code> que vai de 60px a 0 e que gavetas, âncoras e <code>scroll-padding-top</code> passam a ler. Sem ela, o índice do curso fica com um vão de 60px quando a barra sai.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea star">
+        <div class="head"><span class="id">C2</span><h3>Barra de contexto</h3></div>
+        <p>A ideia do Fandom levada para o Moodle: depois do cabeçalho da página, a barra troca o conteúdo sem mudar de altura. Em atividade mostra título, posição no curso e “Concluir”; no curso, nome e progresso; na vitrine, “Inscrever-se”. Rolar para cima devolve a barra global.</p>
+        <p class="how">Mesma altura de 60px, só troca de camada com fade. Nenhum offset muda, então é mais seguro que C1. A ação de conclusão reaproveita <code>$PAGE->get_header_actions()</code>, como o modo foco.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea star">
+        <div class="head"><span class="id">C3</span><h3>A faixa de 3px vira progresso</h3></div>
+        <p>A faixa azul que já é a assinatura do tema enche da esquerda para a direita conforme a leitura avança. No curso, mostra a conclusão. Não acrescenta nenhum elemento à tela.</p>
+        <p class="how"><code>transform: scaleX()</code> no <code>::after</code> que já existe, alimentado por uma variável CSS. Leve e sem layout.</p>
+        <div class="chips"><span class="chip c-s">P</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">C4</span><h3>Barra translúcida ao rolar</h3></div>
+        <p>Fundo com <code>backdrop-filter: blur</code> depois do topo, padrão comum no mercado. <b>Contra a regra do tema:</b> o design system só aceita blur sobre a imagem de um card ou sobre o navy, e uma navbar flutuante translúcida já foi desenhada e rejeitada. Fica registrada para não ser proposta de novo.</p>
+        <div class="chips"><span class="chip c-l">rejeitada</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">C5</span><h3>Abas do curso fixas</h3></div>
+        <p>A navegação secundária do curso (Curso, Configurações, Participantes, Notas) gruda abaixo da barra ao rolar, como as abas da Domestika, com “4 de 9 concluídas” à direita.</p>
+        <p class="how">Combina com C1: quando a barra sai, as abas sobem para o topo.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+    </div>
+
+    <h3>D · Mais ousadas</h3>
+    <div class="ideas">
+      <article class="idea">
+        <div class="head"><span class="id">D1</span><h3>Paleta de comandos</h3></div>
+        <p><kbd>Ctrl</kbd>+<kbd>K</kbd> abre uma busca que pula para curso, atividade, competência ou página de administração. É o atalho que Linear, GitHub e Notion ensinaram a esperar.</p>
+        <div class="chips"><span class="chip c-l">G</span><span class="chip c-core">fora</span></div>
+      </article>
+      <article class="idea star">
+        <div class="head"><span class="id">D2</span><h3>Sino e mensagens juntos no celular</h3></div>
+        <p>Abaixo de 576px, notificações e mensagens viram um ícone só com a soma dos contadores, e o popover abre como folha que sobe da base. Resolve o aperto da barra em 390px.</p>
+        <p class="how">Antes, reproduzir o estouro em 390px no m503: ele não está registrado no repositório.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">D3</span><h3>Menu do usuário como folha</h3></div>
+        <p>No celular, o menu do avatar abre de baixo para cima, com alvos de 48px e o nome no topo, em vez de um dropdown espremido no canto.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">D4</span><h3>Aparência na gaveta</h3></div>
+        <p>Claro, Escuro e Sistema num controle segmentado no rodapé da gaveta, como no Fandom. Só faz sentido se a preferência de cor do 5.3 puder ser lida e gravada pelo tema.</p>
+        <div class="chips"><span class="chip c-s">P</span><span class="chip c-core">contexto</span></div>
+      </article>
+      <article class="idea">
+        <div class="head"><span class="id">D5</span><h3>Atalhos de papel</h3></div>
+        <p>Professor vê na barra de contexto do curso o interruptor de edição e “Avaliar agora” com a contagem do feedback_tracker; estudante vê “Próxima atividade”. A barra conhece quem está nela.</p>
+        <div class="chips"><span class="chip c-m">M</span><span class="chip c-core">JS+CSS</span></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="foco">
+    <span class="eyebrow">Relação com o modo foco</span>
+    <h2>Uma escada, não uma escolha</h2>
+    <p>O auto-ocultar não substitui o modo foco: são degraus de intensidade. Cada degrau tira um pouco mais da tela e pede um pouco mais de intenção.</p>
+    <div class="ladder">
+      <div class="rung"><span class="bar" style="width:25%"></span><span class="lvl">Normal</span><p>Barra fixa do core. Painel, administração, relatórios.</p></div>
+      <div class="rung"><span class="bar" style="width:50%"></span><span class="lvl">Barra de contexto (C2)</span><p>Mesma altura, conteúdo da página. Padrão em atividades e curso.</p></div>
+      <div class="rung"><span class="bar" style="width:75%"></span><span class="lvl">Auto-ocultar (C1)</span><p>Some na leitura, volta no gesto. Setting do site, por tipo de página.</p></div>
+      <div class="rung"><span class="bar" style="width:100%"></span><span class="lvl">Modo foco</span><p>Troca estrutural da página, por curso ou por sessão. A barra de foco também pode auto-ocultar.</p></div>
+    </div>
+  </section>
+
+  <section id="esbocos">
+    <span class="eyebrow">Esboços</span>
+    <h2>A barra do visitante e o tablet</h2>
+    <div class="cols">
+      <div class="sketch">
+        <h3>Hoje (core)</h3>
+        <div class="sk-bar sk-old"><b>Site</b><span>Página inicial</span><span class="sp"></span><span>🌐 pt_br</span><span>Você está acessando como visitante | Acessar</span></div>
+        <h3>A1 + A2</h3>
+        <div class="sk-bar"><b>Dimensions</b><span class="visit">● Visitante</span><span>Início · Cursos</span><span class="sp"></span><span>🌐</span><span class="pill">Entrar</span><span class="pill fill">Criar conta</span></div>
+        <h3>A3 num curso público, depois de rolar</h3>
+        <div class="sk-bar"><b>Gestão por competências</b><span class="sp"></span><span class="pill">Entrar</span><span class="pill fill">Inscrever-se no curso</span></div>
+        <p class="sk-note">“Criar conta” some quando o site não tem autocadastro; “Inscrever-se” só aparece quando há inscrição livre disponível.</p>
+      </div>
+      <div class="sketch">
+        <h3>B5 · tablet com menu demais</h3>
+        <div class="sk-bar"><span>☰</span><b>Dimensions</b><span class="sp"></span><span>🔔</span><span>AB</span></div>
+        <div class="tablet">
+          <div class="rail"><i class="on"></i><i></i><i></i><i></i></div>
+          <div class="tcontent"><span class="tline" style="width:60%"></span><span class="tline"></span><span class="tline" style="width:85%"></span><span class="tline" style="width:70%"></span></div>
+        </div>
+        <p class="sk-note">Acima: B5 troca a barra para hambúrguer quando os itens não cabem. O trilho cinza à esquerda é a alternativa B6, sempre visível.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="praticas">
+    <span class="eyebrow">Boas práticas</span>
+    <h2>O que qualquer opção precisa cumprir</h2>
+    <div class="cols">
+      <div class="card">
+        <h3>Acessibilidade</h3>
+        <ul>
+          <li>Nunca esconder a barra com foco do teclado dentro dela (<code>:focus-within</code>) ou com menu, popover ou gaveta aberta.</li>
+          <li>Gaveta: foco preso, <code>Esc</code> fecha, foco volta ao botão que abriu, página atrás com <code>inert</code>.</li>
+          <li><code>prefers-reduced-motion</code>: troca sem animação, nunca desliga a funcionalidade.</li>
+          <li>Alvos de toque com pelo menos 44px na gaveta e 2,25rem na barra; anel de foco de 3px que o tema já usa.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Rolagem</h3>
+        <ul>
+          <li>Ouvir rolagem com <code>passive: true</code> e decidir num <code>requestAnimationFrame</code>; nunca medir layout dentro do evento.</li>
+          <li>Limiar de distância e de velocidade, para o tremor do dedo e o “rubber band” do iOS não fazerem a barra piscar.</li>
+          <li>Âncoras e “pular para o conteúdo” respeitam a barra com <code>scroll-padding-top</code> lido da mesma variável.</li>
+          <li><code>env(safe-area-inset-top)</code> nos iPhones com notch.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Moodle</h3>
+        <ul>
+          <li>Desligado no app Moodle e nas web views que ele abre (o app já tem sua própria barra).</li>
+          <li>Desligado no site de Behat: um elemento da barra fora da tela falha o clique do Selenium. Testar o comportamento em PHPUnit pela classe do body e em um cenário dedicado.</li>
+          <li>Cores pela cadeia de tokens (<code>--dimensions-*</code>, <code>--dim-ds-*</code>) e por <code>navbarcolorclasses</code>, nunca por <code>--bs-*</code> escrito à mão na barra.</li>
+          <li>Tudo atrás de settings do tema, com o padrão mais próximo do core.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="fases">
+    <span class="eyebrow">Proposta de fatiamento</span>
+    <h2>Quatro entregas, da mais barata à mais ambiciosa</h2>
+    <div>
+      <div class="phase"><span class="n">1</span><div><h3>Visitante propositivo</h3><p>A1, A2, A4 e A5. Muda só contexto e template; nenhum offset; dá para medir o efeito nos cadastros logo depois.</p></div></div>
+      <div class="phase"><span class="n">2</span><div><h3>Gaveta nova</h3><p>B1, B2, B3 e B4, com D4 se a preferência de cor do core permitir. Override do Mustache móvel; o desktop React fica intocado.</p></div></div>
+      <div class="phase"><span class="n">3</span><div><h3>Barra que acompanha a leitura</h3><p>C3 primeiro (pequeno), depois C2 e por fim C1 com a variável de offset. C5 entra aqui se as abas do curso fizerem falta.</p></div></div>
+      <div class="phase"><span class="n">4</span><div><h3>Tablet e ousadias</h3><p>B5 ou B6, D2, D3 e D5. D1 e B7 só se a fase 3 mostrar que vale.</p></div></div>
+    </div>
+  </section>
+
+  <section id="decisoes">
+    <span class="eyebrow">Decidido em 18 out 2026</span>
+    <h2>Respostas do dono</h2>
+    <ol class="qs">
+      <li><b>Cadastro:</b> “Criar conta” segue a configuração do site. Com o cadastro do auth_loginsteps ligado (<code>auth_loginsteps/enableregistration</code>) leva a <code>/auth/loginsteps/register.php</code>, que escolhe entre o fluxo clássico e o em etapas (<code>registrationflow</code>); senão, ao cadastro do core quando <code>signup_is_enabled()</code>; sem nenhum dos dois, o botão não aparece.</li>
+      <li><b>Selo de visitante:</b> “nota menor”. O texto do core fica no popover do selo.</li>
+      <li><b>Padrão:</b> barra de contexto (C2) ligada nas atividades; auto-ocultar (C1) como opção do site.</li>
+      <li><b>Escopo do auto-ocultar:</b> configuração do admin, por tipo de página, desligada por padrão.</li>
+      <li><b>Tablet:</b> B5, decidir pelo que cabe e trocar para hambúrguer + gaveta.</li>
+      <li><b>Barra inferior:</b> B7 vira um retoque visual da barra inferior dos smart menus do Boost Union, exibida só no celular quando o admin coloca um smart menu nela. Fica para depois. <b>Achado:</b> o Boost Union <code>upgrade-503</code> removeu essa localização em 2026-10-08 (CHANGES.md, commit 9e2a0cc7) até reimplementá-la sobre os smart menus em React; ela existe no 5.2 (<code>LOCATION_BOTTOM = 4</code>). B7 espera o Boost Union devolvê-la ou passa a ter implementação própria.</li>
+      <li><b>Próximo passo:</b> canvas com os estados de todas as fases antes de codar.</li>
+    </ol>
+  </section>
+
+  <section id="perguntas">
+    <span class="eyebrow">Para decidir</span>
+    <h2>Perguntas ao dono (respondidas acima)</h2>
+    <ol class="qs">
+      <li><b>Cadastro:</b> “Criar conta” leva ao cadastro em etapas do auth_loginsteps em todos os sites, ou o tema deve funcionar igual com o cadastro por e-mail do core?</li>
+      <li><b>Selo de visitante (A2):</b> manter o texto do core no popover basta como “nota menor”, ou ele deve continuar visível em algum lugar fixo?</li>
+      <li><b>C1 ou C2 como padrão:</b> recomendo C2 ligada por padrão em atividades e C1 como opção do site, por mexer nos offsets. Concorda?</li>
+      <li><b>Escopo do auto-ocultar:</b> só páginas de atividade, ou também a página do curso e a vitrine de categoria?</li>
+      <li><b>Tablet:</b> B5 (decidir pelo que cabe, troca para hambúrguer) ou B6 (trilho de ícones fixo)?</li>
+      <li><b>Barra inferior (B7):</b> descartar de vez ou guardar como opção desligada?</li>
+      <li><b>Próximo passo:</b> protótipo no m503 da fase 1, ou um canvas com os estados de todas as fases antes de codar, como foi com a faixa de calendário?</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  const scroller = document.getElementById('scroller');
+  const bar = document.getElementById('mbar');
+  const screen = document.getElementById('screen');
+  const readout = document.getElementById('readout');
+  const panes = document.getElementById('panes');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const state = {mode: 'ctx', who: 'user', band: true, lastY: 0, ticking: false};
+  const THRESHOLD = 120;
+  const DELTA = 8;
+
+  function drawerOpen() {
+    return screen.classList.contains('dopen');
+  }
+
+  function setCtx(on) {
+    bar.classList.toggle('ctxon', on);
+    bar.querySelector('.layer.ctx').setAttribute('aria-hidden', on ? 'false' : 'true');
+    bar.querySelectorAll('.layer.ctx button').forEach(b => { b.tabIndex = on ? 0 : -1; });
+  }
+
+  function update() {
+    state.ticking = false;
+    const y = scroller.scrollTop;
+    const max = scroller.scrollHeight - scroller.clientHeight;
+    const dy = y - state.lastY;
+    const focusInBar = bar.contains(document.activeElement);
+    let msg = '';
+
+    if (state.band) {
+      bar.style.setProperty('--band', max > 0 ? Math.min(1, y / max).toFixed(3) : '0');
+    } else {
+      bar.style.setProperty('--band', '1');
+    }
+
+    if (Math.abs(dy) < DELTA && y > 0) {
+      return;
+    }
+
+    if (state.mode === 'fixed') {
+      bar.classList.remove('hidden');
+      setCtx(false);
+      msg = 'Fixa: a barra do core fica sempre no lugar.';
+    } else if (state.mode === 'hide') {
+      setCtx(false);
+      const hide = y > THRESHOLD && dy > 0 && !focusInBar && !drawerOpen();
+      bar.classList.toggle('hidden', hide);
+      msg = hide ? 'Rolando para baixo: a barra saiu da frente.' : 'Rolando para cima ou perto do topo: a barra voltou.';
+    } else {
+      bar.classList.remove('hidden');
+      const ctx = y > THRESHOLD && dy > 0;
+      if (y <= THRESHOLD || dy < 0) {
+        setCtx(false);
+        msg = 'Barra global: logo, navegação e conta.';
+      } else if (ctx) {
+        setCtx(true);
+        msg = 'Barra de contexto: título, posição no curso e a ação da página.';
+      }
+    }
+    if (msg) {
+      readout.textContent = msg;
+    }
+    state.lastY = y;
+  }
+
+  scroller.addEventListener('scroll', function () {
+    if (!state.ticking) {
+      state.ticking = true;
+      window.requestAnimationFrame(update);
+    }
+  }, {passive: true});
+
+  document.querySelectorAll('input[name="mode"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      state.mode = input.value;
+      bar.classList.remove('hidden');
+      setCtx(false);
+      scroller.scrollTo({top: 0, behavior: reduced.matches ? 'auto' : 'smooth'});
+      readout.textContent = 'Role a tela do celular.';
+    });
+  });
+
+  document.querySelectorAll('input[name="who"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      const guest = input.value === 'guest';
+      state.who = input.value;
+      document.getElementById('userbits').hidden = guest;
+      document.getElementById('guestbits').hidden = !guest;
+      document.getElementById('guestnote').hidden = !guest;
+      document.getElementById('donebtn').hidden = guest;
+      document.getElementById('d-who').hidden = guest;
+      document.getElementById('d-resume').hidden = guest;
+      document.getElementById('d-join').hidden = !guest;
+      document.getElementById('d-courses').hidden = guest;
+      document.getElementById('d-competency').hidden = guest;
+      document.getElementById('ctxcta').textContent = guest ? 'Inscrever-se' : 'Concluir';
+      document.getElementById('ctxsub').textContent = guest ? 'Gestão por competências · curso aberto' : 'Gestão por competências · 4 de 9';
+    });
+  });
+
+  document.getElementById('band-progress').addEventListener('change', function (e) {
+    state.band = e.target.checked;
+    update();
+  });
+
+  const openBtn = document.getElementById('open-drawer');
+  function openDrawer() {
+    screen.classList.add('dopen');
+    bar.classList.remove('hidden');
+    document.getElementById('close-drawer').focus();
+  }
+  function closeDrawer() {
+    screen.classList.remove('dopen');
+    panes.classList.remove('drill');
+    openBtn.focus();
+  }
+  openBtn.addEventListener('click', openDrawer);
+  document.getElementById('close-drawer').addEventListener('click', closeDrawer);
+  document.getElementById('scrim').addEventListener('click', closeDrawer);
+  screen.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawerOpen()) {
+      closeDrawer();
+    }
+  });
+
+  const sub = panes.querySelector('.pane.sub');
+  function setDrill(on) {
+    panes.classList.toggle('drill', on);
+    sub.setAttribute('aria-hidden', on ? 'false' : 'true');
+    sub.querySelectorAll('button').forEach(b => { b.tabIndex = on ? 0 : -1; });
+    if (on) {
+      document.getElementById('drill-back').focus();
+    } else {
+      document.getElementById('drill').focus();
+    }
+  }
+  document.getElementById('drill').addEventListener('click', function () { setDrill(true); });
+  document.getElementById('drill-back').addEventListener('click', function () { setDrill(false); });
+
+  update();
+})();
+</script>
