@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Folhas no celular</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div style="width: 860px; height: 844px; display: flex; gap: 80px; background: transparent;">
+
+  <div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+    <nav class="nav" aria-label="Navegação do site" style="padding: 0 10px 0 6px;">
+      <button class="ibtn" type="button" aria-label="Abrir navegação"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <span class="brand" style="font-size: 18px;">Dimensions</span>
+      <span class="grow"></span>
+      <button class="ibtn" type="button" aria-label="Atividade: 2 notificações e 3 mensagens" aria-expanded="true" style="background: rgba(255,255,255,0.16);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="count">5</span></button>
+      <span class="avatar">AB</span>
+    </nav>
+    <div class="wrapc" aria-hidden="true"><span class="title">Meus cursos</span><div class="fig"></div><div class="fig"></div></div>
+    <div class="scrim"></div>
+    <section class="sheet" aria-label="Atividade" style="height: 560px;">
+      <span class="grab" aria-hidden="true"></span>
+      <div class="tabs" role="tablist">
+        <span class="on" role="tab" aria-selected="true">Notificações · 2</span>
+        <span role="tab" aria-selected="false">Mensagens · 3</span>
+        <span class="grow"></span>
+      </div>
+      <div class="note"><span class="dot" aria-hidden="true"></span><div><p>Sua competência <b>Mapear processos</b> foi avaliada como proficiente.</p><small>há 12 minutos · Gestão por competências</small></div></div>
+      <div class="note"><span class="dot" aria-hidden="true"></span><div><p>Nova resposta no fórum de dúvidas da Unidade 2.</p><small>há 1 hora · Gestão por competências</small></div></div>
+      <div class="note" style="opacity: 0.75;"><span class="dot" aria-hidden="true" style="background: transparent;"></span><div><p>A atividade 2.3 vence sexta, 24 de outubro.</p><small>ontem</small></div></div>
+      <div style="padding: 14px 16px; display: flex; justify-content: space-between; font-size: 14px; font-weight: 700;"><a href="#">Marcar todas como lidas</a><a href="#">Ver todas</a></div>
+    </section>
+    <span class="tagid" style="left: 260px; top: 70px;">D2</span>
+  </div>
+
+  <div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+    <nav class="nav" aria-label="Navegação do site" style="padding: 0 10px 0 6px;">
+      <button class="ibtn" type="button" aria-label="Abrir navegação"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <span class="brand" style="font-size: 18px;">Dimensions</span>
+      <span class="grow"></span>
+      <button class="ibtn" type="button" aria-label="Atividade: 5 novas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="count">5</span></button>
+      <button class="ibtn" type="button" aria-label="Menu do usuário" aria-expanded="true"><span class="avatar" style="box-shadow: 0 0 0 2px #fff;">AB</span></button>
+    </nav>
+    <div class="wrapc" aria-hidden="true"><span class="title">Meus cursos</span><div class="fig"></div><div class="fig"></div></div>
+    <div class="scrim"></div>
+    <section class="sheet" aria-label="Menu do usuário" style="height: 520px;">
+      <span class="grab" aria-hidden="true"></span>
+      <div class="who" style="padding: 8px 18px 12px; border-bottom: 1px solid #e1e3ef;">
+        <span class="avatar lg">AB</span>
+        <span>Ana Beatriz Souza<small>ana.souza@exemplo.org</small></span>
+      </div>
+      <div class="dsec" style="padding: 8px 10px;">
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>Notas</a>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Calendário</a>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Preferências</a>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg>Idioma<span class="tag">Português (Brasil)</span></a>
+        <a class="ditem" href="#" style="color: #9b1c3a;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="color: #9b1c3a;"><path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/></svg>Sair</a>
+      </div>
+    </section>
+    <span class="tagid" style="left: 300px; top: 70px;">D3</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"$preview":{"width":860,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { brand: this.props.brand ?? '#070093' };
+  }
+}
+</script>
+</body>
+</html>

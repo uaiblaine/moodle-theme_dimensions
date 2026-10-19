@@ -5,6 +5,39 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The visitor's navbar: "Log in" and "Create account"** (phase 1; 2026100512). A visitor
+  who is not logged in, and the guest account, no longer see core's "Log in" link and "You are currently using
+  guest access" in the navbar: two actions stand at its right end instead, "Log in" (an outline pill) and
+  "Create account" (a filled one), the second only while the site takes sign-ups (core's `signup_is_enabled()`,
+  so a plugin that answers core's sign-up page, auth_loginsteps among them, is followed through it). The guest
+  account also gets a small "Guest" chip that opens core's sentence and what a guest can and cannot do. Below
+  the md breakpoint only "Log in" stays in the bar, and the mobile drawer opens with a "New here?" card offering
+  both (the theme now overrides `theme_boost/primary-drawer-mobile`: Boost Union's copy plus that card; re-diff
+  it on every Boost Union update). Never in the Moodle app or on the login, maintenance, embedded, popup and
+  secure layouts.
+  - Setting `navbarguestactions` (Identity tab), a checkbox that ships on and reads as on until an explicit `0`
+    is stored, so no upgrade step writes it. Switched off, the navbar is Boost Union's.
+  - Every decision is `classes/local/guestnav.php`; the renderer appends the actions to `navbar_plugin_output()`
+    and empties the user menu by the context's shape (`usermenu.unauthenticateduser`). Nine mutation gates
+    (`guestnav_*`), each reddening a test on PostgreSQL and MariaDB.
+
+- **The brand on dark surfaces** (2026100512). Two file settings on the Identity tab,
+  `logodark` and `logocompactdark`, give Boost Union's logo and compact logo a variant for dark surfaces: the
+  compact one stands in the navy navbar, in a dark Boost Union navbar colour, in the mobile drawer's heading in dark
+  mode and on the theme's login page (its panel and its band are navy in either mode); the full one on Boost
+  Union's login page in dark mode. The nearest `data-bs-theme` decides which surface is dark, so a navbar Boost
+  Union paints light keeps the light logo in a dark page. A dark file is a variant: without its light partner in
+  Boost Union it is not used, and a flavour (or the multi-tenancy extension) with a logo of its own keeps it,
+  variant by variant. No template is copied: the light `<img>` keeps its box and its alternative text, its image is
+  moved out of the box and the dark file is drawn as that image's own background, so the dark file should keep the
+  light file's proportions.
+  - Every decision is `classes/local/darklogo.php`: the address (config and file settings only, so the extra SCSS
+    callback can ask it on the command line; through `styleurl::safe()`), the logo in force (Boost Union's flavour
+    lookup, asked by the renderer only), the body classes `dimensions-darklogo-compact` and
+    `dimensions-darklogo-full` the renderer adds in `body_attributes()` (the login layout included), and the two
+    file areas `theme_dimensions_pluginfile()` serves from the system context to anybody, as Boost Union serves its
+    logos. Seven mutation gates (`darklogo_*`), each reddening a test on PostgreSQL and MariaDB.
+
 - **The filter line previews what a filter would keep** (`2026100511`): the filter-line redesign's stage T4 (contract
   section 6), for both the logged-in and the visitor's live client, through a module of its own (`categorypreview`)
   that the shared line module arms.

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Navbar do visitante</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0f6cbf}a:hover{color:#0a4a85}
+</style>
+</helmet>
+<div class="dim" style="width: 1280px; height: 460px; --dim-nav: {{brand}}; display: flex; flex-direction: column;">
+  <div style="padding: 10px 16px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5d6180;">Hoje · core 5.3</div>
+  <nav class="nav" aria-label="Navegação do site, hoje" style="opacity: 0.92;">
+    <span class="brand">Dimensions</span>
+    <a class="navlink on" href="#">Página inicial</a>
+    <span class="grow"></span>
+    <span class="lang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg>Português (Brasil)</span>
+    <span style="font-size: 14px; color: rgba(255,255,255,0.86); padding-left: 8px;">Você está acessando como visitante <span aria-hidden="true">·</span> <a href="#" style="color: #fff; font-weight: 700;">Acessar</a></span>
+  </nav>
+
+  <div style="padding: 26px 16px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #5d6180;">Proposta · A1 + A2</div>
+  <nav class="nav" aria-label="Navegação do site">
+    <span class="brand">Dimensions</span>
+    <button class="visit" type="button" aria-expanded="true" aria-controls="visitpop"><i></i>Visitante</button>
+    <a class="navlink on" href="#">Página inicial</a>
+    <a class="navlink" href="#">Catálogo</a>
+    <span class="grow"></span>
+    <span class="lang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg>PT</span>
+    <a class="pill" href="#">Entrar</a>
+    <sc-if value="{{showSignup}}" hint-placeholder-val="{{ true }}">
+      <a class="pill fill" href="#">Criar conta</a>
+    </sc-if>
+  </nav>
+
+  <sc-if value="{{showPopover}}" hint-placeholder-val="{{ true }}">
+    <div class="popover" id="visitpop" role="dialog" aria-label="Acesso de visitante" style="left: 150px; top: 168px; width: 340px;">
+      <span class="t">Você está acessando como visitante</span>
+      <span class="s">Dá para ver os cursos abertos e ler os materiais. Para se inscrever, entregar atividades e guardar o seu progresso, entre na sua conta.</span>
+      <div style="display: flex; gap: 8px; padding-top: 4px;">
+        <a class="btn primary" href="#" style="height: 36px; font-size: 13.5px;">Entrar</a>
+        <sc-if value="{{showSignup}}" hint-placeholder-val="{{ true }}">
+          <a class="btn line" href="#" style="height: 36px; font-size: 13.5px;">Criar conta</a>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="margin: 18px 16px 0; height: 150px; border-radius: 14px; background: linear-gradient(120deg, #030050, #070093 55%, #2a31c9); color: #fff; padding: 26px 30px; display: flex; flex-direction: column; gap: 8px; justify-content: flex-end;">
+    <span style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; font-weight: 700;">Catálogo</span>
+    <span class="disp" style="font-size: 30px; font-weight: 700;">Cursos abertos</span>
+    <span style="font-size: 14px; opacity: 0.85;">48 cursos em 6 áreas</span>
+  </div>
+
+  <span class="tagid" style="left: 128px; top: 112px;">A2</span>
+  <span class="tagid" style="left: 1150px; top: 112px;">A1</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"signup":{"editor":"enum","default":"loginsteps","options":["loginsteps","core","off"]},"popover":{"editor":"boolean","default":true},"$preview":{"width":1280,"height":460}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const signup = this.props.signup ?? 'loginsteps';
+    return {
+      brand: this.props.brand ?? '#070093',
+      showSignup: signup !== 'off',
+      showPopover: this.props.popover ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

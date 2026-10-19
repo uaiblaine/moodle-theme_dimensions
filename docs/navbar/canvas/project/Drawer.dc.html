@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Gaveta do site</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+  <nav class="nav" aria-hidden="true" style="padding: 0 10px 0 6px;">
+    <span class="ibtn"></span>
+    <span class="brand" style="font-size: 18px;">Dimensions</span>
+    <span class="grow"></span>
+    <span class="avatar">AB</span>
+  </nav>
+  <div class="scrim"></div>
+
+  <nav class="drawer" aria-label="Navegação" style="width: 330px;">
+    <div class="dhead">
+      <span class="brand">Dimensions</span>
+      <span class="grow"></span>
+      <button class="ibtn" type="button" aria-label="Fechar navegação" style="color: #1d2033;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="dbody">
+      <div class="who">
+        <span class="avatar lg">AB</span>
+        <span>Ana Beatriz Souza<small>Estudante · 3 cursos em andamento</small></span>
+      </div>
+      <sc-if value="{{showResume}}" hint-placeholder-val="{{ true }}">
+        <a class="resume" href="#">
+          <small>Continuar de onde parou</small>
+          <b>Leitura 2 · Mapas de competência</b>
+          <span class="sub">Gestão por competências · 4 de 9 concluídas</span>
+          <span class="rail"><i style="width: 44%;"></i></span>
+        </a>
+      </sc-if>
+      <div class="dsec">
+        <span class="lab">Navegar</span>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 11l9-7 9 7v9H3z"/></svg>Página inicial</a>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg>Painel</a>
+        <a class="ditem cur" href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>Meus cursos</a>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>Minhas competências</a>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Catálogo<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="dsec">
+        <span class="lab">Smart menu · Ajuda</span>
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4V14M12 17h.01"/></svg>Central de ajuda<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="dsec">
+        <span class="lab">Aparência</span>
+        <div class="seg" role="group" aria-label="Aparência"><span>Claro</span><span>Escuro</span><span class="on">Sistema</span></div>
+      </div>
+      <div class="dsec">
+        <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg>Português (Brasil)<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </nav>
+  <span class="tagid" style="left: 280px; top: 140px;">B2</span>
+  <span class="tagid" style="left: 280px; top: 214px;">B4</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"resume":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      brand: this.props.brand ?? '#070093',
+      showResume: this.props.resume ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

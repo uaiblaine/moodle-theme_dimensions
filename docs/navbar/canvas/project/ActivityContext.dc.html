@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Barra de contexto</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+  <nav class="nav ctx track" aria-label="Barra de contexto da atividade" style="padding: 0 12px 0 6px; gap: 8px;">
+    <button class="ibtn" type="button" aria-label="Índice do curso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h3M4 12h3M4 18h3M10 6h10M10 12h10M10 18h10"/></svg></button>
+    <span class="ctxt grow"><b>Leitura 2 · Mapas de competência</b><span>Gestão por competências · 4 de 9</span></span>
+    <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+      <span class="visit" style="background: #dcf3e8; color: #17694a; height: 30px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true" style="width: 14px; height: 14px;"><path d="M6 12.5l4 4 8-9"/></svg>Concluída</span>
+    </sc-if>
+    <sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}">
+      <span class="visit" style="height: 30px;">Pendente</span>
+    </sc-if>
+    <span class="bandfill" style="width: {{bandWidth}};" aria-hidden="true"></span>
+  </nav>
+
+  <div class="wrapc" style="padding-top: 18px;">
+    <p class="para">Depois vem o plano. Um plano reúne as competências que uma pessoa precisa desenvolver num período e mostra, para cada uma, o que já foi avaliado e o que ainda falta. O plano não ensina nada sozinho: ele aponta para cursos e atividades.</p>
+    <div class="fig">figura 2 · plano de aprendizagem</div>
+    <p class="para">As evidências chegam por caminhos diferentes. Uma atividade concluída pode marcar uma competência; um professor pode avaliar diretamente; a própria pessoa pode anexar uma prova do que fez fora da plataforma.</p>
+    <p class="para">Quando a evidência basta, a competência fica proficiente no curso. Se o plano está ativo, a avaliação sobe para o plano.</p>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e1e3ef; padding: 10px 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 -6px 18px rgba(10, 12, 50, 0.06);">
+    <a class="btn line" href="#" style="height: 40px; padding: 0 12px;" aria-label="Anterior: Vídeo, Planos na prática"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="width: 18px; height: 18px;"><path d="M15 6l-6 6 6 6"/></svg></a>
+    <span class="done {{doneClass}}" style="flex: 1 1 auto; justify-content: center; align-self: auto; height: 40px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg>{{doneLabel}}</span>
+    <a class="btn primary" href="#" style="height: 40px; padding: 0 14px;">Próxima<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="width: 18px; height: 18px;"><path d="M9 6l6 6-6 6"/></svg></a>
+  </div>
+  <span class="tagid" style="left: 16px; top: 70px;">C2</span>
+  <span class="tagid" style="left: 16px; top: 750px;">core · navegação linear</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"progress":{"editor":"range","default":46,"min":0,"max":100,"step":1,"unit":"%"},"done":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props.progress ?? 46;
+    const done = this.props.done ?? false;
+    return {
+      brand: this.props.brand ?? '#070093',
+      bandWidth: Math.max(0, Math.min(100, p)) + '%',
+      isDone: done,
+      notDone: !done,
+      doneClass: done ? 'is' : '',
+      doneLabel: done ? 'Concluída' : 'Marcar como concluída'
+    };
+  }
+}
+</script>
+</body>
+</html>

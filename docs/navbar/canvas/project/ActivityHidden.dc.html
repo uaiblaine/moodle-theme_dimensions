@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Auto-ocultar ligado</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 390px; height: 844px; background: #fff;">
+  <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: rgba(68, 86, 255, 0.22); z-index: 6;">
+    <span style="display: block; height: 3px; width: {{bandWidth}}; background: #4456ff;"></span>
+  </div>
+
+  <div class="wrapc" style="padding-top: 22px;">
+    <p class="para">As evidências chegam por caminhos diferentes. Uma atividade concluída pode marcar uma competência; um professor pode avaliar diretamente; a própria pessoa pode anexar uma prova do que fez fora da plataforma.</p>
+    <p class="para">Quando a evidência basta, a competência fica proficiente no curso. Se o plano está ativo, a avaliação sobe para o plano. É esse caminho que o painel de competências mostra em uma linha por competência.</p>
+    <div class="fig">figura 3 · do curso ao plano</div>
+    <p class="para">Na próxima leitura vamos montar um quadro pequeno do zero, com três competências e uma escala de quatro níveis, e ligar uma atividade a cada uma delas.</p>
+    <p class="para">Antes de seguir, revise a escala: ela é o que decide quando alguém é considerado proficiente, e trocar a escala depois de avaliar exige refazer as avaliações.</p>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e1e3ef; padding: 10px 12px; display: flex; align-items: center; gap: 8px; box-shadow: 0 -6px 18px rgba(10, 12, 50, 0.06);">
+    <a class="btn line" href="#" style="height: 40px; padding: 0 12px;" aria-label="Anterior: Vídeo, Planos na prática"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="width: 18px; height: 18px;"><path d="M15 6l-6 6 6 6"/></svg></a>
+    <span class="done" style="flex: 1 1 auto; justify-content: center; align-self: auto; height: 40px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg>Marcar como concluída</span>
+    <a class="btn primary" href="#" style="height: 40px; padding: 0 14px;">Próxima<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="width: 18px; height: 18px;"><path d="M9 6l6 6-6 6"/></svg></a>
+  </div>
+  <span class="tagid" style="left: 16px; top: 10px;">C1 · a barra saiu; a faixa de 3px fica</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"progress":{"editor":"range","default":72,"min":0,"max":100,"step":1,"unit":"%"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props.progress ?? 72;
+    return { bandWidth: Math.max(0, Math.min(100, p)) + '%' };
+  }
+}
+</script>
+</body>
+</html>

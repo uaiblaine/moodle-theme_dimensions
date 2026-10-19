@@ -28,8 +28,10 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\filterfields_setting;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
+use theme_dimensions\local\darklogo;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\guesthome;
+use theme_dimensions\local\guestnav;
 use theme_dimensions\local\login;
 
 defined('MOODLE_INTERNAL') || die();
@@ -281,6 +283,46 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             $description,
             THEME_DIMENSIONS_SETTING_NAVBARSTYLE_NAVY,
             $navbarstyleoptions
+        );
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+
+        // Setting: The visitor's navbar actions. Default on, and read as on unless an explicit '0' was
+        // stored ({@see guestnav::enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . guestnav::SETTING;
+        $title = get_string('navbarguestactions', 'theme_dimensions', null, true);
+        $description = get_string('navbarguestactions_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: The full logo's variant for dark surfaces, the partner of Boost Union's logo ({@see darklogo}).
+        // Images only, as Boost Union's own logo settings; the stylesheet carries its address, so a change
+        // rebuilds it.
+        $name = 'theme_dimensions/' . darklogo::FULL;
+        $title = get_string('logodark', 'theme_dimensions', null, true);
+        $description = get_string('logodark_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configstoredfile(
+            $name,
+            $title,
+            $description,
+            darklogo::FULL,
+            0,
+            ['maxfiles' => 1, 'accepted_types' => 'web_image']
+        );
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+
+        // Setting: The compact logo's variant for dark surfaces, the partner of Boost Union's compact logo.
+        $name = 'theme_dimensions/' . darklogo::COMPACT;
+        $title = get_string('logocompactdark', 'theme_dimensions', null, true);
+        $description = get_string('logocompactdark_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configstoredfile(
+            $name,
+            $title,
+            $description,
+            darklogo::COMPACT,
+            0,
+            ['maxfiles' => 1, 'accepted_types' => 'web_image']
         );
         $setting->set_updatedcallback('theme_reset_all_caches');
         $tab->add($setting);

@@ -382,14 +382,18 @@ textarea:focus-visible,
     padding-left: .25rem;
 }
 
-/* The two things a dark navbar changes about the pill, declared once on the navbar itself and
+/* The things a dark navbar changes about the pill, declared once on the navbar itself and
    read by inheritance. Both navbars are covered by this one rule: the ordinary one the entry
    button is spliced into, and the focus bar, which is a .navbar and carries the same attribute
    from the same layout context key. A light navbar has no attribute, leaves them unset, and the
-   mixin's own fallbacks apply - which is the whole light-bar case, in two lines. */
+   mixin's own fallbacks apply - which is the whole light-bar case. The filled pill's ink (the
+   visitor's "Create account") is the navbar's own fill on a dark bar, Bootstrap's primary, which is
+   what this theme's renderer paints the bar with; on a light bar its fallback is the body's
+   background, the light half of the same pair. */
 .navbar[data-bs-theme="dark"] {
     --dimensions-pill-border: var(--dim-ds-border-inverse);
     --dimensions-pill-hover: rgba(255, 255, 255, .12);
+    --dimensions-pill-filled-ink: var(--bs-primary);
 }
 
 /* ---- The way into focus mode, in the ordinary navbar --------------------- */
@@ -399,6 +403,188 @@ textarea:focus-visible,
    it would be lost between the edit switch and the bell. */
 .dimensions-focus-entry-button {
     @include dimensions-navbar-pill;
+}
+
+/* ---- The visitor's actions, at the right end of the navbar --------------- */
+/* templates/navbar_guest.mustache, appended to the navbar's plugin output for a visitor and the guest
+   account while the user menu is emptied ({@see \theme_dimensions\local\guestnav}). "Log in" wears
+   the focus entry's pill; "Create account" is the same pill filled with the colour the navbar's type
+   takes, so it follows the bar's colour mode as the outline one does; the guest account's chip is a
+   smaller pill whose dot is the type's colour. Bootstrap's .btn writes outline 0 on focus-visible with
+   a selector that outranks the theme's global ring, so each control states the ring again. */
+@mixin dimensions-guestnav-ring {
+    &:focus-visible {
+        outline: var(--dim-ds-focus-ring-width) solid var(--dim-ds-focus-ring);
+        outline-offset: 2px;
+    }
+}
+
+.dimensions-guestnav {
+    gap: var(--dim-ds-space-xs);
+
+    /* Boost Union prints a divider after the plugin output, to stand between it and the user menu,
+       which is empty for these visitors: left alone the navbar would end on a hairline. */
+    + .divider {
+        display: none;
+    }
+}
+
+.dimensions-guestnav-login {
+    @include dimensions-navbar-pill;
+    @include dimensions-guestnav-ring;
+}
+
+.dimensions-guestnav-signup {
+    @include dimensions-navbar-pill;
+    @include dimensions-guestnav-ring;
+    border-color: var(--bs-navbar-brand-color, var(--bs-body-color));
+    background-color: var(--bs-navbar-brand-color, var(--bs-body-color));
+    color: var(--dimensions-pill-filled-ink, var(--bs-body-bg));
+    font-weight: 600;
+
+    &:hover,
+    &:focus {
+        border-color: var(--bs-navbar-brand-color, var(--bs-body-color));
+        background-color: var(--bs-navbar-brand-color, var(--bs-body-color));
+        color: var(--dimensions-pill-filled-ink, var(--bs-body-bg));
+        opacity: .88;
+    }
+}
+
+.dimensions-guestnav-chip {
+    @include dimensions-navbar-pill;
+    @include dimensions-guestnav-ring;
+    gap: .375rem;
+    padding: .125rem .5rem;
+    font-size: .75rem;
+}
+
+.dimensions-guestnav-dot {
+    width: .5rem;
+    height: .5rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background-color: currentcolor;
+}
+
+/* The chip's menu is skinned by the navbar dropdown rule above, navy on either bar, and sets no
+   colour of its own. What it changes is what the pills inside it read: the dropdown's own ink, edge,
+   hover and surface, so they stay legible on that surface whatever the bar's colour mode is. */
+.dimensions-guestnav-menu {
+    --bs-navbar-brand-color: var(--bs-dropdown-color);
+    --dimensions-pill-border: var(--bs-dropdown-border-color);
+    --dimensions-pill-hover: var(--bs-dropdown-link-hover-bg);
+    --dimensions-pill-filled-ink: var(--bs-dropdown-bg);
+    width: 20rem;
+    max-width: calc(100vw - 2rem);
+    padding: var(--dim-ds-space-sm) var(--dim-ds-space-md);
+    white-space: normal;
+}
+
+.dimensions-guestnav-menu-title {
+    margin: 0 0 .25rem;
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.dimensions-guestnav-menu-text {
+    margin: 0;
+    font-size: .8125rem;
+    line-height: 1.45;
+}
+
+.dimensions-guestnav-menu-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dim-ds-space-xs);
+    margin-top: var(--dim-ds-space-sm);
+}
+
+/* ---- The visitor's card, at the top of the mobile drawer ----------------- */
+/* templates/navbar_guest_card.mustache, in this theme's copy of theme_boost/primary-drawer-mobile.
+   The drawer is not inside the .navbar, so the card reads the page's family tokens and its buttons
+   are Bootstrap's own. */
+.dimensions-guestcard {
+    margin: var(--dim-ds-space-sm) var(--dim-ds-space-sm) var(--dim-ds-space-xs);
+    padding: var(--dim-ds-space-md);
+    border: 1px solid var(--dimensions-line);
+    border-radius: var(--dim-ds-radius-lg);
+    background-color: var(--dimensions-surface-alt);
+    color: var(--dimensions-ink);
+}
+
+.dimensions-guestcard-title {
+    margin: 0 0 .25rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.dimensions-guestcard-text {
+    margin: 0 0 var(--dim-ds-space-sm);
+    font-size: .875rem;
+}
+
+.dimensions-guestcard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dim-ds-space-xs);
+}
+
+.dimensions-guestcard-note {
+    margin: var(--dim-ds-space-sm) 0 0;
+    color: var(--dimensions-ink-muted);
+    font-size: .8125rem;
+}
+
+/* ---- The brand on dark surfaces ----------------------------------------- */
+/* Boost Union's logo and compact logo get a variant for dark surfaces (classes/local/darklogo.php).
+   The SURFACE decides, through the nearest data-bs-theme: the html element's colour mode, then a
+   navbar's own - "dark" on the theme's navy bar in light mode, "light" on one of Boost Union's navbar
+   colours in dark mode. The extra SCSS callback overrides the two sources of a variant on the root,
+   and only while the variant can be painted; these defaults stand otherwise. */
+:root {
+    --dimensions-logo-dark-src: none;
+    --dimensions-logo-dark-shift: 0%;
+    --dimensions-logo-compact-dark-src: none;
+    --dimensions-logo-compact-dark-shift: 0%;
+}
+
+:root,
+[data-bs-theme="light"] {
+    --dimensions-logo-dark: none;
+    --dimensions-logo-shift: 0%;
+    --dimensions-logo-compact-dark: none;
+    --dimensions-logo-compact-shift: 0%;
+}
+
+[data-bs-theme="dark"] {
+    --dimensions-logo-dark: var(--dimensions-logo-dark-src, none);
+    --dimensions-logo-shift: var(--dimensions-logo-dark-shift, 0%);
+    --dimensions-logo-compact-dark: var(--dimensions-logo-compact-dark-src, none);
+    --dimensions-logo-compact-shift: var(--dimensions-logo-compact-dark-shift, 0%);
+}
+
+/* The consumers, armed by a body class the renderer writes only while the logo in force is the site's
+   own and its dark file exists, so a flavour's logo is never painted over. The light <img> keeps its
+   box and its alt: its replaced content is moved out of that box, where it is clipped, and the dark
+   file is the image's own background, contained in the same box. Opacity cannot do it - it hides the
+   element's background with its image - and a background on the brand link is larger than the image,
+   which Boost Union sizes at 100% of the bar's height under core's max-height. The two logos sit
+   centred in their boxes (object-fit contain, or the image's own ratio), so the dark one does too. */
+body.dimensions-darklogo-compact {
+    .navbar .navbar-brand .logo,
+    .drawer-primary [data-region="site-home-link"] .logo {
+        overflow: hidden;
+        background: var(--dimensions-logo-compact-dark, none) center / contain no-repeat;
+        object-position: calc(50% + var(--dimensions-logo-compact-shift, 0%)) 50%;
+    }
+}
+
+/* Boost Union's login page draws the full logo, on the page's own surface. */
+body.dimensions-darklogo-full #logoimage {
+    overflow: hidden;
+    background: var(--dimensions-logo-dark, none) center / contain no-repeat;
+    object-position: calc(50% + var(--dimensions-logo-shift, 0%)) 50%;
 }
 
 /* ---- Calendar ------------------------------------------------------------ */

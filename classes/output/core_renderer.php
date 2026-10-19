@@ -25,6 +25,8 @@
 namespace theme_dimensions\output;
 
 use theme_dimensions\local\coursenotice\builder as coursenotice_builder;
+use theme_dimensions\local\darklogo;
+use theme_dimensions\local\guestnav;
 use theme_dimensions\local\login;
 
 /**
@@ -126,6 +128,13 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * shape rather than the template's name on purpose: it survives Boost Union renaming or
      * reorganising its layout templates, and it costs one isset() per render.
      *
+     * A layout drawn for a visitor - a session that is not logged in, or the guest account - loses the
+     * user menu while {@see guestnav::applies()}: core prints nothing in it for them but its "Log in"
+     * link and, for the guest account, "You are currently using guest access", which the theme's own
+     * actions replace ({@see self::navbar_plugin_output()}). The same data goes into the context as
+     * dimensionsguest, for this theme's override of theme_boost/primary-drawer-mobile, which the navbar
+     * includes with the layout context.
+     *
      * The two layouts that print Boost Union's course related hints get this theme's course notice
      * in their place, under the same key: Boost Union's include writes the key only when it has a
      * hint, so the value is SET here whatever the include did, and an empty string when the notice
@@ -150,6 +159,15 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         }
         if (is_array($context) && isset($context['usermenu']['userfullname'])) {
             $context = $this->apply_name_in_usermenu($context);
+        }
+
+        /* The visitor's navbar: core's "Log in" link and its guest sentence go, the theme's actions
+           (appended by navbar_plugin_output()) replace them, and the mobile drawer's card reads the
+           same data from the layout context. Guarded by the SHAPE core writes for exactly these
+           visitors - usermenu.unauthenticateduser - for the reason the docblock gives. */
+        if (is_array($context) && isset($context['usermenu']['unauthenticateduser']) && guestnav::applies($this->page)) {
+            $context['usermenu'] = false;
+            $context['dimensionsguest'] = guestnav::context();
         }
 
         /* The category showcase's hero draws the category's tabs itself, so the band the layout
@@ -313,7 +331,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Returns HTML attributes to use within the body tag, adding the focus mode classes.
+     * Returns HTML attributes to use within the body tag, adding the focus mode and the dark logo classes.
      *
      * Boost Union calls this from inside its layout file, with the page's cm already set,
      * which is why focus mode needs no hook for the class and never meets
@@ -337,11 +355,30 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             }
         }
 
+        // The logo variants for dark surfaces, armed only while the logo in force is the site's own.
+        // Boost Union's layout/login.php calls this method too, so the login layout carries them.
+        $additionalclasses = array_merge(
+            $additionalclasses,
+            darklogo::body_classes($this->page->theme, $this->darklogo_flavour())
+        );
+
         return parent::body_attributes($additionalclasses);
     }
 
     /**
-     * The navbar's plugin output, with the way into focus mode spliced into it.
+     * The Boost Union flavour that applies to this page, as {@see darklogo::applied_flavour()} answers it.
+     *
+     * A seam, so a test can hand in a flavour: Boost Union memoises its lookup in a function static for the
+     * whole process, so the first page a PHPUnit run renders decides the answer for every later test.
+     *
+     * @return \stdClass|null The flavour's record.
+     */
+    protected function darklogo_flavour(): ?\stdClass {
+        return darklogo::applied_flavour();
+    }
+
+    /**
+     * The navbar's plugin output, with the way into focus mode spliced into it and the visitor's actions after it.
      *
      * The position is the whole point and it is fixed by core's assembly order: the
      * subsystems' callbacks run first, so message_popup's notification bell is already in
@@ -355,24 +392,31 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * button is prepended instead, so the worst case is a position and never a lost
      * control.
      *
+     * The visitor's actions ({@see guestnav}) are APPENDED: Boost Union's navbar prints this output
+     * immediately before the user menu, which render_from_template() empties for the same visitors,
+     * so the end of this string is the right end of the navbar.
+     *
      * @return string
      */
     public function navbar_plugin_output() {
         $output = parent::navbar_plugin_output();
 
-        if (!\theme_dimensions\local\focusmode::offers_entry($this->page)) {
-            return $output;
+        if (\theme_dimensions\local\focusmode::offers_entry($this->page)) {
+            $button = $this->render_from_template('theme_dimensions/focusmode_entry', [
+                'actionurl' => (new \moodle_url('/theme/dimensions/focus.php'))->out(false),
+                'sesskey' => sesskey(),
+                'cmid' => (int) $this->page->cm->id,
+                'label' => get_string('focusmode_enter', 'theme_dimensions'),
+                'title' => get_string('focusmode_enter_title', 'theme_dimensions'),
+            ]);
+            $output = $this->splice_focus_entry($output, $button);
         }
 
-        $button = $this->render_from_template('theme_dimensions/focusmode_entry', [
-            'actionurl' => (new \moodle_url('/theme/dimensions/focus.php'))->out(false),
-            'sesskey' => sesskey(),
-            'cmid' => (int) $this->page->cm->id,
-            'label' => get_string('focusmode_enter', 'theme_dimensions'),
-            'title' => get_string('focusmode_enter_title', 'theme_dimensions'),
-        ]);
+        if (guestnav::applies($this->page)) {
+            $output .= $this->render_from_template('theme_dimensions/navbar_guest', guestnav::context());
+        }
 
-        return $this->splice_focus_entry($output, $button);
+        return $output;
     }
 
     /**

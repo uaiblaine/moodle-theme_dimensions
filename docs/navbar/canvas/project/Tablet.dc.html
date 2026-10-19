@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Tablet em modo compacto</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 1024px; height: 720px; --dim-nav: {{brand}};">
+  <nav class="nav" aria-label="Navegação do site" style="padding: 0 16px 0 8px; gap: 8px;">
+    <button class="ibtn" type="button" aria-label="Abrir navegação" aria-expanded="{{drawerOpen}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="brand">Dimensions</span>
+    <span class="grow"></span>
+    <button class="ibtn" type="button" aria-label="Notificações, 2 novas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="count">2</span></button>
+    <button class="ibtn" type="button" aria-label="Mensagens"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
+    <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px;"><span class="avatar">AB</span>Ana Beatriz Souza</span>
+  </nav>
+
+  <div style="padding: 26px 32px; display: flex; flex-direction: column; gap: 16px;">
+    <span class="crumb">Painel</span>
+    <h2 style="font-size: 26px;">Bom dia, Ana</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+      <div class="notice"><b>Gestão por competências</b><span class="para" style="font-size: 14px;">4 de 9 concluídas</span><span style="height: 6px; border-radius: 3px; background: #e3e5f0; overflow: hidden;"><span style="display: block; width: 44%; height: 100%; background: #4456ff;"></span></span></div>
+      <div class="notice"><b>Tecnologia educacional</b><span class="para" style="font-size: 14px;">1 de 6 concluídas</span><span style="height: 6px; border-radius: 3px; background: #e3e5f0; overflow: hidden;"><span style="display: block; width: 16%; height: 100%; background: #4456ff;"></span></span></div>
+      <div class="notice"><b>Atendimento ao público</b><span class="para" style="font-size: 14px;">Começa em 3 de novembro</span><span style="height: 6px; border-radius: 3px; background: #e3e5f0;"></span></div>
+    </div>
+    <div class="fig" style="height: 230px;">calendário e atividades da semana</div>
+  </div>
+
+  <sc-if value="{{showDrawer}}" hint-placeholder-val="{{ true }}">
+    <div class="scrim"></div>
+    <nav class="drawer" aria-label="Navegação" style="width: 340px;">
+      <div class="dhead">
+        <span class="brand">Dimensions</span>
+        <span class="grow"></span>
+        <button class="ibtn" type="button" aria-label="Fechar navegação" style="color: #1d2033;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="dbody">
+        <a class="resume" href="#">
+          <small>Continuar de onde parou</small>
+          <b>Leitura 2 · Mapas de competência</b>
+          <span class="rail"><i style="width: 44%;"></i></span>
+        </a>
+        <div class="dsec">
+          <span class="lab">Navegar</span>
+          <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 11l9-7 9 7v9H3z"/></svg>Página inicial</a>
+          <a class="ditem cur" href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></svg>Painel</a>
+          <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>Meus cursos</a>
+          <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>Minhas competências</a>
+          <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Catálogo<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+          <a class="ditem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Administração do site<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+    </nav>
+  </sc-if>
+  <span class="tagid" style="left: 60px; top: 70px;">B5</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"drawer":{"editor":"boolean","default":true},"$preview":{"width":1024,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const open = this.props.drawer ?? true;
+    return {
+      brand: this.props.brand ?? '#070093',
+      showDrawer: open,
+      drawerOpen: open ? 'true' : 'false'
+    };
+  }
+}
+</script>
+</body>
+</html>

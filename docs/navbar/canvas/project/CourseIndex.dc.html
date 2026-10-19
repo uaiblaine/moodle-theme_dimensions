@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Gaveta do curso</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+  <nav class="nav ctx" aria-hidden="true" style="padding: 0 10px 0 6px;">
+    <span class="ibtn"></span>
+    <span class="ctxt grow"><b>Leitura 2 · Mapas de competência</b><span>Gestão por competências · 4 de 9</span></span>
+  </nav>
+  <div class="scrim"></div>
+
+  <nav class="drawer" aria-label="Índice do curso" style="width: 330px;">
+    <div class="dhead" style="flex-direction: column; align-items: stretch; gap: 8px; padding: 14px 10px 14px 18px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="disp" style="font-weight: 700; font-size: 17px; color: #070093; flex: 1 1 auto; min-width: 0;">Gestão por competências</span>
+        <button class="ibtn" type="button" aria-label="Fechar índice do curso" style="color: #1d2033;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; padding-right: 8px;">
+        <span style="flex: 1 1 auto; height: 6px; border-radius: 3px; background: #e3e5f0; overflow: hidden;"><span style="display: block; width: 44%; height: 100%; background: #4456ff;"></span></span>
+        <span style="font-size: 12.5px; color: #5d6180; white-space: nowrap;">4 de 9 concluídas</span>
+      </div>
+    </div>
+    <div class="dbody" style="gap: 6px; padding-top: 8px;">
+      <div class="cidx">
+        <div class="sect"><span>Unidade 1 · Quadros e escalas</span><span style="color: #17694a;">3/3</span></div>
+        <div class="act"><span class="ck y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg></span>Boas-vindas</div>
+        <div class="act"><span class="ck y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg></span>Leitura 1 · O que é competência</div>
+        <div class="act"><span class="ck y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg></span>Questionário 1</div>
+        <div class="sect"><span>Unidade 2 · Planos</span><span style="color: #5d6180;">1/3</span></div>
+        <div class="act"><span class="ck y"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg></span>Vídeo · Planos na prática</div>
+        <div class="act cur" aria-current="page"><span class="ck"></span>Leitura 2 · Mapas de competência</div>
+        <div class="act"><span class="ck"></span>Atividade 2.3 · Monte o seu quadro</div>
+        <div class="sect"><span>Unidade 3 · Evidências</span><span style="color: #5d6180;">0/3</span></div>
+        <div class="act"><span class="ck"></span>Leitura 3 · Evidências</div>
+        <div class="act"><span class="ck"></span>Fórum de dúvidas</div>
+        <div class="act"><span class="ck"></span>Avaliação final</div>
+      </div>
+    </div>
+  </nav>
+  <span class="tagid" style="left: 280px; top: 120px;">B1</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { brand: this.props.brand ?? '#070093' };
+  }
+}
+</script>
+</body>
+</html>

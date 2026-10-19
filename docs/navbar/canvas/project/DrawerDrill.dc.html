@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Subnível da gaveta</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+  <nav class="nav" aria-hidden="true" style="padding: 0 10px 0 6px;">
+    <span class="ibtn"></span>
+    <span class="brand" style="font-size: 18px;">Dimensions</span>
+    <span class="grow"></span>
+    <span class="avatar">AB</span>
+  </nav>
+  <div class="scrim"></div>
+
+  <nav class="drawer" aria-label="Navegação" style="width: 330px;">
+    <div class="dhead">
+      <span class="brand">Dimensions</span>
+      <span class="grow"></span>
+      <button class="ibtn" type="button" aria-label="Fechar navegação" style="color: #1d2033;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="dbody" style="gap: 10px;">
+      <a class="back" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Navegação</a>
+      <h3 style="font-size: 22px; padding: 0 6px;">Catálogo</h3>
+      <div class="dsec">
+        <a class="ditem" href="#">Gestão e liderança<span class="tag">14</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-left: 8px;"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a class="ditem" href="#">Tecnologia educacional<span class="tag">9</span></a>
+        <a class="ditem" href="#">Saúde e segurança<span class="tag">11</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-left: 8px;"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a class="ditem" href="#">Atendimento ao público<span class="tag">6</span></a>
+        <a class="ditem" href="#">Formação de formadores<span class="tag">8</span></a>
+      </div>
+      <a class="btn line block" href="#" style="margin-top: 6px;">Ver todo o catálogo</a>
+    </div>
+  </nav>
+  <span class="tagid" style="left: 120px; top: 74px;">B3</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { brand: this.props.brand ?? '#070093' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-18T21:10:00Z"},
+  "title": "Navegação Dimensions — estados",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 460, "title": "A1 + A2 · Navbar do visitante (desktop)"},
+    "GuestCourse.dc.html": {"x": 1360, "y": 0, "w": 1280, "h": 560, "title": "A3 · Curso aberto, depois de rolar"},
+    "GuestPhone.dc.html": {"x": 2720, "y": 0, "w": 390, "h": 844, "title": "A1 · Visitante no celular"},
+    "GuestDrawer.dc.html": {"x": 3190, "y": 0, "w": 390, "h": 844, "title": "A4 · Gaveta do visitante"},
+    "LoginReturn.dc.html": {"x": 3660, "y": 0, "w": 390, "h": 844, "title": "A5 · De volta depois de entrar"},
+    "Drawer.dc.html": {"x": 0, "y": 1224, "w": 390, "h": 844, "title": "B2 + B4 · Gaveta do site"},
+    "DrawerDrill.dc.html": {"x": 470, "y": 1224, "w": 390, "h": 844, "title": "B3 · Subnível deslizante"},
+    "CourseIndex.dc.html": {"x": 940, "y": 1224, "w": 390, "h": 844, "title": "B1 · Gaveta do curso"},
+    "ActivityTop.dc.html": {"x": 0, "y": 2448, "w": 390, "h": 844, "title": "C3 · Atividade no topo"},
+    "ActivityContext.dc.html": {"x": 470, "y": 2448, "w": 390, "h": 844, "title": "C2 · Barra de contexto"},
+    "ActivityHidden.dc.html": {"x": 940, "y": 2448, "w": 390, "h": 844, "title": "C1 · Auto-ocultar ligado"},
+    "DesktopCourse.dc.html": {"x": 1410, "y": 2448, "w": 1280, "h": 640, "title": "C2 + C5 + D5 · Curso no desktop"},
+    "Tablet.dc.html": {"x": 0, "y": 3672, "w": 1024, "h": 720, "title": "B5 · Tablet em modo compacto"},
+    "Sheets.dc.html": {"x": 1104, "y": 3672, "w": 860, "h": 844, "title": "D2 + D3 · Folhas no celular"}
+  },
+  "order": [
+    "Main.dc.html",
+    "GuestCourse.dc.html",
+    "GuestPhone.dc.html",
+    "GuestDrawer.dc.html",
+    "LoginReturn.dc.html",
+    "Drawer.dc.html",
+    "DrawerDrill.dc.html",
+    "CourseIndex.dc.html",
+    "ActivityTop.dc.html",
+    "ActivityContext.dc.html",
+    "ActivityHidden.dc.html",
+    "DesktopCourse.dc.html",
+    "Tablet.dc.html",
+    "Sheets.dc.html"
+  ],
+  "notes": {
+    "phase1": {"x": 0, "y": -300, "text": "Fase 1 · Visitante propositivo", "kind": "title1", "maxW": 4050},
+    "phase2": {"x": 0, "y": 924, "text": "Fase 2 · Gaveta nova", "kind": "title1", "maxW": 1800},
+    "phase3": {"x": 0, "y": 2148, "text": "Fase 3 · Barra que acompanha a leitura", "kind": "title1", "maxW": 2690},
+    "phase4": {"x": 0, "y": 3372, "text": "Fase 4 · Tablet e folhas", "kind": "title1", "maxW": 1964},
+    "signup": {"x": 4130, "y": 0, "w": 360, "fill": "yellow", "text": "Criar conta segue o site: auth_loginsteps com cadastro ligado leva a /auth/loginsteps/register.php (clássico ou em etapas, pela configuração do plugin); senão o cadastro do core se signup_is_enabled(); sem nenhum, o botão some. Use o tweak 'Cadastro' nas pranchas da fase 1."},
+    "phone": {"x": 4130, "y": 420, "w": 360, "fill": "blue", "text": "No celular a barra mostra só Entrar: Criar conta mora no cartão da gaveta e na página de entrada. Dois botões e o hambúrguer não cabem com folga em 390px junto do logo."},
+    "b7": {"x": 1410, "y": 1224, "w": 380, "fill": "orange", "text": "B7 fica para depois: retoque visual da barra inferior dos smart menus do Boost Union, só no celular. O upgrade-503 do Boost Union removeu essa localização em 2026-10-08 até reimplementá-la em React; existe no 5.2."},
+    "scroll": {"x": 2770, "y": 2448, "w": 380, "fill": "green", "text": "Padrão decidido: C2 ligada nas atividades. C1 é opção do admin por tipo de página, desligada por padrão. Quando a barra some, a faixa de progresso fica presa no topo (3px) e é o único resto da navegação na tela."},
+    "tablet": {"x": 2044, "y": 3672, "w": 380, "fill": "purple", "text": "B5: entre 768 e 1199px, quando a navegação primária mandaria mais de dois itens para Mais, a barra vira hambúrguer + gaveta lateral. Decisão por medida (ResizeObserver), não por largura fixa."}
+  },
+  "designSystems": []
+}

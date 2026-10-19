@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Visitante no celular</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./dim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&amp;family=Noto+Sans:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div class="dim" style="width: 390px; height: 844px; background: #fff; --dim-nav: {{brand}};">
+  <nav class="nav" aria-label="Navegação do site" style="padding: 0 10px 0 6px;">
+    <button class="ibtn" type="button" aria-label="Abrir navegação"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span class="brand" style="font-size: 18px;">Dimensions</span>
+    <span class="grow"></span>
+    <button class="ibtn" type="button" aria-label="Idioma"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg></button>
+    <a class="pill sm" href="#">Entrar</a>
+  </nav>
+
+  <div class="wrapc">
+    <span class="crumb">Gestão por competências › Unidade 2</span>
+    <span class="title">Leitura 2 · Mapas de competência</span>
+    <div class="notice">
+      <b>Você está vendo este curso como visitante</b>
+      <span class="para" style="font-size: 14px;">Dá para ler os materiais. Para entregar atividades e guardar seu progresso, entre na sua conta.</span>
+      <div style="display: flex; gap: 8px;">
+        <a class="btn primary" href="#" style="height: 40px; flex: 1 1 0;">Entrar</a>
+        <sc-if value="{{showSignup}}" hint-placeholder-val="{{ true }}">
+          <a class="btn line" href="#" style="height: 40px; flex: 1 1 0;">Criar conta</a>
+        </sc-if>
+      </div>
+    </div>
+    <p class="para">Um mapa de competências organiza o que se espera de uma pessoa em níveis observáveis. Nesta leitura você vai ver como os quadros do Moodle descrevem cada competência.</p>
+    <div class="fig">figura 1 · quadro de competências</div>
+    <p class="para">Comece pelo quadro. Ele é a árvore que dá nome às coisas: domínios no topo, competências nas folhas.</p>
+  </div>
+  <span class="tagid" style="left: 300px; top: 68px;">A1</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#070093","options":["#070093","#0a4a85","#0f6cbf","#1d2125"]},"signup":{"editor":"enum","default":"loginsteps","options":["loginsteps","core","off"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      brand: this.props.brand ?? '#070093',
+      showSignup: (this.props.signup ?? 'loginsteps') !== 'off'
+    };
+  }
+}
+</script>
+</body>
+</html>

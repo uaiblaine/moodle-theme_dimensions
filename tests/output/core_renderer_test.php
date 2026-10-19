@@ -27,6 +27,8 @@ namespace theme_dimensions\output;
 
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\population;
+use theme_dimensions\local\darklogo;
+use theme_dimensions\local\guestnav;
 use theme_dimensions\local\login;
 use theme_dimensions\output\category_hero;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -599,6 +601,130 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
+     * The real page header of the course index for the current session, through Boost Union's layout.
+     *
+     * @return string
+     */
+    private function visitor_header(): string {
+        global $PAGE;
+
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $renderer = $this->renderer('/course/index.php', 'standard');
+        $PAGE->set_title('Courses');
+        $PAGE->set_heading('Courses');
+
+        return $renderer->header();
+    }
+
+    /**
+     * A visitor who is not logged in gets the theme's two actions and the drawer's card, and not core's link.
+     *
+     * Core's "Log in" link is Boost Union's user menu's span.login; the theme empties the user menu for this
+     * visitor. The control is the setting at '0', where core's link is back and none of the theme's is drawn.
+     *
+     * @return void
+     */
+    public function test_a_visitor_gets_the_theme_actions_in_place_of_cores_link(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->registerauth = 'email';
+        $this->setUser(null);
+
+        $html = $this->visitor_header();
+        $this->assertMatchesRegularExpression(
+            '~<a class="btn dimensions-guestnav-login" href="' . preg_quote(get_login_url(), '~') . '"~',
+            $html
+        );
+        $this->assertStringContainsString('data-region="dimensions-guestnav-signup"', $html);
+        $this->assertStringContainsString('href="' . $CFG->wwwroot . '/login/signup.php"', $html);
+        $this->assertStringContainsString('data-region="dimensions-guestcard"', $html, 'The drawer carries the card.');
+        $this->assertStringNotContainsString('<span class="login ps-2">', $html);
+        $this->assertStringNotContainsString('dimensions-guestnav-chip', $html, 'The chip is the guest account\'s alone.');
+
+        set_config(guestnav::SETTING, '0', guestnav::COMPONENT);
+        $off = $this->visitor_header();
+        $this->assertStringContainsString('<span class="login ps-2">', $off, 'Control: core\'s link with the feature off.');
+        $this->assertStringNotContainsString('data-region="dimensions-guestnav"', $off);
+        $this->assertStringNotContainsString('data-region="dimensions-guestcard"', $off);
+    }
+
+    /**
+     * "Create account" exists exactly while core's sign-up page would answer, in the navbar and in the card.
+     *
+     * @return void
+     */
+    public function test_the_signup_action_follows_core(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $this->setUser(null);
+
+        $CFG->registerauth = '';
+        $html = $this->visitor_header();
+        $this->assertStringContainsString('data-region="dimensions-guestnav-login"', $html, 'Precondition: the actions are drawn.');
+        $this->assertStringNotContainsString('/login/signup.php', $html);
+
+        $CFG->registerauth = 'email';
+        $html = $this->visitor_header();
+        $this->assertSame(1, substr_count($html, 'data-region="dimensions-guestnav-signup"'));
+        $this->assertMatchesRegularExpression(
+            '~<div class="dimensions-guestcard"[^>]*>.*?href="'
+                . preg_quote($CFG->wwwroot . '/login/signup.php', '~') . '".*?</div>~s',
+            $html
+        );
+    }
+
+    /**
+     * The guest account gets the chip, with core's sentence as the title of its menu, and not core's own text.
+     *
+     * @return void
+     */
+    public function test_the_guest_account_gets_the_chip_with_cores_sentence_inside(): void {
+        $this->resetAfterTest();
+        $this->setGuestUser();
+        $sentence = get_string('loggedinasguest');
+
+        $html = $this->visitor_header();
+        $this->assertStringContainsString('class="btn dimensions-guestnav-chip"', $html);
+        $this->assertMatchesRegularExpression(
+            '~<div class="dropdown-menu dropdown-menu-end dimensions-guestnav-menu"[^>]*>\s*'
+                . '<p class="dimensions-guestnav-menu-title">\s*' . preg_quote($sentence, '~') . '\s*</p>~',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '~<p class="dimensions-guestcard-note">\s*' . preg_quote($sentence, '~') . '\s*</p>~',
+            $html,
+            'Below md the chip is hidden, so the card carries the sentence.'
+        );
+        $this->assertStringNotContainsString('<span class="login ps-2">', $html);
+
+        set_config(guestnav::SETTING, '0', guestnav::COMPONENT);
+        $off = $this->visitor_header();
+        $this->assertMatchesRegularExpression(
+            '~<span class="login ps-2">\s*' . preg_quote($sentence, '~') . '~',
+            $off,
+            'Control: core prints the sentence in its user menu with the feature off.'
+        );
+        $this->assertStringNotContainsString('dimensions-guestnav-chip', $off);
+    }
+
+    /**
+     * A real account keeps its user menu and gets none of the visitor's controls.
+     *
+     * @return void
+     */
+    public function test_a_real_account_gets_none_of_it(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->registerauth = 'email';
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $html = $this->visitor_header();
+        $this->assertStringContainsString('id="user-menu-toggle"', $html, 'Control: the user menu is drawn.');
+        $this->assertStringNotContainsString('dimensions-guestnav', $html);
+        $this->assertStringNotContainsString('dimensions-guestcard', $html);
+    }
+
+    /**
      * The opening tag of the navbar, rendered with Boost Union's light navbar keys.
      *
      * @param core_renderer $renderer The theme's renderer.
@@ -991,5 +1117,100 @@ final class core_renderer_test extends \advanced_testcase {
 
         $this->assertStringContainsString('dimensions-login-panel', $html);
         $this->assertStringNotContainsString('theme-dimensions-loginshell', $html);
+    }
+
+    /**
+     * Give the site both of Boost Union's light logos, and both dark files unless told otherwise.
+     *
+     * @param bool $dark Whether to store the dark files' settings too.
+     * @return void
+     */
+    private function logos(bool $dark = true): void {
+        set_config('logo', '/light.png', 'theme_boost_union');
+        set_config('logocompact', '/lightcompact.png', 'theme_boost_union');
+        if ($dark) {
+            set_config(darklogo::FULL, '/dark.png', 'theme_dimensions');
+            set_config(darklogo::COMPACT, '/darkcompact.png', 'theme_dimensions');
+        }
+    }
+
+    /**
+     * The dark logo classes reach the body of an ordinary page and of the login layout while the site's logos are in force.
+     *
+     * The login half goes through Boost Union's layout/login.php, which asks body_attributes() itself; nothing else
+     * would show that the class reaches the page the theme's login logo is on.
+     *
+     * @return void
+     */
+    public function test_the_dark_logo_classes_reach_the_body_with_a_dark_file(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        $this->logos();
+
+        $attributes = $this->renderer('/my/', 'standard')->body_attributes();
+        $this->assertStringContainsString('dimensions-darklogo-compact', $attributes);
+        $this->assertStringContainsString('dimensions-darklogo-full', $attributes);
+
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $renderer = $this->renderer();
+        $PAGE->set_title('Sign in');
+        $PAGE->set_heading('Sign in');
+        $body = $this->body_tag($renderer->header());
+        $this->assertStringContainsString('dimensions-darklogo-compact', $body);
+        $this->assertStringContainsString(login::BODY_CLASS, $body, 'Control: the theme\'s login page drew this body.');
+    }
+
+    /**
+     * Without a dark file the body carries no dark logo class.
+     *
+     * The control of the test above, on the same light logos: a renderer that never wrote the class would pass
+     * this alone.
+     *
+     * @return void
+     */
+    public function test_without_a_dark_file_the_body_carries_no_dark_logo_class(): void {
+        $this->resetAfterTest();
+        $this->logos(false);
+
+        $attributes = $this->renderer('/my/', 'standard')->body_attributes();
+        $this->assertStringNotContainsString('dimensions-darklogo', $attributes);
+        $this->assertStringContainsString('class="', $attributes, 'Control: the body attributes were drawn.');
+    }
+
+    /**
+     * A flavour with a compact logo of its own disarms the compact class and leaves the full one.
+     *
+     * The flavour is handed to the renderer through its seam: Boost Union memoises its own lookup for the process.
+     *
+     * @return void
+     */
+    public function test_a_flavours_own_logo_disarms_its_dark_class(): void {
+        global $DB, $PAGE;
+        $this->resetAfterTest();
+        $this->logos();
+        $flavour = $this->getDataGenerator()->get_plugin_generator('theme_boost_union')->create_flavour(['title' => 'Org']);
+        $DB->set_field('theme_boost_union_flavours', 'look_logocompact', 'org.png', ['id' => $flavour->id]);
+        $flavour = $DB->get_record('theme_boost_union_flavours', ['id' => $flavour->id], '*', MUST_EXIST);
+
+        $this->renderer('/my/', 'standard');
+        $renderer = new class ($PAGE, RENDERER_TARGET_GENERAL) extends core_renderer {
+            /** @var \stdClass|null The flavour this page is told applies. */
+            public ?\stdClass $flavour = null;
+
+            /**
+             * The flavour the test set.
+             *
+             * @return \stdClass|null
+             */
+            protected function darklogo_flavour(): ?\stdClass {
+                return $this->flavour;
+            }
+        };
+        $this->assertStringContainsString('dimensions-darklogo-compact', $renderer->body_attributes(), 'Control: no flavour.');
+
+        $renderer->flavour = $flavour;
+        $attributes = $renderer->body_attributes();
+        $this->assertStringNotContainsString('dimensions-darklogo-compact', $attributes);
+        $this->assertStringContainsString('dimensions-darklogo-full', $attributes, 'The flavour keeps the site\'s full logo.');
     }
 }

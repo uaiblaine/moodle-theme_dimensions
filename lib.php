@@ -146,6 +146,11 @@ function theme_dimensions_get_extra_scss($theme) {
     // pre SCSS.
     $scss .= theme_dimensions_get_settings_extra_scss();
 
+    // And the addresses of the logo variants for dark surfaces, as Boost does its background image: the
+    // stylesheet is rebuilt when a file setting changes. Config and file settings only, never the page:
+    // this callback also runs on the command line.
+    $scss .= \theme_dimensions\local\darklogo::scss($theme);
+
     return $scss;
 }
 
@@ -306,7 +311,7 @@ function theme_dimensions_control_view_profile($user, $course = null, $userconte
 }
 
 /**
- * Serve the theme's file areas: the public landing page's and the category branding's.
+ * Serve the theme's file areas: the public landing page's, the category branding's and the dark logos'.
  *
  * file_pluginfile() hands any component carrying an underscore to <component>_pluginfile()
  * with no login check of its own, which is what makes an anonymous image route possible
@@ -319,8 +324,8 @@ function theme_dimensions_control_view_profile($user, $course = null, $userconte
  * @param context $context The context the URL names.
  * @param string $filearea The file area.
  * @param array $args The remaining path segments.
- * @param bool $forcedownload Passed on to the site-wide fallback image alone; the other routes decide it themselves.
- * @param array $options Core's sending options, passed on to the site-wide fallback image alone.
+ * @param bool $forcedownload Passed on to the theme's setting files alone; the other routes decide it themselves.
+ * @param array $options Core's sending options, passed on to the theme's setting files alone.
  * @return void
  */
 function theme_dimensions_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
@@ -334,6 +339,13 @@ function theme_dimensions_pluginfile($course, $cm, $context, $filearea, $args, $
     );
     if ($context->contextlevel == CONTEXT_COURSECAT && in_array($filearea, $brandingareas, true)) {
         $branding::serve($context, $filearea, $args);
+    }
+    // The site's logo variants for dark surfaces: theme settings' own files in the system context, public
+    // like Boost Union's logos, which every visitor's navbar and login page draw.
+    if (\theme_dimensions\local\darklogo::serves($context, $filearea)) {
+        $theme = \core\output\theme_config::load('dimensions');
+        $theme->setting_file_serve($filearea, $args, $forcedownload, $options);
+        return;
     }
     // The site-wide fallback of that image: a theme setting's own file in the system context,
     // institutional content with nothing to protect; core serves it cacheable by browsers and

@@ -164,6 +164,8 @@ classes/local/loginshell.php   Which login-layout pages (the second factor, the 
                                is their bare page, scss/loginshell.scss lays core's form into the column.
 classes/local/styleurl.php     The one vocabulary for a url printed inside url('...') in a style
                                attribute: the landing page hero's and the poster watermark's. Pure, no DB.
+classes/local/darklogo.php     The logo variants for dark surfaces: the address (the extra SCSS callback's), the logo in
+                               force (Boost Union's flavour lookup, renderer only), the body classes, the two file areas.
 classes/local/profileaccess.php   Who may reach another user's profile. Only ever PREVENTs.
 classes/recommendation/*.php   The theme's items in Boost Union's recommendations overview.
 classes/local/landing/publicfiles.php  The file route of the public landing page: every check is in resolve().
@@ -377,6 +379,10 @@ Two of the three carry a url, and both ask `classes/local/styleurl.php`:
 | the category hero / directory band (`category_hero::style()`, `branding::hex()`) | colour channels | its own vocabulary: every value is parsed into integers and printed back |
 | the landing page's workload bar (`landing_page::hero_comp()`) | `width: N%` on two spans | an integer from `(int) round()`, clamped to 0..100 in PHP |
 
+- **A fifth place prints a url in a CSS context, in the STYLESHEET rather than an attribute**: the dark logos'
+  addresses, which `darklogo::url()` hands the extra SCSS callback as `url("…")` custom properties. No HTML
+  decoding happens there, but a quote or a parenthesis would still close the value, so it asks `styleurl::safe()`
+  too (gate `darklogo_styleurl_call`); the minifier drops the quotes, which only that refusal makes harmless.
 - **The refusal is on the AMPERSAND, and that is the rule a relaxation would lose.** `&apos;` and
   `&rpar;` are a quote and a parenthesis to the CSS engine once the attribute is decoded, in a
   spelling `clean_param(…, PARAM_URL)` hands straight back; the ampersand begins every character

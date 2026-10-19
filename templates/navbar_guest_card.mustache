@@ -1,0 +1,58 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/navbar_guest_card
+
+    The "New here?" card at the top of the mobile primary drawer, for the visitors the navbar's
+    actions are drawn for (theme_dimensions/navbar_guest). Below the md breakpoint the navbar keeps
+    only "Log in", so this card is where "Create account" and, for the guest account, core's
+    "You are currently using guest access" are found. It is included by this theme's override of
+    theme_boost/primary-drawer-mobile from the layout context key dimensionsguest, which the theme's
+    core renderer writes from theme_dimensions\local\guestnav::context().
+
+    The drawer is not inside the .navbar, so the buttons are Bootstrap's own and read the page's
+    colours.
+
+    Context variables required for this template (described without braces, because a Mustache
+    comment closes at the first pair of closing braces it meets):
+
+    * loginurl - Core's login page, plain
+    * hassignup - Whether the site takes sign-ups (core's signup_is_enabled())
+    * signupurl - Core's sign-up page, plain; empty without sign-ups
+    * isguest - Whether the session is the guest account's
+
+    Example context (json):
+    {
+        "loginurl": "https://example.com/login/index.php",
+        "hassignup": true,
+        "signupurl": "https://example.com/login/signup.php",
+        "isguest": true
+    }
+}}
+<div class="dimensions-guestcard" data-region="dimensions-guestcard">
+    <p class="dimensions-guestcard-title">{{#str}} guestnav_card_title, theme_dimensions {{/str}}</p>
+    <p class="dimensions-guestcard-text">{{#str}} guestnav_card_text, theme_dimensions {{/str}}</p>
+    <div class="dimensions-guestcard-actions">
+        {{#hassignup}}
+        <a class="btn btn-primary" href="{{signupurl}}">{{#str}} guestnav_signup, theme_dimensions {{/str}}</a>
+        {{/hassignup}}
+        <a class="btn btn-outline-primary" href="{{loginurl}}">{{#str}} login, core {{/str}}</a>
+    </div>
+    {{#isguest}}
+    <p class="dimensions-guestcard-note">{{#str}} loggedinasguest, core {{/str}}</p>
+    {{/isguest}}
+</div>

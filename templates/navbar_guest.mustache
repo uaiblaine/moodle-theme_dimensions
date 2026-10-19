@@ -1,0 +1,75 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/navbar_guest
+
+    The visitor's actions at the right end of the navbar, in place of core's "Log in" link and its
+    "You are currently using guest access" sentence. The theme's core renderer appends the rendered
+    template to navbar_plugin_output(), which Boost Union's navbar prints immediately before the user
+    menu, and empties the user menu for the same visitors; every decision is
+    theme_dimensions\local\guestnav's.
+
+    "Log in" is the one action kept below the md breakpoint, where the navbar has no room for a
+    label: the chip and "Create account" are hidden there, and the mobile drawer's card
+    (theme_dimensions/navbar_guest_card) offers both. The chip is the guest account's alone, as
+    core's sentence is; its dropdown is aligned to the end because Bootstrap positions no dropdown
+    inside a .navbar.
+
+    Context variables required for this template (described without braces, because a Mustache
+    comment closes at the first pair of closing braces it meets):
+
+    * loginurl - Core's login page, plain
+    * hassignup - Whether the site takes sign-ups (core's signup_is_enabled())
+    * signupurl - Core's sign-up page, plain; empty without sign-ups
+    * isguest - Whether the session is the guest account's
+
+    Example context (json):
+    {
+        "loginurl": "https://example.com/login/index.php",
+        "hassignup": true,
+        "signupurl": "https://example.com/login/signup.php",
+        "isguest": true
+    }
+}}
+<div class="dimensions-guestnav d-flex align-items-center" data-region="dimensions-guestnav">
+    {{#isguest}}
+    <div class="dropdown d-none d-md-flex align-items-center">
+        <button type="button" class="btn dimensions-guestnav-chip" id="dimensions-guestnav-chip-{{uniqid}}"
+            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+            aria-controls="dimensions-guestnav-menu-{{uniqid}}" aria-label="{{#str}} guestnav_chip_label, theme_dimensions {{/str}}">
+            <span class="dimensions-guestnav-dot" aria-hidden="true"></span>
+            <span>{{#str}} guestnav_chip, theme_dimensions {{/str}}</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end dimensions-guestnav-menu" id="dimensions-guestnav-menu-{{uniqid}}"
+            aria-labelledby="dimensions-guestnav-chip-{{uniqid}}">
+            <p class="dimensions-guestnav-menu-title">{{#str}} loggedinasguest, core {{/str}}</p>
+            <p class="dimensions-guestnav-menu-text">{{#str}} guestnav_explain, theme_dimensions {{/str}}</p>
+            <div class="dimensions-guestnav-menu-actions">
+                <a class="btn dimensions-guestnav-login" href="{{loginurl}}">{{#str}} login, core {{/str}}</a>
+                {{#hassignup}}
+                <a class="btn dimensions-guestnav-signup" href="{{signupurl}}">{{#str}} guestnav_signup, theme_dimensions {{/str}}</a>
+                {{/hassignup}}
+            </div>
+        </div>
+    </div>
+    {{/isguest}}
+    <a class="btn dimensions-guestnav-login" href="{{loginurl}}" data-region="dimensions-guestnav-login">{{#str}} login, core {{/str}}</a>
+    {{#hassignup}}
+    <a class="btn dimensions-guestnav-signup d-none d-md-inline-flex" href="{{signupurl}}"
+        data-region="dimensions-guestnav-signup">{{#str}} guestnav_signup, theme_dimensions {{/str}}</a>
+    {{/hassignup}}
+</div>
