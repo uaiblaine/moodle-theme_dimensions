@@ -181,6 +181,10 @@ landing.php                       The script entry: 303 to the route while the r
 classes/local/landing/shortcode.php  Six spoken letters for the public address; pure, blocklist inside.
 classes/shortlink_handler.php     Answers core's /p/{shortcode} route with links::page(). Found by name.
 classes/local/hook/course/before_course_deleted.php  Forgets a deleted course's short codes.
+classes/local/landingdefaults.php  The defaults a NEW course gets for the page model, the modality and the
+                               format: the settings' choices, the clamped value, the one write. See its section.
+classes/local/hook/course/after_form_submission.php  Writes those defaults into a course create_course() just made.
+classes/local/hook/course/after_form_definition_after_data.php  Preselects them in a new course's form.
 classes/output/core_renderer.php  render_login() draws the theme's page or Boost Union's; render_from_template()
                                colours the navbar, puts the name block in the user menu and sets
                                Boost Union's courserelatedhints key to the course notice.
@@ -657,6 +661,43 @@ a preview of unsaved edits is the obvious wrong assumption. `$OUTPUT->render_fro
 inside `definition()` is fine — core does the same in `course/editsection_form.php` — and
 `course/edit.php` is the form's only consumer, with every `$PAGE` call that would object
 to an early theme init already made before the form is built.
+
+## The landing page defaults for new courses
+
+The *Landing pages* tab sets what a NEW course starts with in `dimensions_model`,
+`dimensions_modality` and `dimensions_format` (`classes/local/landingdefaults.php`). The rule:
+**an existing course never changes, and changing a setting writes nothing.**
+
+- **The field's own default value stays `''` for good; never move it to carry a setting.** Core's
+  select `data_controller::get_value()` answers `get_default_value()` for every course WITHOUT a
+  data row, so a field default is also what every untouched course reads. Moving it safely is focus
+  mode's route (materialise every row-less course under a lock, an adhoc task above 500, and only
+  then move), and anything that moves it without materialising - an administrator editing the field
+  on the *Course custom fields* page included - flips every course nobody saved. With the field
+  default fixed, an existing course's read path never moves, so the rule holds by construction and
+  the settings need no updated callback.
+- **The default reaches a course once, as a row, when it is created.** Core's
+  `after_form_submission` hook is dispatched by `create_course()` LAST, after core saved the custom
+  fields the data carried, so every path through it gets the default: the course form, an approved
+  course request, `core_course_create_courses`, tool_uploadcourse and the test generator.
+  `update_course()` dispatches the same hook with `isnewcourse` false and gets nothing (gate
+  `landingdefault_newcourse_only`). Restore and duplication never call `create_course()` and keep
+  what the backup carried: a copy is not a new course.
+- **A row is an answer, the explicit empty one included, and it wins.** The write is skipped for a
+  field the course already holds a `customfield_data` row for; core stores the form's empty choice
+  as a row with intvalue 0, so a creator who emptied a preselected field keeps it empty (gate
+  `landingdefault_answered_skip`). The form's preselection is `setDefault()` on a new course only
+  (`after_form_definition_after_data`), which never overrides a submitted value: QuickForm's
+  `updateValue` reads constants, then the submission, then the defaults.
+- **The row's component, area and itemid come from `data_controller::create()`**, which falls back to
+  the field's handler. Copying `instance_form_save()`'s `set_many()` from the category instead would
+  write nulls: landingfields resolves its fields through `api::get_categories_with_fields()`, whose
+  categories carry no original component.
+- **A setting is an option index clamped to the field as configured now**
+  (`landingfields::option_lines()`, the one split `option_label()` reads too): past the last line,
+  or with the field not resolving, it is None. The choices offer the configured lines, and the
+  provisioned language strings while the field does not resolve, so settings.php has a full list on
+  a fresh install.
 
 ## The public landing page
 

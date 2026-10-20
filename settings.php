@@ -34,6 +34,7 @@ use theme_dimensions\local\drawernav;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\guesthome;
 use theme_dimensions\local\guestnav;
+use theme_dimensions\local\landingdefaults;
 use theme_dimensions\local\login;
 use theme_dimensions\local\readingbar;
 
@@ -442,6 +443,39 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         );
         $setting->set_updatedcallback('theme_dimensions_sync_focusmode_default');
         $tab->add($setting);
+
+        // Add tab to settings page.
+        $page->add($tab);
+
+        // Create landing pages tab.
+        $tab = new admin_settingpage(
+            'theme_dimensions_landing',
+            get_string('landingtab', 'theme_dimensions', null, true)
+        );
+
+        // Create the defaults for new courses heading.
+        $name = 'theme_dimensions/landingdefaultsheading';
+        $title = get_string('landingdefaultsheading', 'theme_dimensions', null, true);
+        $description = get_string('landingdefaultsheading_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_heading($name, $title, $description);
+        $tab->add($setting);
+
+        // Settings: What a course created from now on answers in the page model, the modality and the format.
+        // No updated callback, unlike focus mode's default: these fields keep their own default value at ''
+        // for good, so moving a setting here changes no course that exists and writes nothing.
+        foreach (landingdefaults::settings() as $shortname => $key) {
+            $name = 'theme_dimensions/' . $key;
+            $title = get_string($key, 'theme_dimensions', null, true);
+            $description = get_string($key . '_desc', 'theme_dimensions', null, true);
+            $setting = new admin_setting_configselect(
+                $name,
+                $title,
+                $description,
+                landingdefaults::NONE,
+                landingdefaults::choices($shortname)
+            );
+            $tab->add($setting);
+        }
 
         // Add tab to settings page.
         $page->add($tab);
