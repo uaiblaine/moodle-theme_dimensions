@@ -27,6 +27,7 @@ plain link to `focusmode::close_url()`. No client-side change can turn one docum
 | D2 | A single activity course that does NOT force focus mode: does it toggle in place like the others? | **Yes.** |
 | D3 | The automatic completion conditions in focus mode. | **Stay as the discreet line at the foot of the content card** (the 2026-09-06 decision), accepting a hidden duplicate of core's static badges in the DOM. |
 | D4 | Having the feature at all. | **The administrator's decision**: an enable/disable switch, and **while it is off nothing of the feature is loaded** (see "The master switch"). |
+| D5 | What a fresh install ships. | **Off.** The administrator switches focus mode on deliberately (see "The master switch"). |
 
 Out of scope: Moodle Workplace. The owner runs none, so Boost Union's MWP extension
 (`local_boost_union_mwp/drawers`, rendered when `admin/tool/tenant` is present) stays as it is today:
@@ -108,6 +109,13 @@ it). What still loads while it is off, and what the implementation changes:
 | The course settings form shows the focus mode checkbox and its category header | The `after_form_definition` hook removes both elements while the switch is off. Stored values are untouched: `data_controller::instance_form_save()` returns early for an element absent from the submission (`customfield/classes/data_controller.php:202`), so turning the switch back on restores every course's answer |
 | The other settings of the focus mode tab | Hidden with `hide_if()` on the master switch |
 
+The shipped default becomes **No** (D5), in two places that must agree: the setting's default in
+`settings.php`, and `focusmode::master_enabled()`, which today reads a value never written as on and
+must read it as off, or a fresh install disagrees with its own settings page. A site that already
+stored a value keeps it: Moodle writes a setting's default only where nothing is stored, so a site
+installed while the default was Yes stays on until an administrator switches it off. The tests that
+pin "unset reads as enabled" flip with it.
+
 Already absent while off, and kept that way: the bar, the entry button (`offers_entry()` answers
 `master`), the AMD module (required only by `layout_context()`), the course field read, and the web
 service (refuses). The lang strings stay in the component's string file; Moodle loads that file whole
@@ -152,10 +160,3 @@ body class and to what is hidden. To add:
   runs before the commit that adds the new gates.
 - The change touches a state machine and a web service: run the `security-diff-read` skill over the
   diff before the push.
-
-## Open
-
-- O1: the switch ships **Yes** today. D4 says having the feature is the administrator's decision;
-  whether a fresh install should ship **No** (opt-in) is for the owner. If it flips,
-  `master_enabled()` must read an unset value as off too, or a fresh install disagrees with its own
-  settings page.
