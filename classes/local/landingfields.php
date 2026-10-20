@@ -1017,12 +1017,26 @@ class landingfields {
         if ($value < 1) {
             return null;
         }
+        $options = self::option_lines($shortname);
+        return $options[$value - 1] ?? null;
+    }
+
+    /**
+     * The option lines of one select field, as the field is actually configured.
+     *
+     * The one split of a select's options in this theme: {@see option_label()} reads a
+     * stored value through it and {@see landingdefaults} counts and offers the options
+     * through it, so a default can never point at a line the label would not find.
+     *
+     * @param string $shortname One of the select SHORTNAME_* constants.
+     * @return array|null The lines, 0-based (index + 1 is the stored value), or null when the field does not resolve.
+     */
+    public static function option_lines(string $shortname): ?array {
         $field = self::get_field($shortname);
         if (!$field || $field->get('type') !== 'select') {
             return null;
         }
-        $options = preg_split("/\s*\n\s*/", trim((string) $field->get_configdata_property('options')));
-        return $options[$value - 1] ?? null;
+        return preg_split("/\s*\n\s*/", trim((string) $field->get_configdata_property('options')));
     }
 
     /**

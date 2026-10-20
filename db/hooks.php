@@ -41,6 +41,16 @@ $callbacks = [
         'priority' => 0,
     ],
     [
+        'hook' => \core_course\hook\after_form_definition_after_data::class,
+        'callback' => 'theme_dimensions\local\hook\course\after_form_definition_after_data::callback',
+        'priority' => 0,
+    ],
+    [
+        'hook' => \core_course\hook\after_form_submission::class,
+        'callback' => 'theme_dimensions\local\hook\course\after_form_submission::callback',
+        'priority' => 0,
+    ],
+    [
         'hook' => \core_course\hook\before_course_deleted::class,
         'callback' => 'theme_dimensions\local\hook\course\before_course_deleted::callback',
         'priority' => 0,

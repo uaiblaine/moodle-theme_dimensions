@@ -5,6 +5,24 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Landing page defaults for new courses** (2026100516). A new *Landing pages* tab sets what a course created from now on
+  starts with in three of its *Course landing page* fields: the page model, the modality and the study format, each
+  offering that field's own options (as the field is configured now) and *None*, the default. The course form of a
+  new course shows them preselected and its creator may change them or leave a field empty; every path through
+  `create_course()` (the form, an approved course request, `core_course_create_courses`, tool_uploadcourse) gets
+  them. Existing courses never change, and changing a setting writes nothing: the three fields keep their own default
+  value at `''`, so a course with no data row reads empty whatever the setting says, and the default reaches a course
+  once, as a data row written when it is created and only where it holds none (an explicit empty answer is a row and
+  wins). Restore and duplication keep what the backup carried.
+  - Settings `landingdefaultmodel`, `landingdefaultmodality`, `landingdefaultformat` (tab `theme_dimensions_landing`,
+    between Focus mode and Category showcase).
+  - `classes/local/landingdefaults.php` (the choices, the clamped value, the one write) and two hook callbacks:
+    `local\hook\course\after_form_submission` (core's `after_form_submission`, new courses only) and
+    `local\hook\course\after_form_definition_after_data` (the preselection, new courses only). `db/hooks.php`
+    registers both. `landingfields::option_lines()` is now the one split of a select's options, which
+    `option_label()` reads too.
+  - Eight mutation gates (`landingdefault_*`), dry-matched.
+
 - **Tablet and sheets** (phase 4 of the navbar; 2026100515). Between tablet and desktop
   widths, when the site's navigation would send more than two items into its "More" menu, the navbar takes the phone's
   layout: core's menu button, the logo and the icons on the right, with the navigation in the side menu (B5). The
