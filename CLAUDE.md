@@ -664,7 +664,7 @@ to an early theme init already made before the form is built.
 
 ## The landing page defaults for new courses
 
-The *Landing pages* tab sets what a NEW course starts with in `dimensions_model`,
+The *Course landing page* tab sets what a NEW course starts with in `dimensions_model`,
 `dimensions_modality` and `dimensions_format` (`classes/local/landingdefaults.php`). The rule:
 **an existing course never changes, and changing a setting writes nothing.**
 

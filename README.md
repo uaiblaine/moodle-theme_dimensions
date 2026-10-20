@@ -156,7 +156,7 @@ reviewed public description, a presentation video address, up to four badges and
 The page shows only the enrolment methods the current user can actually use, and
 `/enrol/index.php?id=N` forwards to it for a course with a model. Each page gets a short public
 address that can be dictated over the phone (`https://<site>/p/batepo`) once Moodle's router is
-configured. The theme's *Landing pages* settings can give new courses a page model, a modality and a
+configured. The theme's *Course landing page* settings can give new courses a page model, a modality and a
 study format to start with; a course that already exists never changes when they do.
 
 
@@ -295,7 +295,7 @@ Settings
 | Login page | The login page switch, the institutional panel's copy and the guest home page. |
 | Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
-| Landing pages | The page model, modality and study format a new course starts with; existing courses never change. |
+| Course landing page | The page model, modality and study format a new course starts with; existing courses never change. |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
 
 
