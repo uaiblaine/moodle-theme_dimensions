@@ -3168,6 +3168,8 @@ The reading mode for activity pages: a 60px bar with the activity name in place 
 Union's navbar, the course index and the block drawer kept, no breadcrumb, no tabs. The whole
 design record — closed decisions, the predicate table, the risks — is
 the original design record (not part of this repository); what follows is what a maintainer must not lose.
+The planned switch in place, without a reload (owner decisions of 2026-10-20, not implemented), is
+`docs/focusmode/README.md`; until it lands, the bullets below describe the code.
 
 - **The interception is a template swap in `render_from_template()`, and nothing else.** No
   new layout file, no `$THEME->layouts` entry, no pagelayout switch, no hook. It cannot be a
@@ -3176,9 +3178,10 @@ the original design record (not part of this repository); what follows is what a
   every activity page, and by header time the layout options are already memoised. Boost
   Union's layout file ends with `render_from_template('theme_boost/drawers', …)` — core
   Boost's own naming, which Boost Union had to keep to stay a valid override target — so the
-  guard matches that string. With Multi-tenancy installed Boost Union renders
-  `local_boost_union_mwp/drawers` instead, the guard does not match, and focus mode fails
-  safe to the ordinary page. Keeping `'incourse'` is also what keeps every Boost Union
+  guard matches that string. On Moodle Workplace (`admin/tool/tenant` present) with Boost
+  Union's MWP extension installed, Boost Union renders `local_boost_union_mwp/drawers`
+  instead, the guard does not match, and focus mode fails safe to the ordinary page.
+  Workplace is out of scope for this theme. Keeping `'incourse'` is also what keeps every Boost Union
   setting keyed on that literal resolving.
 - **The bar keeps `class="navbar fixed-top"`, and 60px is a contract.** Every offset that
   stops the page sliding under a fixed bar is compiled from Boost's `$navbar-height: 60px`
