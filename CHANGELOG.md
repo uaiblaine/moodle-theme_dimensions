@@ -5,7 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **Landing page defaults for new courses** (2026100516). A new *Landing pages* tab sets what a course created from now on
+- **The Brazilian Portuguese pack calls the landing page "Página de apresentação do curso".** Every "hotsite"
+  in `lang/pt_br` (37 strings: the course notice chips, the field descriptions, the recommendations, the settings
+  tab) now uses the name the custom field category already had, with articles and agreements rewritten to the
+  feminine noun. The settings tab is named after that category in English too ("Course landing page", formerly
+  "Landing pages"). Values only: no key changed, so no version bump; a site picks it up after a cache purge.
+
+- **Landing page defaults for new courses** (2026100516). A new *Course landing page* tab sets what a course created from now on
   starts with in three of its *Course landing page* fields: the page model, the modality and the study format, each
   offering that field's own options (as the field is configured now) and *None*, the default. The course form of a
   new course shows them preselected and its creator may change them or leave a field empty; every path through
