@@ -159,7 +159,12 @@ final class sheets_scss_test extends \basic_testcase {
             }
             $this->assertStringContainsString('max-height: calc(100vh - INTERPOLATION - var(--dim-ds-space-md));', $sheet);
             $this->assertStringContainsString('border-radius: var(--dim-ds-radius-xl) var(--dim-ds-radius-xl) 0 0;', $sheet);
-            $this->assertStringContainsString('box-shadow: 0 0 0 100vmax rgba(var(--dim-ds-shadow-rgb), .45);', $sheet);
+            $this->assertStringContainsString(
+                'box-shadow: 0 0 0 100vmax var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));',
+                $sheet,
+                "{$scope}: the scrim is the neutral backdrop token."
+            );
+            $this->assertStringNotContainsString('--dim-ds-shadow-rgb', $sheet, "{$scope}: the navy shadow tint is not a scrim.");
 
             $handle = $this->children($sheet)['&::before'] ?? '';
             $this->assertStringContainsString('content: "";', $handle, "{$scope}: the grab handle.");

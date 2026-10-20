@@ -45,7 +45,34 @@ body.dimensions-navcompact-armed {
             }
 
             .drawer-primary.show {
-                box-shadow: 0 0 0 100vmax rgba(var(--dim-ds-shadow-rgb), .45);
+                box-shadow: 0 0 0 100vmax var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
+            }
+
+            /* Core restyles every .drawer-left from lg up on the standard layouts and on body.limitedwidth
+               (boost/scss/moodle/drawer.scss, "Anchored drawers"): zero width, an anchored right offset, overflow
+               clip, a top that clears the page title, rounded corners. That is the course index's geometry, and the
+               primary drawer carries drawer-left too, so at tablet width it opened 58px wide, cut at the left edge.
+               Here it is the plain overlay drawer core gives it below md: against the left edge, offscreen while
+               closed, under the navbar, the full height of the rest of the viewport, with core's own slide. The
+               compact body classes and the drawer's id outrank the anchored selectors (which also carry :has() for
+               the docked drawers' right offset), so no !important is needed. */
+            #theme_boost-drawers-primary.drawer-primary.drawer-left {
+                left: calc(-#{$drawer-left-width} + -10px);
+                right: auto;
+                top: $navbar-height;
+                width: $drawer-left-width;
+                max-width: $drawer-left-width;
+                height: calc(100vh - #{$navbar-height});
+                max-height: calc(100vh - #{$navbar-height});
+                overflow: visible;
+                @include border-radius(0);
+                @include transition(left 0.2s ease, top 0.2s ease, visibility 0.2s ease);
+
+                &.show {
+                    left: 0;
+                    right: auto;
+                    width: $drawer-left-width;
+                }
             }
         }
     }

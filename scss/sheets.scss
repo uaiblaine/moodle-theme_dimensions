@@ -41,7 +41,7 @@
             overflow: hidden;
             border-width: 1px 0 0;
             border-radius: var(--dim-ds-radius-xl) var(--dim-ds-radius-xl) 0 0;
-            box-shadow: 0 0 0 100vmax rgba(var(--dim-ds-shadow-rgb), .45);
+            box-shadow: 0 0 0 100vmax var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
 
             &::before {
                 flex: 0 0 auto;
@@ -133,7 +133,7 @@
             overscroll-behavior: contain;
             border-width: 0;
             border-radius: var(--dim-ds-radius-xl) var(--dim-ds-radius-xl) 0 0;
-            box-shadow: 0 0 0 100vmax rgba(var(--dim-ds-shadow-rgb), .45);
+            box-shadow: 0 0 0 100vmax var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
 
             /* The handle on the menu's own surface: the theme's navbar menus are navy (post.scss), and the
                divider's colour is the one that reads on it. */

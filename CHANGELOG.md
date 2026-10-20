@@ -21,7 +21,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
     `dimensions-nav-compact` and takes `d-md-none` off core's toggler while compact. New `scss/compactnav.scss` and
     `scss/sheets.scss`. D5 is `readingbar::edit_applies()`, core's `user_allowed_editing()`, with core's
     `edit_switch()` rendered into `theme_dimensions/navbar_readingbar`.
-  - Twenty mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`, `scss_sheets_*`,
+  - Two visual defects of the first build, found in real-Chrome screenshots at 390 and 1024: the scrim of the tablet
+    drawer and of both sheets was the design system's navy shadow tint at .45 (the page turned purple), and is now
+    the neutral `--dimensions-backdrop` (core's modal black, .5 on a light page and .7 on a dark one, through
+    `--bs-black-rgb`; a theme-own token, not part of the family contract). The notifications popover was unreadable
+    inside the dark navbar (dark ink on the dark colour mode's `#343a40`, an invisible cog, a white footer): it is now
+    one light surface, through the colour mode tokens re-pointed on `.navbar .popover-region-container`, on phones and
+    on the desktop dropdown alike, which had the same defect.
+  - The tablet drawer opened 58px wide, cut at the left edge, on the standard layouts and on `body.limitedwidth`: from lg
+    up core anchors every `.drawer.drawer-left` (zero width, an anchored `right`, `overflow: clip`, a top under the page
+    title, rounded corners) for the course index, and the primary drawer is a `drawer-left` too. In compact mode it is
+    again the plain overlay drawer core gives it below md (left edge, offscreen when closed, under the navbar, the
+    rest of the viewport high), under a selector with the drawer's id that the anchored ones cannot outrank. Gate
+    `scss_compactnav_primary_overlay`.
+  - Twenty-one mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`, `scss_sheets_*`,
     `readingbar_edit_*`), dry-matched; `readingbar_layer_appended` follows the renderer's new line. Behat feature
     `theme_dimensions_navcompact.feature` and the step `the site navigation has "N" custom menu items`.
 

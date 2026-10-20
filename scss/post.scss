@@ -103,6 +103,11 @@
     /* The 3px rule under the navbar. A Boost Union flavour overrides it in look_rawscss so each
        organisation signs its own area; the default is the highlight blue. */
     --dimensions-navbar-band: var(--dim-ds-accent-highlight);
+
+    /* The veil behind a drawer or a sheet, a neutral black as core's modal backdrop is. Not the design system's
+       shadow tint: that navy is meant for a faint elevation at a tenth, and at this alpha it turns the page purple.
+       The dark half is below the family block. */
+    --dimensions-backdrop: rgba(var(--bs-black-rgb, 0, 0, 0), .5);
 }
 
 /* ---- Family tokens: the contract with local_dimensions and block_dimensions ---- */
@@ -256,6 +261,11 @@ body,
     --dimensions-state-neutral-edge: var(--dimensions-state-neutral-bg);
 }
 
+/* A dark page needs a heavier veil than a light one for the same separation. */
+:root[data-bs-theme="dark"] {
+    --dimensions-backdrop: rgba(var(--bs-black-rgb, 0, 0, 0), .7);
+}
+
 /* ---- Focus: WCAG 2.2 AA, the same ring on white and on navy -------------- */
 a:focus-visible,
 button:focus-visible,
@@ -328,6 +338,26 @@ textarea:focus-visible,
     --bs-dropdown-divider-bg: var(--dim-ds-border-inverse);
     --bs-dropdown-header-color: var(--dim-ds-blue-100);
     --bs-dropdown-link-disabled-color: var(--dim-ds-blue-200);
+}
+
+/* ---- The notifications popover inside the navy chrome -------------------- */
+/* message_popup's popover is rendered INSIDE the navbar, so it inherits the navbar's dark colour mode: Bootstrap's
+   dark palette repaints its container (core paints it var(--bs-white), which the dark mode makes #343a40) while
+   the ink stays the page's, and Boost Union's rules for it (.navbar[data-bs-theme="dark"] .popover-region-container,
+   all !important) assume a LIGHT surface: the icons #343a40, the footer white, the "See all" link Moodle's blue.
+   That left dark ink, a dark icon and a white footer on a dark body. The popover is one light surface: the colour
+   mode tokens it reads are re-pointed here to the design system's light ones, on the container, where Bootstrap
+   reads them from, so its header, items, empty state and the close button all follow. */
+.navbar .popover-region-container {
+    --bs-white: var(--dim-ds-surface-card);
+    --bs-body-bg: var(--dim-ds-surface-card);
+    --bs-body-color: var(--dim-ds-text-body);
+    --bs-heading-color: var(--dim-ds-text-body);
+    --bs-tertiary-bg: var(--dim-ds-surface-subtle);
+    --bs-link-color: var(--dim-ds-text-link);
+    --bs-link-hover-color: var(--dim-ds-text-link-hover);
+    color: var(--bs-body-color);
+    color-scheme: light;
 }
 
 /* ---- The pill both ways through focus mode wear -------------------------- */

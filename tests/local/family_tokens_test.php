@@ -71,6 +71,7 @@ final class family_tokens_test extends \basic_testcase {
      */
     private const OWN = [
         '--dimensions-navbar-band',
+        '--dimensions-backdrop',
         '--dimensions-pill-border',
         '--dimensions-pill-hover',
         '--dimensions-pill-filled-ink',

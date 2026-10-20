@@ -169,10 +169,49 @@ final class compactnav_scss_test extends \basic_testcase {
         $scss = $this->stylesheet();
         $this->assertMatchesRegularExpression('~\.drawer-primary \{\s*z-index: \$zindex-sticky \+ 2;\s*\}~', $scss);
         $this->assertMatchesRegularExpression(
-            '~\.drawer-primary\.show \{\s*box-shadow: 0 0 0 100vmax rgba\(var\(--dim-ds-shadow-rgb\), \.45\);\s*\}~',
+            '~\.drawer-primary\.show \{\s*box-shadow: 0 0 0 100vmax'
+                . ' var\(--dimensions-backdrop, rgba\(var\(--bs-black-rgb, 0, 0, 0\), \.5\)\);\s*\}~',
             $scss
         );
         $this->assertDoesNotMatchRegularExpression('~#[0-9a-fA-F]{3,6}\b~', $scss, 'No literal colour.');
+        $this->assertStringNotContainsString('--dim-ds-shadow-rgb', $scss, 'The navy shadow tint is not a scrim.');
+    }
+
+    /**
+     * Core anchors every .drawer-left from lg up (zero width, an anchored right offset, clipped), and the primary drawer
+     * is one: in compact mode it must be the plain overlay drawer again, under a selector the anchored ones cannot outrank.
+     *
+     * @return void
+     */
+    public function test_the_primary_drawer_is_a_plain_overlay_drawer_where_core_anchors_every_left_drawer(): void {
+        $scss = $this->stylesheet();
+        $this->assertSame(1, preg_match(
+            '~&\.dimensions-nav-compact \{.*?\n\s+#theme_boost-drawers-primary\.drawer-primary\.drawer-left \{'
+                . '(.*?)&\.show \{(.*?)\}\s*\}~s',
+            $scss,
+            $found
+        ), 'The id and the two drawer classes sit in the compact scope and outrank core\'s anchored selectors.');
+        [, $drawer, $shown] = $found;
+
+        foreach (
+            [
+                'left: calc(-#{$drawer-left-width} + -10px);',
+                'right: auto;',
+                'top: $navbar-height;',
+                'width: $drawer-left-width;',
+                'max-width: $drawer-left-width;',
+                'height: calc(100vh - #{$navbar-height});',
+                'max-height: calc(100vh - #{$navbar-height});',
+                'overflow: visible;',
+                '@include border-radius(0);',
+            ] as $declaration
+        ) {
+            $this->assertStringContainsString($declaration, $drawer);
+        }
+
+        $this->assertStringContainsString('left: 0;', $shown, 'Open, against the left edge.');
+        $this->assertStringContainsString('right: auto;', $shown);
+        $this->assertStringContainsString('width: $drawer-left-width;', $shown);
     }
 
     /**

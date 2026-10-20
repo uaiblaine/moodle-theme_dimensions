@@ -339,11 +339,36 @@ Union's layout on m503's PHPUnit site and the theme's compiled sheet loaded in h
   user menu below sm is overridden (`max-width: none`).
 
 Both are CSS only (`scss/sheets.scss`), scoped to `.navbar.fixed-top .popover-region-notifications` and
-`.navbar.fixed-top .usermenu`, every rule under `media-breakpoint-down(sm)`. The scrim is the sheet's own `box-shadow`,
-so a press outside reaches core's handlers: the popover region controller's document click (and Escape) for the
+`.navbar.fixed-top .usermenu`, every rule under `media-breakpoint-down(sm)`. The scrim is the sheet's own `box-shadow`
+(`--dimensions-backdrop`, see below), so a press outside reaches core's handlers: the popover region controller's document click (and Escape) for the
 popover, Bootstrap's outside click (and Escape, with the focus back on the toggle) for the user menu. The popover rises
 by core's own height transition, dropped under `prefers-reduced-motion: reduce`; the user menu rises by an animation
 that exists only under `no-preference`.
+
+### The scrim and the notifications surface (corrected 2026-10-20, from real-Chrome screenshots at 390 and 1024)
+
+- **The scrim was lavender.** The tablet drawer's and both sheets' `box-shadow: 0 0 0 100vmax` read
+  `rgba(var(--dim-ds-shadow-rgb), .45)`, and that channel triple is the design system's navy (7, 0, 147), meant for a
+  faint elevation at a tenth: at .45 it turned the page purple. The three now read `--dimensions-backdrop`, declared in
+  `scss/post.scss` (`rgba(var(--bs-black-rgb, 0, 0, 0), .5)`, and .7 under the html element's dark mode), through that
+  fallback chain. It is a name of the theme's own (`family_tokens_test::OWN`), outside the contract with the sibling
+  plugins, whose `--dimensions-scrim` is another thing (a veil of the page's own surface).
+- **The notifications popover mixed two palettes.** It is rendered inside `nav.navbar[data-bs-theme="dark"]`, so
+  Bootstrap's dark mode repainted the container (core paints it `var(--bs-white)`, which the dark mode makes `#343a40`),
+  while the ink stayed the page's (`rgb(29, 33, 37)`, from the body: the title, the empty state, the items, 1.41:1), and
+  Boost Union's own rules for it (`.navbar.bg-primary[data-bs-theme="dark"] .popover-region-container a .icon`, the
+  footer and the "See all" link, all `!important`) assume a LIGHT surface: icons `#343a40` (so the cog and "mark all as
+  read" were `#343a40` on `#343a40`, 1.00:1, an empty outlined square on focus), a white footer, a `#0f6cbf` link. The
+  desktop dropdown measured the same at 1280, so it was not the sheet's rules. Those rules cannot be outranked
+  (`!important`), so the surface is light, and `scss/post.scss` re-points, on the container where Bootstrap reads them,
+  the colour mode tokens it uses (`--bs-white`, `--bs-body-bg`, `--bs-body-color`, `--bs-heading-color`,
+  `--bs-tertiary-bg`, `--bs-link-color`, `--bs-link-hover-color`) to the design system's light ones, with `color` and
+  `color-scheme: light`. Title, empty state, items, the close button and the footer then follow without a colour of
+  their own. The user menu sheet stays the navbar's navy dropdown.
+- Measured (the real header and the compiled sheet in headless Chromium, 390 and 1280): title and empty state 1.41:1
+  before, 16.48:1 after; the cog and "mark all as read" glyph 1.00:1 before, 11.51:1 after; the close glyph 4.89:1
+  (light blue, on the dark body) before, 14.68:1 after; the "See all" link 2.15:1 on the dark body before (5.36:1 on its
+  white strip), 5.36:1 on a white one after; the unread item 14.85:1.
 
 ### D5
 
@@ -363,8 +388,20 @@ the frame, the count, the range, the toggler, the press outside, the build), `te
 `tests/local/sheets_scss_test.php` (scopes, ranges, no `!important`, reduced motion, the sheets' parts and 44px
 targets), the D5 cases in `readingbar_test` and `readingbar_render_test`; the Behat feature
 `tests/behat/theme_dimensions_navcompact.feature` (`@theme_dimensions_navcompact`, with the theme's step `the site
-navigation has "N" custom menu items`); twenty mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`,
+navigation has "N" custom menu items`); twenty-one mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`,
 `scss_sheets_*`, `readingbar_edit_*`), dry-matched; `readingbar_layer_appended` repointed at the renderer's new line.
+
+**The tablet drawer's geometry (fixed 2026-10-20).** From lg up core restyles every `.drawer.drawer-left` on
+`.pagelayout-standard` and `body.limitedwidth` (`boost/scss/moodle/drawer.scss`, "Anchored drawers": `left: auto`,
+`right: $drawer-anchor-none`, `width: 0`, `overflow: clip`, an anchored `top`, a border radius, a width transition) for
+the course index. `#theme_boost-drawers-primary` carries `drawer-left`, so in compact mode it opened 58px wide, cut at
+the left edge. `scss/compactnav.scss` makes it core's own below-md overlay drawer again (`left: 0` open and
+`calc(-285px - 10px)` closed, `right: auto`, 285px, `top` and height from `$navbar-height`, no radius, no clip, core's
+slide), under `#theme_boost-drawers-primary.drawer-primary.drawer-left`, which outranks the anchored selectors without
+`!important`. Measured at 1024x768 (the real incourse header and the compiled sheet in headless Chromium, the compact
+classes applied by hand, other layouts by swapping the body class): open, x=0 and 285 wide, y=60, 708 high (before, on
+the standard and limitedwidth layouts: x=-216, 285 by 238, y=100, radius 6px, clipped; closed: 0 wide); closed, x=-295,
+fully offscreen, hidden.
 
 **Not verified**: anything in a real browser driving the module (the compact mode's decision against core's React
 navigation, the drawer's scrim and press outside, the sheets' motion), the Behat feature (written, not run), the
