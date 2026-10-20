@@ -1,0 +1,174 @@
+/* The notifications popover and the user menu as bottom sheets on phones (D2 and D3, phase 4 of the navbar).
+
+   CSS only: core's markup and core's behaviour are untouched. The notifications popover is message_popup's,
+   opened and closed by core's popover region controller (a press outside the region and Escape close it); the
+   user menu is Boost Union's core/user_menu, a Bootstrap dropdown inside the navbar (a press outside closes it,
+   the arrow keys move through it, Escape closes it and gives the focus back to its toggle). Below sm each opens
+   as a sheet: fixed to the bottom edge, the full width, rounded top corners, a grab handle drawn by the sheet's
+   own ::before, a height that never reaches over the navbar with the overflow scrolled inside, and a scrim that
+   is the sheet's own shadow (no element of its own, so the press outside reaches core's handler).
+
+   Every top-level selector is the navbar's own class with the region's (tests/local/sheets_scss_test.php), and
+   every rule sits inside media-breakpoint-down(sm). The motion exists only under prefers-reduced-motion:
+   no-preference; with less motion the sheet appears in place.
+
+   Measured before (2026-10-19, m503, an editing teacher on an activity page, the theme's compiled sheet in
+   Chromium at 390x844): nothing overflows sideways. Core's rule below 481px pins the popover from 46px down,
+   fixed, so its first 15px lie over the 61px navbar and its 3px band, across the bottom of the navbar's
+   controls, and its base max-height of 80vh stops it at 721px, leaving 123px of page under it uncovered. */
+
+/* ---- D2: the notifications popover --------------------------------------- */
+.navbar.fixed-top .popover-region-notifications {
+    @include media-breakpoint-down(sm) {
+        /* Core's arrow points from the toggle at a dropdown under it; a sheet has none. */
+        .popover-region-toggle::before,
+        .popover-region-toggle::after {
+            display: none;
+        }
+
+        /* The sheet in both states, so it closes where it opened; core's collapsed rule still takes its height
+           to 0 and hides it, and the shadow goes with the visibility. */
+        .popover-region-container {
+            position: fixed;
+            top: auto;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            width: auto;
+            max-height: calc(100vh - #{$navbar-height} - var(--dim-ds-space-md));
+            overflow: hidden;
+            border-width: 1px 0 0;
+            border-radius: var(--dim-ds-radius-xl) var(--dim-ds-radius-xl) 0 0;
+            box-shadow: 0 0 0 100vmax var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
+
+            &::before {
+                flex: 0 0 auto;
+                width: 2.5rem;
+                height: 5px;
+                margin: var(--dim-ds-space-xs) auto var(--dim-ds-space-xxs);
+                border-radius: var(--dim-ds-radius-pill);
+                background: var(--dim-ds-border-strong);
+                content: "";
+            }
+        }
+
+        &:not(.collapsed) .popover-region-container {
+            height: 70vh;
+        }
+
+        /* The header is a row of touch targets: core's title and its three actions (mark all as read, the
+           preferences, close), each 44px. */
+        .popover-region-header-container {
+            display: flex;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: space-between;
+            height: auto;
+            min-height: 2.75rem;
+            padding: 0 var(--dim-ds-space-xs) 0 var(--dim-ds-space-md);
+        }
+
+        .popover-region-header-actions > * {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.75rem;
+            min-height: 2.75rem;
+            margin-left: 0;
+        }
+
+        /* The list takes what is left and scrolls inside; core's height is a share of a fixed box. */
+        .popover-region-content-container {
+            flex: 1 1 auto;
+            height: auto;
+            min-height: 0;
+            overscroll-behavior: contain;
+        }
+
+        .see-all-link {
+            flex: 0 0 auto;
+        }
+
+        .popover-region-footer-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: auto;
+            min-height: 2.75rem;
+            padding-top: 0;
+        }
+
+        /* Core grows the sheet from its height, which reads as rising from the bottom edge; with less motion it
+           appears in place. */
+        @media (prefers-reduced-motion: reduce) {
+            .popover-region-container {
+                transition: none;
+            }
+        }
+    }
+}
+
+/* ---- D3: the user menu --------------------------------------------------- */
+/* Boost Union's core/user_menu, not copied. The name is at the top already: below md the theme shows the full
+   name in Boost Union's "logged in as" block, the menu's first child. Bootstrap disables Popper inside a
+   .navbar, so the menu is placed by CSS alone (data-bs-popper="static"), and these rules outrank both that
+   placement, .navbar-expand's absolute position and core's own max-width below sm (100vw less 1rem, written for a
+   dropdown that keeps a gutter). */
+.navbar.fixed-top .usermenu {
+    @include media-breakpoint-down(sm) {
+        .dropdown-menu {
+            position: fixed;
+            top: auto;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            width: auto;
+            max-width: none;
+            max-height: calc(100vh - #{$navbar-height} - var(--dim-ds-space-md));
+            margin: 0;
+            padding: 0 0 var(--dim-ds-space-xs);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            border-width: 0;
+            border-radius: var(--dim-ds-radius-xl) var(--dim-ds-radius-xl) 0 0;
+            box-shadow: 0 0 0 100vmax var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
+
+            /* The handle on the menu's own surface: the theme's navbar menus are navy (post.scss), and the
+               divider's colour is the one that reads on it. */
+            &::before {
+                display: block;
+                width: 2.5rem;
+                height: 5px;
+                margin: var(--dim-ds-space-xs) auto var(--dim-ds-space-xxs);
+                border-radius: var(--dim-ds-radius-pill);
+                background: var(--bs-dropdown-divider-bg, var(--dim-ds-border-strong));
+                content: "";
+            }
+
+            /* Every row a 44px target. */
+            .dropdown-item {
+                display: flex;
+                align-items: center;
+                min-height: 2.75rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .dropdown-menu.show {
+                animation: dimensions-sheet-rise var(--dim-ds-motion-base) var(--dim-ds-motion-ease);
+            }
+        }
+    }
+
+    @keyframes dimensions-sheet-rise {
+        from {
+            transform: translateY(100%);
+        }
+
+        to {
+            transform: translateY(0);
+        }
+    }
+}

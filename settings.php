@@ -28,6 +28,7 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\filterfields_setting;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\category\publicaccess;
+use theme_dimensions\local\compactnav;
 use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
 use theme_dimensions\local\focusmode;
@@ -318,6 +319,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $title = get_string('navbarautohide', 'theme_dimensions', null, true);
         $description = get_string('navbarautohide_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configmulticheckbox($name, $title, $description, [], readingbar::kinds());
+        $tab->add($setting);
+
+        // Setting: The compact navbar on tablets. Default on, and read as on unless an explicit '0' was stored
+        // ({@see compactnav::enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . compactnav::SETTING;
+        $title = get_string('navbarcompact', 'theme_dimensions', null, true);
+        $description = get_string('navbarcompact_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
         $tab->add($setting);
 
         // Setting: The full logo's variant for dark surfaces, the partner of Boost Union's logo ({@see darklogo}).

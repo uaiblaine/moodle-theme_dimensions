@@ -56,6 +56,7 @@ final class readingbar_scss_test extends \basic_testcase {
         '.navbar.fixed-top .dimensions-ctxbar-sub',
         '.navbar.fixed-top .dimensions-ctxbar-index',
         '.navbar.fixed-top .dimensions-ctxbar-status',
+        '.navbar.fixed-top .dimensions-ctxbar-edit',
         '.navbar.fixed-top.dimensions-ctx-on',
         self::AUTOHIDE,
     ];

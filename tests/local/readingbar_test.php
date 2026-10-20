@@ -475,4 +475,27 @@ final class readingbar_test extends \advanced_testcase {
         $this->setGuestUser();
         $this->assertNull(readingbar::client_config($home, false)['progress']);
     }
+
+    /**
+     * A reader core lets edit the page gets core's edit mode switch in the layer; a student of the same page does not.
+     *
+     * @return void
+     */
+    public function test_the_edit_switch_follows_cores_own_predicate(): void {
+        $course = $this->course();
+        $cm = $this->activity($course);
+
+        $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'editingteacher'));
+        $page = $this->activity_page($course, $cm);
+        $this->assertTrue($page->user_allowed_editing(), 'Precondition: core lets the teacher edit.');
+        $this->assertTrue(readingbar::edit_applies($page));
+        $this->assertTrue(readingbar::context($page)['canedit']);
+
+        $this->student($course);
+        $page = $this->activity_page($course, $cm);
+        $this->assertTrue(readingbar::context_applies($page), 'Control: the student gets the layer.');
+        $this->assertFalse($page->user_allowed_editing(), 'Precondition: core does not let the student edit.');
+        $this->assertFalse(readingbar::edit_applies($page));
+        $this->assertFalse(readingbar::context($page)['canedit']);
+    }
 }

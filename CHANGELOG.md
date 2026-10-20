@@ -5,6 +5,39 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Tablet and sheets** (phase 4 of the navbar; 2026100515). Between tablet and desktop
+  widths, when the site's navigation would send more than two items into its "More" menu, the navbar takes the phone's
+  layout: core's menu button, the logo and the icons on the right, with the navigation in the side menu (B5). The
+  decision is the browser's, read from what core's own navigation measured, and the navigation is held back until it
+  is made, so the first paint never shows items about to go; at tablet width the side menu then gets a scrim, closes
+  on a press outside it and stacks above the docked drawers. On phones the notifications popover (D2) and the user menu
+  (D3) open as bottom sheets: full width, rounded top, a grab handle, scrolling inside, a scrim, 44px rows, rising only
+  without `prefers-reduced-motion`. In the context bar a reader who may edit the page finds core's edit mode switch
+  again (D5). Never in the Moodle app; focus mode keeps its own bar. Notifications and messages are not merged into one
+  control yet.
+  - Setting `navbarcompact` (Identity tab), a checkbox that ships on and reads as on until an explicit `0` is stored.
+  - Every decision of B5 is `classes/local/compactnav.php`; the renderer splices `dimensions-navcompact-armed` into the
+    layout's body attributes and arms the new `amd/src/compactnav.js`, which writes `dimensions-navcompact-measured`,
+    `dimensions-nav-compact` and takes `d-md-none` off core's toggler while compact. New `scss/compactnav.scss` and
+    `scss/sheets.scss`. D5 is `readingbar::edit_applies()`, core's `user_allowed_editing()`, with core's
+    `edit_switch()` rendered into `theme_dimensions/navbar_readingbar`.
+  - Two visual defects of the first build, found in real-Chrome screenshots at 390 and 1024: the scrim of the tablet
+    drawer and of both sheets was the design system's navy shadow tint at .45 (the page turned purple), and is now
+    the neutral `--dimensions-backdrop` (core's modal black, .5 on a light page and .7 on a dark one, through
+    `--bs-black-rgb`; a theme-own token, not part of the family contract). The notifications popover was unreadable
+    inside the dark navbar (dark ink on the dark colour mode's `#343a40`, an invisible cog, a white footer): it is now
+    one light surface, through the colour mode tokens re-pointed on `.navbar .popover-region-container`, on phones and
+    on the desktop dropdown alike, which had the same defect.
+  - The tablet drawer opened 58px wide, cut at the left edge, on the standard layouts and on `body.limitedwidth`: from lg
+    up core anchors every `.drawer.drawer-left` (zero width, an anchored `right`, `overflow: clip`, a top under the page
+    title, rounded corners) for the course index, and the primary drawer is a `drawer-left` too. In compact mode it is
+    again the plain overlay drawer core gives it below md (left edge, offscreen when closed, under the navbar, the
+    rest of the viewport high), under a selector with the drawer's id that the anchored ones cannot outrank. Gate
+    `scss_compactnav_primary_overlay`.
+  - Twenty-one mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`, `scss_sheets_*`,
+    `readingbar_edit_*`), dry-matched; `readingbar_layer_appended` follows the renderer's new line. Behat feature
+    `theme_dimensions_navcompact.feature` and the step `the site navigation has "N" custom menu items`.
+
 - **The bar that follows the reading** (phase 3 of the navbar; 2026100514). On activity pages and the course page the 3px band is the reading progress: it fills from the left as an
   activity page is scrolled, and shows the reader's completion of the course on the course page (computed on the
   server); a faint track shows behind it, and every other page keeps the full band. Past the page header the navbar's

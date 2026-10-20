@@ -1,0 +1,85 @@
+/* The navbar's compact mode on tablets (B5, phase 4 of the navbar). Where the server armed it
+   (classes/local/compactnav.php writes dimensions-navcompact-armed on the body) and while
+   amd/src/compactnav.js has measured that core's primary navigation sends more than two items into its
+   "More" menu (it writes dimensions-nav-compact on the body), the navbar between md and xl takes the phone's
+   pattern: core's hamburger, the brand, the right cluster, and the mobile drawer holds the navigation.
+
+   Every rule is nested under the armed body class, because lib.php concatenates this file into the theme's
+   main SCSS and it reaches every page of the site (tests/local/compactnav_scss_test.php), and every rule
+   sits inside media-breakpoint-between(md, xl), the range the module's RANGE spells.
+
+   The hamburger is NOT shown here: core's toggler carries d-md-none, a Bootstrap utility compiled as
+   display: none !important, which no selector outranks without !important of its own. The module takes that
+   one class off the toggler while the navbar is compact and puts it back after. */
+body.dimensions-navcompact-armed {
+    @include media-breakpoint-between(md, xl) {
+        /* Held back until the module has measured, so the first paint never shows items that are about to go.
+           Only under core's jsenabled, which core writes at the top of the body before the first paint: without
+           JavaScript the navbar stays core's. Visibility and not display: a hidden box keeps its size, and core's
+           navigation goes on measuring it (with display: none it would read every item as fitting, and the
+           module would read that as no overflow). The animation is the fail-open: should the module never run,
+           the navigation comes back after two seconds instead of being lost with its hamburger hidden. */
+        &.jsenabled:not(.dimensions-navcompact-measured) .primary-navigation {
+            visibility: hidden;
+            animation: dimensions-navcompact-failopen 100ms 2s forwards;
+        }
+
+        /* Compact: the primary navigation is hidden in place. Its box stays, so core's navigation measures
+           the same room with the hamburger shown, and an overflow that sent the bar compact never reads as a
+           fit because the bar went compact: no flip back and forth. */
+        &.dimensions-nav-compact {
+            .primary-navigation {
+                visibility: hidden;
+            }
+
+            .navbar.fixed-top .navbar-toggler {
+                margin-inline-end: var(--dim-ds-space-xs);
+            }
+
+            /* The mobile drawer at tablet width. Core shows its backdrop below md only, so the scrim is the
+               drawer's own shadow, painted under the navbar like core's; the module closes the drawer on a press
+               outside it. It stacks above the course index and the blocks drawer, which are docked on the same
+               side from lg up, and under the navbar ($zindex-fixed). */
+            .drawer-primary {
+                z-index: $zindex-sticky + 2;
+            }
+
+            .drawer-primary.show {
+                box-shadow: 0 0 0 100vmax var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
+            }
+
+            /* Core restyles every .drawer-left from lg up on the standard layouts and on body.limitedwidth
+               (boost/scss/moodle/drawer.scss, "Anchored drawers"): zero width, an anchored right offset, overflow
+               clip, a top that clears the page title, rounded corners. That is the course index's geometry, and the
+               primary drawer carries drawer-left too, so at tablet width it opened 58px wide, cut at the left edge.
+               Here it is the plain overlay drawer core gives it below md: against the left edge, offscreen while
+               closed, under the navbar, the full height of the rest of the viewport, with core's own slide. The
+               compact body classes and the drawer's id outrank the anchored selectors (which also carry :has() for
+               the docked drawers' right offset), so no !important is needed. */
+            #theme_boost-drawers-primary.drawer-primary.drawer-left {
+                left: calc(-#{$drawer-left-width} + -10px);
+                right: auto;
+                top: $navbar-height;
+                width: $drawer-left-width;
+                max-width: $drawer-left-width;
+                height: calc(100vh - #{$navbar-height});
+                max-height: calc(100vh - #{$navbar-height});
+                overflow: visible;
+                @include border-radius(0);
+                @include transition(left 0.2s ease, top 0.2s ease, visibility 0.2s ease);
+
+                &.show {
+                    left: 0;
+                    right: auto;
+                    width: $drawer-left-width;
+                }
+            }
+        }
+    }
+
+    @keyframes dimensions-navcompact-failopen {
+        to {
+            visibility: visible;
+        }
+    }
+}

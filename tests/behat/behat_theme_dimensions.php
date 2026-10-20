@@ -373,4 +373,22 @@ class behat_theme_dimensions extends behat_base {
         );
         $this->getSession()->wait(self::get_timeout() * 1000, "window.getComputedStyle({$layer}).opacity === '1'");
     }
+
+    /**
+     * Give the site's primary navigation a number of custom menu items, one per line of core's custommenuitems.
+     *
+     * The setting is a multi-line text, which a step table cannot carry. Each item is "Catalogue item N" and links to
+     * the course index.
+     *
+     * @Given /^the site navigation has "(?P<count>\d+)" custom menu items$/
+     * @param string $count How many items.
+     * @return void
+     */
+    public function the_site_navigation_has_custom_menu_items(string $count): void {
+        $lines = [];
+        for ($i = 1; $i <= (int) $count; $i++) {
+            $lines[] = "Catalogue item {$i}|/course/index.php?item={$i}";
+        }
+        set_config('custommenuitems', implode("\n", $lines));
+    }
 }

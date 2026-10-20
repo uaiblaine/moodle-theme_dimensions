@@ -84,6 +84,14 @@ function theme_dimensions_get_main_scss_content($theme) {
     // reads the navbar pill mixin and the tokens post.scss declares.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/readingbar.scss');
 
+    // And the navbar's compact mode on tablets (classes/local/compactnav.php), every rule nested under the body class
+    // the renderer writes where the mode may happen, between the md and xl breakpoints.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/compactnav.scss');
+
+    // And the notifications popover and the user menu as bottom sheets on phones, every rule under the navbar's own
+    // class and the region's, below the sm breakpoint.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/sheets.scss');
+
     // And the competency framework's pages and dialogues (tool_lp, report_competency, block_lp), scoped
     // to the body classes core derives for those scripts, the block's root and the dim-comp- classes
     // only the theme's copies of their templates carry. It reads Font Awesome's fa-content() and

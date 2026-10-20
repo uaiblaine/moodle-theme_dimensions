@@ -31,6 +31,11 @@
     data-region="completion-status": core's header module replaces the FIRST such element of the page,
     which would be this one.
 
+    A reader core lets edit the page gets core's edit mode switch at the end of the layer (D5): the layer
+    covers the navbar's own switch while it is shown. It is core's edit_switch() output rendered a second
+    time, with an id of its own, so its form, its React mount and core/edit_switch work as the first one
+    does; the navbar's switch comes first in the document, so a lookup by the "Edit mode" label finds that one.
+
     Context variables required for this template (described without braces, because a Mustache
     comment closes at the first pair of closing braces it meets):
 
@@ -44,6 +49,8 @@
     * cmid - The activity's course module id
     * state - complete or pending
     * complete - Whether the state is complete
+    * canedit - Whether the reader may edit the page, by core's own predicate
+    * editswitch - Core's edit mode switch as core_renderer::edit_switch() renders it, trusted HTML
 
     Example context (json):
     {
@@ -56,7 +63,9 @@
         "hasstatus": true,
         "cmid": 42,
         "state": "pending",
-        "complete": false
+        "complete": false,
+        "canedit": true,
+        "editswitch": "<form action=\"https://example.com/editmode.php\" method=\"post\" class=\"d-flex align-items-center editmode-switch-form ms-2\"><input type=\"checkbox\" role=\"switch\" name=\"setmode\" id=\"editingswitch1\"><label for=\"editingswitch1\">Edit mode</label></form>"
     }
 }}
 <div class="dimensions-ctxbar" data-region="dimensions-ctxbar" data-kind="{{kind}}">
@@ -81,4 +90,7 @@
         <span class="dimensions-ctxbar-status-pending">{{#str}} readingbar_status_pending, theme_dimensions {{/str}}</span>
     </span>
     {{/hasstatus}}
+    {{#canedit}}
+    <div class="dimensions-ctxbar-edit" data-region="dimensions-ctxbar-edit">{{{editswitch}}}</div>
+    {{/canedit}}
 </div>

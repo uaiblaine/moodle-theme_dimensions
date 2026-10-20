@@ -139,6 +139,14 @@ body.dimensions-readingbar {
     }
 }
 
+/* The edit mode switch (D5): core's own form, rendered again for a reader core lets edit the page, at the end of
+   the layer where the navbar's switch sat. Core's stylesheet draws it; this only keeps it whole in the row. */
+.navbar.fixed-top .dimensions-ctxbar-edit {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+}
+
 /* The swap. The module writes dimensions-ctx-on on the nav past the page header and takes it away on the
    way back; the global bar's items are hidden in place (visibility keeps their boxes, so nothing in the
    bar reflows), the layer is shown over them. */
