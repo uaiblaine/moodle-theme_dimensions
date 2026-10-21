@@ -34,9 +34,9 @@ use theme_dimensions\local\focusmode;
  * that opens focused and the one that opens ordinary; only the header actions differ.
  *
  * Every decision it renders belongs to {@see focusmode}; this class only reads the page
- * and the layout context Boost Union already built. Two of its keys come straight from
- * that context - navbarcolorclasses and databstheme - so an organisation's flavour, or an
- * administrator's navbar colour, recolours the bar with no code here at all.
+ * and the layout context Boost Union already built. One of its keys comes straight from
+ * that context - navbarcolorclasses - so an organisation's flavour, or an administrator's
+ * navbar colour, recolours the bar with no code here at all.
  *
  * Every value below lands in a Mustache double stash and therefore leaves in the PLAIN
  * spelling, which is why the activity and course names are formatted with escape => false. The header
@@ -103,7 +103,6 @@ class focusmode_bar implements \core\output\renderable, \core\output\templatable
             'editswitch' => $editswitch,
             'hasmore' => $moreitems !== [] || $editswitch !== '',
             'navbarcolorclasses' => (string) ($this->layoutcontext['navbarcolorclasses'] ?? ''),
-            'databstheme' => (string) ($this->layoutcontext['databstheme'] ?? ''),
         ];
     }
 

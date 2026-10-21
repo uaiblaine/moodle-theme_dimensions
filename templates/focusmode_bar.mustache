@@ -41,8 +41,7 @@
     Context variables required for this template (described without braces, because a
     Mustache comment closes at the first pair of closing braces it meets):
 
-    * navbarcolorclasses - the background utility classes Boost Union resolved for the navbar
-    * databstheme - the Bootstrap colour mode for the bar, or the empty string
+    * navbarcolorclasses - the colour classes Boost Union resolved for the navbar (navbar-dark for light type)
     * coursename - the course short name, plain spelling, shown as an overline
     * closeurl - where "Exit focus mode" goes, and where the overline links
     * title - the activity name, the page's h1
@@ -64,8 +63,7 @@
 
     Example context (json):
     {
-        "navbarcolorclasses": "bg-primary",
-        "databstheme": "dark",
+        "navbarcolorclasses": "navbar-dark bg-primary",
         "coursename": "APH-2026",
         "closeurl": "https://example.com/course/view.php?id=2#module-4",
         "title": "Sinais vitais",
@@ -88,7 +86,7 @@
         "closetitle": "Back to the ordinary page"
     }
 }}
-<nav class="navbar fixed-top dimensions-focusbar dimensions-focus-only {{navbarcolorclasses}}" {{#databstheme}}data-bs-theme="{{databstheme}}"{{/databstheme}} aria-label="{{#str}}focusmode_bar, theme_dimensions{{/str}}">
+<nav class="navbar fixed-top dimensions-focusbar dimensions-focus-only {{navbarcolorclasses}}" aria-label="{{#str}}focusmode_bar, theme_dimensions{{/str}}">
     <div class="dimensions-focusbar-heading">
         <a class="dimensions-focusbar-course d-none d-md-block" href="{{closeurl}}">{{coursename}}</a>
         <h1 class="dimensions-focusbar-title">{{title}}</h1>

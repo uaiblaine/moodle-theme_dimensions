@@ -324,9 +324,16 @@ textarea:focus-visible,
 }
 
 /* ---- Dropdowns inside the navy chrome ----------------------------------- */
-/* Boost Union pins the user menu to data-bs-theme="light"; these custom properties sit on the
-   menu itself, which is where Bootstrap 5.3 reads them from, so they win without !important. */
+/* The navbar carries no colour mode of its own, so its dropdowns would be the page's light
+   surface; these custom properties sit on the menu itself, which is where Bootstrap 5.3 reads them
+   from, so they win without !important. The hover pair is the exception: Boost Union sets it on the
+   same menus with a longer selector (:root:not([data-bs-theme="dark"]) .navbar.navbar-dark
+   .dropdown-menu), from its own --bu-navbar-bg and --bu-navbar-dropdown-hover-color, which on a
+   navy menu below a navy bar would be a hover nobody sees. Those two are inherited from the navbar,
+   so they are answered here, on the menu, where Boost Union's own declarations read them. */
 .navbar .dropdown-menu {
+    --bu-navbar-bg: rgba(255, 255, 255, .12);
+    --bu-navbar-dropdown-hover-color: var(--dim-ds-text-inverse);
     --bs-dropdown-bg: var(--dim-ds-surface-inverse-deep);
     --bs-dropdown-color: var(--dim-ds-text-inverse);
     --bs-dropdown-link-color: var(--dim-ds-text-inverse);
@@ -341,13 +348,12 @@ textarea:focus-visible,
 }
 
 /* ---- The notifications popover inside the navy chrome -------------------- */
-/* message_popup's popover is rendered INSIDE the navbar, so it inherits the navbar's dark colour mode: Bootstrap's
-   dark palette repaints its container (core paints it var(--bs-white), which the dark mode makes #343a40) while
-   the ink stays the page's, and Boost Union's rules for it (.navbar[data-bs-theme="dark"] .popover-region-container,
-   all !important) assume a LIGHT surface: the icons #343a40, the footer white, the "See all" link Moodle's blue.
-   That left dark ink, a dark icon and a white footer on a dark body. The popover is one light surface: the colour
-   mode tokens it reads are re-pointed here to the design system's light ones, on the container, where Bootstrap
-   reads them from, so its header, items, empty state and the close button all follow. */
+/* message_popup's popover is rendered INSIDE the navbar, so it reads whatever colour mode reaches it there - the
+   page's, now that the navbar carries none of its own - and core paints its container var(--bs-white), which the
+   dark mode turns grey while the ink, the footer and the "See all" link keep half of the light palette. The popover
+   is one light surface in either mode: the colour mode tokens it reads are re-pointed here to the design system's
+   light ones, on the container, where Bootstrap reads them from, so its header, items, empty state and the close
+   button all follow. */
 .navbar .popover-region-container {
     --bs-white: var(--dim-ds-surface-card);
     --bs-body-bg: var(--dim-ds-surface-card);
@@ -421,13 +427,14 @@ textarea:focus-visible,
 
 /* The things a dark navbar changes about the pill, declared once on the navbar itself and
    read by inheritance. Both navbars are covered by this one rule: the ordinary one the entry
-   button is spliced into, and the focus bar, which is a .navbar and carries the same attribute
-   from the same layout context key. A light navbar has no attribute, leaves them unset, and the
-   mixin's own fallbacks apply - which is the whole light-bar case. The filled pill's ink (the
-   visitor's "Create account") is the navbar's own fill on a dark bar, Bootstrap's primary, which is
-   what this theme's renderer paints the bar with; on a light bar its fallback is the body's
-   background, the light half of the same pair. */
-.navbar[data-bs-theme="dark"] {
+   button is spliced into, and the focus bar, which is a .navbar and carries the same classes
+   from the same layout context key. .navbar-dark is Boost Union's mark of a bar with light type
+   (its dark and coloured-dark choices, and this theme's renderer); a light navbar lacks it, leaves
+   them unset, and the mixin's own fallbacks apply - which is the whole light-bar case. The filled
+   pill's ink (the visitor's "Create account") is the navbar's own fill on a dark bar, Bootstrap's
+   primary, which is what this theme's renderer paints the bar with; on a light bar its fallback is
+   the body's background, the light half of the same pair. */
+.navbar.navbar-dark {
     --dimensions-pill-border: var(--dim-ds-border-inverse);
     --dimensions-pill-hover: rgba(255, 255, 255, .12);
     --dimensions-pill-filled-ink: var(--bs-primary);
@@ -566,10 +573,12 @@ textarea:focus-visible,
 
 /* ---- The brand on dark surfaces ----------------------------------------- */
 /* Boost Union's logo and compact logo get a variant for dark surfaces (classes/local/darklogo.php).
-   The SURFACE decides, through the nearest data-bs-theme: the html element's colour mode, then a
-   navbar's own - "dark" on the theme's navy bar in light mode, "light" on one of Boost Union's navbar
-   colours in dark mode. The extra SCSS callback overrides the two sources of a variant on the root,
-   and only while the variant can be painted; these defaults stand otherwise. */
+   The SURFACE decides: the html element's colour mode, then a navbar with light type (.navbar-dark,
+   the theme's navy bar and Boost Union's dark choices) in the light mode, and the nearest
+   data-bs-theme="light" any element pins inside a dark page. Boost Union paints every navbar dark in
+   the dark mode, so no navbar needs the light variant there. The extra SCSS callback overrides the two
+   sources of a variant on the root, and only while the variant can be painted; these defaults stand
+   otherwise. */
 :root {
     --dimensions-logo-dark-src: none;
     --dimensions-logo-dark-shift: 0%;
@@ -585,7 +594,8 @@ textarea:focus-visible,
     --dimensions-logo-compact-shift: 0%;
 }
 
-[data-bs-theme="dark"] {
+[data-bs-theme="dark"],
+.navbar.navbar-dark {
     --dimensions-logo-dark: var(--dimensions-logo-dark-src, none);
     --dimensions-logo-shift: var(--dimensions-logo-dark-shift, 0%);
     --dimensions-logo-compact-dark: var(--dimensions-logo-compact-dark-src, none);

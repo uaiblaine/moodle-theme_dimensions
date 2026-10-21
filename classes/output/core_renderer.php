@@ -412,13 +412,15 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Make the navbar dark in the brand colour (bg-primary), through Boost Union's own mechanism.
+     * Make the navbar dark in the brand colour, through Boost Union's own mechanism.
      *
-     * Boost Union's navbar include writes these two keys from its navbarcolor setting and from a
-     * flavour's look_navbarcolor. Setting them here rather than recolouring the navbar with CSS is
-     * what keeps every component inside it coherent: 'dark' is a full Bootstrap colour mode, so the
-     * notification popovers, the edit-mode switch and the mobile toggler all get a palette that
-     * reads, instead of inheriting a half-set of inverted tokens and rendering white on white.
+     * Boost Union's navbar include writes this key from its navbarcolor setting and from a
+     * flavour's look_navbarcolor; 'navbar-dark bg-primary' is exactly its "coloured, light font"
+     * choice. Setting it here rather than recolouring the navbar with CSS is what keeps every
+     * component inside it coherent: Boost Union maps the pills, the user menu toggle, the edit
+     * switch, the divider and the dropdown hovers onto that pair of classes, and in the dark colour
+     * mode it repaints the bar itself. The navbar carries no data-bs-theme of its own, so the
+     * dropdowns and popovers inside it keep the page's colour mode.
      *
      * Only the untouched default is filled in. An admin who picked a navbar colour, and a flavour
      * which sets one for its organisation, both already produced something other than 'bg-body' -
@@ -432,11 +434,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if ($navbarstyle == THEME_DIMENSIONS_SETTING_NAVBARSTYLE_INHERIT) {
             return $context;
         }
-        if (($context['navbarcolorclasses'] ?? '') !== 'bg-body' || ($context['databstheme'] ?? '') !== '') {
+        if (($context['navbarcolorclasses'] ?? '') !== 'bg-body') {
             return $context;
         }
-        $context['navbarcolorclasses'] = 'bg-primary';
-        $context['databstheme'] = 'dark';
+        $context['navbarcolorclasses'] = 'navbar-dark bg-primary';
 
         return $context;
     }

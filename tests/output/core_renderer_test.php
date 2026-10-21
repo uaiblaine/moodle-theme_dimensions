@@ -593,11 +593,46 @@ final class core_renderer_test extends \advanced_testcase {
 
         $renderer = $this->renderer('/my/', 'standard');
         $anonymous = $this->navbar_html($renderer, ['unauthenticateduser' => ['content' => 'You are not logged in.']]);
-        $this->assertStringContainsString('navbar fixed-top bg-primary', $anonymous);
-        $this->assertStringContainsString('data-bs-theme="dark"', $anonymous);
+        $this->assertStringContainsString('navbar fixed-top navbar-dark bg-primary', $anonymous);
 
         $loggedin = $this->navbar_html($renderer, ['userfullname' => 'Ana Souza']);
-        $this->assertStringContainsString('navbar fixed-top bg-primary', $loggedin);
+        $this->assertStringContainsString('navbar fixed-top navbar-dark bg-primary', $loggedin);
+    }
+
+    /**
+     * The dark navbar is Boost Union's coloured-dark pair, and the bar carries no colour mode of its own.
+     *
+     * Boost Union's upgrade-503 maps every element of the navbar onto .navbar-dark and keeps the dropdowns
+     * inside it in the page's colour mode, which a data-bs-theme on the nav would switch to dark.
+     *
+     * @return void
+     */
+    public function test_the_dark_navbar_is_boost_unions_pair_and_sets_no_colour_mode(): void {
+        $this->resetAfterTest();
+        set_config('navbarstyle', THEME_DIMENSIONS_SETTING_NAVBARSTYLE_NAVY, 'theme_dimensions');
+
+        $html = $this->navbar_html($this->renderer('/my/', 'standard'), ['userfullname' => 'Ana Souza']);
+        $this->assertStringContainsString(' navbar-dark bg-primary ', $html);
+        $this->assertStringNotContainsString('data-bs-theme', $html);
+    }
+
+    /**
+     * A navbar colour somebody chose stands: only Boost Union's untouched light default is filled in.
+     *
+     * The control is the default, which the same renderer turns into the dark pair.
+     *
+     * @return void
+     */
+    public function test_a_chosen_navbar_colour_is_left_alone(): void {
+        $this->resetAfterTest();
+        set_config('navbarstyle', THEME_DIMENSIONS_SETTING_NAVBARSTYLE_NAVY, 'theme_dimensions');
+        $renderer = $this->renderer('/my/', 'standard');
+
+        $this->assertStringContainsString(' navbar-dark bg-primary ', $this->navbar_html($renderer, [], 'bg-body'));
+        $chosen = $this->navbar_html($renderer, [], 'navbar-dark bg-dark');
+        $this->assertStringContainsString(' navbar-dark bg-dark ', $chosen);
+        $this->assertStringNotContainsString('bg-primary', $chosen);
+        $this->assertStringContainsString(' bg-primary navbar-expand', $this->navbar_html($renderer, [], 'bg-primary'));
     }
 
     /**
@@ -725,16 +760,16 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * The opening tag of the navbar, rendered with Boost Union's light navbar keys.
+     * The opening tag of the navbar, rendered with Boost Union's navbar colour key.
      *
      * @param core_renderer $renderer The theme's renderer.
      * @param array $usermenu The user menu part of the layout context.
+     * @param string $colourclasses What Boost Union's navbar include wrote, its light default unless given.
      * @return string
      */
-    private function navbar_html(core_renderer $renderer, array $usermenu): string {
+    private function navbar_html(core_renderer $renderer, array $usermenu, string $colourclasses = 'bg-body'): string {
         $html = $renderer->render_from_template('theme_boost/navbar', [
-            'navbarcolorclasses' => 'bg-body',
-            'databstheme' => '',
+            'navbarcolorclasses' => $colourclasses,
             'usermenu' => $usermenu,
         ]);
         $this->assertSame(1, preg_match('~<nav class="navbar [^>]*>~', $html, $matches), 'The navbar is drawn.');
