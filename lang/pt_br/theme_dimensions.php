@@ -354,12 +354,16 @@ $string['extrascssinheritancesetting_desc'] = 'Com esta configuração, você co
 $string['focusmode'] = 'Modo foco nas atividades';
 $string['focusmode_bar'] = 'Modo foco';
 $string['focusmode_close'] = 'Sair do modo foco';
-$string['focusmode_close_title'] = 'Voltar para o curso';
+$string['focusmode_close_title'] = 'Voltar para a página comum desta atividade';
+$string['focusmode_close_title_site'] = 'Sair do curso para a página inicial do site';
 $string['focusmode_completionkicker'] = 'Para concluir';
-$string['focusmode_desc'] = 'Interruptor geral. Cada curso liga o modo pela caixa «Modo foco nas atividades» das suas configurações; quem estuda também pode abrir o modo pelo botão da navbar em qualquer atividade de um curso que não ligou. Acrescente ?focusoff=1 ao endereço de uma atividade para ver a página comum uma vez, no suporte.';
+$string['focusmode_desc'] = 'Interruptor geral, desligado num site novo. Enquanto está desligado nada do modo foco é carregado: nem a barra, nem o botão da navbar, nem os estilos, e a caixa «Modo foco nas atividades» some das configurações do curso (cada curso guarda a sua resposta para quando o modo for religado). Cada curso liga o modo por essa caixa; quem estuda também pode abrir o modo pelo botão da navbar em qualquer atividade, e sair dele de novo, pelo resto da sessão naquele curso, sem recarregar a página. Acrescente ?focusoff=1 ao endereço de uma atividade para ver a página comum uma vez, no suporte.';
 $string['focusmode_enter'] = 'Modo foco';
 $string['focusmode_enter_title'] = 'Abrir esta atividade no modo foco';
 $string['focusmode_more'] = 'Mais';
+$string['focusmode_status_off'] = 'Modo foco desligado';
+$string['focusmode_status_on'] = 'Modo foco ligado';
+$string['focusmode_unavailable'] = 'O modo foco não está disponível aqui.';
 $string['focusmode_width'] = 'Coluna de leitura larga';
 $string['focusmodedefaultwidth'] = 'Largura padrão';
 $string['focusmodedefaultwidth_contracted'] = 'Contraída (830px, a largura da página de atividade)';

@@ -308,6 +308,31 @@ class behat_theme_dimensions extends behat_base {
     }
 
     /**
+     * Switch focus mode's master switch on, with the stylesheet that goes with it.
+     *
+     * The switch ships off, and while it is off lib.php compiles no focus mode stylesheet; the Behat
+     * site's CSS is built once at init time and put back after every scenario
+     * (behat_util::restore_saved_themes()), so a scenario that sets the switch alone would test the
+     * two skins with no rule telling them apart. Under JavaScript this step therefore compiles this
+     * theme's CSS again, with the switch on, into the theme's CSS cache, which the scenario's pages are
+     * served from and the reset afterwards replaces. Without JavaScript nothing reads the CSS, and the
+     * compilation is skipped.
+     *
+     * @Given /^focus mode is switched on for the site$/
+     * @return void
+     */
+    public function focus_mode_is_switched_on_for_the_site(): void {
+        global $CFG;
+
+        set_config('focusmode', \theme_dimensions\local\login::SELECT_YES, 'theme_dimensions');
+        if (!$this->running_javascript()) {
+            return;
+        }
+        require_once($CFG->libdir . '/outputlib.php');
+        theme_build_css_for_themes([\core\output\theme_config::load('dimensions')], ['ltr'], true);
+    }
+
+    /**
      * Put the focus mode switch of a course into a state, as an administrator would.
      *
      * A direct write through core's own data controller rather than through the course settings
@@ -368,9 +393,9 @@ class behat_theme_dimensions extends behat_base {
         if (!$this->evaluate_script("return {$layer} !== null;")) {
             throw new \Behat\Mink\Exception\ExpectationException('The navbar has no context layer.', $this->getSession());
         }
-        $this->execute_script(
-            "document.querySelector('nav.navbar.fixed-top:not(.boost-union-menubar)').classList.add('dimensions-ctx-on');"
-        );
+        // Not the focus bar, which a page that can switch focus mode in place prints before the navbar.
+        $navbar = "document.querySelector('nav.navbar.fixed-top:not(.boost-union-menubar):not(.dimensions-focusbar)')";
+        $this->execute_script("{$navbar}.classList.add('dimensions-ctx-on');");
         $this->getSession()->wait(self::get_timeout() * 1000, "window.getComputedStyle({$layer}).opacity === '1'");
     }
 

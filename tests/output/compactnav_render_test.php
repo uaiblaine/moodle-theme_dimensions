@@ -237,9 +237,10 @@ final class compactnav_render_test extends \advanced_testcase {
         $this->activity_header($course, $cm);
         $this->assertSame(1, $this->armed(), 'Control: the ordinary activity page.');
 
-        focusmode::enter_session((int) $course->id);
+        set_config('focusmode', \theme_dimensions\local\login::SELECT_YES, focusmode::COMPONENT);
+        focusmode::choose((int) $course->id, true);
         $html = $this->activity_header($course, $cm);
-        $this->assertStringContainsString('dimensions-focusbar', $html, 'Precondition: the focus bar is drawn.');
+        $this->assertStringContainsString('dimensions-focusmode', $this->body_tag($html), 'Precondition: the page opens focused.');
         $this->assertStringNotContainsString(compactnav::BODY_ARMED, $this->body_tag($html));
         $this->assertSame(0, $this->armed());
     }

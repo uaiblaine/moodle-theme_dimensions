@@ -364,11 +364,10 @@ textarea:focus-visible,
 /* One shape, defined once, for the way in and the way out of focus mode, which a person meets
    seconds apart; a unit test asserts both controls include it.
 
-   The exit control's own rule cannot live here - it has to be scoped under the focus body class,
-   which scss/focusmode.scss is tested for - and this one cannot live there, because the entry
-   button renders on an ordinary activity page which carries no such class. Both files are
-   concatenated into one Sass document by lib.php, post.scss first, so a mixin defined here is in
-   scope there.
+   Both controls are drawn by scss/focusmode.scss, which lib.php compiles only while focus mode's
+   master switch is on; the mixin lives here because the visitor's actions in the navbar wear it
+   too. The files are concatenated into one Sass document by lib.php, post.scss first, so a mixin
+   defined here is in scope there.
 
    Nothing here names a text colour by hand. The bar underneath is not one colour: this theme
    fills in a dark bar in the brand colour by default, Boost Union ships navbarcolor as bg-body, an
@@ -432,15 +431,6 @@ textarea:focus-visible,
     --dimensions-pill-border: var(--dim-ds-border-inverse);
     --dimensions-pill-hover: rgba(255, 255, 255, .12);
     --dimensions-pill-filled-ink: var(--bs-primary);
-}
-
-/* ---- The way into focus mode, in the ordinary navbar --------------------- */
-/* This button is spliced into the navbar of an ordinary activity page, so the page carries no
-   focus body class and the rule cannot live in scss/focusmode.scss, where every top-level
-   selector is scoped to one and a unit test says so. Bootstrap's bare .btn gives it no edge, so
-   it would be lost between the edit switch and the bell. */
-.dimensions-focus-entry-button {
-    @include dimensions-navbar-pill;
 }
 
 /* ---- The visitor's actions, at the right end of the navbar --------------- */

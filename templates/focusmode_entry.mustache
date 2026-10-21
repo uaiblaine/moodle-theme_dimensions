@@ -17,12 +17,14 @@
 {{!
     @template theme_dimensions/focusmode_entry
 
-    The way into focus mode from an ordinary activity page of a course which did not
-    switch focus mode on.
+    The way into focus mode from the ordinary skin of an activity page that can switch in place.
 
     A form and not a link, because pressing it changes state: the session key is what
     makes that safe, and a bare link which flipped a session flag is the shape a link
-    prefetcher walks into. The theme's core renderer splices the rendered form into the
+    prefetcher walks into. The theme_dimensions/focusmode module intercepts the submit and
+    switches in place; without JavaScript the form records the choice and reloads the activity.
+    It is in the navbar on a page that opens focused too, where the navbar is hidden: it is the
+    way back in after leaving in place. The theme's core renderer splices the rendered form into the
     navbar's plugin output, immediately before the notifications container.
 
     The label is the accessible name at every width and is only hidden from view below the

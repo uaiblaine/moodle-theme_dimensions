@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - Tests for the focus mode shell as the renderer draws it
+ * Theme Dimensions - Tests for the two skins of an activity page as the renderer draws them
  *
  * @package    theme_dimensions
  * @category   test
@@ -32,18 +32,19 @@ use theme_dimensions\local\login;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Tests for the focus mode shell, rendered through the real layout.
+ * Tests for the two skins of an activity page, rendered through the real layout.
  *
- * Every test here renders the whole page - Boost Union's layout file, this theme's renderer and
- * the focus template - because the properties that matter are only visible in the output: that
- * exactly one fixed bar reaches the browser, that the page still carries its JavaScript, that the
- * skip link still lands on an anchor which exists exactly once, and that the two drawers survive
- * a template written by removing things from Boost Union's. The predicate itself is covered by
- * {@see \theme_dimensions\local\focusmode_test}.
+ * Every test here renders the whole page - Boost Union's layout file and template, untouched, and
+ * this theme's renderer adding to them - because the properties that matter are only visible in the
+ * output: which body classes the first paint carries, that the bar is there exactly once on every
+ * page that can switch in place and nowhere else, that the header actions are drawn once and in the
+ * skin the page opens in, that the skip link still precedes the bar, and that the foot of the content
+ * is drawn. The predicate itself is covered by {@see \theme_dimensions\local\focusmode_test}; what
+ * is shown or hidden under the body class is {@see \theme_dimensions\local\focusmode_scss_test}'s.
  *
- * Each test asserting the bar's absence carries the control that proves the page rendered at
- * all: the marker only Boost Union's navbar produces, {@see self::BU_NAVBAR_MARKER}. Without it
- * "focus mode is off" and "nothing was rendered" are the same assertion.
+ * Boost Union's navbar is on every one of these pages now, focused or not, so it is the control that
+ * the page rendered at all: {@see self::BU_NAVBAR_MARKER}. Without it "the bar is absent" and
+ * "nothing was rendered" are the same assertion.
  *
  * @package    theme_dimensions
  * @category   test
@@ -58,10 +59,9 @@ final class focusmode_renderer_test extends \advanced_testcase {
      * @var string A marker only Boost Union's own navbar puts on the page.
      *
      * The id belongs to the wrapper the navbar template draws around the user menu
-     * (BU/templates/theme_boost/navbar.mustache:107, core Boost's own naming). The focus
-     * template does not include that partial at all, so the id is present on an ordinary page
-     * and absent on a focused one - which is what makes every "the bar is absent" assertion
-     * below mean "the ordinary page was drawn" rather than "nothing came out".
+     * (BU/templates/theme_boost/navbar.mustache, core Boost's own naming). Boost Union's layout
+     * renders untouched in both skins, so the id is on every page below - which is what makes every
+     * "the bar is absent" assertion mean "the ordinary page was drawn" rather than "nothing came out".
      */
     private const BU_NAVBAR_MARKER = 'id="usernavigation"';
 
@@ -70,6 +70,15 @@ final class focusmode_renderer_test extends \advanced_testcase {
 
     /** @var string The opening of every fixed bar on the site, ours and Boost Union's alike. */
     private const FIXED_BAR = 'class="navbar fixed-top';
+
+    /** @var string The body class of the focused skin. */
+    private const FOCUSED = 'dimensions-focusmode';
+
+    /** @var string The body class of every page that can switch in place. */
+    private const FOCUSABLE = 'dimensions-focusable';
+
+    /** @var string The hook of the manual completion button, core's own. */
+    private const MANUAL_TOGGLE = 'data-action="toggle-manual-completion"';
 
     /** @var string The page title, deliberately free of any activity name. */
     private const PAGE_TITLE = 'Rendered by the focus mode test';
@@ -93,6 +102,8 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $this->resetAfterTest();
         focusmode::reset_caches();
         set_config('enablecompletion', 1);
+        // The switch ships off (decision D5); the tests about it set it back.
+        set_config('focusmode', login::SELECT_YES, focusmode::COMPONENT);
     }
 
     /**
@@ -267,50 +278,108 @@ final class focusmode_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * The bar replaces Boost Union's navbar; it does not join it.
+     * The classes of the body tag, as a list.
      *
-     * The count is the whole test. A presence-only assertion passes on a page carrying two fixed
-     * bars stacked on top of each other, which is what an interception that renders the focus
-     * template without removing the navbar partial produces - and the second one is 60px of
-     * chrome the design exists to remove.
+     * Read as a list and never by substring: dimensions-focusmode is a prefix of
+     * dimensions-focusmode-expanded, so a substring test passes on the wrong class.
+     *
+     * @param string $html The rendered page.
+     * @return array The class names.
+     */
+    private function body_classes(string $html): array {
+        $found = preg_match('~\bclass="([^"]*)"~', $this->body_tag($html), $matches);
+        $this->assertSame(1, $found, 'The body tag has no class attribute.');
+        return preg_split('/\s+/', trim($matches[1]));
+    }
+
+    /**
+     * Core's page header's header actions container alone, cut out of a rendered page.
+     *
+     * @param string $html The rendered page.
+     * @return string The container's markup, up to the header extras container that follows it.
+     */
+    private function page_header_actions(string $html): string {
+        $start = strpos($html, 'data-region="header-actions-container"');
+        $this->assertNotFalse($start, 'Core\'s page header has no header actions container.');
+        $end = strpos($html, 'data-region="header-extras-container"', $start);
+        $this->assertNotFalse($end);
+        return substr($html, $start, $end - $start);
+    }
+
+    /**
+     * A course which switched focus mode on opens focused, with the bar beside Boost Union's navbar.
+     *
+     * Both skins are in the page: Boost Union's layout renders untouched and the bar is added to it,
+     * once. The body classes are what the stylesheet shows one or the other by; the count of fixed
+     * bars is the bar's and the navbar's, and nothing more.
      *
      * @return void
      */
-    public function test_the_focus_bar_replaces_the_navbar(): void {
+    public function test_a_switched_on_course_opens_focused_beside_boost_unions_navbar(): void {
         $course = $this->course(true);
         $cm = $this->activity($course);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
         $html = $this->render($course, $cm);
 
-        $this->assertStringContainsString(self::BAR, $html);
-        $this->assertSame(1, substr_count($html, self::FIXED_BAR), 'Exactly one fixed bar, and it is ours.');
-        $this->assertStringNotContainsString(self::BU_NAVBAR_MARKER, $html);
+        $classes = $this->body_classes($html);
+        $this->assertContains(self::FOCUSED, $classes);
+        $this->assertContains(self::FOCUSABLE, $classes);
+        $this->assertSame(1, substr_count($html, '<nav class="navbar fixed-top ' . self::BAR), 'The bar, once.');
+        $this->assertStringContainsString(self::BU_NAVBAR_MARKER, $html, 'Boost Union\'s navbar renders too.');
+        $this->assertSame(2, substr_count($html, self::FIXED_BAR), 'The bar and Boost Union\'s navbar.');
+        $this->assertStringContainsString('dimensions-focus-only', $this->focus_bar($html));
     }
 
     /**
-     * A course which did not switch focus mode on gets Boost Union's page, whole.
+     * A course which did not switch focus mode on opens ordinary, with the bar and the way in ready.
      *
      * @return void
      */
-    public function test_the_ordinary_page_is_drawn_when_the_course_switch_is_off(): void {
+    public function test_an_unswitched_course_opens_ordinary_with_the_bar_ready(): void {
         $course = $this->course(false);
         $cm = $this->activity($course);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
         $html = $this->render($course, $cm);
 
-        $this->assertStringNotContainsString(self::BAR, $html);
+        $classes = $this->body_classes($html);
+        $this->assertNotContains(self::FOCUSED, $classes);
+        $this->assertContains(self::FOCUSABLE, $classes);
+        $this->assertStringContainsString(self::BAR, $html);
+        $this->assertStringContainsString('dimensions-focus-entry', $html);
         $this->assertStringContainsString(self::BU_NAVBAR_MARKER, $html);
-        $this->assertSame(1, substr_count($html, self::FIXED_BAR));
     }
 
     /**
-     * The site-wide master switch off leaves every course alone, whatever the course says.
+     * Leaving a switched-on course in place makes its next page open ordinary, for the session.
+     *
+     * Decision D1. The control is the same page before the choice, focused.
      *
      * @return void
      */
-    public function test_the_ordinary_page_is_drawn_when_the_master_switch_is_off(): void {
+    public function test_a_course_left_in_place_opens_ordinary_for_the_session(): void {
+        $course = $this->course(true);
+        $cm = $this->activity($course);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+        $this->assertContains(self::FOCUSED, $this->body_classes($this->render($course, $cm)), 'Control.');
+
+        focusmode::choose((int) $course->id, false);
+
+        $html = $this->render($course, $cm);
+        $this->assertNotContains(self::FOCUSED, $this->body_classes($html));
+        $this->assertContains(self::FOCUSABLE, $this->body_classes($html));
+        $this->assertStringContainsString(self::BAR, $html);
+    }
+
+    /**
+     * The site-wide master switch off loads nothing of the feature, whatever the course says.
+     *
+     * Decision D4: no bar, no body class, no way in and no module.
+     *
+     * @return void
+     */
+    public function test_the_master_switch_off_loads_nothing_of_the_feature(): void {
         $course = $this->course(true);
         $cm = $this->activity($course);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
@@ -320,11 +389,14 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $html = $this->render($course, $cm);
 
         $this->assertStringNotContainsString(self::BAR, $html);
+        $this->assertStringNotContainsString('dimensions-focus', $this->body_tag($html));
+        $this->assertStringNotContainsString('dimensions-focus-entry', $html);
+        $this->assertStringNotContainsString('theme_dimensions/focusmode', $html);
         $this->assertStringContainsString(self::BU_NAVBAR_MARKER, $html);
     }
 
     /**
-     * The support parameter gives one page load of the ordinary theme.
+     * The support parameter gives one page load of the ordinary theme, with nothing of focus mode in it.
      *
      * @return void
      */
@@ -338,13 +410,14 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $html = $this->render($course, $cm);
 
         $this->assertStringNotContainsString(self::BAR, $html);
+        $this->assertStringNotContainsString('dimensions-focus', $this->body_tag($html));
         $this->assertStringContainsString(self::BU_NAVBAR_MARKER, $html);
     }
 
     /**
-     * A teacher who turned editing on gets the whole theme back.
+     * A teacher who turned editing on gets the whole theme back, with nothing of focus mode in it.
      *
-     * The edit switch lives in the navbar focus mode replaces, so a focus mode which survived
+     * The edit switch lives in the navbar focus mode hides, so a focus mode which survived
      * editing would leave the teacher unable to turn it off again.
      *
      * @return void
@@ -360,37 +433,38 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $html = $this->render($course, $cm);
 
         $this->assertStringNotContainsString(self::BAR, $html);
+        $this->assertStringNotContainsString('dimensions-focus', $this->body_tag($html));
         $this->assertStringContainsString(self::BU_NAVBAR_MARKER, $html);
     }
 
     /**
-     * The focused page still carries its JavaScript.
+     * The module is armed with the skin the page opened in, on both skins.
      *
-     * The focus template is Boost Union's drawers template with things removed, and it must keep
-     * the footer partial: that partial emits the end-of-body token which
-     * {@see \core\output\core_renderer::footer()} replaces with the page's JavaScript. Without it
-     * the page looks right and has no drawers, no completion toggle and no width control, with
-     * nothing in any log.
+     * The module is what turns the two forms into a switch in place; armed with the wrong first
+     * state, the first press would switch to the skin already shown.
      *
      * @return void
      */
-    public function test_the_page_still_carries_its_javascript(): void {
-        $course = $this->course(true);
-        $cm = $this->activity($course);
-        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+    public function test_the_module_is_armed_with_the_first_paint(): void {
+        $focused = $this->course(true);
+        $cm = $this->activity($focused);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($focused, 'student'));
+        $html = $this->render($focused, $cm);
+        $this->assertMatchesRegularExpression('~theme_dimensions/focusmode.*?"active":true~s', $html);
 
-        $html = $this->render($course, $cm);
-
-        $this->assertStringContainsString(self::BAR, $html);
-        $this->assertStringContainsString("require(['theme_boost/loader'", $html);
+        $ordinary = $this->course(false);
+        $cm = $this->activity($ordinary);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($ordinary, 'student'));
+        $html = $this->render($ordinary, $cm);
+        $this->assertMatchesRegularExpression('~theme_dimensions/focusmode.*?"active":false~s', $html);
     }
 
     /**
      * The anchor the skip link points at is on the page exactly once.
      *
-     * Once, not "at least once": the anchor is core's, it comes from the activity header partial
-     * the focus template keeps, and a template which also emitted one of its own would give the
-     * browser two elements with the same id and the skip link a coin toss.
+     * Once, not "at least once": the anchor is core's, it comes from the activity header partial,
+     * and anything of focus mode's that also emitted one would give the browser two elements with
+     * the same id and the skip link a coin toss.
      *
      * @return void
      */
@@ -407,9 +481,9 @@ final class focusmode_renderer_test extends \advanced_testcase {
     /**
      * Core's skip link is still the first thing in the body, ahead of the bar.
      *
-     * It reaches the page through output.standard_top_of_body_html, which the focus template
-     * keeps at the top of the page wrapper. A template which dropped it, or placed it after the
-     * bar, would leave a keyboard user tabbing through the bar's controls on every activity.
+     * Both reach the page through output.standard_top_of_body_html, the bar appended to core's
+     * output. Printed before it, a keyboard user would tab through the bar's controls on every
+     * activity before the skip link.
      *
      * @return void
      */
@@ -422,20 +496,43 @@ final class focusmode_renderer_test extends \advanced_testcase {
 
         $skip = strpos($html, 'href="#maincontent"');
         $bar = strpos($html, self::BAR);
+        $navbar = strpos($html, self::BU_NAVBAR_MARKER);
         $this->assertNotFalse($skip, 'Core\'s skip link is missing from the focused page.');
         $this->assertNotFalse($bar);
         $this->assertLessThan($bar, $skip);
+        $this->assertLessThan($navbar, $bar, 'The bar comes before Boost Union\'s navbar.');
     }
 
     /**
-     * The activity name is in the bar and nowhere else in the page's own content.
+     * The status line that announces a switch is outside the bar, so it speaks in both skins.
      *
-     * Not a whole-page count: in the browser the course index drawer lists every activity by name,
-     * so the name legitimately occurs more than once. What must not happen is a second copy in the
-     * reading column, in the heading the activity header partial draws. Boost and Boost Union
-     * export that title empty (activityheaderconfig notitle), so no code in this theme prevents
-     * it; this test is the sentinel for a parent theme that stops doing so. The third assertion
-     * catches it: the h2 is inside the page container, and the bar and the drawers are outside it.
+     * A live region inside an element that is not displayed announces nothing, and the bar is not
+     * displayed in the ordinary skin.
+     *
+     * @return void
+     */
+    public function test_the_status_line_is_outside_the_bar(): void {
+        $course = $this->course(false);
+        $cm = $this->activity($course);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $html = $this->render($course, $cm);
+
+        $this->assertStringContainsString(
+            '<div class="visually-hidden" aria-live="polite" data-region="dimensions-focus-status"></div>',
+            $html
+        );
+        $this->assertStringNotContainsString('dimensions-focus-status', $this->focus_bar($html));
+    }
+
+    /**
+     * The activity name is in the bar once, and never as a second heading in the reading column.
+     *
+     * Not a whole-page count: the course index and Boost Union's breadcrumb name the activity too.
+     * What must not happen is a second copy in the reading column, in the heading the activity
+     * header partial draws. Boost and Boost Union export that title empty (activityheaderconfig
+     * notitle), so no code in this theme prevents it; this test is the sentinel for a parent theme
+     * that stops doing so.
      *
      * @return void
      */
@@ -453,9 +550,6 @@ final class focusmode_renderer_test extends \advanced_testcase {
             '~<h2[^>]*>\s*' . preg_quote($name, '~') . '\s*</h2>~',
             $html
         );
-        $container = strpos($html, '<div id="page"');
-        $this->assertNotFalse($container);
-        $this->assertStringNotContainsString($name, substr($html, $container));
     }
 
     /**
@@ -490,12 +584,11 @@ final class focusmode_renderer_test extends \advanced_testcase {
      * Under core's linear navigation the bar carries the completion status and core's footer the button.
      *
      * Moodle 5.3 moves the manual completion button out of the page header whenever it adds its
-     * linear navigation footer (topics and weeks, on by default): the header gets the read-only
-     * status core_course/completion_status, which core updates in place when the footer's button is
-     * pressed, and the button is in the sticky footer core prints from before_footer_html_generation
-     * (lib/classes/output/activity_header.php, core_courseformat\hook_listener). The bar reads the
-     * header actions as before, so it carries that status; the footer reaches the focus page through
-     * footer() like any other, so the button is still on the page, once, under the text.
+     * linear navigation footer (topics and weeks, on by default): the header actions get the
+     * read-only status core_course/completion_status, which core updates in place when the footer's
+     * button is pressed, and the button is in the sticky footer core prints from
+     * before_footer_html_generation. On a page that opens focused the status is in the bar and not
+     * in the page header too; the button is on the page once, under the text.
      *
      * The control is the same activity without completion tracking: no button anywhere and no
      * status in the bar.
@@ -515,14 +608,12 @@ final class focusmode_renderer_test extends \advanced_testcase {
         );
 
         [$header, $footer] = $this->render_halves($course, $cm);
-        $bar = $this->focus_bar($header);
-        $this->assertMatchesRegularExpression(
-            '~<span class="activity-completion-status" data-region="completion-status" data-cmid="' . $cm->id . '"~',
-            $bar
-        );
-        $this->assertStringNotContainsString('data-action="toggle-manual-completion"', $bar);
+        $status = '~<span class="activity-completion-status" data-region="completion-status" data-cmid="' . $cm->id . '"~';
+        $this->assertMatchesRegularExpression($status, $this->focus_bar($header));
+        $this->assertDoesNotMatchRegularExpression($status, $this->page_header_actions($header), 'Not drawn twice.');
+        $this->assertStringNotContainsString(self::MANUAL_TOGGLE, $this->focus_bar($header));
         $this->assertStringContainsString('course-linear-navigation-footer-content', $footer);
-        $this->assertSame(1, substr_count($header . $footer, 'data-action="toggle-manual-completion"'));
+        $this->assertSame(1, substr_count($header . $footer, self::MANUAL_TOGGLE));
 
         // The control: the same activity without completion tracking has neither.
         $plain = $this->activity($course, [
@@ -530,20 +621,21 @@ final class focusmode_renderer_test extends \advanced_testcase {
             'completion' => COMPLETION_TRACKING_NONE,
         ]);
         $html = $this->render($course, $plain);
-        $this->assertStringNotContainsString('data-action="toggle-manual-completion"', $html);
+        $this->assertStringNotContainsString(self::MANUAL_TOGGLE, $html);
         $this->assertStringNotContainsString('data-region="completion-status"', $this->focus_bar($html));
     }
 
     /**
-     * Without linear navigation the manual completion button is in the bar, and it is the real one.
+     * The manual completion button is drawn once, in the skin the page opens in.
      *
-     * The button is not built by this theme: it arrives as one of the page's header actions,
-     * which core fills while the activity header exports itself. So this pins the whole route -
-     * the header actions being read at all, and being read late enough to have been filled.
+     * The button is not built by this theme: it arrives as one of the page's header actions, which
+     * core fills while the activity header exports itself. Focused, the bar takes it and the page
+     * header leaves it out; ordinary, the page header draws it and the bar's slot is empty. The
+     * module then moves the one node; a hidden second copy would go stale when one was pressed.
      *
      * @return void
      */
-    public function test_the_manual_completion_button_is_in_the_bar(): void {
+    public function test_the_manual_completion_button_is_drawn_once_in_the_first_skin(): void {
         $this->without_linear_navigation();
         $course = $this->course(true);
         $cm = $this->activity($course, [
@@ -553,8 +645,18 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
         $html = $this->render($course, $cm);
-        $this->assertStringContainsString('data-action="toggle-manual-completion"', $this->focus_bar($html));
         $this->assertStringNotContainsString('course-linear-navigation', $html, 'Precondition: core printed no footer.');
+        $this->assertStringContainsString(self::MANUAL_TOGGLE, $this->focus_bar($html));
+        $this->assertStringNotContainsString(self::MANUAL_TOGGLE, $this->page_header_actions($html));
+        $this->assertSame(1, substr_count($html, self::MANUAL_TOGGLE));
+
+        // Ordinary first paint: the page header draws it, the bar's slot is empty.
+        focusmode::choose((int) $course->id, false);
+        $html = $this->render($course, $cm);
+        $this->assertStringContainsString(self::MANUAL_TOGGLE, $this->page_header_actions($html));
+        $this->assertStringNotContainsString(self::MANUAL_TOGGLE, $this->focus_bar($html));
+        $this->assertStringContainsString('data-region="dimensions-focus-headeractions"></div>', $this->focus_bar($html));
+        $this->assertSame(1, substr_count($html, self::MANUAL_TOGGLE));
 
         // The control: the same activity without completion tracking has no button anywhere.
         $plain = $this->activity($course, [
@@ -562,71 +664,44 @@ final class focusmode_renderer_test extends \advanced_testcase {
             'completion' => COMPLETION_TRACKING_NONE,
         ]);
         $html = $this->render($course, $plain);
-        $this->assertStringNotContainsString('data-action="toggle-manual-completion"', $html);
+        $this->assertStringNotContainsString(self::MANUAL_TOGGLE, $html);
         $this->assertStringContainsString(self::BAR, $html);
     }
 
     /**
-     * The course index drawer survives the reduced shell.
+     * A header action the page header adds itself stays there, and the page keeps every action.
      *
-     * It is the learner's way from one activity to the next without leaving the mode. The control
-     * is a course format which uses no course index (social): the drawer's absence there is a
-     * course-format fact and not a theme one, so a test asserting only the presence could not tell
-     * the two apart.
-     *
-     * @return void
-     */
-    public function test_the_course_index_drawer_is_kept(): void {
-        $course = $this->course(true, ['format' => 'topics']);
-        $cm = $this->activity($course);
-        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
-
-        $html = $this->render($course, $cm);
-        $this->assertStringContainsString('theme_boost-drawers-courseindex', $html);
-        $this->assertStringContainsString(self::BAR, $html);
-        // Its controls too, in the block 5.3's theme_boost/drawer names drawercontrols.
-        $this->assertStringContainsString('id="courseindexdrawercontrols"', $html);
-
-        $social = $this->course(true, ['format' => 'social']);
-        $socialcm = $this->activity($social);
-        $this->setUser($this->getDataGenerator()->create_and_enrol($social, 'student'));
-
-        $html = $this->render($social, $socialcm);
-        $this->assertStringNotContainsString('theme_boost-drawers-courseindex', $html);
-        $this->assertStringContainsString(self::BAR, $html);
-    }
-
-    /**
-     * The block drawer survives the reduced shell.
-     *
-     * mod_book's table of contents, mod_quiz's question navigation and mod_lesson's menu are fake
-     * blocks, so they reach the page only through the block drawer. The drawer is empty on a
-     * mod_page, which is why this test adds a block rather than trusting the shell.
+     * The page header is drawn with the bar's actions withdrawn around the parent's call; what the
+     * parent appends - the region main settings menu - must survive the call, and the actions the
+     * bar took must be back on the page afterwards, for anything that reads them later.
      *
      * @return void
      */
-    public function test_the_block_drawer_is_kept(): void {
+    public function test_the_header_actions_are_put_back_after_the_page_header(): void {
+        global $PAGE;
+
+        $this->without_linear_navigation();
         $course = $this->course(true);
-        $cm = $this->activity($course);
-        $this->getDataGenerator()->create_block('online_users', [
-            'parentcontextid' => \core\context\module::instance($cm->id)->id,
-        ]);
+        $cm = $this->activity($course, ['completion' => COMPLETION_TRACKING_MANUAL]);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
-        $html = $this->render($course, $cm);
+        $renderer = $this->renderer($course, $cm);
+        $renderer->header();
 
-        $this->assertStringContainsString('theme_boost-drawers-blocks', $html);
-        $this->assertStringContainsString(self::BAR, $html);
+        $actions = $PAGE->get_header_actions();
+        $this->assertNotEmpty($actions);
+        $this->assertStringContainsString(self::MANUAL_TOGGLE, $actions[0], 'The bar\'s action is back, first.');
     }
 
     /**
-     * The previous and next controls are rendered, which core alone would not do.
+     * The previous and next controls are drawn in the foot, which core alone would not do.
      *
      * Core returns an empty string for activity_navigation() whenever the theme and the format
      * both use a course index, which on a topics course is exactly this page. The controls exist
      * here only because the renderer flips that flag around core's own call, so their presence
-     * is the flip. Core's linear navigation is switched off for topics, as a site may: with it on,
-     * core's own footer is the route forward and this row is not drawn (the test below).
+     * is the flip. They are in the focus-only foot: the ordinary skin keeps core's own answer.
+     * Core's linear navigation is switched off for topics, as a site may: with it on, core's own
+     * footer is the route forward and this row is not drawn (the test below).
      *
      * @return void
      */
@@ -639,18 +714,18 @@ final class focusmode_renderer_test extends \advanced_testcase {
 
         [, $footer] = $this->render_halves($course, $first);
 
-        $this->assertStringContainsString('dimensions-focus-activitynav', $footer);
-        $this->assertStringContainsString('activity-navigation', $footer);
-        $this->assertStringContainsString('Second task', $footer);
+        $this->assertMatchesRegularExpression(
+            '~<div class="dimensions-focus-only dimensions-focus-foot">.*?dimensions-focus-activitynav.*?Second task~s',
+            $footer
+        );
     }
 
     /**
      * Where core draws its linear navigation, the page carries that one row forward and not this theme's too.
      *
      * Core 5.3 prints previous and next in the sticky footer it adds to an activity page of topics
-     * and weeks; the focus page prints that footer as every page does, so the theme's own row would
-     * be a second navigation under the text. The control is the same page with linear navigation
-     * off, where the theme's row is the only one.
+     * and weeks, in either skin, so the theme's own row would be a second navigation under the text.
+     * The control is the same page with linear navigation off, where the theme's row is the only one.
      *
      * @return void
      */
@@ -662,7 +737,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
 
         [, $footer] = $this->render_halves($course, $first);
         $this->assertSame(1, substr_count($footer, 'course-linear-navigation-footer-content'), 'Core\'s row, once.');
-        $this->assertMatchesRegularExpression('~<div class="dimensions-focus-activitynav">\s*</div>~', $footer);
+        $this->assertStringNotContainsString('dimensions-focus-activitynav', $footer);
         $this->assertStringNotContainsString('class="mt-5 mb-1 activity-navigation', $footer);
 
         $this->without_linear_navigation();
@@ -687,16 +762,15 @@ final class focusmode_renderer_test extends \advanced_testcase {
         set_config('focusmodedefaultwidth', focusmode::WIDTH_CONTRACTED, focusmode::COMPONENT);
         set_user_preference(focusmode::PREFERENCE_EXPANDED, 1);
 
-        $body = $this->body_tag($this->render($course, $cm));
-        $this->assertStringContainsString('dimensions-focusmode-expanded', $body);
+        $this->assertContains('dimensions-focusmode-expanded', $this->body_classes($this->render($course, $cm)));
 
         /* The control: with the preference gone the administrator's default decides, and the
            mode class stays - the two classes are separate, and only the second one moves. */
         unset_user_preference(focusmode::PREFERENCE_EXPANDED);
 
-        $body = $this->body_tag($this->render($course, $cm));
-        $this->assertStringNotContainsString('dimensions-focusmode-expanded', $body);
-        $this->assertStringContainsString('dimensions-focusmode', $body);
+        $classes = $this->body_classes($this->render($course, $cm));
+        $this->assertNotContains('dimensions-focusmode-expanded', $classes);
+        $this->assertContains(self::FOCUSED, $classes);
     }
 
     /**
@@ -759,12 +833,13 @@ final class focusmode_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * The completion conditions are one line under the content, and never the box again.
+     * The completion conditions are one line in the foot of the content, and core's box keeps them too.
      *
-     * Two controls, because the risk is not that the line is missing but that it grows back into
-     * the activity information box the design removed: the box's own region marker must be gone,
-     * and so must the activity dates it carries. The third control is an activity with no
-     * completion at all, where the whole line has to disappear rather than render empty.
+     * Decision D3: the foot draws them as one discreet line, through core's own partial, in a
+     * container only the focused skin shows, while core's activity information box keeps its own
+     * statement of them for the ordinary skin (the stylesheet hides that half under the body class).
+     * The control is an activity with no completion at all, where the whole line has to disappear
+     * rather than render empty.
      *
      * The line's position is asserted through the split rather than through offsets: header()
      * cuts the page exactly where the activity's own content goes, so "in the footer half" is
@@ -782,22 +857,18 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
         [$header, $footer] = $this->render_halves($course, $cm);
-        $whole = $header . $footer;
 
         $this->assertSame(1, substr_count($footer, 'dimensions-focus-completion-list'));
+        $this->assertMatchesRegularExpression(
+            '~<div class="dimensions-focus-only dimensions-focus-foot">\s*<div class="dimensions-focus-completion">~',
+            $footer
+        );
         $this->assertStringContainsString('automatic-completion-is-incomplete', $footer);
-        $kicker = get_string('focusmode_completionkicker', focusmode::COMPONENT);
-        $this->assertStringContainsString($kicker, $footer);
+        $this->assertStringContainsString(get_string('focusmode_completionkicker', focusmode::COMPONENT), $footer);
         $this->assertStringNotContainsString('dimensions-focus-completion', $header);
+        $this->assertStringContainsString('data-region="completion-info"', $header, 'Core\'s box is kept.');
 
-        /* The two controls, scoped to the reading column: the bar may legitimately carry a
-           date among its header actions on an activity which has one, and it is the box coming
-           back into the content that this test exists to refuse. */
-        $column = substr($whole, strpos($whole, 'id="region-main"'));
-        $this->assertStringNotContainsString('data-region="activity-information"', $column);
-        $this->assertStringNotContainsString('data-region="activity-dates"', $column);
-
-        // The third control: no completion, no line - not an empty one.
+        // The control: no completion, no line - not an empty one.
         $plain = $this->activity($course, [
             'name' => 'Plain task',
             'completion' => COMPLETION_TRACKING_NONE,
@@ -808,23 +879,15 @@ final class focusmode_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * The activity description is still in the reading column, and the box around it is not.
+     * The activity description is printed once, by core's own box, in either skin.
      *
      * Since Moodle 4.0 a module's intro is printed by the activity header, inside
-     * core_course/activity_info - the same template that draws the activity information box. So
-     * the key focus mode rewrites carries both, and blanking it would drop the intro of every page,
-     * forum and assignment along with the box, while the page still looked correct.
-     *
-     * The fixture is a mod_page with printintro on, which is the shape a reader actually meets:
-     * the intro is what mod_page prints above its content. The two assertions are each other's
-     * control - the description proves the header content was exported and reached the column, so
-     * the absent region marker means the box was removed rather than nothing having rendered.
+     * core_course/activity_info, so the box is kept and the stylesheet reduces it to the
+     * description under the body class. Nothing of focus mode prints a second copy.
      *
      * @return void
      */
-    public function test_the_activity_description_is_kept_in_the_reading_column(): void {
-        global $DB;
-
+    public function test_the_activity_description_is_printed_once_by_cores_box(): void {
         $course = $this->course(true);
         $intro = 'Read the vital signs protocol before the practical session.';
         $cm = $this->activity($course, [
@@ -837,24 +900,64 @@ final class focusmode_renderer_test extends \advanced_testcase {
 
         $html = $this->render($course, $cm);
 
-        $this->assertStringContainsString(self::BAR, $html);
+        $this->assertContains(self::FOCUSED, $this->body_classes($html));
         $column = substr($html, strpos($html, 'id="region-main"'));
-        $this->assertStringContainsString($intro, $column);
-        $this->assertStringContainsString('dimensions-focus-description', $column);
-        $this->assertStringNotContainsString('data-region="activity-information"', $column);
+        $this->assertSame(1, substr_count($column, $intro));
+        $this->assertMatchesRegularExpression('~data-region="activity-information".*?id="intro"~s', $column);
+    }
 
-        /* The control: an activity with no intro renders no wrapper rather than an empty one.
-           The empty intro is written afterwards because the module generator refuses to make
-           one - `empty($record->intro)` is true of the empty string, so it substitutes its own
-           "Test page N" and the control would have tested nothing. The header reads the record
-           straight from the database (moodle_page::load_activity_record()), so no cache rebuild
-           is involved. */
-        $bare = $this->activity($course, ['name' => 'Bare task']);
-        $DB->set_field('page', 'intro', '', ['id' => $bare->instance]);
+    /**
+     * Every exit leaves in place, but a single activity course's that switched focus mode on.
+     *
+     * In place, the exit is the leave form the module intercepts (data-action dimensions-focus-leave),
+     * on a topics course that switched focus mode on as on a manual session. A single activity course
+     * that switched it on has no ordinary page to go back to (decision D2): its exit is the plain link
+     * to the site home page. A single activity course that did not switch it on is the control.
+     *
+     * @return void
+     */
+    public function test_the_exit_leaves_in_place_but_on_a_forced_single_activity_course(): void {
+        $topics = $this->course(true);
+        $cm = $this->activity($topics);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($topics, 'student'));
+        $bar = $this->focus_bar($this->render($topics, $cm));
+        $this->assertStringContainsString('data-action="dimensions-focus-leave"', $bar);
+        $this->assertStringNotContainsString('data-action="dimensions-focus-exit"', $bar);
 
-        $html = $this->render($course, $bare);
-        $this->assertStringNotContainsString('dimensions-focus-description', $html);
-        $this->assertStringContainsString(self::BAR, $html);
+        $single = $this->course(true, ['format' => 'singleactivity', 'activitytype' => 'page']);
+        $cm = $this->activity($single);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($single, 'student'));
+        $bar = $this->focus_bar($this->render($single, $cm, '/mod/page/view.php'));
+        $home = (new \moodle_url('/', ['redirect' => 0]))->out(false);
+        $link = '<a class="btn dimensions-focusbar-close" href="' . s($home) . '" data-action="dimensions-focus-exit"';
+        $this->assertStringContainsString($link, $bar);
+        $this->assertStringNotContainsString('data-action="dimensions-focus-leave"', $bar);
+
+        $plain = $this->course(false, ['format' => 'singleactivity', 'activitytype' => 'page']);
+        $cm = $this->activity($plain);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($plain, 'student'));
+        focusmode::choose((int) $plain->id, true);
+        $bar = $this->focus_bar($this->render($plain, $cm));
+        $this->assertStringContainsString('data-action="dimensions-focus-leave"', $bar, 'Control: not forced, in place.');
+    }
+
+    /**
+     * The way into focus mode is in the navbar of a page that opens focused too, for the way back.
+     *
+     * The navbar is hidden in the focused skin, so the button is unseen until the reader leaves
+     * in place; it is what the focus moves to then.
+     *
+     * @return void
+     */
+    public function test_a_focused_page_carries_the_way_back_in(): void {
+        $course = $this->course(true);
+        $cm = $this->activity($course);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $html = $this->render($course, $cm);
+
+        $this->assertContains(self::FOCUSED, $this->body_classes($html));
+        $this->assertStringContainsString('data-action="dimensions-focus-enter"', $html);
     }
 
     /**
@@ -883,10 +986,10 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $this->assertNotFalse($bell, 'The notifications container is missing, so the order proves nothing.');
         $this->assertLessThan($bell, $entry);
 
-        /* The control, in this configuration: a page the predicate refuses to offer entry on
-           carries no button. Editing is the clause used here; the already-focused course is the
-           control of the test below, so between them both refusals are covered with the
-           notifications container present and absent. */
+        /* The control, in this configuration: a page that cannot switch in place carries no
+           button. Editing is the clause used here, the master switch the control of the test below,
+           so between them both refusals are covered with the notifications container present and
+           absent. */
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'editingteacher'));
         $USER->editing = 1;
 
@@ -921,13 +1024,11 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $this->assertNotFalse($messages, 'The messages toggle is missing, so the order proves nothing.');
         $this->assertLessThan($messages, $entry);
 
-        // The control, in this configuration: a course which is already focused offers no way in.
-        $focused = $this->course(true);
-        $focusedcm = $this->activity($focused);
-        $this->setUser($this->getDataGenerator()->create_and_enrol($focused, 'student'));
+        // The control, in this configuration: with the master switch off there is no way in.
+        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
 
-        $html = $this->render($focused, $focusedcm);
+        $html = $this->render($course, $cm);
         $this->assertStringNotContainsString('dimensions-focus-entry', $html);
-        $this->assertStringContainsString(self::BAR, $html);
+        $this->assertStringContainsString('data-region="popover-region-messages"', $html);
     }
 }

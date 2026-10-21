@@ -42,8 +42,11 @@
 import CourseEvents from 'core_course/events';
 import {isLarge} from 'core/pagehelpers';
 
-/** The main navbar. Boost Union's menu bar is a .navbar.fixed-top too, and carries none of this. */
-const NAVBAR = 'nav.navbar.fixed-top:not(.boost-union-menubar)';
+/**
+ * The main navbar. Boost Union's menu bar is a .navbar.fixed-top too, and carries none of this; so is focus mode's bar,
+ * printed before it on a page that can switch in place, whose band is its own.
+ */
+const NAVBAR = 'nav.navbar.fixed-top:not(.boost-union-menubar):not(.dimensions-focusbar)';
 
 /** The custom property the band's fill reads (scss/post.scss), a fraction from 0 to 1. */
 const PROGRESS = '--dimensions-band-progress';

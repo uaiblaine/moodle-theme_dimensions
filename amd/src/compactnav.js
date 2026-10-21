@@ -48,8 +48,11 @@ import Drawers from 'theme_boost/drawers';
 import Pending from 'core/pending';
 import {isSmall} from 'core/pagehelpers';
 
-/** The main navbar. Boost Union's menu bar is a .navbar.fixed-top too. */
-const NAVBAR = 'nav.navbar.fixed-top:not(.boost-union-menubar)';
+/**
+ * The main navbar. Boost Union's menu bar is a .navbar.fixed-top too, and so is focus mode's bar, printed before it on a
+ * page that can switch in place.
+ */
+const NAVBAR = 'nav.navbar.fixed-top:not(.boost-union-menubar):not(.dimensions-focusbar)';
 
 /** The range the mode lives in: media-breakpoint-between(md, xl) of scss/compactnav.scss. */
 const RANGE = '(min-width: 768px) and (max-width: 1199.98px)';

@@ -59,9 +59,12 @@ function theme_dimensions_get_main_scss_content($theme) {
     // scoped under the class only that layout's bare page writes.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/loginshell.scss');
 
-    // And the focus mode styles, which consume the same tokens. Every rule in that file is scoped
-    // under the body class the renderer adds, so nothing it says reaches an ordinary page.
-    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/focusmode.scss');
+    // And the focus mode styles, which consume the same tokens, only while the master switch is on:
+    // off, nothing of the feature is loaded (the setting rebuilds the theme's CSS when it changes).
+    // Every rule in that file is scoped under a class only a page that can switch focus mode carries.
+    if (\theme_dimensions\local\focusmode::master_enabled()) {
+        $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/focusmode.scss');
+    }
 
     // Then the category showcase, scoped under the body class its renderer adds.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/category.scss');

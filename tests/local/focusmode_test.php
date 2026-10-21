@@ -43,13 +43,18 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(focusmode::class)]
 final class focusmode_test extends \advanced_testcase {
     /**
-     * Start every test with empty request caches.
+     * Start every test with empty request caches and the master switch on.
+     *
+     * The switch ships off (decision D5), so a test about any later clause turns it on first;
+     * the tests about the switch itself set it back.
      *
      * @return void
      */
     protected function setUp(): void {
         parent::setUp();
+        $this->resetAfterTest();
         focusmode::reset_caches();
+        set_config('focusmode', login::SELECT_YES, focusmode::COMPONENT);
     }
 
     /**
@@ -160,7 +165,7 @@ final class focusmode_test extends \advanced_testcase {
 
         $this->assertTrue(focusmode::applies($page));
         $this->assertSame('applies', focusmode::why($page));
-        $this->assertFalse(focusmode::offers_entry($page));
+        $this->assertTrue(focusmode::available($page));
     }
 
     /**
@@ -177,27 +182,29 @@ final class focusmode_test extends \advanced_testcase {
 
         $this->assertFalse(focusmode::applies($page));
         $this->assertSame('master', focusmode::why($page));
-        $this->assertFalse(focusmode::offers_entry($page));
+        $this->assertFalse(focusmode::available($page));
     }
 
     /**
-     * A site which never wrote the master switch gets the documented default, which is on.
+     * A site which never wrote the master switch gets the documented default, which is off.
      *
-     * The companion of the test above, and the one which pins the reading: a default-on
-     * setting read with a falsy fallback would report the unwritten value as off and
-     * switch the whole feature off on a fresh install.
+     * The companion of the test above, and the one which pins the reading: the switch ships
+     * off (decision D5), so a fresh install must agree with its own settings page, and only an
+     * explicit Yes turns the feature on. The control is that Yes.
      *
      * @return void
      */
-    public function test_the_master_switch_is_on_when_it_was_never_written(): void {
-        $this->resetAfterTest();
+    public function test_the_master_switch_is_off_when_it_was_never_written(): void {
         $course = $this->switched_on_course();
         $page = $this->activity_page($course, $this->activity($course));
+        $this->assertTrue(focusmode::applies($page), 'Control: an explicit Yes.');
 
         unset_config('focusmode', focusmode::COMPONENT);
 
         $this->assertFalse(get_config(focusmode::COMPONENT, 'focusmode'));
-        $this->assertTrue(focusmode::applies($page));
+        $this->assertFalse(focusmode::master_enabled());
+        $this->assertFalse(focusmode::applies($page));
+        $this->assertSame('master', focusmode::why($page));
     }
 
     /**
@@ -252,7 +259,7 @@ final class focusmode_test extends \advanced_testcase {
 
         $this->assertFalse(focusmode::applies($page));
         $this->assertSame('pagelayout', focusmode::why($page));
-        $this->assertFalse(focusmode::offers_entry($page));
+        $this->assertFalse(focusmode::available($page));
     }
 
     /**
@@ -322,7 +329,7 @@ final class focusmode_test extends \advanced_testcase {
 
         $this->assertFalse(focusmode::applies($page));
         $this->assertSame('siteid', focusmode::why($page));
-        $this->assertFalse(focusmode::offers_entry($page));
+        $this->assertFalse(focusmode::available($page));
     }
 
     /**
@@ -347,7 +354,7 @@ final class focusmode_test extends \advanced_testcase {
         $this->assertTrue($page->user_is_editing());
         $this->assertFalse(focusmode::applies($page));
         $this->assertSame('editing', focusmode::why($page));
-        $this->assertFalse(focusmode::offers_entry($page));
+        $this->assertFalse(focusmode::available($page));
     }
 
     /**
@@ -366,7 +373,7 @@ final class focusmode_test extends \advanced_testcase {
         $this->assertTrue(\core_useragent::is_moodle_app());
         $this->assertFalse(focusmode::applies($page));
         $this->assertSame('app', focusmode::why($page));
-        $this->assertFalse(focusmode::offers_entry($page));
+        $this->assertFalse(focusmode::available($page));
     }
 
     /**
@@ -509,47 +516,81 @@ final class focusmode_test extends \advanced_testcase {
     }
 
     /**
-     * The way into focus mode is offered on an activity of a course which did not switch it on.
+     * An activity of a course which did not switch focus mode on can switch in place, and opens ordinary.
      *
      * @return void
      */
-    public function test_the_entry_is_offered_in_an_unswitched_course(): void {
-        $this->resetAfterTest();
+    public function test_an_unswitched_course_is_available_and_opens_ordinary(): void {
         $course = $this->switched_off_course();
         $page = $this->activity_page($course, $this->activity($course));
 
-        $this->assertTrue(focusmode::offers_entry($page));
+        $this->assertTrue(focusmode::available($page));
         $this->assertFalse(focusmode::applies($page));
+        $this->assertSame('course', focusmode::why($page));
     }
 
     /**
-     * The entry is not offered on a page which is already focused.
+     * A course which switched focus mode on opens focused, and can be left in place for the session.
+     *
+     * Decision D1: leaving lasts the rest of the session in that course. The page stays available,
+     * which is what puts the way back in on it, and entering again wins over the exit.
      *
      * @return void
      */
-    public function test_the_entry_is_not_offered_in_a_switched_on_course(): void {
-        $this->resetAfterTest();
+    public function test_leaving_a_switched_on_course_lasts_the_session(): void {
         $course = $this->switched_on_course();
         $page = $this->activity_page($course, $this->activity($course));
-
-        $this->assertFalse(focusmode::offers_entry($page));
         $this->assertTrue(focusmode::applies($page));
+
+        focusmode::choose((int) $course->id, false);
+
+        $this->assertTrue(focusmode::opted_out((int) $course->id));
+        $this->assertFalse(focusmode::applies($page));
+        $this->assertSame('optout', focusmode::why($page));
+        $this->assertTrue(focusmode::available($page));
+        $this->assertFalse(focusmode::chosen((int) $course->id));
+
+        focusmode::choose((int) $course->id, true);
+
+        $this->assertFalse(focusmode::opted_out((int) $course->id));
+        $this->assertTrue(focusmode::applies($page));
+        $this->assertTrue(focusmode::chosen((int) $course->id));
     }
 
     /**
-     * The entry is not offered while a manual session is already open for the course.
+     * Leaving one switched-on course leaves another switched-on course focused.
      *
      * @return void
      */
-    public function test_the_entry_is_not_offered_during_a_session(): void {
-        $this->resetAfterTest();
+    public function test_leaving_is_held_per_course(): void {
+        $first = $this->switched_on_course();
+        $second = $this->switched_on_course();
+        $secondpage = $this->activity_page($second, $this->activity($second));
+
+        focusmode::choose((int) $first->id, false);
+
+        $this->assertTrue(focusmode::opted_out((int) $first->id));
+        $this->assertFalse(focusmode::opted_out((int) $second->id));
+        $this->assertTrue(focusmode::applies($secondpage));
+    }
+
+    /**
+     * The two flags are exclusive: the last choice is the one the predicate reads.
+     *
+     * @return void
+     */
+    public function test_a_choice_replaces_the_previous_one(): void {
         $course = $this->switched_off_course();
-        $page = $this->activity_page($course, $this->activity($course));
-        $this->assertTrue(focusmode::offers_entry($page));
 
-        focusmode::enter_session((int) $course->id);
+        focusmode::choose((int) $course->id, true);
+        $this->assertTrue(focusmode::in_session((int) $course->id));
+        $this->assertFalse(focusmode::opted_out((int) $course->id));
+        $this->assertTrue(focusmode::chosen((int) $course->id));
 
-        $this->assertFalse(focusmode::offers_entry($page));
+        focusmode::choose((int) $course->id, false);
+        $this->assertFalse(focusmode::in_session((int) $course->id));
+        $this->assertTrue(focusmode::opted_out((int) $course->id));
+        $this->assertFalse(focusmode::chosen((int) $course->id));
     }
 
     /**
@@ -567,7 +608,7 @@ final class focusmode_test extends \advanced_testcase {
         $firstpage = $this->activity_page($first, $this->activity($first));
         $secondpage = $this->activity_page($second, $this->activity($second));
 
-        focusmode::enter_session((int) $first->id);
+        focusmode::choose((int) $first->id, true);
 
         $this->assertTrue(focusmode::in_session((int) $first->id));
         $this->assertTrue(focusmode::applies($firstpage));
@@ -585,14 +626,14 @@ final class focusmode_test extends \advanced_testcase {
         $this->resetAfterTest();
         $course = $this->switched_off_course();
         $page = $this->activity_page($course, $this->activity($course));
-        focusmode::enter_session((int) $course->id);
+        focusmode::choose((int) $course->id, true);
         $this->assertTrue(focusmode::applies($page));
 
-        focusmode::leave_session((int) $course->id);
+        focusmode::choose((int) $course->id, false);
 
         $this->assertFalse(focusmode::in_session((int) $course->id));
         $this->assertFalse(focusmode::applies($page));
-        $this->assertTrue(focusmode::offers_entry($page));
+        $this->assertTrue(focusmode::available($page));
     }
 
     /**
@@ -603,9 +644,9 @@ final class focusmode_test extends \advanced_testcase {
     public function test_leaving_one_session_keeps_the_others(): void {
         $this->resetAfterTest();
 
-        focusmode::enter_session(11);
-        focusmode::enter_session(12);
-        focusmode::leave_session(11);
+        focusmode::choose(11, true);
+        focusmode::choose(12, true);
+        focusmode::choose(11, false);
 
         $this->assertFalse(focusmode::in_session(11));
         $this->assertTrue(focusmode::in_session(12));
@@ -614,8 +655,7 @@ final class focusmode_test extends \advanced_testcase {
     /**
      * The close control returns to the activity's own place, as each format defines it.
      *
-     * The reader is a real account: a visitor and the guest account leave a single activity
-     * course elsewhere, {@see test_a_guest_leaves_a_single_activity_course_for_the_login_page()}.
+     * The single activity format is {@see test_a_single_activity_course_leaves_for_the_site_home_page()}.
      *
      * @return void
      */
@@ -635,17 +675,6 @@ final class focusmode_test extends \advanced_testcase {
         $this->assertStringContainsString('/course/view.php', $url->out(false));
         $this->assertStringEndsWith('#module-' . $cm->id, $url->out(false));
 
-        /* The single activity format redirects its own course page straight back into the
-           activity, so closing there has to leave the course altogether. */
-        $single = $this->getDataGenerator()->create_course([
-            'format' => 'singleactivity',
-            'activitytype' => 'page',
-        ]);
-        $cm = $this->activity($single);
-        $url = focusmode::close_url($cm);
-        $this->assertStringEndsWith('/my/courses.php', $url->out_omit_querystring());
-        $this->assertStringNotContainsString('/course/view.php', $url->out(false));
-
         $social = $this->getDataGenerator()->create_course(['format' => 'social']);
         $cm = $this->activity($social);
         $url = focusmode::close_url($cm);
@@ -654,16 +683,16 @@ final class focusmode_test extends \advanced_testcase {
     }
 
     /**
-     * A visitor or the guest account leaving a single activity course goes to the login page.
+     * A single activity course's way out is the site home page, kept there, for everybody.
      *
-     * The course page would bounce them back into the activity and they have no courses of their own,
-     * so the login is the way on. A real account is the control: its own courses, as before. A topics
-     * course is the other control: a guest can read its course page, so the exit stays there.
+     * The course page would bounce the reader straight back into the activity, so the exit leaves
+     * the course. redirect=0 keeps a logged-in reader whose home page is the Dashboard on the site
+     * home; a visitor or the guest account under forcelogin is sent on to the login page by core.
+     * A topics course is the control: its exit stays in the course.
      *
      * @return void
      */
-    public function test_a_guest_leaves_a_single_activity_course_for_the_login_page(): void {
-        $this->resetAfterTest();
+    public function test_a_single_activity_course_leaves_for_the_site_home_page(): void {
         $single = $this->getDataGenerator()->create_course([
             'format' => 'singleactivity',
             'activitytype' => 'page',
@@ -671,18 +700,36 @@ final class focusmode_test extends \advanced_testcase {
         $cm = $this->activity($single);
         $topics = $this->getDataGenerator()->create_course(['format' => 'topics']);
         $topicscm = $this->activity($topics);
-        $login = (new \moodle_url(get_login_url()))->out(false);
+        $home = (new \moodle_url('/', ['redirect' => 0]))->out(false);
 
         $this->setUser($this->getDataGenerator()->create_user());
-        $this->assertStringEndsWith('/my/courses.php', focusmode::close_url($cm)->out(false), 'Control: a real account.');
+        $this->assertSame($home, focusmode::close_url($cm)->out(false));
+        $this->assertStringContainsString('/course/view.php', focusmode::close_url($topicscm)->out(false), 'Control.');
 
         $this->setGuestUser();
-        $this->assertSame($login, focusmode::close_url($cm)->out(false));
-        $this->assertStringContainsString('/course/view.php', focusmode::close_url($topicscm)->out(false));
+        $this->assertSame($home, focusmode::close_url($cm)->out(false));
 
         $this->setUser(null);
-        $this->assertFalse(isloggedin());
-        $this->assertSame($login, focusmode::close_url($cm)->out(false));
+        $this->assertSame($home, focusmode::close_url($cm)->out(false));
+    }
+
+    /**
+     * Only a single activity course that switched focus mode on leaves the course to leave focus mode.
+     *
+     * Decision D2: a single activity course that did not switch it on toggles in place like any
+     * other, and so does every other format that did.
+     *
+     * @return void
+     */
+    public function test_only_a_forced_single_activity_course_leaves_the_course(): void {
+        $single = $this->switched_on_course(['format' => 'singleactivity', 'activitytype' => 'page']);
+        $this->assertTrue(focusmode::leaves_course($this->activity($single)));
+
+        $plain = $this->switched_off_course(['format' => 'singleactivity', 'activitytype' => 'page']);
+        $this->assertFalse(focusmode::leaves_course($this->activity($plain)), 'Not forced: in place.');
+
+        $topics = $this->switched_on_course(['format' => 'topics']);
+        $this->assertFalse(focusmode::leaves_course($this->activity($topics)), 'Another format: in place.');
     }
 
     /**
@@ -781,5 +828,26 @@ final class focusmode_test extends \advanced_testcase {
 
         set_config('focusmodedefaultwidth', focusmode::WIDTH_CONTRACTED, focusmode::COMPONENT);
         $this->assertFalse(focusmode::wants_expanded());
+    }
+
+    /**
+     * The focus mode stylesheet is compiled into the theme only while the master switch is on.
+     *
+     * Decision D4: off, nothing of the feature is loaded. Read from the main SCSS callback itself,
+     * which the theme's stylesheet is compiled from; the token is one only focusmode.scss declares.
+     * The control is the switch on.
+     *
+     * @return void
+     */
+    public function test_the_stylesheet_is_compiled_only_while_the_switch_is_on(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/theme/dimensions/lib.php');
+        $theme = \core\output\theme_config::load('dimensions');
+        $token = '$dimensions-focusbar-height';
+
+        $this->assertStringContainsString($token, theme_dimensions_get_main_scss_content($theme), 'Control: on.');
+
+        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        $this->assertStringNotContainsString($token, theme_dimensions_get_main_scss_content($theme));
     }
 }

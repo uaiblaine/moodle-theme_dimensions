@@ -29,9 +29,15 @@ namespace theme_dimensions\local;
  *
  * The whole rule lives here and nowhere else: the renderer only asks. Every
  * clause is evaluated in one place, {@see evaluate()}, so the predicate, the
- * developer trace and the "offer the way in" question can never disagree - a
- * second copy of the rule is exactly how a button appears on a page that is
- * already focused.
+ * developer trace and the "can the page switch in place" question can never
+ * disagree - a second copy of the rule is exactly how a bar appears on a page
+ * that could never be focused.
+ *
+ * The page carries both skins whenever {@see available()} holds: Boost Union's
+ * layout renders untouched, the bar is added beside it, and the body class
+ * {@see applies()} decides is what the stylesheet shows one skin or the other by.
+ * The amd module moves the class in place and records the choice through
+ * {@see \theme_dimensions\external\set_focus_mode}.
  *
  * The clauses are ordered cheapest first. Only the last one reads the
  * database, and its answer is cached per request and per course.
@@ -51,6 +57,14 @@ final class focusmode {
      * stores nothing about the person and ends with the session.
      */
     public const SESSION_KEY = 'theme_dimensions_focus';
+
+    /**
+     * @var string Session key holding the courses left in place, as an array keyed by course id.
+     *
+     * The mirror of {@see SESSION_KEY} for a course that switched focus mode on: leaving it lasts
+     * the rest of the session, in that course alone (decision D1 of docs/focusmode/README.md).
+     */
+    public const SESSION_KEY_OUT = 'theme_dimensions_focusout';
 
     /** @var string User preference remembering that the reading column was widened. */
     public const PREFERENCE_EXPANDED = 'theme_dimensions_focus_expanded';
@@ -84,7 +98,7 @@ final class focusmode {
      * Whether focus mode applies to the page being rendered.
      *
      * @param \moodle_page $page The page about to be rendered.
-     * @return bool True when the reduced shell replaces Boost Union's.
+     * @return bool True when the page opens in focus mode: the body class goes on.
      */
     public static function applies(\moodle_page $page): bool {
         return self::evaluate($page) === 'applies';
@@ -96,13 +110,14 @@ final class focusmode {
      * The developer trace, and it is called rather than emitted: nothing renders it into the
      * page. Answering "why is focus mode not on here?" means asking it from a debugging
      * snippet - a CLI one-liner, an Xdebug watch, or a throwaway debugging() call. An HTML
-     * comment would put markup on every page and inside the very output the "the bar is
-     * absent" assertions are made on.
+     * comment would put markup on every page and inside the very output the renderer tests
+     * read the body class and the bar from.
      *
      * The vocabulary is fixed and pinned by a test, because it is the clause names of the
      * predicate itself and the two must not drift apart: 'master', 'focusoff',
      * 'pagelayout', 'context', 'cm', 'siteid', 'editing', 'app', 'pagetype',
-     * 'course', 'applies'.
+     * 'course' (the course did not switch focus mode on and the session did not enter it),
+     * 'optout' (the course did, and the session left it), 'applies'.
      *
      * @param \moodle_page $page The page about to be rendered.
      * @return string One name of the vocabulary above.
@@ -112,19 +127,20 @@ final class focusmode {
     }
 
     /**
-     * Whether the navbar should offer the way into focus mode on this page.
+     * Whether the page can switch into focus mode and out of it in place.
      *
-     * True on exactly the pages {@see applies()} would accept if the course had
-     * switched focus mode on: every clause but the last holds, the course did
-     * not switch it on, and no manual session is open for it. So the button is
-     * absent while editing, on an excluded page type, in the app, on a course
-     * page and on a page which is already focused, with no second copy of the rule.
+     * True on exactly the pages every clause but the last accepts: the course's own
+     * switch and the session's choice are the only answers that remain, and both move
+     * without a reload. Such a page carries the bar, the entry button and the module
+     * whichever skin it opens in; every other page is Boost Union's alone. So the bar
+     * never reaches a page while editing, on an excluded page type, in the app, or
+     * with the master switch off, with no second copy of the rule.
      *
      * @param \moodle_page $page The page about to be rendered.
-     * @return bool True when the entry button belongs on this page.
+     * @return bool True when both skins belong on this page.
      */
-    public static function offers_entry(\moodle_page $page): bool {
-        return self::evaluate($page) === 'course';
+    public static function available(\moodle_page $page): bool {
+        return in_array(self::evaluate($page), ['applies', 'course', 'optout'], true);
     }
 
     /**
@@ -176,8 +192,12 @@ final class focusmode {
         if (in_array(strtolower((string) $page->pagetype), self::excluded_pagetypes(), true)) {
             return 'pagetype';
         }
-        if (!self::enabled_for_course($courseid) && !self::in_session($courseid)) {
-            return 'course';
+        /* The last clause, and the only one the session moves: the course's own switch, then the
+           session's choice in this course. Entering wins over a course that did not switch focus
+           mode on, leaving over one that did; {@see choose()} keeps the two flags exclusive. */
+        $forced = self::enabled_for_course($courseid);
+        if (!self::in_session($courseid) && (!$forced || self::opted_out($courseid))) {
+            return $forced ? 'optout' : 'course';
         }
         return 'applies';
     }
@@ -185,20 +205,19 @@ final class focusmode {
     /**
      * Whether the site-wide master switch is on.
      *
-     * The switch ships on, so a value which was never written - a site whose admin
-     * settings for this theme have not been applied yet - must read as enabled.
-     * Reading the config with a falsy fallback instead would switch the feature off
-     * on a fresh install and leave nothing on screen to say why. Same shape as
-     * {@see login::page_enabled()}.
+     * The switch ships off (decision D5): an administrator turns the feature on
+     * deliberately, so a value which was never written reads as off, exactly as the
+     * settings page shows it. A site that stored a value keeps it - Moodle writes a
+     * default only where nothing is stored. Only an explicit Yes switches it on.
+     *
+     * While it is off nothing of the feature is loaded: no bar, no entry button, no
+     * module, no stylesheet ({@see theme_dimensions_get_main_scss_content()}), no course
+     * form field, and the web service refuses.
      *
      * @return bool True when focus mode is allowed to apply anywhere on this site.
      */
-    private static function master_enabled(): bool {
-        $config = get_config(self::COMPONENT, 'focusmode');
-        if ($config === false || $config === '') {
-            return true;
-        }
-        return ((int) $config) === login::SELECT_YES;
+    public static function master_enabled(): bool {
+        return ((int) get_config(self::COMPONENT, 'focusmode')) === login::SELECT_YES;
     }
 
     /**
@@ -269,13 +288,18 @@ final class focusmode {
      *
      * Core's own pattern for returning to an activity's place in its course, taken
      * from mod/label/view.php: the format decides whether that is the course page
-     * with a section anchor or a section page. The single activity format is the one
-     * exception - its course page redirects straight back into the activity, so
-     * closing there has to leave the course altogether: to the learner's own courses,
-     * or, for a visitor or the guest account, to the login page. Neither has courses
-     * of its own: /my/courses.php lists nothing for the guest account and sends a
-     * visitor through the login to a list of courses they do not have, so the login
-     * page itself is the honest exit.
+     * with a section anchor or a section page. It is the bar's course overline and,
+     * where the page cannot leave focus mode in place ({@see leaves_course()}), the
+     * exit itself.
+     *
+     * The single activity format is the one exception - its course page redirects
+     * straight back into the activity, so the way out is the site home page.
+     * redirect=0 is what keeps it there: without it a logged-in reader whose
+     * defaulthomepage is the Dashboard is sent on to it. A visitor or the guest
+     * account on a site that forces login is sent on to the login page by core itself.
+     * And on a site whose home page is switched off (enablemyhome, off by default
+     * since Moodle 5.3) core sends "/" on to the reader's own home page whatever
+     * redirect=0 says: the exit is then that page, which is core's to decide.
      *
      * @param \cm_info $cm The activity the learner is closing.
      * @return \moodle_url The URL to return to.
@@ -285,11 +309,8 @@ final class focusmode {
         require_once($CFG->dirroot . '/course/lib.php');
 
         $course = $cm->get_course();
-        if (course_get_format($course)->get_format() === 'singleactivity') {
-            if (!isloggedin() || isguestuser()) {
-                return new \moodle_url(get_login_url());
-            }
-            return new \moodle_url('/my/courses.php');
+        if (self::is_single_activity($course)) {
+            return new \moodle_url('/', ['redirect' => 0]);
         }
 
         $url = course_get_url($course, $cm->sectionnum);
@@ -302,10 +323,38 @@ final class focusmode {
     }
 
     /**
-     * Whether this session opened focus mode manually in one course.
+     * Whether the only way out of focus mode on this activity is to leave the course.
+     *
+     * A single activity course that switched focus mode on (decision D2): its course page is
+     * the activity itself, so there is no ordinary page to switch to and the exit is a link
+     * to {@see close_url()}. Every other page leaves in place.
+     *
+     * @param \cm_info $cm The activity.
+     * @return bool True when the exit is a link out of the course.
+     */
+    public static function leaves_course(\cm_info $cm): bool {
+        $course = $cm->get_course();
+        return self::is_single_activity($course) && self::enabled_for_course((int) $course->id);
+    }
+
+    /**
+     * Whether a course uses the single activity format.
+     *
+     * @param \stdClass $course The course record.
+     * @return bool True for the single activity format.
+     */
+    private static function is_single_activity(\stdClass $course): bool {
+        global $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        return course_get_format($course)->get_format() === 'singleactivity';
+    }
+
+    /**
+     * Whether this session entered focus mode in one course.
      *
      * @param int $courseid The course id.
-     * @return bool True when the flag is held for that course.
+     * @return bool True when the entry flag is held for that course.
      */
     public static function in_session(int $courseid): bool {
         global $SESSION;
@@ -315,35 +364,59 @@ final class focusmode {
     }
 
     /**
-     * Open a manual focus session for one course.
-     *
-     * Keyed by course id, never a single boolean for the whole session: a learner
-     * following a link into another course must find that course exactly as its own
-     * switch says.
+     * Whether this session left focus mode in one course.
      *
      * @param int $courseid The course id.
-     * @return void
+     * @return bool True when the exit flag is held for that course.
      */
-    public static function enter_session(int $courseid): void {
+    public static function opted_out(int $courseid): bool {
         global $SESSION;
 
-        $flags = (array) ($SESSION->{self::SESSION_KEY} ?? []);
-        $flags[$courseid] = true;
-        $SESSION->{self::SESSION_KEY} = $flags;
+        $flags = (array) ($SESSION->{self::SESSION_KEY_OUT} ?? []);
+        return !empty($flags[$courseid]);
     }
 
     /**
-     * Close the manual focus session of one course, leaving the others alone.
+     * Record the session's choice in one course: in focus mode, or out of it.
+     *
+     * Two flags, each keyed by course id and never a single boolean for the whole session:
+     * a learner following a link into another course must find that course exactly as its
+     * own switch says. The choice sets one flag and clears the other, so the last choice
+     * is the one {@see evaluate()} reads whatever the course's switch says, and both end
+     * with the session. Written by the web service and by focus.php, never read from them.
      *
      * @param int $courseid The course id.
+     * @param bool $active True to be in focus mode, false to be out of it.
      * @return void
      */
-    public static function leave_session(int $courseid): void {
+    public static function choose(int $courseid, bool $active): void {
         global $SESSION;
 
-        $flags = (array) ($SESSION->{self::SESSION_KEY} ?? []);
-        unset($flags[$courseid]);
-        $SESSION->{self::SESSION_KEY} = $flags;
+        $in = (array) ($SESSION->{self::SESSION_KEY} ?? []);
+        $out = (array) ($SESSION->{self::SESSION_KEY_OUT} ?? []);
+        unset($in[$courseid], $out[$courseid]);
+        if ($active) {
+            $in[$courseid] = true;
+        } else {
+            $out[$courseid] = true;
+        }
+        $SESSION->{self::SESSION_KEY} = $in;
+        $SESSION->{self::SESSION_KEY_OUT} = $out;
+    }
+
+    /**
+     * Whether the session's choice in one course, as {@see choose()} recorded it, is focus mode.
+     *
+     * The last clause of {@see evaluate()} alone, for the web service's answer, which has no page.
+     *
+     * @param int $courseid The course id.
+     * @return bool True when the course's activities open in focus mode for this session.
+     */
+    public static function chosen(int $courseid): bool {
+        if (self::in_session($courseid)) {
+            return true;
+        }
+        return self::enabled_for_course($courseid) && !self::opted_out($courseid);
     }
 
     /**
@@ -377,51 +450,47 @@ final class focusmode {
     }
 
     /**
-     * Reduce Boost Union's layout context to the one the focus template consumes.
+     * What the page adds to Boost Union's layout so it can switch skins in place.
      *
-     * Nothing is switched off server-side and no key is removed: Boost Union's layout
-     * file has already built the whole context and this only adds to it and rewrites two
-     * fields. The activity <h2> goes because the bar carries the same name as the page's
-     * h1, and the activity information box goes because the automatic conditions are
-     * re-offered as one line at the foot of the card - the manual completion button and
-     * the automatic status badge ride into the bar through the page's header actions,
-     * which is why neither activity_header::disable() nor set_hidecompletion(true) may
-     * ever be called: both would take those actions away with the box.
+     * Boost Union's layout file has built the whole context and renders it untouched: nothing
+     * here rewrites a key of it. It is read, after its builder ran and before its template
+     * does, for the three things focus mode adds: the bar (its colours are the navbar's, so a
+     * flavour recolours it), the completion line at the foot of the content (decision D3), and
+     * the module's arguments. The renderer prints the bar at the top of the body and the line
+     * under the content ({@see \theme_dimensions\output\core_renderer::standard_top_of_body_html()},
+     * {@see \theme_dimensions\output\core_renderer::activity_navigation()}).
      *
-     * The second field is rewritten and not blanked, because the box is also the only
-     * place the activity description renders ({@see description_only()}).
+     * Neither activity_header::disable() nor set_hidecompletion(true) may ever be called: both
+     * take the manual completion button, or under core's linear navigation its status, out of
+     * the page's header actions, and those actions are what the bar carries in focus mode. The
+     * actions go where the FIRST paint shows them - the bar when the page opens focused, the
+     * page header otherwise - and the module moves the same nodes on every switch, so there is
+     * never a second copy to go stale when one is pressed.
      *
      * The renderer arrives as an argument rather than being reached for: the bar is a
      * templatable and needs one, while this class still owns no renderer of its own.
      *
      * @param array $context The layout template context Boost Union built.
-     * @param \moodle_page $page The page being rendered.
+     * @param \moodle_page $page The page being rendered, which {@see available()} accepted.
      * @param \core\output\renderer_base $output The renderer rendering it.
-     * @return array The same context, reduced for the focus template.
+     * @return array active (bool), bar (array, the focusmode_bar context), completion (array|false).
      */
-    public static function layout_context(array $context, \moodle_page $page, \core\output\renderer_base $output): array {
-        $bar = new \theme_dimensions\output\focusmode_bar($page, $context);
-        $context['focusbar'] = $bar->export_for_template($output);
-
+    public static function shell(array $context, \moodle_page $page, \core\output\renderer_base $output): array {
+        $active = self::applies($page);
+        $bar = new \theme_dimensions\output\focusmode_bar($page, $context, $active);
         $headercontent = (array) ($context['headercontent'] ?? []);
-        $context['focuscompletion'] = self::completion_line($headercontent);
-        if ($headercontent !== []) {
-            /* Keep every other key: the partial still emits the #maincontent anchor. The title
-               needs no blanking - Boost and Boost Union declare activityheaderconfig notitle
-               (theme/boost/config.php:189-191, Boost Union config.php:252), so core exports it
-               empty and the partial never draws the h2; the renderer test pins that outcome. */
-            $headercontent['completion'] = self::description_only($headercontent, $output);
-            $context['headercontent'] = $headercontent;
-        }
-
         $expanded = self::wants_expanded();
-        $context['focusmodeexpanded'] = $expanded;
+        $cm = $page->cm;
 
         $page->requires->js_call_amd(
             self::COMPONENT . '/focusmode',
             'init',
             [
                 [
+                    'active' => $active,
+                    'cmid' => (int) $cm->id,
+                    'courseid' => (int) $page->course->id,
+                    'leavescourse' => self::leaves_course($cm),
                     'expanded' => $expanded,
                     'canpersist' => self::can_persist_width(),
                     'preference' => self::PREFERENCE_EXPANDED,
@@ -429,35 +498,11 @@ final class focusmode {
             ]
         );
 
-        return $context;
-    }
-
-    /**
-     * The activity description alone, in place of the whole activity information render.
-     *
-     * The key this replaces holds core's rendered core_course/activity_info, and that template
-     * is the only place the activity description appears: Moodle 4.0 moved the intro out of
-     * every module's own page and into the header. Blanking the key would remove content and
-     * not chrome - a forum's or a page's intro text would vanish from the reading column, with
-     * the page otherwise looking exactly right.
-     *
-     * The description is already finished HTML, built by format_module_intro() inside
-     * activity_header, which is why the template triple-stashes it.
-     *
-     * @param array $headercontent The exported activity header context.
-     * @param \core\output\renderer_base $output The renderer rendering the page.
-     * @return string The rendered description, or the empty string when the activity has none.
-     */
-    private static function description_only(array $headercontent, \core\output\renderer_base $output): string {
-        $description = (string) ($headercontent['description'] ?? '');
-        if (trim($description) === '') {
-            return '';
-        }
-
-        return $output->render_from_template(
-            self::COMPONENT . '/focusmode_description',
-            ['description' => $description]
-        );
+        return [
+            'active' => $active,
+            'bar' => $bar->export_for_template($output),
+            'completion' => self::completion_line($headercontent),
+        ];
     }
 
     /**

@@ -24,7 +24,10 @@
 
 namespace theme_dimensions\local\hook\course;
 
+use theme_dimensions\local\focusmode;
+use theme_dimensions\local\focusmodefields;
 use theme_dimensions\local\landing\links;
+use theme_dimensions\local\login;
 use theme_dimensions\local\landingfields;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -457,5 +460,52 @@ final class after_form_definition_test extends \advanced_testcase {
         $hook = $this->hook_with_modality(null);
         after_form_definition::callback($hook);
         $this->assertFalse($hook->mform->elementExists(after_form_definition::DEADLINE_ELEMENT));
+    }
+
+    /**
+     * The course form as core builds its custom fields, after this hook ran.
+     *
+     * @param \stdClass $course The course being edited.
+     * @return \MoodleQuickForm The form.
+     */
+    private function course_form(\stdClass $course): \MoodleQuickForm {
+        global $CFG;
+        require_once($CFG->libdir . '/formslib.php');
+        require_once($CFG->dirroot . '/course/edit_form.php');
+
+        $mform = new \MoodleQuickForm('testform', 'post', '/');
+        \core_course\customfield\course_handler::create()->instance_form_definition($mform, (int) $course->id);
+        $formwrapper = $this->createMock(\course_edit_form::class);
+        $formwrapper->method('get_course')->willReturn($course);
+        after_form_definition::callback(new \core_course\hook\after_form_definition($formwrapper, $mform));
+        return $mform;
+    }
+
+    /**
+     * While focus mode's master switch is off its box, its description and its category's header leave the form.
+     *
+     * Decision D4. The control is the same form with the switch on, which offers all three.
+     */
+    public function test_the_focus_mode_box_leaves_the_form_while_the_switch_is_off(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        \core_course\customfield\course_handler::reset_caches();
+        focusmodefields::ensure_fields();
+        focusmodefields::reset_field_cache();
+        $course = self::getDataGenerator()->create_course();
+        $element = 'customfield_' . focusmodefields::SHORTNAME;
+        $header = 'category_' . focusmodefields::get_field()->get_category()->get('id');
+
+        set_config('focusmode', login::SELECT_YES, focusmode::COMPONENT);
+        $mform = $this->course_form($course);
+        $this->assertTrue($mform->elementExists($element), 'Control: on, the box is offered.');
+        $this->assertTrue($mform->elementExists($element . '_static'));
+        $this->assertTrue($mform->elementExists($header));
+
+        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        $mform = $this->course_form($course);
+        $this->assertFalse($mform->elementExists($element));
+        $this->assertFalse($mform->elementExists($element . '_static'));
+        $this->assertFalse($mform->elementExists($header));
     }
 }

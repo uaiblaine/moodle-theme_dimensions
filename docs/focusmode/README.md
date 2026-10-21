@@ -1,8 +1,9 @@
 # Focus mode in place: design record
 
-Status: feasibility study and owner decisions (2026-10-20). Nothing implemented. The focus mode this
-record changes is the one described in the repository `CLAUDE.md`, section "Focus mode"; read that
-section first, because every constraint it lists still holds unless this record says otherwise.
+Status: feasibility study and owner decisions (2026-10-20), implemented in 2026100517 (2026-10-21). The
+repository `CLAUDE.md`, section "Focus mode", now describes the code as built; this record keeps the
+reasoning and the decisions. Where the implementation chose something the record left open, it is noted
+under "As built" at the end.
 
 ## Goal
 
@@ -160,3 +161,32 @@ body class and to what is hidden. To add:
   runs before the commit that adds the new gates.
 - The change touches a state machine and a web service: run the `security-diff-read` skill over the
   diff before the push.
+
+## As built (2026100517)
+
+- **The bar is on every page `focusmode::available()` accepts** (every clause but the course's switch
+  and the session's choice), and a second body class, `dimensions-focusable`, scopes the rules that hold
+  in both skins: `.dimensions-focus-only` hidden outside focus mode, and the entry button's pill, which
+  moved from `post.scss` into `focusmode.scss` so that it, too, is absent while the switch is off.
+- **The header actions are withdrawn from the page header by reflection** on
+  `moodle_page::$_headeractions` around Boost Union's `full_header()`, the only way to stop a second copy
+  on a page that opens focused; the region main settings menu, which `full_header()` adds itself, stays
+  in the page header and is hidden with it.
+- **`why()` gained `optout`** (switched on, left in the session) beside `course` (not switched on, not
+  entered). `offers_entry()` is gone: the entry is on every available page, hidden with the navbar in
+  focus mode, because it is the way back in.
+- **On 5.3 the site home can be switched off, and is by default** (`enablemyhome`): `index.php` then sends
+  `/` on to the reader's own home page (the Dashboard or My courses) whatever `redirect=0` says. The forced
+  single activity exit therefore lands on the site home where the site has one and on the reader's home
+  page where it does not; the link stays `/?redirect=0` and core decides. Found by the Behat run of
+  2026-10-21.
+- **The no-JavaScript exit returns to the same activity**, ordinary, mirroring the switch in place;
+  the exit of a forced single activity course is the link to the site home page, and the service and
+  focus.php both refuse to record an exit in place for it.
+- **Two other modules found the bar first**: readingbar.js and compactnav.js select the navbar with
+  `:not(.dimensions-focusbar)` now, and readingbar.scss's track and auto-hide stand down under focus
+  mode. Neither arms on a page that opened focused, so leaving such a page in place gives the ordinary
+  navbar without the reading band until the next page; accepted.
+- **The Behat site's CSS is built at init with the switch off**, so the step `focus mode is switched on
+  for the site` recompiles this theme's CSS into the cache under JavaScript.
+

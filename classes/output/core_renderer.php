@@ -53,6 +53,17 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     public const HINTS_KEY = 'courserelatedhints';
 
     /**
+     * @var array|null What focus mode adds to the page being rendered, {@see focusmode::shell()}'s answer.
+     *
+     * Set while the drawers layout renders on a page that can switch in place, and read by the three
+     * methods its template calls afterwards in the same render: standard_top_of_body_html() prints the
+     * bar, full_header() leaves out the header actions the bar took, activity_navigation() prints the
+     * completion line and the previous and next row. Null on every other page, where all three are the
+     * parent's.
+     */
+    protected ?array $focusshell = null;
+
+    /**
      * Renders the login form.
      *
      * With the theme's login page switched off, Boost Union renders its form exactly as configured
@@ -155,7 +166,11 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * hint, so the value is SET here whatever the include did, and an empty string when the notice
      * says nothing - Boost Union's cards never reach the page. Guarded by the template's name,
      * because the shape cannot be: the key is absent exactly when Boost Union had nothing to say.
-     * It runs before the focus mode swap, so the focus template prints the notice too.
+     * Focus mode keeps the notice in its reading column, as the ordinary page does.
+     *
+     * The drawers layout of a page that can switch focus mode in place is read, never rewritten,
+     * for what focus mode adds to it ({@see focusmode::shell()}); Boost Union's template renders it
+     * exactly as it would have.
      *
      * @param string $templatename The template to render.
      * @param mixed $context The template context.
@@ -229,18 +244,19 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $context[self::HINTS_KEY] = $this->course_notice();
         }
 
-        /* Focus mode swaps the template, after the two guards above so the bar inherits the
-           navbar colours they resolved. Boost Union's layout file ends with exactly this
-           template name - core Boost's own naming, which Boost Union had to keep to stay a
-           valid override target - and with Multi-tenancy installed it renders another one,
-           where this guard does not match and focus mode simply does not apply. */
+        /* Focus mode reads the layout, after the guards above so the bar inherits the navbar colours
+           they resolved, and renders nothing in its place: the template Boost Union named renders
+           unchanged and the bar is printed by standard_top_of_body_html(), which that template
+           evaluates later in this same call. Boost Union's layout file ends with exactly this
+           template name - core Boost's own naming, which Boost Union had to keep to stay a valid
+           override target - and with Multi-tenancy installed it renders another one, where this
+           guard does not match and focus mode simply does not apply. */
         if (
             $templatename === 'theme_boost/drawers'
             && is_array($context)
-            && \theme_dimensions\local\focusmode::applies($this->page)
+            && \theme_dimensions\local\focusmode::available($this->page)
         ) {
-            $context = \theme_dimensions\local\focusmode::layout_context($context, $this->page, $this);
-            $templatename = 'theme_dimensions/focusmode';
+            $this->focusshell = \theme_dimensions\local\focusmode::shell($context, $this->page, $this);
         }
 
         return parent::render_from_template($templatename, $context);
@@ -295,20 +311,104 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * concern. The breadcrumb is not handed over: the hero draws its own trail from the
      * category's path, because core empties the breadcrumb as soon as the page's URL carries
      * a parameter besides the category. With no hero armed the parent draws its header
-     * unchanged.
+     * unchanged, but for the header actions of a page that opens in focus mode
+     * ({@see self::focus_full_header()}).
      *
      * @return string HTML to display the main header.
      */
     public function full_header() {
         $hero = category_hero::current();
         if ($hero === null) {
-            return parent::full_header();
+            return $this->focus_full_header();
         }
         $context = $hero->export_for_template($this);
         $context->headeractions = $this->page->get_header_actions();
         $context->headerextras = $this->page->get_header_extras();
         $context->hasheaderextras = !empty($context->headerextras);
         return $this->render_from_template('theme_dimensions/category_hero', $context);
+    }
+
+    /**
+     * Boost Union's page header, without the header actions the focus bar already drew.
+     *
+     * A page that opens in focus mode draws the manual completion button (or its status) in the
+     * bar, and the page header - hidden under the body class, there for the switch back - must not
+     * draw it a second time: a hidden copy would go stale the moment the visible one was pressed,
+     * and the module moves the one node between the two places instead. moodle_page offers no way
+     * to withdraw a header action, so the list is narrowed around the parent's call and put back
+     * after it: the first actions are the bar's (it read them before this template ran), and what
+     * the parent appended itself - the region main settings menu - is kept, in the header, where
+     * focus mode hides it with the rest of the chrome.
+     *
+     * @return string HTML to display the main header.
+     */
+    protected function focus_full_header(): string {
+        $taken = count((array) ($this->focusshell['bar']['headeractions'] ?? []));
+        if ($taken === 0) {
+            return parent::full_header();
+        }
+
+        $actions = new \ReflectionProperty(\moodle_page::class, '_headeractions');
+        $before = $this->page->get_header_actions();
+        $actions->setValue($this->page, array_slice($before, $taken));
+        try {
+            return parent::full_header();
+        } finally {
+            $actions->setValue($this->page, array_merge(array_slice($before, 0, $taken), $this->page->get_header_actions()));
+        }
+    }
+
+    /**
+     * The top of the body, and on a page that can switch focus mode in place the bar after it.
+     *
+     * Boost Union's layout template prints this first inside the page wrapper, so the bar lands
+     * where the reduced shell used to draw it: after core's skip link, which this output carries,
+     * and before Boost Union's navbar. The bar is always in the page and the stylesheet shows it
+     * only under the focus mode body class; the status line beside it is not hidden with it, because
+     * it is what announces the switch in either direction.
+     *
+     * @return string HTML.
+     */
+    public function standard_top_of_body_html() {
+        $output = parent::standard_top_of_body_html();
+        if ($this->focusshell === null) {
+            return $output;
+        }
+
+        return $output . $this->render_from_template('theme_dimensions/focusmode_top', [
+            'bar' => $this->focusshell['bar'],
+        ]);
+    }
+
+    /**
+     * Core's activity navigation, with focus mode's foot of the content after it where the page can switch.
+     *
+     * The foot is the completion line (decision D3: the automatic conditions as one discreet line,
+     * core's own partial, while the activity information box keeps them for the ordinary skin) and
+     * the previous and next row core suppresses on a format with a course index
+     * ({@see self::focus_activity_navigation()}). Both sit in a container the stylesheet shows only
+     * under the focus mode body class. Where core already drew its row the foot carries none of its
+     * own, so no skin ever shows two.
+     *
+     * @return string HTML.
+     */
+    public function activity_navigation() {
+        $ordinary = parent::activity_navigation();
+        if ($this->focusshell === null) {
+            return $ordinary;
+        }
+
+        $navigation = $ordinary === '' ? $this->focus_activity_navigation() : '';
+        if ($navigation === '' && $this->focusshell['completion'] === false) {
+            return $ordinary;
+        }
+        $foot = $this->render_from_template('theme_dimensions/focusmode_foot', [
+            'completion' => $this->focusshell['completion'],
+            'activitynav' => $navigation,
+            'hasactivitynav' => $navigation !== '',
+        ]);
+
+        return $foot . $ordinary;
     }
 
     /**
@@ -393,10 +493,17 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $additionalclasses = explode(' ', $additionalclasses);
         }
 
-        if (\theme_dimensions\local\focusmode::applies($this->page)) {
-            $additionalclasses[] = 'dimensions-focusmode';
-            if (\theme_dimensions\local\focusmode::wants_expanded()) {
-                $additionalclasses[] = 'dimensions-focusmode-expanded';
+        /* Two classes, because the page carries both skins: dimensions-focusable on every page that can
+           switch in place, which scopes the rules that hold in either skin (the focus-only parts hidden,
+           the entry button's pill), and dimensions-focusmode on the one that opens focused, which the
+           amd module then moves. */
+        if (\theme_dimensions\local\focusmode::available($this->page)) {
+            $additionalclasses[] = 'dimensions-focusable';
+            if (\theme_dimensions\local\focusmode::applies($this->page)) {
+                $additionalclasses[] = 'dimensions-focusmode';
+                if (\theme_dimensions\local\focusmode::wants_expanded()) {
+                    $additionalclasses[] = 'dimensions-focusmode-expanded';
+                }
             }
         }
 
@@ -457,7 +564,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     public function navbar_plugin_output() {
         $output = parent::navbar_plugin_output();
 
-        if (\theme_dimensions\local\focusmode::offers_entry($this->page)) {
+        // On every page that can switch in place: the navbar is hidden in focus mode, and this is the way back in.
+        if (\theme_dimensions\local\focusmode::available($this->page)) {
             $button = $this->render_from_template('theme_dimensions/focusmode_entry', [
                 'actionurl' => (new \moodle_url('/theme/dimensions/focus.php'))->out(false),
                 'sesskey' => sesskey(),
@@ -514,7 +622,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * Core's activity navigation, produced on the formats which normally suppress it.
+     * Core's activity navigation, produced on the formats which normally suppress it, for focus mode's foot.
      *
      * Core returns the empty string whenever the theme has a course index and the format
      * uses one - topics and weeks, that is - because the drawer is then the way forward.
@@ -527,14 +635,14 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * it (topics and weeks, switched on by default) gets previous and next, and the manual
      * completion button, in the sticky footer core adds from before_footer_html_generation
      * ({@see \core_courseformat\hook_listener::add_course_navigation_sticky_footer()}). The
-     * footer is printed by footer() into the focus page as into any other, so a second row of
-     * our own would put two navigations under the text. The question is core's own predicate,
+     * footer is printed by footer() into the page in either skin, so a second row of our own
+     * would put two navigations under the text. The question is core's own predicate,
      * asked while the layout renders: a page that later prints a sticky footer of its own loses
      * core's linear navigation and this one alike, exactly as the ordinary page does.
      *
      * @return string
      */
-    public function focusmode_activity_navigation(): string {
+    protected function focus_activity_navigation(): string {
         if (\core_courseformat\local\linearnavigationsettings::show_navigation_footer($this->page)) {
             return '';
         }
