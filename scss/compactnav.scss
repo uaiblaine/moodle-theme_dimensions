@@ -37,9 +37,10 @@ body.dimensions-navcompact-armed {
             }
 
             /* The mobile drawer at tablet width. Core shows its backdrop below md only, so the scrim is the
-               drawer's own shadow, painted under the navbar like core's; the module closes the drawer on a press
-               outside it. It stacks above the course index and the blocks drawer, which are docked on the same
-               side from lg up, and under the navbar ($zindex-fixed). */
+               drawer's own shadow; the module closes the drawer on a press outside it. It stacks above the course
+               index and the blocks drawer, which are docked on the same side from lg up, and over the navbar, which
+               steps down to $zindex-sticky while it is open (post.scss, "The primary drawer opens over the
+               navbar"). */
             .drawer-primary {
                 z-index: $zindex-sticky + 2;
             }
@@ -52,18 +53,18 @@ body.dimensions-navcompact-armed {
                (boost/scss/moodle/drawer.scss, "Anchored drawers"): zero width, an anchored right offset, overflow
                clip, a top that clears the page title, rounded corners. That is the course index's geometry, and the
                primary drawer carries drawer-left too, so at tablet width it opened 58px wide, cut at the left edge.
-               Here it is the plain overlay drawer core gives it below md: against the left edge, offscreen while
-               closed, under the navbar, the full height of the rest of the viewport, with core's own slide. The
+               Here it is the plain overlay drawer of post.scss: against the left edge, offscreen while closed, over
+               the navbar, the full height of the viewport, with core's own slide. The
                compact body classes and the drawer's id outrank the anchored selectors (which also carry :has() for
                the docked drawers' right offset), so no !important is needed. */
             #theme_boost-drawers-primary.drawer-primary.drawer-left {
                 left: calc(-#{$drawer-left-width} + -10px);
                 right: auto;
-                top: $navbar-height;
+                top: 0;
                 width: $drawer-left-width;
                 max-width: $drawer-left-width;
-                height: calc(100vh - #{$navbar-height});
-                max-height: calc(100vh - #{$navbar-height});
+                height: 100vh;
+                max-height: 100vh;
                 overflow: visible;
                 @include border-radius(0);
                 @include transition(left 0.2s ease, top 0.2s ease, visibility 0.2s ease);

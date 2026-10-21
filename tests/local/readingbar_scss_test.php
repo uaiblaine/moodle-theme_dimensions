@@ -43,7 +43,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 final class readingbar_scss_test extends \basic_testcase {
     /** @var string The auto-hide scope: the body class, standing down beside Boost Union's menu bar and flush drawers. */
     private const AUTOHIDE = 'body.dimensions-autohide:not(.dimensions-focusmode):not(:has(.navbar.boost-union-menubar))'
-        . ':not(#{$dimensions-bu-flush})';
+        . ':not(:where(#{$dimensions-bu-flush}))';
 
     /**
      * @var string[] The only top-level selectors the file may have: the reading pages, the layer and its swap (a

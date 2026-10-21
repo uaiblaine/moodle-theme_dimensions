@@ -595,7 +595,8 @@ textarea:focus-visible,
 }
 
 [data-bs-theme="dark"],
-.navbar.navbar-dark {
+.navbar.navbar-dark,
+.drawer-primary .drawerheader:has(.dimensions-drawer-band.navbar-dark) {
     --dimensions-logo-dark: var(--dimensions-logo-dark-src, none);
     --dimensions-logo-shift: var(--dimensions-logo-dark-shift, 0%);
     --dimensions-logo-compact-dark: var(--dimensions-logo-compact-dark-src, none);
@@ -623,6 +624,68 @@ body.dimensions-darklogo-full #logoimage {
     overflow: hidden;
     background: var(--dimensions-logo-dark, none) center / contain no-repeat;
     object-position: calc(50% + var(--dimensions-logo-shift, 0%)) 50%;
+}
+
+/* ---- The primary drawer opens over the navbar ---------------------------- */
+/* The drawer of the collapsed navbar (below md, and the compact navbar of scss/compactnav.scss) covers the
+   whole height of the screen, the navbar included, as the navbar canvas draws it. Moodle 5.3 puts every drawer
+   BELOW the navbar instead (MDL-89076) and sizes its backdrop from the first drawer's z-index, once, so raising
+   this drawer would raise the backdrop over the course index and the block drawer too. So the navbar steps down
+   while this drawer is open: to $zindex-sticky, the backdrop's own level (the drawer's less one), where the
+   backdrop - appended to the body, after the navbar - paints over it, dims it and closes the drawer on a press,
+   as it does over the page. The menu bar of Boost Union's smart menus is a .navbar.fixed-top too and steps down
+   with it. The id outranks the drawer offsets of readingbar.scss's auto-hide. */
+#theme_boost-drawers-primary.drawer-primary {
+    top: 0;
+    height: 100vh;
+}
+
+body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
+    z-index: $zindex-sticky;
+}
+
+/* The header is the navbar's band: the template draws an element carrying the navbar's own colour classes
+   behind it ({@see templates/theme_boost/primary-drawer-mobile.mustache}), so Boost Union's colour and tint, a
+   flavour's and the dark mode's repaint reach it by the navbar's own rules, and the logo - the navbar's - sits
+   where the navbar holds it: core's height ($navbar-height less two $primary-nav-padding-y) and the 12px from
+   the edge measured on Boost Union's navbar. The element is a .navbar only to be painted like one: every
+   Bootstrap box property of that class is put back here. The close button takes the navbar's ink while the
+   band is a dark one. */
+.drawer-primary .drawerheader {
+    position: relative;
+    z-index: 0;
+
+    .dimensions-drawer-band {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        display: block;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    [data-region="site-home-link"] {
+        padding-inline-start: var(--dim-ds-space-sm);
+    }
+
+    .logo {
+        height: calc(#{$navbar-height} - (#{$primary-nav-padding-y} * 2));
+        max-height: calc(#{$navbar-height} - (#{$primary-nav-padding-y} * 2));
+    }
+
+    &:has(.dimensions-drawer-band.navbar-dark) .draweractions .btn {
+        --bs-btn-color: var(--dim-ds-text-inverse);
+        --bs-btn-hover-color: var(--dim-ds-text-inverse);
+        background-color: rgba(255, 255, 255, .12);
+        color: var(--dim-ds-text-inverse);
+
+        &:hover,
+        &:focus {
+            background-color: rgba(255, 255, 255, .24);
+            color: var(--dim-ds-text-inverse);
+        }
+    }
 }
 
 /* ---- Calendar ------------------------------------------------------------ */

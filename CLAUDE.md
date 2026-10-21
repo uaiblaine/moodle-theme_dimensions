@@ -479,6 +479,13 @@ already shaped decisions here:
   theme's rules key on `.navbar.navbar-dark` (the pill tokens, the dark logo), and its navy dropdowns
   answer Boost Union's two hover properties on the menu itself (`post.scss`). Re-read Boost Union's
   navbar section of `scss/boost_union/post.scss` on every update: it is the contract now.
+- **The primary drawer opens over the navbar, and the navbar is what moves.** Core 5.3 puts drawers below the
+  navbar (MDL-89076) and sizes its one shared backdrop from the FIRST drawer's z-index, once
+  (`theme_boost/drawers` `getDrawerZIndex()`), so a raised primary drawer would raise the backdrop over the course
+  index drawer for the rest of the page. `post.scss` steps every `.navbar.fixed-top` down to `$zindex-sticky` while
+  `#theme_boost-drawers-primary.show`, where the backdrop (appended later to the body) paints over it. The header
+  band is an element of the drawer template carrying `navbarcolorclasses` and the class `.navbar`, so every rule
+  that paints the navbar paints it; its Bootstrap box properties are put back in `post.scss`.
 - **Only the untouched default is filled in.** `apply_navbar_style()` returns early unless the
   context still says `bg-body`, so an admin's navbarcolor choice and a flavour's
   `look_navbarcolor` both stand (`test_a_chosen_navbar_colour_is_left_alone`).
