@@ -75,7 +75,7 @@ body.dimensions-focusmode #region-main-settings-menu,
 body.dimensions-focusmode .region_main_settings_menu_proxy,
 body.dimensions-focusmode #region-main .tertiary-navigation,
 body.dimensions-focusmode #theme-block-region-outside-top,
-body.dimensions-focusmode #theme-block-region-header,
+body.dimensions-focusmode .theme-block-region-header-wrapper,
 body.dimensions-focusmode #theme-block-region-outside-left,
 body.dimensions-focusmode #theme-block-region-outside-right,
 body.dimensions-focusmode #theme-block-region-outside-bottom,
@@ -148,7 +148,7 @@ body.dimensions-focusmode-expanded #page.drawers .main-inner {
    shrink - the heading, and whatever the activity module put in the header - while the controls
    this theme owns keep a width which does not depend on what any of them is called. */
 /* The colour is Bootstrap's own navbar brand colour, which the colour mode already resolves:
-   white under data-bs-theme="dark", near-black on a light navbar. The nav element itself has no
+   white under .navbar-dark, near-black on a light navbar. The nav element itself has no
    colour of its own - Bootstrap only sets the custom properties - so without this line every
    "color: inherit" below would resolve to the page's body colour: dark type on the navy bar. */
 body.dimensions-focusmode .dimensions-focusbar {

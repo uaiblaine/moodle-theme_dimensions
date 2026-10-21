@@ -41,8 +41,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  */
 #[CoversNothing]
 final class readingbar_scss_test extends \basic_testcase {
-    /** @var string The auto-hide scope: the body class, standing down beside Boost Union's menu bar. */
-    private const AUTOHIDE = 'body.dimensions-autohide:not(.dimensions-focusmode):not(:has(.navbar.boost-union-menubar))';
+    /** @var string The auto-hide scope: the body class, standing down beside Boost Union's menu bar and flush drawers. */
+    private const AUTOHIDE = 'body.dimensions-autohide:not(.dimensions-focusmode):not(:has(.navbar.boost-union-menubar))'
+        . ':not(#{$dimensions-bu-flush})';
 
     /**
      * @var string[] The only top-level selectors the file may have: the reading pages, the layer and its swap (a
@@ -209,6 +210,29 @@ final class readingbar_scss_test extends \basic_testcase {
     }
 
     /**
+     * Auto-hide stands down on exactly the pages where Boost Union pins the drawers flush with !important.
+     *
+     * The condition is a copy of Boost Union's, so it is read from Boost Union's own stylesheet: the four
+     * block regions and the limited width, in its order. A Boost Union release that changes them reddens this.
+     *
+     * @return void
+     */
+    public function test_autohide_stands_down_where_boost_union_pins_the_drawers(): void {
+        global $CFG;
+        $regions = '#theme-block-region-outside-left, #theme-block-region-outside-right, '
+            . '#theme-block-region-outside-top, #theme-block-region-header';
+
+        $scss = $this->stylesheet();
+        $this->assertSame(1, preg_match('~\$dimensions-bu-flush: "([^"]*)"\s*\+\s*"([^"]*)";~', $scss, $matches));
+        $this->assertSame('.limitedwidth:has(' . $regions . ')', $matches[1] . $matches[2]);
+        $this->assertNotFalse(strpos($scss, self::AUTOHIDE . ' {'));
+
+        $bu = (string) file_get_contents($CFG->dirroot . '/theme/boost_union/scss/boost_union/post.scss');
+        $bu = (string) preg_replace('~\s+~', ' ', $bu);
+        $this->assertStringContainsString('body.limitedwidth:has(' . $regions . ') {', $bu);
+    }
+
+    /**
      * Auto-hide: one offset, 60px at rest and none while away; every moved offset reads it; the bar keeps its band.
      *
      * @return void
@@ -217,7 +241,8 @@ final class readingbar_scss_test extends \basic_testcase {
         $scss = $this->stylesheet();
         $at = strpos($scss, self::AUTOHIDE . ' {');
         $this->assertNotFalse($at);
-        $block = substr($scss, $at);
+        // Past the selector, whose interpolation carries braces of its own.
+        $block = substr($scss, $at + strlen(self::AUTOHIDE));
 
         $this->assertMatchesRegularExpression('~^[^{]*\{\s*--dimensions-navbar-offset: #\{\$navbar-height\};~', $block);
         $this->assertMatchesRegularExpression(

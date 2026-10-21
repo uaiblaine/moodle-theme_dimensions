@@ -31,8 +31,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * Guards the contrast and colour-mode rules of scss/post.scss that no linter reads.
  *
  * The subtle grey token reads 2.96:1 on a white card, under the 4.5:1 that text needs at any
- * size, so it may colour a rule or an icon and never a label. The backdrop token and the notifications popover's
- * light surface are held here too.
+ * size, so it may colour a rule or an icon and never a label. The backdrop token, the notifications popover's
+ * light surface and the navbar's dark half are held here too.
  *
  * @package    theme_dimensions
  * @category   test
@@ -93,10 +93,10 @@ final class post_scss_test extends \basic_testcase {
     /**
      * The notifications popover is one light surface inside the dark navbar.
      *
-     * message_popup renders it inside the navbar, so Bootstrap's dark colour mode repaints its container while the
-     * ink stays the page's, and Boost Union's own rules for it (!important) draw dark icons, a white footer and a
-     * blue link: the popover must read as a light surface. The colour mode tokens it reads are re-pointed on the
-     * container to the design system's light ones, and the ink is set from them.
+     * message_popup renders it inside the navbar, so it reads whatever colour mode reaches it there, and core's
+     * white container turns grey in the dark mode while half of the light palette stays: the popover must read as
+     * one light surface. The colour mode tokens it reads are re-pointed on the container to the design system's
+     * light ones, and the ink is set from them.
      *
      * @return void
      */
@@ -123,5 +123,42 @@ final class post_scss_test extends \basic_testcase {
         }
         $this->assertStringNotContainsString('!important', $body);
         $this->assertDoesNotMatchRegularExpression('/#[0-9a-fA-F]{3,6}\b/', $body, 'No literal colour.');
+    }
+
+    /**
+     * The navy dropdowns answer Boost Union's hover properties on the menu, or a hover is navy on navy.
+     *
+     * Boost Union sets the menus' hover pair from --bu-navbar-bg and --bu-navbar-dropdown-hover-color with a
+     * selector this theme does not outrank; the two are inherited from the navbar, whose --bu-navbar-bg is the bar's
+     * own navy. The control is the menu's own navy surface in the same rule.
+     *
+     * @return void
+     */
+    public function test_the_navy_dropdowns_answer_boost_unions_hover_properties(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertSame(1, preg_match('/\n\.navbar \.dropdown-menu \{(.*?)\n\}/s', $scss, $rule));
+        $this->assertStringContainsString('--bs-dropdown-bg: var(--dim-ds-surface-inverse-deep);', $rule[1], 'Control.');
+        $this->assertStringContainsString('--bu-navbar-bg: rgba(255, 255, 255, .12);', $rule[1]);
+        $this->assertStringContainsString('--bu-navbar-dropdown-hover-color: var(--dim-ds-text-inverse);', $rule[1]);
+    }
+
+    /**
+     * The navbar's dark half keys on Boost Union's .navbar-dark, never on a colour mode the navbar no longer carries.
+     *
+     * Boost Union's upgrade-503 stopped writing data-bs-theme on the navbar, so a rule keyed on it matches nothing
+     * and the pills and the dark logo fall back to their light values on the navy bar, silently.
+     *
+     * @return void
+     */
+    public function test_the_navbar_rules_key_on_navbar_dark(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertStringNotContainsString('.navbar[data-bs-theme', $scss);
+        $this->assertMatchesRegularExpression('/\n\.navbar\.navbar-dark \{\s*--dimensions-pill-border:/', $scss);
+        $this->assertMatchesRegularExpression(
+            '/\n\[data-bs-theme="dark"\],\s*\.navbar\.navbar-dark \{\s*--dimensions-logo-dark:/',
+            $scss
+        );
     }
 }

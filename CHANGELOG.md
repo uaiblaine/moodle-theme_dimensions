@@ -5,6 +5,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Boost Union's new navbar contract** (Boost Union `upgrade-503` at 3b534e30, 2026-10-20; no version bump:
+  no schema, service or JavaScript change). Boost Union dropped the navbar's `databstheme` key and colours a
+  dark bar through `.navbar-dark` instead, so the theme's renderer now writes `navbar-dark bg-primary` (its
+  "coloured, light font" choice) and nothing else; the focus bar copies only `navbarcolorclasses`. The pill
+  tokens and the dark logo key on `.navbar.navbar-dark`; the navy dropdowns answer Boost Union's hover
+  properties (`--bu-navbar-bg`, `--bu-navbar-dropdown-hover-color`) on the menu, or a hover would be navy on
+  navy. Focus mode hides Boost Union's new `theme-block-region-header-wrapper` (with its spacers) instead of
+  the header region alone. Auto-hide stands down on the limited-width pages where Boost Union pins the drawers
+  flush with the window edges (an outside or header block region shown), whose `!important` rules it cannot
+  move. In the dark colour mode Boost Union now paints the navbar with the body background, brand colour
+  included: Boost Union's decision, kept.
 - **Focus mode switches in place, without a reload** (2026100517; `docs/focusmode/README.md`, decisions D1-D5).
   Every activity page that can be focused carries both skins: Boost Union's layout renders untouched and the
   theme adds the bar (after core's top of body) and the foot of the content (the completion line and the

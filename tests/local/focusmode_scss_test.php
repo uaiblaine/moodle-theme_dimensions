@@ -647,6 +647,7 @@ final class focusmode_scss_test extends \basic_testcase {
                 '.secondary-navigation',
                 '#region-main-settings-menu',
                 '#theme-block-region-outside-left',
+                '.theme-block-region-header-wrapper',
                 '#footnote',
             ] as $hidden
         ) {

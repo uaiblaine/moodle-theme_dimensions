@@ -466,17 +466,22 @@ already shaped decisions here:
   `--bs-body-bg` and kept a blue link (navy on navy), the edit-mode switch's track went navy
   on navy, and the mobile toggler stayed dark. Shipped and caught in review.
   The fix is Boost Union's own mechanism: this theme's renderer writes
-  `navbarcolorclasses = 'bg-primary'` and `databstheme = 'dark'` into the layout context —
-  the same two keys `layout/includes/navbar.php` writes from the navbarcolor setting — so the bar
-  is dark in whatever `$primary` is: Boost Union's `brandcolor`, a flavour's `look_brandcolor`, or
-  Boost's own default blue. The theme assigns no `$primary` of its own (it did, the institutional
-  navy, until 2026100503). `data-bs-theme="dark"` is a *complete*
-  Bootstrap colour mode, so everything nested gets a coherent palette, including the
-  switch's own `--bs-form-switch-bg` (whose value is an inline SVG we could not have written
-  ourselves: Moodle's stylelint forbids data URIs in CSS).
+  `navbarcolorclasses = 'navbar-dark bg-primary'` into the layout context — the key
+  `layout/includes/navbar.php` writes from the navbarcolor setting, with the value of its
+  "coloured, light font" choice — so the bar is dark in whatever `$primary` is: Boost Union's
+  `brandcolor`, a flavour's `look_brandcolor`, or Boost's own default blue. The theme assigns no
+  `$primary` of its own (it did, the institutional navy, until 2026100503). Boost Union maps every
+  element of the bar (pills, user menu toggle, edit switch, divider, dropdown hovers) onto
+  `.navbar-dark` through its `--bu-navbar-*` properties, and in the dark colour mode it repaints
+  every dark or coloured navbar with the body background, so the brand colour is a light-mode fact.
+- **The navbar carries no `data-bs-theme`.** Boost Union's `upgrade-503` dropped the `databstheme`
+  key (2026-10-20): a colour mode on the nav switched the dropdowns inside it to dark as well. So the
+  theme's rules key on `.navbar.navbar-dark` (the pill tokens, the dark logo), and its navy dropdowns
+  answer Boost Union's two hover properties on the menu itself (`post.scss`). Re-read Boost Union's
+  navbar section of `scss/boost_union/post.scss` on every update: it is the contract now.
 - **Only the untouched default is filled in.** `apply_navbar_style()` returns early unless the
-  context still says `bg-body` with no theme, so an admin's navbarcolor choice and a
-  flavour's `look_navbarcolor` both stand.
+  context still says `bg-body`, so an admin's navbarcolor choice and a flavour's
+  `look_navbarcolor` both stand (`test_a_chosen_navbar_colour_is_left_alone`).
 - **The signature band is a `::after`, not a `border-bottom`.** Boost Union sets
   `border-bottom: none` on a dark navbar with a selector a child theme should not be
   outbidding. A pseudo-element is not in that argument at all.
@@ -3334,7 +3339,7 @@ version's decisions; the switch in place and the owner's decisions D1-D5 of 2026
   `<nav>` itself, so inheritance walks up to `<body>` and the bar's type comes out as the page's
   body colour - measured `rgb(29, 33, 37)` on `#070093`, dark on navy, with every renderer test
   green. `body.dimensions-focusmode .dimensions-focusbar` reads `var(--bs-navbar-brand-color,
-  var(--bs-body-color))`, white under `data-bs-theme="dark"` and near-black on a light navbar.
+  var(--bs-body-color))`, white under `.navbar-dark` and near-black on a light navbar.
   Nothing in the pipeline measures a colour; check it in a browser after any change to the bar.
   The same trap caught the "Focus mode" entry button in the ordinary navbar (it also said
   `color: inherit`) and, from the other side, the bar's "More" dropdown: `post.scss` gives every

@@ -171,7 +171,11 @@ body.dimensions-readingbar {
    while Boost Union's menu bar is on the page: its rules move the navbar,
    the page and the drawers by the bar's height at a specificity these would outrank, and folding that
    height in here would mean writing a zero length (stylelint's length-zero-no-unit) for every page
-   without one.
+   without one. Standing down, too, where Boost Union draws the drawers flush with the window edges: on a
+   limited-width page showing an outside or header block region its rules pin the drawers and their
+   togglers below the resting navbar with !important, which nothing here may outrank, so the navbar would
+   leave and the drawers stay. $dimensions-bu-flush is a copy of Boost Union's own condition
+   (scss/boost_union/post.scss, "Finally, we take care of the drawers if outside block regions are shown").
 
    --dimensions-navbar-offset is the height the navbar takes from the top of the screen: 60px at rest, none
    while the module has put dimensions-navbar-away on the body. Every fixed or sticky element core and Boost
@@ -186,7 +190,10 @@ $dimensions-anchored-gap: "#{$drawer-anchored-top-gap} - #{$drawer-anchored-head
 $dimensions-anchored-top: "calc(var(--dimensions-navbar-offset) + #{$dimensions-anchored-gap})";
 $dimensions-anchored-below: "(#{$drawer-anchored-bottom-gap} + var(--sticky-footer-total-height, 0px))";
 
-body.dimensions-autohide:not(.dimensions-focusmode):not(:has(.navbar.boost-union-menubar)) {
+$dimensions-bu-flush: ".limitedwidth:has(#theme-block-region-outside-left, #theme-block-region-outside-right, "
+    + "#theme-block-region-outside-top, #theme-block-region-header)";
+
+body.dimensions-autohide:not(.dimensions-focusmode):not(:has(.navbar.boost-union-menubar)):not(#{$dimensions-bu-flush}) {
     --dimensions-navbar-offset: #{$navbar-height};
 
     /* The navbar leaves upwards, and its last 3px - the band, still showing the progress - stay on the
