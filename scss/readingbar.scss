@@ -11,9 +11,10 @@
 /* The band's own colour at a fraction of it, so a flavour's --dimensions-navbar-band moves both. Opacity on
    a pseudo-element of its own, because the palette has no tint of the band and stylelint refuses
    color-mix(). Drawn only on reading pages, and on the main navbar only: Boost Union's menu bar is a
-   .navbar.fixed-top too, and it carries no progress. Under a full band it is not seen. */
+   .navbar.fixed-top too, and it carries no progress, and so is focus mode's bar on a page that can
+   switch in place, whose band is its own. Under a full band it is not seen. */
 body.dimensions-readingbar {
-    .navbar.fixed-top:not(.boost-union-menubar)::before {
+    .navbar.fixed-top:not(.boost-union-menubar):not(.dimensions-focusbar)::before {
         position: absolute;
         right: 0;
         bottom: 0;
@@ -165,7 +166,9 @@ body.dimensions-readingbar {
 
 /* ---- C1: auto-hide ------------------------------------------------------- */
 /* Armed by a body class the server writes only where an administrator ticked the page kind, and never on
-   the Behat site. Standing down while Boost Union's menu bar is on the page: its rules move the navbar,
+   the Behat site. Standing down under focus mode's skin, which a page that opened ordinary can switch to
+   in place: the navbar it moves is not displayed there and the focus bar must not leave. Standing down
+   while Boost Union's menu bar is on the page: its rules move the navbar,
    the page and the drawers by the bar's height at a specificity these would outrank, and folding that
    height in here would mean writing a zero length (stylelint's length-zero-no-unit) for every page
    without one.
@@ -183,7 +186,7 @@ $dimensions-anchored-gap: "#{$drawer-anchored-top-gap} - #{$drawer-anchored-head
 $dimensions-anchored-top: "calc(var(--dimensions-navbar-offset) + #{$dimensions-anchored-gap})";
 $dimensions-anchored-below: "(#{$drawer-anchored-bottom-gap} + var(--sticky-footer-total-height, 0px))";
 
-body.dimensions-autohide:not(:has(.navbar.boost-union-menubar)) {
+body.dimensions-autohide:not(.dimensions-focusmode):not(:has(.navbar.boost-union-menubar)) {
     --dimensions-navbar-offset: #{$navbar-height};
 
     /* The navbar leaves upwards, and its last 3px - the band, still showing the progress - stay on the

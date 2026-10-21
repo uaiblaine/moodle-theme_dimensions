@@ -27,7 +27,11 @@ namespace theme_dimensions\output;
 use theme_dimensions\local\focusmode;
 
 /**
- * Builds the sub-context of the bar which replaces Boost Union's navbar in focus mode.
+ * Builds the sub-context of the bar which stands in for Boost Union's navbar in focus mode.
+ *
+ * The bar is on every page that can switch in place ({@see focusmode::available()}) and the
+ * stylesheet shows it only under the focus mode body class, so the same export serves the page
+ * that opens focused and the one that opens ordinary; only the header actions differ.
  *
  * Every decision it renders belongs to {@see focusmode}; this class only reads the page
  * and the layout context Boost Union already built. Two of its keys come straight from
@@ -52,12 +56,15 @@ class focusmode_bar implements \core\output\renderable, \core\output\templatable
      *
      * @param \moodle_page $page The page being rendered, with its cm and course already set.
      * @param array $layoutcontext The layout template context Boost Union built.
+     * @param bool $active Whether the page opens in focus mode, which is when the bar holds the header actions.
      */
     public function __construct(
         /** @var \moodle_page The page being rendered. */
         private readonly \moodle_page $page,
         /** @var array The layout template context Boost Union built. */
         private readonly array $layoutcontext,
+        /** @var bool Whether the page opens in focus mode. */
+        private readonly bool $active = true,
     ) {
     }
 
@@ -69,22 +76,22 @@ class focusmode_bar implements \core\output\renderable, \core\output\templatable
      */
     public function export_for_template(\core\output\renderer_base $output): array {
         $cm = $this->page->cm;
-        $courseid = (int) $this->page->course->id;
         $expanded = focusmode::wants_expanded();
         $moreitems = $this->more_items();
         $editswitch = $this->edit_switch($output);
 
-        /* One control with two renderings. A course whose own switch is on gets the plain
-           link back to the section; a manual session gets a POST which also clears the
-           session flag, so leaving does not land on a page that re-focuses itself. */
-        $leaveform = !focusmode::enabled_for_course($courseid) && focusmode::in_session($courseid);
+        /* One control with two renderings. Where there is an ordinary page to go back to, the
+           exit is a POST the module turns into a switch in place - and without JavaScript the
+           form records the choice and reloads the activity. A single activity course that
+           switched focus mode on has none, so its exit is the plain link out of the course. */
+        $leaveform = !focusmode::leaves_course($cm);
 
         return [
             'title' => $cm->get_formatted_name(['escape' => false]),
             'coursename' => $this->course_name(),
             'closeurl' => focusmode::close_url($cm)->out(false),
             'closelabel' => get_string('focusmode_close', self::COMPONENT),
-            'closetitle' => get_string('focusmode_close_title', self::COMPONENT),
+            'closetitle' => get_string($leaveform ? 'focusmode_close_title' : 'focusmode_close_title_site', self::COMPONENT),
             'leaveform' => $leaveform,
             'sesskey' => sesskey(),
             'cmid' => (int) $cm->id,
@@ -120,11 +127,18 @@ class focusmode_bar implements \core\output\renderable, \core\output\templatable
      *
      * These are the manual completion button and the automatic status badge, queued by
      * core's own activity_header::export_for_template(). The manual toggle's listener is
-     * delegated from the document, so the button works wherever its markup lands.
+     * delegated from the document, so the button works wherever its markup lands - which is
+     * what lets the module move these very nodes between the bar and the page header.
+     *
+     * Only on a page that opens focused: otherwise the page header draws them and the bar's
+     * slot starts empty, because a second copy would go stale the moment one is pressed.
      *
      * @return array List of ['html' => string].
      */
     private function header_actions(): array {
+        if (!$this->active) {
+            return [];
+        }
         $actions = [];
         foreach ($this->page->get_header_actions() as $action) {
             $actions[] = ['html' => $action];

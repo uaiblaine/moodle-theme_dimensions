@@ -15,13 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - Focus mode entry and leave endpoint
+ * Theme Dimensions - Focus mode entry and leave endpoint, the fallback without JavaScript
  *
- * A learner may open focus mode on any activity of a course which did not switch it on, and
- * leave it again. Both are state changes on the session, which is why this is reached by a POST
- * form carrying a sesskey and not by a link: a bare GET which flips a session flag is the shape
- * a link prefetcher walks into. Every decision the endpoint takes belongs to local\focusmode;
- * the file itself is guards and a redirect.
+ * A learner may enter focus mode on any activity, and leave it again, for the rest of the session
+ * in that course. With JavaScript the theme_dimensions/focusmode module switches the page in place
+ * and records the choice through the set_focus_mode web service; this endpoint is what the same two
+ * forms do without it, and it records the same choice and comes back to the same activity. Both are
+ * state changes on the session, which is why this is reached by a POST form carrying a sesskey and
+ * not by a link: a bare GET which flips a session flag is the shape a link prefetcher walks into.
+ * Every decision the endpoint takes belongs to local\focusmode; the file itself is guards and a
+ * redirect.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -40,12 +43,20 @@ $action = required_param('action', PARAM_ALPHA);
 require_login($course, false, $cm);
 require_sesskey();
 
+if (!focusmode::master_enabled() || (int) $course->id === (int) SITEID) {
+    throw new \moodle_exception('focusmode_unavailable', 'theme_dimensions');
+}
+
 if ($action === 'enter') {
-    focusmode::enter_session((int) $course->id);
+    focusmode::choose((int) $course->id, true);
     redirect($cm->url);
 } else if ($action === 'leave') {
-    focusmode::leave_session((int) $course->id);
-    redirect(focusmode::close_url($cm));
+    // A page with no ordinary skin to go back to leaves the course instead, and records nothing.
+    if (focusmode::leaves_course($cm)) {
+        redirect(focusmode::close_url($cm));
+    }
+    focusmode::choose((int) $course->id, false);
+    redirect($cm->url);
 } else {
     throw new \moodle_exception('invalidaction');
 }

@@ -13,10 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// Focus mode. Every rule of this file has to be scoped under the body class the renderer adds,
-// because the file is concatenated into the theme's main SCSS and reaches every page of the
-// site otherwise - an unscoped "display: none" on the navbar would hide it everywhere. A unit
-// test asserts the scope, and the two class names it accepts are the two below.
+// Focus mode. Every rule of this file has to be scoped under a body class the renderer adds,
+// because the file is concatenated into the theme's main SCSS (while the master switch is on) and
+// reaches every page of the site otherwise - an unscoped "display: none" on the navbar would hide
+// it everywhere. A unit test asserts the scope, and the three class names it accepts are these:
+// dimensions-focusable on every page that can switch in place, in either skin, and
+// dimensions-focusmode and dimensions-focusmode-expanded on the focused skin, which the amd module
+// moves without a reload.
 
 /* The bar's height is a contract, not a style: every offset which stops the page sliding under a
    fixed bar is compiled from Boost's own $navbar-height and none of those selectors matches on
@@ -44,6 +47,74 @@ body.dimensions-focusmode,
     --dim-ds-tracking-overline: 0.12em;
     --dim-ds-weight-medium: 500;
     --dim-ds-weight-semibold: 600;
+}
+
+/* ---- Which skin --------------------------------------------------------- */
+/* The page carries both: Boost Union's layout, rendered untouched, and what focus mode adds - the
+   bar and the foot of the content, marked dimensions-focus-only. Outside the focused skin those are
+   not displayed, which also takes them out of the tab order and the accessibility tree. */
+body.dimensions-focusable:not(.dimensions-focusmode) .dimensions-focus-only {
+    display: none;
+}
+
+/* Boost Union's chrome under the focused skin: everything the reduced shell used to leave out,
+   named after Boost Union's own drawers template (BU/templates/theme_boost/drawers.mustache, branch
+   upgrade-503) and core's partials. This list is the coupling with Boost Union now: re-read that
+   template on every Boost Union update, because a new element of it shows inside focus mode until
+   it is named here. Kept: the two drawers and their togglers, the info banners, the JavaScript
+   hint, the course notice, the activity header and Boost Union's footer.
+
+   The navbar is named by its place and not by a class: the focus bar is a .navbar.fixed-top too,
+   and Boost Union's menu bar is a second one. */
+body.dimensions-focusmode #page-wrapper > .navbar.fixed-top:not(.dimensions-focusbar),
+body.dimensions-focusmode #theme_boost-drawers-primary,
+body.dimensions-focusmode #theme_boost_union-drawers-offcanvas,
+body.dimensions-focusmode #page-header,
+body.dimensions-focusmode .secondary-navigation,
+body.dimensions-focusmode #region-main-settings-menu,
+body.dimensions-focusmode .region_main_settings_menu_proxy,
+body.dimensions-focusmode #region-main .tertiary-navigation,
+body.dimensions-focusmode #theme-block-region-outside-top,
+body.dimensions-focusmode #theme-block-region-header,
+body.dimensions-focusmode #theme-block-region-outside-left,
+body.dimensions-focusmode #theme-block-region-outside-right,
+body.dimensions-focusmode #theme-block-region-outside-bottom,
+body.dimensions-focusmode #theme-block-region-content-upper,
+body.dimensions-focusmode #theme-block-region-content-lower,
+body.dimensions-focusmode #theme-block-region-footer,
+body.dimensions-focusmode #themeboostunionslider-wrapper,
+body.dimensions-focusmode #themeboostunionadvtiles,
+body.dimensions-focusmode #footnote {
+    display: none;
+}
+
+/* The activity information box stays core's, and under the focused skin only its description is
+   left: the automatic conditions are the discreet line at the foot of the content instead
+   (decision D3), so the box's half that states them, its grey ground and the rule under the
+   description go. The box is the only place a module's intro is printed since Moodle 4.0, which is
+   why it is reduced here and never removed. */
+body.dimensions-focusmode #region-main .activity-details:not(:empty) {
+    margin-bottom: 0;
+    padding-right: 0;
+    padding-left: 0;
+    border-radius: 0;
+    background-color: transparent;
+}
+
+body.dimensions-focusmode #region-main .activity-details .completion-info {
+    display: none;
+}
+
+body.dimensions-focusmode #region-main .activity-description.has-automatic-completion {
+    border-bottom: 0;
+}
+
+/* ---- The way into focus mode, in the ordinary navbar --------------------- */
+/* The button is spliced into Boost Union's navbar on every page that can switch, so it is scoped
+   under the class both skins carry; under the focused one the navbar is not displayed at all.
+   Bootstrap's bare .btn gives it no edge, so it would be lost between the edit switch and the bell. */
+body.dimensions-focusable .dimensions-focus-entry-button {
+    @include dimensions-navbar-pill;
 }
 
 /* ---- The reading column ------------------------------------------------- */
@@ -188,11 +259,27 @@ body.dimensions-focusmode .dimensions-focusbar-actions > * {
 
 /* The one exception, and the only unbounded thing in the row: a header action is HTML the
    activity module wrote - core's completion button or its status badge on most pages, but
-   mod_forum puts a whole quick search form here and a plugin may put anything at all. So it
-   shrinks before the theme's own controls do. It is not clipped: an element's own overflow does
-   not clip its own outline, but a wrapper's does, and a focus ring inside somebody else's markup
-   is not this theme's to cut. */
-body.dimensions-focusmode .dimensions-focusbar-actions > .dimensions-focusbar-action {
+   mod_forum puts a whole quick search form here and a plugin may put anything at all. So the slot
+   holding them, and each of them inside it, shrinks before the theme's own controls do. Neither is
+   clipped: an element's own overflow does not clip its own outline, but a wrapper's does, and a
+   focus ring inside somebody else's markup is not this theme's to cut.
+
+   The slot is in the bar on every page and the amd module moves the actions in and out of it, so
+   an empty slot takes no box, and with it no gap of the row: the template writes it on one line,
+   and the module leaves it with no child at all, so :empty holds whenever nothing is in it. */
+body.dimensions-focusmode .dimensions-focusbar-actions > .dimensions-focusbar-headeractions {
+    display: flex;
+    flex: 0 1 auto;
+    gap: var(--dim-ds-space-xs);
+    align-items: center;
+    min-width: 0;
+}
+
+body.dimensions-focusmode .dimensions-focusbar-actions > .dimensions-focusbar-headeractions:empty {
+    display: none;
+}
+
+body.dimensions-focusmode .dimensions-focusbar-headeractions > .dimensions-focusbar-action {
     display: flex;
     flex: 0 1 auto;
     align-items: center;

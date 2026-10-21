@@ -48,12 +48,12 @@ final class focusmode_scss_test extends \basic_testcase {
     /**
      * @var array The class prefixes a top-level selector of the stylesheet may be scoped to.
      *
-     * Not only the body class: the entry button lives in the navbar of an ordinary page, so its
-     * rule is in post.scss and cannot be scoped under the body class. The feature's own class
-     * prefixes stay accepted scopes here because nothing core or Boost Union ships carries them,
-     * so a selector wearing one cannot reach markup this theme did not draw.
+     * The two body classes - dimensions-focusable on every page that can switch in place, in either
+     * skin, and dimensions-focusmode (with its -expanded companion) on the focused skin - and the
+     * feature's own class prefixes, which stay accepted scopes because nothing core or Boost Union
+     * ships carries them, so a selector wearing one cannot reach markup this theme did not draw.
      */
-    private const SCOPES = ['.dimensions-focusmode', '.dimensions-focusbar', '.dimensions-focus-'];
+    private const SCOPES = ['.dimensions-focusable', '.dimensions-focusmode', '.dimensions-focusbar', '.dimensions-focus-'];
 
     /**
      * Absolute path to the theme root.
@@ -218,7 +218,7 @@ final class focusmode_scss_test extends \basic_testcase {
      * old name buys nothing at all and costs the rule an expiry date.
      *
      * data-toggle is listed with the equals sign on purpose: Boost Union's own drawer markup,
-     * which the focus template copies verbatim, carries data-toggler and data-target, and
+     * which the focus mode once copied verbatim, carries data-toggler and data-target, and
      * neither is a Bootstrap attribute.
      *
      * @return array Regular expression => the spelling to use instead.
@@ -448,15 +448,18 @@ final class focusmode_scss_test extends \basic_testcase {
             'min-width: 0 on the cluster removes the floor which keeps the controls at full size.'
         );
 
-        $action = $this->declarations_of(
-            $scss,
-            'body.dimensions-focusmode .dimensions-focusbar-actions > .dimensions-focusbar-action'
-        );
-        $this->assertMatchesRegularExpression(
-            '~min-width:\s*0~',
-            $action,
-            'A header action is markup this theme did not write and has to be the one thing which gives way.'
-        );
+        foreach (
+            [
+                'body.dimensions-focusmode .dimensions-focusbar-actions > .dimensions-focusbar-headeractions',
+                'body.dimensions-focusmode .dimensions-focusbar-headeractions > .dimensions-focusbar-action',
+            ] as $selector
+        ) {
+            $this->assertMatchesRegularExpression(
+                '~min-width:\s*0~',
+                $this->declarations_of($scss, $selector),
+                'A header action is markup this theme did not write and has to be the one thing which gives way: ' . $selector
+            );
+        }
     }
 
     /**
@@ -534,7 +537,8 @@ final class focusmode_scss_test extends \basic_testcase {
      * The way in and the way out of focus mode wear one pill, from one definition.
      *
      * They are the same control seconds apart, so both take the dimensions-navbar-pill mixin of
-     * post.scss; this test stops either end being restyled by hand instead.
+     * post.scss; this test stops either end being restyled by hand instead. Both rules are in
+     * focusmode.scss, so neither reaches a page while the master switch is off.
      *
      * @return void
      */
@@ -548,8 +552,13 @@ final class focusmode_scss_test extends \basic_testcase {
         );
         $this->assertMatchesRegularExpression(
             '~@include\s+dimensions-navbar-pill;~',
-            $this->declarations_of($post, '.dimensions-focus-entry-button'),
+            $this->declarations_of($this->stylesheet(), 'body.dimensions-focusable .dimensions-focus-entry-button'),
             'The entry button must take the shared pill rather than a copy of it.'
+        );
+        $this->assertStringNotContainsString(
+            'dimensions-focus-entry-button',
+            $post,
+            'The entry button\'s rule belongs to focusmode.scss, which is not compiled while the switch is off.'
         );
         $this->assertMatchesRegularExpression(
             '~@include\s+dimensions-navbar-pill;~',
@@ -583,6 +592,113 @@ final class focusmode_scss_test extends \basic_testcase {
             '~margin-inline-start:\s*auto~',
             $this->declarations_of($this->stylesheet(), 'body.dimensions-focusmode .dimensions-focusbar-actions'),
             'The auto margin is what holds the controls at the end of the row now.'
+        );
+    }
+
+    /**
+     * Outside the focused skin, what focus mode adds is not displayed.
+     *
+     * The bar and the foot of the content are in the page whichever skin it opens in, and the
+     * module only moves the body class; display: none also keeps them out of the tab order and the
+     * accessibility tree while the ordinary skin is shown.
+     *
+     * @return void
+     */
+    public function test_the_focus_only_parts_are_hidden_outside_the_focused_skin(): void {
+        $rule = $this->declarations_of(
+            $this->stylesheet(),
+            'body.dimensions-focusable:not(.dimensions-focusmode) .dimensions-focus-only'
+        );
+        $this->assertMatchesRegularExpression('~display:\s*none~', $rule);
+
+        foreach (['/templates/focusmode_bar.mustache', '/templates/focusmode_foot.mustache'] as $file) {
+            $this->assertStringContainsString(
+                'dimensions-focus-only',
+                file_get_contents($this->plugin_root() . $file),
+                $file . ' must mark its root focus-only.'
+            );
+        }
+    }
+
+    /**
+     * The focused skin hides Boost Union's chrome, and keeps what the reader works with.
+     *
+     * The list is the coupling with Boost Union's drawers template. Named here are the pieces the
+     * reduced shell used to leave out; refused are the ones it kept on purpose - the two drawers and
+     * their togglers (a book's contents and a quiz's navigation are blocks), the activity header with
+     * its anchor, the info banners and the footer, which in either skin is Boost Union's own.
+     *
+     * @return void
+     */
+    public function test_the_focused_skin_hides_the_chrome_and_keeps_the_drawers(): void {
+        $scss = $this->stylesheet();
+        $found = preg_match(
+            '~((?:body\.dimensions-focusmode [^,{]+,\s*)+body\.dimensions-focusmode [^,{]+)\s*\{\s*display:\s*none;\s*\}~',
+            $scss,
+            $matches
+        );
+        $this->assertSame(1, $found, 'The chrome list is gone from the stylesheet.');
+        $selectors = array_map('trim', explode(',', $matches[1]));
+
+        foreach (
+            [
+                '#page-wrapper > .navbar.fixed-top:not(.dimensions-focusbar)',
+                '#page-header',
+                '.secondary-navigation',
+                '#region-main-settings-menu',
+                '#theme-block-region-outside-left',
+                '#footnote',
+            ] as $hidden
+        ) {
+            $this->assertContains('body.dimensions-focusmode ' . $hidden, $selectors, $hidden . ' must be hidden.');
+        }
+        $kept = ['drawers-courseindex', 'drawers-blocks', 'drawer-toggle', 'activity-header', 'infobanner', 'page-footer'];
+        foreach ($kept as $name) {
+            foreach ($selectors as $selector) {
+                $this->assertStringNotContainsString($name, $selector, $name . ' is the reader\'s and must stay.');
+            }
+        }
+    }
+
+    /**
+     * Core's activity information box is reduced to the description in the focused skin, never removed.
+     *
+     * Decision D3: the conditions are the discreet line at the foot of the content, so the box's
+     * half that states them goes, while the box itself is the only place the intro is printed.
+     *
+     * @return void
+     */
+    public function test_the_activity_box_keeps_only_the_description_when_focused(): void {
+        $scss = $this->stylesheet();
+
+        $this->assertMatchesRegularExpression(
+            '~display:\s*none~',
+            $this->declarations_of($scss, 'body.dimensions-focusmode #region-main .activity-details .completion-info')
+        );
+        $this->assertStringNotContainsString('.activity-information {', $scss, 'The box is reduced, never hidden whole.');
+        $this->assertStringNotContainsString('#intro {', $scss, 'The description is never hidden.');
+    }
+
+    /**
+     * An empty header actions slot takes no box in the bar.
+     *
+     * The module moves the actions out of the slot in the ordinary skin, and a slot holding nothing
+     * would still take a gap of the row; the template writes it on one line so :empty holds.
+     *
+     * @return void
+     */
+    public function test_an_empty_header_actions_slot_takes_no_box(): void {
+        $this->assertMatchesRegularExpression(
+            '~display:\s*none~',
+            $this->declarations_of(
+                $this->stylesheet(),
+                'body.dimensions-focusmode .dimensions-focusbar-actions > .dimensions-focusbar-headeractions:empty'
+            )
+        );
+        $this->assertMatchesRegularExpression(
+            '~data-region="dimensions-focus-headeractions">\{\{#headeractions\}\}.*\{\{/headeractions\}\}</div>~',
+            file_get_contents($this->plugin_root() . '/templates/focusmode_bar.mustache'),
+            'The slot must be written on one line, or a text node defeats :empty.'
         );
     }
 }

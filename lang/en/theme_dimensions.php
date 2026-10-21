@@ -354,12 +354,16 @@ $string['extrascssinheritancesetting_desc'] = 'With this setting, you control if
 $string['focusmode'] = 'Focus mode on activities';
 $string['focusmode_bar'] = 'Focus mode';
 $string['focusmode_close'] = 'Exit focus mode';
-$string['focusmode_close_title'] = 'Back to the course';
+$string['focusmode_close_title'] = 'Back to the ordinary page of this activity';
+$string['focusmode_close_title_site'] = 'Leave the course for the site home page';
 $string['focusmode_completionkicker'] = 'To complete';
-$string['focusmode_desc'] = 'Master switch. Courses opt in through the "Focus mode on activities" box in their settings; a learner may also open focus mode from the navbar button on any activity of a course that did not. Append ?focusoff=1 to an activity URL to see the ordinary page once, for support.';
+$string['focusmode_desc'] = 'Master switch, off on a new site. While it is off nothing of focus mode is loaded: no bar, no navbar button, no styles, and the "Focus mode on activities" box disappears from the course settings (each course keeps its answer for when it is switched back on). Courses opt in through that box; a learner may also open focus mode from the navbar button on any activity, and leave it again, for the rest of the session in that course, without reloading the page. Append ?focusoff=1 to an activity URL to see the ordinary page once, for support.';
 $string['focusmode_enter'] = 'Focus mode';
 $string['focusmode_enter_title'] = 'Open this activity in focus mode';
 $string['focusmode_more'] = 'More';
+$string['focusmode_status_off'] = 'Focus mode off';
+$string['focusmode_status_on'] = 'Focus mode on';
+$string['focusmode_unavailable'] = 'Focus mode is not available here.';
 $string['focusmode_width'] = 'Wide reading column';
 $string['focusmodedefaultwidth'] = 'Default width';
 $string['focusmodedefaultwidth_contracted'] = 'Contracted (830px, the activity page width)';

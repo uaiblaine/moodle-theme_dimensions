@@ -24,6 +24,8 @@
 
 namespace theme_dimensions\local\hook\course;
 
+use theme_dimensions\local\focusmode;
+use theme_dimensions\local\focusmodefields;
 use theme_dimensions\local\landing\guestaccess;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\offer;
@@ -31,14 +33,13 @@ use theme_dimensions\local\landing\publicaccess;
 use theme_dimensions\local\landingfields;
 
 /**
- * Adjusts the landing page part of the course settings form.
+ * Adjusts the parts of the course settings form made of the fields this theme provisions.
  *
- * Three edits, about the fields this theme provisions and not expressible
- * through the custom field configuration itself: a course which already has
- * a landing page gains its public address and a link to the page, an event whose
- * enrolment methods set no deadline is told so (round 6, decision D9), and
- * the fields that only apply to some models, modalities and formats are
- * hidden while they do not (decisions D8 and D10).
+ * Four edits, not expressible through the custom field configuration itself: a course which
+ * already has a landing page gains its public address and a link to the page, an event whose
+ * enrolment methods set no deadline is told so (round 6, decision D9), the landing page fields that
+ * only apply to some models, modalities and formats are hidden while they do not (decisions D8 and
+ * D10), and the focus mode box leaves the form while focus mode's master switch is off.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -60,6 +61,44 @@ class after_form_definition {
         self::add_landing_link($hook->formwrapper->get_course(), $hook->mform);
         self::warn_open_ended_event($hook->formwrapper->get_course(), $hook->mform);
         self::hide_inapplicable_fields($hook->mform);
+        self::remove_focusmode_field($hook->mform);
+    }
+
+    /**
+     * Take the focus mode box, its description and its category's header out of the form while the master switch is off.
+     *
+     * Off, nothing of the feature is loaded (decision D4), and a box nobody's answer reaches would
+     * be a question with no effect. Removing the elements stores nothing: core's
+     * data_controller::instance_form_save() returns early for an element absent from the
+     * submission (customfield/classes/data_controller.php), so every course keeps its answer for the
+     * day the switch is turned back on. The category's header goes too, but only while the field is
+     * alone in it: an administrator may have moved other fields into the theme's category.
+     *
+     * @param \MoodleQuickForm $mform The course form.
+     * @return void
+     */
+    private static function remove_focusmode_field(\MoodleQuickForm $mform): void {
+        if (focusmode::master_enabled()) {
+            return;
+        }
+        $element = 'customfield_' . focusmodefields::SHORTNAME;
+        if (!$mform->elementExists($element)) {
+            return;
+        }
+        $mform->removeElement($element);
+        if ($mform->elementExists($element . '_static')) {
+            $mform->removeElement($element . '_static');
+        }
+
+        $field = focusmodefields::get_field();
+        if (!$field) {
+            return;
+        }
+        $category = $field->get_category();
+        $header = 'category_' . $category->get('id');
+        if (count($category->get_fields()) === 1 && $mform->elementExists($header)) {
+            $mform->removeElement($header);
+        }
     }
 
     /**

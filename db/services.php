@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - External functions of the category showcase and the mobile drawer.
+ * Theme Dimensions - External functions of the category showcase, the mobile drawer and focus mode.
  *
  * The first four answer the logged-in showcase's client module over core/ajax:
  * loginrequired, ajax, no capability of their own - every refusal is decided inside the
@@ -24,8 +24,9 @@
  * lib/ajax/service-nologin.php and so is not loginrequired: it serves only a public
  * category's listing, refuses every logged-in session, and is closed until the site opens it
  * (publicaccess::client_enabled()). The sixth answers the mobile drawer of a logged-in account
- * when it is first shown, about the session's own user only. None is part of a service such as the
- * mobile one.
+ * when it is first shown, about the session's own user only. The seventh records a switch of focus
+ * mode made in place, in the session alone, and so keeps a writable session. None is part of a
+ * service such as the mobile one.
  * Registered on upgrade, so any change here ships with a version bump.
  *
  * @package    theme_dimensions
@@ -85,6 +86,14 @@ $functions = [
         'type' => 'read',
         'ajax' => true,
         'loginrequired' => false,
+        'capabilities' => '',
+    ],
+    'theme_dimensions_set_focus_mode' => [
+        'classname' => 'theme_dimensions\external\set_focus_mode',
+        'description' => 'Record that the reader switched focus mode on or off in an activity\'s course, for the session.',
+        'type' => 'write',
+        'ajax' => true,
+        'loginrequired' => true,
         'capabilities' => '',
     ],
 ];

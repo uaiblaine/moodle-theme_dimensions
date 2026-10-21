@@ -1,0 +1,62 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/focusmode_top
+
+    What the top of the body carries on an activity page that can switch focus mode in place.
+
+    The theme's core renderer appends it to core's standard top of body html, which Boost Union's
+    layout template prints first inside the page wrapper, so it follows core's skip link and comes
+    before Boost Union's navbar.
+
+    The bar is always in the page and the stylesheet shows it only under the focus mode body class.
+    The status line is NOT inside it on purpose: a live region inside an element that is not
+    displayed announces nothing, and the module writes the new mode here on every switch, in both
+    directions. It starts empty, so the first paint announces nothing.
+
+    Context variables required for this template (described without braces, because a Mustache
+    comment closes at the first pair of closing braces it meets):
+
+    * bar - the bar sub-context, documented in the focusmode_bar template
+
+    Example context (json):
+    {
+        "bar": {
+            "navbarcolorclasses": "bg-primary",
+            "databstheme": "dark",
+            "coursename": "APH-2026",
+            "closeurl": "https://example.com/course/view.php?id=2#module-4",
+            "title": "Sinais vitais",
+            "headeractions": [],
+            "expanded": false,
+            "widthlabel": "Wide reading column",
+            "hasmore": false,
+            "moreitems": [],
+            "editswitch": "",
+            "leaveform": true,
+            "actionurl": "https://example.com/theme/dimensions/focus.php",
+            "sesskey": "AbC123dEf4",
+            "cmid": 4,
+            "closelabel": "Exit focus mode",
+            "closetitle": "Back to the ordinary page"
+        }
+    }
+}}
+<div class="visually-hidden" aria-live="polite" data-region="dimensions-focus-status"></div>
+{{#bar}}
+    {{> theme_dimensions/focusmode_bar }}
+{{/bar}}

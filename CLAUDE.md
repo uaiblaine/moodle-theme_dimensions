@@ -217,19 +217,20 @@ amd/src/category*.js           The showcase's modules. Its listing clients: cate
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
                                name, under two rules of the theme's own. See its section below.
 templates/category_pages.mustache  The strip's markup, drawn by category_listing above the toolbar.
-classes/local/focusmode.php    Focus mode: the whole predicate, the close target, the session
-                               flag, and layout_context() which reduces Boost Union's context.
+classes/local/focusmode.php    Focus mode: the whole predicate, the close target, the two session
+                               flags, and shell(), which reads Boost Union's context for the bar.
 classes/local/focusmodefields.php  Provisions the per course focus mode checkbox and moves its
                                default for new courses (materialise, then move).
 classes/task/materialise_focusmode_default.php  The adhoc half of that move.
 classes/output/focusmode_bar.php   The bar's context. Every decision comes from local\focusmode.
-templates/focusmode.mustache   The reduced shell. Keep the footer partial: it is the JS token.
+templates/focusmode_top.mustache   The bar and the status line, appended to standard_top_of_body_html().
 templates/focusmode_bar.mustache   The bar alone, so it can be asserted in isolation.
+templates/focusmode_foot.mustache  The completion line and the previous/next row, after activity_navigation().
 templates/focusmode_entry.mustache The navbar way in, spliced by navbar_plugin_output().
-templates/focusmode_description.mustache  The activity description, without core's box.
-scss/focusmode.scss            Focus mode styles. Every rule scoped under the body class.
-amd/src/focusmode.js           The width toggle and its user preference.
-focus.php                      The enter/leave endpoint: guards, a state change, a redirect.
+scss/focusmode.scss            Focus mode styles, compiled only while the master switch is on; the two skins.
+amd/src/focusmode.js           The switch in place (class, header actions, focus, the web service) and the width.
+classes/external/set_focus_mode.php  Records a switch made in place, in the session.
+focus.php                      The no-JavaScript fallback of the switch: guards, a state change, a redirect.
 templates/core/user_menu_metadata.mustache  Adds the name beside the avatar, md and up.
 templates/loginform.mustache   The theme's login page's form column; core/loginform stays Boost Union's.
 templates/core/login_panel.mustache  The institutional panel, Boost Union v5.2-r8's partial in the other branch.
@@ -887,8 +888,8 @@ Boost Union parity table and the MooTube finding are in the original design reco
 
 - **Boost Union writes `courserelatedhints` only when it has a hint, so the theme SETS the key, by template
   name** (`core_renderer::HINT_LAYOUTS`, drawers and columns2), to the notice or to `''`. A shape guard
-  would miss every page where Boost Union had nothing to say and the notice does. It runs before the focus
-  mode swap, so `focusmode.mustache` prints the notice too. Boost Union still computes its hints on every
+  would miss every page where Boost Union had nothing to say and the notice does. Focus mode keeps it in
+  its reading column, as the ordinary skin does. Boost Union still computes its hints on every
   such page; their cost is unchanged and their output is discarded.
 - **The hints are a COPY of `theme_boost_union_get_course_related_hints()`**: same settings (compared with
   Boost Union's own constants), capabilities, strings and placeholders. Re-read that function on every
@@ -3206,141 +3207,127 @@ the renderer factory (see the profile page section), with a factory test beside 
 ## Focus mode
 
 The reading mode for activity pages: a 60px bar with the activity name in place of Boost
-Union's navbar, the course index and the block drawer kept, no breadcrumb, no tabs. The whole
-design record — closed decisions, the predicate table, the risks — is
-the original design record (not part of this repository); what follows is what a maintainer must not lose.
-The planned switch in place, without a reload (owner decisions of 2026-10-20, not implemented), is
-`docs/focusmode/README.md`; until it lands, the bullets below describe the code.
+Union's navbar, the course index and the block drawer kept, no breadcrumb, no tabs, **switched in
+place, without a reload**. The original design record (not part of this repository) holds the first
+version's decisions; the switch in place and the owner's decisions D1-D5 of 2026-10-20 are
+`docs/focusmode/README.md`. What follows is what a maintainer must not lose.
 
-- **The interception is a template swap in `render_from_template()`, and nothing else.** No
-  new layout file, no `$THEME->layouts` entry, no pagelayout switch, no hook. It cannot be a
-  pagelayout switch: `require_login()` / `require_course_login()` assign `'incourse'`
-  themselves *after* `core\hook\after_config` fires, so any earlier choice is overwritten on
-  every activity page, and by header time the layout options are already memoised. Boost
-  Union's layout file ends with `render_from_template('theme_boost/drawers', …)` — core
-  Boost's own naming, which Boost Union had to keep to stay a valid override target — so the
-  guard matches that string. On Moodle Workplace (`admin/tool/tenant` present) with Boost
-  Union's MWP extension installed, Boost Union renders `local_boost_union_mwp/drawers`
-  instead, the guard does not match, and focus mode fails safe to the ordinary page.
-  Workplace is out of scope for this theme. Keeping `'incourse'` is also what keeps every Boost Union
-  setting keyed on that literal resolving.
-- **The bar keeps `class="navbar fixed-top"`, and 60px is a contract.** Every offset that
-  stops the page sliding under a fixed bar is compiled from Boost's `$navbar-height: 60px`
-  and none of those selectors matches on `.navbar` itself — `navbar.scss:151-153`,
-  `layout.scss:36-37,184-188`, `drawer.scss`. Changing the class or the height puts all four
-  out by the difference. The 3px signature band needs no new CSS either: it is the `::after`
-  on `.navbar.fixed-top` in `post.scss`.
-- **Never call `$PAGE->activityheader->disable()` and never `set_hidecompletion(true)`.**
-  Both sit outside / around `if (!$this->hidecompletion)` in
-  `lib/classes/output/activity_header.php:193`, which is where core queues the completion
-  control into the page's header actions: the manual button or the automatic status badge, or,
-  under linear navigation, the read-only status (below). Take either call and the bar loses
-  those controls, silently. The `<h2>` and the activity
-  information box are removed by *rewriting one context key* in
-  `focusmode::layout_context()`, which leaves everything else in place — including the
-  `#maincontent` anchor the partial emits unconditionally.
-- **The activity header's title needs no blanking.** Boost and Boost Union declare
-  `activityheaderconfig notitle` (`theme/boost/config.php:189-191`, BU `config.php:252`), so
-  core exports the title empty and the partial draws only the anchor. A blanking line the first
-  draft carried reddened nothing in the mutation sweep and was deleted;
-  `test_the_activity_name_is_shown_exactly_once` is the sentinel.
-- **`headercontent['completion']` is REPLACED, never blanked, because the activity
-  DESCRIPTION is inside it.** That key holds core's whole rendered
-  `core_course/activity_info`, and since Moodle 4.0 that template is the only place a
-  module's intro appears — the modules stopped printing it themselves. Blanking the key
-  therefore removes content and not chrome: a page's or a forum's intro text vanishes from
-  the reading column while the page still looks entirely correct, which is why it survived a
-  first round of review. `focusmode::description_only()` renders
-  `templates/focusmode_description.mustache` in its place — core's own
-  `div.activity-description#intro` around the same `format_module_intro()` output, with no
-  box, no `data-region="activity-information"` and no completion half — and the empty string
-  when the activity has no intro. Guarded by
-  `test_the_activity_description_is_kept_in_the_reading_column` and the mutation gate
-  `focusmode_description`; note that every assertion about the box being gone stays green
-  under that mutation, which is exactly why the gate is needed.
-- **The Boost Union footer partial in `templates/focusmode.mustache` is the JavaScript.** It
-  is what emits `standard_end_of_body_html_endtoken`, which `core_renderer::footer()`
-  substitutes `get_end_code()` into by `str_replace`. A template without it ships the page
-  with **no JavaScript at all**, and nothing errors. It is the most dangerous line in the
-  feature and carries both a test (`test_the_page_still_carries_its_javascript`) and a
-  mutation gate (`focusmode_footer_partial`).
-- **The block drawer is kept verbatim, `forceblockdraweropen` included.** `side-pre` is the
-  only region the `incourse` layout declares, and it is where `mod_book`'s table of contents,
-  `mod_quiz`'s question navigation, `mod_lesson`'s menu and `mod_assign`'s fake blocks live.
-  Dropping it strands a learner inside a book with no way to turn the page. This sank one
-  candidate design; `test_the_block_drawer_is_kept` and `focusmode_blockdrawer` guard it.
+- **One page, two skins.** Boost Union's `theme_boost/drawers` renders UNTOUCHED on every activity
+  page; focus mode is the body class `dimensions-focusmode` plus what it adds, all marked
+  `dimensions-focus-only`: the bar (appended by the `standard_top_of_body_html()` override) and the
+  foot of the content (the completion line and the previous/next row, appended by the
+  `activity_navigation()` override). `render_from_template()` keeps the `theme_boost/drawers` guard
+  but only READS the context there (`focusmode::shell()`), into `core_renderer::$focusshell`, which
+  the three overrides read later in the same render. There is no copied shell any more, and so no
+  "footer partial is the JavaScript" hazard. What replaces the re-diff is the list of Boost Union
+  selectors `scss/focusmode.scss` hides under the body class: **re-read Boost Union's drawers
+  template on every Boost Union update**, because a new element of it shows inside focus mode until
+  it is named there (`test_the_focused_skin_hides_the_chrome_and_keeps_the_drawers`). On Moodle
+  Workplace (`local_boost_union_mwp/drawers`) the guard does not match and focus mode fails safe.
+- **Three body classes.** `dimensions-focusable` on every page `focusmode::available()` accepts (every
+  clause but the course's switch and the session's choice holds), which scopes what holds in both
+  skins (`.dimensions-focus-only` hidden outside focus mode, the entry button's pill);
+  `dimensions-focusmode` (and `-expanded`) on the page that opens focused, which the module then moves.
+  The first paint is the server's (`body_attributes()`), so there is no flash of the wrong mode.
+- **The pagelayout anchor stays.** `require_login()` / `require_course_login()` assign `'incourse'`
+  after `core\hook\after_config` fires, which is why nothing earlier than the layout can decide.
+- **The bar keeps `class="navbar fixed-top"`, and 60px is a contract.** Every offset that stops the
+  page sliding under a fixed bar is compiled from Boost's `$navbar-height: 60px` and none of those
+  selectors matches on `.navbar` itself. The 3px signature band is post.scss's `::after`. **The bar is
+  a `.navbar.fixed-top` printed BEFORE Boost Union's navbar**, so anything looking for "the navbar"
+  with `querySelector('.navbar.fixed-top')` finds the bar first: readingbar.js and compactnav.js add
+  `:not(.dimensions-focusbar)` (gate `js_navbar_skips_focusbar`), readingbar.scss excludes it from the
+  track and stands auto-hide down under the body class (gate `readingbar_autohide_focus_standdown`).
+  readingbar and compactnav still arm only where focus mode does not apply at first paint, so a page
+  that opened focused and is left in place has neither until the next page.
+- **Never call `$PAGE->activityheader->disable()` and never `set_hidecompletion(true)`.** Both take
+  the completion control out of the page's header actions (`activity_header.php:193`): the manual
+  button, the automatic status, or under linear navigation the read-only status.
+- **The header actions are drawn ONCE, where the first paint shows them, and the module moves the
+  nodes.** Focused, the bar takes them (`focusmode_bar` reads them only when `$active`) and
+  `focus_full_header()` withdraws them from Boost Union's page header around the parent's call - by
+  reflection on `moodle_page::$_headeractions`, the one way, and put back afterwards with what the
+  parent appended itself (the region main settings menu, which stays in the header and is hidden with
+  it). Ordinary, the page header draws them and the bar's slot is empty (one line in the template, so
+  `:empty` hides it). Core's manual toggle is delegated on `document`
+  (`manual_completion_toggle.js`), which is what lets one node travel; a hidden copy would go stale
+  when the other was pressed. Gates `focusmode_headeractions_withdrawn`,
+  `focusbar_headeractions_first_paint`, `js_focus_settings_menu_stays`.
+- **Core's activity information box is kept; the focused skin reduces it to `#intro`.** Since 4.0
+  it is the only place a module's intro is printed, so it is never removed: the stylesheet takes
+  away its ground and its `.completion-info` (gate `focusmode_box_completion_hidden`), and the
+  automatic conditions are the discreet line in the foot (decision D3, a hidden duplicate accepted).
+  The activity header's title needs no blanking: Boost and Boost Union declare `activityheaderconfig
+  notitle`; `test_the_activity_name_is_shown_exactly_once` is the sentinel.
+- **State: two per-course session flags, exclusive.** `$SESSION->theme_dimensions_focus[courseid]`
+  (entered) and `theme_dimensions_focusout[courseid]` (left a course that switched focus mode on;
+  decision D1: the rest of the session, in that course). `focusmode::choose()` sets one and clears
+  the other, so the last choice wins whatever the course says; the course clause is "switched on and
+  not left, or entered". Keyed by course: one boolean for the session would follow a learner into
+  another course. Never a user preference: nothing about the person is stored.
+- **The switch in place is the module; the forms are the fallback.** `amd/src/focusmode.js`
+  intercepts the submit of the navbar's entry form and the bar's leave form (delegated on
+  `document`), closes open menus and tooltips, moves the header actions and the class, dispatches
+  `resize` (now and on the column's `transitionend`), moves the focus to the counterpart control,
+  says the mode in the `aria-live` status line (outside the bar: a live region in a hidden element
+  announces nothing), and records the choice through `theme_dimensions_set_focus_mode` under
+  `core/pending`, putting the page back on a refusal. A page the back-forward cache restores is
+  painted to the tab's last choice for the course (sessionStorage), recording nothing. Without
+  JavaScript both forms post to `focus.php`, which records the same choice and reloads the activity.
+- **The web service writes the session only, and keeps a writable session** (type write, no
+  `readonlysession`; `readonly_session_test` holds that). It refuses while the master switch is off,
+  validates the module context (`require_login()` on the cm), refuses the site course and the exit in
+  place of a forced single activity course. The guest is NOT refused, as focus.php does not refuse it:
+  the choice lives in the session. No capability and no event, on purpose (its class docblock says why).
+- **A single activity course (decision D2).** Not forced: it switches in place like any other.
+  Forced (`focusmode::leaves_course()`): no in-place exit; the bar's exit is a link to
+  `new moodle_url('/', ['redirect' => 0])` (`redirect=0` keeps a Dashboard-home reader on the site
+  home; core sends a visitor or the guest under forcelogin to the login page). **5.3 ships the site
+  home switched off (`enablemyhome`), and then `index.php` sends `/` to the reader's own home page
+  whatever `redirect=0` says**: on such a site the exit lands on the Dashboard, by core's decision;
+  the Behat scenario switches the site home on. Gates
+  `focusmode_leaves_course_exit`, `focusmode_single_activity_home`, `ws_focus_leaves_course`.
+- **The master switch ships OFF and, off, loads nothing (D4, D5).** `master_enabled()` reads only an
+  explicit Yes as on, so a fresh install agrees with its settings page (a site that stored a value
+  keeps it). Off: no bar, no entry, no module, no body class, the web service and focus.php refuse,
+  `lib.php` does not compile `scss/focusmode.scss` (the setting carries
+  `theme_reset_all_caches`), the course form loses the box, its `_static` and its category header
+  (only while the field is alone in it; nothing is stored by the removal, `instance_form_save()` skips
+  an absent element), and the tab's other settings are `hide_if()`ed. **Every test that exercises
+  focus mode turns the switch on first**, and the Behat step `focus mode is switched on for the site`
+  also recompiles this theme's CSS under JavaScript, because the Behat site's CSS is built at init with
+  the switch off and restored after every scenario.
 - **The entry button is spliced, not appended, and that is not a preference.**
-  `core_renderer::navbar_plugin_output()` adds the *subsystems'* callbacks first, so
-  `message_popup`'s bell is already in the string by the time a plugin's callback could
-  append — i.e. to the **right** of the bell, the one position ruled out. So a theme
-  `render_navbar_output()` in `lib.php` cannot reach the position at all, and copying Boost
-  Union's 160-line navbar template to place the button by hand would mean re-diffing it for
-  ever. The override calls `parent::`, finds `nav-notification-popover-container`, walks back
-  to the `<div` that opens it and inserts there. With the id absent the button is
-  **prepended**, so the worst case is a position, never a lost control.
-- **The manual way in is a session flag keyed by course id**
-  (`$SESSION->theme_dimensions_focus[courseid]`), never a user preference: it ends
-  with the session and stores nothing about the person. Keyed by course because the course
-  index and the prev/next links are core's plain cm URLs and carry nothing across — one
-  boolean for the whole session would focus a *different* course the learner walked into, and
-  it would pass every other test in the file.
-- **Changing the site default materialises before it moves.** `checkbydefault` does two jobs —
-  what a new course's form shows pre-ticked *and* what every course with no data row reads —
-  so `focusmodefields::sync_default()` writes the **previous** default into every row-less
-  course first and only then moves it. Reversing the two silently flips focus mode in every
-  course whose settings form has never been saved. Above 500 courses step 2 moves into an
-  adhoc task, which mtraces and returns on failure and never throws.
-- **`?focusoff=1` is the smallest kill switch and exists for support**, exactly as `?nocpf=1`
-  does for auth_loginsteps' mask on the login page. Then the course field, then the master setting, then the excluded
-  page types textarea — which ships with `mod-quiz-attempt`, `mod-quiz-summary` and
-  `mod-quiz-review` in it, because an exit control beside a running quiz timer is data loss.
-- **`focusmode::why()` is the trace, and it is CALLED, not emitted.** Its vocabulary is the
-  clause names — `master`, `focusoff`, `pagelayout`, `context`, `cm`, `siteid`, `editing`,
-  `app`, `pagetype`, `course`, `applies` — and a unit test pins them. Nothing renders it into
-  the page: ask it from a debugging snippet (a `docker exec … php -r` one-liner against the
-  page in question, an Xdebug watch, a throwaway `debugging()`), never by reading a saved
-  page. The developer-debug HTML comment earlier drafts of the design record described was
-  never implemented and should not be — it would pin unrelated markup inside the very output
-  every "the bar is absent" assertion is made on, for a question asked twice a year. The
-  snippet is decision 25 of the original design record (not part of this repository).
-- **`focusmode_activity_navigation()` flips `usescourseindex` around one parent call and
-  restores it in a `finally`.** Core returns `''` from `activity_navigation()` whenever the
-  theme has a course index and the format uses one, which is topics and weeks — so without
-  the flip a reader in focus mode has no forward route but the drawer. It must never be set
-  for the whole request: the course format's own content class reads the same property.
-- **On 5.3 core's linear navigation is the route forward, and the flip only runs without it.**
-  Topics and weeks (`enablelinearnav`, on by default) get a sticky footer on every activity page,
-  printed by `core_courseformat\hook_listener::add_course_navigation_sticky_footer()` from
-  `before_footer_html_generation`: previous, next and the manual completion button. `footer()`
-  prints it into the focus page as into any other, so `focusmode_activity_navigation()` returns
-  `''` whenever `linearnavigationsettings::show_navigation_footer()` says core draws it (gate
-  `focusmode_linearnav_defers`); otherwise the page carries two rows under the text. While the
-  footer is there, `activity_header` queues only the read-only `core_course/completion_status`
-  (`span[data-region="completion-status"]`) into the header actions, which core updates when the
-  footer's button is pressed, so that status is what the bar carries. With linear navigation off,
-  5.3 behaves as 5.2: the button in the bar, the theme's row under the text.
-  `focusmode_renderer_test` holds both cases; the Behat scenario walks forward through the footer
-  (`I click on "Next" "link" in the "sticky-footer" "region"`). Nothing measures the footer's
-  position against the focus shell: check it in a browser.
-- **The course index drawer's controls go in `{{$drawercontrols}}`**, the block 5.3's
-  `theme_boost/drawer` declares (5.2's `drawerheadercontent` is gone, and a block the parent does
-  not declare is dropped without a word). Gate `focusmode_drawercontrols_block`.
-- **Every rule of `scss/focusmode.scss` is scoped under `body.dimensions-focusmode`**, and a
-  `basic_testcase` asserts it. The file is concatenated into the theme's main SCSS and
-  reaches every page of the site otherwise. Its tokens are declared on the body **and** on
-  `.dimensions-focusbar`, because an unresolved `var()` is an invalid declaration and not a
-  fallback to the literal.
-- **The completion list wraps core's partial in a `ul` because core 5.2 and 5.3 do, and that is
-  branch-specific.** `templates/focusmode.mustache` mirrors
-  `course/templates/activity_info.mustache`, which on 5.2 and 5.3 puts
-  `core_course/completion_automatic` inside `ul.activity-completion-list`; the partial emits
-  an `li` there. On 5.1 the same partial emits `div.badge[role="listitem"]` and core wraps it
-  in a `div[role="list"]` instead. So the wrapper is correct on the only branch this theme
-  supports and cannot be made correct on both — if the mustache lint ever calls it invalid,
-  the gate is on the wrong branch, not the template. See the Commands section.
+  `core_renderer::navbar_plugin_output()` adds the subsystems' callbacks first, so message_popup's bell
+  is already there and a theme callback would land to its right. The override splices the button
+  before `nav-notification-popover-container`, or prepends it. It is on every available page, the
+  focused one included, where the navbar is hidden: it is the way back in after leaving in place.
+- **Changing the site default materialises before it moves.** `checkbydefault` is also what every
+  row-less course reads, so `focusmodefields::sync_default()` writes the previous default into them
+  first (an adhoc task above 500 courses).
+- **`?focusoff=1` is the smallest kill switch and exists for support**, then the course field, then
+  the master setting, then the excluded page types (shipping the three quiz pages: an exit beside a
+  running quiz timer is data loss). Editing, the app, excluded page types and `focusoff` stay
+  server-side clauses: those pages carry nothing of focus mode.
+- **`focusmode::why()` is the trace, and it is CALLED, not emitted.** Vocabulary: `master`, `focusoff`,
+  `pagelayout`, `context`, `cm`, `siteid`, `editing`, `app`, `pagetype`, `course` (not switched on,
+  not entered), `optout` (switched on, left), `applies`; a unit test pins it.
+- **`focus_activity_navigation()` flips `usescourseindex` around one parent call and restores it in a
+  `finally`**, for the foot's row on topics and weeks; never for the whole request. Where core already
+  returned a row, the foot draws none of its own.
+- **On 5.3 core's linear navigation is the route forward, and the flip only runs without it.** The
+  sticky footer core adds from `before_footer_html_generation` is in the page in either skin, so the
+  foot's row is `''` whenever `linearnavigationsettings::show_navigation_footer()` says core draws it
+  (gate `focusmode_linearnav_defers`); under it the header actions carry only the read-only status.
+- **Every rule of `scss/focusmode.scss` is scoped under `body.dimensions-focusable`,
+  `body.dimensions-focusmode` or a feature class**, and a `basic_testcase` asserts it. Its tokens are
+  declared on the body and on `.dimensions-focusbar`: an unresolved `var()` is an invalid declaration.
+- **The completion line wraps core's partial in a `ul` because core 5.3 does** (`activity_info`); on
+  5.1 the partial is a `div[role=listitem]`, so a mustache lint calling it invalid means the gate ran on
+  the wrong branch.
 
 - **The compiled CSS is verified in process, never in a browser.** The served stylesheet lags
-  one request:
+  one request (and with the master switch off the count is 0 by design):
   `docker exec <stack>-webserver-1 php -r 'define("CLI_SCRIPT",true);require("/var/www/html/config.php");$t=theme_config::load("dimensions");echo substr_count($t->get_css_content(),"dimensions-focusmode");'`
 - **The bar has to set its own colour; `color: inherit` inside it is not enough.** Bootstrap puts
   the navbar's colours into custom properties on the element and never sets `color` on the

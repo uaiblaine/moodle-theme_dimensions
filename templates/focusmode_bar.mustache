@@ -17,7 +17,11 @@
 {{!
     @template theme_dimensions/focusmode_bar
 
-    The bar which replaces Boost Union's navbar while focus mode applies.
+    The bar which stands in for Boost Union's navbar while focus mode applies.
+
+    It is in the page wherever focus mode can be switched in place, and the stylesheet shows it only
+    under the focus mode body class; the theme_dimensions/focusmode module moves that class and the
+    header actions without a reload.
 
     It keeps the navbar and fixed-top classes deliberately: every offset which stops the
     page sliding under a fixed bar is compiled from Boost's own navbar height, and none of
@@ -42,13 +46,16 @@
     * coursename - the course short name, plain spelling, shown as an overline
     * closeurl - where "Exit focus mode" goes, and where the overline links
     * title - the activity name, the page's h1
-    * headeractions - list of objects with an html key: the manual completion button or the status badge
+    * headeractions - list of objects with an html key: the manual completion button or the status badge,
+      on a page that opens focused; empty otherwise, and the module moves them in from the page header
     * expanded - whether the reading column is currently widened
     * widthlabel - the width button's name, the same in both states: aria-pressed carries the state
     * hasmore - whether the overflow menu carries anything at all
     * moreitems - list of objects with url and text keys
     * editswitch - core's rendered edit switch, or the empty string
-    * leaveform - true when leaving must also clear the manual focus session
+    * leaveform - true when the page leaves focus mode in place: a form the module intercepts, which
+      without JavaScript records the choice and reloads the activity; false on a single activity course
+      that switched focus mode on, whose exit is the plain link out of the course
     * actionurl - the theme's focus endpoint, which the leave form posts to
     * sesskey - the session key of the leave form
     * cmid - the course module id of the leave form
@@ -73,23 +80,22 @@
             {"url": "https://example.com/report/log/index.php?id=2", "text": "Reports"}
         ],
         "editswitch": "",
-        "leaveform": false,
+        "leaveform": true,
         "actionurl": "https://example.com/theme/dimensions/focus.php",
         "sesskey": "AbC123dEf4",
         "cmid": 4,
         "closelabel": "Exit focus mode",
-        "closetitle": "Back to the course"
+        "closetitle": "Back to the ordinary page"
     }
 }}
-<nav class="navbar fixed-top dimensions-focusbar {{navbarcolorclasses}}" {{#databstheme}}data-bs-theme="{{databstheme}}"{{/databstheme}} aria-label="{{#str}}focusmode_bar, theme_dimensions{{/str}}">
+<nav class="navbar fixed-top dimensions-focusbar dimensions-focus-only {{navbarcolorclasses}}" {{#databstheme}}data-bs-theme="{{databstheme}}"{{/databstheme}} aria-label="{{#str}}focusmode_bar, theme_dimensions{{/str}}">
     <div class="dimensions-focusbar-heading">
         <a class="dimensions-focusbar-course d-none d-md-block" href="{{closeurl}}">{{coursename}}</a>
         <h1 class="dimensions-focusbar-title">{{title}}</h1>
     </div>
     <div class="dimensions-focusbar-actions">
-        {{#headeractions}}
-            <div class="dimensions-focusbar-action">{{{html}}}</div>
-        {{/headeractions}}
+        {{! One line on purpose: with no action the slot must hold no text node at all, so :empty hides it. }}
+        <div class="dimensions-focusbar-headeractions" data-region="dimensions-focus-headeractions">{{#headeractions}}<div class="dimensions-focusbar-action">{{{html}}}</div>{{/headeractions}}</div>
         <button type="button" class="btn dimensions-focusbar-width d-none d-lg-inline-flex" data-action="dimensions-focus-width" aria-pressed="{{#expanded}}true{{/expanded}}{{^expanded}}false{{/expanded}}" title="{{widthlabel}}">
             <span class="dimensions-focusbar-width-expand{{#expanded}} d-none{{/expanded}}" data-region="dimensions-focus-width-expand">{{#pix}} e/resize, core {{/pix}}</span>
             <span class="dimensions-focusbar-width-contract{{^expanded}} d-none{{/expanded}}" data-region="dimensions-focus-width-contract">{{#pix}} e/merge_cells, core {{/pix}}</span>
@@ -116,7 +122,7 @@
                 <input type="hidden" name="sesskey" value="{{sesskey}}">
                 <input type="hidden" name="cmid" value="{{cmid}}">
                 <input type="hidden" name="action" value="leave">
-                <button type="submit" class="btn dimensions-focusbar-close" title="{{closetitle}}">
+                <button type="submit" class="btn dimensions-focusbar-close" data-action="dimensions-focus-leave" title="{{closetitle}}">
                     <i class="icon fa fa-xmark fa-fw" aria-hidden="true"></i>
                     <span class="dimensions-focusbar-close-label d-none d-md-inline">{{closelabel}}</span>
                     <span class="visually-hidden d-md-none">{{closelabel}}</span>
@@ -124,7 +130,7 @@
             </form>
         {{/leaveform}}
         {{^leaveform}}
-            <a class="btn dimensions-focusbar-close" href="{{closeurl}}" title="{{closetitle}}">
+            <a class="btn dimensions-focusbar-close" href="{{closeurl}}" data-action="dimensions-focus-exit" title="{{closetitle}}">
                 <i class="icon fa fa-xmark fa-fw" aria-hidden="true"></i>
                 <span class="dimensions-focusbar-close-label d-none d-md-inline">{{closelabel}}</span>
                 <span class="visually-hidden d-md-none">{{closelabel}}</span>

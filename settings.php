@@ -380,6 +380,8 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         // Setting: The master switch.
         // The description names the bypass parameter, because an admin looking for a way to see an
         // ordinary activity page without switching the whole site off will look here and nowhere else.
+        // It ships off (focusmode::master_enabled() reads an unset value as off too), and it decides
+        // whether the focus mode stylesheet is compiled at all, so a change rebuilds the theme's CSS.
         $name = 'theme_dimensions/focusmode';
         $title = get_string('focusmode', 'theme_dimensions', null, true);
         $description = get_string('focusmode_desc', 'theme_dimensions', null, true);
@@ -387,9 +389,10 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             $name,
             $title,
             $description,
-            login::SELECT_YES,
+            login::SELECT_NO,
             $yesnooption
         );
+        $setting->set_updatedcallback('theme_reset_all_caches');
         $tab->add($setting);
 
         // Prepare the reading column width options.
@@ -429,8 +432,8 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $tab->add($setting);
 
         // Setting: What a course created from now on answers.
-        // The only setting of this tab which carries a callback: changing the default has to write
-        // the previous answer into the courses which never answered, or they would all change state.
+        // Its callback writes the previous answer into the courses which never answered when the
+        // default changes, or they would all change state.
         $name = 'theme_dimensions/focusmodenewcourses';
         $title = get_string('focusmodenewcourses', 'theme_dimensions', null, true);
         $description = get_string('focusmodenewcourses_desc', 'theme_dimensions', null, true);
@@ -443,6 +446,16 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         );
         $setting->set_updatedcallback('theme_dimensions_sync_focusmode_default');
         $tab->add($setting);
+
+        // The rest of the tab means nothing while the master switch is off.
+        foreach (['focusmodedefaultwidth', 'focusmodeexcludedpagetypes', 'focusmodenewcourses'] as $dependent) {
+            $page->hide_if(
+                'theme_dimensions/' . $dependent,
+                'theme_dimensions/focusmode',
+                'neq',
+                login::SELECT_YES
+            );
+        }
 
         // Add tab to settings page.
         $page->add($tab);

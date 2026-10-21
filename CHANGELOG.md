@@ -5,6 +5,29 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Focus mode switches in place, without a reload** (2026100517; `docs/focusmode/README.md`, decisions D1-D5).
+  Every activity page that can be focused carries both skins: Boost Union's layout renders untouched and the
+  theme adds the bar (after core's top of body) and the foot of the content (the completion line and the
+  previous/next row), shown only under the `dimensions-focusmode` body class. The entry button and the exit
+  switch the class, move the header actions (the manual completion button or its status) between the page
+  header and the bar, move the focus, announce the mode and record the choice for the course through a new
+  web service, `theme_dimensions_set_focus_mode`; without JavaScript they post to `focus.php` and reload the
+  activity. Leaving a course that switched focus mode on lasts the rest of the session in that course (D1);
+  a single activity course that switched it on leaves for the site home page instead (D2). The copied
+  shell `templates/focusmode.mustache` and `focusmode_description.mustache` are deleted; core's activity
+  information box is kept and reduced to the description in focus mode.
+  - **The master switch ships off (D5) and, off, loads nothing (D4)**: no bar, no button, no module, no
+    stylesheet (`scss/focusmode.scss` is compiled only while it is on; the setting rebuilds the theme's
+    CSS), no course form box, and the service refuses. A site that stored a value keeps it. The tab's other
+    settings hide while it is off.
+  - Strings `focusmode_close_title_site`, `focusmode_status_on`, `focusmode_status_off`,
+    `focusmode_unavailable`; `focusmode_close_title` and `focusmode_desc` reworded.
+  - readingbar and compactnav skip the focus bar when they look for the navbar, and auto-hide stands down
+    under focus mode.
+  - Mutation gates: six retired with the shell (`focusmode_template_swap`, `focusmode_footer_partial`,
+    `focusmode_blockdrawer`, `focusmode_description`, `focusmode_drawercontrols_block`,
+    `r6s21_focus_guest_login`), two rewritten, twenty-three added; every line of the spec dry-matched.
+
 - **The landing page's hero takes the brand colour.** The hero and the guest entry's card paint a gradient of
   `$primary` (a head 18% darker, the colour, a tail 12% lighter: the stops of `branding::stops()`) instead of the
   fixed navy, and the guest entry's button writes its label in that colour. Boost Union compiles the sheet once per
