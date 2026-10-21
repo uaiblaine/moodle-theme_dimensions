@@ -28,6 +28,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
     `focusmode_blockdrawer`, `focusmode_description`, `focusmode_drawercontrols_block`,
     `r6s21_focus_guest_login`), two rewritten, twenty-three added; every line of the spec dry-matched.
 
+- **The landing page's hero takes the brand colour.** The hero and the guest entry's card paint a gradient of
+  `$primary` (a head 18% darker, the colour, a tail 12% lighter: the stops of `branding::stops()`) instead of the
+  fixed navy, and the guest entry's button writes its label in that colour. Boost Union compiles the sheet once per
+  flavour, so each flavour's brand colour gets its own hero, an anonymous visitor's included. A brand colour on whose
+  lightest stop white text reads under 4.5:1 keeps the navy; Boost's default blue is one, so a site with no brand
+  colour looks as before. Stylesheet only: no version bump; a site picks it up after a cache purge.
+  - `tests/local/landing_scss_test.php` compiles `scss/landing.scss` against Bootstrap with four brand colours.
+
 - **The Brazilian Portuguese pack calls the landing page "Página de apresentação do curso".** Every "hotsite"
   in `lang/pt_br` (37 strings: the course notice chips, the field descriptions, the recommendations, the settings
   tab) now uses the name the custom field category already had, with articles and agreements rewritten to the

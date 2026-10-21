@@ -15,18 +15,44 @@
 
 // Enrolment landing page. Every colour, radius, shadow and
 // motion value comes from the design-system tokens declared in post.scss; the
-// only local literals are the white-over-navy glass values the design system
-// itself fixes for chips on the institutional gradient. The organisation
+// only local literals are the white-over-glass values the design system
+// itself fixes for chips on the hero's gradient. The organisation
 // flavour recolours the page chrome through Boost Union's own mechanisms.
 
+// The ground of the hero and of the guest entry's card: the brand colour as a gradient, with the
+// stops of {@see \theme_dimensions\local\category\branding::stops()} (a head 18% darker, the colour,
+// a tail 12% lighter). Boost Union compiles this sheet once per flavour with that flavour's
+// look_brandcolor as $primary, so every flavour gets its own ground, the anonymous visitor's
+// included. Both grounds carry white text, so a brand colour on whose lightest stop white reads
+// under branding::FLOOR (4.5:1) keeps the institutional navy; Boost's default blue is one of them.
+$dim-landing-from: shade-color($primary, 18%);
+$dim-landing-to: tint-color($primary, 12%);
+$dim-landing-branded: contrast-ratio($dim-landing-to, $white) >= 4.5;
+
+// The three stops, declared on each root that paints them.
+@mixin dim-landing-ground {
+    @if $dim-landing-branded {
+        --dim-landing-from: #{$dim-landing-from};
+        --dim-landing-mid: #{$primary};
+        --dim-landing-to: #{$dim-landing-to};
+    }
+    @else {
+        --dim-landing-from: var(--dim-ds-blue-800);
+        --dim-landing-mid: var(--dim-ds-blue-600);
+        --dim-landing-to: var(--dim-ds-blue-500);
+    }
+}
+
 .theme_dimensions-landing {
+    @include dim-landing-ground;
+
     .dimensions-landing__hero {
         position: relative;
         overflow: hidden;
         padding: 2.5rem 1.75rem 3.25rem;
         border-radius: var(--dim-ds-radius-xl);
         clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px));
-        background: linear-gradient(135deg, var(--dim-ds-blue-800), var(--dim-ds-blue-600) 55%, var(--dim-ds-blue-500));
+        background: linear-gradient(135deg, var(--dim-landing-from), var(--dim-landing-mid) 55%, var(--dim-landing-to));
         color: var(--dim-ds-text-inverse);
     }
 
@@ -681,8 +707,10 @@
 // The guest entry's interstitial: the moment between the "enter as guest" address and the course.
 // One card on the embedded layout, in the hero's gradient with the design system's chamfer. The
 // focus ring turns white on it, as the category hero's does on its band: the ring's blue is lost
-// on the navy. The bar is decoration and stands still for a reader who asked for less motion.
+// on the ground. The bar is decoration and stands still for a reader who asked for less motion.
 .theme_dimensions-guestentry {
+    @include dim-landing-ground;
+
     .dimensions-guestentry {
         display: flex;
         align-items: center;
@@ -701,7 +729,7 @@
         padding: 2.125rem 1.625rem;
         border-radius: var(--dim-ds-radius-xl);
         clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
-        background: linear-gradient(135deg, var(--dim-ds-blue-800), var(--dim-ds-blue-600) 55%, var(--dim-ds-blue-500));
+        background: linear-gradient(135deg, var(--dim-landing-from), var(--dim-landing-mid) 55%, var(--dim-landing-to));
         color: var(--dim-ds-text-inverse);
         box-shadow: var(--dim-ds-shadow-lg);
     }
@@ -739,10 +767,11 @@
         margin: 0;
     }
 
+    // The ground's own colour on white: the contrast that kept white on the ground holds the other way.
     .dimensions-guestentry__button {
         border: 1px solid var(--dim-ds-white);
         background: var(--dim-ds-white);
-        color: var(--dim-ds-blue-600);
+        color: var(--dim-landing-mid);
         font-weight: 600;
     }
 
