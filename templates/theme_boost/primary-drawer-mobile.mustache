@@ -22,6 +22,7 @@
 
     Example context (json):
     {
+        "navbarcolorclasses": "navbar-dark bg-primary",
         "output": {
             "should_display_navbar_logo": true,
             "get_compact_logo_url": "http://placekitten.com/50/50"
@@ -61,7 +62,12 @@
 {{!
     theme_dimensions: this is Boost Union's override of theme_boost/primary-drawer-mobile, copied
     verbatim from Boost Union's upgrade-503 branch (templates/theme_boost/primary-drawer-mobile.mustache,
-    2026-10-14, release v5.2-r12, version 2026100500), with TWO modifications:
+    2026-10-14, release v5.2-r12, version 2026100500), with THREE modifications:
+
+    * A band behind the drawer's header carrying the navbar's own colour classes (navbarcolorclasses,
+      the layout context key the navbar is drawn with), so every rule that paints the navbar - Boost
+      Union's colour and tint, a flavour's, the dark colour mode's repaint - paints the band too. The
+      drawer opens over the navbar (scss/post.scss), and its logo is the navbar's, made for that colour.
 
     * The visitor's "New here?" card (theme_dimensions/navbar_guest_card) at the start of the drawer's
       content, drawn from the layout context key dimensionsguest, which this theme's core renderer
@@ -79,6 +85,7 @@
     {{$drawerclasses}}drawer drawer-left drawer-primary{{/drawerclasses}}
     {{$drawercloseonresize}}1{{/drawercloseonresize}}
     {{$drawerheading}}
+        <span class="navbar {{navbarcolorclasses}} dimensions-drawer-band" aria-hidden="true"></span>
         <a
             href="{{#alternativelogolinkurl}}{{{alternativelogolinkurl}}}{{/alternativelogolinkurl}}{{^alternativelogolinkurl}}{{{ config.homeurl }}}{{/alternativelogolinkurl}}"
             title="{{{ sitename }}}"

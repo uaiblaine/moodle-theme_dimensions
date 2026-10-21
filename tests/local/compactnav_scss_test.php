@@ -179,7 +179,8 @@ final class compactnav_scss_test extends \basic_testcase {
 
     /**
      * Core anchors every .drawer-left from lg up (zero width, an anchored right offset, clipped), and the primary drawer
-     * is one: in compact mode it must be the plain overlay drawer again, under a selector the anchored ones cannot outrank.
+     * is one: in compact mode it must be the plain overlay drawer again, under a selector the anchored ones cannot outrank,
+     * over the navbar and the full height of the screen as below md.
      *
      * @return void
      */
@@ -197,11 +198,11 @@ final class compactnav_scss_test extends \basic_testcase {
             [
                 'left: calc(-#{$drawer-left-width} + -10px);',
                 'right: auto;',
-                'top: $navbar-height;',
+                'top: 0;',
                 'width: $drawer-left-width;',
                 'max-width: $drawer-left-width;',
-                'height: calc(100vh - #{$navbar-height});',
-                'max-height: calc(100vh - #{$navbar-height});',
+                'height: 100vh;',
+                'max-height: 100vh;',
                 'overflow: visible;',
                 '@include border-radius(0);',
             ] as $declaration

@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The primary drawer opens over the navbar** (the navbar canvas; no version bump). Below md and in the compact
+  navbar the drawer covers the whole screen, navbar included: the navbar steps down to `$zindex-sticky` while the
+  drawer is open, so core's backdrop dims it and closes the drawer on a press (raising the drawer instead would
+  raise core's shared backdrop over the course index drawer). The drawer's header is the navbar's band: an element
+  carrying the navbar's own colour classes paints it (Boost Union's colour and tint, a flavour's, the dark mode's
+  repaint), the logo sits where the navbar holds it (52px, 4px from the top, 12px from the edge) and takes the
+  navbar's dark variant, and the close button takes the navbar's ink. Auto-hide's Boost Union condition moved
+  inside `:where()`, so its block region ids no longer add specificity to the scope's rules.
 - **Boost Union's new navbar contract** (Boost Union `upgrade-503` at 3b534e30, 2026-10-20; no version bump:
   no schema, service or JavaScript change). Boost Union dropped the navbar's `databstheme` key and colours a
   dark bar through `.navbar-dark` instead, so the theme's renderer now writes `navbar-dark bg-primary` (its

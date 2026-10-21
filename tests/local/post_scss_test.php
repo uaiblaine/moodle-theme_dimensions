@@ -144,6 +144,57 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
+     * The primary drawer covers the navbar by stepping the navbar down, never by raising the drawer.
+     *
+     * Core sizes the drawers' shared backdrop from the first drawer's z-index once, so a raised primary drawer would
+     * put the backdrop over the course index drawer. The navbar steps down to $zindex-sticky only while the primary
+     * drawer is open, and the drawer reaches the top of the screen.
+     *
+     * @return void
+     */
+    public function test_the_primary_drawer_opens_over_the_navbar_without_raising_itself(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertSame(1, preg_match('/\n#theme_boost-drawers-primary\.drawer-primary \{([^}]*)\}/', $scss, $drawer));
+        $this->assertStringContainsString('top: 0;', $drawer[1]);
+        $this->assertStringContainsString('height: 100vh;', $drawer[1]);
+        $this->assertStringNotContainsString('z-index', $drawer[1], 'Raising the drawer raises core\'s backdrop.');
+        $this->assertMatchesRegularExpression(
+            '/\nbody:has\(#theme_boost-drawers-primary\.show\) \.navbar\.fixed-top \{\s*z-index: \$zindex-sticky;\s*\}/',
+            $scss
+        );
+    }
+
+    /**
+     * The drawer's header is painted by the navbar's own classes, and its logo takes the navbar's dark variant.
+     *
+     * The band is an element of the drawer template carrying navbarcolorclasses; the control is that the template
+     * draws it inside the header block, before the logo's link.
+     *
+     * @return void
+     */
+    public function test_the_drawer_header_is_the_navbars_band(): void {
+        $root = dirname(__DIR__, 2);
+        $template = file_get_contents($root . '/templates/theme_boost/primary-drawer-mobile.mustache');
+        $this->assertMatchesRegularExpression(
+            '~\{\{\$drawerheading\}\}\s*<span class="navbar \{\{navbarcolorclasses\}\} dimensions-drawer-band" aria-hidden="true">'
+                . '</span>\s*<a~',
+            $template
+        );
+
+        $scss = file_get_contents($root . '/scss/post.scss');
+        $this->assertMatchesRegularExpression(
+            '/\n\.drawer-primary \.drawerheader \{\s*position: relative;\s*z-index: 0;\s*\.dimensions-drawer-band \{'
+                . '\s*position: absolute;\s*inset: 0;\s*z-index: -1;/',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.drawer-primary \.drawerheader:has\(\.dimensions-drawer-band\.navbar-dark\) \{\s*--dimensions-logo-dark:/',
+            $scss
+        );
+    }
+
+    /**
      * The navbar's dark half keys on Boost Union's .navbar-dark, never on a colour mode the navbar no longer carries.
      *
      * Boost Union's upgrade-503 stopped writing data-bs-theme on the navbar, so a rule keyed on it matches nothing
@@ -157,7 +208,7 @@ final class post_scss_test extends \basic_testcase {
         $this->assertStringNotContainsString('.navbar[data-bs-theme', $scss);
         $this->assertMatchesRegularExpression('/\n\.navbar\.navbar-dark \{\s*--dimensions-pill-border:/', $scss);
         $this->assertMatchesRegularExpression(
-            '/\n\[data-bs-theme="dark"\],\s*\.navbar\.navbar-dark \{\s*--dimensions-logo-dark:/',
+            '/\n\[data-bs-theme="dark"\],\s*\.navbar\.navbar-dark,[^{]*\{\s*--dimensions-logo-dark:/',
             $scss
         );
     }

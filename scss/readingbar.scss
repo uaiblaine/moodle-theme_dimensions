@@ -175,7 +175,9 @@ body.dimensions-readingbar {
    limited-width page showing an outside or header block region its rules pin the drawers and their
    togglers below the resting navbar with !important, which nothing here may outrank, so the navbar would
    leave and the drawers stay. $dimensions-bu-flush is a copy of Boost Union's own condition
-   (scss/boost_union/post.scss, "Finally, we take care of the drawers if outside block regions are shown").
+   (scss/boost_union/post.scss, "Finally, we take care of the drawers if outside block regions are shown"),
+   inside :where() so its block region ids add no specificity: the scope's rules keep the weight they had,
+   under the primary drawer's id and the compact navbar's.
 
    --dimensions-navbar-offset is the height the navbar takes from the top of the screen: 60px at rest, none
    while the module has put dimensions-navbar-away on the body. Every fixed or sticky element core and Boost
@@ -193,7 +195,7 @@ $dimensions-anchored-below: "(#{$drawer-anchored-bottom-gap} + var(--sticky-foot
 $dimensions-bu-flush: ".limitedwidth:has(#theme-block-region-outside-left, #theme-block-region-outside-right, "
     + "#theme-block-region-outside-top, #theme-block-region-header)";
 
-body.dimensions-autohide:not(.dimensions-focusmode):not(:has(.navbar.boost-union-menubar)):not(#{$dimensions-bu-flush}) {
+body.dimensions-autohide:not(.dimensions-focusmode):not(:has(.navbar.boost-union-menubar)):not(:where(#{$dimensions-bu-flush})) {
     --dimensions-navbar-offset: #{$navbar-height};
 
     /* The navbar leaves upwards, and its last 3px - the band, still showing the progress - stay on the
