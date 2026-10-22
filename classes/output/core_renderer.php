@@ -53,6 +53,15 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     public const HINTS_KEY = 'courserelatedhints';
 
     /**
+     * @var string The brand's classes in Boost Union's navbar partial (BU/templates/theme_boost/navbar.mustache, included
+     *      by both layouts of {@see self::HINT_LAYOUTS}): hidden below md, where only the hamburger is drawn.
+     */
+    public const BRAND_HIDDEN = 'class="navbar-brand d-none d-md-flex ';
+
+    /** @var string The same brand shown at every width, beside the hamburger on a phone. */
+    public const BRAND_SHOWN = 'class="navbar-brand d-flex ';
+
+    /**
      * @var array|null What focus mode adds to the page being rendered, {@see focusmode::shell()}'s answer.
      *
      * Set while the drawers layout renders on a page that can switch in place, and read by the three
@@ -259,7 +268,34 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             $this->focusshell = \theme_dimensions\local\focusmode::shell($context, $this->page, $this);
         }
 
-        return parent::render_from_template($templatename, $context);
+        $html = parent::render_from_template($templatename, $context);
+        if (in_array($templatename, self::HINT_LAYOUTS, true)) {
+            $html = $this->brand_on_phones($html);
+        }
+
+        return $html;
+    }
+
+    /**
+     * Show the navbar's brand on a phone too, beside the hamburger.
+     *
+     * Boost Union's navbar partial hides the logo below md with Bootstrap's d-none, which is display: none !important,
+     * so no rule of this theme's stylesheet can bring it back (stylelint forbids !important) and the partial is a piece of
+     * the layout, never rendered through this method on its own. The layout's output is therefore edited in its one
+     * place: the brand's first class list, replaced once. Should Boost Union change that list, the page simply keeps its
+     * phone navbar without the logo; core_renderer_test reads Boost Union's partial for the exact string so that a
+     * change there reddens rather than goes unseen.
+     *
+     * @param string $html A layout of {@see self::HINT_LAYOUTS}, rendered.
+     * @return string
+     */
+    protected function brand_on_phones(string $html): string {
+        $at = strpos($html, self::BRAND_HIDDEN);
+        if ($at === false) {
+            return $html;
+        }
+
+        return substr_replace($html, self::BRAND_SHOWN, $at, strlen(self::BRAND_HIDDEN));
     }
 
     /**

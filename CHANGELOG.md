@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The phone navbar** (owner's request, 2026-10-22; nothing in it needs a version bump of its own). The
+  brand shows beside the hamburger below md: Boost Union's navbar partial hides it with `d-none` (`!important`), so
+  the core renderer edits the rendered layout's one brand class list (`brand_on_phones()`, a test reads Boost Union's
+  partial for the exact string); a site name without a logo is cut with an ellipsis. The navbar's dividers on a dark
+  bar take its white at 15%. The navbar's colour mode menu (and the divider after it) leaves the navbar below md and
+  in the compact navbar wherever the drawer carries the appearance switch. Three mutation gates.
 - **Three defects found in a browser** (2026100518; measured on m503, 2026-10-22). The compact navbar's drawer dimmed the
   page twice from 768px to 990px: core 5.3 shows its drawers' backdrop below `core/pagehelpers`' `Sizes.medium`
   (991px), not below md, so the drawer's own shadow now stands down while that backdrop is on the page. The reading

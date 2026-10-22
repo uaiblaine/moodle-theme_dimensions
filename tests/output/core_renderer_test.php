@@ -636,6 +636,29 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
+     * The navbar's brand is drawn at every width, beside the hamburger on a phone, by editing the rendered layout.
+     *
+     * Boost Union's navbar partial hides it below md with d-none (display: none !important); the control reads that
+     * partial, so a Boost Union release that changes the brand's classes reddens here instead of the phone navbar
+     * silently losing its logo.
+     *
+     * @return void
+     */
+    public function test_the_brand_shows_beside_the_hamburger_on_a_phone(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $partial = (string) file_get_contents($CFG->dirroot . '/theme/boost_union/templates/theme_boost/navbar.mustache');
+        $this->assertStringContainsString(core_renderer::BRAND_HIDDEN, $partial, 'Control: Boost Union hides the brand below md.');
+
+        $html = $this->visitor_header();
+        $this->assertStringContainsString(core_renderer::BRAND_SHOWN, $html);
+        $this->assertStringNotContainsString(core_renderer::BRAND_HIDDEN, $html);
+        $this->assertSame(1, substr_count($html, 'class="navbar-brand '), 'One brand, edited once.');
+    }
+
+    /**
      * The real page header of the course index for the current session, through Boost Union's layout.
      *
      * @return string
