@@ -36,17 +36,23 @@ body.dimensions-navcompact-armed {
                 margin-inline-end: var(--dim-ds-space-xs);
             }
 
-            /* The mobile drawer at tablet width. Core shows its backdrop below md only, so the scrim is the
-               drawer's own shadow; the module closes the drawer on a press outside it. It stacks above the course
-               index and the blocks drawer, which are docked on the same side from lg up, and over the navbar, which
-               steps down to $zindex-sticky while it is open (post.scss, "The primary drawer opens over the
-               navbar"). */
+            /* The mobile drawer at tablet width. It stacks above the course index and the blocks drawer, which are
+               docked on the same side from lg up, and over the navbar, which steps down to $zindex-sticky while it is
+               open (post.scss, "The primary drawer opens over the navbar"). Its scrim is its own shadow, and the module
+               closes it on a press outside it, wherever core draws no backdrop of its own. Core's drawers decide that by
+               the width of the body, below core/pagehelpers' Sizes.medium (991px), not by a breakpoint of this range,
+               so the shadow stands down on whatever page core's backdrop is shown on: two scrims would dim the page
+               twice. */
             .drawer-primary {
                 z-index: $zindex-sticky + 2;
             }
 
             .drawer-primary.show {
                 box-shadow: 0 0 0 100vmax var(--dimensions-backdrop, rgba(var(--bs-black-rgb, 0, 0, 0), .5));
+            }
+
+            &:has(.modal-backdrop.show) .drawer-primary.show {
+                box-shadow: none;
             }
 
             /* Core restyles every .drawer-left from lg up on the standard layouts and on body.limitedwidth

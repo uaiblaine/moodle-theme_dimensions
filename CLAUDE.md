@@ -486,6 +486,11 @@ already shaped decisions here:
   `#theme_boost-drawers-primary.show`, where the backdrop (appended later to the body) paints over it. The header
   band is an element of the drawer template carrying `navbarcolorclasses` and the class `.navbar`, so every rule
   that paints the navbar paints it; its Bootstrap box properties are put back in `post.scss`.
+- **The brand on a phone is an edit of the rendered layout.** Boost Union's navbar partial writes
+  `navbar-brand d-none d-md-flex`, and `d-none` is `!important`, which this theme's stylesheet may not outrank;
+  `core_renderer::brand_on_phones()` replaces that class list once in the output of `HINT_LAYOUTS`
+  (`BRAND_HIDDEN`/`BRAND_SHOWN`). Re-read Boost Union's `templates/theme_boost/navbar.mustache` on every update:
+  `test_the_brand_shows_beside_the_hamburger_on_a_phone` reads it for the exact string.
 - **Only the untouched default is filled in.** `apply_navbar_style()` returns early unless the
   context still says `bg-body`, so an admin's navbarcolor choice and a flavour's
   `look_navbarcolor` both stand (`test_a_chosen_navbar_colour_is_left_alone`).

@@ -40,7 +40,7 @@
  */
 
 import CourseEvents from 'core_course/events';
-import {isLarge} from 'core/pagehelpers';
+import {isSmall} from 'core/pagehelpers';
 
 /**
  * The main navbar. Boost Union's menu bar is a .navbar.fixed-top too, and carries none of this; so is focus mode's bar,
@@ -68,10 +68,10 @@ const CLASSES = {
     AWAY: 'dimensions-navbar-away',
 };
 
-/** The drawers that are docked beside the page from the lg breakpoint up, and lie over it below. */
+/** The drawers that are docked beside the page from the lg breakpoint up, and lie over it below (core's backdrop). */
 const DOCKED = ['theme_boost-drawers-courseindex', 'theme_boost-drawers-blocks'];
 
-/** The pixels of travel in one direction, past the page header, before the bar changes. */
+/** The pixels of travel in one direction, past the page header, before the bar changes; above it, none is counted. */
 const DISTANCE = {
     SWAP: 24,
     HIDE: 96,
@@ -137,7 +137,9 @@ const pastHeader = () => {
  * Whether the bar must stay as it is: the focus is in it, one of its menus is open, or a drawer lies over the page.
  *
  * A drawer docked beside the page (the course index and the blocks, from lg up) is no reason: it is open on every
- * page of a reader who keeps it so.
+ * page of a reader who keeps it so. Docked is core's own answer, isSmall() (below Sizes.medium, 991px, core's drawers
+ * lie over the page behind a backdrop), and not isLarge(), which is 1400px: between the two the course index is docked
+ * and would hold the bar for good.
  *
  * @returns {boolean}
  */
@@ -151,8 +153,8 @@ const busy = () => {
     if (document.querySelector(SELECTORS.MESSAGES)) {
         return true;
     }
-    const large = isLarge();
-    return Array.from(document.querySelectorAll(SELECTORS.DRAWER)).some((drawer) => !large || !DOCKED.includes(drawer.id));
+    const overlaid = isSmall();
+    return Array.from(document.querySelectorAll(SELECTORS.DRAWER)).some((drawer) => overlaid || !DOCKED.includes(drawer.id));
 };
 
 /**
@@ -228,8 +230,14 @@ const decide = () => {
         bar.travel = 0;
         return;
     }
+    if (!past) {
+        bar.travel = 0;
+        setAway(false);
+        setContext(false);
+        return;
+    }
     bar.travel = (delta > 0) === (bar.travel > 0) ? bar.travel + delta : delta;
-    if (!past || bar.travel <= -DISTANCE.BACK) {
+    if (bar.travel <= -DISTANCE.BACK) {
         setAway(false);
         setContext(false);
         return;

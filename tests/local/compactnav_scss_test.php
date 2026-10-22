@@ -161,7 +161,11 @@ final class compactnav_scss_test extends \basic_testcase {
     }
 
     /**
-     * At tablet width the drawer stacks above the docked drawers and under the navbar, with its own shadow as the scrim.
+     * At tablet width the drawer stacks above the docked drawers, with its own shadow as the scrim wherever core draws
+     * no backdrop.
+     *
+     * Core 5.3 shows its drawers' backdrop below core/pagehelpers' Sizes.medium (991px), inside the compact range: the
+     * shadow must stand down while that backdrop is on the page, or the page is dimmed twice.
      *
      * @return void
      */
@@ -172,6 +176,11 @@ final class compactnav_scss_test extends \basic_testcase {
             '~\.drawer-primary\.show \{\s*box-shadow: 0 0 0 100vmax'
                 . ' var\(--dimensions-backdrop, rgba\(var\(--bs-black-rgb, 0, 0, 0\), \.5\)\);\s*\}~',
             $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~&:has\(\.modal-backdrop\.show\) \.drawer-primary\.show \{\s*box-shadow: none;\s*\}~',
+            $scss,
+            'One scrim: the shadow stands down where core shows its backdrop.'
         );
         $this->assertDoesNotMatchRegularExpression('~#[0-9a-fA-F]{3,6}\b~', $scss, 'No literal colour.');
         $this->assertStringNotContainsString('--dim-ds-shadow-rgb', $scss, 'The navy shadow tint is not a scrim.');

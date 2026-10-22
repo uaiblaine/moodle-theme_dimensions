@@ -195,6 +195,63 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
+     * The navbar's dividers are a quiet rule on a dark bar, and the colour mode menu leaves the collapsed navbar where the
+     * drawer carries the appearance switch.
+     *
+     * The divider's property is declared on the divider itself, where Boost Union's own declarations read it. The colour
+     * mode menu is hidden only while the drawer holds its twin (.dimensions-drawer-modes): a visitor's drawer has none.
+     *
+     * @return void
+     */
+    public function test_the_phone_navbar_is_quiet_and_carries_no_twin_control(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertMatchesRegularExpression(
+            '/\n\.navbar\.navbar-dark \.divider \{\s*--bu-navbar-divider-color: rgba\(255, 255, 255, \.15\);\s*\}/',
+            $scss
+        );
+        foreach (
+            [
+                '@include media-breakpoint-down(md) {' . "\n" . '    body:has(.dimensions-drawer-modes) #usernavigation {',
+                "\nbody.dimensions-nav-compact:has(.dimensions-drawer-modes) #usernavigation {",
+            ] as $scope
+        ) {
+            $at = strpos($scss, $scope);
+            $this->assertNotFalse($at, 'Missing scope: ' . $scope);
+            $this->assertMatchesRegularExpression(
+                '/^[^{]*\{\s*\.colourmodemenu,\s*\.colourmodemenu \+ \.divider \{\s*display: none;/',
+                substr($scss, $at + strlen($scope) - 1)
+            );
+        }
+    }
+
+    /**
+     * The logo keeps 8px of the bar around it, in the navbar and in the drawer's header, from one height.
+     *
+     * The drawer lies over the navbar, so its logo and the navbar's are one size; core's own is 52px of a 60px bar.
+     *
+     * @return void
+     */
+    public function test_the_logo_keeps_a_margin_of_the_bar_in_both_places(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertStringContainsString(
+            '$dimensions-logo-height: calc(#{$navbar-height} - 2 * var(--dim-ds-space-xs));',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '/\n\.navbar\.fixed-top \.navbar-brand \.logo \{\s*height: \$dimensions-logo-height;'
+                . '\s*max-height: \$dimensions-logo-height;/',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '/\n    \.logo \{\s*height: \$dimensions-logo-height;\s*max-height: \$dimensions-logo-height;\s*\}/',
+            $scss,
+            'The drawer header\'s logo reads the same height.'
+        );
+    }
+
+    /**
      * The navbar's dark half keys on Boost Union's .navbar-dark, never on a colour mode the navbar no longer carries.
      *
      * Boost Union's upgrade-503 stopped writing data-bs-theme on the navbar, so a rule keyed on it matches nothing

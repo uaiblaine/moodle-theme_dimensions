@@ -626,6 +626,64 @@ body.dimensions-darklogo-full #logoimage {
     object-position: calc(50% + var(--dimensions-logo-shift, 0%)) 50%;
 }
 
+/* ---- The navbar's dividers and its phone width ------------------------------ */
+/* The hairlines between the navbar's groups are a quiet rule, not a line to read: on a dark bar they take the bar's own
+   white at 15%. Boost Union paints them from --bu-navbar-divider-color (background and border, the border with
+   !important) under a longer selector than this one; the property is declared here on the divider itself, where Boost
+   Union's own declarations read it, so it wins without !important. A light navbar and the dark colour mode keep core's
+   divider, which is already a quiet one. */
+.navbar.navbar-dark .divider {
+    --bu-navbar-divider-color: rgba(255, 255, 255, .15);
+}
+
+/* Where the drawer carries the appearance switch (drawernav, a logged-in account core lets choose a colour mode), the
+   navbar's own colour mode menu is the same control twice: it leaves the navbar wherever the hamburger is the way in,
+   below md and in the compact navbar, with the divider after it, which would otherwise open the group. */
+@include media-breakpoint-down(md) {
+    body:has(.dimensions-drawer-modes) #usernavigation {
+        .colourmodemenu,
+        .colourmodemenu + .divider {
+            display: none;
+        }
+    }
+}
+
+body.dimensions-nav-compact:has(.dimensions-drawer-modes) #usernavigation {
+    .colourmodemenu,
+    .colourmodemenu + .divider {
+        display: none;
+    }
+}
+
+/* The logo keeps a margin of the bar around it: 8px above and below, where core's 52px left it 4px from the band. One
+   height for the navbar's brand and the drawer's header, which lies over it (below). Set on the image: Boost Union's
+   brand link carries m-0 and p-0, which are !important. */
+$dimensions-logo-height: calc(#{$navbar-height} - 2 * var(--dim-ds-space-xs));
+
+.navbar.fixed-top .navbar-brand .logo {
+    height: $dimensions-logo-height;
+    max-height: $dimensions-logo-height;
+}
+
+/* The brand beside the hamburger on a phone (core_renderer::brand_on_phones()), 8px from it; a site with no logo shows
+   its name, cut short rather than pushing the user menu off the bar. */
+@include media-breakpoint-down(md) {
+    .navbar.fixed-top .navbar-brand {
+        min-width: 0;
+
+        .logo,
+        .sitename {
+            margin-inline-start: var(--dim-ds-space-xs);
+        }
+
+        .sitename {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+}
+
 /* ---- The primary drawer opens over the navbar ---------------------------- */
 /* The drawer of the collapsed navbar (below md, and the compact navbar of scss/compactnav.scss) covers the
    whole height of the screen, the navbar included, as the navbar canvas draws it. Moodle 5.3 puts every drawer
@@ -647,8 +705,8 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
 /* The header is the navbar's band: the template draws an element carrying the navbar's own colour classes
    behind it ({@see templates/theme_boost/primary-drawer-mobile.mustache}), so Boost Union's colour and tint, a
    flavour's and the dark mode's repaint reach it by the navbar's own rules, and the logo - the navbar's - sits
-   where the navbar holds it: core's height ($navbar-height less two $primary-nav-padding-y) and the 12px from
-   the edge measured on Boost Union's navbar. The element is a .navbar only to be painted like one: every
+   where the navbar holds it: $dimensions-logo-height (above) and the 12px from the edge measured on Boost Union's
+   navbar. The element is a .navbar only to be painted like one: every
    Bootstrap box property of that class is put back here. The close button takes the navbar's ink while the
    band is a dark one. */
 .drawer-primary .drawerheader {
@@ -670,8 +728,8 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
     }
 
     .logo {
-        height: calc(#{$navbar-height} - (#{$primary-nav-padding-y} * 2));
-        max-height: calc(#{$navbar-height} - (#{$primary-nav-padding-y} * 2));
+        height: $dimensions-logo-height;
+        max-height: $dimensions-logo-height;
     }
 
     &:has(.dimensions-drawer-band.navbar-dark) .draweractions .btn {
