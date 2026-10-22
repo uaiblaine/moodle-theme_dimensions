@@ -223,15 +223,24 @@ final class readingbar_source_test extends \basic_testcase {
     }
 
     /**
-     * The status follows core's own toggle event for this activity, and the course page's band is the server's number.
+     * The status and the course's progress follow core's own toggle event, and the course page's band is the server's
+     * number.
+     *
+     * The progress moves by one per toggle and is said again in the language string the server printed; the Behat
+     * scenario "Marking the activity done in core's footer updates the context layer" is the behaviour, this the shape.
      *
      * @return void
      */
     public function test_the_status_and_the_course_band_follow_the_server(): void {
         $status = $this->body('armStatus');
         $this->assertStringContainsString('document.addEventListener(CourseEvents.manualCompletionToggled', $status);
-        $this->assertStringContainsString('String(detail.cmid) !== status.dataset.cmid', $status);
+        $this->assertStringContainsString('status && String(detail.cmid) === status.dataset.cmid', $status);
         $this->assertStringContainsString("status.dataset.state = detail.completed ? 'complete' : 'pending';", $status);
+        $this->assertStringContainsString('countProgress(progress, detail.completed ? 1 : -1)', $status);
+
+        $count = $this->body('countProgress');
+        $this->assertStringContainsString("await getString('drawer_progress', 'theme_dimensions', {completed, total});", $count);
+        $this->assertStringContainsString('Math.min(total, Math.max(0, Number(progress.dataset.completed) + step))', $count);
 
         $init = $this->body('init');
         $this->assertStringContainsString('setBand(config.progress / 100);', $init);

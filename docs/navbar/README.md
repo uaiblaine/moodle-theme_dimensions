@@ -214,7 +214,8 @@ Mechanism:
   the stylesheet shows one, so the client composes no text. **It must not carry core's `data-region="completion-status"`**:
   core's `activity_header` module replaces the FIRST such element of the page with `querySelector`, and the navbar comes
   before the page header, so core would overwrite the chip with its own indicator. The "X of Y completed" of the sub line
-  is the server's and is not updated in place.
+  follows the same event (since 2026-10-22): the server hands its two numbers on `data-region="dimensions-ctxbar-progress"`,
+  the module moves the completed one by one per toggle and says it again with the server's `drawer_progress` string.
 - **B1, the course index control**, carries core's toggler attributes (`data-toggler="drawers" data-action="toggle"
   data-target="theme_boost-drawers-courseindex"`) and is drawn only where `readingbar::has_course_index()` holds:
   `core_course_drawer()`'s clauses (the page did not hide the index, and `course_format::uses_course_index()`).

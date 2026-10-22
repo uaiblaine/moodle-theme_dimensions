@@ -294,8 +294,9 @@ final class readingbar {
      * Everything is in the plain spelling, for the template's double stashes:
      *
      * - The title: the activity's name on an activity page, the course's on the course page.
-     * - The sub line: the course's name on an activity page, then "X of Y completed" while the reader is tracked
-     *   in the course; on the course page the count alone.
+     * - The sub line: the course's name on an activity page (coursename), then "X of Y completed" while the reader
+     *   is tracked in the course (progress, with its two numbers, completed and total, which amd/src/readingbar.js
+     *   moves when core's manual completion button is toggled); on the course page the count alone.
      * - The status of the activity, read-only: on 5.3 core's linear navigation footer owns the manual completion
      *   button, and a status cannot duplicate it. Read from core's own cm_completion_details, never computed here.
      * - The course index control, only where the drawer exists ({@see has_course_index()}).
@@ -303,7 +304,8 @@ final class readingbar {
      *   switch itself, core's edit_switch() output, as editswitch.
      *
      * @param \moodle_page $page The page being rendered; {@see context_applies()} said yes.
-     * @return array kind, isactivity, title, subline, hasindex, drawerid, hasstatus, cmid, state, complete, canedit.
+     * @return array kind, isactivity, title, hassub, coursename, progress, completed, total, hasindex, drawerid, hasstatus,
+     *      cmid, state, complete, canedit.
      */
     public static function context(\moodle_page $page): array {
         $kind = self::kind($page);
@@ -315,12 +317,15 @@ final class readingbar {
             ['context' => $coursecontext, 'escape' => false]
         );
 
-        $parts = [];
         $data = [
             'kind' => (string) $kind,
             'isactivity' => $kind === self::KIND_ACTIVITY,
             'title' => $coursename,
-            'subline' => '',
+            'hassub' => false,
+            'coursename' => '',
+            'progress' => '',
+            'completed' => 0,
+            'total' => 0,
             'hasindex' => self::has_course_index($page),
             'drawerid' => self::COURSEINDEX,
             'hasstatus' => false,
@@ -334,7 +339,7 @@ final class readingbar {
             $cm = $page->cm;
             $data['title'] = format_string($cm->name, true, ['context' => $cm->context, 'escape' => false]);
             $data['cmid'] = (int) $cm->id;
-            $parts[] = $coursename;
+            $data['coursename'] = $coursename;
             $status = self::activity_status($cm);
             if ($status !== null) {
                 $data['hasstatus'] = true;
@@ -345,9 +350,11 @@ final class readingbar {
 
         $counts = self::course_completion($course);
         if ($counts !== null) {
-            $parts[] = get_string('drawer_progress', self::COMPONENT, (object) $counts);
+            $data['progress'] = get_string('drawer_progress', self::COMPONENT, (object) $counts);
+            $data['completed'] = (int) $counts['completed'];
+            $data['total'] = (int) $counts['total'];
         }
-        $data['subline'] = implode(' · ', $parts);
+        $data['hassub'] = $data['coursename'] !== '' || $data['progress'] !== '';
 
         return $data;
     }

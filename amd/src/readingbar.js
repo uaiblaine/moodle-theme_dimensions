@@ -40,6 +40,8 @@
  */
 
 import CourseEvents from 'core_course/events';
+import Notification from 'core/notification';
+import {getString} from 'core/str';
 import {isSmall} from 'core/pagehelpers';
 
 /**
@@ -55,6 +57,7 @@ const SELECTORS = {
     LAYER: '[data-region="dimensions-ctxbar"]',
     INDEX: '[data-region="dimensions-ctxbar-index"]',
     STATUS: '[data-region="dimensions-ctxbar-status"]',
+    PROGRESS: '[data-region="dimensions-ctxbar-progress"]',
     HEADER: '#page-header',
     MENUBAR: '.navbar.boost-union-menubar',
     EXPANDED: '[aria-expanded="true"]',
@@ -260,19 +263,44 @@ const onScroll = () => {
 };
 
 /**
- * Follow the activity's completion when core's footer button changes it: the status only says what core says.
+ * Move the course's progress by one activity, and say it again in the server's own sentence.
+ *
+ * The two numbers are the server's (readingbar::context()); a toggle moves the completed one by exactly one, as core's
+ * button flips one activity. The sentence is the language string the server printed, never composed here.
+ *
+ * @param {HTMLElement} progress The progress element of the sub line.
+ * @param {number} step 1 for an activity marked done, -1 for one marked not done.
+ * @returns {Promise<void>}
+ */
+const countProgress = async(progress, step) => {
+    const total = Number(progress.dataset.total);
+    const completed = Math.min(total, Math.max(0, Number(progress.dataset.completed) + step));
+    progress.dataset.completed = String(completed);
+    progress.textContent = await getString('drawer_progress', 'theme_dimensions', {completed, total});
+};
+
+/**
+ * Follow the reader's completion when core's manual button changes it (on 5.3, in the linear navigation's footer of an
+ * activity, or beside each activity of the course page): the status of this activity and the course's progress only
+ * say what core says.
  */
 const armStatus = () => {
     const status = bar.layer ? bar.layer.querySelector(SELECTORS.STATUS) : null;
-    if (!status) {
+    const progress = bar.layer ? bar.layer.querySelector(SELECTORS.PROGRESS) : null;
+    if (!status && !progress) {
         return;
     }
     document.addEventListener(CourseEvents.manualCompletionToggled, (event) => {
         const detail = event.detail;
-        if (!detail || String(detail.cmid) !== status.dataset.cmid) {
+        if (!detail) {
             return;
         }
-        status.dataset.state = detail.completed ? 'complete' : 'pending';
+        if (status && String(detail.cmid) === status.dataset.cmid) {
+            status.dataset.state = detail.completed ? 'complete' : 'pending';
+        }
+        if (progress) {
+            countProgress(progress, detail.completed ? 1 : -1).catch(Notification.exception);
+        }
     });
 };
 

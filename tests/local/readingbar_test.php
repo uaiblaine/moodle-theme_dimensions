@@ -436,17 +436,24 @@ final class readingbar_test extends \advanced_testcase {
         $this->assertSame(readingbar::KIND_ACTIVITY, $context['kind']);
         $this->assertTrue($context['isactivity']);
         $this->assertSame('Maps & scales', $context['title'], 'The plain spelling, for the double stash.');
-        $this->assertSame('Competency management · ' . $progress, $context['subline']);
+        $this->assertTrue($context['hassub']);
+        $this->assertSame('Competency management', $context['coursename']);
+        $this->assertSame($progress, $context['progress']);
+        $this->assertSame([1, 2], [$context['completed'], $context['total']], 'The numbers the module moves.');
 
         $home = readingbar::context($this->course_page($course));
         $this->assertSame('Competency management', $home['title']);
         $this->assertFalse($home['isactivity']);
         $this->assertFalse($home['hasstatus']);
-        $this->assertSame($progress, $home['subline']);
+        $this->assertSame('', $home['coursename'], 'The course page titles itself with the course.');
+        $this->assertSame($progress, $home['progress']);
 
         // A reader completion does not track reads the course's name alone.
         $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'editingteacher'));
-        $this->assertSame('Competency management', readingbar::context($this->activity_page($course, $cm))['subline']);
+        $teacher = readingbar::context($this->activity_page($course, $cm));
+        $this->assertSame('Competency management', $teacher['coursename']);
+        $this->assertSame('', $teacher['progress']);
+        $this->assertTrue($teacher['hassub']);
     }
 
     /**

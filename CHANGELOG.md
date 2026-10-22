@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The context layer's progress follows a completion toggle** (2026100519). The sub line's "X of Y completed" was
+  printed once by the server, so marking the activity done in core 5.3's linear navigation footer moved the status to
+  "Completed" and left "0 of 1 completed". `readingbar::context()` now hands the course's name and the progress apart,
+  the progress with its two numbers, and `amd/src/readingbar.js` moves the completed one by one on core's
+  `manualCompletionToggled` (an activity's footer, or any activity's button on the course page) and says it again in
+  the server's own string. A Behat scenario marks the activity done and back in the footer; one mutation gate.
 - **The phone navbar** (owner's request, 2026-10-22; nothing in it needs a version bump of its own). The
   brand shows beside the hamburger below md: Boost Union's navbar partial hides it with `d-none` (`!important`), so
   the core renderer edits the rendered layout's one brand class list (`brand_on_phones()`, a test reads Boost Union's
