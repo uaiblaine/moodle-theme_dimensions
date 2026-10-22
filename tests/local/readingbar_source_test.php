@@ -128,7 +128,13 @@ final class readingbar_source_test extends \basic_testcase {
             $busy
         );
         $this->assertStringContainsString('document.querySelector(SELECTORS.MESSAGES)', $busy);
-        $this->assertStringContainsString('!large || !DOCKED.includes(drawer.id)', $busy);
+        $this->assertStringContainsString('overlaid || !DOCKED.includes(drawer.id)', $busy);
+        // Docked is core's isSmall() boundary (991px), where its drawers stop lying over the page; isLarge() is 1400px,
+        // and between the two an open course index would hold the bar for good.
+        $this->assertStringContainsString('const overlaid = isSmall();', $busy);
+        $this->assertStringContainsString("import {isSmall} from 'core/pagehelpers';", $this->source());
+        $this->assertStringNotContainsString('isLarge', $busy);
+        $this->assertStringNotContainsString('import {isLarge', $this->source());
 
         $decide = $this->body('decide');
         $this->assertMatchesRegularExpression('~if \(held\) \{\s*bar\.travel = 0;\s*return;\s*\}~', $decide);
@@ -146,14 +152,20 @@ final class readingbar_source_test extends \basic_testcase {
 
     /**
      * Distance thresholds both ways: a short way down swaps, a longer one hides, a short way up brings the global bar
-     * back; above the page header the global bar always stands.
+     * back; above the page header the global bar always stands and no travel is counted, so the swap is a stage of its
+     * own after the header has gone (counted from the top, both happened in the frame the header left).
      *
      * @return void
      */
     public function test_the_thresholds_keep_the_bar_from_flickering(): void {
         $decide = $this->body('decide');
-        $this->assertStringContainsString('bar.travel = (delta > 0) === (bar.travel > 0) ? bar.travel + delta : delta;', $decide);
-        $this->assertStringContainsString('if (!past || bar.travel <= -DISTANCE.BACK) {', $decide);
+        $this->assertMatchesRegularExpression(
+            '~if \(!past\) \{\s*bar\.travel = 0;\s*setAway\(false\);\s*setContext\(false\);\s*return;\s*\}\s*'
+                . 'bar\.travel = \(delta > 0\) === \(bar\.travel > 0\) \? bar\.travel \+ delta : delta;~',
+            $decide,
+            'Above the header the travel is reset, before any delta is added.'
+        );
+        $this->assertStringContainsString('if (bar.travel <= -DISTANCE.BACK) {', $decide);
         $this->assertMatchesRegularExpression('~if \(bar\.travel >= DISTANCE\.SWAP\) \{\s*setContext\(true\);~', $decide);
         $this->assertMatchesRegularExpression('~if \(bar\.travel >= DISTANCE\.HIDE\) \{\s*setAway\(true\);~', $decide);
 

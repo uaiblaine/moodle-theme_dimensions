@@ -193,11 +193,13 @@ Mechanism:
 - **The module.** One passive `scroll` listener (and `resize`) that only books an animation frame; `decide()` reads the
   layout first (the scroll, the page header's box, whether the bar is busy) and writes after. Thresholds by distance
   and direction: down travel past `#page-header` of 24px swaps to the layer, 96px hides the bar (auto-hide), 16px up
-  restores the global bar and brings a hidden bar back; above the page header the global bar always stands. The travel
-  resets when the direction flips. Nothing changes while the focus is in the nav, an element of the nav is
+  restores the global bar and brings a hidden bar back; above the page header the global bar always stands and no travel
+  is counted (until 2026-10-22 it was counted from the top, so the swap and the hide landed together the frame the
+  header left). The travel resets when the direction flips. Nothing changes while the focus is in the nav, an element of the nav is
   `aria-expanded="true"` or a `.dropdown-menu.show` is in it, the message drawer is open, or a fixed drawer lies over the
-  page (any one below `lg`; from `lg` the course index and block drawers are docked and are no reason, the others still
-  are). The keyboard reaching a hidden bar (`focusin` on the nav) brings it back. The band's fill is
+  page (any one below core's `isSmall()` boundary, 991px; from there the course index and block drawers are docked and
+  are no reason, the others still are - core's `isLarge()`, 1400px, held the bar for good between the two until
+  2026-10-22). The keyboard reaching a hidden bar (`focusin` on the nav) brings it back. The band's fill is
   `--dimensions-band-progress` on the nav, the one style the module writes.
 - **The band**: `scss/post.scss`'s `::after` reads `transform: scaleX(var(--dimensions-band-progress, 1))` with the origin
   at the left (the RTL build flips it), so an unset property is the full band of every other page; `--dimensions-navbar-band`
@@ -311,10 +313,11 @@ verified is at the end of this section).
   first paint never shows items about to go. What can still move at load is the brand, by the hamburger's width, when
   the decision is compact. A fail-open animation lets the navigation show after two seconds if the module never runs,
   instead of losing it with its hamburger hidden.
-- **The drawer at tablet width.** Core's `drawercloseonresize` only acts below md (`isSmall()` in `closeOnResizeListener`),
-  so it does not close the drawer at tablet widths; what core withholds there is everything else a phone gets: the
-  backdrop, the press outside that closes, and closing the other drawers from lg up. While compact the theme gives it
-  a scrim (the drawer's own `box-shadow`, painted under the navbar as core's backdrop is), a stack above the docked
+- **The drawer at tablet width.** Core's `isSmall()` is below `Sizes.medium`, 991px of body width (not md): below it core
+  gives the drawer its backdrop, the press outside that closes and `drawercloseonresize`; from it, everything a phone
+  gets is withheld, and closing the other drawers from lg up. While compact the theme gives it a scrim (the drawer's
+  own `box-shadow`, which stands down while core's backdrop is on the page, or the page is dimmed twice - measured
+  2026-10-22 at 800px), a stack above the docked
   course index and blocks drawer (`$zindex-sticky + 2`, under the navbar), a press outside that closes it (on the page
   the press is the scrim's and goes no further; on the navbar it goes on to its control, as core lets it on a phone),
   another drawer opening that closes it, and the bar leaving the mode closing it unless the focus is inside (its

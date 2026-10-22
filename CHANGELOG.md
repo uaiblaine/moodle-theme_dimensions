@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Three defects found in a browser** (2026100518; measured on m503, 2026-10-22). The compact navbar's drawer dimmed the
+  page twice from 768px to 990px: core 5.3 shows its drawers' backdrop below `core/pagehelpers`' `Sizes.medium`
+  (991px), not below md, so the drawer's own shadow now stands down while that backdrop is on the page. The reading
+  bar counted its travel from the top of the page, so the frame the page header left already held more than 96px and
+  the context swap and the hide landed together; the travel now starts when the header has gone (swap at 24px, hide
+  at 96px, back at 16px up). And a docked course index or block drawer held the bar for good between 992px and
+  1399px: `busy()` read core's `isLarge()` (1400px) where the drawers dock from `isSmall()`'s 991px, which it reads
+  now. Three mutation gates; `amd/build/readingbar` rebuilt.
 - **The primary drawer opens over the navbar** (the navbar canvas; no version bump). Below md and in the compact
   navbar the drawer covers the whole screen, navbar included: the navbar steps down to `$zindex-sticky` while the
   drawer is open, so core's backdrop dims it and closes the drawer on a press (raising the drawer instead would
