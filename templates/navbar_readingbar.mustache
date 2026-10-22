@@ -42,7 +42,11 @@
     * kind - activity or course
     * isactivity - Whether the page is an activity's
     * title - The activity's name, or the course's on the course page, plain
-    * subline - The course's name and the reader's completion of it, plain; may be empty
+    * hassub - Whether the sub line has anything to say
+    * coursename - The course's name on an activity page, plain; empty on the course page
+    * progress - The reader's completion of the course ("X of Y completed"), plain; empty when not tracked
+    * completed - The completed count the progress says, which the module moves on a completion toggle
+    * total - The total count the progress says
     * hasindex - Whether the course index drawer exists on the page
     * drawerid - The course index drawer's id
     * hasstatus - Whether the reader's completion status of the activity is shown
@@ -57,7 +61,11 @@
         "kind": "activity",
         "isactivity": true,
         "title": "Reading 2: Competency maps",
-        "subline": "Competency management · 4 of 9 completed",
+        "hassub": true,
+        "coursename": "Competency management",
+        "progress": "4 of 9 completed",
+        "completed": 4,
+        "total": 9,
         "hasindex": true,
         "drawerid": "theme_boost-drawers-courseindex",
         "hasstatus": true,
@@ -78,9 +86,9 @@
     {{/hasindex}}
     <div class="dimensions-ctxbar-text">
         <span class="dimensions-ctxbar-title" data-region="dimensions-ctxbar-title">{{title}}</span>
-        {{#subline}}
-        <span class="dimensions-ctxbar-sub" data-region="dimensions-ctxbar-sub">{{subline}}</span>
-        {{/subline}}
+        {{#hassub}}
+        <span class="dimensions-ctxbar-sub" data-region="dimensions-ctxbar-sub">{{#coursename}}{{coursename}}{{#progress}} · {{/progress}}{{/coursename}}{{#progress}}<span data-region="dimensions-ctxbar-progress" data-completed="{{completed}}" data-total="{{total}}">{{progress}}</span>{{/progress}}</span>
+        {{/hassub}}
     </div>
     {{#hasstatus}}
     <span class="dimensions-ctxbar-status" data-region="dimensions-ctxbar-status" data-cmid="{{cmid}}" data-state="{{state}}">
