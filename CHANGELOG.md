@@ -8,7 +8,8 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 - **The phone navbar** (owner's request, 2026-10-22; nothing in it needs a version bump of its own). The
   brand shows beside the hamburger below md: Boost Union's navbar partial hides it with `d-none` (`!important`), so
   the core renderer edits the rendered layout's one brand class list (`brand_on_phones()`, a test reads Boost Union's
-  partial for the exact string); a site name without a logo is cut with an ellipsis. The navbar's dividers on a dark
+  partial for the exact string), 8px from the hamburger; a site name without a logo is cut with an ellipsis. The logo
+  keeps 8px of the bar above and below it (44px where core gave 52px), in the navbar and in the drawer's header. The navbar's dividers on a dark
   bar take its white at 15%. The navbar's colour mode menu (and the divider after it) leaves the navbar below md and
   in the compact navbar wherever the drawer carries the appearance switch. Three mutation gates.
 - **Three defects found in a browser** (2026100518; measured on m503, 2026-10-22). The compact navbar's drawer dimmed the
@@ -24,7 +25,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   drawer is open, so core's backdrop dims it and closes the drawer on a press (raising the drawer instead would
   raise core's shared backdrop over the course index drawer). The drawer's header is the navbar's band: an element
   carrying the navbar's own colour classes paints it (Boost Union's colour and tint, a flavour's, the dark mode's
-  repaint), the logo sits where the navbar holds it (52px, 4px from the top, 12px from the edge) and takes the
+  repaint), the logo sits where the navbar holds it (the navbar's logo height, 12px from the edge) and takes the
   navbar's dark variant, and the close button takes the navbar's ink. Auto-hide's Boost Union condition moved
   inside `:where()`, so its block region ids no longer add specificity to the scope's rules.
 - **Boost Union's new navbar contract** (Boost Union `upgrade-503` at 3b534e30, 2026-10-20; no version bump:
