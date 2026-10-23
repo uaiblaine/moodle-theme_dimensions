@@ -497,7 +497,7 @@ final class category_listing_markup_test extends \advanced_testcase {
         $summary = $xpath->query('./summary', $panel->item(0))->item(0);
         $this->assertSame(1, $xpath->query('./i[' . self::has_class('fa-sliders') . ']', $summary)->length);
         $this->assertSame(
-            'Filtros',
+            'Filters',
             $xpath->query('./span[' . self::has_class('dim-line__label') . ']', $summary)->item(0)->textContent,
             'The word, in a span of its own the client\'s folding can take away.'
         );
@@ -518,9 +518,9 @@ final class category_listing_markup_test extends \advanced_testcase {
         $organise = $xpath->query('//div[@data-region="dim-line"]/details[@data-region="dim-organise"]');
         $this->assertFalse($organise->item(0)->hasAttribute('open'));
         $toggle = $xpath->query('./summary', $organise->item(0))->item(0);
-        $this->assertSame('Organizar', $toggle->getAttribute('title'));
+        $this->assertSame('Organise', $toggle->getAttribute('title'));
         $word = $xpath->query('./span[' . self::has_class('visually-hidden') . ']', $toggle)->item(0);
-        $this->assertSame('Organizar', $word->textContent, 'Its name is a word out of the picture.');
+        $this->assertSame('Organise', $word->textContent, 'Its name is a word out of the picture.');
         $this->assertSame(1, $xpath->query('./i[@aria-hidden="true"]', $toggle)->length);
         $this->assertSame(
             1,
@@ -542,8 +542,8 @@ final class category_listing_markup_test extends \advanced_testcase {
         // The search pill: magnifier, field, and the eraser - a client's control, named, never a cross.
         $eraser = $xpath->query('//*[@data-region="dim-line-search"]/button[@data-action="dim-search-clear"]')->item(0);
         $this->assertSame('button', $eraser->getAttribute('type'), 'It never submits the form.');
-        $this->assertSame('Limpar texto', $eraser->getAttribute('aria-label'));
-        $this->assertSame('Limpar texto', $eraser->getAttribute('title'));
+        $this->assertSame('Clear text', $eraser->getAttribute('aria-label'));
+        $this->assertSame('Clear text', $eraser->getAttribute('title'));
         $this->assertTrue(self::has_token($eraser->getAttribute('class'), 'dim-live-only'), 'Either client reveals it.');
         $this->assertSame(1, $xpath->query('./i[' . self::has_class('fa-eraser') . ']', $eraser)->length);
         $this->assertFalse($eraser->hasAttribute('hidden'), 'The example holds a term, so it shows.');
@@ -731,7 +731,7 @@ final class category_listing_markup_test extends \advanced_testcase {
             $this->assertSame($expected, $chip->getAttribute('data-param'));
             $this->assertSame(1, $xpath->query('./i[' . self::has_class('fa-xmark') . '][@aria-hidden="true"]', $chip)->length);
             $this->assertSame(
-                'Remover filtro',
+                'Remove filter',
                 $xpath->query('./span[' . self::has_class('visually-hidden') . ']', $chip)->item(0)->textContent
             );
         }
