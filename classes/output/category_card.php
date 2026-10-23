@@ -872,10 +872,14 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @return string Plain text, shortened; '' when the summary is empty.
      */
     private function excerpt(\core\context\course $context): string {
+        global $CFG;
+
         $summary = (string) ($this->course->summary ?? '');
         if (trim($summary) === '') {
             return '';
         }
+        // Not loaded on the paging web service's path: it reaches here without a course login or a file area read.
+        require_once($CFG->libdir . '/filelib.php');
         $html = file_rewrite_pluginfile_urls($summary, 'pluginfile.php', $context->id, 'course', 'summary', null);
         $html = format_text($html, (int) $this->course->summaryformat, [
             'context' => $context,
