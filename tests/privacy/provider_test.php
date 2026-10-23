@@ -453,9 +453,26 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
      */
     public function test_a_course_context_with_a_branded_categorys_id_touches_nothing(): void {
         $this->resetAfterTest();
+        global $DB;
+
         $subject = $this->getDataGenerator()->create_user();
         $course = $this->getDataGenerator()->create_course();
-        $category = $this->branded_by($subject, 'Mine');
+        /* PHPUnit starts every table's sequence at its own offset, so a category never shares a
+           course's id by chance: import one under the course's id, then brand it. */
+        $DB->import_record('course_categories', (object) [
+            'id' => (int) $course->id,
+            'name' => 'Same id as the course',
+            'parent' => 0,
+            'sortorder' => 0,
+            'depth' => 1,
+            'path' => '/' . (int) $course->id,
+            'visible' => 1,
+            'timemodified' => time(),
+        ]);
+        $this->setUser($subject);
+        branding::save((int) $course->id, (object) ['tagline' => 'Mine']);
+        $this->setUser(null);
+        $category = \core\context\coursecat::instance((int) $course->id);
         $this->assertSame((int) $course->id, (int) $category->instanceid, 'Precondition: the two ids coincide.');
         $coursecontext = \core\context\course::instance((int) $course->id);
 
