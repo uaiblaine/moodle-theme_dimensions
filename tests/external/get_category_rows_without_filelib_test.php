@@ -111,7 +111,7 @@ final class get_category_rows_without_filelib_test extends \advanced_testcase {
      * @return array Keys: loadedbefore, and excerpt or error.
      */
     private function run_child(int $courseid): array {
-        global $CFG;
+        global $CFG, $DB;
         $script = make_request_directory() . '/category_rows_child.php';
         file_put_contents($script, self::CHILD);
         $loader = new \ReflectionClass(\Composer\Autoload\ClassLoader::class);
@@ -129,6 +129,12 @@ final class get_category_rows_without_filelib_test extends \advanced_testcase {
         fclose($pipes[1]);
         fclose($pipes[2]);
         $exit = proc_close($process);
+
+        // The child writes through its own connection, so the reset after this test cannot see which
+        // tables it touched: mark them all, or its rows outlive the test and collide with later ones.
+        foreach (array_keys($DB->get_tables(false)) as $table) {
+            \testing_util::set_table_modified_by_sql(' ' . $DB->get_prefix() . $table);
+        }
 
         $result = json_decode((string) $stdout, true);
         $this->assertIsArray($result, "The child process exited with $exit:\n$stdout\n$stderr");
