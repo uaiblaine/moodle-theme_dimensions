@@ -19,6 +19,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
     skipped because a theme styles the whole site). Six provider tests and twelve mutation gates.
   - Changed: `lang/pt_br` leaves the release package (`export-ignore`); the Brazilian Portuguese translation
     stays in git and reaches sites through AMOS.
+- **The category rows web service loads `filelib.php` for the card excerpt.** `category_card::excerpt()` calls
+  `file_rewrite_pluginfile_urls()`, and with `courseoverviewfileslimit` at 0 and no textarea landing fields nothing
+  else on the `theme_dimensions_get_category_rows` path had loaded `lib/filelib.php`, so the call died with "Call to
+  undefined function". The method now requires it. A PHPUnit case exports a card in a child process that has not
+  loaded it.
 - **The context layer's progress follows a completion toggle** (2026100519). The sub line's "X of Y completed" was
   printed once by the server, so marking the activity done in core 5.3's linear navigation footer moved the status to
   "Completed" and left "0 of 1 completed". `readingbar::context()` now hands the course's name and the progress apart,
