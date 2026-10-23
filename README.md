@@ -308,13 +308,51 @@ back to a plain form): the theme draws the login page and keeps the form hooks t
 and nothing of the mask itself.
 
 
-Capabilities and privacy
-------------------------
+Data stored
+-----------
 
-The theme declares no capabilities of its own; its settings page is guarded by Boost Union's
-`theme/boost_union:configure`. It stores one table (the branding of a category, no personal data)
-and five user preferences (display choices such as the focus mode width and the category view),
-which its privacy provider describes and exports.
+The theme has one table, `theme_dimensions_cat`: the branding of a course category on the
+category showcase (layout, colour pair, overlay, tagline, card text, default organisation, public
+summary and public page text), one row per category somebody branded, with `usermodified` (the
+user who last saved it) and the times it was created and saved. A row is kept until the category
+is deleted (an event observer removes it) or the theme is uninstalled. The category's images,
+cover film and badges are files of the theme in the category's context, and the site-wide
+fallback hero image a file in the system context; core deletes them with the category's context
+or with the theme. The branding is cached per category (cache `categorybranding`), with
+nothing a viewer's rights decide in it.
+
+The theme also stores five user preferences: the focus mode reading width, the category view
+(cards or list), how a person left each of their most recent category pages (organisation, view
+and filters, at most twenty categories), whether they folded a category page's header and whether
+they folded the course notice. Uninstalling the theme deletes them.
+
+Beyond that the theme writes core's own rows and leaves them to core: a course a person stars on
+the showcase is core's course favourite (component `core_course`); the short address of a landing
+page is a row of core's `shortlink` table with user id 0; and installing the theme creates two
+course custom field categories (*Course landing page* and *Focus mode*), whose values are what
+course editors type about their courses. Focus mode keeps its state in the session only.
+
+All personal data is covered by the Privacy API: a data request exports the five preferences and,
+in each category whose branding the person last saved, that they saved it and when; a deletion
+request clears that stamp (`usermodified` becomes 0) and keeps the branding, which is the
+category's institutional content.
+
+
+Capabilities
+------------
+
+The theme declares no capabilities of its own. Its settings page is guarded by Boost Union's
+`theme/boost_union:configure`; the category appearance editor asks for core's
+`moodle/category:manage` in the category, and every page and web service of the theme asks core's
+own capabilities and the visibility rules of `local_unlistedcourses`.
+
+
+Translations
+------------
+
+The English strings ship in the package. The Brazilian Portuguese translation is maintained in
+this repository (`lang/pt_br`) and reaches sites through [AMOS](https://lang.moodle.org/), as the
+plugins directory requires; it is left out of the release package.
 
 
 Roadmap

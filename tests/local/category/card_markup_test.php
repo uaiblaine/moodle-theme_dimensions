@@ -966,12 +966,12 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertSame('fav', $star->getAttribute('name'));
         $this->assertSame('1', $star->getAttribute('value'), 'Released, a press turns it on.');
         $this->assertSame('false', $star->getAttribute('aria-pressed'));
-        $this->assertSame('Favoritos', $star->getAttribute('title'), 'Its tooltip names it.');
+        $this->assertSame('Favourites', $star->getAttribute('title'), 'Its tooltip names it.');
         $glyph = $toolbar->query('./i[' . self::has_class('fa-star') . ']', $star)->item(0);
         $this->assertNotNull($glyph);
         $this->assertStringContainsString('fa-regular', $glyph->getAttribute('class'), 'The card\'s released star.');
         $this->assertSame('true', $glyph->getAttribute('aria-hidden'), 'Decorative: the name is the words beside it.');
-        $this->assertSame('Favoritos 2', trim(preg_replace('/\s+/', ' ', $star->textContent)), 'The word and the number.');
+        $this->assertSame('Favourites 2', trim(preg_replace('/\s+/', ' ', $star->textContent)), 'The word and the number.');
         $this->assertSame(
             1,
             $toolbar->query('./span[' . self::has_class('visually-hidden') . ']//*[@data-region="dim-fav-count"]', $star)->length,
@@ -1050,7 +1050,7 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertSame('0', $this->submitted($pressed, '[@data-region="dim-line-star"]')['fav'] ?? null);
         $enter = $this->submitted($pressed, '[' . self::has_class('dim-toolbar__defaultsubmit') . ']');
         $this->assertSame('1', $enter['fav'] ?? null, 'Enter in the search box keeps the favourites on.');
-        $this->assertSame('resgate', $enter['q'] ?? null, 'Precondition: the form really was read.');
+        $this->assertSame('rescue', $enter['q'] ?? null, 'Precondition: the form really was read.');
         $view = $this->submitted($pressed, '[@data-region="dim-view-row"]/button[@value="list"]', true);
         $this->assertSame('1', $view['fav'] ?? null, 'And so does the view toggle.');
 

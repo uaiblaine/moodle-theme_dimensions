@@ -27,8 +27,12 @@ namespace theme_dimensions\privacy;
 use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\types\database_table;
 use core_privacy\local\metadata\types\user_preference;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\remembered;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\output\category_hero;
@@ -59,7 +63,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * The metadata names the five preferences and the one table, whose usermodified column is the only user id in it.
+     * The metadata names the five preferences and the one table: its authorship stamp and when it was saved.
      *
      * @return void
      */
@@ -76,7 +80,10 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertEquals('privacy:metadata:preference:category_state', $items[4]->get_summary());
         $this->assertInstanceOf(database_table::class, $items[0]);
         $this->assertEquals('theme_dimensions_cat', $items[0]->get_name());
-        $this->assertSame(['usermodified' => 'privacy:metadata:cat:usermodified'], $items[0]->get_privacy_fields());
+        $this->assertSame([
+            'usermodified' => 'privacy:metadata:cat:usermodified',
+            'timemodified' => 'privacy:metadata:cat:timemodified',
+        ], $items[0]->get_privacy_fields());
         $this->assertEquals('privacy:metadata:cat', $items[0]->get_summary());
         $this->assertInstanceOf(user_preference::class, $items[3]);
         $this->assertEquals(category_hero::PREFERENCE_FOLDED, $items[3]->get_name());
@@ -112,7 +119,11 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
             static fn(string $name): bool => preg_match('~^(userid|usermodified)$~', $name) === 1
         );
         $this->assertSame(['usermodified'], array_values($columns), 'Precondition: the table holds one user column.');
-        $this->assertSame(['usermodified'], $declared['theme_dimensions_cat']);
+        $declaredusers = array_filter(
+            $declared['theme_dimensions_cat'],
+            static fn(string $name): bool => preg_match('~^(userid|usermodified)$~', $name) === 1
+        );
+        $this->assertSame(['usermodified'], array_values($declaredusers));
     }
 
     /**
@@ -277,5 +288,207 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $preferences = writer::with_context(\context_system::instance())
             ->get_user_preferences('theme_dimensions');
         $this->assertEquals(get_string('no'), $preferences->{focusmode::PREFERENCE_EXPANDED}->value);
+    }
+
+    /**
+     * Save the branding of a new category as the given person.
+     *
+     * @param \stdClass $user The person saving it.
+     * @param string $tagline The tagline saved, so a test can tell the row survived a detach.
+     * @return \core\context\coursecat The category's context.
+     */
+    private function branded_by(\stdClass $user, string $tagline): \core\context\coursecat {
+        $categoryid = (int) $this->getDataGenerator()->create_category()->id;
+        $this->setUser($user);
+        branding::save($categoryid, (object) ['tagline' => $tagline]);
+        $this->setUser(null);
+        return \core\context\coursecat::instance($categoryid);
+    }
+
+    /**
+     * The stamp of a category's branding, read from the table.
+     *
+     * @param \context $context A category context.
+     * @return int The stored usermodified.
+     */
+    private function stamp(\context $context): int {
+        global $DB;
+        return (int) $DB->get_field(branding::TABLE, 'usermodified', ['categoryid' => $context->instanceid], MUST_EXIST);
+    }
+
+    /**
+     * The categories a person last saved are their contexts, and only those.
+     *
+     * The other person's category is the control: a lookup that returned every branded category
+     * would name it for the subject as well.
+     *
+     * @return void
+     */
+    public function test_the_categories_a_person_last_saved_are_their_contexts(): void {
+        $this->resetAfterTest();
+        $subject = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $mine = $this->branded_by($subject, 'Mine');
+        $theirs = $this->branded_by($other, 'Theirs');
+
+        $contexts = static fn(\stdClass $user): array => array_map(
+            'intval',
+            provider::get_contexts_for_userid((int) $user->id)->get_contextids()
+        );
+        $this->assertSame([(int) $mine->id], $contexts($subject));
+        $this->assertSame([(int) $theirs->id], $contexts($other));
+
+        $userlist = new userlist($mine, 'theme_dimensions');
+        provider::get_users_in_context($userlist);
+        $this->assertSame([(int) $subject->id], array_map('intval', $userlist->get_userids()));
+
+        $system = new userlist(\context_system::instance(), 'theme_dimensions');
+        provider::get_users_in_context($system);
+        $this->assertSame([], $system->get_userids(), 'Only a category context holds a stamp.');
+    }
+
+    /**
+     * The export names the categories the REQUEST's subject saved, whoever runs it.
+     *
+     * The export runs while another person, who saved a category of their own, is the session
+     * user: the privacy manager and tool_dataprivacy's task never switch $USER to the subject,
+     * so a provider reading $USER would export that person's stamp instead.
+     *
+     * @return void
+     */
+    public function test_the_export_is_the_subjects_stamp_run_as_another_user(): void {
+        $this->resetAfterTest();
+        $subject = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $mine = $this->branded_by($subject, 'Mine');
+        $theirs = $this->branded_by($other, 'Theirs');
+        $this->setUser($other);
+
+        $contextids = [(int) $mine->id, (int) $theirs->id];
+        provider::export_user_data(new approved_contextlist($subject, 'theme_dimensions', $contextids));
+
+        $path = [get_string('privacy:path:branding', 'theme_dimensions')];
+        $exported = writer::with_context($mine)->get_data($path);
+        $this->assertNotEmpty($exported, 'The category the subject saved is exported.');
+        $this->assertEquals((int) $subject->id, $exported->usermodified);
+        $this->assertNotEmpty($exported->timemodified);
+        $this->assertFalse(
+            writer::with_context($theirs)->has_any_data(),
+            'Nothing of the session user is exported as the subject\'s.'
+        );
+    }
+
+    /**
+     * A deletion for one person clears their stamp, keeps the branding, and leaves another's stamp.
+     *
+     * @return void
+     */
+    public function test_a_deletion_for_a_person_detaches_them_and_keeps_the_branding(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $subject = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $mine = $this->branded_by($subject, 'Mine');
+        $theirs = $this->branded_by($other, 'Theirs');
+        $this->assertSame((int) $subject->id, $this->stamp($mine), 'Precondition: the stamp names the subject.');
+
+        $contextids = [(int) $mine->id, (int) $theirs->id];
+        provider::delete_data_for_user(new approved_contextlist($subject, 'theme_dimensions', $contextids));
+
+        $this->assertSame(0, $this->stamp($mine));
+        $this->assertSame('Mine', $DB->get_field(branding::TABLE, 'tagline', ['categoryid' => $mine->instanceid]));
+        $this->assertSame((int) $other->id, $this->stamp($theirs), 'Another person\'s stamp is not the subject\'s to clear.');
+    }
+
+    /**
+     * A deletion for a list of people clears theirs in that category and nobody else's.
+     *
+     * @return void
+     */
+    public function test_a_deletion_for_users_detaches_only_the_approved_ones(): void {
+        $this->resetAfterTest();
+        $subject = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $mine = $this->branded_by($subject, 'Mine');
+        $theirs = $this->branded_by($other, 'Theirs');
+
+        provider::delete_data_for_users(new approved_userlist($mine, 'theme_dimensions', [(int) $subject->id]));
+        provider::delete_data_for_users(new approved_userlist($theirs, 'theme_dimensions', [(int) $subject->id]));
+
+        $this->assertSame(0, $this->stamp($mine));
+        $this->assertSame((int) $other->id, $this->stamp($theirs), 'The subject never saved this one.');
+    }
+
+    /**
+     * A deletion for a whole category clears its stamp and no other category's.
+     *
+     * @return void
+     */
+    public function test_a_deletion_for_a_category_detaches_everyone_there_only(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $subject = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $mine = $this->branded_by($subject, 'Mine');
+        $theirs = $this->branded_by($other, 'Theirs');
+
+        provider::delete_data_for_all_users_in_context($mine);
+        provider::delete_data_for_all_users_in_context(\context_system::instance());
+
+        $this->assertSame(0, $this->stamp($mine));
+        $this->assertSame('Mine', $DB->get_field(branding::TABLE, 'tagline', ['categoryid' => $mine->instanceid]));
+        $this->assertSame((int) $other->id, $this->stamp($theirs), 'Another category keeps its stamp.');
+    }
+
+    /**
+     * A course context that shares a branded category's instance id touches nothing of its stamp.
+     *
+     * The table is keyed by category id alone, so every method must first ask that the context is
+     * a category's: a course whose id equals a branded category's would otherwise export, list or
+     * clear that category's stamp. PHPUnit restores the sequences, so the first course and the
+     * first category a test creates share an id, which the precondition checks. The control is
+     * the same deletion through the category's own context, which does clear the stamp.
+     *
+     * @return void
+     */
+    public function test_a_course_context_with_a_branded_categorys_id_touches_nothing(): void {
+        $this->resetAfterTest();
+        global $DB;
+
+        $subject = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        /* PHPUnit starts every table's sequence at its own offset, so a category never shares a
+           course's id by chance: import one under the course's id, then brand it. */
+        $DB->import_record('course_categories', (object) [
+            'id' => (int) $course->id,
+            'name' => 'Same id as the course',
+            'parent' => 0,
+            'sortorder' => 0,
+            'depth' => 1,
+            'path' => '/' . (int) $course->id,
+            'visible' => 1,
+            'timemodified' => time(),
+        ]);
+        $this->setUser($subject);
+        branding::save((int) $course->id, (object) ['tagline' => 'Mine']);
+        $this->setUser(null);
+        $category = \core\context\coursecat::instance((int) $course->id);
+        $this->assertSame((int) $course->id, (int) $category->instanceid, 'Precondition: the two ids coincide.');
+        $coursecontext = \core\context\course::instance((int) $course->id);
+
+        $userlist = new userlist($coursecontext, 'theme_dimensions');
+        provider::get_users_in_context($userlist);
+        $this->assertSame([], $userlist->get_userids());
+        provider::export_user_data(new approved_contextlist($subject, 'theme_dimensions', [(int) $coursecontext->id]));
+        $this->assertFalse(writer::with_context($coursecontext)->has_any_data());
+        provider::delete_data_for_user(new approved_contextlist($subject, 'theme_dimensions', [(int) $coursecontext->id]));
+        $this->assertSame((int) $subject->id, $this->stamp($category), 'delete_data_for_user() read a course as a category.');
+        provider::delete_data_for_users(new approved_userlist($coursecontext, 'theme_dimensions', [(int) $subject->id]));
+        $this->assertSame((int) $subject->id, $this->stamp($category), 'delete_data_for_users() read a course as a category.');
+        provider::delete_data_for_all_users_in_context($coursecontext);
+        $this->assertSame((int) $subject->id, $this->stamp($category), 'The context deletion read a course as a category.');
+
+        provider::delete_data_for_all_users_in_context($category);
+        $this->assertSame(0, $this->stamp($category), 'Control: the category\'s own context clears it.');
     }
 }

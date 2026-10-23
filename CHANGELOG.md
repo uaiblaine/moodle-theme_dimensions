@@ -5,6 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Plugins directory readiness** (2026100520; the directory's submission guidelines, after a reviewer's four
+  findings on local_groupdist).
+  - Fixed: the branding table's `usermodified` stamp is personal data and was only declared. The privacy
+    provider is now a request and userlist provider as well: a data request exports, per category whose
+    branding the person last saved, that they saved it and when (read from the request's subject, never the
+    session user); a deletion request clears the stamp to 0 and keeps the branding. Every method asks that the
+    context is a category's first. `timemodified` is declared beside it.
+  - Fixed: the README said the table held no personal data and never named it; it now has "Data stored",
+    "Capabilities" and "Translations" sections matching the provider and the code.
+  - Added: `LICENSE` (a byte copy of `COPYING.txt`) and `tests/marketplace_readiness_test.php` (the fleet
+    template; the settings test reads the `$name` assignments of `settings.php`, and the CSS scope test is
+    skipped because a theme styles the whole site). Six provider tests and twelve mutation gates.
+  - Changed: `lang/pt_br` leaves the release package (`export-ignore`); the Brazilian Portuguese translation
+    stays in git and reaches sites through AMOS.
 - **The category rows web service loads `filelib.php` for the card excerpt.** `category_card::excerpt()` calls
   `file_rewrite_pluginfile_urls()`, and with `courseoverviewfileslimit` at 0 and no textarea landing fields nothing
   else on the `theme_dimensions_get_category_rows` path had loaded `lib/filelib.php`, so the call died with "Call to
