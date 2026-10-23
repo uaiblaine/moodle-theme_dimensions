@@ -8,7 +8,8 @@ shows the user's name (the name itself is core's `fullname()`); the user profile
 `course_renderer` override, a hero and a showcase listing); and an optional reduced "focus mode" shell for
 activities. It depends on `theme_boost_union` and `local_unlistedcourses`; `customfield_picture` (the badges' and
 the share picture's field type) is optional, asked for at run time. It owns one
-table, `theme_dimensions_cat` (the branding of a category: no personal data).
+table, `theme_dimensions_cat` (the branding of a category; its one personal datum is the
+`usermodified` authorship stamp, which the privacy provider exports and clears to 0 on deletion).
 
 ## Who is trusted
 

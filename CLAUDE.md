@@ -15,7 +15,9 @@ design records behind it (the decisions D1-D39, the stage and round status block
 the blueprints this file cites) are that private record's and are **not part of this repository**,
 so this file and `mutations/gates.conf` are what a maintainer has here. It owns one table
 (`theme_dimensions_cat`, the branding of a category on the category showcase - institutional
-content, no personal data) and five user preferences, described by a `user_preference_provider`.
+content whose one personal datum is the `usermodified` authorship stamp) and five user preferences;
+the privacy provider is a request, userlist and user preference provider: the stamp is exported
+and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
 on Boost Union's `upgrade-503` branch until Boost Union tags its 5.3 release. Hard-depends on
 `theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);

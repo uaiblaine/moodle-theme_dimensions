@@ -26,8 +26,14 @@
 namespace theme_dimensions\privacy;
 
 use core_privacy\local\metadata\collection;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\contextlist;
+use core_privacy\local\request\transform;
 use core_privacy\local\request\user_preference_provider;
+use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\remembered;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\output\category_hero;
@@ -43,23 +49,32 @@ use theme_dimensions\output\course_notice;
  * whether they folded the header of the category pages, and whether they folded the course
  * notice of the course pages. Its one table holds the branding of
  * categories - a layout, two colours, a tagline, public texts - and its only user-linked column
- * is usermodified, the id of the user who last saved a category's branding. That id is kept as an
- * authorship stamp, and it is declared in {@see get_metadata()} for that reason. Deleting the
- * account leaves core's stub row in the user table, so the stamp then names nobody: the
- * anonymisation is that of core's deletion, and the provider does not export or erase the
- * institutional content the stamp sits on. Everything else the theme shows about a person - the
- * rank, the war name, what a course says about itself, the courses they starred (core's own
- * favourite rows, which core_favourites describes) - belongs to core's own subsystems, which
- * describe and delete it themselves.
+ * is usermodified, the id of the user who last saved a category's branding, kept as an
+ * authorship stamp. That stamp is personal data, so the provider is a request provider as well:
+ * a data request exports, in each category context whose branding the person last saved, when
+ * they saved it; a deletion request DETACHES them (usermodified becomes 0) and keeps the row,
+ * because the branding is the category's institutional content and removing it would repaint a
+ * category's page as a side effect of somebody leaving the site (the shape of
+ * local_unlistedcourses' provider). usermodified is not in the cached payload
+ * ({@see branding::CACHED_KEYS}), so a detach needs no cache purge.
+ *
+ * Everything else the theme shows or writes about a person belongs to core's own subsystems,
+ * which describe and delete it themselves: the courses they starred are core_course's own
+ * favourite rows (component core_course, {@see \theme_dimensions\local\category\wishlist}), and
+ * the landing page short links the theme mints carry user id 0.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  *             based on code by Daniel Poggenpohl and Alexander Bias
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements \core_privacy\local\metadata\provider, user_preference_provider {
+class provider implements
+    \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider,
+    user_preference_provider {
     /**
-     * Describe the user preferences this theme stores and the one user id its table keeps.
+     * Describe the user preferences this theme stores and the authorship stamp its table keeps.
      *
      * @param collection $collection The collection of metadata items to add to.
      * @return collection The same collection, with this theme's items added.
@@ -67,7 +82,10 @@ class provider implements \core_privacy\local\metadata\provider, user_preference
     public static function get_metadata(collection $collection): collection {
         $collection->add_database_table(
             'theme_dimensions_cat',
-            ['usermodified' => 'privacy:metadata:cat:usermodified'],
+            [
+                'usermodified' => 'privacy:metadata:cat:usermodified',
+                'timemodified' => 'privacy:metadata:cat:timemodified',
+            ],
             'privacy:metadata:cat'
         );
         $collection->add_user_preference(
@@ -92,6 +110,127 @@ class provider implements \core_privacy\local\metadata\provider, user_preference
         );
 
         return $collection;
+    }
+
+    /**
+     * The category contexts whose branding this person last saved.
+     *
+     * @param int $userid The user id.
+     * @return contextlist The category contexts.
+     */
+    public static function get_contexts_for_userid(int $userid): contextlist {
+        $contextlist = new contextlist();
+        $sql = "SELECT ctx.id
+                  FROM {context} ctx
+                  JOIN {" . branding::TABLE . "} b ON b.categoryid = ctx.instanceid
+                 WHERE ctx.contextlevel = :categorylevel
+                   AND b.usermodified = :userid";
+        $contextlist->add_from_sql($sql, ['categorylevel' => CONTEXT_COURSECAT, 'userid' => $userid]);
+        return $contextlist;
+    }
+
+    /**
+     * The person who last saved the branding of this category, if the context is a category's.
+     *
+     * @param userlist $userlist The userlist to add to.
+     * @return void
+     */
+    public static function get_users_in_context(userlist $userlist): void {
+        $context = $userlist->get_context();
+        if ($context->contextlevel != CONTEXT_COURSECAT) {
+            return;
+        }
+        $sql = "SELECT usermodified
+                  FROM {" . branding::TABLE . "}
+                 WHERE categoryid = :categoryid
+                   AND usermodified > 0";
+        $userlist->add_from_sql('usermodified', $sql, ['categoryid' => $context->instanceid]);
+    }
+
+    /**
+     * Export, per approved category, that this person last saved its branding and when.
+     *
+     * Only the stamp is the person's: the branding itself (colours, texts, files) is the
+     * category's content and is not exported as theirs.
+     *
+     * @param approved_contextlist $contextlist The approved contexts.
+     * @return void
+     */
+    public static function export_user_data(approved_contextlist $contextlist): void {
+        global $DB;
+
+        $userid = (int) $contextlist->get_user()->id;
+        foreach ($contextlist->get_contexts() as $context) {
+            if ($context->contextlevel != CONTEXT_COURSECAT) {
+                continue;
+            }
+            $row = $DB->get_record(branding::TABLE, ['categoryid' => $context->instanceid, 'usermodified' => $userid]);
+            if (!$row) {
+                continue;
+            }
+            writer::with_context($context)->export_data(
+                [get_string('privacy:path:branding', 'theme_dimensions')],
+                (object) [
+                    'usermodified' => transform::user((int) $row->usermodified),
+                    'timemodified' => transform::datetime((int) $row->timemodified),
+                ]
+            );
+        }
+    }
+
+    /**
+     * Detach every person from the branding of this category, keeping the branding.
+     *
+     * @param \context $context The context.
+     * @return void
+     */
+    public static function delete_data_for_all_users_in_context(\context $context): void {
+        global $DB;
+
+        if ($context->contextlevel != CONTEXT_COURSECAT) {
+            return;
+        }
+        $DB->set_field(branding::TABLE, 'usermodified', 0, ['categoryid' => $context->instanceid]);
+    }
+
+    /**
+     * Detach this person from the branding of the approved categories they last saved.
+     *
+     * @param approved_contextlist $contextlist The approved contexts.
+     * @return void
+     */
+    public static function delete_data_for_user(approved_contextlist $contextlist): void {
+        global $DB;
+
+        $userid = (int) $contextlist->get_user()->id;
+        foreach ($contextlist->get_contexts() as $context) {
+            if ($context->contextlevel != CONTEXT_COURSECAT) {
+                continue;
+            }
+            $DB->set_field(branding::TABLE, 'usermodified', 0, [
+                'categoryid' => $context->instanceid,
+                'usermodified' => $userid,
+            ]);
+        }
+    }
+
+    /**
+     * Detach the approved people from the branding of this category.
+     *
+     * @param approved_userlist $userlist The approved users.
+     * @return void
+     */
+    public static function delete_data_for_users(approved_userlist $userlist): void {
+        global $DB;
+
+        $context = $userlist->get_context();
+        $userids = $userlist->get_userids();
+        if ($context->contextlevel != CONTEXT_COURSECAT || !$userids) {
+            return;
+        }
+        [$insql, $params] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+        $params['categoryid'] = $context->instanceid;
+        $DB->set_field_select(branding::TABLE, 'usermodified', 0, "categoryid = :categoryid AND usermodified $insql", $params);
     }
 
     /**

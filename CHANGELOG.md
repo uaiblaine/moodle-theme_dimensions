@@ -5,6 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Plugins directory readiness** (2026100520; the directory's submission guidelines, after a reviewer's four
+  findings on local_groupdist).
+  - Fixed: the branding table's `usermodified` stamp is personal data and was only declared. The privacy
+    provider is now a request and userlist provider as well: a data request exports, per category whose
+    branding the person last saved, that they saved it and when (read from the request's subject, never the
+    session user); a deletion request clears the stamp to 0 and keeps the branding. Every method asks that the
+    context is a category's first. `timemodified` is declared beside it.
+  - Fixed: the README said the table held no personal data and never named it; it now has "Data stored",
+    "Capabilities" and "Translations" sections matching the provider and the code.
+  - Added: `LICENSE` (a byte copy of `COPYING.txt`) and `tests/marketplace_readiness_test.php` (the fleet
+    template; the settings test reads the `$name` assignments of `settings.php`, and the CSS scope test is
+    skipped because a theme styles the whole site). Six provider tests and twelve mutation gates.
+  - Changed: `lang/pt_br` leaves the release package (`export-ignore`); the Brazilian Portuguese translation
+    stays in git and reaches sites through AMOS.
 - **The context layer's progress follows a completion toggle** (2026100519). The sub line's "X of Y completed" was
   printed once by the server, so marking the activity done in core 5.3's linear navigation footer moved the status to
   "Completed" and left "0 of 1 completed". `readingbar::context()` now hands the course's name and the progress apart,
