@@ -46,16 +46,18 @@ final class readingbar_scss_test extends \basic_testcase {
         . ':not(:where(#{$dimensions-bu-flush}))';
 
     /**
-     * @var string[] The only top-level selectors the file may have: the reading pages, the layer and its swap (a
-     *      class only the template or the module writes, under the navbar's own), and auto-hide.
+     * @var string[] The only top-level selectors the file may have: the reading pages, the phone slide's clip, the layer
+     *      and its swap (a class only the template or the module writes, under the navbar's own), and auto-hide.
      */
     private const SCOPES = [
         'body.dimensions-readingbar',
+        '@keyframes dimensions-ctxbar-clip',
         '.navbar.fixed-top .dimensions-ctxbar',
         '.navbar.fixed-top .dimensions-ctxbar-text',
         '.navbar.fixed-top .dimensions-ctxbar-title',
         '.navbar.fixed-top .dimensions-ctxbar-sub',
         '.navbar.fixed-top .dimensions-ctxbar-index',
+        '.navbar.fixed-top .dimensions-ctxbar-focus',
         '.navbar.fixed-top .dimensions-ctxbar-status',
         '.navbar.fixed-top .dimensions-ctxbar-edit',
         '.navbar.fixed-top.dimensions-ctx-on',
@@ -96,8 +98,10 @@ final class readingbar_scss_test extends \basic_testcase {
                 $buffer .= $char;
                 $depth = 0;
             } else if ($char === '{') {
-                if ($depth === 0) {
-                    $selectors[] = trim((string) preg_replace('~\s+~', ' ', $buffer));
+                $selector = trim((string) preg_replace('~\s+~', ' ', $buffer));
+                // A Sass function is not a rule: it emits nothing.
+                if ($depth === 0 && !str_starts_with($selector, '@function ')) {
+                    $selectors[] = $selector;
                 }
                 $depth++;
                 $buffer = '';
@@ -167,12 +171,18 @@ final class readingbar_scss_test extends \basic_testcase {
     public function test_the_motion_is_reduced_motion_aware(): void {
         $scss = $this->stylesheet();
 
-        $this->assertSame(2, substr_count($scss, 'transition:'));
-        $this->assertSame(2, preg_match_all(
+        $this->assertSame(3, substr_count($scss, 'transition:'));
+        $this->assertSame(3, preg_match_all(
             '~@media \(prefers-reduced-motion: no-preference\) \{[^{}]*\{\s*transition:~',
             $scss
         ), 'Each transition is the only rule of its own reduced-motion query.');
-        $this->assertStringNotContainsString('animation', $scss);
+        $this->assertSame(1, substr_count($scss, 'animation:'));
+        $this->assertMatchesRegularExpression(
+            '~@media \(prefers-reduced-motion: no-preference\) \{\s*\.navbar\.fixed-top:not\(\.dimensions-ctx-on\) \{\s*'
+                . 'animation: dimensions-ctxbar-clip var\(--dim-ds-motion-base\) backwards;\s*\}\s*\}~',
+            $scss,
+            'The clip of the slide back is motion too.'
+        );
     }
 
     /**
@@ -184,7 +194,8 @@ final class readingbar_scss_test extends \basic_testcase {
         $scss = $this->stylesheet();
 
         $this->assertMatchesRegularExpression(
-            '~\.navbar\.fixed-top \.dimensions-ctxbar \{[^}]*position: absolute;[^}]*visibility: hidden;\s*opacity: 0;~',
+            '~\.navbar\.fixed-top \.dimensions-ctxbar \{(?:#\{[^}]*\}|[^}])*position: absolute;[^}]*visibility: hidden;\s*'
+                . 'opacity: 0;~',
             $scss
         );
         $this->assertMatchesRegularExpression(
@@ -193,6 +204,58 @@ final class readingbar_scss_test extends \basic_testcase {
                 . 'visibility: hidden;\s*opacity: 0;~',
             $scss
         );
+    }
+
+    /**
+     * Below md the swap is Fandom's slide: the layer comes down from above, the global items go down by the bar's
+     * height, both clipped by the nav while the layer is in, and by the keyframes' overflow on the way back.
+     *
+     * @return void
+     */
+    public function test_below_md_the_swap_is_a_clipped_slide(): void {
+        $scss = $this->stylesheet();
+        $at = strpos($scss, '@include media-breakpoint-down(md) {');
+        $this->assertNotFalse($at);
+        $this->assertLessThan(strpos($scss, '@keyframes dimensions-ctxbar-clip'), $at, 'Inside the reading pages\' block.');
+        $block = substr($scss, $at);
+
+        $this->assertMatchesRegularExpression(
+            '~^@include media-breakpoint-down\(md\) \{\s*\.navbar\.fixed-top \.dimensions-ctxbar \{\s*opacity: 1;\s*'
+                . 'transform: translateY\(-100%\);\s*\}\s*\.navbar\.fixed-top\.dimensions-ctx-on \{\s*overflow: hidden;\s*'
+                . '\.dimensions-ctxbar \{\s*transform: none;\s*\}\s*> \.container-fluid > :not\(#usernavigation\),\s*'
+                . '#usernavigation > :not\(\.dimensions-ctxbar\) \{\s*opacity: 1;\s*'
+                . 'transform: translateY\(#\{\$navbar-height\}\);~',
+            $block
+        );
+        $this->assertMatchesRegularExpression(
+            '~@keyframes dimensions-ctxbar-clip \{\s*0%,\s*100% \{\s*overflow: hidden;\s*\}\s*\}~',
+            $scss
+        );
+    }
+
+    /**
+     * The layer paints the derived pair: its ground, and its ink through the navbar's brand colour property that every
+     * part of it reads; the pills and the ring take the same ink.
+     *
+     * @return void
+     */
+    public function test_the_layer_paints_the_derived_pair(): void {
+        $scss = $this->stylesheet();
+        $this->assertSame(
+            1,
+            preg_match('~\n\.navbar\.fixed-top \.dimensions-ctxbar \{((?:#\{[^}]*\}|[^}])*)\}~', $scss, $matches)
+        );
+
+        $this->assertStringContainsString('--dim-ctxbar-ground: #{$dimensions-ctxbar-ground};', $matches[1]);
+        $this->assertStringContainsString('--dim-ctxbar-line: #{transparentize($dimensions-ctxbar-ink, .55)};', $matches[1]);
+        $this->assertStringContainsString('--bs-navbar-brand-color: #{$dimensions-ctxbar-ink};', $matches[1]);
+        $this->assertStringContainsString('--dim-ds-focus-ring: var(--bs-navbar-brand-color);', $matches[1]);
+        $this->assertStringContainsString('background-color: var(--dim-ctxbar-ground);', $matches[1]);
+        $this->assertStringContainsString(
+            '$dimensions-ctxbar-ground: dimensions-ctxbar-ground($dimensions-ctxbar-color, $primary);',
+            $scss
+        );
+        $this->assertStringNotContainsString('opacity: .82', $scss, 'The sub line keeps the contrast the ground was chosen for.');
     }
 
     /**

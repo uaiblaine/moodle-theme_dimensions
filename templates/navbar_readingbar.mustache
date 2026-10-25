@@ -31,6 +31,10 @@
     data-region="completion-status": core's header module replaces the FIRST such element of the page,
     which would be this one.
 
+    On a page that can switch into focus mode the layer carries the way in, the navbar's own entry form drawn a second
+    time as an icon pill: amd/src/focusmode.js intercepts the submit of any form whose button carries its action, so
+    the layer's switches in place exactly as the navbar's does, and without JavaScript both post to focus.php.
+
     A reader core lets edit the page gets core's edit mode switch at the end of the layer (D5): the layer
     covers the navbar's own switch while it is shown. It is core's edit_switch() output rendered a second
     time, with an id of its own, so its form, its React mount and core/edit_switch work as the first one
@@ -53,6 +57,8 @@
     * cmid - The activity's course module id
     * state - complete or pending
     * complete - Whether the state is complete
+    * hasfocus - Whether the page can switch into focus mode
+    * focus - The navbar's focus mode entry form: actionurl, sesskey, cmid, label, title
     * canedit - Whether the reader may edit the page, by core's own predicate
     * editswitch - Core's edit mode switch as core_renderer::edit_switch() renders it, trusted HTML
 
@@ -72,6 +78,14 @@
         "cmid": 42,
         "state": "pending",
         "complete": false,
+        "hasfocus": true,
+        "focus": {
+            "actionurl": "https://example.com/theme/dimensions/focus.php",
+            "sesskey": "abc123",
+            "cmid": 42,
+            "label": "Focus mode",
+            "title": "Read this activity without distractions"
+        },
         "canedit": true,
         "editswitch": "<form action=\"https://example.com/editmode.php\" method=\"post\" class=\"d-flex align-items-center editmode-switch-form ms-2\"><input type=\"checkbox\" role=\"switch\" name=\"setmode\" id=\"editingswitch1\"><label for=\"editingswitch1\">Edit mode</label></form>"
     }
@@ -98,6 +112,19 @@
         <span class="dimensions-ctxbar-status-pending">{{#str}} readingbar_status_pending, theme_dimensions {{/str}}</span>
     </span>
     {{/hasstatus}}
+    {{#hasfocus}}
+    {{#focus}}
+    <form class="dimensions-ctxbar-focus" data-region="dimensions-ctxbar-focus" method="post" action="{{actionurl}}">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="cmid" value="{{cmid}}">
+        <input type="hidden" name="action" value="enter">
+        <button type="submit" class="btn dimensions-ctxbar-focus-button" data-action="dimensions-focus-enter"
+            aria-label="{{label}}" title="{{title}}">
+            <i class="icon fa-solid fa-book-open-reader fa-fw" aria-hidden="true"></i>
+        </button>
+    </form>
+    {{/focus}}
+    {{/hasfocus}}
     {{#canedit}}
     <div class="dimensions-ctxbar-edit" data-region="dimensions-ctxbar-edit">{{{editswitch}}}</div>
     {{/canedit}}

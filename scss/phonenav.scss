@@ -1,0 +1,84 @@
+/* The navbar's controls that make room on a phone (classes/local/phonenav.php, amd/src/phonemenu.js).
+
+   Below md the navbar keeps the hamburger, the brand, the notifications and the user menu; the messaging drawer,
+   local_mail's inbox, the way into focus mode and the edit mode switch are entries at the top of the user menu, and
+   the last two are in the context bar as well. A control is hidden only once its entry is in the user menu: the module
+   moves it there and then writes dimensions-phonenav-<key> on the nav, a class rather than a :has() over the menu,
+   which scssphp compiles with warnings. A page the module never ran on, and a visitor's navbar, which has no user menu,
+   keep every control.
+
+   Hidden in place, out of the row: visibility takes the control out of the tab order and the accessibility tree, and
+   position takes it out of the flex row. Not display, which the edit switch's form cannot be given: its d-flex is
+   Bootstrap's !important. With no transition: the context bar's slide moves visibility with a delay on every child of
+   #usernavigation, which would leave the control on screen for the length of a slide after the module marked the nav.
+   The control stays in the document, where its entry presses it. Only the navbar's own
+   controls, the direct children of #usernavigation: the context layer draws the focus form and the edit switch again,
+   and those stay.
+
+   From md up the navbar has room for every control and the entries go.
+
+   Every top-level selector is the navbar's own class (tests/local/phonenav_source_test.php). */
+
+/* The entry each control stands for, and the selector of the control, as amd/src/phonemenu.js names them. */
+$dimensions-phonenav-controls: (
+    "messages": "[data-region=\"popover-region-messages\"]",
+    "mail": "#local-mail-navbar",
+    "focus": ".dimensions-focus-entry",
+    "edit": ".editmode-switch-form",
+);
+
+.navbar.fixed-top {
+    @include media-breakpoint-down(md) {
+        @each $key, $control in $dimensions-phonenav-controls {
+            &.dimensions-phonenav-#{$key} #usernavigation > #{$control} {
+                position: absolute;
+                top: 0;
+                left: 0;
+                visibility: hidden;
+                transition: none;
+            }
+        }
+    }
+
+    @include media-breakpoint-up(md) {
+        #user-action-menu .dimensions-phonemenu-item,
+        #user-action-menu .dimensions-phonemenu-divider {
+            display: none;
+        }
+    }
+}
+
+/* An entry: core's menu item, its label taking the room and the count at the end. */
+.navbar.fixed-top .dimensions-phonemenu-item {
+    display: flex;
+    gap: var(--dim-ds-space-xs);
+    align-items: center;
+
+    .icon {
+        margin: 0;
+    }
+}
+
+.navbar.fixed-top .dimensions-phonemenu-label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* The unread count: the call to action's pair, which reads on the menu's surface in either colour mode. */
+.navbar.fixed-top .dimensions-phonemenu-count {
+    flex: 0 0 auto;
+    min-width: 1.25rem;
+    padding: 0 .375rem;
+    border-radius: var(--dim-ds-radius-pill);
+    background-color: var(--dim-ds-accent-highlight);
+    color: var(--dim-ds-text-inverse);
+    font-size: .75rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1.25rem;
+    text-align: center;
+
+    &[hidden] {
+        display: none;
+    }
+}

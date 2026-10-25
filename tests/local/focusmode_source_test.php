@@ -138,7 +138,12 @@ final class focusmode_source_test extends \basic_testcase {
      */
     public function test_the_focus_follows_and_the_mode_is_said(): void {
         $settle = $this->body('settleFocus');
-        $this->assertStringContainsString('document.querySelector(active ? SELECTORS.barexit : SELECTORS.enter)', $settle);
+        $this->assertStringContainsString(
+            'Array.from(document.querySelectorAll(active ? SELECTORS.barexit : SELECTORS.enter)).find(shown)',
+            $settle,
+            'The first counterpart on the screen: on a phone the navbar\'s own way in is hidden in place.'
+        );
+        $this->assertStringContainsString("window.getComputedStyle(element).visibility !== 'hidden'", $this->source());
         $this->assertStringContainsString('target.focus();', $settle);
         $this->assertStringContainsString("'focusmode_status_on'", $settle);
         $this->assertStringContainsString('status.textContent = text;', $settle);

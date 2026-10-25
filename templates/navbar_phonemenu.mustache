@@ -1,0 +1,72 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/navbar_phonemenu
+
+    The user menu entries that stand in for the navbar's controls on a phone ({@see \theme_dimensions\local\phonenav}).
+    The theme's core renderer appends this to navbar_plugin_output(), inside #usernavigation, as an inert holder:
+    amd/src/phonemenu.js moves the entries to the top of the user menu's main panel, where core's markup has no slot of
+    its own, and scss/phonenav.scss hides each control the menu then holds, below md only. Without the module the
+    holder stays inert and the navbar keeps every control.
+
+    Each entry is the markup core's user_action_menu_item_link writes, so core's user menu module and Bootstrap's
+    dropdown keyboard handling treat it as theirs. An entry that stands for an action (focus mode, edit mode) is a link
+    to the page itself; the module runs the hidden control's own action instead. A counted entry carries an empty badge,
+    which the module fills from the hidden control's own count each time the menu opens.
+
+    Context variables required for this template (described without braces, because a Mustache
+    comment closes at the first pair of closing braces it meets):
+
+    * entries - The entries, each: key (messages, mail, focus or edit), url, isaction, icon (Font Awesome classes),
+      label (plain), counted (whether it shows an unread count)
+
+    Example context (json):
+    {
+        "entries": [
+            {
+                "key": "messages",
+                "url": "https://example.com/message/index.php",
+                "isaction": false,
+                "icon": "fa-regular fa-comment",
+                "label": "Messages",
+                "counted": true
+            },
+            {
+                "key": "focus",
+                "url": "#",
+                "isaction": true,
+                "icon": "fa-solid fa-book-open-reader",
+                "label": "Focus mode",
+                "counted": false
+            }
+        ]
+    }
+}}
+<template data-region="dimensions-phonemenu">
+    {{#entries}}
+    <a href="{{url}}" class="dropdown-item dimensions-phonemenu-item" role="menuitem" tabindex="-1"
+        data-dimensions-phone="{{key}}"{{#isaction}} data-action="dimensions-phonemenu-action"{{/isaction}}>
+        <i class="icon {{icon}} fa-fw" aria-hidden="true"></i>
+        <span class="dimensions-phonemenu-label">{{label}}</span>
+        {{#counted}}
+        <span class="dimensions-phonemenu-count" data-region="dimensions-phonemenu-count" aria-hidden="true" hidden></span>
+        <span class="visually-hidden" data-region="dimensions-phonemenu-unread"></span>
+        {{/counted}}
+    </a>
+    {{/entries}}
+    <div class="dropdown-divider dimensions-phonemenu-divider" role="presentation"></div>
+</template>

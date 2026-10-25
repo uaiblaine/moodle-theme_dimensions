@@ -5,6 +5,25 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The context bar slides in on a phone and comes in with a colour of its own** (2026100522; Fandom's mobile
+  navbar is the model). Below md the context layer comes down from above the bar while the global bar's items go down out of it, by
+  the bar's height, clipped by the nav while the layer is in and, through a keyframe holding `overflow: hidden` for
+  the length of the slide back (Fandom's `overflowHiddenForAnimation`), on the way out; after it the nav overflows
+  again for its menus. From md up the swap is still a fade. The layer paints a ground at every width: the new
+  *Context bar colour* setting (`theme_dimensions/navbarcontextcolor`, hexadecimal, compiled into the stylesheet by
+  the pre SCSS callback) or, left empty, a step of `$primary` towards its ink (30, 20 or 10 %, the most visible that
+  still reads) or a quarter step away from it; the ink is white or the darkest grey, and the ground is moved, never
+  the ink, until the pair reads 4.6:1. The sub line lost its 82 % opacity, which would have fallen under that
+  contrast. New `tests/local/readingbar_colour_test.php` compiles the Sass over Bootstrap's own functions and measures
+  it with a WCAG implementation of its own.
+- **The phone's navbar keeps four controls.** At 375px an editor's navbar carried seven (menu, brand, edit switch,
+  focus mode, notifications, messages, Mail, user menu) and left the brand 14px. Below md the messaging drawer, Mail,
+  focus mode and the edit mode switch are entries at the top of the user menu, after the name block
+  (`classes/local/phonenav.php`, `templates/navbar_phonemenu.mustache`, `amd/src/phonemenu.js`, `scss/phonenav.scss`);
+  an entry presses the hidden control itself and repeats its unread count, and a control is hidden only once its
+  entry is in the menu, so without the module the navbar stays as it was. The context layer carries the way into
+  focus mode as well, and focus mode's module moves the focus to the first counterpart on the screen.
+
 - **The course notice says why a course is not public** (2026100521). A course set to public under an unlisted
   category read "Login only", with a note telling the editor to make it public. The promotion section now names the
   course's own state - public, "Public, not in effect", unlisted, or login only - and, below it, what withholds it:

@@ -95,6 +95,10 @@ function theme_dimensions_get_main_scss_content($theme) {
     // class and the region's, below the sm breakpoint.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/sheets.scss');
 
+    // And the navbar's controls that move into the user menu on phones (classes/local/phonenav.php), every rule under
+    // the navbar's own class.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/phonenav.scss');
+
     // And the competency framework's pages and dialogues (tool_lp, report_competency, block_lp), scoped
     // to the body classes core derives for those scripts, the block's root and the dim-comp- classes
     // only the theme's copies of their templates carry. It reads Font Awesome's fa-content() and
@@ -136,6 +140,14 @@ function theme_dimensions_get_pre_scss($theme) {
     // No brand colour is assigned here: $primary is Boost Union's (its brandcolor setting and a
     // flavour's look_brandcolor) and core's otherwise. A settings-driven assignment would belong in
     // this callback and not in the extra SCSS, which runs after Bootstrap has been compiled.
+
+    // The context bar's own colour, when an administrator chose one: scss/readingbar.scss reads it with a !default
+    // and derives one from $primary otherwise, so the derivation follows a flavour's brand colour too. Written with a
+    // !default itself: a flavour's raw initial SCSS, compiled before this callback, may set its own and must win.
+    $contextcolour = \theme_dimensions\local\readingbar::context_colour();
+    if ($contextcolour !== null) {
+        $scss .= "\n\$dimensions-ctxbar-color: {$contextcolour} !default;\n";
+    }
 
     return $scss;
 }
