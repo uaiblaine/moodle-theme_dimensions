@@ -91,16 +91,17 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
-     * The notifications popover is one light surface inside the dark navbar.
+     * The notifications popover is one surface in the page's colour mode, inside the navbar.
      *
      * message_popup renders it inside the navbar, so it reads whatever colour mode reaches it there, and core's
      * white container turns grey in the dark mode while half of the light palette stays: the popover must read as
-     * one light surface. The colour mode tokens it reads are re-pointed on the container to the design system's
-     * light ones, and the ink is set from them.
+     * one surface. The colour mode tokens it reads are re-pointed on the container to the design system's semantic
+     * ones, which turn with the page (tests/local/dark_tokens_test.php), and the ink is set from them. It forces no
+     * colour scheme: on a dark page its controls and scrollbar are the page's.
      *
      * @return void
      */
-    public function test_the_popover_is_one_light_surface_inside_the_navbar(): void {
+    public function test_the_popover_is_one_surface_in_the_pages_mode(): void {
         $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
         $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
         $this->assertSame(1, substr_count($scss, "\n.navbar .popover-region-container {"), 'One rule, on the container.');
@@ -116,13 +117,13 @@ final class post_scss_test extends \basic_testcase {
             '--bs-link-color' => 'var(--dim-ds-text-link)',
             '--bs-link-hover-color' => 'var(--dim-ds-text-link-hover)',
             'color' => 'var(--bs-body-color)',
-            'color-scheme' => 'light',
         ];
         foreach ($expected as $property => $value) {
             $this->assertStringContainsString("{$property}: {$value};", $body, "{$property} on the popover.");
         }
         $this->assertStringNotContainsString('!important', $body);
         $this->assertDoesNotMatchRegularExpression('/#[0-9a-fA-F]{3,6}\b/', $body, 'No literal colour.');
+        $this->assertStringNotContainsString('color-scheme', $body, 'The popover follows the page\'s mode.');
     }
 
     /**

@@ -5,43 +5,79 @@
 // :root is shared with every plugin on the page, so an unprefixed name would be anyone's.
 
 /* ---- Tokens ------------------------------------------------------------- */
+// The primitives as Sass colours, the one place their values are written. The :root block below declares each as a
+// custom property for the components, and the dark half of the semantic aliases derives from these with core's
+// dark-readable() and mix(), which read a colour and not a custom property.
+$dim-ds-blue-050: #edeefb;
+$dim-ds-blue-100: #d6d8f7;
+$dim-ds-blue-200: #adb2f0;
+$dim-ds-blue-300: #7c84ff;
+$dim-ds-blue-400: #4456ff;
+$dim-ds-blue-500: #2a31c9;
+$dim-ds-blue-600: #070093;
+$dim-ds-blue-700: #050073;
+$dim-ds-blue-800: #030050;
+$dim-ds-blue-900: #020034;
+$dim-ds-green-050: #f0fbe0;
+$dim-ds-green-400: #69e000;
+$dim-ds-green-700: #2f6b00;
+$dim-ds-green-800: #1e4500;
+$dim-ds-gray-050: #f8f9fa;
+$dim-ds-gray-100: #f2f3f5;
+$dim-ds-gray-200: #e9ecef;
+$dim-ds-gray-300: #dee2e6;
+$dim-ds-gray-400: #c8c8c8;
+$dim-ds-gray-500: #969696;
+$dim-ds-gray-600: #6a737b;
+$dim-ds-gray-700: #505050;
+$dim-ds-gray-800: #343a40;
+$dim-ds-gray-900: #1f1f1f;
+$dim-ds-white: #fff;
+$dim-ds-cyan-100: #cce6ea;
+$dim-ds-cyan-800: #00343c;
+$dim-ds-yellow-100: #fcefdc;
+$dim-ds-yellow-800: #60451f;
+$dim-ds-red-100: #f4d6d2;
+$dim-ds-red-500: #ca3120;
+$dim-ds-red-800: #51140d;
+
 :root {
     /* Primitives - the design system's blues (#070093 its navy, #4456FF its highlight). */
-    --dim-ds-blue-050: #edeefb;
-    --dim-ds-blue-100: #d6d8f7;
-    --dim-ds-blue-200: #adb2f0;
-    --dim-ds-blue-300: #7c84ff;
-    --dim-ds-blue-400: #4456ff;
-    --dim-ds-blue-500: #2a31c9;
-    --dim-ds-blue-600: #070093;
-    --dim-ds-blue-700: #050073;
-    --dim-ds-blue-800: #030050;
-    --dim-ds-blue-900: #020034;
+    --dim-ds-blue-050: #{$dim-ds-blue-050};
+    --dim-ds-blue-100: #{$dim-ds-blue-100};
+    --dim-ds-blue-200: #{$dim-ds-blue-200};
+    --dim-ds-blue-300: #{$dim-ds-blue-300};
+    --dim-ds-blue-400: #{$dim-ds-blue-400};
+    --dim-ds-blue-500: #{$dim-ds-blue-500};
+    --dim-ds-blue-600: #{$dim-ds-blue-600};
+    --dim-ds-blue-700: #{$dim-ds-blue-700};
+    --dim-ds-blue-800: #{$dim-ds-blue-800};
+    --dim-ds-blue-900: #{$dim-ds-blue-900};
     /* Primitives - brand green, for specific elements only. */
-    --dim-ds-green-050: #f0fbe0;
-    --dim-ds-green-400: #69e000;
-    --dim-ds-green-700: #2f6b00;
-    --dim-ds-green-800: #1e4500;
+    --dim-ds-green-050: #{$dim-ds-green-050};
+    --dim-ds-green-400: #{$dim-ds-green-400};
+    --dim-ds-green-700: #{$dim-ds-green-700};
+    --dim-ds-green-800: #{$dim-ds-green-800};
     /* Primitives - neutrals: the manual greys over Boost's surface greys. */
-    --dim-ds-gray-050: #f8f9fa;
-    --dim-ds-gray-100: #f2f3f5;
-    --dim-ds-gray-200: #e9ecef;
-    --dim-ds-gray-300: #dee2e6;
-    --dim-ds-gray-400: #c8c8c8;
-    --dim-ds-gray-500: #969696;
-    --dim-ds-gray-600: #6a737b;
-    --dim-ds-gray-700: #505050;
-    --dim-ds-gray-800: #343a40;
-    --dim-ds-gray-900: #1f1f1f;
-    --dim-ds-white: #fff;
+    --dim-ds-gray-050: #{$dim-ds-gray-050};
+    --dim-ds-gray-100: #{$dim-ds-gray-100};
+    --dim-ds-gray-200: #{$dim-ds-gray-200};
+    --dim-ds-gray-300: #{$dim-ds-gray-300};
+    --dim-ds-gray-400: #{$dim-ds-gray-400};
+    --dim-ds-gray-500: #{$dim-ds-gray-500};
+    --dim-ds-gray-600: #{$dim-ds-gray-600};
+    --dim-ds-gray-700: #{$dim-ds-gray-700};
+    --dim-ds-gray-800: #{$dim-ds-gray-800};
+    --dim-ds-gray-900: #{$dim-ds-gray-900};
+    --dim-ds-white: #{$dim-ds-white};
     /* Primitives - the feedback hues the state badges pair with their own ink. */
-    --dim-ds-cyan-100: #cce6ea;
-    --dim-ds-cyan-800: #00343c;
-    --dim-ds-yellow-100: #fcefdc;
-    --dim-ds-yellow-800: #60451f;
-    --dim-ds-red-100: #f4d6d2;
-    --dim-ds-red-500: #ca3120;
-    --dim-ds-red-800: #51140d;
+    --dim-ds-cyan-100: #{$dim-ds-cyan-100};
+    --dim-ds-cyan-800: #{$dim-ds-cyan-800};
+    --dim-ds-yellow-100: #{$dim-ds-yellow-100};
+    --dim-ds-yellow-800: #{$dim-ds-yellow-800};
+    --dim-ds-red-100: #{$dim-ds-red-100};
+    --dim-ds-red-500: #{$dim-ds-red-500};
+    --dim-ds-red-800: #{$dim-ds-red-800};
 
     /* Semantic aliases - components consume only these. */
     --dim-ds-surface-page: var(--dim-ds-gray-050);
@@ -58,6 +94,8 @@
     --dim-ds-text-heading: var(--dim-ds-blue-600);
     --dim-ds-text-link: var(--dim-ds-blue-600);
     --dim-ds-text-link-hover: var(--dim-ds-blue-700);
+    --dim-ds-text-on-tint: var(--dim-ds-blue-700);
+    --dim-ds-text-success: var(--dim-ds-green-700);
     --dim-ds-border-default: var(--dim-ds-gray-300);
     --dim-ds-border-subtle: var(--dim-ds-gray-200);
     --dim-ds-border-strong: var(--dim-ds-gray-400);
@@ -108,6 +146,37 @@
        shadow tint: that navy is meant for a faint elevation at a tenth, and at this alpha it turns the page purple.
        The dark half is below the family block. */
     --dimensions-backdrop: rgba(var(--bs-black-rgb, 0, 0, 0), .5);
+}
+
+/* The dark half of the semantic aliases. Core 5.3's colour mode turns Bootstrap's surfaces and ink and none of these,
+   so a component reading them drew navy ink on a card the page had darkened, or a white card under the ink the page
+   had lightened. Surfaces and ink turn together: the surfaces are core's own dark greys (theme/boost/scss/moodle/
+   colour-mode.scss), and an ink is its light primitive lifted by core's dark-readable() until it reads 4.6:1 on a
+   raised surface (7:1 for a link's hover, 3:1 for a line), as core lifts the brand colour in dark.scss and Boost
+   Union the link colour. tests/local/dark_tokens_test.php holds the list and measures every pair. Left alone on
+   purpose: the inverse tokens, which are the navy chrome in both modes; the accents; and the primary fill, which is
+   one pair with white ink. */
+:root[data-bs-theme="dark"],
+:root[data-bs-theme="dark"] body,
+:root[data-bs-theme="dark"] .modal {
+    --dim-ds-surface-page: #{$dark-surface-page};
+    --dim-ds-surface-card: #{$dark-surface-raised};
+    --dim-ds-surface-subtle: #{$dark-surface-recessed};
+    --dim-ds-surface-strong: #{mix($dim-ds-white, $dark-surface-raised, 10%)};
+    --dim-ds-text-body: var(--bs-body-color);
+    --dim-ds-text-muted: #{dark-readable($dim-ds-gray-700)};
+    --dim-ds-text-subtle: #{dark-readable($dim-ds-gray-500, $min: 3)};
+    --dim-ds-text-heading: #{dark-readable($dim-ds-blue-600)};
+    --dim-ds-text-link: #{dark-readable($dim-ds-blue-600)};
+    --dim-ds-text-link-hover: #{dark-readable($dim-ds-blue-600, $min: 7)};
+    --dim-ds-text-on-tint: #{dark-readable($dim-ds-blue-700, mix($dim-ds-blue-600, $dark-surface-page, 20%))};
+    --dim-ds-text-success: #{dark-readable($dim-ds-green-700)};
+    --dim-ds-border-default: var(--bs-border-color);
+    --dim-ds-border-subtle: var(--bs-border-color-translucent);
+    --dim-ds-border-strong: #{dark-readable($dim-ds-gray-600, $min: 3)};
+    --dim-ds-interactive-primary-tint: #{mix($dim-ds-blue-600, $dark-surface-page, 20%)};
+    /* The family ring's dark stop (--dimensions-focus-ring below), so the page has one ring. */
+    --dim-ds-focus-ring: var(--dim-ds-blue-300);
 }
 
 /* ---- Family tokens: the contract with local_dimensions and block_dimensions ---- */
@@ -351,9 +420,9 @@ textarea:focus-visible,
 /* message_popup's popover is rendered INSIDE the navbar, so it reads whatever colour mode reaches it there - the
    page's, now that the navbar carries none of its own - and core paints its container var(--bs-white), which the
    dark mode turns grey while the ink, the footer and the "See all" link keep half of the light palette. The popover
-   is one light surface in either mode: the colour mode tokens it reads are re-pointed here to the design system's
-   light ones, on the container, where Bootstrap reads them from, so its header, items, empty state and the close
-   button all follow. */
+   is one surface in the page's mode: the colour mode tokens it reads are re-pointed here to the design system's
+   semantic ones, which have a dark half of their own, on the container, where Bootstrap reads them from, so its
+   header, items, empty state and the close button all follow the same pair. */
 .navbar .popover-region-container {
     --bs-white: var(--dim-ds-surface-card);
     --bs-body-bg: var(--dim-ds-surface-card);
@@ -363,7 +432,6 @@ textarea:focus-visible,
     --bs-link-color: var(--dim-ds-text-link);
     --bs-link-hover-color: var(--dim-ds-text-link-hover);
     color: var(--bs-body-color);
-    color-scheme: light;
 }
 
 /* ---- The pill both ways through focus mode wear -------------------------- */

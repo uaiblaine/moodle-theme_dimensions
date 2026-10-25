@@ -217,13 +217,28 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
-     * The design system's tokens of post.scss: name => value.
+     * The design system's tokens of post.scss as the light page has them: name => value.
+     *
+     * A primitive is written once, as a Sass variable, and declared through it, so its interpolation is resolved here;
+     * a semantic alias is declared again for the dark page further down, so the first declaration of a name is kept.
      *
      * @return array
      */
     private function palette(): array {
-        preg_match_all('~(?<![-\w])(--dim-ds-[a-z0-9-]+)\s*:\s*([^;]+);~', $this->stylesheet('post.scss'), $matches);
-        return array_combine($matches[1], array_map('trim', $matches[2]));
+        $scss = $this->stylesheet('post.scss');
+        preg_match_all('~^\$(dim-ds-[a-z0-9-]+):\s*(#[0-9a-f]{3,6});$~m', $scss, $sass);
+        $variables = array_combine($sass[1], $sass[2]);
+        preg_match_all('~(?<![-\w])(--dim-ds-[a-z0-9-]+)\s*:\s*([^;]+);~', $scss, $matches);
+        $palette = [];
+        foreach ($matches[1] as $i => $name) {
+            $value = preg_replace_callback(
+                '~^#\{\$(dim-ds-[a-z0-9-]+)\}$~',
+                fn($found) => $variables[$found[1]] ?? $found[0],
+                trim($matches[2][$i])
+            );
+            $palette[$name] ??= $value;
+        }
+        return $palette;
     }
 
     /**
