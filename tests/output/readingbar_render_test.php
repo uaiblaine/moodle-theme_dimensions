@@ -395,6 +395,108 @@ final class readingbar_render_test extends \advanced_testcase {
     }
 
     /**
+     * On a page that can switch into focus mode the layer carries the way in, the navbar's own form again, and the page
+     * queues the phone's user menu with an entry per control the navbar printed: focus mode for a student, edit mode
+     * after it for a teacher, and the module that moves them armed once.
+     *
+     * @return void
+     */
+    public function test_the_layer_and_the_phone_menu_carry_the_page_controls(): void {
+        global $PAGE;
+        [$course, $cm] = $this->course();
+        set_config('focusmode', \theme_dimensions\local\login::SELECT_YES, focusmode::COMPONENT);
+        $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $navbar = $this->navbar($this->activity_header($course, $cm));
+        $this->assertTrue(focusmode::available($PAGE), 'Precondition: the page can switch into focus mode.');
+
+        $layer = substr($navbar, (int) strpos($navbar, self::LAYER));
+        $this->assertMatchesRegularExpression(
+            '~<form class="dimensions-ctxbar-focus" data-region="dimensions-ctxbar-focus" method="post" action="[^"]*/theme/'
+                . 'dimensions/focus\.php">.*?name="cmid" value="' . $cm->id . '".*?data-action="dimensions-focus-enter"~s',
+            $layer
+        );
+        $this->assertSame(2, substr_count($navbar, 'data-action="dimensions-focus-enter"'), 'The navbar\'s and the layer\'s.');
+
+        $this->assertSame(1, substr_count($navbar, 'data-region="dimensions-phonemenu"'), 'One holder.');
+        preg_match_all('~data-dimensions-phone="([a-z]+)"~', $navbar, $keys);
+        $this->assertContains('focus', $keys[1]);
+        $this->assertNotContains('edit', $keys[1], 'A student edits nothing.');
+        $this->assertSame(1, $this->armed('theme_dimensions/phonemenu'), 'The module is armed once.');
+
+        $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'editingteacher'));
+        $navbar = $this->navbar($this->activity_header($course, $cm));
+        preg_match_all('~data-dimensions-phone="([a-z]+)"~', $navbar, $keys);
+        $this->assertSame(['focus', 'edit'], array_values(array_intersect($keys[1], ['focus', 'edit'])));
+    }
+
+    /**
+     * Without focus mode the layer has no way into it, and a student gets an entry only for a control the navbar really
+     * printed: with messaging off, none, or Mail alone where local_mail is installed; with none, no holder and no module.
+     *
+     * @return void
+     */
+    public function test_only_a_printed_control_gets_an_entry(): void {
+        [$course, $cm] = $this->course();
+        set_config('messaging', 0);
+        $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $navbar = $this->navbar($this->activity_header($course, $cm));
+
+        $this->assertStringContainsString(self::LAYER, $navbar, 'Control: the layer is drawn.');
+        $this->assertStringNotContainsString('dimensions-ctxbar-focus', $navbar);
+        $this->assertStringNotContainsString('data-region="popover-region-messages"', $navbar, 'Precondition: no messaging.');
+        preg_match_all('~data-dimensions-phone="([a-z]+)"~', $navbar, $keys);
+        if (str_contains($navbar, 'id="local-mail-navbar"')) {
+            $this->assertSame(['mail'], $keys[1]);
+            $this->assertSame(1, $this->armed('theme_dimensions/phonemenu'));
+            return;
+        }
+        $this->assertSame([], $keys[1]);
+        $this->assertStringNotContainsString('data-region="dimensions-phonemenu"', $navbar);
+        $this->assertSame(0, $this->armed('theme_dimensions/phonemenu'));
+    }
+
+    /**
+     * The module that shows core's linear navigation footer again near the end of the page is armed where core adds that
+     * footer, by core's own predicate, and not where the course format's linear navigation is switched off.
+     *
+     * @return void
+     */
+    public function test_the_linear_footer_module_follows_cores_predicate(): void {
+        global $PAGE;
+        [$course, $cm] = $this->course();
+        $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $this->activity_header($course, $cm);
+        $this->assertTrue(
+            \core_courseformat\local\linearnavigationsettings::is_linear_navigation_enabled($course),
+            'Precondition: topics uses linear navigation by default.'
+        );
+        $this->assertSame(1, $this->armed('theme_dimensions/linearfooter'));
+
+        set_config(\core_courseformat\local\linearnavigationsettings::SETTING_ENABLE_LINEAR_NAV, 0, 'format_topics');
+        $this->activity_header($course, $cm);
+        $this->assertFalse(\core_courseformat\local\linearnavigationsettings::show_navigation_footer($PAGE));
+        $this->assertSame(0, $this->armed('theme_dimensions/linearfooter'));
+    }
+
+    /**
+     * How many times a module's init was queued on the page.
+     *
+     * @param string $module The module's name.
+     * @return int
+     */
+    private function armed(string $module): int {
+        global $PAGE;
+
+        $property = new \ReflectionProperty($PAGE->requires, 'amdjscode');
+        $calls = implode("\n", (array) $property->getValue($PAGE->requires));
+
+        return substr_count($calls, "require(['" . $module . "'], function(amd) {amd.init(");
+    }
+
+    /**
      * The template's own example renders the two words of the status and the control with core's toggler attributes.
      *
      * @return void

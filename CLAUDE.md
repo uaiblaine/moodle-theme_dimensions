@@ -229,6 +229,8 @@ templates/focusmode_top.mustache   The bar and the status line, appended to stan
 templates/focusmode_bar.mustache   The bar alone, so it can be asserted in isolation.
 templates/focusmode_foot.mustache  The completion line and the previous/next row, after activity_navigation().
 templates/focusmode_entry.mustache The navbar way in, spliced by navbar_plugin_output().
+classes/local/phonenav.php     Which navbar controls become user menu entries on a phone; templates/navbar_phonemenu,
+                               amd/src/phonemenu.js (moves them, marks the nav), scss/phonenav.scss (hides below md).
 scss/focusmode.scss            Focus mode styles, compiled only while the master switch is on; the two skins.
 amd/src/focusmode.js           The switch in place (class, header actions, focus, the web service) and the width.
 classes/external/set_focus_mode.php  Records a switch made in place, in the session.
@@ -554,6 +556,39 @@ already shaped decisions here:
 - **Core renders only the avatar in the navbar toggle.** The name comes from this
   theme's override of `core/user_menu_metadata.mustache` — 60 lines, stable, unlike the
   400-line login form template which is deliberately not overridden.
+
+## The context bar's colour and the phone's navbar
+
+- **The context layer's ground is Sass, compiled per flavour, and the ink is never the one moved.**
+  `readingbar::context_colour()` hands the pre SCSS callback a hex alone (`$dimensions-ctxbar-color`); empty, the
+  ground is a step of `$primary` (`scss/readingbar.scss`, `dimensions-ctxbar-*` functions). The pair reads 4.6:1, as
+  core's `$dark-min-contrast`. `readingbar_colour_test` compiles that block with `core_scss` over
+  `$CFG->root/lib/bundles/bootstrap/scss` (0.25 s a colour, not a whole theme compile) and measures it with its own
+  WCAG maths. Anything painted on the layer reads `--bs-navbar-brand-color`, which the layer sets to the ink: a
+  fraction of it (the old 82 % sub line) falls under the contrast.
+- **The phone slide is Fandom's: transforms by `$navbar-height`, clipped by `overflow: hidden` on the nav while the
+  layer is in, and by `@keyframes dimensions-ctxbar-clip` (overflow held hidden for one run) on the way back.**
+  Overflow animates discretely; the animation reruns each time `:not(.dimensions-ctx-on)` starts to match, and once
+  at load. Never leave the nav `overflow: hidden` at rest: its menus and popovers drop out of it.
+- **A phone control is hidden only by a class the module writes after moving its entry**
+  (`dimensions-phonenav-<key>` on the nav), never by `:has(#user-action-menu ...)`: a nested `&:has()` makes scssphp
+  print "Array to string conversion" four times. Hidden with `position: absolute; visibility: hidden;
+  transition: none`: `display` cannot beat the edit switch's `d-flex !important`, and without `transition: none`
+  the context bar's visibility transition keeps the control on screen for a slide's length (in a hidden pane, for
+  good). The entries are decided from the PARENT's plugin output (`phonenav::entries()`), before the theme splices
+  its focus button in.
+- **The context bar holds still only for a keyboard focus (`:focus-visible`).** Closing the course index from the
+  layer leaves the focus on the layer's control: Boost's drawers module gives it back to the last-used toggle. A hold
+  on any focus kept the bar stuck until a press elsewhere (gate `js_readingbar_pointer_focus`).
+- **The linear navigation footer is core's; the theme only brings it back near the end.** Boost's
+  `theme_boost/sticky-footer` hides every sticky footer on the way down below 768px (`document.body.clientWidth`,
+  class `hasstickyfooter` on body and `#page`, listener on the document). `amd/src/linearfooter.js` listens on the
+  WINDOW so it runs after Boost's in the same scroll event and re-adds the class before paint; a document listener
+  would race Boost's by registration order. `linearfooter_source_test` reads Boost's module for the three facts it
+  mirrors.
+- **Measuring the slide in the Browser pane:** a hidden pane neither ticks transitions nor runs animation frames;
+  readingbar's frame booked at load jams for about 40 s. Shim `requestAnimationFrame`, wait the jam out, and slow
+  `--dim-ds-motion-base` on the root to see a frame mid-slide.
 
 ## Rank and war name
 

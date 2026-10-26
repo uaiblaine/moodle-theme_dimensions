@@ -61,6 +61,9 @@ final class readingbar {
     /** @var string The auto-hide setting, an admin_setting_configmulticheckbox of page kinds that ships empty. */
     public const SETTING_AUTOHIDE = 'navbarautohide';
 
+    /** @var string The context bar's own colour, an admin_setting_configcolourpicker that ships empty. */
+    public const SETTING_COLOUR = 'navbarcontextcolor';
+
     /** @var string The page kind of an activity's own page. */
     public const KIND_ACTIVITY = 'activity';
 
@@ -161,6 +164,25 @@ final class readingbar {
      */
     public static function context_enabled(): bool {
         return (string) get_config(self::COMPONENT, self::SETTING_CONTEXT) !== '0';
+    }
+
+    /**
+     * The context bar's own colour as the stylesheet may read it, or null for the colour derived from the brand colour.
+     *
+     * Only a hexadecimal colour is handed on, with its hash: the value is written into the SCSS before it is compiled
+     * ({@see theme_dimensions_get_pre_scss()}), so anything else - a colour name or an rgb() the picker also accepts,
+     * or a value forced in config.php that no validation saw - is read as unset rather than risk the compilation of
+     * the whole stylesheet. The colour picker itself writes hexadecimal.
+     *
+     * @return string|null A lowercase colour such as #1d4f91.
+     */
+    public static function context_colour(): ?string {
+        $stored = trim((string) get_config(self::COMPONENT, self::SETTING_COLOUR));
+        if (!preg_match('/^#?(?:[0-9a-f]{3}){1,2}$/i', $stored)) {
+            return null;
+        }
+
+        return '#' . strtolower(ltrim($stored, '#'));
     }
 
     /**

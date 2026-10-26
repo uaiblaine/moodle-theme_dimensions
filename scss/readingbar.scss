@@ -7,6 +7,62 @@
    navbar's own class with a class only the module writes (tests/local/readingbar_scss_test.php). The
    motion exists only under prefers-reduced-motion: no-preference; otherwise every change is a swap. */
 
+/* ---- The context layer's colour ------------------------------------------ */
+/* The layer comes in with a ground of its own, so the change from the global bar is seen at once (Fandom's sticky
+   community bar is the model). An administrator may choose it (readingbar::SETTING_COLOUR, which the pre SCSS
+   callback writes into $dimensions-ctxbar-color); left empty, it is a step of the brand colour, $primary, which a
+   flavour sets too. Either way the ink is white or the dark grey, whichever reads better on the ground, and the
+   ground is moved, never the ink, until the pair reaches the contrast: 4.6 rather than 4.5, as core's dark palette
+   asks ($dark-min-contrast), so a checker that rounds differently does not report it. Every value the layer paints
+   with is derived here, from Bootstrap's own colour functions, so the stylesheet names no colour by hand. */
+$dimensions-ctxbar-color: null !default;
+$dimensions-ctxbar-min-contrast: 4.6;
+
+/* The ink that reads better on a ground: white or core's darkest grey. */
+@function dimensions-ctxbar-ink($ground) {
+    @if contrast-ratio($ground, $white) >= contrast-ratio($ground, $gray-900) {
+        @return $white;
+    }
+    @return $gray-900;
+}
+
+/* A ground moved away from its ink in 5% steps until the two reach the contrast, as core's dark-readable() does; a
+   ground that already reaches it is returned as it is. */
+@function dimensions-ctxbar-readable($ground, $ink) {
+    $away: if($ink == $white, $black, $white);
+    $readable: $ground;
+    @for $step from 1 through 20 {
+        @if contrast-ratio($readable, $ink) < $dimensions-ctxbar-min-contrast {
+            $readable: mix($away, $ground, percentage($step * .05));
+        }
+    }
+    @return $readable;
+}
+
+/* The ground derived from the brand colour: the most visible step TOWARDS the ink (a lighter navy under white type)
+   that still reads, else a quarter step away from it, which can only add contrast. */
+@function dimensions-ctxbar-derived($base) {
+    $ink: dimensions-ctxbar-ink($base);
+    @each $weight in (30%, 20%, 10%) {
+        $candidate: mix($ink, $base, $weight);
+        @if contrast-ratio($candidate, $ink) >= $dimensions-ctxbar-min-contrast {
+            @return $candidate;
+        }
+    }
+    @return dimensions-ctxbar-readable(mix(if($ink == $white, $black, $white), $base, 25%), $ink);
+}
+
+/* The ground: the administrator's colour, moved only as far as its ink needs, or the one derived from $primary. */
+@function dimensions-ctxbar-ground($chosen, $base) {
+    @if $chosen == null {
+        @return dimensions-ctxbar-derived($base);
+    }
+    @return dimensions-ctxbar-readable($chosen, dimensions-ctxbar-ink($chosen));
+}
+
+$dimensions-ctxbar-ground: dimensions-ctxbar-ground($dimensions-ctxbar-color, $primary);
+$dimensions-ctxbar-ink: dimensions-ctxbar-ink($dimensions-ctxbar-ground);
+
 /* ---- C3: the track behind the band's fill ---------------------------------- */
 /* The band's own colour at a fraction of it, so a flavour's --dimensions-navbar-band moves both. Opacity on
    a pseudo-element of its own, because the palette has no tint of the band and stylelint refuses
@@ -25,7 +81,7 @@ body.dimensions-readingbar {
         content: "";
     }
 
-    /* The swap is the whole animation: the global bar's items fade out as the layer fades in, and back.
+    /* From md up the swap is a fade: the global bar's items fade out as the layer fades in, and back.
        Visibility goes with the opacity, so the hidden half leaves the tab order and the accessibility
        tree once its fade is over and is in both from the first frame of its fade in. */
     @media (prefers-reduced-motion: no-preference) {
@@ -37,16 +93,74 @@ body.dimensions-readingbar {
                 visibility var(--dim-ds-motion-fast);
         }
     }
+
+    /* Below md the swap is a slide, as Fandom's phone navbar does it: the layer comes down from above the bar while
+       the global bar's items go down out of it, both by the bar's height, with no fade. The nav clips them while the
+       layer is in, and, through the keyframes below, for the length of the slide back; after it the nav overflows
+       again, because its menus and popovers drop out of it. With the motion reduced the same states swap at once. */
+    @include media-breakpoint-down(md) {
+        .navbar.fixed-top .dimensions-ctxbar {
+            opacity: 1;
+            transform: translateY(-100%);
+        }
+
+        .navbar.fixed-top.dimensions-ctx-on {
+            overflow: hidden;
+
+            .dimensions-ctxbar {
+                transform: none;
+            }
+
+            > .container-fluid > :not(#usernavigation),
+            #usernavigation > :not(.dimensions-ctxbar) {
+                opacity: 1;
+                transform: translateY(#{$navbar-height});
+            }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .navbar.fixed-top .dimensions-ctxbar,
+            .navbar.fixed-top > .container-fluid > *,
+            .navbar.fixed-top #usernavigation > * {
+                transition:
+                    transform var(--dim-ds-motion-base) var(--dim-ds-motion-ease),
+                    visibility var(--dim-ds-motion-base);
+            }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .navbar.fixed-top:not(.dimensions-ctx-on) {
+                animation: dimensions-ctxbar-clip var(--dim-ds-motion-base) backwards;
+            }
+        }
+    }
+}
+
+/* Overflow animates discretely: held hidden for the whole run, it is the clip of the slide back (Fandom's
+   overflowHiddenForAnimation). Run each time the layer leaves, and once at load, when the bar is not moving. */
+@keyframes dimensions-ctxbar-clip {
+    0%,
+    100% {
+        overflow: hidden;
+    }
 }
 
 /* ---- C2: the context layer ----------------------------------------------- */
 /* templates/navbar_readingbar.mustache, printed inside #usernavigation and laid over the whole nav: the
    nav is fixed, so it is the containing block, and nothing between the two is positioned (core's and
    Boost Union's compiled sheets set no position on #usernavigation, .navbar-nav or .container-fluid).
-   It keeps off the band's 3px. Transparent: the nav's own fill shows through, whatever the navbar
-   colour, and the type takes the brand colour the navbar's colour mode resolved, never inherit
-   (the focus bar's lesson: the nav sets no colour of its own). */
+   It keeps off the band's 3px. Its ground and ink are the pair derived above, at every width and in either
+   colour mode; the type everything in it reads is that ink, through the navbar's own brand colour property
+   (the focus bar's lesson: the nav sets no colour of its own, so inherit would walk up to the body), and the
+   pills' hairline, hover and the focus ring are the same ink, so they read on whatever ground was chosen. The
+   hairline and the hover are the layer's own properties, set on each pill after the mixin: the family's
+   --dimensions-pill-* names are post.scss's alone (tests/local/family_tokens_test.php). */
 .navbar.fixed-top .dimensions-ctxbar {
+    --dim-ctxbar-ground: #{$dimensions-ctxbar-ground};
+    --dim-ctxbar-line: #{transparentize($dimensions-ctxbar-ink, .55)};
+    --dim-ctxbar-hover: #{transparentize($dimensions-ctxbar-ink, .88)};
+    --bs-navbar-brand-color: #{$dimensions-ctxbar-ink};
+    --dim-ds-focus-ring: var(--bs-navbar-brand-color);
     position: absolute;
     top: 0;
     right: 0;
@@ -56,6 +170,7 @@ body.dimensions-readingbar {
     gap: var(--dim-ds-space-xs);
     align-items: center;
     padding: 0 var(--dim-ds-space-md) 0 var(--dim-ds-space-xs);
+    background-color: var(--dim-ctxbar-ground);
     color: var(--bs-navbar-brand-color, var(--bs-body-color));
     visibility: hidden;
     opacity: 0;
@@ -77,10 +192,11 @@ body.dimensions-readingbar {
     white-space: nowrap;
 }
 
+/* The sub line is the full ink: a fraction of it would fall under the contrast the ground was chosen for. */
 .navbar.fixed-top .dimensions-ctxbar-sub {
     overflow: hidden;
     font-size: .75rem;
-    opacity: .82;
+    font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -92,7 +208,14 @@ body.dimensions-readingbar {
 .navbar.fixed-top .dimensions-ctxbar-index {
     @include dimensions-navbar-pill;
     @include dimensions-navbar-pill-icon;
+    border-color: var(--dim-ctxbar-line);
     flex: 0 0 auto;
+
+    &:hover,
+    &:focus {
+        background-color: var(--dim-ctxbar-hover);
+    }
+
     min-width: 2.75rem;
     min-height: 2.75rem;
 
@@ -106,6 +229,37 @@ body.dimensions-readingbar {
     }
 }
 
+/* The way into focus mode: the navbar's entry form again, as the index control's icon pill at the same touch target.
+   The form only keeps the button whole in the row. */
+.navbar.fixed-top .dimensions-ctxbar-focus {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+
+    .dimensions-ctxbar-focus-button {
+        @include dimensions-navbar-pill;
+        @include dimensions-navbar-pill-icon;
+        border-color: var(--dim-ctxbar-line);
+        min-width: 2.75rem;
+
+        &:hover,
+        &:focus {
+            background-color: var(--dim-ctxbar-hover);
+        }
+
+        min-height: 2.75rem;
+
+        .icon {
+            margin: 0;
+        }
+
+        &:focus-visible {
+            outline: var(--dim-ds-focus-ring-width) solid var(--dim-ds-focus-ring);
+            outline-offset: 2px;
+        }
+    }
+}
+
 /* The activity's status, read-only. Both words are in the markup and data-state shows one, so the module
    flips an attribute and composes no text. "Completed" wears the family's success pair, a ground that
    states its ink; "Pending" is the navbar's outline pill. */
@@ -116,7 +270,7 @@ body.dimensions-readingbar {
     align-items: center;
     min-height: 1.875rem;
     padding: .25rem .75rem;
-    border: 1px solid var(--dimensions-pill-border, var(--dim-ds-border-default));
+    border: 1px solid var(--dim-ctxbar-line);
     border-radius: var(--dim-ds-radius-pill);
     color: var(--bs-navbar-brand-color, var(--bs-body-color));
     font-size: .8125rem;

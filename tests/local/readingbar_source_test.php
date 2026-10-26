@@ -122,7 +122,14 @@ final class readingbar_source_test extends \basic_testcase {
      */
     public function test_nothing_changes_while_the_bar_is_busy(): void {
         $busy = $this->body('busy');
-        $this->assertStringContainsString('if (bar.nav.contains(document.activeElement)) {', $busy);
+        $this->assertStringContainsString('if (keyboardFocus()) {', $busy);
+        $focus = $this->body('keyboardFocus');
+        $this->assertStringContainsString('if (!focused || !bar.nav.contains(focused)) {', $focus);
+        $this->assertStringContainsString(
+            "return focused.matches(':focus-visible');",
+            $focus,
+            'A focus a pointer left in the bar (the course index given back its toggle) must not hold it.'
+        );
         $this->assertStringContainsString(
             'bar.nav.querySelector(SELECTORS.EXPANDED) || bar.nav.querySelector(SELECTORS.OPENMENU)',
             $busy

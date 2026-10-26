@@ -244,6 +244,17 @@ const paint = (active) => {
 };
 
 /**
+ * Whether a control is on the screen and can take the focus.
+ *
+ * The way in is drawn more than once (the navbar's button, the context bar's, a phone's user menu entry), and on a
+ * phone the navbar's own is hidden in place, so the first one in the document is not always one the focus can reach.
+ *
+ * @param {HTMLElement} element A control.
+ * @return {Boolean}
+ */
+const shown = (element) => element.getClientRects().length > 0 && window.getComputedStyle(element).visibility !== 'hidden';
+
+/**
  * Move the keyboard focus to the counterpart of the control that was pressed, and say the new mode.
  *
  * The pressed control has just stopped being displayed with the chrome it lives in, so the focus
@@ -254,7 +265,7 @@ const paint = (active) => {
  * @return {void}
  */
 const settleFocus = (active) => {
-    const target = document.querySelector(active ? SELECTORS.barexit : SELECTORS.enter);
+    const target = Array.from(document.querySelectorAll(active ? SELECTORS.barexit : SELECTORS.enter)).find(shown);
     if (target) {
         target.focus();
     }

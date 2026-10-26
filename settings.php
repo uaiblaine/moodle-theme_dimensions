@@ -315,6 +315,16 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
         $tab->add($setting);
 
+        // Setting: The context bar's own colour. Empty by default, which derives one from the brand colour; the value is
+        // compiled into the stylesheet ({@see readingbar::context_colour()}), so a change rebuilds it.
+        $name = 'theme_dimensions/' . readingbar::SETTING_COLOUR;
+        $title = get_string('navbarcontextcolor', 'theme_dimensions', null, true);
+        $description = get_string('navbarcontextcolor_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, '');
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+        $page->hide_if('theme_dimensions/' . readingbar::SETTING_COLOUR, 'theme_dimensions/' . readingbar::SETTING_CONTEXT);
+
         // Setting: The page kinds whose navbar hides on scroll down. None by default ({@see readingbar::autohide_kinds()}).
         $name = 'theme_dimensions/' . readingbar::SETTING_AUTOHIDE;
         $title = get_string('navbarautohide', 'theme_dimensions', null, true);

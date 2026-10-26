@@ -233,6 +233,24 @@ public description, a 1200x630 preview image, canonical URL, site name, locale),
 unfurls in messaging apps and social networks. They are `noindex` unless the site is open to search
 engines.
 
+### The navbar while reading
+
+On an activity page and the course page, once the reader scrolls past the page title, the navbar
+gives way to a context bar: the activity's or the course's name, the course and its progress, the
+activity's completion status, the course index, the way into focus mode and, for an editor, the edit
+mode switch. It comes in with a colour of its own, so the change is seen at once: the *Context bar
+colour* setting, or, left empty, a lighter or darker step of the brand colour; either way its text
+is white or dark, whichever reaches the contrast WCAG AA asks for. On a phone the two bars slide
+past each other vertically; on a wider screen they fade.
+
+On a phone the navbar keeps the menu, the brand, the notifications and the user menu. The messaging
+drawer, Mail (local_mail), focus mode and the edit mode switch move to the top of the user menu, the
+last two to the context bar as well; each moves only where the navbar would have shown it.
+
+On a phone Moodle hides the activity navigation footer ("Next", "Previous" and the completion
+button) while the reader scrolls down; the theme brings it back near the end of the page, where
+the reader looks for "Next".
+
 ### Pages strip
 
 With local_page installed, a category page names that category's pages under its hero, as the
@@ -293,7 +311,7 @@ Settings
 |---|---|
 | General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. |
 | Login page | The login page switch, the institutional panel's copy and the guest home page. |
-| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*. |
+| Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Course landing page | The page model, modality and study format a new course starts with; existing courses never change. |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |

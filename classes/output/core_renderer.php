@@ -30,6 +30,7 @@ use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
 use theme_dimensions\local\guestnav;
 use theme_dimensions\local\login;
+use theme_dimensions\local\phonenav;
 use theme_dimensions\local\readingbar;
 
 /**
@@ -594,22 +595,33 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * that runs the band, the swap and auto-hide is armed here too, on every reading page, with or
      * without the layer: on the course page it is what paints the reader's completion on the band. A reader core
      * lets edit the page ({@see readingbar::edit_applies()}) gets core's edit mode switch in the layer, rendered
-     * again by core's own edit_switch(): the navbar's switch is hidden under the layer while it is shown (D5).
+     * again by core's own edit_switch(): the navbar's switch is hidden under the layer while it is shown (D5). The
+     * layer carries the way into focus mode too, the navbar's own form drawn a second time, on the pages it applies to.
+     *
+     * Last, the user menu entries that stand in for the navbar's controls on a phone ({@see phonenav}), decided from the
+     * parent's output alone, so that the theme's own focus button never counts as a control of a plugin's.
+     * And where core adds its linear navigation footer, the module that shows that footer again near the end of the page
+     * on a phone (amd/src/linearfooter.js): Boost hides it on the way down, which is how a reader reaches "Next".
      *
      * @return string
      */
     public function navbar_plugin_output() {
         $output = parent::navbar_plugin_output();
+        // The phone's user menu entries are decided from what the subsystems and plugins printed, before anything of
+        // the theme's is added to it.
+        $phoneentries = phonenav::entries($output, $this->page);
 
         // On every page that can switch in place: the navbar is hidden in focus mode, and this is the way back in.
+        $focusentry = null;
         if (\theme_dimensions\local\focusmode::available($this->page)) {
-            $button = $this->render_from_template('theme_dimensions/focusmode_entry', [
+            $focusentry = [
                 'actionurl' => (new \moodle_url('/theme/dimensions/focus.php'))->out(false),
                 'sesskey' => sesskey(),
                 'cmid' => (int) $this->page->cm->id,
                 'label' => get_string('focusmode_enter', 'theme_dimensions'),
                 'title' => get_string('focusmode_enter_title', 'theme_dimensions'),
-            ]);
+            ];
+            $button = $this->render_from_template('theme_dimensions/focusmode_entry', $focusentry);
             $output = $this->splice_focus_entry($output, $button);
         }
 
@@ -624,9 +636,23 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
                     // Core's own switch, rendered again: a second id, its own form and its own module (D5).
                     $layer['editswitch'] = (string) $this->edit_switch();
                 }
+                // The way into focus mode, the navbar's own form again: focusmode.js intercepts any submit of it.
+                $layer['hasfocus'] = $focusentry !== null;
+                $layer['focus'] = $focusentry;
                 $output .= $this->render_from_template('theme_dimensions/navbar_readingbar', $layer);
             }
             $this->page->requires->js_call_amd('theme_dimensions/readingbar', 'init', [readingbar::client_config($this->page)]);
+        }
+
+        if ($phoneentries) {
+            $output .= $this->render_from_template('theme_dimensions/navbar_phonemenu', ['entries' => $phoneentries]);
+            $this->page->requires->js_call_amd('theme_dimensions/phonemenu', 'init');
+        }
+
+        // Core's linear navigation footer, shown again near the end of the page on a phone. Core's own predicate, the one
+        // its hook asks before it adds the footer; the module still looks for the footer on the page before it arms.
+        if (\core_courseformat\local\linearnavigationsettings::show_navigation_footer($this->page)) {
+            $this->page->requires->js_call_amd('theme_dimensions/linearfooter', 'init');
         }
 
         return $output;
