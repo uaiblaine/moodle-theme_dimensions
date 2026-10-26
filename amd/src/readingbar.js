@@ -29,7 +29,7 @@
  *
  * The scroll listener is passive and only books one animation frame, where the whole decision runs:
  * the layout is read first and the classes written after. Distance thresholds in each direction keep the
- * bar from flickering. Nothing changes while the keyboard focus is in the bar, one of its menus is open, or
+ * bar from flickering. Nothing changes while a keyboard reader's focus is in the bar, one of its menus is open, or
  * a drawer lies over the page. The motion is the stylesheet's, under prefers-reduced-motion: no-preference;
  * the module only writes classes and one custom property. On the Behat site the bar never moves or swaps
  * with the scroll: a scenario that scrolled would find the controls of the global bar out of reach.
@@ -137,7 +137,31 @@ const pastHeader = () => {
 };
 
 /**
- * Whether the bar must stay as it is: the focus is in it, one of its menus is open, or a drawer lies over the page.
+ * Whether a keyboard reader's focus is in the bar.
+ *
+ * Only a focus the browser shows (:focus-visible) holds the bar: a keyboard reader would otherwise see the control
+ * they are on swap or leave. A focus a pointer left there does not, and one is left on every close of the course
+ * index from the layer: Boost's drawers module gives the focus back to the toggle that opened the drawer, which is the
+ * layer's control, and the bar would stay as it was until a press elsewhere took the focus away. A browser that does
+ * not know the selector holds the bar, as before.
+ *
+ * @returns {boolean}
+ */
+const keyboardFocus = () => {
+    const focused = document.activeElement;
+    if (!focused || !bar.nav.contains(focused)) {
+        return false;
+    }
+    try {
+        return focused.matches(':focus-visible');
+    } catch (error) {
+        return true;
+    }
+};
+
+/**
+ * Whether the bar must stay as it is: a keyboard reader's focus is in it, one of its menus is open, or a drawer lies
+ * over the page.
  *
  * A drawer docked beside the page (the course index and the blocks, from lg up) is no reason: it is open on every
  * page of a reader who keeps it so. Docked is core's own answer, isSmall() (below Sizes.medium, 991px, core's drawers
@@ -147,7 +171,7 @@ const pastHeader = () => {
  * @returns {boolean}
  */
 const busy = () => {
-    if (bar.nav.contains(document.activeElement)) {
+    if (keyboardFocus()) {
         return true;
     }
     if (bar.nav.querySelector(SELECTORS.EXPANDED) || bar.nav.querySelector(SELECTORS.OPENMENU)) {

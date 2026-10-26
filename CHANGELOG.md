@@ -23,6 +23,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   an entry presses the hidden control itself and repeats its unread count, and a control is hidden only once its
   entry is in the menu, so without the module the navbar stays as it was. The context layer carries the way into
   focus mode as well, and focus mode's module moves the focus to the first counterpart on the screen.
+- **Fixed: the context bar stayed as it was after the course index was closed from it.** Boost's drawers module gives
+  the focus back to the toggle that opened the drawer, which is the layer's own control, and the bar held still for any
+  focus inside it until a press elsewhere. Only a keyboard reader's focus (`:focus-visible`) holds it now.
 
 - **The course notice says why a course is not public** (2026100521). A course set to public under an unlisted
   category read "Login only", with a note telling the editor to make it public. The promotion section now names the
