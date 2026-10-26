@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The showcase asks for its first paint's images first, and loads three modules on first use** (2026100524; P0 of
+  `docs/vitrine-react/PLAN.md`, the performance plan). The covers of the first row of a listing's first page (three,
+  `category_listing::FIRST_ROW`) and of the posters that open a grouped page or the root load at once instead of
+  lazily (the card's new `eager` key, declared in the rows service's returns and set only on the page's own first
+  paint: `category_listing`'s `$firstpaint`, passed by the two page entries, never by a web service answer); the hero's picture is fetched with
+  `fetchpriority="high"`; the hero's crests are no longer lazy, and every crest states its box in the markup. The
+  cover film is now `theme_dimensions/local/coverfilm`, imported by a small entry (`covervideo`) on the first pointer,
+  focus or finger on a cover, which holds a press that arrives before the film and gives it back; the course dialogue
+  imports `core/modal` on the first press; the filter line imports its preview on the first pointer or focus on the
+  toolbar. The visitor's import walk now follows dynamic imports too.
 - **Every copy of core or Boost Union code keeps a snapshot of its upstream** (Boost Union's `Nav.tsx.upstream`
   pattern). The 24 template overrides and the two copied methods carry a verbatim `.upstream` file beside them;
   `classes/local/upstream.php` reads today's upstream as the page does, `tests/local/upstream_test.php` reddens when

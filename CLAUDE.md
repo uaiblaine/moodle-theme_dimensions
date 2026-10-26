@@ -213,7 +213,7 @@ classes/local/category/        The category showcase's decision layer (stage 2):
                                population (the two gates, the clamps, the probe cap, the page),
                                classifier (eleven states, five statements), facets, cards, criteria,
                                scope, page_result, unavailable_exception. See the section below.
-amd/src/category*.js           The showcase's modules. Its listing clients: categoryvitrine and
+amd/src/category*.js           The showcase's modules (amd/src/covervideo.js + local/coverfilm.js: the cover film). Its listing clients: categoryvitrine and
                                categorypanel (an account's), categorypublic (a visitor's), over the
                                shared categorylisting, categoryposters and categoryareapanel.
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
@@ -3158,6 +3158,36 @@ plan, with the decisions taken while briefing, are `moodle-dev/docs/filter-line/
   both wait for an upgrade - cron suspended, administrators redirected to the upgrade page - under
   everyone using them. The stage's number goes in `CHANGELOG.md` while it is worked on, and the stacks
   are upgraded after asking the other sessions.
+
+## The category showcase: first paint and first use (P0, 2026-10-26)
+
+P0 of `docs/vitrine-react/PLAN.md` (the performance plan; section 5 has the measurements). What a maintainer
+must not lose:
+
+- **`eager` is decided once, on the page's own first paint.**
+  - `category_listing`'s constructor takes `$firstpaint`, and only the two page entries pass it:
+    `course_renderer::course_category()` and `request::handle()`.
+  - With it, the first `FIRST_ROW` (3) covers of the first page load at once when no posters sit above them;
+    otherwise the posters' first visible row does.
+  - A web service answer (rows, panels, slices, later pages) never sets it. That is what keeps the
+    page-versus-answer parity tests exact: they compare every key but `eager`, and assert that an answer never
+    marks it.
+  - Gates: `first_row_*`, `posters_first_row_eager`, `first_paint_entries`, `first_paint_visitor`.
+- **The cover film has two modules.**
+  - `covervideo` is the entry the page arms. It marks the body (`dim-cover-js`) and imports
+    `local/coverfilm` on the first pointer, focus or finger on a cover.
+  - A press on a cluster control that arrives before the film is held (`stopImmediatePropagation`) and given
+    back to the same control once the film listens.
+  - A hover is replayed only while the band is still `:hover`, or the film would start under a pointer that
+    has already left.
+- **The course dialogue imports `core/modal` on the first press, held as pending.** Core already loads the
+  modal stack on these pages, so the saving shows only where nothing else asks for it.
+- **The filter line imports `categorypreview` on the first pointer or focus on the toolbar**, or on the first
+  suggestion walked to. `Preview` in `categoryline` is a stand-in until then: clear and refresh do nothing, and
+  show imports the preview.
+- **A dynamic `import()` is part of the visitor's import graph.** `categorypublic_source_test::imports()` reads
+  both import lines and `import('...')`. A walk that read only import lines would let a module loaded on first
+  use leave the walk in silence.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

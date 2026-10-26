@@ -122,7 +122,7 @@
 <header id="page-header" class="header-maxwidth d-print-none dim-hero {{classes}}" style="{{style}}" data-for="page-heading" data-region="dim-hero" data-categoryid="{{categoryid}}">
     <div class="dim-hero__band">
         {{#hasimage}}
-        <img class="dim-hero__image" src="{{imageurl}}" alt="">
+        <img class="dim-hero__image" src="{{imageurl}}" alt="" fetchpriority="high">
         {{/hasimage}}
         <div class="dim-hero__inner">
             <div class="dim-hero__col">
@@ -160,7 +160,7 @@
             {{#hasbadges}}
             <ul class="dim-hero__badges" role="list" aria-label="{{badgeslabel}}" data-region="dim-hero-badges">
                 {{#badges}}
-                <li class="dim-hero__badge"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
+                <li class="dim-hero__badge"><img src="{{url}}" alt="{{alt}}" width="80" height="88" decoding="async"></li>
                 {{/badges}}
             </ul>
             {{/hasbadges}}

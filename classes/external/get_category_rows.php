@@ -605,6 +605,7 @@ class get_category_rows extends external_api {
                 NULL_ALLOWED
             ),
             'hasimage' => new external_value(PARAM_BOOL, 'Whether there is an image.'),
+            'eager' => new external_value(PARAM_BOOL, 'Whether the cover is in the first row of the first page, loaded at once.'),
             'badges' => new external_multiple_structure(
                 new external_single_structure([
                     'url' => new external_value(PARAM_URL, 'The badge image, through the theme\'s own file route.'),

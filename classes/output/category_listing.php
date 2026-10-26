@@ -88,6 +88,20 @@ class category_listing implements \core\output\named_templatable, \core\output\r
     public const TREE_MAX_INDENT_DEPTH = 4;
 
     /**
+     * How many covers of the page's first grid load at once instead of lazily: the first row at its widest.
+     *
+     * The grids are three tracks from xl (scss/category.scss, `.dim-vitrine__grid`), two below and one on a
+     * phone, so three covers the first row at every width. A lazy image waits for layout before it is even
+     * requested, and the first row is what the reader sees first: one of its covers is the page's largest
+     * paint when the category has no hero image. Only the page's own first paint marks it (the constructor's
+     * $firstpaint, set by the two entries): a web service answer is a filter, a panel or a page appended
+     * further down, and its cards must equal the ones the page would draw for the same criteria.
+     *
+     * @var int
+     */
+    public const FIRST_ROW = 3;
+
+    /**
      * Constructor.
      *
      * @param core_course_category $category The listed category, already admitted by both gates.
@@ -96,6 +110,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * @param string $view The view in force ({@see category_toolbar::VIEW_CARDS} or VIEW_LIST).
      * @param string $manageactions Core's rendered action menu for the category's managers, or ''.
      * @param array|null $pages The pages strip's context ({@see category_pages::export()}), or null for none.
+     * @param bool $firstpaint Whether this is the page's own first paint, so its first row of covers loads at once
+     *     ({@see self::FIRST_ROW}); a web service answer is never one.
      */
     public function __construct(
         /** @var core_course_category The listed category. */
@@ -110,6 +126,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
         private readonly string $manageactions = '',
         /** @var array|null The pages strip, built by the page's entries and never by the web service. */
         private readonly ?array $pages = null,
+        /** @var bool Whether this is the page's first paint: set by the page's two entries, never by the web service. */
+        private readonly bool $firstpaint = false,
     ) {
     }
 
@@ -203,6 +221,12 @@ class category_listing implements \core\output\named_templatable, \core\output\r
         $islist = $this->view === category_toolbar::VIEW_LIST;
         $isgrouped = $this->criteria->is_grouped();
         $areas = $isgrouped && $this->result->posters ? $this->areas($this->result->posters, false, $output) : null;
+        // The first row of courses loads at once where it is the top of the page: the first page, with no posters above it.
+        if ($this->firstpaint && $areas === null && $this->result->page === 0) {
+            foreach (array_slice($cardcontexts, 0, self::FIRST_ROW) as $card) {
+                $card->eager = true;
+            }
+        }
         $count = $this->count_line();
 
         return (object) [
@@ -791,6 +815,11 @@ class category_listing implements \core\output\named_templatable, \core\output\r
             }
         }
         $slice = population::directory_slice($entries);
+        // The posters open the page, so the first row of the visible ones loads at once (self::FIRST_ROW).
+        $eager = 0;
+        foreach ($slice['directory'] as $index => $entry) {
+            $slice['directory'][$index]['eager'] = $this->firstpaint && !$entry['hidden'] && $eager++ < self::FIRST_ROW;
+        }
         $isopen = $openindex >= 0;
         $inmore = $isopen && $openindex >= population::DIRECTORY_SLICE;
         // The open poster's place among the VISIBLE posters of its grid: the row integers come from it.

@@ -325,6 +325,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'hasoverline' => $this->overline !== null && $this->overline !== '',
             'imageurl' => $this->image ? $this->image->out(false) : null,
             'hasimage' => $this->image !== null,
+            // Lazy unless the listing puts the card in its first row ({@see category_listing::FIRST_ROW}).
+            'eager' => false,
             'badges' => $badges,
             'hasbadges' => !empty($badges),
             'badgeslabel' => get_string('category_badges', self::COMPONENT),

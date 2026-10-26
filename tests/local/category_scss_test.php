@@ -163,9 +163,10 @@ final class category_scss_test extends \basic_testcase {
            cannot see is one the Bootstrap rules do not apply to, which is why the membership test
            below names it. */
         $files[] = $root . '/amd/src/daterange.js';
-        /* Nor does covervideo's: it writes the band's playing class, the body class that reveals
-           the cluster and the Font Awesome glyph each toggle swaps to. */
+        /* Nor does the cover film's: its entry writes the body class that reveals the cluster, and
+           the film the band's playing class and the Font Awesome glyph each toggle swaps to. */
         $files[] = $root . '/amd/src/covervideo.js';
+        $files[] = $root . '/amd/src/local/coverfilm.js';
         /* The refusal page, what a reader gets instead of a listing, does not match the globs
            either. The page scripts (category.php, categoryhero.php) and the editor's form
            (classes/form/categoryhero.php) write no class name: the form builds moodleform
@@ -215,6 +216,7 @@ final class category_scss_test extends \basic_testcase {
             'categoryhero.js',
             'daterange.js',
             'covervideo.js',
+            'coverfilm.js',
             'category.scss',
             'categoryhero.scss',
         ];
@@ -634,7 +636,7 @@ final class category_scss_test extends \basic_testcase {
         // The playing class is still the one covervideo writes on the element it binds to.
         $this->assertStringContainsString(
             "PLAYING_CLASS = 'dim-card__media--playing'",
-            (string) file_get_contents($this->plugin_root() . '/amd/src/covervideo.js')
+            (string) file_get_contents($this->plugin_root() . '/amd/src/local/coverfilm.js')
         );
     }
 

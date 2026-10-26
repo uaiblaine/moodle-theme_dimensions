@@ -24,7 +24,10 @@
  * native disclosure's and opens its panel in place, which is the whole of the fallback.
  *
  * core/modal brings the focus trap, Escape, the close button and the focus given back to the
- * summary; this module adds what core's markup cannot say on its own: the dialogue's own class on
+ * summary. It is imported on the first press, not with the page: most readers never open a dialogue,
+ * and the modal stack (its templates, the backdrop, the focus lock) is script the first paint does not
+ * need. The press is held as pending meanwhile, so nothing reads the page between the press and the
+ * dialogue; this module adds what core's markup cannot say on its own: the dialogue's own class on
  * the root it appends to the body, the id core's root is labelled by on the title the cover
  * carries (core's header keeps only its close button here, so that the title scrolls away with
  * its picture), and the footer's shadow while the sheet has more to scroll.
@@ -38,8 +41,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Modal from 'core/modal';
-import Notification from 'core/notification';
+import Pending from 'core/pending';
 
 /** @type {Object} The hooks this module reads: data attributes only, never a class name. */
 const SELECTORS = {
@@ -108,6 +110,7 @@ const open = async(summary, parts) => {
         return;
     }
     const title = sheet.querySelector(SELECTORS.title);
+    const Modal = await import('core/modal');
     const modal = await Modal.create({
         template: TEMPLATE,
         templateContext: {title: title ? title.textContent : ''},
@@ -149,6 +152,19 @@ const mark = (scope) => {
 };
 
 /**
+ * Tell the reader that the dialogue could not be built, through core's own exception dialogue.
+ *
+ * Imported here rather than with the page, as core/modal is: it is needed only when something failed.
+ *
+ * @param {Error} error What failed.
+ * @return {Promise} Resolving once the reader has been told.
+ */
+const report = async(error) => {
+    const Notification = await import('core/notification');
+    Notification.exception(error);
+};
+
+/**
  * A press anywhere on the page: a card's summary opens its dialogue instead of its disclosure.
  *
  * Preventing the click's default is what keeps the native disclosure shut - a summary toggles its
@@ -169,10 +185,12 @@ const onClick = (event) => {
         return;
     }
     opening = true;
+    const pending = new Pending('theme_dimensions/categorycoursemodal:open');
     open(summary, parts)
-        .catch(Notification.exception)
+        .catch(report)
         .finally(() => {
             opening = false;
+            pending.resolve();
         });
 };
 

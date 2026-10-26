@@ -28,7 +28,8 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the invariants of amd/src/covervideo.js by reading its source.
+ * Pins the invariants of the cover film by reading its source: amd/src/local/coverfilm.js, the film, and
+ * amd/src/covervideo.js, the entry the page arms, which imports the film on the first intent towards a cover.
  *
  * Same shape and reasoning as {@see amd_source_test} and {@see daterange_source_test}: plugin CI
  * runs no JavaScript unit tests, so the properties of this module whose loss costs a wrong page
@@ -59,7 +60,7 @@ final class covervideo_source_test extends \basic_testcase {
      * @return string
      */
     private function source(): string {
-        $path = $this->plugin_root() . '/amd/src/covervideo.js';
+        $path = $this->plugin_root() . '/amd/src/local/coverfilm.js';
         $this->assertFileExists($path);
         return (string) file_get_contents($path);
     }
@@ -70,7 +71,7 @@ final class covervideo_source_test extends \basic_testcase {
      * @return string
      */
     private function built_from(): string {
-        $path = $this->plugin_root() . '/amd/build/covervideo.min.js.map';
+        $path = $this->plugin_root() . '/amd/build/local/coverfilm.min.js.map';
         $this->assertFileExists($path, 'The source map is missing; Moodle serves the build beside it.');
         $map = json_decode((string) file_get_contents($path), true);
         $this->assertIsArray($map, 'The source map is not readable JSON.');
@@ -660,8 +661,83 @@ final class covervideo_source_test extends \basic_testcase {
             $this->built_from(),
             'amd/build is not this source: rebuild it with grunt amd and commit both files.'
         );
-        $build = (string) file_get_contents($this->plugin_root() . '/amd/build/covervideo.min.js');
+        $build = (string) file_get_contents($this->plugin_root() . '/amd/build/local/coverfilm.min.js');
         $this->assertStringContainsString('dim-cover-media', $build);
         $this->assertStringContainsString('dim-card__media--playing', $build);
+    }
+
+    /**
+     * The entry's source and the source its committed build was made from.
+     *
+     * @return string[] The source, then the build map's source.
+     */
+    private function entry(): array {
+        $source = (string) file_get_contents($this->plugin_root() . '/amd/src/covervideo.js');
+        $map = json_decode((string) file_get_contents($this->plugin_root() . '/amd/build/covervideo.min.js.map'), true);
+        return [$source, (string) ($map['sourcesContent'][0] ?? '')];
+    }
+
+    /**
+     * The body of one top-level arrow function of the entry.
+     *
+     * @param string $name The name it is bound to.
+     * @return string
+     */
+    private function entry_body(string $name): string {
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n\};~s';
+        $found = preg_match($pattern, $this->entry()[0], $matches);
+        $this->assertSame(1, $found, "No top-level function named {$name} in the entry.");
+        return $matches[1];
+    }
+
+    /**
+     * The page arms the entry, and the entry imports the film on the first intent towards a cover.
+     *
+     * Changes that must make it fail: the film imported with the page again; the body left unmarked, so the cluster
+     * stays hidden until a cover is approached and a finger has no control to press; the first-use listeners left in
+     * the bubbling phase, where a card's own listener can stop the intent; the load not pending, so a reader of the
+     * page (Behat) finds a film half-armed; the listeners left on once the film listens.
+     */
+    public function test_the_entry_imports_the_film_on_first_intent(): void {
+        [$source, $built] = $this->entry();
+        $this->assertSame($source, $built, 'amd/build/covervideo is not this source: rebuild it with grunt amd.');
+        preg_match_all("~^import [^\n]* from '([^']+)';$~m", $source, $imports);
+        $this->assertSame(['core/pending'], $imports[1], 'The entry imports core\'s pending tracker with the page, nothing else.');
+        preg_match_all("~\\bimport\\('([^']+)'\\)~", $source, $dynamic);
+        $this->assertSame(['theme_dimensions/local/coverfilm'], $dynamic[1]);
+
+        $init = $this->entry_body('init');
+        $this->assertStringContainsString('document.body.classList.add(BODY_CLASS);', $init);
+        $this->assertStringContainsString("INTENTS.forEach((type) => document.addEventListener(type, onIntent, true));", $init);
+        $this->assertStringContainsString("document.addEventListener('click', onPress, true);", $init);
+        $this->assertStringContainsString("const BODY_CLASS = 'dim-cover-js';", $source);
+        $this->assertStringContainsString("const INTENTS = ['pointerover', 'focusin', 'pointerdown'];", $source);
+
+        $load = $this->entry_body('load');
+        $this->assertStringContainsString("new Pending('theme_dimensions/covervideo:load')", $load);
+        $this->assertStringContainsString('Film.init();', $load);
+        $this->assertStringContainsString("INTENTS.forEach((type) => document.removeEventListener(type, onIntent, true));", $load);
+        $this->assertStringContainsString("document.removeEventListener('click', onPress, true);", $load);
+        $this->assertStringContainsString('.finally(() => pending.resolve());', $load);
+    }
+
+    /**
+     * A press that arrives before the film is held and given back; a hover is told again only while it holds.
+     *
+     * Changes that must make it fail: a press on a control before the film has loaded left to do nothing (a button
+     * that does nothing); the press given back to another element; a hover replayed after the pointer has left, which
+     * starts a film nothing will stop.
+     */
+    public function test_an_early_press_is_held_and_a_hover_replayed_only_while_it_holds(): void {
+        $press = $this->entry_body('onPress');
+        $this->assertStringContainsString('if (ready || !control) {', $press);
+        $this->assertStringContainsString('event.preventDefault();', $press);
+        $this->assertStringContainsString('event.stopImmediatePropagation();', $press);
+        $this->assertStringContainsString('control.click();', $press);
+
+        $intent = $this->entry_body('onIntent');
+        $this->assertStringContainsString("event.type === 'pointerover' && where.matches(':hover') && target.isConnected", $intent);
+        $this->assertStringContainsString("new PointerEvent('pointerover', {", $intent);
+        $this->assertStringContainsString('pointerType: event.pointerType,', $intent);
     }
 }

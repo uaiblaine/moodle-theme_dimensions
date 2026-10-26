@@ -1578,4 +1578,48 @@ final class card_markup_test extends \advanced_testcase {
             'A cell with something to offer is drawn as ever.'
         );
     }
+
+    /**
+     * A cover in the first row is not lazy, every other is; the hero's picture is fetched first; crests reserve their box.
+     *
+     * The hero's picture is the page's largest paint whenever the category has one, so it is asked for ahead of every
+     * other image. A crest states the size of its box in the markup as well as in the stylesheet, so nothing in the
+     * row moves when it decodes. The hero's crests are at the top of the page and are not lazy.
+     */
+    public function test_the_first_paint_images_are_asked_for_first_and_crests_reserve_their_box(): void {
+        $this->resetAfterTest();
+        $card = $this->example_context('category_card');
+        $this->assertTrue($card['hasimage'], 'Precondition: the example card has a cover.');
+        $lazy = $this->render_context('category_card', ['eager' => false] + $card);
+        $image = $lazy->query('//img[' . self::has_class('dim-card__image') . ']')->item(0);
+        $this->assertSame('lazy', $image->getAttribute('loading'));
+        $eager = $this->render_context('category_card', ['eager' => true] + $card);
+        $this->assertFalse(
+            $eager->query('//img[' . self::has_class('dim-card__image') . ']')->item(0)->hasAttribute('loading'),
+            'A cover of the first row is loaded as the browser finds it.'
+        );
+        foreach ($lazy->query('//li[' . self::has_class('dim-card__crest') . ']/img') as $crest) {
+            $this->assertSame(['80', '88'], [$crest->getAttribute('width'), $crest->getAttribute('height')]);
+        }
+
+        $hero = $this->example_context('category_hero');
+        $hero['hasimage'] = true;
+        $hero['imageurl'] = 'https://example.com/pluginfile.php/1/theme_dimensions/categoryhero/7/hero.jpg';
+        $xpath = $this->render_context('category_hero', $hero);
+        $image = $xpath->query('//img[' . self::has_class('dim-hero__image') . ']')->item(0);
+        $this->assertSame('high', $image->getAttribute('fetchpriority'));
+        $badges = $xpath->query('//li[' . self::has_class('dim-hero__badge') . ']/img');
+        $this->assertGreaterThan(0, $badges->length, 'Precondition: the example hero has crests.');
+        foreach ($badges as $badge) {
+            $this->assertFalse($badge->hasAttribute('loading'), 'The hero\'s crests are at the top of the page.');
+            $this->assertSame(['80', '88'], [$badge->getAttribute('width'), $badge->getAttribute('height')]);
+        }
+
+        $poster = $this->example_context('category_directory_card');
+        $xpath = $this->render_context('category_directory_card', ['eager' => false] + $poster);
+        $image = $xpath->query('//img[' . self::has_class('dim-poster__img') . ']')->item(0);
+        $this->assertSame('lazy', $image->getAttribute('loading'));
+        $xpath = $this->render_context('category_directory_card', ['eager' => true] + $poster);
+        $this->assertFalse($xpath->query('//img[' . self::has_class('dim-poster__img') . ']')->item(0)->hasAttribute('loading'));
+    }
 }
