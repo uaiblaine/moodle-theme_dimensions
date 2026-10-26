@@ -22,9 +22,9 @@
     The login layout (core/login_layout) loads the panel from this partial so that a theme can
     customise the welcome copy and branding. While the theme's login page is on, the panel is
     the institutional one: the logo, the kicker, the title and the monitoring notice, on every
-    page that stays on the login layout. Otherwise the partial is Boost Union's own, copied
-    verbatim from Boost Union v5.2-r8: re-diff it against Boost Union's
-    templates/core/login_panel.mustache when Boost Union is updated.
+    page that stays on the login layout. Otherwise the partial is Boost Union's own, verbatim:
+    login_panel.mustache.upstream beside this file is the Boost Union copy it tracks, and
+    scripts/upstream-merge.sh brings a Boost Union change into it.
 
     Context variables required for this template:
     * dimensionsloginpage - Whether the custom panel is drawn; without it Boost Union's panel is.

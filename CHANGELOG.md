@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Every copy of core or Boost Union code keeps a snapshot of its upstream** (Boost Union's `Nav.tsx.upstream`
+  pattern). The 24 template overrides and the two copied methods carry a verbatim `.upstream` file beside them;
+  `classes/local/upstream.php` reads today's upstream as the page does, `tests/local/upstream_test.php` reddens when
+  core or Boost Union changes a copied file, and `scripts/upstream-merge.sh` (development only, export-ignored)
+  applies the upstream change to the copy with a three-way merge and refreshes the snapshot. No version change.
 - **Fixed: a navbar logo capped by Boost Union's *Maximal width of logo in navbar* was squeezed sideways**
   (2026100523). That setting writes `max-width` and `height: auto` on `.navbar-brand .logo`; the 44px height of
   2026100518 outranks the `auto`, so a 300x31 wordmark capped at 200px was drawn 200x44. The logo is
