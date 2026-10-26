@@ -237,7 +237,9 @@ classes/external/set_focus_mode.php  Records a switch made in place, in the sess
 focus.php                      The no-JavaScript fallback of the switch: guards, a state change, a redirect.
 templates/core/user_menu_metadata.mustache  Adds the name beside the avatar, md and up.
 templates/loginform.mustache   The theme's login page's form column; core/loginform stays Boost Union's.
-templates/core/login_panel.mustache  The institutional panel, Boost Union v5.2-r8's partial in the other branch.
+templates/core/login_panel.mustache  The institutional panel, Boost Union's partial in the other branch.
+classes/local/upstream.php     The copies of core and Boost Union code and today's upstream of each; the snapshots
+                               (*.upstream beside each copy), tests/local/upstream_test.php, scripts/upstream-merge.sh.
 scss/login.scss                Everything under body.theme_dimensions-login.
 tests/output/core_renderer_test.php  Renders the real login page: no remote image, the switch, the layout;
                                and the navbar's name, through a real page header.
@@ -263,13 +265,40 @@ templates/tool_lp/, templates/report_competency/, templates/block_lp/  Copies of
   forever. So auth_loginsteps' CPF mask binds to `form#login` / `#username`, stable in core, Boost
   and Boost Union alike, and the theme's login page renders `templates/loginform.mustache`
   (`theme_dimensions/loginform`), which keeps those same hooks. The one core
-  partial overridden is `core/login_panel`, 12 lines, with Boost Union v5.2-r8's markup in
-  the off branch - re-diff it against Boost Union's copy on every Boost Union update.
+  partial overridden is `core/login_panel`, 12 lines, with Boost Union's markup in the off
+  branch, tracked by its snapshot (see "Copies of upstream code").
 - **`render_login()` calls `parent::render_login()` only while the page is switched off.**
   Boost Union builds its whole login context there, and "Leave it to Boost Union" must give
   back exactly that page - provider image and all; the renderer test asserts the favicon IS
   in that output, as the control. With the page on, the context is core's export plus what
   this theme draws differently, and nothing of Boost Union's login settings is read.
+
+## Copies of upstream code
+
+Every template under `templates/<component>/` that overrides one of core or Boost Union, and every method
+copied from core (`upstream::METHODS`), keeps beside it a byte-for-byte snapshot of the upstream it was last
+re-diffed against: `<copy>.upstream` for a template, `<copy file>.<method>.upstream` for a method, as Boost Union
+keeps `js/esm/src/nav/Nav.tsx.upstream` beside its copy of core's navigation. `classes/local/upstream.php` lists
+them and reads today's upstream the way the page does (the template finder for the first parent theme;
+reflection on the class the copy would otherwise inherit from).
+
+- **`upstream_test` reddens the moment core or Boost Union changes a copied file, on purpose**, CI included (CI
+  takes Boost Union's `upgrade-503` and core's `MOODLE_503_STABLE` live). The copy is brought back to parity in
+  the change that takes the new upstream in, as the readingbar test already demands of Boost Union's flush
+  condition.
+- **The fix is `scripts/upstream-merge.sh [--check] [stack]`** (host; the stack, m503 by default, must mount this
+  checkout): for a template it runs `git merge-file` with the snapshot as the base, so upstream's change lands in
+  the copy and a clash is left as conflict markers; for a method it prints upstream's diff to apply by hand; then
+  it refreshes the snapshot. `--check` only prints the diffs. Review every merged copy against its docblock's list
+  of modifications before committing it with its snapshot.
+- **A new override gets its snapshot in the same commit** (the script writes it: "new snapshot"), after checking
+  that the copy tracks today's upstream; `test_every_copy_has_a_snapshot_and_every_snapshot_a_copy` fails
+  otherwise. A new method copy is added to `upstream::METHODS` first.
+- **The three `core_user/myprofile_*` templates copy nothing** (core draws the profile in PHP) and are
+  `upstream::OWN_TEMPLATES`; a test reddens if core or Boost Union ever ships one of those names.
+- The snapshots ship in the release (as Boost Union's does); `/scripts` is `export-ignore`d. The baseline of
+  2026-10-26 (core 5.3+ 2026100500.02, Boost Union 143e7497) was taken after reading all 26 copies against
+  upstream: every body difference is a documented modification or a cosmetic local edit.
 
 ## The theme's login page
 

@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Every copy of core or Boost Union code keeps a snapshot of its upstream** (Boost Union's `Nav.tsx.upstream`
+  pattern). The 24 template overrides and the two copied methods carry a verbatim `.upstream` file beside them;
+  `classes/local/upstream.php` reads today's upstream as the page does, `tests/local/upstream_test.php` reddens when
+  core or Boost Union changes a copied file, and `scripts/upstream-merge.sh` (development only, export-ignored)
+  applies the upstream change to the copy with a three-way merge and refreshes the snapshot. No version change.
 - **The context bar slides in on a phone and comes in with a colour of its own** (2026100522; Fandom's mobile
   navbar is the model). Below md the context layer comes down from above the bar while the global bar's items go down out of it, by
   the bar's height, clipped by the nav while the layer is in and, through a keyframe holding `overflow: hidden` for

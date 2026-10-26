@@ -21,4 +21,5 @@
 /lang/pt_br           export-ignore
 /mutations            export-ignore
 /phpcs.xml            export-ignore
+/scripts              export-ignore
 /.mdlshield          export-ignore

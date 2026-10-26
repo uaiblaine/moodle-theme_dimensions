@@ -1,0 +1,13 @@
+    public function get_description_editor_options() {
+        global $CFG;
+        $context = $this->_customdata['context'];
+        $itemid = $this->_customdata['itemid'];
+        return array(
+            'maxfiles'  => EDITOR_UNLIMITED_FILES,
+            'maxbytes'  => $CFG->maxbytes,
+            'trusttext' => false,
+            'noclean'   => true,
+            'context'   => $context,
+            'subdirs'   => file_area_contains_subdirs($context, 'coursecat', 'description', $itemid),
+        );
+    }
