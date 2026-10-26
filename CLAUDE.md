@@ -577,6 +577,15 @@ already shaped decisions here:
   the context bar's visibility transition keeps the control on screen for a slide's length (in a hidden pane, for
   good). The entries are decided from the PARENT's plugin output (`phonenav::entries()`), before the theme splices
   its focus button in.
+- **The context bar holds still only for a keyboard focus (`:focus-visible`).** Closing the course index from the
+  layer leaves the focus on the layer's control: Boost's drawers module gives it back to the last-used toggle. A hold
+  on any focus kept the bar stuck until a press elsewhere (gate `js_readingbar_pointer_focus`).
+- **The linear navigation footer is core's; the theme only brings it back near the end.** Boost's
+  `theme_boost/sticky-footer` hides every sticky footer on the way down below 768px (`document.body.clientWidth`,
+  class `hasstickyfooter` on body and `#page`, listener on the document). `amd/src/linearfooter.js` listens on the
+  WINDOW so it runs after Boost's in the same scroll event and re-adds the class before paint; a document listener
+  would race Boost's by registration order. `linearfooter_source_test` reads Boost's module for the three facts it
+  mirrors.
 - **Measuring the slide in the Browser pane:** a hidden pane neither ticks transitions nor runs animation frames;
   readingbar's frame booked at load jams for about 40 s. Shim `requestAnimationFrame`, wait the jam out, and slow
   `--dim-ds-motion-base` on the root to see a frame mid-slide.

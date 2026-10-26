@@ -458,6 +458,30 @@ final class readingbar_render_test extends \advanced_testcase {
     }
 
     /**
+     * The module that shows core's linear navigation footer again near the end of the page is armed where core adds that
+     * footer, by core's own predicate, and not where the course format's linear navigation is switched off.
+     *
+     * @return void
+     */
+    public function test_the_linear_footer_module_follows_cores_predicate(): void {
+        global $PAGE;
+        [$course, $cm] = $this->course();
+        $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $this->activity_header($course, $cm);
+        $this->assertTrue(
+            \core_courseformat\local\linearnavigationsettings::is_linear_navigation_enabled($course),
+            'Precondition: topics uses linear navigation by default.'
+        );
+        $this->assertSame(1, $this->armed('theme_dimensions/linearfooter'));
+
+        set_config(\core_courseformat\local\linearnavigationsettings::SETTING_ENABLE_LINEAR_NAV, 0, 'format_topics');
+        $this->activity_header($course, $cm);
+        $this->assertFalse(\core_courseformat\local\linearnavigationsettings::show_navigation_footer($PAGE));
+        $this->assertSame(0, $this->armed('theme_dimensions/linearfooter'));
+    }
+
+    /**
      * How many times a module's init was queued on the page.
      *
      * @param string $module The module's name.

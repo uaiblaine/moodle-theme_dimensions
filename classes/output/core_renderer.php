@@ -600,6 +600,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      *
      * Last, the user menu entries that stand in for the navbar's controls on a phone ({@see phonenav}), decided from the
      * parent's output alone, so that the theme's own focus button never counts as a control of a plugin's.
+     * And where core adds its linear navigation footer, the module that shows that footer again near the end of the page
+     * on a phone (amd/src/linearfooter.js): Boost hides it on the way down, which is how a reader reaches "Next".
      *
      * @return string
      */
@@ -645,6 +647,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         if ($phoneentries) {
             $output .= $this->render_from_template('theme_dimensions/navbar_phonemenu', ['entries' => $phoneentries]);
             $this->page->requires->js_call_amd('theme_dimensions/phonemenu', 'init');
+        }
+
+        // Core's linear navigation footer, shown again near the end of the page on a phone. Core's own predicate, the one
+        // its hook asks before it adds the footer; the module still looks for the footer on the page before it arms.
+        if (\core_courseformat\local\linearnavigationsettings::show_navigation_footer($this->page)) {
+            $this->page->requires->js_call_amd('theme_dimensions/linearfooter', 'init');
         }
 
         return $output;

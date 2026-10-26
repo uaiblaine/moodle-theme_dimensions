@@ -26,6 +26,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 - **Fixed: the context bar stayed as it was after the course index was closed from it.** Boost's drawers module gives
   the focus back to the toggle that opened the drawer, which is the layer's own control, and the bar held still for any
   focus inside it until a press elsewhere. Only a keyboard reader's focus (`:focus-visible`) holds it now.
+- **Core's linear navigation footer comes back near the end of the page on a phone.** Below 768px Boost hides every
+  sticky footer on the way down the page, so a reader reached the end of an activity with "Next" and the completion
+  button hidden. `amd/src/linearfooter.js` leaves Boost's behaviour along the page and shows that footer again within a
+  quarter of the screen's height of the end, after Boost's own scroll listener and in Boost's own way; armed by core's
+  predicate (`linearnavigationsettings::show_navigation_footer()`), never on other sticky footers.
 
 - **The course notice says why a course is not public** (2026100521). A course set to public under an unlisted
   category read "Login only", with a note telling the editor to make it public. The promotion section now names the

@@ -247,6 +247,10 @@ On a phone the navbar keeps the menu, the brand, the notifications and the user 
 drawer, Mail (local_mail), focus mode and the edit mode switch move to the top of the user menu, the
 last two to the context bar as well; each moves only where the navbar would have shown it.
 
+On a phone Moodle hides the activity navigation footer ("Next", "Previous" and the completion
+button) while the reader scrolls down; the theme brings it back near the end of the page, where
+the reader looks for "Next".
+
 ### Pages strip
 
 With local_page installed, a category page names that category's pages under its hero, as the
