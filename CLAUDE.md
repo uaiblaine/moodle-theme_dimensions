@@ -924,6 +924,12 @@ Boost Union parity table and the MooTube finding are in the original design reco
   so anything printed in `#region-main` is underneath it. `amd/src/coursenotice.js` moves the notice into
   the format's scrolling `#content`; no CSS of the theme can lift it out from there. Verified only by
   reading the format's code: check it in a browser after a MooTube update.
+- **The discoverability notes explain the predicate; they never decide.** Public or not is
+  `publicaccess::is_public()` (gate `coursenotice_public_read`); `builder::add_discoverability()` reads the
+  course's own state and `path_withholders()` re-reads the terms of local_unlistedcourses'
+  `discoverability::are_public()` (course hidden, an unlisted or hidden category on the path) only to name them.
+  When that composition gains a term, add its note here; until then such a course reads "Public, not in effect"
+  with no reason under it, never "Public".
 - **Only a notice with the promotion section folds** (`course_notice`'s constructor, gate
   `notice_fold_promote_only`): a folded switched role or hidden course hint is a hint nobody reads, and the
   guest account cannot hold the preference.

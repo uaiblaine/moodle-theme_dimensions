@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The course notice says why a course is not public** (2026100521). A course set to public under an unlisted
+  category read "Login only", with a note telling the editor to make it public. The promotion section now names the
+  course's own state - public, "Public, not in effect", unlisted, or login only - and, below it, what withholds it:
+  the course hidden, the nearest unlisted category on its path (with the link to that category's discoverability
+  page for whoever may change it) and the nearest hidden category (with the link to edit it). The category notes are
+  said whatever the course's state, because both also withhold the course from listings. An unlisted course says who
+  still learns that it exists, with the link to change it for whoever holds `moodle/course:visibility`. The verdict
+  is still local_unlistedcourses' predicate; a refusal the notice cannot name still reads "not in effect". Six
+  PHPUnit cases and ten mutation gates.
 - **The design system's semantic aliases turn with the colour mode.** Core 5.3's dark mode turns Bootstrap's surfaces
   and ink and none of the `--dim-ds-*` aliases, so the login page drew its heading and "Forgotten your password?" in
   navy on a dark card (1.28:1), and the profile cards, the landing page card and the "not available" card stayed white
