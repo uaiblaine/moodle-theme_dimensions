@@ -725,12 +725,15 @@ body.dimensions-nav-compact:has(.dimensions-drawer-modes) #usernavigation {
 
 /* The logo keeps a margin of the bar around it: 8px above and below, where core's 52px left it 4px from the band. One
    height for the navbar's brand and the drawer's header, which lies over it (below). Set on the image: Boost Union's
-   brand link carries m-0 and p-0, which are !important. */
+   brand link carries m-0 and p-0, which are !important. Boost Union's "Maximal width of logo in navbar" setting
+   (theme_boost_union_get_scss_navbar()) caps the image's width and asks for height: auto, which this height outranks:
+   contained, a capped logo shrinks inside its box instead of being squeezed sideways. */
 $dimensions-logo-height: calc(#{$navbar-height} - 2 * var(--dim-ds-space-xs));
 
 .navbar.fixed-top .navbar-brand .logo {
     height: $dimensions-logo-height;
     max-height: $dimensions-logo-height;
+    object-fit: contain;
 }
 
 /* The brand beside the hamburger on a phone (core_renderer::brand_on_phones()), 8px from it; a site with no logo shows

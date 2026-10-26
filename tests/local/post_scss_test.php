@@ -253,6 +253,35 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
+     * A logo whose width Boost Union caps keeps its ratio inside the navbar's fixed height.
+     *
+     * Boost Union's "Maximal width of logo in navbar" writes max-width and height: auto on the brand's logo; the
+     * theme's height outranks that height, so without object-fit the image is squeezed sideways into the capped
+     * box. Boost Union's generator is read as well, so a change of its selector or of its height shows here.
+     *
+     * @return void
+     */
+    public function test_a_logo_capped_by_boost_union_keeps_its_ratio(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertMatchesRegularExpression(
+            '/\n\.navbar\.fixed-top \.navbar-brand \.logo \{\s*height: \$dimensions-logo-height;'
+                . '\s*max-height: \$dimensions-logo-height;\s*object-fit: contain;\s*\}/',
+            $scss
+        );
+
+        $locallib = \core_component::get_plugin_directory('theme', 'boost_union') . '/locallib.php';
+        $source = file_get_contents($locallib);
+        $this->assertNotFalse($source, 'Precondition: Boost Union\'s locallib.php is readable.');
+        $this->assertMatchesRegularExpression(
+            "/'\\.navbar-brand, \\.navbar-brand \\.logo \\{\\s*max-width: ' \\. get_config\\('theme_boost_union', "
+                . "'maxlogowidth'\\) \\. ';\\s*height: auto;/",
+            $source,
+            'Boost Union still caps the brand\'s logo by width and asks for height: auto.'
+        );
+    }
+
+    /**
      * The navbar's dark half keys on Boost Union's .navbar-dark, never on a colour mode the navbar no longer carries.
      *
      * Boost Union's upgrade-503 stopped writing data-bs-theme on the navbar, so a rule keyed on it matches nothing
