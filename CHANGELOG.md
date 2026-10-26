@@ -10,6 +10,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   `classes/local/upstream.php` reads today's upstream as the page does, `tests/local/upstream_test.php` reddens when
   core or Boost Union changes a copied file, and `scripts/upstream-merge.sh` (development only, export-ignored)
   applies the upstream change to the copy with a three-way merge and refreshes the snapshot. No version change.
+- **Fixed: a navbar logo capped by Boost Union's *Maximal width of logo in navbar* was squeezed sideways**
+  (2026100523). That setting writes `max-width` and `height: auto` on `.navbar-brand .logo`; the 44px height of
+  2026100518 outranks the `auto`, so a 300x31 wordmark capped at 200px was drawn 200x44. The logo is
+  `object-fit: contain` now and keeps its ratio inside the capped box. Gate `navbar_logo_contain`.
 - **The context bar slides in on a phone and comes in with a colour of its own** (2026100522; Fandom's mobile
   navbar is the model). Below md the context layer comes down from above the bar while the global bar's items go down out of it, by
   the bar's height, clipped by the nav while the layer is in and, through a keyframe holding `overflow: hidden` for
