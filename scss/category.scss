@@ -548,8 +548,8 @@ body.dim-category {
             color: var(--dim-hero-ink);
         }
 
-        // The active tab is the page colour, so its ink is the ONE brand ink that follows the
-        // colour mode: --dim-ds-text-heading is navy in both and would be navy on a dark tab.
+        // The active tab is the page colour, so its ink is the brand ink the hero resolves for the
+        // page's colour mode (the tab list may carry a colour mode of its own, see the visual refinement).
         .nav-link.active {
             border: 0;
             background: var(--dim-hero-page);
@@ -2644,7 +2644,7 @@ body.dim-category {
 
     .dim-card__learn .fa {
         margin-right: 6px;
-        color: var(--dim-ds-green-700, #2f6b00);
+        color: var(--dim-ds-text-success, #2f6b00);
         font-size: .75rem;
     }
 

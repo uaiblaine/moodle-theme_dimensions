@@ -544,7 +544,7 @@ $dim-landing-branded: contrast-ratio($dim-landing-to, $white) >= 4.5;
 
         .icon {
             margin: 0;
-            color: var(--dim-ds-blue-600);
+            color: var(--dim-ds-text-heading);
         }
     }
 
@@ -612,7 +612,7 @@ $dim-landing-branded: contrast-ratio($dim-landing-to, $white) >= 4.5;
         border-radius: var(--dim-ds-radius-sm);
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--dim-ds-green-700);
+        color: var(--dim-ds-text-success);
     }
 
     // The mobile enrolment bar (hidden on wide viewports, fixed at the bottom

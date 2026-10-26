@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The design system's semantic aliases turn with the colour mode.** Core 5.3's dark mode turns Bootstrap's surfaces
+  and ink and none of the `--dim-ds-*` aliases, so the login page drew its heading and "Forgotten your password?" in
+  navy on a dark card (1.28:1), and the profile cards, the landing page card and the "not available" card stayed white
+  under the page's light ink (1.30 to 2.35:1). The aliases now have a dark half on the html element's mode: surfaces
+  from core's dark greys, inks lifted from their light primitive by core's `dark-readable()` (4.6:1 on a raised surface,
+  7:1 for a link's hover, 3:1 for a line), the tint mixed into the dark page, the focus ring the family ring's dark
+  stop. The inverse tokens, the accents and the primary fill stay the same in both modes. The primitives are written
+  once, as Sass variables, which the `:root` block declares. Two aliases replace inks that read a primitive directly:
+  `--dim-ds-text-on-tint` (the login's lead route) and `--dim-ds-text-success` (the landing page's held place and the
+  card's learning list); the landing page's offer icon reads the heading ink. The notifications popover follows the
+  page's mode instead of forcing a light scheme. New `tests/local/dark_tokens_test.php` (every alias has a dark half,
+  every dark pair measured on core's compiled values, no ink reads a primitive but the fixed plates) and four mutation
+  gates. No version bump: stylesheet only.
 - **Plugins directory readiness** (2026100520; the directory's submission guidelines, after a reviewer's four
   findings on local_groupdist).
   - Fixed: the branding table's `usermodified` stamp is personal data and was only declared. The privacy
