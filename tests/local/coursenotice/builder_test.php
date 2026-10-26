@@ -106,6 +106,41 @@ final class builder_test extends \advanced_testcase {
         \local_unlistedcourses\discoverability::reset_caches();
         \local_unlistedcourses\access::reset_caches();
         \local_unlistedcourses\category_access::reset_caches();
+        \local_unlistedcourses\category_discoverability::reset_caches();
+    }
+
+    /**
+     * Set a course's own discoverability state, as the administrator, and forget the memos.
+     *
+     * @param \stdClass $course The course.
+     * @param int $state One of local_unlistedcourses' discoverability::STATE_* values.
+     * @return void
+     */
+    private function set_course_state(\stdClass $course, int $state): void {
+        global $USER;
+        $userid = $USER->id;
+        $this->setAdminUser();
+        \local_unlistedcourses\discoverability::set_state((int) $course->id, $state);
+        $this->setUser($userid);
+        $this->reset_discoverability();
+    }
+
+    /**
+     * Unlist a category, as the administrator, and forget the memos.
+     *
+     * @param \core_course_category $category The category.
+     * @return void
+     */
+    private function unlist_category(\core_course_category $category): void {
+        global $USER;
+        $userid = $USER->id;
+        $this->setAdminUser();
+        \local_unlistedcourses\category_discoverability::set_state(
+            (int) $category->id,
+            \local_unlistedcourses\category_discoverability::STATE_UNLISTED
+        );
+        $this->setUser($userid);
+        $this->reset_discoverability();
     }
 
     /**
@@ -422,6 +457,166 @@ final class builder_test extends \advanced_testcase {
         $this->assertArrayHasKey(builder::KEY_PUBLIC, $notice->notes);
         $edit = (new \core\url('/course/edit.php', ['id' => $course->id]))->out(false);
         $this->assertSame($edit, $notice->notes[builder::KEY_PUBLIC]['link']['url'], 'The administrator may publish.');
+    }
+
+    /**
+     * A public course under an unlisted category is said to be withheld, and the category is named.
+     *
+     * The control is the same course before the category is unlisted, which the notice calls public.
+     * The nearest unlisted category is named: a child that is unlisted under an unlisted parent wins.
+     *
+     * @return void
+     */
+    public function test_a_public_course_under_an_unlisted_category_says_why_it_is_withheld(): void {
+        $parent = $this->getDataGenerator()->create_category(['name' => 'Parent']);
+        $child = $this->getDataGenerator()->create_category(['name' => 'Child', 'parent' => $parent->id]);
+        $course = $this->course(landingfields::MODEL_COURSE, ['category' => $child->id]);
+        $this->set_course_state($course, \local_unlistedcourses\discoverability::STATE_PUBLIC);
+        $this->setAdminUser();
+
+        $notice = $this->build($this->page($course));
+        $this->assertSame(['public', 'landing'], array_keys($notice->chips), 'Control: public before the category is unlisted.');
+        $this->assertArrayNotHasKey(builder::KEY_UNLISTEDCATEGORY, $notice->notes);
+
+        $this->unlist_category($parent);
+        $notice = $this->build($this->page($course));
+        $this->assertSame(['publicwithheld', 'unlistedcategory', 'landing'], array_keys($notice->chips));
+        $this->assertSame(notice::TONE_WARN, $notice->chips[builder::KEY_PUBLICWITHHELD]['tone']);
+        $this->assertArrayNotHasKey(builder::KEY_PUBLIC, $notice->notes);
+        $this->assertArrayNotHasKey(builder::KEY_LOGINONLY, $notice->notes, 'The course is not "login only" by its own setting.');
+        $this->assertArrayHasKey(builder::KEY_PUBLICWITHHELD, $notice->notes);
+        $edit = (new \core\url('/course/edit.php', ['id' => $course->id]))->out(false);
+        $this->assertSame($edit, $notice->notes[builder::KEY_PUBLICWITHHELD]['link']['url']);
+        $note = $notice->notes[builder::KEY_UNLISTEDCATEGORY];
+        $this->assertSame(get_string('coursenotice_unlistedcategorytext', 'theme_dimensions', 'Parent'), $note['text']);
+        $url = (new \core\url('/local/unlistedcourses/category.php', ['id' => $parent->id]))->out(false);
+        $this->assertSame($url, $note['link']['url'], 'The administrator may change the category state.');
+
+        $this->unlist_category($child);
+        $notice = $this->build($this->page($course));
+        $this->assertSame(
+            get_string('coursenotice_unlistedcategorytext', 'theme_dimensions', 'Child'),
+            $notice->notes[builder::KEY_UNLISTEDCATEGORY]['text'],
+            'The nearest unlisted category is the one named.'
+        );
+
+        $this->setUser($this->member($course, 'editingteacher'));
+        $notice = $this->build($this->page($course));
+        $this->assertArrayHasKey(builder::KEY_UNLISTEDCATEGORY, $notice->notes);
+        $this->assertNull($notice->notes[builder::KEY_UNLISTEDCATEGORY]['link'], 'A teacher may not change the category state.');
+    }
+
+    /**
+     * A public course under a hidden category is said to be withheld, with the category named.
+     *
+     * @return void
+     */
+    public function test_a_public_course_under_a_hidden_category_says_why_it_is_withheld(): void {
+        $category = $this->getDataGenerator()->create_category(['name' => 'Archive']);
+        $course = $this->course(landingfields::MODEL_COURSE, ['category' => $category->id]);
+        $this->set_course_state($course, \local_unlistedcourses\discoverability::STATE_PUBLIC);
+        $this->setAdminUser();
+        $this->assertArrayHasKey(builder::KEY_PUBLIC, $this->build($this->page($course))->chips, 'Control: public while visible.');
+
+        \core_course_category::get($category->id)->hide();
+        $this->reset_discoverability();
+        $notice = $this->build($this->page($course));
+        $this->assertSame(['publicwithheld', 'hiddencategory', 'landing'], array_keys($notice->chips));
+        $note = $notice->notes[builder::KEY_HIDDENCATEGORY];
+        $this->assertSame(get_string('coursenotice_hiddencategorytext', 'theme_dimensions', 'Archive'), $note['text']);
+        $url = (new \core\url('/course/editcategory.php', ['id' => $category->id]))->out(false);
+        $this->assertSame($url, $note['link']['url'], 'The administrator may edit the category.');
+        $this->assertArrayNotHasKey(builder::KEY_UNLISTEDCATEGORY, $notice->notes);
+
+        $this->setUser($this->member($course, 'editingteacher'));
+        $notice = $this->build($this->page($course));
+        $this->assertArrayHasKey(builder::KEY_HIDDENCATEGORY, $notice->notes, 'Said to a teacher who cannot see the category.');
+        $this->assertNull($notice->notes[builder::KEY_HIDDENCATEGORY]['link'], 'A teacher may not edit the category.');
+    }
+
+    /**
+     * A public course that is hidden is said to be withheld because it is hidden.
+     *
+     * @return void
+     */
+    public function test_a_hidden_public_course_says_it_is_withheld(): void {
+        $course = $this->course(landingfields::MODEL_COURSE);
+        $this->set_course_state($course, \local_unlistedcourses\discoverability::STATE_PUBLIC);
+        $this->setAdminUser();
+        $this->assertArrayNotHasKey(builder::KEY_PUBLICHIDDEN, $this->build($this->page($course))->notes, 'Control: visible.');
+
+        course_change_visibility((int) $course->id, false);
+        $course = get_course($course->id);
+        $this->reset_discoverability();
+        $notice = $this->build($this->page($course));
+        $this->assertArrayHasKey(builder::KEY_PUBLICWITHHELD, $notice->chips);
+        $this->assertArrayHasKey(builder::KEY_PUBLICHIDDEN, $notice->notes);
+        $this->assertArrayNotHasKey(builder::KEY_HIDDENCATEGORY, $notice->chips);
+    }
+
+    /**
+     * A public course the predicate refuses for a reason the notice cannot name is still not called public.
+     *
+     * A category id no row holds is the one such reason the predicate has today: it fails closed.
+     *
+     * @return void
+     */
+    public function test_a_withheld_public_course_is_never_called_public(): void {
+        global $DB;
+        $course = $this->course(landingfields::MODEL_COURSE);
+        $this->set_course_state($course, \local_unlistedcourses\discoverability::STATE_PUBLIC);
+        $this->setAdminUser();
+
+        $DB->set_field('course', 'category', 999999, ['id' => $course->id]);
+        $course = get_course($course->id);
+        $this->reset_discoverability();
+        $notice = $this->build($this->page($course));
+        $this->assertSame(['publicwithheld', 'landing'], array_keys($notice->chips));
+        $this->assertArrayHasKey(builder::KEY_PUBLICWITHHELD, $notice->notes);
+        $this->assertArrayNotHasKey(builder::KEY_PUBLIC, $notice->notes);
+    }
+
+    /**
+     * An unlisted course says so, with the link to change it for whoever the course form offers the state to.
+     *
+     * @return void
+     */
+    public function test_an_unlisted_course_says_who_learns_that_it_exists(): void {
+        global $DB;
+        $course = $this->course(landingfields::MODEL_COURSE);
+        $teacher = $this->member($course, 'editingteacher');
+        $this->setUser($teacher);
+        $this->assertArrayHasKey(builder::KEY_LOGINONLY, $this->build($this->page($course))->chips, 'Control: listed.');
+
+        $this->set_course_state($course, \local_unlistedcourses\discoverability::STATE_UNLISTED);
+        $notice = $this->build($this->page($course));
+        $this->assertSame(['unlisted', 'landing'], array_keys($notice->chips));
+        $this->assertArrayNotHasKey(builder::KEY_LOGINONLY, $notice->notes);
+        $edit = (new \core\url('/course/edit.php', ['id' => $course->id]))->out(false);
+        $this->assertSame($edit, $notice->notes[builder::KEY_UNLISTED]['link']['url'], 'A teacher may leave the unlisted state.');
+
+        $editingteacher = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+        assign_capability(builder::CAP_VISIBILITY, CAP_PROHIBIT, $editingteacher, \core\context\course::instance($course->id));
+        $notice = $this->build($this->page($course));
+        $this->assertNull($notice->notes[builder::KEY_UNLISTED]['link'], 'Not without moodle/course:visibility.');
+    }
+
+    /**
+     * A listed course under an unlisted category stays "login only" and says what the category withholds.
+     *
+     * @return void
+     */
+    public function test_a_listed_course_under_an_unlisted_category_names_it(): void {
+        $category = $this->getDataGenerator()->create_category(['name' => 'Restricted']);
+        $course = $this->course(landingfields::MODEL_COURSE, ['category' => $category->id]);
+        $this->setUser($this->member($course, 'editingteacher'));
+        $this->assertSame(['loginonly', 'landing'], array_keys($this->build($this->page($course))->chips), 'Control: listed.');
+
+        $this->unlist_category($category);
+        $notice = $this->build($this->page($course));
+        $this->assertSame(['loginonly', 'unlistedcategory', 'landing'], array_keys($notice->chips));
+        $this->assertArrayHasKey(builder::KEY_LOGINONLY, $notice->notes);
+        $this->assertArrayHasKey(builder::KEY_UNLISTEDCATEGORY, $notice->notes);
     }
 
     /**

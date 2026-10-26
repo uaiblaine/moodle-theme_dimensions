@@ -41,7 +41,8 @@ use theme_dimensions\local\landingfields;
  *   on every Boost Union update; the parity table is in the original design record (not part of this repository).
  * - The promotion section, for course editors only (moodle/course:update) and only on a course with
  *   a landing page model: the landing page's public address, the guest entry's address where the course offers
- *   it, and whether the course is public.
+ *   it, and who may learn that the course exists - public, listed, unlisted - with what withholds it when
+ *   that is not the course's own setting ({@see add_discoverability()}).
  *
  * One thing is generalised, and only one: Boost Union's page gate. Where it asks for
  * /course/view.php this class asks for the course HOME ({@see is_course_home()}), which is the
@@ -70,6 +71,24 @@ final class builder {
     /** @var string local_unlistedcourses' publish capability, which earns the "change it" link. */
     public const CAP_PUBLISH = 'local/unlistedcourses:publish';
 
+    /** @var string The capability local_unlistedcourses' course form offers the state select behind. */
+    public const CAP_VISIBILITY = 'moodle/course:visibility';
+
+    /** @var string local_unlistedcourses' category state capability, which earns the category note its link. */
+    public const CAP_CATEGORYSTATE = 'local/unlistedcourses:managecategorystate';
+
+    /** @var string The category state predicate, read as optional like {@see publicaccess::PREDICATE}. */
+    public const CATEGORY_PREDICATE = \local_unlistedcourses\category_discoverability::class;
+
+    /** @var string The course's own discoverability state, as {@see own_state()} spells it: public. */
+    public const STATE_PUBLIC = 'public';
+
+    /** @var string The course's own discoverability state: unlisted. */
+    public const STATE_UNLISTED = 'unlisted';
+
+    /** @var string The course's own discoverability state: listed, the default. */
+    public const STATE_LISTED = 'listed';
+
     /** @var string[] The forum scripts on which Boost Union swaps the hidden course hint for the forum one. */
     public const FORUM_SCRIPTS = ['/mod/forum/view.php', '/mod/forum/discuss.php', '/mod/forum/post.php'];
 
@@ -84,6 +103,21 @@ final class builder {
 
     /** @var string Item key: the guest entry (chip and address). */
     public const KEY_GUEST = 'guest';
+
+    /** @var string Item key: the course is set to public and something else withholds it (chip and note). */
+    public const KEY_PUBLICWITHHELD = 'publicwithheld';
+
+    /** @var string Item key: the course's own state is unlisted (chip and note). */
+    public const KEY_UNLISTED = 'unlisted';
+
+    /** @var string Item key: a public course withheld because it is hidden (note). */
+    public const KEY_PUBLICHIDDEN = 'publichidden';
+
+    /** @var string Item key: a category on the course's path is hidden (chip and note). */
+    public const KEY_HIDDENCATEGORY = 'hiddencategory';
+
+    /** @var string Item key: a category on the course's path is unlisted (chip and note). */
+    public const KEY_UNLISTEDCATEGORY = 'unlistedcategory';
 
     /** @var string Item key: the guest entry of a course that is not public (note). */
     public const KEY_GUESTNOTPUBLIC = 'guestnotpublic';
@@ -201,10 +235,34 @@ final class builder {
         $notice->promote = true;
 
         $public = publicaccess::is_public($courseid);
+        $state = self::own_state($courseid);
+        $path = self::path_withholders($course);
         if ($public) {
             $notice->add_chip(self::KEY_PUBLIC, get_string('coursenotice_chip_public', self::COMPONENT), notice::TONE_OK);
+        } else if ($state === self::STATE_PUBLIC) {
+            $notice->add_chip(
+                self::KEY_PUBLICWITHHELD,
+                get_string('coursenotice_chip_publicwithheld', self::COMPONENT),
+                notice::TONE_WARN
+            );
+        } else if ($state === self::STATE_UNLISTED) {
+            $notice->add_chip(self::KEY_UNLISTED, get_string('coursenotice_chip_unlisted', self::COMPONENT), notice::TONE_WARN);
         } else {
             $notice->add_chip(self::KEY_LOGINONLY, get_string('coursenotice_chip_loginonly', self::COMPONENT), notice::TONE_WARN);
+        }
+        if ($path[self::KEY_UNLISTEDCATEGORY]) {
+            $notice->add_chip(
+                self::KEY_UNLISTEDCATEGORY,
+                get_string('coursenotice_chip_unlistedcategory', self::COMPONENT),
+                notice::TONE_WARN
+            );
+        }
+        if ($path[self::KEY_HIDDENCATEGORY]) {
+            $notice->add_chip(
+                self::KEY_HIDDENCATEGORY,
+                get_string('coursenotice_chip_hiddencategory', self::COMPONENT),
+                notice::TONE_WARN
+            );
         }
         $notice->add_chip(self::KEY_LANDING, self::landing_chip($courseid, $model), notice::TONE_INFO);
 
@@ -244,13 +302,7 @@ final class builder {
                 $change
             );
         } else {
-            $notice->add_note(
-                self::KEY_LOGINONLY,
-                notice::TONE_WARN,
-                '',
-                get_string('coursenotice_loginonlytext', self::COMPONENT),
-                $change
-            );
+            self::add_discoverability($notice, $course, $context, $state, $path, $change);
             if ($guest) {
                 $notice->add_note(
                     self::KEY_GUESTNOTPUBLIC,
@@ -263,6 +315,187 @@ final class builder {
         if (!links::routing_enabled()) {
             $notice->add_note(self::KEY_ROUTEROFF, notice::TONE_INFO, '', get_string('landing_addressrouteroff', self::COMPONENT));
         }
+    }
+
+    /**
+     * The notes of a course that is not public: its own state, then whatever above it withholds it.
+     *
+     * The verdict is always the predicate's ({@see publicaccess::is_public()}), read by the caller;
+     * this only says why. A course set to public that the predicate refuses gets the "not in effect"
+     * note and one note per withholding fact the theme can name - the course hidden, a hidden
+     * category, an unlisted category - each read the way local_unlistedcourses' discoverability::are_public()
+     * composes it. Should that composition grow a term this does not read, the "not in effect" note
+     * still says the setting is withheld, so the notice never claims the course is public.
+     *
+     * The category notes are said whatever the course's own state, because they withhold the course
+     * from listings as well: a hidden category from whoever may not see hidden categories, an unlisted
+     * one from whoever local_unlistedcourses' category predicate does not admit
+     * ({@see \local_unlistedcourses\access::filter_courses()}).
+     *
+     * @param notice $notice The notice being built.
+     * @param \stdClass $course The course.
+     * @param \core\context\course $context The course context.
+     * @param string|null $state The course's own state ({@see own_state()}).
+     * @param array $path {@see path_withholders()}.
+     * @param array|null $change The "change the discoverability" link for whoever may publish, or null.
+     * @return void
+     */
+    private static function add_discoverability(
+        notice $notice,
+        \stdClass $course,
+        \core\context\course $context,
+        ?string $state,
+        array $path,
+        ?array $change
+    ): void {
+        if ($state === self::STATE_PUBLIC) {
+            $notice->add_note(
+                self::KEY_PUBLICWITHHELD,
+                notice::TONE_WARN,
+                get_string('coursenotice_publicwithheldlead', self::COMPONENT),
+                get_string('coursenotice_publicwithheldtext', self::COMPONENT),
+                $change
+            );
+            if (!$course->visible) {
+                $notice->add_note(
+                    self::KEY_PUBLICHIDDEN,
+                    notice::TONE_WARN,
+                    '',
+                    get_string('coursenotice_publichiddentext', self::COMPONENT)
+                );
+            }
+        } else if ($state === self::STATE_UNLISTED) {
+            // Leaving the unlisted state is no publishing act: the course form offers it to course:visibility.
+            $link = null;
+            if (has_capability(self::CAP_VISIBILITY, $context)) {
+                $link = [
+                    'url' => (new \core\url('/course/edit.php', ['id' => $course->id]))->out(false),
+                    'label' => get_string('coursenotice_changediscoverability', self::COMPONENT),
+                ];
+            }
+            $notice->add_note(
+                self::KEY_UNLISTED,
+                notice::TONE_WARN,
+                get_string('coursenotice_unlistedlead', self::COMPONENT),
+                get_string('coursenotice_unlistedtext', self::COMPONENT),
+                $link
+            );
+        } else {
+            $notice->add_note(
+                self::KEY_LOGINONLY,
+                notice::TONE_WARN,
+                '',
+                get_string('coursenotice_loginonlytext', self::COMPONENT),
+                $change
+            );
+        }
+
+        $unlisted = $path[self::KEY_UNLISTEDCATEGORY];
+        if ($unlisted) {
+            $link = null;
+            // Optional like the publish capability: between a deploy and its upgrade it may not be installed.
+            if (
+                get_capability_info(self::CAP_CATEGORYSTATE)
+                && has_capability(self::CAP_CATEGORYSTATE, $unlisted->get_context())
+            ) {
+                $link = [
+                    'url' => (new \core\url('/local/unlistedcourses/category.php', ['id' => $unlisted->id]))->out(false),
+                    'label' => get_string('coursenotice_changecategorydiscoverability', self::COMPONENT),
+                ];
+            }
+            $notice->add_note(
+                self::KEY_UNLISTEDCATEGORY,
+                notice::TONE_WARN,
+                '',
+                get_string(
+                    'coursenotice_unlistedcategorytext',
+                    self::COMPONENT,
+                    $unlisted->get_formatted_name(['escape' => false])
+                ),
+                $link
+            );
+        }
+        $hidden = $path[self::KEY_HIDDENCATEGORY];
+        if ($hidden) {
+            $link = null;
+            if (has_capability('moodle/category:manage', $hidden->get_context())) {
+                $link = [
+                    'url' => (new \core\url('/course/editcategory.php', ['id' => $hidden->id]))->out(false),
+                    'label' => get_string('coursenotice_editcategory', self::COMPONENT),
+                ];
+            }
+            $notice->add_note(
+                self::KEY_HIDDENCATEGORY,
+                notice::TONE_WARN,
+                '',
+                get_string(
+                    'coursenotice_hiddencategorytext',
+                    self::COMPONENT,
+                    $hidden->get_formatted_name(['escape' => false])
+                ),
+                $link
+            );
+        }
+    }
+
+    /**
+     * The course's own discoverability state, or null where local_unlistedcourses is not there.
+     *
+     * Only ever explains a "not public" verdict; it decides nothing, so a missing plugin reads as no
+     * state and the notice says "login only", as the fail-closed predicate does. Spelled in this
+     * class's own constants, so that no caller names the plugin's class where it may be missing.
+     *
+     * @param int $courseid The course.
+     * @return string|null One of the STATE_* constants, or null.
+     */
+    private static function own_state(int $courseid): ?string {
+        if (!class_exists(publicaccess::PREDICATE)) {
+            return null;
+        }
+        return match (\local_unlistedcourses\discoverability::get_state($courseid)) {
+            \local_unlistedcourses\discoverability::STATE_PUBLIC => self::STATE_PUBLIC,
+            \local_unlistedcourses\discoverability::STATE_UNLISTED => self::STATE_UNLISTED,
+            default => self::STATE_LISTED,
+        };
+    }
+
+    /**
+     * The categories on the course's path that withhold it: the nearest unlisted one and the nearest hidden one.
+     *
+     * The nearest, because that is the category whose own settings a course editor is likeliest to
+     * reach; a second one further up is named once the first is dealt with. "Unlisted" is a row of
+     * the category itself or of an ancestor, read through local_unlistedcourses'
+     * category_discoverability::unlisted_ids(), the same set its course predicate intersects with the
+     * path. Hidden categories are read with core_course_category::get()'s $alwaysreturnhidden, because
+     * the reader may well not see them - which is the point of saying so.
+     *
+     * @param \stdClass $course The course.
+     * @return array [KEY_UNLISTEDCATEGORY => core_course_category|null, KEY_HIDDENCATEGORY => core_course_category|null].
+     */
+    private static function path_withholders(\stdClass $course): array {
+        $found = [self::KEY_UNLISTEDCATEGORY => null, self::KEY_HIDDENCATEGORY => null];
+        $category = \core_course_category::get((int) $course->category, IGNORE_MISSING, true);
+        if (!$category) {
+            return $found;
+        }
+        $unlistedids = class_exists(self::CATEGORY_PREDICATE)
+            ? \local_unlistedcourses\category_discoverability::unlisted_ids()
+            : [];
+        // Nearest first: the course's own category, then up the path.
+        $ids = array_reverse(array_map('intval', array_filter(explode('/', (string) $category->path))));
+        foreach ($ids as $id) {
+            $ancestor = \core_course_category::get($id, IGNORE_MISSING, true);
+            if (!$ancestor) {
+                continue;
+            }
+            if (!$found[self::KEY_UNLISTEDCATEGORY] && in_array($id, $unlistedids, true)) {
+                $found[self::KEY_UNLISTEDCATEGORY] = $ancestor;
+            }
+            if (!$found[self::KEY_HIDDENCATEGORY] && !$ancestor->visible) {
+                $found[self::KEY_HIDDENCATEGORY] = $ancestor;
+            }
+        }
+        return $found;
     }
 
     /**
