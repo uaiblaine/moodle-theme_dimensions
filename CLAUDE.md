@@ -3267,7 +3267,7 @@ Section 5.4 of `docs/vitrine-react/PLAN.md`. Three instruments; only the first i
   Xdebug unless the stack's Xdebug is off (`mdl xdebug`); compare runs of one configuration only.
 - **The trend: the browser probe**, `tests/behat/theme_dimensions_perf.feature` (`@theme_dimensions_perf`, one
   tag per scenario) over `behat_theme_dimensions_perf` and the engine `tests/behat/theme_dimensions_perf_probe.php`.
-  It SKIPS unless the site opts in: `$CFG->theme_dimensions_perfprobe = true;` (or an array overriding the
+  It SKIPS unless the site opts in: `$CFG->behat_theme_dimensions_perfprobe = true;` (or an array overriding the
   engine's `DEFAULTS`: runs, cpu, latency, download, upload, quiet, timeout) in the stack's `config.php`, or
   `THEME_DIMENSIONS_PERFPROBE=1` in the runner's environment (`mdl behat` does not pass one through). Then
   `mdl behat m503b @theme_dimensions_perf` on a stack that mounts the checkout under test; every probe step loads its

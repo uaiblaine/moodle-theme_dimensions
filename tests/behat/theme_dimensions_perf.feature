@@ -5,7 +5,7 @@ Feature: The category showcase's first paint, measured in a throttled browser
   I need the browser's own paint, blocking, shift, interaction and request numbers of its pages, run by run
 
   # The performance probe of docs/vitrine-react/PLAN.md, section 5.4. It SKIPS unless the site opts
-  # in ($CFG->theme_dimensions_perfprobe = true, or THEME_DIMENSIONS_PERFPROBE=1 in the runner's
+  # in ($CFG->behat_theme_dimensions_perfprobe = true, or THEME_DIMENSIONS_PERFPROBE=1 in the runner's
   # environment), so ordinary suites and CI never spend its minutes. Opted in, every probe step loads
   # its page five times under 4x CPU throttling and a 150 ms / 1.6 Mbps network (Chrome DevTools,
   # through chromedriver's vendor endpoint), reads the browser's own entries once the page is quiet,

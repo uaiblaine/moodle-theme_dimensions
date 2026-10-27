@@ -80,6 +80,32 @@ final class perf_probe_test extends \advanced_testcase {
     }
 
     /**
+     * The config opt-in outlives core's clean-up of $CFG in the Behat process, where the probe reads it.
+     *
+     * behat_clean_init_config() unsets every property that is neither on core's short allowlist nor
+     * behat_-prefixed; an opt-in it removed would skip every scenario on a site that opted in.
+     */
+    public function test_the_config_opt_in_survives_the_behat_process_clean_up(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/behat/lib.php');
+        $saved = clone $CFG;
+        try {
+            $CFG->{\theme_dimensions_perf_probe::CONFIG} = true;
+            $CFG->theme_dimensions_control = true;
+            behat_clean_init_config();
+            $kept = \theme_dimensions_perf_probe::options();
+            $control = isset($CFG->theme_dimensions_control);
+        } finally {
+            foreach (get_object_vars($saved) as $name => $value) {
+                $CFG->{$name} = $value;
+            }
+            unset($CFG->theme_dimensions_control);
+        }
+        $this->assertFalse($control, 'The clean-up ran: an unprefixed property is gone.');
+        $this->assertSame(\theme_dimensions_perf_probe::DEFAULTS, $kept, 'The opt-in is still there after it.');
+    }
+
+    /**
      * An array or a JSON object overrides the defaults it names and nothing else, with a floor of one run.
      */
     public function test_the_opt_in_overrides_only_the_conditions_it_names(): void {

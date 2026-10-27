@@ -43,8 +43,14 @@ use Facebook\WebDriver\WebDriverBy;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class theme_dimensions_perf_probe {
-    /** @var string The config property that opts a site in: true, or an array overriding {@see DEFAULTS}. */
-    public const CONFIG = 'theme_dimensions_perfprobe';
+    /**
+     * @var string The config property that opts a site in: true, or an array overriding {@see DEFAULTS}.
+     *
+     * It carries the behat_ prefix because the Behat process keeps nothing else of config.php:
+     * core's behat_clean_init_config() unsets every $CFG property outside a short allowlist that is
+     * not behat_-prefixed, before any step runs.
+     */
+    public const CONFIG = 'behat_theme_dimensions_perfprobe';
 
     /** @var string The environment variable that opts a run in: 1, or a JSON object overriding {@see DEFAULTS}. */
     public const ENV = 'THEME_DIMENSIONS_PERFPROBE';
@@ -246,7 +252,7 @@ JS;
     /**
      * Whether, and how, this site runs the probe: null unless it opted in.
      *
-     * The opt-in is the config property (`$CFG->theme_dimensions_perfprobe = true;` or an array),
+     * The opt-in is the config property (`$CFG->behat_theme_dimensions_perfprobe = true;` or an array),
      * else the environment variable (`1`, or a JSON object). Anything empty, `0` or false is off, so
      * an ordinary suite and CI skip the probe's scenarios.
      *
