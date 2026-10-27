@@ -362,4 +362,173 @@ final class cards_test extends \advanced_testcase {
         $this->assertSame([(int) $prerequisite->id], array_keys($prerequisites));
         $this->assertSame('Base', $prerequisites[(int) $prerequisite->id]->fullname);
     }
+
+    /**
+     * The values the card reads are the same whether the listing reads the card's fields only or every field.
+     *
+     * cards::values() hands values_many() the card's own fields (cards::CARD_SHORTNAMES). Over stored values,
+     * stored empty values, courses with no row at all (two of them, so the shared default is shared) and a
+     * programme whose DEFAULT text is not empty, every key the card reads must equal what the full read gives and
+     * what a read of the course alone gives - the latter shares nothing. The keys compared are the ones
+     * category_card's source reads, so a card that starts reading another value reddens this test until its field
+     * is named. And the names are the card fields' alone: the other fields are not read at all.
+     */
+    public function test_the_card_reads_its_values_alike_with_its_fields_only(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        course_handler::reset_caches();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        $programme = landingfields::get_field(landingfields::SHORTNAME_PROGRAMME);
+        $config = (array) $programme->get('configdata');
+        $config['defaultvalue'] = '<p>Default programme</p>';
+        \core_customfield\api::save_field_configuration($programme, (object) ['configdata' => $config]);
+        course_handler::reset_caches();
+        landingfields::reset_field_cache();
+
+        $generator = self::getDataGenerator();
+        $handler = course_handler::create();
+        $stored = (int) $generator->create_course()->id;
+        $handler->instance_form_save((object) [
+            'id' => $stored,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
+            'customfield_' . landingfields::SHORTNAME_MODALITY => landingfields::MODALITY_INPERSON,
+            'customfield_' . landingfields::SHORTNAME_WORKLOAD => 40,
+            'customfield_' . landingfields::SHORTNAME_CITY => 'Rio & Co',
+            'customfield_' . landingfields::SHORTNAME_VENUE => 'Sede',
+            'customfield_' . landingfields::SHORTNAME_FORMAT => landingfields::FORMAT_TUTORED,
+            'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => ['text' => '<p>Um</p>', 'format' => FORMAT_HTML],
+        ]);
+        $empty = (int) $generator->create_course()->id;
+        $handler->instance_form_save((object) [
+            'id' => $empty,
+            'customfield_' . landingfields::SHORTNAME_MODEL => 0,
+            'customfield_' . landingfields::SHORTNAME_MODALITY => 0,
+            'customfield_' . landingfields::SHORTNAME_CITY => '',
+            'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => ['text' => '', 'format' => FORMAT_HTML],
+        ]);
+        $bare = (int) $generator->create_course()->id;
+        $alsobare = (int) $generator->create_course()->id;
+        $other = (int) $generator->create_course()->id;
+        $handler->instance_form_save((object) [
+            'id' => $other,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_EVENT,
+            'customfield_' . landingfields::SHORTNAME_WORKLOAD => 8,
+            'customfield_' . landingfields::SHORTNAME_MODALITY => landingfields::MODALITY_ONLINE,
+        ]);
+        if (landingfields::picture_type_available()) {
+            /** @var \core_customfield_generator $customfields */
+            $customfields = $generator->get_plugin_generator('core_customfield');
+            $data = $customfields->add_instance_data(landingfields::get_field(landingfields::SHORTNAME_CREST2), $stored, 1);
+            get_file_storage()->create_file_from_pathname([
+                'contextid' => \core\context\course::instance($stored)->id,
+                'component' => 'customfield_picture',
+                'filearea' => 'file',
+                'itemid' => (int) $data->get('id'),
+                'filepath' => '/',
+                'filename' => 'crest.png',
+            ], $CFG->dirroot . '/lib/tests/fixtures/gd-logo.png');
+        }
+        $ids = [$stored, $empty, $bare, $alsobare, $other];
+        foreach ($ids as $courseid) {
+            \core\context\course::instance($courseid);
+        }
+
+        // The keys category_card reads off its values, from its own source.
+        preg_match_all('/\$this->values->([a-z]+)|\$values->([a-z]+)/', file_get_contents(
+            __DIR__ . '/../../../classes/output/category_card.php'
+        ), $matches);
+        $read = array_values(array_unique(array_filter(array_merge($matches[1], $matches[2]))));
+        sort($read);
+        $compared = ['city', 'crests', 'modality', 'model', 'names', 'programme', 'venue', 'workload'];
+        $this->assertSame($compared, $read, 'The card reads exactly the keys compared here.');
+
+        $card = static function (\stdClass $values): array {
+            $keys = [];
+            foreach (['city', 'modality', 'model', 'programme', 'venue', 'workload'] as $key) {
+                $keys[$key] = $values->$key;
+            }
+            $keys['crests'] = array_map(static fn(\stored_file $file): int => (int) $file->get_id(), $values->crests);
+            $keys['names'] = array_intersect_key($values->names, array_flip(cards::CARD_SHORTNAMES));
+            return $keys;
+        };
+        $only = landingfields::values_many($ids, false, cards::CARD_SHORTNAMES);
+        $all = landingfields::values_many($ids, false);
+        foreach ($ids as $courseid) {
+            $alone = landingfields::values_many([$courseid], false);
+            $this->assertSame($card($alone[$courseid]), $card($only[$courseid]), "Course {$courseid}, against itself alone.");
+            $this->assertSame($card($all[$courseid]), $card($only[$courseid]), "Course {$courseid}, against every field.");
+            $this->assertSame(
+                [],
+                array_diff(array_keys($only[$courseid]->names), cards::CARD_SHORTNAMES),
+                'Only the card\'s fields are read.'
+            );
+        }
+        $this->assertSame(
+            landingfields::values_many([$bare], false)[$bare]->programme,
+            $only[$alsobare]->programme,
+            'The shared default reads the default text, formatted as the course alone formats it.'
+        );
+        $this->assertStringContainsString('Default programme', (string) $only[$alsobare]->programme, 'Precondition.');
+        $this->assertSame('Rio & Co', $only[$stored]->city);
+        $this->assertSame(40.0, $only[$stored]->workload);
+        $this->assertSame(landingfields::FORMAT_TUTORED, $all[$stored]->format, 'Control: the full read has the format.');
+        $this->assertSame(0, $only[$stored]->format, 'A field the card does not read keeps its empty value.');
+    }
+
+    /**
+     * Core's course_image cache is written where its entry is missing or says otherwise, and only there.
+     *
+     * The cache is compared first, without its data source; a second page of the same courses finds every entry
+     * right and writes nothing. The writes are counted by MUC's own statistics, which perfdebug switches on.
+     */
+    public function test_the_image_cache_is_written_only_where_it_is_missing_or_wrong(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->courseoverviewfileslimit = 1;
+        $CFG->courseoverviewfilesext = '.jpg,.gif,.png';
+        $CFG->perfdebug = 15;
+        \core_cache\factory::reset();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $covered = $generator->create_course(['category' => $category->id]);
+        $this->overview_file((int) $covered->id, 'capa.png', base64_decode(self::PNG));
+        $plain = $generator->create_course(['category' => $category->id]);
+        $third = $generator->create_course(['category' => $category->id]);
+        $this->overview_file((int) $third->id, 'capa.png', base64_decode(self::PNG));
+
+        $this->become($generator->create_user());
+        $rows = $this->rows((int) $category->id);
+        $sets = static function (): int {
+            $count = 0;
+            foreach (\core_cache\helper::get_stats()['core/course_image']['stores'] ?? [] as $store) {
+                $count += (int) $store['sets'];
+            }
+            return $count;
+        };
+        $cache = \cache::make('core', 'course_image');
+        $cache->purge();
+
+        $before = $sets();
+        $images = cards::images($rows);
+        $this->assertSame(3, $sets() - $before, 'A cold cache: every course is written.');
+        $contextid = \core\context\course::instance($covered->id)->id;
+        $this->assertSame("/pluginfile.php/{$contextid}/course/overviewfiles/capa.png", $cache->get((int) $covered->id));
+        $this->assertNull($cache->get((int) $plain->id), 'No image is cached as null, as core caches it.');
+
+        $before = $sets();
+        $this->assertEquals($images, cards::images($rows));
+        $this->assertSame(0, $sets() - $before, 'A warm cache that is right: nothing is written.');
+
+        $cache->set((int) $third->id, 'stale');
+        $cache->delete((int) $plain->id);
+        $before = $sets();
+        cards::images($rows);
+        $this->assertSame(2, $sets() - $before, 'The wrong entry and the missing one, and nothing else.');
+        $this->assertSame($images[(int) $third->id]->out_as_local_url(), $cache->get((int) $third->id));
+    }
 }

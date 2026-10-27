@@ -156,6 +156,37 @@ class category_hero implements renderable, templatable {
     }
 
     /**
+     * Whether this hero paints a picture: the page's largest paint, which is then not one of the listing's covers.
+     *
+     * The same answer {@see export_for_template()} draws `hasimage` from, read from the same cached branding
+     * payload: the listing asks it to decide which image of the first paint is fetched first
+     * ({@see category_listing::priority()}).
+     *
+     * @return bool
+     */
+    public function draws_image(): bool {
+        $categoryid = (int) $this->category->id;
+        return self::image_address($categoryid, branding::for_category($categoryid)) !== null;
+    }
+
+    /**
+     * The address of the picture behind the band, or null when the layout paints none or has none to paint.
+     *
+     * @param int $categoryid The category, 0 for the root.
+     * @param array $branding The payload of {@see branding::for_category()}.
+     * @return string|null
+     */
+    private static function image_address(int $categoryid, array $branding): ?string {
+        if ($branding['layout'] !== branding::LAYOUT_IMAGE) {
+            return null;
+        }
+        if ($branding['image'] !== null) {
+            return branding::image_url($categoryid, $branding['image'])->out(false);
+        }
+        return branding::fallback_url();
+    }
+
+    /**
      * The fold state to draw: what the request asked for, else what the person chose before, else open.
      *
      * A requested state is remembered for a logged-in person who is not the guest account;
@@ -232,17 +263,10 @@ class category_hero implements renderable, templatable {
         $branding = branding::for_category($categoryid);
 
         $layout = $branding['layout'];
-        $imageurl = null;
-        if ($layout === branding::LAYOUT_IMAGE) {
-            if ($branding['image'] !== null) {
-                $imageurl = branding::image_url($categoryid, $branding['image'])->out(false);
-            } else {
-                $imageurl = branding::fallback_url();
-            }
-            if ($imageurl === null) {
-                // Nothing to paint behind the overlay: the solid band, in the same colour.
-                $layout = branding::LAYOUT_SOLID;
-            }
+        $imageurl = self::image_address($categoryid, $branding);
+        if ($layout === branding::LAYOUT_IMAGE && $imageurl === null) {
+            // Nothing to paint behind the overlay: the solid band, in the same colour.
+            $layout = branding::LAYOUT_SOLID;
         }
         $compact = ($layout === branding::LAYOUT_COMPACT) || $this->folded;
 

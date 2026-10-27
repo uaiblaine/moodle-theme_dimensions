@@ -5,6 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The showcase's first paint costs less per card** (2026100526; R0 of the performance plan, after
+  a measured review of the server render). A card's landing page values are read for the ten fields a card shows
+  (`cards::CARD_SHORTNAMES`, passed to `landingfields::values_many()`'s new `$only`), with one default controller
+  per field shared by the courses without a row and the field names formatted once per call while the string
+  filters are off; every badge file of the page is one `{files}` statement instead of one per stored crest, so
+  the bulk reads are flat in the page size with crests too. `landingfields::get_field()` checks the new
+  `FIELD_TYPES` list instead of building the definitions, `option_lines()` and `facets::fields()` are memoised per
+  request (reset by `landingfields::reset_field_cache()`), core's `course_image` cache is written only where its
+  entry is missing or wrong, and the labels every card spells alike are read once per language. The first eager
+  card cover of the page's own first paint asks for `fetchpriority="high"` where the hero paints no picture (the
+  card's new `priority` key, declared in the rows service's returns, always false in an answer). The unlisted
+  courses the population hands local_unlistedcourses arrive with their contexts preloaded, so the plugin's
+  relationship check no longer reads one `{context}` row per probed course (the root of a large subtree was not
+  statement-flat for a logged-in reader). No database or JavaScript change.
 - **The performance probe of the category showcase** (R0 of `docs/vitrine-react/PLAN.md`, section 5.4; no version
   change: tests and a development script only). `tests/output/core/first_paint_budget_test.php` gates what a first
   paint costs without a browser: the HTML bytes of a card and of the rest of a listing, the hero's bytes, and exactly

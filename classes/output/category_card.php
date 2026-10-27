@@ -221,6 +221,16 @@ class category_card implements \core\output\renderable, \core\output\templatable
     ];
 
     /**
+     * @var array The strings every card of the request spells alike: language => component => key => text.
+     *
+     * A listing builds a card per course and each one spelled the same dozen labels again; the
+     * parameterised ones (the star's, the dates', the hours') still go through get_string() per card. Keyed
+     * by the language in force, so a request or a test that switches language reads its own spelling;
+     * {@see reset_strings()} is for a test that changes a language pack under the same language.
+     */
+    private static array $strings = [];
+
+    /**
      * Constructor.
      *
      * @param \stdClass $course The course row ({@see \theme_dimensions\local\category\cards::records()}).
@@ -265,6 +275,26 @@ class category_card implements \core\output\renderable, \core\output\templatable
         /** @var \core_customfield\field_controller[] The page's filter fields, fieldid => field. */
         private readonly array $fields = [],
     ) {
+    }
+
+    /**
+     * A string that holds no parameter, read once per language for the whole request ({@see self::$strings}).
+     *
+     * @param string $key The string's key.
+     * @param string $component Its component, the theme's by default.
+     * @return string
+     */
+    private static function text(string $key, string $component = self::COMPONENT): string {
+        return self::$strings[current_language()][$component][$key] ??= get_string($key, $component);
+    }
+
+    /**
+     * Forget the strings read so far: the next card reads every label from the string manager again.
+     *
+     * @return void
+     */
+    public static function reset_strings(): void {
+        self::$strings = [];
     }
 
     /**
@@ -327,11 +357,13 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'hasimage' => $this->image !== null,
             // Lazy unless the listing puts the card in its first row ({@see category_listing::FIRST_ROW}).
             'eager' => false,
+            // Never fetched ahead of the rest unless the listing names this cover the page's first ({@see category_listing}).
+            'priority' => false,
             'badges' => $badges,
             'hasbadges' => !empty($badges),
-            'badgeslabel' => get_string('category_badges', self::COMPONENT),
+            'badgeslabel' => self::text('category_badges'),
             'isevent' => $isevent,
-            'kindlabel' => $kindkey ? get_string($kindkey, self::COMPONENT) : null,
+            'kindlabel' => $kindkey ? self::text($kindkey) : null,
             'haskind' => $kindkey !== null,
             'datetile' => $this->datetile($isevent),
             'meta' => $this->meta($isevent),
@@ -342,12 +374,12 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'startday' => $hasstartday && $start > 0 ? criteria::iso($start) : '',
             'badge' => ['label' => $badgelabel, 'classes' => $badgeclasses, 'icon' => $badgeicon],
             'hasroute' => $hasroute,
-            'routelabel' => $hasroute ? get_string('category_route_enrol', self::COMPONENT) : '',
+            'routelabel' => $hasroute ? self::text('category_route_enrol') : '',
             'hasopens' => $openslabel !== '',
             'openslabel' => $openslabel,
             'ishidden' => empty($this->row->visible),
             'hiddenbadge' => [
-                'label' => get_string(self::BADGE_HIDDEN[1], self::COMPONENT),
+                'label' => self::text(self::BADGE_HIDDEN[1]),
                 'classes' => self::BADGE_HIDDEN[0],
             ],
             'ismuted' => $muted,
@@ -359,14 +391,14 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'starlabeladd' => get_string('category_star_add', self::COMPONENT, $fullname),
             'starlabelremove' => get_string('category_star_remove', self::COMPONENT, $fullname),
             'detailsid' => 'dim-card-details-' . $courseid,
-            'detailslabel' => get_string('category_details', self::COMPONENT),
+            'detailslabel' => self::text('category_details'),
             'excerpt' => $excerpt,
             'hasexcerpt' => $excerpt !== '',
             'facts' => $facts,
             'hasfacts' => !empty($facts),
             'learn' => $learn,
             'haslearn' => !empty($learn),
-            'learnlabel' => get_string('category_learn', self::COMPONENT),
+            'learnlabel' => self::text('category_learn'),
             'modal' => $this->modal($state, $url, $held, $openslabel, $isevent, $cta),
         ];
     }
@@ -426,7 +458,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
     private function modal(?string $state, ?\moodle_url $url, bool $held, string $openslabel, bool $isevent, ?array $cta): array {
         $primary = $this->modal_primary($state, $url, $held, $openslabel, $cta);
         $secondary = $url === null ? null : [
-            'label' => get_string($isevent ? 'category_modal_eventpage' : 'category_modal_coursepage', self::COMPONENT),
+            'label' => self::text($isevent ? 'category_modal_eventpage' : 'category_modal_coursepage'),
             'url' => $url->out(false),
         ];
         if ($primary !== null && !$primary['disabled'] && $secondary !== null && $primary['url'] === $secondary['url']) {
@@ -436,7 +468,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         return [
             'kicker' => $kicker,
             'haskicker' => $kicker !== '',
-            'factslabel' => get_string('category_modal_facts', self::COMPONENT),
+            'factslabel' => self::text('category_modal_facts'),
             'primary' => $primary,
             'hasprimary' => $primary !== null,
             'secondary' => $secondary,
@@ -467,12 +499,12 @@ class category_card implements \core\output\renderable, \core\output\templatable
             return null;
         }
         if ($openslabel !== '') {
-            $date = userdate((int) $this->opens, get_string('category_modal_opensformat', self::COMPONENT));
+            $date = userdate((int) $this->opens, self::text('category_modal_opensformat'));
             return [
                 'label' => get_string('category_modal_opens', self::COMPONENT, $date),
                 'url' => null,
                 'disabled' => true,
-                'note' => get_string('category_modal_opensnote', self::COMPONENT),
+                'note' => self::text('category_modal_opensnote'),
                 'icon' => 'fa-calendar',
             ];
         }
@@ -483,7 +515,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
                 return null;
             }
             return [
-                'label' => get_string($key, self::COMPONENT),
+                'label' => self::text($key),
                 'url' => $target->out(false),
                 'disabled' => false,
                 'note' => '',
@@ -521,7 +553,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
                 ]);
                 return get_string('category_state_conditional', self::COMPONENT, $name);
             default:
-                return get_string($key, self::COMPONENT);
+                return self::text($key);
         }
     }
 
@@ -633,7 +665,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @return string The short date.
      */
     private function date(int $timestamp): string {
-        return userdate($timestamp, get_string('strftimedatefullshort', 'langconfig'));
+        return userdate($timestamp, self::text('strftimedatefullshort', 'langconfig'));
     }
 
     /**
@@ -694,7 +726,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
                 return null;
             }
             return [
-                'label' => get_string('category_cta_landing', self::COMPONENT),
+                'label' => self::text('category_cta_landing'),
                 'url' => links::page((int) $this->course->id)->out(false),
                 'primary' => true,
             ];
@@ -726,7 +758,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             return null;
         }
         return [
-            'label' => get_string($key, self::COMPONENT),
+            'label' => self::text($key),
             'url' => $target->out(false),
             /* The outline is what "view the application" wears, so it follows the LABEL and not
                the state: a viewer who may walk in is offered the course, and that is never quiet. */
@@ -790,7 +822,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         if ($isevent) {
             $dateline = $this->dateline();
             if ($dateline !== null) {
-                $facts[] = ['label' => get_string('date'), 'value' => $dateline, 'icon' => self::FACT_ICONS['date']];
+                $facts[] = ['label' => self::text('date', 'core'), 'value' => $dateline, 'icon' => self::FACT_ICONS['date']];
             }
         } else if ($this->values->workload !== null && isset($names[landingfields::SHORTNAME_WORKLOAD])) {
             $facts[] = [
@@ -825,7 +857,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
                 $people[] = $contact['fullname'] . ' (' . $contact['rolename'] . ')';
             }
             $facts[] = [
-                'label' => get_string('category_contact', self::COMPONENT),
+                'label' => self::text('category_contact'),
                 'value' => implode(', ', $people),
                 'icon' => self::FACT_ICONS['contact'],
             ];
@@ -843,7 +875,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         if (!$start) {
             return null;
         }
-        $format = get_string('strftimedatefullshort', 'langconfig');
+        $format = self::text('strftimedatefullshort', 'langconfig');
         $end = (int) $this->course->enddate;
         if ($end && usergetmidnight($start) !== usergetmidnight($end)) {
             return userdate($start, $format) . ' – ' . userdate($end, $format);

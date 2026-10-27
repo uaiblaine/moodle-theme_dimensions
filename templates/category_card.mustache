@@ -75,6 +75,10 @@
     badges: the panel's rail resizes them through it, while the design-system
     classes keep every colour.
 
+    Its cover is lazy unless the listing puts the card in the first row of the
+    page's first paint (eager), and the first such cover is fetched ahead of
+    every other image (priority) only where the hero paints no picture.
+
     The card carries its own "More information" dialogue, drawn into an inert
     <template> (dim-card-modal) by category_card_modal from this same context.
     Without JavaScript nothing reads it and the disclosure opens its panel in
@@ -91,6 +95,7 @@
         "hasoverline": true,
         "imageurl": "https://example.com/pluginfile.php/31/course/overviewfiles/capa.jpg",
         "hasimage": true,
+        "priority": false,
         "badges": [
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc/crest-alpha.png", "alt": "crest alpha"},
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/def/dimensions.svg", "alt": "dimensions"}
@@ -149,7 +154,7 @@
 <article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}>
     <div class="dim-card__media{{#hasimage}} dim-card__media--image{{/hasimage}}">
         {{#hasimage}}
-        <img class="dim-card__image" src="{{imageurl}}" alt=""{{^eager}} loading="lazy"{{/eager}} decoding="async" width="320" height="150">
+        <img class="dim-card__image" src="{{imageurl}}" alt=""{{^eager}} loading="lazy"{{/eager}}{{#priority}} fetchpriority="high"{{/priority}} decoding="async" width="320" height="150">
         {{/hasimage}}
         {{#datetile}}
         <span class="dim-card__datetile"><b>{{day}}</b><span>{{month}}</span></span>

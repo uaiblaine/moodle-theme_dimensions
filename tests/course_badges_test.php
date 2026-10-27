@@ -166,9 +166,9 @@ final class course_badges_test extends \advanced_testcase {
     /**
      * The callback costs one statement of its own whatever the number of courses; the rest is what the values read.
      *
-     * Courses with no crest read the same at two and at eight. Courses with crests pay customfield_picture's own
-     * lookup per badge inside landingfields::values_many(); the callback's slope must be exactly that one's, so it is
-     * measured against values_many() over the same courses with their contexts preloaded, as the callback preloads them.
+     * Courses with no crest read the same at two and at eight. Courses with crests pay one statement for every badge
+     * file of the call inside landingfields::values_many(); the callback's own reads are measured against
+     * values_many() over the same courses with their contexts preloaded, as the callback preloads them.
      */
     public function test_the_callback_reads_nothing_per_course_of_its_own(): void {
         global $DB;
@@ -203,10 +203,10 @@ final class course_badges_test extends \advanced_testcase {
         $eight = $callback($bare);
         $this->assertSame($two, $eight, "{$two} reads for two courses with no crest against {$eight} for eight.");
 
-        $this->assertGreaterThan(
+        $this->assertSame(
             $valuesonly(array_slice($crested, 0, 2)),
             $valuesonly($crested),
-            'Precondition: a crest does cost customfield_picture a lookup per course.'
+            'The badge files of every course are read at once, whatever the number of courses.'
         );
         $owntwo = $callback(array_slice($crested, 0, 2)) - $valuesonly(array_slice($crested, 0, 2));
         $owneight = $callback($crested) - $valuesonly($crested);
