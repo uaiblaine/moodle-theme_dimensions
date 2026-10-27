@@ -1291,4 +1291,135 @@ final class budget_test extends \advanced_testcase {
             "{$searchedtwo} reads for two subareas against {$searchedeight} for eight."
         );
     }
+
+    /**
+     * Four crests on every card cost the page's bulk reads nothing per card: the badge files are one statement.
+     *
+     * customfield_picture's get_file() is a {files} statement per stored badge, which put up to four statements
+     * per card into the bulk reads of a catalogue with crests. landingfields::values_many() reads every badge file
+     * of the page at once, so the four layers cost the same at four cards and at twenty-four with four crests each;
+     * every card measured must carry its four, or the fixture would measure a slope over nothing.
+     */
+    public function test_four_crests_per_card_cost_the_bulk_reads_nothing_per_card(): void {
+        if (!landingfields::picture_type_available()) {
+            $this->markTestSkipped('customfield_picture is not installed or not enabled.');
+        }
+        $viewer = $this->prepare();
+        $generator = self::getDataGenerator();
+        /** @var \core_customfield_generator $customfields */
+        $customfields = $generator->get_plugin_generator('core_customfield');
+        $category = $generator->create_category();
+        $handler = course_handler::create();
+        $this->setAdminUser();
+        for ($i = 0; $i < 24; $i++) {
+            $course = $generator->create_course(['category' => $category->id]);
+            $handler->instance_form_save((object) [
+                'id' => $course->id,
+                'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
+            ]);
+            foreach (landingfields::CREST_SHORTNAMES as $position => $shortname) {
+                $data = $customfields->add_instance_data(landingfields::get_field($shortname), (int) $course->id, 1);
+                get_file_storage()->create_file_from_string([
+                    'contextid' => \core\context\course::instance((int) $course->id)->id,
+                    'component' => 'customfield_picture',
+                    'filearea' => 'file',
+                    'itemid' => (int) $data->get('id'),
+                    'filepath' => '/',
+                    'filename' => "crest-{$position}.png",
+                ], base64_decode(self::PNG));
+            }
+        }
+
+        $this->become($viewer);
+        $categoryid = (int) $category->id;
+        $bulk = function (int $pagesize) use ($categoryid): void {
+            $result = population::resolve(new criteria($categoryid, ['pagesize' => $pagesize]));
+            $this->assertCount($pagesize, $result->rows, "There are {$pagesize} cards to pay for.");
+            cards::records($result->ids());
+            $values = cards::values($result->rows);
+            foreach ($values as $courseid => $value) {
+                $this->assertCount(4, $value->crests, "Course {$courseid} carries its four crests.");
+            }
+            cards::images($result->rows);
+            cards::contacts($result->rows);
+        };
+        // Warm what a second request would find warm.
+        $bulk(24);
+
+        $four = $this->reads(fn() => $bulk(4));
+        $twentyfour = $this->reads(fn() => $bulk(24));
+        $this->record('bulk reads with four crests per card', ['reads at P=4' => $four, 'reads at P=24' => $twentyfour]);
+        $this->assertSame($four, $twentyfour, "{$four} reads for four cards of four crests against {$twentyfour} for twenty-four.");
+    }
+
+    /**
+     * The unlisted courses the plugin is asked about cost it no context statement each: their contexts are preloaded.
+     *
+     * local_unlistedcourses' relationship check reads each probed course's context; the population rows carry the
+     * preload columns, so the theme puts those contexts in the cache before it asks (both page-cutting modes probe).
+     * A root holding one unlisted course nobody is related to is measured against one holding thirteen, and the
+     * single-row {context} statements are counted off the driver's own debug output: they must not grow with the
+     * unlisted courses. The plugin's other per-course reads are its own and are recorded, not asserted. The page
+     * total is the precondition that the unlisted courses were really probed and withheld.
+     *
+     * @param bool $statesort The mode.
+     */
+    #[DataProvider('modes_provider')]
+    public function test_the_probed_unlisted_courses_cost_no_context_statement_each(bool $statesort): void {
+        global $DB;
+
+        $viewer = $this->prepare();
+        set_config(population::SETTING_STATESORT, $statesort ? '1' : '0', 'theme_dimensions');
+        $generator = self::getDataGenerator();
+        $root = function (int $unlisted) use ($generator): int {
+            $category = $generator->create_category();
+            for ($i = 0; $i < 3; $i++) {
+                $generator->create_course(['category' => $category->id]);
+            }
+            for ($i = 0; $i < $unlisted; $i++) {
+                $course = $generator->create_course(['category' => $category->id]);
+                $this->set_course_state((int) $course->id, \local_unlistedcourses\discoverability::STATE_UNLISTED);
+            }
+            return (int) $category->id;
+        };
+        $one = $root(1);
+        $thirteen = $root(13);
+        $this->become($viewer);
+
+        $measure = function (int $rootid) use ($DB): array {
+            $contextreads = 0;
+            $reads = $this->reads(function () use ($rootid, $DB, &$contextreads): void {
+                ob_start();
+                $DB->set_debug(true);
+                try {
+                    $result = population::resolve(new criteria($rootid, ['sort' => criteria::SORT_NAME]));
+                } finally {
+                    $DB->set_debug(false);
+                    $log = (string) ob_get_clean();
+                }
+                $this->assertSame(3, $result->total, 'The unlisted courses were probed and withheld.');
+                $contextreads = preg_match_all(
+                    '/FROM\s+\w*context\s+WHERE\s+contextlevel\s*=\s*\S+\s+AND\s+instanceid\s*=\s*\S+/i',
+                    $log
+                );
+            });
+            return [$reads, $contextreads];
+        };
+        // Warm what a second request would find warm.
+        $measure($one);
+        $measure($thirteen);
+        [$onereads, $onecontexts] = $measure($one);
+        [$thirteenreads, $thirteencontexts] = $measure($thirteen);
+        $this->record('unlisted probe ' . ($statesort ? '(state sort on)' : '(state sort off)'), [
+            'reads at U=1' => $onereads,
+            'reads at U=13' => $thirteenreads,
+            'context reads at U=1' => $onecontexts,
+            'context reads at U=13' => $thirteencontexts,
+        ]);
+        $this->assertSame(
+            $onecontexts,
+            $thirteencontexts,
+            "{$onecontexts} single-row context reads for one unlisted course against {$thirteencontexts} for thirteen."
+        );
+    }
 }

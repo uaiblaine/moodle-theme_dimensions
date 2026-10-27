@@ -1930,9 +1930,10 @@ these are the facts a maintainer must not lose.
   stylelint has not been asked about.
 - **The crests cost no statement per card, and the statement they DO cost is not this round's.**
   Measured on m502: exporting a page of cards with a crest each costs **0 reads** at four cards
-  and at twenty-four, while the four bulk reads go from 15 to 35 over the same two sizes - one
-  `{files}` statement per stored badge, inside `landingfields::values_many()`, which the listing
-  has paid since stage 3 for badges nothing was showing. `budget_test` meters the export alone
+  and at twenty-four, while the four bulk reads went from 15 to 35 over the same two sizes - one
+  `{files}` statement per stored badge, inside `landingfields::values_many()`. Since R0
+  (2026-10-27) every badge file of the call is one statement (`landingfields::crest_files()`), and
+  `budget_test` holds the bulk reads flat with four crests per card. `budget_test` meters the export alone
   and primes the page's course contexts inside the meter, because `fixture::reads()` empties the
   context cache a real request still holds at that point and would otherwise charge each card a
   context statement and read it as a per-card cost of the crests.
@@ -3013,8 +3014,9 @@ status block, the design, the HTTP facts, the numbers and the cache verdicts. Wh
   change of its own.
 - **The budget is a fixture's.** `get_public_category_rows_test` records 17 reads (PHP cut) or 19
   (SQL cut), flat in N and in P, and 1 for a refusal. Its fixture stores no crest: on m502's data flat
-  12 reads 27 and flat 48 reads 51, one `{files}` statement per stored crest inside
-  `landingfields::values_many()` (round E1), so "flat in P" holds for a catalogue without crests only.
+  12 read 27 and flat 48 read 51, one `{files}` statement per stored crest inside
+  `landingfields::values_many()` (round E1), until R0 (2026-10-27) read every badge file in one statement;
+  a catalogue with crests pays that one statement more, flat in P.
 - **Proving a JavaScript mutation builds**: Moodle's eslint override for AMD applies to
   `**/amd/src/*.js` only, so a mutated copy is linted under such a path, in a scratch copy mounted at
   the plugin's mount point. Never mount a scratch directory BELOW `~/dev/moodle-502/public/...`:
@@ -3289,6 +3291,42 @@ Section 5.4 of `docs/vitrine-react/PLAN.md`. Three instruments; only the first i
   was on m503b): a seed that sets only the public courses measures a catalogue of unlisted ones, whose cost is the
   plugin's probe cap (a few statements per unrelated unlisted course, up to fifty), not the showcase.
 
+## The category showcase: the server render of the first paint (R0, 2026-10-27)
+
+What the page costs per card after the bulk reads, from a measured review (m503, Xdebug off: 37 cards in 32-35 ms).
+What a maintainer must not lose:
+
+- **A card reads ten landing page fields, and only those are read.** `cards::values()` hands
+  `landingfields::values_many()` `cards::CARD_SHORTNAMES`; the landing page and every other caller read all
+  of them. A card that starts reading another value names its field there: `cards_test` reads the keys
+  `category_card` reads off its source and compares them with a full read and with a read of the course alone.
+- **Only a DEFAULT controller is shared between courses**, and that is safe only because a default reads the
+  field and never its course (a textarea formats its default in the field's configuration context, a picture
+  has no data id). A controller over a stored row is never shared (gate `values_default_shared_only`).
+- **A field's name is formatted once per call only while `filterall` is off**; with it on, format_string()
+  runs each course context's filters and the name may read differently per course (`values_names_filterall`).
+- **The badge files are one statement** (`landingfields::crest_files()`), which must answer what
+  customfield_picture's `get_file()` answers row by row: the row's own context, no directory, the first by
+  item id, path and name. Re-read `get_file()` on every customfield_picture update; three gates hold the rules.
+- **Three per-request memos are reset by `landingfields::reset_field_cache()`**: the field cache, the option
+  lines of the selects and `facets::fields()`. The last is keyed on the raw setting and on the very list of
+  controllers the course handler holds (identity), which core rebuilds when a field changes through it and per
+  PHPUnit test. `category_card`'s labels are memoised per language; the fixture's `forget()` drops them.
+- **Core's `course_image` cache is compared before it is written**, without its data source: `has()` asks the
+  store, `get_many()` gets only held keys (a missing key in `get_many()` loads one course at a time).
+- **`priority` (fetchpriority="high") is the first eager card with a cover**, on the page's own first paint,
+  and only where the hero armed for the same category paints no picture (`category_hero::draws_image()`, the
+  same answer as its `hasimage`). It is a card key the rows service declares and always answers false; the
+  page-versus-answer parity tests normalise it with `eager`.
+- **The unlisted courses handed to the plugin arrive with their contexts preloaded** (F1), in both page-cutting
+  modes (`gate()` and `admitted_unlisted()`): local_unlistedcourses' relationship check asks core for each probed
+  course's context, which on a cold cache is one `{context}` statement per course - measured on m503b's 5,000-course
+  seed as the root of the subtree not being statement-flat for a logged-in reader. From a clone, by the stage 2
+  rule. `budget_test` counts the single-row context reads at one and at thirteen unlisted courses.
+- **The modal partial stays a partial.** Inlining it into `category_card.mustache` would save
+  `Engine::loadPartial()`'s re-hash, but `category_card_modal_test` and `card_markup_test` render it alone and
+  two gates target its file: a copy kept for them would be a template nothing ships.
+
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 
 The design record is the fleet's `moodle-dev/docs/enrolment-status-matrix/` (decisions D1-D8, the owner's answers
@@ -3341,8 +3379,8 @@ a-f, the flows and the mockup); local_unlistedcourses 5a owns the rule. What the
   `publicfiles::viewer_may_see_many()`, which is `viewer_may_see()` read in bulk: a crest's address and
   alt text name the file, so a caller that passes unfiltered ids must learn nothing about a hidden or
   unlisted course (an MDL Shield finding on the private theme). `course_badges_test` holds the two against
-  `publicfiles::resolve()` course by course; keep them in step. Each uploaded badge still costs
-  customfield_picture's own `{files}` lookup inside `values_many()`; the callback's own statements (the
+  `publicfiles::resolve()` course by course; keep them in step. The badge files of the call are one
+  `{files}` statement inside `values_many()` (R0); the callback's own statements (the
   courses with their contexts, the plugin's course states, the categories' contexts) are flat in the
   number of courses.
 - **enrol_coursecompleted is written as a raw `{enrol}` row in the classifier, listing and service

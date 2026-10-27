@@ -63,6 +63,18 @@ final class facets {
     public const SETTING = 'categoryfilterfields';
 
     /**
+     * @var array|null The last answer of {@see fields()}: ['setting' => string, 'all' => the fields read, 'ids' => int[]].
+     *
+     * The page asks for the filter fields from five places (the renderer, the listing, the population, the
+     * toolbar, the remembered state), and the answer depends on the setting and on the course fields alone.
+     * The memo is keyed on both: the raw setting, and the very list of field controllers the course handler
+     * hands back (compared by identity, which costs no read of a field). The handler builds that list anew
+     * whenever its fields change through it and is itself rebuilt for each PHPUnit test, so a changed setting,
+     * a field added, edited or deleted, or the next test's fields under the same ids, are each a miss.
+     */
+    private static ?array $memo = null;
+
+    /**
      * The allowlisted fields, in the configured order, keyed by field id.
      *
      * Reads the setting as shortnames, so a field deleted and recreated keeps
@@ -79,8 +91,16 @@ final class facets {
         if (!$wanted) {
             return [];
         }
+        $all = course_handler::create()->get_fields();
+        if (self::$memo !== null && self::$memo['setting'] === $setting && self::$memo['all'] === $all) {
+            $fields = [];
+            foreach (self::$memo['ids'] as $fieldid) {
+                $fields[$fieldid] = $all[$fieldid];
+            }
+            return $fields;
+        }
         $byshortname = [];
-        foreach (course_handler::create()->get_fields() as $field) {
+        foreach ($all as $field) {
             if ($field->get('type') === 'select') {
                 $byshortname[$field->get('shortname')] = $field;
             }
@@ -94,7 +114,20 @@ final class facets {
                 break;
             }
         }
+        self::$memo = ['setting' => $setting, 'all' => $all, 'ids' => array_keys($fields)];
         return $fields;
+    }
+
+    /**
+     * Forget the memo of {@see fields()}; {@see \theme_dimensions\local\landingfields::reset_field_cache()} calls it.
+     *
+     * The key already follows the setting and the handler's list of fields; this is for a field changed in
+     * place on a controller the handler still holds, which the identity of the list cannot see.
+     *
+     * @return void
+     */
+    public static function reset_fields(): void {
+        self::$memo = null;
     }
 
     /**

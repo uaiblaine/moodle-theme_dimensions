@@ -200,8 +200,43 @@ class landingfields {
     /** @var int Stored value of the format select for "tutored". */
     public const FORMAT_TUTORED = 2;
 
+    /**
+     * @var string[] The custom field type of every field of {@see definitions()}, in the same order: shortname => type.
+     *
+     * The readers that only need to know whether a shortname is the theme's, and of which type
+     * ({@see get_field()}, {@see load_field_cache()}, {@see values_many()}), read this list instead of
+     * building the definitions, which format some forty language strings on every call.
+     * landingfields_test holds the two in step, order included.
+     */
+    public const FIELD_TYPES = [
+        self::SHORTNAME_MODEL => 'select',
+        self::SHORTNAME_MODALITY => 'select',
+        self::SHORTNAME_WORKLOAD => 'number',
+        self::SHORTNAME_FORMAT => 'select',
+        self::SHORTNAME_LIVECLASSES => 'checkbox',
+        self::SHORTNAME_LIVECLASSESWHEN => 'text',
+        self::SHORTNAME_INPERSONWORKLOAD => 'number',
+        self::SHORTNAME_MEETINGS => 'text',
+        self::SHORTNAME_AUDIENCE => 'textarea',
+        self::SHORTNAME_PROGRAMME => 'textarea',
+        self::SHORTNAME_CERTIFICATION => 'textarea',
+        self::SHORTNAME_CITY => 'text',
+        self::SHORTNAME_VENUE => 'text',
+        self::SHORTNAME_ADDRESS => 'text',
+        self::SHORTNAME_PUBLICDESCRIPTION => 'text',
+        self::SHORTNAME_CREST1 => self::PICTURE_TYPE,
+        self::SHORTNAME_CREST2 => self::PICTURE_TYPE,
+        self::SHORTNAME_CREST3 => self::PICTURE_TYPE,
+        self::SHORTNAME_CREST4 => self::PICTURE_TYPE,
+        self::SHORTNAME_VIDEOURL => 'text',
+        self::SHORTNAME_SHAREIMAGE => self::PICTURE_TYPE,
+    ];
+
     /** @var array|null Request cache of resolved field controllers keyed by shortname (null = missing). */
     private static ?array $fieldcache = null;
+
+    /** @var array Request cache of {@see option_lines()}: shortname => the lines, or null when the field does not resolve. */
+    private static array $optionlines = [];
 
     /**
      * The full definition of every field this theme provisions.
@@ -479,8 +514,7 @@ class landingfields {
      * @return field_controller|null The field controller.
      */
     public static function get_field(string $shortname): ?field_controller {
-        $definitions = self::definitions();
-        if (!isset($definitions[$shortname])) {
+        if (!isset(self::FIELD_TYPES[$shortname])) {
             throw new \coding_exception("Unknown landing page field shortname '{$shortname}'.");
         }
         if (self::$fieldcache === null) {
@@ -492,10 +526,16 @@ class landingfields {
     /**
      * Reset the request-level field cache (used by tests and after provisioning).
      *
+     * The memos built over the same fields go with it: the option lines of the selects, and the
+     * filter fields of the showcase ({@see category\facets::fields()}), so a test or a step that
+     * edits a field and resets here reads the field as it is now everywhere.
+     *
      * @return void
      */
     public static function reset_field_cache(): void {
         self::$fieldcache = null;
+        self::$optionlines = [];
+        category\facets::reset_fields();
     }
 
     /**
@@ -575,8 +615,7 @@ class landingfields {
      * @return void
      */
     private static function load_field_cache(): void {
-        $definitions = self::definitions();
-        self::$fieldcache = array_fill_keys(array_keys($definitions), null);
+        self::$fieldcache = array_fill_keys(array_keys(self::FIELD_TYPES), null);
 
         $categories = api::get_categories_with_fields('core_course', 'course', 0);
         foreach ($categories as $category) {
@@ -585,10 +624,11 @@ class landingfields {
                 if (!array_key_exists($shortname, self::$fieldcache)) {
                     continue;
                 }
-                if ($field->get('type') !== $definitions[$shortname]['type']) {
+                $expected = self::FIELD_TYPES[$shortname];
+                if ($field->get('type') !== $expected) {
                     debugging(
                         self::COMPONENT . ": field '{$shortname}' exists with unexpected type '" .
-                            $field->get('type') . "', expected '{$definitions[$shortname]['type']}' - not used.",
+                            $field->get('type') . "', expected '{$expected}' - not used.",
                         DEBUG_DEVELOPER
                     );
                     continue;
@@ -712,11 +752,31 @@ class landingfields {
      * customfield_textarea's data_controller::export_value() and must be
      * re-read against it on each core upgrade.
      *
+     * Three things are read once for the call and never per course, and each is exactly what the
+     * per-course reading answered (landingfields_test pins every one against values() course by course):
+     *
+     * - the fields' own facts - shortname, type, name and, while the site does not run the text filters
+     *   over strings (`filterall` off), the formatted name, which format_string() then derives from the
+     *   string alone, whatever the context;
+     * - one DEFAULT controller per field, shared by every course without a row: a default reads only the
+     *   field (select, number, text and checkbox answer get_default_value(), a textarea formats its
+     *   default in the field's configuration context, a picture has no data id and so no file), never
+     *   the course it was created for, which is what makes sharing it safe. A controller over a stored
+     *   row is never shared;
+     * - the badge files of every stored badge row, in ONE {files} statement ({@see crest_files()}), where
+     *   customfield_picture's get_file() costs one statement per badge.
+     *
+     * A caller that reads only some of the values names their fields in $only (a listing's card:
+     * {@see category\cards::CARD_SHORTNAMES}): the other fields are neither read nor turned into
+     * controllers, and the keys they fill keep their empty values. Without $only every field is read,
+     * as values() needs.
+     *
      * @param int[] $courseids The courses.
      * @param bool $filters Whether the textareas go through the text filters (the landing page) or not (a listing).
+     * @param string[]|null $only The shortnames to read, null for every field; `names` then holds these alone.
      * @return \stdClass[] courseid => the typed values of values(), for every id given.
      */
-    public static function values_many(array $courseids, bool $filters = true): array {
+    public static function values_many(array $courseids, bool $filters = true, ?array $only = null): array {
         global $DB;
 
         $courseids = array_values(array_unique(array_map('intval', $courseids)));
@@ -725,16 +785,23 @@ class landingfields {
             return $results;
         }
 
-        $definitions = self::definitions();
         $fields = [];
+        $table = [];
         foreach (course_handler::create()->get_fields() as $field) {
             $shortname = $field->get('shortname');
-            if (isset($definitions[$shortname]) && $field->get('type') === $definitions[$shortname]['type']) {
-                $fields[(int) $field->get('id')] = $field;
+            if ($field->get('type') !== (self::FIELD_TYPES[$shortname] ?? null)) {
+                continue;
             }
+            if ($only !== null && !in_array($shortname, $only, true)) {
+                continue;
+            }
+            $fieldid = (int) $field->get('id');
+            $fields[$fieldid] = $field;
+            $table[$fieldid] = ['shortname' => $shortname, 'name' => (string) $field->get('name')];
         }
 
         $data = array_fill_keys($courseids, []);
+        $badgedata = [];
         if ($fields) {
             [$fsql, $fparams] = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld');
             [$csql, $cparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'crs');
@@ -746,31 +813,116 @@ class landingfields {
                 $cparams + $fparams + ['component' => 'core_course', 'area' => 'course']
             );
             foreach ($rows as $row) {
-                $data[(int) $row->instanceid][(int) $row->fieldid] = data_controller::create(0, $row, $fields[(int) $row->fieldid]);
+                $fieldid = (int) $row->fieldid;
+                $controller = data_controller::create(0, $row, $fields[$fieldid]);
+                $data[(int) $row->instanceid][$fieldid] = $controller;
+                if (
+                    in_array($table[$fieldid]['shortname'], self::CREST_SHORTNAMES, true)
+                    && $controller instanceof \customfield_picture\data_controller
+                ) {
+                    $badgedata[(int) $controller->get('id')] = $controller;
+                }
+            }
+        }
+        $badges = self::crest_files($badgedata);
+
+        // Without the string filters a name formats the same in every context: once for the call.
+        $names = null;
+        if (!\core\di::get(\core\formatting::class)->get_filterall()) {
+            $names = [];
+            $context = \core\context\course::instance($courseids[0]);
+            foreach ($table as $fieldid => $facts) {
+                $names[$fieldid] = format_string($facts['name'], true, ['context' => $context, 'escape' => false]);
             }
         }
 
+        $defaults = [];
         foreach ($courseids as $courseid) {
             $controllers = [];
             foreach ($fields as $fieldid => $field) {
-                $controllers[] = $data[$courseid][$fieldid]
-                    ?? data_controller::create(0, (object) ['instanceid' => $courseid], $field);
+                // Only a default is shared: it reads the field and nothing of the course it was made for.
+                $controllers[$fieldid] = $data[$courseid][$fieldid]
+                    ?? ($defaults[$fieldid] ??= data_controller::create(0, (object) ['instanceid' => $courseid], $field));
             }
-            $results[$courseid] = self::typed_values($courseid, $controllers, $definitions, $filters);
+            $results[$courseid] = self::typed_values($courseid, $controllers, $table, $names, $filters, $badges);
         }
         return $results;
+    }
+
+    /**
+     * The file of every stored badge row, in one statement: what customfield_picture's get_file() answers row by row.
+     *
+     * get_file() reads the field's area at the row's own context with the data id as the item id,
+     * directories left out, ordered by item id, path and name, and takes the first file. The same
+     * statement over every row at once asks for all the rows' item ids under all their contexts, so a
+     * file is kept only where its context is its own row's (two courses' rows never share an item id,
+     * but nothing here relies on that), and the first in that order wins. The columns are the ones
+     * file_storage reads for a stored file, the reference ones included, so get_file_instance() builds
+     * the same object get_area_files() would.
+     *
+     * @param \customfield_picture\data_controller[] $controllers The badge rows, keyed by data id.
+     * @return array data id => \stored_file or null, for every row given.
+     */
+    private static function crest_files(array $controllers): array {
+        global $DB;
+
+        $files = array_fill_keys(array_keys($controllers), null);
+        if (!$controllers) {
+            return $files;
+        }
+        $contexts = [];
+        foreach ($controllers as $dataid => $controller) {
+            $contexts[$dataid] = (int) $controller->get_context()->id;
+        }
+        [$isql, $iparams] = $DB->get_in_or_equal(array_keys($contexts), SQL_PARAMS_NAMED, 'bdg');
+        [$csql, $cparams] = $DB->get_in_or_equal(array_values(array_unique($contexts)), SQL_PARAMS_NAMED, 'bctx');
+        // Rides component-filearea-contextid-itemid of {files}; both lists are bounded by the page.
+        $records = $DB->get_records_sql(
+            "SELECT f.id, f.contenthash, f.pathnamehash, f.contextid, f.component, f.filearea, f.itemid, f.filepath,
+                    f.filename, f.userid, f.filesize, f.mimetype, f.status, f.source, f.author, f.license,
+                    f.timecreated, f.timemodified, f.sortorder, f.referencefileid,
+                    r.repositoryid, r.reference, r.lastsync AS referencelastsync
+               FROM {files} f
+          LEFT JOIN {files_reference} r ON f.referencefileid = r.id
+              WHERE f.component = :component AND f.filearea = :filearea
+                    AND f.contextid {$csql} AND f.itemid {$isql} AND f.filename <> :dot
+           ORDER BY f.itemid, f.filepath, f.filename",
+            $cparams + $iparams + [
+                'component' => 'customfield_picture',
+                'filearea' => \customfield_picture\data_controller::FILEAREA,
+                'dot' => '.',
+            ]
+        );
+        $fs = get_file_storage();
+        foreach ($records as $record) {
+            $dataid = (int) $record->itemid;
+            if ($files[$dataid] !== null || (int) $record->contextid !== $contexts[$dataid]) {
+                continue;
+            }
+            $files[$dataid] = $fs->get_file_instance($record);
+        }
+        return $files;
     }
 
     /**
      * Turn one course's data controllers into the typed values of values().
      *
      * @param int $courseid The course id.
-     * @param data_controller[] $controllers One controller per landing page field, defaults included.
-     * @param array $definitions The field definitions, shortname => definition.
+     * @param data_controller[] $controllers One controller per landing page field read, defaults included, keyed by field id.
+     * @param array $table The fields' facts, field id => ['shortname' => string, 'name' => raw name].
+     * @param string[]|null $names The formatted names, field id => plain, or null to format them in this course's context.
      * @param bool $filters Whether the textareas go through the text filters.
+     * @param array $badges The badge files, data id => \stored_file or null ({@see crest_files()}).
      * @return \stdClass The typed values.
      */
-    private static function typed_values(int $courseid, array $controllers, array $definitions, bool $filters): \stdClass {
+    private static function typed_values(
+        int $courseid,
+        array $controllers,
+        array $table,
+        ?array $names,
+        bool $filters,
+        array $badges
+    ): \stdClass {
         $values = (object) [
             'model' => 0,
             'modality' => 0,
@@ -791,16 +943,12 @@ class landingfields {
             'crests' => [],
             'names' => [],
         ];
-        $badges = [];
+        $found = [];
 
         $context = \core\context\course::instance($courseid);
-        foreach ($controllers as $data) {
-            $field = $data->get_field();
-            $shortname = $field->get('shortname');
-            if (!isset($definitions[$shortname]) || $field->get('type') !== $definitions[$shortname]['type']) {
-                continue;
-            }
-            $values->names[$shortname] = format_string($field->get('name'), true, [
+        foreach ($controllers as $fieldid => $data) {
+            $shortname = $table[$fieldid]['shortname'];
+            $values->names[$shortname] = $names[$fieldid] ?? format_string($table[$fieldid]['name'], true, [
                 'context' => $context,
                 'escape' => false,
             ]);
@@ -858,16 +1006,17 @@ class landingfields {
                 case self::SHORTNAME_CREST2:
                 case self::SHORTNAME_CREST3:
                 case self::SHORTNAME_CREST4:
-                    // The customfield_picture controller knows where its file is; a foreign 'picture' type would not.
+                    /* The customfield_picture controller knows where its file is; a foreign 'picture' type would
+                       not. A default has no data id and so no file, as get_file() answers. */
                     if ($data instanceof \customfield_picture\data_controller) {
-                        $badges[$shortname] = $data->get_file();
+                        $found[$shortname] = $badges[(int) $data->get('id')] ?? null;
                     }
                     break;
             }
         }
         foreach (self::CREST_SHORTNAMES as $shortname) {
-            if (!empty($badges[$shortname])) {
-                $values->crests[] = $badges[$shortname];
+            if (!empty($found[$shortname])) {
+                $values->crests[] = $found[$shortname];
             }
         }
         return self::coherent($values);
@@ -1032,11 +1181,18 @@ class landingfields {
      * @return array|null The lines, 0-based (index + 1 is the stored value), or null when the field does not resolve.
      */
     public static function option_lines(string $shortname): ?array {
+        // Memoised per request beside the field cache, and reset with it ({@see reset_field_cache()}).
+        if (array_key_exists($shortname, self::$optionlines)) {
+            return self::$optionlines[$shortname];
+        }
         $field = self::get_field($shortname);
         if (!$field || $field->get('type') !== 'select') {
-            return null;
+            return self::$optionlines[$shortname] = null;
         }
-        return preg_split("/\s*\n\s*/", trim((string) $field->get_configdata_property('options')));
+        return self::$optionlines[$shortname] = preg_split(
+            "/\s*\n\s*/",
+            trim((string) $field->get_configdata_property('options'))
+        );
     }
 
     /**

@@ -690,4 +690,142 @@ final class landingfields_test extends \advanced_testcase {
             $this->assertSame(landingfields::PICTURE_TYPE, landingfields::get_field($shortname)?->get('type'), $shortname);
         }
     }
+
+    /**
+     * The list of field types the cheap readers check is the definitions' own, order included.
+     *
+     * get_field(), the field cache and values_many() read FIELD_TYPES so as not to build the
+     * definitions, which format forty strings each time: a field added to one and not the other, or a
+     * type changed in one, would make a provisioned field unreadable or a foreign one adopted.
+     */
+    public function test_the_field_types_are_the_definitions_types(): void {
+        $this->assertSame(
+            array_map(static fn(array $definition): string => $definition['type'], landingfields::definitions()),
+            landingfields::FIELD_TYPES
+        );
+        $this->expectException(\coding_exception::class);
+        landingfields::get_field('dimensions_nosuchfield');
+    }
+
+    /**
+     * The badges read in bulk are the files customfield_picture's get_file() answers, row by row, in one statement.
+     *
+     * get_file() reads the row's own context, directories left out, and takes the first file by item id, path and
+     * name. The fixture holds what each of those rules decides: a row with two files (the first by name wins), a
+     * row with no file at all, a course with no row (a default, no file), and a decoy - a file of the same area
+     * and the same item id as a badge row, under ANOTHER course on the page - which sorts first by name and must
+     * be left out because it is not the row's context.
+     */
+    public function test_the_badge_files_read_in_one_statement_are_the_files_get_file_answers(): void {
+        global $CFG, $DB;
+
+        $this->resetAfterTest();
+        $this->require_picture_type();
+        $this->setAdminUser();
+        course_handler::reset_caches();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+
+        /** @var \core_customfield_generator $generator */
+        $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
+        $fs = get_file_storage();
+        $logo = $CFG->dirroot . '/lib/tests/fixtures/gd-logo.png';
+        $put = function (int $contextid, int $itemid, string $filename) use ($fs, $logo): void {
+            $fs->create_file_from_pathname([
+                'contextid' => $contextid,
+                'component' => 'customfield_picture',
+                'filearea' => 'file',
+                'itemid' => $itemid,
+                'filepath' => '/',
+                'filename' => $filename,
+            ], $logo);
+        };
+        $row = fn(string $shortname, int $courseid): int => (int) $generator->add_instance_data(
+            landingfields::get_field($shortname),
+            $courseid,
+            1
+        )->get('id');
+
+        $x = (int) self::getDataGenerator()->create_course()->id;
+        $y = (int) self::getDataGenerator()->create_course()->id;
+        $z = (int) self::getDataGenerator()->create_course()->id;
+        $xcontext = \core\context\course::instance($x)->id;
+        $ycontext = \core\context\course::instance($y)->id;
+
+        $xfirst = $row(landingfields::SHORTNAME_CREST1, $x);
+        $put($xcontext, $xfirst, 'crest-x.png');
+        $xsecond = $row(landingfields::SHORTNAME_CREST2, $x);
+        $put($xcontext, $xsecond, 'b-second.png');
+        $put($xcontext, $xsecond, 'a-first.png');
+        $row(landingfields::SHORTNAME_CREST3, $x);
+        $yfirst = $row(landingfields::SHORTNAME_CREST4, $y);
+        $put($ycontext, $yfirst, 'crest-y.png');
+        // The decoy: X's badge row's item id, under Y's context, first by name.
+        $put($ycontext, $xfirst, 'a-decoy.png');
+
+        $ids = fn(array $files): array => array_map(static fn(\stored_file $file): int => (int) $file->get_id(), $files);
+        $courses = [$x, $y, $z];
+        foreach ($courses as $courseid) {
+            \core\context\course::instance($courseid);
+        }
+        $many = landingfields::values_many($courses, false);
+        foreach ($courses as $courseid) {
+            $this->assertSame(
+                $ids(landingfields::badges($courseid)),
+                $ids($many[$courseid]->crests),
+                "Course {$courseid}: the bulk read is get_file()'s answer, badge by badge."
+            );
+        }
+        $this->assertSame(['crest-x.png', 'a-first.png'], array_map(fn($f) => $f->get_filename(), $many[$x]->crests));
+        $this->assertSame(['crest-y.png'], array_map(fn($f) => $f->get_filename(), $many[$y]->crests));
+        $this->assertSame([], $many[$z]->crests);
+
+        $reads = $DB->perf_get_reads();
+        landingfields::values_many($courses, false);
+        $this->assertSame(2, $DB->perf_get_reads() - $reads, 'The rows, then every badge file of the three courses.');
+    }
+
+    /**
+     * A field's name is formatted once for many courses only where the string filters do not run.
+     *
+     * With filterall on, format_string() runs the filters active in each course's context, so the same name can read
+     * differently on two courses: here the multilang filter is switched off in one of them. Each course must then get
+     * the name values() gives it alone; the course with the filter on is the control that the filter runs at all.
+     */
+    public function test_a_field_name_is_formatted_in_each_courses_context_while_the_string_filters_run(): void {
+        global $CFG, $FILTERLIB_PRIVATE;
+
+        $this->resetAfterTest();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        $field = landingfields::get_field(landingfields::SHORTNAME_WORKLOAD);
+        $field->set('name', '<span lang="en" class="multilang">Hours</span><span lang="xx" class="multilang">Horas</span>');
+        $field->save();
+        course_handler::reset_caches();
+        landingfields::reset_field_cache();
+
+        $on = (int) self::getDataGenerator()->create_course()->id;
+        $off = (int) self::getDataGenerator()->create_course()->id;
+        filter_set_global_state('multilang', TEXTFILTER_ON);
+        // A filter runs over format_string() only where it is set to apply to headings as well as content.
+        filter_set_applies_to_strings('multilang', true);
+        filter_set_local_state('multilang', \core\context\course::instance($off)->id, TEXTFILTER_OFF);
+        $CFG->filterall = 1;
+        $FILTERLIB_PRIVATE = null;
+        \filter_manager::reset_caches();
+
+        $alone = [
+            $on => landingfields::values($on)->names[landingfields::SHORTNAME_WORKLOAD],
+            $off => landingfields::values($off)->names[landingfields::SHORTNAME_WORKLOAD],
+        ];
+        $this->assertSame('Hours', $alone[$on], 'Precondition: the filter runs where it is on.');
+        $this->assertNotSame($alone[$on], $alone[$off], 'Precondition: and the name reads otherwise where it is off.');
+
+        $many = landingfields::values_many([$on, $off], false);
+        foreach ($alone as $courseid => $name) {
+            $this->assertSame($name, $many[$courseid]->names[landingfields::SHORTNAME_WORKLOAD], "Course {$courseid}.");
+        }
+    }
 }

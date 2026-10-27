@@ -540,9 +540,11 @@ final class get_public_category_rows_test extends \advanced_testcase {
             /* Only the page's first paint loads its first row at once (category_listing::FIRST_ROW); an answer
                never is one, so the page's cards are compared with that one key set as an answer sets it. */
             $this->assertNotContains(true, array_column($answer['cards'], 'eager'), $case . ': an answer is never a first paint.');
+            $this->assertNotContains(true, array_column($answer['cards'], 'priority'), $case . ': nor asks for a cover first.');
             $pagecards = $clean('cards', $context->cards);
             foreach ($pagecards as $index => $card) {
                 $pagecards[$index]['eager'] = false;
+                $pagecards[$index]['priority'] = false;
             }
             $this->assertSame($pagecards, $answer['cards'], $case . ': the cards, whole.');
             $this->assertSame(json_decode($context->vitrine)->total, $answer['total'], $case);

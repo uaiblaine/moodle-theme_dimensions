@@ -3093,4 +3093,126 @@ final class category_listing_test extends \advanced_testcase {
             'The web service answers a filter, a panel or a later page: never a first paint.'
         );
     }
+
+    /**
+     * The first cover of the first paint is fetched ahead of every other image, and only where the hero paints none.
+     *
+     * Of the first row's eager cards, the first with a cover gets the priority and no other card does: the first card
+     * in order has no cover here, so a rule that marked the first card, or every eager one, is seen. A hero that
+     * paints a picture is the page's largest paint and already asks first, so with one armed for this category no
+     * card asks; a hero armed for another category is the control that the hero's own picture is what is read. A
+     * web service answer, which is never a first paint, marks nothing.
+     */
+    public function test_the_first_cover_is_fetched_first_only_where_the_hero_paints_no_picture(): void {
+        global $CFG;
+
+        $this->become($this->seed());
+        $CFG->courseoverviewfileslimit = 1;
+        $CFG->courseoverviewfilesext = '.jpg,.gif,.png';
+        $order = array_map(static fn(\stdClass $card): int => (int) $card->id, array_values(
+            $this->export(['sort' => criteria::SORT_NAME], category_toolbar::VIEW_CARDS, true)->cards
+        ));
+        $this->assertGreaterThan(category_listing::FIRST_ROW, count($order), 'Precondition: more cards than one row.');
+        foreach (array_slice($order, 1) as $courseid) {
+            get_file_storage()->create_file_from_string([
+                'contextid' => \core\context\course::instance($courseid)->id,
+                'component' => 'course',
+                'filearea' => 'overviewfiles',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => 'capa.png',
+            ], base64_decode(self::PNG));
+        }
+        \cache::make('core', 'course_image')->purge();
+        $priority = fn(\stdClass $context): array => array_map(
+            static fn(\stdClass $card): bool => $card->priority,
+            array_values($context->cards)
+        );
+
+        $flat = $this->export(['sort' => criteria::SORT_NAME], category_toolbar::VIEW_CARDS, true);
+        $this->assertFalse(array_values($flat->cards)[0]->hasimage, 'Precondition: the first card has no cover.');
+        $expected = array_fill(0, count($order), false);
+        $expected[1] = true;
+        $this->assertSame($expected, $priority($flat), 'The first cover of the first row, and nothing else.');
+
+        $answer = $this->export(['sort' => criteria::SORT_NAME]);
+        $this->assertSame([false], array_unique($priority($answer)), 'An answer is never a first paint.');
+
+        // A hero armed for another category paints its picture elsewhere: this page's first cover still asks.
+        $elsewhere = (int) self::getDataGenerator()->create_category()->id;
+        $this->hero_with_picture($elsewhere);
+        $this->assertSame(
+            $expected,
+            $priority($this->export(['sort' => criteria::SORT_NAME], category_toolbar::VIEW_CARDS, true))
+        );
+
+        $this->hero_with_picture($this->ids['root']);
+        $this->assertTrue(category_hero::current()->draws_image(), 'Precondition: the hero paints a picture.');
+        $this->assertSame(
+            [false],
+            array_unique($priority($this->export(['sort' => criteria::SORT_NAME], category_toolbar::VIEW_CARDS, true))),
+            'Under a hero picture, no cover asks first.'
+        );
+    }
+
+    /**
+     * Arm a hero for a category whose branding paints an image of its own.
+     *
+     * @param int $categoryid The category.
+     * @return void
+     */
+    private function hero_with_picture(int $categoryid): void {
+        branding::save($categoryid, (object) [
+            'layout' => branding::LAYOUT_IMAGE,
+            'bgcolour' => '#12484f',
+            'inkcolour' => '#ffffff',
+            'overlay' => 78,
+        ]);
+        $context = \core\context\coursecat::instance($categoryid);
+        if (!get_file_storage()->file_exists($context->id, branding::COMPONENT, branding::AREA_HERO, 0, '/', 'hero.png')) {
+            get_file_storage()->create_file_from_string([
+                'contextid' => $context->id,
+                'component' => branding::COMPONENT,
+                'filearea' => branding::AREA_HERO,
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => 'hero.png',
+            ], base64_decode(self::PNG));
+        }
+        branding::forget_all();
+        $category = core_course_category::get($categoryid, MUST_EXIST, true);
+        $criteria = new criteria($categoryid);
+        category_hero::arm(new category_hero($category, population::resolve($criteria), $criteria));
+    }
+
+    /**
+     * The labels every card spells alike are read once per language, and a language switched mid-request is read anew.
+     */
+    public function test_the_cards_labels_follow_the_language_in_force(): void {
+        global $CFG;
+
+        $this->become($this->seed());
+        $english = array_values($this->export(['sort' => criteria::SORT_NAME])->cards)[0];
+        $this->assertSame(get_string('category_details', 'theme_dimensions'), $english->detailslabel);
+
+        $folder = $CFG->dataroot . '/lang/xx';
+        check_dir_exists($folder);
+        file_put_contents(
+            $folder . '/langconfig.php',
+            "<?php\n\$string['thislanguage'] = 'Xx';\n\$string['parentlanguage'] = '';\n"
+        );
+        file_put_contents($folder . '/theme_dimensions.php', "<?php\n\$string['category_details'] = 'XX detalhes';\n");
+        get_string_manager()->reset_caches();
+        $this->assertTrue(get_string_manager()->translation_exists('xx', false), 'Precondition: the pack is installed.');
+
+        $previous = force_current_language('xx');
+        try {
+            $spoken = array_values($this->export(['sort' => criteria::SORT_NAME])->cards)[0];
+        } finally {
+            force_current_language($previous);
+        }
+        $this->assertSame('XX detalhes', $spoken->detailslabel, 'The language in force, not the first one read.');
+        $again = array_values($this->export(['sort' => criteria::SORT_NAME])->cards)[0];
+        $this->assertSame($english->detailslabel, $again->detailslabel, 'And back.');
+    }
 }

@@ -119,6 +119,41 @@ final class facets_test extends \advanced_testcase {
     }
 
     /**
+     * The allowlist is read once per request, and a changed setting or a changed set of fields is a new answer.
+     *
+     * The page asks for it from five places, so it is memoised; what the memo may never do is answer for a setting
+     * or for fields it was not computed from. The control for each change is the answer before it.
+     */
+    public function test_fields_is_remembered_until_the_setting_or_the_fields_change(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [$model, $modality] = $this->landing_selects();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL . ',later', 'theme_dimensions');
+        $this->assertSame([(int) $model->get('id')], array_keys(facets::fields()));
+        $reads = $DB->perf_get_reads();
+        $this->assertSame([(int) $model->get('id')], array_keys(facets::fields()), 'Asked again, the same answer.');
+        $this->assertSame($reads, $DB->perf_get_reads(), 'And no read for it.');
+
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODALITY . ',later', 'theme_dimensions');
+        $this->assertSame([(int) $modality->get('id')], array_keys(facets::fields()), 'The setting changed: a new answer.');
+
+        $later = self::getDataGenerator()->get_plugin_generator('core_customfield')->create_field([
+            'categoryid' => (int) $model->get('categoryid'),
+            'type' => 'select',
+            'shortname' => 'later',
+            'name' => 'Later',
+            'configdata' => ['options' => "One\nTwo", 'defaultvalue' => ''],
+        ]);
+        course_handler::reset_caches();
+        $this->assertSame(
+            [(int) $modality->get('id'), (int) $later->get('id')],
+            array_keys(facets::fields()),
+            'A field created since: the handler\'s list changed, and so does the answer.'
+        );
+    }
+
+    /**
      * The value map costs one statement, spans the admitted categories only, and omits unset values.
      */
     public function test_values_is_one_statement_over_the_admitted_categories(): void {

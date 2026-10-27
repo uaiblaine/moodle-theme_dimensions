@@ -49,8 +49,9 @@ use theme_dimensions\local\landingfields;
  * {files} statement over the page's contexts, and then write the answer into
  * core's course_image cache, the one Boost Union's cards and the Dashboard
  * read, so the next reader of the same course pays nothing. The cache is not
- * read here: it has a data source, and a miss on get_many() would load one
- * course at a time.
+ * the source of the answer: it has a data source, and a miss on get_many()
+ * would load one course at a time. It is only compared, so that an entry
+ * already right is not written again ({@see warm_course_image_cache()}).
  *
  * The contacts go through core's own bulk method,
  * {@see core_course_category::preload_course_contacts()}, which fills the
@@ -64,6 +65,29 @@ final class cards {
     /** @var string The columns a card needs from {course}. */
     private const COURSE_FIELDS = 'id, category, fullname, shortname, idnumber, summary, summaryformat, '
         . 'startdate, enddate, visible, cacherev, timemodified';
+
+    /**
+     * @var string[] The landing page fields a card reads, and the only ones {@see values()} asks for.
+     *
+     * {@see \theme_dimensions\output\category_card} reads the model (the kind, the date tile, the call to
+     * action, the crests' gate), the modality, the workload, the city and the venue (the meta line and the
+     * facts, with the names of the workload, the modality and the city), the programme (what you will
+     * learn) and the four crests. A card that starts reading another value names its field here, or reads
+     * the empty value: cards_test compares the card's keys read this way with every field read, and reads
+     * the card's source for the keys it compares.
+     */
+    public const CARD_SHORTNAMES = [
+        landingfields::SHORTNAME_MODEL,
+        landingfields::SHORTNAME_MODALITY,
+        landingfields::SHORTNAME_WORKLOAD,
+        landingfields::SHORTNAME_CITY,
+        landingfields::SHORTNAME_VENUE,
+        landingfields::SHORTNAME_PROGRAMME,
+        landingfields::SHORTNAME_CREST1,
+        landingfields::SHORTNAME_CREST2,
+        landingfields::SHORTNAME_CREST3,
+        landingfields::SHORTNAME_CREST4,
+    ];
 
     /**
      * The course rows of the page, one statement.
@@ -97,14 +121,16 @@ final class cards {
      * the page's contexts are rebuilt from the preload columns first. The
      * textareas skip the text filter pass ({@see landingfields::values_many()}
      * says why): a card shows an excerpt, and a filter pass per course context
-     * is a recordset plus whatever each active filter reads, per card.
+     * is a recordset plus whatever each active filter reads, per card. Only the
+     * fields a card reads are read ({@see CARD_SHORTNAMES}): the landing page's
+     * other eleven would be a controller each per card for keys nobody prints.
      *
      * @param \stdClass[] $rows Population rows carrying the context preload columns, keyed by course id.
-     * @return \stdClass[] courseid => the typed values of landingfields::values().
+     * @return \stdClass[] courseid => the typed values of landingfields::values(), the card's keys filled.
      */
     public static function values(array $rows): array {
         population::page_contexts($rows);
-        return landingfields::values_many(array_map('intval', array_keys($rows)), false);
+        return landingfields::values_many(array_map('intval', array_keys($rows)), false, self::CARD_SHORTNAMES);
     }
 
     /**
@@ -199,11 +225,7 @@ final class cards {
             );
         }
 
-        $cached = [];
-        foreach ($images as $courseid => $url) {
-            $cached[$courseid] = $url?->out_as_local_url();
-        }
-        \cache::make('core', 'course_image')->set_many($cached);
+        self::warm_course_image_cache($images);
 
         // The cache is warm with core's answer before this: the public reader gets the other route.
         if ($public) {
@@ -212,6 +234,40 @@ final class cards {
             }
         }
         return $images;
+    }
+
+    /**
+     * Write core's answer into core's course_image cache, for the courses whose entry is missing or says otherwise.
+     *
+     * A page usually finds the cache already holding what it computed (the previous request wrote it), and the
+     * file store pays a write per key, so the entries are compared first. They are read without the cache's
+     * data source: has() asks the store alone, and get_many() is then handed only keys the store holds, because a
+     * missing key in get_many() is loaded through the data source one course at a time. An entry evicted between
+     * the two calls is loaded that way once, and compared like any other. A course with no image is cached as
+     * null, as the data source caches it.
+     *
+     * @param array $images courseid => \moodle_url or null: core's own route, never the public shell's.
+     * @return void
+     */
+    private static function warm_course_image_cache(array $images): void {
+        $cache = \cache::make('core', 'course_image');
+        $held = [];
+        foreach (array_keys($images) as $courseid) {
+            if ($cache->has($courseid)) {
+                $held[] = $courseid;
+            }
+        }
+        $stored = $held ? $cache->get_many($held) : [];
+        $writes = [];
+        foreach ($images as $courseid => $url) {
+            $value = $url?->out_as_local_url();
+            if (!array_key_exists($courseid, $stored) || $stored[$courseid] !== $value) {
+                $writes[$courseid] = $value;
+            }
+        }
+        if ($writes) {
+            $cache->set_many($writes);
+        }
     }
 
     /**

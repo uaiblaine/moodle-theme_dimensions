@@ -132,6 +132,30 @@ class category_listing implements \core\output\named_templatable, \core\output\r
     }
 
     /**
+     * Ask for the first cover of the first row ahead of every other image, where no hero picture is the page's largest paint.
+     *
+     * Called on the page's own first paint alone, after the first row was marked eager: of those cards, the first
+     * that has a cover gets `priority` (fetchpriority="high"), and no other card does. A hero that paints a
+     * picture already asks for it first (category_hero.mustache) and is the larger paint, so with one armed for
+     * this category no card asks: two images asking for the front of the queue would share it.
+     *
+     * @param \stdClass[] $cardcontexts The exported cards, in display order.
+     * @return void
+     */
+    private function priority(array $cardcontexts): void {
+        $hero = category_hero::current();
+        if ($hero !== null && $hero->category_id() === (int) $this->category->id && $hero->draws_image()) {
+            return;
+        }
+        foreach (array_slice($cardcontexts, 0, self::FIRST_ROW) as $card) {
+            if ($card->hasimage) {
+                $card->priority = true;
+                return;
+            }
+        }
+    }
+
+    /**
      * The template rendering this renderable.
      *
      * @param \core\output\renderer_base $renderer The renderer.
@@ -226,6 +250,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
             foreach (array_slice($cardcontexts, 0, self::FIRST_ROW) as $card) {
                 $card->eager = true;
             }
+            $this->priority($cardcontexts);
         }
         $count = $this->count_line();
 

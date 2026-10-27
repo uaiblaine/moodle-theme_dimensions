@@ -1622,4 +1622,19 @@ final class card_markup_test extends \advanced_testcase {
         $xpath = $this->render_context('category_directory_card', ['eager' => true] + $poster);
         $this->assertFalse($xpath->query('//img[' . self::has_class('dim-poster__img') . ']')->item(0)->hasAttribute('loading'));
     }
+
+    /**
+     * The cover the listing names the first paint's first is asked for with a high fetch priority, and no other is.
+     */
+    public function test_only_the_cover_named_first_asks_for_a_high_fetch_priority(): void {
+        $this->resetAfterTest();
+        $card = $this->example_context('category_card');
+        $this->assertTrue($card['hasimage'], 'Precondition: the example card has a cover.');
+        $image = fn(array $context): \DOMElement => $this->render_context('category_card', $context)
+            ->query('//img[' . self::has_class('dim-card__image') . ']')->item(0);
+        $this->assertFalse($image(['eager' => true, 'priority' => false] + $card)->hasAttribute('fetchpriority'));
+        $first = $image(['eager' => true, 'priority' => true] + $card);
+        $this->assertSame('high', $first->getAttribute('fetchpriority'));
+        $this->assertFalse($first->hasAttribute('loading'), 'And it is not lazy either.');
+    }
 }
