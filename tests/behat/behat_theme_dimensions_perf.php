@@ -54,7 +54,7 @@ class behat_theme_dimensions_perf extends behat_base {
     /**
      * Skip the scenario unless the site opted in and the browser is a Chrome the probe can throttle.
      *
-     * The opt-in is `$CFG->theme_dimensions_perfprobe` or the THEME_DIMENSIONS_PERFPROBE
+     * The opt-in is `$CFG->behat_theme_dimensions_perfprobe` or the THEME_DIMENSIONS_PERFPROBE
      * environment variable ({@see theme_dimensions_perf_probe::options()}), so an ordinary suite and
      * CI skip these scenarios rather than spend minutes on numbers nobody reads.
      *
@@ -83,8 +83,10 @@ class behat_theme_dimensions_perf extends behat_base {
      * PERFFLAT holds FLAT_COURSES courses, every one with a landing page model and a cover, all
      * public, in a public category whose hero has the image layout and a picture; PERFAREAS holds
      * AREAS areas of AREA_COURSES listed courses each, every other one with a cover. The student
-     * "perfstudent" is enrolled in three of the flat courses. Nobody logs in with a password: the
-     * scenarios use "I log in as", which visits core's Behat login script.
+     * "perfstudent" is enrolled in three of the flat courses. The scenarios log in with "I log in as",
+     * core's Behat login script, which authenticates with the username as the password and only adds a
+     * notification when that fails: a student made with the generator's default password would be
+     * measured as a visitor.
      *
      * @Given /^the showcase performance fixture exists$/
      * @return void
@@ -98,7 +100,12 @@ class behat_theme_dimensions_perf extends behat_base {
         try {
             $flat = $generator->create_category(['name' => 'Performance flat', 'idnumber' => 'PERFFLAT']);
             $areas = $generator->create_category(['name' => 'Performance areas', 'idnumber' => 'PERFAREAS']);
-            $student = $generator->create_user(['username' => 'perfstudent', 'firstname' => 'Perf', 'lastname' => 'Student']);
+            $student = $generator->create_user([
+                'username' => 'perfstudent',
+                'password' => 'perfstudent',
+                'firstname' => 'Perf',
+                'lastname' => 'Student',
+            ]);
             $today = usergetmidnight(time());
             for ($i = 0; $i < self::FLAT_COURSES; $i++) {
                 $course = $generator->create_course([
