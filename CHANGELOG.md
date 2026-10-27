@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The theme has an ES module tree, `js/esm`, and nothing uses it yet** (2026100525; R0 of `docs/vitrine-react/PLAN.md`,
+  the tooling half). `js/esm/src/amd.ts` (`@moodle/lms/theme_dimensions/amd`) is the one door from the theme's ES modules
+  to AMD: `load()` and `loadMany()` over core's `@moodle/lms/core/amd`, typed to the two modules R1 needs
+  (`core/templates`, `core/notification`); strings and the pending counter are core 5.3's own ES modules and are not
+  bridged. `js/esm/src/.eslintrc` is block_compass's, which restores core's AMD jsdoc rules on TypeScript.
+  `js/esm/build` is core 5.3's `grunt esm` output (`amd.js`, `amd.dev.js`, `amd.dev.js.map`). Jest tests in
+  `js/esm/tests` run under core's own `jest.config.js`. New `tests/local/esm_source_test.php` pins the build against
+  the source (the development map byte for byte, the outputs per source, the production build's imports) and that
+  only the bridge reaches RequireJS; the visitor's import walk (`categorypublic_source_test`) now follows imports into
+  `js/esm` and back, and starts from the bridge as well.
 - **The showcase asks for its first paint's images first, and loads three modules on first use** (2026100524; P0 of
   `docs/vitrine-react/PLAN.md`, the performance plan). The covers of the first row of a listing's first page (three,
   `category_listing::FIRST_ROW`) and of the posters that open a grouped page or the root load at once instead of

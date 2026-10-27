@@ -43,6 +43,12 @@ use theme_dimensions\output\category_panel;
  * it: the request a panel asks, which keeps a slice flat and alone; the poster that stays a link;
  * a question asked once, after a quiet; and a failure that loads the poster's link.
  *
+ * The walk crosses into the theme's ES modules (js/esm) and back: an AMD module reaches one through
+ * core's `core/esm!` loader or by naming it for a React mount, an ES module reaches its siblings by
+ * relative import and an AMD module only through the bridge, js/esm/src/amd.ts, by its quoted name.
+ * An ES module is a node named `esm:` and its path under js/esm/src, and its build is both files
+ * Moodle may serve, the production one and the development one.
+ *
  * @package    theme_dimensions
  * @category   test
  * @copyright  2026 Anderson Blaine
@@ -58,6 +64,12 @@ final class categorypublic_source_test extends \basic_testcase {
 
     /** @var string The panel module both clients arm, whose visitor's half is pinned here. */
     private const PANEL = 'categoryareapanel';
+
+    /** @var string The prefix of an ES module's node in the walk, before its path under js/esm/src. */
+    private const ESM = 'esm:';
+
+    /** @var string The bridge every ES module of the theme reaches AMD through, shared by both shells. */
+    private const BRIDGE = self::ESM . 'amd';
 
     /** @var string[] Theme modules a visitor's page may never load: the session's star and the logged-in clients. */
     private const FORBIDDEN_MODULES = ['categorystar', 'categoryvitrine', 'categorypanel'];
@@ -76,6 +88,9 @@ final class categorypublic_source_test extends \basic_testcase {
         'core_course_set_favourite_courses',
     ];
 
+    /** @var array|null Files by their path under the theme root, read instead of the tree when a test sets them. */
+    private ?array $fixture = null;
+
     /**
      * Absolute path to the theme root.
      *
@@ -86,27 +101,73 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * One module's source.
+     * Whether a file of the theme exists, in the fixture while a test has set one.
      *
-     * @param string $module The module's name.
-     * @return string
+     * @param string $path The path under the theme root.
+     * @return bool
      */
-    private function source(string $module = self::MODULE): string {
-        $path = $this->plugin_root() . '/amd/src/' . $module . '.js';
-        $this->assertFileExists($path);
-        return (string) file_get_contents($path);
+    private function exists(string $path): bool {
+        if ($this->fixture !== null) {
+            return array_key_exists($path, $this->fixture);
+        }
+        return is_file($this->plugin_root() . '/' . $path);
     }
 
     /**
-     * One module as the browser actually receives it.
+     * One file of the theme, from the fixture while a test has set one.
      *
-     * @param string $module The module's name.
+     * @param string $path The path under the theme root.
+     * @param string $missing What a missing file means.
+     * @return string
+     */
+    private function read(string $path, string $missing): string {
+        $this->assertTrue($this->exists($path), $path . ': ' . $missing);
+        if ($this->fixture !== null) {
+            return $this->fixture[$path];
+        }
+        return (string) file_get_contents($this->plugin_root() . '/' . $path);
+    }
+
+    /**
+     * The path of an ES module's node under js/esm, without its extension.
+     *
+     * @param string $module An ES module's node.
+     * @param string $tree src or build.
+     * @return string
+     */
+    private function esm_path(string $module, string $tree): string {
+        return 'js/esm/' . $tree . '/' . substr($module, strlen(self::ESM));
+    }
+
+    /**
+     * One module's source.
+     *
+     * @param string $module The module's name, or an ES module's node.
+     * @return string
+     */
+    private function source(string $module = self::MODULE): string {
+        if (!str_starts_with($module, self::ESM)) {
+            return $this->read('amd/src/' . $module . '.js', 'The source is missing.');
+        }
+        $base = $this->esm_path($module, 'src');
+        return $this->read($this->exists($base . '.tsx') ? $base . '.tsx' : $base . '.ts', 'The source is missing.');
+    }
+
+    /**
+     * One module as the browser actually receives it: for an ES module, both builds Moodle may serve.
+     *
+     * @param string $module The module's name, or an ES module's node.
      * @return string
      */
     private function build(string $module = self::MODULE): string {
-        $path = $this->plugin_root() . '/amd/build/' . $module . '.min.js';
-        $this->assertFileExists($path, 'The build is missing: Moodle serves amd/build, never amd/src.');
-        return (string) file_get_contents($path);
+        if (!str_starts_with($module, self::ESM)) {
+            $missing = 'The build is missing: Moodle serves amd/build, never amd/src.';
+            return $this->read('amd/build/' . $module . '.min.js', $missing);
+        }
+        $base = $this->esm_path($module, 'build');
+        $production = $this->read($base . '.js', 'The build is missing: Moodle serves js/esm/build, never js/esm/src.');
+        $development = $this->read($base . '.dev.js', 'The development build is missing: it is served while JS is not cached.');
+        return $production . "\n" . $development;
     }
 
     /**
@@ -134,7 +195,17 @@ final class categorypublic_source_test extends \basic_testcase {
      * @return string
      */
     private function code(string $module = self::MODULE): string {
-        $code = (string) preg_replace('~/\*.*?\*/~s', '', $this->source($module));
+        return $this->uncommented($this->source($module));
+    }
+
+    /**
+     * A text without its block comments and its whole-line comments.
+     *
+     * @param string $text Source or build text.
+     * @return string
+     */
+    private function uncommented(string $text): string {
+        $code = (string) preg_replace('~/\*.*?\*/~s', '', $text);
         return (string) preg_replace('~^\s*//.*$~m', '', $code);
     }
 
@@ -158,12 +229,18 @@ final class categorypublic_source_test extends \basic_testcase {
      *
      * A module imported on first use (`import('...')`) ships to the visitor's page as surely as one in an
      * import line - only later - so the walk follows both, or a dynamic import would take a module out of
-     * the walk in silence.
+     * the walk in silence. An ES module's are read from its source and from both builds.
      *
-     * @param string $module The module's name.
+     * @param string $module The module's name, or an ES module's node.
      * @return string[]
      */
     private function imports(string $module): array {
+        if (str_starts_with($module, self::ESM)) {
+            // A build is minified, so the specifier is matched wherever an import or a from names one.
+            $text = $this->uncommented($this->source($module) . "\n" . $this->build($module));
+            preg_match_all('~\\b(?:from|import)\\s*\\(?\\s*(["\'])([^"\']+)\\1~', $text, $found);
+            return array_values(array_unique($found[2]));
+        }
         $source = $this->source($module);
         preg_match_all("~^import [^\n]* from '([^']+)';$~m", $source, $static);
         preg_match_all("~\\bimport\\('([^']+)'\\)~", $source, $dynamic);
@@ -171,9 +248,71 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * The theme modules a module loads, itself included, followed through every import.
+     * The theme modules one module loads, as nodes of the walk.
      *
-     * @param string $module The module's name.
+     * Its imports, read as a theme AMD module (`theme_dimensions/x`), a theme ES module
+     * (`@moodle/lms/theme_dimensions/x`, through `core/esm!` from AMD) or, from an ES module, a
+     * sibling by relative path; then every ES module it names in a string, which is how a React
+     * mount is asked for; and from an ES module every theme AMD module it names in a string, which
+     * is how the bridge is asked for one. A quoted `theme_dimensions/x` with no amd/src/x.js is a
+     * template's name and no edge.
+     *
+     * @param string $module The module's name, or an ES module's node.
+     * @return string[]
+     */
+    private function edges(string $module): array {
+        $esm = str_starts_with($module, self::ESM);
+        $text = $this->uncommented($this->source($module) . ($esm ? "\n" . $this->build($module) : ''));
+        $specifiers = $this->imports($module);
+        preg_match_all('~["\'\x60](?:core/esm!)?(@moodle/lms/theme_dimensions/[A-Za-z0-9_/.-]+)["\'\x60]~', $text, $mounts);
+        $specifiers = array_merge($specifiers, $mounts[1]);
+        if ($esm) {
+            preg_match_all('~["\'\x60](theme_dimensions/[a-z0-9_/]+)["\'\x60]~', $text, $quoted);
+            foreach ($quoted[1] as $name) {
+                if ($this->exists('amd/src/' . substr($name, strlen('theme_dimensions/')) . '.js')) {
+                    $specifiers[] = $name;
+                }
+            }
+        }
+        $edges = [];
+        foreach ($specifiers as $specifier) {
+            $specifier = (string) preg_replace('~^core/esm!~', '', $specifier);
+            if (str_starts_with($specifier, '@moodle/lms/theme_dimensions/')) {
+                $path = substr($specifier, strlen('@moodle/lms/theme_dimensions/'));
+                $edges[] = self::ESM . preg_replace('~\.(?:tsx?|jsx?)$~', '', $path);
+            } else if (str_starts_with($specifier, 'theme_dimensions/')) {
+                $edges[] = substr($specifier, strlen('theme_dimensions/'));
+            } else if ($esm && preg_match('~^\.\.?/~', $specifier)) {
+                $edges[] = self::ESM . $this->relative(substr($module, strlen(self::ESM)), $specifier);
+            }
+        }
+        return array_values(array_unique($edges));
+    }
+
+    /**
+     * The path under js/esm/src a relative specifier of an ES module names, without its extension.
+     *
+     * @param string $from The importing module's path under js/esm/src.
+     * @param string $specifier The relative specifier.
+     * @return string
+     */
+    private function relative(string $from, string $specifier): string {
+        $parts = explode('/', $from);
+        array_pop($parts);
+        foreach (explode('/', (string) preg_replace('~\.(?:tsx?|jsx?)$~', '', $specifier)) as $part) {
+            if ($part === '..') {
+                array_pop($parts);
+            } else if ($part !== '.' && $part !== '') {
+                $parts[] = $part;
+            }
+        }
+        return implode('/', $parts);
+    }
+
+    /**
+     * The theme modules a module loads, itself included, followed through every edge.
+     *
+     * @param string $module The module's name, or an ES module's node.
      * @return string[]
      */
     private function graph(string $module): array {
@@ -185,10 +324,8 @@ final class categorypublic_source_test extends \basic_testcase {
                 continue;
             }
             $seen[$current] = true;
-            foreach ($this->imports($current) as $import) {
-                if (str_starts_with($import, 'theme_dimensions/')) {
-                    $queue[] = substr($import, strlen('theme_dimensions/'));
-                }
+            foreach ($this->edges($current) as $edge) {
+                $queue[] = $edge;
             }
         }
         return array_keys($seen);
@@ -215,17 +352,48 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
+     * The walk crosses from AMD into the ES modules and back, which the visitor's rule depends on.
+     *
+     * Read over a fixture, because no visitor's module reaches an ES module yet: an AMD entry loads an
+     * ES module through `core/esm!`, a second one names it for a React mount, the ES module imports the
+     * bridge by relative path from a subdirectory, and the bridge asks RequireJS for a theme AMD
+     * module by its quoted name, in its build alone. A template's name beside it is no edge.
+     */
+    public function test_the_walk_crosses_into_the_es_modules_and_back(): void {
+        $this->fixture = [
+            'amd/src/entry.js' => "import Island from 'core/esm!@moodle/lms/theme_dimensions/local/Island';\n",
+            'amd/src/mounter.js' => "root.dataset.reactComponent = '@moodle/lms/theme_dimensions/local/Island';\n",
+            'amd/src/categorystar.js' => "export const init = () => null;\n",
+            'js/esm/src/local/Island.tsx' => "import {load} from '../amd';\nconst card = 'theme_dimensions/category_card';\n",
+            'js/esm/build/local/Island.js' => 'import{load as o}from"../amd";const c="theme_dimensions/category_card";',
+            'js/esm/build/local/Island.dev.js' => "import { load } from \"../amd\";\n",
+            'js/esm/src/amd.ts' => "import {requireAsync} from '@moodle/lms/core/amd';\n",
+            'js/esm/build/amd.js' => 'import{requireAsync as o}from"@moodle/lms/core/amd";'
+                . 'const s=()=>o("theme_dimensions/categorystar");',
+            'js/esm/build/amd.dev.js' => "import { requireAsync } from \"@moodle/lms/core/amd\";\n",
+        ];
+        $this->assertSame(['entry', self::ESM . 'local/Island', self::BRIDGE, 'categorystar'], $this->graph('entry'));
+        $this->assertSame(['mounter', self::ESM . 'local/Island', self::BRIDGE, 'categorystar'], $this->graph('mounter'));
+        $this->assertSame([self::BRIDGE], $this->edges(self::ESM . 'local/Island'), 'A template\'s name is no edge.');
+    }
+
+    /**
      * Nothing a visitor's page loads reads the session, stars a course or asks a logged-in service.
      *
      * The walk covers every theme module the visitor's module loads, and for each one its imports,
      * its source and its build: a logged-in import reached through the shared listing ships to the
-     * internet as surely as one in the entry file.
+     * internet as surely as one in the entry file. It starts from the bridge as well: every ES module
+     * reaches AMD through it, a visitor's component included, so it may reach nothing of a session
+     * itself, whether or not a visitor's module imports it yet.
      *
      * Changes that must make it fail: importing categorystar anywhere in the graph (the shared
-     * listing's marker import swapped for it); naming a logged-in service in any module of it.
+     * listing's marker import swapped for it); naming a logged-in service in any module of it; the
+     * bridge, in its source or either build, naming categorystar or core_user/repository.
      */
     public function test_its_whole_import_graph_reaches_nothing_of_a_session(): void {
-        $graph = $this->graph(self::MODULE);
+        $bridge = $this->graph(self::BRIDGE);
+        $this->assertContains(self::BRIDGE, $bridge, 'The control: the bridge is read.');
+        $graph = array_values(array_unique(array_merge($this->graph(self::MODULE), $bridge)));
         foreach (self::FORBIDDEN_MODULES as $module) {
             $this->assertNotContains($module, $graph, $module . ' is loaded on a visitor\'s page.');
         }
@@ -290,7 +458,9 @@ final class categorypublic_source_test extends \basic_testcase {
             if ($module === self::MODULE) {
                 continue;
             }
-            $this->assertNotContains('core/ajax', $this->imports($module), $module . ' calls a web service of its own.');
+            foreach (['core/ajax', '@moodle/lms/core/ajax'] as $ajax) {
+                $this->assertNotContains($ajax, $this->imports($module), $module . ' calls a web service of its own.');
+            }
             $this->assertStringNotContainsString('methodname:', $this->code($module), $module . ' names a method.');
         }
     }
