@@ -152,6 +152,61 @@ status: building the wrong directory exits 0. Everything else in this section ap
 worktree with its own stack and repository directory in place of the main checkout's — including
 the gate, `mdl ci <worktree directory> --branch MOODLE_503_STABLE`.
 
+## The ESM tree (R0)
+
+React and TypeScript live in `js/esm/src`, built to `js/esm/build`, tested in `js/esm/tests`
+(`docs/vitrine-react/PLAN.md` is the port they are for).
+
+- **A component never imports AMD; it goes through `js/esm/src/amd.ts`**, which loads through core's
+  `@moodle/lms/core/amd`. An AMD module the tree needs is added to the bridge's `Modules` type first, so
+  any other name is a type error. Strings and the pending counter are core 5.3's ES modules
+  (`@moodle/lms/core/stringUtils`, `@moodle/lms/core/pending`): import them, do not bridge them.
+  `esm_source_test` fails a second module that imports core's loader or calls RequireJS.
+- **`js/esm/src/.eslintrc` is block_compass's, rule for rule.** Core 5.3 has no react-hooks plugin, so a
+  disable comment naming `react-hooks/*` is an error; `no-unused-vars` keeps `args: "none"` for the
+  parameter names of function types.
+- **Build in a worktree by hand** (`mdl grunt` builds the wrong checkout, section above), over the 5.3
+  checkout's own `node_modules`, with no `npm install`:
+
+  ```sh
+  docker run --rm -v ~/dev/moodle-503:/app -v <worktree>:/app/public/theme/dimensions \
+    -v ~/dev/moodle-dev/bin/lib/esm-typecheck.sh:/mdl-esm-typecheck.sh:ro -w /app node:22-bookworm \
+    bash -lc 'npx --no-install grunt eslint:react --root=public/theme/dimensions --max-lint-warnings=0 \
+      && npx --no-install grunt jsconfig && . /mdl-esm-typecheck.sh && esm_typecheck public/theme/dimensions \
+      && npx --no-install grunt esm'
+  ```
+
+  `grunt esm` rebuilds every ES module of the core checkout too (byte for byte the same), and
+  `grunt jsconfig` rewrites core's gitignored `tsconfig.aliases.json` and `jsconfig.json` from what is
+  mounted: copy both aside first and put them back after, because other sessions' Jest and tsc read
+  them. Judge the run by the file times in the worktree's `js/esm/build`. Commit `X.js`, `X.dev.js` and
+  `X.dev.js.map` per source, and `js/esm/src/swizzle.json` when the build writes one (a `.tsx` that
+  exports a component); then `mdl purge` the stack, because a served ESM module is cached until the JS
+  revision moves.
+- **Jest runs offline under core's own `jest.config.js`**, with core's AMD mock (`mockAmdModule()`):
+
+  ```sh
+  mkdir -p /tmp/probe/public/theme/dimensions
+  docker run --rm --network none -v ~/dev/moodle-503:/src:ro -v /tmp/probe:/probe:ro \
+    -v <checkout>:/probe/public/theme/dimensions:ro -w /src node:22-bookworm \
+    bash -lc 'npx --no-install jest --ci --rootDir /src --roots /probe --modulePaths /src/node_modules --cacheDirectory /tmp/jc'
+  ```
+
+  Never create a mount point under `~/dev/moodle-503/public/` on the host: docker makes it there, inside
+  the checkout. The theme's stub at `public/theme/dimensions` is the one that exists.
+- **The gates.** `mdl ci <checkout> --branch MOODLE_503_STABLE`'s grunt step runs `tsc --noEmit` over
+  the plugin (`moodle-dev/bin/lib/esm-typecheck.sh`) and `esm_tree_check`, which rebuilds `js/esm` and
+  compares it whole with the committed tree: the gate for the minified `X.js`, which has no map. Its
+  eslint covers `amd/src` only: `grunt eslint:react` over `js/esm/src` runs in the build recipe above
+  (and `mdl grunt`), and nowhere in a pipeline, so run it before every commit of the tree. `tests/local/esm_source_test.php` holds what PHPUnit can see anywhere: the outputs per source
+  and nothing else, the development map's `sourcesContent` byte for byte, and the production build
+  importing what the development build imports. Jest is not in any pipeline yet; run it by hand.
+- **The visitor's import walk reads `js/esm`** (`categorypublic_source_test`): an AMD module reaches an ES
+  module through `core/esm!` or by naming `@moodle/lms/theme_dimensions/...` for a mount, an ES module
+  its siblings by relative import and theme AMD modules by quoted name through the bridge, and the walk
+  starts from the bridge as well as from `categorypublic`. So the bridge, and anything a visitor's
+  component imports, names nothing of a session, comments included.
+
 ## Code layout
 
 ```
