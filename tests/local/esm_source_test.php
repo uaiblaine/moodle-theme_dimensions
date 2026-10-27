@@ -96,7 +96,8 @@ final class esm_source_test extends \basic_testcase {
     private function specifiers(string $text): array {
         $code = (string) preg_replace('~/\*.*?\*/~s', '', $text);
         $code = (string) preg_replace('~^\s*//.*$~m', '', $code);
-        preg_match_all('~\b(?:from|import)\s*\(?\s*(["\'])([^"\']+)\1~', $code, $found);
+        // A keyword inside a string literal ("from") is no import, nor is a "specifier" across lines.
+        preg_match_all('~(?<!["\'])\b(?:from|import)\s*\(?\s*(["\'])([^"\'\n]+)\1~', $code, $found);
         $specifiers = array_values(array_unique($found[2]));
         sort($specifiers);
         return $specifiers;
@@ -144,14 +145,23 @@ final class esm_source_test extends \basic_testcase {
      * The production build loads what the development build beside it loads.
      *
      * Its bytes are mdl ci's to judge; a production file left from an older source would load another
-     * set of modules, which is also what the visitor's import walk reads.
+     * set of modules, which is also what the visitor's import walk reads. The one difference core's
+     * build makes on purpose is JSX's runtime: a development build of a component imports
+     * `react/jsx-dev-runtime` where the production one imports `react/jsx-runtime`, so the development
+     * name is read as the production one.
      *
      * Changes that must make it fail: a production build of an older source importing another module.
      */
     public function test_the_production_build_loads_what_the_development_build_loads(): void {
         foreach (array_keys($this->modules()) as $module) {
+            $development = $this->specifiers((string) file_get_contents($this->root() . '/build/' . $module . '.dev.js'));
+            $development = array_map(
+                fn(string $name): string => $name === 'react/jsx-dev-runtime' ? 'react/jsx-runtime' : $name,
+                $development
+            );
+            sort($development);
             $this->assertSame(
-                $this->specifiers((string) file_get_contents($this->root() . '/build/' . $module . '.dev.js')),
+                $development,
                 $this->specifiers((string) file_get_contents($this->root() . '/build/' . $module . '.js')),
                 "js/esm/build/{$module}.js does not load what its development build loads: it is stale."
             );

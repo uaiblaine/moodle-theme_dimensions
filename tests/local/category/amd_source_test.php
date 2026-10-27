@@ -1151,20 +1151,22 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('today: fieldset.dataset.today,', $mount);
         $this->assertStringContainsString('onpick: onpick,', $mount);
         $this->assertStringContainsString(
-            'const mountCalendar = () => Listing.mountCalendar(root, state, setRange);',
+            'const mountCalendar = () => Listing.mountCalendar(root, state, setRange, CALENDAR);',
             $this->source(),
-            'And this module hands it setRange, which fetches the period picked.'
+            'And this module hands it setRange, which fetches the period picked, and its own calendar.'
         );
-        $this->assertStringContainsString('fields.hidden = true;', $mount);
-        $this->assertStringContainsString('input.tabIndex = -1;', $mount);
         $this->assertMatchesRegularExpression(
-            '~if \(!mounted\) \{\s*return;~',
+            '~if \(!mounted\) \{\s*return;\s*\}\s*hideDateFields\(root\);\s*$~',
             $mount,
             'A calendar that did not mount leaves the two fields exactly as the server drew them.'
         );
+        $hide = $this->body('hideDateFields');
+        $this->assertStringContainsString('fields.hidden = true;', $hide);
+        $this->assertStringContainsString('input.tabIndex = -1;', $hide);
 
         $dates = $this->body('paintDates');
         $this->assertStringContainsString('DateRange.set(state.datefrom, state.dateto);', $dates);
+        $this->assertStringContainsString('tellCalendar(root.querySelector(SELECTORS.daterange), state);', $dates);
         $this->assertStringContainsString('input.value = state.datefrom;', $dates);
         $this->assertStringContainsString('input.value = state.dateto;', $dates);
     }

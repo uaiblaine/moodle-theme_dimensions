@@ -200,7 +200,7 @@ React and TypeScript live in `js/esm/src`, built to `js/esm/build`, tested in `j
   eslint covers `amd/src` only: `grunt eslint:react` over `js/esm/src` runs in the build recipe above
   (and `mdl grunt`), and nowhere in a pipeline, so run it before every commit of the tree. `tests/local/esm_source_test.php` holds what PHPUnit can see anywhere: the outputs per source
   and nothing else, the development map's `sourcesContent` byte for byte, and the production build
-  importing what the development build imports. Jest is not in any pipeline yet; run it by hand.
+  importing what the development build imports. Jest runs as `mdl ci`'s `jest` step (`--only jest`) and the reusable workflow's.
 - **The visitor's import walk reads `js/esm`** (`categorypublic_source_test`): an AMD module reaches an ES
   module through `core/esm!` or by naming `@moodle/lms/theme_dimensions/...` for a mount, an ES module
   its siblings by relative import and theme AMD modules by quoted name through the bridge, and the walk
@@ -3326,6 +3326,41 @@ What a maintainer must not lose:
 - **The modal partial stays a partial.** Inlining it into `category_card.mustache` would save
   `Engine::loadPartial()`'s re-hash, but `category_card_modal_test` and `card_markup_test` render it alone and
   two gates target its file: a copy kept for them would be a template nothing ships.
+
+## The category showcase: the calendar as a React component (R1, 2026-10-27)
+
+Stage R1 of `docs/vitrine-react/PLAN.md`. **Two calendars until R4, on the owner's decision**: the logged-in shell
+draws `js/esm/src/daterange/DateRange.tsx`, the visitor's keeps `amd/src/daterange.js`. A rule of the control
+changes in both, and in `model.ts` (the component's transitions, named after the AMD functions) as well.
+
+- **The contract is three events on the toolbar's `dim-daterange` region**, spelled in `categorylisting.js`
+  (`CALENDAR`) and `DateRange.tsx` (`EVENTS`), held equal by `daterange_component_source_test`: the component
+  sends `dim-daterange:mounted` once drawn and `:pick` (detail `{from, to}`, bubbling) where the AMD module called
+  `onpick`; the listing sends `:set` from `paintDates()` on both shells (no listener on the visitor's). The
+  listeners go on before the node; the fields hide in the mounted listener alone, and the listing tells the
+  period again there, for a quick option or Back pressed while the module was still loading.
+- **The specifier lives in `categoryvitrine` alone and reaches `mountCalendar()` as an argument.** The visitor's
+  import walk follows every `@moodle/lms/theme_dimensions/...` string of a shared module, so naming it in
+  `categorylisting` would put the component in the visitor's graph
+  (`test_the_visitors_graph_never_reaches_the_calendar_component`).
+- **The mount is an APPENDED child** with `data-react-props` the props object itself (`{id, firstday, today, from,
+  to}`): `react_autoinit` observes `childList` only. So the markup is region > mount node > `.dim-daterange`, one
+  block wrapper deeper than the AMD calendar; the popover still positions against the region.
+- **The component renders nothing until its eleven strings arrive** (`@moodle/lms/core/stringUtils`), holding
+  `theme_dimensions/daterange:mount` on core's pending counter until it says it is drawn; the mounted event goes
+  out from a layout effect, so the boxes appear and the fields hide in one frame. Without a valid `today` it draws
+  nothing and the fields stay. A string failure shows core's exception through the bridge.
+- **Focus across repaints**: cells are keyed by date, so a press within the months on screen keeps the focused
+  button; a change of months asks a layout effect to focus the day stood on, which runs before the focus-out
+  rule's timeout, as `focusDay()` does in the AMD module.
+- **Jest cannot move the process's timezone**: it hands a test a copy of `process.env`, so `TZ` set there never
+  reaches Node. `js/esm/tests/daterange/zone.ts` replaces Date's local-time methods with New York's 2026 rules for
+  a suite instead, with a control test; a local-time constructor is invisible to it, which is what the PHP source
+  test's `new Date(Date.UTC(` count is for.
+- **`grunt eslint:react` runs with `--fix`, and the fix WRITES empty docblocks** into the source for an arrow
+  function in an object literal (the block_compass trap of the `.eslintrc`). Lint a change with
+  `npx --no-install eslint --no-fix --max-warnings 0 public/theme/dimensions/js/esm/src` first, and write such a
+  table as a function.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 
