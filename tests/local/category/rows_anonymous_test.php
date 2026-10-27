@@ -266,7 +266,14 @@ final class rows_anonymous_test extends \advanced_testcase {
      */
     private static function cards(array|\stdClass $source): array {
         $cards = is_array($source) ? $source['cards'] : $source->cards;
-        return json_decode(json_encode($cards), true);
+        $cards = json_decode(json_encode($cards), true);
+        /* The one key a page and an answer for the same criteria tell apart on purpose: only the page's first
+           paint loads its first row at once (category_listing::FIRST_ROW), and a web service answer never is one.
+           test_a_visitors_fetch_is_the_anonymous_pages_card_for_card asserts the answer's side of it. */
+        foreach ($cards as $index => $card) {
+            $cards[$index]['eager'] = false;
+        }
+        return $cards;
     }
 
     /**
@@ -319,6 +326,7 @@ final class rows_anonymous_test extends \advanced_testcase {
             $answer = $this->ask($root, $args);
             $context = $this->page($root, $query);
             $this->assertSame(self::cards($context), self::cards($answer), $case . ': the cards, whole.');
+            $this->assertNotContains(true, array_column($answer['cards'], 'eager'), $case . ': an answer is never a first paint.');
             $this->assertSame(json_decode($context->vitrine)->total, $answer['total'], $case . ': the total.');
             $this->assertSame($context->countnumber, $answer['countnumber'], $case);
             $this->assertSame($context->countline, $answer['countline'], $case);

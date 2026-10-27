@@ -147,16 +147,21 @@ final class category_listing_test extends \advanced_testcase {
      *
      * @param array $options Criteria options.
      * @param string $view The view.
+     * @param bool $firstpaint Whether the listing is the page's own first paint, as the page's entries build it.
      * @return \stdClass The exported context.
      */
-    private function export(array $options = [], string $view = category_toolbar::VIEW_CARDS): \stdClass {
+    private function export(
+        array $options = [],
+        string $view = category_toolbar::VIEW_CARDS,
+        bool $firstpaint = false
+    ): \stdClass {
         global $PAGE;
         $PAGE->set_url('/course/index.php', ['categoryid' => $this->ids['root']]);
         // The page's own request asks for its posters (criteria::from_request()); a test may say otherwise.
         $criteria = new criteria($this->ids['root'], $options + ['withposters' => true]);
         $result = population::resolve($criteria);
         $category = core_course_category::get($this->ids['root'], MUST_EXIST, true);
-        $listing = new category_listing($category, $criteria, $result, $view);
+        $listing = new category_listing($category, $criteria, $result, $view, '', null, $firstpaint);
         return $listing->export_for_template($PAGE->get_renderer('core'));
     }
 
@@ -3024,5 +3029,68 @@ final class category_listing_test extends \advanced_testcase {
                 $this->assertContains((string) $cell['value'], $offered, 'Every cell drawn is one the group offers.');
             }
         }
+    }
+
+    /**
+     * The covers of the first row of the first page load at once, and every other cover lazily.
+     *
+     * A lazy image is not even requested before layout, and the first row is the top of what the reader sees: one of
+     * its covers is the page's largest paint when the category has no hero image. Below it, a later page, a grouped
+     * page whose posters open the listing and a panel keep the lazy load, which is what spares the page the covers
+     * nobody scrolls to. The posters that open a grouped page are its first row instead.
+     */
+    public function test_the_first_row_of_the_first_page_loads_its_covers_at_once(): void {
+        $this->become($this->seed());
+
+        $flat = array_values($this->export(['sort' => criteria::SORT_NAME], category_toolbar::VIEW_CARDS, true)->cards);
+        $this->assertGreaterThan(category_listing::FIRST_ROW, count($flat), 'Precondition: more cards than one row.');
+        $this->assertSame(
+            array_merge(
+                array_fill(0, category_listing::FIRST_ROW, true),
+                array_fill(0, count($flat) - category_listing::FIRST_ROW, false)
+            ),
+            array_map(static fn(\stdClass $card): bool => $card->eager, $flat),
+            'The first row of a flat listing, and no card past it.'
+        );
+
+        $options = ['sort' => criteria::SORT_NAME, 'pagesize' => 2, 'page' => 1];
+        $later = $this->export($options, category_toolbar::VIEW_CARDS, true)->cards;
+        $this->assertNotEmpty($later, 'Precondition: the second page has cards.');
+        $this->assertSame([false], array_unique(array_map(static fn(\stdClass $card): bool => $card->eager, $later)));
+
+        $grouped = $this->export([], category_toolbar::VIEW_CARDS, true);
+        $this->assertTrue($grouped->hasareas, 'Precondition: the grouped page opens on its posters.');
+        foreach ($grouped->cards as $card) {
+            $this->assertFalse($card->eager, 'Under the posters, the direct courses are not the first row.');
+        }
+        $this->assertTrue($grouped->areas['posters'][0]['eager'], 'The first poster is the first row of a grouped page.');
+
+        // The same flat request outside a first paint - what the web service answers - marks nothing.
+        $answer = $this->export(['sort' => criteria::SORT_NAME]);
+        $this->assertSame([false], array_unique(array_map(static fn(\stdClass $card): bool => $card->eager, $answer->cards)));
+    }
+
+    /**
+     * The page's two entries build the listing as its first paint, and the web service never does.
+     *
+     * Nothing renders differently enough for a test of the page to notice a lost flag - a lazy first row still
+     * loads - so the three places a listing is built are read for it.
+     */
+    public function test_the_page_entries_and_only_they_ask_for_the_first_paint(): void {
+        $root = dirname(__DIR__, 2);
+        $this->assertStringContainsString(
+            '$listing = new category_listing($coursecat, $criteria, $result, $view, $manageactions, $pages, true);',
+            (string) file_get_contents($root . '/classes/output/core/course_renderer.php')
+        );
+        $this->assertStringContainsString(
+            "\$listing = new category_listing(\$category, \$criteria, \$result, \$view, '', "
+                . "category_pages::export(\$categoryid), true);",
+            (string) file_get_contents($root . '/classes/local/category/request.php')
+        );
+        $this->assertStringContainsString(
+            '$listing = new category_listing($category, $criteria, $result, category_toolbar::VIEW_CARDS);',
+            (string) file_get_contents($root . '/classes/local/category/rows.php'),
+            'The web service answers a filter, a panel or a later page: never a first paint.'
+        );
     }
 }

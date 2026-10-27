@@ -95,6 +95,7 @@
         "style": "--dim-card-band: #0a4a85; --dim-card-ink: #ffffff;",
         "imageurl": "https://example.com/pluginfile.php/31/theme_dimensions/categorycover/7/abc/capa.jpg",
         "hasimage": true,
+        "eager": true,
         "hasvideo": true,
         "videourl": "https://example.com/pluginfile.php/31/theme_dimensions/categorycovervideo/7/def/capa.mp4",
         "videotype": "video/mp4",
@@ -121,7 +122,7 @@
     <div class="dim-poster__card" data-region="dim-cover-media">
         <div class="dim-poster__media">
             {{#hasimage}}
-            <img class="dim-poster__img" src="{{imageurl}}" alt="" loading="lazy" decoding="async" width="560" height="315">
+            <img class="dim-poster__img" src="{{imageurl}}" alt=""{{^eager}} loading="lazy"{{/eager}} decoding="async" width="560" height="315">
             {{/hasimage}}
             {{#hasvideo}}
             <video class="dim-poster__video" data-region="dim-cover-video" muted playsinline loop preload="none">
@@ -136,7 +137,7 @@
             {{#hasbadges}}
             <ul class="dim-poster__crests" role="list" aria-label="{{badgeslabel}}" data-region="dim-card-crests">
                 {{#badges}}
-                <li class="dim-poster__crest"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
+                <li class="dim-poster__crest"><img src="{{url}}" alt="{{alt}}" width="48" height="53" loading="lazy" decoding="async"></li>
                 {{/badges}}
             </ul>
             {{/hasbadges}}

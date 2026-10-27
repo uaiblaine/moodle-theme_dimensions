@@ -154,14 +154,20 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * Every module a module imports, core's and the theme's, as written in its import lines.
+     * Every module a module imports, core's and the theme's: its import lines, then its dynamic imports.
+     *
+     * A module imported on first use (`import('...')`) ships to the visitor's page as surely as one in an
+     * import line - only later - so the walk follows both, or a dynamic import would take a module out of
+     * the walk in silence.
      *
      * @param string $module The module's name.
      * @return string[]
      */
     private function imports(string $module): array {
-        preg_match_all("~^import [^\n]* from '([^']+)';$~m", $this->source($module), $matches);
-        return $matches[1];
+        $source = $this->source($module);
+        preg_match_all("~^import [^\n]* from '([^']+)';$~m", $source, $static);
+        preg_match_all("~\\bimport\\('([^']+)'\\)~", $source, $dynamic);
+        return array_merge($static[1], $dynamic[1]);
     }
 
     /**

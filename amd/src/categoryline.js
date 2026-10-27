@@ -59,7 +59,9 @@
  *
  * Pointing at a filter, or walking the suggestions with the arrows, lights the cards it would keep: the
  * preview is categorypreview's, armed here over the same form, and told which control the active
- * suggestion names ({@see activate}).
+ * suggestion names ({@see activate}). It is imported on first use - the first pointer or focus on the
+ * toolbar, or the first suggestion walked to ({@see loadPreview}) - not with the page: a reader who
+ * never points at a filter never loads it.
  *
  * Nothing here calls a web service, reads the session or composes a word: the visitor's module
  * imports it (categorypublic_source_test walks that graph). Every label, legend and count it shows
@@ -72,7 +74,6 @@
  */
 
 import Pending from 'core/pending';
-import * as Preview from 'theme_dimensions/categorypreview';
 
 /** @type {Object} Every hook this module reads, all of them written by the toolbar's template. */
 const SELECTORS = {
@@ -184,6 +185,104 @@ const state = {
     width: -1,
     active: -1,
     items: [],
+};
+
+/** @type {Element|null} The listing whose cards the preview lights. */
+let listing = null;
+
+/** @type {Object|null} The preview (theme_dimensions/categorypreview) once imported and armed. */
+let preview = null;
+
+/** @type {Promise|null} The preview's import, once started. */
+let previewing = null;
+
+/**
+ * The control the active suggestion names, or null.
+ *
+ * @return {Element|null}
+ */
+const activeControl = () => (state.open && state.active >= 0 ? state.items[state.active].control : null);
+
+/**
+ * Import the preview and arm it over the form, once; the first-use listeners go when it is armed.
+ *
+ * Pending while it loads, so nothing that waits for the page reads it half-armed.
+ *
+ * @return {Promise} Resolving with the preview once it listens.
+ */
+const loadPreview = () => {
+    if (previewing === null) {
+        const pending = new Pending('theme_dimensions/categoryline:preview');
+        previewing = import('theme_dimensions/categorypreview')
+            .then((Module) => {
+                Module.arm(listing, form, {
+                    controlOf: (option) => {
+                        const item = state.items[Number(option.dataset.index)];
+                        return item ? item.control : null;
+                    },
+                });
+                preview = Module;
+                form.removeEventListener('pointerover', onPreviewIntent, true);
+                form.removeEventListener('focusin', onPreviewIntent, true);
+                return Module;
+            })
+            .finally(() => pending.resolve());
+    }
+    return previewing;
+};
+
+/**
+ * The first pointer or focus on the toolbar: import the preview, and tell it of what started the import.
+ *
+ * The preview's own listeners come after the event that loaded it, so the event is given again, to the
+ * same control, while it still holds: the pointer still over it, the focus still on it.
+ *
+ * @param {Event} event The pointerover or the focusin.
+ * @return {void}
+ */
+const onPreviewIntent = (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) {
+        return;
+    }
+    loadPreview().then(() => {
+        if (event.type === 'pointerover' && target.matches(':hover')) {
+            target.dispatchEvent(new PointerEvent('pointerover', {
+                bubbles: true,
+                pointerType: event.pointerType,
+                isPrimary: event.isPrimary,
+            }));
+        } else if (event.type === 'focusin' && document.activeElement === target) {
+            target.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
+        }
+        return null;
+    }).catch(() => null);
+};
+
+/**
+ * The preview as the line asks it: nothing to clear or refresh before it is loaded, and a suggestion walked to
+ * before then imports it and is previewed once it is armed.
+ *
+ * @type {Object}
+ */
+const Preview = {
+    show: (control) => {
+        if (preview) {
+            preview.show(control);
+        } else if (control) {
+            loadPreview().then((Module) => Module.show(activeControl())).catch(() => null);
+        }
+    },
+    clear: () => {
+        if (preview) {
+            preview.clear();
+        }
+    },
+    refresh: () => {
+        if (preview) {
+            preview.refresh();
+        }
+    },
 };
 
 /**
@@ -1183,12 +1282,9 @@ export const arm = (root, options) => {
     listenSearch();
     listenLayers();
     listenRows();
-    Preview.arm(root, form, {
-        controlOf: (option) => {
-            const item = state.items[Number(option.dataset.index)];
-            return item ? item.control : null;
-        },
-    });
+    listing = root;
+    form.addEventListener('pointerover', onPreviewIntent, true);
+    form.addEventListener('focusin', onPreviewIntent, true);
     remember();
     fit();
     // The line's own width, never the viewport's: a drawer opening changes the one and not the other.

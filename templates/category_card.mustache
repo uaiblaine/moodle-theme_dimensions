@@ -149,7 +149,7 @@
 <article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}>
     <div class="dim-card__media{{#hasimage}} dim-card__media--image{{/hasimage}}">
         {{#hasimage}}
-        <img class="dim-card__image" src="{{imageurl}}" alt="" loading="lazy" decoding="async" width="320" height="150">
+        <img class="dim-card__image" src="{{imageurl}}" alt=""{{^eager}} loading="lazy"{{/eager}} decoding="async" width="320" height="150">
         {{/hasimage}}
         {{#datetile}}
         <span class="dim-card__datetile"><b>{{day}}</b><span>{{month}}</span></span>
@@ -172,7 +172,7 @@
             {{#hasbadges}}
             <ul class="dim-card__crests" role="list" aria-label="{{badgeslabel}}" data-region="dim-card-crests">
                 {{#badges}}
-                <li class="dim-card__crest"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
+                <li class="dim-card__crest"><img src="{{url}}" alt="{{alt}}" width="80" height="88" loading="lazy" decoding="async"></li>
                 {{/badges}}
             </ul>
             {{/hasbadges}}

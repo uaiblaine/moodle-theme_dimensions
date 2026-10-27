@@ -168,7 +168,7 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
         $manageactions = $isroot ? '' : (new category_actions($this->page, $coursecat))->render_actions($this);
         // The pages strip is built by the page's two entries, never by the listing's export: see category_pages.
         $pages = category_pages::export($categoryid);
-        $listing = new category_listing($coursecat, $criteria, $result, $view, $manageactions, $pages);
+        $listing = new category_listing($coursecat, $criteria, $result, $view, $manageactions, $pages, true);
 
         /* The listing's client modules belong to THIS shell and to no other. The anonymous shell
            draws the same listing but pages and searches by GET with no web service, and both

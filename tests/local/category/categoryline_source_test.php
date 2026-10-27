@@ -420,10 +420,12 @@ final class categoryline_source_test extends \basic_testcase {
             'amd/build/categoryline is not this source: rebuild it with grunt amd and commit the build.'
         );
         preg_match_all("~^import [^\n]* from '([^']+)';$~m", $this->source(), $imports);
+        $this->assertSame(['core/pending'], $imports[1], 'It imports core\'s pending tracker with the page, and nothing else.');
+        preg_match_all("~\\bimport\\('([^']+)'\\)~", $this->source(), $dynamic);
         $this->assertSame(
-            ['core/pending', 'theme_dimensions/categorypreview'],
-            $imports[1],
-            'It imports core\'s pending tracker and the preview, and nothing else.'
+            ['theme_dimensions/categorypreview'],
+            $dynamic[1],
+            'The preview is imported on first use, and nothing else is.'
         );
     }
 
@@ -440,11 +442,10 @@ final class categoryline_source_test extends \basic_testcase {
      * replaced.
      */
     public function test_the_line_previews_the_active_suggestion_and_refreshes_after_an_answer(): void {
-        $arm = $this->body('arm');
         $this->assertMatchesRegularExpression(
-            '~Preview\.arm\(root, form, \{\s*controlOf: \(option\) => \{\s*'
+            '~Module\.arm\(listing, form, \{\s*controlOf: \(option\) => \{\s*'
                 . 'const item = state\.items\[Number\(option\.dataset\.index\)\];\s*return item \? item\.control : null;~',
-            $arm
+            $this->body('loadPreview')
         );
         $this->assertStringContainsString(
             'Preview.show(state.active >= 0 ? state.items[state.active].control : null);',
@@ -456,5 +457,31 @@ final class categoryline_source_test extends \basic_testcase {
             $this->body('render')
         );
         $this->assertMatchesRegularExpression('~render\(\);\s*Preview\.refresh\(\);~', $this->body('repaint'));
+    }
+
+    /**
+     * The preview is imported on first use: the first pointer or focus on the toolbar, or a suggestion walked to.
+     *
+     * Changes that must make it fail: the preview armed with the page (it would load for every reader again); the
+     * first-use listeners left on once it is armed; the event that loaded it not given again, so the first filter
+     * pointed at previews nothing; a replay under a pointer that has already left; nothing pending while it loads.
+     */
+    public function test_the_preview_is_imported_on_first_use(): void {
+        $arm = $this->body('arm');
+        $this->assertStringContainsString("form.addEventListener('pointerover', onPreviewIntent, true);", $arm);
+        $this->assertStringContainsString("form.addEventListener('focusin', onPreviewIntent, true);", $arm);
+        $this->assertStringNotContainsString('.arm(', $arm, 'The preview is not armed with the page.');
+
+        $load = $this->body('loadPreview');
+        $this->assertStringContainsString("new Pending('theme_dimensions/categoryline:preview')", $load);
+        $this->assertStringContainsString("import('theme_dimensions/categorypreview')", $load);
+        $this->assertStringContainsString("form.removeEventListener('pointerover', onPreviewIntent, true);", $load);
+        $this->assertStringContainsString("form.removeEventListener('focusin', onPreviewIntent, true);", $load);
+        $this->assertStringContainsString('.finally(() => pending.resolve());', $load);
+
+        $intent = $this->body('onPreviewIntent');
+        $this->assertStringContainsString("event.type === 'pointerover' && target.matches(':hover')", $intent);
+        $this->assertStringContainsString("event.type === 'focusin' && document.activeElement === target", $intent);
+        $this->assertStringContainsString("new PointerEvent('pointerover', {", $intent);
     }
 }

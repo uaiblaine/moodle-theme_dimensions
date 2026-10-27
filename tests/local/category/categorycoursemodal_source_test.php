@@ -127,7 +127,8 @@ final class categorycoursemodal_source_test extends \basic_testcase {
      */
     public function test_the_dialogue_is_core_modal_with_the_plugins_root_class_and_the_focus_returned(): void {
         $source = $this->source();
-        $this->assertStringContainsString("import Modal from 'core/modal';", $source);
+        // Imported on the first press, not with the page: see test_core_modal_is_imported_on_the_first_press.
+        $this->assertStringContainsString("const Modal = await import('core/modal');", $this->body('open'));
         $this->assertStringContainsString("const TEMPLATE = 'theme_dimensions/category_course_modal';", $source);
         $this->assertStringContainsString("const ROOT_CLASS = 'dim-cmodal';", $source);
         $open = $this->body('open');
@@ -220,5 +221,22 @@ final class categorycoursemodal_source_test extends \basic_testcase {
         $build = (string) file_get_contents($this->plugin_root() . '/amd/build/categorycoursemodal.min.js');
         $this->assertStringContainsString('dim-card-modal', $build);
         $this->assertStringContainsString('theme_dimensions/category_course_modal', $build);
+    }
+
+    /**
+     * core/modal is imported on the first press, and the press is pending until the dialogue is on screen.
+     *
+     * Changes that must make it fail: the modal stack imported with the page again (every reader pays for a dialogue
+     * most never open); the press not held as pending, so a reader of the page (Behat) finds neither the disclosure
+     * nor the dialogue between the press and the import; the pending never resolved, so the page never settles.
+     */
+    public function test_core_modal_is_imported_on_the_first_press(): void {
+        preg_match_all("~^import [^\n]* from '([^']+)';$~m", $this->source(), $imports);
+        $this->assertSame(['core/pending'], $imports[1], 'Only core\'s pending tracker is imported with the page.');
+        $click = $this->body('onClick');
+        $this->assertStringContainsString("const pending = new Pending('theme_dimensions/categorycoursemodal:open');", $click);
+        $this->assertStringContainsString('pending.resolve();', $click);
+        $this->assertStringContainsString('.catch(report)', $click);
+        $this->assertStringContainsString("await import('core/notification');", $this->body('report'));
     }
 }

@@ -537,7 +537,14 @@ final class get_public_category_rows_test extends \advanced_testcase {
         foreach ($cases as $case => [$args, $query]) {
             $answer = $this->ask(['categoryid' => $root] + $args);
             $context = $this->page($root, $query);
-            $this->assertSame($clean('cards', $context->cards), $answer['cards'], $case . ': the cards, whole.');
+            /* Only the page's first paint loads its first row at once (category_listing::FIRST_ROW); an answer
+               never is one, so the page's cards are compared with that one key set as an answer sets it. */
+            $this->assertNotContains(true, array_column($answer['cards'], 'eager'), $case . ': an answer is never a first paint.');
+            $pagecards = $clean('cards', $context->cards);
+            foreach ($pagecards as $index => $card) {
+                $pagecards[$index]['eager'] = false;
+            }
+            $this->assertSame($pagecards, $answer['cards'], $case . ': the cards, whole.');
             $this->assertSame(json_decode($context->vitrine)->total, $answer['total'], $case);
             foreach (['countnumber', 'countline', 'seeallurl', 'nexturl', 'clearurl', 'hasfilters'] as $key) {
                 $this->assertSame($context->$key, $answer[$key], "{$case}: {$key}.");
