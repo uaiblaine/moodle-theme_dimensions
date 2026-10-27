@@ -3244,6 +3244,51 @@ must not lose:
   both import lines and `import('...')`. A walk that read only import lines would let a module loaded on first
   use leave the walk in silence.
 
+## The performance probe (R0)
+
+Section 5.4 of `docs/vitrine-react/PLAN.md`. Three instruments; only the first is a gate.
+
+- **The gate: the deterministic counts, in PHPUnit.** `tests/output/core/first_paint_budget_test.php` holds the
+  bytes one card costs and the rest of a listing costs (a slope, four cards against twenty-four), the hero's bytes,
+  and EXACTLY the theme's AMD modules and strings_for_js a page asks for at load, on the logged-in shell and on the
+  visitor's; `budget_test` and `course_renderer_test` hold the statements. A byte ceiling is the measurement plus
+  3 % (two runs differed by 1.3 %); a module list is exact, so a module added to or moved off the first paint
+  changes the list in the same change. Filters' modules (MathJax) are the site's and are not compared.
+- **The meter: `docs/vitrine-react/probe/loadprobe.php`** (export-ignored, phpcs-ignored). `--seed` builds the
+  5,000-course subtree idempotently (fields, covers on a third, a quarter public, unlisted and hidden ones, enrol
+  shapes, a student and a manager with random passwords nobody types, a branded root); `--run` meters the REAL
+  entries (`course_category()` + `full_header()` as student/manager/admin, `request::handle()` + render as the
+  visitor), warm or `--cold`, as a table or `--json`. The stack mounts the live checkout, so run a copy:
+  `docker cp docs/vitrine-react/probe/loadprobe.php m503b-webserver-1:/tmp/loadprobe.php`, then
+  `docker exec -u www-data m503b-webserver-1 php /tmp/loadprobe.php --seed` (or `--run --viewer=visitor --cold`).
+  **The 5,000-course set lives on m503b and the owner keeps it for tests: never delete it.** Its numbers carry
+  Xdebug unless the stack's Xdebug is off (`mdl xdebug`); compare runs of one configuration only.
+- **The trend: the browser probe**, `tests/behat/theme_dimensions_perf.feature` (`@theme_dimensions_perf`, one
+  tag per scenario) over `behat_theme_dimensions_perf` and the engine `tests/behat/theme_dimensions_perf_probe.php`.
+  It SKIPS unless the site opts in: `$CFG->theme_dimensions_perfprobe = true;` (or an array overriding the
+  engine's `DEFAULTS`: runs, cpu, latency, download, upload, quiet, timeout) in the stack's `config.php`, or
+  `THEME_DIMENSIONS_PERFPROBE=1` in the runner's environment (`mdl behat` does not pass one through). Then
+  `mdl behat m503b @theme_dimensions_perf` on a stack that mounts the checkout under test; every probe step loads its
+  page five times under 4x CPU and a 150 ms / 1.6 Mbps network and writes every run and the medians to
+  `~/dev/moodle-dev/data/<stack>/faildumps/theme_dimensions_perf/`. FCP, LCP, TBT, CLS and INP are a trend and an
+  A/B measure until the hosts' noise is known; the browser's counts (scripts and stylesheets before load, their
+  bytes, DOM nodes, HTML bytes) are read from the COLD series, because a warm load answers most requests from
+  memory and reports fewer of them.
+- **How the engine measures, and why each piece is there.** CDP goes over chromedriver's vendor endpoint
+  (`POST /session/{id}/goog/cdp/execute`, php-webdriver's `ChromeDevToolsDriver`), which the Selenium grid forwards
+  (measured on m503b's 4.46 grid). The collector is registered with `Page.addScriptToEvaluateOnNewDocument`, before
+  any page script, so no entry type depends on the browser buffering it for a late observer. A page is settled
+  when it is loaded, `M.util.pending_js` is empty and no entry arrived for two seconds. The press for INP is a real
+  WebDriver click, so the browser counts it as an interaction.
+- **The dev site from the grid**: the Selenium container reaches the dev site, not only the Behat site at
+  `webserver`, through Chrome's `--host-resolver-rules=MAP localhost:9503 webserver:80` (the Host header stays the
+  dev site's). That is how the engine was proved against m503b's seeded visitor page outside Behat.
+- **The stacks run `cachejs` off**, so a page asks for its AMD modules one by one (95 scripts before load on the
+  visitor's page, cold). For production-like numbers measure under `mdl fast <stack> on`, and say which.
+- **Seed every discoverability state explicitly.** local_unlistedcourses' creation default can be unlisted (it
+  was on m503b): a seed that sets only the public courses measures a catalogue of unlisted ones, whose cost is the
+  plugin's probe cap (a few statements per unrelated unlisted course, up to fifty), not the showcase.
+
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 
 The design record is the fleet's `moodle-dev/docs/enrolment-status-matrix/` (decisions D1-D8, the owner's answers

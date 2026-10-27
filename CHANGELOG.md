@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The performance probe of the category showcase** (R0 of `docs/vitrine-react/PLAN.md`, section 5.4; no version
+  change: tests and a development script only). `tests/output/core/first_paint_budget_test.php` gates what a first
+  paint costs without a browser: the HTML bytes of a card and of the rest of a listing, the hero's bytes, and exactly
+  the theme's AMD modules and strings_for_js a page asks for at load, logged in and as a visitor. The browser probe,
+  `tests/behat/theme_dimensions_perf.feature` (`@theme_dimensions_perf`), loads a flat page with covers, the course
+  index, a grouped page and a visitor's public page five times under 4x CPU and a slow network (Chrome DevTools
+  through chromedriver), reads FCP, LCP, TBT, CLS, the INP of one press and the request counts from the browser's own
+  entries, and writes the runs and their medians as JSON under the faildumps; it skips unless the site opts in
+  (`$CFG->theme_dimensions_perfprobe` or `THEME_DIMENSIONS_PERFPROBE`). `docs/vitrine-react/probe/loadprobe.php`
+  (export-ignored) seeds the 5,000-course data set and meters the real server entries, warm and cold.
 - **The theme has an ES module tree, `js/esm`, and nothing uses it yet** (2026100525; R0 of `docs/vitrine-react/PLAN.md`,
   the tooling half). `js/esm/src/amd.ts` (`@moodle/lms/theme_dimensions/amd`) is the one door from the theme's ES modules
   to AMD: `load()` and `loadMany()` over core's `@moodle/lms/core/amd`, typed to the two modules R1 needs
