@@ -129,6 +129,12 @@ const REMEMBER_WAIT = 1000;
 /** @type {String} The body class which hides the no-JavaScript submit and shows what only this module drives. */
 const BODY_CLASS = 'dim-js';
 
+/**
+ * @type {String} The calendar of this shell: the React component of stage R1, appended by the shared
+ * mountCalendar(). Named here and nowhere the visitor's modules reach, which keep the AMD calendar.
+ */
+const CALENDAR = '@moodle/lms/theme_dimensions/daterange/DateRange';
+
 /** @type {Number} Milliseconds of quiet before a typed term is sent. */
 const SEARCH_DEBOUNCE = 300;
 
@@ -289,7 +295,7 @@ const paintPager = (response, append, first) => Listing.paintPager(root, respons
 const paintGrid = (grid, items, append) => Listing.paintGrid(root, state, grid, items, append, discard);
 const paintDirect = (response) => Listing.paintDirect(root, response);
 const armTreebox = () => Listing.armTreebox(root);
-const mountCalendar = () => Listing.mountCalendar(root, state, setRange);
+const mountCalendar = () => Listing.mountCalendar(root, state, setRange, CALENDAR);
 
 /**
  * The web service's arguments for a page of this request: the term alone at the root.

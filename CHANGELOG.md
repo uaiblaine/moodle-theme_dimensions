@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The logged-in showcase's calendar is a React component** (2026100527; R1 of `docs/vitrine-react/PLAN.md`).
+  `js/esm/src/daterange/DateRange.tsx` (`@moodle/lms/theme_dimensions/daterange/DateRange`) draws the template
+  `category_daterange`'s markup hook for hook, over `daterange/model.ts` (the draft, its three ways out, the press
+  rules and the clears, function for function as `amd/src/daterange.js`) and `daterange/calendar.ts` (the `{y, m, d}`
+  arithmetic through `Date.UTC`; the site's today and first weekday from the server, never the browser's clock). The
+  shared `mountCalendar()` appends it to the toolbar's region only when the caller names it, which only
+  `categoryvitrine` does; the two talk through `dim-daterange:mounted`, `:pick` and `:set` on the region, and the
+  native date fields hide only once the component says it is drawn. The visitor's shell keeps the AMD calendar until
+  R4, and its import graph is unchanged. Jest covers the component (`js/esm/tests/daterange`, in a zone west of UTC
+  with daylight saving); new `daterange_component_source_test` pins the AMD half and the absence of timezone
+  arithmetic, five new `js_calendar_*` gates break it. No database change; the first paint's module and string lists
+  are unchanged.
 - **The showcase's first paint costs less per card** (2026100526; R0 of the performance plan, after
   a measured review of the server render). A card's landing page values are read for the ten fields a card shows
   (`cards::CARD_SHORTNAMES`, passed to `landingfields::values_many()`'s new `$only`), with one default controller

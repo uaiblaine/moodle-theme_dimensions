@@ -134,6 +134,18 @@ const EVENTS = {
     view: 'dim-vitrine:view',
 };
 
+/**
+ * @type {Object} The events the logged-in shell's calendar component and this module exchange on the
+ * toolbar's dim-daterange region: js/esm/src/daterange/DateRange.tsx spells the same three names. The
+ * component says it is drawn (mounted) and that the reader changed the period (pick, detail {from,
+ * to}); this module tells it the period the address says (set, the same detail), silently.
+ */
+const CALENDAR = {
+    pick: 'dim-daterange:pick',
+    set: 'dim-daterange:set',
+    mounted: 'dim-daterange:mounted',
+};
+
 /** @type {String} The card partial: one template, one row schema, page one and every later page. */
 const CARD_TEMPLATE = 'theme_dimensions/category_card';
 
@@ -593,6 +605,7 @@ export const markTree = (root, state) => {
  */
 export const paintDates = (root, state) => {
     DateRange.set(state.datefrom, state.dateto);
+    tellCalendar(root.querySelector(SELECTORS.daterange), state);
     const fields = root.querySelector(SELECTORS.dateinputs);
     if (!fields) {
         return;
@@ -1271,7 +1284,7 @@ export const armTreebox = (root) => {
 };
 
 /**
- * Mount the calendar over the two native date fields, and hide them behind it.
+ * Hide the two native date fields behind a calendar that is up.
  *
  * The fields are hidden and not removed: they are the form's own transport, the client keeps
  * their values in step, and a control removed from the document is a control that cannot come
@@ -1280,14 +1293,95 @@ export const armTreebox = (root) => {
  * so that nothing which unhides a field by CSS alone can put it silently back in.
  *
  * @param {HTMLElement} root The listing section.
+ * @return {void}
+ */
+const hideDateFields = (root) => {
+    const fields = root.querySelector(SELECTORS.dateinputs);
+    if (fields) {
+        fields.hidden = true;
+        fields.querySelectorAll('input[type="date"]').forEach((input) => {
+            input.tabIndex = -1;
+        });
+    }
+};
+
+/**
+ * Tell the calendar component the period the state holds, without it telling anybody back.
+ *
+ * Sent on every paint of the period, on both shells: the visitor's region holds the AMD calendar,
+ * which listens to nothing, so there the event reaches no one.
+ *
+ * @param {HTMLElement|null} region The toolbar's calendar region.
+ * @param {Object} state The calling module's state.
+ * @return {void}
+ */
+const tellCalendar = (region, state) => {
+    if (region) {
+        region.dispatchEvent(new CustomEvent(CALENDAR.set, {detail: {from: state.datefrom, to: state.dateto}}));
+    }
+};
+
+/**
+ * Append the calendar component to its region: the logged-in shell's calendar since stage R1.
+ *
+ * Core's react_autoinit watches added nodes and never attributes, so the mount is a NEW child carrying
+ * the component's name and its props, which are the props object itself: an object nested under a key
+ * of its own renders nothing. Both listeners are in place before the node goes in, so no event of the
+ * component can arrive before there is somebody to hear it. The fields are hidden only once the
+ * component says it is drawn, which it never says without the site's today: then they stay as the
+ * server drew them. The period is told again at that moment, because the reader may have pressed a
+ * quick option or Back while the component was still on its way.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {HTMLElement} fieldset The period's fieldset, carrying the site's today and first weekday.
+ * @param {HTMLElement} region The empty region the calendar goes into.
  * @param {Object} state The calling module's state.
  * @param {Function} onpick Called with the two bounds of the period whenever the reader changes it.
- * @return {Promise} Resolving when the calendar is up, or at once when there is no toolbar.
+ * @param {String} component The component's specifier, which only the logged-in shell names.
+ * @return {void}
  */
-export const mountCalendar = async(root, state, onpick) => {
+const appendCalendar = (root, fieldset, region, state, onpick, component) => {
+    region.addEventListener(CALENDAR.pick, (event) => {
+        onpick(event.detail.from, event.detail.to);
+    });
+    region.addEventListener(CALENDAR.mounted, () => {
+        hideDateFields(root);
+        tellCalendar(region, state);
+    }, {once: true});
+    const node = document.createElement('div');
+    node.dataset.reactComponent = component;
+    node.dataset.reactProps = JSON.stringify({
+        id: state.categoryid,
+        firstday: fieldset.dataset.firstday,
+        today: fieldset.dataset.today,
+        from: state.datefrom,
+        to: state.dateto,
+    });
+    region.append(node);
+};
+
+/**
+ * Mount the calendar over the two native date fields, and hide them behind it.
+ *
+ * Two calendars until stage R4 of docs/vitrine-react/PLAN.md: the logged-in shell names the React
+ * component, and only through `component` - this module is the visitor's as well, and the visitor's
+ * import walk (categorypublic_source_test) follows every module a shared one names - while the
+ * visitor's shell passes nothing and keeps the AMD module.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {Object} state The calling module's state.
+ * @param {Function} onpick Called with the two bounds of the period whenever the reader changes it.
+ * @param {String} component The React component to append instead of the AMD calendar, or the empty string.
+ * @return {Promise} Resolving when the calendar is up (or appended), or at once when there is no toolbar.
+ */
+export const mountCalendar = async(root, state, onpick, component = '') => {
     const fieldset = root.querySelector(SELECTORS.date);
     const region = fieldset ? fieldset.querySelector(SELECTORS.daterange) : null;
     if (!region) {
+        return;
+    }
+    if (component !== '') {
+        appendCalendar(root, fieldset, region, state, onpick, component);
         return;
     }
     const mounted = await DateRange.mount(region, {
@@ -1301,11 +1395,5 @@ export const mountCalendar = async(root, state, onpick) => {
     if (!mounted) {
         return;
     }
-    const fields = root.querySelector(SELECTORS.dateinputs);
-    if (fields) {
-        fields.hidden = true;
-        fields.querySelectorAll('input[type="date"]').forEach((input) => {
-            input.tabIndex = -1;
-        });
-    }
+    hideDateFields(root);
 };

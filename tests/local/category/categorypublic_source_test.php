@@ -378,6 +378,38 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
+     * The visitor's page never reaches the logged-in shell's calendar component, which the walk does see.
+     *
+     * Two calendars until stage R4 of docs/vitrine-react/PLAN.md: the logged-in module names the React
+     * component and hands it to the shared mountCalendar(), the visitor's keeps the AMD module. The
+     * component reaches nothing of a session either, but it is a change of the visitor's page the owner
+     * has not decided, so the graph stays as it was. The control walks from the logged-in module, so a
+     * walk that cannot see a component named for a mount does not pass this test by being blind.
+     *
+     * Changes that must make it fail: the specifier named in a shared module (categorylisting); the
+     * visitor's module handing mountCalendar a component.
+     */
+    public function test_the_visitors_graph_never_reaches_the_calendar_component(): void {
+        $component = self::ESM . 'daterange/DateRange';
+        $this->assertContains($component, $this->graph('categoryvitrine'), 'The control: the walk sees the component.');
+        $graph = $this->graph(self::MODULE);
+        $this->assertContains('daterange', $graph, 'The visitor keeps the AMD calendar.');
+        $this->assertNotContains($component, $graph, 'The visitor\'s page reaches the logged-in calendar component.');
+        foreach ($graph as $module) {
+            $this->assertStringNotContainsString(
+                '@moodle/lms/theme_dimensions/daterange',
+                $this->code($module),
+                $module . ' names the logged-in calendar component.'
+            );
+        }
+        $this->assertMatchesRegularExpression(
+            '~Listing\.mountCalendar\(root, state, setRange\)\.catch\(~',
+            $this->code(),
+            'The visitor mounts the AMD calendar, naming no component.'
+        );
+    }
+
+    /**
      * Nothing a visitor's page loads reads the session, stars a course or asks a logged-in service.
      *
      * The walk covers every theme module the visitor's module loads, and for each one its imports,
