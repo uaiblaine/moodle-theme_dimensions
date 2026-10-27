@@ -291,6 +291,37 @@ Running it again (section 5.4):
 3. The reports land under `~/dev/moodle-dev/data/m503b/faildumps/theme_dimensions_perf/`.
 4. Remove the line afterwards.
 
+### 5.2.3 R1 against the baseline (m503b, 2026-10-28)
+
+Theme main `77717c2` (R1, #37), same stack, data, fixtures and throttling as 5.2.2; medians of five runs. R1 draws
+the React calendar on the logged-in shell only, so the visitor's page is a control, and so is the student's course
+index, which draws no calendar.
+
+| Page | Cache | FCP R0 → R1 | TBT R0 → R1 | INP R0 → R1 | Scripts before load R0 → R1 | DOM nodes R0 → R1 |
+|---|---|---|---|---|---|---|
+| Student, flat category | cold | 5,052 → 5,012 ms | 1,017 → 985 ms | 64 → 64 ms | 81 → 85 | 1,678 → 1,679 |
+| Student, flat category | warm | 556 → 536 ms | 99 → 98 ms | 64 → 48 ms | 47 → 47 | 1,677 → 1,678 |
+| Student, course index | cold | 4,832 → 4,844 ms | 833 → 773 ms | 56 → 48 ms | 81 → 81 | 951 → 951 |
+| Student, course index | warm | 496 → 480 ms | 1 → 4 ms | 48 → 40 ms | 19 → 48 | 950 → 950 |
+| Student, grouped category | cold | 4,836 → 4,764 ms | 931 → 819 ms | 48 → 56 ms | 81 → 85 | 1,195 → 1,196 |
+| Student, grouped category | warm | 540 → 524 ms | 61 → 39 ms | 40 → 48 ms | 47 → 47 | 1,194 → 1,195 |
+| Visitor, flat public page | cold | 5,032 → 5,020 ms | 457 → 388 ms | 48 → 48 ms | 14 → 14 | 857 → 857 |
+| Visitor, flat public page | warm | 504 → 524 ms | 11 → 22 ms | 40 → 48 ms | 17 → 17 | 857 → 857 |
+
+What it says:
+- **R1 costs nothing measurable and was not meant to save anything.** It is a port: the calendar's work moved from
+  an AMD module to a component. The logged-in pages with a calendar ask for four more scripts before load (the
+  component's ES modules) and hold one more DOM node (the mount). Their FCP and TBT moved by less than the
+  controls did: the course index's cold TBT fell 7 % and the visitor's 15 % with no code of theirs changed. HTML is
+  4 bytes shorter. CLS stayed 0 and 0.0001.
+- **The warm script count is bimodal and is not a measure.** On the course index the five warm runs read about 18 or
+  about 47 scripts, in both series (R0: 47, 18, 19, 18, 21; R1: 16, 45, 48, 50, 47), so the median flips with the
+  browser's cache rather than with the code. Read script counts from the cold series only, as 5.4 says.
+- **A first run was discarded.** It overlapped another session's Behat run on m503 (same host) and read every
+  logged-in page's cold TBT 30 to 40 % higher, the course index included, while the visitor's pages, measured last
+  after that run had ended, read as here. The controls are what told it apart. An A/B on this host needs nothing
+  else running in the Selenium or PHP containers; check before trusting a run.
+
 ### 5.3 What option B does for each metric
 
 **FCP and LCP.**
@@ -363,7 +394,7 @@ code it removes with tests of the new code, either TSX source tests or Jest if s
 |---|---|---|---|
 | P0 | Quick wins without React (5.3): hero `fetchpriority` and intrinsic size, first row of covers eager, sized crests, the film / dialogue / preview modules loaded on first use | nothing | a first row that differs per breakpoint (three, two, one cards) |
 | R0 | Tooling: `js/esm/src` in the theme, `.eslintrc` (block_compass's), `tsconfig`, the `tsc` and build-currency gates for `js/esm`, the AMD bridge module, the visitor import-graph walk extended to `js/esm/build`; the performance probe (5.4) and its baseline before any port | nothing | a visitor build that silently pulls a session module; a noisy probe |
-| R1 | `daterange` as a React component; its native date fields stay the transport | `daterange.js` (1029) | focus kept across repaints, the draft/commit rules, no timezone arithmetic (CLAUDE.md, round D2b/D3) |
+| R1 | `daterange` as a React component on the logged-in shell; its native date fields stay the transport (done, #37; numbers in 5.2.3) | nothing yet: the visitor keeps `daterange.js` (1029) until R4 (owner, 2026-10-27) | focus kept across repaints, the draft/commit rules, no timezone arithmetic (CLAUDE.md, round D2b/D3) |
 | R2 | The filter line (`categoryline`, `categorypreview`, `categorymark`) as one component over the server's GET form, aligned with block_compass's `FilterLine` where the contract allows | about 1,750 | the steps measured on the line's own width; suggestions from the last answer without a term |
 | R3 | The panel and the posters (`categoryareapanel`, `categoryposters`, `categorypanel`) | about 2,440 | the ticket/turn races, `settle()`, the five integers of the row placement, Escape scope |
 | R4 | One listing store for both shells (`categoryvitrine`, `categorypublic`, `categorylisting`), visitor features behind props, the visitor entry importing nothing of a session | about 3,580 | the visitor graph; `pushState` vs `replaceState` ownership; the remembered state and the view preference |
