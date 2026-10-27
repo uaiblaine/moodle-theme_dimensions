@@ -223,6 +223,74 @@ These numbers are within the noise of the baseline. On a warm image cache, on th
 image: what P0 changes (a first row that is not held back by lazy loading, the hero's picture asked for first, less
 script at load) shows on a cold cache, a slow network and a slow CPU, which is what the probe of 5.4 has to throttle.
 
+### 5.2.2 The R0 baseline at 5,000 courses (m503b, 2026-10-27)
+
+The baseline every React stage is compared with. It was measured on m503b with theme main `076e160`
+(P0, R0 and the probe fix #35). The stack also mounted local_unlistedcourses with its batched
+discoverability probe (F2/F3, branch `perf/batch-discoverability-probe`, not merged yet), so the
+logged-in reads below already include that plugin change.
+
+**The server meter** (`docs/vitrine-react/probe/loadprobe.php --run`, warm, the seeded 5,000-course subtree,
+Xdebug loaded in trigger mode, so the milliseconds are an upper bound and only the statements gate):
+
+| Viewer | Subtree (courses) | Statements (listing + hero) | ms | Peak | Listing HTML | Hero HTML |
+|---|---|---|---|---|---|---|
+| Student | root (5,000) | 35 (21 + 14) | 78 | 19.2 MB | 37 KB | 4 KB |
+| Student | mid (510) | 33 (19 + 14) | 35 | 2.4 MB | 56 KB | 4 KB |
+| Student | leaf (35) | 39 (19 + 20) | 25 | 1.2 MB | 136 KB | 4 KB |
+| Manager | root (5,000) | 37 (20 + 17) | 166 | 19.2 MB | 40 KB | 13 KB |
+| Manager | mid (510) | 36 (19 + 17) | 46 | 2.4 MB | 61 KB | 13 KB |
+| Manager | leaf (35) | 44 (21 + 23) | 27 | 1.2 MB | 141 KB | 13 KB |
+| Visitor | root (5,000) | 18 (18 + 0) | 29 | 10.1 MB | 33 KB | 2 KB |
+| Visitor | mid (510) | 19 (17 + 2) | 11 | 1.1 MB | 23 KB | 2 KB |
+
+- Before R0, on the same data, the student's root cost 127 listing statements and the manager's 78. The theme's
+  context preload (R0, #34) and the plugin's batching (F2/F3) brought them to 21 and 20.
+- The visitor's leaf is not measured: the leaf the meter picks is not public, and the meter refuses a redirect.
+- The root's 19 MB peak is the O(N) statements over the whole subtree (D22): flat in statements, linear in rows.
+
+**The browser probe** (`@theme_dimensions_perf`, five runs each, median kept):
+- Throttling: 4x CPU, 150 ms latency, 1.6 Mbps down.
+- The Behat site (`cachejs` on).
+- Small fixtures built by the probe itself: 24 flat courses, the course index, an areas category.
+
+| Page | Cache | TTFB | FCP = LCP | TBT | CLS | INP of the press | Scripts before load | DOM nodes |
+|---|---|---|---|---|---|---|---|---|
+| Student, flat category | cold | 156 ms | 5,052 ms | 1,017 ms | 0 | 64 ms | 81 | 1,678 |
+| Student, flat category | warm | 143 ms | 556 ms | 99 ms | 0 | 64 ms | 47 | 1,677 |
+| Student, course index | cold | 143 ms | 4,832 ms | 833 ms | 0 | 56 ms | 81 | 951 |
+| Student, course index | warm | 110 ms | 496 ms | 1 ms | 0 | 48 ms | 19 | 950 |
+| Student, grouped category | cold | 157 ms | 4,836 ms | 931 ms | 0 | 48 ms | 81 | 1,195 |
+| Student, grouped category | warm | 116 ms | 540 ms | 61 ms | 0 | 40 ms | 47 | 1,194 |
+| Visitor, flat public page | cold | 113 ms | 5,032 ms | 457 ms | 0.0001 | 48 ms | 14 | 857 |
+| Visitor, flat public page | warm | 89 ms | 504 ms | 11 ms | 0.0001 | 40 ms | 17 | 857 |
+
+What the probe says:
+- **The cold first paint is the cost of core's JavaScript and stylesheets on a slow line, not the showcase's
+  HTML.**
+  - FCP is about 5 s on every cold page, the visitor's included.
+  - The visitor's page asks for 14 scripts before load and the student's for 81 (the logged-in page's AMD
+    modules, one request each), yet both paint at about 5 s.
+  - The difference shows in TBT instead: 457 ms against 833-1,017 ms.
+- **The cold TBT is the logged-in page's main target for the React stages.** Warm, it is at or under the 200 ms
+  target everywhere; cold, it is four to five times over.
+- **The noise is small on one host.** Across five runs:
+  - FCP spreads by 1-3 % cold and about 20 % warm;
+  - cold TBT spreads by about 15 %, the visitor's by up to 50 % (one run of 689 ms among four of about 400-490);
+  - an A/B on the same host needs a difference larger than those spreads.
+- **CLS is 0 on the logged-in pages and 0.0001 on the visitor's**, under the 0.1 target. The filter line's shift of
+  5.2.1 does not appear at the probe's viewport.
+- **The INP of a press is 40-80 ms** everywhere: the controls already answer within the target.
+- The flat page's cold `load` event is about 31 s for the student and 20 s for the visitor. That is the whole
+  page, every module and image, at 1.6 Mbps; it is reported but is not one of the targets.
+
+Running it again (section 5.4):
+1. Add `$CFG->behat_theme_dimensions_perfprobe = true;` to the stack's `config.php`. The `behat_` prefix is what
+   survives core's `behat_clean_init_config()`.
+2. Run `mdl behat m503b @theme_dimensions_perf`.
+3. The reports land under `~/dev/moodle-dev/data/m503b/faildumps/theme_dimensions_perf/`.
+4. Remove the line afterwards.
+
 ### 5.3 What option B does for each metric
 
 **FCP and LCP.**
@@ -328,3 +396,26 @@ The whole series is weeks of rounds, at the cadence of the showcase's earlier ro
 9. **Skeleton for the first paint**: keep the server's content as the first paint (recommended while
    the time to first byte stays low), or a shell with a skeleton and the first page fetched by the
    client, accepting a later LCP and a page without JavaScript that has to be kept by other means?
+
+### 7.1 The owner's answers (2026-10-27)
+
+1. **Option B.**
+2. **R1 first**, the calendar.
+3. **Jest, if it works.** It does: core 5.3's own `jest.config.js` runs a plugin's `js/esm/tests`.
+   - `mdl ci` has a `jest` step (uaiblaine/moodle-dev#124), and the reusable workflow has one too
+     (uaiblaine/moodle-workflows#7).
+   - The theme's first three tests (`js/esm/tests/amd.test.ts`) run in the matrix.
+4. **The visitor client stays AMD** until the logged-in side has shipped.
+5. **Two implementations of the same contract**, the theme's and block_compass's, which is already React.
+6. **P0 first**: done, #31.
+7. **The 5,000-course load probe re-created on m503b**, and its data kept there for tests: never delete it.
+8. **What makes the probe assertive.**
+   - Asked as a question; the answer adopted for R0 is in three parts.
+   - The deterministic numbers gate from R0 on:
+     - statements;
+     - the HTML bytes of a card, of a listing and of the hero;
+     - the exact module and string lists (`first_paint_budget_test`, the budget tests).
+   - The browser timings are an A/B measure, with medians of five throttled runs on one host.
+   - The targets of 5.1 become a hard gate once two stages have shown the hosts' spread (5.2.2 is the first
+     measure of it).
+9. **The server's content stays the first paint**, and the code that renders it was reviewed for cost (R0, #34).
