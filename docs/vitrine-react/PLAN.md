@@ -369,6 +369,38 @@ What it says:
   client measures. It is under the 0.1 target; removing it would take a server stylesheet that draws the fourth step
   below the phone breakpoint, which costs the page without JavaScript nothing at that width. A candidate for R3.
 
+### 5.2.5 R3 against R2 (m503b, 2026-10-28)
+
+R3 (#42, the React posters and panel on the logged-in shell), same stack, data, fixtures and throttling as 5.2.2;
+medians of five runs. The flat page draws no posters and the visitor keeps the AMD panel, so both are controls; the
+course index and the grouped page carry R3.
+
+| Page | Cache | TBT R0 / R1 / R2 (#40) / R3 | Scripts before load (cold) |
+|---|---|---|---|
+| Student, flat category (control) | cold | 1,017 / 985 / 1,003 / 1,027 ms | 81 / 85 / 93 / 93 |
+| Student, flat category (control) | warm | 99 / 98 / 132 / 175 ms | |
+| Student, course index | cold | 833 / 773 / 760 / 862 ms | 81 / 81 / 82 / 89 |
+| Student, course index | warm | 1 / 4 / 9 / 8 ms | |
+| Student, grouped category | cold | 931 / 819 / 814 / 890 ms | 81 / 85 / 93 / 99 |
+| Student, grouped category | warm | 61 / 39 / 44 / 74 ms | |
+| Visitor, flat public page (control) | cold | 457 / 388 / 384 / 460 ms | 14 / 14 / 14 / 14 |
+| Visitor, flat public page (control) | warm | 11 / 22 / 18 / 35 ms | |
+
+FCP moved by 2 % or less, the INP of a press stayed at 48-104 ms, and CLS stayed 0 (0.0001 on the visitor's).
+
+What it says:
+- **R3 costs nothing the probe can separate from the host.** The host ran about 20 % slower than for 5.2.4 (load
+  near 4, against near 3): the two controls, whose code R3 does not touch, rose 20 % (visitor, cold) and 33 % (flat,
+  warm). The pages R3 changed rose 9-13 % cold and stayed level warm on the course index. A first run under a load of
+  5-6 read every page 25-60 % higher, the controls included, and was discarded.
+- **A CPU profile of a warm grouped page under 4x CPU attributes no sampled time to the `areas` modules.** Its long
+  frames are the filter line's one measured step (about 60 ms) and React's commits; nothing of the panel or the posters
+  forces a layout at mount, as the component's own count of layout reads says.
+- **The posters and the panel add six scripts before load** on the pages that draw them (the `areas` modules).
+- **The host is the limit of this instrument now.** Three stages in, the A/B is read against controls rather than
+  against the previous stage's numbers; an A/B that matters should run both builds back to back on one host, or the
+  probe should move to a CI host with nothing else on it.
+
 ### 5.3 What option B does for each metric
 
 **FCP and LCP.**
@@ -443,7 +475,7 @@ code it removes with tests of the new code, either TSX source tests or Jest if s
 | R0 | Tooling: `js/esm/src` in the theme, `.eslintrc` (block_compass's), `tsconfig`, the `tsc` and build-currency gates for `js/esm`, the AMD bridge module, the visitor import-graph walk extended to `js/esm/build`; the performance probe (5.4) and its baseline before any port | nothing | a visitor build that silently pulls a session module; a noisy probe |
 | R1 | `daterange` as a React component on the logged-in shell; its native date fields stay the transport (done, #37; numbers in 5.2.3) | nothing yet: the visitor keeps `daterange.js` (1029) until R4 (owner, 2026-10-27) | focus kept across repaints, the draft/commit rules, no timezone arithmetic (CLAUDE.md, round D2b/D3) |
 | R2 | The filter line (`categoryline`, `categorypreview`, `categorymark`) as one component over the server's GET form, aligned with block_compass's `FilterLine` where the contract allows (done on the logged-in shell, #39 and #40; numbers in 5.2.4) | nothing yet: the visitor keeps the three modules until R4 | the steps measured on the line's own width; suggestions from the last answer without a term |
-| R3 | The panel and the posters (`categoryareapanel`, `categoryposters`, `categorypanel`) | about 2,440 | the ticket/turn races, `settle()`, the five integers of the row placement, Escape scope |
+| R3 | The panel and the posters (`categoryareapanel`, `categoryposters`, `categorypanel`) (done on the logged-in shell, #42; numbers in 5.2.5) | nothing of the visitor's: it keeps `categoryareapanel` and `categoryposters` until R4 | the ticket/turn races, `settle()`, the five integers of the row placement, Escape scope |
 | R4 | One listing store for both shells (`categoryvitrine`, `categorypublic`, `categorylisting`), visitor features behind props, the visitor entry importing nothing of a session | about 3,580 | the visitor graph; `pushState` vs `replaceState` ownership; the remembered state and the view preference |
 | R5 | The star joins the store; clean-up of the dead hooks, `gates.conf` retargeted, CLAUDE.md sections rewritten | `categorystar` (127) | mutation specs left matching nothing (a hard exit for `mdl mutate`) |
 
