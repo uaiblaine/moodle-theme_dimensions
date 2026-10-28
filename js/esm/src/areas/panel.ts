@@ -14,20 +14,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The panel between the poster rows on the logged-in shell: one area at a time, its place, its address,
- * its orders, its rail, its keyboard and its states, behind Areas.tsx.
+ * The panel between the poster rows, on both shells: one area at a time, its place, its address, its
+ * orders, its rail, its keyboard and its states, behind Areas.tsx.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md: the logged-in half of amd/src/categoryareapanel.js, which the
- * visitor's shell keeps until R4, with every function named after the AMD function it stands for, so a
- * rule of the panel changes in both. The state is read and written synchronously, as the AMD module's
- * is; what React draws from it (the summary of the areas with no result) is told through `ui`.
+ * Stage R3 of docs/vitrine-react/PLAN.md ported amd/src/categoryareapanel.js for the logged-in shell, with
+ * every function named after the AMD function it stood for; stage R4a gave the component the visitor's
+ * half as options ({@see Options}): posters that stay links, a question asked once per opening after a
+ * quiet, a failure the page takes over, and no automatic opening. The state is read and written
+ * synchronously, as the AMD module's was; what React draws from it (the summary of the areas with no
+ * result) is told through `ui`.
  *
  * WHO WRITES WHAT. The panel's element - the one list item of the grid the server always writes - is this
  * module's frame: its hidden state, its three transition classes (only through {@see settle}), the five
  * integers of its row and the open area's colour on its style, and its place in the DOM. Inside it the
  * panel's content is Mustache's: category_panel rendered by core/templates and inserted whole
  * ({@see renderWhole}) or region by region ({@see transplant}), never diffed. The cards in it keep their own
- * modules (the star, the film, the dialogue, the progress categorypanel paints on `painted`).
+ * modules (the film, the dialogue, and on the logged-in shell what an account adds, painted on `painted`).
  *
  * LAYOUT. The row is the five integers and the DOM order the last poster of the open one's row, both
  * counted from the posters shown and the grid's tracks (matchMedia and the view class), never read off a
@@ -52,19 +54,22 @@ import {
 } from './model';
 import type {Answer, Entry, PanelContext, Summary, Word} from './model';
 import {
-    convertPoster, failed, fitReveal, isExpandable, isFiltered, isZeroed, itemOf, loadedAllEmpty, paintAllEmpty,
+    convertPoster, driven, failed, fitReveal, isExpandable, isFiltered, isZeroed, itemOf, loadedAllEmpty, paintAllEmpty,
     paintPosters, paintReveal, paintSearchAll, pending, posterOf, setAttr, setClass, setExpandable, setHidden,
     setPosterOpen, shellOf, shownItems, toButton, unveil,
 } from './posters';
 import {dragRail, paintRail, railState, scrollRail} from './rail';
 
 /**
- * The events the component and its page exchange; amd/src/categorypanel.js, categoryvitrine.js and
- * categorylisting.js spell the ones they send or hear alike, held equal by areas_component_source_test.
+ * The events the component and its page exchange. The areas section's are spelled by amd/src/categorylisting.js
+ * too, whose mountAreas() hears them for the page's client; the document's by the two listing clients;
+ * areas_component_source_test holds them equal.
  */
 export const EVENTS = {
     mounted: 'dim-areas:mounted',
     ask: 'dim-areas:ask',
+    question: 'dim-areas:question',
+    unanswered: 'dim-areas:unanswered',
     painted: 'dim-areas:painted',
     view: 'dim-vitrine:view',
     pending: 'dim-vitrine:pending',
@@ -87,20 +92,55 @@ export type Nodes = {areas: HTMLElement, panel: HTMLElement, status: HTMLElement
 /** The detail of the ask event: the page's client fills `answer` while it is dispatched. */
 export type Asked = {poster: HTMLElement, psort: string, answer: Promise<Answer> | null};
 
+/** The detail of the question event: a client that names its question fills `question` while it is dispatched. */
+export type Questioned = {poster: HTMLElement, psort: string, question: string};
+
+/** The detail of the unanswered event: a client that takes a failure over sets `taken` while it is dispatched. */
+export type Unanswered = {poster: HTMLElement, psort: string, taken: boolean};
+
+/**
+ * How a shell's posters and questions behave, from the mount's props: the logged-in shell passes none, the
+ * visitor's all three.
+ *
+ * - links: the posters stay the server's links, announced as buttons; a press meant for another tab or window
+ *   goes to the address, Space opens as Enter does.
+ * - quiet: milliseconds a question waits for the reader to stop pressing; every one is a read the site pays for.
+ * - autoopen: whether an answer naming the one area holding every result opens it by itself.
+ */
+export type Options = {links: boolean, quiet: number, autoopen: boolean};
+
+/** What the mount's props may say, each part optional. */
+export type Props = {links?: unknown, quiet?: unknown, autoopen?: unknown};
+
+/**
+ * The options a mount's props say: anything but the exact values reads as the logged-in shell's.
+ *
+ * @param {object} props The mount's props.
+ * @returns {object}
+ */
+export const optionsOf = (props: Props): Options => ({
+    links: props.links === true,
+    quiet: typeof props.quiet === 'number' && Number.isInteger(props.quiet) && props.quiet > 0 ? props.quiet : 0,
+    autoopen: props.autoopen !== false,
+});
+
 /** What a criteria answer's event carries. */
 export type Criteria = {accordion?: Entry[], areas?: Word};
 
 /**
- * The panel's state: what is open, its order and who opened it; the latest request's ticket; the turn,
- * counting every opening and closing; the paint, counting the transplants started; the skeleton's timer;
- * whether nothing matches anywhere with no panel open; whether each area opens, by id; whether the drag just
- * ended; and whether the panel's mark is on the body.
+ * The panel's state: what is open, its order and who opened it; the latest request's ticket; the question
+ * that request asked and the ticket it was asked under, so the same question about the same open panel is
+ * not asked twice; the turn, counting every opening and closing; the paint, counting the transplants
+ * started; the skeleton's timer; whether nothing matches anywhere with no panel open; whether each area
+ * opens, by id; whether the drag just ended; and whether the panel's mark is on the body.
  */
 type State = {
     open: number,
     psort: string,
     openedby: string,
     ticket: number,
+    asked: string,
+    askedticket: number,
     turn: number,
     paint: number,
     skeleton: number,
@@ -129,19 +169,34 @@ export const drawnOpen = (nodes: Nodes): number => {
 };
 
 /**
+ * Whether a click on a link was meant for another tab or window, which the link's own address answers.
+ *
+ * A middle press and a secondary one arrive as events of their own (auxclick, contextmenu) and never reach a
+ * click listener; a press with a modifier and one another listener has already dealt with do.
+ *
+ * @param {MouseEvent} event The click.
+ * @returns {boolean}
+ */
+export const elsewhere = (event: MouseEvent): boolean => event.defaultPrevented || event.button !== 0
+    || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey;
+
+/**
  * Build the panel's behaviour over the server's areas.
  *
  * @param {object} nodes The areas, the panel and the status.
  * @param {object} ui What the component draws from the state.
+ * @param {object} mode The shell's options ({@see optionsOf}).
  * @returns {object} The functions the component's listeners call.
  */
-export const createPanel = (nodes: Nodes, ui: Ui) => {
+export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({})) => {
     const {areas, panel, status} = nodes;
     const st: State = {
         open: 0,
         psort: '',
         openedby: '',
         ticket: 0,
+        asked: '',
+        askedticket: -1,
         turn: 0,
         paint: 0,
         skeleton: 0,
@@ -236,7 +291,60 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
     };
 
     /**
-     * Tell the page the rows are on screen, so it paints what belongs to an account (the progress).
+     * The question a request about an area would ask, as the page's client names it: the empty string, which
+     * is asked every time, where nobody names one.
+     *
+     * @param {Element} poster The area's poster.
+     * @param {string} psort The panel's order.
+     * @returns {string}
+     */
+    const question = (poster: HTMLElement, psort: string): string => {
+        const detail: Questioned = {poster: poster, psort: psort, question: ''};
+        areas.dispatchEvent(new CustomEvent(EVENTS.question, {detail: detail}));
+        return typeof detail.question === 'string' ? detail.question : '';
+    };
+
+    /**
+     * Whether the open panel already shows, or is being sent, the answer to this question.
+     *
+     * A client that names its question (the visitor's, whose every request is a read the site pays for on the
+     * open internet) asks it once per opening: an answer to criteria that did not change - Back over a change
+     * of view, a panel the server drew for the address - is the one on screen. Every opening and closing takes
+     * a ticket, so the same question asked of a new opening is asked again.
+     *
+     * @param {string} asking The question, or the empty string.
+     * @returns {boolean}
+     */
+    const answered = (asking: string): boolean => asking !== '' && asking === st.asked && st.askedticket === st.ticket;
+
+    /**
+     * Wait for the shell's quiet, when it has one: a reader pressing poster after poster asks once.
+     *
+     * @param {number} ticket The ticket of the request that waits.
+     * @returns {Promise} Resolving true when the request is still the latest once the quiet is over.
+     */
+    const quiet = async(ticket: number): Promise<boolean> => {
+        if (mode.quiet > 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, mode.quiet));
+        }
+        return ticket === st.ticket;
+    };
+
+    /**
+     * Offer a failure to the page's client before the inline error: the visitor's loads the poster's link.
+     *
+     * @param {Element} poster The area's poster.
+     * @param {string} psort The panel's order.
+     * @returns {boolean} Whether the client took it over.
+     */
+    const unanswered = (poster: HTMLElement, psort: string): boolean => {
+        const detail: Unanswered = {poster: poster, psort: psort, taken: false};
+        areas.dispatchEvent(new CustomEvent(EVENTS.unanswered, {detail: detail}));
+        return detail.taken === true;
+    };
+
+    /**
+     * Tell the page the rows are on screen, so it paints what belongs to it (an account's progress).
      *
      * @returns {void}
      */
@@ -494,8 +602,10 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
     /**
      * Ask for the open area's rows, and paint the answer unless something newer has been asked since.
      *
-     * The body stays empty for SKELETON_DELAY; a slower answer gets the skeleton first. A failure is the
-     * inline error with its retry, never a dialogue.
+     * A question already answered for this opening is not asked again ({@see answered}). The body stays empty
+     * for SKELETON_DELAY past the shell's quiet; a slower answer gets the skeleton first. A failure is the
+     * page's client's to take over first ({@see unanswered}), and otherwise the inline error with its retry,
+     * never a dialogue.
      *
      * @returns {Promise} Resolving when the request has been dealt with.
      */
@@ -505,8 +615,15 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
         if (!poster) {
             return;
         }
+        const asking = question(poster, st.psort);
+        if (answered(asking)) {
+            return;
+        }
         arm();
         const ticket = ++st.ticket;
+        st.asked = asking;
+        st.askedticket = ticket;
+        // The quiet is a timer no request covers yet: held from here until the answer is painted.
         const held = new Pending('theme_dimensions/areas:request');
         window.clearTimeout(st.skeleton);
         setSortBusy(true);
@@ -514,8 +631,11 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
             if (ticket === st.ticket) {
                 transplant(shellContext(shellOf(poster), st.psort, window.location.href, {isskeleton: true}), ticket);
             }
-        }, SKELETON_DELAY);
+        }, SKELETON_DELAY + mode.quiet);
         try {
+            if (!(await quiet(ticket))) {
+                return;
+            }
             const response = await ask(poster, st.psort);
             if (ticket !== st.ticket) {
                 return;
@@ -534,6 +654,10 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
                 return;
             }
             window.clearTimeout(st.skeleton);
+            st.asked = '';
+            if (unanswered(poster, st.psort)) {
+                return;
+            }
             if (!(await transplant(shellContext(shellOf(poster), st.psort, window.location.href, {iserror: true}), ticket))) {
                 return;
             }
@@ -636,7 +760,7 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
     const applyExpandable = (poster: HTMLElement | null): void => {
         const id = poster ? Number(poster.dataset.categoryid) : 0;
         if (poster && st.expandable.has(id)) {
-            setExpandable(poster, Boolean(st.expandable.get(id)), st.open);
+            setExpandable(poster, Boolean(st.expandable.get(id)), st.open, mode.links);
         }
     };
 
@@ -784,8 +908,8 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
         const before = prev ? poster.getBoundingClientRect().top : 0;
         const prevhides = isZeroed(areas, prev);
         const samerow = sharesRow(prev, poster);
-        setPosterOpen(prev, false);
-        setPosterOpen(poster, true);
+        setPosterOpen(prev, false, mode.links);
+        setPosterOpen(poster, true, mode.links);
         if (prev && prevhides) {
             setHidden(itemOf(prev), true);
             fitReveal(areas);
@@ -833,7 +957,7 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
         arm();
         const poster = posterOf(areas, st.open);
         const zeroed = isZeroed(areas, poster);
-        setPosterOpen(poster, false);
+        setPosterOpen(poster, false, mode.links);
         st.open = 0;
         st.openedby = '';
         st.psort = '';
@@ -898,28 +1022,65 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
     };
 
     /**
-     * A press inside the areas: a poster's button opens or closes its panel. A poster that is a link (one
-     * with nothing to open) goes to its page.
+     * Open a poster's panel, or close it when it is the open one.
      *
-     * @param {Event} event The click.
+     * @param {Element} poster The poster.
      * @returns {void}
      */
-    const onAreasClick = (event: Event): void => {
-        const control = event.target instanceof Element ? event.target.closest<HTMLElement>(SELECTORS.control) : null;
-        if (!control || panel.contains(control) || control.tagName !== 'BUTTON') {
-            return;
-        }
-        const poster = control.closest<HTMLElement>(SELECTORS.area);
-        if (!poster || !isExpandable(poster)) {
-            return;
-        }
-        event.preventDefault();
+    const toggleArea = (poster: HTMLElement): void => {
         const id = Number(poster.dataset.categoryid);
         if (id === st.open) {
             closeArea(true, true);
         } else {
             openArea(id, {focus: true});
         }
+    };
+
+    /**
+     * A press inside the areas: a poster's control opens or closes its panel. A poster that is a link to its
+     * page (one with nothing to open) goes there; on a shell keeping the posters links, a press meant for
+     * another tab or window goes to the link's address too, exactly as it does without the component.
+     *
+     * @param {Event} event The click.
+     * @returns {void}
+     */
+    const onAreasClick = (event: Event): void => {
+        const control = event.target instanceof Element ? event.target.closest<HTMLElement>(SELECTORS.control) : null;
+        if (!control || panel.contains(control)) {
+            return;
+        }
+        const poster = control.closest<HTMLElement>(SELECTORS.area);
+        if (!poster || !isExpandable(poster) || driven(poster, mode.links) !== control) {
+            return;
+        }
+        if (control.tagName === 'A' && elsewhere(event as MouseEvent)) {
+            return;
+        }
+        event.preventDefault();
+        toggleArea(poster);
+    };
+
+    /**
+     * Space on a poster that stays a link opens or closes its panel, as it would a button's.
+     *
+     * The link is announced as a button, and a button answers Space; a link alone would scroll the page.
+     * Enter needs nothing here: on a link it is a click.
+     *
+     * @param {KeyboardEvent} event The key.
+     * @returns {boolean} Whether the key was a poster's.
+     */
+    const onSpace = (event: KeyboardEvent): boolean => {
+        if (event.key !== ' ' || event.repeat || !mode.links) {
+            return false;
+        }
+        const control = event.target instanceof Element ? event.target.closest<HTMLElement>(SELECTORS.control) : null;
+        const poster = control ? control.closest<HTMLElement>(SELECTORS.area) : null;
+        if (!control || !poster || control.tagName !== 'A' || panel.contains(control) || driven(poster, true) !== control) {
+            return false;
+        }
+        event.preventDefault();
+        toggleArea(poster);
+        return true;
     };
 
     /**
@@ -1008,8 +1169,8 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
 
     /**
      * Escape closes the open panel from inside it or from its poster, and from nowhere else: not from the
-     * search box, where it empties the field, and not from the film's controls, where it stops the film. The
-     * arrows move between the two orders.
+     * search box, where it empties the field, and not from the film's controls, where it stops the film. Space
+     * opens a poster that stays a link ({@see onSpace}). The arrows move between the two orders.
      *
      * @param {KeyboardEvent} event The key.
      * @returns {void}
@@ -1025,6 +1186,9 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
                 event.preventDefault();
                 closeArea(true, true);
             }
+            return;
+        }
+        if (onSpace(event)) {
             return;
         }
         const option = event.target instanceof Element ? event.target.closest(SELECTORS.sortoption) : null;
@@ -1099,17 +1263,17 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
     };
 
     /**
-     * Open the one area holding every result, when the answer names one.
+     * Open the one area holding every result, when the answer names one and the shell opens by itself.
      *
      * The focus stays where the reader is typing, a panel the reader opened is never swapped for another, and
-     * nothing is ever closed by this.
+     * nothing is ever closed by this. The visitor's shell never had the automatic opening and has none.
      *
      * @param {object} word The answer's word on the areas: autoopen, the area's id or 0.
      * @returns {void}
      */
     const autoOpen = (word: Word): void => {
         const id = Number(word.autoopen) || 0;
-        if (!id || id === st.open || (st.open && st.openedby === 'user')) {
+        if (!mode.autoopen || !id || id === st.open || (st.open && st.openedby === 'user')) {
             return;
         }
         openArea(id, {focus: false, scroll: false, auto: true});
@@ -1132,7 +1296,7 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
         areas.querySelectorAll(SELECTORS.grid).forEach((grid) => setAttr(grid, 'aria-busy', null));
         areas.dataset.filtered = filtered ? '1' : '0';
         areas.dataset.elsewhere = word.elsewhere || '';
-        paintPosters(areas, accordion, filtered, st.open, st.expandable);
+        paintPosters(areas, accordion, filtered, st.open, st.expandable, mode.links);
         ui.sync(() => {
             ui.filtered(filtered);
             ui.summary(summaryOf(accordion, word, (id) => {
@@ -1182,6 +1346,9 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
      * Take over the page at mount: a panel the server drew (no request, no scroll, no measure: the server
      * already placed it), every expandable poster's control, and the panel's mark where no panel is open.
      *
+     * A drawn panel's rows are the answer to the address's question, so that question counts as asked: an
+     * answer to the same criteria later asks it again only for a client that names no question.
+     *
      * @returns {void}
      */
     const adopt = (): void => {
@@ -1191,12 +1358,14 @@ export const createPanel = (nodes: Nodes, ui: Ui) => {
             st.open = id;
             st.openedby = 'user';
             st.psort = readPanel(window.location.href).psort;
+            st.asked = question(posterOf(areas, id) as HTMLElement, st.psort);
+            st.askedticket = st.ticket;
             convertPanel();
             markTitles(panel, termOf(window.location.href));
             setClass(panel, CLASSES.shut, false);
             setClass(areas, CLASSES.areasopen, true);
         }
-        areas.querySelectorAll<HTMLElement>(SELECTORS.area).forEach((poster) => convertPoster(poster, st.open));
+        areas.querySelectorAll<HTMLElement>(SELECTORS.area).forEach((poster) => convertPoster(poster, st.open, mode.links));
         if (!st.open) {
             arm();
             return;

@@ -38,10 +38,12 @@ use theme_dimensions\output\category_panel;
  * server's words. moodle-plugin-ci has no JavaScript test runner, so they are assertions about
  * spelling, each scoped to the function it is about.
  *
- * Its panels open in place through categoryareapanel, the logged-in client's own panel module
- * (categorypanel_source_test pins the panel itself); what is pinned here is the visitor's half of
- * it: the request a panel asks, which keeps a slice flat and alone; the poster that stays a link;
- * a question asked once, after a quiet; and a failure that loads the poster's link.
+ * Since stage R4a its calendar, its filter line and its posters with their panel are the React
+ * components the logged-in shell draws (js/esm/src/daterange, filterline and areas), mounted through
+ * the shared listing. What is pinned here is the visitor's half of them: the components reached by
+ * the walk and naming nothing of the logged-in shell; the request a panel asks, which keeps a slice
+ * flat and alone; the poster that stays a link; a question asked once, after a quiet; and a failure
+ * that loads the poster's link. The component's behaviour in both modes is Jest's (js/esm/tests/areas).
  *
  * The walk crosses into the theme's ES modules (js/esm) and back: an AMD module reaches one through
  * core's `core/esm!` loader or by naming it for a React mount, an ES module reaches its siblings by
@@ -62,14 +64,20 @@ final class categorypublic_source_test extends \basic_testcase {
     /** @var string The one service it may call. */
     private const METHOD = 'theme_dimensions_get_public_category_rows';
 
-    /** @var string The panel module both clients arm, whose visitor's half is pinned here. */
-    private const PANEL = 'categoryareapanel';
+    /** @var string The posters' component's directory, whose visitor's options are pinned here. */
+    private const AREAS = 'js/esm/src/areas/';
 
     /** @var string The prefix of an ES module's node in the walk, before its path under js/esm/src. */
     private const ESM = 'esm:';
 
     /** @var string The bridge every ES module of the theme reaches AMD through, shared by both shells. */
     private const BRIDGE = self::ESM . 'amd';
+
+    /** @var string[] The React components both shells mount, as nodes of the walk. */
+    private const COMPONENTS = ['esm:daterange/DateRange', 'esm:filterline/FilterLine', 'esm:areas/Areas'];
+
+    /** @var string[] The logged-in modules nothing a visitor's page loads may name, in code or in a comment. */
+    private const LOGGED_IN_NAMES = ['categoryvitrine', 'categorypanel', 'categorystar'];
 
     /** @var string[] Theme modules a visitor's page may never load: the session's star and the logged-in clients. */
     private const FORBIDDEN_MODULES = ['categorystar', 'categoryvitrine', 'categorypanel'];
@@ -225,6 +233,47 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
+     * The body of one top-level function of a module of the posters' component.
+     *
+     * @param string $name The function's name.
+     * @param string $file The file under js/esm/src/areas.
+     * @return string The body, without the signature or the closing brace.
+     */
+    private function area_body(string $name, string $file): string {
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n\};~s';
+        $found = preg_match($pattern, $this->read(self::AREAS . $file, 'The source is missing.'), $matches);
+        $this->assertSame(1, $found, "No top-level function named {$name} in {$file}.");
+        return $matches[1];
+    }
+
+    /**
+     * The body of one function of the component's panel, declared inside createPanel() at four spaces.
+     *
+     * @param string $name The function's name.
+     * @return string
+     */
+    private function inner(string $name): string {
+        $pattern = '~\n    const ' . preg_quote($name, '~') . ' = (?:[^\n]*\n)*?[^\n]*\{\n(.*?)\n    \}\)?;~s';
+        $found = preg_match($pattern, $this->read(self::AREAS . 'panel.ts', 'The source is missing.'), $matches);
+        $this->assertSame(1, $found, "No function named {$name} in the component's panel.");
+        return $matches[1];
+    }
+
+    /**
+     * The logged-in modules one module of the walk names, anywhere in its source or its builds.
+     *
+     * Read from the raw text, comments included: a comment is no import, but nothing a visitor's page
+     * loads may say what the logged-in shell is made of, which is one edit away from importing it.
+     *
+     * @param string $module The module's name, or an ES module's node.
+     * @return string[]
+     */
+    private function logged_in_names(string $module): array {
+        $text = $this->source($module) . "\n" . $this->build($module);
+        return array_values(array_filter(self::LOGGED_IN_NAMES, fn(string $name): bool => str_contains($text, $name)));
+    }
+
+    /**
      * Every module a module imports, core's and the theme's: its import lines, then its dynamic imports.
      *
      * A module imported on first use (`import('...')`) ships to the visitor's page as surely as one in an
@@ -332,22 +381,29 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * The walk follows imports all the way down, which the two assertions below depend on.
+     * The walk follows imports all the way down, which every assertion below depends on.
      *
      * A walk that read the entry file alone would pass a session module pulled in through a shared
-     * one. The shared listing reaches the calendar and the title marker, and the visitor's graph holds
-     * the shared listing's.
+     * one. The shared listing reaches the period's reader and the title marker, and names the three
+     * components it mounts, whose relative imports the walk follows down to the bridge; the visitor's
+     * graph holds all of it, and none of the AMD modules the components replaced, which no shell arms
+     * since R4a.
      */
     public function test_the_import_walk_is_transitive(): void {
         $listing = $this->graph('categorylisting');
         $this->assertContains('categorymark', $listing);
         $this->assertContains('daterange', $listing);
-        $this->assertContains('categoryposters', $this->graph(self::PANEL), 'The panel module paints the posters too.');
+        foreach (self::COMPONENTS as $component) {
+            $this->assertContains($component, $listing, 'The shared listing mounts ' . $component . '.');
+        }
+        $this->assertContains(self::ESM . 'areas/panel', $listing, 'The component\'s relative imports are followed.');
+        $this->assertContains(self::BRIDGE, $listing, 'Down to the bridge.');
         $graph = $this->graph(self::MODULE);
-        $this->assertContains(self::PANEL, $graph, 'The panels are opened through the shared panel module.');
-        $this->assertContains('categoryline', $graph, 'The filter line\'s behaviour is the shared line module\'s.');
-        foreach (array_merge($listing, $this->graph('categoryposters'), $this->graph(self::PANEL)) as $module) {
+        foreach ($listing as $module) {
             $this->assertContains($module, $graph, $module . ' is reached through a shared module and the walk lost it.');
+        }
+        foreach (['categoryline', 'categorypreview', 'categoryareapanel', 'categoryposters'] as $replaced) {
+            $this->assertNotContains($replaced, $graph, $replaced . ' is armed by no shell since R4a.');
         }
     }
 
@@ -378,102 +434,72 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * The visitor's page never reaches the logged-in shell's calendar component, which the walk does see.
+     * The visitor's page reaches each component the logged-in shell draws, through the one place each is named.
      *
-     * Two calendars until stage R4 of docs/vitrine-react/PLAN.md: the logged-in module names the React
-     * component and hands it to the shared mountCalendar(), the visitor's keeps the AMD module. The
-     * component reaches nothing of a session either, but it is a change of the visitor's page the owner
-     * has not decided, so the graph stays as it was. The control walks from the logged-in module, so a
-     * walk that cannot see a component named for a mount does not pass this test by being blind.
+     * Stage R4a of docs/vitrine-react/PLAN.md moved the visitor onto the components on purpose: they are
+     * visitor-safe by rule ({@see test_nothing_the_walk_reaches_names_the_logged_in_shell()}). Each
+     * specifier is named once, in the shared listing, so both shells mount the same component and no
+     * client names one the walk would have to be taught. The preview the line imports on first use and
+     * the panel's modules are reached too, down to the bridge.
      *
-     * Changes that must make it fail: the specifier named in a shared module (categorylisting); the
-     * visitor's module handing mountCalendar a component.
+     * Changes that must make it fail: a specifier dropped from the shared listing (gate
+     * js_public_graph_reaches_areas); a client naming a component itself.
      */
-    public function test_the_visitors_graph_never_reaches_the_calendar_component(): void {
-        $component = self::ESM . 'daterange/DateRange';
-        $this->assertContains($component, $this->graph('categoryvitrine'), 'The control: the walk sees the component.');
+    public function test_the_visitors_graph_reaches_each_component_named_once(): void {
         $graph = $this->graph(self::MODULE);
-        $this->assertContains('daterange', $graph, 'The visitor keeps the AMD calendar.');
-        $this->assertNotContains($component, $graph, 'The visitor\'s page reaches the logged-in calendar component.');
-        foreach ($graph as $module) {
-            $this->assertStringNotContainsString(
-                '@moodle/lms/theme_dimensions/daterange',
-                $this->code($module),
-                $module . ' names the logged-in calendar component.'
-            );
+        $logged = $this->graph('categoryvitrine');
+        $reached = array_merge(self::COMPONENTS, [
+            self::ESM . 'filterline/preview',
+            self::ESM . 'areas/panel',
+            self::ESM . 'areas/posters',
+            self::BRIDGE,
+        ]);
+        foreach ($reached as $module) {
+            $this->assertContains($module, $graph, 'The visitor\'s page reaches ' . $module . '.');
+            $this->assertContains($module, $logged, 'And the logged-in shell\'s reaches the same one.');
+        }
+        foreach (glob($this->plugin_root() . '/amd/src/*.js') as $file) {
+            $name = basename($file, '.js');
+            $count = substr_count($this->code($name), '@moodle/lms/theme_dimensions/');
+            $this->assertSame($name === 'categorylisting' ? 3 : 0, $count, "{$name} names a component.");
         }
         $this->assertMatchesRegularExpression(
-            '~Listing\.mountCalendar\(root, state, setRange\)\.catch\(~',
-            $this->code(),
-            'The visitor mounts the AMD calendar, naming no component.'
+            "~^const COMPONENTS = \{\n    calendar: '@moodle/lms/theme_dimensions/daterange/DateRange',\n"
+                . "    line: '@moodle/lms/theme_dimensions/filterline/FilterLine',\n"
+                . "    areas: '@moodle/lms/theme_dimensions/areas/Areas',\n\};$~m",
+            $this->source('categorylisting')
         );
     }
 
     /**
-     * The visitor's page never reaches the logged-in shell's filter line component, which the walk does see.
+     * Nothing a visitor's page loads names the logged-in shell's modules, not even in a comment.
      *
-     * Two filter lines until stage R4 of docs/vitrine-react/PLAN.md: the logged-in module names the React
-     * component and hands it to the shared mountLine(), the visitor's arms categoryline (with categorypreview
-     * and categorymark), exactly as before. The control walks from the logged-in module, through the
-     * component's relative imports and its preview imported on first use, so a walk blind to a component
-     * named for a mount does not pass this test.
+     * The walk starts from the visitor's module and from the bridge and reads every module's source and
+     * both builds as they are, comments included. A name in a comment is no import, but the rule of R4a
+     * is that the visitor's graph says nothing of what the logged-in shell is made of: a component that
+     * names the logged-in module answering it is one edit from importing it. The logged-in services are
+     * the next test's. The controls: the logged-in panel module names the star, and a comment alone is
+     * found.
      *
-     * Changes that must make it fail: the specifier named in a shared module (categorylisting); the
-     * visitor's module handing its line to the component.
+     * Changes that must make it fail: a comment naming categoryvitrine in the shared listing (gate
+     * js_public_graph_names_vitrine), or categorypanel in the component's panel (gate
+     * js_public_component_names_panel).
      */
-    public function test_the_visitors_graph_never_reaches_the_filter_line_component(): void {
-        $component = self::ESM . 'filterline/FilterLine';
-        $logged = $this->graph('categoryvitrine');
-        $this->assertContains($component, $logged, 'The control: the walk sees the component.');
-        $this->assertContains(self::ESM . 'filterline/preview', $logged, 'And the preview it imports on first use.');
-        $this->assertNotContains('categoryline', $logged, 'The logged-in shell no longer arms the AMD line.');
-        $graph = $this->graph(self::MODULE);
-        foreach (['categoryline', 'categorypreview', 'categorymark'] as $module) {
-            $this->assertContains($module, $graph, "The visitor keeps {$module}.");
-        }
+    public function test_nothing_the_walk_reaches_names_the_logged_in_shell(): void {
+        $graph = array_values(array_unique(array_merge($this->graph(self::MODULE), $this->graph(self::BRIDGE))));
+        $this->assertGreaterThan(20, count($graph), 'The control: the walk reaches the components.');
         foreach ($graph as $module) {
-            $this->assertStringStartsNotWith(self::ESM . 'filterline/', $module, 'The visitor\'s page reaches ' . $module . '.');
-            $this->assertStringNotContainsString(
-                '@moodle/lms/theme_dimensions/filterline',
-                $this->code($module),
-                $module . ' names the logged-in filter line component.'
-            );
+            $this->assertSame([], $this->logged_in_names($module), "{$module} names the logged-in shell.");
         }
-        $this->assertStringContainsString('Line.arm(root, {dropTerm: dropTerm});', $this->code());
-        $this->assertStringNotContainsString('Listing.mountLine(', $this->code(), 'The visitor hands its line to nothing.');
+        $this->assertContains('categorystar', $this->logged_in_names('categorypanel'), 'The control: a name is found.');
+        $this->fixture = [
+            'amd/src/entry.js' => "/** Answered by categorypanel. */\nexport const init = () => null;\n",
+            'amd/build/entry.min.js' => 'define([],(function(){}));',
+        ];
+        $this->assertSame(['categorypanel'], $this->logged_in_names('entry'), 'A comment alone is found.');
     }
 
-    /**
-     * The visitor's page never reaches the logged-in shell's posters and panel component, which the walk does see.
-     *
-     * Two implementations of the panel until stage R4 of docs/vitrine-react/PLAN.md: categorypanel (logged in)
-     * appends the React component, the visitor's module arms categoryareapanel and categoryposters exactly as
-     * before. The control walks from the logged-in module, through the component's relative imports, so a walk
-     * blind to a component named for a mount does not pass this test.
-     *
-     * Changes that must make it fail: the specifier named in a shared module (gate js_areas_visitor_no_component);
-     * the visitor's module dropping the shared panel.
-     */
-    public function test_the_visitors_graph_never_reaches_the_panel_component(): void {
-        $component = self::ESM . 'areas/Areas';
-        $logged = $this->graph('categorypanel');
-        $this->assertContains($component, $logged, 'The control: the walk sees the component.');
-        $this->assertContains(self::ESM . 'areas/panel', $logged, 'And the panel it imports.');
-        $this->assertNotContains(self::PANEL, $logged, 'The logged-in shell no longer arms the AMD panel.');
-        $this->assertNotContains('categoryposters', $logged, 'Nor the AMD posters\' painters.');
-        $graph = $this->graph(self::MODULE);
-        foreach ([self::PANEL, 'categoryposters'] as $module) {
-            $this->assertContains($module, $graph, "The visitor keeps {$module}.");
-        }
-        foreach ($graph as $module) {
-            $this->assertStringStartsNotWith(self::ESM . 'areas/', $module, 'The visitor\'s page reaches ' . $module . '.');
-            $this->assertStringNotContainsString(
-                '@moodle/lms/theme_dimensions/areas',
-                $this->code($module),
-                $module . ' names the logged-in posters and panel component.'
-            );
-        }
-    }
+
 
     /**
      * Nothing a visitor's page loads reads the session, stars a course or asks a logged-in service.
@@ -652,7 +678,7 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringNotContainsString('requestRows(', $init, 'init never fetches.');
         $this->assertStringNotContainsString('Ajax.call(', $init);
         $this->assertStringNotContainsString('ask(', $init);
-        $this->assertStringNotContainsString('client.ask(', $this->body('arm', self::PANEL), 'Nor does arming the panels.');
+        $this->assertStringNotContainsString('ask(', $this->inner('adopt'), 'Nor does the component taking the page over.');
     }
 
     /**
@@ -669,23 +695,27 @@ final class categorypublic_source_test extends \basic_testcase {
      * leaving a failure to the inline error; the fallback losing the panel's order or its fragment.
      */
     public function test_a_panel_it_cannot_answer_loads_the_posters_link(): void {
-        $merge = $this->body('answerContext', self::PANEL);
+        $merge = $this->area_body('answerContext', 'model.ts');
         $this->assertMatchesRegularExpression(
-            '~if \(!response\.panel \|\| Number\(response\.panel\.id\) !== id\) \{\s*throw new Error\(~',
+            '~if \(!response \|\| !response\.panel \|\| Number\(response\.panel\.id\) !== id\) \{\s*throw new Error\(~',
             $merge,
             'An answer with no panel of the area asked about is a failure.'
         );
-        $request = $this->body('request', self::PANEL);
+        $request = $this->inner('request');
         $found = preg_match('~\} catch \(error\) \{(.*?)\} finally \{~s', $request, $matches);
         $this->assertSame(1, $found, 'The request has no catch block.');
         $catch = $matches[1];
-        $this->assertMatchesRegularExpression('~if \(ticket !== state\.ticket\) \{\s*return;~', $catch, 'Only the latest request.');
-        $handed = strpos($catch, 'if (client.unanswered(poster, state.psort)) {');
+        $this->assertMatchesRegularExpression('~if \(ticket !== st\.ticket\) \{\s*return;~', $catch, 'Only the latest request.');
+        $handed = strpos($catch, 'if (unanswered(poster, st.psort)) {');
         $this->assertIsInt($handed, 'A failure is offered to the client.');
-        $this->assertLessThan(
-            (int) strpos($catch, 'transplant(shellContext(poster, {iserror: true}), ticket)'),
-            $handed,
-            'Before the inline error is drawn.'
+        $this->assertLessThan((int) strpos($catch, '{iserror: true}'), $handed, 'Before the inline error is drawn.');
+        $offer = $this->inner('unanswered');
+        $this->assertStringContainsString('areas.dispatchEvent(new CustomEvent(EVENTS.unanswered, {detail: detail}));', $offer);
+        $this->assertStringContainsString('return detail.taken === true;', $offer);
+        $this->assertStringContainsString(
+            'event.detail.taken = client.unanswered(event.detail.poster, event.detail.psort);',
+            $this->body('mountAreas', 'categorylisting'),
+            'The shared mount hands the client\'s word back.'
         );
 
         $failed = $this->body('panelFailed');
@@ -741,19 +771,21 @@ final class categorypublic_source_test extends \basic_testcase {
             'The server\'s own fragment for a panel.'
         );
         $this->assertMatchesRegularExpression(
-            "~AreaPanel\.criteria\(\{accordion: accordion, areas: response\.areas \|\| \{\}\}\);\s*linkPosters\(\);~",
+            '~document\.dispatchEvent\(new CustomEvent\(EVENTS\.criteria, \{detail: \{\s*accordion: response\.accordion \|\| \[\],'
+                . '\s*areas: word,.*?\}\}\)\);\s*linkPosters\(\);\s*$~s',
             $this->body('paintAreas'),
-            'Every answer is painted with the open panel asked again, and points the posters again.'
+            'Every answer is told to the component, which asks the open panel again, and the posters are pointed again.'
         );
         $this->assertMatchesRegularExpression(
-            "~if \(state\.open\) \{\s*place\(\);\s*request\(\);~",
-            $this->body('criteria', self::PANEL),
-            'The shared painting asks the open panel again.'
+            "~if \(st\.open\) \{\s*place\(\);\s*request\(\);~",
+            $this->inner('criteria'),
+            'The component asks the open panel again.'
         );
-        // The shell a panel shows before its rows arrive carries the criteria, so it follows them too.
-        $paint = $this->body('paintAreas');
-        $this->assertStringContainsString("poster.dataset.ctaurl = entry.ctaurl || '';", $paint);
-        $this->assertStringContainsString("poster.dataset.ctalabel = entry.ctalabel || '';", $paint);
+        // The shell a panel shows before its rows arrive carries the criteria: the component writes it.
+        $this->assertStringNotContainsString('dataset.ctaurl', $this->code(), 'Nothing here writes into a poster but its link.');
+        $posters = $this->read(self::AREAS . 'posters.ts', 'The source is missing.');
+        $this->assertStringContainsString("poster.dataset.ctaurl = entry.ctaurl || '';", $posters);
+        $this->assertStringContainsString("poster.dataset.ctalabel = entry.ctalabel || '';", $posters);
         $this->assertStringContainsString('const url = Listing.buildUrl(state);', $this->body('fallbackUrl'));
         $this->assertStringContainsString('linkPosters();', $this->body('init'), 'The open poster links to its own panel too.');
     }
@@ -775,7 +807,12 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~^const SEARCH_DEBOUNCE = 300;$~m', $this->source());
         $this->assertMatchesRegularExpression('~^const SEARCH_DEBOUNCE = 300;$~m', $this->source('categoryvitrine'));
         $listen = $this->body('listen');
-        $this->assertStringContainsString("search.addEventListener('input', () => onSearchInput(search));", $listen);
+        $this->assertMatchesRegularExpression(
+            '~form\.addEventListener\(\'input\', \(event\) => \{\s*const search = Listing\.closestOf\(event, SELECTORS\.search\);'
+                . '\s*if \(search\) \{\s*onSearchInput\(search\);~',
+            $listen,
+            'Delegated on the form: the line\'s component replaces the server\'s field with its own.'
+        );
         $this->assertStringContainsString("form.addEventListener('submit', (event) => event.preventDefault());", $listen);
         $this->assertMatchesRegularExpression(
             '~^    cancelSearch\(\);\n    Listing\.paintEraser\(root\);\n'
@@ -871,109 +908,144 @@ final class categorypublic_source_test extends \basic_testcase {
     /**
      * A visitor's poster stays its link: a plain press opens the panel in place, any other press follows it.
      *
-     * The shared panel module turns the logged-in client's posters into buttons; a client that keeps
-     * them links (this one) has each announced as the button it acts as - role, state, the panel it
-     * controls - and answers Enter (a click) and Space on it, while a press meant for another tab or
-     * window, with a modifier or already dealt with, is left to the link. A middle or secondary
-     * press is an event of its own and never reaches the click listener.
+     * The posters' component turns the logged-in client's posters into buttons; mounted with the visitor's
+     * options (links), it keeps them links, has each announced as the button it acts as - role, state, the
+     * panel it controls - and answers Enter (a click) and Space on it, while a press meant for another tab
+     * or window, with a modifier or already dealt with, is left to the link. A middle or secondary press
+     * is an event of its own and never reaches the click listener. The behaviour is Jest's; this is the
+     * wiring and the spelling.
      *
-     * Changes that must make it fail: arming the panels without links (the posters become buttons
-     * with no address); intercepting a modified press; Space doing nothing on a poster.
+     * Changes that must make it fail: mounting the visitor's posters without links (gate
+     * js_public_posters_stay_links: buttons with no address); the component ignoring the option (gate
+     * js_panel_links_announced); intercepting a modified press (js_panel_modified_press); Space doing
+     * nothing on a poster (js_panel_space_toggles).
      */
     public function test_a_visitors_poster_stays_its_link_and_a_plain_press_opens_it(): void {
-        $this->assertMatchesRegularExpression('~AreaPanel\.arm\(\{[^}]*\blinks: true,~s', $this->body('init'));
-        $this->assertDoesNotMatchRegularExpression(
-            '~\blinks:~',
-            (string) file_get_contents($this->plugin_root() . '/amd/src/categorypanel.js'),
-            'The logged-in client keeps its buttons.'
-        );
-        $convert = $this->body('convertPoster', self::PANEL);
         $this->assertMatchesRegularExpression(
-            "~if \(client\.links\) \{\s*attributes\.role = 'button';\s*"
-                . 'Object\.keys\(attributes\)\.forEach\(\(name\) => '
-                . 'control\.setAttribute\(name, attributes\[name\]\)\);\s*return;~',
+            "~^const AREAS_PROPS = \{\n    links: true,\n    quiet: PANEL_QUIET,\n    autoopen: false,\n\};$~m",
+            $this->source()
+        );
+        $this->assertStringContainsString('Listing.mountAreas(areas, AREAS_PROPS, {', $this->body('init'));
+        $this->assertStringContainsString(
+            'node.dataset.reactProps = JSON.stringify(props);',
+            $this->body('mountAreas', 'categorylisting')
+        );
+        $this->assertStringContainsString(
+            'const mountAreas = () => Listing.mountAreas(areas, {}, {ask: ask, painted: paintProgress});',
+            $this->source('categorypanel'),
+            'The logged-in client keeps its buttons: its props are none.'
+        );
+        $panel = $this->read(self::AREAS . 'panel.ts', 'The source is missing.');
+        $this->assertStringContainsString("    links: props.links === true,\n", $panel);
+        $this->assertStringContainsString("    autoopen: props.autoopen !== false,\n", $panel);
+        $this->assertStringContainsString(
+            '}, optionsOf(props || {})) : null));',
+            $this->read(self::AREAS . 'Areas.tsx', 'The source is missing.'),
+            'The component builds its panel with the mount\'s props.'
+        );
+
+        $convert = $this->area_body('convertPoster', 'posters.ts');
+        $this->assertMatchesRegularExpression(
+            "~if \(links\) \{\s*attributes\.role = 'button';\s*"
+                . 'Object\.keys\(attributes\)\.forEach\(\(name\) => setAttr\(control, name, attributes\[name\]\)\);\s*return;~',
             $convert,
             'The link is kept, announced as a button with its state and the panel it controls.'
         );
-        $this->assertLessThan((int) strpos($convert, 'toButton('), (int) strpos($convert, 'if (client.links) {'));
+        $this->assertLessThan((int) strpos($convert, 'toButton('), (int) strpos($convert, 'if (links) {'));
         $this->assertStringContainsString("'aria-controls': PANEL_ID,", $convert);
+        $this->assertStringContainsString(
+            "return links && control.tagName === 'A' && isExpandable(poster) ? control : null;",
+            $this->area_body('driven', 'posters.ts')
+        );
+        $setopen = $this->area_body('setPosterOpen', 'posters.ts');
+        $this->assertStringContainsString('const control = driven(poster, links);', $setopen);
 
-        $click = $this->body('onAreasClick', self::PANEL);
+        $click = $this->inner('onAreasClick');
+        $this->assertStringContainsString('driven(poster, mode.links) !== control', $click);
         $this->assertMatchesRegularExpression(
-            "~if \(control\.tagName === 'A' && elsewhere\(event\)\) \{\s*return;\s*\}\s*"
+            "~if \(control\.tagName === 'A' && elsewhere\(event as MouseEvent\)\) \{\s*return;\s*\}\s*"
                 . 'event\.preventDefault\(\);\s*toggleArea\(poster\);~',
             $click,
             'A press for another tab or window is the link\'s.'
         );
         $this->assertMatchesRegularExpression(
-            '~const elsewhere = \(event\) => event\.defaultPrevented \|\| event\.button !== 0\s*'
+            '~export const elsewhere = \(event: MouseEvent\): boolean => event\.defaultPrevented \|\| event\.button !== 0\s*'
                 . '\|\| event\.ctrlKey \|\| event\.metaKey \|\| event\.shiftKey \|\| event\.altKey;~',
-            $this->source(self::PANEL)
+            $panel
         );
-        $driven = $this->body('driven', self::PANEL);
-        $this->assertStringContainsString(
-            "return client.links && control.tagName === 'A' && isExpandable(poster) ? control : null;",
-            $driven
-        );
-
-        $space = $this->body('onSpace', self::PANEL);
-        $this->assertStringContainsString("if (event.key !== ' ' || event.repeat || !client.links) {", $space);
+        $space = $this->inner('onSpace');
+        $this->assertStringContainsString("if (event.key !== ' ' || event.repeat || !mode.links) {", $space);
         $this->assertMatchesRegularExpression('~event\.preventDefault\(\);\s*toggleArea\(poster\);\s*return true;~', $space);
-        $this->assertMatchesRegularExpression('~if \(onSpace\(event\)\) \{\s*return;~', $this->body('onKeydown', self::PANEL));
-        $this->assertStringContainsString('const control = driven(poster);', $this->body('setPosterOpen', self::PANEL));
+        $this->assertMatchesRegularExpression('~if \(onSpace\(event\)\) \{\s*return;~', $this->inner('onKeydown'));
     }
 
     /**
      * A panel's question is asked once, and only after the reader stopped pressing.
      *
-     * Every question costs the site a slice or a panel's reads, on the open internet. The open
-     * panel is asked again with every answer to new criteria; an answer to criteria that did not
-     * change - the back button over a change of view - finds the same question already asked for
-     * the same opening, and a panel the server drew counts its address's question as asked. A
-     * request waits PANEL_QUIET for the reader to stop pressing, and goes out only if it is still the
-     * latest. There is no prefetch: nothing asks on hover. The logged-in client names neither, and is
-     * asked every time as it always was.
+     * Every question costs the site a slice or a panel's reads, on the open internet. The open panel
+     * is asked again with every answer to new criteria; an answer to criteria that did not change -
+     * the back button over a change of view - finds the same question already asked for the same
+     * opening, and a panel the server drew counts its address's question as asked. A request waits
+     * PANEL_QUIET for the reader to stop pressing, and goes out only if it is still the latest. There is
+     * no prefetch: nothing asks on hover. The logged-in client names no question, and is asked every
+     * time as it always was.
      *
-     * Changes that must make it fail: asking an answered question again; asking with no quiet;
-     * dropping the ticket check after the quiet.
+     * Changes that must make it fail: the visitor's question not handed to the component (gates
+     * js_public_question_named, js_areas_question_answered); asking an answered question again
+     * (js_panel_question_once); asking with no quiet (js_public_panel_quiet); dropping the ticket check
+     * after the quiet (js_panel_quiet_latest).
      */
     public function test_a_panels_question_is_asked_once_after_a_quiet(): void {
         $init = $this->body('init');
         $this->assertStringContainsString('question: panelQuestion,', $init);
-        $this->assertStringContainsString('quiet: PANEL_QUIET,', $init);
         $this->assertMatchesRegularExpression('~^const PANEL_QUIET = [1-9][0-9]*;$~m', $this->source());
+        $this->assertStringContainsString("\n    quiet: PANEL_QUIET,\n", $this->source());
         $this->assertStringContainsString('return JSON.stringify(panelArgs(poster, psort));', $this->body('panelQuestion'));
-
-        $this->assertMatchesRegularExpression(
-            "~const answered = \(question\) => question !== '' && question === state\.asked "
-                . '&& state\.askedticket === state\.ticket;~',
-            $this->source(self::PANEL)
+        $this->assertStringContainsString(
+            'event.detail.question = client.question(event.detail.poster, event.detail.psort);',
+            $this->body('mountAreas', 'categorylisting')
         );
-        $request = $this->body('request', self::PANEL);
-        $asked = strpos($request, "if (answered(question)) {\n        return;\n    }");
-        $ticket = strpos($request, 'const ticket = ++state.ticket;');
+
+        $panel = $this->read(self::AREAS . 'panel.ts', 'The source is missing.');
+        $this->assertMatchesRegularExpression(
+            "~const answered = \(asking: string\): boolean => asking !== '' && asking === st\.asked "
+                . '&& st\.askedticket === st\.ticket;~',
+            $panel
+        );
+        $this->assertStringContainsString(
+            'areas.dispatchEvent(new CustomEvent(EVENTS.question, {detail: detail}));',
+            $this->inner('question')
+        );
+        $request = $this->inner('request');
+        $asked = strpos($request, "if (answered(asking)) {\n            return;\n        }");
+        $ticket = strpos($request, 'const ticket = ++st.ticket;');
         $this->assertIsInt($asked, 'An answered question is not asked again.');
         $this->assertIsInt($ticket);
         $this->assertLessThan($ticket, $asked, 'Before a ticket is taken, which would supersede the answer on screen.');
-        $this->assertMatchesRegularExpression('~state\.asked = question;\s*state\.askedticket = ticket;~', $request);
-        $quiet = strpos($request, "if (!(await quiet(ticket))) {\n            return;\n        }");
+        $this->assertMatchesRegularExpression('~st\.asked = asking;\s*st\.askedticket = ticket;~', $request);
+        $quiet = strpos($request, "if (!(await quiet(ticket))) {\n                return;\n            }");
         $this->assertIsInt($quiet, 'A request waits for the quiet and stays the latest.');
-        $this->assertLessThan((int) strpos($request, 'await client.ask(poster, state.psort);'), $quiet);
+        $this->assertLessThan((int) strpos($request, 'await ask(poster, st.psort);'), $quiet);
+        $this->assertStringContainsString('SKELETON_DELAY + mode.quiet', $request, 'The skeleton waits for the quiet too.');
         $this->assertMatchesRegularExpression(
-            '~await new Promise\(\(resolve\) => window\.setTimeout\(resolve, client\.quiet\)\);\s*\}\s*'
-                . 'return ticket === state\.ticket;~',
-            $this->body('quiet', self::PANEL)
+            '~await new Promise\(\(resolve\) => window\.setTimeout\(resolve, mode\.quiet\)\);\s*\}\s*'
+                . 'return ticket === st\.ticket;~',
+            $this->inner('quiet')
         );
-        $this->assertStringContainsString("state.asked = '';", $request, 'A failed question may be asked again.');
-        $adopt = $this->body('adopt', self::PANEL);
+        $this->assertStringContainsString("st.asked = '';", $request, 'A failed question may be asked again.');
         $this->assertMatchesRegularExpression(
-            '~state\.asked = client\.question\(poster, state\.psort\);\s*state\.askedticket = state\.ticket;~',
-            $adopt,
+            '~st\.asked = question\(posterOf\(areas, id\) as HTMLElement, st\.psort\);\s*st\.askedticket = st\.ticket;~',
+            $this->inner('adopt'),
             'A panel the server drew is the answer to its address.'
         );
-        foreach ([self::MODULE, self::PANEL] as $module) {
+        $sources = [
+            self::MODULE => $this->code(),
+            'panel.ts' => $this->uncommented($panel),
+            'posters.ts' => $this->uncommented($this->read(self::AREAS . 'posters.ts', 'The source is missing.')),
+        ];
+        foreach ($sources as $module => $code) {
             foreach (['mouseenter', 'mouseover', 'pointerover', 'pointerenter'] as $hover) {
-                $this->assertStringNotContainsString("'{$hover}'", $this->code($module), "{$module} asks nothing on hover.");
+                $this->assertStringNotContainsString("'{$hover}'", $code, "{$module} asks nothing on hover.");
             }
         }
     }
@@ -990,7 +1062,11 @@ final class categorypublic_source_test extends \basic_testcase {
         );
         $request = $this->body('requestRows');
         $this->assertStringContainsString("root.setAttribute('aria-busy', 'true');", $request);
-        $this->assertStringContainsString('Posters.pending(areas, {filtered: Listing.narrows(state)});', $request);
+        $this->assertStringContainsString(
+            'document.dispatchEvent(new CustomEvent(EVENTS.pending, {detail: {filtered: Listing.narrows(state)}}));',
+            $request,
+            'The posters\' component holds their numbers until the answer.'
+        );
         $this->assertMatchesRegularExpression(
             "~finally \{\s*if \(ticket === seq\) \{\s*root\.removeAttribute\('aria-busy'\);~",
             $request
@@ -998,10 +1074,13 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * The committed builds of the module and of the three it paints with were made from the sources beside them.
+     * The committed builds of the module and of the listing it paints with were made from the sources beside them.
+     *
+     * The components' builds are esm_source_test's. The AMD modules they replaced are named by no build of
+     * the visitor's.
      */
     public function test_the_committed_builds_were_made_from_the_committed_sources(): void {
-        foreach ([self::MODULE, 'categorylisting', 'categoryposters', self::PANEL, 'categoryline'] as $module) {
+        foreach ([self::MODULE, 'categorylisting'] as $module) {
             $this->assertSame(
                 $this->source($module),
                 $this->built_from($module),
@@ -1009,9 +1088,58 @@ final class categorypublic_source_test extends \basic_testcase {
             );
         }
         $this->assertStringContainsString('theme_dimensions/categorylisting', $this->build());
-        $this->assertStringContainsString('theme_dimensions/categoryposters', $this->build());
-        $this->assertStringContainsString('theme_dimensions/' . self::PANEL, $this->build());
-        $this->assertStringContainsString('theme_dimensions/categoryline', $this->build());
+        foreach (['categoryposters', 'categoryareapanel', 'categoryline'] as $replaced) {
+            $this->assertStringNotContainsString('theme_dimensions/' . $replaced, $this->build());
+        }
+        $this->assertStringContainsString('@moodle/lms/theme_dimensions/areas/Areas', $this->build('categorylisting'));
+    }
+
+    /**
+     * The visitor's module hands its line, its calendar and its posters to the components, as the logged-in one does.
+     *
+     * The line goes first: the line put back where it stands is seen by core's observer as leaving and
+     * coming back, which would unmount a calendar already inside it. The posters are handed over before
+     * the root without a search line returns, because its directory has posters too. After every answer
+     * the line is told its numbers, after the painters; the field the component draws is read delegated
+     * on the form and never written; a client's focus on the search goes to the field or, folded, to its
+     * icon. No area opens by itself on this shell.
+     *
+     * Changes that must make it fail: the line or the calendar not handed over (gates js_public_line_armed,
+     * js_public_calendar_mounted); the line handed over after the calendar (js_public_line_before_calendar);
+     * the answer not told (js_public_line_answer_told); the field read where the component replaced it
+     * (js_public_line_input_delegated) or written into (js_public_erase_guard); the focus put on a folded
+     * field (js_public_focus_target); the automatic opening (js_public_no_autoopen).
+     */
+    public function test_the_visitor_hands_its_controls_to_the_components(): void {
+        $init = $this->body('init');
+        $line = strpos($init, "\n    Listing.mountLine(root, dropTerm);\n");
+        $calendar = strpos($init, "\n    Listing.mountCalendar(root, state, setRange).catch(() => null);\n");
+        $areas = strpos($init, "\n    Listing.mountAreas(areas, AREAS_PROPS, {\n");
+        $root = strpos($init, 'if (Listing.isRoot(state) && !root.querySelector(SELECTORS.toolbar)) {');
+        foreach (['line' => $line, 'calendar' => $calendar, 'posters' => $areas, 'root' => $root] as $what => $at) {
+            $this->assertIsInt($at, "The {$what} is not handed over as it should be.");
+        }
+        $this->assertLessThan($calendar, $line, 'The line before the calendar.');
+        $this->assertLessThan($root, $areas, 'The posters wherever there are posters, the root\'s directory included.');
+        $this->assertLessThan($line, $root, 'The line where there is a toolbar.');
+        $this->assertMatchesRegularExpression("~^    autoopen: false,$~m", $this->source());
+        $this->assertStringContainsString('if (!mode.autoopen || !id || ', $this->inner('autoOpen'), 'Which the component obeys.');
+
+        $apply = $this->body('applyResponse');
+        $told = strpos($apply, 'Listing.tellAnswer(root, response);');
+        $this->assertIsInt($told, 'The line is told every answer.');
+        foreach (['Listing.paintFilterBadge(', 'Listing.paintChips(', 'Listing.paintGroups(', 'Listing.paintPager('] as $painter) {
+            $this->assertLessThan($told, (int) strpos($apply, $painter), $painter . ' paints before the line is told.');
+        }
+        $this->assertMatchesRegularExpression(
+            '~form\.addEventListener\(\'input\', \(event\) => \{\s*const search = Listing\.closestOf\(event, SELECTORS\.search\);~',
+            $this->body('listen')
+        );
+        $this->assertStringContainsString('if (search && !search.closest(SELECTORS.drawnline)) {', $this->body('onErase'));
+        $this->assertStringContainsString("drawnline: '[data-region=\"dim-line\"][data-line-drawn]',", $this->source());
+        foreach (['onClear', 'onChipRemove'] as $handler) {
+            $this->assertStringContainsString('const search = Listing.focusTarget(root);', $this->body($handler), $handler);
+        }
     }
 
     /**

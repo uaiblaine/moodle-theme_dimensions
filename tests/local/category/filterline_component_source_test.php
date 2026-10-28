@@ -35,8 +35,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * react_autoinit and put back where it stands; the component draws the line's own controls and adopts
  * three frames of server markup (the Filters panel, the Organise menu, the managers' menu); and no
  * painter of the shared listing writes into what the component draws - it tells the component through
- * events on the line, spelled alike on both sides. The visitor's shell keeps categoryline until R4, so
- * only the logged-in module names the component (the visitor's import walk is categorypublic_source_test's).
+ * events on the line, spelled alike on both sides. Since R4a both shells hand their line over, the component
+ * named once in the shared listing (the visitor's import walk, which reaches it, is categorypublic_source_test's).
  * And the Jest suites run over a copy of the template's markup, which is held equal to the template here.
  *
  * @package    theme_dimensions
@@ -171,7 +171,7 @@ final class filterline_component_source_test extends \advanced_testcase {
     public function test_the_extractor_returns_one_function_and_not_the_file(): void {
         $mount = $this->body('mountLine');
         $this->assertStringContainsString('reactComponent', $mount);
-        $this->assertStringNotContainsString('DateRange.mount(', $mount, 'The extractor is returning more than one function.');
+        $this->assertStringNotContainsString('appendCalendar(', $mount, 'The extractor is returning more than one function.');
     }
 
     /**
@@ -180,22 +180,32 @@ final class filterline_component_source_test extends \advanced_testcase {
      * Changes that must make it fail: the guard on the field and the listbox dropped (the component would
      * replace a line it cannot draw with nothing); the line not put back (react_autoinit hears no added
      * node and the line is never drawn); the props nested under a key (the component renders nothing); the
-     * dropterm listener added after the node goes in; the pending mount never released.
+     * dropterm listener added after the node goes in; the pending mount never released, or released only when
+     * the component draws (a line it cannot draw would hold every Behat step on the page: gate js_line_failed_released);
+     * the form's id read as a property (gate js_line_form_id_attribute): the visitor's script form carries a hidden
+     * field named "id", which form.id returns, so the component is handed {} and finds no line to draw or to
+     * report failed on. Only the script entry has that field, so only a site without the router shows it.
      */
     public function test_the_line_is_handed_over_only_where_the_component_can_draw_it(): void {
         $mount = $this->body('mountLine');
         $listing = $this->read('amd/src/categorylisting.js');
-        $this->assertStringContainsString('export const mountLine = (root, component, dropTerm) => {', $listing);
+        $this->assertStringContainsString('export const mountLine = (root, dropTerm) => {', $listing);
+        $this->assertStringContainsString("const formid = form ? form.getAttribute('id') : null;", $mount);
+        $this->assertDoesNotMatchRegularExpression(
+            '~\bform\.id\b~',
+            $this->uncommented($mount),
+            'A form\'s id property is the control named "id" when the form has one.'
+        );
         $this->assertMatchesRegularExpression(
             '~if \(!line \|\| !line\.querySelector\(SELECTORS\.linefield\) \|\| '
-                . '!line\.querySelector\(SELECTORS\.listbox\) \|\| !form\.id\) \{\s*return false;\s*\}~',
+                . '!line\.querySelector\(SELECTORS\.listbox\) \|\| !formid\) \{\s*return false;\s*\}~',
             $mount,
-            'A line without its field or its listbox stays the server\'s, as categoryline arms none.'
+            'A line without its field or its listbox stays the server\'s, which works without the component.'
         );
         $this->assertStringContainsString("listbox: '[data-region=\"dim-line-suggest\"]',", $listing);
-        $this->assertStringContainsString('line.dataset.reactComponent = component;', $mount);
+        $this->assertStringContainsString('line.dataset.reactComponent = COMPONENTS.line;', $mount);
         $this->assertStringContainsString(
-            'line.dataset.reactProps = JSON.stringify({form: form.id});',
+            'line.dataset.reactProps = JSON.stringify({form: formid});',
             $mount,
             'The props object itself.'
         );
@@ -204,6 +214,7 @@ final class filterline_component_source_test extends \advanced_testcase {
         $listeners = [
             'line.addEventListener(LINE.dropterm, () => dropTerm());',
             'line.addEventListener(LINE.mounted, () => pending.resolve(), {once: true});',
+            'line.addEventListener(LINE.failed, () => pending.resolve(), {once: true});',
         ];
         foreach ($listeners as $listener) {
             $at = strpos($mount, $listener);
@@ -226,6 +237,7 @@ final class filterline_component_source_test extends \advanced_testcase {
         $this->assertSame(
             [
                 'mounted' => 'dim-line:mounted',
+                'failed' => 'dim-line:failed',
                 'state' => 'dim-line:state',
                 'answer' => 'dim-line:answer',
                 'dropterm' => 'dim-line:dropterm',
@@ -338,29 +350,32 @@ final class filterline_component_source_test extends \advanced_testcase {
     }
 
     /**
-     * The logged-in module names the component, which is built; the visitor's keeps categoryline.
+     * The shared listing names the component, which is built, and both shells hand their line to it.
      *
-     * Changes that must make it fail: the logged-in module arming categoryline again; the specifier named
-     * in the shared listing or the visitor's module; the component not built.
+     * Changes that must make it fail: a client arming categoryline again or naming the component itself; the
+     * visitor's module handing its line to nothing (gate js_public_line_armed); the component not built.
      */
-    public function test_only_the_logged_in_shell_names_the_component(): void {
-        $vitrine = $this->read('amd/src/categoryvitrine.js');
-        $this->assertStringContainsString("const FILTERLINE = '" . self::SPECIFIER . "';", $vitrine);
-        $this->assertStringContainsString('const mountLine = () => Listing.mountLine(root, FILTERLINE, dropTerm);', $vitrine);
+    public function test_both_shells_hand_their_line_to_the_component_named_in_the_listing(): void {
+        $this->assertStringContainsString("    line: '" . self::SPECIFIER . "',\n", $this->read('amd/src/categorylisting.js'));
+        $this->assertStringContainsString(
+            'const mountLine = () => Listing.mountLine(root, dropTerm);',
+            $this->read('amd/src/categoryvitrine.js')
+        );
         foreach (['FilterLine', 'lazy', 'preview', 'model', 'measure', 'steps', 'suggest', 'mark'] as $module) {
             foreach (['js', 'dev.js'] as $build) {
                 $this->assertFileExists($this->plugin_root() . "/js/esm/build/filterline/{$module}.{$build}");
             }
         }
         $public = $this->uncommented($this->read('amd/src/categorypublic.js'));
-        $this->assertStringContainsString('Line.arm(root, {dropTerm: dropTerm});', $public);
-        $this->assertStringContainsString('Line.repaint();', $public);
-        $this->assertStringNotContainsString('Listing.mountLine(', $public);
-        foreach (['categorypublic', 'categorylisting'] as $module) {
+        $this->assertStringContainsString('Listing.mountLine(root, dropTerm);', $public);
+        $this->assertStringContainsString('Listing.tellAnswer(root, response);', $public);
+        foreach (['categorypublic', 'categoryvitrine'] as $module) {
+            $source = $this->read('amd/src/' . $module . '.js');
+            $this->assertStringNotContainsString("'theme_dimensions/categoryline'", $source, $module . ' arms categoryline.');
             $this->assertStringNotContainsString(
                 '@moodle/lms/theme_dimensions/filterline',
-                $this->read('amd/src/' . $module . '.js'),
-                $module . ' names the component: the visitor\'s graph would reach it.'
+                $source,
+                $module . ' names the component: the listing names it, once.'
             );
         }
     }

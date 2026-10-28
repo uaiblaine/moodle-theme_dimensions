@@ -1,2 +1,2 @@
-# Ask the service and hand the component nothing: every panel opens into its error.
-s/        event\.detail\.answer = ask\(event\.detail\.poster, event\.detail\.psort\);/        ask(event.detail.poster, event.detail.psort);/;
+# Hear the component's question and leave its answer empty: every panel opens into its error.
+s/        event\.detail\.answer = client\.ask\(event\.detail\.poster, event\.detail\.psort\);/        client.ask(event.detail.poster, event.detail.psort);/;

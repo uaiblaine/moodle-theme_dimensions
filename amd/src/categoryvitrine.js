@@ -55,11 +55,12 @@
  * categorystar's, and the searched term is marked in the cards' titles by categorymark.
  *
  * The filter line is a React component's since stage R2 of docs/vitrine-react/PLAN.md
- * (js/esm/src/filterline/FilterLine.tsx), handed the server's line by the shared mountLine(); the
- * visitor's module keeps categoryline. The component draws the line's own controls, which this module and
- * the shared painters never write into: they tell it what moved (the shared tellAnswer() after every
- * answer, and every painter of the line's controls through the line's events), and it says when a
- * suggestion is about to press its control, so this module drops the typed term first (dropTerm).
+ * (js/esm/src/filterline/FilterLine.tsx), handed the server's line by the shared mountLine(), as the
+ * visitor's is since R4a; the calendar is R1's, appended by the shared mountCalendar(). The component
+ * draws the line's own controls, which this module and the shared painters never write into: they tell it
+ * what moved (the shared tellAnswer() after every answer, and every painter of the line's controls through
+ * the line's events), and it says when a suggestion is about to press its control, so this module drops
+ * the typed term first (dropTerm).
  *
  * @module     theme_dimensions/categoryvitrine
  * @copyright  2026 Anderson Blaine
@@ -136,18 +137,6 @@ const REMEMBER_WAIT = 1000;
 
 /** @type {String} The body class which hides the no-JavaScript submit and shows what only this module drives. */
 const BODY_CLASS = 'dim-js';
-
-/**
- * @type {String} The calendar of this shell: the React component of stage R1, appended by the shared
- * mountCalendar(). Named here and nowhere the visitor's modules reach, which keep the AMD calendar.
- */
-const CALENDAR = '@moodle/lms/theme_dimensions/daterange/DateRange';
-
-/**
- * @type {String} The filter line of this shell: the React component of stage R2, handed the server's line
- * by the shared mountLine(). Named here and nowhere the visitor's modules reach, which keep categoryline.
- */
-const FILTERLINE = '@moodle/lms/theme_dimensions/filterline/FilterLine';
 
 /** @type {Number} Milliseconds of quiet before a typed term is sent. */
 const SEARCH_DEBOUNCE = 300;
@@ -309,8 +298,8 @@ const paintPager = (response, append, first) => Listing.paintPager(root, respons
 const paintGrid = (grid, items, append) => Listing.paintGrid(root, state, grid, items, append, discard);
 const paintDirect = (response) => Listing.paintDirect(root, response);
 const armTreebox = () => Listing.armTreebox(root);
-const mountCalendar = () => Listing.mountCalendar(root, state, setRange, CALENDAR);
-const mountLine = () => Listing.mountLine(root, FILTERLINE, dropTerm);
+const mountCalendar = () => Listing.mountCalendar(root, state, setRange);
+const mountLine = () => Listing.mountLine(root, dropTerm);
 const tellAnswer = (response) => Listing.tellAnswer(root, response);
 const focusTarget = () => Listing.focusTarget(root);
 

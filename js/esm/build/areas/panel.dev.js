@@ -1,20 +1,22 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 /**
- * The panel between the poster rows on the logged-in shell: one area at a time, its place, its address,
- * its orders, its rail, its keyboard and its states, behind Areas.tsx.
+ * The panel between the poster rows, on both shells: one area at a time, its place, its address, its
+ * orders, its rail, its keyboard and its states, behind Areas.tsx.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md: the logged-in half of amd/src/categoryareapanel.js, which the
- * visitor's shell keeps until R4, with every function named after the AMD function it stands for, so a
- * rule of the panel changes in both. The state is read and written synchronously, as the AMD module's
- * is; what React draws from it (the summary of the areas with no result) is told through `ui`.
+ * Stage R3 of docs/vitrine-react/PLAN.md ported amd/src/categoryareapanel.js for the logged-in shell, with
+ * every function named after the AMD function it stood for; stage R4a gave the component the visitor's
+ * half as options ({@see Options}): posters that stay links, a question asked once per opening after a
+ * quiet, a failure the page takes over, and no automatic opening. The state is read and written
+ * synchronously, as the AMD module's was; what React draws from it (the summary of the areas with no
+ * result) is told through `ui`.
  *
  * WHO WRITES WHAT. The panel's element - the one list item of the grid the server always writes - is this
  * module's frame: its hidden state, its three transition classes (only through {@see settle}), the five
  * integers of its row and the open area's colour on its style, and its place in the DOM. Inside it the
  * panel's content is Mustache's: category_panel rendered by core/templates and inserted whole
  * ({@see renderWhole}) or region by region ({@see transplant}), never diffed. The cards in it keep their own
- * modules (the star, the film, the dialogue, the progress categorypanel paints on `painted`).
+ * modules (the film, the dialogue, and on the logged-in shell what an account adds, painted on `painted`).
  *
  * LAYOUT. The row is the five integers and the DOM order the last poster of the open one's row, both
  * counted from the posters shown and the grid's tracks (matchMedia and the view class), never read off a
@@ -61,6 +63,7 @@ import {
 } from "./model";
 import {
   convertPoster,
+  driven,
   failed,
   fitReveal,
   isExpandable,
@@ -88,6 +91,8 @@ import { dragRail, paintRail, railState, scrollRail } from "./rail";
 const EVENTS = {
   mounted: "dim-areas:mounted",
   ask: "dim-areas:ask",
+  question: "dim-areas:question",
+  unanswered: "dim-areas:unanswered",
   painted: "dim-areas:painted",
   view: "dim-vitrine:view",
   pending: "dim-vitrine:pending",
@@ -95,18 +100,26 @@ const EVENTS = {
   failed: "dim-vitrine:failed",
   autoopened: "dim-panel:autoopened"
 };
+const optionsOf = /* @__PURE__ */ __name((props) => ({
+  links: props.links === true,
+  quiet: typeof props.quiet === "number" && Number.isInteger(props.quiet) && props.quiet > 0 ? props.quiet : 0,
+  autoopen: props.autoopen !== false
+}), "optionsOf");
 const drawnOpen = /* @__PURE__ */ __name((nodes) => {
   const section = nodes.panel.querySelector(SELECTORS.section);
   const id = section ? Number(section.dataset.categoryid) : 0;
   return !nodes.panel.hidden && isExpandable(posterOf(nodes.areas, id)) ? id : 0;
 }, "drawnOpen");
-const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
+const elsewhere = /* @__PURE__ */ __name((event) => event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey, "elsewhere");
+const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => {
   const { areas, panel, status } = nodes;
   const st = {
     open: 0,
     psort: "",
     openedby: "",
     ticket: 0,
+    asked: "",
+    askedticket: -1,
     turn: 0,
     paint: 0,
     skeleton: 0,
@@ -146,6 +159,23 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
     areas.dispatchEvent(new CustomEvent(EVENTS.ask, { detail }));
     return detail.answer || Promise.reject(new Error("Nothing on the page answers the panel."));
   }, "ask");
+  const question = /* @__PURE__ */ __name((poster, psort) => {
+    const detail = { poster, psort, question: "" };
+    areas.dispatchEvent(new CustomEvent(EVENTS.question, { detail }));
+    return typeof detail.question === "string" ? detail.question : "";
+  }, "question");
+  const answered = /* @__PURE__ */ __name((asking) => asking !== "" && asking === st.asked && st.askedticket === st.ticket, "answered");
+  const quiet = /* @__PURE__ */ __name(async (ticket) => {
+    if (mode.quiet > 0) {
+      await new Promise((resolve) => window.setTimeout(resolve, mode.quiet));
+    }
+    return ticket === st.ticket;
+  }, "quiet");
+  const unanswered = /* @__PURE__ */ __name((poster, psort) => {
+    const detail = { poster, psort, taken: false };
+    areas.dispatchEvent(new CustomEvent(EVENTS.unanswered, { detail }));
+    return detail.taken === true;
+  }, "unanswered");
   const painted = /* @__PURE__ */ __name(() => {
     areas.dispatchEvent(new CustomEvent(EVENTS.painted, { detail: { panel } }));
   }, "painted");
@@ -309,8 +339,14 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
     if (!poster) {
       return;
     }
+    const asking = question(poster, st.psort);
+    if (answered(asking)) {
+      return;
+    }
     arm();
     const ticket = ++st.ticket;
+    st.asked = asking;
+    st.askedticket = ticket;
     const held = new Pending("theme_dimensions/areas:request");
     window.clearTimeout(st.skeleton);
     setSortBusy(true);
@@ -318,8 +354,11 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
       if (ticket === st.ticket) {
         transplant(shellContext(shellOf(poster), st.psort, window.location.href, { isskeleton: true }), ticket);
       }
-    }, SKELETON_DELAY);
+    }, SKELETON_DELAY + mode.quiet);
     try {
+      if (!await quiet(ticket)) {
+        return;
+      }
       const response = await ask(poster, st.psort);
       if (ticket !== st.ticket) {
         return;
@@ -338,6 +377,10 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
         return;
       }
       window.clearTimeout(st.skeleton);
+      st.asked = "";
+      if (unanswered(poster, st.psort)) {
+        return;
+      }
       if (!await transplant(shellContext(shellOf(poster), st.psort, window.location.href, { iserror: true }), ticket)) {
         return;
       }
@@ -396,7 +439,7 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
   const applyExpandable = /* @__PURE__ */ __name((poster) => {
     const id = poster ? Number(poster.dataset.categoryid) : 0;
     if (poster && st.expandable.has(id)) {
-      setExpandable(poster, Boolean(st.expandable.get(id)), st.open);
+      setExpandable(poster, Boolean(st.expandable.get(id)), st.open, mode.links);
     }
   }, "applyExpandable");
   const recountSummary = /* @__PURE__ */ __name(() => {
@@ -483,8 +526,8 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
     const before = prev ? poster.getBoundingClientRect().top : 0;
     const prevhides = isZeroed(areas, prev);
     const samerow = sharesRow(prev, poster);
-    setPosterOpen(prev, false);
-    setPosterOpen(poster, true);
+    setPosterOpen(prev, false, mode.links);
+    setPosterOpen(poster, true, mode.links);
     if (prev && prevhides) {
       setHidden(itemOf(prev), true);
       fitReveal(areas);
@@ -521,7 +564,7 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
     arm();
     const poster = posterOf(areas, st.open);
     const zeroed = isZeroed(areas, poster);
-    setPosterOpen(poster, false);
+    setPosterOpen(poster, false, mode.links);
     st.open = 0;
     st.openedby = "";
     st.psort = "";
@@ -572,23 +615,42 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
     writeAddress();
     request();
   }, "setPsort");
-  const onAreasClick = /* @__PURE__ */ __name((event) => {
-    const control = event.target instanceof Element ? event.target.closest(SELECTORS.control) : null;
-    if (!control || panel.contains(control) || control.tagName !== "BUTTON") {
-      return;
-    }
-    const poster = control.closest(SELECTORS.area);
-    if (!poster || !isExpandable(poster)) {
-      return;
-    }
-    event.preventDefault();
+  const toggleArea = /* @__PURE__ */ __name((poster) => {
     const id = Number(poster.dataset.categoryid);
     if (id === st.open) {
       closeArea(true, true);
     } else {
       openArea(id, { focus: true });
     }
+  }, "toggleArea");
+  const onAreasClick = /* @__PURE__ */ __name((event) => {
+    const control = event.target instanceof Element ? event.target.closest(SELECTORS.control) : null;
+    if (!control || panel.contains(control)) {
+      return;
+    }
+    const poster = control.closest(SELECTORS.area);
+    if (!poster || !isExpandable(poster) || driven(poster, mode.links) !== control) {
+      return;
+    }
+    if (control.tagName === "A" && elsewhere(event)) {
+      return;
+    }
+    event.preventDefault();
+    toggleArea(poster);
   }, "onAreasClick");
+  const onSpace = /* @__PURE__ */ __name((event) => {
+    if (event.key !== " " || event.repeat || !mode.links) {
+      return false;
+    }
+    const control = event.target instanceof Element ? event.target.closest(SELECTORS.control) : null;
+    const poster = control ? control.closest(SELECTORS.area) : null;
+    if (!control || !poster || control.tagName !== "A" || panel.contains(control) || driven(poster, true) !== control) {
+      return false;
+    }
+    event.preventDefault();
+    toggleArea(poster);
+    return true;
+  }, "onSpace");
   const onPanelClick = /* @__PURE__ */ __name((event) => {
     if (!(event.target instanceof Element)) {
       return;
@@ -658,6 +720,9 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
       }
       return;
     }
+    if (onSpace(event)) {
+      return;
+    }
     const option = event.target instanceof Element ? event.target.closest(SELECTORS.sortoption) : null;
     const arrows = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
     if (option && option.tagName === "BUTTON" && arrows.indexOf(event.key) >= 0) {
@@ -709,7 +774,7 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
   }, "onToggle");
   const autoOpen = /* @__PURE__ */ __name((word) => {
     const id = Number(word.autoopen) || 0;
-    if (!id || id === st.open || st.open && st.openedby === "user") {
+    if (!mode.autoopen || !id || id === st.open || st.open && st.openedby === "user") {
       return;
     }
     openArea(id, { focus: false, scroll: false, auto: true });
@@ -724,7 +789,7 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
     areas.querySelectorAll(SELECTORS.grid).forEach((grid) => setAttr(grid, "aria-busy", null));
     areas.dataset.filtered = filtered ? "1" : "0";
     areas.dataset.elsewhere = word.elsewhere || "";
-    paintPosters(areas, accordion, filtered, st.open, st.expandable);
+    paintPosters(areas, accordion, filtered, st.open, st.expandable, mode.links);
     ui.sync(() => {
       ui.filtered(filtered);
       ui.summary(summaryOf(accordion, word, (id) => {
@@ -769,12 +834,14 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
       st.open = id;
       st.openedby = "user";
       st.psort = readPanel(window.location.href).psort;
+      st.asked = question(posterOf(areas, id), st.psort);
+      st.askedticket = st.ticket;
       convertPanel();
       markTitles(panel, termOf(window.location.href));
       setClass(panel, CLASSES.shut, false);
       setClass(areas, CLASSES.areasopen, true);
     }
-    areas.querySelectorAll(SELECTORS.area).forEach((poster) => convertPoster(poster, st.open));
+    areas.querySelectorAll(SELECTORS.area).forEach((poster) => convertPoster(poster, st.open, mode.links));
     if (!st.open) {
       arm();
       return;
@@ -812,6 +879,8 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui) => {
 export {
   EVENTS,
   createPanel,
-  drawnOpen
+  drawnOpen,
+  elsewhere,
+  optionsOf
 };
 //# sourceMappingURL=panel.dev.js.map

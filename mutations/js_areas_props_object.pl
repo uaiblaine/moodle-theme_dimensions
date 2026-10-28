@@ -1,2 +1,2 @@
-# Nest the props under a key: data-react-props is the props object itself.
-s/node\.dataset\.reactProps = JSON\.stringify\(\{\}\);/node.dataset.reactProps = JSON.stringify({props: {}});/;
+# Nest the props under a key: the component reads no option, and the visitor's posters become buttons.
+s/node\.dataset\.reactProps = JSON\.stringify\(props\);/node.dataset.reactProps = JSON.stringify({props: props});/;

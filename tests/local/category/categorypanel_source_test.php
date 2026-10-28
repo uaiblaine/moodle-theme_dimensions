@@ -209,9 +209,14 @@ final class categorypanel_source_test extends \basic_testcase {
         $this->assertStringContainsString("methodname: 'theme_dimensions_get_category_rows',", $ask);
         $this->assertStringContainsString('args: panelArgs(id, psort),', $ask);
         $this->assertStringContainsString(
-            'event.detail.answer = ask(event.detail.poster, event.detail.psort);',
-            $this->body('mountAreas'),
+            'const mountAreas = () => Listing.mountAreas(areas, {}, {ask: ask, painted: paintProgress});',
+            $this->source(),
             'The logged-in panel asks through this module and nothing else.'
+        );
+        $this->assertStringContainsString(
+            'event.detail.answer = client.ask(event.detail.poster, event.detail.psort);',
+            $this->body('mountAreas', 'categorylisting'),
+            'And the shared mount hands the component this module\'s answer.'
         );
         /* The answer's context is the server's panel, plus the cards the service returns at the top
            level and the page's own suggestions for a zero panel, which the service cannot know:
@@ -603,7 +608,7 @@ final class categorypanel_source_test extends \basic_testcase {
             );
         }
         $this->assertStringContainsString('theme_dimensions_get_category_rows', $this->build('categorypanel'));
-        $this->assertStringContainsString('@moodle/lms/theme_dimensions/areas/Areas', $this->build('categorypanel'));
+        $this->assertStringContainsString('.mountAreas(areas,{},{ask:ask,painted:paintProgress})', $this->build('categorypanel'));
         $this->assertStringNotContainsString('theme_dimensions/' . self::SHARED, $this->build('categorypanel'));
         $this->assertStringContainsString('theme_dimensions/category_panel', $this->build(self::SHARED));
         $this->assertStringContainsString('theme_dimensions/categoryposters', $this->build(self::SHARED));
@@ -640,10 +645,10 @@ final class categorypanel_source_test extends \basic_testcase {
         }
         $this->assertStringContainsString('state.allempty = Boolean(data.allempty);', $criteria);
         $this->assertStringContainsString("areas.dataset.elsewhere = data.elsewhere || '';", $criteria);
-        // The logged-in component writes an answer in the same order, its automatic opening last.
+        // The component writes an answer in the same order on both shells, its automatic opening last.
         $component = (string) file_get_contents($this->plugin_root() . '/js/esm/src/areas/panel.ts');
         $this->assertMatchesRegularExpression(
-            '~paintPosters\(areas, accordion, filtered, st\.open, st\.expandable\);.*?ui\.summary\(summaryOf\(.*?'
+            '~paintPosters\(areas, accordion, filtered, st\.open, st\.expandable, mode\.links\);.*?ui\.summary\(summaryOf\(.*?'
                 . 'paintReveal\(areas, word\);.*?paintAllEmpty\(areas, st\.allempty, st\.open\);.*?'
                 . 'if \(st\.open\) \{\s*place\(\);\s*request\(\);\s*\}\s*autoOpen\(word\);~s',
             $component

@@ -19,8 +19,8 @@
  * The page it runs on is the anonymous shell, complete without it: the toolbar is a real GET form,
  * the pager is real links and every state of the listing has an address. This module moves that
  * page as the logged-in client moves its own - it paints an answer and writes the address with the
- * same functions (categorylisting, categoryposters), so the two shells cannot be told apart row for
- * row and an address it writes is the one the server's own links spell.
+ * same functions (categorylisting), so the two shells cannot be told apart row for row and an address
+ * it writes is the one the server's own links spell.
  *
  * It asks theme_dimensions_get_public_category_rows, and nothing else, through core/ajax
  * with login not required, which posts to lib/ajax/service-nologin.php: no session is read and
@@ -30,18 +30,23 @@
  * the page's own (M.cfg.language), because the request carries no session to hold the reader's.
  *
  * What it imports is the point: nothing that reads the session, stars a course, writes a
- * preference or asks a logged-in service (categorypublic_source_test walks the whole graph). Its
- * mark on the body is dim-public-js and never dim-js, which is the logged-in client's.
+ * preference or asks a logged-in service (categorypublic_source_test walks the whole graph, the
+ * React components it mounts included). Its mark on the body is dim-public-js and never dim-js,
+ * which is the logged-in client's.
  *
- * A poster's panel opens in place, through categoryareapanel - the logged-in client's own panel,
- * which this module arms with the visitor's half. Every poster of a visitor's page opens its panel
- * at rest and under a criterion alike, and stays the link it is: a press meant for another tab or
- * window goes to the link's address, the panel of that area under the criteria on screen, which is
- * also what every poster's link is written to after each change. A plain press asks the same
- * service for the area's rows: a public area by its own id, as a panel of its page; a merely listed
- * one, which has no page a visitor may open, as a slice of this page's listing narrowed to it, in a
- * flat order and on the first page. An open panel is asked again with every answer to new criteria,
- * once per question - an answer to criteria that did not change is the panel already on screen.
+ * Since stage R4a of docs/vitrine-react/PLAN.md the toolbar's calendar, its filter line and the
+ * posters with their panel are the React components the logged-in shell draws, mounted through the
+ * shared listing's mounts; this module answers them as the logged-in client does, with the visitor's
+ * service and the visitor's rules. Every poster of a visitor's page opens its panel at rest and under
+ * a criterion alike, and stays the link it is (the component's links option): a press meant for
+ * another tab or window goes to the link's address, the panel of that area under the criteria on
+ * screen, which is also what every poster's link is written to after each change. A plain press asks
+ * the same service for the area's rows: a public area by its own id, as a panel of its page; a merely
+ * listed one, which has no page a visitor may open, as a slice of this page's listing narrowed to it,
+ * in a flat order and on the first page. A question is asked after a quiet and once per opening (the
+ * component's quiet option and this module's question): an open panel is asked again with every
+ * answer to new criteria, and an answer to criteria that did not change is the panel on screen. No
+ * area opens by itself on this shell.
  *
  * A failure is never told in the service's words: it would speak the request's language rather
  * than the page's, and say nothing a visitor can act on. The page's own sentence is shown and the
@@ -58,12 +63,9 @@ import Ajax from 'core/ajax';
 import Config from 'core/config';
 import Pending from 'core/pending';
 import {getString} from 'core/str';
-import * as AreaPanel from 'theme_dimensions/categoryareapanel';
 import * as CategoryMark from 'theme_dimensions/categorymark';
 import * as DateRange from 'theme_dimensions/daterange';
-import * as Line from 'theme_dimensions/categoryline';
 import * as Listing from 'theme_dimensions/categorylisting';
-import * as Posters from 'theme_dimensions/categoryposters';
 
 /** @type {Object} Every hook this module reads, all of them written by the showcase's templates. */
 const SELECTORS = {
@@ -79,12 +81,23 @@ const SELECTORS = {
     pagerbar: '[data-region="dim-vitrine-pagerbar"]',
     loadmore: '[data-action="dim-loadmore"]',
     search: 'input[type="search"]',
+    drawnline: '[data-region="dim-line"][data-line-drawn]',
     viewbutton: '[data-action="dim-view"]',
     quick: '[data-action="dim-quick"]',
     treelink: '[data-region="dim-vitrine-tree"] a[data-region="dim-tree-link"]',
     areas: '[data-region="dim-areas"]',
     area: '[data-region="dim-area"]',
     control: '[data-region="dim-poster-control"]',
+};
+
+/**
+ * @type {Object} The events this module sends the posters' component on the document, as the logged-in
+ * client sends them: a request for new criteria went out (pending, detail {filtered}) and its answer
+ * arrived (criteria, detail {accordion, areas, filtered, total}). js/esm/src/areas/panel.ts spells them alike.
+ */
+const EVENTS = {
+    pending: 'dim-vitrine:pending',
+    criteria: 'dim-vitrine:criteria',
 };
 
 /** @type {String} The one web service this module calls: the visitor's, answered without a session. */
@@ -120,6 +133,16 @@ const PANEL_SIZE = 8;
  * question is a read the site pays for, so a reader running a finger along the posters asks once.
  */
 const PANEL_QUIET = 120;
+
+/**
+ * @type {Object} The posters' component's options on this shell (js/esm/src/areas/panel.ts optionsOf()):
+ * the posters stay their links, a question waits for the quiet, and no area opens by itself.
+ */
+const AREAS_PROPS = {
+    links: true,
+    quiet: PANEL_QUIET,
+    autoopen: false,
+};
 
 /** @type {String} The one order a panel can be asked for besides its default. */
 const PSORT_NAME = 'name';
@@ -364,7 +387,7 @@ const panelArgs = (poster, psort) => {
 };
 
 /**
- * Ask for one poster's panel: the shared panel module's question, through the one call site.
+ * Ask for one poster's panel: the posters' component's question, through the one call site.
  *
  * @param {HTMLElement} poster The area's poster.
  * @param {String} psort The panel's order.
@@ -375,7 +398,7 @@ const askPanel = (poster, psort) => {
 };
 
 /**
- * The question a panel's request asks, so that the shared module never sends the same one twice.
+ * The question a panel's request asks, so that the posters' component never sends the same one twice.
  *
  * @param {HTMLElement} poster The area's poster.
  * @param {String} psort The panel's order.
@@ -402,12 +425,12 @@ const panelFailed = (poster, psort) => {
 };
 
 /**
- * Write each area of an answer onto its poster, the summary and the reveal, ask the open panel again, and point the links.
+ * Tell the posters' component an answer that replaced the grid, then point the posters' links again.
  *
- * The shell a panel shows before its rows arrive - the call to action's address and label - carries
- * the criteria, so it is written from the answer, as the logged-in listing writes it. The rest is
- * the shared panel module's painting, which the logged-in client runs too: the posters' results,
- * the summary, the reveal, the "nothing anywhere" box, and the open panel placed and asked again.
+ * The component writes everything an answer changes on the posters - each area's shell (the call to
+ * action's address and label, which carry the criteria), its results and whether it opens, the summary,
+ * the reveal, the "nothing anywhere" box - and asks the open panel again, as it does for the logged-in
+ * client: nothing here writes into the posters but their addresses.
  *
  * @param {Object} response The rows response.
  * @return {void}
@@ -416,15 +439,13 @@ const paintAreas = (response) => {
     if (!areas) {
         return;
     }
-    const accordion = response.accordion || [];
-    accordion.forEach((entry) => {
-        const poster = areas.querySelector(SELECTORS.area + '[data-categoryid="' + Number(entry.id) + '"]');
-        if (poster) {
-            poster.dataset.ctaurl = entry.ctaurl || '';
-            poster.dataset.ctalabel = entry.ctalabel || '';
-        }
-    });
-    AreaPanel.criteria({accordion: accordion, areas: response.areas || {}});
+    const word = response.areas || {};
+    document.dispatchEvent(new CustomEvent(EVENTS.criteria, {detail: {
+        accordion: response.accordion || [],
+        areas: word,
+        filtered: Boolean(word.filtered),
+        total: Number(response.total),
+    }}));
     linkPosters();
 };
 
@@ -469,8 +490,8 @@ const applyResponse = async(response, append, ticket) => {
         Listing.paintDirect(root, response);
         paintAreas(response);
     }
-    // The suggestions read the counts just painted, and the line's step follows what is on it.
-    Line.repaint();
+    // The line's numbers are the component's to draw, after the painters: its suggestions read their counts.
+    Listing.tellAnswer(root, response);
 };
 
 /**
@@ -508,8 +529,9 @@ const requestRows = async(page, append) => {
     }
     if (!append) {
         root.setAttribute('aria-busy', 'true');
+        // A new question for the posters: the component holds their numbers until it is answered.
         if (areas) {
-            Posters.pending(areas, {filtered: Listing.narrows(state)});
+            document.dispatchEvent(new CustomEvent(EVENTS.pending, {detail: {filtered: Listing.narrows(state)}}));
         }
     }
     try {
@@ -721,7 +743,7 @@ const onClear = () => {
     Listing.paintControls(root, state);
     apply();
     // The field, or its icon where the line folded it away: a folded field cannot take the focus.
-    const search = Line.focusTarget(root.querySelector(SELECTORS.search));
+    const search = Listing.focusTarget(root);
     if (search) {
         search.focus({preventScroll: true});
     }
@@ -744,7 +766,7 @@ const onChipRemove = (chip) => {
     Listing.paintControls(root, state);
     apply();
     // The field, or its icon where the line folded it away: a folded field cannot take the focus.
-    const search = Line.focusTarget(root.querySelector(SELECTORS.search));
+    const search = Listing.focusTarget(root);
     if (search) {
         search.focus({preventScroll: true});
     }
@@ -777,7 +799,8 @@ const dropTerm = () => {
 const onErase = async() => {
     cancelSearch();
     const search = root.querySelector(SELECTORS.search);
-    if (search) {
+    // The component's eraser has emptied its own field and kept the focus in it; this module writes into neither.
+    if (search && !search.closest(SELECTORS.drawnline)) {
         search.value = '';
         search.focus({preventScroll: true});
     }
@@ -795,10 +818,13 @@ const listen = () => {
     if (form) {
         // Enter in the search box: everything is applied in place already, as the logged-in client does.
         form.addEventListener('submit', (event) => event.preventDefault());
-        const search = form.querySelector(SELECTORS.search);
-        if (search) {
-            search.addEventListener('input', () => onSearchInput(search));
-        }
+        // Delegated: the line's component replaces the server's field with its own.
+        form.addEventListener('input', (event) => {
+            const search = Listing.closestOf(event, SELECTORS.search);
+            if (search) {
+                onSearchInput(search);
+            }
+        });
     }
 
     root.addEventListener('change', (event) => {
@@ -865,9 +891,11 @@ const listen = () => {
  * Arm the visitor's live listing and its panels on a public category page.
  *
  * Nothing is fetched here: the page on screen is the server's answer to its own address, so a
- * failure later can only ever load a page, and never loop. The panels are armed wherever the page
- * has posters, the root's directory without a search line included; a panel the server drew for
- * the address is taken over, its question counted as asked.
+ * failure later can only ever load a page, and never loop. The posters are handed to their component
+ * wherever the page has posters with a panel, the root's directory without a search line included; a
+ * panel the server drew for the address is taken over, its question counted as asked. The filter line
+ * goes to its component before the calendar's node goes inside it, as on the logged-in shell: the line
+ * put back where it stands would otherwise take the calendar out and in again.
  *
  * @param {Number} categoryid The category the page lists, 0 for the root of the course index.
  * @return {void}
@@ -911,14 +939,12 @@ export const init = (categoryid) => {
     lastpage = state.page;
     publicOnly();
     areas = root.querySelector(SELECTORS.areas);
-    AreaPanel.arm({
+    linkPosters();
+    Listing.mountAreas(areas, AREAS_PROPS, {
         ask: askPanel,
         question: panelQuestion,
         unanswered: panelFailed,
-        links: true,
-        quiet: PANEL_QUIET,
     });
-    linkPosters();
     // The root is armed for its search line; a root with nothing to search draws none.
     if (Listing.isRoot(state) && !root.querySelector(SELECTORS.toolbar)) {
         return;
@@ -929,6 +955,9 @@ export const init = (categoryid) => {
 
     // The searched term in the titles of the server's own rows.
     CategoryMark.mark(root.querySelector(SELECTORS.grid), state.query);
+
+    // The filter line folds to its width, opens its search over itself and suggests the page's filters.
+    Listing.mountLine(root, dropTerm);
 
     // The one calendar of the design, over the two native fields; a calendar that cannot mount
     // leaves them exactly as the server drew them, and says nothing.
@@ -942,7 +971,4 @@ export const init = (categoryid) => {
 
     Listing.armTreebox(root);
     listen();
-
-    // The filter line folds to its width, opens its search over itself and suggests the page's filters.
-    Line.arm(root, {dropTerm: dropTerm});
 };

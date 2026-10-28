@@ -28,7 +28,10 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the rules of amd/src/categoryline.js, the filter line's behaviour for both listing clients.
+ * Pins the rules of amd/src/categoryline.js, the filter line's behaviour before the React component.
+ *
+ * Since stage R4a no shell arms the module (both draw js/esm/src/filterline/FilterLine.tsx); it stays in
+ * the tree, unimported, until the clean-up of R5 removes it with these assertions.
  *
  * moodle-plugin-ci has no JavaScript test runner, so these are assertions about spelling, each scoped
  * to the function it is about, as amd_source_test's are; the Behat feature of the client is what runs
@@ -270,13 +273,12 @@ final class categoryline_source_test extends \basic_testcase {
      *
      * The client's own handler of that control makes the one request; the client's dropTerm takes the
      * term out of its state before the press, so that request carries none, and the field is emptied
-     * and the search stays open. The visitor's client arms this line with its dropTerm and repaints it
-     * from every answer; the logged-in client hands its line to the React component of stage R2 instead
-     * (filterline_component_source_test holds that half).
+     * and the search stays open. Since R4a both clients hand their line to the React component instead
+     * (filterline_component_source_test holds that half), and the visitor's still drops the term first.
      *
      * Changes that must make it fail: the term dropped after the press (a request with the term, then
      * one without); a request of the line's own; the search closed after a pick; the visitor's client not
-     * arming the line or not repainting it.
+     * handing its line over or not telling it the answer.
      */
     public function test_a_suggestion_presses_its_control_after_the_term_is_dropped(): void {
         $choose = $this->body('choose');
@@ -287,17 +289,19 @@ final class categoryline_source_test extends \basic_testcase {
         $code = $this->code();
         $this->assertStringNotContainsString('core/ajax', $code, 'The line makes no request of its own.');
         $this->assertStringNotContainsString('methodname', $code);
+        /* Since R4a no shell arms this module: the visitor's client hands its line to the component, as the
+           logged-in client does (filterline_component_source_test), and still drops the term first. */
         foreach (['categorypublic' => 'Listing.paintEraser(root);'] as $client => $eraser) {
             $source = $this->source($client);
-            $this->assertStringContainsString("import * as Line from 'theme_dimensions/categoryline';", $source);
-            $this->assertStringContainsString('Line.arm(root, {dropTerm: dropTerm});', $source);
-            $this->assertStringContainsString('Line.repaint();', $this->body('applyResponse', $client));
+            $this->assertStringNotContainsString('theme_dimensions/categoryline', $source);
+            $this->assertStringContainsString('Listing.mountLine(root, dropTerm);', $source);
+            $this->assertStringContainsString('Listing.tellAnswer(root, response);', $this->body('applyResponse', $client));
             $drop = $this->body('dropTerm', $client);
             $this->assertMatchesRegularExpression("~cancelSearch\(\);\s*state\.query = '';~", $drop, $client . ' drops the term.');
             $this->assertStringContainsString($eraser, $drop);
             foreach (['onClear', 'onChipRemove'] as $handler) {
                 $this->assertStringContainsString(
-                    'const search = Line.focusTarget(root.querySelector(SELECTORS.search));',
+                    'const search = Listing.focusTarget(root);',
                     $this->body($handler, $client),
                     "{$client}'s {$handler} gives the focus to the field or, folded, to its icon."
                 );

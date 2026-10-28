@@ -499,7 +499,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
             return null;
         }
         if ($openslabel !== '') {
-            $date = userdate((int) $this->opens, self::text('category_modal_opensformat'));
+            // The format is the string's own day/month/year; userdate()'s fixday would drop the day's leading zero.
+            $date = userdate((int) $this->opens, self::text('category_modal_opensformat'), 99, false);
             return [
                 'label' => get_string('category_modal_opens', self::COMPONENT, $date),
                 'url' => null,

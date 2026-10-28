@@ -2,14 +2,14 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The one calendar of the logged-in showcase: a start box and an end box over one popover.
+ * The one calendar of the showcase, on both shells: a start box and an end box over one popover.
  *
- * Stage R1 of docs/vitrine-react/PLAN.md. The visitor's shell keeps amd/src/daterange.js until R4, so
- * this component and that module are two implementations of one control: the same markup (the
- * template category_daterange's, hook for hook, which scss/category.scss and the Behat steps read),
- * the same rules (./model, function for function) and no timezone arithmetic (./calendar).
+ * Stage R1 of docs/vitrine-react/PLAN.md drew it for the logged-in shell, stage R4a for the visitor's too.
+ * It keeps amd/src/daterange.js's control: the same markup (the template category_daterange's, hook for
+ * hook, which scss/category.scss and the Behat steps read), the same rules (./model, function for
+ * function) and no timezone arithmetic (./calendar).
  *
- * It is mounted by categorylisting's mountCalendar(), on the logged-in shell alone, as a node APPENDED
+ * It is mounted by categorylisting's mountCalendar(), on both shells, as a node APPENDED
  * to the toolbar's empty dim-daterange region: core's react_autoinit observes added nodes and never
  * attributes. The props are what the server resolved and the client may not compute: id, firstday,
  * today, from, to. It talks to the listing through events on that region, never through a callback:

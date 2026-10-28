@@ -1,14 +1,15 @@
-import{Fragment as q,useLayoutEffect as S,useState as c}from"react";import{createPortal as g,flushSync as A}from"react-dom";import{PHONE as P,SELECTORS as d,WIDE as k,summaryLabel as x}from"./model";import{EVENTS as f,createPanel as D,drawnOpen as F}from"./panel";import{isFiltered as N,setHidden as O}from"./posters";import{jsx as T,jsxs as V}from"react/jsx-runtime";/**
- * The posters of the areas and the panel between their rows, on the logged-in showcase.
+import{Fragment as q,useLayoutEffect as g,useState as i}from"react";import{createPortal as T,flushSync as A}from"react-dom";import{PHONE as k,SELECTORS as c,WIDE as x,summaryLabel as D}from"./model";import{EVENTS as f,createPanel as F,drawnOpen as N,optionsOf as O}from"./panel";import{isFiltered as I,setHidden as K}from"./posters";import{jsx as M,jsxs as $}from"react/jsx-runtime";/**
+ * The posters of the areas and the panel between their rows, on both shells of the showcase.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md. The visitor's shell keeps amd/src/categoryareapanel.js and
- * categoryposters.js until R4, so this component and those modules are two implementations of one panel:
- * a rule changes in both, and in the module of this tree that carries it (`panel.ts` for the panel,
- * `posters.ts` for the posters' result layer, `rail.ts`, `model.ts`), named after the AMD functions.
+ * Stage R3 of docs/vitrine-react/PLAN.md drew it for the logged-in shell; stage R4a hands it the visitor's
+ * too, whose differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
+ * false}` on the visitor's page, nothing on the logged-in one. A rule changes in the module of this tree
+ * that carries it (`panel.ts` for the panel, `posters.ts` for the posters' result layer, `rail.ts`,
+ * `model.ts`), each named after the AMD function it stood for.
  *
- * WHO OWNS WHAT. The mount node is an empty, hidden child amd/src/categorypanel.js appends to the areas
- * section, so the mount draws no box and the first paint stays the server's, to the pixel. From it the
- * component owns, and is the only writer of, on this shell:
+ * WHO OWNS WHAT. The mount node is an empty, hidden child amd/src/categorylisting.js's mountAreas() appends
+ * to the areas section, so the mount draws no box and the first paint stays the server's, to the pixel.
+ * From it the component owns, and is the only writer of:
  *
  * - the panel's frame: the one list item of the grid (`panel.ts`), whose content is category_panel
  *   rendered by core/templates and inserted whole, never diffed;
@@ -18,14 +19,17 @@ import{Fragment as q,useLayoutEffect as S,useState as c}from"react";import{creat
  * - the "nothing in N areas" summary, which React draws: its sentence and its list, through portals into
  *   the server's `<summary>` and `<ul>`, read off them in the first render and drawn back hook for hook.
  *
- * Nothing of the AMD side writes into those. It speaks to the component through events
- * ({@see EVENTS}): the listing's `dim-vitrine:pending`, `:criteria`, `:failed` (categoryvitrine) and
- * `:view` (categorylisting) on the document; the component answers `dim-panel:autoopened` there. On the
- * areas section, categorypanel hears `dim-areas:ask` (it fills the detail's `answer` with the web
- * service's promise: the component calls no service and reads no session), `dim-areas:painted` (it paints
- * the progress of the panel's enrolled courses) and `dim-areas:mounted`, which ends its pending.
+ * Nothing of the AMD side writes into those, but for the address of a visitor's poster that stays a link,
+ * which the visitor's module points at the area's panel. It speaks to the component through events
+ * ({@see EVENTS}): the listing client's `dim-vitrine:pending`, `:criteria` and `:failed` and the listing's
+ * `:view` on the document; the component answers `dim-panel:autoopened` there. On the areas section,
+ * mountAreas() hears, for the page's client, `dim-areas:ask` (the client fills the detail's `answer` with
+ * its web service's promise: the component calls no service and reads no session), `dim-areas:question`
+ * and `dim-areas:unanswered` (the visitor's names its question and takes a failure over),
+ * `dim-areas:painted` (the logged-in shell paints what an account adds to the rows) and
+ * `dim-areas:mounted`, which ends its pending.
  *
  * @module     theme_dimensions/areas/Areas
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */const I=n=>{const r=n.querySelector(d.nomatch),s=r?r.querySelector(d.nomatchlist):null,E=s?Array.from(s.children).map(i=>({id:Number(i.dataset.categoryid),name:i.textContent||"",url:i.querySelector("a")?.getAttribute("href")||""})):[],u=document.activeElement;return{box:r,label:r?r.querySelector(d.nomatchsummary):null,list:s,summary:{entries:E,all:r?.dataset.labelAll||"",less:r?.dataset.labelLess||""},focused:s&&u&&s.contains(u)?u:null}},K=n=>A(n),R=()=>{const[n]=c(()=>{const e=document.querySelector(d.areas),a=e?e.querySelector(d.panel):null,o=e&&a?{areas:e,panel:a,status:e.querySelector(d.status)}:null;return{nodes:o,drawn:e?I(e):null,open:o?F(o):0,filtered:e?N(e):!1}}),[r,s]=c(n.drawn?n.drawn.summary:{entries:[],all:"",less:""}),[E,u]=c(n.open),[i,M]=c(n.filtered),[p,H]=c(!1),[t]=c(()=>n.nodes?D(n.nodes,{summary:s,opened:u,filtered:M,sync:K}):null);S(()=>{if(!n.nodes||!t)return;const{areas:e,panel:a}=n.nodes,o=n.drawn;o&&o.label&&o.list&&(o.label.textContent="",o.list.replaceChildren(),H(!0)),t.adopt();const v=[[e,"click",t.onAreasClick,!1],[a,"click",t.onDragClick,!0],[a,"click",t.onPanelClick,!1],[a,"scroll",t.onScroll,!0],[a,"pointerdown",t.onPointerDown,!1],[a,"dragstart",t.onDragStart,!1],[e,"toggle",t.onToggle,!0],[document,"keydown",t.onKeydown,!1],[window,"popstate",t.onPopState,!1],[document,f.view,t.relayout,!1],[document,f.pending,l=>t.onPending(l.detail||{}),!1],[document,f.failed,t.onFailed,!1],[document,f.criteria,l=>t.criteria(l.detail||{}),!1]];v.forEach(([l,b,L,h])=>l.addEventListener(b,L,h));const w=[k,P].map(l=>window.matchMedia(l));return w.forEach(l=>l.addEventListener("change",t.relayout)),e.dispatchEvent(new CustomEvent(f.mounted,{bubbles:!0})),()=>{v.forEach(([l,b,L,h])=>l.removeEventListener(b,L,h)),w.forEach(l=>l.removeEventListener("change",t.relayout)),t.disconnect()}},[]);const y=x(r,E);S(()=>{const e=n.drawn;if(!(!p||!e||!e.box)&&(O(e.box,!i||y===""),e.focused instanceof HTMLAnchorElement&&!e.focused.isConnected&&e.list)){const a=e.focused.getAttribute("href");e.list.querySelector(`a[href="${a}"]`)?.focus({preventScroll:!0}),e.focused=null}},[p,i,y]);const m=n.drawn;if(!p||!m||!m.label||!m.list)return null;const C=r.entries.map(e=>T("li",{"data-categoryid":e.id,hidden:e.id===E,children:e.url?T("a",{href:e.url,children:e.name}):e.name},e.id));return V(q,{children:[g(y,m.label),g(C,m.list)]})};var J=R;export{f as EVENTS,J as default};
+ */const R=d=>{const t=d.querySelector(c.nomatch),a=t?t.querySelector(c.nomatchlist):null,p=a?Array.from(a.children).map(u=>({id:Number(u.dataset.categoryid),name:u.textContent||"",url:u.querySelector("a")?.getAttribute("href")||""})):[],s=document.activeElement;return{box:t,label:t?t.querySelector(c.nomatchsummary):null,list:a,summary:{entries:p,all:t?.dataset.labelAll||"",less:t?.dataset.labelLess||""},focused:a&&s&&a.contains(s)?s:null}},V=d=>A(d),W=d=>{const[t]=i(()=>{const e=document.querySelector(c.areas),l=e?e.querySelector(c.panel):null,o=e&&l?{areas:e,panel:l,status:e.querySelector(c.status)}:null;return{nodes:o,drawn:e?R(e):null,open:o?N(o):0,filtered:e?I(e):!1}}),[a,p]=i(t.drawn?t.drawn.summary:{entries:[],all:"",less:""}),[s,u]=i(t.open),[v,H]=i(t.filtered),[E,C]=i(!1),[n]=i(()=>t.nodes?F(t.nodes,{summary:p,opened:u,filtered:H,sync:V},O(d||{})):null);g(()=>{if(!t.nodes||!n)return;const{areas:e,panel:l}=t.nodes,o=t.drawn;o&&o.label&&o.list&&(o.label.textContent="",o.list.replaceChildren(),C(!0));try{n.adopt()}catch{}const w=[[e,"click",n.onAreasClick,!1],[l,"click",n.onDragClick,!0],[l,"click",n.onPanelClick,!1],[l,"scroll",n.onScroll,!0],[l,"pointerdown",n.onPointerDown,!1],[l,"dragstart",n.onDragStart,!1],[e,"toggle",n.onToggle,!0],[document,"keydown",n.onKeydown,!1],[window,"popstate",n.onPopState,!1],[document,f.view,n.relayout,!1],[document,f.pending,r=>n.onPending(r.detail||{}),!1],[document,f.failed,n.onFailed,!1],[document,f.criteria,r=>n.criteria(r.detail||{}),!1]];w.forEach(([r,b,L,h])=>r.addEventListener(b,L,h));const S=[x,k].map(r=>window.matchMedia(r));return S.forEach(r=>r.addEventListener("change",n.relayout)),e.dispatchEvent(new CustomEvent(f.mounted,{bubbles:!0})),()=>{w.forEach(([r,b,L,h])=>r.removeEventListener(b,L,h)),S.forEach(r=>r.removeEventListener("change",n.relayout)),n.disconnect()}},[]);const y=D(a,s);g(()=>{const e=t.drawn;if(!(!E||!e||!e.box)&&(K(e.box,!v||y===""),e.focused instanceof HTMLAnchorElement&&!e.focused.isConnected&&e.list)){const l=e.focused.getAttribute("href");e.list.querySelector(`a[href="${l}"]`)?.focus({preventScroll:!0}),e.focused=null}},[E,v,y]);const m=t.drawn;if(!E||!m||!m.label||!m.list)return null;const P=a.entries.map(e=>M("li",{"data-categoryid":e.id,hidden:e.id===s,children:e.url?M("a",{href:e.url,children:e.name}):e.name},e.id));return $(q,{children:[T(y,m.label),T(P,m.list)]})};var U=W;export{f as EVENTS,U as default};

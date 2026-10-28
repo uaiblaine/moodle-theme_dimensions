@@ -1,2 +1,2 @@
-# Paint no progress on a panel's enrolled courses.
-s/^    areas\.addEventListener\(AREAS\.painted, \(event\) => paintProgress\(event\.detail\.panel\)\);\n//m;
+# Hand the shared mount no progress painter: the panel's enrolled courses never show their progress.
+s/\{ask: ask, painted: paintProgress\}/{ask: ask}/;

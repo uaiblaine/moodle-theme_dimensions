@@ -337,7 +337,7 @@ final class category_card_modal_test extends \advanced_testcase {
         $this->assertSame(classifier::STATE_NONE, $card->state, 'Precondition: nothing on offer yet.');
         $this->assertTrue($card->hasopens, 'Precondition: the card dates the window.');
 
-        $date = userdate($this->opens, '%d/%m/%Y');
+        $date = userdate($this->opens, '%d/%m/%Y', 99, false);
         $this->assertMatchesRegularExpression('~^\d{2}/\d{2}/\d{4}$~', $date);
         $primary = $card->modal['primary'];
         $this->assertTrue($primary['disabled']);
