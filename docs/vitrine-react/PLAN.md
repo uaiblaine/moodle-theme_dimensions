@@ -401,6 +401,49 @@ What it says:
   against the previous stage's numbers; an A/B that matters should run both builds back to back on one host, or the
   probe should move to a CI host with nothing else on it.
 
+### 5.2.6 R4a against R3 (m503b, 2026-10-29)
+
+R4a (#46, the visitor's page on the three React components), same stack, data, fixtures and throttling as 5.2.2;
+medians of five runs, at a load of 3.7-4.4. Between the R3 run and this one, `core/first.js` shrank from 10.78 MB to
+8.22 MB (interactivevideo and ivquiz moved their vendored libraries out of it), which every page pays when it parses.
+The logged-in pages, whose code R4a barely touches, are the controls for that change.
+
+| Page | Cache | TBT R3 / R4a | INP R3 / R4a | Scripts before load / until settled (R4a) |
+|---|---|---|---|---|
+| Student, flat category (control) | cold | 1,027 / 741 ms | 88 / 96 ms | 93 / 93 |
+| Student, flat category (control) | warm | 175 / 98 ms | 88 / 96 ms | 47 / 95 |
+| Student, course index (control) | cold | 862 / 678 ms | 56 / 48 ms | 90 / 90 |
+| Student, course index (control) | warm | 8 / 3 ms | 52 / 40 ms | 47 / 92 |
+| Student, grouped category (control) | cold | 890 / 625 ms | 56 / 48 ms | 99 / 99 |
+| Student, grouped category (control) | warm | 74 / 47 ms | 48 / 48 ms | 47 / 101 |
+| Visitor, flat public page | cold | 460 / 442 ms | 56 / 72 ms | 14 / 53 (R3: 14 / 41) |
+| Visitor, flat public page | warm | 35 / 77 ms | 48 / 56 ms | 17 / 56 (R3: 17 / 44) |
+
+FCP and LCP moved by 6 % or less on every page, and CLS stayed 0 (0.0001 on the visitor's).
+
+What it says:
+- **The controls fell 19-31 % cold and 25-63 % warm with the smaller `first.js`; the visitor's page did not.** Its
+  cold TBT fell 18 ms where the controls fell 184-286 ms, and its warm TBT doubled. Read against the controls, R4a
+  costs the visitor roughly 200 ms of blocking time cold and 40-80 ms warm at 4x CPU, and 8-16 ms of INP. The two
+  effects cannot be separated exactly, because the two runs do not share a `first.js`.
+- **The visitor loads twelve more scripts before it settles** (41 to 53 cold): the components' ES modules, as the
+  logged-in pages did in R1-R3. Nothing more loads before the load event.
+- **A CPU profile puts the cost in the filter line's first commit.** It used moodle-dev's
+  `docs/client-performance-audit/profile.php` on the dev site's public category 8 (`?sort=name`), as a visitor, three
+  warm and three cold loads at 4x CPU. The host was busier than for the probe (load 4.1-6), so the absolute numbers
+  are high. One long frame holds React's commit: 133 ms of script with 120 ms of forced layout warm, 151 ms with
+  135 ms cold. Its self time is in `filterline/measure.ts` (`contentWidth()`, `stepWidths()`, `requiredWidth()`,
+  76-86 ms with `getBoundingClientRect` on top), called from `FilterLine`'s first layout effect. The line fits at
+  `s1`, so `stepWidths()` measures one try: what the frame pays is the page's first full layout, forced inside the
+  commit, not repeated tries. That is the mechanism behind the logged-in flat page's leftover of 5.2.4 as well (R3's
+  profile: one measured step, about 60 ms).
+- **What else the profile shows is core's**: `theme_boost`'s drawer module logs "Page is missing a drawer region" on
+  a page without drawers, 24 ms at 4x CPU, through core's `log` module.
+- **Candidate fix, for R4b or the audit (`docs/performance-audit/PLAN.md`), to measure before choosing**: where the
+  server's fold fits, take the first measure in the `ResizeObserver`'s first callback, which runs after the browser's
+  own layout and forces none, instead of in the layout effect. Containing the line's layout (`contain`) would keep
+  the measuring class from relaying the page. Either one helps both shells.
+
 ### 5.3 What option B does for each metric
 
 **FCP and LCP.**
