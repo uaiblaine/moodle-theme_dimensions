@@ -758,13 +758,16 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * A narrowed page writes each area's shell onto its poster, then tells the panel's module.
+     * A replaced answer tells the posters' component each area's shell, and writes none itself.
      *
      * The shell - the call to action's address and label a panel shows before its rows arrive -
-     * carries the page's criteria, so a filter changes it; the server composes it for every area
-     * and this module only writes it. The event is what makes the panel's module ask the open
-     * panel again. It runs on a replaced grid and never on an appended page, which is more of the
-     * same question.
+     * carries the page's criteria, so a filter changes it; the server composes it for every area,
+     * it travels in the event's accordion and the component writes it, the posters being its alone
+     * since stage R3. The event is what makes the component ask the open panel again. It runs on a
+     * replaced grid and never on an appended page, which is more of the same question.
+     *
+     * Changes that must make it fail: this module writing a poster's shell again (gate
+     * js_areas_shells_untouched).
      *
      * The event also carries what the posters need - the answer's areas, whether it narrows, its
      * total - and the count line and the courses sitting here are painted before it, so the count
@@ -772,8 +775,13 @@ final class amd_source_test extends \basic_testcase {
      */
     public function test_a_narrowed_page_writes_the_shells_and_tells_the_panel(): void {
         $paint = $this->body('paintShells');
-        $this->assertStringContainsString("poster.dataset.ctaurl = group.ctaurl || '';", $paint);
-        $this->assertStringContainsString("poster.dataset.ctalabel = group.ctalabel || '';", $paint);
+        // Since stage R3 the posters are the component's to write: the shells travel in the event's accordion.
+        $this->assertStringNotContainsString('poster.dataset', $paint);
+        $this->assertStringNotContainsString('SELECTORS.area', $paint);
+        $this->assertStringContainsString(
+            "poster.dataset.ctaurl = entry.ctaurl || '';",
+            (string) file_get_contents(dirname(__DIR__, 3) . '/js/esm/src/areas/posters.ts')
+        );
         $this->assertMatchesRegularExpression(
             '~document\.dispatchEvent\(new CustomEvent\(EVENTS\.criteria, \{detail: \{\s*accordion: accordion,\s*'
                 . 'areas: areas,\s*filtered: Boolean\(areas\.filtered\),\s*total: Number\(response\.total\),\s*\}\}\)\);~',
@@ -781,11 +789,6 @@ final class amd_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString('const areas = response.areas || {};', $paint);
         $this->assertStringContainsString("autoopenlabel = areas.autoopenlabel || '';", $paint);
-        $this->assertLessThan(
-            strpos($paint, 'dispatchEvent'),
-            strpos($paint, 'poster.dataset.ctaurl'),
-            'The shells are written BEFORE the panel is told, or it would read the previous ones.'
-        );
         $apply = $this->body('applyResponse');
         $this->assertMatchesRegularExpression(
             '~if \(!append\) \{\s*paintDirect\(response\);\s*paintShells\(response\);~',

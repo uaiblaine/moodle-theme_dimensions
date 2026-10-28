@@ -444,6 +444,38 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
+     * The visitor's page never reaches the logged-in shell's posters and panel component, which the walk does see.
+     *
+     * Two implementations of the panel until stage R4 of docs/vitrine-react/PLAN.md: categorypanel (logged in)
+     * appends the React component, the visitor's module arms categoryareapanel and categoryposters exactly as
+     * before. The control walks from the logged-in module, through the component's relative imports, so a walk
+     * blind to a component named for a mount does not pass this test.
+     *
+     * Changes that must make it fail: the specifier named in a shared module (gate js_areas_visitor_no_component);
+     * the visitor's module dropping the shared panel.
+     */
+    public function test_the_visitors_graph_never_reaches_the_panel_component(): void {
+        $component = self::ESM . 'areas/Areas';
+        $logged = $this->graph('categorypanel');
+        $this->assertContains($component, $logged, 'The control: the walk sees the component.');
+        $this->assertContains(self::ESM . 'areas/panel', $logged, 'And the panel it imports.');
+        $this->assertNotContains(self::PANEL, $logged, 'The logged-in shell no longer arms the AMD panel.');
+        $this->assertNotContains('categoryposters', $logged, 'Nor the AMD posters\' painters.');
+        $graph = $this->graph(self::MODULE);
+        foreach ([self::PANEL, 'categoryposters'] as $module) {
+            $this->assertContains($module, $graph, "The visitor keeps {$module}.");
+        }
+        foreach ($graph as $module) {
+            $this->assertStringStartsNotWith(self::ESM . 'areas/', $module, 'The visitor\'s page reaches ' . $module . '.');
+            $this->assertStringNotContainsString(
+                '@moodle/lms/theme_dimensions/areas',
+                $this->code($module),
+                $module . ' names the logged-in posters and panel component.'
+            );
+        }
+    }
+
+    /**
      * Nothing a visitor's page loads reads the session, stars a course or asks a logged-in service.
      *
      * The walk covers every theme module the visitor's module loads, and for each one its imports,

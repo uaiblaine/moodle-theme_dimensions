@@ -16,17 +16,19 @@
 /**
  * The panel between the rows of posters for a logged-in account: one area's courses, opened in place.
  *
- * The panel itself - one area at a time, its place between the rows, its address, its two orders,
- * its rail, its keyboard and its states - is categoryareapanel's, which the visitor's module arms
- * too. What this module adds is what belongs to an account: the listing's web service a panel is
- * asked through, the progress of the enrolled courses the panel's cards show, the star of each
- * card, and the automatic opening of the one area holding every result.
+ * Since stage R3 of docs/vitrine-react/PLAN.md the posters and the panel of the logged-in shell are a
+ * React component (js/esm/src/areas/Areas.tsx), which this module appends to the areas section and which
+ * owns them from then on: the panel's frame, the posters' result layer and the summary of the areas with
+ * no result. The visitor's module keeps arming categoryareapanel and categoryposters. What this module
+ * keeps is what belongs to an account, which the component neither calls nor reads: the listing's web
+ * service a panel is asked through, the progress of the enrolled courses a panel shows, and the star of
+ * each card.
  *
- * It runs on every page of the logged-in shell, the root included, and never on the anonymous
- * shell, whose panels categorypublic arms, nor for the guest. The listing's own module coordinates with it through events on the
- * document: a request for new criteria went out, its answer arrived, or it failed; the panel
- * module answers with one of its own when it opened an area by itself, and both hear the view
- * change from the shared listing.
+ * It runs on every page of the logged-in shell, the root included, and never on the anonymous shell nor
+ * for the guest. It and the component talk through events on the areas section ({@see AREAS}): the
+ * component asks for an area's rows (this module puts the service's promise in the event's detail), says
+ * the rows are on screen (this module paints their progress), and says it is drawn. The listing's module
+ * talks to the component directly, through its events on the document.
  *
  * @module     theme_dimensions/categorypanel
  * @copyright  2026 Anderson Blaine
@@ -34,14 +36,14 @@
  */
 
 import Ajax from 'core/ajax';
-import * as AreaPanel from 'theme_dimensions/categoryareapanel';
-import * as Posters from 'theme_dimensions/categoryposters';
+import Pending from 'core/pending';
 import * as CategoryStar from 'theme_dimensions/categorystar';
 import * as DateRange from 'theme_dimensions/daterange';
 
 /** @type {Object} Every hook this module reads, all of them data attributes of the showcase's templates. */
 const SELECTORS = {
     areas: '[data-region="dim-areas"]',
+    panel: '[data-region="dim-panel"]',
     card: '[data-region="dim-card"]',
     progress: '[data-region="dim-card-progress"]',
 };
@@ -75,13 +77,22 @@ const SORT = {
 };
 
 /**
- * @type {Object} The events on the document the listing's module tells this one about: a request
- * for new criteria went out, its answer arrived, or it failed.
+ * @type {String} The posters and their panel on this shell: the React component of stage R3, appended to the
+ * areas section by mountAreas(). Named here and nowhere the visitor's modules reach, which keep
+ * categoryareapanel and categoryposters.
  */
-const EVENTS = {
-    pending: 'dim-vitrine:pending',
-    criteria: 'dim-vitrine:criteria',
-    failed: 'dim-vitrine:failed',
+const COMPONENT = '@moodle/lms/theme_dimensions/areas/Areas';
+
+/**
+ * @type {Object} The events the component and this module exchange on the areas section:
+ * js/esm/src/areas/panel.ts spells the same names. The component asks for an area's rows (ask, detail
+ * {poster, psort, answer}: this module puts the answer's promise in it while the event is dispatched), says
+ * the rows are on screen (painted, detail {panel}) and says it is drawn (mounted).
+ */
+const AREAS = {
+    mounted: 'dim-areas:mounted',
+    ask: 'dim-areas:ask',
+    painted: 'dim-areas:painted',
 };
 
 /** @type {HTMLElement|null} The areas section of this page. */
@@ -191,29 +202,27 @@ const paintProgress = async(panel) => {
 };
 
 /**
- * The criteria's answer arrived: the panel module paints it, then the one area holding every result opens.
+ * Hand the posters and their panel to the component: listen first, then append its node.
  *
- * The automatic opening comes last, after the posters carry the new numbers and the open panel has
- * been asked again ({@see AreaPanel.criteria}).
- *
- * @param {Object} detail The answer's accordion, its word on the areas, whether it narrows, its total.
- * @return {void}
- */
-const onCriteria = (detail) => {
-    AreaPanel.criteria(detail);
-    AreaPanel.autoOpen(detail.areas || {});
-};
-
-/**
- * Wire the listing module's three events.
+ * The node is an empty, hidden child of the areas section, so the mount draws no box. Core's react_autoinit
+ * mounts it when it is added; the mount is held as pending until the component says it is drawn, so Behat
+ * never presses a poster still a link. The listeners go on before the node, so a component already imported
+ * cannot ask before anybody answers.
  *
  * @return {void}
  */
-const listenToListing = () => {
-    document.addEventListener(EVENTS.pending, (event) => Posters.pending(areas, event.detail || {}));
-    document.addEventListener(EVENTS.failed, () => Posters.failed(areas));
-    // The criteria changed: the posters are their results, and the open panel is a listing of them one level down.
-    document.addEventListener(EVENTS.criteria, (event) => onCriteria(event.detail || {}));
+const mountAreas = () => {
+    const pending = new Pending('theme_dimensions/categorypanel:areas');
+    areas.addEventListener(AREAS.ask, (event) => {
+        event.detail.answer = ask(event.detail.poster, event.detail.psort);
+    });
+    areas.addEventListener(AREAS.painted, (event) => paintProgress(event.detail.panel));
+    areas.addEventListener(AREAS.mounted, () => pending.resolve(), {once: true});
+    const node = document.createElement('div');
+    node.hidden = true;
+    node.dataset.reactComponent = COMPONENT;
+    node.dataset.reactProps = JSON.stringify({});
+    areas.append(node);
 };
 
 /**
@@ -223,10 +232,10 @@ const listenToListing = () => {
  */
 export const init = () => {
     areas = document.querySelector(SELECTORS.areas);
-    if (!areas || !AreaPanel.arm({ask: ask, painted: paintProgress})) {
+    if (!areas || !areas.querySelector(SELECTORS.panel)) {
         return;
     }
     // The star of the panel's cards, the root's included; categorystar's init() is idempotent.
     CategoryStar.init();
-    listenToListing();
+    mountAreas();
 };
