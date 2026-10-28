@@ -16,4 +16,4 @@ import{requireAsync as o,requireManyAsync as t}from"@moodle/lms/core/amd";/**
  * @module     theme_dimensions/amd
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */const n=e=>o(e),d=e=>t(e);export{n as load,d as loadMany};
+ */const r=e=>o(e),s=e=>t(e);export{r as load,s as loadMany};

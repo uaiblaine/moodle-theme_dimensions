@@ -45,12 +45,13 @@
  * in it. Every other move - between the two flat orders, and every filter, search, period and page
  * - is a fetch with a history entry.
  *
- * The posters of the areas and the panel between their rows are not this module's: they belong to
- * categorypanel. The two talk through events on the document - the view changed; a request for new
- * criteria went out; its answer arrived (with each area's shell, so a panel opened next knows its
- * call to action before its rows arrive, each area's results and the page's word on the areas as a
- * whole); it failed; and, back from the panel's module, an area was opened by itself - and through
- * the address, whose panel parameters this module carries without owning them. The star is
+ * The posters of the areas and the panel between their rows are not this module's: since stage R3 they
+ * are a React component's (js/esm/src/areas/Areas.tsx, appended by categorypanel), which is their only
+ * writer. The two talk through events on the document - the view changed; a request for new criteria
+ * went out; its answer arrived (with each area's shell, so a panel opened next knows its call to action
+ * before its rows arrive, each area's results and the page's word on the areas as a whole); it failed;
+ * and, back from the component, an area was opened by itself - and through the address, whose panel
+ * parameters this module carries without owning them. The star is
  * categorystar's, and the searched term is marked in the cards' titles by categorymark.
  *
  * The filter line is a React component's since stage R2 of docs/vitrine-react/PLAN.md
@@ -733,37 +734,29 @@ const applyResponse = async(response, append, ticket) => {
 };
 
 /**
- * Write each area's shell from a response that narrowed the page, then tell the panel's module.
+ * Tell the posters' component an answer that replaced the grid: each area's shell and results, and the
+ * page's word on the areas.
  *
- * The shell is what a panel needs before its rows arrive - the call to action's address and its
- * label - and both carry the page's criteria, so a filter changes them. They are composed by the
- * server for every area of the answer and are written onto the posters here, never composed in
- * this module; the panel's module then re-asks the panel that is open, which is a listing of the
- * same criteria one level down and would otherwise be the one part of the page still answering
- * the previous question.
+ * The shell is what a panel needs before its rows arrive - the call to action's address and its label -
+ * and both carry the page's criteria, so a filter changes them. They are composed by the server for every
+ * area of the answer and travel in the event's accordion; the component writes them onto the posters,
+ * which it alone writes on this shell (stage R3), and then re-asks the panel that is open, which is a
+ * listing of the same criteria one level down and would otherwise be the one part of the page still
+ * answering the previous question. Nothing here writes into the areas.
  *
- * The event carries the rest of the answer the posters need: each area's results and
- * whether it opens, the page's word on the areas as a whole (the summary's sentences, the reveal,
- * "nothing anywhere", the automatic opening), whether the answer narrows, and its total. The panel's
- * module writes all of it; this module keeps only the automatic opening's sentence, which it adds
- * to the count line if the panel's module does open the area.
+ * The event carries the rest of the answer the posters need: each area's results and whether it opens,
+ * the page's word on the areas as a whole (the summary's sentences, the reveal, "nothing anywhere", the
+ * automatic opening), whether the answer narrows, and its total. This module keeps only the automatic
+ * opening's sentence, which it adds to the count line if the component does open the area.
  *
- * It runs on a replaced grid and never on an appended page: an append is more of the same
- * question, and re-asking the open panel for it would be a request per page.
+ * It runs on a replaced grid and never on an appended page: an append is more of the same question, and
+ * re-asking the open panel for it would be a request per page.
  *
  * @param {Object} response The rows response.
  * @return {void}
  */
 const paintShells = (response) => {
     const accordion = response.accordion || [];
-    accordion.forEach((group) => {
-        const poster = root.querySelector(SELECTORS.area + '[data-categoryid="' + Number(group.id) + '"]');
-        if (!poster) {
-            return;
-        }
-        poster.dataset.ctaurl = group.ctaurl || '';
-        poster.dataset.ctalabel = group.ctalabel || '';
-    });
     const areas = response.areas || {};
     autoopenlabel = areas.autoopenlabel || '';
     document.dispatchEvent(new CustomEvent(EVENTS.criteria, {detail: {

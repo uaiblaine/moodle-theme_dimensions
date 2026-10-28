@@ -270,7 +270,9 @@ classes/local/category/        The category showcase's decision layer (stage 2):
                                scope, page_result, unavailable_exception. See the section below.
 amd/src/category*.js           The showcase's modules (amd/src/covervideo.js + local/coverfilm.js: the cover film). Its listing clients: categoryvitrine and
                                categorypanel (an account's), categorypublic (a visitor's), over the
-                               shared categorylisting, categoryposters and categoryareapanel.
+                               shared categorylisting, categoryposters and categoryareapanel (the visitor's
+                               posters and panel since R3; the logged-in shell's are js/esm/src/areas).
+js/esm/src/                    The React port (R0-R3): daterange/ (R1), filterline/ (R2), areas/ (R3).
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
                                name, under two rules of the theme's own. See its section below.
 templates/category_pages.mustache  The strip's markup, drawn by category_listing above the toolbar.
@@ -2556,13 +2558,15 @@ maintainer must not lose.
 - **The panel is ONE list item of the grid and its row is five integers on its own style
   attribute.** `--dim-row-3/-2/-1` (the row after the open poster's at three, two and one column)
   and `--dim-col-3/-2` (where the arrow points), written by the server through `sprintf('%d')` and
-  by `categorypanel` through `style.setProperty()`. The stylesheet reads the one for its
+  by the client through `style.setProperty()` (`categoryareapanel` on the visitor's shell, `areas/panel.ts`
+  on the logged-in one since R3). The stylesheet reads the one for its
   breakpoint, and reads `--dim-row-1` in the list view at EVERY width, whose grid is one track -
   without that rule the panel falls rows away from its poster. An explicitly placed item is placed
   first and auto-placement skips its row, which is why a resize needs no script. The DOM order is
   the module's: after the LAST poster of the open poster's row, on open, on a breakpoint change and
   on a view change, never on `resize`. The breakpoints are the stylesheet's own 1199.98 and 575.98,
-  and `categorypanel_source_test` reads both files to hold them together.
+  and `categorypanel_source_test` reads both files to hold them together (`areas_component_source_test`
+  holds the component's `model.ts` to the same two numbers).
 - **A panel the server drew is OPEN by construction, with the module or without it.** The shut
   state is a class only the module writes (`dim-panel--shut`, for the moment it grows from or
   collapses into). The first version tied "open" to a class the module adds, which made the
@@ -2597,16 +2601,19 @@ maintainer must not lose.
 - **The listing and the panel talk through events on the document and through the address.** The
   shared `paintView()` (`categorylisting`) sends `dim-vitrine:view` for both clients, and
   `categoryareapanel` re-places the panel on it. On the logged-in shell `categoryvitrine` sends
-  `dim-vitrine:criteria` from `paintShells()`, on a REPLACED answer only, after writing each
-  poster's `data-ctaurl` and `data-ctalabel` from the response's `accordion[]` - the panel's shell,
-  composed by the server, which the panel shows before its rows arrive - and `categorypanel` hands
-  it to `categoryareapanel`'s `criteria()`, which repaints the posters and re-asks the open panel.
+  `dim-vitrine:criteria` from `paintShells()`, on a REPLACED answer only, carrying the response's
+  `accordion[]` with each area's `ctaurl` and `ctalabel` - the panel's shell, composed by the server,
+  which the panel shows before its rows arrive - and since R3 the posters' component hears it
+  (`areas/panel.ts` `criteria()`), writes the shells onto the posters, repaints them and re-asks the
+  open panel; `categoryvitrine` writes nothing into the posters any more (R3's section).
   The visitor's `categorypublic` does the same in `paintAreas()`, with no event. Neither side
   composes a number or a sentence; the client changes only the `sort` of the shell's address for the
   A-Z order.
 - **Each module writes its own mark, and there are five.** `dim-js` (the logged-in listing,
   `categoryvitrine`), `dim-public-js` (the visitor's, `categorypublic`), `dim-cover-js` (the film),
-  `dim-panel-js` (the panel, written by the shared `categoryareapanel`'s `arm()` for both clients)
+  `dim-panel-js` (the panel, written by the shared `categoryareapanel`'s `arm()` on the visitor's
+  shell and by the component's `arm()` on the logged-in one, deferred there while a server-drawn panel
+  is open: R3's section)
   and `dim-star-js` (the star, a module of its own because both logged-in modules arm it). A
   static render of the design record's probe harness stamps the marks of the modules a page ARMS, so
   it stamps `dim-panel-js` and not `dim-star-js`, which is imported: a static render of the root
@@ -2614,7 +2621,8 @@ maintainer must not lose.
 - **The panel's address is replaced, never pushed, and three other holders follow it.** Every
   write of `open`/`psort` goes through `replaceState` and then rewrites the toolbar form's and the
   hero fold form's hidden `open`/`psort` fields and the clear link's href (and, since stage T2, every
-  chip's under the filter line: `categoryareapanel`'s `syncHolders()`). And `categoryvitrine`
+  chip's under the filter line: `categoryareapanel`'s `syncHolders()`, and `areas/panel.ts`'s on the
+  logged-in shell since R3). And `categoryvitrine`
   rewrites ALL the fold form's criteria from the address after each of its own writes: the fold
   form is drawn with the server render's criteria, so a fold after a filter applied in place used
   to reload with the old filters (blueprint section 11, fixed in this round).
@@ -2643,7 +2651,8 @@ maintainer must not lose.
   `js_cover_pause_not_refusal`). The Behat scenario "A finger pauses the film in place" met it only
   when the fixture loaded slowly - two red runs out of three on a loaded machine, three green once
   fixed.
-- **A render is asynchronous, so "the latest request wins" is checked AFTER it resolves.**
+- **A render is asynchronous, so "the latest request wins" is checked AFTER it resolves** (in
+  `categoryareapanel` and, since R3, in `areas/panel.ts`, whose Jest suite orders the renders by hand).
   `renderWhole()` takes the opening's turn (`state.turn`, bumped by every open and close) and
   `transplant()` the request's ticket plus a number of its own (`state.paint`), and each compares
   between the render and the write. Checked only before the render, the skeleton's render and the
@@ -2653,7 +2662,8 @@ maintainer must not lose.
   first.** `dim-panel--fading`, `--static` and `--shut` each last one transition and come off on
   their step's success path; a step superseded before it gets there (a second press inside the
   crossfade, a close while the first render is out) used to leave one on, drawing every later panel
-  invisible or collapsed. `categorypanel_source_test` fails any `classList.add` of them elsewhere.
+  invisible or collapsed. `categorypanel_source_test` fails any `classList.add` of them elsewhere, and
+  `areas_component_source_test` any `panel.classList.add` of the component's but `settle()`'s.
 - **The visitor's root reads the open panel off the address and nothing else**, as the logged-in root
   does: `request.php` builds it with `criteria::panel_options_from_request()`, not `from_request()`.
   The root honours no filter and draws no control to clear one, so anything else it read rode the
@@ -2671,14 +2681,16 @@ are the facts a maintainer must not lose.
 - **Result mode is ONE switch: a grouped page with areas and `criteria::has_filters()`.** It is
   computed in `category_listing::results()` - one builder the page (with its real open panel) and
   `get_category_rows` (with none, as `areas`) both read - written on the areas section as
-  `data-filtered`, and rewritten by `categorypanel` from every answer. The root never is (it reads no
+  `data-filtered`, and rewritten by the client from every answer (the component's `criteria()` on the
+  logged-in shell since R3, `categoryareapanel`'s on the visitor's). The root never is (it reads no
   filter). Nothing in it costs a statement: every number comes from the accordion already in hand.
 - **Whether a poster opens has ONE spelling: `population::expandable($filtered, $count)`**, called
   by `posters()` and by `rows.php` for each `accordion[]` entry. Under a criterion every poster opens
   (a zeroed one opens its "no results" panel, which is how the open area stays); at rest an area with
   no course is the link to its page. Because the client applies filters in place, the poster's markup
   carries both states (the trigger's `data-empty`, the chevron, the visually hidden note) and
-  `categoryareapanel`'s `setExpandable()` flips class, attribute, note, word and control - never on
+  `setExpandable()` (`categoryareapanel` on the visitor's shell, `areas/posters.ts` on the logged-in one)
+  flips class, attribute, note, word and control - never on
   the open poster, which waits until it closes.
 - **V18: a visitor's posters under a criterion are the areas the page shows at rest**, at the price
   of ONE grouped statement (`population::accordion_tree()`, the at-rest anonymous predicate grouped by
@@ -2703,7 +2715,8 @@ are the facts a maintainer must not lose.
   written so the arrangement does not rest on a reboot rule. The colon is the stylesheet's `::after`.
 - **A zero panel's suggestions are PAGE data, merged by the client like the cards.** The web
   service answers for one area and knows nothing of its siblings, so the server adds them in
-  `category_panel::for_page()` from the page's posters and `categorypanel` reads them off the posters'
+  `category_panel::for_page()` from the page's posters and the client (`categoryareapanel`, or the
+  component's `areas/model.ts` `suggestions()` since R3) reads them off the posters'
   `data-count`/`data-resultcount` into `Object.assign({}, response.panel, {cards, jsmode, suggestions,
   hassuggestions})`. A server-drawn suggestion is a link with the button's data attributes, which the
   adoption turns into a button.
@@ -2743,7 +2756,8 @@ are the facts a maintainer must not lose.
   logged-in page with the state sort on honours it (gate `state_chip_dropped_unhonoured`).
 - **The pending state has exactly two ways out: the answer's event and `dim-vitrine:failed`.**
   `requestRows()` sends the second from its catch, for the latest replacing request on a page with
-  areas; `categorypanel` hands it to `categoryposters`' `failed()`, which drops `aria-busy` and
+  areas; the posters' component hears it (since R3; `categoryposters`' `failed()` on the visitor's
+  shell, `areas/posters.ts`'s on the logged-in one), which drops `aria-busy` and
   repaints every pill through `paintPill()` from the poster's own `data-resultlabel`, which the server
   draws on the article and every answer rewrites. Without it a failed request left every pill - each
   control's description - at "…".
@@ -2918,7 +2932,9 @@ status block, the design, the HTTP facts, the numbers and the cache verdicts. Wh
   posters' results) and `categoryareapanel.js` (the panel: one area at a time, its place, address,
   orders, rail, keyboard and states). `categoryvitrine` and `categorypanel` keep what is an
   account's - the progress observer, the peek, the star, the view preference, the logged-in services
-  and the automatic opening - and bind the shared functions in one-line bindings at the top.
+  - and bind the shared functions in one-line bindings at the top. Since R3 the logged-in shell no
+  longer arms `categoryareapanel` or `categoryposters`: its posters, panel and automatic opening are the
+  React component's (R3's section), and the two shared modules are the visitor's alone until R4.
   `amd_source_test::body()` and `categorypanel_source_test::body()` look in the module and then in
   the shared file, and a one-line binding never matches, so a body found is the code that runs; the
   two panel files therefore give their functions distinct names (`init`/`arm`,
@@ -3065,7 +3081,8 @@ the design and what is not verified. These are the facts a maintainer must not l
   `view=` in the address creates the entry the request then has to know about.
 - **The panel's colour is the open poster's `--dim-card-band`**, written on the panel's style by the
   server (`panel_style()`, through `branding::hex()`: the sink is five integers and one colour) and
-  copied by `categoryareapanel`'s `place()` on every placement. The rail, the head's tint, the glow,
+  copied by the client's `place()` on every placement (`categoryareapanel`, or `areas/panel.ts` on the
+  logged-in shell since R3, both writing it only when it changes). The rail, the head's tint, the glow,
   the arrow's tint and the dark page's lift are each the band itself as a layer at an opacity, because
   stylelint refuses `color-mix()`; `.dim-panel__inner` reaches 16px below the panel and gives it back
   as padding so the glow is inside the clip of the grow.
@@ -3438,6 +3455,79 @@ draws `js/esm/src/filterline/FilterLine.tsx`, the visitor's keeps `amd/src/categ
   `js_line_input_delegated`, `js_line_erase_guard`, `js_line_focus_icon`; `js_vitrine_line_armed`,
   `js_vitrine_drop_term` and `js_clear_focus_target` were retargeted to the logged-in shell's new spelling. The
   component's own rules are Jest's and are mutation-checked by hand, never by the sweep.
+
+## The category showcase: the panel and the posters as React components (R3, 2026-10-28)
+
+Stage R3 of `docs/vitrine-react/PLAN.md`. **Two implementations of the posters and their panel until R4, on the
+owner's decision**: the logged-in shell draws `js/esm/src/areas/Areas.tsx`, the visitor's keeps `amd/src/categoryareapanel.js`
+and `categoryposters.js`. A rule of the panel or the posters changes in both, and in the module of the tree that carries
+it (`panel.ts` for the panel's behaviour, `posters.ts` for the posters' result layer, `rail.ts`, `model.ts`, `mark.ts`),
+each named after the AMD function it stands for. Every rule of the EL-1, EL-2, EL-3 and round I sections binds both.
+
+- **The mount is an empty, hidden child of the areas section**, appended by `categorypanel`'s `mountAreas()` (the
+  logged-in module, so the specifier never reaches the visitor's graph), with `data-react-props` the props object
+  itself (`{}`). It draws no box, so the first paint is the server's to the pixel: the component never re-renders a
+  poster or a panel the server drew, it takes them over. Mounting on the panel's list item would not do: core's
+  `react_autoinit` UNMOUNTS a removed node and mounts an added one, so the panel's moves between rows (`moveAfter()`)
+  would remount it and lose its state; the areas section never moves. `mountAreas()` runs only where the areas carry a
+  panel, puts its three listeners on before it appends the node, and holds `theme_dimensions/categorypanel:areas` on
+  core's pending counter until `dim-areas:mounted`, so Behat never presses a poster that is still a link.
+- **The ownership boundary.** The component owns, and is the only writer of, on the logged-in shell: the panel's
+  FRAME (the one list item: hidden state, the three transition classes through `settle()` alone, the five integers and
+  the colour on its style, its DOM order; `panel.ts`); the posters' RESULT LAYER (pills, `data-count`/`resultcount`/
+  `resultlabel`/`ctaurl`/`ctalabel`/`expandable` on the articles, the control as a button that opens or the link to its
+  page with `aria-describedby` handed over, the open state and trigger word, the items' `hidden`, the reveal past the
+  slice, "nothing anywhere" and "search all", the hint, `data-filtered`/`data-elsewhere`, the live status; `posters.ts`);
+  and the "nothing in N areas" SUMMARY, which React draws through portals into the server's `<summary>` and list, read
+  off them in the first render (`readSummary()`), emptied in the first commit's layout effect and drawn back before
+  paint. Server markup it never diffs: the panel's CONTENT, `category_panel` rendered by `core/templates` through the
+  bridge and inserted whole (`replaceNodeContents`) or region by region (`appendNodeContents` into a holder, then the
+  subtitle, the strip, the body and the foot swapped), and each card's own internals, which keep their own modules
+  (the star, the film, the dialogue, the progress). The areas' head (`dim-direct-skip`, `paintDirect()`) and the
+  holders outside the areas (the toolbar and fold forms' hidden fields, the clear link, the chips) are not the
+  component's; it writes the holders as `syncHolders()` always did.
+- **The event contract.** On the document, from `categoryvitrine`: `dim-vitrine:pending` (`{filtered}`), `:criteria`
+  (`{accordion, areas, filtered, total}`) and `:failed`; from `categorylisting`'s `paintView()`: `:view`; the component
+  sends `dim-panel:autoopened` (`{id}`). On the areas section, with `categorypanel`: the component dispatches
+  `dim-areas:ask` with `{poster, psort, answer: null}` and `categorypanel` fills `answer` with the logged-in service's
+  promise while the event is dispatched (no answer is the panel's inline error); `dim-areas:painted` (`{panel}`) after the
+  rows are drawn (`categorypanel` paints the progress); `dim-areas:mounted`. The names are `EVENTS` in `areas/panel.ts`,
+  `AREAS` in `categorypanel` and `EVENTS` in `categoryvitrine`, held equal by `areas_component_source_test`. **The
+  component calls no service and reads no session** (the test reads its sources for it): what an account adds stays in
+  `categorypanel` (`panelArgs()`, `ask()`, `paintProgress()`, the star), so R4 can hand the same component the
+  visitor's client. `paintShells()` no longer writes the shells onto the posters: they travel in the accordion.
+- **Layout is read in three places, never at mount.** The row is the five integers and the DOM order the last
+  poster of the open one's row, both counted from the posters SHOWN in its grid (`shownItems()`, a DOM read) and the
+  grid's tracks (`model.ts` `columns()`: `matchMedia` of `WIDE`/`PHONE` and the listing's `dim-vitrine--list` class),
+  where `categoryareapanel`'s `place()` read every item's `offsetTop`. The reads left: a move from one open area to
+  another reads the pressed poster's top before the move and once after it (one forced layout per such press, to keep
+  the poster under the pointer); `ensureVisible()` reads the panel's box 340 ms after the opening, on a laid-out page;
+  the grow reads one computed style (`opacity`, a style flush and no layout) so the transition starts from the shut
+  state; the navbar's height is a computed custom property. The rail reads its scroll (`railState()`) only from a
+  ResizeObserver entry - after layout, before paint - and from its own scroll events. `adopt()` reads nothing: the
+  server already placed the panel, and `place()` writes an integer or the colour only where it changes.
+  `areas_component_source_test::test_layout_is_read_only_where_the_component_says` counts the reads per function.
+- **A server-drawn open panel keeps its no-JavaScript presentation until the component first changes it.** The body's
+  `dim-panel-js` turns the rail from a grid of four (1200px up) into a scroll and shows the arrows and the phone
+  counter, which redraws an open panel's height: the mark goes on at mount only where no panel is open, otherwise in
+  the component's `arm()` on its first opening, close, order or answer. Every write of the posters' layer and the
+  rail goes through `setHidden`/`setClass`/`setAttr`, which write only a change, so a pass that agrees with the page
+  invalidates no style.
+- **Only the logged-in shell's controls exist in the component**: posters are buttons (no `links`, no `onSpace`), a
+  question is asked every time (no `question`/`quiet`), and a failure is the inline error with its retry. The visitor's
+  options stay `categoryareapanel`'s `arm()` options until R4 moves them into the component as props.
+- **Jest is the behaviour gate** (`js/esm/tests/areas`: `model`, `posters`, `Areas`, 32 tests over `page.ts`, a page
+  with the templates' hooks and a stand-in of `category_panel`): the latest request writing after each async render
+  (the opening's turn, the request's ticket, the transplant's paint), the skeleton never outliving the answer, every
+  step starting from `settle()`, Escape only from the panel or its poster, the zeroed open poster staying until closed
+  and its close focusing the summary, the automatic opening, the address replaced and never pushed with the holders in
+  step, the order's radio group, Back, a mount that reads no layout, and the placement by `matchMedia`. Each of those
+  guards was mutation-checked by hand (the suite reddens with it removed); the sweep runs PHPUnit alone.
+- **Gates**: `js_areas_mount_guard`, `js_areas_listens_first`, `js_areas_node_hidden`, `js_areas_props_object`,
+  `js_areas_ask_answered`, `js_areas_progress_painted`, `js_areas_shells_untouched`, `js_areas_visitor_no_component`,
+  `js_areas_no_amd_panel`, `js_areas_events_spelled`. The panel's older gates on `categoryareapanel`/`categoryposters`
+  hold the visitor's shell; `js_panel_sends_no_direct`, `js_root_panel_carries_query` and `js_panel_period_read` still
+  hold `categorypanel`'s `panelArgs()`, which the logged-in panel asks through.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

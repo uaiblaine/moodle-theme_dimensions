@@ -5,6 +5,25 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The logged-in showcase's posters and the panel between their rows are a React component** (2026100530; R3 of
+  `docs/vitrine-react/PLAN.md`). `js/esm/src/areas/Areas.tsx` (`@moodle/lms/theme_dimensions/areas/Areas`) is mounted
+  on an empty, hidden child `categorypanel` appends to the areas section, so the mount draws no box and the first paint
+  stays the server's. It owns, and is the only writer of, the panel's frame (`areas/panel.ts`: the list item's hidden
+  state, its three transition classes through one `settle()`, the five integers of its row, the open poster's colour,
+  its DOM order), the posters' result layer (`areas/posters.ts`: pills, counts and shells, the control as a button or
+  the link to its page, the open state, zeroed posters by `hidden`, the reveal, "nothing anywhere" and "search all",
+  the hint, the live status) and the "nothing in N areas" summary, which React draws through portals into the
+  server's `<summary>` and list. The panel's content stays `category_panel`, rendered by `core/templates` through the
+  bridge (which now types `replaceNodeContents`/`appendNodeContents`) and inserted whole, never diffed. The component
+  calls no service: it asks `categorypanel` for an area's rows on `dim-areas:ask` (the module puts the logged-in
+  service's promise in the event), tells it the rows are drawn on `dim-areas:painted` (the progress) and that it is
+  drawn on `dim-areas:mounted`; it hears the listing's `dim-vitrine:*` events and sends `dim-panel:autoopened`, and
+  `categoryvitrine` no longer writes the posters' shells. The row is counted from the posters shown and the grid's
+  tracks through `matchMedia`, never read off a box; nothing is measured at mount, a server-drawn panel keeps its
+  no-JavaScript presentation until the component first changes it (the body's `dim-panel-js` redraws its rail), and the
+  rail reads its scroll from a ResizeObserver entry. The visitor's shell keeps `categoryareapanel` and
+  `categoryposters`, and its import graph is unchanged. Jest pins the component (`js/esm/tests/areas`, 32 tests);
+  `areas_component_source_test` pins the AMD half, with ten new `js_areas_*` mutation gates.
 - **The logged-in filter line measures its steps as categoryline does: up to the first that fits** (2026100529; R2
   follow-up). `filterline/measure.ts` `stepWidths()` measured all five tries on every measure, five forced layouts in
   the first commit; a CPU profile on m503b (4x throttling) put 407 ms of forced style and layout in one 453 ms frame,

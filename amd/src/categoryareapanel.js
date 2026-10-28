@@ -44,8 +44,11 @@
  * Two clients arm it, and arm() is handed everything that differs between them: how an area's rows
  * are asked for - each client has a web service of its own -, what is painted once they are on
  * screen, whether a poster's link becomes a button or stays the link it is, whether the same
- * question is asked twice, and what a failure becomes. categorypanel arms it for a logged-in
- * account and categorypublic for a visitor. Nothing here calls a web service, reads the session or
+ * question is asked twice, and what a failure becomes. categorypublic arms it for a visitor; since stage
+ * R3 of docs/vitrine-react/PLAN.md the logged-in shell draws its posters and panel with a React component
+ * of the ESM tree (js/esm/src/areas), which follows the same rules function for function until R4 makes it
+ * the visitor's too, so a rule of the panel changes in both. The logged-in options of arm() (no links, no
+ * question, no quiet) stay for that. Nothing here calls a web service, reads the session or
  * stars a course, because the visitor's module imports this one (categorypublic_source_test walks
  * the import graph); its mark on the body is its own, dim-panel-js, which the stylesheet's panel
  * rules - the transitions, the rail's arrows and its counter - are written against.

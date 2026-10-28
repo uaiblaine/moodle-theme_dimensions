@@ -31,9 +31,11 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * Pins the invariants of the panel's, the star's and the marker's client modules by reading their source.
  *
  * categoryareapanel holds the panel itself - opening, placing, rendering, the address, the keyboard -
- * and both clients arm it; categorypanel holds what the logged-in client adds to it: the listing's
- * web service a panel is asked through, the progress, the star and the automatic opening. The
- * visitor's half is categorypublic_source_test's.
+ * and the visitor's client arms it (its half is categorypublic_source_test's). Since stage R3 the
+ * logged-in shell's posters and panel are a React component (js/esm/src/areas, Jest's to test, its AMD
+ * half areas_component_source_test's), and categorypanel holds what an account adds to it: the
+ * listing's web service a panel is asked through, the progress and the star. The shared modules' rules
+ * pinned here are the visitor's until R4 and the component's too: a rule changes in both.
  *
  * Plugin CI runs no JavaScript unit tests, so the properties whose loss costs a reader something are
  * pinned the way amd_source_test pins the listing's module, each assertion scoped to the function it
@@ -207,9 +209,9 @@ final class categorypanel_source_test extends \basic_testcase {
         $this->assertStringContainsString("methodname: 'theme_dimensions_get_category_rows',", $ask);
         $this->assertStringContainsString('args: panelArgs(id, psort),', $ask);
         $this->assertStringContainsString(
-            'AreaPanel.arm({ask: ask, painted: paintProgress})',
-            $this->init_body('categorypanel'),
-            'The shared panel asks through this module and nothing else.'
+            'event.detail.answer = ask(event.detail.poster, event.detail.psort);',
+            $this->body('mountAreas'),
+            'The logged-in panel asks through this module and nothing else.'
         );
         /* The answer's context is the server's panel, plus the cards the service returns at the top
            level and the page's own suggestions for a zero panel, which the service cannot know:
@@ -601,9 +603,10 @@ final class categorypanel_source_test extends \basic_testcase {
             );
         }
         $this->assertStringContainsString('theme_dimensions_get_category_rows', $this->build('categorypanel'));
-        $this->assertStringContainsString('theme_dimensions/' . self::SHARED, $this->build('categorypanel'));
+        $this->assertStringContainsString('@moodle/lms/theme_dimensions/areas/Areas', $this->build('categorypanel'));
+        $this->assertStringNotContainsString('theme_dimensions/' . self::SHARED, $this->build('categorypanel'));
         $this->assertStringContainsString('theme_dimensions/category_panel', $this->build(self::SHARED));
-        $this->assertStringContainsString('theme_dimensions/categoryposters', $this->build('categorypanel'));
+        $this->assertStringContainsString('theme_dimensions/categoryposters', $this->build(self::SHARED));
         $this->assertStringContainsString('dim-card-title', $this->build('categorymark'));
     }
 
@@ -637,23 +640,17 @@ final class categorypanel_source_test extends \basic_testcase {
         }
         $this->assertStringContainsString('state.allempty = Boolean(data.allempty);', $criteria);
         $this->assertStringContainsString("areas.dataset.elsewhere = data.elsewhere || '';", $criteria);
-        // The logged-in client's automatic opening comes after the shared painting and the re-asked panel.
+        // The logged-in component writes an answer in the same order, its automatic opening last.
+        $component = (string) file_get_contents($this->plugin_root() . '/js/esm/src/areas/panel.ts');
         $this->assertMatchesRegularExpression(
-            '~AreaPanel\.criteria\(detail\);\s*AreaPanel\.autoOpen\(detail\.areas \|\| \{\}\);~',
-            $this->body('onCriteria')
-        );
-        $listen = $this->body('listenToListing');
-        $this->assertStringContainsString(
-            'document.addEventListener(EVENTS.criteria, (event) => onCriteria(event.detail || {}));',
-            $listen
-        );
-        $this->assertStringContainsString(
-            'document.addEventListener(EVENTS.pending, (event) => Posters.pending(areas, event.detail || {}));',
-            $listen
+            '~paintPosters\(areas, accordion, filtered, st\.open, st\.expandable\);.*?ui\.summary\(summaryOf\(.*?'
+                . 'paintReveal\(areas, word\);.*?paintAllEmpty\(areas, st\.allempty, st\.open\);.*?'
+                . 'if \(st\.open\) \{\s*place\(\);\s*request\(\);\s*\}\s*autoOpen\(word\);~s',
+            $component
         );
         $this->assertMatchesRegularExpression(
             "~pending: 'dim-vitrine:pending',\s*criteria: 'dim-vitrine:criteria',\s*failed: 'dim-vitrine:failed',~",
-            $this->source()
+            $component
         );
         $this->assertMatchesRegularExpression("~autoopened: 'dim-panel:autoopened',~", $this->source(self::SHARED));
 
@@ -702,10 +699,14 @@ final class categorypanel_source_test extends \basic_testcase {
             'Every pill is written again from its poster, under the result mode the page is still in.'
         );
         $this->assertStringContainsString(
-            'document.addEventListener(EVENTS.failed, () => Posters.failed(areas));',
-            $this->body('listenToListing')
+            '[document, EVENTS.failed, panel.onFailed, false],',
+            (string) file_get_contents($this->plugin_root() . '/js/esm/src/areas/Areas.tsx'),
+            'The logged-in component hears the failure.'
         );
-        $this->assertMatchesRegularExpression("~failed: 'dim-vitrine:failed',~", $this->source());
+        $this->assertMatchesRegularExpression(
+            "~failed: 'dim-vitrine:failed',~",
+            (string) file_get_contents($this->plugin_root() . '/js/esm/src/areas/panel.ts')
+        );
         $card = (string) file_get_contents($this->plugin_root() . '/templates/category_directory_card.mustache');
         $this->assertStringContainsString(
             'data-resultlabel="{{results.label}}"',

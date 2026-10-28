@@ -38,10 +38,15 @@ import {requireAsync, requireManyAsync} from '@moodle/lms/core/amd';
 /** What `core/templates` renders: the markup and the JavaScript its blocks collected. */
 export type Rendered = {html: string, js: string};
 
-/** The part of `core/templates` the theme uses: Mustache stays the one description of the content. */
+/**
+ * The part of `core/templates` the theme uses: Mustache stays the one description of the content. The two
+ * writers put rendered markup into a node and run its JavaScript and core's filter event, as an AMD caller's do.
+ */
 export type TemplatesModule = {
     renderForPromise: (name: string, context: object) => Promise<Rendered>,
     runTemplateJS: (js: string) => void,
+    replaceNodeContents: (element: Element, html: string, js: string) => unknown,
+    appendNodeContents: (element: Element, html: string, js: string) => unknown,
 };
 
 /** One message for core's notification area. */

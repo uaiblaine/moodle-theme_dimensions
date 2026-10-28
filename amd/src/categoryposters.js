@@ -23,11 +23,13 @@
  * and every sentence of that is the server's, carried by the answer's accordion and its word on the
  * areas as a whole; this module writes them onto the page and composes nothing.
  *
- * categoryareapanel paints them with every answer, for whichever client armed it - categorypanel
- * for a logged-in account or categorypublic for a visitor - and the two clients mark them pending
- * while their request is out. Nothing here calls a web service or reads the session: the visitor's
- * module imports this one. What the painting depends on - whether a panel is open, and what a
- * poster's control becomes when the answer changes whether it opens - is handed in.
+ * categoryareapanel paints them with every answer for the visitor's client, categorypublic, which marks
+ * them pending while its request is out; since stage R3 of docs/vitrine-react/PLAN.md the logged-in shell
+ * paints its posters with a React component of the ESM tree (js/esm/src/areas/posters.ts), which follows
+ * these painters function for function until R4, so a rule changes in both. Nothing here calls a web
+ * service or reads the session: the visitor's module imports this one. What the painting depends on -
+ * whether a panel is open, and what a poster's control becomes when the answer changes whether it
+ * opens - is handed in.
  *
  * @module     theme_dimensions/categoryposters
  * @copyright  2026 Anderson Blaine
