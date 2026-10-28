@@ -56,8 +56,13 @@ detached DOM or a heap that grows past the warm-up after a forced garbage collec
 
 ## Known items carried in
 
+- **The filter line's first commit forces the page's first layout** (PLAN 5.2.6): on the visitor's page after R4a, one
+  long frame of about 130-150 ms at 4x CPU, 120-135 ms of it forced layout, in `filterline/measure.ts` called from
+  `FilterLine`'s first layout effect, with the line already fitting at `s1`. Axis C; the candidate fixes (the first
+  measure in the `ResizeObserver`'s first callback, `contain` on the line) are listed there, to measure on both shells.
 - **R2's leftover blocking time**: the flat warm page is about 30 ms of TBT above R1, and the scope press's INP is
-  96 ms against 48-64 before (PLAN 5.2.4). Axis A or C; the profile of the press is the first measurement.
+  96 ms against 48-64 before (PLAN 5.2.4). Axis A or C; the profile of the press is the first measurement. R3's
+  profile already put about 60 ms of the warm grouped page in the line's one measured step: likely the item above.
 - **The phone layout shift**: 0.038-0.041 when the filter line folds to two lines, measured at Chrome's 500 px
   window floor, not at 390 (PLAN 5.2.4). Re-measure at a true 390; if it stands, axis C.
 - **Lighthouse's "render-blocking requests"** on S4, reported by the owner on 2026-10-28: the stylesheet and the
