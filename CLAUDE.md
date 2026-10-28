@@ -3407,10 +3407,13 @@ draws `js/esm/src/filterline/FilterLine.tsx`, the visitor's keeps `amd/src/categ
   line put back where it stands is seen by core's observer as leaving and coming back, which would unmount a calendar
   already inside it. The adoption itself is safe: it happens inside the first commit, before the observer's
   microtask, and by then the removed server node no longer holds the calendar.
-- **The step is measured once per content and taken from a width alone.** `measure.ts` `stepWidths()` lays the line
-  out under `dim-line--measuring` with every scope cell drawn, once per try, and records the width each try needs
-  (the controls' extent with the search at its step's floor); a ResizeObserver entry then picks the step with
-  `steps.ts` `choose()`, under `flushSync`, before the frame is painted, and reads no layout. The widths are measured
+- **The step is measured once per content, up to the first try that fits, and taken from a width alone.**
+  `measure.ts` `stepWidths()` lays the line out under `dim-line--measuring` with every scope cell drawn, once per try,
+  and records the width each try needs (the controls' extent with the search at its step's floor), stopping at the
+  first that fits the line's width, as `categoryline`'s `fit()` does: each try is a forced layout of the page, and
+  measuring all five cost 407 ms of one frame under 4x CPU (the R2 follow-up). A ResizeObserver entry then picks the
+  step with `steps.ts` `choose()`, under `flushSync`, before the frame is painted, and reads no layout - unless the
+  line narrowed past every try measured (`settled()`), which measures the rest. The widths are measured
   again only when the words, the counts or the slots change (the component's `signature`) and when the fonts arrive.
   The first commit folds the line before React's first paint.
 - **The first paint's shift (0.031-0.032, PLAN 5.2.1) is removed only where the client keeps the first step.** The

@@ -29,7 +29,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {CLASSES, TRIES, paint} from './steps';
+import {CLASSES, TOLERANCE, TRIES, paint} from './steps';
 import type {Fold} from './steps';
 
 /** Pixels between the line's real bottom and a layer placed under it: the stylesheet's own gap. */
@@ -107,13 +107,15 @@ export const requiredWidth = (line: HTMLElement): number => {
  *
  * The open search is set aside for the measure (its slide would read as controls of no width), and the
  * fold the line carried, the searching class and every hidden cell are put back before the caller paints.
- * Forces one layout per try.
+ * Forces one layout per try, so with a width it stops at the first try that fits, as categoryline's fit()
+ * does: a wide line pays one layout, not five ({@see settled()} says when the tries left out are needed).
  *
  * @param {HTMLElement} line The line.
  * @param {object} drawn The fold the line carries now, put back afterwards; null for none.
- * @returns {Array} One width per try, in TRIES' order.
+ * @param {number} width The line's content width to stop at; every try is measured without one.
+ * @returns {Array} One width per try measured, in TRIES' order.
  */
-export const stepWidths = (line: HTMLElement, drawn: Fold | null): number[] => {
+export const stepWidths = (line: HTMLElement, drawn: Fold | null, width?: number): number[] => {
     const searching = line.classList.contains(CLASSES.searching);
     const scope = line.querySelector(SCOPE);
     const absent = scope ? Array.from(scope.querySelectorAll<HTMLElement>('label[hidden]')) : [];
@@ -122,10 +124,14 @@ export const stepWidths = (line: HTMLElement, drawn: Fold | null): number[] => {
     absent.forEach((label) => {
         label.hidden = false;
     });
-    const widths = TRIES.map((fold) => {
+    const widths: number[] = [];
+    for (const fold of TRIES) {
         paint(line, fold);
-        return requiredWidth(line);
-    });
+        widths.push(requiredWidth(line));
+        if (width !== undefined && widths[widths.length - 1] <= width + TOLERANCE) {
+            break;
+        }
+    }
     absent.forEach((label) => {
         label.hidden = true;
     });

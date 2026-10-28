@@ -42,6 +42,7 @@ const choose = /* @__PURE__ */ __name((required, width) => {
   }
   return TRIES[TRIES.length - 1];
 }, "choose");
+const settled = /* @__PURE__ */ __name((required, width) => required.length >= TRIES.length || required.some((need) => need <= width + TOLERANCE), "settled");
 const morphs = /* @__PURE__ */ __name((fold) => fold !== null && MORPH_STEPS.indexOf(fold.step) >= 0, "morphs");
 const same = /* @__PURE__ */ __name((one, two) => one === two || one !== null && two !== null && one.step === two.step && one.folded === two.folded, "same");
 const paint = /* @__PURE__ */ __name((line, fold) => {
@@ -58,6 +59,7 @@ export {
   choose,
   morphs,
   paint,
-  same
+  same,
+  settled
 };
 //# sourceMappingURL=steps.dev.js.map

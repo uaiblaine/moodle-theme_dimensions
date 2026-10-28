@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The logged-in filter line measures its steps as categoryline does: up to the first that fits** (2026100529; R2
+  follow-up). `filterline/measure.ts` `stepWidths()` measured all five tries on every measure, five forced layouts in
+  the first commit; a CPU profile on m503b (4x throttling) put 407 ms of forced style and layout in one 453 ms frame,
+  and the browser probe read the flat page's warm TBT at 303 ms against 98 ms under R1. It now stops at the first try
+  that fits the line's width, and a ResizeObserver width the measured tries do not decide (`steps.ts` `settled()`)
+  measures the rest; any other width is still a fold alone. Jest pins both.
 - **The logged-in showcase's filter line is a React component** (2026100528; R2 of `docs/vitrine-react/PLAN.md`).
   `js/esm/src/filterline/FilterLine.tsx` (`@moodle/lms/theme_dimensions/filterline/FilterLine`) is mounted on the
   server's line itself, which the shared `mountLine()` names for core's `react_autoinit` and puts back where it stands;

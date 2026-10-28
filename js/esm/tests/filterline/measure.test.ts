@@ -122,6 +122,31 @@ describe('theme_dimensions/filterline/measure', () => {
         expect(Array.from(line.classList).sort()).toEqual(['dim-line', 'dim-line--folded', 'dim-line--s3', 'dim-line--searching']);
     });
 
+    it('stops at the first try that fits the width it is given, so a wide line pays one layout', () => {
+        const {line} = drawPage();
+        const search = line.querySelector('[data-region="dim-line-search"]') as HTMLElement;
+        search.style.minWidth = '208px';
+        const tried: string[] = [];
+        layout(line, (child, classes) => {
+            const fold = Array.from(classes).filter((name) => /--s\d|--folded/.test(name)).join(' ');
+            // Every control's box reads its siblings' widths too: count each step once, as it comes.
+            if (fold !== '' && tried[tried.length - 1] !== fold) {
+                tried.push(fold);
+            }
+            return example(child, classes);
+        });
+        const full = 300 + 208 + 40 + 120 + 40 + 80 + 42 + 60;
+
+        expect(stepWidths(line, null, 1200)).toEqual([full]);
+        expect(tried).toEqual(['dim-line--s1']);
+
+        // Narrower than the first try: it goes on to the second, which fits, and no further.
+        tried.length = 0;
+        expect(stepWidths(line, null, full - 50)).toEqual([full, full - 60]);
+        expect(tried).toEqual(['dim-line--s1', 'dim-line--s2']);
+        expect(line.classList.contains('dim-line--measuring')).toBe(false);
+    });
+
     it('measures under the measuring class and never with the search open over the line', () => {
         const {line} = drawPage();
         const classes = new Set<string>();
