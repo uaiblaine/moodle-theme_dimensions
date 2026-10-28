@@ -53,6 +53,13 @@
  * the address, whose panel parameters this module carries without owning them. The star is
  * categorystar's, and the searched term is marked in the cards' titles by categorymark.
  *
+ * The filter line is a React component's since stage R2 of docs/vitrine-react/PLAN.md
+ * (js/esm/src/filterline/FilterLine.tsx), handed the server's line by the shared mountLine(); the
+ * visitor's module keeps categoryline. The component draws the line's own controls, which this module and
+ * the shared painters never write into: they tell it what moved (the shared tellAnswer() after every
+ * answer, and every painter of the line's controls through the line's events), and it says when a
+ * suggestion is about to press its control, so this module drops the typed term first (dropTerm).
+ *
  * @module     theme_dimensions/categoryvitrine
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -65,7 +72,6 @@ import {setUserPreference} from 'core_user/repository';
 import * as CategoryMark from 'theme_dimensions/categorymark';
 import * as CategoryStar from 'theme_dimensions/categorystar';
 import * as DateRange from 'theme_dimensions/daterange';
-import * as Line from 'theme_dimensions/categoryline';
 import * as Listing from 'theme_dimensions/categorylisting';
 
 /** @type {Object} Every hook this module reads, all of them written by the showcase's templates. */
@@ -96,6 +102,7 @@ const SELECTORS = {
     treelink: '[data-region="dim-vitrine-tree"] a[data-region="dim-tree-link"]',
     area: '[data-region="dim-area"]',
     areapanel: '[data-region="dim-panel"]',
+    drawnline: '[data-region="dim-line"][data-line-drawn]',
 };
 
 /** @type {Object} The request parameter names, the same ones the form and the server use. */
@@ -134,6 +141,12 @@ const BODY_CLASS = 'dim-js';
  * mountCalendar(). Named here and nowhere the visitor's modules reach, which keep the AMD calendar.
  */
 const CALENDAR = '@moodle/lms/theme_dimensions/daterange/DateRange';
+
+/**
+ * @type {String} The filter line of this shell: the React component of stage R2, handed the server's line
+ * by the shared mountLine(). Named here and nowhere the visitor's modules reach, which keep categoryline.
+ */
+const FILTERLINE = '@moodle/lms/theme_dimensions/filterline/FilterLine';
 
 /** @type {Number} Milliseconds of quiet before a typed term is sent. */
 const SEARCH_DEBOUNCE = 300;
@@ -296,6 +309,9 @@ const paintGrid = (grid, items, append) => Listing.paintGrid(root, state, grid, 
 const paintDirect = (response) => Listing.paintDirect(root, response);
 const armTreebox = () => Listing.armTreebox(root);
 const mountCalendar = () => Listing.mountCalendar(root, state, setRange, CALENDAR);
+const mountLine = () => Listing.mountLine(root, FILTERLINE, dropTerm);
+const tellAnswer = (response) => Listing.tellAnswer(root, response);
+const focusTarget = () => Listing.focusTarget(root);
 
 /**
  * The web service's arguments for a page of this request: the term alone at the root.
@@ -712,8 +728,8 @@ const applyResponse = async(response, append, ticket) => {
         paintDirect(response);
         paintShells(response);
     }
-    // A scope cell came back or went, and the suggestions read the counts just painted.
-    Line.repaint();
+    // The line's numbers are the component's to draw: the scope's cells, the star, the Filters badge.
+    tellAnswer(response);
 };
 
 /**
@@ -1036,7 +1052,7 @@ const onClear = () => {
     writeUrl(true);
     requestRows(0, false);
     // The field, or its icon where the line folded it away: a folded field cannot take the focus.
-    const search = Line.focusTarget(root.querySelector(SELECTORS.search));
+    const search = focusTarget();
     if (search) {
         search.focus({preventScroll: true});
     }
@@ -1061,7 +1077,7 @@ const onChipRemove = (chip) => {
     remember(false);
     writeUrl(true);
     requestRows(0, false);
-    const search = Line.focusTarget(root.querySelector(SELECTORS.search));
+    const search = focusTarget();
     if (search) {
         search.focus({preventScroll: true});
     }
@@ -1095,7 +1111,8 @@ const dropTerm = () => {
 const onErase = async() => {
     cancelSearch();
     const search = root.querySelector(SELECTORS.search);
-    if (search) {
+    // The component's eraser has emptied its own field and kept the focus in it; this module writes into neither.
+    if (search && !search.closest(SELECTORS.drawnline)) {
         search.value = '';
         search.focus({preventScroll: true});
     }
@@ -1114,10 +1131,13 @@ const listen = () => {
         // With the module running, every control of the toolbar is asynchronous; a submit would
         // reload the page and throw away the history entry this module just wrote.
         form.addEventListener('submit', (event) => event.preventDefault());
-        const search = form.querySelector(SELECTORS.search);
-        if (search) {
-            search.addEventListener('input', () => onSearchInput(search));
-        }
+        // Delegated: the line's component replaces the server's field with its own.
+        form.addEventListener('input', (event) => {
+            const search = closestOf(event, SELECTORS.search);
+            if (search) {
+                onSearchInput(search);
+            }
+        });
     }
 
     root.addEventListener('change', (event) => {
@@ -1301,6 +1321,10 @@ export const init = () => {
     // The star of every card on the page, the panel's included: one listener, armed once.
     CategoryStar.init();
 
+    /* The filter line's component (stage R2) first: the mount is the line itself, put back where it stands,
+       and the calendar's node goes inside it afterwards, so the observer never sees the calendar leave. */
+    mountLine();
+
     // The one calendar of the design, over the two native fields. Nothing here waits on it: a
     // mount that cannot happen leaves those fields exactly as the server drew them.
     mountCalendar().catch(Notification.exception);
@@ -1316,9 +1340,6 @@ export const init = () => {
     // The tree is a disclosure on a phone and a list at every width above it.
     armTreebox();
     listen();
-
-    // The filter line folds to its width, opens its search over itself and suggests the page's filters.
-    Line.arm(root, {dropTerm: dropTerm});
 
     /* The page was drawn with the reader's remembered state wherever the address named none: the
        address is written out in full now, so a reload, Back or a copied address names what is on

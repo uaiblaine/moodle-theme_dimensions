@@ -85,6 +85,11 @@ const SELECTORS = {
     star: '[data-region="dim-line-star"]',
     favfield: '[data-region="dim-fav-field"]',
     favcount: '[data-region="dim-fav-count"]',
+    line: '[data-region="dim-line"]',
+    linefield: '[data-region="dim-line-search"] input[type="search"]',
+    listbox: '[data-region="dim-line-suggest"]',
+    opener: '[data-action="dim-search-open"]',
+    adopted: '[data-region="dim-filters-panel"], [data-region="dim-organise-menu"], [data-region="dim-line-manage"]',
 };
 
 /** @type {Object} The request parameter names, the same ones the form and the server use. */
@@ -146,6 +151,25 @@ const CALENDAR = {
     mounted: 'dim-daterange:mounted',
 };
 
+/**
+ * @type {Object} The events the logged-in shell's filter line component and the listing exchange on the
+ * line: js/esm/src/filterline/FilterLine.tsx spells the same four names. The component says it is drawn
+ * (mounted) and that a suggestion is about to press its control (dropterm); the listing tells it its own
+ * state (state, detail {query, chip, fav, view} or any part of it) and an answer's numbers (answer).
+ */
+export const LINE = {
+    mounted: 'dim-line:mounted',
+    state: 'dim-line:state',
+    answer: 'dim-line:answer',
+    dropterm: 'dim-line:dropterm',
+};
+
+/**
+ * @type {String} The attribute the component writes on the line once it draws it, and which every painter
+ * here reads: FilterLine.tsx's DRAWN.
+ */
+const LINE_DRAWN = 'data-line-drawn';
+
 /** @type {String} The card partial: one template, one row schema, page one and every later page. */
 const CARD_TEMPLATE = 'theme_dimensions/category_card';
 
@@ -195,6 +219,123 @@ export const closestOf = (event, selector) => {
         return null;
     }
     return target.closest(selector);
+};
+
+/**
+ * Whether the filter line's component draws an element, which this module then never writes into.
+ *
+ * Stage R2 of docs/vitrine-react/PLAN.md: on the logged-in shell the line is a React component, which
+ * draws the line's own controls - the scope, the search, the star, the Filters badge, the view toggle - and
+ * holds three frames of server markup it never diffs inside (the Filters panel, the Organise menu, the
+ * managers' menu), which stay this module's to paint. A painter here paints what the component does not
+ * draw and tells the component the rest ({@see tellLine}). The component marks the line once it draws it,
+ * so until then - and always on the visitor's shell, whose line is categoryline's - this answers false and
+ * every painter paints as it always did.
+ *
+ * @param {Element|null} element An element of the toolbar.
+ * @return {Boolean}
+ */
+const drawnByLine = (element) => {
+    const line = element ? element.closest(SELECTORS.line) : null;
+    return Boolean(line) && line.hasAttribute(LINE_DRAWN) && !element.closest(SELECTORS.adopted);
+};
+
+/**
+ * Tell the filter line's component something, where a component draws the line.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {String} type One of LINE's events.
+ * @param {Object} detail What it is told.
+ * @return {Boolean} Whether a component draws the line and was told.
+ */
+const tellLine = (root, type, detail) => {
+    const line = root.querySelector(SELECTORS.line);
+    if (!line || !line.hasAttribute(LINE_DRAWN)) {
+        return false;
+    }
+    line.dispatchEvent(new CustomEvent(type, {detail: detail}));
+    return true;
+};
+
+/**
+ * Tell the filter line's component an answer's numbers: the scope's part of the status group, in SCOPE's
+ * order, the favourites toggle and the Filters badge. Called after the painters, so the panel's groups the
+ * component's suggestions read are painted already. Nothing on the visitor's shell, where categoryline's
+ * repaint() follows the painters instead.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {Object} response The rows response.
+ * @return {void}
+ */
+export const tellAnswer = (root, response) => {
+    const options = response.statusgroup ? (response.statusgroup.options || []) : [];
+    const rank = (option) => SCOPE.indexOf(String(option.value));
+    tellLine(root, LINE.answer, {
+        // No option at all is a page whose state sort was switched off under it: the scope stays as drawn.
+        scope: options.length ? options.filter((option) => rank(option) >= 0).sort((a, b) => rank(a) - rank(b)) : null,
+        favourites: response.favourites || null,
+        filtercount: Number(response.filtercount || 0),
+        filtercountlabel: response.filtercountlabel || '',
+    });
+};
+
+/**
+ * Where a client's own focus on the search should go: the field, or its icon where the field is folded away.
+ *
+ * A client gives the search the focus after a control it pressed hides itself ("Clear all", a chip); a
+ * field folded into its icon cannot take it, and the focus would fall to the top of the document. Read
+ * off the page, so it holds for the component's line, categoryline's and the root's search line alike;
+ * the field's own rule keeps a focus moved here from opening the search.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @return {HTMLElement|null} The control to focus.
+ */
+export const focusTarget = (root) => {
+    const search = root.querySelector(SELECTORS.search);
+    const opener = root.querySelector(SELECTORS.opener);
+    if (!search || search.getClientRects().length > 0 || !opener || opener.getClientRects().length === 0) {
+        return search;
+    }
+    return opener;
+};
+
+/**
+ * Hand the toolbar's filter line to a React component: the logged-in shell's since stage R2.
+ *
+ * The mount node is the server's line itself, so it keeps its place in the form, its classes and the
+ * sibling rules the stylesheet writes against it, and the component's first render reads the markup it
+ * replaces. Core's react_autoinit watches added nodes and never attributes, so the line is named for the
+ * component and put back where it stands, which the observer sees as an added node. The listener is on
+ * before that, and the mount is held as pending until the component says it is drawn.
+ *
+ * A line the component cannot draw - no field, no listbox, as categoryline's arming asks - is left to the
+ * server's markup. The specifier is the caller's: this module is the visitor's too, and the visitor's
+ * import walk (categorypublic_source_test) follows every module a shared one names.
+ *
+ * @param {HTMLElement} root The listing section.
+ * @param {String} component The component's specifier, which only the logged-in shell names.
+ * @param {Function} dropTerm Called before a suggestion's control is pressed: takes the typed term out of
+ *   the caller's state, so the one request that control causes carries none.
+ * @return {Boolean} Whether the line was handed over.
+ */
+export const mountLine = (root, component, dropTerm) => {
+    const form = root.querySelector(SELECTORS.toolbar);
+    const line = form ? form.querySelector(SELECTORS.line) : null;
+    if (!line || !line.querySelector(SELECTORS.linefield) || !line.querySelector(SELECTORS.listbox) || !form.id) {
+        return false;
+    }
+    const pending = new Pending('theme_dimensions/categorylisting:line');
+    line.addEventListener(LINE.dropterm, () => dropTerm());
+    line.addEventListener(LINE.mounted, () => pending.resolve(), {once: true});
+    line.dataset.reactComponent = component;
+    line.dataset.reactProps = JSON.stringify({form: form.id});
+    // Put back where it stands: the observer hears an added node, and the line keeps its place and any focus.
+    const focused = line.contains(document.activeElement) ? document.activeElement : null;
+    line.parentNode.insertBefore(line, line.nextSibling);
+    if (focused) {
+        focused.focus({preventScroll: true});
+    }
+    return true;
 };
 
 /**
@@ -559,8 +700,11 @@ export const paintView = (root, view) => {
     root.classList.toggle('dim-vitrine--cards', view === 'cards');
     root.classList.toggle('dim-vitrine--list', view === 'list');
     root.querySelectorAll(SELECTORS.viewbutton).forEach((button) => {
-        button.setAttribute('aria-pressed', button.value === view ? 'true' : 'false');
+        if (!drawnByLine(button)) {
+            button.setAttribute('aria-pressed', button.value === view ? 'true' : 'false');
+        }
     });
+    tellLine(root, LINE.state, {view: view});
     document.dispatchEvent(new CustomEvent(EVENTS.view, {detail: {view: view}}));
 };
 
@@ -632,8 +776,13 @@ export const paintDates = (root, state) => {
  * @return {void}
  */
 export const paintFavToggle = (root, on) => {
+    const field = root.querySelector(SELECTORS.favfield);
+    if (field) {
+        field.disabled = !on;
+    }
     const star = root.querySelector(SELECTORS.star);
-    if (!star) {
+    if (!star || drawnByLine(star)) {
+        tellLine(root, LINE.state, {fav: Boolean(on)});
         return;
     }
     star.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -642,10 +791,6 @@ export const paintFavToggle = (root, on) => {
     if (glyph) {
         glyph.classList.toggle('fa-solid', on);
         glyph.classList.toggle('fa-regular', !on);
-    }
-    const field = root.querySelector(SELECTORS.favfield);
-    if (field) {
-        field.disabled = !on;
     }
 };
 
@@ -662,7 +807,8 @@ export const paintFavToggle = (root, on) => {
 export const paintEraser = (root) => {
     const search = root.querySelector(SELECTORS.search);
     const eraser = root.querySelector(SELECTORS.eraser);
-    if (search && eraser) {
+    // The component's eraser follows its own field.
+    if (search && eraser && !drawnByLine(eraser)) {
         eraser.hidden = search.value === '';
     }
 };
@@ -675,12 +821,16 @@ export const paintEraser = (root) => {
  * @return {void}
  */
 export const paintControls = (root, state) => {
+    tellLine(root, LINE.state, {query: state.query, chip: state.chip, fav: Boolean(state.fav), view: state.view});
     const search = root.querySelector(SELECTORS.search);
-    if (search) {
+    if (search && !drawnByLine(search)) {
         search.value = state.query;
     }
     paintEraser(root);
     root.querySelectorAll(SELECTORS.group).forEach((fieldset) => {
+        if (drawnByLine(fieldset)) {
+            return;
+        }
         const name = fieldset.dataset.name || '';
         const current = name === PARAM.chip
             ? state.chip
@@ -723,7 +873,7 @@ export const paintFavourites = (root, response) => {
     }
     paintFavToggle(root, Boolean(toggle.pressed));
     const count = root.querySelector(SELECTORS.favcount);
-    if (count) {
+    if (count && !drawnByLine(count)) {
         count.textContent = String(Number(toggle.count) || 0);
     }
 };
@@ -743,7 +893,7 @@ export const paintFavourites = (root, response) => {
  */
 export const paintFilterBadge = (root, response) => {
     const badge = root.querySelector(SELECTORS.filterbadge);
-    if (!badge) {
+    if (!badge || drawnByLine(badge)) {
         return;
     }
     const count = Number(response.filtercount || 0);
@@ -957,6 +1107,10 @@ const paintStatus = (scope, more, options) => {
 export const paintGroups = (root, response) => {
     const groups = new Map();
     root.querySelectorAll(SELECTORS.group).forEach((fieldset) => {
+        // The component's scope is told by tellAnswer(), and left out here: paintStatus() then paints "More statuses" alone.
+        if (drawnByLine(fieldset)) {
+            return;
+        }
         // The state chip is two fieldsets of one radio group: the line's scope and the panel's "More statuses".
         const name = fieldset.dataset.name || '';
         groups.set(name === PARAM.chip ? name + ':' + (fieldset.dataset.role || '') : name, fieldset);

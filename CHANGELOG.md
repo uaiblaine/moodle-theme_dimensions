@@ -5,6 +5,26 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The logged-in showcase's filter line is a React component** (2026100528; R2 of `docs/vitrine-react/PLAN.md`).
+  `js/esm/src/filterline/FilterLine.tsx` (`@moodle/lms/theme_dimensions/filterline/FilterLine`) is mounted on the
+  server's line itself, which the shared `mountLine()` names for core's `react_autoinit` and puts back where it stands;
+  its first render reads the markup it replaces (`filterline/model.ts`) and draws it back hook for hook, with every
+  name in the same GET form, so the no-JavaScript submits, the listing's form reading and the Behat steps are
+  unchanged. It draws the line's own controls (the scope, the search with its eraser and icon, the star, the Filters
+  and Organise summaries, the view toggle, the close button and the listbox) and adopts three frames of server
+  markup whole, never diffed: the Filters panel (with R1's calendar inside), the Organise menu and the managers' menu
+  (the template's new `dim-line-manage` hook). No painter of the shared listing writes into what the component draws
+  (`drawnByLine()`): it tells the component through `dim-line:state` and `dim-line:answer` on the line, and hears
+  `dim-line:mounted` and `dim-line:dropterm`, spelled alike in both languages. The steps, the search that grows over
+  the line, the suggestions (`filterline/suggest.ts`), the layers, the rows that scroll and the preview
+  (`filterline/preview.ts`, imported on first use through `filterline/lazy.ts`) keep `categoryline`'s and
+  `categorypreview`'s rules; the width each step needs is measured once per content, and a width change takes its step
+  without reading layout. The search's flex basis is now the first step's floor (13rem), so an unmeasured line wraps
+  exactly where the first step stops fitting and the line no longer shifts when its client folds it there. The
+  visitor's shell keeps `categoryline`, `categorypreview` and `categorymark`, and its import graph is unchanged. Jest
+  covers the component and its modules (`js/esm/tests/filterline`, over the template rendered from its example
+  context); new `filterline_component_source_test` pins the AMD half and holds the Jest fixture equal to the template,
+  twenty new `js_line_*` gates break it, and three gates of the logged-in wiring are retargeted. No database change.
 - **The logged-in showcase's calendar is a React component** (2026100527; R1 of `docs/vitrine-react/PLAN.md`).
   `js/esm/src/daterange/DateRange.tsx` (`@moodle/lms/theme_dimensions/daterange/DateRange`) draws the template
   `category_daterange`'s markup hook for hook, over `daterange/model.ts` (the draft, its three ways out, the press

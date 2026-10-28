@@ -994,7 +994,8 @@ final class category_scss_test extends \basic_testcase {
      *
      * Changes that must make it fail: the wrap dropped from the line; the line not positioned (the
      * panel is then placed against the page); the popover's absolute position or its inner scroll
-     * dropped; the row at rest kept as a box; a chip shorter than a control.
+     * dropped; the row at rest kept as a box; a chip shorter than a control; the search's basis moved
+     * off the first step's floor (stage R2: the unmeasured line would wrap where the first step fits).
      */
     public function test_the_filter_line_wraps_and_its_panel_is_a_popover_from_sm(): void {
         $scss = $this->stylesheet('category.scss');
@@ -1004,9 +1005,14 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~display:\s*flex;\s*flex-wrap:\s*wrap;~', $line, 'One row that wraps.');
         $this->assertMatchesRegularExpression('~gap:\s*10px;~', $line);
         $this->assertMatchesRegularExpression(
-            '~flex:\s*1 1 14rem;\s*min-width:\s*0;~',
+            '~flex:\s*1 1 13rem;\s*min-width:\s*0;~',
             $this->rule_body($scss, '.dim-toolbar__search'),
             'The search is what grows and shrinks, and never sets the line\'s width.'
+        );
+        // The basis is the first step's floor, so the unmeasured line wraps where that step stops fitting.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line--s1 > \.dim-line__search,\s*\.dim-line--s2 > \.dim-line__search \{\s*min-width:\s*13rem;~',
+            $scss
         );
         $this->assertDoesNotMatchRegularExpression(
             '~padding-right~',

@@ -3174,9 +3174,10 @@ plan, with the decisions taken while briefing, are `moodle-dev/docs/filter-line/
   stacking context (`.dim-toolbar`, `z-index: 30`) painted over what was left. Core's more-menu
   already collapses the tabs that do not fit, so the rail has nothing to scroll. The 31 must stay
   above the toolbar's number; `category_scss_test` pins it.
-- **The line's client behaviour is ONE shared module, `categoryline`, for both clients** (T3). It imports only
-  `core/pending`, so it belongs to the visitor's import graph and `categorypublic_source_test` walks it. Both clients
-  call `repaint()` after every answer; nothing else of the line is painted elsewhere.
+- **The visitor's line is ONE module, `categoryline`; the logged-in shell's is a React component since R2** (its own
+  section below, which every rule of this one binds as well). `categoryline` imports only `core/pending`, so it belongs to
+  the visitor's import graph and `categorypublic_source_test` walks it; `categorypublic` calls `repaint()` after every
+  answer. A rule of the line changes in both implementations.
 - **The step is measured on the line's own width with every scope cell drawn**: the server writes a cell with nothing
   to offer as `absent` (hidden), the measure unhides them under the `measuring` class, with no transition. Digit widths
   still move the step at a boundary (measured: 1024 flips s3 to s1 when counts drop to one digit).
@@ -3241,7 +3242,8 @@ must not lose:
   modal stack on these pages, so the saving shows only where nothing else asks for it.
 - **The filter line imports `categorypreview` on the first pointer or focus on the toolbar**, or on the first
   suggestion walked to. `Preview` in `categoryline` is a stand-in until then: clear and refresh do nothing, and
-  show imports the preview.
+  show imports the preview. The logged-in shell's component does the same with `filterline/preview.ts`, through
+  `filterline/lazy.ts` (R2).
 - **A dynamic `import()` is part of the visitor's import graph.** `categorypublic_source_test::imports()` reads
   both import lines and `import('...')`. A walk that read only import lines would let a module loaded on first
   use leave the walk in silence.
@@ -3361,6 +3363,78 @@ changes in both, and in `model.ts` (the component's transitions, named after the
   function in an object literal (the block_compass trap of the `.eslintrc`). Lint a change with
   `npx --no-install eslint --no-fix --max-warnings 0 public/theme/dimensions/js/esm/src` first, and write such a
   table as a function.
+
+## The category showcase: the filter line as a React component (R2, 2026-10-27)
+
+Stage R2 of `docs/vitrine-react/PLAN.md`. **Two filter lines until R4, on the owner's decision**: the logged-in shell
+draws `js/esm/src/filterline/FilterLine.tsx`, the visitor's keeps `amd/src/categoryline.js` with `categorypreview` and
+`categorymark`. A rule of the line changes in both, and in the module of the component that carries it (`steps.ts`,
+`measure.ts`, `suggest.ts`, `mark.ts`, `preview.ts`, named after the AMD functions).
+
+- **The mount is the server's line itself.** `categorylisting`'s `mountLine()` writes `data-react-component` and
+  `data-react-props` (`{form}`, the props object itself) on `[data-region="dim-line"]` and puts the line back where it
+  stands, which `react_autoinit` reads as an added node; it listens for `dim-line:dropterm` and holds a pending until
+  `dim-line:mounted`, both before it names the line. The line keeps its place in the form, its class and the sibling
+  rule `.dim-line--folded ~ .dim-line__chips` the stylesheet writes against it; a wrapper would break that rule and add
+  a box to the toolbar's flex column. A line without its field or its listbox is never handed over: the component's
+  first commit empties its node (`textContent = ''`, React 19) whatever it renders.
+- **The first render reads the markup it replaces** (`model.ts` `read()`, inside a `useState` initialiser, before the
+  first commit empties the node) and draws it back, the template's markup hook for hook, the same names in the same
+  GET form, and any term typed or radio pressed before the mount. Jest compares the two trees
+  (`FilterLine.test.tsx`, over `js/esm/tests/filterline/toolbar.ts`, the template rendered from its example context),
+  and `filterline_component_source_test` holds that copy equal to Moodle's render: **change the toolbar's line in the
+  template and render the copy again** (core's `lib/amd/src/mustache.js` in node renders it). The component adds only
+  the combobox's and the listbox's ARIA, which `categoryline` used to write at arming.
+- **The ownership boundary: React draws the line's own controls; three frames hold server markup it adopts and never
+  diffs.** Drawn: the scope, the search with its eraser and icon, the star, the Filters and Organise summaries (the
+  badge included), the view toggle, the close button, the listbox. Adopted on the first commit (their child nodes
+  moved into empty frames React drew): the Filters panel (`dim-filters-panel`: More statuses, the custom fields, the
+  period with R1's calendar, the quick dates, the no-JS submit), the Organise menu (`dim-organise-menu`) and the
+  managers' menu (`dim-line-manage`, a hook added in R2). The panel stays server markup because R1's calendar, the
+  native date fields and the panel's pills are painted by `categorylisting` on both shells; drawing them here would
+  have meant a second spelling of every one of those painters.
+- **No AMD module writes into what React draws.** Every painter of `categorylisting` that touched the line asks
+  `drawnByLine(element)` - inside a line the component marked `data-line-drawn` and outside the three adopted frames -
+  and tells the component instead: `dim-line:state` (`{query, chip, fav, view}` or part of it, from `paintControls`,
+  `paintFavToggle`, `paintView`) and `dim-line:answer` (`{scope, favourites, filtercount, filtercountlabel}`, from
+  `tellAnswer()`, called by `categoryvitrine` after the painters, the scope in `SCOPE`'s order). The four names are
+  `LINE` in `categorylisting` and `EVENTS` in `FilterLine.tsx`, the mark `LINE_DRAWN`/`DRAWN`; the source test holds
+  them equal. The component marks the line in its first commit's layout effect, so until then the painters paint the
+  server's line as before and the component reads what they painted. On the visitor's shell nothing is marked and
+  every painter paints as it always did. `categoryvitrine` reads the field delegated on the form (the component's
+  field replaces the server's) and never writes it (`onErase` and `focusTarget()`, read off the page).
+- **The calendar's node goes in after the line is handed over** (`init`: `mountLine()` before `mountCalendar()`). The
+  line put back where it stands is seen by core's observer as leaving and coming back, which would unmount a calendar
+  already inside it. The adoption itself is safe: it happens inside the first commit, before the observer's
+  microtask, and by then the removed server node no longer holds the calendar.
+- **The step is measured once per content and taken from a width alone.** `measure.ts` `stepWidths()` lays the line
+  out under `dim-line--measuring` with every scope cell drawn, once per try, and records the width each try needs
+  (the controls' extent with the search at its step's floor); a ResizeObserver entry then picks the step with
+  `steps.ts` `choose()`, under `flushSync`, before the frame is painted, and reads no layout. The widths are measured
+  again only when the words, the counts or the slots change (the component's `signature`) and when the fonts arrive.
+  The first commit folds the line before React's first paint.
+- **The first paint's shift (0.031-0.032, PLAN 5.2.1) is removed only where the client keeps the first step.** The
+  search's flex basis is the first step's floor, `13rem` (`.dim-toolbar__search`), so a line no client has measured
+  wraps exactly where the first step stops fitting. A width at which the client takes step 2, 3 or 4 still moves once
+  when the component mounts: the server cannot know the step, and drawing one before the client measures would cost
+  the page without JavaScript (a line that never wraps). Measure it with the probe before calling it gone.
+- **The component's state is a ref read synchronously, as `categoryline`'s `state` is**, and React draws from it
+  (`live`, plus a reducer that redraws); the native listeners call the latest render's functions through `api`. The
+  line's container classes (the step, the fold, `searching`, `measuring`) are written on the mount node imperatively,
+  because React draws its children and not the node. The search's class goes on at once in `openSearch()`: a field
+  folded into its icon takes the focus only once the class has shown it.
+- **Focus across draws**: everything is keyed, so a press keeps its control; the scope moved to its own line at the
+  fourth step gets its focused cell's focus back after the move; a focus the reader had on the server's line before the
+  mount is given to its counterpart, quietly.
+- **Jest cannot run a native `import()`**: core's ts-jest compiles the tree as CommonJS under node16, which keeps
+  `import()`, and Jest refuses it without `--experimental-vm-modules`. The preview's first-use import is therefore the
+  one function of `filterline/lazy.ts`, which the component suite stands in for; the browser runs the real one.
+- **Gates**: `js_line_drawn_guard`, `js_line_adopted_exempt`, the seven `js_line_guard_*` (one per painter),
+  `js_line_tells_state`, `js_line_answer_told`, `js_line_answer_scope_order`, `js_line_mount_guard`,
+  `js_line_reinserted`, `js_line_listens_first`, `js_line_before_calendar`, `js_line_visitor_no_component`,
+  `js_line_input_delegated`, `js_line_erase_guard`, `js_line_focus_icon`; `js_vitrine_line_armed`,
+  `js_vitrine_drop_term` and `js_clear_focus_target` were retargeted to the logged-in shell's new spelling. The
+  component's own rules are Jest's and are mutation-checked by hand, never by the sweep.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

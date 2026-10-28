@@ -1,0 +1,367 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Tests for the logged-in showcase's filter line component, mounted on the server's own line.
+ *
+ * The page is the template's example (./toolbar, held equal to the template by
+ * filterline_component_source_test), and the component is mounted the way core's react_autoinit mounts
+ * it: a root over the line node itself, whose server markup the first commit replaces. The listing is
+ * played by the events it sends and hears on the line. jsdom lays nothing out, so the steps are given
+ * through a stubbed measure where a test is about them.
+ *
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+import {act, fireEvent, render, waitFor} from '@testing-library/react';
+import FilterLine, {DRAWN, EVENTS} from '../../src/filterline/FilterLine';
+import * as Measure from '../../src/filterline/measure';
+import {FORM, drawPage, pointer, shape} from './page';
+import type {Card, Page} from './page';
+
+// The browser imports the preview on first use; Jest's runtime cannot run a native import(), so the
+// suite hands the component the very module it would have imported.
+jest.mock('../../src/filterline/lazy', () => ({
+    importPreview: () => Promise.resolve(jest.requireActual('../../src/filterline/preview')),
+}));
+
+jest.mock('../../src/filterline/measure', () => {
+    const actual = jest.requireActual('../../src/filterline/measure');
+    return Object.assign({}, actual, {
+        stepWidths: jest.fn(actual.stepWidths),
+        contentWidth: jest.fn(actual.contentWidth),
+    });
+});
+
+/** The attributes the component adds to the server's markup: the combobox and its listbox. */
+const ADDED = ['input:role', 'input:aria-autocomplete', 'input:aria-expanded', 'input:aria-controls', 'div:role', 'div:aria-label'];
+
+/** The ResizeObserver callbacks the page has registered. */
+let observers: Array<(entries: Array<{contentRect: {width: number}}>) => void> = [];
+
+beforeEach(() => {
+    observers = [];
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+        media: query,
+        matches: false,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+    }));
+    (window as unknown as {ResizeObserver: unknown}).ResizeObserver = class {
+        /**
+         * Keep the callback for the test to call.
+         *
+         * @param {Function} callback The observer's callback.
+         */
+        constructor(callback: (entries: Array<{contentRect: {width: number}}>) => void) {
+            observers.push(callback);
+        }
+
+        /**
+         * Nothing to observe in jsdom.
+         *
+         * @returns {void}
+         */
+        observe(): void {
+            return undefined;
+        }
+
+        /**
+         * Nothing to stop.
+         *
+         * @returns {void}
+         */
+        disconnect(): void {
+            return undefined;
+        }
+    };
+});
+
+afterEach(async() => {
+    // The preview arrives a task later and gives the focus event that loaded it again: inside act, then gone.
+    await act(async() => {
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+    document.body.replaceChildren();
+});
+
+/** The page, the line and what the listing heard. */
+type Mounted = Page & {mounted: jest.Mock, dropped: jest.Mock, field: HTMLInputElement};
+
+/**
+ * Draw the page and mount the component on its line, as react_autoinit does.
+ *
+ * @param {Array} cards The cards of the grid.
+ * @param {Function} before Called with the page before the mount: what the reader did on the server's line.
+ * @returns {Promise} The page with the listing's listeners.
+ */
+const mount = async(cards: Card[] = [], before: (page: Page) => void = () => undefined): Promise<Mounted> => {
+    const page = drawPage(cards);
+    before(page);
+    const mounted = jest.fn();
+    const dropped = jest.fn();
+    page.line.addEventListener(EVENTS.mounted, mounted);
+    page.line.addEventListener(EVENTS.dropterm, dropped);
+    await act(async() => {
+        render(<FilterLine form={FORM} />, {container: page.line});
+    });
+    const field = page.line.querySelector<HTMLInputElement>('input[type="search"]') as HTMLInputElement;
+    return Object.assign(page, {mounted, dropped, field});
+};
+
+/**
+ * Empty the server's field before the mount, so the suggestions start from no term.
+ *
+ * @param {Page} page The page.
+ * @returns {void}
+ */
+const empty = (page: Page): void => {
+    (page.line.querySelector('input[type="search"]') as HTMLInputElement).value = '';
+};
+
+/**
+ * The listbox's options' words.
+ *
+ * @param {HTMLElement} line The line.
+ * @returns {Array}
+ */
+const options = (line: HTMLElement): string[] => Array.from(line.querySelectorAll('[role="option"] .dim-line__optionlabel'))
+    .map((label) => label.textContent || '');
+
+/**
+ * The listbox.
+ *
+ * @param {HTMLElement} line The line.
+ * @returns {HTMLElement}
+ */
+const listbox = (line: HTMLElement): HTMLElement => line.querySelector('[data-region="dim-line-suggest"]') as HTMLElement;
+
+/**
+ * Tell the line something, as the listing does.
+ *
+ * @param {HTMLElement} line The line.
+ * @param {string} type The event.
+ * @param {object} detail What it is told.
+ * @returns {Promise}
+ */
+const tell = async(line: HTMLElement, type: string, detail: object): Promise<void> => {
+    await act(async() => {
+        line.dispatchEvent(new CustomEvent(type, {detail: detail}));
+    });
+};
+
+describe('theme_dimensions/filterline/FilterLine', () => {
+    it('draws the boxes the server drew, every name in the same form, the three frames adopted as they were', async() => {
+        const page = drawPage();
+        const server = Array.from(page.line.children).map((child) => shape(child, ADDED)).join('');
+        const posted = Array.from(new FormData(page.form).entries());
+        const panel = page.line.querySelector('[data-region="dim-filters-panel"] [data-name="cf_12"]');
+        const menu = page.line.querySelector('[data-region="dim-sort"]');
+        const manage = page.line.querySelector('[data-region="dim-line-manage"] .action-menu');
+
+        await act(async() => {
+            render(<FilterLine form={FORM} />, {container: page.line});
+        });
+
+        expect(Array.from(page.line.children).map((child) => shape(child, ADDED)).join('')).toBe(server);
+        expect(Array.from(new FormData(page.form).entries())).toEqual(posted);
+        // The very server nodes, moved: what the listing paints there and what R1's calendar is mounted in.
+        expect(page.line.querySelector('[data-region="dim-filters-panel"] [data-name="cf_12"]')).toBe(panel);
+        expect(page.line.querySelector('[data-region="dim-sort"]')).toBe(menu);
+        expect(page.line.querySelector('[data-region="dim-line-manage"] .action-menu')).toBe(manage);
+        const field = page.line.querySelector('input[type="search"]') as HTMLInputElement;
+        expect(field.getAttribute('role')).toBe('combobox');
+        expect(field.getAttribute('aria-controls')).toBe('dim-vitrine-suggest-7');
+        expect(listbox(page.line).getAttribute('role')).toBe('listbox');
+    });
+
+    it('marks the line drawn and says so once, after the first commit', async() => {
+        const page = await mount();
+        expect(page.line.hasAttribute(DRAWN)).toBe(true);
+        expect(page.mounted).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps what the reader did on the server\'s line before the mount, the focus included', async() => {
+        const page = await mount([], (server) => {
+            const field = server.line.querySelector('input[type="search"]') as HTMLInputElement;
+            field.value = 'fire';
+            (server.line.querySelector('#dim-chip-7-enrolled') as HTMLInputElement).checked = true;
+            field.focus();
+        });
+        expect(page.field.value).toBe('fire');
+        expect((page.line.querySelector('#dim-chip-7-enrolled') as HTMLInputElement).checked).toBe(true);
+        expect(document.activeElement).toBe(page.field);
+        // A focus the component gave back is not the reader's: the search did not open.
+        expect(listbox(page.line).hidden).toBe(true);
+    });
+
+    it('draws an answer: the scope\'s counts and absent cells, the star, the badge', async() => {
+        const page = await mount();
+        await tell(page.line, EVENTS.answer, {
+            scope: [
+                {id: 'dim-chip-7-all', value: '', label: 'All', count: 8, hascount: true, checked: true},
+                {id: 'dim-chip-7-open', value: 'open', label: 'Open', count: 2, hascount: true, checked: false},
+            ],
+            favourites: {available: true, pressed: true, count: 4},
+            filtercount: 0,
+            filtercountlabel: '',
+        });
+        const label = (value: string) => page.line.querySelector(`label[for="dim-chip-7-${value}"]`) as HTMLElement;
+        expect(label('all').textContent).toBe('All 8');
+        expect((page.line.querySelector('#dim-chip-7-all') as HTMLInputElement).checked).toBe(true);
+        expect(label('enrolled').hidden).toBe(true);
+        expect(label('open').hidden).toBe(false);
+        const star = page.line.querySelector('[data-region="dim-line-star"]') as HTMLButtonElement;
+        expect(star.getAttribute('aria-pressed')).toBe('true');
+        expect(star.value).toBe('0');
+        expect(star.querySelector('.fa-star')?.classList.contains('fa-solid')).toBe(true);
+        expect(star.querySelector('[data-region="dim-fav-count"]')?.textContent).toBe('4');
+        expect((page.line.querySelector('[data-region="dim-filtercount"]') as HTMLElement).hidden).toBe(true);
+    });
+
+    it('draws the listing\'s state: the term, the scope\'s choice, the star, the view', async() => {
+        const page = await mount();
+        await tell(page.line, EVENTS.state, {query: '', chip: 'enrolled', fav: true, view: 'list'});
+        expect(page.field.value).toBe('');
+        expect((page.line.querySelector('[data-action="dim-search-clear"]') as HTMLElement).hidden).toBe(true);
+        expect((page.line.querySelector('#dim-chip-7-enrolled') as HTMLInputElement).checked).toBe(true);
+        expect(page.line.querySelector('[data-region="dim-line-star"]')?.getAttribute('aria-pressed')).toBe('true');
+        const views = Array.from(page.line.querySelectorAll('[data-region="dim-view-row"] button'));
+        expect(views.map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+    });
+
+    it('opens the search on the reader\'s own focus only: a press or a Tab, never a client\'s focus', async() => {
+        const page = await mount([], empty);
+        await act(async() => page.field.focus());
+        expect(listbox(page.line).hidden).toBe(true);
+        await act(async() => page.field.blur());
+
+        fireEvent.pointerDown(page.field);
+        await act(async() => page.field.focus());
+        expect(listbox(page.line).hidden).toBe(false);
+        expect(page.field.getAttribute('aria-expanded')).toBe('true');
+        expect(listbox(page.line).querySelector('.dim-line__suggesthead')?.textContent).toBe('Start with a filter');
+        expect(options(page.line)).toEqual(['In-person', 'My courses', 'Favourites', 'Today']);
+
+        fireEvent.keyDown(page.field, {key: 'Escape'});
+        expect(listbox(page.line).hidden).toBe(true);
+        await act(async() => page.field.blur());
+        fireEvent.keyDown(document, {key: 'Tab'});
+        await act(async() => page.field.focus());
+        expect(listbox(page.line).hidden).toBe(false);
+    });
+
+    it('matches what is typed, accent- and case-insensitively, and marks it in the option', async() => {
+        const page = await mount([], empty);
+        fireEvent.change(page.field, {target: {value: 'PERS'}});
+        expect(listbox(page.line).hidden).toBe(false);
+        expect(listbox(page.line).querySelector('.dim-line__suggesthead')?.textContent).toBe('Filters');
+        expect(options(page.line)).toEqual(['In-person']);
+        expect(listbox(page.line).querySelector('mark.dim-mark')?.textContent).toBe('pers');
+    });
+
+    it('applies a suggestion: the term dropped first, then its very control pressed, and offers what is left', async() => {
+        const page = await mount([], empty);
+        const control = page.line.querySelector('#dim-cf-12-2') as HTMLInputElement;
+        const order: string[] = [];
+        page.dropped.mockImplementation(() => order.push('dropterm'));
+        control.addEventListener('click', () => order.push(control.checked ? 'press' : 'press-unchecked'));
+        fireEvent.change(page.field, {target: {value: 'in'}});
+        fireEvent.keyDown(page.field, {key: 'ArrowDown'});
+        expect(page.field.getAttribute('aria-activedescendant')).toBe('dim-vitrine-suggest-7-0');
+        expect(listbox(page.line).querySelector('[aria-selected="true"]')?.textContent).toContain('In-person');
+        await act(async() => {
+            fireEvent.keyDown(page.field, {key: 'Enter'});
+        });
+        expect(order).toEqual(['dropterm', 'press']);
+        expect(control.checked).toBe(true);
+        expect(page.field.value).toBe('');
+        expect(options(page.line)).not.toContain('In-person');
+        expect(listbox(page.line).hidden).toBe(false);
+    });
+
+    it('closes a panel of the line on Escape and gives its summary the focus, but leaves the calendar its key', async() => {
+        const page = await mount();
+        const filters = page.line.querySelector('[data-region="dim-filters"]') as HTMLDetailsElement;
+        filters.open = true;
+        const radio = page.line.querySelector('#dim-cf-12-2') as HTMLInputElement;
+        fireEvent.keyDown(radio, {key: 'Escape'});
+        expect(filters.open).toBe(false);
+        expect(document.activeElement).toBe(filters.querySelector('summary'));
+
+        filters.open = true;
+        const calendar = document.createElement('button');
+        page.line.querySelector('[data-region="dim-daterange"]')?.append(calendar);
+        fireEvent.keyDown(calendar, {key: 'Escape'});
+        expect(filters.open).toBe(true);
+    });
+
+    it('folds before its first paint, from the widths measured once', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(700);
+        const page = await mount();
+        expect(page.line.classList.contains('dim-line--s3')).toBe(true);
+        expect(page.line.classList.contains('dim-line--folded')).toBe(true);
+        expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
+    });
+
+    it('takes a step from a new width alone, the scope on a line of its own at the fourth, its focus kept', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(1000);
+        const page = await mount();
+        expect(page.line.classList.contains('dim-line--s1')).toBe(true);
+        const cell = page.line.querySelector('#dim-chip-7-enrolled') as HTMLInputElement;
+        await act(async() => cell.focus());
+
+        await act(async() => {
+            observers.forEach((callback) => callback([{contentRect: {width: 500}}]));
+        });
+
+        expect(page.line.classList.contains('dim-line--s4')).toBe(true);
+        expect(page.line.classList.contains('dim-line--folded')).toBe(false);
+        expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
+        const order = Array.from(page.line.children).map((child) => child.getAttribute('data-region') || child.getAttribute('data-action'));
+        expect(order.indexOf('dim-vitrine-group')).toBe(order.indexOf('dim-search-close') + 1);
+        expect(document.activeElement).toBe(page.line.querySelector('#dim-chip-7-enrolled'));
+    });
+
+    it('grows the search over the line from the third step and closes back to the control that opened it', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(700);
+        const page = await mount([], empty);
+        const opener = page.line.querySelector('[data-action="dim-search-open"]') as HTMLButtonElement;
+        await act(async() => opener.focus());
+        fireEvent.click(opener);
+        expect(page.line.classList.contains('dim-line--searching')).toBe(true);
+        expect(opener.getAttribute('aria-expanded')).toBe('true');
+        expect(document.activeElement).toBe(page.field);
+        expect(listbox(page.line).hidden).toBe(false);
+
+        fireEvent.keyDown(page.field, {key: 'Escape'});
+        expect(page.line.classList.contains('dim-line--searching')).toBe(false);
+        expect(listbox(page.line).hidden).toBe(true);
+    });
+
+    it('imports the preview on the first pointer on the toolbar, and previews the active suggestion', async() => {
+        const page = await mount([{chip: 'pending', fields: '12:2'}, {chip: 'pending', fields: '12:1'}], empty);
+        const label = page.line.querySelector('label[for="dim-cf-12-2"]') as HTMLElement;
+        label.dispatchEvent(pointer('pointerover', 'mouse'));
+        await waitFor(() => expect(globalThis.pendingStack).toContain('theme_dimensions/filterline:preview'));
+        await waitFor(() => expect(globalThis.completeStack).toContain('theme_dimensions/filterline:preview'));
+        label.dispatchEvent(pointer('pointerover', 'mouse'));
+        expect(page.cards.map((card) => card.classList.contains('dim-card--lit'))).toEqual([true, false]);
+    });
+});
