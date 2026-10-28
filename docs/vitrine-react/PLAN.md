@@ -322,6 +322,53 @@ What it says:
   after that run had ended, read as here. The controls are what told it apart. An A/B on this host needs nothing
   else running in the Selenium or PHP containers; check before trusting a run.
 
+### 5.2.4 R2 and its follow-up (m503b, 2026-10-28)
+
+R2 (#39, the React filter line on the logged-in shell) and its follow-up (#40), same stack, data, fixtures and
+throttling as 5.2.2; medians of five runs. The course index draws no filter line and the visitor keeps `categoryline`,
+so both are controls.
+
+| Page | Cache | TBT R0 / R1 / R2 / #40 | INP R0 / R1 / R2 / #40 | Scripts before load (cold) |
+|---|---|---|---|---|
+| Student, flat category | cold | 1,017 / 985 / 1,256 / 1,003 ms | 64 / 64 / 96 / 96 ms | 81 / 85 / 93 / 93 |
+| Student, flat category | warm | 99 / 98 / 303 / 132 ms | 64 / 48 / 80 / 96 ms | |
+| Student, grouped category | cold | 931 / 819 / 1,099 / 814 ms | 48 / 56 / 56 / 48 ms | 81 / 85 / 93 / 93 |
+| Student, grouped category | warm | 61 / 39 / 109 / 44 ms | 40 / 48 / 40 / 40 ms | |
+| Student, course index | cold | 833 / 773 / 811 / 760 ms | 56 / 48 / 56 / 56 ms | 81 / 81 / 82 / 82 |
+| Visitor, flat public page | cold | 457 / 388 / 440 / 384 ms | 48 / 48 / 72 / 48 ms | 14 / 14 / 14 / 14 |
+
+FCP moved by 2 % or less on every page, and CLS stayed 0 (0.0001 on the visitor's) at the probe's viewport.
+
+What it says:
+- **R2 as merged regressed the blocking time of the pages with the line** (flat warm 98 to 303 ms, every run above
+  R1's highest). A CPU profile of a warm load on m503b under 4x CPU found one 453 ms frame, 407 ms of it forced
+  style and layout inside the component's first layout effect: `filterline/measure.ts` `stepWidths()` measured all
+  five steps, each a forced layout of the whole page, where `categoryline`'s `fit()` stops at the first that fits.
+- **#40 brings it back.** The cold TBT is at R0 and R1's level on both pages with the line; the grouped page's warm TBT
+  is too. The flat page's warm TBT (132 ms, runs 103-156) is still about 30 ms above R1's (runs 72-138), and the INP
+  of the scope press is 96 ms against R1's 48-64: the press now redraws the React line with the answer. Both are under
+  the 200 ms targets; the press is the place to look in R3 and R4.
+- **The line adds eight scripts before load** on a cold logged-in page (the `filterline` modules), against R1's four
+  for the calendar.
+
+**The layout shift where the line wraps**, measured outside the probe on m503b's dev site (admin, a flat leaf of the
+5,000-course set, 4x CPU, two loads per width, after R2 and before #40, which changes no box):
+
+| Window | Step the client takes | CLS |
+|---|---|---|
+| 1358, 1280 | s1 | 0 |
+| 1200 | s2 | 0 |
+| 1100, 1024 | s3, folded | 0 to 0.0003 |
+| 900 | s4 | 0 |
+| 768, 600 | s4 | 0.002 to 0.003 (core's navbar, not the line) |
+| 390 (Chrome's floor, 500) | s4 | 0.041: the listing rises 54 px when the line folds to two lines |
+
+- The 0.031-0.032 shift of 5.2.1 is gone from every desktop width: the component folds the line before its first
+  paint.
+- A phone still shifts once, by 0.038 of the line's own making, because the server cannot know the step before the
+  client measures. It is under the 0.1 target; removing it would take a server stylesheet that draws the fourth step
+  below the phone breakpoint, which costs the page without JavaScript nothing at that width. A candidate for R3.
+
 ### 5.3 What option B does for each metric
 
 **FCP and LCP.**
@@ -395,7 +442,7 @@ code it removes with tests of the new code, either TSX source tests or Jest if s
 | P0 | Quick wins without React (5.3): hero `fetchpriority` and intrinsic size, first row of covers eager, sized crests, the film / dialogue / preview modules loaded on first use | nothing | a first row that differs per breakpoint (three, two, one cards) |
 | R0 | Tooling: `js/esm/src` in the theme, `.eslintrc` (block_compass's), `tsconfig`, the `tsc` and build-currency gates for `js/esm`, the AMD bridge module, the visitor import-graph walk extended to `js/esm/build`; the performance probe (5.4) and its baseline before any port | nothing | a visitor build that silently pulls a session module; a noisy probe |
 | R1 | `daterange` as a React component on the logged-in shell; its native date fields stay the transport (done, #37; numbers in 5.2.3) | nothing yet: the visitor keeps `daterange.js` (1029) until R4 (owner, 2026-10-27) | focus kept across repaints, the draft/commit rules, no timezone arithmetic (CLAUDE.md, round D2b/D3) |
-| R2 | The filter line (`categoryline`, `categorypreview`, `categorymark`) as one component over the server's GET form, aligned with block_compass's `FilterLine` where the contract allows | about 1,750 | the steps measured on the line's own width; suggestions from the last answer without a term |
+| R2 | The filter line (`categoryline`, `categorypreview`, `categorymark`) as one component over the server's GET form, aligned with block_compass's `FilterLine` where the contract allows (done on the logged-in shell, #39 and #40; numbers in 5.2.4) | nothing yet: the visitor keeps the three modules until R4 | the steps measured on the line's own width; suggestions from the last answer without a term |
 | R3 | The panel and the posters (`categoryareapanel`, `categoryposters`, `categorypanel`) | about 2,440 | the ticket/turn races, `settle()`, the five integers of the row placement, Escape scope |
 | R4 | One listing store for both shells (`categoryvitrine`, `categorypublic`, `categorylisting`), visitor features behind props, the visitor entry importing nothing of a session | about 3,580 | the visitor graph; `pushState` vs `replaceState` ownership; the remembered state and the view preference |
 | R5 | The star joins the store; clean-up of the dead hooks, `gates.conf` retargeted, CLAUDE.md sections rewritten | `categorystar` (127) | mutation specs left matching nothing (a hard exit for `mdl mutate`) |
