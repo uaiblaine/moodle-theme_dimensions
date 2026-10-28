@@ -529,3 +529,11 @@ The whole series is weeks of rounds, at the cadence of the showcase's earlier ro
    - The targets of 5.1 become a hard gate once two stages have shown the hosts' spread (5.2.2 is the first
      measure of it).
 9. **The server's content stays the first paint**, and the code that renders it was reviewed for cost (R0, #34).
+
+## 8. After the port: the performance audit
+
+Once R5 has merged, the theme's JavaScript gets a client-side performance audit (owner, 2026-10-28): profiles,
+long tasks, event frequency, layout and animation work, and memory, over the code that survived the port. Its
+plan is `docs/performance-audit/PLAN.md`, an instance of the fleet's template in
+`moodle-dev/docs/client-performance-audit/README.md`; it carries in the leftovers of 5.2.4 (the flat warm page's
+extra blocking time, the scope press's INP and the phone shift measured at Chrome's 500 px floor).
