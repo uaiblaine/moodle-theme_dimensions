@@ -14,16 +14,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The posters of the areas and the panel between their rows, on the logged-in showcase.
+ * The posters of the areas and the panel between their rows, on both shells of the showcase.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md. The visitor's shell keeps amd/src/categoryareapanel.js and
- * categoryposters.js until R4, so this component and those modules are two implementations of one panel:
- * a rule changes in both, and in the module of this tree that carries it (`panel.ts` for the panel,
- * `posters.ts` for the posters' result layer, `rail.ts`, `model.ts`), named after the AMD functions.
+ * Stage R3 of docs/vitrine-react/PLAN.md drew it for the logged-in shell; stage R4a hands it the visitor's
+ * too, whose differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
+ * false}` on the visitor's page, nothing on the logged-in one. A rule changes in the module of this tree
+ * that carries it (`panel.ts` for the panel, `posters.ts` for the posters' result layer, `rail.ts`,
+ * `model.ts`), each named after the AMD function it stood for.
  *
- * WHO OWNS WHAT. The mount node is an empty, hidden child amd/src/categorypanel.js appends to the areas
- * section, so the mount draws no box and the first paint stays the server's, to the pixel. From it the
- * component owns, and is the only writer of, on this shell:
+ * WHO OWNS WHAT. The mount node is an empty, hidden child amd/src/categorylisting.js's mountAreas() appends
+ * to the areas section, so the mount draws no box and the first paint stays the server's, to the pixel.
+ * From it the component owns, and is the only writer of:
  *
  * - the panel's frame: the one list item of the grid (`panel.ts`), whose content is category_panel
  *   rendered by core/templates and inserted whole, never diffed;
@@ -33,12 +34,15 @@
  * - the "nothing in N areas" summary, which React draws: its sentence and its list, through portals into
  *   the server's `<summary>` and `<ul>`, read off them in the first render and drawn back hook for hook.
  *
- * Nothing of the AMD side writes into those. It speaks to the component through events
- * ({@see EVENTS}): the listing's `dim-vitrine:pending`, `:criteria`, `:failed` (categoryvitrine) and
- * `:view` (categorylisting) on the document; the component answers `dim-panel:autoopened` there. On the
- * areas section, categorypanel hears `dim-areas:ask` (it fills the detail's `answer` with the web
- * service's promise: the component calls no service and reads no session), `dim-areas:painted` (it paints
- * the progress of the panel's enrolled courses) and `dim-areas:mounted`, which ends its pending.
+ * Nothing of the AMD side writes into those, but for the address of a visitor's poster that stays a link,
+ * which the visitor's module points at the area's panel. It speaks to the component through events
+ * ({@see EVENTS}): the listing client's `dim-vitrine:pending`, `:criteria` and `:failed` and the listing's
+ * `:view` on the document; the component answers `dim-panel:autoopened` there. On the areas section,
+ * mountAreas() hears, for the page's client, `dim-areas:ask` (the client fills the detail's `answer` with
+ * its web service's promise: the component calls no service and reads no session), `dim-areas:question`
+ * and `dim-areas:unanswered` (the visitor's names its question and takes a failure over),
+ * `dim-areas:painted` (the logged-in shell paints what an account adds to the rows) and
+ * `dim-areas:mounted`, which ends its pending.
  *
  * @module     theme_dimensions/areas/Areas
  * @copyright  2026 Anderson Blaine
@@ -49,8 +53,8 @@ import {Fragment, useLayoutEffect, useState} from 'react';
 import {createPortal, flushSync} from 'react-dom';
 import {PHONE, SELECTORS, WIDE, summaryLabel} from './model';
 import type {Missing, Summary} from './model';
-import {EVENTS, createPanel, drawnOpen} from './panel';
-import type {Criteria, Nodes, Panel} from './panel';
+import {EVENTS, createPanel, drawnOpen, optionsOf} from './panel';
+import type {Criteria, Nodes, Panel, Props} from './panel';
 import {isFiltered, setHidden} from './posters';
 
 export {EVENTS};
@@ -99,9 +103,10 @@ const synchronously = (update: () => void): void => flushSync(update);
 /**
  * The posters and their panel.
  *
+ * @param {object} props The shell's options: links, quiet and autoopen, each optional ({@see ./panel optionsOf}).
  * @returns {object|null} The summary's portals, or nothing where the page has no areas with a panel.
  */
-const Areas = () => {
+const Areas = (props: Props) => {
     // Read once, during the first render, while the server's markup is still the whole of it.
     const [setup] = useState(() => {
         const areas = document.querySelector<HTMLElement>(SELECTORS.areas);
@@ -125,7 +130,7 @@ const Areas = () => {
         opened: setOpened,
         filtered: setFiltered,
         sync: synchronously,
-    }) : null));
+    }, optionsOf(props || {})) : null));
 
     // The first commit: the summary handed over, the server's panel adopted, every listener on.
     useLayoutEffect(() => {
@@ -140,7 +145,11 @@ const Areas = () => {
             drawn.list.replaceChildren();
             setAdopted(true);
         }
-        panel.adopt();
+        try {
+            panel.adopt();
+        } catch (error) {
+            // The posters stay the server's links, which open the panel by a page load: the mount is still said.
+        }
         const listeners: Array<[EventTarget, string, EventListener, boolean]> = [
             [areas, 'click', panel.onAreasClick, false],
             [frame, 'click', panel.onDragClick, true],

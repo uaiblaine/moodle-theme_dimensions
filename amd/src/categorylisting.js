@@ -16,14 +16,16 @@
 /**
  * The listing of the category showcase as every client of it paints it and addresses it.
  *
- * Two modules drive the listing in place: categoryvitrine for a logged-in account and categorypublic
- * for a visitor. Each asks a web service of its own, and both paint the answer with these functions
- * and write the address with them, so a row, a count or an address on one shell is the same one on
- * the other, and an address a client writes is the one the server's own links spell.
+ * Two modules drive the listing in place, the logged-in account's and categorypublic for a visitor.
+ * Each asks a web service of its own, and both paint the answer with these functions and write the
+ * address with them, so a row, a count or an address on one shell is the same one on the other, and
+ * an address a client writes is the one the server's own links spell. Both hand the toolbar's calendar,
+ * its filter line and the posters with their panel to the React components through the mounts here
+ * ({@see COMPONENTS}), which is the one place the components are named.
  *
  * Nothing here calls a web service, reads the session or writes a mark on the body: the visitor's
  * module imports this one, so a logged-in import here would ship to the internet with it
- * (categorypublic_source_test walks the import graph).
+ * (categorypublic_source_test walks the import graph, the components included).
  *
  * The state every function is handed is the calling module's own object: categoryid, page, total,
  * hasmore, query, chip, fav (the favourites toggle, which combines with the chip), filters, sort
@@ -89,6 +91,7 @@ const SELECTORS = {
     linefield: '[data-region="dim-line-search"] input[type="search"]',
     listbox: '[data-region="dim-line-suggest"]',
     opener: '[data-action="dim-search-open"]',
+    panel: '[data-region="dim-panel"]',
     adopted: '[data-region="dim-filters-panel"], [data-region="dim-organise-menu"], [data-region="dim-line-manage"]',
 };
 
@@ -140,8 +143,20 @@ const EVENTS = {
 };
 
 /**
- * @type {Object} The events the logged-in shell's calendar component and this module exchange on the
- * toolbar's dim-daterange region: js/esm/src/daterange/DateRange.tsx spells the same three names. The
+ * @type {Object} The React components both shells draw (docs/vitrine-react/PLAN.md, R1 to R4a), each
+ * named here and nowhere else: the toolbar's calendar, its filter line, and the posters with the panel
+ * between their rows. They are visitor-safe by rule: nothing they reach names a session module or a
+ * logged-in service (categorypublic_source_test walks them).
+ */
+const COMPONENTS = {
+    calendar: '@moodle/lms/theme_dimensions/daterange/DateRange',
+    line: '@moodle/lms/theme_dimensions/filterline/FilterLine',
+    areas: '@moodle/lms/theme_dimensions/areas/Areas',
+};
+
+/**
+ * @type {Object} The events the calendar component and this module exchange on the toolbar's
+ * dim-daterange region: js/esm/src/daterange/DateRange.tsx spells the same three names. The
  * component says it is drawn (mounted) and that the reader changed the period (pick, detail {from,
  * to}); this module tells it the period the address says (set, the same detail), silently.
  */
@@ -152,13 +167,15 @@ const CALENDAR = {
 };
 
 /**
- * @type {Object} The events the logged-in shell's filter line component and the listing exchange on the
- * line: js/esm/src/filterline/FilterLine.tsx spells the same four names. The component says it is drawn
- * (mounted) and that a suggestion is about to press its control (dropterm); the listing tells it its own
- * state (state, detail {query, chip, fav, view} or any part of it) and an answer's numbers (answer).
+ * @type {Object} The events the filter line component and the listing exchange on the
+ * line: js/esm/src/filterline/FilterLine.tsx spells the same five names. The component says it is drawn
+ * (mounted), or that it cannot draw the markup it was handed (failed: the line stays the server's), and that
+ * a suggestion is about to press its control (dropterm); the listing tells it its own state (state, detail
+ * {query, chip, fav, view} or any part of it) and an answer's numbers (answer).
  */
 export const LINE = {
     mounted: 'dim-line:mounted',
+    failed: 'dim-line:failed',
     state: 'dim-line:state',
     answer: 'dim-line:answer',
     dropterm: 'dim-line:dropterm',
@@ -169,6 +186,22 @@ export const LINE = {
  * here reads: FilterLine.tsx's DRAWN.
  */
 const LINE_DRAWN = 'data-line-drawn';
+
+/**
+ * @type {Object} The events the posters' component and the page's client exchange on the areas section,
+ * heard here for the client ({@see mountAreas}): js/esm/src/areas/panel.ts spells the same names. The
+ * component asks for an area's rows (ask, detail {poster, psort, answer}: the client puts its answer's
+ * promise in it while the event is dispatched), asks for the question that request would ask (question,
+ * detail {poster, psort, question}), offers a failure before its inline error (unanswered, detail {poster,
+ * psort, taken}), says the rows are on screen (painted, detail {panel}) and says it is drawn (mounted).
+ */
+const AREAS = {
+    mounted: 'dim-areas:mounted',
+    ask: 'dim-areas:ask',
+    question: 'dim-areas:question',
+    unanswered: 'dim-areas:unanswered',
+    painted: 'dim-areas:painted',
+};
 
 /** @type {String} The card partial: one template, one row schema, page one and every later page. */
 const CARD_TEMPLATE = 'theme_dimensions/category_card';
@@ -224,13 +257,13 @@ export const closestOf = (event, selector) => {
 /**
  * Whether the filter line's component draws an element, which this module then never writes into.
  *
- * Stage R2 of docs/vitrine-react/PLAN.md: on the logged-in shell the line is a React component, which
+ * Stages R2 and R4a of docs/vitrine-react/PLAN.md: on both shells the line is a React component, which
  * draws the line's own controls - the scope, the search, the star, the Filters badge, the view toggle - and
  * holds three frames of server markup it never diffs inside (the Filters panel, the Organise menu, the
  * managers' menu), which stay this module's to paint. A painter here paints what the component does not
  * draw and tells the component the rest ({@see tellLine}). The component marks the line once it draws it,
- * so until then - and always on the visitor's shell, whose line is categoryline's - this answers false and
- * every painter paints as it always did.
+ * so until then - and on a line it was never handed ({@see mountLine}) - this answers false and every
+ * painter paints the server's line.
  *
  * @param {Element|null} element An element of the toolbar.
  * @return {Boolean}
@@ -259,9 +292,9 @@ const tellLine = (root, type, detail) => {
 
 /**
  * Tell the filter line's component an answer's numbers: the scope's part of the status group, in SCOPE's
- * order, the favourites toggle and the Filters badge. Called after the painters, so the panel's groups the
- * component's suggestions read are painted already. Nothing on the visitor's shell, where categoryline's
- * repaint() follows the painters instead.
+ * order, the favourites toggle and the Filters badge. Called by both clients after the painters, so the
+ * panel's groups the component's suggestions read are painted already. A visitor's answer carries no scope
+ * and no favourites, which leaves both as the server drew them (none).
  *
  * @param {HTMLElement} root The listing section.
  * @param {Object} response The rows response.
@@ -284,7 +317,7 @@ export const tellAnswer = (root, response) => {
  *
  * A client gives the search the focus after a control it pressed hides itself ("Clear all", a chip); a
  * field folded into its icon cannot take it, and the focus would fall to the top of the document. Read
- * off the page, so it holds for the component's line, categoryline's and the root's search line alike;
+ * off the page, so it holds for the component's line and the root's search line alike;
  * the field's own rule keeps a focus moved here from opening the search.
  *
  * @param {HTMLElement} root The listing section.
@@ -300,35 +333,39 @@ export const focusTarget = (root) => {
 };
 
 /**
- * Hand the toolbar's filter line to a React component: the logged-in shell's since stage R2.
+ * Hand the toolbar's filter line to its React component: the logged-in shell's since stage R2, the visitor's
+ * since R4a.
  *
  * The mount node is the server's line itself, so it keeps its place in the form, its classes and the
  * sibling rules the stylesheet writes against it, and the component's first render reads the markup it
  * replaces. Core's react_autoinit watches added nodes and never attributes, so the line is named for the
- * component and put back where it stands, which the observer sees as an added node. The listener is on
- * before that, and the mount is held as pending until the component says it is drawn.
+ * component and put back where it stands, which the observer sees as an added node. The listeners are on
+ * before that, and the mount is held as pending until the component says it is drawn, or that it cannot
+ * draw the line (Pending's resolve() runs once, whichever comes first).
  *
- * A line the component cannot draw - no field, no listbox, as categoryline's arming asks - is left to the
- * server's markup. The specifier is the caller's: this module is the visitor's too, and the visitor's
- * import walk (categorypublic_source_test) follows every module a shared one names.
+ * A line the component cannot draw - no field, no listbox, or a form with no id - is left to the
+ * server's markup, which works without any of this.
  *
  * @param {HTMLElement} root The listing section.
- * @param {String} component The component's specifier, which only the logged-in shell names.
  * @param {Function} dropTerm Called before a suggestion's control is pressed: takes the typed term out of
  *   the caller's state, so the one request that control causes carries none.
  * @return {Boolean} Whether the line was handed over.
  */
-export const mountLine = (root, component, dropTerm) => {
+export const mountLine = (root, dropTerm) => {
     const form = root.querySelector(SELECTORS.toolbar);
     const line = form ? form.querySelector(SELECTORS.line) : null;
-    if (!line || !line.querySelector(SELECTORS.linefield) || !line.querySelector(SELECTORS.listbox) || !form.id) {
+    /* The attribute, never the property: the visitor's script form carries a hidden field named "id",
+       which a form's named-control lookup returns for form.id, and the component would be handed {}. */
+    const formid = form ? form.getAttribute('id') : null;
+    if (!line || !line.querySelector(SELECTORS.linefield) || !line.querySelector(SELECTORS.listbox) || !formid) {
         return false;
     }
     const pending = new Pending('theme_dimensions/categorylisting:line');
     line.addEventListener(LINE.dropterm, () => dropTerm());
     line.addEventListener(LINE.mounted, () => pending.resolve(), {once: true});
-    line.dataset.reactComponent = component;
-    line.dataset.reactProps = JSON.stringify({form: form.id});
+    line.addEventListener(LINE.failed, () => pending.resolve(), {once: true});
+    line.dataset.reactComponent = COMPONENTS.line;
+    line.dataset.reactProps = JSON.stringify({form: formid});
     // Put back where it stands: the observer hears an added node, and the line keeps its place and any focus.
     const focused = line.contains(document.activeElement) ? document.activeElement : null;
     line.parentNode.insertBefore(line, line.nextSibling);
@@ -748,7 +785,6 @@ export const markTree = (root, state) => {
  * @return {void}
  */
 export const paintDates = (root, state) => {
-    DateRange.set(state.datefrom, state.dateto);
     tellCalendar(root.querySelector(SELECTORS.daterange), state);
     const fields = root.querySelector(SELECTORS.dateinputs);
     if (!fields) {
@@ -1462,8 +1498,8 @@ const hideDateFields = (root) => {
 /**
  * Tell the calendar component the period the state holds, without it telling anybody back.
  *
- * Sent on every paint of the period, on both shells: the visitor's region holds the AMD calendar,
- * which listens to nothing, so there the event reaches no one.
+ * Sent on every paint of the period, on both shells; before the component is drawn the event reaches no
+ * one, and the mounted listener tells it the period again.
  *
  * @param {HTMLElement|null} region The toolbar's calendar region.
  * @param {Object} state The calling module's state.
@@ -1476,7 +1512,8 @@ const tellCalendar = (region, state) => {
 };
 
 /**
- * Append the calendar component to its region: the logged-in shell's calendar since stage R1.
+ * Append the calendar component to its region: the logged-in shell's calendar since stage R1, the
+ * visitor's since R4a.
  *
  * Core's react_autoinit watches added nodes and never attributes, so the mount is a NEW child carrying
  * the component's name and its props, which are the props object itself: an object nested under a key
@@ -1491,19 +1528,20 @@ const tellCalendar = (region, state) => {
  * @param {HTMLElement} region The empty region the calendar goes into.
  * @param {Object} state The calling module's state.
  * @param {Function} onpick Called with the two bounds of the period whenever the reader changes it.
- * @param {String} component The component's specifier, which only the logged-in shell names.
  * @return {void}
  */
-const appendCalendar = (root, fieldset, region, state, onpick, component) => {
+const appendCalendar = (root, fieldset, region, state, onpick) => {
     region.addEventListener(CALENDAR.pick, (event) => {
         onpick(event.detail.from, event.detail.to);
     });
+    // Every time: core's react_autoinit mounts the node again after a move with the line, and the period it was
+    // appended with may be old by then.
     region.addEventListener(CALENDAR.mounted, () => {
         hideDateFields(root);
         tellCalendar(region, state);
-    }, {once: true});
+    });
     const node = document.createElement('div');
-    node.dataset.reactComponent = component;
+    node.dataset.reactComponent = COMPONENTS.calendar;
     node.dataset.reactProps = JSON.stringify({
         id: state.categoryid,
         firstday: fieldset.dataset.firstday,
@@ -1515,39 +1553,73 @@ const appendCalendar = (root, fieldset, region, state, onpick, component) => {
 };
 
 /**
- * Mount the calendar over the two native date fields, and hide them behind it.
+ * Mount the calendar component over the two native date fields, which hide behind it once it is drawn.
  *
- * Two calendars until stage R4 of docs/vitrine-react/PLAN.md: the logged-in shell names the React
- * component, and only through `component` - this module is the visitor's as well, and the visitor's
- * import walk (categorypublic_source_test) follows every module a shared one names - while the
- * visitor's shell passes nothing and keeps the AMD module.
+ * One calendar on both shells since stage R4a of docs/vitrine-react/PLAN.md; the AMD module's mount is
+ * armed by no shell (amd/src/daterange.js stays for its period(), the reading of an address both clients
+ * share). A toolbar without the period's region gets nothing.
  *
  * @param {HTMLElement} root The listing section.
  * @param {Object} state The calling module's state.
  * @param {Function} onpick Called with the two bounds of the period whenever the reader changes it.
- * @param {String} component The React component to append instead of the AMD calendar, or the empty string.
- * @return {Promise} Resolving when the calendar is up (or appended), or at once when there is no toolbar.
+ * @return {Promise} Resolving once the component is appended, or at once when there is no toolbar.
  */
-export const mountCalendar = async(root, state, onpick, component = '') => {
+export const mountCalendar = async(root, state, onpick) => {
     const fieldset = root.querySelector(SELECTORS.date);
     const region = fieldset ? fieldset.querySelector(SELECTORS.daterange) : null;
     if (!region) {
         return;
     }
-    if (component !== '') {
-        appendCalendar(root, fieldset, region, state, onpick, component);
-        return;
+    appendCalendar(root, fieldset, region, state, onpick);
+};
+
+/**
+ * Hand the posters and their panel to the React component: listen first, then append its node.
+ *
+ * Both shells since stage R4a of docs/vitrine-react/PLAN.md. The node is an empty, hidden child of the
+ * areas section, so the mount draws no box: the component takes over the posters and the panel the server
+ * drew. Core's react_autoinit mounts it when it is added; the mount is held as pending until the component
+ * says it is drawn, so Behat never presses a poster that is still a plain link. The listeners go on before
+ * the node, so a component already imported cannot ask before anybody answers. A page whose areas carry no
+ * panel is left as the server drew it.
+ *
+ * The component calls no service: the page's client answers it. `ask` (poster, psort) is its answer's
+ * promise; `question` (poster, psort), where a client names one, is the question that answer is to, asked
+ * once per opening; `unanswered` (poster, psort) is true when the client took a failure over; `painted`
+ * (panel) is told once the rows are on screen. The props are the shell's options, the props object itself
+ * (js/esm/src/areas/panel.ts optionsOf()).
+ *
+ * @param {HTMLElement|null} areas The areas section.
+ * @param {Object} props The component's props: {} on the logged-in shell, the visitor's options on its own.
+ * @param {Object} client What the page's client answers with: ask, and optionally question, unanswered and painted.
+ * @return {Boolean} Whether the posters were handed over.
+ */
+export const mountAreas = (areas, props, client) => {
+    if (!areas || !areas.querySelector(SELECTORS.panel)) {
+        return false;
     }
-    const mounted = await DateRange.mount(region, {
-        id: state.categoryid,
-        firstday: fieldset.dataset.firstday,
-        today: fieldset.dataset.today,
-        from: state.datefrom,
-        to: state.dateto,
-        onpick: onpick,
+    const pending = new Pending('theme_dimensions/categorylisting:areas');
+    areas.addEventListener(AREAS.ask, (event) => {
+        event.detail.answer = client.ask(event.detail.poster, event.detail.psort);
     });
-    if (!mounted) {
-        return;
+    if (client.question) {
+        areas.addEventListener(AREAS.question, (event) => {
+            event.detail.question = client.question(event.detail.poster, event.detail.psort);
+        });
     }
-    hideDateFields(root);
+    if (client.unanswered) {
+        areas.addEventListener(AREAS.unanswered, (event) => {
+            event.detail.taken = client.unanswered(event.detail.poster, event.detail.psort);
+        });
+    }
+    if (client.painted) {
+        areas.addEventListener(AREAS.painted, (event) => client.painted(event.detail.panel));
+    }
+    areas.addEventListener(AREAS.mounted, () => pending.resolve(), {once: true});
+    const node = document.createElement('div');
+    node.hidden = true;
+    node.dataset.reactComponent = COMPONENTS.areas;
+    node.dataset.reactProps = JSON.stringify(props);
+    areas.append(node);
+    return true;
 };

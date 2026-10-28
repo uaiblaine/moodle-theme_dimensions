@@ -35,8 +35,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * mounts a node added to the document and reads no attribute change, so the listing APPENDS a node
  * carrying the component and its props; it listens to the component before the node goes in; and the
  * native date fields go behind the calendar only once the component says it is drawn, which it never
- * says without the site's today. The visitor's shell keeps the AMD calendar until R4, so only the
- * logged-in module names the component (the visitor's import walk is categorypublic_source_test's).
+ * says without the site's today. Since R4a both shells mount it, named once in the shared listing (the
+ * visitor's import walk, which reaches it, is categorypublic_source_test's).
  *
  * @package    theme_dimensions
  * @category   test
@@ -101,33 +101,31 @@ final class daterange_component_source_test extends \basic_testcase {
     public function test_the_extractor_returns_one_function_and_not_the_file(): void {
         $append = $this->body('appendCalendar');
         $this->assertStringContainsString('reactComponent', $append);
-        $this->assertStringNotContainsString('DateRange.mount(', $append, 'The extractor is returning more than one function.');
-        $this->assertStringContainsString('DateRange.mount(', $this->body('mountCalendar'));
+        $this->assertStringNotContainsString('if (!region) {', $append, 'The extractor is returning more than one function.');
+        $this->assertStringContainsString('if (!region) {', $this->body('mountCalendar'));
     }
 
     /**
-     * The component is appended only when the caller names it; otherwise the AMD calendar mounts as before.
+     * The component is the calendar of every shell, appended wherever the toolbar has the period's region.
      *
-     * Changes that must make it fail: the guard on the option dropped (every caller, the visitor's
-     * included, would append a node naming no component); the AMD path left reachable after the append.
+     * No shell mounts the AMD calendar since R4a: amd/src/daterange.js stays for its period(), the reading of
+     * an address both clients share.
+     *
+     * Changes that must make it fail: the AMD calendar mounted again beside the component; the specifier
+     * handed in by a caller instead of named in the listing.
      */
-    public function test_the_component_is_appended_only_on_the_option_that_names_it(): void {
+    public function test_the_component_is_the_calendar_of_every_shell(): void {
         $mount = $this->body('mountCalendar');
         $this->assertStringContainsString(
-            "export const mountCalendar = async(root, state, onpick, component = '') => {",
+            'export const mountCalendar = async(root, state, onpick) => {',
             $this->read('amd/src/categorylisting.js')
         );
         $this->assertMatchesRegularExpression(
-            "~if \\(component !== ''\\) \\{\\s*appendCalendar\\(root, fieldset, region, state, onpick, component\\);"
-                . "\\s*return;\\s*\\}~",
-            $mount,
-            'A named component is appended, and the AMD calendar is not mounted beside it.'
+            '~if \(!region\) \{\s*return;\s*\}\s*appendCalendar\(root, fieldset, region, state, onpick\);\s*$~',
+            $mount
         );
-        $this->assertLessThan(
-            strpos($mount, 'DateRange.mount('),
-            strpos($mount, "if (component !== '')"),
-            'The option is read before the AMD calendar is mounted.'
-        );
+        $this->assertStringNotContainsString('DateRange.mount(', $this->uncommented($this->read('amd/src/categorylisting.js')));
+        $this->assertStringContainsString('node.dataset.reactComponent = COMPONENTS.calendar;', $this->body('appendCalendar'));
     }
 
     /**
@@ -140,7 +138,7 @@ final class daterange_component_source_test extends \basic_testcase {
     public function test_the_mount_is_an_appended_child_carrying_the_props_object_itself(): void {
         $append = $this->body('appendCalendar');
         $this->assertStringContainsString("const node = document.createElement('div');", $append);
-        $this->assertStringContainsString('node.dataset.reactComponent = component;', $append);
+        $this->assertStringContainsString('node.dataset.reactComponent = COMPONENTS.calendar;', $append);
         $this->assertMatchesRegularExpression(
             '~node\.dataset\.reactProps = JSON\.stringify\(\{\s*id: state\.categoryid,\s*firstday: fieldset\.dataset\.firstday,\s*'
                 . 'today: fieldset\.dataset\.today,\s*from: state\.datefrom,\s*to: state\.dateto,\s*\}\);~',
@@ -175,9 +173,10 @@ final class daterange_component_source_test extends \basic_testcase {
         );
         $this->assertMatchesRegularExpression(
             '~region\.addEventListener\(CALENDAR\.mounted, \(\) => \{\s*hideDateFields\(root\);\s*tellCalendar\(region, state\);\s*'
-                . '\}, \{once: true\}\);~',
+                . '\}\);~',
             $append,
-            'The fields hide when the component says it is drawn, and the period is told again then.'
+            'The fields hide when the component says it is drawn, and the period is told again then - every time, since a '
+                . 'calendar moved with the line is mounted again (gate js_calendar_mounted_every_time).'
         );
         $this->assertSame(1, substr_count($append, 'hideDateFields('), 'The fields hide in the mounted listener and nowhere else.');
     }
@@ -222,30 +221,34 @@ final class daterange_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The logged-in module names the component, which is built; the visitor's passes nothing.
+     * The shared listing names the component, which is built, and both shells mount it through it.
      *
-     * Changes that must make it fail: the logged-in module mounting the AMD calendar again (no
-     * specifier); the visitor's handing mountCalendar a component.
+     * Changes that must make it fail: a client naming the component itself, or mounting no calendar
+     * (gate js_public_calendar_mounted on the visitor's).
      */
-    public function test_only_the_logged_in_shell_names_the_component(): void {
-        $vitrine = $this->read('amd/src/categoryvitrine.js');
-        $this->assertStringContainsString("const CALENDAR = '" . self::SPECIFIER . "';", $vitrine);
-        $this->assertStringContainsString('Listing.mountCalendar(root, state, setRange, CALENDAR);', $vitrine);
+    public function test_both_shells_mount_the_component_named_in_the_listing(): void {
+        $this->assertStringContainsString(
+            "    calendar: '" . self::SPECIFIER . "',\n",
+            $this->read('amd/src/categorylisting.js')
+        );
         foreach (['js', 'dev.js'] as $build) {
             $this->assertFileExists(
                 $this->plugin_root() . '/js/esm/build/daterange/DateRange.' . $build,
                 'The specifier resolves to js/esm/build/daterange/DateRange.js, which must be built.'
             );
         }
-
+        $this->assertStringContainsString(
+            'const mountCalendar = () => Listing.mountCalendar(root, state, setRange);',
+            $this->read('amd/src/categoryvitrine.js')
+        );
         $public = $this->uncommented($this->read('amd/src/categorypublic.js'));
         $this->assertSame(1, substr_count($public, 'Listing.mountCalendar('));
         $this->assertStringContainsString('Listing.mountCalendar(root, state, setRange).catch(', $public);
-        foreach (['categorypublic', 'categorylisting'] as $module) {
+        foreach (['categorypublic', 'categoryvitrine'] as $module) {
             $this->assertStringNotContainsString(
                 '@moodle/lms/theme_dimensions/daterange',
                 $this->read('amd/src/' . $module . '.js'),
-                $module . ' names the component: the visitor\'s graph would reach it.'
+                $module . ' names the component: the listing names it, once.'
             );
         }
     }

@@ -14,12 +14,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the logged-in showcase's posters and panel component, mounted the way categorypanel mounts it.
+ * Tests for the showcase's posters and panel component, mounted the way the shared listing's mountAreas() mounts it.
  *
  * The page is ./page's (the hooks of category_areas, category_directory_card and category_panel), the panel
- * template is its stand-in behind core/templates' mock, and categorypanel is played by the listeners of
- * its three events on the areas section: a test answers the component's questions when it chooses, which
- * is how the races are written. jsdom lays nothing out, so the grid's tracks come from a stubbed matchMedia.
+ * template is its stand-in behind core/templates' mock, and the page's client is played by the listeners of
+ * its events on the areas section: a test answers the component's questions when it chooses, which is how
+ * the races are written. The logged-in shell's client names no question and takes no failure over; the
+ * visitor's names both and mounts the component with its options (VISITOR). jsdom lays nothing out, so the
+ * grid's tracks come from a stubbed matchMedia.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -27,8 +29,15 @@
 
 import {act, render} from '@testing-library/react';
 import Areas, {EVENTS} from '../../src/areas/Areas';
+import {optionsOf} from '../../src/areas/panel';
 import {controlOf, drawPage, panelEl, panelHtml, posterEl} from './page';
 import type {Page} from './page';
+
+/** What the page's client may answer besides the rows: the visitor's names its question and takes a failure over. */
+type Client = {question?: (id: number, psort: string) => string, unanswered?: (id: number, psort: string) => boolean};
+
+/** The visitor's options, as amd/src/categorypublic.js mounts the component. */
+const VISITOR = {links: true, quiet: 120, autoopen: false};
 
 /** One question the component asked, held until a test answers it. */
 type Question = {id: number, psort: string, resolve: (answer: object) => void, reject: (error: Error) => void};
@@ -91,13 +100,29 @@ const flush = async(ms: number = 0): Promise<void> => {
 };
 
 /**
- * Draw the page, play categorypanel's half, and mount the component on the appended node.
+ * Draw the page, play the page's client, and mount the component on the appended node.
  *
  * @param {object} page The page's shape.
+ * @param {object} props The mount's props: none on the logged-in shell, VISITOR on the visitor's.
+ * @param {object} client What the client answers besides the rows.
  * @returns {Promise} The areas section.
  */
-const mount = async(page: Page = {}): Promise<HTMLElement> => {
+const mount = async(page: Page = {}, props: object = {}, client: Client = {}): Promise<HTMLElement> => {
     const {areas, mount: node} = drawPage(page);
+    if (client.question) {
+        const name = client.question;
+        areas.addEventListener(EVENTS.question, (event: Event) => {
+            const detail = (event as CustomEvent).detail;
+            detail.question = name(Number(detail.poster.dataset.categoryid), detail.psort);
+        });
+    }
+    if (client.unanswered) {
+        const take = client.unanswered;
+        areas.addEventListener(EVENTS.unanswered, (event: Event) => {
+            const detail = (event as CustomEvent).detail;
+            detail.taken = take(Number(detail.poster.dataset.categoryid), detail.psort);
+        });
+    }
     areas.addEventListener(EVENTS.ask, (event: Event) => {
         const detail = (event as CustomEvent).detail;
         detail.answer = new Promise((resolve, reject) => {
@@ -110,7 +135,7 @@ const mount = async(page: Page = {}): Promise<HTMLElement> => {
     areas.addEventListener(EVENTS.mounted, () => {
         mounted++;
     });
-    render(<Areas />, {container: node});
+    render(<Areas {...props} />, {container: node});
     await flush();
     return areas;
 };
@@ -519,5 +544,209 @@ describe('theme_dimensions/areas/Areas', () => {
         // While the question is out the orders are busy, and a press asks nothing.
         await press(panel.querySelector('[data-psort="recent"]') as HTMLElement);
         expect(questions).toHaveLength(1);
+    });
+});
+
+describe('theme_dimensions/areas/Areas on the visitor\'s shell', () => {
+    it('reads its options from the props, and anything but the exact values as the logged-in shell\'s', () => {
+        expect(optionsOf({})).toEqual({links: false, quiet: 0, autoopen: true});
+        expect(optionsOf(VISITOR)).toEqual({links: true, quiet: 120, autoopen: false});
+        expect(optionsOf({links: 'true', quiet: -5, autoopen: 0})).toEqual({links: false, quiet: 0, autoopen: true});
+        expect(optionsOf({quiet: 1.5})).toEqual({links: false, quiet: 0, autoopen: true});
+    });
+
+    it('keeps every poster the link it was, announced as the button it acts as', async() => {
+        await mount({filtered: true, posters: [{id: 8, name: 'Brigade', count: 2, label: '2 results'}]}, VISITOR);
+
+        const control = controlOf(8);
+        expect(control.tagName).toBe('A');
+        expect(control.getAttribute('href')).toBe('https://example.com/course/index.php?categoryid=7&open=8#dim-panel');
+        expect(control.getAttribute('role')).toBe('button');
+        expect(control.getAttribute('aria-expanded')).toBe('false');
+        expect(control.getAttribute('aria-controls')).toBe('dim-panel');
+        expect(control.getAttribute('aria-describedby')).toBe('dim-area-results-8');
+        expect(document.body.classList.contains('dim-panel-js')).toBe(true);
+        expect(questions).toHaveLength(0);
+    });
+
+    it('opens on a plain press, leaves a press meant for another tab to the link, and waits for the quiet', async() => {
+        await mount({}, VISITOR);
+        // Heard after the component's listener: what it left to the link, then no navigation for jsdom.
+        const left: boolean[] = [];
+        const record = (event: Event): void => {
+            left.push(!event.defaultPrevented);
+            event.preventDefault();
+        };
+        window.addEventListener('click', record);
+
+        await act(async() => {
+            controlOf(9).dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, ctrlKey: true}));
+        });
+        await flush(200);
+        expect(left).toEqual([true]);
+        expect(panelEl().hidden).toBe(true);
+        expect(controlOf(9).getAttribute('aria-expanded')).toBe('false');
+
+        await act(async() => {
+            controlOf(9).dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+        });
+        await flush();
+        window.removeEventListener('click', record);
+        expect(left).toEqual([true, false]);
+        expect(controlOf(9).tagName).toBe('A');
+        expect(controlOf(9).getAttribute('aria-expanded')).toBe('true');
+        expect(window.location.search).toBe('?categoryid=7&open=9');
+        expect(document.activeElement).toBe(panelEl().querySelector('[data-region="dim-panel-title"]'));
+        // Nothing is asked before the quiet is over, and the skeleton waits for it too.
+        await flush(119);
+        expect(questions).toHaveLength(0);
+        await flush(1);
+        expect(questions.map((one) => one.id)).toEqual([9]);
+        expect(panelEl().querySelector('[aria-busy="true"]')).toBeNull();
+        await flush(150);
+        expect(panelEl().querySelector('[aria-busy="true"]')).not.toBeNull();
+        await answer();
+        expect(panelEl().querySelector('[data-region="dim-card"]')?.getAttribute('data-courseid')).toBe('209');
+    });
+
+    it('asks only for the last of several presses within the quiet', async() => {
+        await mount({}, VISITOR);
+        await press(controlOf(8));
+        await flush(60);
+        await press(controlOf(9));
+        await flush(60);
+        await press(controlOf(10));
+        // A move within the row crossfades first (150 ms), then the quiet.
+        await flush(150);
+        await flush(120);
+        expect(questions.map((one) => one.id)).toEqual([10]);
+    });
+
+    it('opens and closes a poster that stays a link with Space, as a button; the logged-in shell leaves Space alone', async() => {
+        await mount({}, VISITOR);
+        controlOf(8).focus();
+        await key(' ');
+        expect(controlOf(8).getAttribute('aria-expanded')).toBe('true');
+        controlOf(8).focus();
+        await key(' ');
+        expect(controlOf(8).getAttribute('aria-expanded')).toBe('false');
+        expect(document.activeElement).toBe(controlOf(8));
+    });
+
+    it('leaves Space to the browser on the logged-in shell\'s buttons', async() => {
+        await mount();
+        controlOf(8).focus();
+        await key(' ');
+        expect(controlOf(8).getAttribute('aria-expanded')).toBe('false');
+        expect(panelEl().hidden).toBe(true);
+    });
+
+    it('asks a question once per opening: an answer to unchanged criteria is the panel on screen', async() => {
+        await mount({}, VISITOR, {question: (id, psort) => `${id}/${psort}/${window.location.search.replace(/[?&]open=\d+/, '')}`});
+        await press(controlOf(8));
+        await flush(120);
+        await answer();
+        expect(questions).toHaveLength(0);
+
+        await criteria({accordion: [], areas: {}});
+        await flush(200);
+        expect(questions).toHaveLength(0);
+
+        window.history.replaceState(null, '', '/course/index.php?categoryid=7&q=sea&open=8');
+        await criteria({accordion: [], areas: {}});
+        await flush(120);
+        expect(questions.map((one) => one.id)).toEqual([8]);
+        await answer();
+
+        // A new opening of the same area is a new question, whatever it would ask.
+        await press(controlOf(8));
+        await flush(300);
+        await press(controlOf(8));
+        await flush(120);
+        expect(questions.map((one) => one.id)).toEqual([8]);
+    });
+
+    it('asks every time where the client names no question', async() => {
+        await mount();
+        await press(controlOf(8));
+        await answer();
+        await criteria({accordion: [], areas: {}});
+        expect(questions.map((one) => one.id)).toEqual([8]);
+    });
+
+    it('counts a panel the server drew as the answer to its address\'s question', async() => {
+        const asked: string[] = [];
+        await mount({open: 8}, VISITOR, {question: (id, psort) => {
+            asked.push(`${id}/${psort}`);
+            return `${id}/${psort}`;
+        }});
+        expect(asked).toEqual(['8/']);
+        expect(controlOf(8).getAttribute('aria-expanded')).toBe('true');
+        await criteria({accordion: [], areas: {}});
+        await flush(300);
+        expect(questions).toHaveLength(0);
+    });
+
+    it('hands a failure to the client before the inline error, and asks again after it', async() => {
+        const failures: number[] = [];
+        await mount({}, VISITOR, {question: (id) => `q${id}`, unanswered: (id) => {
+            failures.push(id);
+            return true;
+        }});
+        await press(controlOf(8));
+        await flush(120);
+        await act(async() => {
+            (questions.shift() as Question).reject(new Error('Refused.'));
+        });
+        await flush(300);
+        expect(failures).toEqual([8]);
+        expect(panelEl().querySelector('[data-region="dim-panel-subtitle"]')?.textContent).not.toBe('Could not load Brigade');
+        expect(panelEl().querySelector('[data-action="dim-panel-retry"]')).toBeNull();
+
+        await criteria({accordion: [], areas: {}});
+        await flush(120);
+        expect(questions.map((one) => one.id)).toEqual([8]);
+    });
+
+    it('draws the inline error where the client leaves the failure', async() => {
+        await mount({}, VISITOR, {unanswered: () => false});
+        await press(controlOf(8));
+        await flush(120);
+        await act(async() => {
+            (questions.shift() as Question).reject(new Error('Refused.'));
+        });
+        await flush();
+        expect(panelEl().querySelector('[data-region="dim-panel-subtitle"]')?.textContent).toBe('Could not load Brigade');
+    });
+
+    it('never opens an area by itself', async() => {
+        const told: number[] = [];
+        const listener = (event: Event): void => {
+            told.push((event as CustomEvent).detail.id);
+        };
+        document.addEventListener(EVENTS.autoopened, listener);
+        await mount({}, VISITOR);
+        await criteria({accordion: [], areas: {filtered: true, autoopen: 10}});
+        await flush(300);
+        document.removeEventListener(EVENTS.autoopened, listener);
+        expect(window.location.search).toBe('?categoryid=7');
+        expect(panelEl().hidden).toBe(true);
+        expect(told).toEqual([]);
+        expect(questions).toHaveLength(0);
+    });
+
+    it('takes the button state off a link that opens nothing, and gives it back', async() => {
+        await mount({}, VISITOR);
+        const before = controlOf(11).getAttribute('href');
+        await criteria({accordion: [{id: 11, count: 0, expandable: false}], areas: {filtered: false}});
+        const control = controlOf(11);
+        expect(control.tagName).toBe('A');
+        expect(control.getAttribute('href')).toBe(before);
+        ['role', 'aria-expanded', 'aria-controls'].forEach((name) => expect(control.hasAttribute(name)).toBe(false));
+        expect(posterEl(11).classList.contains('dim-poster--empty')).toBe(true);
+
+        await criteria({accordion: [{id: 11, count: 2, expandable: true}], areas: {filtered: false}});
+        expect(controlOf(11).getAttribute('role')).toBe('button');
+        expect(controlOf(11).getAttribute('aria-expanded')).toBe('false');
     });
 });

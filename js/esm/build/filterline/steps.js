@@ -2,7 +2,7 @@
  * The filter line's folding steps, as a rule over numbers.
  *
  * The fleet contract's section 2 (moodle-dev/docs/filter-line/CONTRACT.md) and amd/src/categoryline.js's
- * fit(), which the visitor's shell keeps until R4: the line takes the first step at which its controls fit
+ * fit(), which no shell arms since R4a: the line takes the first step at which its controls fit
  * on its OWN width - full; Filters without its word; the search as an icon; two lines, the scope on the
  * second and the view toggle in the Organise menu - and the last one whatever it measures.
  *

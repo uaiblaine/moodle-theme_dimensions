@@ -1,12 +1,12 @@
 import{useEffect as W,useLayoutEffect as Y,useRef as _,useState as M}from"react";import fe from"@moodle/lms/core/pending";import{getStrings as pe}from"@moodle/lms/core/stringUtils";import{load as _e}from"../amd";import{WEEK as T,firstOf as j,monthAt as ye,parse as ve,say as N,shift as D,shiftMonth as G,weekdays as he,weeks as be}from"./calendar";import{FROM as Q,TO as y}from"./model";import*as m from"./model";import{jsx as r,jsxs as l}from"react/jsx-runtime";/**
- * The one calendar of the logged-in showcase: a start box and an end box over one popover.
+ * The one calendar of the showcase, on both shells: a start box and an end box over one popover.
  *
- * Stage R1 of docs/vitrine-react/PLAN.md. The visitor's shell keeps amd/src/daterange.js until R4, so
- * this component and that module are two implementations of one control: the same markup (the
- * template category_daterange's, hook for hook, which scss/category.scss and the Behat steps read),
- * the same rules (./model, function for function) and no timezone arithmetic (./calendar).
+ * Stage R1 of docs/vitrine-react/PLAN.md drew it for the logged-in shell, stage R4a for the visitor's too.
+ * It keeps amd/src/daterange.js's control: the same markup (the template category_daterange's, hook for
+ * hook, which scss/category.scss and the Behat steps read), the same rules (./model, function for
+ * function) and no timezone arithmetic (./calendar).
  *
- * It is mounted by categorylisting's mountCalendar(), on the logged-in shell alone, as a node APPENDED
+ * It is mounted by categorylisting's mountCalendar(), on both shells, as a node APPENDED
  * to the toolbar's empty dim-daterange region: core's react_autoinit observes added nodes and never
  * attributes. The props are what the server resolved and the client may not compute: id, firstday,
  * today, from, to. It talks to the listing through events on that region, never through a callback:

@@ -1151,27 +1151,27 @@ final class amd_source_test extends \basic_testcase {
      * put it silently back into the tab order.
      */
     public function test_the_native_date_fields_are_hidden_behind_the_calendar_and_kept_in_step(): void {
-        $mount = $this->body('mountCalendar');
-        $this->assertStringContainsString('DateRange.mount(region, {', $mount);
-        $this->assertStringContainsString('firstday: fieldset.dataset.firstday,', $mount);
-        $this->assertStringContainsString('today: fieldset.dataset.today,', $mount);
-        $this->assertStringContainsString('onpick: onpick,', $mount);
+        $this->assertStringContainsString('appendCalendar(root, fieldset, region, state, onpick);', $this->body('mountCalendar'));
+        $append = $this->body('appendCalendar');
+        $this->assertStringContainsString('firstday: fieldset.dataset.firstday,', $append);
+        $this->assertStringContainsString('today: fieldset.dataset.today,', $append);
+        $this->assertStringContainsString('onpick(event.detail.from, event.detail.to);', $append);
         $this->assertStringContainsString(
-            'const mountCalendar = () => Listing.mountCalendar(root, state, setRange, CALENDAR);',
+            'const mountCalendar = () => Listing.mountCalendar(root, state, setRange);',
             $this->source(),
-            'And this module hands it setRange, which fetches the period picked, and its own calendar.'
+            'And this module hands it setRange, which fetches the period picked.'
         );
         $this->assertMatchesRegularExpression(
-            '~if \(!mounted\) \{\s*return;\s*\}\s*hideDateFields\(root\);\s*$~',
-            $mount,
-            'A calendar that did not mount leaves the two fields exactly as the server drew them.'
+            '~region\.addEventListener\(CALENDAR\.mounted, \(\) => \{\s*hideDateFields\(root\);~',
+            $append,
+            'A calendar that never says it is drawn leaves the two fields exactly as the server drew them.'
         );
         $hide = $this->body('hideDateFields');
         $this->assertStringContainsString('fields.hidden = true;', $hide);
         $this->assertStringContainsString('input.tabIndex = -1;', $hide);
 
         $dates = $this->body('paintDates');
-        $this->assertStringContainsString('DateRange.set(state.datefrom, state.dateto);', $dates);
+        $this->assertStringNotContainsString('DateRange.', $dates, 'No shell mounts the AMD calendar since R4a.');
         $this->assertStringContainsString('tellCalendar(root.querySelector(SELECTORS.daterange), state);', $dates);
         $this->assertStringContainsString('input.value = state.datefrom;', $dates);
         $this->assertStringContainsString('input.value = state.dateto;', $dates);

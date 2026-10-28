@@ -14,13 +14,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The filter line of the logged-in showcase: its folding, the search that grows over it and its
+ * The filter line of the showcase, on both shells: its folding, the search that grows over it and its
  * suggestions, its floating layers and its rows that scroll sideways.
  *
- * Stage R2 of docs/vitrine-react/PLAN.md. The visitor's shell keeps amd/src/categoryline.js (with
- * categorypreview and categorymark) until R4, so this component and that module are two implementations
- * of one control and of the fleet contract (moodle-dev/docs/filter-line/CONTRACT.md): a rule changes in
- * both. block_compass's FilterLine implements the same contract on its own; nothing is shared.
+ * Stage R2 of docs/vitrine-react/PLAN.md drew it for the logged-in shell, stage R4a for the visitor's too,
+ * where no star is drawn and the scope may be absent: it draws what the server drew. It implements the fleet
+ * contract (moodle-dev/docs/filter-line/CONTRACT.md); amd/src/categoryline.js, which no shell arms since
+ * R4a, leaves the tree with R5. block_compass's FilterLine implements the same contract on its own;
+ * nothing is shared.
  *
  * WHO OWNS WHAT. The mount node is the server's line itself (dim-line), which categorylisting's
  * mountLine() names for core's react_autoinit, so the line keeps its place, its classes and the sibling
@@ -41,7 +42,15 @@
  * - `dim-line:dropterm`, sent by the line before it presses the control a suggestion names, so the one
  *   request that control causes carries no term;
  * - `dim-line:mounted`, sent once the line is drawn, after it marked itself drawn (data-line-drawn), which
- *   is what the painters read.
+ *   is what the painters read;
+ * - `dim-line:failed`, sent instead where the markup is not a line this component can draw, so the listing
+ *   releases what it holds for the mount: the line stays the server's.
+ *
+ * A MOUNT AGAIN DRAWS THE LINE AGAIN. Core's react_autoinit unmounts a mounted node that leaves the document
+ * and mounts it when it comes back, so a line moved after the hand-over - or under an ancestor that moved -
+ * is mounted a second time onto a node React has just emptied. Unmounting therefore gives the adopted frames'
+ * nodes back to the server's frames and keeps them, with the line's last state, for that node
+ * ({@see KEPT}); a later mount draws from them instead of reading markup that is no longer there.
  *
  * The step is measured once per content on the line's own width with every scope cell drawn
  * ({@see ./measure stepWidths()}), and taken again from a width alone on every ResizeObserver entry; the
@@ -71,6 +80,7 @@ import type {Fold} from './steps';
 /** The events the line and the listing exchange on the line; amd/src/categorylisting.js spells them too. */
 export const EVENTS = {
     mounted: 'dim-line:mounted',
+    failed: 'dim-line:failed',
     state: 'dim-line:state',
     answer: 'dim-line:answer',
     dropterm: 'dim-line:dropterm',
@@ -102,6 +112,16 @@ type Handlers = Record<string, (...args: never[]) => void>;
 
 /** What data-react-props carries: the id of the toolbar form the line is in. */
 type FilterLineProps = {form: string};
+
+/** What an unmount keeps of a drawn line for the next mount of the same node: the last state and the server's frames. */
+type Kept = {model: Line, panel: Element | null, menu: Element | null, manage: Element | null};
+
+/**
+ * The lines this component drew and was unmounted from, by node: what a mount onto a line React has emptied draws.
+ *
+ * A WeakMap, so a line removed for good takes its entry with it.
+ */
+const KEPT: WeakMap<Element, Kept> = new WeakMap();
 
 /** The line's behaviour state, read and written synchronously as categoryline's own state is. */
 type Live = {
@@ -176,6 +196,20 @@ const FilterLine = ({form}: FilterLineProps) => {
         const toolbar = document.getElementById(form);
         const line = toolbar ? toolbar.querySelector<HTMLElement>(SELECTORS.line) : null;
         const active = document.activeElement;
+        // A line this component drew before is empty now: it is drawn again from what the unmount kept.
+        const kept = line ? KEPT.get(line) : undefined;
+        if (line && kept) {
+            KEPT.delete(line);
+            return {
+                toolbar: toolbar,
+                line: line,
+                first: kept.model,
+                panel: kept.panel,
+                menu: kept.menu,
+                manage: kept.manage,
+                focused: null,
+            };
+        }
         return {
             toolbar: toolbar,
             line: line,
@@ -187,6 +221,9 @@ const FilterLine = ({form}: FilterLineProps) => {
         };
     });
     const [model, setModel] = useState<Line | null>(setup.first);
+    // The state the latest render drew from, which an unmount keeps for the next mount of this node.
+    const latest = useRef<Line | null>(model);
+    latest.current = model;
     const [, rerender] = useReducer((count: number) => count + 1, 0);
     const [answers, setAnswers] = useState<number>(0);
     const [relist, setRelist] = useState<number>(0);
@@ -761,6 +798,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     // The first commit: the server's frames adopted, every listener on, the line folded before it is painted.
     useLayoutEffect(() => {
         if (!line || !toolbar || !setup.first) {
+            // Not a line this component can draw: the listing stops holding the mount, and the line stays the server's.
+            line?.dispatchEvent(new CustomEvent(EVENTS.failed, {bubbles: true}));
             return undefined;
         }
         adopt(setup.panel, panel.current);
@@ -798,9 +837,14 @@ const FilterLine = ({form}: FilterLineProps) => {
         listeners.forEach(([target, type, listener, options]) => target.addEventListener(type, listener, options));
 
         remember(toolbar, field.current ? field.current.value : '', rest.current);
-        st.width = contentWidth(line);
-        st.widths = stepWidths(line, null, st.width);
-        refold();
+        try {
+            st.width = contentWidth(line);
+            st.widths = stepWidths(line, null, st.width);
+            refold();
+        } catch (error) {
+            // A line that cannot be measured stays at the full step, and is still the line: it is drawn and said so.
+            st.widths = [];
+        }
 
         // The line's own width, never the viewport's: a drawer opening changes the one and not the other.
         const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((entries) => {
@@ -831,6 +875,15 @@ const FilterLine = ({form}: FilterLineProps) => {
             observer?.disconnect();
             listeners.forEach(([target, type, listener, options]) => target.removeEventListener(type, listener, options));
             line.removeAttribute(DRAWN);
+            /* React is about to empty the line: the adopted nodes go back to the server's frames, kept with the last
+               state, so a mount of this node again (react_autoinit, after a move) draws the line again. Run before the
+               frames are removed: a component's layout cleanup runs ahead of its host nodes' removal. */
+            adopt(panel.current, setup.panel);
+            adopt(menu.current, setup.menu);
+            adopt(manage.current, setup.manage);
+            if (latest.current) {
+                KEPT.set(line, {model: latest.current, panel: setup.panel, menu: setup.menu, manage: setup.manage});
+            }
         };
     // The first commit's effect, once: every later change reaches the listeners through api.
     }, []);

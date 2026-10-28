@@ -3,14 +3,19 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 /**
  * The posters' result layer: what Areas.tsx writes onto the server's posters, and nobody else does.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md. The posters are the server's markup (category_directory_card)
- * and stay it: the component never re-renders one. What changes with an answer - the pill, the counts and
- * the shell on the article, whether the poster opens (its control a button or the link to its page), its
- * open state, its item's place in the grid, the reveal and the "nothing anywhere" box - is written here,
- * on the logged-in shell by Areas.tsx alone; amd/src/categoryposters.js and categoryareapanel.js write the
- * same for the visitor's shell until R4, and a rule changes in both. Every function is named after the AMD
- * function it stands for. Every write is made only when it changes something, so a pass that agrees with
- * the page invalidates no style.
+ * Stages R3 and R4a of docs/vitrine-react/PLAN.md. The posters are the server's markup
+ * (category_directory_card) and stay it: the component never re-renders one. What changes with an answer -
+ * the pill, the counts and the shell on the article, whether the poster opens (its control a button or the
+ * link to its page), its open state, its item's place in the grid, the reveal and the "nothing anywhere"
+ * box - is written here, by Areas.tsx alone, on both shells since R4a. Every function is named after the AMD
+ * function it stood for. Every write is made only when it changes something, so a pass that agrees with the
+ * page invalidates no style.
+ *
+ * Two kinds of poster control. The logged-in shell's become buttons. The visitor's stay the links the server
+ * drew (`links`), each announced as the button it acts as - its role, its state, the panel it controls - so a
+ * press meant for another tab or window still goes to its address; the visitor's module points those
+ * addresses at each area's panel under the address on screen, which is the one write on a poster that is not
+ * this module's.
  *
  * @module     theme_dimensions/areas/posters
  * @copyright  2026 Anderson Blaine
@@ -83,7 +88,17 @@ const toLink = /* @__PURE__ */ __name((button, href) => {
   button.replaceWith(link);
   return link;
 }, "toLink");
-const convertPoster = /* @__PURE__ */ __name((poster, open) => {
+const driven = /* @__PURE__ */ __name((poster, links) => {
+  const control = poster ? poster.querySelector(SELECTORS.control) : null;
+  if (!control) {
+    return null;
+  }
+  if (control.tagName === "BUTTON") {
+    return control;
+  }
+  return links && control.tagName === "A" && isExpandable(poster) ? control : null;
+}, "driven");
+const convertPoster = /* @__PURE__ */ __name((poster, open, links = false) => {
   const control = poster.querySelector(SELECTORS.control);
   if (!control || control.tagName === "BUTTON" || !isExpandable(poster)) {
     return;
@@ -92,13 +107,18 @@ const convertPoster = /* @__PURE__ */ __name((poster, open) => {
     "aria-expanded": Number(poster.dataset.categoryid) === open ? "true" : "false",
     "aria-controls": PANEL_ID
   };
+  if (links) {
+    attributes.role = "button";
+    Object.keys(attributes).forEach((name) => setAttr(control, name, attributes[name]));
+    return;
+  }
   const described = control.getAttribute("aria-describedby");
   if (described) {
     attributes["aria-describedby"] = described;
   }
   toButton(control, attributes);
 }, "convertPoster");
-const setExpandable = /* @__PURE__ */ __name((poster, on, open) => {
+const setExpandable = /* @__PURE__ */ __name((poster, on, open, links = false) => {
   if (isExpandable(poster) === on || Number(poster.dataset.categoryid) === open) {
     return;
   }
@@ -116,22 +136,24 @@ const setExpandable = /* @__PURE__ */ __name((poster, on, open) => {
   const control = poster.querySelector(SELECTORS.control);
   const focused = Boolean(control) && document.activeElement === control;
   if (on) {
-    convertPoster(poster, open);
+    convertPoster(poster, open, links);
   } else if (control && control.tagName === "BUTTON" && poster.dataset.titleurl) {
     toLink(control, poster.dataset.titleurl);
+  } else if (control && links) {
+    ["role", "aria-expanded", "aria-controls"].forEach((name) => setAttr(control, name, null));
   }
   const now = poster.querySelector(SELECTORS.control);
   if (focused && now && now !== control) {
     now.focus({ preventScroll: true });
   }
 }, "setExpandable");
-const setPosterOpen = /* @__PURE__ */ __name((poster, on) => {
+const setPosterOpen = /* @__PURE__ */ __name((poster, on, links = false) => {
   if (!poster) {
     return;
   }
   setClass(poster, CLASSES.posteropen, on);
-  const control = poster.querySelector(SELECTORS.control);
-  if (control && control.tagName === "BUTTON") {
+  const control = driven(poster, links);
+  if (control) {
     setAttr(control, "aria-expanded", on ? "true" : "false");
   }
   const trigger = poster.querySelector(SELECTORS.trigger);
@@ -181,7 +203,7 @@ const failed = /* @__PURE__ */ __name((areas) => {
   areas.querySelectorAll(SELECTORS.grid).forEach((grid) => setAttr(grid, "aria-busy", null));
   areas.querySelectorAll(SELECTORS.area).forEach((poster) => paintPill(poster, isFiltered(areas)));
 }, "failed");
-const paintPosters = /* @__PURE__ */ __name((areas, accordion, filtered, open, expandable) => {
+const paintPosters = /* @__PURE__ */ __name((areas, accordion, filtered, open, expandable, links = false) => {
   if (!filtered) {
     const named = new Set(accordion.map((entry) => Number(entry.id)));
     areas.querySelectorAll(SELECTORS.area).forEach((poster) => {
@@ -208,7 +230,7 @@ const paintPosters = /* @__PURE__ */ __name((areas, accordion, filtered, open, e
     poster.dataset.ctalabel = entry.ctalabel || "";
     paintPill(poster, filtered);
     expandable.set(id, Boolean(entry.expandable));
-    setExpandable(poster, Boolean(entry.expandable), open);
+    setExpandable(poster, Boolean(entry.expandable), open, links);
     setHidden(itemOf(poster), filtered && count === 0 && id !== open);
   });
 }, "paintPosters");
@@ -266,6 +288,7 @@ const loadedAllEmpty = /* @__PURE__ */ __name((areas, root) => {
 export {
   PENDING,
   convertPoster,
+  driven,
   failed,
   fitReveal,
   isExpandable,

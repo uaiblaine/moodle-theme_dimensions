@@ -5,6 +5,37 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The course dialogue's "Enrolment from" date keeps its day's leading zero** (2026100531). `userdate()` strips it by
+  default, so from the 1st to the 9th of a month the button read `1/11/2026` against the string's own `%d/%m/%Y`, and
+  `category_card_modal_test` failed on those days only. `category_card::modal_primary()` passes `fixday` false.
+- **The visitor's showcase draws the logged-in shell's React components** (2026100531; R4a of
+  `docs/vitrine-react/PLAN.md`, the first half of R4). The anonymous live client (`categorypublic`, armed by
+  `categorypublicclient`) mounts the calendar (R1), the filter line (R2) and the posters with their panel (R3) through
+  the shared listing's mounts, each component named once in `categorylisting`'s `COMPONENTS`; the posters' mount moved
+  from `categorypanel` into `categorylisting`'s `mountAreas()`, which hears the component for either client. The
+  posters' component takes the visitor's differences as props (`{links: true, quiet: 120, autoopen: false}` on the
+  visitor's page, none on the logged-in one): the posters stay the server's links announced as buttons (a modified
+  press follows the link, Space opens as Enter does), a panel's question is asked after a quiet and once per opening
+  (`dim-areas:question`, named by the visitor's module), a failure is offered to the page before the inline error
+  (`dim-areas:unanswered`, which the visitor's module takes by loading the poster's link) and no area opens by itself.
+  The visitor answers the components as the logged-in client does, with its own service: `dim-areas:ask` with the
+  public call's promise (a public area by its id, a merely listed one as a slice), `dim-vitrine:pending` and
+  `:criteria` on the document, the line told every answer (`tellAnswer()`), the field read delegated on the form.
+  The visitor's import graph now reaches the three components by design, and nothing it reaches names
+  `categoryvitrine`, `categorypanel`, `categorystar` or a logged-in service, comments included
+  (`categorypublic_source_test`). `categoryline`, `categorypreview`, `categoryareapanel` and `categoryposters` are
+  imported by nothing and stay in the tree until R5; no shell mounts `daterange`'s AMD calendar, whose `period()`
+  both clients still read. Jest covers both modes (13 new tests); 22 new mutation gates, 17 retargeted, 4 retired.
+  The filter line survives a remount: core's `react_autoinit` unmounts a mounted node that leaves the document and
+  mounts it again when it returns, and React's unmount had emptied the line for good (no field, no `dim-line:mounted`,
+  the listing's pending held for ever). The unmount now gives the
+  adopted frames back to the server's and keeps them with the last state for that node, so the next mount draws the
+  line again; a line the component cannot draw sends `dim-line:failed`, which releases the pending too; the calendar is
+  told its period on every mount, not the first. Jest runs the three components on the visitor's own markup
+  (`js/esm/tests/visitor`, captured from an anonymous page), with two more gates. `mountLine()` reads the toolbar
+  form's id as an attribute: on the visitor's script page (`category.php`, what a site without the router serves) the
+  form carries a hidden field named `id`, which is what `form.id` returns, so the component was handed `{}`, drew no
+  line and held the pending for every visitor client scenario in CI (gate `js_line_form_id_attribute`).
 - **The logged-in showcase's posters and the panel between their rows are a React component** (2026100530; R3 of
   `docs/vitrine-react/PLAN.md`). `js/esm/src/areas/Areas.tsx` (`@moodle/lms/theme_dimensions/areas/Areas`) is mounted
   on an empty, hidden child `categorypanel` appends to the areas section, so the mount draws no box and the first paint

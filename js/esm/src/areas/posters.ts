@@ -16,14 +16,19 @@
 /**
  * The posters' result layer: what Areas.tsx writes onto the server's posters, and nobody else does.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md. The posters are the server's markup (category_directory_card)
- * and stay it: the component never re-renders one. What changes with an answer - the pill, the counts and
- * the shell on the article, whether the poster opens (its control a button or the link to its page), its
- * open state, its item's place in the grid, the reveal and the "nothing anywhere" box - is written here,
- * on the logged-in shell by Areas.tsx alone; amd/src/categoryposters.js and categoryareapanel.js write the
- * same for the visitor's shell until R4, and a rule changes in both. Every function is named after the AMD
- * function it stands for. Every write is made only when it changes something, so a pass that agrees with
- * the page invalidates no style.
+ * Stages R3 and R4a of docs/vitrine-react/PLAN.md. The posters are the server's markup
+ * (category_directory_card) and stay it: the component never re-renders one. What changes with an answer -
+ * the pill, the counts and the shell on the article, whether the poster opens (its control a button or the
+ * link to its page), its open state, its item's place in the grid, the reveal and the "nothing anywhere"
+ * box - is written here, by Areas.tsx alone, on both shells since R4a. Every function is named after the AMD
+ * function it stood for. Every write is made only when it changes something, so a pass that agrees with the
+ * page invalidates no style.
+ *
+ * Two kinds of poster control. The logged-in shell's become buttons. The visitor's stay the links the server
+ * drew (`links`), each announced as the button it acts as - its role, its state, the panel it controls - so a
+ * press meant for another tab or window still goes to its address; the visitor's module points those
+ * addresses at each area's panel under the address on screen, which is the one write on a poster that is not
+ * this module's.
  *
  * @module     theme_dimensions/areas/posters
  * @copyright  2026 Anderson Blaine
@@ -210,17 +215,41 @@ export const toLink = (button: HTMLElement, href: string): HTMLAnchorElement => 
 };
 
 /**
- * Turn an expandable poster's link into the button that opens its panel.
+ * The control of a poster that opens its panel in place, or null.
  *
- * toButton() copies the data attributes alone, so the pill's description is handed over by name: a poster
- * drawn in result mode is described by its pill, and a button without it would stop saying how many results
- * the area holds.
+ * A button always is. A link is only on a shell that keeps the posters links, and only while its poster
+ * opens: a link to an area with nothing to open goes to its page.
+ *
+ * @param {Element|null} poster The poster.
+ * @param {boolean} links Whether the posters stay links.
+ * @returns {HTMLElement|null}
+ */
+export const driven = (poster: HTMLElement | null, links: boolean): HTMLElement | null => {
+    const control = poster ? poster.querySelector<HTMLElement>(SELECTORS.control) : null;
+    if (!control) {
+        return null;
+    }
+    if (control.tagName === 'BUTTON') {
+        return control;
+    }
+    return links && control.tagName === 'A' && isExpandable(poster) ? control : null;
+};
+
+/**
+ * Turn an expandable poster's link into the control that opens its panel.
+ *
+ * On the logged-in shell the link becomes a button. toButton() copies the data attributes alone, so the
+ * pill's description is handed over by name: a poster drawn in result mode is described by its pill, and a
+ * button without it would stop saying how many results the area holds. A shell keeping the posters links has
+ * the link announced as the button it now acts as - its role, its state and the panel it controls - while it
+ * keeps its address.
  *
  * @param {Element} poster The poster.
  * @param {number} open The open area.
+ * @param {boolean} links Whether the posters stay links.
  * @returns {void}
  */
-export const convertPoster = (poster: HTMLElement, open: number): void => {
+export const convertPoster = (poster: HTMLElement, open: number, links: boolean = false): void => {
     const control = poster.querySelector<HTMLElement>(SELECTORS.control);
     if (!control || control.tagName === 'BUTTON' || !isExpandable(poster)) {
         return;
@@ -229,6 +258,11 @@ export const convertPoster = (poster: HTMLElement, open: number): void => {
         'aria-expanded': Number(poster.dataset.categoryid) === open ? 'true' : 'false',
         'aria-controls': PANEL_ID,
     };
+    if (links) {
+        attributes.role = 'button';
+        Object.keys(attributes).forEach((name) => setAttr(control, name, attributes[name]));
+        return;
+    }
     const described = control.getAttribute('aria-describedby');
     if (described) {
         attributes['aria-describedby'] = described;
@@ -241,14 +275,16 @@ export const convertPoster = (poster: HTMLElement, open: number): void => {
  *
  * Everything that says which one a poster is flips together: its class, its attribute, the note naming the
  * link's destination, the trigger's word and the control. The open poster is left as it is until it closes,
- * so the panel the reader has open never loses its control.
+ * so the panel the reader has open never loses its control. A shell keeping the posters links leaves the link
+ * in place and takes its button state off it.
  *
  * @param {Element} poster The poster.
  * @param {boolean} on Whether it opens a panel.
  * @param {number} open The open area.
+ * @param {boolean} links Whether the posters stay links.
  * @returns {void}
  */
-export const setExpandable = (poster: HTMLElement, on: boolean, open: number): void => {
+export const setExpandable = (poster: HTMLElement, on: boolean, open: number, links: boolean = false): void => {
     if (isExpandable(poster) === on || Number(poster.dataset.categoryid) === open) {
         return;
     }
@@ -266,9 +302,11 @@ export const setExpandable = (poster: HTMLElement, on: boolean, open: number): v
     const control = poster.querySelector<HTMLElement>(SELECTORS.control);
     const focused = Boolean(control) && document.activeElement === control;
     if (on) {
-        convertPoster(poster, open);
+        convertPoster(poster, open, links);
     } else if (control && control.tagName === 'BUTTON' && poster.dataset.titleurl) {
         toLink(control, poster.dataset.titleurl);
+    } else if (control && links) {
+        ['role', 'aria-expanded', 'aria-controls'].forEach((name) => setAttr(control, name, null));
     }
     const now = poster.querySelector<HTMLElement>(SELECTORS.control);
     if (focused && now && now !== control) {
@@ -281,15 +319,16 @@ export const setExpandable = (poster: HTMLElement, on: boolean, open: number): v
  *
  * @param {Element|null} poster The poster.
  * @param {boolean} on Whether it is the open one.
+ * @param {boolean} links Whether the posters stay links.
  * @returns {void}
  */
-export const setPosterOpen = (poster: HTMLElement | null, on: boolean): void => {
+export const setPosterOpen = (poster: HTMLElement | null, on: boolean, links: boolean = false): void => {
     if (!poster) {
         return;
     }
     setClass(poster, CLASSES.posteropen, on);
-    const control = poster.querySelector<HTMLElement>(SELECTORS.control);
-    if (control && control.tagName === 'BUTTON') {
+    const control = driven(poster, links);
+    if (control) {
         setAttr(control, 'aria-expanded', on ? 'true' : 'false');
     }
     const trigger = poster.querySelector<HTMLElement>(SELECTORS.trigger);
@@ -385,6 +424,7 @@ export const failed = (areas: HTMLElement): void => {
  * @param {boolean} filtered Whether the answer is in result mode.
  * @param {number} open The open area, 0 for none.
  * @param {Map} expandable Each area's opening state as the latest answer gave it, by id: written here.
+ * @param {boolean} links Whether the posters stay links.
  * @returns {void}
  */
 export const paintPosters = (
@@ -392,7 +432,8 @@ export const paintPosters = (
     accordion: Entry[],
     filtered: boolean,
     open: number,
-    expandable: Map<number, boolean>
+    expandable: Map<number, boolean>,
+    links: boolean = false
 ): void => {
     if (!filtered) {
         const named = new Set(accordion.map((entry) => Number(entry.id)));
@@ -420,7 +461,7 @@ export const paintPosters = (
         poster.dataset.ctalabel = entry.ctalabel || '';
         paintPill(poster, filtered);
         expandable.set(id, Boolean(entry.expandable));
-        setExpandable(poster, Boolean(entry.expandable), open);
+        setExpandable(poster, Boolean(entry.expandable), open, links);
         setHidden(itemOf(poster), filtered && count === 0 && id !== open);
     });
 };

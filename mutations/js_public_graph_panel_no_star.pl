@@ -1,3 +1,3 @@
-# Import the star into the shared panel module, in the place of the title marker: the visitor's page
-# then loads a module that stars courses for a session it does not have.
-s/^import \* as CategoryMark from 'theme_dimensions\/categorymark';$/import * as CategoryMark from 'theme_dimensions\/categorystar';/m;
+# Ask the bridge for the star from the posters' component, which the visitor's page mounts: the walk
+# must follow a component's quoted AMD name through the bridge and find it.
+s/templates = templates \|\| load\('core\/templates'\);/templates = templates || load('theme_dimensions\/categorystar');/;

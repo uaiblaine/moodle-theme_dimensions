@@ -204,8 +204,9 @@ React and TypeScript live in `js/esm/src`, built to `js/esm/build`, tested in `j
 - **The visitor's import walk reads `js/esm`** (`categorypublic_source_test`): an AMD module reaches an ES
   module through `core/esm!` or by naming `@moodle/lms/theme_dimensions/...` for a mount, an ES module
   its siblings by relative import and theme AMD modules by quoted name through the bridge, and the walk
-  starts from the bridge as well as from `categorypublic`. So the bridge, and anything a visitor's
-  component imports, names nothing of a session, comments included.
+  starts from the bridge as well as from `categorypublic`. Since R4a it reaches the three components (the visitor
+  mounts them), so the bridge and every module of `js/esm/src` a component imports name nothing of a session and
+  none of `categoryvitrine`, `categorypanel` or `categorystar`, comments included (the R4a section).
 
 ## Code layout
 
@@ -270,9 +271,10 @@ classes/local/category/        The category showcase's decision layer (stage 2):
                                scope, page_result, unavailable_exception. See the section below.
 amd/src/category*.js           The showcase's modules (amd/src/covervideo.js + local/coverfilm.js: the cover film). Its listing clients: categoryvitrine and
                                categorypanel (an account's), categorypublic (a visitor's), over the
-                               shared categorylisting, categoryposters and categoryareapanel (the visitor's
-                               posters and panel since R3; the logged-in shell's are js/esm/src/areas).
-js/esm/src/                    The React port (R0-R3): daterange/ (R1), filterline/ (R2), areas/ (R3).
+                               shared categorylisting, which mounts the React components for both (R4a).
+                               categoryline, categorypreview, categoryareapanel and categoryposters are
+                               imported by nothing since R4a and leave with R5.
+js/esm/src/                    The React port (R0-R4a): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells.
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
                                name, under two rules of the theme's own. See its section below.
 templates/category_pages.mustache  The strip's markup, drawn by category_listing above the toolbar.
@@ -2927,19 +2929,15 @@ status block, the design, the HTTP facts, the numbers and the cache verdicts. Wh
   refuses `isloggedin()`, true for the guest too. It delegates to `rows::fetch()` with `anonymous` on,
   which builds what `request::handle()` builds for the page, and its returns are
   `get_category_rows::execute_returns()` key for key, so both clients paint one shape.
-- **The client is `categorypublic.js` over three shared modules that import nothing of a session**:
-  `categorylisting.js` (the listing's painters and address helpers), `categoryposters.js` (the
-  posters' results) and `categoryareapanel.js` (the panel: one area at a time, its place, address,
-  orders, rail, keyboard and states). `categoryvitrine` and `categorypanel` keep what is an
-  account's - the progress observer, the peek, the star, the view preference, the logged-in services
-  - and bind the shared functions in one-line bindings at the top. Since R3 the logged-in shell no
-  longer arms `categoryareapanel` or `categoryposters`: its posters, panel and automatic opening are the
-  React component's (R3's section), and the two shared modules are the visitor's alone until R4.
-  `amd_source_test::body()` and `categorypanel_source_test::body()` look in the module and then in
-  the shared file, and a one-line binding never matches, so a body found is the code that runs; the
-  two panel files therefore give their functions distinct names (`init`/`arm`,
-  `listenToListing`/`listen`, `onCriteria`/`criteria`). A gate on moved code names the shared file in
-  `mutations/gates.conf`.
+- **The client is `categorypublic.js` over the shared `categorylisting`, which imports nothing of a session**
+  (the listing's painters, its address helpers and, since R4a, the mounts of the three React components: the
+  calendar, the filter line, the posters with their panel; the R4a section). `categoryvitrine` and `categorypanel` keep
+  what is an account's - the progress observer, the peek, the star, the view preference, the logged-in services - and
+  bind the shared functions in one-line bindings at the top. Until R4a the visitor armed `categoryareapanel`,
+  `categoryposters` and `categoryline`; they are imported by nothing now and leave with R5, their source tests and
+  gates with them. `amd_source_test::body()` and `categorypanel_source_test::body()` look in the module and then in
+  the shared file, and a one-line binding never matches, so a body found is the code that runs. A gate on moved code
+  names the shared file in `mutations/gates.conf`.
 - **The service's order is a security property and moves as one block**: it is the class docblock of
   `get_public_category_rows`, eleven steps - parameters, one call per request, no `cachekey`, no
   session, the cheap shape checks, the language, the service's switch then `publicaccess::is_public()`
@@ -3007,25 +3005,25 @@ status block, the design, the HTTP facts, the numbers and the cache verdicts. Wh
   once per opening (`client.question`; `adopt()` counts the panel the server drew as asked), after
   `PANEL_QUIET` (120 ms); core/ajax has no abort, so a superseded answer is dropped by its ticket.
 - **The visitor's import graph is the security property**, walked transitively, builds included
-  (`categorypublic_source_test`): a session module pulled in through a shared module ships to the
-  internet as surely as one in the entry file (`js_public_graph_no_star` and
-  `js_public_graph_panel_no_star` add the star to a shared module to prove the walk sees it). So a
-  shared module's name must not begin with `categorypanel`, `categorystar` or `categoryvitrine` - the
-  test forbids `theme_dimensions/categorypanel` in any build of the graph - and its comments
-  must not name the logged-in services, because the forbidden strings are read from source, comments
-  included. `daterange` is shared as it is: it imports only core modules, whose template and string
-  services are `loginrequired => false`, and its `Notification.exception` on a failed template render
-  is core's message, not the visitor's service's.
+  (`categorypublic_source_test`): a session module pulled in through a shared module ships to the internet as surely
+  as one in the entry file (`js_public_graph_no_star` adds the star to the shared listing, `js_public_graph_panel_no_star`
+  asks the bridge for it from the posters' component, to prove the walk sees both). So no module of the graph may be
+  named `categorypanel*`, `categorystar*` or `categoryvitrine*` - the test forbids `theme_dimensions/categorypanel` in
+  any build of the graph - and, since R4a, no module of it names those three or a logged-in service ANYWHERE, comments
+  included, because the forbidden strings are read from the raw source and both builds. `daterange` is shared for its
+  `period()`: it imports only core modules, whose template and string services are `loginrequired => false`.
 - **The visitor's poster stays an `<a>` announced as a button** (`role`, `aria-expanded`,
-  `aria-controls`). A plain click, Enter and Space (`onSpace()`) open it in place; a click with a
-  modifier or already prevented follows the link, and middle and secondary presses never reach a
-  click listener. `linkPosters()` points every poster at its panel under the address on screen after
-  every change. Any failure, and an answer with no panel of the area asked about, loads the poster's
-  link with the panel's order and its fragment (`panelFailed()`); the logged-in client keeps its
-  inline error and retry. The panel's criteria are read off the address through `Listing.readUrl()`
-  on a throwaway object, not off the listing's state: the shared `onPopState` and the listing's own
-  popstate listener run in registration order, and the address is already the new one for both.
-- **`dim-panel-js` is the shared module's mark**, written by `arm()` on both shells. No hover peek for
+  `aria-controls`): the posters' component's `links` option since R4a. A plain click, Enter and Space (`onSpace()`)
+  open it in place; a click with a modifier or already prevented follows the link (`elsewhere()`), and middle and
+  secondary presses never reach a click listener. `linkPosters()` points every poster at its panel under the address
+  on screen after every change - the one write on a poster that is not the component's. Any failure, and an answer
+  with no panel of the area asked about, loads the poster's link with the panel's order and its fragment
+  (`panelFailed()`, the visitor's answer to `dim-areas:unanswered`); the logged-in client keeps its inline error and
+  retry. The panel's criteria are read off the address through `Listing.readUrl()` on a throwaway object, not off the
+  listing's state: the visitor's popstate listener runs before the component's (registered later, at mount), and the
+  address is already the new one for both.
+- **`dim-panel-js` is the posters' component's mark**, written by its `arm()` on both shells (at mount where no panel is
+  open, otherwise on the first change: R3). No hover peek for
   visitors: the minis hide their disclosure on both shells, and a peek on the visitor's grid is a
   change of its own.
 - **The budget is a fixture's.** `get_public_category_rows_test` records 17 reads (PHP cut) or 19
@@ -3191,10 +3189,9 @@ plan, with the decisions taken while briefing, are `moodle-dev/docs/filter-line/
   stacking context (`.dim-toolbar`, `z-index: 30`) painted over what was left. Core's more-menu
   already collapses the tabs that do not fit, so the rail has nothing to scroll. The 31 must stay
   above the toolbar's number; `category_scss_test` pins it.
-- **The visitor's line is ONE module, `categoryline`; the logged-in shell's is a React component since R2** (its own
-  section below, which every rule of this one binds as well). `categoryline` imports only `core/pending`, so it belongs to
-  the visitor's import graph and `categorypublic_source_test` walks it; `categorypublic` calls `repaint()` after every
-  answer. A rule of the line changes in both implementations.
+- **Both shells' line is the React component since R4a** (R2's section below, which every rule of this one binds as
+  well): `categorypublic` hands its line over with the shared `mountLine()` and calls `tellAnswer()` after every answer,
+  as `categoryvitrine` does. `categoryline` and `categorypreview` are armed by no shell and leave with R5.
 - **The step is measured on the line's own width with every scope cell drawn**: the server writes a cell with nothing
   to offer as `absent` (hidden), the measure unhides them under the `measuring` class, with no transition. Digit widths
   still move the step at a boundary (measured: 1024 flips s3 to s1 when counts drop to one digit).
@@ -3203,8 +3200,8 @@ plan, with the decisions taken while briefing, are `moodle-dev/docs/filter-line/
   WebDriver moves there, which keeps the older Behat scenarios unobstructed.
 - **A term in force while the field is folded is a server chip** (`param=q`, dropping `q` alone), shown by the
   stylesheet only then; at steps 1 and 2 the field itself says it.
-- **The preview (T4) decides from facts the card states and never asks the server** (`categorypreview`, armed by
-  `categoryline`, so it is in the visitor's graph and imports nothing). The facts are `data-chip`, `data-fields`
+- **The preview (T4) decides from facts the card states and never asks the server** (`filterline/preview.ts`, imported
+  by the line's component on first use, so it is in the visitor's graph and imports nothing). The facts are `data-chip`, `data-fields`
   (`fieldid:value` pairs, `:0` for none) and `data-start` (the site timezone's day, `criteria::iso()`) on the
   article, decided by `category_card` and declared in `get_category_rows::card_structure()` - a fact left out of the
   returns reaches the page's cards and never a client-rendered one. The favourite is the card star's
@@ -3259,8 +3256,8 @@ must not lose:
   modal stack on these pages, so the saving shows only where nothing else asks for it.
 - **The filter line imports `categorypreview` on the first pointer or focus on the toolbar**, or on the first
   suggestion walked to. `Preview` in `categoryline` is a stand-in until then: clear and refresh do nothing, and
-  show imports the preview. The logged-in shell's component does the same with `filterline/preview.ts`, through
-  `filterline/lazy.ts` (R2).
+  show imports the preview. The component, on both shells since R4a, does the same with `filterline/preview.ts`,
+  through `filterline/lazy.ts` (R2).
 - **A dynamic `import()` is part of the visitor's import graph.** `categorypublic_source_test::imports()` reads
   both import lines and `import('...')`. A walk that read only import lines would let a module loaded on first
   use leave the walk in silence.
@@ -3348,20 +3345,18 @@ What a maintainer must not lose:
 
 ## The category showcase: the calendar as a React component (R1, 2026-10-27)
 
-Stage R1 of `docs/vitrine-react/PLAN.md`. **Two calendars until R4, on the owner's decision**: the logged-in shell
-draws `js/esm/src/daterange/DateRange.tsx`, the visitor's keeps `amd/src/daterange.js`. A rule of the control
-changes in both, and in `model.ts` (the component's transitions, named after the AMD functions) as well.
+Stage R1 of `docs/vitrine-react/PLAN.md`. The logged-in shell drew `js/esm/src/daterange/DateRange.tsx` from R1 and the
+visitor's from R4a: one calendar. `amd/src/daterange.js` mounts on no shell and stays for `period()`, the reading of an
+address both clients share; `model.ts` keeps the AMD functions' names.
 
 - **The contract is three events on the toolbar's `dim-daterange` region**, spelled in `categorylisting.js`
   (`CALENDAR`) and `DateRange.tsx` (`EVENTS`), held equal by `daterange_component_source_test`: the component
   sends `dim-daterange:mounted` once drawn and `:pick` (detail `{from, to}`, bubbling) where the AMD module called
-  `onpick`; the listing sends `:set` from `paintDates()` on both shells (no listener on the visitor's). The
+  `onpick`; the listing sends `:set` from `paintDates()` on both shells. The
   listeners go on before the node; the fields hide in the mounted listener alone, and the listing tells the
   period again there, for a quick option or Back pressed while the module was still loading.
-- **The specifier lives in `categoryvitrine` alone and reaches `mountCalendar()` as an argument.** The visitor's
-  import walk follows every `@moodle/lms/theme_dimensions/...` string of a shared module, so naming it in
-  `categorylisting` would put the component in the visitor's graph
-  (`test_the_visitors_graph_never_reaches_the_calendar_component`).
+- **The specifier lives in `categorylisting`'s `COMPONENTS` since R4a**, with the line's and the posters'; no client
+  names a component, and the visitor's walk reaches each through the shared listing (`categorypublic_source_test`).
 - **The mount is an APPENDED child** with `data-react-props` the props object itself (`{id, firstday, today, from,
   to}`): `react_autoinit` observes `childList` only. So the markup is region > mount node > `.dim-daterange`, one
   block wrapper deeper than the AMD calendar; the popover still positions against the region.
@@ -3383,10 +3378,10 @@ changes in both, and in `model.ts` (the component's transitions, named after the
 
 ## The category showcase: the filter line as a React component (R2, 2026-10-27)
 
-Stage R2 of `docs/vitrine-react/PLAN.md`. **Two filter lines until R4, on the owner's decision**: the logged-in shell
-draws `js/esm/src/filterline/FilterLine.tsx`, the visitor's keeps `amd/src/categoryline.js` with `categorypreview` and
-`categorymark`. A rule of the line changes in both, and in the module of the component that carries it (`steps.ts`,
-`measure.ts`, `suggest.ts`, `mark.ts`, `preview.ts`, named after the AMD functions).
+Stage R2 of `docs/vitrine-react/PLAN.md`. The logged-in shell drew `js/esm/src/filterline/FilterLine.tsx` from R2 and the
+visitor's from R4a (whose line has no star, and a scope only where the server draws one: the component draws what it
+reads). A rule of the line changes in the module of the component that carries it (`steps.ts`, `measure.ts`,
+`suggest.ts`, `mark.ts`, `preview.ts`, named after the AMD functions of `categoryline`, which no shell arms since R4a).
 
 - **The mount is the server's line itself.** `categorylisting`'s `mountLine()` writes `data-react-component` and
   `data-react-props` (`{form}`, the props object itself) on `[data-region="dim-line"]` and puts the line back where it
@@ -3417,9 +3412,9 @@ draws `js/esm/src/filterline/FilterLine.tsx`, the visitor's keeps `amd/src/categ
   `tellAnswer()`, called by `categoryvitrine` after the painters, the scope in `SCOPE`'s order). The four names are
   `LINE` in `categorylisting` and `EVENTS` in `FilterLine.tsx`, the mark `LINE_DRAWN`/`DRAWN`; the source test holds
   them equal. The component marks the line in its first commit's layout effect, so until then the painters paint the
-  server's line as before and the component reads what they painted. On the visitor's shell nothing is marked and
-  every painter paints as it always did. `categoryvitrine` reads the field delegated on the form (the component's
-  field replaces the server's) and never writes it (`onErase` and `focusTarget()`, read off the page).
+  server's line as before and the component reads what they painted; a line never handed over (no field, no listbox)
+  is never marked, and every painter paints it as it always did. Both clients read the field delegated on the form (the
+  component's field replaces the server's) and never write it (`onErase` and `focusTarget()`, read off the page).
 - **The calendar's node goes in after the line is handed over** (`init`: `mountLine()` before `mountCalendar()`). The
   line put back where it stands is seen by core's observer as leaving and coming back, which would unmount a calendar
   already inside it. The adoption itself is safe: it happens inside the first commit, before the observer's
@@ -3458,20 +3453,19 @@ draws `js/esm/src/filterline/FilterLine.tsx`, the visitor's keeps `amd/src/categ
 
 ## The category showcase: the panel and the posters as React components (R3, 2026-10-28)
 
-Stage R3 of `docs/vitrine-react/PLAN.md`. **Two implementations of the posters and their panel until R4, on the
-owner's decision**: the logged-in shell draws `js/esm/src/areas/Areas.tsx`, the visitor's keeps `amd/src/categoryareapanel.js`
-and `categoryposters.js`. A rule of the panel or the posters changes in both, and in the module of the tree that carries
-it (`panel.ts` for the panel's behaviour, `posters.ts` for the posters' result layer, `rail.ts`, `model.ts`, `mark.ts`),
-each named after the AMD function it stands for. Every rule of the EL-1, EL-2, EL-3 and round I sections binds both.
+Stage R3 of `docs/vitrine-react/PLAN.md`. The logged-in shell drew `js/esm/src/areas/Areas.tsx` from R3 and the
+visitor's from R4a, with the visitor's differences as props (the R4a section). A rule of the panel or the posters
+changes in the module of the tree that carries it (`panel.ts` for the panel's behaviour, `posters.ts` for the posters'
+result layer, `rail.ts`, `model.ts`, `mark.ts`), each named after the AMD function of `categoryareapanel` or
+`categoryposters` it stood for. Every rule of the EL-1, EL-2, EL-3 and round I sections binds it.
 
-- **The mount is an empty, hidden child of the areas section**, appended by `categorypanel`'s `mountAreas()` (the
-  logged-in module, so the specifier never reaches the visitor's graph), with `data-react-props` the props object
-  itself (`{}`). It draws no box, so the first paint is the server's to the pixel: the component never re-renders a
+- **The mount is an empty, hidden child of the areas section**, appended by `categorylisting`'s `mountAreas()` (since
+  R4a; `categorypanel` held it in R3), with `data-react-props` the props object itself (`{}` on the logged-in shell). It draws no box, so the first paint is the server's to the pixel: the component never re-renders a
   poster or a panel the server drew, it takes them over. Mounting on the panel's list item would not do: core's
   `react_autoinit` UNMOUNTS a removed node and mounts an added one, so the panel's moves between rows (`moveAfter()`)
   would remount it and lose its state; the areas section never moves. `mountAreas()` runs only where the areas carry a
-  panel, puts its three listeners on before it appends the node, and holds `theme_dimensions/categorypanel:areas` on
-  core's pending counter until `dim-areas:mounted`, so Behat never presses a poster that is still a link.
+  panel, puts its listeners on before it appends the node, and holds `theme_dimensions/categorylisting:areas` on
+  core's pending counter until `dim-areas:mounted`, so Behat never presses a poster that is not yet taken over.
 - **The ownership boundary.** The component owns, and is the only writer of, on the logged-in shell: the panel's
   FRAME (the one list item: hidden state, the three transition classes through `settle()` alone, the five integers and
   the colour on its style, its DOM order; `panel.ts`); the posters' RESULT LAYER (pills, `data-count`/`resultcount`/
@@ -3513,9 +3507,8 @@ each named after the AMD function it stands for. Every rule of the EL-1, EL-2, E
   the component's `arm()` on its first opening, close, order or answer. Every write of the posters' layer and the
   rail goes through `setHidden`/`setClass`/`setAttr`, which write only a change, so a pass that agrees with the page
   invalidates no style.
-- **Only the logged-in shell's controls exist in the component**: posters are buttons (no `links`, no `onSpace`), a
-  question is asked every time (no `question`/`quiet`), and a failure is the inline error with its retry. The visitor's
-  options stay `categoryareapanel`'s `arm()` options until R4 moves them into the component as props.
+- **The logged-in shell passes no options**: posters are buttons, a question is asked every time, a failure is the
+  inline error with its retry, and the one matching area opens by itself. The visitor's options arrived in R4a.
 - **Jest is the behaviour gate** (`js/esm/tests/areas`: `model`, `posters`, `Areas`, 32 tests over `page.ts`, a page
   with the templates' hooks and a stand-in of `category_panel`): the latest request writing after each async render
   (the opening's turn, the request's ticket, the transplant's paint), the skeleton never outliving the answer, every
@@ -3528,6 +3521,77 @@ each named after the AMD function it stands for. Every rule of the EL-1, EL-2, E
   `js_areas_no_amd_panel`, `js_areas_events_spelled`. The panel's older gates on `categoryareapanel`/`categoryposters`
   hold the visitor's shell; `js_panel_sends_no_direct`, `js_root_panel_carries_query` and `js_panel_period_read` still
   hold `categorypanel`'s `panelArgs()`, which the logged-in panel asks through.
+
+## The category showcase: the visitor's shell on the React components (R4a, 2026-10-28)
+
+Stage R4a of `docs/vitrine-react/PLAN.md`, the first half of R4 (R4 is split in two to keep each pull request under MDL
+Shield's 3,000 effective lines; R4b builds the one listing store). The visitor's live client (`categorypublic`, armed
+by `categorypublicclient`) draws the calendar, the filter line and the posters with their panel with the logged-in
+shell's components. Every rule of the S1-S4, R1, R2 and R3 sections binds it. What a maintainer must not lose:
+
+- **The components are named once, in `categorylisting`'s `COMPONENTS`, and mounted by its three mounts**:
+  `mountCalendar(root, state, onpick)`, `mountLine(root, dropTerm)` and `mountAreas(areas, props, client)`. No client
+  names a specifier; `categorypublic_source_test::test_the_visitors_graph_reaches_each_component_named_once` counts them
+  per file. The visitor hands its line over before the calendar goes in (R2's reason) and its posters before the root
+  without a search line returns (the root's directory has posters).
+- **The visitor's graph reaches the components by design, and names nothing of the logged-in shell, comments
+  included.** `test_nothing_the_walk_reaches_names_the_logged_in_shell` reads every module of the walk from the
+  visitor's module and from the bridge - `categorylisting`, `categorymark`, `daterange` and all of `js/esm/src` the
+  components import - raw and in both builds, for `categoryvitrine`, `categorypanel` and `categorystar`; the logged-in
+  services are the older test's. A docblock that explains the component by naming the logged-in module answering it
+  fails the test: say "the logged-in shell" (`categorylisting` and the `areas` docblocks were rewritten so).
+- **The visitor's differences are the posters' component's options, from the mount's props** (`panel.ts`
+  `optionsOf()`, anything but the exact value reads as the logged-in shell's): `{links: true, quiet: 120, autoopen:
+  false}` (`categorypublic`'s `AREAS_PROPS`) against `{}`. `links` keeps the server's `<a>` and announces it as a
+  button (`posters.ts` `driven()`, `convertPoster()`, `setExpandable()` take it off a link that opens nothing),
+  answers Space (`onSpace()`) and leaves a modified press to the link (`elsewhere()`); `quiet` delays every question
+  and the skeleton by its milliseconds and drops a question the reader pressed past; `autoopen: false` is the
+  visitor's shell, which never opened an area by itself.
+- **Two answers are events, because they are the client's to compute**: `dim-areas:question` (detail `{poster, psort,
+  question}`: the visitor's `panelQuestion()`, its request's JSON) makes a question asked once per opening - a drawn
+  panel counts its address's question as asked (`adopt()`), and every opening or closing takes a ticket, so the same
+  question about a new opening is asked again; `dim-areas:unanswered` (detail `{poster, psort, taken}`) offers a
+  failure before the inline error, and the visitor's `panelFailed()` takes it by loading the poster's link. A client
+  hearing neither (the logged-in one) gets R3's behaviour. `mountAreas()` hears them only where the client passes the
+  function; the names are `AREAS` in `categorylisting` and `EVENTS` in `panel.ts`.
+- **The visitor answers the components as the logged-in client does, with its own service**: `dim-areas:ask` with the
+  public call's promise (`askPanel()`: a public area by its id, a merely listed one as a slice), `dim-vitrine:pending`
+  and `:criteria` on the document (its `EVENTS`; the component writes the posters' shells from the accordion, and
+  nothing of the visitor's writes a poster but its link), `tellAnswer()` after the painters, the search read delegated
+  on the form, the eraser and `focusTarget()` never writing the component's field. A failed rows request still loads
+  the address (S1-S4); it sends no `:failed`, because the page that loads next is the answer.
+- **A line moved after the hand-over is mounted again, and must be drawn again.** Core's `react_autoinit` unmounts a
+  mounted node that leaves the document (a move of the line or of any ancestor) and mounts it when it comes back; the
+  filter line's container is the server's line itself, so React's unmount empties it and the next mount read nothing:
+  no field, no `dim-line:mounted`, `theme_dimensions/categorylisting:line` held for ever (reproduced in a browser by
+  moving the line after its mount; the CI timeout of the same day was the next bullet's). `FilterLine`'s unmount gives
+  the adopted frames' nodes back to the server's frames and keeps them with the last state in `KEPT`, by node, and a
+  mount finds them there before it reads markup. A line it cannot draw sends `dim-line:failed`, which `mountLine()`
+  hears like `mounted` (gate `js_line_failed_released`); the calendar's mounted listener is not `once`, so a calendar
+  mounted again with the line is told the period again (gate `js_calendar_mounted_every_time`). Jest holds it on the
+  visitor's own markup (`js/esm/tests/visitor`): recapture `page.ts` from an anonymous page when the toolbar or the
+  posters' templates change.
+- **The toolbar form's id is read as an attribute, never as `form.id`.** The visitor's script entry (`category.php`,
+  the page a site without the router serves, `mdl ci` and GitHub's CI included) carries the category in a hidden field
+  named `id`, and a form's named-control lookup makes `form.id` that field: `mountLine()` handed the component
+  `{"form":{}}`, it found no line, and with no line it had nowhere to send `dim-line:failed`, so the pending mount held
+  every step of the five visitor client scenarios (CI, 2026-10-28; found by a throwaway build that wrote the line's
+  state into a pending key, which Behat's timeout message prints). The routed page has no such field, which is why the
+  stacks never showed it. Gate `js_line_form_id_attribute`; use `getAttribute()` for any attribute of a form.
+- **The replaced AMD modules stay, unimported, until R5**: `categoryline`, `categorypreview`, `categoryareapanel`,
+  `categoryposters` (3,918 lines with their builds and source tests) would have put this pull request over MDL Shield's
+  limit. Their source tests and their gates still hold their files; `daterange` keeps `period()` for both clients and
+  no shell mounts its calendar (`paintDates()` no longer calls its `set()`).
+- **The first paint's module list is unchanged** (`first_paint_budget_test`: `covervideo`, `categorycoursemodal`,
+  `categorypublic` and one string). What moves is the graph behind `categorypublic`: three AMD modules
+  (`categoryline`, `categoryareapanel`, `categoryposters`) leave it and the components' ES modules join it, as they
+  did on the logged-in pages in R1-R3 (four for the calendar, eight for the line, six for the posters).
+- **Gates**: the R4a block at the end of `mutations/gates.conf` (25, `js_public_*`, `js_areas_*`, `js_panel_*`, three `js_line_*`/`js_calendar_*`); seven
+  S1-S4 panel gates and the R3 mount's gates were retargeted to the component's files and to `categorylisting`, and
+  `js_calendar_option_guard`, `js_calendar_visitor_no_component`, `js_line_visitor_no_component` and
+  `js_areas_visitor_no_component` were retired. The component's behaviour in both modes is Jest's
+  (`js/esm/tests/areas/Areas.test.tsx`, 13 visitor tests, each guard mutation-checked by hand); only Behat
+  (`theme_dimensions_category_public_client.feature`) runs the wiring in a browser.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 
