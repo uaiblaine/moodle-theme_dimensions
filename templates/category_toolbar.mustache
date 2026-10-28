@@ -28,8 +28,17 @@
     (dim-line-search) with its eraser; the favourites star (dim-line-star); the
     Filters disclosure (dim-filters); the Organise menu (dim-organise); the view
     toggle (dim-view-row, icons only, List first); core's action menu for the
-    category's managers. With no JavaScript the line wraps where it does not fit
-    and every control still submits.
+    category's managers (dim-line-manage). With no JavaScript the line wraps
+    where it does not fit and every control still submits.
+
+    On the logged-in shell the line is a React component's mount
+    (js/esm/src/filterline/FilterLine.tsx, stage R2), which draws this same
+    markup from the markup it replaces and adopts three subtrees of it whole,
+    never redrawn: the Filters panel (dim-filters-panel), the Organise menu
+    (dim-organise-menu) and the managers' menu (dim-line-manage). A change of
+    the line's own markup here changes the component too; the Jest fixture
+    js/esm/tests/filterline/toolbar.ts is this template rendered from its
+    example context, and filterline_component_source_test holds the two equal.
 
     The scope fieldset and the panel's "More statuses" fieldset are ONE radio
     group by name (chip), so a choice holds across both; each carries
@@ -364,7 +373,7 @@
             {{/views}}
         </div>
         {{#hasmanageactions}}
-        <div class="dim-toolbar__manage">{{{manageactions}}}</div>
+        <div class="dim-toolbar__manage" data-region="dim-line-manage">{{{manageactions}}}</div>
         {{/hasmanageactions}}
         <button type="button" class="dim-line__iconbtn dim-line__searchclose" data-action="dim-search-close" aria-label="{{searchcloselabel}}" title="{{searchcloselabel}}"><i class="fa fa-xmark" aria-hidden="true"></i></button>
         {{#suggestid}}

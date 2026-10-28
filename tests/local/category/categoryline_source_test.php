@@ -270,12 +270,13 @@ final class categoryline_source_test extends \basic_testcase {
      *
      * The client's own handler of that control makes the one request; the client's dropTerm takes the
      * term out of its state before the press, so that request carries none, and the field is emptied
-     * and the search stays open. Both clients arm the line with their dropTerm and repaint it from
-     * every answer.
+     * and the search stays open. The visitor's client arms this line with its dropTerm and repaints it
+     * from every answer; the logged-in client hands its line to the React component of stage R2 instead
+     * (filterline_component_source_test holds that half).
      *
      * Changes that must make it fail: the term dropped after the press (a request with the term, then
-     * one without); a request of the line's own; the search closed after a pick; a client not arming
-     * the line or not repainting it.
+     * one without); a request of the line's own; the search closed after a pick; the visitor's client not
+     * arming the line or not repainting it.
      */
     public function test_a_suggestion_presses_its_control_after_the_term_is_dropped(): void {
         $choose = $this->body('choose');
@@ -286,7 +287,7 @@ final class categoryline_source_test extends \basic_testcase {
         $code = $this->code();
         $this->assertStringNotContainsString('core/ajax', $code, 'The line makes no request of its own.');
         $this->assertStringNotContainsString('methodname', $code);
-        foreach (['categoryvitrine' => 'paintEraser();', 'categorypublic' => 'Listing.paintEraser(root);'] as $client => $eraser) {
+        foreach (['categorypublic' => 'Listing.paintEraser(root);'] as $client => $eraser) {
             $source = $this->source($client);
             $this->assertStringContainsString("import * as Line from 'theme_dimensions/categoryline';", $source);
             $this->assertStringContainsString('Line.arm(root, {dropTerm: dropTerm});', $source);

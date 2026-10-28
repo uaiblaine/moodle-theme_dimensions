@@ -410,6 +410,40 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
+     * The visitor's page never reaches the logged-in shell's filter line component, which the walk does see.
+     *
+     * Two filter lines until stage R4 of docs/vitrine-react/PLAN.md: the logged-in module names the React
+     * component and hands it to the shared mountLine(), the visitor's arms categoryline (with categorypreview
+     * and categorymark), exactly as before. The control walks from the logged-in module, through the
+     * component's relative imports and its preview imported on first use, so a walk blind to a component
+     * named for a mount does not pass this test.
+     *
+     * Changes that must make it fail: the specifier named in a shared module (categorylisting); the
+     * visitor's module handing its line to the component.
+     */
+    public function test_the_visitors_graph_never_reaches_the_filter_line_component(): void {
+        $component = self::ESM . 'filterline/FilterLine';
+        $logged = $this->graph('categoryvitrine');
+        $this->assertContains($component, $logged, 'The control: the walk sees the component.');
+        $this->assertContains(self::ESM . 'filterline/preview', $logged, 'And the preview it imports on first use.');
+        $this->assertNotContains('categoryline', $logged, 'The logged-in shell no longer arms the AMD line.');
+        $graph = $this->graph(self::MODULE);
+        foreach (['categoryline', 'categorypreview', 'categorymark'] as $module) {
+            $this->assertContains($module, $graph, "The visitor keeps {$module}.");
+        }
+        foreach ($graph as $module) {
+            $this->assertStringStartsNotWith(self::ESM . 'filterline/', $module, 'The visitor\'s page reaches ' . $module . '.');
+            $this->assertStringNotContainsString(
+                '@moodle/lms/theme_dimensions/filterline',
+                $this->code($module),
+                $module . ' names the logged-in filter line component.'
+            );
+        }
+        $this->assertStringContainsString('Line.arm(root, {dropTerm: dropTerm});', $this->code());
+        $this->assertStringNotContainsString('Listing.mountLine(', $this->code(), 'The visitor hands its line to nothing.');
+    }
+
+    /**
      * Nothing a visitor's page loads reads the session, stars a course or asks a logged-in service.
      *
      * The walk covers every theme module the visitor's module loads, and for each one its imports,

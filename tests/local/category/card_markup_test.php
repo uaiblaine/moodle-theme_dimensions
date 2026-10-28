@@ -527,6 +527,9 @@ final class card_markup_test extends \advanced_testcase {
                 . '[@data-label-filters][@data-label-start][@hidden]',
             'dim-filters-panel' => '//details[@data-region="dim-filters"]/div[@data-region="dim-filters-panel"]',
             'dim-organise-menu' => '//details[@data-region="dim-organise"]/div[@data-region="dim-organise-menu"]',
+            // The third frame the logged-in shell's line component adopts whole (stage R2): core's managers' menu.
+            'dim-line-manage' => '//*[@data-region="dim-line"]/div[@data-region="dim-line-manage"]'
+                . '/div[' . self::has_class('action-menu') . ']',
             'dim-showas' => '//*[@data-region="dim-organise-menu"]/*[@data-region="dim-showas"][@role="group"]'
                 . '/button[@type="button"][@data-action="dim-view"][@value][@aria-pressed]',
         ];

@@ -990,9 +990,14 @@ body.dim-category {
         gap: 10px;
     }
 
+    // The search's basis is the first step's floor (13rem, the dim-line--s1 rule below), so a line that
+    // wraps before its client measures it breaks its row exactly where that step stops fitting: at a
+    // width the client keeps at the first step, the server's first paint is already the folded line and
+    // nothing moves when the step arrives. A wider basis put a control on a second row the step then
+    // pulled back up, the line's one layout shift (docs/vitrine-react/PLAN.md, section 5.2.1).
     .dim-toolbar__search {
         position: relative;
-        flex: 1 1 14rem;
+        flex: 1 1 13rem;
         min-width: 0;
     }
 

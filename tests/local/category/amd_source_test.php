@@ -244,8 +244,11 @@ final class amd_source_test extends \basic_testcase {
      */
     public function test_the_search_is_debounced_at_three_hundred_milliseconds(): void {
         $this->assertMatchesRegularExpression('~^const SEARCH_DEBOUNCE = 300;$~m', $this->source());
-        $this->assertStringContainsString(
-            "search.addEventListener('input', () => onSearchInput(search));",
+        // Delegated on the form: the line's component (stage R2) replaces the server's field with its own.
+        $this->assertMatchesRegularExpression(
+            "~form\\.addEventListener\\('input', \\(event\\) => \\{\\s*"
+                . 'const search = closestOf\\(event, SELECTORS\\.search\\);\\s*'
+                . 'if \\(search\\) \\{\\s*onSearchInput\\(search\\);~',
             $this->body('listen')
         );
         $this->assertMatchesRegularExpression(
@@ -984,11 +987,11 @@ final class amd_source_test extends \basic_testcase {
             $this->assertStringContainsString($step, $clear, 'Clearing no longer runs ' . $step);
         }
         $this->assertMatchesRegularExpression(
-            '~const search = Line\.focusTarget\(root\.querySelector\(SELECTORS\.search\)\);\s*if \(search\) \{\s*'
-                . 'search\.focus\(\{preventScroll: true\}\);~',
+            '~const search = focusTarget\(\);\s*if \(search\) \{\s*search\.focus\(\{preventScroll: true\}\);~',
             $clear,
             'The focus goes to the search box, without a scroll - or to its icon where the line folded the field away.'
         );
+        $this->assertStringContainsString('const focusTarget = () => Listing.focusTarget(root);', $this->source());
         $this->assertLessThan(
             (int) strpos($clear, 'search.focus('),
             (int) strpos($clear, 'requestRows(0, false);'),
