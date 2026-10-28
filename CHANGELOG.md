@@ -5,6 +5,21 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A visitor's flat tree links every child it names, a merely listed one included** (2026100533). On a public
+  category page in a flat organisation (A-Z or the recent sort) each child holding a public course but not itself
+  public was drawn as `<span class="dim-tree__text">`, though the server already honoured its `cat=`: the tree's entry
+  was gated on the population's `linkable`, which says whether the child's OWN page is public (D20). That gate belongs
+  to the posters and the accordion, whose links open that page; a tree entry is a filter of the parent's page and
+  only regroups rows the page already lists. `category_listing::tree()` now links every entry, its `linkable` key, the
+  template's text branch and `.dim-tree__text` are gone, and the visitor's client handles the new links in place as it
+  did the others. And the tree a server draws for a visitor under a filter is the tree at rest: it was built from the
+  narrowed population, so a chosen child, or its reloaded address, left that child alone in the tree and its sibling no
+  choice at all. `population::accordion_tree()` is now `tree_at_rest()` and also feeds a visitor's flat tree, on the
+  page's own request only (`criteria::$withposters`): one grouped statement, which the web service's filter fetch, whose
+  answer carries no tree, never pays. `category_listing_test::test_a_visitors_flat_tree_links_a_listed_child_as_a_filter_of_this_page`
+  pins both with the public child and a child holding no public course as controls, and `budget_test` the +1 on the
+  page and the 0 on the service; mutation gates `tree_visitor_listed_link`, `tree_at_rest_flat`,
+  `tree_at_rest_service_free`.
 - **A person can have a Boost Union flavour as their own look: the choice and how it reaches the page** (2026100532;
   S1 of `docs/flavourchoice/PLAN.md`, no interface yet). The setting `theme_dimensions/selectableflavours` (General
   settings, *Look*) lists the flavours a logged-in person may choose; the preference `theme_dimensions_flavour` holds

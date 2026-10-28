@@ -1926,6 +1926,67 @@ final class category_listing_test extends \advanced_testcase {
     }
 
     /**
+     * A visitor's flat tree links a merely listed child, as a filter of this page, like a public one.
+     *
+     * The population marks the listed child not `linkable` because it has no public page of its
+     * own (D20), and the posters keep that gate: theirs is the child's page. The tree's entry never
+     * leaves this page, so it is a link carrying `cat`, and following it narrows the listing to the
+     * public course the page already lists while the tree stays the one at rest. The public child is
+     * the control of the link and of the sibling kept, and a listed child holding no public course
+     * the control of the naming: the visitor's tree never offers a filter that opens onto nothing.
+     *
+     * @return void
+     */
+    public function test_a_visitors_flat_tree_links_a_listed_child_as_a_filter_of_this_page(): void {
+        $this->seed_public();
+        $this->setAdminUser();
+        $generator = self::getDataGenerator();
+        $listed = $generator->create_category(['parent' => $this->ids['root'], 'name' => 'Listada']);
+        $course = $generator->create_course(['category' => $listed->id, 'fullname' => 'Curso Listado Publico']);
+        \local_unlistedcourses\discoverability::set_state(
+            (int) $course->id,
+            \local_unlistedcourses\discoverability::STATE_PUBLIC,
+            (int) get_admin()->id
+        );
+        $empty = $generator->create_category(['parent' => $this->ids['root'], 'name' => 'Vazia']);
+        $generator->create_course(['category' => $empty->id, 'fullname' => 'Curso Interno Vazio']);
+        $script = '/theme/dimensions/category.php?id=' . $this->ids['root'];
+
+        $this->become(null);
+        $flat = $this->export(['anonymous' => true, 'sort' => criteria::SORT_NAME]);
+        $tree = array_column($flat->tree, null, 'name');
+        $this->assertArrayNotHasKey('Vazia', $tree, 'A child holding no public course is not named at all.');
+        foreach (['Listada' => (int) $listed->id, 'Brigada' => $this->ids['child']] as $name => $id) {
+            $this->assertArrayHasKey($name, $tree);
+            $this->assertStringContainsString($script, $tree[$name]['url'], $name . ' is an address of this public page.');
+            $this->assertStringContainsString(
+                criteria::PARAM_CAT . '=' . $id,
+                $tree[$name]['url'],
+                $name . ' narrows it to the child.'
+            );
+        }
+
+        // Following the listed child's entry: the criterion stands and the page holds its public course alone.
+        self::forget();
+        $narrowed = $this->export(['anonymous' => true, 'sort' => criteria::SORT_NAME, 'cat' => (int) $listed->id]);
+        $this->assertTrue(array_column($narrowed->tree, 'current', 'name')['Listada'], 'The filter is in force.');
+        $this->assertSame([(int) $course->id], array_keys($this->cards($narrowed)));
+        /* The tree is drawn at rest, not from the narrowed population: the sibling stays a choice,
+           and the child holding no public course is still not one. */
+        $this->assertSame(
+            ['Vitrine & Cia', 'Brigada', 'Listada'],
+            array_column($narrowed->tree, 'name'),
+            'Choosing one child keeps its sibling in the tree.'
+        );
+
+        // The posters keep the own-page gate: the listed child is a text poster, the public one a link.
+        self::forget();
+        $posters = array_column($this->export(['anonymous' => true])->areas['posters'], null, 'name');
+        $this->assertTrue($posters['Listada']['istext'], 'A listed child has no page a visitor may open.');
+        $this->assertFalse($posters['Brigada']['istext']);
+    }
+
+    /**
      * A directory card's description and its image are built by the server: a plain excerpt and a branding URL.
      *
      * A markup test rendering the template from its own example context proves the template

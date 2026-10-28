@@ -176,3 +176,26 @@ Feature: A visitor's public category page narrows in place once the site opens i
     And the url should match "[?&]open=[0-9]+"
     And "//article[@data-name='Area listada']//a[@data-region='dim-poster-control'][@aria-expanded='true']" "xpath_element" should exist
     And "Username" "field" should not exist
+
+  Scenario: A visitor's flat tree narrows the listing in place to a merely listed area
+    # The listed area has no page a visitor may open, so its poster is text; its tree entry is a
+    # filter of this page, a link the module fetches like any other.
+    Given the following config values are set as admin:
+      | categorypublicclient | 1 | theme_dimensions |
+    And the following "categories" exist:
+      | name         | category | idnumber |
+      | Area listada | PUBCAT   | LISTAREA |
+    And the following "courses" exist:
+      | fullname      | shortname | category | customfield_dimensions_model | startdate   |
+      | Curso Listado | LISTCO    | LISTAREA | 1                          | ##+2 days## |
+    And the course "LISTCO" is "public" for discoverability
+    When I am on the "PUBCAT|sort=name" "theme_dimensions > Public category page" page
+    Then I should see "3" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
+    When I mark the page in the browser
+    And I click on "Area listada" "link" in the ".dim-vitrine__tree" "css_element"
+    Then I should see "1" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
+    And I should see "Curso Listado" in the "[data-region='dim-vitrine-grid']" "css_element"
+    And "//nav[@data-region='dim-vitrine-tree']//a[@aria-current='true'][contains(., 'Area listada')]" "xpath_element" should exist
+    And the url should match "[?&]cat=[0-9]+"
+    And the page in the browser is the one I marked
+    And "Username" "field" should not exist

@@ -98,7 +98,7 @@ final class page_result {
      *   {@see $directory}, each counting that area's matches. The count spans the child's whole
      *   subtree, post-filter, and carries the population's probe cap, so the entries and $total
      *   partition the subtree between them. The set does not follow a criterion: for a visitor it
-     *   is the children holding a public course at rest ({@see population::accordion_tree()}), so
+     *   is the children holding a public course at rest ({@see population::tree_at_rest()}), so
      *   a child the criterion misses is an entry counting 0 rather than a missing one.
      */
     public array $accordion = [];
