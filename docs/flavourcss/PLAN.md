@@ -1,6 +1,6 @@
 # Compiling the flavours' stylesheets ahead of time
 
-Status: **proposal, 2026-10-28, nothing implemented.** It replaces the shape proposed on 2026-10-27
+Status: **S0 done (probes, 2026-10-28); S1 onwards not started.** It replaces the shape proposed on 2026-10-27
 (a scheduled detector queuing one adhoc builder per flavour): section 3 found that Boost Union
 cannot compile two flavours in one PHP process. Section 8 lists the defaults this plan picked; each
 can be overturned before its stage starts.
@@ -83,6 +83,15 @@ setting through it during the compile.
 id1: '#7a1f2b'
 id999 (no such row): '#7a1f2b'
 ```
+
+**Measured on m503b, 2026-10-28 (S0).** Two flavours, A `#7a1f2b` and B `#1f6a7a`, compiled by
+`theme_config::get_css_content()` in the cron container (no Xdebug):
+
+| Run | `--bs-primary` | A's colour | B's colour | Time | Peak |
+|---|---|---|---|---|---|
+| A, then B, one process: A | `#7a1f2b` | 91 | 0 | 9.1 s | 145 MB |
+| A, then B, one process: **B** | **`#7a1f2b`** | **91** | **0** | 9.7 s | 150 MB |
+| B alone, fresh process | `#1f6a7a` | 0 | 91 | 8.2 s | 145 MB |
 
 So a second flavour compiled in the same process gets the first flavour's brand colour, raw SCSS
 and every other look field, silently. Consequences:
@@ -190,13 +199,21 @@ The CLI `--all` runs the same planner, for a deploy script right after `upgrade.
 
 ## 5. Stages
 
-**S0. Probes, before any code** (m503b, after asking the sessions that use it).
-- Create a second flavour with another brand colour. Compile flavour 1 then flavour 2 in one
-  process and in two; show the poisoned sheet carries flavour 1's colour and the second does not.
-  This turns section 3.3 into a measured fact for the CHANGELOG and the upstream report.
-- Confirm the cron sidecar and the web container share `localcachedir` and `tempdir` (the dev stacks
-  mount one `moodledata`), and read what `pathtophp` the stacks set.
-- Measure the child's overhead (bootstrap without compile) and the no-op run of the planner.
+**S0. Probes, before any code. Done 2026-10-28 on m503b** (the test flavours were inserted with no
+category or cohort, compiled from the CLI with no cache written, and deleted).
+- **Poisoning:** measured, table in section 3.3. The compile itself is 8-10 s and 145-150 MB on
+  m503b, above m503's ~7 s and ~120 MB; the stage S3 measurement settles the figure for the README.
+- **Static guard:** `ReflectionFunction::getStaticVariables()` reads Boost Union's static. It is
+  `NULL` in a fresh process and holds record 2 after a lookup of flavour 2, after which a lookup of
+  flavour 1 answers flavour 2's colour. So step 2 of section 4.2 can be written as designed.
+- **Shared directories:** the web and cron containers mount the same `moodledata` volume, and
+  `localcachedir` and `tempdir` are its defaults (`moodledata/localcache`, `moodledata/temp`). A
+  file the cron node writes is the file the web node serves.
+- **PHP binary:** `PHP_BINARY` in the cron container is `/usr/local/bin/php`, `config.php` sets
+  `$CFG->pathtophp` to the same path, and `disable_functions` is empty, so `proc_open` is available.
+- **Overheads:** a child's bootstrap (`config.php` only) takes 0.5-1.0 s and 16 MB, about a tenth of
+  a compile. The planner's no-op check (one query and one `file_exists()` per flavour) takes under
+  1 ms, which is the task's whole cost per minute while everything is built.
 
 **S1. Builder.**
 - What: `builder.php`, the copied helpers, the lang strings for its errors.
