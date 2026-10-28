@@ -65,7 +65,7 @@ import {SELECTORS, answered, read, stated} from './model';
 import type {Answer, Line, Told} from './model';
 import {MIN_TERM, offers, remember, suggest} from './suggest';
 import type {Offer, Rest} from './suggest';
-import {CLASSES as STEP_CLASSES, TWO_LINES, choose, morphs, paint, same} from './steps';
+import {CLASSES as STEP_CLASSES, TWO_LINES, choose, morphs, paint, same, settled} from './steps';
 import type {Fold} from './steps';
 
 /** The events the line and the listing exchange on the line; amd/src/categorylisting.js spells them too. */
@@ -470,8 +470,8 @@ const FilterLine = ({form}: FilterLineProps) => {
         if (!line || !line.isConnected) {
             return;
         }
-        st.widths = stepWidths(line, st.fold);
         st.width = contentWidth(line);
+        st.widths = stepWidths(line, st.fold, st.width);
         refold();
     };
 
@@ -798,8 +798,8 @@ const FilterLine = ({form}: FilterLineProps) => {
         listeners.forEach(([target, type, listener, options]) => target.addEventListener(type, listener, options));
 
         remember(toolbar, field.current ? field.current.value : '', rest.current);
-        st.widths = stepWidths(line, null);
         st.width = contentWidth(line);
+        st.widths = stepWidths(line, null, st.width);
         refold();
 
         // The line's own width, never the viewport's: a drawer opening changes the one and not the other.
@@ -835,7 +835,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     // The first commit's effect, once: every later change reaches the listeners through api.
     }, []);
 
-    api.current.remeasureWidth = (() => refold()) as (...args: never[]) => void;
+    // A width the tries measured so far decide is a fold alone; a line narrowed past them measures the rest.
+    api.current.remeasureWidth = (() => (settled(st.widths, st.width) ? refold() : remeasure())) as (...args: never[]) => void;
 
     // What changes a control's width: the words, the counts, which slots there are.
     const signature = model ? JSON.stringify([

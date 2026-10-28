@@ -15,7 +15,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-import { CLASSES, TRIES, paint } from "./steps";
+import { CLASSES, TOLERANCE, TRIES, paint } from "./steps";
 const GAP = 6;
 const REVEAL_PAD = 16;
 const MIN_LIST_WIDTH = 288;
@@ -48,7 +48,7 @@ const requiredWidth = /* @__PURE__ */ __name((line) => {
   });
   return end > start ? end - start - slack : 0;
 }, "requiredWidth");
-const stepWidths = /* @__PURE__ */ __name((line, drawn) => {
+const stepWidths = /* @__PURE__ */ __name((line, drawn, width) => {
   const searching = line.classList.contains(CLASSES.searching);
   const scope = line.querySelector(SCOPE);
   const absent = scope ? Array.from(scope.querySelectorAll("label[hidden]")) : [];
@@ -57,10 +57,14 @@ const stepWidths = /* @__PURE__ */ __name((line, drawn) => {
   absent.forEach((label) => {
     label.hidden = false;
   });
-  const widths = TRIES.map((fold) => {
+  const widths = [];
+  for (const fold of TRIES) {
     paint(line, fold);
-    return requiredWidth(line);
-  });
+    widths.push(requiredWidth(line));
+    if (width !== void 0 && widths[widths.length - 1] <= width + TOLERANCE) {
+      break;
+    }
+  }
   absent.forEach((label) => {
     label.hidden = true;
   });

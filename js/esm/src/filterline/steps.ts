@@ -89,6 +89,19 @@ export const choose = (required: number[], width: number): Fold => {
 };
 
 /**
+ * Whether the widths measured so far decide the fold of a line of a width.
+ *
+ * {@see ./measure stepWidths()} stops at the first try that fits, so a line that narrows past it needs the
+ * tries left out measured before choose() may answer: without them it would jump to the last try.
+ *
+ * @param {Array} required The width each try measured so far needs, in TRIES' order.
+ * @param {number} width The line's own content width.
+ * @returns {boolean}
+ */
+export const settled = (required: number[], width: number): boolean =>
+    required.length >= TRIES.length || required.some((need) => need <= width + TOLERANCE);
+
+/**
  * Whether the search grows over the line at a step.
  *
  * @param {object} fold The fold.

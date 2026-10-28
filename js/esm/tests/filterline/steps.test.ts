@@ -20,7 +20,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {TOLERANCE, TRIES, choose, morphs, paint, same} from '../../src/filterline/steps';
+import {TOLERANCE, TRIES, choose, morphs, paint, same, settled} from '../../src/filterline/steps';
 
 /** The widths each try needs on a line of the example: full, no word, folded, two lines, two lines folded. */
 const WIDTHS = [900, 840, 620, 480, 300];
@@ -43,6 +43,18 @@ describe('theme_dimensions/filterline/steps', () => {
         expect(choose(WIDTHS, 320)).toEqual({step: 's4', folded: true});
         expect(choose(WIDTHS, 10)).toEqual({step: 's4', folded: true});
         expect(choose([], 2000)).toEqual({step: 's4', folded: true});
+    });
+
+    it('lets the widths measured so far decide only while one of them fits, or every try was measured', () => {
+        // A wide line measured the first try alone: it decides any width the first try fits.
+        expect(settled([900], 1200)).toBe(true);
+        expect(settled([900], 900 - TOLERANCE)).toBe(true);
+        // Narrowed past it, the tries left out are needed: choose() would jump to the last try.
+        expect(settled([900], 898)).toBe(false);
+        expect(settled([900, 840, 620], 600)).toBe(false);
+        expect(settled([900, 840, 620], 700)).toBe(true);
+        expect(settled(WIDTHS, 10)).toBe(true);
+        expect(settled([], 2000)).toBe(false);
     });
 
     it('grows the search over the line from the third step only', () => {
