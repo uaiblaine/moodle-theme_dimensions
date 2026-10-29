@@ -68,7 +68,10 @@ final class categorypanel_source_test extends \basic_testcase {
      * @return string
      */
     private function source(string $module = 'categorypanel'): string {
-        $path = $this->plugin_root() . '/amd/src/' . $module . '.js';
+        // A name with a slash is a module of the shared listing, under js/esm/src (R4b1).
+        $path = str_contains($module, '/')
+            ? $this->plugin_root() . '/js/esm/src/' . $module . '.ts'
+            : $this->plugin_root() . '/amd/src/' . $module . '.js';
         $this->assertFileExists($path);
         return (string) file_get_contents($path);
     }
@@ -126,7 +129,8 @@ final class categorypanel_source_test extends \basic_testcase {
      * @return string The body, without the signature or the closing brace.
      */
     private function body(string $name, string $module = 'categorypanel'): string {
-        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n\};~s';
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
+            . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
         $found = preg_match($pattern, $this->source($module), $matches);
         if ($found !== 1 && $module === 'categorypanel') {
             $found = preg_match($pattern, $this->source(self::SHARED), $matches);
@@ -214,8 +218,8 @@ final class categorypanel_source_test extends \basic_testcase {
             'The logged-in panel asks through this module and nothing else.'
         );
         $this->assertStringContainsString(
-            'event.detail.answer = client.ask(event.detail.poster, event.detail.psort);',
-            $this->body('mountAreas', 'categorylisting'),
+            'detail.answer = client.ask(detail.poster, detail.psort);',
+            $this->body('mountAreas', 'listing/mounts'),
             'And the shared mount hands the component this module\'s answer.'
         );
         /* The answer's context is the server's panel, plus the cards the service returns at the top
@@ -653,9 +657,11 @@ final class categorypanel_source_test extends \basic_testcase {
                 . 'if \(st\.open\) \{\s*place\(\);\s*request\(\);\s*\}\s*autoOpen\(word\);~s',
             $component
         );
+        // The component's names are the shared listing's since R4b1 (listing/events.ts).
+        $this->assertStringContainsString('export const EVENTS = {...AREAS, ...LISTING};', $component);
         $this->assertMatchesRegularExpression(
             "~pending: 'dim-vitrine:pending',\s*criteria: 'dim-vitrine:criteria',\s*failed: 'dim-vitrine:failed',~",
-            $component
+            (string) file_get_contents($this->plugin_root() . '/js/esm/src/listing/events.ts')
         );
         $this->assertMatchesRegularExpression("~autoopened: 'dim-panel:autoopened',~", $this->source(self::SHARED));
 
@@ -710,7 +716,7 @@ final class categorypanel_source_test extends \basic_testcase {
         );
         $this->assertMatchesRegularExpression(
             "~failed: 'dim-vitrine:failed',~",
-            (string) file_get_contents($this->plugin_root() . '/js/esm/src/areas/panel.ts')
+            (string) file_get_contents($this->plugin_root() . '/js/esm/src/listing/events.ts')
         );
         $card = (string) file_get_contents($this->plugin_root() . '/templates/category_directory_card.mustache');
         $this->assertStringContainsString(
@@ -941,8 +947,8 @@ final class categorypanel_source_test extends \basic_testcase {
         $vitrine = $this->source('categoryvitrine');
         $this->assertStringContainsString("import * as CategoryMark from 'theme_dimensions/categorymark';", $vitrine);
         $this->assertStringContainsString(
-            'items.forEach((item) => CategoryMark.mark(item, state.query));',
-            $this->body('paintGrid', 'categorylisting')
+            'items.forEach((item) => markTitles(item, state.query));',
+            $this->body('paintGrid', 'listing/paint')
         );
         $this->assertStringContainsString(
             'CategoryMark.mark(root.querySelector(SELECTORS.grid), state.query);',

@@ -9,7 +9,7 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * hook, which scss/category.scss and the Behat steps read), the same rules (./model, function for
  * function) and no timezone arithmetic (./calendar).
  *
- * It is mounted by categorylisting's mountCalendar(), on both shells, as a node APPENDED
+ * It is mounted by the listing's mountCalendar(), on both shells, as a node APPENDED
  * to the toolbar's empty dim-daterange region: core's react_autoinit observes added nodes and never
  * attributes. The props are what the server resolved and the client may not compute: id, firstday,
  * today, from, to. It talks to the listing through events on that region, never through a callback:
@@ -33,11 +33,8 @@ import { load } from "../amd";
 import { WEEK, firstOf, monthAt, parse, say, shift, shiftMonth, weekdays, weeks } from "./calendar";
 import { FROM, TO } from "./model";
 import * as State from "./model";
-const EVENTS = {
-  pick: "dim-daterange:pick",
-  set: "dim-daterange:set",
-  mounted: "dim-daterange:mounted"
-};
+import { CALENDAR } from "../listing/events";
+const EVENTS = CALENDAR;
 const REGION = '[data-region="dim-daterange"]';
 const DAY = '[data-region="dim-daterange-day"]';
 const COMPONENT = "theme_dimensions";
@@ -82,7 +79,7 @@ const monthsFor = /* @__PURE__ */ __name((query) => query.matches ? 2 : 1, "mont
 const report = /* @__PURE__ */ __name((failure) => load("core/notification").then((notification) => notification.exception(failure)), "report");
 const blank = /* @__PURE__ */ __name((slot) => /* @__PURE__ */ jsxDEV("span", { className: "dim-daterange__day dim-daterange__day--blank", role: "gridcell" }, `blank-${slot}`, false, {
   fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-  lineNumber: 170,
+  lineNumber: 167,
   columnNumber: 5
 }), "blank");
 const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
@@ -259,7 +256,7 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           children: [
             /* @__PURE__ */ jsxDEV("i", { className: "fa fa-calendar-days dim-daterange__icon", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 486,
+              lineNumber: 483,
               columnNumber: 21
             }),
             /* @__PURE__ */ jsxDEV(
@@ -273,13 +270,13 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 487,
+                lineNumber: 484,
                 columnNumber: 21
               }
             ),
             /* @__PURE__ */ jsxDEV("span", { className: "dim-daterange__value", "data-region": "dim-daterange-value", children: say(value, MEDIUM, language) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 491,
+              lineNumber: 488,
               columnNumber: 21
             })
           ]
@@ -288,7 +285,7 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-          lineNumber: 475,
+          lineNumber: 472,
           columnNumber: 17
         }
       ),
@@ -304,12 +301,12 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           children: [
             /* @__PURE__ */ jsxDEV("i", { className: "fa fa-xmark", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 501,
+              lineNumber: 498,
               columnNumber: 21
             }),
             /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: clear }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 501,
+              lineNumber: 498,
               columnNumber: 71
             })
           ]
@@ -318,13 +315,13 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-          lineNumber: 493,
+          lineNumber: 490,
           columnNumber: 17
         }
       )
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-      lineNumber: 474,
+      lineNumber: 471,
       columnNumber: 13
     });
   }, "box");
@@ -363,7 +360,7 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 534,
+        lineNumber: 531,
         columnNumber: 13
       }
     );
@@ -376,7 +373,7 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
     return /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__monthblock", "data-region": "dim-daterange-monthblock", hidden, children: [
       /* @__PURE__ */ jsxDEV("span", { className: "dim-daterange__month", id: captionid, "data-region": "dim-daterange-month", "aria-live": "polite", children: painted ? say(firstOf(shown), { year: "numeric", month: "long" }, language) : "" }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 565,
+        lineNumber: 562,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV(
@@ -399,17 +396,17 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 577,
+                lineNumber: 574,
                 columnNumber: 33
               }
             )) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 575,
+              lineNumber: 572,
               columnNumber: 25
             }) : null,
             painted ? weeks(shown, weekstart).map((row, rowindex) => /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__row", role: "row", children: row.map((iso, slot) => iso === "" ? blank(slot) : day(iso)) }, `${firstOf(shown)}-${rowindex}`, false, {
               fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-              lineNumber: 587,
+              lineNumber: 584,
               columnNumber: 25
             })) : null
           ]
@@ -418,13 +415,13 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-          lineNumber: 568,
+          lineNumber: 565,
           columnNumber: 17
         }
       )
     ] }, index, true, {
       fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-      lineNumber: 564,
+      lineNumber: 561,
       columnNumber: 13
     });
   }, "month");
@@ -435,7 +432,7 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
       box(TO, strings.category_dateto, strings.category_dateclearto)
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-      lineNumber: 599,
+      lineNumber: 596,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("div", { ref: pop, className: "dim-daterange__pop", id: popid, "data-region": "dim-daterange-pop", hidden: !model.open, children: [
@@ -450,12 +447,12 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
             children: [
               /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-left", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 611,
+                lineNumber: 608,
                 columnNumber: 25
               }),
               /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: strings.category_dateprevmonth }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 612,
+                lineNumber: 609,
                 columnNumber: 25
               })
             ]
@@ -464,13 +461,13 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-            lineNumber: 605,
+            lineNumber: 602,
             columnNumber: 21
           }
         ),
         /* @__PURE__ */ jsxDEV("p", { className: "dim-daterange__prompt", "data-region": "dim-daterange-prompt", "aria-live": "polite", children: prompt }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-          lineNumber: 614,
+          lineNumber: 611,
           columnNumber: 21
         }),
         /* @__PURE__ */ jsxDEV(
@@ -483,12 +480,12 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
             children: [
               /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-right", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 621,
+                lineNumber: 618,
                 columnNumber: 25
               }),
               /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: strings.category_datenextmonth }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-                lineNumber: 622,
+                lineNumber: 619,
                 columnNumber: 25
               })
             ]
@@ -497,13 +494,13 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-            lineNumber: 615,
+            lineNumber: 612,
             columnNumber: 21
           }
         )
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 604,
+        lineNumber: 601,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__months", children: [
@@ -511,7 +508,7 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
         month(1)
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 625,
+        lineNumber: 622,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("div", { className: "dim-daterange__footer", children: [
@@ -528,7 +525,7 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-            lineNumber: 630,
+            lineNumber: 627,
             columnNumber: 21
           }
         ),
@@ -545,29 +542,29 @@ const Calendar = /* @__PURE__ */ __name(({ id, firstday, today, from, to }) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-            lineNumber: 636,
+            lineNumber: 633,
             columnNumber: 21
           }
         )
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-        lineNumber: 629,
+        lineNumber: 626,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-      lineNumber: 603,
+      lineNumber: 600,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-    lineNumber: 598,
+    lineNumber: 595,
     columnNumber: 9
   });
 }, "Calendar");
 const DateRange = /* @__PURE__ */ __name((props) => parse(props.today) ? /* @__PURE__ */ jsxDEV(Calendar, { ...props }, void 0, false, {
   fileName: "public/theme/dimensions/js/esm/src/daterange/DateRange.tsx",
-  lineNumber: 657,
+  lineNumber: 654,
   columnNumber: 68
 }) : null, "DateRange");
 var DateRange_default = DateRange;

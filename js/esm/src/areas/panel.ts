@@ -59,24 +59,14 @@ import {
     setPosterOpen, shellOf, shownItems, toButton, unveil,
 } from './posters';
 import {dragRail, paintRail, railState, scrollRail} from './rail';
+import {AREAS, LISTING} from '../listing/events';
+import {replaceKeeping} from '../listing/history';
 
 /**
- * The events the component and its page exchange. The areas section's are spelled by amd/src/categorylisting.js
- * too, whose mountAreas() hears them for the page's client; the document's by the two listing clients;
- * areas_component_source_test holds them equal.
+ * The events the component and its page exchange, spelled once in listing/events.ts: the areas section's,
+ * which the listing's mountAreas() hears for the page's client, and the listing's on the document.
  */
-export const EVENTS = {
-    mounted: 'dim-areas:mounted',
-    ask: 'dim-areas:ask',
-    question: 'dim-areas:question',
-    unanswered: 'dim-areas:unanswered',
-    painted: 'dim-areas:painted',
-    view: 'dim-vitrine:view',
-    pending: 'dim-vitrine:pending',
-    criteria: 'dim-vitrine:criteria',
-    failed: 'dim-vitrine:failed',
-    autoopened: 'dim-panel:autoopened',
-};
+export const EVENTS = {...AREAS, ...LISTING};
 
 /** What the component draws from the panel's state, handed in by it. */
 export type Ui = {
@@ -729,7 +719,7 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
      * @returns {void}
      */
     const writeAddress = (): void => {
-        window.history.replaceState(window.history.state, '', addressWith(window.location.href, st.open, st.psort));
+        replaceKeeping(addressWith(window.location.href, st.open, st.psort));
         syncHolders();
     };
 

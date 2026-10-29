@@ -275,10 +275,11 @@ classes/local/category/        The category showcase's decision layer (stage 2):
                                scope, page_result, unavailable_exception. See the section below.
 amd/src/category*.js           The showcase's modules (amd/src/covervideo.js + local/coverfilm.js: the cover film). Its listing clients: categoryvitrine and
                                categorypanel (an account's), categorypublic (a visitor's), over the
-                               shared categorylisting, which mounts the React components for both (R4a).
-                               categoryline, categorypreview, categoryareapanel and categoryposters are
-                               imported by nothing since R4a and leave with R5.
-js/esm/src/                    The React port (R0-R4a): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells.
+                               shared listing in js/esm/src/listing (R4b1), which mounts the React components for both.
+                               categorylisting (since R4b1), categoryline, categorypreview, categoryareapanel and
+                               categoryposters are imported by nothing and leave with the removal pull request.
+js/esm/src/                    The React port (R0-R4b1): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells;
+                               listing/ (R4b1), the shared listing the AMD clients load through core/esm!.
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
                                name, under two rules of the theme's own. See its section below.
 templates/category_pages.mustache  The strip's markup, drawn by category_listing above the toolbar.
@@ -3545,7 +3546,7 @@ result layer, `rail.ts`, `model.ts`, `mark.ts`), each named after the AMD functi
   poster or a panel the server drew, it takes them over. Mounting on the panel's list item would not do: core's
   `react_autoinit` UNMOUNTS a removed node and mounts an added one, so the panel's moves between rows (`moveAfter()`)
   would remount it and lose its state; the areas section never moves. `mountAreas()` runs only where the areas carry a
-  panel, puts its listeners on before it appends the node, and holds `theme_dimensions/categorylisting:areas` on
+  panel, puts its listeners on before it appends the node, and holds `theme_dimensions/listing:areas` on
   core's pending counter until `dim-areas:mounted`, so Behat never presses a poster that is not yet taken over.
 - **The ownership boundary.** The component owns, and is the only writer of, on the logged-in shell: the panel's
   FRAME (the one list item: hidden state, the three transition classes through `settle()` alone, the five integers and
@@ -3644,7 +3645,7 @@ shell's components. Every rule of the S1-S4, R1, R2 and R3 sections binds it. Wh
 - **A line moved after the hand-over is mounted again, and must be drawn again.** Core's `react_autoinit` unmounts a
   mounted node that leaves the document (a move of the line or of any ancestor) and mounts it when it comes back; the
   filter line's container is the server's line itself, so React's unmount empties it and the next mount read nothing:
-  no field, no `dim-line:mounted`, `theme_dimensions/categorylisting:line` held for ever (reproduced in a browser by
+  no field, no `dim-line:mounted`, `theme_dimensions/listing:line` held for ever (reproduced in a browser by
   moving the line after its mount; the CI timeout of the same day was the next bullet's). `FilterLine`'s unmount gives
   the adopted frames' nodes back to the server's frames and keeps them with the last state in `KEPT`, by node, and a
   mount finds them there before it reads markup. A line it cannot draw sends `dim-line:failed`, which `mountLine()`
@@ -3673,6 +3674,44 @@ shell's components. Every rule of the S1-S4, R1, R2 and R3 sections binds it. Wh
   `js_areas_visitor_no_component` were retired. The component's behaviour in both modes is Jest's
   (`js/esm/tests/areas/Areas.test.tsx`, 13 visitor tests, each guard mutation-checked by hand); only Behat
   (`theme_dimensions_category_public_client.feature`) runs the wiring in a browser.
+
+## The category showcase: the shared listing in TypeScript (R4b1, 2026-10-29)
+
+Stage R4b1 of `docs/vitrine-react/R4b.md`, the first of the listing store's three slices (R4b2 the store and the visitor's
+shell, R4b3 the account's). `amd/src/categorylisting.js` became `js/esm/src/listing/`, function for function and with no
+behaviour change. Every rule of the S1-S4, R1, R2, R3 and R4a sections binds it. What a maintainer must not lose:
+
+- **The AMD clients load it through `core/esm!@moodle/lms/theme_dimensions/listing/listing`**, one import line each
+  (`categoryvitrine`, `categorypublic`, `categorypanel`). Core's own `core/str` and `core/ajax` reach their ES modules
+  this way; checked on m503b before the port: RequireJS resolves a theme ES module so, it is the instance a native
+  `import()` gets, and babel's wildcard interop copies the namespace's exports. `js_call_amd` cannot name an ES module
+  (it cleans the name to `PARAM_ALPHANUMEXT`), so a page still arms an AMD module, and `first_paint_budget_test`'s list
+  is unchanged.
+- **The barrel `listing.ts` exports exactly `categorylisting`'s names**, which is what `Listing.<name>` in the clients
+  reads. A name it leaves out is undefined in the browser and nowhere else: `listing_source_test` reads every
+  `Listing.<name>` of the clients against it (gate `js_listing_barrel_complete`). The barrel goes with the last AMD
+  client (R4b3).
+- **One module of `js/esm/src` writes the history, `listing/history.ts`**: `writeUrl()` pushes a change of criteria and
+  replaces a correction; `replaceKeeping()` is the posters' component's write of `open`/`psort`, which keeps the entry's
+  state and never pushes. `listing_source_test` fails a `pushState`/`replaceState` anywhere else in the tree (gates
+  `js_history_*`). `categorypublic`'s `load()` still writes its own until R4b2.
+- **Every event between the listing and the components is spelled once, in `listing/events.ts`** (`LISTING`, `LINE`,
+  `LINE_DRAWN`, `CALENDAR`, `AREAS`, and the hooks as `SELECTORS`); the components' `EVENTS` are those objects. No other
+  module of `js/esm/src` may write an event literal (`areas_component_source_test`, gate `js_events_one_spelling`). The
+  AMD clients' own `EVENTS` stay, held equal to `LISTING`, until they move to the store.
+- **The visitor's walk crosses the `core/esm!` edge**, and reads an ES module's source AND its builds: a mutation of a
+  source alone leaves the build's edges in the graph. A gate that removes an edge from a `js/esm/src` file therefore
+  reddens the tests that read the source's spelling, never the walk's reach (`js_public_graph_reaches_areas` names
+  no walk test since R4b1).
+- **The source tests read the TypeScript**: `amd_source_test`, `categorypublic_source_test`, `categorypanel_source_test`
+  and the three component source tests look a shared function up in `js/esm/src/listing/*.ts`, with an extractor that
+  accepts a signature written one parameter a line (keep any other signature on one line, as the extractor of the other
+  tests expects). The 52 gates that named `categorylisting.js` name the TypeScript file holding their line.
+- **The pending keys are `theme_dimensions/listing:line`, `:areas` and `:reveal`.** A key that named an AMD module
+  (`theme_dimensions/categorylisting:line`) was an edge of the visitor's walk to that module, since the walk reads a
+  quoted `theme_dimensions/<name>` with an `amd/src/<name>.js` as one.
+- **`categorylisting.js` stays, unimported, until the removal pull request** deletes it with its build; nothing reads it
+  but `category_scss_test`'s scan for Bootstrap 4 names, which reads `js/esm/src/listing` as well.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

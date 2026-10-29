@@ -88,18 +88,9 @@ import {
   unveil
 } from "./posters";
 import { dragRail, paintRail, railState, scrollRail } from "./rail";
-const EVENTS = {
-  mounted: "dim-areas:mounted",
-  ask: "dim-areas:ask",
-  question: "dim-areas:question",
-  unanswered: "dim-areas:unanswered",
-  painted: "dim-areas:painted",
-  view: "dim-vitrine:view",
-  pending: "dim-vitrine:pending",
-  criteria: "dim-vitrine:criteria",
-  failed: "dim-vitrine:failed",
-  autoopened: "dim-panel:autoopened"
-};
+import { AREAS, LISTING } from "../listing/events";
+import { replaceKeeping } from "../listing/history";
+const EVENTS = { ...AREAS, ...LISTING };
 const optionsOf = /* @__PURE__ */ __name((props) => ({
   links: props.links === true,
   quiet: typeof props.quiet === "number" && Number.isInteger(props.quiet) && props.quiet > 0 ? props.quiet : 0,
@@ -427,7 +418,7 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
     });
   }, "syncHolders");
   const writeAddress = /* @__PURE__ */ __name(() => {
-    window.history.replaceState(window.history.state, "", addressWith(window.location.href, st.open, st.psort));
+    replaceKeeping(addressWith(window.location.href, st.open, st.psort));
     syncHolders();
   }, "writeAddress");
   const focusTitle = /* @__PURE__ */ __name(() => {

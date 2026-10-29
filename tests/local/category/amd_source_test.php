@@ -34,8 +34,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * costs a server rather than a screenshot are pinned the way category_scss_test pins class names.
  * They are assertions about spelling, each scoped to the one function it is about through body().
  *
- * The painters and the address helpers live in amd/src/categorylisting.js, which the visitor's
- * module paints with too; body() finds a function in either file, and the module's bindings to the
+ * The painters and the address helpers live in js/esm/src/listing (stage R4b1, docs/vitrine-react/R4b.md),
+ * which the visitor's module paints with too; body() finds a function in the module or in those sources,
+ * and the module's bindings to the
  * shared functions are one line each, which body() never matches, so a function's body is always the
  * code that runs.
  *
@@ -50,6 +51,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  */
 #[CoversNothing]
 final class amd_source_test extends \basic_testcase {
+    /** @var string[] The shared listing's sources under js/esm/src/listing, without their extension. */
+    private const LISTING = ['events', 'address', 'history', 'mounts', 'paint'];
+
     /**
      * Absolute path to the theme root.
      *
@@ -71,14 +75,33 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * The shared listing's source: the painters and the address helpers this module is bound to.
+     * The shared listing's sources: the painters and the address helpers this module is bound to.
      *
      * @return string
      */
     private function shared(): string {
-        $path = $this->plugin_root() . '/amd/src/categorylisting.js';
-        $this->assertFileExists($path);
-        return (string) file_get_contents($path);
+        $text = '';
+        foreach (self::LISTING as $file) {
+            $path = $this->plugin_root() . '/js/esm/src/listing/' . $file . '.ts';
+            $this->assertFileExists($path);
+            $text .= file_get_contents($path) . "\n";
+        }
+        return $text;
+    }
+
+    /**
+     * The shared listing's production builds, as the browser receives them.
+     *
+     * @return string
+     */
+    private function shared_build(): string {
+        $text = '';
+        foreach (self::LISTING as $file) {
+            $path = $this->plugin_root() . '/js/esm/build/listing/' . $file . '.js';
+            $this->assertFileExists($path, 'The build is missing: Moodle serves js/esm/build, never js/esm/src.');
+            $text .= file_get_contents($path) . "\n";
+        }
+        return $text;
     }
 
     /**
@@ -130,7 +153,8 @@ final class amd_source_test extends \basic_testcase {
      * @return string The body, without the signature or the closing brace.
      */
     private function body(string $name): string {
-        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n\};~s';
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
+            . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
         $found = preg_match($pattern, $this->source(), $matches);
         if ($found !== 1) {
             $found = preg_match($pattern, $this->shared(), $matches);
@@ -154,7 +178,7 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('if (node !== expected) {', $group, 'Only what is out of place moves.');
         $status = $this->body('paintStatus');
         $this->assertStringContainsString('options.filter(isScope).sort((a, b) => rank(a) - rank(b))', $status);
-        $this->assertStringContainsString('const rank = (option) => SCOPE.indexOf(String(option.value));', $status);
+        $this->assertStringContainsString('const rank = (option: Option): number => SCOPE.indexOf(String(option.value));', $status);
     }
 
     /**
@@ -358,7 +382,7 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringNotContainsString('insertAdjacentHTML', $sources);
         $this->assertStringNotContainsString('innerHTML', $sources);
         $shared = $this->shared();
-        $this->assertStringContainsString("import Templates from 'core/templates';", $shared);
+        $this->assertStringContainsString("const Templates = await load('core/templates');", $shared);
         $this->assertMatchesRegularExpression('~Templates\.renderForPromise\(CARD_TEMPLATE~', $shared);
         $this->assertStringContainsString(
             'const renderCards = (cards) => Listing.renderCards(cards);',
@@ -392,7 +416,7 @@ final class amd_source_test extends \basic_testcase {
         $found = preg_match('~\} else \{(.*?)grid\.replaceChildren~s', $apply, $matches);
         $this->assertSame(1, $found, 'paintGrid has no replace branch to read.');
         $this->assertMatchesRegularExpression(
-            '~grid\.querySelectorAll\(SELECTORS\.card\)\.forEach\(\(card\) => discard\(card\)\);~',
+            '~grid\.querySelectorAll<HTMLElement>\(SELECTORS\.card\)\.forEach\(\(card\) => discard\(card\)\);~',
             $matches[1],
             'The replace branch discards its cards without handing them to the caller first.'
         );
@@ -563,7 +587,8 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('state.chip = chipOf(params);', $read);
         $this->assertStringContainsString('state.fav = favOf(params);', $read);
         $this->assertStringContainsString(
-            "export const favOf = (params) => params.get(PARAM.fav) === '1' || params.get(PARAM.chip) === LEGACY_FAVOURITES;",
+            "export const favOf = (params: URLSearchParams): boolean =>\n"
+                . "    params.get(PARAM.fav) === '1' || params.get(PARAM.chip) === LEGACY_FAVOURITES;",
             $this->shared()
         );
         $this->assertMatchesRegularExpression(
@@ -600,7 +625,7 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('paintFavToggle(root, state.fav);', $this->body('paintControls'));
         foreach (['isfavourites', 'dim-pill__star'] as $gone) {
             $this->assertStringNotContainsString($gone, $this->sources());
-            $this->assertStringNotContainsString($gone, $this->build('categorylisting'));
+            $this->assertStringNotContainsString($gone, $this->shared_build());
         }
     }
 
@@ -639,7 +664,7 @@ final class amd_source_test extends \basic_testcase {
     public function test_the_organisation_is_a_navigation_between_shells_and_a_fetch_inside_one(): void {
         $source = $this->shared();
         $this->assertMatchesRegularExpression(
-            "~^const GROUPED_SORTS = \['', 'category'\];$~m",
+            "~^export const GROUPED_SORTS = \['', 'category'\];$~m",
             $source,
             'The empty value and the named default are the one grouped organisation, as the server has it.'
         );
@@ -732,7 +757,8 @@ final class amd_source_test extends \basic_testcase {
             'And the period, read as the server reads it.'
         );
         $this->assertStringContainsString(
-            'export const periodOf = (params) => DateRange.period(params.get(PARAM.from), params.get(PARAM.to));',
+            'export const periodOf = (params: URLSearchParams): Period => '
+                . 'calendarPeriod(params.get(PARAM.from), params.get(PARAM.to));',
             $this->shared()
         );
         $init = $this->init_body();
@@ -805,7 +831,7 @@ final class amd_source_test extends \basic_testcase {
         );
         // And the view's own event, so the panel's row follows the list view's single track.
         $this->assertStringContainsString(
-            'document.dispatchEvent(new CustomEvent(EVENTS.view, {detail: {view: view}}));',
+            'document.dispatchEvent(new CustomEvent(LISTING.view, {detail: {view: view}}));',
             $this->body('paintView')
         );
     }
@@ -831,7 +857,7 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString("const url = response.seeallurl || '';", $count);
         $this->assertStringContainsString("seeall.hidden = url === '';", $count);
         $this->assertMatchesRegularExpression(
-            '~const note = root\.querySelector\(SELECTORS\.countnote\);\s*if \(note\) \{\s*note\.hidden = true;~',
+            '~const note = root\.querySelector<HTMLElement>\(SELECTORS\.countnote\);\s*if \(note\) \{\s*note\.hidden = true;~',
             $count,
             'Every answer takes the automatic opening\'s note away.'
         );
@@ -873,7 +899,7 @@ final class amd_source_test extends \basic_testcase {
             'It is told before the request goes out.'
         );
         $this->assertMatchesRegularExpression(
-            "~export const narrows = \(state\) => state\.query !== ''\s*\|\| state\.chip !== ''\s*"
+            "~export const narrows = \(state: ListingState\): boolean => state\.query !== ''\s*\|\| state\.chip !== ''\s*"
                 . "\|\| Boolean\(state\.fav\)\s*\|\| Object\.keys\(state\.filters\)\.length > 0\s*"
                 . "\|\| state\.datefrom !== ''\s*\|\| state\.dateto !== '';~",
             $this->shared()
@@ -1012,9 +1038,9 @@ final class amd_source_test extends \basic_testcase {
      */
     public function test_the_term_is_marked_in_the_rows_this_module_draws(): void {
         $apply = $this->body('paintGrid');
-        $this->assertStringContainsString('items.forEach((item) => CategoryMark.mark(item, state.query));', $apply);
+        $this->assertStringContainsString('items.forEach((item) => markTitles(item, state.query));', $apply);
         $this->assertLessThan(
-            (int) strpos($apply, 'CategoryMark.mark('),
+            (int) strpos($apply, 'markTitles('),
             (int) strpos($apply, 'reveal(items);'),
             'The rows are marked as they are revealed, on both paths.'
         );
@@ -1038,7 +1064,7 @@ final class amd_source_test extends \basic_testcase {
     public function test_a_repainted_grid_is_pending_until_its_rows_are_shown(): void {
         $reveal = $this->body('reveal');
         $this->assertMatchesRegularExpression(
-            "~^    const pending = new Pending\('theme_dimensions/categorylisting:reveal'\);\n"
+            "~^    const pending = new Pending\('theme_dimensions/listing:reveal'\);\n"
                 . "    window\.requestAnimationFrame\(~",
             $reveal,
             'The token is taken before the first frame.'
@@ -1155,7 +1181,7 @@ final class amd_source_test extends \basic_testcase {
         $append = $this->body('appendCalendar');
         $this->assertStringContainsString('firstday: fieldset.dataset.firstday,', $append);
         $this->assertStringContainsString('today: fieldset.dataset.today,', $append);
-        $this->assertStringContainsString('onpick(event.detail.from, event.detail.to);', $append);
+        $this->assertStringContainsString('onpick(detail.from, detail.to);', $append);
         $this->assertStringContainsString(
             'const mountCalendar = () => Listing.mountCalendar(root, state, setRange);',
             $this->source(),
@@ -1246,7 +1272,7 @@ final class amd_source_test extends \basic_testcase {
 
         // Exactly one entry carries the marking, and it is a loop over every link rather than a swap.
         $mark = $this->body('markTree');
-        $this->assertStringContainsString('root.querySelectorAll(SELECTORS.treelink)', $mark);
+        $this->assertStringContainsString('root.querySelectorAll<HTMLElement>(SELECTORS.treelink)', $mark);
         $this->assertStringContainsString(
             'const on = state.cat === 0 ? id === state.categoryid : id === state.cat;',
             $mark
@@ -1469,12 +1495,9 @@ final class amd_source_test extends \basic_testcase {
             'amd/build is not this source: rebuild it with grunt amd for this plugin and '
                 . 'commit the rebuilt .min.js and .map with the change.'
         );
-        $this->assertSame(
-            $this->shared(),
-            $this->built_from('categorylisting'),
-            'amd/build/categorylisting is not its source: rebuild it with grunt amd and commit the build.'
-        );
-        $this->assertStringContainsString('theme_dimensions/categorylisting', $this->build());
+        // The shared listing's builds are esm_source_test's; this module's build loads them through core/esm!.
+        $this->assertStringContainsString('"core/esm!@moodle/lms/theme_dimensions/listing/listing"', $this->build());
+        $this->assertStringNotContainsString('"theme_dimensions/categorylisting"', $this->build());
 
         // And the build names the theme's own services; the star's lives in categorystar, whose
         // build categorypanel_source_test checks.
@@ -1533,7 +1556,10 @@ final class amd_source_test extends \basic_testcase {
         $this->assertSame(\theme_dimensions\output\category_toolbar::CHIP_PERIOD, 'period', 'The server\'s spelling.');
 
         $status = $this->body('paintStatus');
-        $this->assertStringContainsString('const isScope = (option) => SCOPE.indexOf(String(option.value)) >= 0;', $status);
+        $this->assertStringContainsString(
+            'const isScope = (option: Option): boolean => SCOPE.indexOf(String(option.value)) >= 0;',
+            $status
+        );
         $this->assertStringContainsString('more.hidden = others.length === 0;', $status);
 
         $apply = $this->body('applyResponse');

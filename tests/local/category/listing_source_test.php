@@ -1,0 +1,228 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Theme Dimensions - Tests for the showcase's shared listing in TypeScript, by its source
+ *
+ * @package    theme_dimensions
+ * @category   test
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace theme_dimensions\local\category;
+
+use PHPUnit\Framework\Attributes\CoversNothing;
+
+/**
+ * Pins how the shared listing of js/esm/src/listing reaches the AMD clients, and who writes the history.
+ *
+ * Stage R4b1 of docs/vitrine-react/R4b.md moved amd/src/categorylisting.js to TypeScript, loaded by the AMD
+ * clients through `core/esm!` under a barrel's names. The painters' own rules are read by amd_source_test and
+ * the component source tests, their behaviour is Jest's (js/esm/tests/listing).
+ *
+ * @package    theme_dimensions
+ * @category   test
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+#[CoversNothing]
+final class listing_source_test extends \basic_testcase {
+    /** @var string The specifier the AMD clients load the listing by. */
+    private const SPECIFIER = 'core/esm!@moodle/lms/theme_dimensions/listing/listing';
+
+    /** @var string[] The AMD modules that paint with the shared listing until the store replaces them (R4b2, R4b3). */
+    private const CLIENTS = ['categoryvitrine', 'categorypublic', 'categorypanel'];
+
+    /**
+     * Absolute path to the theme root.
+     *
+     * @return string
+     */
+    private function plugin_root(): string {
+        return dirname(__DIR__, 3);
+    }
+
+    /**
+     * One file of the theme.
+     *
+     * @param string $path The path under the theme root.
+     * @return string
+     */
+    private function read(string $path): string {
+        $file = $this->plugin_root() . '/' . $path;
+        $this->assertFileExists($file);
+        return (string) file_get_contents($file);
+    }
+
+    /**
+     * A text without its block comments and its whole-line comments.
+     *
+     * @param string $text Source text.
+     * @return string
+     */
+    private function uncommented(string $text): string {
+        $code = (string) preg_replace('~/\*.*?\*/~s', '', $text);
+        return (string) preg_replace('~^\s*//.*$~m', '', $code);
+    }
+
+    /**
+     * Every TypeScript source of js/esm/src, by its path under the theme root.
+     *
+     * @return string[]
+     */
+    private function esm_sources(): array {
+        $root = $this->plugin_root();
+        $files = array_merge(glob($root . '/js/esm/src/*.ts'), glob($root . '/js/esm/src/*/*.{ts,tsx}', GLOB_BRACE));
+        sort($files);
+        return array_map(static fn(string $file): string => substr($file, strlen($root) + 1), $files);
+    }
+
+    /**
+     * The body of one top-level arrow function of a TypeScript source, a signature on several lines included.
+     *
+     * @param string $name The function's name.
+     * @param string $path The source's path under the theme root.
+     * @return string The body, without the signature or the closing brace.
+     */
+    private function body(string $name, string $path): string {
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
+            . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
+        $found = preg_match($pattern, $this->read($path), $matches);
+        $this->assertSame(1, $found, "No top-level function named {$name} in {$path}.");
+        return $matches[1];
+    }
+
+    /**
+     * The extractor returns one function and not the module around it.
+     */
+    public function test_the_extractor_returns_one_function_and_not_the_file(): void {
+        $write = $this->body('writeUrl', 'js/esm/src/listing/history.ts');
+        $this->assertStringContainsString('syncFold();', $write);
+        $this->assertStringNotContainsString('replaceKeeping', $write);
+        $this->assertStringContainsString('appendCalendar(root, fieldset, region, state, onpick);', $this->body(
+            'mountCalendar',
+            'js/esm/src/listing/mounts.ts'
+        ));
+    }
+
+    /**
+     * Every AMD client loads the TypeScript listing through core's ES module loader, and none the AMD one.
+     *
+     * A client importing the AMD listing again would run a second copy of the painters, with their own counters.
+     *
+     * Changes that must make it fail: a client importing theme_dimensions/categorylisting again (gates
+     * js_vitrine_listing_through_esm, js_panel_listing_through_esm; the visitor's is
+     * js_public_listing_through_esm, read by categorypublic_source_test's walk too).
+     */
+    public function test_the_amd_clients_load_the_typescript_listing(): void {
+        foreach (self::CLIENTS as $client) {
+            $source = $this->read('amd/src/' . $client . '.js');
+            $this->assertStringContainsString(
+                "\nimport * as Listing from '" . self::SPECIFIER . "';\n",
+                $source,
+                "{$client} loads the shared listing through core/esm!."
+            );
+            $this->assertStringNotContainsString("'theme_dimensions/categorylisting'", $source, "{$client} loads the AMD listing.");
+            $this->assertStringContainsString('"' . self::SPECIFIER . '"', $this->read('amd/build/' . $client . '.min.js'));
+        }
+        foreach (glob($this->plugin_root() . '/amd/src/*.js') as $file) {
+            $this->assertStringNotContainsString("from 'theme_dimensions/categorylisting'", (string) file_get_contents($file));
+        }
+    }
+
+    /**
+     * The barrel exports every name an AMD client calls on the listing, and nothing it does not have.
+     *
+     * A name the barrel left out is undefined at run time, in the browser alone.
+     *
+     * Changes that must make it fail: a name dropped from the barrel (gate js_listing_barrel_complete).
+     */
+    public function test_the_barrel_exports_every_name_the_amd_clients_call(): void {
+        $barrel = $this->uncommented($this->read('js/esm/src/listing/listing.ts'));
+        $this->assertSame(5, preg_match_all('~\} from \'\./(?:address|events|history|mounts|paint)\';~', $barrel));
+        preg_match_all('~export \{([^}]*)\} from~s', $barrel, $lists);
+        $exported = [];
+        foreach ($lists[1] as $list) {
+            foreach (preg_split('~[\s,]+~', $list, -1, PREG_SPLIT_NO_EMPTY) as $name) {
+                $exported[] = $name;
+            }
+        }
+        $called = [];
+        foreach (self::CLIENTS as $client) {
+            preg_match_all('~\bListing\.([A-Za-z]+)~', $this->uncommented($this->read('amd/src/' . $client . '.js')), $uses);
+            $called = array_merge($called, $uses[1]);
+        }
+        $called = array_values(array_unique($called));
+        sort($called);
+        $this->assertGreaterThan(30, count($called), 'The control: the clients\' calls are read.');
+        foreach ($called as $name) {
+            $this->assertContains($name, $exported, "A client calls Listing.{$name}, which the barrel does not export.");
+        }
+        // Each exported name exists in the module the barrel names it from.
+        foreach (['address', 'events', 'history', 'mounts', 'paint'] as $file) {
+            preg_match('~export \{([^}]*)\} from \'\./' . $file . '\';~s', $barrel, $list);
+            $source = $this->read('js/esm/src/listing/' . $file . '.ts');
+            foreach (preg_split('~[\s,]+~', $list[1], -1, PREG_SPLIT_NO_EMPTY) as $name) {
+                $this->assertMatchesRegularExpression(
+                    '~^export const ' . preg_quote($name, '~') . ' = ~m',
+                    $source,
+                    "The barrel exports {$name} from {$file}.ts, which has none."
+                );
+            }
+        }
+    }
+
+    /**
+     * One module of js/esm/src writes the history, and it replaces the panel's address without pushing.
+     *
+     * The posters' component replaces its open area and never pushes, or every opening would be a step of Back;
+     * two writers spelling the calls themselves is how one pushes where the other replaces.
+     *
+     * Changes that must make it fail: a history call spelled outside history.ts, the panel's own included (gate
+     * js_history_one_writer); the panel's write pushing (gate js_history_keeps_entry); the criteria pushed whatever
+     * the caller asked (gate js_history_push_flag).
+     */
+    public function test_only_the_history_module_writes_the_address(): void {
+        $sources = $this->esm_sources();
+        $this->assertContains('js/esm/src/listing/history.ts', $sources, 'The control: the tree is read.');
+        foreach ($sources as $path) {
+            if ($path === 'js/esm/src/listing/history.ts') {
+                continue;
+            }
+            $this->assertDoesNotMatchRegularExpression(
+                '~\bhistory\.(?:pushState|replaceState)\(~',
+                $this->uncommented($this->read($path)),
+                "{$path} writes the history itself instead of through listing/history.ts."
+            );
+        }
+        $keeping = $this->body('replaceKeeping', 'js/esm/src/listing/history.ts');
+        $this->assertSame("    window.history.replaceState(window.history.state, '', url);", $keeping);
+        $write = $this->body('writeUrl', 'js/esm/src/listing/history.ts');
+        $this->assertMatchesRegularExpression(
+            "~if \(push\) \{\s*window\.history\.pushState\(\{\}, '', url\);\s*\} else \{\s*"
+                . "window\.history\.replaceState\(\{\}, '', url\);\s*\}\s*syncFold\(\);~",
+            $write
+        );
+        $panel = $this->read('js/esm/src/areas/panel.ts');
+        $this->assertStringContainsString("import {replaceKeeping} from '../listing/history';", $panel);
+        $this->assertStringContainsString(
+            "        replaceKeeping(addressWith(window.location.href, st.open, st.psort));\n        syncHolders();",
+            $panel,
+            'The panel writes its open area through the history module, replacing.'
+        );
+    }
+}

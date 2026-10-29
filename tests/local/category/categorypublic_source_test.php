@@ -76,6 +76,9 @@ final class categorypublic_source_test extends \basic_testcase {
     /** @var string[] The React components both shells mount, as nodes of the walk. */
     private const COMPONENTS = ['esm:daterange/DateRange', 'esm:filterline/FilterLine', 'esm:areas/Areas'];
 
+    /** @var string The shared listing's barrel, which the AMD clients load through core/esm! (R4b1). */
+    private const LISTING = self::ESM . 'listing/listing';
+
     /** @var string[] The logged-in modules nothing a visitor's page loads may name, in code or in a comment. */
     private const LOGGED_IN_NAMES = ['categoryvitrine', 'categorypanel', 'categorystar'];
 
@@ -225,7 +228,8 @@ final class categorypublic_source_test extends \basic_testcase {
      * @return string The body, without the signature or the closing brace.
      */
     private function body(string $name, string $module = self::MODULE): string {
-        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n\};~s';
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
+            . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
         $found = preg_match($pattern, $this->source($module), $matches);
         $this->assertSame(1, $found, "No top-level function named {$name} in {$module}.");
         $this->assertNotSame('', trim($matches[1]), "The body of {$name} is empty.");
@@ -384,15 +388,18 @@ final class categorypublic_source_test extends \basic_testcase {
      * The walk follows imports all the way down, which every assertion below depends on.
      *
      * A walk that read the entry file alone would pass a session module pulled in through a shared
-     * one. The shared listing reaches the period's reader and the title marker, and names the three
-     * components it mounts, whose relative imports the walk follows down to the bridge; the visitor's
-     * graph holds all of it, and none of the AMD modules the components replaced, which no shell arms
-     * since R4a.
+     * one. The shared listing (js/esm/src/listing since R4b1, reached from AMD through `core/esm!`) reaches
+     * the period's reader and the title marker, and names the three components it mounts, whose relative
+     * imports the walk follows down to the bridge; the visitor's graph holds all of it, and none of the AMD
+     * modules the TypeScript replaced: categorylisting since R4b1, the components' since R4a.
+     *
+     * Changes that must make it fail: the visitor's module importing amd/src/categorylisting.js again (gate
+     * js_public_listing_through_esm).
      */
     public function test_the_import_walk_is_transitive(): void {
-        $listing = $this->graph('categorylisting');
-        $this->assertContains('categorymark', $listing);
-        $this->assertContains('daterange', $listing);
+        $listing = $this->graph(self::LISTING);
+        $this->assertContains(self::ESM . 'areas/mark', $listing);
+        $this->assertContains(self::ESM . 'daterange/calendar', $listing);
         foreach (self::COMPONENTS as $component) {
             $this->assertContains($component, $listing, 'The shared listing mounts ' . $component . '.');
         }
@@ -402,8 +409,9 @@ final class categorypublic_source_test extends \basic_testcase {
         foreach ($listing as $module) {
             $this->assertContains($module, $graph, $module . ' is reached through a shared module and the walk lost it.');
         }
-        foreach (['categoryline', 'categorypreview', 'categoryareapanel', 'categoryposters'] as $replaced) {
-            $this->assertNotContains($replaced, $graph, $replaced . ' is armed by no shell since R4a.');
+        $this->assertContains('categorymark', $graph, 'The control: an AMD import of the module is followed.');
+        foreach (['categorylisting', 'categoryline', 'categorypreview', 'categoryareapanel', 'categoryposters'] as $replaced) {
+            $this->assertNotContains($replaced, $graph, $replaced . ' is armed by no shell.');
         }
     }
 
@@ -458,16 +466,31 @@ final class categorypublic_source_test extends \basic_testcase {
             $this->assertContains($module, $graph, 'The visitor\'s page reaches ' . $module . '.');
             $this->assertContains($module, $logged, 'And the logged-in shell\'s reaches the same one.');
         }
-        foreach (glob($this->plugin_root() . '/amd/src/*.js') as $file) {
-            $name = basename($file, '.js');
-            $count = substr_count($this->code($name), '@moodle/lms/theme_dimensions/');
-            $this->assertSame($name === 'categorylisting' ? 3 : 0, $count, "{$name} names a component.");
+        $specifiers = ['@moodle/lms/theme_dimensions/daterange/DateRange', '@moodle/lms/theme_dimensions/filterline/FilterLine',
+            '@moodle/lms/theme_dimensions/areas/Areas'];
+        $files = array_merge(
+            glob($this->plugin_root() . '/amd/src/*.js'),
+            glob($this->plugin_root() . '/js/esm/src/*.ts'),
+            glob($this->plugin_root() . '/js/esm/src/*/*.{ts,tsx}', GLOB_BRACE)
+        );
+        foreach ($files as $file) {
+            $name = substr($file, strlen($this->plugin_root()) + 1);
+            // The AMD listing the TypeScript replaced, unimported since R4b1, leaves with its source tests (R4c).
+            if ($name === 'amd/src/categorylisting.js') {
+                continue;
+            }
+            $text = $this->uncommented((string) file_get_contents($file));
+            $count = 0;
+            foreach ($specifiers as $specifier) {
+                $count += substr_count($text, $specifier);
+            }
+            $this->assertSame($name === 'js/esm/src/listing/mounts.ts' ? 3 : 0, $count, "{$name} names a component.");
         }
         $this->assertMatchesRegularExpression(
             "~^const COMPONENTS = \{\n    calendar: '@moodle/lms/theme_dimensions/daterange/DateRange',\n"
                 . "    line: '@moodle/lms/theme_dimensions/filterline/FilterLine',\n"
                 . "    areas: '@moodle/lms/theme_dimensions/areas/Areas',\n\};$~m",
-            $this->source('categorylisting')
+            $this->source(self::ESM . 'listing/mounts')
         );
     }
 
@@ -713,8 +736,8 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString('areas.dispatchEvent(new CustomEvent(EVENTS.unanswered, {detail: detail}));', $offer);
         $this->assertStringContainsString('return detail.taken === true;', $offer);
         $this->assertStringContainsString(
-            'event.detail.taken = client.unanswered(event.detail.poster, event.detail.psort);',
-            $this->body('mountAreas', 'categorylisting'),
+            'detail.taken = unanswered(detail.poster, detail.psort);',
+            $this->body('mountAreas', self::ESM . 'listing/mounts'),
             'The shared mount hands the client\'s word back.'
         );
 
@@ -745,7 +768,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * The address is the shared listing's, and every poster's link follows it.
      *
      * The address an applied change writes, the one a failure loads and the one each poster's link
-     * carries are built by categorylisting's buildUrl(), the logged-in client's own, so an address
+     * carries are built by the shared listing's buildUrl(), the logged-in client's own, so an address
      * round-trips between the page and the client. A poster's link is the server's
      * category_panel::page_address() for that area: the page's parameters, the area open, no panel
      * order, the panel's fragment. A change applied with a panel open is fetched like any other: the
@@ -928,7 +951,7 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString('Listing.mountAreas(areas, AREAS_PROPS, {', $this->body('init'));
         $this->assertStringContainsString(
             'node.dataset.reactProps = JSON.stringify(props);',
-            $this->body('mountAreas', 'categorylisting')
+            $this->body('mountAreas', self::ESM . 'listing/mounts')
         );
         $this->assertStringContainsString(
             'const mountAreas = () => Listing.mountAreas(areas, {}, {ask: ask, painted: paintProgress});',
@@ -1002,8 +1025,8 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString("\n    quiet: PANEL_QUIET,\n", $this->source());
         $this->assertStringContainsString('return JSON.stringify(panelArgs(poster, psort));', $this->body('panelQuestion'));
         $this->assertStringContainsString(
-            'event.detail.question = client.question(event.detail.poster, event.detail.psort);',
-            $this->body('mountAreas', 'categorylisting')
+            'detail.question = question(detail.poster, detail.psort);',
+            $this->body('mountAreas', self::ESM . 'listing/mounts')
         );
 
         $panel = $this->read(self::AREAS . 'panel.ts', 'The source is missing.');
@@ -1074,24 +1097,22 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * The committed builds of the module and of the listing it paints with were made from the sources beside them.
+     * The committed build of the module was made from the source beside it, and loads the TypeScript listing.
      *
-     * The components' builds are esm_source_test's. The AMD modules they replaced are named by no build of
+     * The listing's and the components' builds are esm_source_test's. The AMD modules they replaced are named by no build of
      * the visitor's.
      */
     public function test_the_committed_builds_were_made_from_the_committed_sources(): void {
-        foreach ([self::MODULE, 'categorylisting'] as $module) {
-            $this->assertSame(
-                $this->source($module),
-                $this->built_from($module),
-                "amd/build/{$module} is not this source: rebuild it with grunt amd and commit the build."
-            );
+        $this->assertSame(
+            $this->source(),
+            $this->built_from(self::MODULE),
+            'amd/build/' . self::MODULE . ' is not this source: rebuild it with grunt amd and commit the build.'
+        );
+        $this->assertStringContainsString('"core/esm!@moodle/lms/theme_dimensions/listing/listing"', $this->build());
+        foreach (['categorylisting', 'categoryposters', 'categoryareapanel', 'categoryline'] as $replaced) {
+            $this->assertStringNotContainsString('"theme_dimensions/' . $replaced . '"', $this->build());
         }
-        $this->assertStringContainsString('theme_dimensions/categorylisting', $this->build());
-        foreach (['categoryposters', 'categoryareapanel', 'categoryline'] as $replaced) {
-            $this->assertStringNotContainsString('theme_dimensions/' . $replaced, $this->build());
-        }
-        $this->assertStringContainsString('@moodle/lms/theme_dimensions/areas/Areas', $this->build('categorylisting'));
+        $this->assertStringContainsString('@moodle/lms/theme_dimensions/areas/Areas', $this->build(self::ESM . 'listing/mounts'));
     }
 
     /**
