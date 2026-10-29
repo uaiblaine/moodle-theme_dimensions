@@ -234,7 +234,7 @@ final class builder {
      *
      * @return int[] The global revision and the theme's sub-revision.
      */
-    private static function revisions(): array {
+    public static function revisions(): array {
         global $DB;
 
         $rev = (int) $DB->get_field('config', 'value', ['name' => 'themerev']);
