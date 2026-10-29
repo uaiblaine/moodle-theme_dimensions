@@ -568,7 +568,7 @@ final class category_listing_markup_test extends \advanced_testcase {
      * The state group is split by criteria::SCOPE: the line's cells, and the panel's "More statuses".
      *
      * Both halves are one radio group by name, so one choice holds across them. The client splits
-     * every answer's status group by the same list, mirrored as SCOPE in amd/src/categorylisting.js:
+     * every answer's status group by the same list, mirrored as SCOPE in js/esm/src/listing/address.ts:
      * the two lists are pinned equal here, so neither side can draw a value where the other paints it.
      *
      * Changes that must make it fail: a value moved between the two lists on one side only; a
@@ -578,7 +578,7 @@ final class category_listing_markup_test extends \advanced_testcase {
         global $CFG;
         $this->resetAfterTest();
 
-        $source = (string) file_get_contents($CFG->dirroot . '/theme/dimensions/amd/src/categorylisting.js');
+        $source = (string) file_get_contents($CFG->dirroot . '/theme/dimensions/js/esm/src/listing/address.ts');
         $this->assertSame(1, preg_match("~^export const SCOPE = \[(.*?)\];$~m", $source, $match), 'The client names its list.');
         $client = array_map(static fn(string $value): string => trim($value, " '"), explode(',', $match[1]));
         $this->assertSame(criteria::SCOPE, $client, 'The client splits the status group by the server\'s own list.');

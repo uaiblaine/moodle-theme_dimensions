@@ -23,7 +23,7 @@
  * R4a, leaves the tree with R5. block_compass's FilterLine implements the same contract on its own;
  * nothing is shared.
  *
- * WHO OWNS WHAT. The mount node is the server's line itself (dim-line), which categorylisting's
+ * WHO OWNS WHAT. The mount node is the server's line itself (dim-line), which the listing's
  * mountLine() names for core's react_autoinit, so the line keeps its place, its classes and the sibling
  * rules the stylesheet writes against it. A mount replaces its markup, so the first render draws the
  * markup the server drew, read off it ({@see ./model read()}), with the same names inside the same GET
@@ -34,7 +34,7 @@
  * Filters panel (More statuses, the custom fields, the period with the calendar of R1, the quick dates),
  * the Organise menu and the managers' menu. The listing's painters keep painting those three, and paint
  * nothing React draws: they tell the line instead, through events on it ({@see EVENTS}), which
- * amd/src/categorylisting.js spells too:
+ * js/esm/src/listing/events.ts spells:
  *
  * - `dim-line:state`, detail {query, chip, fav, view} or any part of it: the listing's own state, after a
  *   press it handled, Back, a clear or a removed chip;
@@ -77,18 +77,13 @@ import {MIN_TERM, offers, remember, suggest} from './suggest';
 import type {Offer, Rest} from './suggest';
 import {CLASSES as STEP_CLASSES, TWO_LINES, choose, morphs, paint, same, settled} from './steps';
 import type {Fold} from './steps';
+import {LINE, LINE_DRAWN} from '../listing/events';
 
-/** The events the line and the listing exchange on the line; amd/src/categorylisting.js spells them too. */
-export const EVENTS = {
-    mounted: 'dim-line:mounted',
-    failed: 'dim-line:failed',
-    state: 'dim-line:state',
-    answer: 'dim-line:answer',
-    dropterm: 'dim-line:dropterm',
-};
+/** The events the line and the listing exchange on the line, spelled once in listing/events.ts. */
+export const EVENTS = LINE;
 
 /** The attribute the line carries once this component draws it: the listing's painters read it. */
-export const DRAWN = 'data-line-drawn';
+export const DRAWN = LINE_DRAWN;
 
 /** Milliseconds a Tab press counts as the reason the field was focused. */
 const TAB_INTENT = 1000;

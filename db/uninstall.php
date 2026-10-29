@@ -23,7 +23,7 @@
  */
 
 /**
- * Remove what is the theme's own and not user-authored: its six user preferences.
+ * Remove what is the theme's own and not user-authored: its six user preferences; release the look cohorts.
  *
  * Core's uninstall_plugin() already drops the theme's table through XMLDB and every file
  * of the theme's component - the category hero images and the site-wide fallback among
@@ -48,6 +48,9 @@ function xmldb_theme_dimensions_uninstall() {
     foreach ($preferences as $name) {
         $DB->delete_records('user_preferences', ['name' => $name]);
     }
+
+    // Released, not deleted: a smart menu restricted by a look cohort keeps its audience.
+    \theme_dimensions\local\lookcohorts::release();
 
     return true;
 }

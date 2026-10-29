@@ -41,4 +41,12 @@ $observers = [
         'eventname' => '\core\event\course_category_updated',
         'callback' => '\theme_dimensions\local\category\branding::category_updated',
     ],
+    // Boost Union's own observer of this event (priority 0) strips the deleted cohort from every smart
+    // menu rule, and a rule left with no cohort shows its menu to everyone. Running first, the theme
+    // hides the menus and items a deleted look cohort restricted while their rules still name it.
+    [
+        'eventname' => '\core\event\cohort_deleted',
+        'callback' => '\theme_dimensions\local\lookcohorts::cohort_deleted',
+        'priority' => 1000,
+    ],
 ];

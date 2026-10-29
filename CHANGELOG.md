@@ -15,6 +15,29 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   revision before it purges, so the builder now reads the revisions after the writes instead and, if they moved,
   removes what it wrote and answers stale; that one check covers a reset during the compile too. 2 new mutation
   gates replace `flavourcss_stale_guard`, whose check they made redundant.
+- **The category showcase's shared listing is TypeScript** (2026100539; R4b1 of `docs/vitrine-react/R4b.md`, the first
+  of the listing store's three slices). `amd/src/categorylisting.js` moved to `js/esm/src/listing/`: `events.ts` (every
+  event between the listing and its components, and the hooks it reads, spelled once), `address.ts` (the state as the
+  address spells it), `history.ts` (the one writer of the history), `mounts.ts` (the calendar, the filter line and the
+  posters handed to their components) and `paint.ts` (the painters), under the barrel `listing.ts` with
+  `categorylisting`'s export names. The three AMD clients (`categoryvitrine`, `categorypublic`, `categorypanel`) load it
+  through `core/esm!@moodle/lms/theme_dimensions/listing/listing`, one import line each; `categorylisting.js` stays
+  unimported until the removal pull request. The components import their event names from `events.ts`, and the posters'
+  component writes its open area through `history.ts`, still replacing. No behaviour changes; the first paint's module
+  list is the same. 29 Jest tests, a new `listing_source_test`, 52 mutation gates retargeted to the TypeScript and 8 new.
+
+- **Smart menus by look** (2026100538; S5 of `docs/flavourchoice/PLAN.md`). `local\lookcohorts` keeps one cohort per
+  offered look (system context, idnumber `theme_dimensions_look_<flavour id>`, component `theme_dimensions`, which
+  makes core's cohort pages refuse to edit, delete or assign it) holding exactly the people who chose it, so Boost
+  Union's own cohort rule restricts a smart menu by look. `flavourchoice::choose()` moves the person, read back
+  from the stored preference under a per-person lock; the offered-flavours setting's updated callback provisions under a core lock, renames on a title
+  change, never claims an idnumber another owner holds, and empties (never deletes) the cohort of a look taken off
+  the list, through the adhoc task `empty_look_cohort` above 500 members. The daily scheduled task
+  `reconcile_look_cohorts` makes a missing cohort again and puts membership back in step with the preferences. A
+  `cohort_deleted` observer at priority 1000, ahead of Boost Union's, hides every smart menu and item a deleted look
+  cohort restricted before Boost Union strips it from the rule (which would show the menu to everyone), and the new
+  recommendation `dimensions_lookcohorts` warns until each is shown again. Uninstall releases the cohorts (stamp
+  cleared, members kept). The privacy metadata links `core_cohort`. Fourteen PHPUnit tests, twenty-three mutation gates.
 - **The flavour stylesheets are compiled before their first visitor, by a scheduled task** (2026100537; S3 of
   `docs/flavourcss/PLAN.md`). `\theme_dimensions\task\warm_flavour_css` runs every minute and hands S2's planner its
   work. That is every sheet of a flavour a page can be served that has no file at the current revisions, built one

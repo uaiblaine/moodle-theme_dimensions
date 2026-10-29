@@ -149,7 +149,7 @@ final class criteria {
      * The reader's relationship with the courses: every other value of {@see classifier::filters()} is
      * a "More statuses" option of the filter panel, the same radio group by name, so one choice holds
      * across both. The client splits the web service's status group by the same list, mirrored as
-     * SCOPE in amd/src/categorylisting.js; category_listing_markup_test pins the two equal.
+     * SCOPE in js/esm/src/listing/address.ts; category_listing_markup_test pins the two equal.
      */
     public const SCOPE = ['', classifier::STATE_ENROLLED, classifier::STATE_OPEN, classifier::STATE_SCHEDULED];
 

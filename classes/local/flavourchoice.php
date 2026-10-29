@@ -191,12 +191,15 @@ final class flavourchoice {
      *
      * The one write path: the web service of the menu and the form of the choice page both come here.
      * The site default is always a valid answer; any other id must be on the list now, so a stale menu
-     * or a hand-made request cannot store a flavour the administrator does not offer.
+     * or a hand-made request cannot store a flavour the administrator does not offer. The person then
+     * moves into the cohort of the look they chose ({@see lookcohorts::sync_user()}).
      *
      * @param int $flavourid The chosen flavour id, or {@see self::SITE_DEFAULT}.
      * @return bool Whether the choice was recorded.
      */
     public static function choose(int $flavourid): bool {
+        global $USER;
+
         if (!isloggedin() || isguestuser()) {
             return false;
         }
@@ -206,6 +209,7 @@ final class flavourchoice {
 
         set_user_preference(self::PREFERENCE, $flavourid);
         self::forget();
+        lookcohorts::sync_user((int) $USER->id);
 
         return true;
     }

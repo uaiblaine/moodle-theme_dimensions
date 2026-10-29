@@ -29,7 +29,7 @@
  *
  * The anonymous shell draws the same listing and never loads this module; only the logged-in
  * shell's renderer arms it, and not for the guest. A visitor's live listing is categorypublic's.
- * The two paint an answer and write the address with the same functions (categorylisting), so the
+ * The two paint an answer and write the address with the same functions (js/esm/src/listing), so the
  * two shells cannot be told apart row for row; what this module adds is what only an account has -
  * the progress of the courses the reader is enrolled in, the hover peek, the star and the view
  * remembered as a preference.
@@ -74,7 +74,7 @@ import {setUserPreference} from 'core_user/repository';
 import * as CategoryMark from 'theme_dimensions/categorymark';
 import * as CategoryStar from 'theme_dimensions/categorystar';
 import * as DateRange from 'theme_dimensions/daterange';
-import * as Listing from 'theme_dimensions/categorylisting';
+import * as Listing from 'core/esm!@moodle/lms/theme_dimensions/listing/listing';
 
 /** @type {Object} Every hook this module reads, all of them written by the showcase's templates. */
 const SELECTORS = {
@@ -266,7 +266,7 @@ const cardOf = (courseid) => {
  */
 const isRootPage = () => state.categoryid === 0;
 
-/* The shared listing (categorylisting), bound to this page's listing section and state: what this
+/* The shared listing (js/esm/src/listing), bound to this page's listing section and state: what this
    module paints and writes into the address is what the visitor's module does, by the same code. */
 const rootOnly = () => Listing.rootOnly(state);
 const isGrouped = (sort) => Listing.isGrouped(sort);

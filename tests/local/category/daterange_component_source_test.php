@@ -45,6 +45,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  */
 #[CoversNothing]
 final class daterange_component_source_test extends \basic_testcase {
+    /** @var string[] The shared listing's sources under js/esm/src/listing, without their extension. */
+    private const LISTING = ['events', 'address', 'history', 'mounts', 'paint'];
+
     /** @var string The component's specifier, resolved by core's import map to js/esm/build/daterange/DateRange.js. */
     private const SPECIFIER = '@moodle/lms/theme_dimensions/daterange/DateRange';
 
@@ -70,15 +73,25 @@ final class daterange_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The body of one top-level arrow function of an AMD module.
+     * The body of one top-level arrow function of an AMD module or of the shared listing.
+     *
+     * A signature may run over several lines in the TypeScript, one parameter a line.
      *
      * @param string $name The function's name.
-     * @param string $module The module's name.
+     * @param string $module The AMD module's name, or listing for the shared listing's TypeScript sources.
      * @return string The body, without the signature or the closing brace.
      */
-    private function body(string $name, string $module = 'categorylisting'): string {
-        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n\};~s';
-        $found = preg_match($pattern, $this->read('amd/src/' . $module . '.js'), $matches);
+    private function body(string $name, string $module = 'listing'): string {
+        $text = '';
+        foreach ($module === 'listing' ? self::LISTING : [] as $file) {
+            $text .= $this->read('js/esm/src/listing/' . $file . '.ts') . "\n";
+        }
+        if ($module !== 'listing') {
+            $text = $this->read('amd/src/' . $module . '.js');
+        }
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
+            . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
+        $found = preg_match($pattern, $text, $matches);
         $this->assertSame(1, $found, "No top-level function named {$name} in {$module}.");
         $this->assertNotSame('', trim($matches[1]), "The body of {$name} is empty.");
         return $matches[1];
@@ -102,7 +115,7 @@ final class daterange_component_source_test extends \basic_testcase {
         $append = $this->body('appendCalendar');
         $this->assertStringContainsString('reactComponent', $append);
         $this->assertStringNotContainsString('if (!region) {', $append, 'The extractor is returning more than one function.');
-        $this->assertStringContainsString('if (!region) {', $this->body('mountCalendar'));
+        $this->assertStringContainsString('if (!fieldset || !region) {', $this->body('mountCalendar'));
     }
 
     /**
@@ -117,14 +130,14 @@ final class daterange_component_source_test extends \basic_testcase {
     public function test_the_component_is_the_calendar_of_every_shell(): void {
         $mount = $this->body('mountCalendar');
         $this->assertStringContainsString(
-            'export const mountCalendar = async(root, state, onpick) => {',
-            $this->read('amd/src/categorylisting.js')
+            "export const mountCalendar = async(\n    root: HTMLElement,\n    state: ListingState,\n",
+            $this->read('js/esm/src/listing/mounts.ts')
         );
         $this->assertMatchesRegularExpression(
-            '~if \(!region\) \{\s*return;\s*\}\s*appendCalendar\(root, fieldset, region, state, onpick\);\s*$~',
+            '~if \(!fieldset \|\| !region\) \{\s*return;\s*\}\s*appendCalendar\(root, fieldset, region, state, onpick\);\s*$~',
             $mount
         );
-        $this->assertStringNotContainsString('DateRange.mount(', $this->uncommented($this->read('amd/src/categorylisting.js')));
+        $this->assertStringNotContainsString('DateRange.mount(', $this->uncommented($this->read('js/esm/src/listing/mounts.ts')));
         $this->assertStringContainsString('node.dataset.reactComponent = COMPONENTS.calendar;', $this->body('appendCalendar'));
     }
 
@@ -167,7 +180,7 @@ final class daterange_component_source_test extends \basic_testcase {
         }
         $this->assertMatchesRegularExpression(
             '~region\.addEventListener\(CALENDAR\.pick, \(event\) => \{\s*'
-                . 'onpick\(event\.detail\.from, event\.detail\.to\);\s*\}\);~',
+                . 'const detail = \(event as CustomEvent\)\.detail;\s*onpick\(detail\.from, detail\.to\);\s*\}\);~',
             $append,
             'A pick is the caller\'s onpick, with the two bounds.'
         );
@@ -206,18 +219,21 @@ final class daterange_component_source_test extends \basic_testcase {
      * component never hears the period.
      */
     public function test_the_two_sides_spell_the_events_alike(): void {
-        preg_match('~\nconst CALENDAR = \{\n(.*?)\n\};~s', $this->read('amd/src/categorylisting.js'), $amd);
-        preg_match('~\nexport const EVENTS = \{\n(.*?)\n\};~s', $this->read('js/esm/src/daterange/DateRange.tsx'), $esm);
-        $this->assertNotEmpty($amd, 'The listing\'s event names are missing.');
-        $this->assertNotEmpty($esm, 'The component\'s event names are missing.');
-        preg_match_all("~(\\w+): '([^']+)'~", $amd[1], $amdnames, PREG_SET_ORDER);
-        preg_match_all("~(\\w+): '([^']+)'~", $esm[1], $esmnames, PREG_SET_ORDER);
-        $pairs = fn(array $sets): array => array_column($sets, 2, 1);
+        preg_match('~\nexport const CALENDAR = \{\n(.*?)\n\};~s', $this->read('js/esm/src/listing/events.ts'), $shared);
+        $this->assertNotEmpty($shared, 'The listing\'s event names are missing.');
+        preg_match_all("~(\\w+): '([^']+)'~", $shared[1], $names, PREG_SET_ORDER);
         $this->assertSame(
             ['pick' => 'dim-daterange:pick', 'set' => 'dim-daterange:set', 'mounted' => 'dim-daterange:mounted'],
-            $pairs($amdnames)
+            array_column($names, 2, 1)
         );
-        $this->assertSame($pairs($amdnames), $pairs($esmnames));
+        // Since R4b1 one spelling: the component and the listing's mounts both import it.
+        $component = $this->read('js/esm/src/daterange/DateRange.tsx');
+        $this->assertStringContainsString("import {CALENDAR} from '../listing/events';", $component);
+        $this->assertStringContainsString('export const EVENTS = CALENDAR;', $component);
+        $this->assertStringContainsString(
+            "import {AREAS, CALENDAR, LINE, LINE_DRAWN, SELECTORS} from './events';",
+            $this->read('js/esm/src/listing/mounts.ts')
+        );
     }
 
     /**
@@ -229,7 +245,7 @@ final class daterange_component_source_test extends \basic_testcase {
     public function test_both_shells_mount_the_component_named_in_the_listing(): void {
         $this->assertStringContainsString(
             "    calendar: '" . self::SPECIFIER . "',\n",
-            $this->read('amd/src/categorylisting.js')
+            $this->read('js/esm/src/listing/mounts.ts')
         );
         foreach (['js', 'dev.js'] as $build) {
             $this->assertFileExists(

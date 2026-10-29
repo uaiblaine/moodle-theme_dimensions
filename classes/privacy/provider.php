@@ -113,6 +113,7 @@ class provider implements
             flavourchoice::PREFERENCE,
             'privacy:metadata:preference:flavour'
         );
+        $collection->add_subsystem_link('core_cohort', [], 'privacy:metadata:core_cohort');
 
         return $collection;
     }

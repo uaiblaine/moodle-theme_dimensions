@@ -19,7 +19,7 @@
  * The page it runs on is the anonymous shell, complete without it: the toolbar is a real GET form,
  * the pager is real links and every state of the listing has an address. This module moves that
  * page as the logged-in client moves its own - it paints an answer and writes the address with the
- * same functions (categorylisting), so the two shells cannot be told apart row for row and an address
+ * same functions (the shared listing, js/esm/src/listing), so the two shells cannot be told apart row for row and an address
  * it writes is the one the server's own links spell.
  *
  * It asks theme_dimensions_get_public_category_rows, and nothing else, through core/ajax
@@ -65,7 +65,7 @@ import Pending from 'core/pending';
 import {getString} from 'core/str';
 import * as CategoryMark from 'theme_dimensions/categorymark';
 import * as DateRange from 'theme_dimensions/daterange';
-import * as Listing from 'theme_dimensions/categorylisting';
+import * as Listing from 'core/esm!@moodle/lms/theme_dimensions/listing/listing';
 
 /** @type {Object} Every hook this module reads, all of them written by the showcase's templates. */
 const SELECTORS = {
@@ -162,7 +162,7 @@ let root = null;
 /** @type {HTMLElement|null} The areas section, on a grouped page and at the root. */
 let areas = null;
 
-/** @type {Object|null} The request this page is showing: categorylisting's state, with no state chip and no favourites. */
+/** @type {Object|null} The request this page is showing: the shared listing's state, with no state chip and no favourites. */
 let state = null;
 
 /** @type {Number} Monotonic ticket: a response whose ticket is not the current one is discarded. */

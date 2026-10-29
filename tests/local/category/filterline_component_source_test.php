@@ -82,18 +82,35 @@ final class filterline_component_source_test extends \advanced_testcase {
     }
 
     /**
-     * The body of one top-level arrow function of an AMD module.
+     * The body of one top-level arrow function of an AMD module or of the shared listing.
+     *
+     * A signature may run over several lines in the TypeScript, one parameter a line.
      *
      * @param string $name The function's name.
-     * @param string $module The module's name.
+     * @param string $module The AMD module's name, or listing for the shared listing's TypeScript sources.
      * @return string The body, without the signature or the closing brace.
      */
-    private function body(string $name, string $module = 'categorylisting'): string {
-        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n\};~s';
-        $found = preg_match($pattern, $this->read('amd/src/' . $module . '.js'), $matches);
+    private function body(string $name, string $module = 'listing'): string {
+        $text = $module === 'listing' ? $this->listing() : $this->read('amd/src/' . $module . '.js');
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
+            . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
+        $found = preg_match($pattern, $text, $matches);
         $this->assertSame(1, $found, "No top-level function named {$name} in {$module}.");
         $this->assertNotSame('', trim($matches[1]), "The body of {$name} is empty.");
         return $matches[1];
+    }
+
+    /**
+     * The shared listing's TypeScript sources, one after the other.
+     *
+     * @return string
+     */
+    private function listing(): string {
+        $text = '';
+        foreach (['events', 'address', 'history', 'mounts', 'paint'] as $file) {
+            $text .= $this->read('js/esm/src/listing/' . $file . '.ts') . "\n";
+        }
+        return $text;
     }
 
     /**
@@ -188,8 +205,11 @@ final class filterline_component_source_test extends \advanced_testcase {
      */
     public function test_the_line_is_handed_over_only_where_the_component_can_draw_it(): void {
         $mount = $this->body('mountLine');
-        $listing = $this->read('amd/src/categorylisting.js');
-        $this->assertStringContainsString('export const mountLine = (root, dropTerm) => {', $listing);
+        $listing = $this->listing();
+        $this->assertStringContainsString(
+            'export const mountLine = (root: HTMLElement, dropTerm: () => void): boolean => {',
+            $listing
+        );
         $this->assertStringContainsString("const formid = form ? form.getAttribute('id') : null;", $mount);
         $this->assertDoesNotMatchRegularExpression(
             '~\bform\.id\b~',
@@ -209,7 +229,7 @@ final class filterline_component_source_test extends \advanced_testcase {
             $mount,
             'The props object itself.'
         );
-        $this->assertStringContainsString('line.parentNode.insertBefore(line, line.nextSibling);', $mount);
+        $this->assertStringContainsString('line.parentNode?.insertBefore(line, line.nextSibling);', $mount);
         $named = strpos($mount, 'line.dataset.reactComponent');
         $listeners = [
             'line.addEventListener(LINE.dropterm, () => dropTerm());',
@@ -221,7 +241,7 @@ final class filterline_component_source_test extends \advanced_testcase {
             $this->assertNotFalse($at, $listener . ' is missing.');
             $this->assertLessThan($named, $at, $listener . ' comes after the line is named.');
         }
-        $this->assertStringContainsString("const pending = new Pending('theme_dimensions/categorylisting:line');", $mount);
+        $this->assertStringContainsString("const pending = new Pending('theme_dimensions/listing:line');", $mount);
     }
 
     /**
@@ -232,8 +252,7 @@ final class filterline_component_source_test extends \advanced_testcase {
      * component's markup because it never sees the mark.
      */
     public function test_the_two_sides_spell_the_events_and_the_mark_alike(): void {
-        $amd = $this->names($this->read('amd/src/categorylisting.js'), 'export const LINE = {');
-        $esm = $this->names($this->read('js/esm/src/filterline/FilterLine.tsx'), 'export const EVENTS = {');
+        $shared = $this->names($this->read('js/esm/src/listing/events.ts'), 'export const LINE = {');
         $this->assertSame(
             [
                 'mounted' => 'dim-line:mounted',
@@ -242,14 +261,17 @@ final class filterline_component_source_test extends \advanced_testcase {
                 'answer' => 'dim-line:answer',
                 'dropterm' => 'dim-line:dropterm',
             ],
-            $amd
+            $shared
         );
-        $this->assertSame($amd, $esm);
-        $this->assertStringContainsString("const LINE_DRAWN = 'data-line-drawn';", $this->read('amd/src/categorylisting.js'));
         $this->assertStringContainsString(
-            "export const DRAWN = 'data-line-drawn';",
-            $this->read('js/esm/src/filterline/FilterLine.tsx')
+            "export const LINE_DRAWN = 'data-line-drawn';",
+            $this->read('js/esm/src/listing/events.ts')
         );
+        // Since R4b1 one spelling: the component imports the names and the mark the listing's painters read.
+        $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
+        $this->assertStringContainsString("import {LINE, LINE_DRAWN} from '../listing/events';", $component);
+        $this->assertStringContainsString('export const EVENTS = LINE;', $component);
+        $this->assertStringContainsString('export const DRAWN = LINE_DRAWN;', $component);
         $this->assertStringContainsString(
             "drawnline: '[data-region=\"dim-line\"][data-line-drawn]',",
             $this->read('amd/src/categoryvitrine.js')
@@ -271,13 +293,13 @@ final class filterline_component_source_test extends \advanced_testcase {
     public function test_no_painter_writes_into_what_the_component_draws(): void {
         $drawn = $this->body('drawnByLine');
         $this->assertStringContainsString(
-            'return Boolean(line) && line.hasAttribute(LINE_DRAWN) && !element.closest(SELECTORS.adopted);',
+            'return element !== null && line !== null && line.hasAttribute(LINE_DRAWN) && !element.closest(SELECTORS.adopted);',
             $drawn
         );
         $this->assertStringContainsString(
             "adopted: '[data-region=\"dim-filters-panel\"], [data-region=\"dim-organise-menu\"], "
                 . "[data-region=\"dim-line-manage\"]',",
-            $this->read('amd/src/categorylisting.js')
+            $this->listing()
         );
         $guards = [
             'paintView' => 'if (!drawnByLine(button)) {',
@@ -293,7 +315,7 @@ final class filterline_component_source_test extends \advanced_testcase {
             $this->assertStringContainsString($guard, $this->body($painter), "{$painter} writes into the component's markup.");
         }
         $this->assertMatchesRegularExpression(
-            '~root\.querySelectorAll\(SELECTORS\.group\)\.forEach\(\(fieldset\) => \{\s*'
+            '~root\.querySelectorAll<HTMLElement>\(SELECTORS\.group\)\.forEach\(\(fieldset\) => \{\s*'
                 . 'if \(drawnByLine\(fieldset\)\) \{\s*return;~',
             $this->body('paintControls'),
             'Back and Clear all check no radio the component draws.'
@@ -309,9 +331,9 @@ final class filterline_component_source_test extends \advanced_testcase {
         $this->assertStringContainsString('line.dispatchEvent(new CustomEvent(type, {detail: detail}));', $tell);
         // The hidden favourites field is the form's, before the line: still painted on both shells.
         $this->assertMatchesRegularExpression(
-            '~const field = root\.querySelector\(SELECTORS\.favfield\);\s*'
+            '~const field = root\.querySelector<HTMLInputElement>\(SELECTORS\.favfield\);\s*'
                 . 'if \(field\) \{\s*field\.disabled = !on;\s*\}\s*'
-                . 'const star = root\.querySelector\(SELECTORS\.star\);~',
+                . 'const star = root\.querySelector<HTMLButtonElement>\(SELECTORS\.star\);~',
             $this->body('paintFavToggle')
         );
     }
@@ -326,7 +348,7 @@ final class filterline_component_source_test extends \advanced_testcase {
      */
     public function test_an_answer_is_told_to_the_component_after_the_painters(): void {
         $answer = $this->body('tellAnswer');
-        $this->assertStringContainsString('const rank = (option) => SCOPE.indexOf(String(option.value));', $answer);
+        $this->assertStringContainsString('const rank = (option: Option): number => SCOPE.indexOf(String(option.value));', $answer);
         $this->assertStringContainsString(
             'scope: options.length ? options.filter((option) => rank(option) >= 0).sort((a, b) => rank(a) - rank(b)) : null,',
             $answer
@@ -356,7 +378,7 @@ final class filterline_component_source_test extends \advanced_testcase {
      * visitor's module handing its line to nothing (gate js_public_line_armed); the component not built.
      */
     public function test_both_shells_hand_their_line_to_the_component_named_in_the_listing(): void {
-        $this->assertStringContainsString("    line: '" . self::SPECIFIER . "',\n", $this->read('amd/src/categorylisting.js'));
+        $this->assertStringContainsString("    line: '" . self::SPECIFIER . "',\n", $this->listing());
         $this->assertStringContainsString(
             'const mountLine = () => Listing.mountLine(root, dropTerm);',
             $this->read('amd/src/categoryvitrine.js')

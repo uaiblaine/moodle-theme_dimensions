@@ -21,7 +21,7 @@
  * hook, which scss/category.scss and the Behat steps read), the same rules (./model, function for
  * function) and no timezone arithmetic (./calendar).
  *
- * It is mounted by categorylisting's mountCalendar(), on both shells, as a node APPENDED
+ * It is mounted by the listing's mountCalendar(), on both shells, as a node APPENDED
  * to the toolbar's empty dim-daterange region: core's react_autoinit observes added nodes and never
  * attributes. The props are what the server resolved and the client may not compute: id, firstday,
  * today, from, to. It talks to the listing through events on that region, never through a callback:
@@ -49,13 +49,10 @@ import type {Month} from './calendar';
 import {FROM, TO} from './model';
 import type {Applied, Bound, Model} from './model';
 import * as State from './model';
+import {CALENDAR} from '../listing/events';
 
-/** The events the control and the listing exchange on the toolbar's region; amd/src/categorylisting.js spells them too. */
-export const EVENTS = {
-    pick: 'dim-daterange:pick',
-    set: 'dim-daterange:set',
-    mounted: 'dim-daterange:mounted',
-};
+/** The events the control and the listing exchange on the toolbar's region, spelled once in listing/events.ts. */
+export const EVENTS = CALENDAR;
 
 /** The toolbar's region the control is mounted in, which the listing tells it the period through. */
 const REGION = '[data-region="dim-daterange"]';

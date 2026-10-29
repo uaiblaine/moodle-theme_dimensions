@@ -74,15 +74,19 @@ final class areas_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The body of one top-level arrow function of an AMD module.
+     * The body of one top-level arrow function of an AMD module or of the shared listing.
+     *
+     * A signature may run over several lines in the TypeScript, one parameter a line.
      *
      * @param string $name The function's name.
-     * @param string $module The module's name.
+     * @param string $module The AMD module's name, or a path under js/esm/src without its extension.
      * @return string The body, without the signature or the closing brace.
      */
     private function body(string $name, string $module = 'categorypanel'): string {
-        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~') . ' = [^\n]*\{\n(.*?)\n\};~s';
-        $found = preg_match($pattern, $this->read('amd/src/' . $module . '.js'), $matches);
+        $path = str_contains($module, '/') ? 'js/esm/src/' . $module . '.ts' : 'amd/src/' . $module . '.js';
+        $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
+            . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
+        $found = preg_match($pattern, $this->read($path), $matches);
         $this->assertSame(1, $found, "No top-level function named {$name} in {$module}.");
         $this->assertNotSame('', trim($matches[1]), "The body of {$name} is empty.");
         return $matches[1];
@@ -130,7 +134,7 @@ final class areas_component_source_test extends \basic_testcase {
      * The extractors return one function and not the module around it.
      */
     public function test_the_extractors_return_one_function_and_not_the_file(): void {
-        $mount = $this->body('mountAreas', 'categorylisting');
+        $mount = $this->body('mountAreas', 'listing/mounts');
         $this->assertStringNotContainsString('appendCalendar', $mount);
         $settle = $this->inner('settle');
         $this->assertStringNotContainsString('const openArea', $settle);
@@ -138,17 +142,20 @@ final class areas_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The events are spelled alike on every side: the component's EVENTS and each AMD module's own list.
+     * The events are spelled once, in the shared listing's events.ts, and the AMD clients spell them alike.
      *
      * A name spelled differently on one side errors nowhere: the component never hears an answer, or the page's
-     * client never answers a question and every panel opens into its error.
+     * client never answers a question and every panel opens into its error. Since R4b1 the component and the
+     * listing's mounts import the names from one file; the two AMD clients, until they move to the store, still
+     * spell their document events themselves, held equal here.
      *
-     * Changes that must make it fail: a name of the shared listing's AREAS spelled otherwise (gate
-     * js_areas_events_spelled), or of the visitor's EVENTS (gate js_public_events_spelled).
+     * Changes that must make it fail: a name of events.ts's AREAS spelled otherwise (gate js_areas_events_spelled),
+     * the visitor's EVENTS (gate js_public_events_spelled), or a component spelling an event of its own instead of
+     * importing it (gate js_events_one_spelling).
      */
     public function test_the_two_sides_spell_the_events_alike(): void {
-        $esm = $this->names($this->read('js/esm/src/areas/panel.ts'), 'export const EVENTS = {');
-        $areas = $this->names($this->read('amd/src/categorylisting.js'), 'const AREAS = {');
+        $events = $this->read('js/esm/src/listing/events.ts');
+        $areas = $this->names($events, 'export const AREAS = {');
         $this->assertSame([
             'mounted' => 'dim-areas:mounted',
             'ask' => 'dim-areas:ask',
@@ -156,18 +163,38 @@ final class areas_component_source_test extends \basic_testcase {
             'unanswered' => 'dim-areas:unanswered',
             'painted' => 'dim-areas:painted',
         ], $areas);
+        $listing = $this->names($events, 'export const LISTING = {');
+        $this->assertSame(['view', 'pending', 'criteria', 'failed', 'autoopened'], array_keys($listing));
+        $panel = $this->read('js/esm/src/areas/panel.ts');
+        $this->assertStringContainsString("import {AREAS, LISTING} from '../listing/events';", $panel);
+        $this->assertStringContainsString('export const EVENTS = {...AREAS, ...LISTING};', $panel);
         $vitrine = $this->names($this->read('amd/src/categoryvitrine.js'), 'const EVENTS = {');
         $this->assertSame(['view', 'pending', 'criteria', 'autoopened', 'failed'], array_keys($vitrine));
         $public = $this->names($this->read('amd/src/categorypublic.js'), 'const EVENTS = {');
         $this->assertSame(['pending', 'criteria'], array_keys($public));
-        foreach ([$areas, $vitrine, $public] as $side) {
+        foreach ([$vitrine, $public] as $side) {
             foreach ($side as $name => $value) {
-                $this->assertSame($value, $esm[$name] ?? null, "The component spells {$name} otherwise.");
+                $this->assertSame($value, $listing[$name] ?? null, "The listing spells {$name} otherwise.");
             }
         }
-        $this->assertSame([], array_diff_key($esm, $areas + $vitrine), 'The component spells an event nobody sends or hears.');
-        $this->assertStringContainsString("view: 'dim-vitrine:view',", $this->read('amd/src/categorylisting.js'));
         $this->assertStringContainsString('export {EVENTS};', $this->read('js/esm/src/areas/Areas.tsx'));
+        // One spelling: no other module of js/esm/src writes an event name of its own.
+        $files = array_merge(
+            glob($this->plugin_root() . '/js/esm/src/*.ts'),
+            glob($this->plugin_root() . '/js/esm/src/*/*.{ts,tsx}', GLOB_BRACE)
+        );
+        $this->assertNotEmpty($files);
+        foreach ($files as $file) {
+            $name = substr($file, strlen($this->plugin_root()) + 1);
+            if ($name === 'js/esm/src/listing/events.ts') {
+                continue;
+            }
+            $this->assertDoesNotMatchRegularExpression(
+                "~['\"\\x60]dim-(?:areas|vitrine|panel|line|daterange):[a-z]+['\"\\x60]~",
+                $this->uncommented((string) file_get_contents($file)),
+                "{$name} spells an event of its own instead of importing it from listing/events.ts."
+            );
+        }
     }
 
     /**
@@ -192,13 +219,13 @@ final class areas_component_source_test extends \basic_testcase {
             $this->read('amd/src/categorypanel.js'),
             'The logged-in shell: no options, its service and its progress.'
         );
-        $mount = $this->body('mountAreas', 'categorylisting');
+        $mount = $this->body('mountAreas', 'listing/mounts');
         $this->assertMatchesRegularExpression(
             '~^    if \(!areas \|\| !areas\.querySelector\(SELECTORS\.panel\)\) \{\s*return false;\s*\}~',
             $mount
         );
-        $this->assertStringContainsString("panel: '[data-region=\"dim-panel\"]',", $this->read('amd/src/categorylisting.js'));
-        $this->assertStringContainsString("const pending = new Pending('theme_dimensions/categorylisting:areas');", $mount);
+        $this->assertStringContainsString("panel: '[data-region=\"dim-panel\"]',", $this->read('js/esm/src/listing/events.ts'));
+        $this->assertStringContainsString("const pending = new Pending('theme_dimensions/listing:areas');", $mount);
         $this->assertStringContainsString('node.hidden = true;', $mount);
         $this->assertStringContainsString('node.dataset.reactComponent = COMPONENTS.areas;', $mount);
         $this->assertStringContainsString('node.dataset.reactProps = JSON.stringify(props);', $mount, 'The props object itself.');
@@ -208,7 +235,7 @@ final class areas_component_source_test extends \basic_testcase {
             'areas.addEventListener(AREAS.ask, (event) => {',
             'areas.addEventListener(AREAS.question, (event) => {',
             'areas.addEventListener(AREAS.unanswered, (event) => {',
-            'areas.addEventListener(AREAS.painted, (event) => client.painted(event.detail.panel));',
+            'areas.addEventListener(AREAS.painted, (event) => painted((event as CustomEvent).detail.panel));',
             'areas.addEventListener(AREAS.mounted, () => pending.resolve(), {once: true});',
         ];
         foreach ($listeners as $listener) {
@@ -230,8 +257,8 @@ final class areas_component_source_test extends \basic_testcase {
      * progress never painted; the component calling a service or reading the session.
      */
     public function test_the_component_asks_through_the_pages_client_and_calls_no_service(): void {
-        $mount = $this->body('mountAreas', 'categorylisting');
-        $this->assertStringContainsString('event.detail.answer = client.ask(event.detail.poster, event.detail.psort);', $mount);
+        $mount = $this->body('mountAreas', 'listing/mounts');
+        $this->assertStringContainsString('detail.answer = client.ask(detail.poster, detail.psort);', $mount);
         $this->assertStringContainsString("methodname: 'theme_dimensions_get_category_rows',", $this->body('ask'));
         $ask = $this->inner('ask');
         $this->assertStringContainsString('areas.dispatchEvent(new CustomEvent(EVENTS.ask, {detail: detail}));', $ask);
@@ -256,7 +283,7 @@ final class areas_component_source_test extends \basic_testcase {
      * js_areas_no_amd_panel); a module not built.
      */
     public function test_the_component_is_named_once_and_no_shell_arms_the_amd_panel(): void {
-        $this->assertStringContainsString("    areas: '" . self::SPECIFIER . "',\n", $this->read('amd/src/categorylisting.js'));
+        $this->assertStringContainsString("    areas: '" . self::SPECIFIER . "',\n", $this->read('js/esm/src/listing/mounts.ts'));
         foreach (['categorypanel', 'categorypublic', 'categoryareapanel', 'categoryposters', 'categoryvitrine'] as $module) {
             $this->assertStringNotContainsString(
                 '@moodle/lms/theme_dimensions/areas',
