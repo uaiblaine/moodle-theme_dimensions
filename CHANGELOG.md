@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The filter line's first measure forces no layout in React's commit** (2026100535; PLAN 5.2.6). The first layout
+  effect measured the steps (`contentWidth()`, `stepWidths()`) and placed the layers inside the commit, forcing the
+  page's first full layout there (one long frame of 130-150 ms at 4x CPU on the visitor's page, most of it forced
+  layout, though the line fitted at the first try). The first measure is now taken at the line's `ResizeObserver`'s
+  first entry, which the browser delivers after its own layout and before the paint, with the entry's content box as
+  the width: the line is still folded before it is first painted. The layers' placement and the rows' fades, a
+  content change and the fonts' remeasure wait for that measure too; a mount again from the kept state gets its own
+  first entry. Without a `ResizeObserver` the commit measures as before. `data-line-drawn`, the focus restore and
+  `dim-line:mounted` stay in the commit. The line is hidden (`visibility: hidden`, its own inline value given back)
+  from the commit to that first fold: a fold in the observer's callback moves nodes the browser has already laid out
+  once, which counted as a layout shift (0.027 on the logged-in flat page at 900 px), and hidden nodes count for none,
+  while visibility keeps the line's box. A line holding the focus is not hidden, since a hidden ancestor takes the
+  focus away. Eight Jest tests, one PHPUnit source assertion, four mutation gates.
 - **A flavour's stylesheet can be compiled before its first visitor** (S1 of `docs/flavourcss/PLAN.md`; nothing calls
   it yet). `local\flavourcss\builder` compiles ONE Boost Union flavour in a CLI process and stores it where Boost
   Union's `flavours/styles.php` reads it: the `core/postprocessedcss` entry, the localcache file and the tempdir

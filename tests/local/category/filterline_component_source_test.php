@@ -435,6 +435,57 @@ final class filterline_component_source_test extends \advanced_testcase {
     }
 
     /**
+     * The first commit reads no layout: the line's first measure is the ResizeObserver's first entry's.
+     *
+     * A measure inside React's commit forces the page's first full layout (PLAN 5.2.6); the observer's first entry
+     * comes after the browser's own layout and before the paint, so the line is still folded before it is painted.
+     * The component's behaviour around it is Jest's (FilterLine.test.tsx); this holds the shape the mutation sweep,
+     * which runs PHPUnit alone, can redden.
+     *
+     * The line is hidden from the commit to that first fold (a fold in the callback moves nodes the browser already
+     * laid out, a layout shift; hidden nodes count for none), unless it holds the focus, and shown again by the
+     * measure, whether it succeeded or not, and by the effect's cleanup.
+     *
+     * Changes that must make it fail: the measure taken in the first commit's effect where an observer exists; the
+     * observer's first entry taking no measure; the layers placed, the fonts' or a new content's remeasure taken
+     * before that first measure; the line not hidden, hidden while it holds the focus, or not shown again.
+     */
+    public function test_the_first_measure_waits_for_the_observers_first_entry(): void {
+        $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
+        $found = preg_match("~\n    // The first commit: (.*?)\n    // The first commit's effect, once~s", $component, $matches);
+        $this->assertSame(1, $found, 'No first commit effect in FilterLine.tsx.');
+        $effect = $this->uncommented($matches[1]);
+        $this->assertMatchesRegularExpression(
+            "~\n        if \(typeof ResizeObserver === 'undefined'\) \{\s*measureFirst\(\);\s*\} else if "
+                . "\(!setup\.focused && !line\.contains\(document\.activeElement\)\) \{\s*"
+                . "st\.veiled = line\.style\.visibility;\s*line\.style\.visibility = 'hidden';\s*\}\n~",
+            $effect
+        );
+        $this->assertMatchesRegularExpression('~return \(\) => \{\s*observer\?\.disconnect\(\);\s*unveil\(\);~', $effect);
+        $this->assertSame(1, substr_count($effect, 'measureFirst('), 'The first commit measures outside the fallback.');
+        foreach (['stepWidths(', 'contentWidth(', 'refold(', 'remeasure()'] as $measure) {
+            $this->assertStringNotContainsString($measure, $effect, "The first commit calls {$measure}.");
+        }
+        $this->assertMatchesRegularExpression(
+            '~const width = entries\[0\]\.contentRect\.width;\s*if \(!live\.current\.measuredOnce\) \{\s*'
+                . 'flushSync\(\(\) => \(api\.current\.measureFirst as \(width: number\) => void\)\(width\)\);\s*return;~',
+            $effect
+        );
+        $this->assertStringContainsString('if (line.isConnected && live.current.measuredOnce) {', $effect);
+        $this->assertMatchesRegularExpression(
+            '~const measureFirst = \(width\?: number\): void => \{.*?st\.measuredOnce = true;.*?'
+                . 'st\.widths = stepWidths\(line, st\.fold, st\.width\);\s*refold\(\);\s*\} catch \(error\) \{\s*'
+                . 'st\.widths = \[\];\s*\}\s*unveil\(\);~s',
+            $component
+        );
+        $this->assertMatchesRegularExpression(
+            '~measured\.current = signature;\s*(//[^\n]*\s*)?if \(st\.measuredOnce\) \{\s*remeasure\(\);~',
+            $component
+        );
+        $this->assertStringContainsString('if (!line || !drawn.current || !st.measuredOnce) {', $component);
+    }
+
+    /**
      * The component adopts exactly the three frames the painters keep painting, and calls nothing itself.
      *
      * Changes that must make it fail: a frame adopted that the guard does not exempt, or exempted and never

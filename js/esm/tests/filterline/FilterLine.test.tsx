@@ -27,6 +27,7 @@
  */
 
 import {act, fireEvent, render, waitFor} from '@testing-library/react';
+import {createRoot} from 'react-dom/client';
 import FilterLine, {DRAWN, EVENTS} from '../../src/filterline/FilterLine';
 import * as Measure from '../../src/filterline/measure';
 import {FORM, drawPage, pointer, shape} from './page';
@@ -54,6 +55,10 @@ let observers: Array<(entries: Array<{contentRect: {width: number}}>) => void> =
 
 beforeEach(() => {
     observers = [];
+    // A value queued for a call a failed test never made must not reach the next test.
+    const actual = jest.requireActual('../../src/filterline/measure');
+    (Measure.stepWidths as jest.Mock).mockReset().mockImplementation(actual.stepWidths);
+    (Measure.contentWidth as jest.Mock).mockReset().mockImplementation(actual.contentWidth);
     window.matchMedia = jest.fn().mockImplementation((query: string) => ({
         media: query,
         matches: false,
@@ -150,6 +155,33 @@ const options = (line: HTMLElement): string[] => Array.from(line.querySelectorAl
 const listbox = (line: HTMLElement): HTMLElement => line.querySelector('[data-region="dim-line-suggest"]') as HTMLElement;
 
 /**
+ * Deliver an entry of the line's width to every observer, as the browser does after its layout.
+ *
+ * @param {number} width The line's content box width.
+ * @returns {Promise}
+ */
+const resize = async(width: number): Promise<void> => {
+    await act(async() => {
+        observers.forEach((callback) => callback([{contentRect: {width: width}}]));
+    });
+};
+
+/**
+ * Spy on every layout read the line's measure and its layers' placement make.
+ *
+ * @returns {Array} The spies, to count and restore.
+ */
+const layoutReads = (): jest.SpyInstance[] => [
+    jest.spyOn(Element.prototype, 'getBoundingClientRect'),
+    jest.spyOn(Element.prototype, 'getClientRects'),
+    jest.spyOn(Element.prototype, 'clientWidth', 'get'),
+    jest.spyOn(Element.prototype, 'scrollWidth', 'get'),
+    jest.spyOn(HTMLElement.prototype, 'offsetWidth', 'get'),
+    jest.spyOn(HTMLElement.prototype, 'offsetParent', 'get'),
+    jest.spyOn(window, 'getComputedStyle'),
+];
+
+/**
  * Tell the line something, as the listing does.
  *
  * @param {HTMLElement} line The line.
@@ -206,6 +238,8 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(document.activeElement).toBe(page.field);
         // A focus the component gave back is not the reader's: the search did not open.
         expect(listbox(page.line).hidden).toBe(true);
+        // A line holding the focus is never hidden until its first fold: a hidden ancestor would take the focus away.
+        expect(page.line.style.visibility).toBe('');
     });
 
     it('draws an answer: the scope\'s counts and absent cells, the star, the badge', async() => {
@@ -309,26 +343,145 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(filters.open).toBe(true);
     });
 
-    it('folds before its first paint, from the widths measured once', async() => {
+    it('folds at the observer\'s first entry, before its first paint, from the widths measured once', async() => {
         (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
-        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(700);
         const page = await mount();
+        await resize(700);
         expect(page.line.classList.contains('dim-line--s3')).toBe(true);
         expect(page.line.classList.contains('dim-line--folded')).toBe(true);
         expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
+        expect(Measure.stepWidths).toHaveBeenCalledWith(page.line, null, 700);
+        // The entry's content box is the width: nothing is read off the line for it.
+        expect(Measure.contentWidth).not.toHaveBeenCalled();
+    });
+
+    it('reads no layout in the mount\'s commit: the line is drawn and said so, and measured at the first entry', async() => {
+        const reads = layoutReads();
+        const page = await mount();
+        try {
+            expect(page.line.hasAttribute(DRAWN)).toBe(true);
+            expect(page.mounted).toHaveBeenCalledTimes(1);
+            expect(Measure.stepWidths).not.toHaveBeenCalled();
+            expect(Measure.contentWidth).not.toHaveBeenCalled();
+            reads.forEach((spy) => expect(spy).not.toHaveBeenCalled());
+            expect(page.line.className).not.toMatch(/dim-line--s\d/);
+        } finally {
+            reads.forEach((spy) => spy.mockRestore());
+        }
+
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900]);
+        await resize(1200);
+        expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
+        expect(Measure.stepWidths).toHaveBeenCalledWith(page.line, null, 1200);
+        expect(page.line.classList.contains('dim-line--s1')).toBe(true);
+    });
+
+    it('folds a line its first entry finds narrow straight to the fourth step, the scope on its own line', async() => {
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+        const page = await mount();
+        expect(page.line.style.visibility).toBe('hidden');
+        await resize(500);
+        expect(page.line.classList.contains('dim-line--s4')).toBe(true);
+        expect(page.line.classList.contains('dim-line--folded')).toBe(false);
+        expect(page.line.style.visibility).toBe('');
+        expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
+        const order = Array.from(page.line.children)
+            .map((child) => child.getAttribute('data-region') || child.getAttribute('data-action'));
+        expect(order.indexOf('dim-vitrine-group')).toBe(order.indexOf('dim-search-close') + 1);
+    });
+
+    it('leaves an answer and the fonts drawn before the first entry to that entry\'s measure', async() => {
+        Object.defineProperty(document, 'fonts', {value: {ready: Promise.resolve()}, configurable: true});
+        try {
+            const page = await mount();
+            const answer = (count: number) => tell(page.line, EVENTS.answer, {
+                scope: [{id: 'dim-chip-7-all', value: '', label: 'All', count: count, hascount: true, checked: true}],
+                favourites: {available: true, pressed: false, count: 0},
+                filtercount: 0,
+                filtercountlabel: '',
+            });
+            await answer(8);
+            expect(page.line.querySelector('label[for="dim-chip-7-all"]')?.textContent).toBe('All 8');
+            expect(Measure.stepWidths).not.toHaveBeenCalled();
+
+            (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900]);
+            await resize(1200);
+            expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
+            // Once measured, new counts are measured again at once.
+            (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900]);
+            (Measure.contentWidth as jest.Mock).mockReturnValueOnce(1200);
+            await answer(9);
+            expect(Measure.stepWidths).toHaveBeenCalledTimes(2);
+        } finally {
+            delete (document as unknown as {fonts?: unknown}).fonts;
+        }
+    });
+
+    it('measures in the mount\'s commit where there is no ResizeObserver', async() => {
+        delete (window as unknown as {ResizeObserver?: unknown}).ResizeObserver;
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
+        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(700);
+        const page = await mount();
+        expect(Measure.contentWidth).toHaveBeenCalledTimes(1);
+        expect(Measure.stepWidths).toHaveBeenCalledWith(page.line, null, 700);
+        expect(page.line.classList.contains('dim-line--s3')).toBe(true);
+        expect(page.line.classList.contains('dim-line--folded')).toBe(true);
+        expect(page.mounted).toHaveBeenCalledTimes(1);
+        // Measured in the commit, folded before the paint: nothing to hide.
+        expect(page.line.style.visibility).toBe('');
+    });
+
+    it('stays the line at the full step where its first entry cannot measure it', async() => {
+        (Measure.stepWidths as jest.Mock).mockImplementationOnce(() => {
+            throw new Error('No layout.');
+        });
+        const page = await mount();
+        expect(page.line.style.visibility).toBe('hidden');
+        await resize(700);
+        expect(page.line.hasAttribute(DRAWN)).toBe(true);
+        expect(page.line.className).not.toMatch(/dim-line--s\d/);
+        expect(page.line.querySelector('input[type="search"]')).not.toBeNull();
+        expect(page.line.style.visibility).toBe('');
+    });
+
+    it('hides the line from its commit to its first fold, then gives it back its own inline visibility', async() => {
+        const page = await mount([], (server) => {
+            server.line.style.visibility = 'visible';
+        });
+        expect(page.line.style.visibility).toBe('hidden');
+        expect(page.mounted).toHaveBeenCalledTimes(1);
+
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900]);
+        await resize(1200);
+        expect(page.line.classList.contains('dim-line--s1')).toBe(true);
+        expect(page.line.style.visibility).toBe('visible');
+        // A later entry leaves it as it is.
+        await resize(1100);
+        expect(page.line.style.visibility).toBe('visible');
+    });
+
+    it('gives the line back its visibility when it is unmounted before its first fold', async() => {
+        const page = drawPage([]);
+        const root = createRoot(page.line);
+        await act(async() => {
+            root.render(<FilterLine form={FORM} />);
+        });
+        expect(page.line.style.visibility).toBe('hidden');
+        await act(async() => {
+            root.unmount();
+        });
+        expect(page.line.style.visibility).toBe('');
     });
 
     it('takes a step from a new width alone, the scope on a line of its own at the fourth, its focus kept', async() => {
         (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
-        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(1000);
         const page = await mount();
+        await resize(1000);
         expect(page.line.classList.contains('dim-line--s1')).toBe(true);
         const cell = page.line.querySelector('#dim-chip-7-enrolled') as HTMLInputElement;
         await act(async() => cell.focus());
 
-        await act(async() => {
-            observers.forEach((callback) => callback([{contentRect: {width: 500}}]));
-        });
+        await resize(500);
 
         expect(page.line.classList.contains('dim-line--s4')).toBe(true);
         expect(page.line.classList.contains('dim-line--folded')).toBe(false);
@@ -340,8 +493,8 @@ describe('theme_dimensions/filterline/FilterLine', () => {
 
     it('grows the search over the line from the third step and closes back to the control that opened it', async() => {
         (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480, 300]);
-        (Measure.contentWidth as jest.Mock).mockReturnValueOnce(700);
         const page = await mount([], empty);
+        await resize(700);
         const opener = page.line.querySelector('[data-action="dim-search-open"]') as HTMLButtonElement;
         await act(async() => opener.focus());
         fireEvent.click(opener);

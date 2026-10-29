@@ -30,12 +30,22 @@ import {createRoot} from 'react-dom/client';
 import Areas, {EVENTS as AREAS} from '../../src/areas/Areas';
 import DateRange, {EVENTS as CALENDAR} from '../../src/daterange/DateRange';
 import FilterLine, {DRAWN, EVENTS as LINE} from '../../src/filterline/FilterLine';
+import * as Measure from '../../src/filterline/measure';
 import {VISITOR_FORM, drawVisitorPage} from './page';
 
 // The browser imports the preview on first use; Jest's runtime cannot run a native import().
 jest.mock('../../src/filterline/lazy', () => ({
     importPreview: () => Promise.resolve(jest.requireActual('../../src/filterline/preview')),
 }));
+
+// jsdom lays nothing out: a test about the steps gives the widths.
+jest.mock('../../src/filterline/measure', () => {
+    const actual = jest.requireActual('../../src/filterline/measure');
+    return Object.assign({}, actual, {stepWidths: jest.fn(actual.stepWidths)});
+});
+
+/** The ResizeObserver callbacks the page has registered, in the order the mounts made them. */
+let observers: Array<(entries: Array<{contentRect: {width: number}}>) => void> = [];
 
 /** The calendar's strings. */
 const STRINGS = [
@@ -67,7 +77,19 @@ beforeEach(() => {
         addEventListener: jest.fn(),
         removeEventListener: jest.fn(),
     }));
+    observers = [];
+    // A value queued for a call a failed test never made must not reach the next test.
+    (Measure.stepWidths as jest.Mock).mockReset().mockImplementation(jest.requireActual('../../src/filterline/measure').stepWidths);
     (window as unknown as {ResizeObserver: unknown}).ResizeObserver = class {
+        /**
+         * Keep the callback for the test to call.
+         *
+         * @param {Function} callback The observer's callback.
+         */
+        constructor(callback: (entries: Array<{contentRect: {width: number}}>) => void) {
+            observers.push(callback);
+        }
+
         /**
          * Nothing to observe in jsdom.
          *
@@ -156,6 +178,44 @@ describe('the components on the visitor\'s markup', () => {
         expect(line.querySelector('input[type="search"]')).not.toBeNull();
         expect(line.querySelectorAll('[data-region="dim-vitrine-group"][data-name^="cf_"]')).toHaveLength(fields);
         expect(line.querySelector('[data-region="dim-filters-panel"] [data-region="dim-daterange"]')).not.toBeNull();
+        await act(async() => {
+            second.unmount();
+        });
+    });
+
+    it('folds a line mounted again at its new observer\'s first entry', async() => {
+        const {line} = drawVisitorPage();
+        const first = createRoot(line);
+        await act(async() => {
+            first.render(<FilterLine form={VISITOR_FORM} />);
+        });
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620]);
+        await act(async() => {
+            observers[0]([{contentRect: {width: 700}}]);
+        });
+        expect(line.classList.contains('dim-line--s3')).toBe(true);
+        expect(line.style.visibility).toBe('');
+        await act(async() => {
+            first.unmount();
+        });
+
+        const second = createRoot(line);
+        await act(async() => {
+            second.render(<FilterLine form={VISITOR_FORM} />);
+        });
+        // Drawn from what the unmount kept, hidden and measured only once its own observer reports the line's width.
+        expect(observers).toHaveLength(2);
+        expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
+        expect(line.style.visibility).toBe('hidden');
+        (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900, 840, 620, 480]);
+        await act(async() => {
+            observers[1]([{contentRect: {width: 500}}]);
+        });
+        expect(Measure.stepWidths).toHaveBeenCalledTimes(2);
+        expect(Measure.stepWidths).toHaveBeenLastCalledWith(line, null, 500);
+        expect(line.classList.contains('dim-line--s4')).toBe(true);
+        expect(line.classList.contains('dim-line--folded')).toBe(false);
+        expect(line.style.visibility).toBe('');
         await act(async() => {
             second.unmount();
         });
