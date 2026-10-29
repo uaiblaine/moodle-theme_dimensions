@@ -416,4 +416,47 @@ class behat_theme_dimensions extends behat_base {
         }
         set_config('custommenuitems', implode("\n", $lines));
     }
+
+    /**
+     * Offer these Boost Union flavours, by title, as the looks a person may choose.
+     *
+     * The setting stores ids, which a feature cannot know, so this step looks them up.
+     *
+     * @Given /^the Boost Union flavours "(?P<titles>(?:[^"]|\\")*)" are offered as looks$/
+     * @param string $titles Comma-separated flavour titles.
+     * @return void
+     */
+    public function the_boost_union_flavours_are_offered_as_looks(string $titles): void {
+        global $DB;
+
+        $ids = [];
+        foreach (array_map('trim', explode(',', $titles)) as $title) {
+            $ids[] = (int) $DB->get_field('theme_boost_union_flavours', 'id', ['title' => $title], MUST_EXIST);
+        }
+        set_config(\theme_dimensions\local\flavourchoice::SETTING, implode(',', $ids), 'theme_dimensions');
+    }
+
+    /**
+     * Assert which Boost Union flavour the page is drawn in, by title, or that it is drawn in none.
+     *
+     * Read from the body's flavour-<id> class, which Boost Union writes from the flavour its resolver chose.
+     *
+     * @Then /^the page is drawn in the Boost Union flavour "(?P<title>(?:[^"]|\\")*)"$/
+     * @param string $title The flavour's title, or "none".
+     * @return void
+     */
+    public function the_page_is_drawn_in_the_boost_union_flavour(string $title): void {
+        global $DB;
+
+        $classes = (string) $this->find('css', 'body')->getAttribute('class');
+        preg_match_all('~\\bflavour-(\\d+)\\b~', $classes, $matches);
+        $expected = $title === 'none' ? [] :
+            [(string) $DB->get_field('theme_boost_union_flavours', 'id', ['title' => $title], MUST_EXIST)];
+        if ($matches[1] !== $expected) {
+            throw new \Behat\Mink\Exception\ExpectationException(
+                "The page is drawn in flavour(s) [" . implode(', ', $matches[1]) . "], not in \"{$title}\".",
+                $this->getSession()
+            );
+        }
+    }
 }

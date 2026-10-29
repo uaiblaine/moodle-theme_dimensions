@@ -1,7 +1,9 @@
 # A look of one's own: choosing a Boost Union flavour from the user menu
 
-Status: **S1 implemented, 2026-10-28** (version 2026100532: `classes/local/flavourchoice.php`, its
-`before_http_headers` callback and `tests/local/flavourchoice_test.php`); S2 to S5 not started. The owner's
+Status: **S1 merged (#51, 2026100532); S2 implemented, 2026-10-29** (2026100534: the Look submenu, the drawer
+panel, `flavour.php` with its form, `amd/src/flavourchoice.js` and the `theme_dimensions_choose_flavour` service). S2
+took the choice page's form from S3 and changed default D3 (section 9). S3 is now the preferences page link alone;
+S4 and S5 are not started. The owner's
 decisions are in section 2.
 F1 was reversed the same day: the person's choice now wins over the administrator's flavours.
 Section 9 lists the defaults this plan picked where nothing was decided; each can be overturned
@@ -421,7 +423,7 @@ application store, where the smart-menu caches live, mapped to Redis.
 |---|---|---|
 | D1 | "Site default" means Boost Union's rules apply (the administrator's category and cohort flavours, or none) | "No flavour at all", overriding the administrator's rules too |
 | D2 | Labels: "Look" / "Visual" (pt_br), "Site default" / "Padrão do site" | Other wording |
-| D3 | The menu writes through a GET with sesskey and a redirect, no JavaScript | An AMD module calling `core_user_update_user_preferences`, then reload |
+| D3 | **Changed in S2:** the menu writes through the theme's own web service from an AMD module, then reloads; without JavaScript each item opens `flavour.php`, which shows a POST form and writes nothing on the GET. The theme never changes state on a GET (`focus.php` says why), and one write path (`flavourchoice::choose()`) keeps S5's cohort writes in one place. | A GET with sesskey and a redirect |
 | D4 | An empty setting means the feature is off; there is no separate on/off switch | A separate checkbox |
 | D5 | "Site default" is always offered | Only the listed flavours |
 | D6 | No cohort for "Site default" | A cohort for it too, so a menu can target people with no choice |

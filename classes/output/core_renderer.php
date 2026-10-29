@@ -28,6 +28,7 @@ use theme_dimensions\local\compactnav;
 use theme_dimensions\local\coursenotice\builder as coursenotice_builder;
 use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
+use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\guestnav;
 use theme_dimensions\local\login;
 use theme_dimensions\local\phonenav;
@@ -199,6 +200,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         }
         if (is_array($context) && isset($context['usermenu']['userfullname'])) {
             $context = $this->apply_name_in_usermenu($context);
+        }
+        // The Look submenu, keyed on the shape only a logged-in account's user menu has.
+        if (is_array($context) && isset($context['usermenu']['avatardata'], $context['usermenu']['items'])) {
+            $context = $this->apply_look_menu($context);
         }
 
         /* The visitor's navbar: core's "Log in" link and its guest sentence go, the theme's actions
@@ -511,6 +516,94 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         unset($context['usermenu']['userfirstname']);
 
         return $context;
+    }
+
+    /**
+     * Add the Look submenu to the user menu, built like core's language submenu.
+     *
+     * The link goes just before core's Language link, or after Preferences where there is no language
+     * menu, or before the last item. Each submenu item is a link to the choice page with its flavour
+     * preselected and carries the flavour id for theme_dimensions/flavourchoice, which records the
+     * choice in place. The current item points at '#', as core's current language does. Core's submenu
+     * template prints an item's text with a triple stash, so the text goes in ESCAPED; the title is
+     * printed double-stashed and goes in PLAIN. A context already carrying the submenu is left alone.
+     *
+     * @param array $context The layout template context.
+     * @return array
+     */
+    protected function apply_look_menu(array $context): array {
+        if (!empty($context['usermenu']['dimensionslook'])) {
+            return $context;
+        }
+        $menu = flavourchoice::menu($this->page->url);
+        if ($menu === null) {
+            return $context;
+        }
+
+        $items = [];
+        foreach ($menu['items'] as $item) {
+            $items[] = [
+                'title' => $item['text'],
+                'text' => s($item['text']),
+                'link' => true,
+                'isactive' => $item['iscurrent'],
+                'url' => $item['iscurrent'] ? new \moodle_url('#') : $item['url'],
+                'attributes' => [['name' => 'data-dimensions-flavour', 'value' => $item['id']]],
+            ];
+        }
+        $submenuid = 'dimensions-look';
+        $link = (object) [
+            'itemtype' => 'submenu-link',
+            'submenuid' => $submenuid,
+            'title' => get_string('lookmenu', 'theme_dimensions'),
+            'divider' => false,
+            'submenulink' => true,
+        ];
+
+        $navitems = array_values((array) $context['usermenu']['items']);
+        array_splice($navitems, self::look_position($navitems, (array) ($context['usermenu']['submenus'] ?? [])), 0, [$link]);
+        $context['usermenu']['items'] = $navitems;
+        $context['usermenu']['submenus'] = array_merge(
+            array_values((array) ($context['usermenu']['submenus'] ?? [])),
+            [(object) ['id' => $submenuid, 'title' => get_string('lookmenu', 'theme_dimensions'), 'items' => $items]]
+        );
+        $context['usermenu']['dimensionslook'] = true;
+        $this->page->requires->js_call_amd('theme_dimensions/flavourchoice', 'init');
+
+        return $context;
+    }
+
+    /**
+     * Where the Look link goes among the user menu's items.
+     *
+     * Core's language link is found through its submenu, whose title is core's languageselector string, as
+     * Boost Union finds it; Preferences by its address.
+     *
+     * @param array $navitems The user menu's items, as core built them.
+     * @param array $submenus The user menu's submenus.
+     * @return int The index to insert at.
+     */
+    protected static function look_position(array $navitems, array $submenus): int {
+        $languageid = null;
+        foreach ($submenus as $submenu) {
+            $submenu = (object) $submenu;
+            if (($submenu->title ?? '') === get_string('languageselector')) {
+                $languageid = $submenu->id ?? null;
+            }
+        }
+        $preferences = null;
+        foreach ($navitems as $index => $item) {
+            $item = (object) $item;
+            if ($languageid !== null && ($item->submenuid ?? null) === $languageid) {
+                return $index;
+            }
+            $url = $item->url ?? null;
+            if ($url instanceof \moodle_url && $url->compare(new \moodle_url('/user/preferences.php'), URL_MATCH_BASE)) {
+                $preferences = $index + 1;
+            }
+        }
+
+        return $preferences ?? max(0, count($navitems) - 1);
     }
 
     /**
