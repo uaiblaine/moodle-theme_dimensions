@@ -33,6 +33,7 @@ exclude:              # exclude wins over include
     - "docs/**"
     - "lang/**"
     - "amd/build/**"
+    - "js/esm/build/**"   # generated; esm_tree_check compares it with a fresh build byte for byte
     - "**/*.min.js"
     - "**/*.map"
     - "mutations/**"
