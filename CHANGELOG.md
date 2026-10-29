@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The showcase's cost bound no longer flakes on a loaded host** (tests only). `budget_test`'s 0.5 s ceiling
+  on one render of two hundred courses failed at 0.508 s and 0.514 s with two `mdl ci --matrix` legs or three
+  `mdl mutate --fast` workers sharing the host, and passed alone; one render measured 120 to 200 ms right after
+  seeding where the docblock said 50. The time half is now the ratio of the median of nine interleaved renders
+  of two hundred courses to that of a root of one full page (48), in the same process, under 2.5 (measured
+  0.96 to 1.3): the per-course cost a statement count cannot see, with the host's speed divided out. The read
+  ceilings and the memory bound are unchanged.
 - **A visitor's flat tree links every child it names, a merely listed one included** (2026100533). On a public
   category page in a flat organisation (A-Z or the recent sort) each child holding a public course but not itself
   public was drawn as `<span class="dim-tree__text">`, though the server already honoured its `cat=`: the tree's entry
