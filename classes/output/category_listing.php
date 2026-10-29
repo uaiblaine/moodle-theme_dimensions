@@ -731,12 +731,16 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * NAVIGATION and never the listing: the page under this tree lists the
      * whole subtree whatever the tree offers.
      *
-     * A non-linkable entry (a merely listed child on the anonymous shell, which
-     * has no page a visitor may open) is present as TEXT: a visitor reads the
-     * name and cannot choose it.
+     * Every entry is a link, a visitor's merely listed child included. The
+     * population's `linkable` says whether the child's OWN page is public (D20),
+     * which is the question of the posters and the accordion, whose links open
+     * that page; an entry of this tree never leaves this page, and narrowing it
+     * to a listed child only regroups rows the page already lists, because a
+     * visitor's population is public courses alone and the tree names only a
+     * child holding one ({@see population::subcategory_tree()}).
      *
      * @return array Entries of ['id' => int, 'name' => string, 'depth' => int, 'url' => string,
-     *   'linkable' => bool, 'current' => bool], this category first at depth 0; empty when the
+     *   'current' => bool], this category first at depth 0; empty when the
      *   organisation is the grouped one. A descendant's depth is capped at
      *   {@see self::TREE_MAX_INDENT_DEPTH}, so the setting's "every level" keeps the last inset.
      */
@@ -759,24 +763,19 @@ class category_listing implements \core\output\named_templatable, \core\output\r
             ]),
             'depth' => 0,
             'url' => links::showcase($categoryid, $params, $this->result->anonymous)->out(false),
-            'linkable' => true,
             'current' => $chosen === 0,
         ]];
         foreach ($this->result->subcategories as $entry) {
-            $linkable = !empty($entry['linkable']);
             $id = (int) $entry['id'];
             $entries[] = [
                 'id' => $id,
                 'name' => $entry['name'],
                 'depth' => min(self::TREE_MAX_INDENT_DEPTH, max(1, (int) $entry['depth'])),
-                'url' => $linkable
-                    ? links::showcase(
-                        $categoryid,
-                        $params + [criteria::PARAM_CAT => $id],
-                        $this->result->anonymous
-                    )->out(false)
-                    : '',
-                'linkable' => $linkable,
+                'url' => links::showcase(
+                    $categoryid,
+                    $params + [criteria::PARAM_CAT => $id],
+                    $this->result->anonymous
+                )->out(false),
                 'current' => $chosen === $id,
             ];
         }

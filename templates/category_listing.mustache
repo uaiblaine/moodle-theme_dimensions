@@ -36,9 +36,10 @@
     tree's own parameter, so following one narrows the listing to that
     category's subtree, and the first entry - this category's address without
     that parameter - clears it. The entry in force carries aria-current. Depth
-    travels as a number on the item, which the stylesheet indents by; an entry
-    the viewer may not open - a child merely listed on the anonymous shell - is
-    text, so the name reads as it did and cannot be chosen.
+    travels as a number on the item, which the stylesheet indents by. Every
+    entry is a link, a child merely listed on the anonymous shell included:
+    the entry never leaves this page, so whether the child has a page of its
+    own is not its question.
 
     The whole tree is a native disclosure, open by default: from the
     stylesheet's breakpoint up its summary is hidden and the list simply shows,
@@ -89,10 +90,10 @@
             ]
         },
         "tree": [
-            {"id": 7, "name": "Brigade Department", "depth": 0, "url": "https://example.com/course/index.php?categoryid=7", "linkable": true, "current": false},
-            {"id": 8, "name": "Brigade", "depth": 1, "url": "https://example.com/course/index.php?categoryid=7&cat=8", "linkable": true, "current": true},
-            {"id": 9, "name": "Rescue", "depth": 2, "url": "https://example.com/course/index.php?categoryid=7&cat=9", "linkable": true, "current": false},
-            {"id": 10, "name": "Civil Protection", "depth": 1, "url": "", "linkable": false, "current": false}
+            {"id": 7, "name": "Brigade Department", "depth": 0, "url": "https://example.com/course/index.php?categoryid=7", "current": false},
+            {"id": 8, "name": "Brigade", "depth": 1, "url": "https://example.com/course/index.php?categoryid=7&cat=8", "current": true},
+            {"id": 9, "name": "Rescue", "depth": 2, "url": "https://example.com/course/index.php?categoryid=7&cat=9", "current": false},
+            {"id": 10, "name": "Civil Protection", "depth": 1, "url": "https://example.com/course/index.php?categoryid=7&cat=10", "current": false}
         ],
         "hastree": true,
         "treelabel": "Categorys",
@@ -304,8 +305,7 @@
                 <ul class="dim-tree" role="list">
                     {{#tree}}
                     <li class="dim-tree__item" data-depth="{{depth}}">
-                        {{#linkable}}<a class="dim-tree__link{{#current}} dim-tree__link--on{{/current}}" href="{{url}}" data-region="dim-tree-link" data-categoryid="{{id}}"{{#current}} aria-current="true"{{/current}}>{{name}}</a>{{/linkable}}
-                        {{^linkable}}<span class="dim-tree__text">{{name}}</span>{{/linkable}}
+                        <a class="dim-tree__link{{#current}} dim-tree__link--on{{/current}}" href="{{url}}" data-region="dim-tree-link" data-categoryid="{{id}}"{{#current}} aria-current="true"{{/current}}>{{name}}</a>
                     </li>
                     {{/tree}}
                 </ul>
