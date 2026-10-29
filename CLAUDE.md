@@ -3467,7 +3467,23 @@ reads). A rule of the line changes in the module of the component that carries i
   step with `steps.ts` `choose()`, under `flushSync`, before the frame is painted, and reads no layout - unless the
   line narrowed past every try measured (`settled()`), which measures the rest. The widths are measured
   again only when the words, the counts or the slots change (the component's `signature`) and when the fonts arrive.
-  The first commit folds the line before React's first paint.
+  The line is folded before its first paint (next bullet).
+- **The first measure is the `ResizeObserver`'s first entry's, never the commit's** (PLAN 5.2.6). A layout read inside
+  React's commit forces the page's FIRST full layout there (130-150 ms of one frame at 4x CPU on the visitor's page,
+  for a line that fitted at the first try); the observer's first entry comes after the browser's own layout and before
+  the paint, so `measureFirst()` folds the line in time and takes the width from the entry's content box. Until it
+  runs (`measuredOnce`), nothing on the line reads layout: the layers' `place()` and the rows' `fades()`
+  (`offsetParent`, `scrollWidth`), a content change and the fonts' remeasure all wait for it. `data-line-drawn` and
+  `dim-line:mounted` stay in the commit. Without a `ResizeObserver` the commit measures as before. Gates
+  `js_line_first_measure_deferred`, `js_line_first_entry_measures`, `js_line_layers_wait_measure`; any new layout
+  read on the mount path belongs after the first measure too.
+- **The line is hidden from the commit to that first fold** (`visibility: hidden`, the inline value kept in `veiled`
+  and given back by `measureFirst()`, failed or not, and by the effect's cleanup). The browser lays the unfolded line
+  out once before the observer's callback, so a fold there moves nodes already laid out, which counts as a layout
+  shift (0.027 on every load of the logged-in flat page at 900 px, where the fold goes to s4); hidden nodes count for
+  none, and visibility keeps the line's box, so nothing below it moves. A line holding the focus at the commit is
+  never hidden, because a focused element inside a hidden ancestor loses the focus: the rare shift is accepted there.
+  Gate `js_line_hidden_until_folded`.
 - **The first paint's shift (0.031-0.032, PLAN 5.2.1) is removed only where the client keeps the first step.** The
   search's flex basis is the first step's floor, `13rem` (`.dim-toolbar__search`), so a line no client has measured
   wraps exactly where the first step stops fitting. A width at which the client takes step 2, 3 or 4 still moves once

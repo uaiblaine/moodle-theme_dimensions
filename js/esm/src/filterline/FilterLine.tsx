@@ -53,9 +53,10 @@
  * ({@see KEPT}); a later mount draws from them instead of reading markup that is no longer there.
  *
  * The step is measured once per content on the line's own width with every scope cell drawn
- * ({@see ./measure stepWidths()}), and taken again from a width alone on every ResizeObserver entry; the
- * first commit folds the line before it is painted. Every request is the listing's: nothing here calls a
- * web service, reads the session or composes a word.
+ * ({@see ./measure stepWidths()}), and taken again from a width alone on every ResizeObserver entry. The
+ * first measure is the observer's first entry's, after the browser's own layout and before the paint, so the
+ * line is folded before it is painted and the commit forces no layout. Every request is the listing's:
+ * nothing here calls a web service, reads the session or composes a word.
  *
  * @module     theme_dimensions/filterline/FilterLine
  * @copyright  2026 Anderson Blaine
@@ -137,6 +138,10 @@ type Live = {
     intent: boolean,
     tabat: number,
     refocus: Element | null,
+    // Whether the first measure was taken: until then nothing on the line reads layout ({@see measureFirst}).
+    measuredOnce: boolean,
+    // The line's own inline visibility while it is hidden until the first fold; null while it is not hidden.
+    veiled: string | null,
 };
 
 /**
@@ -241,6 +246,8 @@ const FilterLine = ({form}: FilterLineProps) => {
         intent: false,
         tabat: 0,
         refocus: null,
+        measuredOnce: false,
+        veiled: null,
     });
     const rest = useRef<WeakMap<Element, Rest>>(new WeakMap());
     const preview = useRef<PreviewModule | null>(null);
@@ -510,6 +517,43 @@ const FilterLine = ({form}: FilterLineProps) => {
         st.width = contentWidth(line);
         st.widths = stepWidths(line, st.fold, st.width);
         refold();
+    };
+
+    /**
+     * Show the line again, with the inline visibility it had before it was hidden until the first fold.
+     *
+     * @returns {void}
+     */
+    const unveil = (): void => {
+        if (line && st.veiled !== null) {
+            line.style.visibility = st.veiled;
+            st.veiled = null;
+        }
+    };
+
+    /**
+     * Take the first measure, and fold to it.
+     *
+     * A line that cannot be measured stays at the full step, and is still the line: it is drawn and said so.
+     *
+     * @param {number} width The line's content width, from the observer's first entry; read off the line without one.
+     * @returns {void}
+     */
+    const measureFirst = (width?: number): void => {
+        if (!line) {
+            return;
+        }
+        st.measuredOnce = true;
+        try {
+            st.width = width === undefined ? contentWidth(line) : width;
+            st.widths = stepWidths(line, st.fold, st.width);
+            refold();
+        } catch (error) {
+            st.widths = [];
+        }
+        unveil();
+        // The layers are placed once the line is measured, whatever the fold ({@see foldkey}).
+        rerender();
     };
 
     /**
@@ -792,10 +836,10 @@ const FilterLine = ({form}: FilterLineProps) => {
 
     api.current = {
         onLineKey, onLineBlur, onToggle, onLineClick, onDocumentPress, onDocumentKey, onPreviewIntent, onState,
-        onAnswer, onFormChange, remeasure,
+        onAnswer, onFormChange, remeasure, measureFirst,
     } as Handlers;
 
-    // The first commit: the server's frames adopted, every listener on, the line folded before it is painted.
+    // The first commit: the server's frames adopted, every listener on; the line is folded before it is painted.
     useLayoutEffect(() => {
         if (!line || !toolbar || !setup.first) {
             // Not a line this component can draw: the listing stops holding the mount, and the line stays the server's.
@@ -837,18 +881,28 @@ const FilterLine = ({form}: FilterLineProps) => {
         listeners.forEach(([target, type, listener, options]) => target.addEventListener(type, listener, options));
 
         remember(toolbar, field.current ? field.current.value : '', rest.current);
-        try {
-            st.width = contentWidth(line);
-            st.widths = stepWidths(line, null, st.width);
-            refold();
-        } catch (error) {
-            // A line that cannot be measured stays at the full step, and is still the line: it is drawn and said so.
-            st.widths = [];
+        /* The first measure waits for the observer's first entry. Read inside this commit, it would force the page's
+           first full layout (PLAN 5.2.6); the entry comes after the browser's own layout and before the paint, so the
+           fold is still drawn before the line is first painted, and its width is the entry's content box - what
+           contentWidth() reads off the line - with no layout read for it. Without an observer it is taken here. */
+        if (typeof ResizeObserver === 'undefined') {
+            measureFirst();
+        } else if (!setup.focused && !line.contains(document.activeElement)) {
+            /* Hidden until that first fold: a fold in the observer's callback moves nodes the browser has already laid
+               out once, which counts as a layout shift, and hidden nodes count for none; visibility keeps the line's
+               box, so nothing below it moves either. A line holding the reader's focus is not hidden, because a
+               focused element inside a hidden ancestor loses the focus: there the rare shift is the lesser cost. */
+            st.veiled = line.style.visibility;
+            line.style.visibility = 'hidden';
         }
 
         // The line's own width, never the viewport's: a drawer opening changes the one and not the other.
         const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((entries) => {
             const width = entries[0].contentRect.width;
+            if (!live.current.measuredOnce) {
+                flushSync(() => (api.current.measureFirst as (width: number) => void)(width));
+                return;
+            }
             if (Math.round(width) === Math.round(live.current.width)) {
                 return;
             }
@@ -857,9 +911,9 @@ const FilterLine = ({form}: FilterLineProps) => {
             flushSync(() => (api.current.remeasureWidth as () => void)());
         });
         observer?.observe(line);
-        // A webfont arriving late changes every width on the line.
+        // A webfont arriving late changes every width on the line; before the first measure, that measure has it.
         document.fonts?.ready.then(() => {
-            if (line.isConnected) {
+            if (line.isConnected && live.current.measuredOnce) {
                 flushSync(() => (api.current.remeasure as () => void)());
             }
             return null;
@@ -873,6 +927,7 @@ const FilterLine = ({form}: FilterLineProps) => {
         line.dispatchEvent(new CustomEvent(EVENTS.mounted, {bubbles: true}));
         return () => {
             observer?.disconnect();
+            unveil();
             listeners.forEach(([target, type, listener, options]) => target.removeEventListener(type, listener, options));
             line.removeAttribute(DRAWN);
             /* React is about to empty the line: the adopted nodes go back to the server's frames, kept with the last
@@ -903,7 +958,10 @@ const FilterLine = ({form}: FilterLineProps) => {
             return;
         }
         measured.current = signature;
-        remeasure();
+        // Before the first measure, that measure reads this content: measuring in this commit would force the layout.
+        if (st.measuredOnce) {
+            remeasure();
+        }
     }, [signature]);
 
     // An answer was drawn: its counts are remembered while the field is empty, and what read the old ones follows.
@@ -945,10 +1003,12 @@ const FilterLine = ({form}: FilterLineProps) => {
         }
     });
 
-    // The layers follow a new fold, and so do the rows' fades.
-    const foldkey = st.fold ? `${st.fold.step}${st.fold.folded ? 'f' : ''}` : '';
+    /* The layers follow a new fold, and so do the rows' fades. Both read layout, so they wait for the first measure
+       as it does - read in the first commit, they would force the page's first full layout themselves - and the key
+       changes when it is taken, the fold or no fold it gives. */
+    const foldkey = (st.measuredOnce ? 'm' : '') + (st.fold ? `${st.fold.step}${st.fold.folded ? 'f' : ''}` : '');
     useLayoutEffect(() => {
-        if (!line || !drawn.current) {
+        if (!line || !drawn.current || !st.measuredOnce) {
             return;
         }
         place(line, panel.current, twolines(), twolines());
