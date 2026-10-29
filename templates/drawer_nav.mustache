@@ -42,6 +42,7 @@
     * sections - id, label, items (see theme_dimensions/drawer_item)
     * panels - id, parentid, level, title, backlabel, backaria, items, hasurl, url, openlabel
     * appearance - false, or cookieattributes and modes (mode, label, icon, togglelabel, isactive, tabindex)
+    * look - false, or panelid, parentid, backlabel, backaria, current and items (id, text, url, iscurrent)
     * language - false, or panelid, parentid, backlabel, backaria, current and items (text, url, lang, iscurrent)
 
     Example context (json):
@@ -161,6 +162,27 @@
                 }
             ]
         },
+        "look": {
+            "panelid": "dimensions-drawer-panel-look",
+            "parentid": "dimensions-drawer-panel-root",
+            "backlabel": "Navigation",
+            "backaria": "Back to Navigation",
+            "current": "Site default",
+            "items": [
+                {
+                    "id": 0,
+                    "text": "Site default",
+                    "url": "https://example.com/theme/dimensions/flavour.php?flavour=0",
+                    "iscurrent": true
+                },
+                {
+                    "id": 3,
+                    "text": "Harbour & Co",
+                    "url": "https://example.com/theme/dimensions/flavour.php?flavour=3",
+                    "iscurrent": false
+                }
+            ]
+        },
         "language": {
             "panelid": "dimensions-drawer-panel-lang",
             "parentid": "dimensions-drawer-panel-root",
@@ -232,6 +254,17 @@
                 </div>
             </div>
             {{/appearance}}
+            {{#look}}
+            <ul class="dimensions-drawer-list dimensions-drawer-look">
+                <li class="dimensions-drawer-row">
+                    <a class="dimensions-drawer-item" href="#{{panelid}}" data-action="dimensions-drawer-open" data-target="{{panelid}}">
+                        <i class="icon fa fa-palette fa-fw dimensions-drawer-icon" aria-hidden="true"></i>
+                        <span class="dimensions-drawer-text"><span class="visually-hidden">{{#str}} lookmenu, theme_dimensions {{/str}}: </span>{{current}}</span>
+                        <i class="icon fa fa-chevron-right fa-fw dimensions-drawer-chevron" aria-hidden="true"></i>
+                    </a>
+                </li>
+            </ul>
+            {{/look}}
             {{#language}}
             <ul class="dimensions-drawer-list dimensions-drawer-language">
                 <li class="dimensions-drawer-row">
@@ -259,6 +292,32 @@
             {{/hasurl}}
         </div>
         {{/panels}}
+        {{#look}}
+        <div class="dimensions-drawer-panel" id="{{panelid}}" data-region="dimensions-drawer-panel" data-level="1" data-parent="{{parentid}}">
+            <a class="dimensions-drawer-back" href="#{{parentid}}" data-action="dimensions-drawer-back" aria-label="{{backaria}}">
+                <i class="icon fa fa-chevron-left fa-fw" aria-hidden="true"></i>
+                <span>{{backlabel}}</span>
+            </a>
+            <p class="dimensions-drawer-title" id="{{panelid}}-title">{{#str}} lookmenu, theme_dimensions {{/str}}</p>
+            <ul class="dimensions-drawer-list" aria-labelledby="{{panelid}}-title">
+                {{#items}}
+                <li class="dimensions-drawer-row">
+                    {{#iscurrent}}
+                    <span class="dimensions-drawer-item is-current" aria-current="true">
+                        <span class="dimensions-drawer-text">{{text}}</span>
+                        <i class="icon fa fa-check fa-fw dimensions-drawer-chevron" aria-hidden="true"></i>
+                    </span>
+                    {{/iscurrent}}
+                    {{^iscurrent}}
+                    <a class="dimensions-drawer-item" href="{{url}}" data-dimensions-flavour="{{id}}">
+                        <span class="dimensions-drawer-text">{{text}}</span>
+                    </a>
+                    {{/iscurrent}}
+                </li>
+                {{/items}}
+            </ul>
+        </div>
+        {{/look}}
         {{#language}}
         <div class="dimensions-drawer-panel" id="{{panelid}}" data-region="dimensions-drawer-panel" data-level="1" data-parent="{{parentid}}">
             <a class="dimensions-drawer-back" href="#{{parentid}}" data-action="dimensions-drawer-back" aria-label="{{backaria}}">

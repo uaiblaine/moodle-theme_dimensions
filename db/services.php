@@ -96,4 +96,12 @@ $functions = [
         'loginrequired' => true,
         'capabilities' => '',
     ],
+    'theme_dimensions_choose_flavour' => [
+        'classname' => 'theme_dimensions\external\choose_flavour',
+        'description' => 'Record the look the caller chose among the offered Boost Union flavours.',
+        'type' => 'write',
+        'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
 ];

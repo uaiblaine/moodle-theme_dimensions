@@ -673,6 +673,16 @@ rests on:
   does that purge once and clears it; `flavourchoice_test` reddens when Boost Union starts clearing the flag itself,
   and the step goes then.
 
+- **The Look menu changes nothing on a GET.** Every item links to `flavour.php` with its flavour preselected, and
+  that page only shows a POST form; with JavaScript, `amd/src/flavourchoice.js` writes through
+  `theme_dimensions_choose_flavour` and reloads. Both go through `flavourchoice::choose()`, which re-checks the list,
+  so a stale menu or a hand-made request cannot store a flavour that is not offered. The user menu's submenu items
+  print `{{{text}}}` and `{{{url}}}` (Boost Union's `core/user_action_menu_submenu_items`), so the renderer hands them
+  the ESCAPED title and a `moodle_url`; the drawer's panel prints `{{text}}` and gets the PLAIN one.
+- **The menu reads no table per page.** `offered()` keeps the offered titles in the application cache `flavourmenu`,
+  keyed by the current language and the offered ids, so a setting change is a new key and needs no callback; Boost
+  Union's flavour events empty it.
+
 ## The context bar's colour and the phone's navbar
 
 - **The context layer's ground is Sass, compiled per flavour, and the ink is never the one moved.**

@@ -54,4 +54,20 @@ $definitions = [
             'theme_boost_union_cohort_deleted',
         ],
     ],
+    // The offered looks with their plain titles, for the user menu every logged-in page draws
+    // (local\flavourchoice::offered()). Site-wide, keyed by the language and the offered ids, so a
+    // change of the setting is a new key; Boost Union's flavour events empty it.
+    'flavourmenu' => [
+        'mode' => \core_cache\store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => false,
+        'staticacceleration' => true,
+        'staticaccelerationsize' => 4,
+        'invalidationevents' => [
+            'theme_boost_union_flavours_resorted',
+            'theme_boost_union_flavours_created',
+            'theme_boost_union_flavours_edited',
+            'theme_boost_union_flavours_deleted',
+        ],
+    ],
 ];
