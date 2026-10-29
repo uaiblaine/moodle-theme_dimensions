@@ -938,10 +938,10 @@ final class category_test extends \core\tests\router\route_testcase {
         $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
         $calls = $this->amd_calls();
         $this->assertArrayHasKey('theme_dimensions/covervideo', $calls, 'The control: this request\'s calls are read.');
-        $this->assertArrayHasKey('theme_dimensions/categorypublic', $calls, 'The live listing is armed.');
+        $this->assertArrayHasKey('theme_dimensions/listingvisitor', $calls, 'The live listing is armed.');
         $this->assertSame(
             (string) $categoryid,
-            $calls['theme_dimensions/categorypublic'],
+            $calls['theme_dimensions/listingvisitor'],
             'It is told the category and nothing else.'
         );
         $this->assertArrayNotHasKey('theme_dimensions/categoryvitrine', $calls, 'Never the logged-in client.');
@@ -980,7 +980,7 @@ final class category_test extends \core\tests\router\route_testcase {
         $this->assertStringContainsString('Curso Publico', $body, 'The public page is served whatever the switch says.');
         $calls = $this->amd_calls();
         $this->assertArrayHasKey('theme_dimensions/covervideo', $calls, 'The control: this request\'s calls are read.');
-        $this->assertArrayNotHasKey('theme_dimensions/categorypublic', $calls);
+        $this->assertArrayNotHasKey('theme_dimensions/listingvisitor', $calls);
         $this->assertNotContains(request::STRING_FALLBACK, $this->js_strings()[self::COMPONENT] ?? []);
         $this->assertStringContainsString('dim-toolbar__submit dim-nojs-only', $body, 'The form keeps its own submit.');
     }
@@ -1014,8 +1014,8 @@ final class category_test extends \core\tests\router\route_testcase {
         $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
         $this->assertStringContainsString('dim-toolbar dim-toolbar--searchonly', $body, 'The root\'s search line.');
         $calls = $this->amd_calls();
-        $this->assertArrayHasKey('theme_dimensions/categorypublic', $calls);
-        $this->assertSame('0', $calls['theme_dimensions/categorypublic'], 'Told the root, category 0.');
+        $this->assertArrayHasKey('theme_dimensions/listingvisitor', $calls);
+        $this->assertSame('0', $calls['theme_dimensions/listingvisitor'], 'Told the root, category 0.');
     }
 
     /**
@@ -1043,7 +1043,7 @@ final class category_test extends \core\tests\router\route_testcase {
         $response = $this->request($who === 'closedroot' ? '0' : (string) $categoryid);
 
         $this->assertSame(302, $response->getStatusCode(), substr((string) $response->getBody(), 0, 2000));
-        $this->assertArrayNotHasKey('theme_dimensions/categorypublic', $this->amd_calls());
+        $this->assertArrayNotHasKey('theme_dimensions/listingvisitor', $this->amd_calls());
     }
 
     /**

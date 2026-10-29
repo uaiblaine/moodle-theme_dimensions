@@ -37,6 +37,13 @@ const AREAS = {
   painted: "dim-areas:painted"
 };
 const SELECTORS = {
+  root: '[data-region="dim-vitrine"]',
+  areas: '[data-region="dim-areas"]',
+  notice: '[data-region="dim-toolbar-notice"]',
+  clearaction: '[data-action="dim-clear"]',
+  chipremove: '[data-action="dim-chip-remove"]',
+  drawnline: '[data-region="dim-line"][data-line-drawn]',
+  quick: '[data-action="dim-quick"]',
   grid: '[data-region="dim-vitrine-grid"]',
   empty: '[data-region="dim-vitrine-empty"]',
   toolbar: '[data-region="dim-vitrine-toolbar"]',

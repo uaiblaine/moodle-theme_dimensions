@@ -95,7 +95,7 @@ final class first_paint_budget_test extends \advanced_testcase {
     private const PUBLIC_MODULES = [
         'theme_dimensions/covervideo',
         'theme_dimensions/categorycoursemodal',
-        'theme_dimensions/categorypublic',
+        'theme_dimensions/listingvisitor',
     ];
 
     /** @var int Strings the logged-in shell adds to strings_for_js: none, its sentences come with the answers. */
@@ -332,7 +332,7 @@ final class first_paint_budget_test extends \advanced_testcase {
         set_config(publicaccess::SETTING_CLIENT, '0', 'theme_dimensions');
         self::forget();
         [, $modules, $strings] = $this->visitor($categoryid, []);
-        $this->assertNotContains('theme_dimensions/categorypublic', $modules, 'Control: the switch closed, no live listing.');
+        $this->assertNotContains('theme_dimensions/listingvisitor', $modules, 'Control: the switch closed, no live listing.');
         $this->assertSame(self::PUBLIC_STRINGS - 1, $strings, 'Control: and no fallback sentence.');
     }
 }

@@ -765,6 +765,10 @@ const paintShells = (response) => {
  */
 const requestRows = async(page, append) => {
     const ticket = ++seq;
+    /* One token from the call until the answer is painted, or dropped: the template load between core/ajax's pending
+       and the render's waits on the module loader's timer, a gap Behat would read as a settled page. The module's
+       pending is the set of course ids waiting for their progress; this token is core's. */
+    const token = new Pending('theme_dimensions/categoryvitrine:rows');
     const more = root.querySelector(SELECTORS.loadmore);
     if (append && more) {
         more.disabled = true;
@@ -791,6 +795,7 @@ const requestRows = async(page, append) => {
         Notification.exception(error);
     } finally {
         restoreMore(more);
+        token.resolve();
     }
 };
 

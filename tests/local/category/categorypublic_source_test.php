@@ -29,7 +29,12 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use theme_dimensions\output\category_panel;
 
 /**
- * Pins what amd/src/categorypublic.js may reach and say, by reading its source and its build.
+ * Pins what the visitor's live listing may reach and say, by reading its sources and their builds.
+ *
+ * Since stage R4b2 the page arms amd/src/listingvisitor.js, which hands it to the visitor's shell
+ * (js/esm/src/listing/visitor.ts) over the shared store (store.ts): the walk starts at the entry, and the
+ * shell's own assertions read those two sources ({@see SHELL}); amd/src/categorypublic.js is imported by
+ * nothing and leaves with the removal pull request.
  *
  * The module runs on a page served to the internet and asks a web service that answers without a
  * session, so the properties pinned here are the ones whose loss is a leak or a cache poisoned for
@@ -58,8 +63,14 @@ use theme_dimensions\output\category_panel;
  */
 #[CoversNothing]
 final class categorypublic_source_test extends \basic_testcase {
-    /** @var string The module under test. */
-    private const MODULE = 'categorypublic';
+    /** @var string The entry the page arms, where the walk starts. */
+    private const MODULE = 'listingvisitor';
+
+    /** @var string The visitor's shell and the store it drives, read together: the default of every reader below. */
+    private const SHELL = 'shell';
+
+    /** @var string[] The ES modules {@see SHELL} names. */
+    private const SHELL_MODULES = ['esm:listing/visitor', 'esm:listing/store'];
 
     /** @var string The one service it may call. */
     private const METHOD = 'theme_dimensions_get_public_category_rows';
@@ -156,7 +167,10 @@ final class categorypublic_source_test extends \basic_testcase {
      * @param string $module The module's name, or an ES module's node.
      * @return string
      */
-    private function source(string $module = self::MODULE): string {
+    private function source(string $module = self::SHELL): string {
+        if ($module === self::SHELL) {
+            return implode("\n", array_map(fn(string $one): string => $this->source($one), self::SHELL_MODULES));
+        }
         if (!str_starts_with($module, self::ESM)) {
             return $this->read('amd/src/' . $module . '.js', 'The source is missing.');
         }
@@ -170,7 +184,10 @@ final class categorypublic_source_test extends \basic_testcase {
      * @param string $module The module's name, or an ES module's node.
      * @return string
      */
-    private function build(string $module = self::MODULE): string {
+    private function build(string $module = self::SHELL): string {
+        if ($module === self::SHELL) {
+            return implode("\n", array_map(fn(string $one): string => $this->build($one), self::SHELL_MODULES));
+        }
         if (!str_starts_with($module, self::ESM)) {
             $missing = 'The build is missing: Moodle serves amd/build, never amd/src.';
             return $this->read('amd/build/' . $module . '.min.js', $missing);
@@ -205,7 +222,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * @param string $module The module's name.
      * @return string
      */
-    private function code(string $module = self::MODULE): string {
+    private function code(string $module = self::SHELL): string {
         return $this->uncommented($this->source($module));
     }
 
@@ -227,7 +244,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * @param string $module The module's name.
      * @return string The body, without the signature or the closing brace.
      */
-    private function body(string $name, string $module = self::MODULE): string {
+    private function body(string $name, string $module = self::SHELL): string {
         $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
             . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
         $found = preg_match($pattern, $this->source($module), $matches);
@@ -409,8 +426,12 @@ final class categorypublic_source_test extends \basic_testcase {
         foreach ($listing as $module) {
             $this->assertContains($module, $graph, $module . ' is reached through a shared module and the walk lost it.');
         }
-        $this->assertContains('categorymark', $graph, 'The control: an AMD import of the module is followed.');
-        foreach (['categorylisting', 'categoryline', 'categorypreview', 'categoryareapanel', 'categoryposters'] as $replaced) {
+        foreach (self::SHELL_MODULES as $shell) {
+            $this->assertContains($shell, $graph, 'The control: the entry\'s core/esm! import is followed to ' . $shell . '.');
+        }
+        $gone = ['categorypublic', 'categorylisting', 'categorymark', 'daterange', 'categoryline', 'categorypreview',
+            'categoryareapanel', 'categoryposters'];
+        foreach ($gone as $replaced) {
             $this->assertNotContains($replaced, $graph, $replaced . ' is armed by no shell.');
         }
     }
@@ -573,7 +594,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * to service-nologin.php and nothing else.
      *
      * Changes that must make it fail: naming get_category_rows; a module of its graph calling a service;
-     * passing a cachekey (M.cfg.langrev or any other) to Ajax.call.
+     * passing a cachekey (M.cfg.langrev or any other) to fetchOne, or login required (gate js_visitor_nologin).
      */
     public function test_it_calls_only_the_visitors_service_and_never_with_a_cachekey(): void {
         $source = $this->source();
@@ -582,27 +603,32 @@ final class categorypublic_source_test extends \basic_testcase {
         preg_match_all("~'(theme_dimensions_[a-z_]+)'~", $source, $services);
         $this->assertSame([self::METHOD], array_values(array_unique($services[1])), 'No other service is named.');
         $this->assertMatchesRegularExpression(
-            '~return Ajax\.call\(\[\{\s*methodname: METHOD,\s*args: args,\s*\}\], true, false\)\[0\];~',
+            '~return fetchOne<Rows>\(\{\s*methodname: METHOD,\s*args: args,\s*\}, \{loginrequired: false\}\);~',
             $this->body('ask'),
             'One call, async, login not required, and nothing after it: no cachekey.'
         );
         // Both questions go through it: a page of the listing and a poster's panel.
-        $this->assertStringContainsString('const response = await ask(rowsArgs(page));', $this->body('requestRows'));
+        $this->assertStringContainsString('const response = await shell.rows(page);', $this->body('requestRows'));
+        $this->assertStringContainsString(
+            'const rows = (page: number): Promise<Rows> => ask(rowsArgs(page));',
+            $this->source(self::ESM . 'listing/visitor')
+        );
         $this->assertStringContainsString('return ask(panelArgs(poster, psort));', $this->body('askPanel'));
         $code = $this->code();
-        $this->assertStringContainsString('Ajax.call([{', $code, 'The control: the code is read.');
+        $this->assertStringContainsString('fetchOne<Rows>({', $code, 'The control: the code is read.');
         foreach (['cachekey', 'langrev', 'templaterev'] as $never) {
             $this->assertStringNotContainsString($never, $code, 'The module never builds a cachekey: ' . $never);
         }
         $this->assertStringContainsString(self::METHOD, $this->build());
-        $this->assertStringContainsString("import Ajax from 'core/ajax';", $source);
+        $this->assertStringContainsString("import {fetchOne} from '@moodle/lms/core/ajax';", $source);
 
         /* And nothing else the module loads calls a service of its own: a shared module asking some
            other theme service would pass the checks above, which read the entry file. The calendar
            reaches core's own string and template services through core/str and core/templates,
            which are core's to call. */
         foreach ($this->graph(self::MODULE) as $module) {
-            if ($module === self::MODULE) {
+            // The shell is the one call site, read above.
+            if ($module === self::ESM . 'listing/visitor') {
                 continue;
             }
             foreach (['core/ajax', '@moodle/lms/core/ajax'] as $ajax) {
@@ -621,7 +647,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * refuses an undeclared key, and refuses the root anything but its term and the language.
      */
     public function test_it_sends_the_pages_language_and_the_root_its_term_alone(): void {
-        $this->assertStringContainsString("import Config from 'core/config';", $this->source());
+        $this->assertStringContainsString("import Config from '@moodle/lms/core/config';", $this->source());
         $args = $this->body('rowsArgs');
         $this->assertMatchesRegularExpression(
             '~if \(Listing\.isRoot\(state\)\) \{\s*return \{categoryid: 0, query: state\.query, lang: Config\.language\};~',
@@ -646,7 +672,8 @@ final class categorypublic_source_test extends \basic_testcase {
      */
     public function test_it_writes_its_own_mark_and_never_dim_js(): void {
         $this->assertMatchesRegularExpression("~^const BODY_CLASS = 'dim-public-js';$~m", $this->source());
-        $this->assertStringContainsString('document.body.classList.add(BODY_CLASS);', $this->body('init'));
+        $this->assertStringContainsString('document.body.classList.add(shell.mark);', $this->body('init'));
+        $this->assertStringContainsString("\n    mark: BODY_CLASS,\n", $this->source(), 'The shell hands the store its mark.');
         foreach ($this->graph(self::MODULE) as $module) {
             $this->assertStringNotContainsString(
                 "'dim-js'",
@@ -686,20 +713,22 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString('notice.textContent = text;', $fall);
         $this->assertMatchesRegularExpression('~\n    load\(url\);$~', $fall);
         $this->assertMatchesRegularExpression(
-            '~^const fallBack = async\(url\) => \{$~m',
+            '~^const fallBack = async\(url: URL\): Promise<void> => \{$~m',
             $source,
             'It is handed the address alone.'
         );
 
         $request = $this->body('requestRows');
         $this->assertMatchesRegularExpression(
-            '~\} catch \(error\) \{\s*if \(ticket === seq\) \{\s*fallBack\(fallbackUrl\(page, append\)\);~',
+            '~\} catch \(error\) \{\s*if \(ticket === seq\) \{\s*shell\.failed\(page, append, error\);~',
             $request,
-            'Only the latest request falls back, and with the address alone.'
+            'Only the latest request falls back.'
         );
+        $failed = $this->body('failed');
+        $this->assertStringContainsString('    fallBack(fallbackUrl(page, append));', $failed, 'With the address alone.');
         $init = $this->body('init');
         $this->assertStringNotContainsString('requestRows(', $init, 'init never fetches.');
-        $this->assertStringNotContainsString('Ajax.call(', $init);
+        $this->assertStringNotContainsString('shell.rows(', $init);
         $this->assertStringNotContainsString('ask(', $init);
         $this->assertStringNotContainsString('ask(', $this->inner('adopt'), 'Nor does the component taking the page over.');
     }
@@ -745,18 +774,18 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString('fallBack(panelAddress(Number(poster.dataset.categoryid), psort));', $failed);
         $this->assertStringContainsString('return true;', $failed, 'The visitor never gets the inline error.');
         $address = $this->body('panelAddress');
-        $this->assertStringContainsString('const url = Listing.buildUrl(state);', $address);
+        $this->assertStringContainsString('const url = Listing.buildUrl(current());', $address);
         $this->assertStringContainsString('url.searchParams.set(PARAM.open, String(id));', $address);
         $this->assertStringContainsString('url.searchParams.set(PARAM.psort, PSORT_NAME);', $address);
         $this->assertStringContainsString('url.hash = PANEL_ANCHOR;', $address, 'The page lands on the panel.');
-        $this->assertStringContainsString('unanswered: panelFailed,', $this->body('init'));
+        $this->assertStringContainsString('unanswered: panelFailed,', $this->source());
         /* The panel module wrote the open parameter into the address when the panel opened, so the
            poster's link differs from the address on screen by its fragment alone - which assign()
            answers with a scroll inside the document, not a page. Such an address is loaded again. */
         $load = $this->body('load');
         $this->assertMatchesRegularExpression(
             "~if \(bare\.toString\(\) === here\.toString\(\)\) \{\s*"
-                . "window\.history\.replaceState\(window\.history\.state, '', target\);\s*"
+                . "replaceKeeping\(target\);\s*"
                 . 'window\.location\.reload\(\);\s*return;\s*\}\s*window\.location\.assign\(target\);~',
             $load
         );
@@ -783,7 +812,8 @@ final class categorypublic_source_test extends \basic_testcase {
         $apply = $this->body('apply');
         $this->assertStringNotContainsString('navigate(', $apply, 'A change with a panel open is fetched, never loaded.');
         $this->assertMatchesRegularExpression(
-            '~^\s*state\.page = 0;\s*Listing\.writeUrl\(state, true\);\s*linkPosters\(\);\s*return requestRows\(0, false\);\s*$~',
+            '~^\s*state\.page = 0;\s*Listing\.writeUrl\(state, true\);\s*shell\.written\(\);'
+                . '\s*return requestRows\(0, false\);\s*$~',
             $apply
         );
         $link = $this->body('linkPosters');
@@ -794,11 +824,12 @@ final class categorypublic_source_test extends \basic_testcase {
             'The server\'s own fragment for a panel.'
         );
         $this->assertMatchesRegularExpression(
-            '~document\.dispatchEvent\(new CustomEvent\(EVENTS\.criteria, \{detail: \{\s*accordion: response\.accordion \|\| \[\],'
-                . '\s*areas: word,.*?\}\}\)\);\s*linkPosters\(\);\s*$~s',
+            '~document\.dispatchEvent\(new CustomEvent\(LISTING\.criteria, \{detail: \{\s*accordion: response\.accordion \|\| \[\],'
+                . '\s*areas: word,.*?\}\}\)\);\s*shell\.answered\(response\);\s*$~s',
             $this->body('paintAreas'),
-            'Every answer is told to the component, which asks the open panel again, and the posters are pointed again.'
+            'Every answer is told to the component, which asks the open panel again, and the shell then.'
         );
+        $this->assertStringContainsString("\n    answered: linkPosters,\n", $this->source(), 'The posters are pointed again.');
         $this->assertMatchesRegularExpression(
             "~if \(st\.open\) \{\s*place\(\);\s*request\(\);~",
             $this->inner('criteria'),
@@ -809,8 +840,8 @@ final class categorypublic_source_test extends \basic_testcase {
         $posters = $this->read(self::AREAS . 'posters.ts', 'The source is missing.');
         $this->assertStringContainsString("poster.dataset.ctaurl = entry.ctaurl || '';", $posters);
         $this->assertStringContainsString("poster.dataset.ctalabel = entry.ctalabel || '';", $posters);
-        $this->assertStringContainsString('const url = Listing.buildUrl(state);', $this->body('fallbackUrl'));
-        $this->assertStringContainsString('linkPosters();', $this->body('init'), 'The open poster links to its own panel too.');
+        $this->assertStringContainsString('const url = Listing.buildUrl(current());', $this->body('fallbackUrl'));
+        $this->assertStringContainsString('shell.written();', $this->body('init'), 'The open poster links to its own panel too.');
     }
 
     /**
@@ -832,14 +863,14 @@ final class categorypublic_source_test extends \basic_testcase {
         $listen = $this->body('listen');
         $this->assertMatchesRegularExpression(
             '~form\.addEventListener\(\'input\', \(event\) => \{\s*const search = Listing\.closestOf\(event, SELECTORS\.search\);'
-                . '\s*if \(search\) \{\s*onSearchInput\(search\);~',
+                . '\s*if \(search\) \{\s*onSearchInput\(search as HTMLInputElement\);~',
             $listen,
             'Delegated on the form: the line\'s component replaces the server\'s field with its own.'
         );
         $this->assertStringContainsString("form.addEventListener('submit', (event) => event.preventDefault());", $listen);
         $this->assertMatchesRegularExpression(
             '~^    cancelSearch\(\);\n    Listing\.paintEraser\(root\);\n'
-                . '    const pending = new Pending\(\'theme_dimensions/categorypublic:search\'\);\n'
+                . '    const pending = new Pending\(\'theme_dimensions/listing:search\'\);\n'
                 . '    searchpending = pending;\n    searchtimer = window\.setTimeout\(async\(\) => \{\n'
                 . '        searchpending = null;\n        try \{\n            await onSearch\(search\.value\);\n'
                 . '        \} finally \{\n            pending\.resolve\(\);\n        \}\n    \}, SEARCH_DEBOUNCE\);$~',
@@ -948,7 +979,8 @@ final class categorypublic_source_test extends \basic_testcase {
             "~^const AREAS_PROPS = \{\n    links: true,\n    quiet: PANEL_QUIET,\n    autoopen: false,\n\};$~m",
             $this->source()
         );
-        $this->assertStringContainsString('Listing.mountAreas(areas, AREAS_PROPS, {', $this->body('init'));
+        $this->assertStringContainsString('Listing.mountAreas(areas, shell.areas.props, shell.areas.client);', $this->body('init'));
+        $this->assertStringContainsString("\n        props: AREAS_PROPS,\n", $this->source(), 'The visitor\'s options.');
         $this->assertStringContainsString(
             'node.dataset.reactProps = JSON.stringify(props);',
             $this->body('mountAreas', self::ESM . 'listing/mounts')
@@ -1019,8 +1051,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * after the quiet (js_panel_quiet_latest).
      */
     public function test_a_panels_question_is_asked_once_after_a_quiet(): void {
-        $init = $this->body('init');
-        $this->assertStringContainsString('question: panelQuestion,', $init);
+        $this->assertStringContainsString('question: panelQuestion,', $this->source());
         $this->assertMatchesRegularExpression('~^const PANEL_QUIET = [1-9][0-9]*;$~m', $this->source());
         $this->assertStringContainsString("\n    quiet: PANEL_QUIET,\n", $this->source());
         $this->assertStringContainsString('return JSON.stringify(panelArgs(poster, psort));', $this->body('panelQuestion'));
@@ -1077,16 +1108,39 @@ final class categorypublic_source_test extends \basic_testcase {
      * Back and forward read the address again and ask for it; a request out makes the listing busy.
      */
     public function test_the_history_and_the_pending_state(): void {
-        $listen = $this->body('listen');
+        // The history's listener goes on before the posters are handed over: Back reaches the state first.
+        $init = $this->body('init');
+        $listens = strpos($init, "        window.addEventListener('popstate', onPopState);\n");
+        $this->assertIsInt($listens, 'Back is heard.');
+        $this->assertLessThan(
+            (int) strpos($init, 'Listing.mountAreas(areas, shell.areas.props, shell.areas.client);'),
+            $listens,
+            'Before the posters\' component, which hears Back for the panel\'s half of the address.'
+        );
+        $this->assertStringNotContainsString("'popstate'", $this->body('listen'));
         $this->assertMatchesRegularExpression(
-            "~window\.addEventListener\('popstate', \(\) => \{.*?Listing\.readUrl\(state\);\s*publicOnly\(\);\s*"
-                . 'Listing\.paintControls\(root, state\);\s*Listing\.syncFold\(\);\s*linkPosters\(\);\s*requestRows\(0, false\);~s',
-            $listen
+            "~^    Listing\.readUrl\(state\);\s*shell\.normalise\(state\);\s*"
+                . 'Listing\.paintControls\(root, state\);\s*Listing\.syncFold\(\);\s*shell\.written\(\);'
+                . '\s*requestRows\(0, false\);$~',
+            $this->body('onPopState')
         );
         $request = $this->body('requestRows');
+        // One pending from the call to the painted rows: the template load between core's own tokens waits on a timer.
+        $this->assertMatchesRegularExpression(
+            "~^    const ticket = \+\+seq;\n(?:    (?:/\*|  )[^\n]*\n)*"
+                . "    const pending = new Pending\('theme_dimensions/listing:rows'\);\n~",
+            $request,
+            'The token is taken with the ticket, before anything is asked (gate js_store_rows_pending).'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\} finally \{\s*if \(ticket === seq\) \{\s*root\.removeAttribute\(\'aria-busy\'\);\s*\}\s*'
+                . 'Listing\.restoreMore\(more\);\s*pending\.resolve\(\);\s*\}$~',
+            $request,
+            'And released once, whatever happened: painted, failed or overtaken.'
+        );
         $this->assertStringContainsString("root.setAttribute('aria-busy', 'true');", $request);
         $this->assertStringContainsString(
-            'document.dispatchEvent(new CustomEvent(EVENTS.pending, {detail: {filtered: Listing.narrows(state)}}));',
+            'document.dispatchEvent(new CustomEvent(LISTING.pending, {detail: {filtered: Listing.narrows(state)}}));',
             $request,
             'The posters\' component holds their numbers until the answer.'
         );
@@ -1104,13 +1158,13 @@ final class categorypublic_source_test extends \basic_testcase {
      */
     public function test_the_committed_builds_were_made_from_the_committed_sources(): void {
         $this->assertSame(
-            $this->source(),
+            $this->source(self::MODULE),
             $this->built_from(self::MODULE),
             'amd/build/' . self::MODULE . ' is not this source: rebuild it with grunt amd and commit the build.'
         );
-        $this->assertStringContainsString('"core/esm!@moodle/lms/theme_dimensions/listing/listing"', $this->build());
-        foreach (['categorylisting', 'categoryposters', 'categoryareapanel', 'categoryline'] as $replaced) {
-            $this->assertStringNotContainsString('"theme_dimensions/' . $replaced . '"', $this->build());
+        $this->assertStringContainsString('"core/esm!@moodle/lms/theme_dimensions/listing/visitor"', $this->build(self::MODULE));
+        foreach (['categorypublic', 'categorylisting', 'categoryposters', 'categoryareapanel', 'categoryline'] as $replaced) {
+            $this->assertStringNotContainsString('"theme_dimensions/' . $replaced . '"', $this->build(self::MODULE));
         }
         $this->assertStringContainsString('@moodle/lms/theme_dimensions/areas/Areas', $this->build(self::ESM . 'listing/mounts'));
     }
@@ -1135,8 +1189,13 @@ final class categorypublic_source_test extends \basic_testcase {
         $init = $this->body('init');
         $line = strpos($init, "\n    Listing.mountLine(root, dropTerm);\n");
         $calendar = strpos($init, "\n    Listing.mountCalendar(root, state, setRange).catch(() => null);\n");
-        $areas = strpos($init, "\n    Listing.mountAreas(areas, AREAS_PROPS, {\n");
-        $root = strpos($init, 'if (Listing.isRoot(state) && !root.querySelector(SELECTORS.toolbar)) {');
+        $areas = strpos($init, "\n    Listing.mountAreas(areas, shell.areas.props, shell.areas.client);\n");
+        $root = strpos($init, "\n    if (!live) {\n        return true;\n    }\n");
+        $this->assertStringContainsString(
+            'const live = !(Listing.isRoot(state) && !root.querySelector(SELECTORS.toolbar));',
+            $init,
+            'A root with nothing to search draws no line: its posters alone are armed there.'
+        );
         foreach (['line' => $line, 'calendar' => $calendar, 'posters' => $areas, 'root' => $root] as $what => $at) {
             $this->assertIsInt($at, "The {$what} is not handed over as it should be.");
         }
@@ -1157,9 +1216,13 @@ final class categorypublic_source_test extends \basic_testcase {
             $this->body('listen')
         );
         $this->assertStringContainsString('if (search && !search.closest(SELECTORS.drawnline)) {', $this->body('onErase'));
-        $this->assertStringContainsString("drawnline: '[data-region=\"dim-line\"][data-line-drawn]',", $this->source());
+        $this->assertStringContainsString(
+            "drawnline: '[data-region=\"dim-line\"][data-line-drawn]',",
+            $this->read('js/esm/src/listing/events.ts', 'The source is missing.')
+        );
+        $this->assertStringContainsString('const search = Listing.focusTarget(root);', $this->body('focusSearch'));
         foreach (['onClear', 'onChipRemove'] as $handler) {
-            $this->assertStringContainsString('const search = Listing.focusTarget(root);', $this->body($handler), $handler);
+            $this->assertStringContainsString("\n    focusSearch();", $this->body($handler), $handler);
         }
     }
 
@@ -1189,7 +1252,10 @@ final class categorypublic_source_test extends \basic_testcase {
         );
         $remove = $this->body('onChipRemove');
         $this->assertStringContainsString("if (!Listing.dropCriterion(state, chip.dataset.param || '')) {", $remove);
-        $this->assertMatchesRegularExpression('~publicOnly\(\);\s*Listing\.paintControls\(root, state\);\s*apply\(\);~', $remove);
+        $this->assertMatchesRegularExpression(
+            '~shell\.normalise\(state\);\s*Listing\.paintControls\(root, state\);\s*apply\(\);~',
+            $remove
+        );
         $this->assertStringContainsString("await onSearch('');", $this->body('onErase'));
     }
 }

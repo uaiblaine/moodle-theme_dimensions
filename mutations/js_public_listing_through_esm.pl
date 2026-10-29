@@ -1,2 +1,2 @@
-# Load the AMD listing again from the visitor's client: its graph would reach the module R4b1 replaced.
-s/^import \* as Listing from 'core\/esm!\@moodle\/lms\/theme_dimensions\/listing\/listing';$/import * as Listing from 'theme_dimensions\/categorylisting';/m;
+# Arm the AMD visitor's module again from the entry: its graph reaches the module R4b2 replaced.
+s/^import \{start\} from 'core\/esm!\@moodle\/lms\/theme_dimensions\/listing\/visitor';$/import {init as start} from 'theme_dimensions\/categorypublic';/m;

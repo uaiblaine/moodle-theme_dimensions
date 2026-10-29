@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The visitor's live listing runs on the listing store** (2026100541; R4b2 of `docs/vitrine-react/R4b.md`).
+  `js/esm/src/listing/store.ts` holds the page's state, every action, the requests with their tickets and the one path
+  from an action to the address; `visitor.ts` is the visitor's shell it is handed (its service without a session, its
+  fallback, its posters' links and panel questions). `request.php` arms `amd/src/listingvisitor.js`, which reaches the
+  shell through `core/esm!`; `categorypublic.js` is imported by nothing until the removal pull request. The store
+  reaches no shell, and Back is heard before the posters' component is mounted. No behaviour changes on the visitor's
+  page. A repaint in place now holds one pending from its request until its rows are painted, on both shells
+  (`theme_dimensions/listing:rows`, `theme_dimensions/categoryvitrine:rows`): core/ajax's token ended with the answer and
+  the render's began after the template load, which RequireJS answers after a timer even for a loaded module (every
+  repaint since R4b1's `load('core/templates')`), so Behat could count the rows being replaced under it, the flake of
+  the visitor's tree scenario. Two Behat scenarios (Back, Load more on the visitor's page), 14 Jest tests, a source test of the store, 29
+  mutation gates retargeted and 7 new.
+
 - **The chosen look, three points from the whole-feature security read.** Core's preference services
   (`core_user_set_user_preferences`, `core_user_update_user_preferences`) may no longer write
   `theme_dimensions_flavour`: its permission callback is `flavourchoice::preference_editable()`, which says no,

@@ -1,2 +1,2 @@
-# Spell the answer's event otherwise: the component never hears the visitor's answers.
+# Spell the criteria event otherwise in the one place the listing spells it.
 s/    criteria: 'dim-vitrine:criteria',/    criteria: 'dim-vitrine:answer',/;

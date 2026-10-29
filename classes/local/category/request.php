@@ -149,7 +149,7 @@ final class request {
            its open panel off the address and nothing else: a filter read here would narrow the
            root's panels and ride the hero's fold form with nothing on the page admitting it. A
            visitor's search is a submission of the search line's form, or live where the site has
-           opened the visitor's web service (categorypublic, armed below). */
+           opened the visitor's web service (listingvisitor, armed below). */
         $criteria = $isroot
             ? criteria::root_from_request(true)
             : criteria::from_request($categoryid, array_keys($fields), true);
@@ -210,7 +210,7 @@ final class request {
            network that may be what failed. */
         if (publicaccess::client_enabled()) {
             $PAGE->requires->strings_for_js([self::STRING_FALLBACK], 'theme_dimensions');
-            $PAGE->requires->js_call_amd('theme_dimensions/categorypublic', 'init', [$categoryid]);
+            $PAGE->requires->js_call_amd('theme_dimensions/listingvisitor', 'init', [$categoryid]);
         }
 
         return self::render($listing);

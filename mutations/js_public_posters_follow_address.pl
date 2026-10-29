@@ -1,3 +1,2 @@
-# Stop pointing the posters' links after an answer: a press meant for another tab then loads the
-# criteria the reader has just changed.
-s/(\}\}\)\);)\n    linkPosters\(\);\n\};/$1\n};/;
+# Tell the shell nothing of an answer: the posters keep linking to the criteria the page was loaded with.
+s/\n    shell\.answered\(response\);\n\};/\n};/;

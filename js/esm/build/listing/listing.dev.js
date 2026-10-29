@@ -2,7 +2,7 @@
  * The showcase's shared listing, under the names its AMD clients import it by.
  *
  * The AMD clients reach it through `core/esm!@moodle/lms/theme_dimensions/listing/listing` (R4b1 of
- * docs/vitrine-react/R4b.md). It goes with the last AMD client (R4b3); the store imports the modules directly.
+ * docs/vitrine-react/R4b.md), and the store and its shells name the listing by it too (R4b2).
  *
  * @module     theme_dimensions/listing/listing
  * @copyright  2026 Anderson Blaine

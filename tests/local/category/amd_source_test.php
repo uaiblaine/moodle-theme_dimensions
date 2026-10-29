@@ -1476,6 +1476,31 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
+     * A repaint is pending from the request until its rows are painted, one token per request.
+     *
+     * core/ajax's own token ends with the answer and the render's starts later: the template load in between
+     * waits on RequireJS's timer, which Behat reads as a settled page, and a step then counts the rows being
+     * replaced under it.
+     *
+     * Changes that must make it fail: taking no token (gate js_vitrine_rows_pending); releasing it before the
+     * answer is painted, or only on success.
+     */
+    public function test_a_repaint_is_pending_from_the_request_until_it_is_painted(): void {
+        $request = $this->body('requestRows');
+        $this->assertMatchesRegularExpression(
+            "~^    const ticket = \+\+seq;\n(?:    (?:/\*|  )[^\n]*\n)*"
+                . "    const token = new Pending\('theme_dimensions/categoryvitrine:rows'\);\n~",
+            $request
+        );
+        $this->assertMatchesRegularExpression('~\} finally \{\s*restoreMore\(more\);\s*token\.resolve\(\);\s*\}$~', $request);
+        $this->assertLessThan(
+            (int) strpos($request, 'token.resolve();'),
+            (int) strpos($request, 'await applyResponse(response, append, ticket);'),
+            'Released after the rows are painted.'
+        );
+    }
+
+    /**
      * The committed build was made from the source that is committed beside it - exactly.
      *
      * Moodle serves amd/build and never amd/src, whatever cachejs says, so a source edit that
