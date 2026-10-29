@@ -35,3 +35,15 @@ Feature: A person chooses their own look from the user menu
     And I press "Save changes"
     And I should see "Your look was saved."
     And the page is drawn in the Boost Union flavour "Harbour"
+
+  Scenario: The preferences page links to the choice page, which comes back to it
+    Given I log in as "student1"
+    And I follow "Preferences" in the user menu
+    # The user menu has a Look link of its own, so the page's is the one in the main region.
+    When I click on "Look" "link" in the "#region-main" "css_element"
+    And I set the field "Harbour" to "1"
+    And I press "Save changes"
+    Then I should see "Your look was saved."
+    # Back on the preferences page, whose main region carries the Look link again.
+    And "Look" "link" should exist in the "#region-main" "css_element"
+    And the page is drawn in the Boost Union flavour "Harbour"
