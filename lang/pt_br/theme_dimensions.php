@@ -368,6 +368,7 @@ $string['extrascssinheritancesetting'] = 'Herança do SCSS extra';
 $string['extrascssinheritancesetting_desc'] = 'Com esta configuração, você controla se o código SCSS extra do Boost Union deve ser herdado ou duplicado.';
 $string['flavourchoice_saved'] = 'Seu visual foi salvo.';
 $string['flavourchoice_unavailable'] = 'Este visual não pode ser escolhido neste site.';
+$string['flavourcssfailed'] = 'A folha de estilo do flavour {$a} não foi gravada: as regras do próprio tema faltam na folha compilada, então o SCSS dele não compilou.';
 $string['flavoursitedefault'] = 'Padrão do site';
 $string['focusmode'] = 'Modo foco nas atividades';
 $string['focusmode_bar'] = 'Modo foco';

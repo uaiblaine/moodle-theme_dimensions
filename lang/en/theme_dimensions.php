@@ -368,6 +368,7 @@ $string['extrascssinheritancesetting'] = 'Extra SCSS inheritance';
 $string['extrascssinheritancesetting_desc'] = 'With this setting, you control if the extra SCSS code from Boost Union should be inherited or duplicated.';
 $string['flavourchoice_saved'] = 'Your look was saved.';
 $string['flavourchoice_unavailable'] = 'This look cannot be chosen on this site.';
+$string['flavourcssfailed'] = 'The stylesheet of flavour {$a} was not stored: the theme\'s own rules are missing from the compiled sheet, so its SCSS did not compile.';
 $string['flavoursitedefault'] = 'Site default';
 $string['focusmode'] = 'Focus mode on activities';
 $string['focusmode_bar'] = 'Focus mode';

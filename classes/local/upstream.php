@@ -67,6 +67,36 @@ final class upstream {
     ];
 
     /**
+     * The functions the theme copies from a file that cannot be included.
+     *
+     * Boost Union's flavours/styles.php serves its request from the top level, so its helpers are read from the
+     * file's tokens rather than through reflection. Each entry: the copy's file and method, and the upstream file
+     * (relative to $CFG->dirroot) and function.
+     *
+     * @var array
+     */
+    const FUNCTIONS = [
+        [
+            'file' => 'classes/local/flavourcss/builder.php',
+            'method' => 'cache_key',
+            'upstreamfile' => 'theme/boost_union/flavours/styles.php',
+            'upstreamfunction' => 'theme_boost_union_flavour_get_css_cache_key',
+        ],
+        [
+            'file' => 'classes/local/flavourcss/builder.php',
+            'method' => 'filename',
+            'upstreamfile' => 'theme/boost_union/flavours/styles.php',
+            'upstreamfunction' => 'theme_boost_union_flavour_styles_get_filename',
+        ],
+        [
+            'file' => 'classes/local/flavourcss/builder.php',
+            'method' => 'store',
+            'upstreamfile' => 'theme/boost_union/flavours/styles.php',
+            'upstreamfunction' => 'theme_boost_union_flavour_styles_generate_and_store',
+        ],
+    ];
+
+    /**
      * The templates under templates/<component>/ that are the theme's own and copy nothing.
      *
      * Core draws the profile page in PHP (core_user\output\myprofile\renderer), so the theme's renderer renders
@@ -103,7 +133,7 @@ final class upstream {
      * @throws \moodle_exception When an overridden template has no upstream left.
      */
     public static function entries(): array {
-        $entries = array_merge(self::template_entries(), self::method_entries());
+        $entries = array_merge(self::template_entries(), self::method_entries(), self::function_entries());
         usort($entries, fn(array $a, array $b): int => strcmp($a['snapshot'], $b['snapshot']));
 
         return $entries;
@@ -204,5 +234,69 @@ final class upstream {
         }
 
         return $entries;
+    }
+
+    /**
+     * The function copies of {@see self::FUNCTIONS}, in the shape of a method entry.
+     *
+     * @return array The entries.
+     * @throws \coding_exception When the upstream file no longer declares the function.
+     */
+    private static function function_entries(): array {
+        global $CFG;
+
+        $entries = [];
+        foreach (self::FUNCTIONS as $function) {
+            $entries[] = [
+                'snapshot' => $function['file'] . '.' . $function['method'] . self::EXTENSION,
+                'copy' => $function['file'],
+                'source' => $function['upstreamfile'] . '::' . $function['upstreamfunction'],
+                'text' => self::function_source($CFG->dirroot . '/' . $function['upstreamfile'], $function['upstreamfunction']),
+            ];
+        }
+
+        return $entries;
+    }
+
+    /**
+     * A top-level function's source, from its signature's line to its closing brace's, without its docblock.
+     *
+     * The file is tokenised, never included.
+     *
+     * @param string $file The absolute path of the PHP file.
+     * @param string $name The function's name.
+     * @return string The lines, verbatim.
+     * @throws \coding_exception When the file does not declare the function.
+     */
+    public static function function_source(string $file, string $name): string {
+        $tokens = \PhpToken::tokenize((string) file_get_contents($file));
+        $count = count($tokens);
+        for ($i = 0; $i < $count; $i++) {
+            if (!$tokens[$i]->is(T_FUNCTION)) {
+                continue;
+            }
+            $j = $i + 1;
+            while ($j < $count && $tokens[$j]->isIgnorable()) {
+                $j++;
+            }
+            if ($j === $count || !$tokens[$j]->is(T_STRING) || $tokens[$j]->text !== $name) {
+                continue;
+            }
+            $depth = 0;
+            for ($k = $j; $k < $count; $k++) {
+                if ($tokens[$k]->text === '{' || $tokens[$k]->is([T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES])) {
+                    $depth++;
+                } else if ($tokens[$k]->text === '}') {
+                    $depth--;
+                    if ($depth === 0) {
+                        $lines = file($file);
+                        $start = $tokens[$i]->line;
+
+                        return implode('', array_slice($lines, $start - 1, $tokens[$k]->line - $start + 1));
+                    }
+                }
+            }
+        }
+        throw new \coding_exception("{$file} declares no function {$name}.");
     }
 }

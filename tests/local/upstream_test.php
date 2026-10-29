@@ -132,4 +132,38 @@ final class upstream_test extends \advanced_testcase {
         $this->assertStringStartsWith('    protected function coursecat_subcategories(', $entry['text']);
         $this->assertStringEndsWith("    }\n", $entry['text']);
     }
+
+    /**
+     * The upstream of a function copy is read from its file's tokens, from its signature to its closing brace.
+     *
+     * Boost Union's flavours/styles.php serves a request from its top level, so it is never included. The control
+     * is the function declared right after the one read: its signature is not in the text.
+     *
+     * @return void
+     */
+    public function test_a_function_upstream_is_read_from_its_file_without_including_it(): void {
+        $entries = array_column(upstream::entries(), null, 'snapshot');
+        $entry = $entries['classes/local/flavourcss/builder.php.store.upstream'];
+
+        $this->assertSame(
+            'theme/boost_union/flavours/styles.php::theme_boost_union_flavour_styles_generate_and_store',
+            $entry['source']
+        );
+        $this->assertStringStartsWith('function theme_boost_union_flavour_styles_generate_and_store(', $entry['text']);
+        $this->assertStringEndsWith("    return \$candidatesheet;\n}\n", $entry['text']);
+        $this->assertStringNotContainsString('function theme_boost_union_flavour_styles_fallback_content', $entry['text']);
+        $this->assertFalse(function_exists('theme_boost_union_flavour_styles_generate_and_store'));
+    }
+
+    /**
+     * A function the file does not declare is an error, never an empty upstream.
+     *
+     * @return void
+     */
+    public function test_a_function_the_file_does_not_declare_is_refused(): void {
+        global $CFG;
+
+        $this->expectException(\coding_exception::class);
+        upstream::function_source($CFG->dirroot . '/theme/boost_union/flavours/styles.php', 'theme_boost_union_no_such_function');
+    }
 }

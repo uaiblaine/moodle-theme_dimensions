@@ -1,0 +1,6 @@
+function theme_boost_union_flavour_get_css_cache_key($theme, $flavourid) {
+    $nosvg = (!$theme->use_svg_icons()) ? 'nosvg_' : '';
+    $rtlmode = ($theme->get_rtl_mode() == true) ? 'rtl' : 'ltr';
+
+    return $nosvg . $theme->name . '_' . $flavourid . '_' . $rtlmode;
+}

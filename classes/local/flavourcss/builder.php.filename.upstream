@@ -1,0 +1,8 @@
+function theme_boost_union_flavour_styles_get_filename($type, $themesubrev = 0, $flavourid = 0, $usesvg = true) {
+    $filename = $type;
+    $filename .= ($themesubrev > 0) ? "_{$themesubrev}" : '';
+    $filename .= ($flavourid > 0) ? "_{$flavourid}" : '';
+    $filename .= $usesvg ? '' : '-nosvg';
+
+    return "{$filename}.css";
+}
