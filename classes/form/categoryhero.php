@@ -26,6 +26,7 @@ namespace theme_dimensions\form;
 
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\unavailable_exception;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -491,6 +492,26 @@ class categoryhero extends \moodleform {
             'name' => $category ? $category->get_formatted_name(['escape' => false]) : '',
             'style' => 'background-color: ' . $bgcolour . '; color: ' . $inkcolour . ';',
         ]);
+    }
+
+    /**
+     * The category whose appearance this person may edit, or the theme's one refusal.
+     *
+     * An id that names no category and an id the person may not manage raise the same exception,
+     * before the category is loaded: two answers (core's unknowncategory and nopermissions) would
+     * tell a guesser which ids exist. The capability is asked at the category's own context, so
+     * every manager of it passes, a hidden category included.
+     *
+     * @param int $categoryid The id the request names.
+     * @return \core_course_category The category, hidden ones included.
+     * @throws unavailable_exception When it does not exist or the person may not manage it.
+     */
+    public static function editable_category(int $categoryid): \core_course_category {
+        $context = \core\context\coursecat::instance($categoryid, IGNORE_MISSING);
+        if (!$context || !has_capability('moodle/category:manage', $context)) {
+            throw new unavailable_exception();
+        }
+        return \core_course_category::get($categoryid, MUST_EXIST, true);
     }
 
     /**

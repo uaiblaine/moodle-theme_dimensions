@@ -26,6 +26,7 @@ namespace theme_dimensions\form;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\category\branding;
+use theme_dimensions\local\category\unavailable_exception;
 use theme_dimensions\local\landingfields;
 
 /**
@@ -1125,6 +1126,80 @@ final class categoryhero_test extends \advanced_testcase {
             "~'coursecat',\s+'description',\s+0\s*\);~",
             $source,
             'The page prepares a different file area than the one core saves into.'
+        );
+    }
+
+    /**
+     * An unused id and an id the person may not manage are refused alike; a manager gets the category.
+     *
+     * A teacher of a course inside the category holds no capability at the category itself. Both of
+     * their refusals must be the same class with the same message, or the page tells a guesser which
+     * ids exist; the administrator on the same existing id is the control that the refusal is the
+     * guard answering, not a lookup that never found the category.
+     */
+    public function test_an_unused_id_and_a_forbidden_one_are_refused_alike(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $course = $generator->create_course(['category' => $category->id]);
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $unused = (int) $category->id + 1000;
+
+        $this->setAdminUser();
+        $this->assertSame((int) $category->id, (int) categoryhero::editable_category((int) $category->id)->id);
+
+        $this->setUser($teacher);
+        $messages = [];
+        foreach ([(int) $category->id, $unused] as $id) {
+            try {
+                categoryhero::editable_category($id);
+                $this->fail("Category id $id was not refused.");
+            } catch (\moodle_exception $e) {
+                $this->assertInstanceOf(unavailable_exception::class, $e, "Category id $id.");
+                $messages[] = $e->getMessage();
+            }
+        }
+        $this->assertSame($messages[0], $messages[1], 'Both refusals read the same.');
+    }
+
+    /**
+     * A manager of a hidden category still reaches its editor.
+     *
+     * The refusal asks the capability at the category's own context; core's hidden flag is not a
+     * second gate here, as it is not on core's /course/editcategory.php.
+     */
+    public function test_a_manager_of_a_hidden_category_reaches_its_editor(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category(['visible' => 0]);
+        $manager = $generator->create_user();
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($roleid, $manager->id, \core\context\coursecat::instance((int) $category->id));
+
+        $this->setUser($manager);
+        $this->assertSame((int) $category->id, (int) categoryhero::editable_category((int) $category->id)->id);
+    }
+
+    /**
+     * The page asks the form's refusal before it loads, renders or prints anything.
+     *
+     * categoryhero.php is a script, which a test cannot run; this reads it. Core's own lookup and
+     * require_capability() are what it replaced, and either one back on the page is the existence
+     * oracle again.
+     */
+    public function test_the_page_refuses_through_the_form(): void {
+        global $CFG;
+        $source = file_get_contents($CFG->dirroot . '/theme/dimensions/categoryhero.php');
+
+        $this->assertStringContainsString('$coursecat = categoryhero_form::editable_category($id);', $source);
+        $this->assertStringNotContainsString('require_capability(', $source);
+        $this->assertStringNotContainsString('core_course_category::get(', $source);
+        $this->assertLessThan(
+            strpos($source, '$PAGE->'),
+            strpos($source, 'editable_category('),
+            'The refusal comes before the page is set up.'
         );
     }
 }

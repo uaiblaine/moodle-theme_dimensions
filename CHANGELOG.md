@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category appearance page answers a missing id and a forbidden one alike** (SEC-01). `categoryhero.php` threw
+  `unknowncategory` for an unused id and `nopermissions` for an existing one, an existence oracle. Both now raise the
+  theme's `unavailable_exception` before the category is loaded, from `categoryhero::editable_category()`; every manager
+  passes as before. Three tests, three mutation gates.
 - **The category tree counts only the courses the viewer may discover** (SEC-04). `coursecat_category()` decided the
   expand arrow from `get_courses_count()`, and in COUNT mode core printed that raw number as "(N)" beside the name
   (the front page's category list; Boost Union a bare badge under its `categorylistingpresentation` setting), so
