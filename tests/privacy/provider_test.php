@@ -34,6 +34,7 @@ use core_privacy\local\request\writer;
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\remembered;
+use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\output\category_hero;
 use theme_dimensions\output\category_listing;
@@ -63,15 +64,18 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * The metadata names the five preferences and the one table: its authorship stamp and when it was saved.
+     * The metadata names the six preferences and the one table: its authorship stamp and when it was saved.
      *
      * @return void
      */
-    public function test_the_metadata_names_the_five_preferences_and_the_branding_stamp(): void {
+    public function test_the_metadata_names_the_six_preferences_and_the_branding_stamp(): void {
         $collection = provider::get_metadata(new collection('theme_dimensions'));
 
         $items = $collection->get_collection();
-        $this->assertCount(6, $items);
+        $this->assertCount(7, $items);
+        $this->assertInstanceOf(user_preference::class, $items[6]);
+        $this->assertEquals(flavourchoice::PREFERENCE, $items[6]->get_name());
+        $this->assertEquals('privacy:metadata:preference:flavour', $items[6]->get_summary());
         $this->assertInstanceOf(user_preference::class, $items[5]);
         $this->assertEquals(course_notice::PREFERENCE_COLLAPSED, $items[5]->get_name());
         $this->assertEquals('privacy:metadata:preference:coursenotice_collapsed', $items[5]->get_summary());
@@ -212,6 +216,53 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $preferences = writer::with_context(\context_system::instance())->get_user_preferences('theme_dimensions');
         $this->assertEquals(get_string('yes'), $preferences->{course_notice::PREFERENCE_COLLAPSED}->value);
         $this->assertObjectNotHasProperty(category_hero::PREFERENCE_FOLDED, $preferences, 'The hero fold was never chosen.');
+    }
+
+    /**
+     * A chosen look is exported by the flavour's title and id, the site default by its label.
+     *
+     * A flavour deleted after it was chosen is exported by the id the preference still holds, which
+     * is all that is left of it; nothing chosen exports nothing.
+     *
+     * @return void
+     */
+    public function test_the_chosen_look_is_exported_by_title_and_id(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        // A bare ampersand: the export is plain text and must carry it as typed, never as &amp;.
+        $flavour = $this->getDataGenerator()->get_plugin_generator('theme_boost_union')
+            ->create_flavour(['title' => 'Harbour & Co']);
+        $chooser = $this->getDataGenerator()->create_user();
+        $default = $this->getDataGenerator()->create_user();
+        $orphan = $this->getDataGenerator()->create_user();
+        $silent = $this->getDataGenerator()->create_user();
+        set_user_preference(flavourchoice::PREFERENCE, $flavour->id, $chooser);
+        set_user_preference(flavourchoice::PREFERENCE, flavourchoice::SITE_DEFAULT, $default);
+        set_user_preference(flavourchoice::PREFERENCE, 987654, $orphan);
+
+        provider::export_user_preferences((int) $chooser->id);
+        $preferences = writer::with_context(\context_system::instance())->get_user_preferences('theme_dimensions');
+        $this->assertSame('Harbour & Co (' . $flavour->id . ')', $preferences->{flavourchoice::PREFERENCE}->value);
+
+        writer::reset();
+        provider::export_user_preferences((int) $default->id);
+        $preferences = writer::with_context(\context_system::instance())->get_user_preferences('theme_dimensions');
+        $this->assertEquals(
+            get_string('flavoursitedefault', 'theme_dimensions'),
+            $preferences->{flavourchoice::PREFERENCE}->value
+        );
+
+        writer::reset();
+        $this->assertFalse($DB->record_exists('theme_boost_union_flavours', ['id' => 987654]), 'Precondition: no such flavour.');
+        provider::export_user_preferences((int) $orphan->id);
+        $preferences = writer::with_context(\context_system::instance())->get_user_preferences('theme_dimensions');
+        $this->assertEquals('987654', $preferences->{flavourchoice::PREFERENCE}->value);
+
+        writer::reset();
+        provider::export_user_preferences((int) $silent->id);
+        $preferences = writer::with_context(\context_system::instance())->get_user_preferences('theme_dimensions');
+        $this->assertObjectNotHasProperty(flavourchoice::PREFERENCE, $preferences, 'Nothing was chosen.');
     }
 
     /**

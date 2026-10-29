@@ -55,6 +55,13 @@ $callbacks = [
         'callback' => 'theme_dimensions\local\hook\course\before_course_deleted::callback',
         'priority' => 0,
     ],
+    // The chosen flavour has to reach Boost Union's cache before anything of the page asks for a
+    // flavour, and Boost Union keeps its first answer for the rest of the request.
+    [
+        'hook' => \core\hook\output\before_http_headers::class,
+        'callback' => 'theme_dimensions\local\hook\output\before_http_headers::callback',
+        'priority' => 1000,
+    ],
     [
         'hook' => \core\hook\output\before_standard_head_html_generation::class,
         'callback' => 'theme_dimensions\local\hook\output\before_standard_head_html_generation::callback',

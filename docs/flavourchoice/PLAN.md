@@ -1,6 +1,8 @@
 # A look of one's own: choosing a Boost Union flavour from the user menu
 
-Status: **proposal, 2026-10-28, nothing implemented.** The owner's decisions are in section 2.
+Status: **S1 implemented, 2026-10-28** (version 2026100532: `classes/local/flavourchoice.php`, its
+`before_http_headers` callback and `tests/local/flavourchoice_test.php`); S2 to S5 not started. The owner's
+decisions are in section 2.
 F1 was reversed the same day: the person's choice now wins over the administrator's flavours.
 Section 9 lists the defaults this plan picked where nothing was decided; each can be overturned
 before its stage starts.

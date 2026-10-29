@@ -23,7 +23,7 @@
  */
 
 /**
- * Remove what is the theme's own and not user-authored: its five user preferences.
+ * Remove what is the theme's own and not user-authored: its six user preferences.
  *
  * Core's uninstall_plugin() already drops the theme's table through XMLDB and every file
  * of the theme's component - the category hero images and the site-wide fallback among
@@ -43,6 +43,7 @@ function xmldb_theme_dimensions_uninstall() {
         \theme_dimensions\local\category\remembered::PREFERENCE,
         \theme_dimensions\output\category_hero::PREFERENCE_FOLDED,
         \theme_dimensions\output\course_notice::PREFERENCE_COLLAPSED,
+        \theme_dimensions\local\flavourchoice::PREFERENCE,
     ];
     foreach ($preferences as $name) {
         $DB->delete_records('user_preferences', ['name' => $name]);
