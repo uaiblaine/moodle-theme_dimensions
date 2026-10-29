@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **block_compass's open-courses line links to the filtered showcase** (2026100542; stage 14f of block_compass's
+  ADR-017). `local\hook\block_compass\category_link` answers the optional `\block_compass\hook\category_link`
+  hook with `?categoryid=N&chip=open&from=Y-m-d&to=Y-m-d` for each asked category and the bare course index for the
+  root. It answers nothing when the showcase or the state chip is off, or for a visitor or the guest account, whose
+  page draws no chips, so the block keeps core's category page. It adds no visibility rule: the page runs its own.
 - **The offered-looks setting lists the flavours again.** `settings.php` handed
   `admin_setting_configmulticheckbox` the array callable `[flavourchoice::class, 'choices']`, and core keeps any
   array as the choices themselves, so the page offered two checkboxes labelled with the class name and `choices`
@@ -23,7 +28,6 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   repaint since R4b1's `load('core/templates')`), so Behat could count the rows being replaced under it, the flake of
   the visitor's tree scenario. Two Behat scenarios (Back, Load more on the visitor's page), 14 Jest tests, a source test of the store, 29
   mutation gates retargeted and 7 new.
-
 - **The chosen look, three points from the whole-feature security read.** Core's preference services
   (`core_user_set_user_preferences`, `core_user_update_user_preferences`) may no longer write
   `theme_dimensions_flavour`: its permission callback is `flavourchoice::preference_editable()`, which says no,
