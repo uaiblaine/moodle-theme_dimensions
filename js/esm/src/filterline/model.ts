@@ -69,7 +69,7 @@ export type Line = {
     suggest: {id: string, filters: string, start: string},
 };
 
-/** One option of an answer's status group, as categorylisting hands the line its scope part. */
+/** One option of an answer's status group, as the listing hands the line its scope part. */
 export type Option = {
     id?: string,
     value: string | number,
@@ -281,7 +281,7 @@ export const read = (line: Element | null): Line | null => {
  *
  * The cells keep the server's order, which is the scope's own (criteria::SCOPE: every cell is drawn, an
  * absent one hidden); an option of no cell drawn - which the server never answers - goes last, in the
- * answer's order, which categorylisting has already put in SCOPE's.
+ * answer's order, which the listing has already put in SCOPE's.
  *
  * @param {Array} cells The cells drawn.
  * @param {Array} options The answer's scope options.
@@ -323,7 +323,7 @@ export const scopeAfter = (cells: Cell[], options: Option[]): Cell[] => {
  * The line after an answer: the scope's counts and states, the star, the Filters badge.
  *
  * Each part the answer leaves out stays as it is: no scope options is a page whose state sort was
- * switched off under it (categorylisting's paintGroup() reads it the same way), and a toggle the answer
+ * switched off under it (the listing's paintGroup() reads it the same way), and a toggle the answer
  * says is not available is left alone, because a page drawn without one has nothing to repaint.
  *
  * @param {object} model The line.

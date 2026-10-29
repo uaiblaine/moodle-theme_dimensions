@@ -39,7 +39,7 @@
 import Ajax from 'core/ajax';
 import * as CategoryStar from 'theme_dimensions/categorystar';
 import * as DateRange from 'theme_dimensions/daterange';
-import * as Listing from 'theme_dimensions/categorylisting';
+import * as Listing from 'core/esm!@moodle/lms/theme_dimensions/listing/listing';
 
 /** @type {Object} Every hook this module reads, all of them data attributes of the showcase's templates. */
 const SELECTORS = {

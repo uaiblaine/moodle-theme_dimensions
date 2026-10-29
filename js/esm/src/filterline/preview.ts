@@ -47,7 +47,7 @@ const SELECTORS = {
     option: '[role="option"]',
 };
 
-/** The request parameters a control of the line names: the server's criteria, as categorylisting's PARAM spells them. */
+/** The request parameters a control of the line names: the server's criteria, as the listing's PARAM spells them. */
 const PARAM = {
     chip: 'chip',
     fieldprefix: 'cf_',

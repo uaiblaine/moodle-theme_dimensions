@@ -7,7 +7,7 @@ import{Fragment as q,useLayoutEffect as g,useState as i}from"react";import{creat
  * that carries it (`panel.ts` for the panel, `posters.ts` for the posters' result layer, `rail.ts`,
  * `model.ts`), each named after the AMD function it stood for.
  *
- * WHO OWNS WHAT. The mount node is an empty, hidden child amd/src/categorylisting.js's mountAreas() appends
+ * WHO OWNS WHAT. The mount node is an empty, hidden child js/esm/src/listing/mounts.ts's mountAreas() appends
  * to the areas section, so the mount draws no box and the first paint stays the server's, to the pixel.
  * From it the component owns, and is the only writer of:
  *

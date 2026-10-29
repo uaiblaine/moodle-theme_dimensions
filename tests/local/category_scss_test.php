@@ -158,6 +158,8 @@ final class category_scss_test extends \basic_testcase {
            Apply buttons are btn btn-sm btn-primary), and phpcs, the Mustache lint and stylelint
            never read a class name out of a JavaScript file. */
         $files = array_merge($files, glob($root . '/amd/src/category*.js'));
+        // The shared listing's painters, in TypeScript since R4b1: they write pills, chips and the count's marker.
+        $files = array_merge($files, glob($root . '/js/esm/src/listing/*.ts'));
         /* The calendar module's name does not match the glob, and it writes every class of its
            month grid, its day cells and the removable pill of the count row. A file the scanner
            cannot see is one the Bootstrap rules do not apply to, which is why the membership test
@@ -201,6 +203,7 @@ final class category_scss_test extends \basic_testcase {
             'category_daterange.mustache',
             'categoryvitrine.js',
             'categorylisting.js',
+            'paint.ts',
             'categoryposters.js',
             'categorypublic.js',
             'categorypanel.js',
@@ -1209,7 +1212,7 @@ final class category_scss_test extends \basic_testcase {
      */
     public function test_the_trees_breakpoint_is_the_same_number_in_the_stylesheet_and_the_module(): void {
         $scss = $this->stylesheet('category.scss');
-        $module = file_get_contents($this->plugin_root() . '/amd/src/categorylisting.js');
+        $module = file_get_contents($this->plugin_root() . '/js/esm/src/listing/paint.ts');
 
         $this->assertMatchesRegularExpression(
             '~\.dim-vitrine__treetoggle \{\s*display:\s*none;\s*\}~',

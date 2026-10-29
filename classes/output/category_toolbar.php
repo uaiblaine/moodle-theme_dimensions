@@ -332,7 +332,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      * client's folding (categoryline) measures the line with every cell of the scope drawn, so
      * the step a line takes follows its width and its language and never what the counts happen
      * to be, and a cell an answer brings back is found in place by its value
-     * (categorylisting's paintGroup()). The cells are in {@see criteria::SCOPE}'s order. Every
+     * (the listing's paintGroup()). The cells are in {@see criteria::SCOPE}'s order. Every
      * option carries the key, so the template never reads it off an outer context.
      *
      * @param array|null $scope The scope half of {@see split_status()}, or null where none is drawn.
