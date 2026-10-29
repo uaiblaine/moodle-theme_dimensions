@@ -14,6 +14,25 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   during the compile (the MUC key carries none), and stores nothing that lacks the theme's own tokens (core falls
   back to the precompiled sheet when the SCSS does not compile). The three `styles.php` helpers it copies have
   snapshots, read from the file's tokens by the new `upstream::FUNCTIONS`. 9 new mutation gates.
+- **The Look submenu in the user menu and the mobile drawer, and the choice page** (2026100534; S2 of
+  `docs/flavourchoice/PLAN.md`). While `theme_dimensions/selectableflavours` offers a flavour, the user menu of a
+  logged-in account gains a Look link before Language (after Preferences where there is no language menu) and a
+  submenu built like core's language one: the site default first, then each offered flavour, the one in force
+  marked current. The drawer gets the same as a row and a panel. Each item links to `flavour.php` with its flavour
+  preselected, which only shows a form (one radio per look, POST with the session key) and writes nothing until it
+  is submitted; with JavaScript, `theme_dimensions/flavourchoice` records the choice in place through the new web
+  service `theme_dimensions_choose_flavour` and reloads the page. Both go through `flavourchoice::choose()`, which
+  accepts the site default or a flavour the setting offers now. The offered titles are cached site-wide (cache
+  `flavourmenu`, keyed by the language and the offered ids, emptied by Boost Union's flavour events), so the menu
+  costs no statement per page. This replaces the plan's first default (a GET link with the session key): the theme
+  never changes state on a GET.
+- **The showcase's cost bound no longer flakes on a loaded host** (tests only). `budget_test`'s 0.5 s ceiling
+  on one render of two hundred courses failed at 0.508 s and 0.514 s with two `mdl ci --matrix` legs or three
+  `mdl mutate --fast` workers sharing the host, and passed alone; one render measured 120 to 200 ms right after
+  seeding where the docblock said 50. The time half is now the ratio of the median of nine interleaved renders
+  of two hundred courses to that of a root of one full page (48), in the same process, under 2.5 (measured
+  0.96 to 1.3): the per-course cost a statement count cannot see, with the host's speed divided out. The read
+  ceilings and the memory bound are unchanged.
 - **A visitor's flat tree links every child it names, a merely listed one included** (2026100533). On a public
   category page in a flat organisation (A-Z or the recent sort) each child holding a public course but not itself
   public was drawn as `<span class="dim-tree__text">`, though the server already honoured its `cat=`: the tree's entry

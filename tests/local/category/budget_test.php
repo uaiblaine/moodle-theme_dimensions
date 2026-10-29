@@ -47,8 +47,9 @@ require_once(__DIR__ . '/fixture.php');
  * ({@see record()}).
  *
  * The cost bound exists because a statement count cannot see a regression in
- * per-row cost at all: it is loose on purpose, an order of magnitude above
- * the measured value.
+ * per-row cost at all. Its time half is a ratio between two renders in the
+ * same process, never a wall-clock ceiling: see
+ * {@see test_a_first_render_of_two_hundred_courses_stays_within_the_cost_bound()}.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -70,8 +71,14 @@ final class budget_test extends \advanced_testcase {
     /** @var int Peak memory a first render of two hundred courses may add, in bytes; the measured peak is about 600 KB. */
     private const COST_MEMORY = 8 * 1024 * 1024;
 
-    /** @var float Wall time a first render of two hundred courses may take, in seconds; the measured time is about 50 ms. */
-    private const COST_SECONDS = 0.5;
+    /**
+     * @var float How many times longer the median render of two hundred courses may take than that of one full page of
+     *   courses; the measured ratio is 0.96 to 1.3.
+     */
+    private const COST_RATIO = 2.5;
+
+    /** @var int Timed renders of each root, interleaved; odd, so the median is one of them. */
+    private const COST_SAMPLES = 9;
 
     /** @var int Reads a directory card with a description may add: core's text-filter setup for its context. */
     private const DESCRIPTION_READS_PER_CARD = 2;
@@ -618,7 +625,52 @@ final class budget_test extends \advanced_testcase {
     }
 
     /**
-     * The cost bound: memory and time at two hundred courses stay under loose constants, in both modes.
+     * Time one first render, reset as a new request would be.
+     *
+     * @param int $rootid The root.
+     * @return float Seconds.
+     */
+    private function timed_render(int $rootid): float {
+        self::forget();
+        \core\context_helper::reset_caches();
+        gc_collect_cycles();
+        $start = hrtime(true);
+        $this->render($rootid);
+        return (hrtime(true) - $start) / 1e9;
+    }
+
+    /**
+     * The median of an odd number of samples.
+     *
+     * @param array $samples The samples, floats.
+     * @return float The middle one.
+     */
+    private static function median(array $samples): float {
+        sort($samples);
+        return $samples[intdiv(count($samples), 2)];
+    }
+
+    /**
+     * The cost bound: memory and time at two hundred courses stay under loose bounds, in both modes.
+     *
+     * Time is bounded as a RATIO, not in seconds. The median of interleaved
+     * renders of two hundred courses is divided by the median for a root of
+     * one full page of courses, both in this process: a loaded host slows both
+     * alike, so the ratio holds where a wall-clock ceiling does not. A single
+     * timed render mostly measures the host: a 0.5 s ceiling on one render
+     * flaked whenever two CI legs or mutation workers shared it, and the medians
+     * on a quiet stack are 35 to 95 ms against one render's 120 to 200 ms right
+     * after seeding.
+     *
+     * Both roots fill the same page, so the cards' layers cost the same on both
+     * sides, and what the ratio sees is what the population pays per course
+     * beyond that page: the per-row cost that no statement count can see. It
+     * measures 0.96 to 1.3. A render whose cost grew linearly with N would
+     * approach 200/48 (4.2), so COST_RATIO = 2.5 is passed once each of the 152
+     * extra courses costs about a fiftieth of a whole page's render (0.6 to
+     * 1.8 ms); the wall-clock ceiling needed about 2 ms a course on a quiet host.
+     * The read ceiling and the memory bound are unchanged, and the slope tests
+     * above hold the statements flat in N and in P.
      *
      * @param bool $statesort The mode.
      */
@@ -629,8 +681,14 @@ final class budget_test extends \advanced_testcase {
         $viewer = $this->prepare();
         set_config(population::SETTING_STATESORT, $statesort ? '1' : '0', 'theme_dimensions');
         $root = $this->seed(200, $viewer);
+        $page = $this->seed(population::DEFAULT_PAGESIZE, $viewer);
         $this->become($viewer);
         $this->render($root);
+        $this->assertCount(
+            count($this->render($page)->rows),
+            $this->render($root)->rows,
+            'Both roots fill the same page, so the ratio compares the population alone.'
+        );
 
         self::forget();
         \core\context_helper::reset_caches();
@@ -639,18 +697,39 @@ final class budget_test extends \advanced_testcase {
         memory_reset_peak_usage();
         $reads = (int) $DB->perf_get_reads();
         $memory = memory_get_usage();
-        $start = microtime(true);
         $rendered = $this->render($root);
-        $seconds = microtime(true) - $start;
         $delta = memory_get_peak_usage() - $memory;
         $reads = (int) $DB->perf_get_reads() - $reads;
+
+        $large = [];
+        $small = [];
+        for ($i = 0; $i < self::COST_SAMPLES; $i++) {
+            $large[] = $this->timed_render($root);
+            $small[] = $this->timed_render($page);
+        }
+        $ratio = self::median($large) / self::median($small);
         $label = $statesort ? 'cost at N=200 (state sort on)' : 'cost at N=200 (state sort off)';
-        $this->record($label, ['reads' => $reads, 'ms' => round($seconds * 1000, 1), 'peak KB' => intdiv($delta, 1024)]);
+        $this->record($label, [
+            'reads' => $reads,
+            'median ms' => round(self::median($large) * 1000, 1),
+            'median ms at one page' => round(self::median($small) * 1000, 1),
+            'ratio' => round($ratio, 2),
+            'peak KB' => intdiv($delta, 1024),
+        ]);
 
         $this->assertSame(200, $rendered->total, 'Two hundred courses were really on the page being measured.');
         $this->assertLessThanOrEqual($statesort ? self::WARM_CEILING : self::WARM_CEILING_SQL, $reads);
         $this->assertLessThan(self::COST_MEMORY, $delta, 'Peak memory grew by ' . intdiv($delta, 1024) . ' KB.');
-        $this->assertLessThan(self::COST_SECONDS, $seconds, "A first render took {$seconds} s.");
+        $this->assertLessThan(
+            self::COST_RATIO,
+            $ratio,
+            sprintf(
+                'Two hundred courses took %.2f times as long as one page of them (medians %.1f ms and %.1f ms).',
+                $ratio,
+                self::median($large) * 1000,
+                self::median($small) * 1000
+            )
+        );
     }
 
     /**

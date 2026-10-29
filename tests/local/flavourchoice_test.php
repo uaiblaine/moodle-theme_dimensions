@@ -464,6 +464,108 @@ final class flavourchoice_test extends \advanced_testcase {
     }
 
     /**
+     * choose() records the site default or an offered flavour, refuses anything else, and forgets the session's prime.
+     *
+     * @return void
+     */
+    public function test_choose_records_only_an_offered_flavour(): void {
+        $this->resetAfterTest();
+        $harbour = $this->flavour('Harbour');
+        $campus = $this->flavour('Campus');
+        $this->offer($harbour);
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        flavourchoice::prime($this->page(null));
+
+        $this->assertTrue(flavourchoice::choose((int) $harbour->id));
+        $this->assertSame((int) $harbour->id, (int) get_user_preferences(flavourchoice::PREFERENCE));
+        $this->assertFalse(\cache::make('theme_dimensions', 'flavourchoice')->get('choice'), 'The prime is forgotten.');
+
+        $this->assertFalse(flavourchoice::choose((int) $campus->id), 'A flavour the setting does not offer.');
+        $this->assertFalse(flavourchoice::choose(987654), 'No such flavour.');
+        $this->assertSame((int) $harbour->id, (int) get_user_preferences(flavourchoice::PREFERENCE), 'Nothing was written.');
+
+        $this->assertTrue(flavourchoice::choose(flavourchoice::SITE_DEFAULT));
+        $this->assertSame(flavourchoice::SITE_DEFAULT, (int) get_user_preferences(flavourchoice::PREFERENCE));
+
+        $this->setGuestUser();
+        $this->assertFalse(flavourchoice::choose((int) $harbour->id), 'The guest chooses nothing.');
+    }
+
+    /**
+     * offered() lists the offered flavours that exist, plain, in Boost Union's order, and follows a setting change.
+     *
+     * @return void
+     */
+    public function test_offered_flavours_are_plain_ordered_and_follow_the_setting(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $harbour = $this->flavour('Harbour & Co');
+        $campus = $this->flavour('Campus');
+        $quay = $this->flavour('Quay');
+        // Every flavour gets a sort, as Boost Union's own form gives one: the generator leaves it null, and
+        // MariaDB sorts a null first where PostgreSQL sorts it last.
+        $DB->set_field('theme_boost_union_flavours', 'sort', 2, ['id' => $harbour->id]);
+        $DB->set_field('theme_boost_union_flavours', 'sort', 1, ['id' => $campus->id]);
+        $DB->set_field('theme_boost_union_flavours', 'sort', 3, ['id' => $quay->id]);
+        $this->offer($harbour, $campus);
+
+        $this->assertSame([(int) $campus->id => 'Campus', (int) $harbour->id => 'Harbour & Co'], flavourchoice::offered());
+
+        // A setting change is a new key, so the cached list of the old one is never read.
+        $this->offer($harbour, $quay);
+        $this->assertSame([(int) $harbour->id => 'Harbour & Co', (int) $quay->id => 'Quay'], flavourchoice::offered());
+
+        // A deleted flavour drops out once Boost Union's event has emptied the cache.
+        $DB->delete_records('theme_boost_union_flavours', ['id' => $quay->id]);
+        $this->assertArrayHasKey((int) $quay->id, flavourchoice::offered(), 'Precondition: the list is cached.');
+        \core_cache\helper::purge_by_event('theme_boost_union_flavours_deleted');
+        $this->assertSame([(int) $harbour->id => 'Harbour & Co'], flavourchoice::offered());
+
+        set_config(flavourchoice::SETTING, '', 'theme_dimensions');
+        $this->assertSame([], flavourchoice::offered());
+    }
+
+    /**
+     * menu() offers the site default first, marks the choice in force, and is nothing for visitors or an empty list.
+     *
+     * @return void
+     */
+    public function test_the_menu_marks_the_choice_in_force(): void {
+        $this->resetAfterTest();
+        $harbour = $this->flavour('Harbour');
+        $campus = $this->flavour('Campus');
+        $return = new \moodle_url('/course/index.php', ['categoryid' => 7]);
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $this->assertNull(flavourchoice::menu($return), 'Nothing offered.');
+
+        $this->offer($harbour, $campus);
+        $menu = flavourchoice::menu($return);
+        $this->assertSame([flavourchoice::SITE_DEFAULT, (int) $harbour->id, (int) $campus->id], array_column($menu['items'], 'id'));
+        $this->assertSame(get_string('flavoursitedefault', 'theme_dimensions'), $menu['current']);
+        $this->assertSame([true, false, false], array_column($menu['items'], 'iscurrent'));
+        $url = $menu['items'][1]['url'];
+        $this->assertStringEndsWith('/theme/dimensions/flavour.php', $url->get_path(false));
+        $this->assertSame((string) $harbour->id, $url->get_param('flavour'));
+        $this->assertSame('/course/index.php?categoryid=7', $url->get_param('returnurl'));
+
+        set_user_preference(flavourchoice::PREFERENCE, $campus->id);
+        $menu = flavourchoice::menu($return);
+        $this->assertSame('Campus', $menu['current']);
+        $this->assertSame([false, false, true], array_column($menu['items'], 'iscurrent'));
+
+        // A choice the setting no longer offers reads as the site default here too.
+        $this->offer($harbour);
+        $this->assertSame([true, false], array_column(flavourchoice::menu($return)['items'], 'iscurrent'));
+
+        $this->setGuestUser();
+        $this->assertNull(flavourchoice::menu($return), 'The guest.');
+        $this->setUser(null);
+        $this->assertNull(flavourchoice::menu($return), 'A visitor.');
+    }
+
+    /**
      * Render the real header of a page in a category, for the current user, through Boost Union's layout.
      *
      * @param int $categoryid The page's category.

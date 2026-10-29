@@ -187,6 +187,120 @@ final class flavourchoice {
     }
 
     /**
+     * Record a new choice for the current person, if it is one the setting offers.
+     *
+     * The one write path: the web service of the menu and the form of the choice page both come here.
+     * The site default is always a valid answer; any other id must be on the list now, so a stale menu
+     * or a hand-made request cannot store a flavour the administrator does not offer.
+     *
+     * @param int $flavourid The chosen flavour id, or {@see self::SITE_DEFAULT}.
+     * @return bool Whether the choice was recorded.
+     */
+    public static function choose(int $flavourid): bool {
+        if (!isloggedin() || isguestuser()) {
+            return false;
+        }
+        if ($flavourid !== self::SITE_DEFAULT && !array_key_exists($flavourid, self::offered())) {
+            return false;
+        }
+
+        set_user_preference(self::PREFERENCE, $flavourid);
+        self::forget();
+
+        return true;
+    }
+
+    /**
+     * The flavours the setting offers that still exist: id => plain title, in Boost Union's order.
+     *
+     * Read on every page that draws the user menu, so it is cached for the whole site under a key made
+     * of the current language and the offered ids: a change of the setting is a new key, and Boost
+     * Union's invalidation events (a flavour edited, re-sorted or deleted) empty the cache. The titles
+     * are in the PLAIN spelling; each template that prints one says which spelling it wants.
+     *
+     * @return array Flavour id => plain title.
+     */
+    public static function offered(): array {
+        global $DB;
+
+        $ids = self::selectable_ids();
+        if (!$ids) {
+            return [];
+        }
+
+        $cache = \cache::make('theme_dimensions', 'flavourmenu');
+        $key = current_language() . '_' . implode('_', $ids);
+        $offered = $cache->get($key);
+        if (is_array($offered)) {
+            return $offered;
+        }
+
+        $offered = [];
+        $options = ['context' => \context_system::instance(), 'escape' => false];
+        foreach ($DB->get_records_list('theme_boost_union_flavours', 'id', $ids, 'sort ASC, id ASC', 'id, title') as $record) {
+            $offered[(int) $record->id] = format_string($record->title, true, $options);
+        }
+        $cache->set($key, $offered);
+
+        return $offered;
+    }
+
+    /**
+     * The look menu for the current person, or null when there is nothing to choose.
+     *
+     * Nothing for a visitor or the guest, and nothing while the setting offers no flavour that still
+     * exists. The site default is always the first item. Each item's url is the choice page with that
+     * flavour preselected: the address without JavaScript, which only shows a form and writes nothing;
+     * with JavaScript, theme_dimensions/flavourchoice writes the choice through the web service and
+     * reloads the page.
+     *
+     * @param \moodle_url $returnurl The page the choice is made on, where the person comes back to.
+     * @return array|null current (the current item's plain label) and items (id, text: plain label,
+     *      url: \moodle_url, iscurrent).
+     */
+    public static function menu(\moodle_url $returnurl): ?array {
+        if (!isloggedin() || isguestuser()) {
+            return null;
+        }
+        $offered = self::offered();
+        if (!$offered) {
+            return null;
+        }
+
+        $chosen = self::chosen_id();
+        if (!array_key_exists($chosen, $offered)) {
+            $chosen = self::SITE_DEFAULT;
+        }
+
+        $labels = [self::SITE_DEFAULT => get_string('flavoursitedefault', 'theme_dimensions')] + $offered;
+        $items = [];
+        foreach ($labels as $id => $label) {
+            $items[] = [
+                'id' => (int) $id,
+                'text' => $label,
+                'url' => self::page_url((int) $id, $returnurl),
+                'iscurrent' => (int) $id === $chosen,
+            ];
+        }
+
+        return ['current' => $labels[$chosen], 'items' => $items];
+    }
+
+    /**
+     * The choice page, with a flavour preselected and the page to come back to.
+     *
+     * @param int $flavourid The flavour to preselect, or {@see self::SITE_DEFAULT}.
+     * @param \moodle_url $returnurl The page to come back to.
+     * @return \moodle_url
+     */
+    public static function page_url(int $flavourid, \moodle_url $returnurl): \moodle_url {
+        return new \moodle_url('/theme/dimensions/flavour.php', [
+            'flavour' => $flavourid,
+            'returnurl' => $returnurl->out_as_local_url(false),
+        ]);
+    }
+
+    /**
      * Whether the choice may be written for this page at all.
      *
      * Hook callbacks of an installed theme run whatever theme draws the page, so the page's own theme

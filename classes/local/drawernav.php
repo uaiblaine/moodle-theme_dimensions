@@ -49,8 +49,9 @@ use theme_boost\colour_mode;
  * - The sections: core's primary nodes and the custom menu as "Browse"; each Boost Union smart menu in
  *   submenu mode as a section of its own, labelled with the menu's title, its items as the rows. Inline
  *   smart menus are already merged into the top level by Boost Union and stay in "Browse".
- * - The footer: the appearance switch while core lets this person choose a colour mode, and the language
- *   row while core's language menu offers more than one language.
+ * - The footer: the appearance switch while core lets this person choose a colour mode, the Look row while
+ *   the theme offers a choice of flavours ({@see flavourchoice::menu()}), and the language row while core's
+ *   language menu offers more than one language.
  *
  * A row with children opens a sub-panel. Every panel is rendered flat, after the root, as a section with
  * an anchor of its own: without the client module, the row is a link to that section and its back control
@@ -73,6 +74,9 @@ final class drawernav {
 
     /** @var string The id of the language panel. */
     public const LANGUAGE = 'dimensions-drawer-panel-lang';
+
+    /** @var string The id of the Look panel. */
+    public const LOOK = 'dimensions-drawer-panel-look';
 
     /** @var string The prefix of every other panel's id, followed by a counter. */
     public const PANEL_PREFIX = 'dimensions-drawer-panel-';
@@ -160,7 +164,8 @@ final class drawernav {
      * @param array $usermenu The layout context's usermenu, as core's get_user_menu() built it.
      * @param \moodle_page $page The page being rendered, for the language menu.
      * @param \renderer_base $output The renderer, for the language menu's export.
-     * @return array rootid, identity, sections, panels, appearance (array|false) and language (array|false).
+     * @return array rootid, identity, sections, panels, appearance (array|false), look (array|false) and language
+     *      (array|false).
      */
     public static function context(array $nodes, array $usermenu, \moodle_page $page, \renderer_base $output): array {
         $panels = [];
@@ -193,6 +198,7 @@ final class drawernav {
         }
 
         $appearance = self::appearance();
+        $look = self::look($page);
         $language = self::language($page, $output);
 
         return [
@@ -201,6 +207,7 @@ final class drawernav {
             'sections' => $sections,
             'panels' => $panels,
             'appearance' => $appearance ?? false,
+            'look' => $look ?? false,
             'language' => $language ?? false,
         ];
     }
@@ -279,6 +286,45 @@ final class drawernav {
             'dark' => get_string('colourmode:dark', 'theme_boost'),
             'auto' => get_string('colourmode:auto', 'theme_boost'),
         };
+    }
+
+    /**
+     * The Look row and its panel, or null while the theme offers no choice of flavours to this person.
+     *
+     * The items are {@see flavourchoice::menu()}'s: the site default first, each a link to the choice page
+     * with its flavour preselected, carrying the flavour id for theme_dimensions/flavourchoice, which records
+     * the choice in place. The current look is not a link, as the current language is not.
+     *
+     * @param \moodle_page $page The page being rendered, the one the choice comes back to.
+     * @return array|null panelid, parentid, backlabel, backaria, current (the current look's plain label) and
+     *      items (id, text, url, iscurrent).
+     */
+    public static function look(\moodle_page $page): ?array {
+        $menu = flavourchoice::menu($page->url);
+        if ($menu === null) {
+            return null;
+        }
+
+        $items = [];
+        foreach ($menu['items'] as $item) {
+            $items[] = [
+                'id' => $item['id'],
+                'text' => $item['text'],
+                'url' => $item['url']->out(false),
+                'iscurrent' => $item['iscurrent'],
+            ];
+        }
+
+        $rootlabel = get_string('navigation');
+
+        return [
+            'panelid' => self::LOOK,
+            'parentid' => self::ROOT,
+            'backlabel' => $rootlabel,
+            'backaria' => get_string('drawer_back', self::COMPONENT, $rootlabel),
+            'current' => $menu['current'],
+            'items' => $items,
+        ];
     }
 
     /**
