@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The flavour stylesheets are compiled before their first visitor, by a scheduled task** (2026100537; S3 of
+  `docs/flavourcss/PLAN.md`). `\theme_dimensions\task\warm_flavour_css` runs every minute and hands S2's planner its
+  work. That is every sheet of a flavour a page can be served that has no file at the current revisions, built one
+  flavour per child process. While every sheet is built, a run is one query and a file check per flavour. Every
+  minute, because a theme cache reset has no event to listen to: Boost Union's flavour editor, the theme settings,
+  the cache purge and every upgrade reset the caches, and the next run is the soonest the missing sheets are seen.
+  2 new mutation gates.
 - **Every missing flavour sheet can be built from the command line, each flavour in a process of its own** (S2 of
   `docs/flavourcss/PLAN.md`; the scheduled task that runs it every minute is S3).
   `php theme/dimensions/cli/build_flavour_css.php --all` (with `--dry-run` to list) runs `local\flavourcss\planner`.

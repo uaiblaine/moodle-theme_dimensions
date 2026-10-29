@@ -654,6 +654,7 @@ $string['selectableflavours'] = 'Looks a person may choose';
 $string['selectableflavours_desc'] = 'The Boost Union flavours a logged-in person may choose as their own look. A chosen flavour is shown on every page to the person who chose it, over the flavours the category and cohort rules apply, so each flavour listed here must work outside the category it was made for. With none ticked, nobody can choose and Boost Union\'s rules decide the look as before.';
 $string['settingsoverviewdesc'] = 'With Dimensions, you extend Boost Union with its own login page, category showcase, landing pages and focus mode.';
 $string['task_materialise_focusmode_default'] = 'Write the previous focus mode default into existing courses';
+$string['task_warm_flavour_css'] = 'Compile the flavour stylesheets no visitor has asked for yet';
 $string['unavailableheading'] = 'This content is not available';
 $string['unavailablemessage'] = 'This page is not available for your profile. If you believe you should have access, please contact the course administration.';
 $string['unavailabletitle'] = 'Content not available';
