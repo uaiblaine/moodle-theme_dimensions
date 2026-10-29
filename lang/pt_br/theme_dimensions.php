@@ -654,6 +654,7 @@ $string['selectableflavours'] = 'Visuais que a pessoa pode escolher';
 $string['selectableflavours_desc'] = 'Os flavours do Boost Union que uma pessoa logada pode escolher como seu próprio visual. O flavour escolhido aparece em todas as páginas para quem o escolheu, acima dos flavours aplicados pelas regras de categoria e de coorte, por isso cada flavour desta lista precisa funcionar fora da categoria para a qual foi feito. Sem nenhum marcado, ninguém escolhe e as regras do Boost Union decidem o visual como antes.';
 $string['settingsoverviewdesc'] = 'Com o Dimensions, você estende o Boost Union com página de acesso própria, vitrine de categorias, páginas de destino e modo foco.';
 $string['task_materialise_focusmode_default'] = 'Gravar o padrão anterior do modo foco nos cursos existentes';
+$string['task_warm_flavour_css'] = 'Compilar as folhas de estilo dos flavours que nenhum visitante pediu ainda';
 $string['unavailableheading'] = 'Este conteúdo não está disponível';
 $string['unavailablemessage'] = 'Esta página não está disponível para o seu perfil. Se você acredita que deveria ter acesso, entre em contato com a administração do curso.';
 $string['unavailabletitle'] = 'Conteúdo não disponível';

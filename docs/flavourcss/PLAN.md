@@ -1,6 +1,6 @@
 # Compiling the flavours' stylesheets ahead of time
 
-Status: **S0 done (probes, 2026-10-28); S1 onwards not started.** It replaces the shape proposed on 2026-10-27
+Status: **S0-S3 done (S1 #52, S2 #57, S3 in review, 2026-10-29); S4, the release work, not started.** It replaces the shape proposed on 2026-10-27
 (a scheduled detector queuing one adhoc builder per flavour): section 3 found that Boost Union
 cannot compile two flavours in one PHP process. Section 8 lists the defaults this plan picked; each
 can be overturned before its stage starts.
@@ -241,8 +241,15 @@ category or cohort, compiled from the CLI with no cache written, and deleted).
 **S3. Task.**
 - What: `warm_flavour_css.php`, `db/tasks.php`, the task name string, `version.php` bump.
 - PHPUnit: the task is a no-op with everything built; it calls the planner when a sheet is missing.
-- Measure on m503b: time from `purge_caches.php` to every flavour warm, and a flavoured page's FCP
-  right after (the 23.5 s case).
+- Measured on m503b, 2026-10-29, instead of after a purge (a purge on the shared stack would have reset every
+  session's caches): two new flavours, one left to `styles.php`, one warmed by the task.
+  - **Cold**, as today: the first request for its sheet waited **23.2 s** for `styles.php` to compile it, the
+    23.5 s of the showcase measurement.
+  - **Warmed**: the task built the other in its own child in 10.7 s, off the request path, and skipped the
+    first because `styles.php` had stored it. The first request for the warmed sheet took **0.013 s**.
+  - A run with nothing missing took 0.00 s.
+  - After a purge of N flavours, the last one is warm within a minute plus about 8-11 s per flavour; a visitor
+    who arrives before that pays what they pay today.
 
 **S4. Release.**
 - `README`: the task, the CLI and the deploy step, the failure memo, the cluster note;
