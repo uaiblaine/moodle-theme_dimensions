@@ -1,9 +1,9 @@
 # Compiling the flavours' stylesheets ahead of time
 
-Status: **S0-S3 merged (S1 #52, S2 #57, S3 #59, 2026-10-29); S4, the release work, in review.** It replaces the shape proposed on 2026-10-27
-(a scheduled detector queuing one adhoc builder per flavour): section 3 found that Boost Union
-cannot compile two flavours in one PHP process. Section 8 lists the defaults this plan picked; each
-can be overturned before its stage starts.
+Status: **done. S0-S4 merged (S0 #49, S1 #52, S2 #57, S3 #59, S4 #62), 2026-10-29.** It replaced the shape
+proposed on 2026-10-27 (a scheduled detector queuing one adhoc builder per flavour): section 3 found that Boost
+Union cannot compile two flavours in one PHP process. Section 8 lists the defaults this plan picked; all of them
+shipped as written.
 
 ## 1. Goal
 
