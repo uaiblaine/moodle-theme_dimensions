@@ -204,7 +204,7 @@ React and TypeScript live in `js/esm/src`, built to `js/esm/build`, tested in `j
 - **The visitor's import walk reads `js/esm`** (`categorypublic_source_test`): an AMD module reaches an ES
   module through `core/esm!` or by naming `@moodle/lms/theme_dimensions/...` for a mount, an ES module
   its siblings by relative import and theme AMD modules by quoted name through the bridge, and the walk
-  starts from the bridge as well as from `categorypublic`. Since R4a it reaches the three components (the visitor
+  starts from the bridge as well as from the visitor's entry, `listingvisitor` (`categorypublic` until R4b2). Since R4a it reaches the three components (the visitor
   mounts them), so the bridge and every module of `js/esm/src` a component imports name nothing of a session and
   none of `categoryvitrine`, `categorypanel` or `categorystar`, comments included (the R4a section).
 
@@ -274,12 +274,13 @@ classes/local/category/        The category showcase's decision layer (stage 2):
                                classifier (eleven states, five statements), facets, cards, criteria,
                                scope, page_result, unavailable_exception. See the section below.
 amd/src/category*.js           The showcase's modules (amd/src/covervideo.js + local/coverfilm.js: the cover film). Its listing clients: categoryvitrine and
-                               categorypanel (an account's), categorypublic (a visitor's), over the
-                               shared listing in js/esm/src/listing (R4b1), which mounts the React components for both.
-                               categorylisting (since R4b1), categoryline, categorypreview, categoryareapanel and
+                               categorypanel (an account's) over the shared listing in js/esm/src/listing (R4b1), which
+                               mounts the React components for both; a visitor's is the store (R4b2, below).
+                               categorylisting (R4b1), categorypublic (R4b2), categoryline, categorypreview, categoryareapanel and
                                categoryposters are imported by nothing and leave with the removal pull request.
-js/esm/src/                    The React port (R0-R4b1): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells;
-                               listing/ (R4b1), the shared listing the AMD clients load through core/esm!.
+js/esm/src/                    The React port (R0-R4b2): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells;
+                               listing/ (R4b1), the shared listing the AMD clients load through core/esm!, and its
+                               store with the visitor's shell (R4b2), armed by amd/src/listingvisitor.js.
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
                                name, under two rules of the theme's own. See its section below.
 templates/category_pages.mustache  The strip's markup, drawn by category_listing above the toolbar.
@@ -3715,6 +3716,39 @@ behaviour change. Every rule of the S1-S4, R1, R2, R3 and R4a sections binds it.
   quoted `theme_dimensions/<name>` with an `amd/src/<name>.js` as one.
 - **`categorylisting.js` stays, unimported, until the removal pull request** deletes it with its build; nothing reads it
   but `category_scss_test`'s scan for Bootstrap 4 names, which reads `js/esm/src/listing` as well.
+
+## The category showcase: the store and the visitor's shell (R4b2, 2026-10-29)
+
+Stage R4b2 of `docs/vitrine-react/R4b.md`. The visitor's live listing is `js/esm/src/listing/store.ts` driven by its shell,
+`visitor.ts`, armed by `amd/src/listingvisitor.js`; the logged-in shell keeps `categoryvitrine` until R4b3. Every rule of
+the S1-S4 and R4a sections binds it. What a maintainer must not lose:
+
+- **One listing runs on a page, so the store's state is module scope**, and its functions keep `categorypublic`'s names
+  (`requestRows`, `applyResponse`, `apply`, `onTree`, ...) so the source tests and the gates followed the code. Its entry
+  is `init(shell, categoryid)`; the visitor's `start(categoryid)` hands it `SHELL`. It names the listing through the
+  barrel (`import * as Listing from './listing'`), which therefore stays after R4b3.
+- **The shell is injected and the store reaches none**: no `./visitor` or `./account` import, no service, method, mark or
+  `fetchOne` (`listing_source_test::test_the_store_reaches_no_shell`, gate `js_store_names_no_shell`). What differs
+  between shells is the `Shell` object: `rows`, `failed`, `written` (after every address the store writes: the
+  visitor's posters' links), `leave`, `normalise`, `answered`, `areas` and `mark`.
+- **Back is heard before the posters' component is mounted** (`init` registers `popstate`, removing it first so a second
+  `init` never doubles it, then mounts), and only where the page has a toolbar: a root without a search line arms its
+  posters alone and hears no Back, as `categorypublic` did (gates `js_popstate_before_mounts`, `js_store_root_live_only`).
+- **The visitor's service goes through core's ES module `@moodle/lms/core/ajax`**: `fetchOne(..., {loginrequired: false})`
+  and nothing else, which is what AMD `Ajax.call([...], true, false)` reached (core/ajax is a shim over it). Strings
+  come from `@moodle/lms/core/stringUtils`, which reads the preloaded `M.str` first, so the fallback sentence still
+  costs no request.
+- **The hooks the store reads are `events.ts`'s `SELECTORS`** (the root, the areas, the notice, the clear and chip
+  actions, the drawn line, the quick dates were added there).
+- **The visitor's walk starts at `listingvisitor`** and crosses `core/esm!` into the shell and the store; it reaches no
+  AMD listing module any more (`categorypublic`, `categorylisting`, `categorymark`, `daterange` and R4a's leftovers are
+  asserted absent). The visitor's shell is the graph's one caller of a service.
+- **A repaint must hold a pending across the template load**: `requestRows` takes one token per request
+  (`theme_dimensions/listing:rows`, `theme_dimensions/categoryvitrine:rows`) and releases it in its `finally`, painted,
+  failed or overtaken. core/ajax's own token ends with the answer, and `renderCards` then loads `core/templates` through
+  the module loader, which answers after a timer even for a module already loaded (RequireJS's `nextTick`); Behat read
+  that gap as a settled page and counted rows being replaced under it (the visitor's tree scenario, three matrices).
+  Gates `js_store_rows_pending`, `js_vitrine_rows_pending`.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

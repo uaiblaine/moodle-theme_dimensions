@@ -68,7 +68,10 @@ final class categoryline_source_test extends \basic_testcase {
      * @return string
      */
     private function source(string $module = self::MODULE): string {
-        $path = $this->plugin_root() . '/amd/src/' . $module . '.js';
+        // A name with a slash is a module of js/esm/src: the store, the visitor's client since R4b2.
+        $path = str_contains($module, '/')
+            ? $this->plugin_root() . '/js/esm/src/' . $module . '.ts'
+            : $this->plugin_root() . '/amd/src/' . $module . '.js';
         $this->assertFileExists($path);
         return (string) file_get_contents($path);
     }
@@ -289,9 +292,10 @@ final class categoryline_source_test extends \basic_testcase {
         $code = $this->code();
         $this->assertStringNotContainsString('core/ajax', $code, 'The line makes no request of its own.');
         $this->assertStringNotContainsString('methodname', $code);
-        /* Since R4a no shell arms this module: the visitor's client hands its line to the component, as the
-           logged-in client does (filterline_component_source_test), and still drops the term first. */
-        foreach (['categorypublic' => 'Listing.paintEraser(root);'] as $client => $eraser) {
+        /* Since R4a no shell arms this module: the visitor's client (the store since R4b2) hands its line to
+           the component, as the logged-in client does (filterline_component_source_test), and still drops the
+           term first. */
+        foreach (['listing/store' => 'Listing.paintEraser(root);'] as $client => $eraser) {
             $source = $this->source($client);
             $this->assertStringNotContainsString('theme_dimensions/categoryline', $source);
             $this->assertStringContainsString('Listing.mountLine(root, dropTerm);', $source);
@@ -299,9 +303,10 @@ final class categoryline_source_test extends \basic_testcase {
             $drop = $this->body('dropTerm', $client);
             $this->assertMatchesRegularExpression("~cancelSearch\(\);\s*state\.query = '';~", $drop, $client . ' drops the term.');
             $this->assertStringContainsString($eraser, $drop);
+            $this->assertStringContainsString('const search = Listing.focusTarget(root);', $this->body('focusSearch', $client));
             foreach (['onClear', 'onChipRemove'] as $handler) {
                 $this->assertStringContainsString(
-                    'const search = Listing.focusTarget(root);',
+                    "\n    focusSearch();",
                     $this->body($handler, $client),
                     "{$client}'s {$handler} gives the focus to the field or, folded, to its icon."
                 );

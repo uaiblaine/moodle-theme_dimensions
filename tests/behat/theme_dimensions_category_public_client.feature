@@ -4,7 +4,7 @@ Feature: A visitor's public category page narrows in place once the site opens i
   As a visitor who is not logged in
   I need the public page's search, dates and area panels to work in place, and the page to stay its plain form while the site keeps that off
 
-  # Thin smoke tests of the visitor's client module (amd/src/categorypublic.js): that it is armed
+  # Thin smoke tests of the visitor's live listing (amd/src/listingvisitor.js, its shell and the store): that it is armed
   # only by the switch, that its requests reach the visitor's web service through
   # service-nologin.php while the site forces login, and that the page moves. What a visitor may be
   # told is PHPUnit's (rows_anonymous_test, get_public_category_rows_test), and the same page
@@ -199,3 +199,43 @@ Feature: A visitor's public category page narrows in place once the site opens i
     And the url should match "[?&]cat=[0-9]+"
     And the page in the browser is the one I marked
     And "Username" "field" should not exist
+
+  Scenario: Going back in the browser puts a visitor's listing and search box back, in the same page
+    # Every in-place change of a visitor's listing pushes a history entry; Back reads the address into
+    # the store, puts the controls back and asks the visitor's service for page zero, without a load.
+    Given the following config values are set as admin:
+      | categorypublicclient | 1 | theme_dimensions |
+    When I am on the "PUBCAT" "theme_dimensions > Public category page" page
+    And I mark the page in the browser
+    And I set the field "Search courses" to "Online"
+    Then I should see "1 course for “Online”" in the "[data-region='dim-vitrine-count']" "css_element"
+    And the url should match "[?&]q=Online"
+    When I press the "back" button in the browser
+    Then I wait until "//ul[@data-region='dim-vitrine-grid'][count(li[not(contains(@class, 'dim-vitrine__item--enter'))]) = 2]" "xpath_element" exists
+    And I should see "2" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
+    And the field "Search courses" matches value ""
+    And the url should match "^(?!.*[?&]q=)"
+    And the page in the browser is the one I marked
+    And "Username" "field" should not exist
+
+  Scenario: Load more appends a visitor's next page, keeps the focus and leaves the address alone
+    # A third public course, so that "the next page" and "the whole rest" are different answers at perpage=1.
+    Given the following config values are set as admin:
+      | categorypublicclient | 1 | theme_dimensions |
+    And the following "courses" exist:
+      | fullname      | shortname | category | customfield_dimensions_model | startdate     |
+      | Curso Aberto  | ABERTO    | PUBCAT   | 1                          | ##yesterday## |
+    And the course "ABERTO" is "public" for discoverability
+    When I am on the "PUBCAT|perpage=1&sort=name" "theme_dimensions > Public category page" page
+    Then I should see "1" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
+    When I mark the page in the browser
+    And I click on "Load more" "button"
+    Then I wait until "//ul[@data-region='dim-vitrine-grid'][count(li[not(contains(@class, 'dim-vitrine__item--enter'))]) = 2]" "xpath_element" exists
+    And I should see "2" node occurrences of type "article" in the "[data-region='dim-vitrine-grid']" "css_element"
+    And the focused element is "Load more" "button"
+    When I click on "Load more" "button"
+    Then I wait until "//ul[@data-region='dim-vitrine-grid'][count(li[not(contains(@class, 'dim-vitrine__item--enter'))]) = 3]" "xpath_element" exists
+    And "Load more" "button" should not be visible
+    # An appended page is state of this document: the address still names none.
+    And the url should match "^(?!.*[?&]page=)"
+    And the page in the browser is the one I marked

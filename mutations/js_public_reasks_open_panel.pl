@@ -1,3 +1,2 @@
-# Tell the component an answer as a pending question instead: the open panel keeps answering the
-# criteria it was opened with.
-s/new CustomEvent\(EVENTS\.criteria, \{detail: \{\n        accordion:/new CustomEvent(EVENTS.pending, {detail: {\n        accordion:/;
+# Send the answer as a new question: the open panel is never asked again for the new criteria.
+s/new CustomEvent\(LISTING\.criteria, \{detail: \{\n        accordion:/new CustomEvent(LISTING.pending, {detail: {\n        accordion:/;

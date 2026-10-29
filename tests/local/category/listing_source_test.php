@@ -44,8 +44,11 @@ final class listing_source_test extends \basic_testcase {
     /** @var string The specifier the AMD clients load the listing by. */
     private const SPECIFIER = 'core/esm!@moodle/lms/theme_dimensions/listing/listing';
 
-    /** @var string[] The AMD modules that paint with the shared listing until the store replaces them (R4b2, R4b3). */
-    private const CLIENTS = ['categoryvitrine', 'categorypublic', 'categorypanel'];
+    /** @var string[] The AMD modules that paint with the shared listing until the store replaces them (R4b3). */
+    private const CLIENTS = ['categoryvitrine', 'categorypanel'];
+
+    /** @var string[] The TypeScript that calls the listing by the barrel's names: the store and its shells. */
+    private const SHELLS = ['js/esm/src/listing/store.ts', 'js/esm/src/listing/visitor.ts'];
 
     /**
      * Absolute path to the theme root.
@@ -125,8 +128,8 @@ final class listing_source_test extends \basic_testcase {
      * A client importing the AMD listing again would run a second copy of the painters, with their own counters.
      *
      * Changes that must make it fail: a client importing theme_dimensions/categorylisting again (gates
-     * js_vitrine_listing_through_esm, js_panel_listing_through_esm; the visitor's is
-     * js_public_listing_through_esm, read by categorypublic_source_test's walk too).
+     * js_vitrine_listing_through_esm, js_panel_listing_through_esm; the visitor's entry is
+     * js_public_listing_through_esm, read by categorypublic_source_test's walk).
      */
     public function test_the_amd_clients_load_the_typescript_listing(): void {
         foreach (self::CLIENTS as $client) {
@@ -162,8 +165,9 @@ final class listing_source_test extends \basic_testcase {
             }
         }
         $called = [];
-        foreach (self::CLIENTS as $client) {
-            preg_match_all('~\bListing\.([A-Za-z]+)~', $this->uncommented($this->read('amd/src/' . $client . '.js')), $uses);
+        $callers = array_merge(array_map(fn(string $client): string => 'amd/src/' . $client . '.js', self::CLIENTS), self::SHELLS);
+        foreach ($callers as $caller) {
+            preg_match_all('~\bListing\.([A-Za-z]+)~', $this->uncommented($this->read($caller)), $uses);
             $called = array_merge($called, $uses[1]);
         }
         $called = array_values(array_unique($called));
@@ -184,6 +188,30 @@ final class listing_source_test extends \basic_testcase {
                 );
             }
         }
+    }
+
+    /**
+     * The store reaches no shell: each shell imports the store and hands it what it is.
+     *
+     * The visitor's page loads the store, so a store that imported a shell, named a service or spelled a
+     * shell's mark would carry that shell to every page that loads it.
+     *
+     * Changes that must make it fail: the store importing a shell (gate js_store_names_no_shell), or spelling a
+     * mark, a service or a method of its own.
+     */
+    public function test_the_store_reaches_no_shell(): void {
+        $store = $this->read('js/esm/src/listing/store.ts');
+        preg_match_all("~^import [^\n]* from '([^']+)';$~m", $store, $imports);
+        $this->assertContains('./listing', $imports[1], 'The control: the imports are read.');
+        foreach ($imports[1] as $import) {
+            $this->assertDoesNotMatchRegularExpression('~^\./(?:visitor|account)$~', $import, "The store imports {$import}.");
+        }
+        $code = $this->uncommented($store);
+        foreach (['methodname', 'theme_dimensions_', "'dim-js'", "'dim-public-js'", 'fetchOne', 'loginrequired'] as $never) {
+            $this->assertStringNotContainsString($never, $code, "The store spells {$never}: that is a shell's.");
+        }
+        $this->assertStringContainsString('document.body.classList.add(shell.mark);', $code);
+        $this->assertStringContainsString("import {current, init} from './store';", $this->read('js/esm/src/listing/visitor.ts'));
     }
 
     /**

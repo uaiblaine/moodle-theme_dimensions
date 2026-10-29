@@ -388,11 +388,11 @@ final class filterline_component_source_test extends \advanced_testcase {
                 $this->assertFileExists($this->plugin_root() . "/js/esm/build/filterline/{$module}.{$build}");
             }
         }
-        $public = $this->uncommented($this->read('amd/src/categorypublic.js'));
-        $this->assertStringContainsString('Listing.mountLine(root, dropTerm);', $public);
-        $this->assertStringContainsString('Listing.tellAnswer(root, response);', $public);
-        foreach (['categorypublic', 'categoryvitrine'] as $module) {
-            $source = $this->read('amd/src/' . $module . '.js');
+        $store = $this->uncommented($this->read('js/esm/src/listing/store.ts'));
+        $this->assertStringContainsString('Listing.mountLine(root, dropTerm);', $store);
+        $this->assertStringContainsString('Listing.tellAnswer(root, response);', $store);
+        foreach (['js/esm/src/listing/store.ts', 'amd/src/categoryvitrine.js'] as $module) {
+            $source = $this->read($module);
             $this->assertStringNotContainsString("'theme_dimensions/categoryline'", $source, $module . ' arms categoryline.');
             $this->assertStringNotContainsString(
                 '@moodle/lms/theme_dimensions/filterline',

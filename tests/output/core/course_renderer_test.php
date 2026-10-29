@@ -1384,7 +1384,7 @@ final class course_renderer_test extends \advanced_testcase {
     /**
      * The visitor's live listing is never armed on the logged-in shell, for a real account or the guest.
      *
-     * categorypublic is armed by the anonymous shell alone (request::handle()), under its own switch.
+     * listingvisitor is armed by the anonymous shell alone (request::handle()), under its own switch.
      * The switch is open here, so the only thing keeping it off this shell is that nothing here arms it:
      * a real account gets the logged-in client, which is the control that the page's calls are read,
      * and the guest gets neither client.
@@ -1402,7 +1402,7 @@ final class course_renderer_test extends \advanced_testcase {
         $this->renderer()->course_category((int) $open->id);
         $requirements = $this->page_requirements();
         $this->assertStringContainsString('theme_dimensions/categoryvitrine', $requirements, 'The control.');
-        $this->assertStringNotContainsString('theme_dimensions/categorypublic', $requirements);
+        $this->assertStringNotContainsString('theme_dimensions/listingvisitor', $requirements);
 
         $this->setGuestUser();
         self::forget();
@@ -1410,7 +1410,7 @@ final class course_renderer_test extends \advanced_testcase {
         $PAGE->set_url('/course/index.php', ['categoryid' => (int) $open->id]);
         $guest = $this->renderer()->course_category((int) $open->id);
         $this->assertStringContainsString('data-region="dim-vitrine"', $guest, 'Precondition: the guest gets the showcase.');
-        $this->assertStringNotContainsString('theme_dimensions/categorypublic', $this->page_requirements());
+        $this->assertStringNotContainsString('theme_dimensions/listingvisitor', $this->page_requirements());
         $this->assertStringNotContainsString('theme_dimensions/categoryvitrine', $this->page_requirements());
     }
 

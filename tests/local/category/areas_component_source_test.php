@@ -170,13 +170,13 @@ final class areas_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('export const EVENTS = {...AREAS, ...LISTING};', $panel);
         $vitrine = $this->names($this->read('amd/src/categoryvitrine.js'), 'const EVENTS = {');
         $this->assertSame(['view', 'pending', 'criteria', 'autoopened', 'failed'], array_keys($vitrine));
-        $public = $this->names($this->read('amd/src/categorypublic.js'), 'const EVENTS = {');
-        $this->assertSame(['pending', 'criteria'], array_keys($public));
-        foreach ([$vitrine, $public] as $side) {
-            foreach ($side as $name => $value) {
-                $this->assertSame($value, $listing[$name] ?? null, "The listing spells {$name} otherwise.");
-            }
+        foreach ($vitrine as $name => $value) {
+            $this->assertSame($value, $listing[$name] ?? null, "The listing spells {$name} otherwise.");
         }
+        // The store, the visitor's since R4b2, sends the listing's own names.
+        $store = $this->read('js/esm/src/listing/store.ts');
+        $this->assertStringContainsString("import {LISTING, SELECTORS} from './events';", $store);
+        $this->assertSame(2, preg_match_all('~new CustomEvent\(LISTING\.(?:pending|criteria),~', $store));
         $this->assertStringContainsString('export {EVENTS};', $this->read('js/esm/src/areas/Areas.tsx'));
         // One spelling: no other module of js/esm/src writes an event name of its own.
         $files = array_merge(
@@ -291,8 +291,8 @@ final class areas_component_source_test extends \basic_testcase {
                 $module . ' names the component.'
             );
         }
-        foreach (['categorypanel', 'categorypublic'] as $client) {
-            $source = $this->read('amd/src/' . $client . '.js');
+        foreach (['amd/src/categorypanel.js', 'js/esm/src/listing/store.ts'] as $client) {
+            $source = $this->read($client);
             $this->assertStringContainsString('Listing.mountAreas(areas, ', $source, $client . ' mounts the component.');
             $this->assertStringNotContainsString("from 'theme_dimensions/categoryareapanel'", $source);
             $this->assertStringNotContainsString("from 'theme_dimensions/categoryposters'", $source);

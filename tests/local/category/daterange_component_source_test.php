@@ -257,13 +257,13 @@ final class daterange_component_source_test extends \basic_testcase {
             'const mountCalendar = () => Listing.mountCalendar(root, state, setRange);',
             $this->read('amd/src/categoryvitrine.js')
         );
-        $public = $this->uncommented($this->read('amd/src/categorypublic.js'));
-        $this->assertSame(1, substr_count($public, 'Listing.mountCalendar('));
-        $this->assertStringContainsString('Listing.mountCalendar(root, state, setRange).catch(', $public);
-        foreach (['categorypublic', 'categoryvitrine'] as $module) {
+        $store = $this->uncommented($this->read('js/esm/src/listing/store.ts'));
+        $this->assertSame(1, substr_count($store, 'Listing.mountCalendar('));
+        $this->assertStringContainsString('Listing.mountCalendar(root, state, setRange).catch(', $store);
+        foreach (['js/esm/src/listing/store.ts', 'amd/src/categoryvitrine.js'] as $module) {
             $this->assertStringNotContainsString(
                 '@moodle/lms/theme_dimensions/daterange',
-                $this->read('amd/src/' . $module . '.js'),
+                $this->read($module),
                 $module . ' names the component: the listing names it, once.'
             );
         }

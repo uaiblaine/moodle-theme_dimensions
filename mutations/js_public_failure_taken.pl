@@ -1,2 +1,2 @@
-# Mount the visitor's posters without taking a failure over: the inline error, never the poster's link.
-s/^        unanswered: panelFailed,\n//m;
+# Take no failure over: a visitor's panel falls into the inline error instead of its link.
+s/^            unanswered: panelFailed,\n//m;
