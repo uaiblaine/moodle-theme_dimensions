@@ -26,6 +26,7 @@
 namespace theme_dimensions\output;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversFunction;
 use theme_dimensions\local\drawernav;
 use theme_dimensions\local\flavourchoice;
 
@@ -40,6 +41,7 @@ use theme_dimensions\local\flavourchoice;
 #[CoversClass(core_renderer::class)]
 #[CoversClass(drawernav::class)]
 #[CoversClass(\theme_dimensions\form\flavourchoice::class)]
+#[CoversFunction('theme_dimensions_extend_navigation_user_settings')]
 final class look_menu_test extends \advanced_testcase {
     /**
      * A Boost Union flavour, made by Boost Union's own generator.
@@ -202,6 +204,66 @@ final class look_menu_test extends \advanced_testcase {
 
         set_config(flavourchoice::SETTING, '', 'theme_dimensions');
         $this->assertStringNotContainsString(drawernav::LOOK, $this->header(), 'Nothing offered, no row.');
+    }
+
+    /**
+     * The user settings navigation as core hands it to the callback, after the callback ran.
+     *
+     * @param string $url The page's url.
+     * @param \stdClass $user The user whose settings are shown.
+     * @param string $theme The theme the page is drawn in.
+     * @return \navigation_node|false The Look node, or false when the callback added none.
+     */
+    private function look_node(string $url, \stdClass $user, string $theme = 'dimensions'): \navigation_node|false {
+        global $CFG, $PAGE, $SITE;
+        require_once($CFG->dirroot . '/theme/dimensions/lib.php');
+
+        $PAGE = new \moodle_page();
+        $PAGE->set_context(\context_system::instance());
+        $PAGE->set_course($SITE);
+        $PAGE->set_url($url);
+        $PAGE->force_theme($theme);
+
+        $root = \navigation_node::create('usersettings');
+        $root->add('Account', null, \navigation_node::TYPE_CONTAINER, null, 'useraccount');
+        theme_dimensions_extend_navigation_user_settings(
+            $root,
+            $user,
+            \context_user::instance($user->id),
+            $SITE,
+            \context_course::instance($SITE->id)
+        );
+
+        return $root->find('dimensionslook', \navigation_node::TYPE_SETTING);
+    }
+
+    /**
+     * The preferences page links to the choice page, for the person's own preferences only.
+     *
+     * Each refusal has the same account and offered list as the control that gets the link, so each one
+     * is that guard's alone: another page, another user's preferences, another theme, nothing offered.
+     *
+     * @return void
+     */
+    public function test_the_preferences_page_links_to_the_choice_page(): void {
+        $this->resetAfterTest();
+        $harbour = $this->flavour('Harbour');
+        $this->offer($harbour);
+        $me = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        $this->setUser($me);
+
+        $node = $this->look_node('/user/preferences.php', $me);
+        $this->assertNotFalse($node, 'Control: my own preferences page.');
+        $this->assertSame(get_string('lookmenu', 'theme_dimensions'), $node->get_content());
+        $this->assertStringEndsWith('/theme/dimensions/flavour.php', $node->action->get_path(false));
+
+        $this->assertFalse($this->look_node('/user/edit.php', $me), 'Another page.');
+        $this->assertFalse($this->look_node('/user/preferences.php', $other), 'Someone else\'s preferences.');
+        $this->assertFalse($this->look_node('/user/preferences.php', $me, 'boost'), 'A page drawn in Boost.');
+
+        set_config(flavourchoice::SETTING, '', 'theme_dimensions');
+        $this->assertFalse($this->look_node('/user/preferences.php', $me), 'Nothing offered.');
     }
 
     /**

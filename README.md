@@ -344,7 +344,7 @@ The theme also stores six user preferences: the focus mode reading width, the ca
 and filters, at most twenty categories), whether they folded a category page's header, whether
 they folded the course notice, and the Boost Union flavour they chose as their look
 (`theme_dimensions_flavour`), chosen in the user menu's *Look* submenu, the mobile drawer or the page
-`/theme/dimensions/flavour.php`. Uninstalling the theme deletes them. Which flavour a session last
+`/theme/dimensions/flavour.php`, which the *Look* link of the preferences page opens. Uninstalling the theme deletes them. Which flavour a session last
 applied as that look is kept in the session only (cache `flavourchoice`).
 
 Beyond that the theme writes core's own rows and leaves them to core: a course a person stars on
