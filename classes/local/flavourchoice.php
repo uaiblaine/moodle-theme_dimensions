@@ -63,15 +63,21 @@ final class flavourchoice {
     /**
      * The flavours an administrator may offer, for the setting: id => title, in Boost Union's order.
      *
-     * The setting's choices are this callable rather than an array, so settings.php reads no table
-     * while it is loaded, which happens during a fresh install before the table may be there. The
-     * titles are in the ESCAPED spelling, because core's multi-checkbox template prints each label
-     * with a triple stash ({{{label}}} in core_admin/setting_configmulticheckbox).
+     * The setting's choices are a closure over this method rather than an array, so settings.php reads
+     * no table while it is loaded. Core still calls it during a fresh install, when
+     * admin_apply_default_settings() writes every default before Boost Union's tables exist, so it
+     * answers no choices until the flavours table is there. The titles are in the ESCAPED spelling,
+     * because core's multi-checkbox template prints each label with a triple stash ({{{label}}} in
+     * core_admin/setting_configmulticheckbox).
      *
      * @return array Flavour id => formatted title.
      */
     public static function choices(): array {
         global $DB;
+
+        if (during_initial_install() || !$DB->get_manager()->table_exists('theme_boost_union_flavours')) {
+            return [];
+        }
 
         $choices = [];
         foreach ($DB->get_records_menu('theme_boost_union_flavours', null, 'sort ASC, id ASC', 'id, title') as $id => $title) {

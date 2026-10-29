@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The offered-looks setting lists the flavours again.** `settings.php` handed
+  `admin_setting_configmulticheckbox` the array callable `[flavourchoice::class, 'choices']`, and core keeps any
+  array as the choices themselves, so the page offered two checkboxes labelled with the class name and `choices`
+  (ids 0 and 1) instead of the flavours. The choices are a closure now. Tests and Behat wrote the setting directly,
+  so none saw it; `flavourchoice_test::test_the_settings_page_offers_the_flavours` reads it from the admin tree.
+  One mutation gate.
 - **The visitor's live listing runs on the listing store** (2026100541; R4b2 of `docs/vitrine-react/R4b.md`).
   `js/esm/src/listing/store.ts` holds the page's state, every action, the requests with their tickets and the one path
   from an action to the address; `visitor.ts` is the visitor's shell it is handed (its service without a session, its

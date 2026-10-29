@@ -464,6 +464,41 @@ final class flavourchoice_test extends \advanced_testcase {
     }
 
     /**
+     * The admin page offers the flavours themselves: the setting's choices are what choices() lists.
+     *
+     * The setting is read from the admin tree, as the settings page builds it, because the defect it pins
+     * lives in settings.php: handed the array callable [flavourchoice::class, 'choices'], core's
+     * multicheckbox keeps the array as its choices and offered the class name and the method name.
+     *
+     * @return void
+     */
+    public function test_the_settings_page_offers_the_flavours(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $harbour = $this->flavour('Harbour', ['sort' => 1]);
+        $campus = $this->flavour('Campus & Co', ['sort' => 2]);
+
+        // The full tree, as admin/settings.php asks for it: without it the page is built without its tabs.
+        $page = admin_get_root(true, true)->locate('theme_dimensions');
+        $this->assertNotNull($page, 'Precondition: the theme has its settings page.');
+        $setting = null;
+        foreach ($page->get_tabs() as $tab) {
+            foreach ($tab->settings as $candidate) {
+                if ($candidate->plugin === 'theme_dimensions' && $candidate->name === flavourchoice::SETTING) {
+                    $setting = $candidate;
+                }
+            }
+        }
+        $this->assertNotNull($setting, 'Precondition: the page carries the setting.');
+
+        $this->assertTrue($setting->load_choices());
+        $this->assertSame(
+            [(int) $harbour->id => 'Harbour', (int) $campus->id => 'Campus &amp; Co'],
+            $setting->choices
+        );
+    }
+
+    /**
      * Core's preference service cannot write the look, which only choose() records; it still writes the theme's others.
      *
      * The control is the focus mode width, a preference of the same theme through the same service call.
