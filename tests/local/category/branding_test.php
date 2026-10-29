@@ -650,6 +650,30 @@ final class branding_test extends \advanced_testcase {
     }
 
     /**
+     * Every image answer is private, a visitor's included.
+     *
+     * The URL carries only the content hash, which does not change when a category stops being
+     * public, so a shared proxy holding a public answer would keep serving the image for the whole
+     * hashed lifetime. The serve path is read as source: a request that reaches send_file() ends
+     * the process, and the options are the whole of the decision.
+     */
+    public function test_the_image_is_always_sent_private(): void {
+        global $CFG;
+        $source = file_get_contents($CFG->dirroot . '/theme/dimensions/classes/local/category/branding.php');
+        $this->assertStringContainsString("\$options = ['cacheability' => 'private'];", $source);
+        $this->assertSame(
+            0,
+            preg_match("/'cacheability'\\s*=>\\s*[^']*'public'/", $source),
+            'No branch of the route may ask for a public answer.'
+        );
+        // The control: the pattern above does see a public option when one is written.
+        $this->assertSame(1, preg_match(
+            "/'cacheability'\\s*=>\\s*[^']*'public'/",
+            "\$options = ['cacheability' => \$visitor ? 'public' : 'private'];"
+        ));
+    }
+
+    /**
      * Store a JPEG GD can read, so that the Open Graph derivative can really be made from it.
      *
      * The 1x1 PNG above is enough for everything the hero route does with bytes; the derivative

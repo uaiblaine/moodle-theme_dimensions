@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Category branding images are always sent cacheability private** (2026100545; SEC-06). The serve path chose public for a
+  visitor, but the URL carries only the content hash, which does not change when a category stops being public, so a
+  shared proxy kept serving the image for the whole hashed lifetime. `branding_test::test_the_image_is_always_sent_private`
+  reads the route's source. One mutation gate.
 - **The old AMD listing is removed** (2026100544; R4c of `docs/vitrine-react/PLAN.md`). The ten modules the
   listing store and the React components replaced, imported by nothing since R4b3, are deleted with their builds:
   `categorylisting`, `categorypublic`, `categoryvitrine`, `categorypanel`, `categoryline`, `categorypreview`,
