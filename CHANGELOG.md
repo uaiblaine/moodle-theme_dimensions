@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The course notice no longer names an unlisted category to a viewer who may not discover it** (SEC-03).
+  `coursenotice_unlistedcategorytext` printed the category's name to a teacher of the course alone, against the
+  theme's own policy for category names. Without the right to discover the category the note now reads the new
+  `coursenotice_unlistedcategoryanon`. The hidden-category note is unchanged: hiding cascades. One test, one mutation gate.
 - **The editor no longer names an unlisted colour source** (SEC-02). The sentence under "own colours" printed the name of
   the category the colours come from whenever core's visibility allowed, even when `local_unlistedcourses` withholds that
   category from the viewer. It now falls back to the generic sentence there too. One test, one mutation gate.

@@ -351,6 +351,7 @@ $string['coursenotice_publicwithheldlead'] = 'Public, but not in effect:';
 $string['coursenotice_publicwithheldtext'] = 'the course is set to public, yet whoever is not logged in still goes to the login page, and a shared link shows no preview on social networks.';
 $string['coursenotice_title'] = 'Course notices';
 $string['coursenotice_toggle'] = 'Show details';
+$string['coursenotice_unlistedcategoryanon'] = 'A category above this course is unlisted. Visitors who are not logged in never see a course inside it, whatever the course\'s own setting, and course listings show the course only to the category\'s cohort members, people with a role in the category, staff, and people enrolled in or applying to this course.';
 $string['coursenotice_unlistedcategorytext'] = 'The category “{$a}” is unlisted. Visitors who are not logged in never see a course inside it, whatever the course\'s own setting, and course listings show the course only to the category\'s cohort members, people with a role in the category, staff, and people enrolled in or applying to this course.';
 $string['coursenotice_unlistedlead'] = 'Unlisted:';
 $string['coursenotice_unlistedtext'] = 'only staff and people who are enrolled in the course, have an application awaiting a decision or could enrol right now learn that it exists. Anybody else who opens the landing page address, logged in or not, is told it is not available.';

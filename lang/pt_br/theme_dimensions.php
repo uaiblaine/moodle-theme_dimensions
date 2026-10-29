@@ -351,6 +351,7 @@ $string['coursenotice_publicwithheldlead'] = 'Público, mas sem efeito:';
 $string['coursenotice_publicwithheldtext'] = 'o curso está configurado como público, mas quem não tem login ainda vai para a tela de entrada, e um link compartilhado não mostra prévia nas redes.';
 $string['coursenotice_title'] = 'Avisos do curso';
 $string['coursenotice_toggle'] = 'Mostrar detalhes';
+$string['coursenotice_unlistedcategoryanon'] = 'Uma categoria acima deste curso não está listada. Quem não tem login nunca vê um curso dentro dela, qualquer que seja a configuração do próprio curso, e as listagens de cursos só mostram o curso aos membros das coortes da categoria, a quem tem papel na categoria, à equipe e a quem está inscrito ou se candidatou a este curso.';
 $string['coursenotice_unlistedcategorytext'] = 'A categoria “{$a}” não está listada. Quem não tem login nunca vê um curso dentro dela, qualquer que seja a configuração do próprio curso, e as listagens de cursos só mostram o curso aos membros das coortes da categoria, a quem tem papel na categoria, à equipe e a quem está inscrito ou se candidatou a este curso.';
 $string['coursenotice_unlistedlead'] = 'Não listado:';
 $string['coursenotice_unlistedtext'] = 'só a equipe e quem está inscrito no curso, tem uma candidatura aguardando decisão ou pode se inscrever agora ficam sabendo que ele existe. Qualquer outra pessoa que abrir o endereço da página de apresentação, com login ou sem, é informada de que ela não está disponível.';
