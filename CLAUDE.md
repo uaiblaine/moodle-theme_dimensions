@@ -15,7 +15,7 @@ design records behind it (the decisions D1-D39, the stage and round status block
 the blueprints this file cites) are that private record's and are **not part of this repository**,
 so this file and `mutations/gates.conf` are what a maintainer has here. It owns one table
 (`theme_dimensions_cat`, the branding of a category on the category showcase - institutional
-content whose one personal datum is the `usermodified` authorship stamp) and five user preferences;
+content whose one personal datum is the `usermodified` authorship stamp) and six user preferences;
 the privacy provider is a request, userlist and user preference provider: the stamp is exported
 and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
@@ -222,6 +222,8 @@ classes/local/loginshell.php   Which login-layout pages (the second factor, the 
                                is their bare page, scss/loginshell.scss lays core's form into the column.
 classes/local/styleurl.php     The one vocabulary for a url printed inside url('...') in a style
                                attribute: the landing page hero's and the poster watermark's. Pure, no DB.
+classes/local/flavourchoice.php  The look a person chose among the offered Boost Union flavours; prime() writes it into
+                               Boost Union's flavours session cache from classes/local/hook/output/before_http_headers.php.
 classes/local/darklogo.php     The logo variants for dark surfaces: the address (the extra SCSS callback's), the logo in
                                force (Boost Union's flavour lookup, renderer only), the body classes, the two file areas.
 classes/local/profileaccess.php   Who may reach another user's profile. Only ever PREVENTs.
@@ -644,6 +646,32 @@ already shaped decisions here:
 - **Core renders only the avatar in the navbar toggle.** The name comes from this
   theme's override of `core/user_menu_metadata.mustache` — 60 lines, stable, unlike the
   400-line login form template which is deliberately not overridden.
+
+## The chosen look (Boost Union flavours per person)
+
+The plan is `docs/flavourchoice/PLAN.md`; stage S1 is the choice and how it reaches the page. The facts the code
+rests on:
+
+- **Boost Union has ONE resolver, and it reads its session cache first.** `theme_boost_union_get_flavour_which_applies()`
+  answers every consumer (stylesheet URL, logos, favicon, body class, navbar colour, footer, footnote, this theme's
+  dark logo), and it returns `theme_boost_union/flavours`' entry for the page's category id (0 outside a category)
+  before it computes anything. So `flavourchoice::prime()` writes the chosen record there, and nothing else of Boost
+  Union is touched or copied. The key must be spelled as Boost Union spells it (`category_key()`), or the entry is
+  one its resolver never reads.
+- **The prime must come before the first consumer, because Boost Union memoises its answer in a function static.**
+  Nothing outside the function resets it. The callback is on `before_http_headers` at priority 1000: core dispatches
+  it at the start of `core_renderer::header()`, before the layout include where Boost Union first asks. A test that
+  goes through the resolver therefore runs `#[RunInSeparateProcess]`, or an earlier test's answer is the answer.
+- **The choice wins (F1), and the site default writes nothing.** With 0, Boost Union resolves its own rules as it does
+  without this theme. Writing null instead would hide every category and cohort flavour from people who chose nothing.
+- **The stored preference is never trusted on its own.** `chosen_id()` reads a flavour the setting no longer offers as 0,
+  and a deleted flavour leaves the marker with no record, so neither is written. The marker (`flavourchoice`, a session
+  cache) keeps the chosen id even when the record is gone, or a deleted flavour would read as a new choice, with a
+  purge and a query, on every page.
+- **Boost Union's flavour purge flag is never cleared by Boost Union** (`eventobservers.php` sets it on cohort
+  membership changes, nothing unsets it), and its resolver purges the cache whenever it is set. `absorb_purge_flag()`
+  does that purge once and clears it; `flavourchoice_test` reddens when Boost Union starts clearing the flag itself,
+  and the step goes then.
 
 ## The context bar's colour and the phone's navbar
 

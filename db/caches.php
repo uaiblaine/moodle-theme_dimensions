@@ -38,4 +38,20 @@ $definitions = [
         'staticacceleration' => true,
         'staticaccelerationsize' => 10,
     ],
+    // Which flavour this session last wrote into Boost Union's flavour cache, and that flavour's
+    // record (local\flavourchoice). A session cache because Boost Union's is one: the two are
+    // purged together, and Boost Union's invalidation events are listed here so that a flavour
+    // edited, re-sorted or deleted is read again by every session, not only by the editor's.
+    'flavourchoice' => [
+        'mode' => \core_cache\store::MODE_SESSION,
+        'simplekeys' => true,
+        'simpledata' => false,
+        'invalidationevents' => [
+            'theme_boost_union_flavours_resorted',
+            'theme_boost_union_flavours_created',
+            'theme_boost_union_flavours_edited',
+            'theme_boost_union_flavours_deleted',
+            'theme_boost_union_cohort_deleted',
+        ],
+    ],
 ];

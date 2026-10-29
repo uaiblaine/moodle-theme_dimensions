@@ -35,6 +35,7 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\remembered;
+use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\output\category_hero;
 use theme_dimensions\output\category_listing;
@@ -43,11 +44,11 @@ use theme_dimensions\output\course_notice;
 /**
  * Privacy Subsystem implementation for theme_dimensions.
  *
- * The theme owns five pieces of personal data that are user preferences: the reading column
+ * The theme owns six pieces of personal data that are user preferences: the reading column
  * width a person chose in focus mode, the view (cards or list) they chose on a category page,
  * the organisation, view and filters they left each of their most recent category pages in,
- * whether they folded the header of the category pages, and whether they folded the course
- * notice of the course pages. Its one table holds the branding of
+ * whether they folded the header of the category pages, whether they folded the course
+ * notice of the course pages, and the Boost Union flavour they chose as their look. Its one table holds the branding of
  * categories - a layout, two colours, a tagline, public texts - and its only user-linked column
  * is usermodified, the id of the user who last saved a category's branding, kept as an
  * authorship stamp. That stamp is personal data, so the provider is a request provider as well:
@@ -107,6 +108,10 @@ class provider implements
         $collection->add_user_preference(
             course_notice::PREFERENCE_COLLAPSED,
             'privacy:metadata:preference:coursenotice_collapsed'
+        );
+        $collection->add_user_preference(
+            flavourchoice::PREFERENCE,
+            'privacy:metadata:preference:flavour'
         );
 
         return $collection;
@@ -240,6 +245,8 @@ class provider implements
      * @return void
      */
     public static function export_user_preferences(int $userid): void {
+        global $DB;
+
         $expanded = get_user_preferences(focusmode::PREFERENCE_EXPANDED, null, $userid);
         if ($expanded !== null) {
             writer::export_user_preference(
@@ -290,6 +297,31 @@ class provider implements
                 course_notice::PREFERENCE_COLLAPSED,
                 $collapsed ? get_string('yes') : get_string('no'),
                 get_string('privacy:metadata:preference:coursenotice_collapsed', 'theme_dimensions')
+            );
+        }
+
+        /* The flavour's title beside its id, because an id alone tells the person nothing; a flavour
+           deleted since is exported by its id, which is all that is left of it. */
+        $flavourid = get_user_preferences(flavourchoice::PREFERENCE, null, $userid);
+        if ($flavourid !== null) {
+            $flavourid = (int) $flavourid;
+            if ($flavourid === flavourchoice::SITE_DEFAULT) {
+                $value = get_string('flavoursitedefault', 'theme_dimensions');
+            } else {
+                $title = $DB->get_field('theme_boost_union_flavours', 'title', ['id' => $flavourid]);
+                if ($title === false) {
+                    $value = (string) $flavourid;
+                } else {
+                    // Plain text: the export is data, and an escaped title would read "Campus &amp; Co" there.
+                    $options = ['context' => \context_system::instance(), 'escape' => false];
+                    $value = format_string($title, true, $options) . ' (' . $flavourid . ')';
+                }
+            }
+            writer::export_user_preference(
+                'theme_dimensions',
+                flavourchoice::PREFERENCE,
+                $value,
+                get_string('privacy:metadata:preference:flavour', 'theme_dimensions')
             );
         }
     }

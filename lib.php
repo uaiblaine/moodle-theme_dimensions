@@ -261,6 +261,15 @@ function theme_dimensions_user_preferences(): array {
             'default' => false,
             'permissioncallback' => [core_user::class, 'is_current_user'],
         ],
+        // The person's look: a Boost Union flavour id, or 0 for the site default. Any integer is
+        // accepted here because the offered list changes; local\flavourchoice reads a value the
+        // setting no longer offers as the site default.
+        \theme_dimensions\local\flavourchoice::PREFERENCE => [
+            'type' => PARAM_INT,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => \theme_dimensions\local\flavourchoice::SITE_DEFAULT,
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
     ];
 }
 

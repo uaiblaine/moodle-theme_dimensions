@@ -309,7 +309,7 @@ Settings
 
 | Tab | What it holds |
 |---|---|
-| General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. |
+| General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. The *Look* section's `theme_dimensions/selectableflavours`: the Boost Union flavours a logged-in person may choose as their own look (none ticked: nobody chooses). A chosen flavour is shown to that person on every page, over the flavours Boost Union's category and cohort rules apply. |
 | Login page | The login page switch, the institutional panel's copy and the guest home page. |
 | Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
@@ -339,10 +339,12 @@ fallback hero image a file in the system context; core deletes them with the cat
 or with the theme. The branding is cached per category (cache `categorybranding`), with
 nothing a viewer's rights decide in it.
 
-The theme also stores five user preferences: the focus mode reading width, the category view
+The theme also stores six user preferences: the focus mode reading width, the category view
 (cards or list), how a person left each of their most recent category pages (organisation, view
-and filters, at most twenty categories), whether they folded a category page's header and whether
-they folded the course notice. Uninstalling the theme deletes them.
+and filters, at most twenty categories), whether they folded a category page's header, whether
+they folded the course notice, and the Boost Union flavour they chose as their look
+(`theme_dimensions_flavour`). Uninstalling the theme deletes them. Which flavour a session last
+applied as that look is kept in the session only (cache `flavourchoice`).
 
 Beyond that the theme writes core's own rows and leaves them to core: a course a person stars on
 the showcase is core's course favourite (component `core_course`); the short address of a landing
@@ -350,7 +352,7 @@ page is a row of core's `shortlink` table with user id 0; and installing the the
 course custom field categories (*Course landing page* and *Focus mode*), whose values are what
 course editors type about their courses. Focus mode keeps its state in the session only.
 
-All personal data is covered by the Privacy API: a data request exports the five preferences and,
+All personal data is covered by the Privacy API: a data request exports the six preferences and,
 in each category whose branding the person last saved, that they saved it and when; a deletion
 request clears that stamp (`usermodified` becomes 0) and keeps the branding, which is the
 category's institutional content.

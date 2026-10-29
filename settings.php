@@ -141,6 +141,27 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting->set_updatedcallback('theme_reset_all_caches');
         $tab->add($setting);
 
+        // Create look heading.
+        $name = 'theme_dimensions/lookheading';
+        $title = get_string('lookheading', 'theme_dimensions', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
+        $tab->add($setting);
+
+        // Setting: The Boost Union flavours a person may choose as their look. The choices are a
+        // callable, so this file reads no table while it loads; no stylesheet depends on the list,
+        // so it needs no theme cache reset.
+        $name = 'theme_dimensions/' . \theme_dimensions\local\flavourchoice::SETTING;
+        $title = get_string('selectableflavours', 'theme_dimensions', null, true);
+        $description = get_string('selectableflavours_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configmulticheckbox(
+            $name,
+            $title,
+            $description,
+            [],
+            [\theme_dimensions\local\flavourchoice::class, 'choices']
+        );
+        $tab->add($setting);
+
         // Add tab to settings page.
         $page->add($tab);
 
