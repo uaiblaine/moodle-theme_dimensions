@@ -349,6 +349,24 @@ function theme_dimensions_sync_focusmode_default(): void {
 }
 
 /**
+ * Give every offered look its cohort, and empty the cohorts of looks no longer offered.
+ *
+ * The updated callback of the offered-flavours setting, a shim like the one above, and for the same
+ * reason it does nothing during an install or an upgrade.
+ *
+ * @return void
+ */
+function theme_dimensions_sync_look_cohorts(): void {
+    global $CFG;
+
+    if (during_initial_install() || !empty($CFG->upgraderunning)) {
+        return;
+    }
+
+    \theme_dimensions\local\lookcohorts::provision();
+}
+
+/**
  * Callback function for theme_boost_union to allow this theme to add cards to the Boost Union settings overview page.
  * This function is expected to return an array of arrays containing values with the keys 'label', 'desc', 'btn' and 'url'.
  *
@@ -500,6 +518,7 @@ function theme_dimensions_extend_burecommendations(): array {
         \theme_dimensions\recommendation\unlistedcourses::class,
         \theme_dimensions\recommendation\customfieldpicture::class,
         \theme_dimensions\recommendation\landingaddresses::class,
+        \theme_dimensions\recommendation\lookcohorts_hidden::class,
     ];
 }
 

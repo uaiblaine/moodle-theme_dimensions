@@ -26,6 +26,7 @@ namespace theme_dimensions\privacy;
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\types\database_table;
+use core_privacy\local\metadata\types\subsystem_link;
 use core_privacy\local\metadata\types\user_preference;
 use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
@@ -64,7 +65,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * The metadata names the six preferences and the one table: its authorship stamp and when it was saved.
+     * The metadata names the six preferences, the one table (its authorship stamp and when it was saved)
+     * and the cohort subsystem, which keeps the look cohorts' memberships.
      *
      * @return void
      */
@@ -72,7 +74,10 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $collection = provider::get_metadata(new collection('theme_dimensions'));
 
         $items = $collection->get_collection();
-        $this->assertCount(7, $items);
+        $this->assertCount(8, $items);
+        $this->assertInstanceOf(subsystem_link::class, $items[7]);
+        $this->assertEquals('core_cohort', $items[7]->get_name());
+        $this->assertEquals('privacy:metadata:core_cohort', $items[7]->get_summary());
         $this->assertInstanceOf(user_preference::class, $items[6]);
         $this->assertEquals(flavourchoice::PREFERENCE, $items[6]->get_name());
         $this->assertEquals('privacy:metadata:preference:flavour', $items[6]->get_summary());

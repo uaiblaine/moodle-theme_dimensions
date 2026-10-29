@@ -309,7 +309,7 @@ Settings
 
 | Tab | What it holds |
 |---|---|
-| General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. The *Look* section's `theme_dimensions/selectableflavours`: the Boost Union flavours a logged-in person may choose as their own look (none ticked: nobody chooses). A chosen flavour is shown to that person on every page, over the flavours Boost Union's category and cohort rules apply. |
+| General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. The *Look* section's `theme_dimensions/selectableflavours`: the Boost Union flavours a logged-in person may choose as their own look (none ticked: nobody chooses). A chosen flavour is shown to that person on every page, over the flavours Boost Union's category and cohort rules apply. Saving the list gives each listed look a cohort (*Look: ...*) and empties the cohort of a look taken off it. |
 | Login page | The login page switch, the institutional panel's copy and the guest home page. |
 | Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
@@ -347,13 +347,29 @@ they folded the course notice, and the Boost Union flavour they chose as their l
 `/theme/dimensions/flavour.php`, which the *Look* link of the preferences page opens. Uninstalling the theme deletes them. Which flavour a session last
 applied as that look is kept in the session only (cache `flavourchoice`).
 
+Each look the setting offers has a cohort in the system context, named *Look: <flavour>* with the
+idnumber `theme_dimensions_look_<flavour id>` and stamped with the component `theme_dimensions`: its
+members are exactly the people who chose that look, so an administrator can restrict a Boost Union smart
+menu or menu item by look with Boost Union's own cohort rule. Do not use these cohorts in a flavour's
+cohort rule (a person in one already chose that look). The membership follows the stored preference:
+it changes with every choice, and the scheduled task *Keep the look cohorts in step with the chosen
+looks* (daily) makes a missing cohort again and undoes memberships changed elsewhere. Core's cohort
+pages refuse to edit, delete or assign a stamped cohort; core's cohort web services do not, so if a
+look cohort is deleted anyway, the theme first hides every smart menu and item restricted by it (which
+would otherwise show to everyone once Boost Union drops the cohort from the rule), and the
+recommendation *Dimensions: Smart menus restricted by look* in Boost Union's overview lists them until
+they are re-pointed and shown again. A look taken off the list keeps its cohort, emptied (by an adhoc
+task above 500 members). Uninstalling the theme keeps the cohorts and their members and clears the
+stamp, so they become ordinary cohorts.
+
 Beyond that the theme writes core's own rows and leaves them to core: a course a person stars on
 the showcase is core's course favourite (component `core_course`); the short address of a landing
 page is a row of core's `shortlink` table with user id 0; and installing the theme creates two
 course custom field categories (*Course landing page* and *Focus mode*), whose values are what
 course editors type about their courses. Focus mode keeps its state in the session only.
 
-All personal data is covered by the Privacy API: a data request exports the six preferences and,
+All personal data is covered by the Privacy API (the look cohorts' memberships through core's cohort
+subsystem, which the theme's metadata links): a data request exports the six preferences and,
 in each category whose branding the person last saved, that they saved it and when; a deletion
 request clears that stamp (`usermodified` becomes 0) and keeps the branding, which is the
 category's institutional content.

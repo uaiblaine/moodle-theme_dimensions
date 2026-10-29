@@ -149,7 +149,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
 
         // Setting: The Boost Union flavours a person may choose as their look. The choices are a
         // callable, so this file reads no table while it loads; no stylesheet depends on the list,
-        // so it needs no theme cache reset.
+        // so it needs no theme cache reset. Each offered look has a cohort, made or emptied on save.
         $name = 'theme_dimensions/' . \theme_dimensions\local\flavourchoice::SETTING;
         $title = get_string('selectableflavours', 'theme_dimensions', null, true);
         $description = get_string('selectableflavours_desc', 'theme_dimensions', null, true);
@@ -160,6 +160,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             [],
             [\theme_dimensions\local\flavourchoice::class, 'choices']
         );
+        $setting->set_updatedcallback('theme_dimensions_sync_look_cohorts');
         $tab->add($setting);
 
         // Add tab to settings page.
