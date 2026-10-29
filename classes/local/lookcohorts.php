@@ -327,7 +327,9 @@ final class lookcohorts {
      * Registered at a priority above Boost Union's own observer of the same event, which removes the
      * deleted cohort from every rule: a rule left with no cohort shows the menu to everyone. Hidden first,
      * such a menu stays out of sight until an administrator re-points and shows it; the hidden menus and
-     * items are recorded for the theme's recommendation, and the reconcile task makes the cohort again.
+     * items are recorded for the theme's recommendation, each before it is hidden, so a failure part way
+     * leaves no hidden menu unrecorded (one recorded but still shown is pruned by prune_hidden()); the
+     * reconcile task makes the cohort again.
      * Any other cohort's deletion is left to Boost Union.
      *
      * @param \core\event\cohort_deleted $event The event.
@@ -345,17 +347,18 @@ final class lookcohorts {
         $hidden = self::hidden();
         foreach ($DB->get_records('theme_boost_union_menus') as $menu) {
             if ($menu->visible && self::names($menu->cohorts, $id)) {
-                \theme_boost_union\smartmenu::instance($menu)->update_visible(false);
                 $hidden['menus'][] = (int) $menu->id;
+                self::record_hidden($hidden);
+                \theme_boost_union\smartmenu::instance($menu)->update_visible(false);
             }
         }
         foreach ($DB->get_records('theme_boost_union_menuitems') as $item) {
             if ($item->visible && self::names($item->cohorts, $id)) {
-                \theme_boost_union\smartmenu_item::instance($item)->update_field('visible', false);
                 $hidden['items'][] = (int) $item->id;
+                self::record_hidden($hidden);
+                \theme_boost_union\smartmenu_item::instance($item)->update_field('visible', false);
             }
         }
-        self::record_hidden($hidden);
     }
 
     /**

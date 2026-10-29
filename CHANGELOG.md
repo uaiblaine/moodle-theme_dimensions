@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The chosen look, three points from the whole-feature security read.** Core's preference services
+  (`core_user_set_user_preferences`, `core_user_update_user_preferences`) may no longer write
+  `theme_dimensions_flavour`: its permission callback is `flavourchoice::preference_editable()`, which says no,
+  so `flavourchoice::choose()` is the one write path and the look cohorts always follow it. The `cohort_deleted`
+  observer records each smart menu or item before it hides it, so a failure part way leaves none hidden unrecorded.
+  The choice page says so when a look is refused at submission instead of returning without a word. One PHPUnit
+  test, one mutation gate.
 - **The README describes the flavour stylesheets compiled ahead of time** (S4 of `docs/flavourcss/PLAN.md`):
   the scheduled task, which flavours it compiles, the child process and its PHP, a flavour that does not compile,
   several web servers, the CLI as a deployment step, and what is stored. `docs/flavourchoice/PLAN.md` points at the

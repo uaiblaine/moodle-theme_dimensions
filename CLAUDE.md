@@ -682,6 +682,9 @@ rests on:
   so a stale menu or a hand-made request cannot store a flavour that is not offered. The user menu's submenu items
   print `{{{text}}}` and `{{{url}}}` (Boost Union's `core/user_action_menu_submenu_items`), so the renderer hands them
   the ESCAPED title and a `moodle_url`; the drawer's panel prints `{{text}}` and gets the PLAIN one.
+- **Core's preference services cannot write the look.** The preference's permission callback is
+  `flavourchoice::preference_editable()`, which answers no: `core_user_set_user_preferences` would store a value
+  without moving the look cohorts. `choose()` writes through `set_user_preference()`, which asks no callback.
 - **The menu reads no table per page.** `offered()` keeps the offered titles in the application cache `flavourmenu`,
   keyed by the current language and the offered ids, so a setting change is a new key and needs no callback; Boost
   Union's flavour events empty it.

@@ -187,6 +187,23 @@ final class flavourchoice {
     }
 
     /**
+     * Whether core's preference services may write the look preference: never.
+     *
+     * The permission callback of the preference's definition (theme_dimensions_user_preferences()).
+     * Core asks it from core_user_set_user_preferences and core_user_update_user_preferences, which
+     * would store the value without moving the person's look cohort, so a smart menu restricted by look
+     * would disagree with the look shown until the reconcile task ran. {@see self::choose()} writes
+     * through set_user_preference(), which asks no callback.
+     *
+     * @param \stdClass $user The person whose preference would be written.
+     * @param string $name The preference's name.
+     * @return bool
+     */
+    public static function preference_editable(\stdClass $user, string $name): bool {
+        return false;
+    }
+
+    /**
      * Record a new choice for the current person, if it is one the setting offers.
      *
      * The one write path: the web service of the menu and the form of the choice page both come here.

@@ -74,7 +74,8 @@ if ($data = $form->get_data()) {
     if (flavourchoice::choose((int) $data->flavour)) {
         redirect($back, get_string('flavourchoice_saved', 'theme_dimensions'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
-    redirect($back);
+    // The look left the list between the form and its submission.
+    redirect($back, get_string('flavourchoice_unavailable', 'theme_dimensions'), null, \core\output\notification::NOTIFY_ERROR);
 }
 
 $selected = ($preselect !== null && array_key_exists($preselect, $options)) ? $preselect : $current;
