@@ -24,6 +24,8 @@
 
 namespace theme_dimensions\form;
 
+use local_unlistedcourses\category_access;
+use local_unlistedcourses\category_discoverability;
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
@@ -160,6 +162,43 @@ final class categoryhero_defaults_test extends \advanced_testcase {
         $html = self::rendered($categoryid);
         $this->assertStringContainsString(get_string('categoryhero_inheritedabove', 'theme_dimensions'), $html);
         $this->assertStringNotContainsString('Brigada', $html, 'A hidden category\'s name reached its child\'s editor.');
+    }
+
+    /**
+     * The colour source above is not named to a manager of the child when it is unlisted for them.
+     *
+     * Core shows the unlisted parent to this viewer, so the name would be printed; the state
+     * local_unlistedcourses keeps on it is the second condition. A manager of the ancestor is the
+     * control: they hold a role there, so the same category is discoverable and its name appears.
+     */
+    public function test_an_unlisted_colour_source_is_not_named_to_a_manager_of_the_child_alone(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $generator = self::getDataGenerator();
+        $parent = (int) $generator->create_category(['name' => 'Unlisted Source'])->id;
+        $categoryid = (int) $generator->create_category(['parent' => $parent])->id;
+        branding::save($parent, (object) ['owncolours' => 1, 'bgcolour' => '#7a1f2b', 'inkcolour' => '#ffffff']);
+        category_discoverability::set_state($parent, category_discoverability::STATE_UNLISTED);
+        $role = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+
+        $childmanager = $generator->create_user();
+        role_assign($role, $childmanager->id, \core\context\coursecat::instance($categoryid));
+        $this->setUser($childmanager);
+        category_access::reset_caches();
+        $html = self::rendered($categoryid);
+        $this->assertStringContainsString(get_string('categoryhero_inheritedabove', 'theme_dimensions'), $html);
+        $this->assertStringNotContainsString('Unlisted Source', $html, 'An unlisted category\'s name reached its child\'s editor.');
+
+        $parentmanager = $generator->create_user();
+        role_assign($role, $parentmanager->id, \core\context\coursecat::instance($parent));
+        $this->setUser($parentmanager);
+        category_access::reset_caches();
+        $this->assertStringContainsString(
+            get_string('categoryhero_inheritedfrom', 'theme_dimensions', 'Unlisted Source'),
+            self::rendered($categoryid),
+            'Control: with a role in the source the name is printed.'
+        );
     }
 
     /**

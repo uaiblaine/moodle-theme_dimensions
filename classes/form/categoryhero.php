@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\form;
 
+use local_unlistedcourses\category_access;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\unavailable_exception;
@@ -548,9 +549,11 @@ class categoryhero extends \moodleform {
      *
      * Asked about the PARENT, never the category: with a pair of its own the category's resolution
      * names itself, and the sentence is about what unticking the box would give. The source's name
-     * is printed only when the viewer may see that category (core_course_category::get() without
-     * the hidden flag answers null otherwise); a manager of this category is not necessarily one of
-     * the category above it, and a hidden name is not this form's to reveal.
+     * is printed only when the viewer may see that category on both counts: core's visibility
+     * (core_course_category::get() without the hidden flag answers null otherwise) and
+     * local_unlistedcourses' state (an unlisted category is withheld whatever core says). A manager
+     * of this category is not necessarily one of the category above it, and a withheld name is not
+     * this form's to reveal.
      *
      * @param int $categoryid The category being edited.
      * @return string The sentence, HTML: the name in it is formatted and escaped once.
@@ -563,7 +566,7 @@ class categoryhero extends \moodleform {
             return get_string('categoryhero_inheritedtheme', self::COMPONENT);
         }
         $source = \core_course_category::get($from, IGNORE_MISSING);
-        if ($source === null) {
+        if ($source === null || !category_access::is_category_discoverable($from)) {
             return get_string('categoryhero_inheritedabove', self::COMPONENT);
         }
         return get_string('categoryhero_inheritedfrom', self::COMPONENT, $source->get_formatted_name());

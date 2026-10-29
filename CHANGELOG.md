@@ -5,6 +5,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The editor no longer names an unlisted colour source** (SEC-02). The sentence under "own colours" printed the name of
+  the category the colours come from whenever core's visibility allowed, even when `local_unlistedcourses` withholds that
+  category from the viewer. It now falls back to the generic sentence there too. One test, one mutation gate.
 - **The category appearance page answers a missing id and a forbidden one alike** (SEC-01). `categoryhero.php` threw
   `unknowncategory` for an unused id and `nopermissions` for an existing one, an existence oracle. Both now raise the
   theme's `unavailable_exception` before the category is loaded, from `categoryhero::editable_category()`; every manager
