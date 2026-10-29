@@ -1,8 +1,12 @@
 # A look of one's own: choosing a Boost Union flavour from the user menu
 
-Status: **S1 merged (#51, 2026100532); S2 merged (#54, 2026100534)** ( the Look submenu, the drawer
-panel, `flavour.php` with its form, `amd/src/flavourchoice.js` and the `theme_dimensions_choose_flavour` service). S2
-took the choice page's form from S3 and changed default D3 (section 9). S3 merged (#56, 2026100536): the preferences page link. S5 implemented 2026-10-29 (2026100538): the look cohorts, the deletion observer, the reconcile and emptying tasks and the recommendation. S4 is not started. The owner's
+Status: **S1-S3 and S5 merged; S4 done except the release tag** (2026-10-29). S1 #51 (2026100532): the choice and
+the priming. S2 #54 (2026100534): the Look submenu, the drawer panel, `flavour.php` with its form,
+`amd/src/flavourchoice.js` and the `theme_dimensions_choose_flavour` service; it took the choice page's form from S3
+and changed default D3 (section 9). S3 #56 (2026100536): the preferences page link. S5 #60 (2026100538): the look
+cohorts, the deletion observer, the reconcile and emptying tasks and the recommendation. S4: the security read over
+the whole feature found nothing blocking and its three minor points were fixed in #63; the warm-up line is complete
+(`docs/flavourcss/PLAN.md`); the tag waits for the owner. Stage U (upstream) is not started. The owner's
 decisions are in section 2.
 F1 was reversed the same day: the person's choice now wins over the administrator's flavours.
 Section 9 lists the defaults this plan picked where nothing was decided; each can be overturned
@@ -293,6 +297,10 @@ Each stage is one pull request on `main`, with `[skip ci]` and the local matrix 
   - an MDL Shield review only if the owner asks for one on that pull request.
 - **Release only after the warm-up work is merged** (section 7). Merged: #52, #57, #59
   (`docs/flavourcss/PLAN.md`).
+- Done 2026-10-29: privacy since S1; the README (the setting, the preference, the cohorts and the warm-up); the
+  security read over S1-S3 and S5 together, whose three minor points #63 fixed (the rest are accepted and recorded
+  in #63's description); the matrix on every stage's head. Left: the tag, when the owner decides; before it, the
+  GitHub pipeline on the commit it goes on.
 
 **S5. Smart menus by look** (section 4.7). It can ship with S4 or after it.
 - What:
