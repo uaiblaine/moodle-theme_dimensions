@@ -301,6 +301,22 @@ final class flavourchoice {
     }
 
     /**
+     * Whether this theme, or a child of it, draws the page.
+     *
+     * Callbacks of an installed theme run whatever theme draws the page (hook callbacks and lib.php
+     * callbacks alike), and a look chosen under another theme would never be applied: every entry point
+     * of the choice asks this first.
+     *
+     * @param \moodle_page $page The page.
+     * @return bool
+     */
+    public static function drawn_by_this_theme(\moodle_page $page): bool {
+        $theme = $page->theme;
+
+        return $theme->name === 'dimensions' || in_array('dimensions', $theme->parents, true);
+    }
+
+    /**
      * Whether the choice may be written for this page at all.
      *
      * Hook callbacks of an installed theme run whatever theme draws the page, so the page's own theme
@@ -314,8 +330,7 @@ final class flavourchoice {
             return false;
         }
 
-        $theme = $page->theme;
-        if ($theme->name !== 'dimensions' && !in_array('dimensions', $theme->parents, true)) {
+        if (!self::drawn_by_this_theme($page)) {
             return false;
         }
 

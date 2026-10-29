@@ -274,6 +274,58 @@ function theme_dimensions_user_preferences(): array {
 }
 
 /**
+ * Add the Look link to the person's own preferences page.
+ *
+ * Core calls this while it builds the user settings navigation, on every page that builds it and for
+ * every installed theme, so the link is added only on /user/preferences.php, only on a page this theme
+ * draws (a look chosen under another theme would never be applied) and only for the person's own
+ * preferences: an administrator looking at someone else's has no look to choose for them. It is left
+ * out while nothing is offered, as the user menu's Look submenu is. The page it opens is the choice
+ * page, whose form comes back to the preferences page. This is tool_mfa's pattern for the same page.
+ *
+ * @param navigation_node $navigation The user settings navigation.
+ * @param stdClass $user The user whose settings are shown.
+ * @param context_user $usercontext That user's context.
+ * @param stdClass $course The course of the page.
+ * @param context_course $coursecontext That course's context.
+ * @return void
+ */
+function theme_dimensions_extend_navigation_user_settings(
+    navigation_node $navigation,
+    stdClass $user,
+    $usercontext,
+    stdClass $course,
+    $coursecontext
+): void {
+    global $PAGE, $USER;
+
+    $preferences = new moodle_url('/user/preferences.php');
+    if (!$PAGE->has_set_url() || !$PAGE->url->compare($preferences, URL_MATCH_BASE)) {
+        return;
+    }
+    if ((int) $user->id !== (int) $USER->id) {
+        return;
+    }
+    if (!\theme_dimensions\local\flavourchoice::drawn_by_this_theme($PAGE)) {
+        return;
+    }
+    if (\theme_dimensions\local\flavourchoice::menu($preferences) === null) {
+        return;
+    }
+
+    $account = $navigation->find('useraccount', navigation_node::TYPE_CONTAINER);
+    if ($account) {
+        $account->add_node(navigation_node::create(
+            get_string('lookmenu', 'theme_dimensions'),
+            new moodle_url('/theme/dimensions/flavour.php'),
+            navigation_node::TYPE_SETTING,
+            null,
+            'dimensionslook'
+        ));
+    }
+}
+
+/**
  * Keep the courses which never answered the focus mode question on the answer that applied to them.
  *
  * Registered with set_updatedcallback(), which takes a plain function name, so this is a shim over

@@ -15,6 +15,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   or a fatal error) is remembered in `theme_dimensions/flavourcss_failed` with the revisions it failed at, and is
   not tried again until a revision moves. The child is started with this process's own PHP, or core's
   `$CFG->pathtophp`; with neither, or with `proc_open()` disabled, nothing is built. 9 new mutation gates.
+- **The preferences page links to the choice page** (2026100536; S3 of `docs/flavourchoice/PLAN.md`).
+  `theme_dimensions_extend_navigation_user_settings()` adds a Look link to the account section of
+  `/user/preferences.php`, for the person's own preferences only, on a page this theme draws and while a look is
+  offered; the choice page's form comes back to the preferences page. The theme check is now
+  `flavourchoice::drawn_by_this_theme()`, which the prime asks too.
 - **The filter line's first measure forces no layout in React's commit** (2026100535; PLAN 5.2.6). The first layout
   effect measured the steps (`contentWidth()`, `stepWidths()`) and placed the layers inside the commit, forcing the
   page's first full layout there (one long frame of 130-150 ms at 4x CPU on the visitor's page, most of it forced
