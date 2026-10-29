@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A flavour's stylesheet can be compiled before its first visitor** (S1 of `docs/flavourcss/PLAN.md`; nothing calls
+  it yet). `local\flavourcss\builder` compiles ONE Boost Union flavour in a CLI process and stores it where Boost
+  Union's `flavours/styles.php` reads it: the `core/postprocessedcss` entry, the localcache file and the tempdir
+  fallback, under the theme's own CSS lock, then removes the older revisions as `styles.php` does. It refuses to
+  compile when Boost Union's static flavour record already holds another flavour (measured on m503b: a second flavour
+  compiled in the same process came out with the first one's brand colour), discards a sheet whose revision moved
+  during the compile (the MUC key carries none), and stores nothing that lacks the theme's own tokens (core falls
+  back to the precompiled sheet when the SCSS does not compile). The three `styles.php` helpers it copies have
+  snapshots, read from the file's tokens by the new `upstream::FUNCTIONS`. 9 new mutation gates.
 - **The course dialogue's "Enrolment from" date keeps its day's leading zero** (2026100531). `userdate()` strips it by
   default, so from the 1st to the 9th of a month the button read `1/11/2026` against the string's own `%d/%m/%Y`, and
   `category_card_modal_test` failed on those days only. `category_card::modal_primary()` passes `fixday` false.

@@ -364,6 +364,7 @@ $string['event_category_branding_updated'] = 'Category appearance updated';
 $string['event_wishlist_updated'] = 'Favourite updated on the category showcase';
 $string['extrascssinheritancesetting'] = 'Extra SCSS inheritance';
 $string['extrascssinheritancesetting_desc'] = 'With this setting, you control if the extra SCSS code from Boost Union should be inherited or duplicated.';
+$string['flavourcssfailed'] = 'The stylesheet of flavour {$a} was not stored: the theme\'s own rules are missing from the compiled sheet, so its SCSS did not compile.';
 $string['focusmode'] = 'Focus mode on activities';
 $string['focusmode_bar'] = 'Focus mode';
 $string['focusmode_close'] = 'Exit focus mode';

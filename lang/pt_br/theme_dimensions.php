@@ -364,6 +364,7 @@ $string['event_category_branding_updated'] = 'Aparência da categoria atualizada
 $string['event_wishlist_updated'] = 'Favorito atualizado na vitrine da categoria';
 $string['extrascssinheritancesetting'] = 'Herança do SCSS extra';
 $string['extrascssinheritancesetting_desc'] = 'Com esta configuração, você controla se o código SCSS extra do Boost Union deve ser herdado ou duplicado.';
+$string['flavourcssfailed'] = 'A folha de estilo do flavour {$a} não foi gravada: as regras do próprio tema faltam na folha compilada, então o SCSS dele não compilou.';
 $string['focusmode'] = 'Modo foco nas atividades';
 $string['focusmode_bar'] = 'Modo foco';
 $string['focusmode_close'] = 'Sair do modo foco';
