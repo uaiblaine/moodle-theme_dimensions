@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Smart menus by look** (2026100538; S5 of `docs/flavourchoice/PLAN.md`). `local\lookcohorts` keeps one cohort per
+  offered look (system context, idnumber `theme_dimensions_look_<flavour id>`, component `theme_dimensions`, which
+  makes core's cohort pages refuse to edit, delete or assign it) holding exactly the people who chose it, so Boost
+  Union's own cohort rule restricts a smart menu by look. `flavourchoice::choose()` moves the person, read back
+  from the stored preference under a per-person lock; the offered-flavours setting's updated callback provisions under a core lock, renames on a title
+  change, never claims an idnumber another owner holds, and empties (never deletes) the cohort of a look taken off
+  the list, through the adhoc task `empty_look_cohort` above 500 members. The daily scheduled task
+  `reconcile_look_cohorts` makes a missing cohort again and puts membership back in step with the preferences. A
+  `cohort_deleted` observer at priority 1000, ahead of Boost Union's, hides every smart menu and item a deleted look
+  cohort restricted before Boost Union strips it from the rule (which would show the menu to everyone), and the new
+  recommendation `dimensions_lookcohorts` warns until each is shown again. Uninstall releases the cohorts (stamp
+  cleared, members kept). The privacy metadata links `core_cohort`. Fourteen PHPUnit tests, twenty-three mutation gates.
 - **The flavour stylesheets are compiled before their first visitor, by a scheduled task** (2026100537; S3 of
   `docs/flavourcss/PLAN.md`). `\theme_dimensions\task\warm_flavour_css` runs every minute and hands S2's planner its
   work. That is every sheet of a flavour a page can be served that has no file at the current revisions, built one

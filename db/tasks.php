@@ -35,4 +35,14 @@ $tasks = [
         'month' => '*',
         'dayofweek' => '*',
     ],
+    // Daily: the look cohorts' membership is put back in step with the people's choices.
+    [
+        'classname' => 'theme_dimensions\task\reconcile_look_cohorts',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => '3',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
 ];

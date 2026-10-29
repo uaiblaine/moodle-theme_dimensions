@@ -224,6 +224,8 @@ classes/local/styleurl.php     The one vocabulary for a url printed inside url('
                                attribute: the landing page hero's and the poster watermark's. Pure, no DB.
 classes/local/flavourchoice.php  The look a person chose among the offered Boost Union flavours; prime() writes it into
                                Boost Union's flavours session cache from classes/local/hook/output/before_http_headers.php.
+classes/local/lookcohorts.php  One cohort per offered look, holding the people who chose it, for Boost Union's smart menu
+                               rules; its reconcile and emptying tasks in classes/task/, its deletion observer in db/events.php.
 classes/local/darklogo.php     The logo variants for dark surfaces: the address (the extra SCSS callback's), the logo in
                                force (Boost Union's flavour lookup, renderer only), the body classes, the two file areas.
 classes/local/profileaccess.php   Who may reach another user's profile. Only ever PREVENTs.
@@ -683,6 +685,28 @@ rests on:
   keyed by the current language and the offered ids, so a setting change is a new key and needs no callback; Boost
   Union's flavour events empty it.
 
+- **Smart menus by look ride on one cohort per offered look (S5, `local\lookcohorts`).** Boost Union's smart menus have
+  no extension point and cache per user, so the CHOICE (never the applied flavour) is carried into a cohort and Boost
+  Union's own cohort rule does the rest; its `cohort_member_added/removed` observers purge that person's menu cache.
+  The preference is the record: `sync_user()` reads the stored choice itself, under the per-person lock, and refuses
+  the guest, a deleted account and a look no longer offered; `choose()` calls it after writing the preference, and
+  the daily `reconcile_look_cohorts` task calls it for every person out of step, so a choice made while the task runs
+  is never undone. A look cohort is the theme's only with BOTH the component stamp
+  and the idnumber prefix; an idnumber another owner holds is reported, never taken.
+- **A look cohort is never deleted by the theme, and a deletion elsewhere fails closed.** Boost Union strips a deleted
+  cohort from every rule (`remove_deleted_condition_menu()`), and a rule left empty shows the menu to EVERYONE. The
+  component stamp blocks core's pages, not core's web services, so the `cohort_deleted` observer runs at priority 1000,
+  before Boost Union's (0), and hides every menu and item whose rule still names the cohort, recorded in the setting
+  `lookcohorthidden` for the recommendation. Core sorts observers stably and then reverses, so at EQUAL priority the
+  theme would run first anyway; the gate therefore puts it at -1, and the 1000 is what keeps it independent of plugin
+  order. A look taken off the list empties its cohort; uninstall releases them (stamp cleared, members kept).
+- **A refused lock writes nothing, and only a fake factory can show it.** PostgreSQL's advisory locks are re-entrant in
+  one session, so a test holding the lock itself would be granted it again; `tests/fixtures/refusing_lock_factory.php`
+  set as `$CFG->lock_factory` is the refusal.
+- **Boost Union stores a rule's cohort ids as JSON strings** (`["5"]`, from its form), and its lookup of the menus a
+  deleted cohort restricted matches `"5"` with the quotes; a test menu built with integer ids is one Boost Union never
+  finds. `lookcohorts::names()` reads both spellings.
+
 ## The context bar's colour and the phone's navbar
 
 - **The context layer's ground is Sass, compiled per flavour, and the ink is never the one moved.**
@@ -796,14 +820,15 @@ The theme reads no profile fields: the navbar shows what `fullname()` composes (
 
 ## Boost Union recommendations
 
-The theme adds four items to Boost Union's recommendations overview
+The theme adds five items to Boost Union's recommendations overview
 (`theme/boost_union/recommendations/overview.php`): `dimensions_profileveto` (core's
 `forceloginforprofiles`, without which the profile rule above is inert), `dimensions_unlistedcourses`
 (the dependency is installed, upgraded and at the required version), `dimensions_customfieldpicture`
 (every course field of `landingfields::definitions()` whose type the site has resolves - a warning
 otherwise, fixed by `ensure_fields()` - and the optional Picture type is installed and enabled - a
 notice otherwise, because the plugin is recommended, not required) and `dimensions_landingaddresses` (a notice while Moodle's router is not
-configured, so every landing page is shared under its long address). The classes are in
+configured, so every landing page is shared under its long address) and `dimensions_lookcohorts` (a warning while smart
+menus or items stay hidden after their look cohort was deleted; see "The chosen look"). The classes are in
 `classes/recommendation/`, sharing `base`, and `theme_dimensions_extend_burecommendations()` in
 `lib.php` names them.
 

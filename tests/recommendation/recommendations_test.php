@@ -48,6 +48,7 @@ use theme_dimensions\local\landingfields;
 #[CoversClass(unlistedcourses::class)]
 #[CoversClass(customfieldpicture::class)]
 #[CoversClass(landingaddresses::class)]
+#[CoversClass(lookcohorts_hidden::class)]
 final class recommendations_test extends \advanced_testcase {
     /**
      * Provision the theme's course fields, as an installed site has them.
@@ -64,7 +65,7 @@ final class recommendations_test extends \advanced_testcase {
     }
 
     /**
-     * The callback names exactly the four classes, each one a recommendation with a prefixed id and title.
+     * The callback names exactly the five classes, each one a recommendation with a prefixed id and title.
      *
      * @return void
      */
@@ -73,7 +74,13 @@ final class recommendations_test extends \advanced_testcase {
         $classes = theme_dimensions_extend_burecommendations();
 
         $this->assertEqualsCanonicalizing(
-            [profileveto::class, unlistedcourses::class, customfieldpicture::class, landingaddresses::class],
+            [
+                profileveto::class,
+                unlistedcourses::class,
+                customfieldpicture::class,
+                landingaddresses::class,
+                lookcohorts_hidden::class,
+            ],
             $classes
         );
         $ids = [];
@@ -91,7 +98,7 @@ final class recommendations_test extends \advanced_testcase {
     }
 
     /**
-     * Boost Union's manager finds all four through the plugin callback.
+     * Boost Union's manager finds all five through the plugin callback.
      *
      * @return void
      */
@@ -115,6 +122,7 @@ final class recommendations_test extends \advanced_testcase {
                     ? recommendation::OK
                     : recommendation::NOTICE,
                 'dimensions_landingaddresses' => recommendation::NOTICE,
+                'dimensions_lookcohorts' => recommendation::OK,
                 'dimensions_profileveto' => recommendation::OK,
                 'dimensions_unlistedcourses' => recommendation::OK,
             ],

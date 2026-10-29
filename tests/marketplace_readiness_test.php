@@ -402,7 +402,10 @@ final class marketplace_readiness_test extends \basic_testcase {
      * write files the row under core_course (core's own star, which
      * core_course's provider covers), its shortlink rows carry the component
      * with user id 0, its course custom fields are core_course's, and the
-     * files of its areas are a category's or a course's content. Group
+     * files of its areas are a category's or a course's content. Its look
+     * cohorts carry the component on the cohort row, which holds no person;
+     * their memberships are plain rows core_cohort's provider exports and
+     * deletes whatever the cohort's component, and the provider links it. Group
      * memberships, the template's entry, stay listed so that a future write is
      * caught.
      *
