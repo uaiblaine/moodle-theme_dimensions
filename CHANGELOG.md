@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The README describes the flavour stylesheets compiled ahead of time** (S4 of `docs/flavourcss/PLAN.md`):
+  the scheduled task, which flavours it compiles, the child process and its PHP, a flavour that does not compile,
+  several web servers, the CLI as a deployment step, and what is stored. `docs/flavourchoice/PLAN.md` points at the
+  merged warm-up its release waited on.
+- **The flavour sheet builder closes the last window of its stale-write guard** (S4's security read of S1-S3). It
+  read the revisions before writing; a cache reset landing between that read and the writes would have left the old
+  sheet under Boost Union's revision-less MUC key and in the fallback file. `theme_reset_all_caches()` moves the
+  revision before it purges, so the builder now reads the revisions after the writes instead and, if they moved,
+  removes what it wrote and answers stale; that one check covers a reset during the compile too. 2 new mutation
+  gates replace `flavourcss_stale_guard`, whose check they made redundant.
 - **The flavour stylesheets are compiled before their first visitor, by a scheduled task** (2026100537; S3 of
   `docs/flavourcss/PLAN.md`). `\theme_dimensions\task\warm_flavour_css` runs every minute and hands S2's planner its
   work. That is every sheet of a flavour a page can be served that has no file at the current revisions, built one

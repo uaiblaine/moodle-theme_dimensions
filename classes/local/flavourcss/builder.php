@@ -31,8 +31,8 @@ namespace theme_dimensions\local\flavourcss;
  *   in the same process gets the first one's look. The caller runs one process per flavour; this class
  *   refuses to compile when the static already holds another flavour.
  * - the stale-write guard: the MUC key carries no revision, so a sheet compiled before a reset and written
- *   after it would outlive the reset. The revisions are read from the database before and after the
- *   compile, and a sheet whose revision moved is discarded.
+ *   after it would outlive the reset. The revisions are read from the database before the compile and
+ *   again after the writes, and a sheet whose revision moved in between is removed from all three stores.
  *
  * The file names, the cache key and the store sequence are copies of Boost Union's styles.php helpers,
  * which cannot be included (the file runs its request at the top level); {@see \theme_dimensions\local\upstream}
@@ -91,6 +91,9 @@ final class builder {
     /** @var int Seconds to wait for the lock. */
     private int $locktimeout;
 
+    /** @var \Closure Reads the revisions: fn(): array, as {@see self::revisions()}. */
+    private \Closure $revisions;
+
     /**
      * Each collaborator defaults to the real one; tests replace them.
      *
@@ -98,17 +101,20 @@ final class builder {
      * @param \core\lock\lock_factory|null $lockfactory The lock factory; default core_theme_get_css_content's.
      * @param \Closure|null $staticflavourid Reads Boost Union's static; default {@see self::boost_union_static_flavourid()}.
      * @param int $locktimeout Seconds to wait for the lock.
+     * @param \Closure|null $revisions Reads the revisions; default {@see self::revisions()}.
      */
     public function __construct(
         ?\Closure $compiler = null,
         ?\core\lock\lock_factory $lockfactory = null,
         ?\Closure $staticflavourid = null,
-        int $locktimeout = self::LOCK_TIMEOUT
+        int $locktimeout = self::LOCK_TIMEOUT,
+        ?\Closure $revisions = null
     ) {
         $this->compiler = $compiler ?? fn(\core\output\theme_config $theme): string => $theme->get_css_content();
         $this->lockfactory = $lockfactory ?? \core\lock\lock_config::get_lock_factory('core_theme_get_css_content');
         $this->staticflavourid = $staticflavourid ?? fn(): ?int => self::boost_union_static_flavourid();
         $this->locktimeout = $locktimeout;
+        $this->revisions = $revisions ?? self::revisions(...);
     }
 
     /**
@@ -144,7 +150,7 @@ final class builder {
             );
         }
 
-        [$rev, $subrev] = self::revisions();
+        [$rev, $subrev] = ($this->revisions)();
         if (file_exists(self::sheet_path($rev, $subrev, $flavourid, $direction))) {
             return self::PRESENT;
         }
@@ -155,7 +161,7 @@ final class builder {
         }
         try {
             // A visitor may have built it, or a reset moved the revisions, while this process waited.
-            [$rev, $subrev] = self::revisions();
+            [$rev, $subrev] = ($this->revisions)();
             $sheet = self::sheet_path($rev, $subrev, $flavourid, $direction);
             if (file_exists($sheet)) {
                 return self::PRESENT;
@@ -165,10 +171,17 @@ final class builder {
             if (!str_contains($css, self::MARKER)) {
                 throw new \moodle_exception('flavourcssfailed', 'theme_dimensions', '', $flavourid);
             }
-            if (self::revisions() !== [$rev, $subrev]) {
+            self::store($theme, $rev, $subrev, $flavourid, $direction, $css);
+
+            // A reset during the compile or the writes would leave this sheet under the revision-less MUC key.
+            // theme_reset_all_caches() moves the revision before it purges, so if the revision has not moved by now,
+            // no reset purged before the writes; if it has, the writes are undone. Checking before the writes too
+            // would spare them, and catch nothing this check does not.
+            $after = ($this->revisions)();
+            if ($after !== [$rev, $subrev]) {
+                self::forget($rev, $subrev, $flavourid, $direction);
                 return self::STALE;
             }
-            self::store($theme, $rev, $subrev, $flavourid, $direction, $css);
 
             return self::BUILT;
         } finally {
@@ -329,6 +342,30 @@ final class builder {
             $cachedsubrev = isset($cachedsubrev[1]) ? intval($cachedsubrev[1]) : 0;
             if ($cachedsubrev > 0 && $cachedsubrev < $subrev) {
                 fulldelete($subrevfile);
+            }
+        }
+    }
+
+    /**
+     * Remove a sheet just stored from the three places, when a reset may have purged before it was written.
+     *
+     * @param int $rev The global revision it was stored under.
+     * @param int $subrev The sub-revision it was stored under.
+     * @param int $flavourid The flavour.
+     * @param string $direction 'ltr' or 'rtl'.
+     * @return void
+     */
+    private static function forget(int $rev, int $subrev, int $flavourid, string $direction): void {
+        global $CFG;
+
+        \cache::make('core', 'postprocessedcss')->delete(self::cache_key($flavourid, $direction));
+        $files = [
+            self::sheet_path($rev, $subrev, $flavourid, $direction),
+            "{$CFG->tempdir}/theme/" . self::THEME . '/' . self::filename(self::type($direction), 0, $flavourid),
+        ];
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                unlink($file);
             }
         }
     }

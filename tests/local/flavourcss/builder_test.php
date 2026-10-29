@@ -162,6 +162,45 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
+     * A reset that lands while the sheet is being written is caught after the writes, and the writes are undone.
+     *
+     * The revisions answer as the database would to a reset that moved the revision after the compile: steady for
+     * the two reads before it (before the lock, under it), moved at the third, after the writes. The control is a
+     * second flavour whose revisions never move, which is stored.
+     *
+     * @return void
+     */
+    public function test_a_reset_landing_during_the_writes_is_undone(): void {
+        $id = $this->flavour('Reset during the writes');
+        $reads = 0;
+        $moving = function () use (&$reads): array {
+            $reads++;
+            return [$reads <= 2 ? self::REV : self::REV + 1, self::SUBREV];
+        };
+
+        $this->assertSame(builder::STALE, $this->builder(null, null, null, $moving)->build($id));
+        $this->assertSame(3, $reads);
+        $this->assert_nothing_stored($id, self::REV, self::SUBREV);
+
+        $steady = $this->flavour('No reset');
+        $still = fn(): array => [self::REV, self::SUBREV];
+        $this->assertSame(builder::BUILT, $this->builder(null, null, null, $still)->build($steady));
+        $this->assert_stored($steady, 'ltr');
+    }
+
+    /**
+     * A direction other than the two styles.php serves is refused before it reaches a cache key or a file name.
+     *
+     * @return void
+     */
+    public function test_an_unknown_direction_is_refused(): void {
+        $id = $this->flavour();
+
+        $this->expectException(\coding_exception::class);
+        $this->builder(fn(): string => $this->fail('An unknown direction was compiled.'))->build($id, '../rtl');
+    }
+
+    /**
      * The two revisions a reset can move.
      *
      * @return array
@@ -356,18 +395,21 @@ final class builder_test extends \advanced_testcase {
      * @param \Closure|null $compiler The compiler.
      * @param \core\lock\lock_factory|null $lockfactory The lock factory.
      * @param \Closure|null $staticflavourid The reader of Boost Union's static.
+     * @param \Closure|null $revisions The reader of the revisions; null for the database.
      * @return builder
      */
     private function builder(
         ?\Closure $compiler = null,
         ?\core\lock\lock_factory $lockfactory = null,
-        ?\Closure $staticflavourid = null
+        ?\Closure $staticflavourid = null,
+        ?\Closure $revisions = null
     ): builder {
         return new builder(
             $compiler ?? fn(): string => self::SHEET,
             $lockfactory,
             $staticflavourid ?? fn(): ?int => null,
-            0
+            0,
+            $revisions
         );
     }
 

@@ -251,6 +251,39 @@ On a phone Moodle hides the activity navigation footer ("Next", "Previous" and t
 button) while the reader scrolls down; the theme brings it back near the end of the page, where
 the reader looks for "Next".
 
+### Boost Union flavours compiled ahead of time
+
+Boost Union compiles a flavour's stylesheet only when a browser first asks for it, so after every
+cache reset (a flavour saved, a theme setting changed, a cache purge, an upgrade) the first visitor of
+each flavour waits for a whole theme compile: 23 s measured on a development site, where the same
+request for a sheet already compiled takes 0.01 s. The theme compiles them before anybody asks.
+
+- **The scheduled task** *Compile the flavour stylesheets no visitor has asked for yet*
+  (`\theme_dimensions\task\warm_flavour_css`) runs every minute. A cache reset has no event to listen
+  to, so the next run is the soonest the missing sheets are seen. While every sheet is built a run is
+  one query and a file check per flavour.
+- **Which flavours:** those a page can be served. That means a flavour applied to at least one
+  category or cohort, or offered for choice in *Look*. A flavour that applies to nothing is not
+  compiled.
+- **One process per flavour.** Boost Union cannot compile two flavours in one PHP process, so each
+  sheet is compiled by a child process, one at a time: about 8 to 11 seconds of CPU and 150 MB of
+  memory each, on the machine that runs cron. The child is started with cron's own PHP binary, or
+  with *Path to PHP CLI* (`pathtophp`). With neither, or with `proc_open()` disabled, nothing is
+  compiled and flavours are compiled on first request, as Boost Union does without this theme.
+- **A flavour whose SCSS does not compile** is tried once per theme revision: the next cache reset
+  tries it again.
+- **Several web servers:** the task fills the shared cache (`core/postprocessedcss`) and the
+  compiled file of the machine that runs cron. Every other web server writes its own file from the
+  shared cache on its first request instead of compiling it.
+
+The same work can be run by hand, for instance as a step of a deployment
+(see *Installation*):
+
+```
+php theme/dimensions/cli/build_flavour_css.php --all
+php theme/dimensions/cli/build_flavour_css.php --all --dry-run
+```
+
 ### Pages strip
 
 With local_page installed, a category page names that category's pages under its hero, as the
@@ -295,6 +328,14 @@ page fields, their short names prefixed `dimensions_`) and *Focus mode* (one che
 once and never deleted; fields whose short names already exist on the site are left alone. The five
 picture fields of *Course landing page* are created only where customfield_picture is installed and
 enabled.
+
+After an upgrade or a cache purge, the scheduled task compiles the Boost Union flavours' stylesheets
+within a minute or so (*Boost Union flavours compiled ahead of time*, above). A deployment that wants
+them ready before the site opens runs, after `admin/cli/upgrade.php` and `admin/cli/purge_caches.php`:
+
+```
+php theme/dimensions/cli/build_flavour_css.php --all
+```
 
 The theme assigns no brand colour of its own: the primary colour is Boost Union's (its brand colour
 setting, or a flavour's) and Boost's default blue otherwise. A category nobody branded draws its band
@@ -346,6 +387,12 @@ they folded the course notice, and the Boost Union flavour they chose as their l
 (`theme_dimensions_flavour`), chosen in the user menu's *Look* submenu, the mobile drawer or the page
 `/theme/dimensions/flavour.php`, which the *Look* link of the preferences page opens. Uninstalling the theme deletes them. Which flavour a session last
 applied as that look is kept in the session only (cache `flavourchoice`).
+
+The flavour stylesheets the theme compiles ahead of time are written where Boost Union keeps the
+ones it compiles itself: core's `core/postprocessedcss` cache, the theme's localcache directory and its
+temporary directory. They hold no personal data and are dropped by every cache reset. A flavour whose
+stylesheet failed to compile is remembered in `theme_dimensions/flavourcss_failed` (the flavour and
+the theme revision it failed at) until a later revision compiles it.
 
 Beyond that the theme writes core's own rows and leaves them to core: a course a person stars on
 the showcase is core's course favourite (component `core_course`); the short address of a landing

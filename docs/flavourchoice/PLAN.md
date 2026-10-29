@@ -19,6 +19,8 @@ An administrator can also show or hide Boost Union smart menus by the look a per
 
 - Compiling the flavours' stylesheets ahead of time. Another line of work owns the cold compile
   (section 7). This feature makes that work a **prerequisite for release**, but not for development.
+  Done: `docs/flavourcss/PLAN.md`, merged as #52, #57 and #59. Its planner compiles every flavour
+  `selectableflavours` offers, beside the category and cohort ones.
 - New flavour fields, or any change to how Boost Union compiles a flavour.
 - The Moodle App, which does not use the theme's stylesheet.
 - Dark mode. Core's colour mode (`theme_boost\colour_mode`, `data-bs-theme`) is applied at runtime and
@@ -289,7 +291,8 @@ Each stage is one pull request on `main`, with `[skip ci]` and the local matrix 
     redirect);
   - `mdl ci moodle-theme_dimensions --matrix --behat`;
   - an MDL Shield review only if the owner asks for one on that pull request.
-- **Release only after the warm-up work is merged** (section 7).
+- **Release only after the warm-up work is merged** (section 7). Merged: #52, #57, #59
+  (`docs/flavourcss/PLAN.md`).
 
 **S5. Smart menus by look** (section 4.7). It can ship with S4 or after it.
 - What:
@@ -362,7 +365,9 @@ taking them changed nothing on the site.
   queue behind one another, about 7 s per flavour, and waiters that time out compile in parallel at
   120 MB each.
 - User choice makes many flavours hot at the same time, which is why the warm-up is a release
-  prerequisite. The design adds nothing to the compile: the stylesheet URL and its cache key are Boost
+  prerequisite. It is merged: a scheduled task compiles every offered flavour within a minute or so of
+  a reset, one child process per flavour (`docs/flavourcss/PLAN.md`; measured 23.2 s cold against
+  0.013 s warmed). The design adds nothing to the compile: the stylesheet URL and its cache key are Boost
   Union's.
 
 ### 7.2 The smart menus, and why pre-warming their cache does not pay

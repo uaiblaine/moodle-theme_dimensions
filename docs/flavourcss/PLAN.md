@@ -1,6 +1,6 @@
 # Compiling the flavours' stylesheets ahead of time
 
-Status: **S0-S3 done (S1 #52, S2 #57, S3 in review, 2026-10-29); S4, the release work, not started.** It replaces the shape proposed on 2026-10-27
+Status: **S0-S3 merged (S1 #52, S2 #57, S3 #59, 2026-10-29); S4, the release work, in review.** It replaces the shape proposed on 2026-10-27
 (a scheduled detector queuing one adhoc builder per flavour): section 3 found that Boost Union
 cannot compile two flavours in one PHP process. Section 8 lists the defaults this plan picked; each
 can be overturned before its stage starts.
@@ -141,11 +141,14 @@ path. `theme_reset_all_caches()` has no hook or event, which is why the trigger 
    have built it while the builder waited.
 5. Set the global, `theme_config::load('dimensions')`, `force_svg_use(true)`,
    `set_rtl_mode(<direction>)`, `get_css_content()`, unset the global in `finally`.
-6. **Stale-write guard.** Re-read both revisions from the database. If either moved, discard the
-   result and exit "stale": a MUC write now would outlive the purge under a revision-less key.
-   (Boost Union's web path has the same window; stage U2 offers the fix upstream.)
-7. Write, as `generate_and_store()` does: the MUC entry, the localcache file through
+6. Write, as `generate_and_store()` does: the MUC entry, the localcache file through
    `css_store_css()`, the tempdir fallback, then the older-revision cleanup.
+7. **Stale-write guard, after the writes** (moved here by S4's security read). Re-read both revisions from
+   the database. If either moved, remove what step 6 wrote and exit "stale": a sheet left under the
+   revision-less MUC key would outlive the purge. `theme_reset_all_caches()` moves the revision before it
+   purges, so a check after the writes sees every reset that could have purged before them; a check before
+   the writes left a window between itself and the writes. (Boost Union's web path has the same window;
+   stage U2 offers the fix upstream.)
 8. Release the lock. Exit codes: 0 built, 3 already present, 4 busy, 5 stale, 1 failed.
 
 The file names, the cache key and the fallback path are **copies of Boost Union's helpers**:
