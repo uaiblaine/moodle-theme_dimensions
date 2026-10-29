@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category tree counts only the courses the viewer may discover** (SEC-04). `coursecat_category()` decided the
+  expand arrow from `get_courses_count()`, and in COUNT mode core printed that raw number as "(N)" beside the name
+  (the front page's category list; Boost Union a bare badge under its `categorylistingpresentation` setting), so
+  both told an outsider that unlisted courses exist. The node now reads the filtered direct courses once, only when
+  one of the two branches needs it, rewrites the number in either spelling and drops the span at zero as core does.
+  Two tests, four mutation gates.
 - **Category branding images are always sent cacheability private** (2026100545; SEC-06). The serve path chose public for a
   visitor, but the URL carries only the content hash, which does not change when a category stops being public, so a
   shared proxy kept serving the image for the whole hashed lifetime. `branding_test::test_the_image_is_always_sent_private`

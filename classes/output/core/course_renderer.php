@@ -457,9 +457,16 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
      * :873-874, Boost Union :718-719), so the first class attribute of the string is that tag's
      * and one targeted replacement is unambiguous.
      *
-     * The course COUNT is deliberately not filtered: get_courses_count() is a cached scalar and
-     * the course-level feature already tolerates that mismatch, for the reason the class
-     * docblock gives about a total counted by somebody else.
+     * The course half of that condition, and the number core prints in COUNT mode, are both
+     * read from the FILTERED direct courses: get_courses_count() counts unlisted courses, so
+     * the raw scalar would keep an arrow over a category whose only course is withheld, and
+     * would print the number beside a name with the withheld courses in it: " (N)" in core
+     * (course/renderer.php:886-890, the front page's category list), a bare "N" badge in Boost
+     * Union's copy under its categorylistingpresentation setting (:731-735). The count is taken once
+     * per node and only when one of those two branches needs it. In COUNT mode the span's
+     * number is rewritten to the filtered one, and the span is dropped at zero as core drops
+     * it. The node's own span is the one inside its FIRST name heading: a child's span sits
+     * further down and was rewritten when that child was rendered.
      *
      * @param coursecat_helper $chelper Display options.
      * @param core_course_category $coursecat The category to render.
@@ -472,13 +479,27 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
         }
 
         $html = parent::coursecat_category($chelper, $coursecat, $depth);
-
-        $notloaded = $chelper->get_subcat_depth() > 0 && $depth >= $chelper->get_subcat_depth();
-        if (!$notloaded || $html === '') {
+        if ($html === '') {
             return $html;
         }
-        $withcourses = $chelper->get_show_courses() >= self::COURSECAT_SHOW_COURSES_COLLAPSED
-            && $coursecat->get_courses_count();
+
+        $count = null;
+        if (
+            $chelper->get_show_courses() == self::COURSECAT_SHOW_COURSES_COUNT
+            && strpos($html, 'numberofcourse') !== false
+        ) {
+            $count = $this->discoverable_courses_count($coursecat);
+            $html = $this->restate_courses_count($html, $count);
+        }
+
+        $notloaded = $chelper->get_subcat_depth() > 0 && $depth >= $chelper->get_subcat_depth();
+        if (!$notloaded) {
+            return $html;
+        }
+        $withcourses = false;
+        if ($chelper->get_show_courses() >= self::COURSECAT_SHOW_COURSES_COLLAPSED) {
+            $withcourses = ($count ?? $this->discoverable_courses_count($coursecat)) > 0;
+        }
         if ($withcourses || count(category_access::filter_categories($coursecat->get_children()))) {
             return $html;
         }
@@ -492,6 +513,51 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             $html,
             1
         );
+    }
+
+    /**
+     * How many of a category's direct courses this user may discover.
+     *
+     * The same scope as get_courses_count() with no options (direct courses only), so the two
+     * numbers differ by exactly the courses access::are_courses_discoverable() withholds.
+     *
+     * @param core_course_category $coursecat The category.
+     * @return int
+     */
+    private function discoverable_courses_count(core_course_category $coursecat): int {
+        $ids = $coursecat->get_courses(['idonly' => true]);
+        return count(array_filter(access::are_courses_discoverable($ids)));
+    }
+
+    /**
+     * Replace the number in a node's course count span, or drop the span at zero.
+     *
+     * Both spellings are matched: core's span carries the class alone and " (N)", Boost Union's
+     * badge carries more classes and a bare "N".
+     *
+     * Only the node's own name heading is touched, so a child's span is left as the child's
+     * render wrote it. Core writes no span at zero, and neither does this.
+     *
+     * @param string $html The node as core rendered it.
+     * @param int $count The filtered number of direct courses.
+     * @return string
+     */
+    private function restate_courses_count(string $html, int $count): string {
+        if (!preg_match('~<h[34] class="categoryname[^"]*">.*?</h[34]>~s', $html, $heading, PREG_OFFSET_CAPTURE)) {
+            return $html;
+        }
+        $rewritten = preg_replace_callback(
+            '~(<span\b[^>]*\bclass="numberofcourse(?:\s[^"]*)?"[^>]*>)([^<]*)(</span>)~',
+            static function (array $matches) use ($count): string {
+                if ($count === 0) {
+                    return '';
+                }
+                return $matches[1] . preg_replace('~\d+~', (string) $count, $matches[2], 1) . $matches[3];
+            },
+            $heading[0][0],
+            1
+        );
+        return substr_replace($html, $rewritten, $heading[0][1], strlen($heading[0][0]));
     }
 
     /**
