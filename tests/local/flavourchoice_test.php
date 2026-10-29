@@ -464,6 +464,42 @@ final class flavourchoice_test extends \advanced_testcase {
     }
 
     /**
+     * Core's preference service cannot write the look, which only choose() records; it still writes the theme's others.
+     *
+     * The control is the focus mode width, a preference of the same theme through the same service call.
+     *
+     * @return void
+     */
+    public function test_core_preference_service_cannot_write_the_look(): void {
+        global $CFG, $DB;
+
+        require_once($CFG->dirroot . '/theme/dimensions/lib.php');
+        $this->resetAfterTest();
+        $harbour = $this->flavour('Harbour');
+        $this->offer($harbour);
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $_POST['sesskey'] = sesskey();
+
+        $response = \core_external\external_api::call_external_function('core_user_set_user_preferences', [
+            'preferences' => [
+                ['name' => flavourchoice::PREFERENCE, 'value' => (string) $harbour->id, 'userid' => (int) $user->id],
+                ['name' => focusmode::PREFERENCE_EXPANDED, 'value' => '1', 'userid' => (int) $user->id],
+            ],
+        ]);
+
+        $this->assertFalse($response['error']);
+        $this->assertSame(
+            [focusmode::PREFERENCE_EXPANDED],
+            array_column($response['data']['saved'], 'name'),
+            'Control: the same call saves the theme\'s other preference.'
+        );
+        $this->assertFalse($DB->record_exists('user_preferences', ['userid' => $user->id, 'name' => flavourchoice::PREFERENCE]));
+        $this->assertTrue(flavourchoice::choose((int) $harbour->id), 'choose() still records it.');
+        $this->assertSame((string) $harbour->id, get_user_preferences(flavourchoice::PREFERENCE, null, $user));
+    }
+
+    /**
      * choose() records the site default or an offered flavour, refuses anything else, and forgets the session's prime.
      *
      * @return void
