@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The README describes the flavour stylesheets compiled ahead of time** (S4 of `docs/flavourcss/PLAN.md`):
+  the scheduled task, which flavours it compiles, the child process and its PHP, a flavour that does not compile,
+  several web servers, the CLI as a deployment step, and what is stored. `docs/flavourchoice/PLAN.md` points at the
+  merged warm-up its release waited on.
+- **The flavour sheet builder closes the last window of its stale-write guard** (S4's security read of S1-S3). It
+  read the revisions before writing; a cache reset landing between that read and the writes would have left the old
+  sheet under Boost Union's revision-less MUC key and in the fallback file. `theme_reset_all_caches()` moves the
+  revision before it purges, so the builder now reads the revisions after the writes instead and, if they moved,
+  removes what it wrote and answers stale; that one check covers a reset during the compile too. 2 new mutation
+  gates replace `flavourcss_stale_guard`, whose check they made redundant.
 - **The category showcase's shared listing is TypeScript** (2026100539; R4b1 of `docs/vitrine-react/R4b.md`, the first
   of the listing store's three slices). `amd/src/categorylisting.js` moved to `js/esm/src/listing/`: `events.ts` (every
   event between the listing and its components, and the hooks it reads, spelled once), `address.ts` (the state as the
