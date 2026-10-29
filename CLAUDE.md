@@ -2723,8 +2723,10 @@ are the facts a maintainer must not lose.
   flips class, attribute, note, word and control - never on
   the open poster, which waits until it closes.
 - **V18: a visitor's posters under a criterion are the areas the page shows at rest**, at the price
-  of ONE grouped statement (`population::accordion_tree()`, the at-rest anonymous predicate grouped by
-  category), paid only by a visitor's grouped page under a criterion, in both page-cutting modes.
+  of ONE grouped statement (`population::tree_at_rest()`, the at-rest anonymous predicate grouped by
+  category), paid by a visitor's grouped page under a criterion, in both page-cutting modes. A visitor's
+  FLAT page pays it too, for its filter tree, but only on the page's own request (`withposters`): the
+  web service's answer carries no tree and is fetched on every keystroke (`budget_test` holds both).
   Without it `subcategory_tree()` names a child only when a row of the NARROWED population sits below
   it, so an area the search missed vanished instead of joining the summary. The counts still come
   from the post-filter tally; `budget_test` holds the +1 and the 0 everywhere else.

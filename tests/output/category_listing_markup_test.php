@@ -187,14 +187,8 @@ final class category_listing_markup_test extends \advanced_testcase {
                 'Depth is a number the stylesheet indents by, never characters inside the name.'
             );
             $links = $xpath->query('.//a', $item);
-            $texts = $xpath->query('.//span[' . self::has_class('dim-tree__text') . ']', $item);
-            if (empty($entry['linkable'])) {
-                $this->assertSame(0, $links->length, 'A category the viewer may not open is not a link.');
-                $this->assertSame(1, $texts->length, 'It is present as text: the name reads, and cannot be chosen.');
-                $this->assertSame($entry['name'], $texts->item(0)->textContent);
-                continue;
-            }
-            $this->assertSame(1, $links->length);
+            // Every entry is a filter of this page, so none is drawn as text.
+            $this->assertSame(1, $links->length, 'Entry ' . $entry['name'] . ' is a link.');
             $this->assertSame($entry['url'], $links->item(0)->getAttribute('href'));
             $this->assertSame($entry['name'], $links->item(0)->textContent);
             $this->assertSame(

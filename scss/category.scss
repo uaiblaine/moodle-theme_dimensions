@@ -852,18 +852,13 @@ body.dim-category {
         padding-left: 48px;
     }
 
-    .dim-tree__link,
-    .dim-tree__text {
+    .dim-tree__link {
         display: block;
         padding: 5px 8px;
         border-radius: var(--dim-radius-sm);
         color: var(--dim-ink);
         font-size: .875rem;
         text-decoration: none;
-    }
-
-    .dim-tree__text {
-        color: var(--dim-muted);
     }
 
     .dim-tree__link:hover {

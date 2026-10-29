@@ -543,8 +543,11 @@ final class population {
             $result->rows = self::replay_public($result->rows);
         }
         // Before the page's own tree, so the category states it reads are already memoised.
-        $resttree = self::accordion_tree($scope, $criteria);
-        $result->subcategories = self::subcategory_tree($scope, $kept);
+        $resttree = self::tree_at_rest($scope, $criteria);
+        // A flat page's tree is a filter, so a visitor's names what it names at rest (tree_at_rest()).
+        $result->subcategories = $resttree !== null && !self::partitions($criteria)
+            ? $resttree
+            : self::subcategory_tree($scope, $kept);
         if (self::partitions($criteria)) {
             $result->accordion = self::accordion($scope, $resttree ?? $result->subcategories, $tally);
         }
@@ -615,7 +618,7 @@ final class population {
      * itself is short, and every number taken from it is short with it.
      *
      * The tree is the page's own, except for a visitor under a criterion, whose accordion is drawn
-     * from the tree at rest ({@see accordion_tree()}): the entries are then the children holding a
+     * from the tree at rest ({@see tree_at_rest()}): the entries are then the children holding a
      * public course, and a child the criterion misses is an entry counting 0.
      *
      * @param scope $scope The admitted subtree.
@@ -686,29 +689,35 @@ final class population {
     }
 
     /**
-     * The tree a visitor's accordion is drawn from under a criterion: the one at rest.
+     * The tree a visitor's narrowed page is drawn from: the one at rest.
      *
      * A visitor's tree names a child only when a course of the population sits below it
-     * ({@see subcategory_tree()}), and under a criterion that population is already narrowed, so a
-     * child the search misses would vanish from the posters instead of collapsing into the
-     * "nothing in N areas" summary a logged-in page draws. The posters of a narrowed page are the
-     * posters at rest, so this asks once which categories hold a public course at all: one grouped
+     * ({@see subcategory_tree()}), and under a criterion that population is already narrowed. On
+     * the grouped page a child the search misses would then vanish from the accordion instead of
+     * collapsing into the "nothing in N areas" summary a logged-in page draws; on a flat page the
+     * filter tree would shrink to the entry chosen, so a visitor who chose one child, or reloaded
+     * its address, could not choose its sibling. A logged-in tree names every open child whatever
+     * the criteria, so this asks once which categories hold a public course at all: one grouped
      * statement over the anonymous predicate with no criterion, which for a visitor is exactly
-     * "visible, public, in an open category" in either page-cutting mode. The numbers still come
-     * from the page's own post-filter tally, so a child the criterion misses is an entry counting 0.
+     * "visible, public, in an open category" in either page-cutting mode. The accordion's numbers
+     * still come from the page's own post-filter tally, so a child the criterion misses is an
+     * entry counting 0.
      *
      * Called before the page's own tree is built, so that the category states the smaller tree
-     * reads are already memoised and the whole difference is the one statement.
+     * reads are already memoised and the whole difference is the one statement. A flat page spends
+     * it only on the page's own request ({@see criteria::$withposters}): the web service's answer
+     * carries no tree, and a filter fetch is what the visitor's client sends on every keystroke.
      *
      * @param scope $scope The admitted subtree.
      * @param criteria $criteria The request.
-     * @return array|null The tree at rest for a visitor's grouped page under a criterion; null
-     *   everywhere else, where the page's own tree is the accordion's and nothing is spent.
+     * @return array|null The tree at rest for a visitor's grouped page, or flat page drawn by the
+     *   server, under a criterion; null everywhere else, where the page's own tree is used and
+     *   nothing is spent.
      */
-    private static function accordion_tree(scope $scope, criteria $criteria): ?array {
+    private static function tree_at_rest(scope $scope, criteria $criteria): ?array {
         global $DB;
 
-        $atrest = $scope->anonymous && $criteria->has_filters() && self::partitions($criteria);
+        $atrest = $scope->anonymous && $criteria->has_filters() && (self::partitions($criteria) || $criteria->withposters);
         if (!$atrest) {
             return null;
         }
@@ -2121,8 +2130,11 @@ final class population {
            the tally taken above stands in for it. */
         $population = $scope->anonymous ? self::populated_rows($tally) : $result->rows;
         // Before the page's own tree, so the category states it reads are already memoised.
-        $resttree = self::accordion_tree($scope, $criteria);
-        $result->subcategories = self::subcategory_tree($scope, $population);
+        $resttree = self::tree_at_rest($scope, $criteria);
+        // A flat page's tree is a filter, so a visitor's names what it names at rest (tree_at_rest()).
+        $result->subcategories = $resttree !== null && !self::partitions($criteria)
+            ? $resttree
+            : self::subcategory_tree($scope, $population);
         if (self::partitions($criteria)) {
             $result->accordion = self::accordion($scope, $resttree ?? $result->subcategories, $tally);
         }

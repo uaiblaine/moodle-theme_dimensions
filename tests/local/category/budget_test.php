@@ -1234,6 +1234,72 @@ final class budget_test extends \advanced_testcase {
     }
 
     /**
+     * A visitor's flat page under a search costs one statement more than at rest, and the service's request none.
+     *
+     * The page draws its filter tree at rest, so a child the search misses stays a choice; the
+     * statement is the one the grouped page pays for its posters. The web service's request draws
+     * no tree and is sent on every keystroke, so it keeps the narrowed tree and pays nothing. The
+     * assertions inside each metered closure keep it non-vacuous: the page's tree names all three
+     * children and the service's only the one the search matches.
+     *
+     * @param bool $statesort The mode.
+     */
+    #[DataProvider('modes_provider')]
+    public function test_a_visitors_flat_page_under_a_search_pays_its_tree_at_rest_and_the_service_does_not(
+        bool $statesort
+    ): void {
+        $this->prepare();
+        set_config(population::SETTING_STATESORT, $statesort ? '1' : '0', 'theme_dimensions');
+        $generator = self::getDataGenerator();
+        $root = $generator->create_category();
+        $rootid = (int) $root->id;
+        $this->set_category_state($rootid, \local_unlistedcourses\category_discoverability::STATE_PUBLIC);
+        $public = function (int $categoryid, string $fullname) use ($generator): void {
+            $course = $generator->create_course(['category' => $categoryid, 'fullname' => $fullname]);
+            $this->set_course_state((int) $course->id, \local_unlistedcourses\discoverability::STATE_PUBLIC);
+        };
+        $public($rootid, 'Incendio direto');
+        foreach (['Incendio florestal', 'Transito urbano', 'Salvamento'] as $fullname) {
+            $child = $generator->create_category(['parent' => $rootid]);
+            $public((int) $child->id, $fullname);
+        }
+        $request = static fn(bool $page, string $search): criteria => new criteria($rootid, array_filter([
+            'anonymous' => true,
+            'sort' => criteria::SORT_NAME,
+            'withposters' => $page,
+            'search' => $search,
+        ]));
+        $measure = function (bool $page, int $named) use ($request): array {
+            population::resolve($request($page, ''));
+            population::resolve($request($page, 'Incendio'));
+            $rest = $this->reads(function () use ($request, $page): void {
+                $this->assertCount(3, population::resolve($request($page, ''))->subcategories);
+            });
+            $searched = $this->reads(function () use ($request, $page, $named): void {
+                $result = population::resolve($request($page, 'Incendio'));
+                $this->assertCount($named, $result->subcategories);
+                $this->assertCount(2, $result->rows, 'The listing is narrowed either way.');
+            });
+            return [$rest, $searched];
+        };
+
+        $this->become(null);
+        [$pagerest, $pagesearched] = $measure(true, 3);
+        [$servicerest, $servicesearched] = $measure(false, 1);
+
+        $label = 'visitor flat page under a search (state sort ' . ($statesort ? 'on' : 'off') . ')';
+        $this->record($label, [
+            'page at rest' => $pagerest,
+            'page under a search' => $pagesearched,
+            'service at rest' => $servicerest,
+            'service under a search' => $servicesearched,
+        ]);
+        $this->assertGreaterThan(0, $pagerest, 'A real measurement.');
+        $this->assertSame(1, $pagesearched - $pagerest, 'The page pays the one statement of the tree at rest.');
+        $this->assertSame(0, $servicesearched - $servicerest, 'The service draws no tree and pays nothing for it.');
+    }
+
+    /**
      * A panel's request under a criterion costs nothing more in the PHP cut and one statement in the SQL cut, flat in the subareas.
      *
      * The strip under a criterion offers only the subareas holding a result, which asks for the
