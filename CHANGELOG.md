@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Every missing flavour sheet can be built from the command line, each flavour in a process of its own** (S2 of
+  `docs/flavourcss/PLAN.md`; the scheduled task that runs it every minute is S3).
+  `php theme/dimensions/cli/build_flavour_css.php --all` (with `--dry-run` to list) runs `local\flavourcss\planner`.
+  It finds the flavours a page can be served: applied to categories or cohorts with at least one id, or offered by
+  `theme_dimensions/selectableflavours`. For each sheet with no localcache file at the current revisions, in each
+  direction a language needs (right to left only while one is installed), it starts the same CLI with `--flavourid`
+  as a child, one at a time, and the child runs S1's builder. A sheet whose child failed (the builder's exception,
+  or a fatal error) is remembered in `theme_dimensions/flavourcss_failed` with the revisions it failed at, and is
+  not tried again until a revision moves. The child is started with this process's own PHP, or core's
+  `$CFG->pathtophp`; with neither, or with `proc_open()` disabled, nothing is built. 9 new mutation gates.
 - **The filter line's first measure forces no layout in React's commit** (2026100535; PLAN 5.2.6). The first layout
   effect measured the steps (`contentWidth()`, `stepWidths()`) and placed the layers inside the commit, forcing the
   page's first full layout there (one long frame of 130-150 ms at 4x CPU on the visitor's page, most of it forced
