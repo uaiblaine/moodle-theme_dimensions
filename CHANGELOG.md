@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A person can have a Boost Union flavour as their own look: the choice and how it reaches the page** (2026100532;
+  S1 of `docs/flavourchoice/PLAN.md`, no interface yet). The setting `theme_dimensions/selectableflavours` (General
+  settings, *Look*) lists the flavours a logged-in person may choose; the preference `theme_dimensions_flavour` holds
+  the choice (a flavour id, or 0 for the site default). A `before_http_headers` callback, at priority 1000, writes the
+  chosen flavour's record into Boost Union's `flavours` session cache under the page's category key before the layout
+  asks which flavour applies, so the stylesheet, the logos, the favicon, the body class, the navbar colour, the
+  footer and the dark logo all follow it, over the category and cohort rules (decision F1). The site default writes
+  nothing, and nothing of Boost Union's resolver is copied. A session cache, `flavourchoice`, remembers what the
+  session was primed with; a different choice, or a flavour leaving the list, purges Boost Union's cache once, and
+  Boost Union's invalidation events refresh it. Boost Union's flavour purge flag, which it never clears, is honoured
+  once and cleared, or it would erase the choice on every page. The preference is exported by the Privacy API and
+  dropped on uninstall.
 - **The course dialogue's "Enrolment from" date keeps its day's leading zero** (2026100531). `userdate()` strips it by
   default, so from the 1st to the 9th of a month the button read `1/11/2026` against the string's own `%d/%m/%Y`, and
   `category_card_modal_test` failed on those days only. `category_card::modal_primary()` passes `fixday` false.
