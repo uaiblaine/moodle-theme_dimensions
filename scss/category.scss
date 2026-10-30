@@ -5585,8 +5585,8 @@ body.dim-category {
         display: inline-flex;
     }
 
-    // The star is categorystar's, which both the listing's module and the panel's import, so the
-    // star has its own mark rather than either module's: the same specificity as the rule above
+    // The star is its own module (listing/star.ts), which the account's shell arms, so the
+    // star has its own mark rather than the listing's: the same specificity as the rule above
     // and later in the source.
     &.dim-star-js .dim-card__star {
         display: inline-flex;

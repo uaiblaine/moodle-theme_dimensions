@@ -14,10 +14,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The showcase's shared listing, under the names its AMD clients import it by.
+ * The showcase's shared listing, under the names the store and its two shells call it by.
  *
- * The AMD clients reach it through `core/esm!@moodle/lms/theme_dimensions/listing/listing` (R4b1 of
- * docs/vitrine-react/R4b.md), and the store and its shells name the listing by it too (R4b2).
+ * Its names were the AMD clients' (R4b1 of docs/vitrine-react/R4b.md); since those left (R4c) it exports what a
+ * shell calls and nothing else (listing_source_test).
  *
  * @module     theme_dimensions/listing/listing
  * @copyright  2026 Anderson Blaine
@@ -25,10 +25,9 @@
  */
 
 export {
-    PARAM, SCOPE, buildUrl, catOf, chipOf, dropCriterion, favOf, filterArgs, isGrouped, isRoot, narrows, pageSizeOf,
-    periodOf, readUrl, rootOnly, sortOf, syncFold, withPanel,
+    PARAM, buildUrl, catOf, dropCriterion, filterArgs, isGrouped, isRoot, narrows, pageSizeOf, periodOf, readUrl, rootOnly,
+    sortOf, syncFold, withPanel,
 } from './address';
-export {LINE} from './events';
 export {writeUrl} from './history';
 export {focusTarget, mountAreas, mountCalendar, mountLine, tellAnswer} from './mounts';
 export {

@@ -5,8 +5,9 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *
  * The listing's and a panel's rows, the progress of the enrolled courses on screen (once per course), the state
  * remembered per category and the view preference, the hover peek, the automatic opening's note and the dim-js mark;
- * a failure is core's exception dialogue. Armed by amd/src/listingaccount.js for a real account only, never the guest
- * (course_renderer.php); the visitor's page never loads it (categorypublic_source_test).
+ * a failure is core's exception dialogue; it arms the card's star (./star). Armed by amd/src/listingaccount.js for a
+ * real account only, never the guest (course_renderer.php); the visitor's page never loads it
+ * (categorypublic_source_test).
  *
  * @module     theme_dimensions/listing/account
  * @copyright  2026 Anderson Blaine
@@ -19,6 +20,7 @@ import { load } from "../amd";
 import { period as calendarPeriod } from "../daterange/calendar";
 import { LISTING, SELECTORS } from "./events";
 import * as Listing from "./listing";
+import { arm as armStar } from "./star";
 import { current, init } from "./store";
 const HOOKS = {
   details: '[data-region="dim-card-details"]',
@@ -402,6 +404,7 @@ const SHELL = {
   }
 };
 const start = /* @__PURE__ */ __name(() => {
+  armStar();
   const found = document.querySelector(SELECTORS.root);
   if (!found) {
     return;

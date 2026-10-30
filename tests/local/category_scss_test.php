@@ -202,7 +202,7 @@ final class category_scss_test extends \basic_testcase {
             'category_daterange.mustache',
             'paint.ts',
             'account.ts',
-            'categorystar.js',
+            'star.ts',
             'categorycoursemodal.js',
             'category_card_modal.mustache',
             'category_course_modal.mustache',
