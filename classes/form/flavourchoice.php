@@ -35,7 +35,8 @@ require_once($CFG->libdir . '/formslib.php');
  * it writes nothing; only its submission does, through flavourchoice::choose(), which checks the
  * answer against the setting again.
  *
- * Custom data: options (id => plain label, the site default first).
+ * Custom data: options (id => plain label, the site default first) and, optionally, marks (id => the
+ * rendered theme_dimensions/look_mark, printed before the label).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -45,7 +46,7 @@ class flavourchoice extends \moodleform {
     /**
      * One radio per look, the page to come back to, save and cancel.
      *
-     * A radio's text is printed raw by core's form template, so each label goes in ESCAPED.
+     * A radio's text is printed raw by core's form template, so each label goes in ESCAPED, after its mark.
      *
      * @return void
      */
@@ -53,8 +54,9 @@ class flavourchoice extends \moodleform {
         $mform = $this->_form;
 
         $radios = [];
+        $marks = $this->_customdata['marks'] ?? [];
         foreach ($this->_customdata['options'] as $id => $label) {
-            $radios[] = $mform->createElement('radio', 'flavour', '', s($label), (int) $id);
+            $radios[] = $mform->createElement('radio', 'flavour', '', ($marks[$id] ?? '') . s($label), (int) $id);
         }
         $mform->addGroup($radios, 'flavourgroup', get_string('lookmenu', 'theme_dimensions'), ['<br>'], false);
         $mform->setType('flavour', PARAM_INT);

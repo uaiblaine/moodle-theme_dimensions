@@ -165,6 +165,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting->set_updatedcallback('theme_dimensions_sync_look_cohorts');
         $tab->add($setting);
 
+        // Setting: Each look's mark before its name in the look menus. Read when a menu is drawn, so it needs no
+        // theme cache reset.
+        $name = 'theme_dimensions/' . \theme_dimensions\local\flavourchoice::ICONS_SETTING;
+        $title = get_string('lookmenufavicons', 'theme_dimensions', null, true);
+        $description = get_string('lookmenufavicons_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
+        $tab->add($setting);
+
         // Add tab to settings page.
         $page->add($tab);
 

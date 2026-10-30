@@ -297,7 +297,7 @@ final class drawernav {
      *
      * @param \moodle_page $page The page being rendered, the one the choice comes back to.
      * @return array|null panelid, parentid, backlabel, backaria, current (the current look's plain label) and
-     *      items (id, text, url, iscurrent).
+     *      items (id, text, url, iscurrent, mark: null or theme_dimensions/look_mark's url and colour).
      */
     public static function look(\moodle_page $page): ?array {
         $menu = flavourchoice::menu($page->url);
@@ -312,6 +312,7 @@ final class drawernav {
                 'text' => $item['text'],
                 'url' => $item['url']->out(false),
                 'iscurrent' => $item['iscurrent'],
+                'mark' => $item['mark'],
             ];
         }
 

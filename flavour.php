@@ -59,15 +59,19 @@ if ($menu === null) {
 }
 
 $options = [];
+$marks = [];
 $current = flavourchoice::SITE_DEFAULT;
 foreach ($menu['items'] as $item) {
     $options[$item['id']] = $item['text'];
+    if ($item['mark'] !== null) {
+        $marks[$item['id']] = $OUTPUT->render_from_template('theme_dimensions/look_mark', $item['mark']);
+    }
     if ($item['iscurrent']) {
         $current = $item['id'];
     }
 }
 
-$form = new \theme_dimensions\form\flavourchoice($url, ['options' => $options]);
+$form = new \theme_dimensions\form\flavourchoice($url, ['options' => $options, 'marks' => $marks]);
 if ($form->is_cancelled()) {
     redirect($back);
 }

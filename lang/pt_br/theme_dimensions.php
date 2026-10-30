@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['brandheading'] = 'Marca';
 $string['cachedef_categorybranding'] = 'A aparência de uma categoria de cursos na vitrine: layout, cor, chamada e o nome da imagem do hero.';
 $string['cachedef_flavourchoice'] = 'Qual flavour do Boost Union a sessão aplicou por último como o visual escolhido pela pessoa, com as configurações desse flavour.';
-$string['cachedef_flavourmenu'] = 'Os visuais que a pessoa pode escolher no menu do usuário: os flavours do Boost Union oferecidos e seus títulos.';
+$string['cachedef_flavourmenu'] = 'Os visuais que a pessoa pode escolher no menu do usuário: os flavours do Boost Union oferecidos, seus títulos e suas marcas.';
 $string['category_allempty'] = 'Nenhum curso corresponde à busca e aos filtros.';
 $string['category_allemptyhint'] = 'Tente outro termo ou limpe os filtros.';
 $string['category_apply'] = 'Aplicar';
@@ -602,6 +602,8 @@ $string['lookcohortdescription'] = 'Criada pelo tema Dimensions: seus membros s�
 $string['lookcohortname'] = 'Visual: {$a}';
 $string['lookheading'] = 'Visual';
 $string['lookmenu'] = 'Visual';
+$string['lookmenufavicons'] = 'Mostrar o favicon de cada visual no menu de visual';
+$string['lookmenufavicons_desc'] = 'Coloca uma marca antes do nome de cada visual no submenu Visual do menu do usuário, no painel Visual da gaveta e na página de escolha: o favicon enviado ao flavour do Boost Union, ou um ponto na cor da marca do flavour quando ele não tem favicon. O padrão do site mostra o favicon do site. As imagens são as que as páginas dos flavours já mostram na aba do navegador, buscadas quando o menu é exibido.';
 $string['navbarautohide'] = 'Esconder a barra de navegação durante a leitura';
 $string['navbarautohide_activity'] = 'Páginas de atividade';
 $string['navbarautohide_course'] = 'A página do curso';

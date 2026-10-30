@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The look menus can show each look's favicon** (2026100547). The new setting `theme_dimensions/lookmenufavicons`
+  (General settings, *Look*, off by default) puts a mark before each name in the user menu's Look submenu, the drawer's
+  Look panel and the choice page: the Boost Union flavour's favicon, else a dot in its brand colour, else an empty box of
+  the same size; the site default shows the site's favicon. The image address is the one Boost Union puts in the browser
+  tab of the flavour's pages, so the browser serves it from its cache, and it is fetched lazily. The marks ride in the
+  `flavourmenu` cache beside the titles, so the menu still reads no table per page. Template `theme_dimensions/look_mark`,
+  stylesheet `scss/look.scss`.
 - **The course notice no longer names an unlisted category to a viewer who may not discover it** (SEC-03).
   `coursenotice_unlistedcategorytext` printed the category's name to a teacher of the course alone, against the
   theme's own policy for category names. Without the right to discover the category the note now reads the new

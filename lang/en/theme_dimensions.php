@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 $string['brandheading'] = 'Brand';
 $string['cachedef_categorybranding'] = 'The appearance of a course category on the category showcase: its layout, colours, tagline and the name of its hero image.';
 $string['cachedef_flavourchoice'] = 'Which Boost Union flavour the session last applied as the person\'s chosen look, with that flavour\'s settings.';
-$string['cachedef_flavourmenu'] = 'The look a person may pick in the user menu: the offered Boost Union flavours and their titles.';
+$string['cachedef_flavourmenu'] = 'The look a person may pick in the user menu: the offered Boost Union flavours, their titles and their marks.';
 $string['category_allempty'] = 'No course matches the search and the filters.';
 $string['category_allemptyhint'] = 'Try another term or clear the filters.';
 $string['category_apply'] = 'Apply';
@@ -602,6 +602,8 @@ $string['lookcohortdescription'] = 'Made by the Dimensions theme: its members ar
 $string['lookcohortname'] = 'Look: {$a}';
 $string['lookheading'] = 'Look';
 $string['lookmenu'] = 'Look';
+$string['lookmenufavicons'] = 'Show each look\'s favicon in the look menu';
+$string['lookmenufavicons_desc'] = 'Puts a mark before each look\'s name in the user menu\'s Look submenu, the drawer\'s Look panel and the choice page: the favicon uploaded to the Boost Union flavour, or a dot in the flavour\'s brand colour when it has no favicon. The site default shows the site\'s favicon. The images are the ones the flavours\' pages already show in the browser tab, fetched when the menu is shown.';
 $string['navbarautohide'] = 'Hide the navbar while reading';
 $string['navbarautohide_activity'] = 'Activity pages';
 $string['navbarautohide_course'] = 'The course page';

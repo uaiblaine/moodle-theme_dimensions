@@ -54,6 +54,9 @@ final class flavourchoice {
     /** @var string The setting listing the flavours a person may choose, under theme_dimensions. */
     public const SETTING = 'selectableflavours';
 
+    /** @var string The setting that puts each look's mark before its name in the look menus, under theme_dimensions. */
+    public const ICONS_SETTING = 'lookmenufavicons';
+
     /** @var int The choice that leaves the page to Boost Union's own rules. */
     public const SITE_DEFAULT = 0;
 
@@ -243,36 +246,164 @@ final class flavourchoice {
     /**
      * The flavours the setting offers that still exist: id => plain title, in Boost Union's order.
      *
-     * Read on every page that draws the user menu, so it is cached for the whole site under a key made
-     * of the current language and the offered ids: a change of the setting is a new key, and Boost
-     * Union's invalidation events (a flavour edited, re-sorted or deleted) empty the cache. The titles
-     * are in the PLAIN spelling; each template that prints one says which spelling it wants.
-     *
      * @return array Flavour id => plain title.
      */
     public static function offered(): array {
+        return self::looks()['titles'];
+    }
+
+    /**
+     * The offered flavours' titles and marks, as the look menus read them.
+     *
+     * Read on every page that draws the user menu, so it is cached for the whole site under a key made
+     * of the current language and the offered ids: a change of the setting is a new key, and Boost
+     * Union's invalidation events (a flavour edited, re-sorted or deleted) empty the cache. The titles
+     * are in the PLAIN spelling; each template that prints one says which spelling it wants. A mark keeps
+     * the favicon's file name, never its address, because the address carries the theme revision.
+     *
+     * @return array titles (id => plain title) and marks (id => favicon: file name or null, colour: a
+     *      colour safe in a style attribute, or null), both in Boost Union's order.
+     */
+    private static function looks(): array {
         global $DB;
 
         $ids = self::selectable_ids();
         if (!$ids) {
-            return [];
+            return ['titles' => [], 'marks' => []];
         }
 
         $cache = \cache::make('theme_dimensions', 'flavourmenu');
         $key = current_language() . '_' . implode('_', $ids);
-        $offered = $cache->get($key);
-        if (is_array($offered)) {
-            return $offered;
+        $looks = $cache->get($key);
+        // An entry of the shape before the marks (a bare list of titles) is built again.
+        if (is_array($looks) && isset($looks['titles'], $looks['marks'])) {
+            return $looks;
         }
 
-        $offered = [];
+        $looks = ['titles' => [], 'marks' => []];
         $options = ['context' => \context_system::instance(), 'escape' => false];
-        foreach ($DB->get_records_list('theme_boost_union_flavours', 'id', $ids, 'sort ASC, id ASC', 'id, title') as $record) {
-            $offered[(int) $record->id] = format_string($record->title, true, $options);
+        $records = $DB->get_records_list(
+            'theme_boost_union_flavours',
+            'id',
+            $ids,
+            'sort ASC, id ASC',
+            'id, title, look_favicon, look_brandcolor'
+        );
+        foreach ($records as $record) {
+            $looks['titles'][(int) $record->id] = format_string($record->title, true, $options);
+            $looks['marks'][(int) $record->id] = [
+                'favicon' => (string) $record->look_favicon !== '' ? (string) $record->look_favicon : null,
+                'colour' => self::safe_colour((string) $record->look_brandcolor),
+            ];
         }
-        $cache->set($key, $offered);
+        $cache->set($key, $looks);
 
-        return $offered;
+        return $looks;
+    }
+
+    /**
+     * A flavour's brand colour as a style attribute may carry it, or null.
+     *
+     * Boost Union's colour picker rule accepts a hex code with or without its #, a colour name and the
+     * rgb(), rgba(), hsl() and hsla() forms. Each is let through only in a shape that holds no quote, no
+     * semicolon and no other property; transparent, currentColor and inherit draw no dot and read as none.
+     *
+     * @param string $colour The flavour's look_brandcolor.
+     * @return string|null The colour, a hex code always with its #, or null.
+     */
+    private static function safe_colour(string $colour): ?string {
+        $colour = trim($colour);
+        if (preg_match('/^#?(?:[[:xdigit:]]{3}){1,2}$/', $colour)) {
+            return '#' . ltrim($colour, '#');
+        }
+        if (in_array(strtolower($colour), ['transparent', 'currentcolor', 'inherit'], true)) {
+            return null;
+        }
+        if (preg_match('/^[a-z]+$/i', $colour) || preg_match('/^(?:rgba?|hsla?)\([0-9., %]+\)$/i', $colour)) {
+            return $colour;
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether the look menus show each look's mark before its name.
+     *
+     * @return bool
+     */
+    public static function marks_shown(): bool {
+        return (bool) get_config('theme_dimensions', self::ICONS_SETTING);
+    }
+
+    /**
+     * The site's favicon, as Boost Union gives it to a page no flavour applies to.
+     *
+     * Mirrors the last branch of {@see \theme_boost_union\output\core_renderer::favicon()}: Boost Union's own
+     * favicon setting, else the theme's pix. That method answers for the page being drawn, so it gives the
+     * applied flavour's favicon wherever one applies, which is why the site default's mark cannot ask it.
+     * Boost Union's tenant branding (local_boost_union_mwp) is not followed. flavourchoice_test compares the
+     * two on a page no flavour applies to.
+     *
+     * @return \moodle_url
+     */
+    public static function site_favicon(): \moodle_url {
+        global $PAGE;
+
+        $logo = get_config('theme_boost_union', 'favicon');
+        if (empty($logo)) {
+            return $PAGE->theme->image_url('favicon', 'theme');
+        }
+
+        return \moodle_url::make_pluginfile_url(
+            \context_system::instance()->id,
+            'theme_boost_union',
+            'favicon',
+            '64x64/',
+            theme_get_revision(),
+            $logo
+        );
+    }
+
+    /**
+     * A flavour's favicon at the address Boost Union puts in the browser tab of the flavour's pages.
+     *
+     * The same address as {@see \theme_boost_union\output\core_renderer::favicon()} builds, size included, so
+     * the browser's cache serves the menu the image the tab already fetched; flavourchoice_test compares them.
+     *
+     * @param int $flavourid The flavour.
+     * @param string $filename The flavour's look_favicon.
+     * @return \moodle_url
+     */
+    public static function flavour_favicon(int $flavourid, string $filename): \moodle_url {
+        return \moodle_url::make_pluginfile_url(
+            \context_system::instance()->id,
+            'theme_boost_union',
+            'flavours_look_favicon',
+            $flavourid,
+            '/64x64/' . theme_get_revision(),
+            '/' . $filename
+        );
+    }
+
+    /**
+     * The mark before a look's name: its favicon, else a dot in its brand colour, else an empty box.
+     *
+     * The site default's mark is the site's favicon. The empty box keeps the names in line.
+     *
+     * @param int $id The flavour, or {@see self::SITE_DEFAULT}.
+     * @param array $marks The marks of {@see self::looks()}.
+     * @return array url (string, the image's address) or null, colour or null.
+     */
+    private static function mark(int $id, array $marks): array {
+        if ($id === self::SITE_DEFAULT) {
+            return ['url' => self::site_favicon()->out(false), 'colour' => null];
+        }
+        $mark = $marks[$id] ?? ['favicon' => null, 'colour' => null];
+        if ($mark['favicon'] !== null) {
+            return ['url' => self::flavour_favicon($id, $mark['favicon'])->out(false), 'colour' => null];
+        }
+
+        return ['url' => null, 'colour' => $mark['colour']];
     }
 
     /**
@@ -287,16 +418,19 @@ final class flavourchoice {
      *
      * @param \moodle_url $returnurl The page the choice is made on, where the person comes back to.
      * @return array|null current (the current item's plain label) and items (id, text: plain label,
-     *      url: \moodle_url, iscurrent).
+     *      url: \moodle_url, iscurrent, mark: null while the setting hides the marks, else
+     *      {@see self::mark()}'s url and colour).
      */
     public static function menu(\moodle_url $returnurl): ?array {
         if (!isloggedin() || isguestuser() || \core\session\manager::is_loggedinas()) {
             return null;
         }
-        $offered = self::offered();
+        $looks = self::looks();
+        $offered = $looks['titles'];
         if (!$offered) {
             return null;
         }
+        $showmarks = self::marks_shown();
 
         $chosen = self::chosen_id();
         if (!array_key_exists($chosen, $offered)) {
@@ -311,6 +445,7 @@ final class flavourchoice {
                 'text' => $label,
                 'url' => self::page_url((int) $id, $returnurl),
                 'iscurrent' => (int) $id === $chosen,
+                'mark' => $showmarks ? self::mark((int) $id, $looks['marks']) : null,
             ];
         }
 

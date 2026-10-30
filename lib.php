@@ -82,6 +82,10 @@ function theme_dimensions_get_main_scss_content($theme) {
     // nested under the drawer's own class, and it reads the family tokens post.scss declares.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/drawer.scss');
 
+    // And the look's mark before each name in the look menus (local\flavourchoice::menu()), in the user menu, the
+    // drawer and the choice page; every rule is on the mark's own classes.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/look.scss');
+
     // And the navbar that follows the reading (classes/local/readingbar.php): the band's track, the context layer
     // and auto-hide. Every rule is scoped to a body class the renderer adds or to the navbar's own class, and it
     // reads the navbar pill mixin and the tokens post.scss declares.

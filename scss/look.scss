@@ -1,0 +1,33 @@
+/* The mark before each look's name in the look menus (theme_dimensions/look_mark): the user menu's Look
+   submenu, the drawer's Look panel and the choice page's radios. One fixed box whatever it holds - the
+   favicon, a dot in the look's brand colour, or nothing - so the names line up. Drawn only while the
+   setting theme_dimensions/lookmenufavicons is on; the classes are the theme's own. */
+.dimensions-look-mark {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-inline-end: var(--dim-ds-space-xs);
+    vertical-align: -.2em;
+}
+
+.dimensions-look-favicon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* A dark brand colour on the dark mode's ground still shows its edge. */
+.dimensions-look-dot {
+    width: .625rem;
+    height: .625rem;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--dim-ds-border-strong);
+}
+
+/* The drawer's row already spaces its children with a gap. */
+.dimensions-drawer-item .dimensions-look-mark {
+    margin-inline-end: 0;
+}

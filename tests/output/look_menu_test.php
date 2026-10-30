@@ -285,4 +285,97 @@ final class look_menu_test extends \advanced_testcase {
         $this->assertSame([], $form->validation(['flavour' => 7], []));
         $this->assertSame([], $form->validation(['flavour' => 0], []));
     }
+
+    /**
+     * Two offered looks with the marks switched on: Harbour & Co with a favicon, Campus with a brand colour alone.
+     *
+     * @return \stdClass[] harbour and campus.
+     */
+    private function marked_looks(): array {
+        global $DB;
+
+        $harbour = $this->flavour('Harbour & Co');
+        $campus = $this->flavour('Campus');
+        $DB->set_field('theme_boost_union_flavours', 'look_favicon', 'harbour.png', ['id' => $harbour->id]);
+        $DB->set_field('theme_boost_union_flavours', 'look_brandcolor', '#7a1f2b', ['id' => $campus->id]);
+        $this->offer($harbour, $campus);
+
+        return [$harbour, $campus];
+    }
+
+    /**
+     * With the setting on, the user menu's submenu puts each look's mark before its escaped title; off, none.
+     *
+     * @return void
+     */
+    public function test_the_user_menu_marks_each_look_while_the_setting_is_on(): void {
+        $this->resetAfterTest();
+        [$harbour] = $this->marked_looks();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $this->assertStringNotContainsString('dimensions-look-mark', $this->look_submenu($this->header()), 'Off: no mark.');
+
+        set_config(flavourchoice::ICONS_SETTING, 1, 'theme_dimensions');
+        $submenu = $this->look_submenu($this->header());
+
+        $favicon = s(flavourchoice::flavour_favicon((int) $harbour->id, 'harbour.png')->out(false));
+        $this->assertMatchesRegularExpression(
+            '~<img class="dimensions-look-favicon" src="' . preg_quote($favicon, '~') . '"[^>]*loading="lazy">\s*</span>'
+                . '\s*Harbour &amp; Co~',
+            $submenu,
+            'The favicon, then the title escaped once.'
+        );
+        $this->assertStringContainsString('<span class="dimensions-look-dot" style="background-color: #7a1f2b;"></span>', $submenu);
+        $this->assertStringContainsString(
+            'src="' . s(flavourchoice::site_favicon()->out(false)) . '"',
+            $submenu,
+            'The site default shows the site\'s favicon.'
+        );
+        $this->assertStringNotContainsString('&amp;amp;', $submenu);
+    }
+
+    /**
+     * The drawer's Look panel draws the same marks before each name.
+     *
+     * @return void
+     */
+    public function test_the_drawer_marks_each_look_while_the_setting_is_on(): void {
+        $this->resetAfterTest();
+        [$harbour, $campus] = $this->marked_looks();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $link = '~data-dimensions-flavour="' . $campus->id . '">\s*<span class="dimensions-look-mark"~';
+
+        $this->assertDoesNotMatchRegularExpression($link, $this->header(), 'Off: no mark.');
+
+        set_config(flavourchoice::ICONS_SETTING, 1, 'theme_dimensions');
+        $html = $this->header();
+
+        $this->assertMatchesRegularExpression($link, $html);
+        $this->assertMatchesRegularExpression(
+            '~data-dimensions-flavour="' . $harbour->id . '">\s*<span class="dimensions-look-mark" aria-hidden="true">'
+                . '<img class="dimensions-look-favicon"[^>]*>\s*</span>\s*'
+                . '<span class="dimensions-drawer-text">Harbour &amp; Co</span>~',
+            $html
+        );
+    }
+
+    /**
+     * The choice page's radios carry the mark it is handed before each escaped label, and none without one.
+     *
+     * @return void
+     */
+    public function test_the_choice_form_prints_each_looks_mark_before_its_label(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $mark = '<span class="dimensions-look-mark" aria-hidden="true"></span>';
+        $form = new \theme_dimensions\form\flavourchoice(
+            null,
+            ['options' => [0 => 'Site default', 7 => 'Harbour & Co'], 'marks' => [7 => $mark]]
+        );
+
+        $html = $form->render();
+
+        $this->assertStringContainsString($mark . 'Harbour &amp; Co', $html);
+        $this->assertSame(1, substr_count($html, 'dimensions-look-mark'), 'Only the look handed a mark has one.');
+    }
 }

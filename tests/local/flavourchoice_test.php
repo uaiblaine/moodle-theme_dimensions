@@ -25,6 +25,7 @@
 namespace theme_dimensions\local;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use theme_dimensions\local\hook\output\before_http_headers;
 
@@ -700,5 +701,176 @@ final class flavourchoice_test extends \advanced_testcase {
 
         $this->assertMatchesRegularExpression('~<body[^>]*class="[^"]*\bflavour-' . $campus->id . '\b~', $html);
         $this->assertDoesNotMatchRegularExpression('~<body[^>]*class="[^"]*\bflavour-' . $harbour->id . '\b~', $html);
+    }
+
+    /**
+     * The marks of the menu's items, in its order.
+     *
+     * @return array Each item's mark: null, or url and colour.
+     */
+    private function marks(): array {
+        return array_map(fn(array $item) => $item['mark'], flavourchoice::menu(new \moodle_url('/my/'))['items']);
+    }
+
+    /**
+     * Three offered looks: one with a favicon and a colour, one with a colour alone, one with neither that is safe.
+     *
+     * @return \stdClass[] harbour, campus and quay, each its record.
+     */
+    private function marked_looks(): array {
+        global $DB;
+
+        $harbour = $this->flavour('Harbour', ['look_brandcolor' => '#112233']);
+        $campus = $this->flavour('Campus', ['look_brandcolor' => '7a1f2b']);
+        $quay = $this->flavour('Quay', ['look_brandcolor' => 'red;background:url(x)']);
+        $DB->set_field('theme_boost_union_flavours', 'look_favicon', 'harbour.png', ['id' => $harbour->id]);
+        // Every flavour gets a sort, for the reason test_offered_flavours_are_plain_ordered_and_follow_the_setting gives.
+        foreach ([$harbour, $campus, $quay] as $sort => $flavour) {
+            $DB->set_field('theme_boost_union_flavours', 'sort', $sort + 1, ['id' => $flavour->id]);
+        }
+        $this->offer($harbour, $campus, $quay);
+
+        return [$harbour, $campus, $quay];
+    }
+
+    /**
+     * The marks follow the setting: none while it is off; a favicon before a colour, a safe colour before nothing; the
+     * site default shows the site's favicon.
+     *
+     * @return void
+     */
+    public function test_the_menu_marks_each_look_while_the_setting_is_on(): void {
+        $this->resetAfterTest();
+        [$harbour] = $this->marked_looks();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $this->assertSame([null, null, null, null], $this->marks(), 'The setting is off: no mark.');
+
+        set_config(flavourchoice::ICONS_SETTING, 1, 'theme_dimensions');
+        $marks = $this->marks();
+
+        $this->assertSame(['url' => flavourchoice::site_favicon()->out(false), 'colour' => null], $marks[0]);
+        $this->assertSame(
+            ['url' => flavourchoice::flavour_favicon((int) $harbour->id, 'harbour.png')->out(false), 'colour' => null],
+            $marks[1],
+            'The favicon wins over the colour.'
+        );
+        $this->assertStringContainsString('/theme_boost_union/flavours_look_favicon/' . $harbour->id . '/64x64/', $marks[1]['url']);
+        $this->assertStringEndsWith('/harbour.png', $marks[1]['url']);
+        $this->assertSame(['url' => null, 'colour' => '#7a1f2b'], $marks[2], 'A colour alone, its # restored.');
+        $this->assertSame(['url' => null, 'colour' => null], $marks[3], 'Neither: the empty box.');
+    }
+
+    /**
+     * The brand colours a style attribute may carry, and the ones it may not.
+     *
+     * @return array Stored look_brandcolor => the mark's colour.
+     */
+    public static function brand_colours(): array {
+        return [
+            'hex' => ['#ABC', '#ABC'],
+            'hex without its #' => ['a1b2c3', '#a1b2c3'],
+            'name' => ['teal', 'teal'],
+            'rgb' => ['rgb(10, 20, 30)', 'rgb(10, 20, 30)'],
+            'hsla' => ['hsla(120, 50%, 40%, 0.5)', 'hsla(120, 50%, 40%, 0.5)'],
+            'transparent' => ['transparent', null],
+            'currentColor' => ['currentColor', null],
+            'inherit' => ['inherit', null],
+            'a second declaration' => ['red;background:red', null],
+            'a quote' => ['red" onclick="x', null],
+            'rgb with a second declaration' => ['rgb(1,2,3);color:red', null],
+            'a url' => ['url(x)', null],
+            'empty' => ['', null],
+        ];
+    }
+
+    /**
+     * Only a colour in a shape that holds no quote, no semicolon and no other property reaches the dot.
+     *
+     * @param string $stored The flavour's look_brandcolor.
+     * @param string|null $expected The mark's colour.
+     * @return void
+     */
+    #[DataProvider('brand_colours')]
+    public function test_only_a_safe_brand_colour_reaches_the_dot(string $stored, ?string $expected): void {
+        $this->resetAfterTest();
+        $this->offer($this->flavour('Harbour', ['look_brandcolor' => $stored]));
+        set_config(flavourchoice::ICONS_SETTING, 1, 'theme_dimensions');
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $this->assertSame(['url' => null, 'colour' => $expected], $this->marks()[1]);
+    }
+
+    /**
+     * The marks ride in the cache beside the titles: a second menu reads no table, and an entry of the shape the
+     * cache held before the marks is built again.
+     *
+     * @return void
+     */
+    public function test_the_marks_are_cached_beside_the_titles(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$harbour, $campus, $quay] = $this->marked_looks();
+        set_config(flavourchoice::ICONS_SETTING, 1, 'theme_dimensions');
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $first = $this->marks();
+        $reads = $DB->perf_get_reads();
+        $this->assertSame($first, $this->marks());
+        $this->assertSame(0, $DB->perf_get_reads() - $reads, 'A second menu reads no table.');
+
+        $cache = \cache::make('theme_dimensions', 'flavourmenu');
+        $key = current_language() . '_' . implode('_', [$harbour->id, $campus->id, $quay->id]);
+        $cache->set($key, [(int) $harbour->id => 'Stale']);
+        $reads = $DB->perf_get_reads();
+        $this->assertSame('Harbour', flavourchoice::offered()[(int) $harbour->id]);
+        $this->assertGreaterThan(0, $DB->perf_get_reads() - $reads, 'The old shape is read again from the table.');
+        $this->assertSame($first, $this->marks());
+    }
+
+    /**
+     * A look's favicon is the address Boost Union puts in the tab of that look's pages, so the browser reuses the fetch.
+     *
+     * Boost Union's favicon() keeps its first answer in a function static, hence the process of its own.
+     *
+     * @return void
+     */
+    #[RunInSeparateProcess]
+    public function test_a_looks_favicon_is_the_address_boost_union_puts_in_the_tab(): void {
+        global $OUTPUT;
+        $this->resetAfterTest();
+        $category = $this->getDataGenerator()->create_category();
+        [$harbour] = $this->marked_looks();
+        set_config(flavourchoice::ICONS_SETTING, 1, 'theme_dimensions');
+        $this->setUser($this->getDataGenerator()->create_user());
+        set_user_preference(flavourchoice::PREFERENCE, $harbour->id);
+
+        $this->category_page_header((int) $category->id);
+        $tab = $OUTPUT->favicon()->out(false);
+
+        $this->assertStringContainsString('/flavours_look_favicon/' . $harbour->id . '/', $tab, 'Control: the look applies.');
+        $this->assertSame($tab, $this->marks()[1]['url']);
+    }
+
+    /**
+     * The site default's mark is the favicon Boost Union gives a page no flavour applies to: the theme's pix, then Boost
+     * Union's own favicon setting.
+     *
+     * @return void
+     */
+    #[RunInSeparateProcess]
+    public function test_the_site_favicon_is_the_one_boost_union_gives_a_page_without_a_look(): void {
+        global $OUTPUT;
+        $this->resetAfterTest();
+        $category = $this->getDataGenerator()->create_category();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $this->category_page_header((int) $category->id);
+
+        $this->assertSame($OUTPUT->favicon()->out(false), flavourchoice::site_favicon()->out(false), 'The theme\'s pix.');
+
+        set_config('favicon', '/site.png', 'theme_boost_union');
+        $this->assertStringContainsString('/theme_boost_union/favicon/64x64/', flavourchoice::site_favicon()->out(false));
+        $this->assertSame($OUTPUT->favicon()->out(false), flavourchoice::site_favicon()->out(false), 'Boost Union\'s setting.');
     }
 }

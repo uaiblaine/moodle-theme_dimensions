@@ -542,9 +542,11 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
 
         $items = [];
         foreach ($menu['items'] as $item) {
+            // Boost Union's submenu item prints the text raw, so the mark's markup goes in front of the escaped title.
+            $mark = $item['mark'] !== null ? $this->render_from_template('theme_dimensions/look_mark', $item['mark']) : '';
             $items[] = [
                 'title' => $item['text'],
-                'text' => s($item['text']),
+                'text' => $mark . s($item['text']),
                 'link' => true,
                 'isactive' => $item['iscurrent'],
                 'url' => $item['iscurrent'] ? new \moodle_url('#') : $item['url'],
