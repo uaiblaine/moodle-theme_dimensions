@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The navbar's dropdowns are a dark slate with the brand colour on the row under the pointer.** Every
+  `.navbar .dropdown-menu` (the user menu and its submenus, the language and look menus, smart menus in the bar,
+  focus mode's "More") is one dark surface in both colour modes, inset by 8px, with 12px corners; the hovered,
+  focused or current row is an 8px-rounded pill in `$primary`, so each Boost Union flavour paints its own. The pill
+  is lifted until it stands out from the surface (3:1) and moved away from its ink until the label reads 4.6:1; the
+  ink is white or the darkest grey. A submenu's title row (the Look and Language panels) was dark on the menu: core's
+  back button reads the body's ink through `.text-body` and Boost Union's smart-menu header is a link, and both now
+  read the menu's; the back arrow, an image of core's icon, is inverted to white and centred on the title, and the
+  row takes one pill, never a second one on the button. Tests `navbar_menu_colour_test` (five brand colours, measured) and two in `post_scss_test`.
 - **The look menus can show each look's favicon** (2026100547). The new setting `theme_dimensions/lookmenufavicons`
   (General settings, *Look*, off by default) puts a mark before each name in the user menu's Look submenu, the drawer's
   Look panel and the choice page: the Boost Union flavour's favicon, else a dot in its brand colour, else an empty box of
