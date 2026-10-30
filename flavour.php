@@ -40,9 +40,10 @@ if (isguestuser()) {
     throw new \moodle_exception('noguest');
 }
 
+$back = flavourchoice::back_url($returnurl);
+$returnurl = $returnurl !== '' ? $back->out_as_local_url(false) : '';
 $params = $returnurl !== '' ? ['returnurl' => $returnurl] : [];
 $url = new moodle_url('/theme/dimensions/flavour.php', $params);
-$back = $returnurl !== '' ? new moodle_url($returnurl) : new moodle_url('/user/preferences.php');
 
 $context = context_system::instance();
 $PAGE->set_context($context);
@@ -70,10 +71,11 @@ $form = new \theme_dimensions\form\flavourchoice($url, ['options' => $options]);
 if ($form->is_cancelled()) {
     redirect($back);
 }
-if ($data = $form->get_data()) {
-    if (flavourchoice::choose((int) $data->flavour)) {
-        redirect($back, get_string('flavourchoice_saved', 'theme_dimensions'), null, \core\output\notification::NOTIFY_SUCCESS);
-    }
+$recorded = flavourchoice::submitted($form);
+if ($recorded) {
+    redirect($back, get_string('flavourchoice_saved', 'theme_dimensions'), null, \core\output\notification::NOTIFY_SUCCESS);
+}
+if ($recorded === false) {
     // The look left the list between the form and its submission.
     redirect($back, get_string('flavourchoice_unavailable', 'theme_dimensions'), null, \core\output\notification::NOTIFY_ERROR);
 }

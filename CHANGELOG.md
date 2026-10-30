@@ -10,6 +10,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   hook with `?categoryid=N&chip=open&from=Y-m-d&to=Y-m-d` for each asked category and the bare course index for the
   root. It answers nothing when the showcase or the state chip is off, or for a visitor or the guest account, whose
   page draws no chips, so the block keeps core's category page. It adds no visibility rule: the page runs its own.
+- **The chosen look's remaining points from the security read, each with a test.** Somebody logged in as another
+  user is offered no look and `flavourchoice::choose()` refuses them: the choice, and the cohort it moves, are
+  the person's. A page another theme draws drops the look this session was primed with
+  (`flavourchoice::unprime()`), so a Boost Union page of the same category no longer shows it. The choice page's
+  return address is cleaned in one place (`flavourchoice::back_url()`, local only) and loses its session key, in
+  the menu's links too, so the redirect after the POST cannot replay an action. The page's one write is
+  `flavourchoice::submitted()`, which `tests/local/flavourchoice_guards_test.php` drives with the page's own form:
+  a GET writes nothing, a POST without the session key or of a look the form did not offer is refused. Six
+  PHPUnit tests, eight mutation gates.
 - **The offered-looks setting lists the flavours again.** `settings.php` handed
   `admin_setting_configmulticheckbox` the array callable `[flavourchoice::class, 'choices']`, and core keeps any
   array as the choices themselves, so the page offered two checkboxes labelled with the class name and `choices`
