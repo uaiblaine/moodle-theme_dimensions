@@ -1,3 +1,2 @@
-# Write a poster's shell from the listing again: two writers of the posters on the logged-in shell, the
-# component's draw and this one racing.
-s/(const paintShells = \(response\) => \{\n    const accordion = response\.accordion \|\| \[\];\n)/$1    accordion.forEach((group) => {\n        const poster = root.querySelector(SELECTORS.area + '[data-categoryid="' + Number(group.id) + '"]');\n        if (poster) {\n            poster.dataset.ctaurl = group.ctaurl || '';\n        }\n    });\n/;
+# Write a poster's shell from the store again: two writers of the posters, the component's draw and this one racing.
+s/(    shell\.answered\(response\);\n)(    document\.dispatchEvent\(new CustomEvent\(LISTING\.criteria)/$1    root.querySelectorAll<HTMLElement>(SELECTORS.area).forEach((poster) => {\n        poster.dataset.ctaurl = '';\n    });\n$2/;

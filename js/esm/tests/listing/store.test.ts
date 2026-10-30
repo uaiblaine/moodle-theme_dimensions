@@ -42,9 +42,14 @@ const shellOf = (): Shell => ({
         answers.push({resolve: resolve, reject: reject, page: page});
     })),
     failed: jest.fn((page: number, append: boolean) => told.push(`failed ${page} ${append}`)),
+    // With the address it saw: a change is told before the address is written.
+    changed: jest.fn((kind: string) => told.push(`changed ${kind} ${window.location.search}`)),
     written: jest.fn(() => told.push('written ' + window.location.search)),
     leave: jest.fn((url: URL) => told.push('leave ' + url.search)),
+    discard: jest.fn(),
+    painted: jest.fn((items: HTMLElement[]) => told.push('painted ' + items.length)),
     answered: jest.fn(() => told.push('answered')),
+    unmounted: jest.fn(() => told.push('unmounted')),
     areas: {props: {links: true}, client: {ask: jest.fn()}},
 });
 
@@ -143,20 +148,24 @@ describe('theme_dimensions/listing/store', () => {
         expect(document.body.classList.contains('dim-test-js')).toBe(false);
     });
 
-    it('pushes one entry for a tree press, then asks page zero, and paints the answer busy until then', async() => {
+    it('pushes one entry for a tree press, asks page zero, is busy until then, and tells the shell first', async() => {
         page();
         start(shellOf(), 7);
+        // As the posters' component hears the answer: after the shell, which may have to word an opening inside it.
+        const heard = (): number => told.push('criteria');
+        document.addEventListener('dim-vitrine:criteria', heard);
         (document.querySelector('[data-region="dim-tree-link"]') as HTMLElement).click();
         expect(push).toHaveBeenCalledTimes(1);
         expect(current().cat).toBe(9);
-        expect(told.slice(2)).toEqual(['written ?categoryid=7&sort=name&cat=9', 'rows 0']);
+        expect(told.slice(2)).toEqual(['changed tree ?categoryid=7&sort=name', 'written ?categoryid=7&sort=name&cat=9', 'rows 0']);
         const root = document.querySelector('[data-region="dim-vitrine"]') as HTMLElement;
         expect(root.getAttribute('aria-busy')).toBe('true');
         answers[0].resolve(rowsOf(2));
         await settle();
         expect(grid()).toEqual(['0', '1']);
         expect(root.hasAttribute('aria-busy')).toBe(false);
-        expect(told).toContain('answered');
+        document.removeEventListener('dim-vitrine:criteria', heard);
+        expect(told.slice(5)).toEqual(['painted 2', 'answered', 'criteria']);
     });
 
     it('paints nothing of an answer a newer request overtook, and lets only the latest failure fall back', async() => {
@@ -212,7 +221,9 @@ describe('theme_dimensions/listing/store', () => {
         window.history.replaceState(null, '', '/course/index.php?categoryid=7&sort=name&q=fire');
         window.dispatchEvent(new PopStateEvent('popstate'));
         expect(current().query).toBe('fire');
-        expect(told.slice(2)).toEqual(['normalise', 'written ?categoryid=7&sort=name&q=fire', 'rows 0']);
+        expect(told.slice(2)).toEqual([
+            'normalise', 'written ?categoryid=7&sort=name&q=fire', 'changed history ?categoryid=7&sort=name&q=fire', 'rows 0',
+        ]);
         expect(push).not.toHaveBeenCalled();
     });
 

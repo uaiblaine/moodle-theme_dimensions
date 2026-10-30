@@ -91,6 +91,7 @@ export const SELECTORS = {
     chipremove: '[data-action="dim-chip-remove"]',
     drawnline: '[data-region="dim-line"][data-line-drawn]',
     quick: '[data-action="dim-quick"]',
+    fav: '[data-action="dim-fav"]',
     grid: '[data-region="dim-vitrine-grid"]',
     empty: '[data-region="dim-vitrine-empty"]',
     toolbar: '[data-region="dim-vitrine-toolbar"]',

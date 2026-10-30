@@ -170,10 +170,10 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
         $pages = category_pages::export($categoryid);
         $listing = new category_listing($coursecat, $criteria, $result, $view, $manageactions, $pages, true);
 
-        /* The listing's client modules belong to THIS shell and to no other. The anonymous shell
-           draws the same listing but pages and searches by GET with no web service, and both
-           modules are clients of the showcase's login-required services; so it arms neither, and
-           the calls that arm them are here rather than in the listing.
+        /* The listing's account client belongs to THIS shell and to no other. The anonymous shell
+           draws the same listing with its own client (request.php arms listingvisitor), and this one
+           is a client of the showcase's login-required services; so the call that arms it is here
+           rather than in the listing.
 
            And not for the guest account, which core counts as logged in and which request.php
            therefore routes to this shell on purpose. All three of the showcase's web services
@@ -182,17 +182,15 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
            answer every click with an exception dialogue. The card's star follows the same rule
            (showstar). The guest is kept out here; never loosen the services' refusal instead. */
         if (isloggedin() && !isguestuser()) {
-            /* The root included: its search line is the listing's own, live as on a category page,
-               and the module drives nothing else there. */
-            $this->page->requires->js_call_amd('theme_dimensions/categoryvitrine', 'init');
-            // The panel module, on every page of this shell the root included: its posters open panels too.
-            $this->page->requires->js_call_amd('theme_dimensions/categorypanel', 'init');
+            /* The root included: its search line is the listing's own, live as on a category page, and its
+               posters open panels as a category's do (js/esm/src/listing/account.ts, with the stars). */
+            $this->page->requires->js_call_amd('theme_dimensions/listingaccount', 'init');
         }
 
         /* The cover film's module is armed for EVERYBODY and on every one of these pages, which
            is the opposite of the rule above and is not an inconsistency. It calls no web service
            - it imports nothing at all - so none of the three refusals that shut the guest out of
-           the vitrine module reaches it, and it hides no control: its own body class reveals the
+           the account's client reaches it, and it hides no control: its own body class reveals the
            cluster and says nothing about the toolbar's no-JavaScript submit. And the ROOT is
            where category cards live, so an arming that skipped the root would skip the whole
            feature; the same line stands in request.php for the anonymous shell. */

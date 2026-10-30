@@ -184,14 +184,20 @@ const rows = /* @__PURE__ */ __name((page) => ask(rowsArgs(page)), "rows");
 const failed = /* @__PURE__ */ __name((page, append) => {
   fallBack(fallbackUrl(page, append));
 }, "failed");
+const nothing = /* @__PURE__ */ __name(() => void 0, "nothing");
 const SHELL = {
   mark: BODY_CLASS,
   normalise: publicOnly,
   rows,
   failed,
+  changed: nothing,
+  discard: null,
+  painted: nothing,
   written: linkPosters,
   leave: navigate,
   answered: linkPosters,
+  // The native fields stay the server's and work: the visitor is told nothing, as before.
+  unmounted: nothing,
   areas: {
     props: AREAS_PROPS,
     client: {

@@ -892,7 +892,7 @@ final class core_renderer_test extends \advanced_testcase {
         $this->setUser($generator->create_user());
         $this->run_course_category((int) $category->id);
         $this->assertStringContainsString(
-            'theme_dimensions/categoryvitrine',
+            'theme_dimensions/listingaccount',
             $this->collected_amd(),
             'A real account gets the client module.'
         );
@@ -903,7 +903,7 @@ final class core_renderer_test extends \advanced_testcase {
         $GLOBALS['PAGE'] = new \moodle_page();
         $this->run_course_category((int) $category->id);
         $this->assertStringNotContainsString(
-            'theme_dimensions/categoryvitrine',
+            'theme_dimensions/listingaccount',
             $this->collected_amd(),
             'The guest is served the page it can actually use: no module, no hidden controls.'
         );

@@ -42,18 +42,25 @@ export type Rows = Answer & {cards?: object[], page?: number | string, searchtoo
 
 /**
  * What a shell gives the store. `rows` asks its service for a page; `failed` takes over the latest request
- * that could not be answered; `written` runs after every address the store writes; `leave` loads the address
- * of a change of shell; `normalise` drops what the shell never honours; `answered` sees an answer that
- * replaced the grid.
+ * that could not be answered; `changed` hears what changed (term, tree, period, filter, view, history) BEFORE the
+ * address is written, so a shell that remembers can mark the state first; `written` runs after every address the
+ * store writes; `leave` loads the address of a change of shell; `normalise` drops what the shell never honours;
+ * `discard` is handed every card a replaced grid drops; `painted` the cards an answer just drew; `answered` sees
+ * an answer that replaced the grid, before the posters' component does; `unmounted` hears a calendar that could not
+ * mount, over the native fields the server drew, which still work.
  */
 export type Shell = {
     mark: string,
     normalise: (state: ListingState) => void,
     rows: (page: number) => Promise<Rows>,
     failed: (page: number, append: boolean, error: unknown) => void,
+    changed: (kind: string) => void,
     written: () => void,
     leave: (url: URL) => void,
+    discard: ((card: HTMLElement) => void) | null,
+    painted: (items: HTMLElement[]) => void,
     answered: (response: Rows) => void,
+    unmounted: (error: unknown) => void,
     areas: {props: object, client: AreasClient},
 };
 
@@ -116,7 +123,7 @@ const applyResponse = async(response: Rows, append: boolean, ticket: number): Pr
     // The root has no course grid: everything below it is still the answer's to paint.
     const grid = root.querySelector<HTMLElement>(SELECTORS.grid);
     if (grid) {
-        Listing.paintGrid(root, state, grid, items, append, null);
+        Listing.paintGrid(root, state, grid, items, append, shell.discard);
     }
     const notice = root.querySelector<HTMLElement>(SELECTORS.notice);
     if (notice) {
@@ -130,6 +137,8 @@ const applyResponse = async(response: Rows, append: boolean, ticket: number): Pr
     Listing.paintCount(root, response);
     Listing.paintChips(root, response);
     Listing.paintGroups(root, response);
+    Listing.paintFavourites(root, response);
+    shell.painted(items);
     Listing.paintPager(root, response, append, items.length ? items[0] : null);
     if (!append) {
         Listing.paintDirect(root, response);
@@ -140,7 +149,10 @@ const applyResponse = async(response: Rows, append: boolean, ticket: number): Pr
 };
 
 /**
- * Tell the posters' component an answer that replaced the grid, then the shell.
+ * Tell an answer that replaced the grid to the shell, then the posters' component.
+ *
+ * The shell first: the component handles the event synchronously and may open an area inside it, whose note the
+ * shell writes from the answer it was handed.
  *
  * @param {object} response The rows response.
  * @returns {void}
@@ -150,13 +162,13 @@ const paintAreas = (response: Rows): void => {
         return;
     }
     const word = response.areas || {};
+    shell.answered(response);
     document.dispatchEvent(new CustomEvent(LISTING.criteria, {detail: {
         accordion: response.accordion || [],
         areas: word,
         filtered: Boolean(word.filtered),
         total: Number(response.total),
     }}));
-    shell.answered(response);
 };
 
 /**
@@ -203,13 +215,15 @@ const requestRows = async(page: number, append: boolean): Promise<void> => {
 };
 
 /**
- * Apply a changed criterion: a new history entry, then the request. An open panel stays open and is asked again
- * with the answer.
+ * Apply a changed criterion: the shell told, a new history entry, then the request. An open panel stays open and
+ * is asked again with the answer.
  *
+ * @param {string} kind What changed: term, tree, period or filter.
  * @returns {Promise} Resolving when the request has been dealt with.
  */
-const apply = (): Promise<void> => {
+const apply = (kind: string): Promise<void> => {
     state.page = 0;
+    shell.changed(kind);
     Listing.writeUrl(state, true);
     shell.written();
     return requestRows(0, false);
@@ -234,7 +248,7 @@ const onSearch = async(raw: string): Promise<void> => {
         notice.hidden = true;
     }
     state.query = term;
-    await apply();
+    await apply('term');
 };
 
 /**
@@ -289,7 +303,7 @@ const onSort = (sort: string): void => {
         shell.leave(Listing.buildUrl(state));
         return;
     }
-    apply();
+    apply('filter');
 };
 
 /**
@@ -309,7 +323,7 @@ const onTree = (link: HTMLElement): void => {
     }
     state.cat = cat;
     Listing.markTree(root, state);
-    apply();
+    apply('tree');
 };
 
 /**
@@ -324,7 +338,7 @@ const setRange = (datefrom: string, dateto: string): void => {
     state.datefrom = range.from;
     state.dateto = range.to;
     Listing.paintDates(root, state);
-    apply();
+    apply('period');
 };
 
 /**
@@ -340,16 +354,31 @@ const onChoose = (input: HTMLInputElement): void => {
         onSort(input.value);
         return;
     }
-    if (!name || !name.startsWith(Listing.PARAM.fieldprefix)) {
+    if (name === Listing.PARAM.chip) {
+        state.chip = input.value;
+    } else if (name && name.startsWith(Listing.PARAM.fieldprefix)) {
+        const fieldid = name.slice(Listing.PARAM.fieldprefix.length);
+        if (Number(input.value) > 0) {
+            state.filters[fieldid] = Number(input.value);
+        } else {
+            delete state.filters[fieldid];
+        }
+    } else {
         return;
     }
-    const fieldid = name.slice(Listing.PARAM.fieldprefix.length);
-    if (Number(input.value) > 0) {
-        state.filters[fieldid] = Number(input.value);
-    } else {
-        delete state.filters[fieldid];
-    }
-    apply();
+    apply('filter');
+};
+
+/**
+ * Deal with the favourites toggle being pressed: a filter that combines with the state chip, repainted at once,
+ * because aria-pressed is what was pressed.
+ *
+ * @returns {void}
+ */
+const onFav = (): void => {
+    state.fav = !state.fav;
+    Listing.paintFavToggle(root, state.fav);
+    apply('filter');
 };
 
 /**
@@ -362,6 +391,7 @@ const setView = (view: string): void => {
     state.view = view;
     state.viewchosen = true;
     Listing.paintView(root, view);
+    shell.changed('view');
     Listing.writeUrl(state, true);
     shell.written();
 };
@@ -387,6 +417,8 @@ const focusSearch = (): void => {
 const onClear = (): void => {
     cancelSearch();
     state.query = '';
+    state.chip = '';
+    state.fav = false;
     state.filters = {};
     state.datefrom = '';
     state.dateto = '';
@@ -396,7 +428,7 @@ const onClear = (): void => {
         notice.hidden = true;
     }
     Listing.paintControls(root, state);
-    apply();
+    apply('filter');
     focusSearch();
 };
 
@@ -412,7 +444,7 @@ const onChipRemove = (chip: HTMLElement): boolean => {
     }
     shell.normalise(state);
     Listing.paintControls(root, state);
-    apply();
+    apply('filter');
     focusSearch();
     return true;
 };
@@ -461,6 +493,7 @@ const onPopState = (): void => {
     Listing.paintControls(root, state);
     Listing.syncFold();
     shell.written();
+    shell.changed('history');
     requestRows(0, false);
 };
 
@@ -514,6 +547,12 @@ const listen = (): void => {
             setRange(quick.dataset.from || '', quick.dataset.to || '');
             return;
         }
+        if (Listing.closestOf(event, SELECTORS.fav)) {
+            // A submit button for a reader without a client; a fetch with a history entry here.
+            event.preventDefault();
+            onFav();
+            return;
+        }
         const view = Listing.closestOf(event, SELECTORS.viewbutton) as HTMLButtonElement | null;
         if (view) {
             event.preventDefault();
@@ -546,7 +585,7 @@ const listen = (): void => {
  *
  * @param {object} given The shell.
  * @param {number} categoryid The category the page lists, 0 for the root of the course index.
- * @returns {boolean} Whether the listing was armed.
+ * @returns {boolean} Whether the listing was armed, which a root without a search line is not: its posters alone are.
  */
 export const init = (given: Shell, categoryid: number): boolean => {
     const found = document.querySelector<HTMLElement>(SELECTORS.root);
@@ -565,20 +604,26 @@ export const init = (given: Shell, categoryid: number): boolean => {
     const range = Listing.periodOf(params);
     // The category's default organisation, which an address naming none gets (criteria's rule).
     const defaultsort = typeof payload.defaultsort === 'string' ? payload.defaultsort : '';
-    const sort = Listing.sortOf(params, defaultsort);
+    /* A reader who left a state on this category may have arrived on its bare address, which the server drew with
+       that state: the organisation is then the payload's, not the address's. */
+    const remembered = payload.remembered === true;
+    const sort = remembered && typeof payload.sort === 'string' ? payload.sort : Listing.sortOf(params, defaultsort);
     state = {
         categoryid: categoryid,
         page: Number(payload.page) || 0,
         total: Number(payload.total) || 0,
         hasmore: Boolean(payload.hasmore),
         query: typeof payload.query === 'string' ? payload.query : '',
-        chip: '',
-        fav: false,
+        chip: typeof payload.chip === 'string' ? payload.chip : '',
+        // The server read an older address's favourites chip as the toggle already.
+        fav: payload.fav === true,
         filters: payload.filters && typeof payload.filters === 'object'
             ? Object.assign({}, payload.filters) as Record<string, number> : {},
         // The organisation, the period and the tree's category are the address's: the toolbar is a GET form.
         defaultsort: defaultsort,
         sort: sort,
+        // Whether every address the store writes names its organisation (the shell's changed() sets it).
+        remembered: remembered,
         datefrom: range.from,
         dateto: range.to,
         cat: Listing.catOf(params, sort),
@@ -599,7 +644,7 @@ export const init = (given: Shell, categoryid: number): boolean => {
     shell.written();
     Listing.mountAreas(areas, shell.areas.props, shell.areas.client);
     if (!live) {
-        return true;
+        return false;
     }
 
     // What hides the submits only a reader without a client needs.
@@ -609,8 +654,8 @@ export const init = (given: Shell, categoryid: number): boolean => {
     markTitles(root.querySelector(SELECTORS.grid), state.query);
 
     Listing.mountLine(root, dropTerm);
-    // A calendar that cannot mount leaves the native fields exactly as the server drew them, and says nothing.
-    Listing.mountCalendar(root, state, setRange).catch(() => null);
+    // A calendar that cannot mount leaves the native fields exactly as the server drew them; the shell decides what is said.
+    Listing.mountCalendar(root, state, setRange).catch(shell.unmounted);
 
     // The numbered bar is the reader-without-a-client's pager and is now the button's job.
     const bar = root.querySelector<HTMLElement>(SELECTORS.pagerbar);

@@ -350,15 +350,27 @@ const failed = (page: number, append: boolean): void => {
     fallBack(fallbackUrl(page, append));
 };
 
+/**
+ * What the visitor's shell does where the logged-in shell remembers or watches: nothing.
+ *
+ * @returns {void}
+ */
+const nothing = (): void => undefined;
+
 /** The visitor's shell for the store. */
 const SHELL = {
     mark: BODY_CLASS,
     normalise: publicOnly,
     rows: rows,
     failed: failed,
+    changed: nothing,
+    discard: null,
+    painted: nothing,
     written: linkPosters,
     leave: navigate,
     answered: linkPosters,
+    // The native fields stay the server's and work: the visitor is told nothing, as before.
+    unmounted: nothing,
     areas: {
         props: AREAS_PROPS,
         client: {

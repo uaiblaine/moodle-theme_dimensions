@@ -1173,21 +1173,21 @@ final class course_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * The root renders its search line and the directory as posters, and arms both modules for a real account.
+     * The root renders its search line and the directory as posters, and arms the account's client for a real account.
      *
      * Core calls course_category(0) whenever the viewer may see more than one top-level category,
      * and a course can never sit directly in the top-level pseudo-category - so at the root the
      * page is a directory of categories. The withheld branch is the withholding control and the
      * open one the rendering control, so a directory that had rendered nothing could not pass.
      *
-     * Its posters open panels like any other page's, so a real account gets the panel module
-     * there, and the listing's too, which drives the root's search line live. The guest gets
-     * neither, anywhere: the showcase's web services refuse it, and it opens a panel through the
-     * address instead. The modules are asserted through the page's own requirements
-     * (`$PAGE->requires->get_end_code()` names every AMD call of the page), and a real category
-     * page rendered beside them is the control: the same viewer, both modules.
+     * Its posters open panels like any other page's and its search line is live, so a real account
+     * gets the account's client there (listingaccount, which replaced the panel's and the listing's
+     * modules in R4b3). The guest gets none, anywhere: the showcase's web services refuse it, and it
+     * opens a panel through the address instead. The client is asserted through the page's own
+     * requirements (`$PAGE->requires->get_end_code()` names every AMD call of the page), and a real
+     * category page rendered beside it is the control: the same viewer, the same client.
      */
-    public function test_the_root_renders_its_search_line_and_the_directory_and_arms_both_modules(): void {
+    public function test_the_root_renders_its_search_line_and_the_directory_and_arms_the_accounts_client(): void {
         global $PAGE;
         $viewer = $this->prepare_showcase();
         $generator = self::getDataGenerator();
@@ -1212,32 +1212,28 @@ final class course_renderer_test extends \advanced_testcase {
 
         $requirements = $this->page_requirements();
         $this->assertStringContainsString(
-            'theme_dimensions/categorypanel',
+            'theme_dimensions/listingaccount',
             $requirements,
-            'The root\'s posters open panels: the panel module is armed for a real account.'
+            'The root\'s posters open panels and its search line is live: the account\'s client is armed for a real account.'
         );
-        $this->assertStringContainsString(
-            'theme_dimensions/categoryvitrine',
-            $requirements,
-            'And the listing\'s module, which makes the root\'s search line live.'
-        );
+        foreach (['categoryvitrine', 'categorypanel'] as $retired) {
+            $this->assertStringNotContainsString('theme_dimensions/' . $retired, $requirements, 'One client, not two.');
+        }
 
-        // The control: the same viewer on a real category gets the listing and both modules.
+        // The control: the same viewer on a real category gets the listing and its client.
         $PAGE = new \moodle_page();
         $PAGE->set_url('/course/index.php', ['categoryid' => (int) $open->id]);
         $this->renderer()->course_category((int) $open->id);
-        $this->assertStringContainsString('theme_dimensions/categoryvitrine', $this->page_requirements());
-        $this->assertStringContainsString('theme_dimensions/categorypanel', $this->page_requirements());
+        $this->assertStringContainsString('theme_dimensions/listingaccount', $this->page_requirements());
 
-        // The guest, on the same category page: neither module, and the page still renders.
+        // The guest, on the same category page: no client, and the page still renders.
         $this->setGuestUser();
         self::forget();
         $PAGE = new \moodle_page();
         $PAGE->set_url('/course/index.php', ['categoryid' => (int) $open->id]);
         $guest = $this->renderer()->course_category((int) $open->id);
         $this->assertStringContainsString('data-region="dim-vitrine"', $guest, 'Precondition: the guest gets the showcase.');
-        $this->assertStringNotContainsString('theme_dimensions/categorypanel', $this->page_requirements());
-        $this->assertStringNotContainsString('theme_dimensions/categoryvitrine', $this->page_requirements());
+        $this->assertStringNotContainsString('theme_dimensions/listingaccount', $this->page_requirements());
     }
 
     /**
@@ -1401,7 +1397,7 @@ final class course_renderer_test extends \advanced_testcase {
         $PAGE->set_url('/course/index.php', ['categoryid' => (int) $open->id]);
         $this->renderer()->course_category((int) $open->id);
         $requirements = $this->page_requirements();
-        $this->assertStringContainsString('theme_dimensions/categoryvitrine', $requirements, 'The control.');
+        $this->assertStringContainsString('theme_dimensions/listingaccount', $requirements, 'The control.');
         $this->assertStringNotContainsString('theme_dimensions/listingvisitor', $requirements);
 
         $this->setGuestUser();
@@ -1411,7 +1407,7 @@ final class course_renderer_test extends \advanced_testcase {
         $guest = $this->renderer()->course_category((int) $open->id);
         $this->assertStringContainsString('data-region="dim-vitrine"', $guest, 'Precondition: the guest gets the showcase.');
         $this->assertStringNotContainsString('theme_dimensions/listingvisitor', $this->page_requirements());
-        $this->assertStringNotContainsString('theme_dimensions/categoryvitrine', $this->page_requirements());
+        $this->assertStringNotContainsString('theme_dimensions/listingaccount', $this->page_requirements());
     }
 
     /**
