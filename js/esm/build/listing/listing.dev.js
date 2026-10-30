@@ -1,8 +1,8 @@
 /**
- * The showcase's shared listing, under the names its AMD clients import it by.
+ * The showcase's shared listing, under the names the store and its two shells call it by.
  *
- * The AMD clients reach it through `core/esm!@moodle/lms/theme_dimensions/listing/listing` (R4b1 of
- * docs/vitrine-react/R4b.md), and the store and its shells name the listing by it too (R4b2).
+ * Its names were the AMD clients' (R4b1 of docs/vitrine-react/R4b.md); since those left (R4c) it exports what a
+ * shell calls and nothing else (listing_source_test).
  *
  * @module     theme_dimensions/listing/listing
  * @copyright  2026 Anderson Blaine
@@ -10,12 +10,9 @@
  */
 import {
   PARAM,
-  SCOPE,
   buildUrl,
   catOf,
-  chipOf,
   dropCriterion,
-  favOf,
   filterArgs,
   isGrouped,
   isRoot,
@@ -28,7 +25,6 @@ import {
   syncFold,
   withPanel
 } from "./address";
-import { LINE } from "./events";
 import { writeUrl } from "./history";
 import { focusTarget, mountAreas, mountCalendar, mountLine, tellAnswer } from "./mounts";
 import {
@@ -52,16 +48,12 @@ import {
   restoreMore
 } from "./paint";
 export {
-  LINE,
   PARAM,
-  SCOPE,
   armTreebox,
   buildUrl,
   catOf,
-  chipOf,
   closestOf,
   dropCriterion,
-  favOf,
   filterArgs,
   focusTarget,
   isGrouped,

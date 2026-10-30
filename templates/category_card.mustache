@@ -35,7 +35,7 @@
     whose panel is anchored to the card, and last the favourite star, so that in
     list view it falls into the cluster's flow beside the button instead of over
     the kind glyph. The star is drawn only for a logged-in viewer and stays
-    hidden until a client module marks the body (categorystar's dim-star-js, or
+    hidden until a client module marks the body (the star's dim-star-js, or
     the listing's dim-js), because a star that does nothing is worse than none.
 
     Every text value arrives in the plain spelling and is escaped here.
@@ -175,7 +175,7 @@
         </div>
         <div class="dim-card__row">
             {{#hasbadges}}
-            <ul class="dim-card__crests" role="list" aria-label="{{badgeslabel}}" data-region="dim-card-crests">
+            <ul class="dim-card__crests" role="list" aria-label="{{badgeslabel}}">
                 {{#badges}}
                 <li class="dim-card__crest"><img src="{{url}}" alt="{{alt}}" width="80" height="88" loading="lazy" decoding="async"></li>
                 {{/badges}}
@@ -191,7 +191,7 @@
         <p class="dim-card__route"><i class="fa fa-arrow-right" aria-hidden="true"></i> {{routelabel}}</p>
         {{/hasroute}}
         {{#hasopens}}
-        <p class="dim-card__opens" data-region="dim-card-opens"><i class="fa fa-calendar-plus" aria-hidden="true"></i> {{openslabel}}</p>
+        <p class="dim-card__opens"><i class="fa fa-calendar-plus" aria-hidden="true"></i> {{openslabel}}</p>
         {{/hasopens}}
         <div class="dim-card__actions">
             {{#cta}}

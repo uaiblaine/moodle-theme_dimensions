@@ -91,14 +91,14 @@ final class categorypublic_source_test extends \basic_testcase {
 
     /** @var string[] The logged-in modules nothing a visitor's page loads may name, in code or in a comment. */
     private const LOGGED_IN_NAMES = [
-        'categorystar',
+        'listing/star',
         'listingaccount',
         'listing/account',
     ];
 
     /** @var string[] Theme modules a visitor's page may never load: the session's star and the logged-in clients. */
     private const FORBIDDEN_MODULES = [
-        'categorystar',
+        self::ESM . 'listing/star',
         'listingaccount',
         self::ESM . 'listing/account',
     ];
@@ -449,17 +449,17 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->fixture = [
             'amd/src/entry.js' => "import Island from 'core/esm!@moodle/lms/theme_dimensions/local/Island';\n",
             'amd/src/mounter.js' => "root.dataset.reactComponent = '@moodle/lms/theme_dimensions/local/Island';\n",
-            'amd/src/categorystar.js' => "export const init = () => null;\n",
+            'amd/src/fixtureamd.js' => "export const init = () => null;\n",
             'js/esm/src/local/Island.tsx' => "import {load} from '../amd';\nconst card = 'theme_dimensions/category_card';\n",
             'js/esm/build/local/Island.js' => 'import{load as o}from"../amd";const c="theme_dimensions/category_card";',
             'js/esm/build/local/Island.dev.js' => "import { load } from \"../amd\";\n",
             'js/esm/src/amd.ts' => "import {requireAsync} from '@moodle/lms/core/amd';\n",
             'js/esm/build/amd.js' => 'import{requireAsync as o}from"@moodle/lms/core/amd";'
-                . 'const s=()=>o("theme_dimensions/categorystar");',
+                . 'const s=()=>o("theme_dimensions/fixtureamd");',
             'js/esm/build/amd.dev.js' => "import { requireAsync } from \"@moodle/lms/core/amd\";\n",
         ];
-        $this->assertSame(['entry', self::ESM . 'local/Island', self::BRIDGE, 'categorystar'], $this->graph('entry'));
-        $this->assertSame(['mounter', self::ESM . 'local/Island', self::BRIDGE, 'categorystar'], $this->graph('mounter'));
+        $this->assertSame(['entry', self::ESM . 'local/Island', self::BRIDGE, 'fixtureamd'], $this->graph('entry'));
+        $this->assertSame(['mounter', self::ESM . 'local/Island', self::BRIDGE, 'fixtureamd'], $this->graph('mounter'));
         $this->assertSame([self::BRIDGE], $this->edges(self::ESM . 'local/Island'), 'A template\'s name is no edge.');
     }
 
@@ -531,7 +531,7 @@ final class categorypublic_source_test extends \basic_testcase {
         foreach ($graph as $module) {
             $this->assertSame([], $this->logged_in_names($module), "{$module} names the logged-in shell.");
         }
-        $this->assertContains('categorystar', $this->logged_in_names('listingaccount'), 'The control: a name is found.');
+        $this->assertContains('listing/account', $this->logged_in_names('listingaccount'), 'The control: a name is found.');
         $this->fixture = [
             'amd/src/entry.js' => "/** Answered by listingaccount. */\nexport const init = () => null;\n",
             'amd/build/entry.min.js' => 'define([],(function(){}));',
@@ -550,9 +550,9 @@ final class categorypublic_source_test extends \basic_testcase {
      * reaches AMD through it, a visitor's component included, so it may reach nothing of a session
      * itself, whether or not a visitor's module imports it yet.
      *
-     * Changes that must make it fail: importing categorystar anywhere in the graph (the shared
-     * listing's marker import swapped for it); naming a logged-in service in any module of it; the
-     * bridge, in its source or either build, naming categorystar or core_user/repository.
+     * Changes that must make it fail: importing the star or the account's entry anywhere in the graph (gates
+     * js_public_graph_no_star, js_public_graph_panel_no_star); naming a logged-in service in any module of it; the
+     * bridge, in its source or either build, naming core_user/repository.
      */
     public function test_its_whole_import_graph_reaches_nothing_of_a_session(): void {
         $bridge = $this->graph(self::BRIDGE);

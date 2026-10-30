@@ -16,45 +16,45 @@
 /**
  * The favourite star of the category showcase's course cards, wherever a card is drawn.
  *
- * A card's star lives on the listing's grid, inside a panel between the posters and on the root's
- * panels, and two modules draw those places: the listing's client on a category page and the
- * panel's client on every page of the logged-in shell, the root included. Both call init(), which
- * is idempotent, so the star works wherever a card is and is armed exactly once.
+ * A card's star lives on the listing's grid, inside a panel between the posters and on the root's panels; the
+ * account's shell arms it on every page of the logged-in showcase, the root's directory included ({@see ./account
+ * start}). One delegated listener on the document, never one per card, so a card painted into a panel or appended
+ * by "load more" behaves like a card the server drew; arm() is idempotent.
  *
- * One delegated listener on the document, never one per card: a card painted into a panel or
- * appended by "load more" long after init() ran behaves like a card the server drew.
+ * The body class it writes is its own mark and shows the star; one module's mark never stands for another's
+ * presence. The visitor's page never loads it (categorypublic_source_test).
  *
- * The body class it writes is its own mark and shows the star; one module's mark never stands for
- * another module's presence.
- *
- * @module     theme_dimensions/categorystar
+ * @module     theme_dimensions/listing/star
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Ajax from 'core/ajax';
-import Notification from 'core/notification';
+import {fetchOne} from '@moodle/lms/core/ajax';
+import {load} from '../amd';
 
-/** @type {Object} Every hook this module reads, written by the card template. */
+/** Every hook this module reads, written by the card template. */
 const SELECTORS = {
     star: '[data-action="dim-star"]',
     starlabel: '[data-region="dim-star-label"]',
 };
 
-/** @type {String} The body class that shows the star: this module's own mark. */
+/** The body class that shows the star: this module's own mark. */
 const BODY_CLASS = 'dim-star-js';
 
-/** @type {Boolean} Whether the one listener is already installed. */
+/** The theme's guarded wishlist service: never core's, which checks nothing a showcase must. */
+const TOGGLE_METHOD = 'theme_dimensions_toggle_wishlist';
+
+/** Whether the one listener is already installed. */
 let armed = false;
 
 /**
  * Paint one star's three faces: the pressed state, the glyph and the label of what it would do next.
  *
  * @param {HTMLElement} button The star button.
- * @param {Boolean} on Whether the course is now a favourite.
- * @return {void}
+ * @param {boolean} on Whether the course is now a favourite.
+ * @returns {void}
  */
-const paintStar = (button, on) => {
+const paintStar = (button: HTMLElement, on: boolean): void => {
     button.setAttribute('aria-pressed', on ? 'true' : 'false');
     const icon = button.querySelector('i');
     if (icon) {
@@ -71,16 +71,16 @@ const paintStar = (button, on) => {
 /**
  * Flip a star optimistically, then tell the server - and put it back if the server refused.
  *
- * The favourites toggle's count is not refreshed here: it is one number the reader has just
- * changed themselves, and it comes right with the next listing request.
+ * The favourites toggle's count is not refreshed here: it is one number the reader has just changed themselves,
+ * and it comes right with the next listing request.
  *
  * @param {HTMLElement} button The star button.
- * @return {Promise} Resolving when the round trip has finished.
+ * @returns {Promise} Resolving when the round trip has finished.
  */
-const toggleStar = async(button) => {
+const toggleStar = async(button: HTMLElement): Promise<void> => {
     if (button.dataset.busy === '1') {
-        // Two clicks in flight race in the server, and the last to arrive decides the stored
-        // state, which need not be the last the reader asked for.
+        // Two clicks in flight race in the server, and the last to arrive decides the stored state, which need not
+        // be the last the reader asked for.
         return;
     }
     button.dataset.busy = '1';
@@ -88,13 +88,14 @@ const toggleStar = async(button) => {
     const wanted = button.getAttribute('aria-pressed') !== 'true';
     paintStar(button, wanted);
     try {
-        const response = await Ajax.call([{
-            methodname: 'theme_dimensions_toggle_wishlist',
+        const response = await fetchOne<{favourite: boolean}>({
+            methodname: TOGGLE_METHOD,
             args: {courseid: courseid, state: wanted},
-        }])[0];
+        });
         paintStar(button, Boolean(response.favourite));
     } catch (error) {
         paintStar(button, !wanted);
+        const Notification = await load('core/notification');
         Notification.exception(error);
     } finally {
         button.dataset.busy = '0';
@@ -104,9 +105,9 @@ const toggleStar = async(button) => {
 /**
  * Arm the star: its mark on the body and one delegated listener. Safe to call more than once.
  *
- * @return {void}
+ * @returns {void}
  */
-export const init = () => {
+export const arm = (): void => {
     document.body.classList.add(BODY_CLASS);
     if (armed) {
         return;
@@ -117,7 +118,7 @@ export const init = () => {
         if (!(target instanceof Element)) {
             return;
         }
-        const star = target.closest(SELECTORS.star);
+        const star = target.closest<HTMLElement>(SELECTORS.star);
         if (!star) {
             return;
         }

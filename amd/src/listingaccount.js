@@ -17,15 +17,14 @@
  * An account's live listing on a category page: the entry course_renderer.php arms for a real account.
  *
  * `js_call_amd` can only name an AMD module, so this one hands the page to the TypeScript shell
- * (js/esm/src/listing/account.ts) through core's ES module loader plugin. It also arms the star of every card
- * on the page, the panel's included: categorystar stays AMD until R5, outside the ESM tree and its bridge.
+ * (js/esm/src/listing/account.ts) through core's ES module loader plugin, which also arms the cards' star
+ * (js/esm/src/listing/star.ts).
  *
  * @module     theme_dimensions/listingaccount
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import * as CategoryStar from 'theme_dimensions/categorystar';
 import {start} from 'core/esm!@moodle/lms/theme_dimensions/listing/account';
 
 /**
@@ -33,8 +32,4 @@ import {start} from 'core/esm!@moodle/lms/theme_dimensions/listing/account';
  *
  * @return {void}
  */
-export const init = () => {
-    // One delegated listener, armed once: categorystar's init() is idempotent.
-    CategoryStar.init();
-    start();
-};
+export const init = () => start();
