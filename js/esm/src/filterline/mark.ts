@@ -14,16 +14,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * A term marked in a text, in the text's own spelling: the rule of amd/src/categorymark.js and of the
- * suggestions of amd/src/categoryline.js, as runs a component draws rather than nodes it writes.
+ * A term marked in a text, in the text's own spelling, as runs a component draws rather than nodes it writes: the
+ * rule of the line's suggestions and of the card titles ({@see ../areas/mark}, which marks the titles with it).
  *
  * The match ignores case and accents, as the server's search does: each character is folded on its own
  * and every folded character remembers the character it came from, so a match found in the folded text is
  * cut from the original one - "Incêndio" is marked whole for "incendio", accent and capital included.
  *
- * The card titles stay marked by categorymark, in AMD, on both shells: the cards are the server's markup,
- * which no component draws until the listing's store (stage R4 of docs/vitrine-react/PLAN.md). The filter
- * line marks its suggestions with this module.
+ * The card titles are the server's markup, which no component draws: the listing's store marks them through
+ * areas/mark.ts on both shells. The filter line marks its suggestions with this module.
  *
  * @module     theme_dimensions/filterline/mark
  * @copyright  2026 Anderson Blaine

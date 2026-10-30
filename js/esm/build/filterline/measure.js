@@ -5,8 +5,8 @@ import{CLASSES as a,TOLERANCE as f,TRIES as g,paint as d}from"./steps";/**
  * ONCE per content - the words, the counts, the slots - with the line under the measuring class (one
  * row that never wraps, no transition, only the search shrinking, down to its step's floor) and every
  * cell of the scope drawn, a cell the counts hide shown for the measure and hidden again before anything
- * is painted: so a step follows the width and the language and never the numbers of the moment, as
- * amd/src/categoryline.js's fit() measures. A width change then needs no measure at all
+ * is painted: so a step follows the width and the language and never the numbers of the moment, as the
+ * fleet contract measures (moodle-dev/docs/filter-line/CONTRACT.md). A width change then needs no measure at all
  * ({@see ./steps choose()}).
  *
  * @module     theme_dimensions/filterline/measure

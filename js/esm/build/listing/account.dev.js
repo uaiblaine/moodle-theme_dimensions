@@ -391,7 +391,7 @@ const SHELL = {
   discard,
   painted,
   answered,
-  // A calendar that could not mount is core's exception dialogue, as categoryvitrine had it.
+  // A calendar that could not mount is core's exception dialogue, as the AMD client it replaced had it.
   unmounted: exception,
   areas: {
     props: {},

@@ -5,7 +5,7 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * The one calendar of the showcase, on both shells: a start box and an end box over one popover.
  *
  * Stage R1 of docs/vitrine-react/PLAN.md drew it for the logged-in shell, stage R4a for the visitor's too.
- * It keeps amd/src/daterange.js's control: the same markup (the template category_daterange's, hook for
+ * It keeps the AMD calendar's control (removed in R4c): the same markup (the template category_daterange's, hook for
  * hook, which scss/category.scss and the Behat steps read), the same rules (./model, function for
  * function) and no timezone arithmetic (./calendar).
  *

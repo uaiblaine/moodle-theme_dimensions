@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * Pins the invariants of an account's listing client by reading its source: js/esm/src/listing/account.ts, the shell
  * over the shared store, and amd/src/listingaccount.js, its entry.
  *
- * Stage R4b3 of docs/vitrine-react/R4b.md replaced categoryvitrine and categorypanel with this shell: what only an
+ * Stage R4b3 of docs/vitrine-react/R4b.md replaced the account's two AMD clients with this shell: what only an
  * account has (the remembered state, the view preference, the progress, the peek, the panel's request) is the shell's,
  * and what both shells do (the tickets, the appended page, the tree, the chips, clear) is the store's, read here for
  * the gates that were written over the account's client. Their behaviour is Jest's (js/esm/tests/listing); these are
@@ -122,9 +122,6 @@ final class listing_account_source_test extends \basic_testcase {
         );
         preg_match_all("~^import [^\n]* from '([^']+)';$~m", $entry, $imports);
         $this->assertCount(2, $imports[1], 'The star and the shell, nothing else.');
-        foreach (['categoryareapanel', 'categoryposters', 'categoryvitrine', 'categorypanel'] as $never) {
-            $this->assertStringNotContainsString("'theme_dimensions/{$never}'", $entry, "The entry loads {$never}.");
-        }
         $map = json_decode($this->read('amd/build/listingaccount.min.js.map'), true);
         $this->assertSame($entry, $map['sourcesContent'][0] ?? null, 'amd/build is not this source: rebuild it.');
         $build = $this->read('amd/build/listingaccount.min.js');

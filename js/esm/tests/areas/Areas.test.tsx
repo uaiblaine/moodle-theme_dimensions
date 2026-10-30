@@ -36,7 +36,7 @@ import type {Page} from './page';
 /** What the page's client may answer besides the rows: the visitor's names its question and takes a failure over. */
 type Client = {question?: (id: number, psort: string) => string, unanswered?: (id: number, psort: string) => boolean};
 
-/** The visitor's options, as amd/src/categorypublic.js mounts the component. */
+/** The visitor's options, as js/esm/src/listing/visitor.ts mounts the component. */
 const VISITOR = {links: true, quiet: 120, autoopen: false};
 
 /** One question the component asked, held until a test answers it. */
@@ -179,7 +179,7 @@ const key = async(key: string): Promise<void> => {
 };
 
 /**
- * Tell the component a criteria answer, as categoryvitrine does.
+ * Tell the component a criteria answer, as the listing's store does.
  *
  * @param {object} detail The accordion and the word on the areas.
  * @returns {Promise}

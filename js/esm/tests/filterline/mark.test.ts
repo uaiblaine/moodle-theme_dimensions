@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for a term marked in a text: categorymark's rule, as runs.
+ * Tests for a term marked in a text, as runs: the matching the line's suggestions and the card titles share.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

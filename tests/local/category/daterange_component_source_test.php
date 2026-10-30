@@ -121,8 +121,8 @@ final class daterange_component_source_test extends \basic_testcase {
     /**
      * The component is the calendar of every shell, appended wherever the toolbar has the period's region.
      *
-     * No shell mounts the AMD calendar since R4a: amd/src/daterange.js stays for its period(), the reading of
-     * an address both clients share.
+     * No shell has mounted the AMD calendar since R4a, and it is gone since R4c: an address's period is read by
+     * js/esm/src/daterange/calendar.ts's period(), on both shells.
      *
      * Changes that must make it fail: the AMD calendar mounted again beside the component; the specifier
      * handed in by a caller instead of named in the listing.
@@ -253,24 +253,18 @@ final class daterange_component_source_test extends \basic_testcase {
                 'The specifier resolves to js/esm/build/daterange/DateRange.js, which must be built.'
             );
         }
-        $this->assertStringContainsString(
-            'const mountCalendar = () => Listing.mountCalendar(root, state, setRange);',
-            $this->read('amd/src/categoryvitrine.js')
-        );
         $store = $this->uncommented($this->read('js/esm/src/listing/store.ts'));
         $this->assertSame(1, substr_count($store, 'Listing.mountCalendar('));
         $this->assertStringContainsString('Listing.mountCalendar(root, state, setRange).catch(', $store);
-        foreach (['js/esm/src/listing/store.ts', 'amd/src/categoryvitrine.js'] as $module) {
-            $this->assertStringNotContainsString(
-                '@moodle/lms/theme_dimensions/daterange',
-                $this->read($module),
-                $module . ' names the component: the listing names it, once.'
-            );
-        }
+        $this->assertStringNotContainsString(
+            '@moodle/lms/theme_dimensions/daterange',
+            $this->read('js/esm/src/listing/store.ts'),
+            'The store names the component: the listing names it, once.'
+        );
     }
 
     /**
-     * The component computes no timezone and asks no clock, exactly as the AMD calendar.
+     * The component computes no timezone and asks no clock.
      *
      * Every boundary of the period is the site's, resolved by PHP; the browser's clock is the reader's.
      * So no bare `new Date()`, no local-time accessor, every Date built through Date.UTC, and the

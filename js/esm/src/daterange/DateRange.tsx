@@ -17,7 +17,7 @@
  * The one calendar of the showcase, on both shells: a start box and an end box over one popover.
  *
  * Stage R1 of docs/vitrine-react/PLAN.md drew it for the logged-in shell, stage R4a for the visitor's too.
- * It keeps amd/src/daterange.js's control: the same markup (the template category_daterange's, hook for
+ * It keeps the AMD calendar's control (removed in R4c): the same markup (the template category_daterange's, hook for
  * hook, which scss/category.scss and the Behat steps read), the same rules (./model, function for
  * function) and no timezone arithmetic (./calendar).
  *
@@ -83,7 +83,7 @@ type Strings = Record<typeof KEYS[number], string>;
 
 /**
  * Where the popover shows two months rather than one: the stylesheet widens it from the same
- * breakpoint (category_scss_test holds the two numbers together, against daterange.js's WIDE), and a
+ * breakpoint (category_scss_test holds the two numbers together), and a
  * month the stylesheet hid while the focus walked into it would take the focus out of the control.
  */
 const WIDE = '(min-width: 768px)';

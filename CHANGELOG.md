@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The old AMD listing is removed** (2026100544; R4c of `docs/vitrine-react/PLAN.md`). The ten modules the
+  listing store and the React components replaced, imported by nothing since R4b3, are deleted with their builds:
+  `categorylisting`, `categorypublic`, `categoryvitrine`, `categorypanel`, `categoryline`, `categorypreview`,
+  `categoryareapanel`, `categoryposters`, `daterange` and `categorymark`. No behaviour changes: every class and lang
+  string they wrote is still read by the ES port. Their source tests went with them or now read the TypeScript
+  (`amd_source_test` reads the store; `categorypanel_source_test` is `categorystar_source_test`, the star's alone);
+  comments that named them name their successors. 47 mutation gates retired (the 46 on those files and
+  `js_areas_no_amd_panel`), 5 retargeted to modules that exist.
+
 - **An account's live listing runs on the listing store** (2026100543; R4b3 of `docs/vitrine-react/R4b.md`).
   `js/esm/src/listing/account.ts` is the logged-in shell the store is handed: the state remembered per category and the
   remembered organisation, the view preference for a real account, the progress of the enrolled courses on screen, the

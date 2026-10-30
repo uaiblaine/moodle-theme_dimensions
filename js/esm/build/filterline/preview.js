@@ -1,8 +1,8 @@
 /**
  * The filter line's preview: pointing at a filter lights the cards on screen it would keep.
  *
- * amd/src/categorypreview.js, function for function, for the line's component, which both shells draw since
- * R4a (the AMD module is armed by no shell and leaves the tree with R5). It acts on the server's
+ * The AMD preview's rules, function for function, for the line's component, which both shells draw since R4a
+ * (the AMD module left the tree with R4c). It acts on the server's
  * cards and on the toolbar form, never on anything a component draws, and writes three classes: the
  * listing previewing, a kept card, a card that recedes. The stylesheet does both by remapping the card's
  * own colour tokens, never by opacity.

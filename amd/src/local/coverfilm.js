@@ -63,8 +63,8 @@ const SELECTORS = {
 
 /**
  * @type {Number} Milliseconds a pointer must rest on a card before its film starts. Equal to
- * categoryvitrine's PEEK_DELAY on purpose: both read the same intent off the same gesture, so
- * keep the two in step.
+ * the account's shell's PEEK_DELAY (js/esm/src/listing/account.ts) on purpose: both read the same
+ * intent off the same gesture, so keep the two in step (covervideo_source_test holds both).
  */
 const INTENT_DELAY = 180;
 
@@ -89,7 +89,7 @@ const PLAYING_CLASS = 'dim-card__media--playing';
 /**
  * @type {String} The body class that reveals the control cluster, written here and nowhere else.
  *
- * Deliberately not the showcase's dim-js, which is categoryvitrine's mark and also hides the
+ * Deliberately not the showcase's dim-js, which is the account's listing mark and also hides the
  * toolbar's no-JavaScript "Filter" submit: this module is also armed where that one is not (the
  * anonymous shell and the guest's page), and there that submit is the only filter control a
  * reader has.

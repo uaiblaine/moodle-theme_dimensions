@@ -28,25 +28,16 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the invariants of amd/src/categoryvitrine.js and of the shared listing it paints with by reading their source.
+ * Pins the invariants of the listing store and of the shared listing it paints with by reading their source.
  *
- * Since stage R4b3 no page arms categoryvitrine: an account's listing is js/esm/src/listing/account.ts over the
- * store, and the methods about what that module did moved with its code to listing_account_source_test. What is left
- * here reads the shared painters and the module's build until the removal pull request (R4c) takes the module.
+ * Both shells run js/esm/src/listing/store.ts over the painters and the address helpers of js/esm/src/listing
+ * (docs/vitrine-react/R4b.md); the shells' own rules are listing_account_source_test's and
+ * categorypublic_source_test's, and the behaviour Jest's (js/esm/tests/listing). The test keeps the name it was
+ * written under, for the AMD client the store replaced.
  *
- * moodle-plugin-ci has no JavaScript unit-test runner, so the properties of this module whose loss
- * costs a server rather than a screenshot are pinned the way category_scss_test pins class names.
- * They are assertions about spelling, each scoped to the one function it is about through body().
- *
- * The painters and the address helpers live in js/esm/src/listing (stage R4b1, docs/vitrine-react/R4b.md),
- * which the visitor's module paints with too; body() finds a function in the module or in those sources,
- * and the module's bindings to the
- * shared functions are one line each, which body() never matches, so a function's body is always the
- * code that runs.
- *
- * The build-currency test compares the committed source map's sourcesContent with amd/src byte for
- * byte. Moodle serves the build, so without it every source assertion here could be green over a
- * module no browser runs.
+ * moodle-plugin-ci has no JavaScript unit-test runner, so the properties whose loss costs a server rather than a
+ * screenshot are pinned the way category_scss_test pins class names: assertions about spelling, each scoped to the
+ * one function it is about through body(). The builds are esm_source_test's.
  *
  * @package    theme_dimensions
  * @category   test
@@ -68,42 +59,48 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * The module's source.
+     * One file of the theme.
+     *
+     * @param string $path The path under the theme root.
+     * @return string
+     */
+    private function read(string $path): string {
+        $file = $this->plugin_root() . '/' . $path;
+        $this->assertFileExists($file);
+        return (string) file_get_contents($file);
+    }
+
+    /**
+     * The store's source.
      *
      * @return string
      */
     private function source(): string {
-        $path = $this->plugin_root() . '/amd/src/categoryvitrine.js';
-        $this->assertFileExists($path);
-        return (string) file_get_contents($path);
+        return $this->read('js/esm/src/listing/store.ts');
     }
 
     /**
-     * The shared listing's sources: the painters and the address helpers this module is bound to.
+     * The shared listing's sources: the painters and the address helpers the store paints with.
      *
      * @return string
      */
     private function shared(): string {
         $text = '';
         foreach (self::LISTING as $file) {
-            $path = $this->plugin_root() . '/js/esm/src/listing/' . $file . '.ts';
-            $this->assertFileExists($path);
-            $text .= file_get_contents($path) . "\n";
+            $text .= $this->read('js/esm/src/listing/' . $file . '.ts') . "\n";
         }
         return $text;
     }
 
     /**
-     * The shared listing's production builds, as the browser receives them.
+     * The store's and the shared listing's production builds, as the browser receives them.
      *
      * @return string
      */
     private function shared_build(): string {
         $text = '';
-        foreach (self::LISTING as $file) {
-            $path = $this->plugin_root() . '/js/esm/build/listing/' . $file . '.js';
-            $this->assertFileExists($path, 'The build is missing: Moodle serves js/esm/build, never js/esm/src.');
-            $text .= file_get_contents($path) . "\n";
+        foreach (array_merge(self::LISTING, ['store']) as $file) {
+            $text .= $this->read('js/esm/build/listing/' . $file . '.js') . "\n";
         }
         return $text;
     }
@@ -118,40 +115,11 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * One module as the browser actually receives it.
+     * The body of one top-level arrow function, in the store or else in the shared listing.
      *
-     * @param string $module The module's name.
-     * @return string
-     */
-    private function build(string $module = 'categoryvitrine'): string {
-        $path = $this->plugin_root() . '/amd/build/' . $module . '.min.js';
-        $this->assertFileExists($path, 'The build is missing: Moodle serves amd/build, never amd/src.');
-        return (string) file_get_contents($path);
-    }
-
-    /**
-     * The source one module's committed build was actually made from.
-     *
-     * @param string $module The module's name.
-     * @return string
-     */
-    private function built_from(string $module = 'categoryvitrine'): string {
-        $path = $this->plugin_root() . '/amd/build/' . $module . '.min.js.map';
-        $this->assertFileExists($path, 'The source map is missing; Moodle serves the build beside it.');
-        $map = json_decode((string) file_get_contents($path), true);
-        $this->assertIsArray($map, 'The source map is not readable JSON.');
-        $this->assertArrayHasKey('sourcesContent', $map);
-        return (string) ($map['sourcesContent'][0] ?? '');
-    }
-
-    /**
-     * The body of one top-level arrow function, in the module or else in the shared listing.
-     *
-     * Every function of the two files is a top-level `const <name> = (…) => {` (or `export const`)
-     * closed by a `};` in the first column, which is what makes the extraction unambiguous. A
-     * binding of the module to a shared function is one line with no brace at its end, so it is
-     * never matched: the body found is the code that runs. Scoping is the point: an assertion made
-     * over the whole file passes when the line it looks for has been moved somewhere it never runs.
+     * Every function of these files is a top-level `const <name> = (…) => {` (or `export const`) closed by a `};` in
+     * the first column, which is what makes the extraction unambiguous. Scoping is the point: an assertion made over
+     * the whole file passes when the line it looks for has been moved somewhere it never runs.
      *
      * @param string $name The function's name.
      * @return string The body, without the signature or the closing brace.
@@ -163,9 +131,18 @@ final class amd_source_test extends \basic_testcase {
         if ($found !== 1) {
             $found = preg_match($pattern, $this->shared(), $matches);
         }
-        $this->assertSame(1, $found, "No top-level function named {$name} in the module or the shared listing.");
+        $this->assertSame(1, $found, "No top-level function named {$name} in the store or the shared listing.");
         $this->assertNotSame('', trim($matches[1]), "The body of {$name} is empty.");
         return $matches[1];
+    }
+
+    /**
+     * The body of the store's init().
+     *
+     * @return string
+     */
+    private function init_body(): string {
+        return $this->body('init');
     }
 
     /**
@@ -186,29 +163,17 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * The body of the module's one exported function.
-     *
-     * @return string
-     */
-    private function init_body(): string {
-        $source = $this->source();
-        $found = preg_match('~\nexport const init = [^\n]*\{\n(.*?)\n\};~s', $source, $matches);
-        $this->assertSame(1, $found, 'The module exports no init().');
-        return $matches[1];
-    }
-
-    /**
      * The extractor really extracts one function and not the file around it.
      *
      * Without this, every scoped assertion below would also pass if body() returned the whole
      * module.
      */
     public function test_the_extractor_returns_one_function_and_not_the_file(): void {
-        $settle = $this->body('settle');
+        $tree = $this->body('onTree');
         $pager = $this->body('paintPager');
-        $this->assertStringContainsString('unobserve', $settle);
-        $this->assertStringNotContainsString('unobserve', $pager, 'The extractor is returning more than one function.');
-        $this->assertStringNotContainsString('PAGE_WINDOW', $settle, 'The extractor is returning more than one function.');
+        $this->assertStringContainsString('state.cat = cat;', $tree);
+        $this->assertStringNotContainsString('state.cat = cat;', $pager, 'The extractor is returning more than one function.');
+        $this->assertStringNotContainsString('PAGE_WINDOW', $tree, 'The extractor is returning more than one function.');
         $this->assertStringContainsString('PAGE_WINDOW', $pager);
     }
 
@@ -247,16 +212,16 @@ final class amd_source_test extends \basic_testcase {
         // Delegated on the form: the line's component (stage R2) replaces the server's field with its own.
         $this->assertMatchesRegularExpression(
             "~form\\.addEventListener\\('input', \\(event\\) => \\{\\s*"
-                . 'const search = closestOf\\(event, SELECTORS\\.search\\);\\s*'
-                . 'if \\(search\\) \\{\\s*onSearchInput\\(search\\);~',
+                . 'const search = Listing\\.closestOf\\(event, SELECTORS\\.search\\);\\s*'
+                . 'if \\(search\\) \\{\\s*onSearchInput\\(search as HTMLInputElement\\);~',
             $this->body('listen')
         );
         $this->assertMatchesRegularExpression(
-            '~^    cancelSearch\(\);\n    paintEraser\(\);\n'
-                . '    const token = new Pending\(\'theme_dimensions/categoryvitrine:search\'\);\n'
-                . '    searchpending = token;\n    searchtimer = window\.setTimeout\(async\(\) => \{\n'
+            '~^    cancelSearch\(\);\n    Listing\.paintEraser\(root\);\n'
+                . '    const pending = new Pending\(\'theme_dimensions/listing:search\'\);\n'
+                . '    searchpending = pending;\n    searchtimer = window\.setTimeout\(async\(\) => \{\n'
                 . '        searchpending = null;\n        try \{\n            await onSearch\(search\.value\);\n'
-                . '        \} finally \{\n            token\.resolve\(\);\n        \}\n    \}, SEARCH_DEBOUNCE\);$~',
+                . '        \} finally \{\n            pending\.resolve\(\);\n        \}\n    \}, SEARCH_DEBOUNCE\);$~',
             $this->body('onSearchInput'),
             'One token from the keystroke until the term it leads to has been dealt with.'
         );
@@ -267,8 +232,7 @@ final class amd_source_test extends \basic_testcase {
         );
         $this->assertMatchesRegularExpression('~^    cancelSearch\(\);$~m', $this->body('onClear'));
         $this->assertMatchesRegularExpression(
-            '~notice\.hidden = true;\s*\}\s*state\.query = term;\s*state\.page = 0;\s*writeUrl\(true\);\s*'
-                . 'await requestRows\(0, false\);~',
+            "~notice\\.hidden = true;\\s*\\}\\s*state\\.query = term;\\s*await apply\\('term'\\);~",
             $this->body('onSearch'),
             'The token outlives the request only if the request is awaited.'
         );
@@ -292,9 +256,9 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString("const Templates = await load('core/templates');", $shared);
         $this->assertMatchesRegularExpression('~Templates\.renderForPromise\(CARD_TEMPLATE~', $shared);
         $this->assertStringContainsString(
-            'const renderCards = (cards) => Listing.renderCards(cards);',
-            $this->source(),
-            'The module renders its rows with the shared listing\'s renderer.'
+            'const items = await Listing.renderCards(response.cards || []);',
+            $this->body('applyResponse'),
+            'The store renders its rows with the shared listing\'s renderer.'
         );
     }
 
@@ -374,8 +338,8 @@ final class amd_source_test extends \basic_testcase {
      * core_course_set_favourite_courses instantiates a course context and checks nothing else,
      * so it would star a course this page is not allowed to admit exists. The positive half is the
      * control: a module that called no web service at all would pass the negative one on its own.
-     * The star is its own module, categorystar, armed by this module and by categorypanel;
-     * categorypanel_source_test holds the rest.
+     * The star is its own module, categorystar, armed by the account's entry (listingaccount);
+     * categorystar_source_test holds the rest.
      *
      * Changes that must make it fail: calling core's service instead of the theme's from categorystar.
      */
@@ -385,7 +349,8 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringNotContainsString('core_course_set_favourite_courses', $source);
         $this->assertStringNotContainsString('core_course_set_favourite_courses', $star);
         $this->assertStringContainsString('theme_dimensions_toggle_wishlist', $star);
-        $this->assertStringContainsString('CategoryStar.init();', $this->init_body(), 'And this module arms it.');
+        $entry = $this->read('amd/src/listingaccount.js');
+        $this->assertStringContainsString('CategoryStar.init();', $entry, 'And the account\'s entry arms it.');
     }
 
     /**
@@ -412,7 +377,7 @@ final class amd_source_test extends \basic_testcase {
             '~\[PARAM\.query, PARAM\.chip, PARAM\.fav, PARAM\.page, PARAM\.view, PARAM\.sort, PARAM\.from, '
                 . 'PARAM\.to, PARAM\.cat\]~',
             $build,
-            'Every parameter this module owns is cleared before it is written, the tree\'s category included.'
+            'Every parameter the listing owns is cleared before it is written, the tree\'s category included.'
         );
         $this->assertMatchesRegularExpression(
             "~if \(state\.sort !== '' && state\.sort !== \(state\.defaultsort \|\| ''\)\) \{\s*"
@@ -460,22 +425,26 @@ final class amd_source_test extends \basic_testcase {
             $this->shared()
         );
         $init = $this->init_body();
-        $this->assertStringContainsString('const period = periodOf(params);', $init, 'The first load reads it the same way.');
+        $this->assertStringContainsString(
+            'const range = Listing.periodOf(params);',
+            $init,
+            'The first load reads it the same way.'
+        );
         $this->assertMatchesRegularExpression(
             "~const defaultsort = typeof payload\.defaultsort === 'string' \? payload\.defaultsort : '';\s*"
-                . '/\*[^*]*\*/\s*const isremembered = payload\.remembered === true;\s*'
-                . "const sort = isremembered && typeof payload\.sort === 'string' \? payload\.sort : "
+                . '/\*[^*]*\*/\s*const remembered = payload\.remembered === true;\s*'
+                . "const sort = remembered && typeof payload\.sort === 'string' \? payload\.sort : "
                 . 'Listing\.sortOf\(params, defaultsort\);~',
             $init,
             'The first load reads the organisation against the category\'s default from the payload, '
                 . 'or the payload\'s own when the page was drawn from the remembered state.'
         );
         $this->assertMatchesRegularExpression('~defaultsort: defaultsort,\s*sort: sort,~', $init);
-        $this->assertMatchesRegularExpression('~datefrom: period\.from,\s*dateto: period\.to,~', $init);
+        $this->assertMatchesRegularExpression('~datefrom: range\.from,\s*dateto: range\.to,~', $init);
         $range = $this->body('setRange');
         $this->assertMatchesRegularExpression(
-            '~const period = DateRange\.period\(datefrom, dateto\);\s*'
-                . 'state\.datefrom = period\.from;\s*state\.dateto = period\.to;~',
+            '~const range = period\(datefrom, dateto\);\s*'
+                . 'state\.datefrom = range\.from;\s*state\.dateto = range\.to;~',
             $range,
             'And whatever hands a period over - the calendar or a quick option - is read the same way too.'
         );
@@ -510,16 +479,11 @@ final class amd_source_test extends \basic_testcase {
         foreach (['countnumber', 'counttext', 'seeall', 'countnote'] as $region) {
             $this->assertStringContainsString("{$region}: '[data-region=\"dim-vitrine-{$region}\"]',", $this->shared());
         }
-        foreach (['countnote', 'countnotetext'] as $region) {
-            $this->assertStringContainsString("{$region}: '[data-region=\"dim-vitrine-{$region}\"]',", $this->source());
-        }
-        $note = $this->body('paintAutoOpened');
-        $this->assertStringContainsString('text.textContent = autoopenlabel;', $note);
-        $this->assertStringContainsString('note.hidden = false;', $note);
-        $this->assertStringContainsString('document.addEventListener(EVENTS.autoopened, paintAutoOpened);', $this->body('listen'));
+        // The note's own sentence is the account's shell's (listing_account_source_test).
         $this->assertMatchesRegularExpression(
-            "~pending: 'dim-vitrine:pending',\s*criteria: 'dim-vitrine:criteria',\s*autoopened: 'dim-panel:autoopened',~",
-            $this->source()
+            "~pending: 'dim-vitrine:pending',\s*criteria: 'dim-vitrine:criteria',\s*failed: 'dim-vitrine:failed',\s*"
+                . "autoopened: 'dim-panel:autoopened',~",
+            $this->shared()
         );
     }
 
@@ -546,10 +510,9 @@ final class amd_source_test extends \basic_testcase {
     /**
      * The searched term is marked in the titles of every row this module draws, and of the server's.
      *
-     * categorymark is a pure helper (categorypanel_source_test holds its shape); this is where the
-     * listing calls it: on each list item a render just produced, the replace and the append alike,
-     * and once at load over the server's own grid - never over the panel, whose rail is the panel
-     * module's.
+     * markTitles() is js/esm/src/areas/mark.ts's pure helper; this is where the listing calls it: on each
+     * list item a render just produced, the replace and the append alike, and once at load over the server's
+     * own grid - never over the panel, whose rail is the posters' component's.
      */
     public function test_the_term_is_marked_in_the_rows_this_module_draws(): void {
         $apply = $this->body('paintGrid');
@@ -559,10 +522,7 @@ final class amd_source_test extends \basic_testcase {
             (int) strpos($apply, 'reveal(items);'),
             'The rows are marked as they are revealed, on both paths.'
         );
-        $this->assertStringContainsString(
-            'CategoryMark.mark(root.querySelector(SELECTORS.grid), state.query);',
-            $this->init_body()
-        );
+        $this->assertStringContainsString('markTitles(root.querySelector(SELECTORS.grid), state.query);', $this->init_body());
     }
 
     /**
@@ -608,20 +568,20 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('document.querySelector(SELECTORS.fold)', $fold);
         $this->assertStringContainsString('FOLD_PARAMS.indexOf(name) >= 0 || name.startsWith(PARAM.fieldprefix)', $fold);
         $this->assertStringContainsString('new URL(window.location.href).searchParams.forEach((value, name) => {', $fold);
-        $this->assertStringContainsString('syncFold();', $this->body('listen'), 'The back button moves it too.');
+        $this->assertStringContainsString('Listing.syncFold();', $this->body('onPopState'), 'The back button moves it too.');
         $this->assertMatchesRegularExpression(
             '~if \(!isGrouped\(state\.sort\)\) \{\s*params\.delete\(PARAM\.open\);\s*params\.delete\(PARAM\.psort\);~',
             $this->body('buildUrl')
         );
-        $this->assertStringContainsString('clear.href = withPanel(response.clearurl);', $this->body('applyResponse'));
+        $this->assertStringContainsString('clear.href = Listing.withPanel(response.clearurl);', $this->body('applyResponse'));
     }
 
     /**
-     * Nothing of the retired accordion is left in the module or in the build.
+     * Nothing of the retired accordion is left in the listing or in its builds.
      *
-     * The posters and the panel between their rows, which are categoryareapanel's (armed for this
-     * shell by categorypanel), replaced it; its requests, its cache, its "Expand all", its
-     * category-card rendering and the star (now categorystar's) left this module with it.
+     * The posters and the panel between their rows, the React component of js/esm/src/areas, replaced it; its
+     * requests, its cache, its "Expand all", its category-card rendering and the star (now categorystar's) left
+     * the listing with it.
      */
     public function test_no_code_of_the_accordion_is_left(): void {
         $source = $this->sources();
@@ -641,7 +601,7 @@ final class amd_source_test extends \basic_testcase {
         foreach ($residue as $gone) {
             $this->assertStringNotContainsString($gone, $source, $gone . ' is the retired accordion\'s or moved out.');
         }
-        $this->assertStringNotContainsString('dim-accordion', $this->build());
+        $this->assertStringNotContainsString('dim-accordion', $this->shared_build());
     }
 
     /**
@@ -664,7 +624,7 @@ final class amd_source_test extends \basic_testcase {
 
         // And it runs where the rest of the toolbar's live numbers are written, on a real page.
         $apply = $this->body('applyResponse');
-        $this->assertStringContainsString('paintFilterBadge(response);', $apply);
+        $this->assertStringContainsString('Listing.paintFilterBadge(root, response);', $apply);
     }
 
     /**
@@ -683,9 +643,9 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('today: fieldset.dataset.today,', $append);
         $this->assertStringContainsString('onpick(detail.from, detail.to);', $append);
         $this->assertStringContainsString(
-            'const mountCalendar = () => Listing.mountCalendar(root, state, setRange);',
-            $this->source(),
-            'And this module hands it setRange, which fetches the period picked.'
+            'Listing.mountCalendar(root, state, setRange).catch(shell.unmounted);',
+            $this->init_body(),
+            'And the store hands it setRange, which fetches the period picked.'
         );
         $this->assertMatchesRegularExpression(
             '~region\.addEventListener\(CALENDAR\.mounted, \(\) => \{\s*hideDateFields\(root\);~',
@@ -724,7 +684,7 @@ final class amd_source_test extends \basic_testcase {
         foreach ($residue as $gone) {
             $this->assertStringNotContainsString($gone, $source, $gone . ' is residue of the retired subcategory select.');
         }
-        $this->assertStringNotContainsString('dimenhanced', $this->build());
+        $this->assertStringNotContainsString('dimenhanced', $this->shared_build());
     }
 
     /**
@@ -749,7 +709,7 @@ final class amd_source_test extends \basic_testcase {
         $this->assertMatchesRegularExpression(
             '~PARAM\.to, PARAM\.cat\]\s*\.forEach\(\(key\) => params\.delete\(key\)\);~',
             $build,
-            'And it is cleared first, like every other parameter this module owns.'
+            'And it is cleared first, like every other parameter the listing owns.'
         );
         $this->assertStringContainsString(
             'return isGrouped(sort) || !Number.isInteger(cat) || cat <= 0 ? 0 : cat;',
@@ -757,13 +717,13 @@ final class amd_source_test extends \basic_testcase {
             'Reading it back follows the same rule, so the back button cannot restore a criterion the page drops.'
         );
         $this->assertStringContainsString('state.cat = catOf(params, state.sort);', $this->body('readUrl'));
-        $this->assertStringContainsString('cat: catOf(params, sort),', $this->init_body());
+        $this->assertStringContainsString('cat: Listing.catOf(params, sort),', $this->init_body());
     }
 
     /**
      * The tree is a disclosure a phone opens, and a width that hides its summary reopens it.
      *
-     * The box ships open, because that is the page a reader without this module gets at every
+     * The box ships open, because that is the page a reader without the client gets at every
      * width, and the stylesheet hides the summary from md up, so the list simply shows there.
      * Below md the module closes the box, or a category with many children pushes the first
      * course far down the screen.
@@ -787,40 +747,7 @@ final class amd_source_test extends \basic_testcase {
             $arm,
             'A reader who widens the page gets the tree back, where the summary cannot give it to them.'
         );
-        $this->assertStringContainsString('armTreebox();', $this->init_body());
-    }
-
-    /**
-     * The committed build was made from the source that is committed beside it - exactly.
-     *
-     * Moodle serves amd/build and never amd/src, whatever cachejs says, so a source edit that
-     * was never rebuilt is invisible in the browser and green in every other gate, every other
-     * assertion in this file included.
-     *
-     * The check is the source map's sourcesContent, which grunt writes from the very bytes it
-     * compiled, so it catches any unbuilt edit, not only one that changes a string literal.
-     *
-     * Changes that must make it fail: appending one comment line to amd/src/categoryvitrine.js
-     * without rebuilding.
-     */
-    public function test_the_committed_build_was_made_from_the_committed_source(): void {
-        $this->assertSame(
-            $this->source(),
-            $this->built_from(),
-            'amd/build is not this source: rebuild it with grunt amd for this plugin and '
-                . 'commit the rebuilt .min.js and .map with the change.'
-        );
-        // The shared listing's builds are esm_source_test's; this module's build loads them through core/esm!.
-        $this->assertStringContainsString('"core/esm!@moodle/lms/theme_dimensions/listing/listing"', $this->build());
-        $this->assertStringNotContainsString('"theme_dimensions/categorylisting"', $this->build());
-
-        // And the build names the theme's own services; the star's lives in categorystar, whose
-        // build categorypanel_source_test checks.
-        $build = $this->build();
-        $this->assertStringContainsString('theme_dimensions_get_category_rows', $build);
-        $this->assertStringContainsString('theme_dimensions_get_card_details', $build);
-        $this->assertStringContainsString('theme_dimensions/categorystar', $build);
-        $this->assertStringNotContainsString('core_course_set_favourite_courses', $build);
+        $this->assertStringContainsString('Listing.armTreebox(root);', $this->init_body());
     }
 
     /**
@@ -878,21 +805,24 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('more.hidden = others.length === 0;', $status);
 
         $apply = $this->body('applyResponse');
-        $this->assertStringContainsString('paintChips(response);', $apply);
+        $this->assertStringContainsString('Listing.paintChips(root, response);', $apply);
         $this->assertStringNotContainsString('response.hasfilters', $apply, 'The clear link\'s visibility is paintChips\'.');
         $listen = $this->body('listen');
         $this->assertMatchesRegularExpression(
-            '~const chip = closestOf\(event, SELECTORS\.chipremove\);\s*if \(chip && onChipRemove\(chip\)\) \{\s*'
+            '~const chip = Listing\.closestOf\(event, SELECTORS\.chipremove\);\s*if \(chip && onChipRemove\(chip\)\) \{\s*'
                 . '(?://[^\n]*\s*)?event\.preventDefault\(\);~',
             $listen,
             'A chip is a fetch with JavaScript, and its link otherwise.'
         );
         $this->assertMatchesRegularExpression(
-            '~if \(closestOf\(event, SELECTORS\.eraser\)\) \{\s*event\.preventDefault\(\);\s*onErase\(\)~',
+            '~if \(Listing\.closestOf\(event, SELECTORS\.eraser\)\) \{\s*event\.preventDefault\(\);\s*(?://[^\n]*\s*)?onErase\(\)~',
             $listen
         );
         $remove = $this->body('onChipRemove');
-        $this->assertMatchesRegularExpression('~remember\(false\);\s*writeUrl\(true\);\s*requestRows\(0, false\);~', $remove);
+        $this->assertMatchesRegularExpression(
+            "~shell\\.normalise\\(state\\);\\s*Listing\\.paintControls\\(root, state\\);\\s*apply\\('filter'\\);~",
+            $remove
+        );
         $erase = $this->body('onErase');
         $this->assertMatchesRegularExpression("~search\.value = '';\s*search\.focus\(\{preventScroll: true\}\);~", $erase);
         $this->assertStringContainsString("await onSearch('');", $erase);

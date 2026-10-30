@@ -2,7 +2,7 @@ import K from"@moodle/lms/core/pending";import{load as Ge}from"../amd";import{ma
  * The panel between the poster rows, on both shells: one area at a time, its place, its address, its
  * orders, its rail, its keyboard and its states, behind Areas.tsx.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md ported amd/src/categoryareapanel.js for the logged-in shell, with
+ * Stage R3 of docs/vitrine-react/PLAN.md ported the AMD panel for the logged-in shell (removed in R4c), with
  * every function named after the AMD function it stood for; stage R4a gave the component the visitor's
  * half as options ({@see Options}): posters that stay links, a question asked once per opening after a
  * quiet, a failure the page takes over, and no automatic opening. The state is read and written

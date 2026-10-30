@@ -10,8 +10,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * shift a calendar square by that offset. The browser's clock is never read: the day the site calls
  * today arrives from the server.
  *
- * The same rules as amd/src/daterange.js, whose period() both listing clients still read an address
- * through (docs/vitrine-react/PLAN.md, R4a): {@see period()} is criteria's reading of a period in both.
+ * {@see period()} is criteria's reading of a period, the one both shells read an address through (the listing's
+ * store and its shells, docs/vitrine-react/R4b.md).
  *
  * @module     theme_dimensions/daterange/calendar
  * @copyright  2026 Anderson Blaine

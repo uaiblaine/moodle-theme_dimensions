@@ -5,7 +5,7 @@ import{bringIntoView as d,firstOf as l,monthAt as m,monthOf as p,onScreen as g,p
  * the next press of a day sets. The presses write a DRAFT; "Done" or a press outside the control
  * applies it ({@see commit()}), and Escape or the keyboard walking out discards it ({@see close()}),
  * leaving the period that was in force. Each clearing control applies at once ({@see drop()}). The
- * same rules as amd/src/daterange.js, function for function; the component only renders this state
+ * same rules as the AMD calendar it replaced (removed in R4c), function for function; the component only renders this state
  * and tells the listing when {@see apply()} says the period in force changed.
  *
  * @module     theme_dimensions/daterange/model

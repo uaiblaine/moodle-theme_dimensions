@@ -160,11 +160,10 @@ final class category_scss_test extends \basic_testcase {
         $files = array_merge($files, glob($root . '/amd/src/category*.js'));
         // The shared listing's painters, in TypeScript since R4b1: they write pills, chips and the count's marker.
         $files = array_merge($files, glob($root . '/js/esm/src/listing/*.ts'));
-        /* The calendar module's name does not match the glob, and it writes every class of its
-           month grid, its day cells and the removable pill of the count row. A file the scanner
-           cannot see is one the Bootstrap rules do not apply to, which is why the membership test
-           below names it. */
-        $files[] = $root . '/amd/src/daterange.js';
+        /* The calendar's component does not match the globs, and it writes every class of its
+           month grid and its day cells. A file the scanner cannot see is one the Bootstrap rules do
+           not apply to, which is why the membership test below names it. */
+        $files[] = $root . '/js/esm/src/daterange/DateRange.tsx';
         /* Nor does the cover film's: its entry writes the body class that reveals the cluster, and
            the film the band's playing class and the Font Awesome glyph each toggle swaps to. */
         $files[] = $root . '/amd/src/covervideo.js';
@@ -201,14 +200,8 @@ final class category_scss_test extends \basic_testcase {
             'category_listing.php',
             'category_card.php',
             'category_daterange.mustache',
-            'categoryvitrine.js',
-            'categorylisting.js',
             'paint.ts',
             'account.ts',
-            'categoryposters.js',
-            'categorypublic.js',
-            'categorypanel.js',
-            'categoryareapanel.js',
             'categorystar.js',
             'categorycoursemodal.js',
             'category_card_modal.mustache',
@@ -218,7 +211,7 @@ final class category_scss_test extends \basic_testcase {
             'category_directory_card.mustache',
             'category_panel.php',
             'categoryhero.js',
-            'daterange.js',
+            'DateRange.tsx',
             'covervideo.js',
             'coverfilm.js',
             'category.scss',
@@ -701,8 +694,8 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The visitor's live listing has a mark of its own, and it hides and reveals what the logged-in client's does.
      *
-     * categorypublic marks the body dim-public-js, never dim-js. The twin of dim-js's rule hides the
-     * same no-JavaScript submits, because the module drives the same controls in place; load more
+     * The visitor's shell (js/esm/src/listing/visitor.ts) marks the body dim-public-js, never dim-js. The twin
+     * of dim-js's rule hides the same no-JavaScript submits, because the module drives the same controls in place; load more
      * and the continue link carry dim-live-only, which either mark reveals; and dim-js-only - the
      * star's - is revealed by the logged-in mark alone, a visitor having no star. The twins come
      * after the rules they mirror, because at equal specificity the source order decides.
@@ -1193,7 +1186,7 @@ final class category_scss_test extends \basic_testcase {
      */
     public function test_the_calendars_two_months_are_the_same_breakpoint_in_the_stylesheet_and_the_module(): void {
         $scss = $this->stylesheet('category.scss');
-        $module = (string) file_get_contents($this->plugin_root() . '/amd/src/daterange.js');
+        $module = (string) file_get_contents($this->plugin_root() . '/js/esm/src/daterange/DateRange.tsx');
         $this->assertMatchesRegularExpression("~^const WIDE = '\(min-width: 768px\)';$~m", $module);
         $this->assertStringContainsString('dim-daterange__pop', $this->wide_block($scss), 'The popover widens in the md block.');
         $this->assertSame(
@@ -1756,7 +1749,7 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The filter line's steps, its morph, its sheet and its search chip are the client's classes alone.
      *
-     * The client (categoryline) writes a step on the line (dim-line--s1 to s4), dim-line--folded where
+     * The filter line's component (js/esm/src/filterline) writes a step on the line (dim-line--s1 to s4), dim-line--folded where
      * the field gives way to its icon, dim-line--searching while the search is open over the line and
      * dim-line--measuring while it measures; the stylesheet does everything else, and without the
      * client none of it applies.

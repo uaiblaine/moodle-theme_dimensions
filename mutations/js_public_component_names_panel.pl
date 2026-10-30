@@ -1,2 +1,2 @@
-# Name the logged-in panel module in a comment of the posters' component, which the visitor's page loads.
-s/^(export const EVENTS = \{\.\.\.AREAS, \.\.\.LISTING\};\n)/\/\/ Answered on the logged-in shell by categorypanel.\n$1/m;
+# Name the account's shell in a comment of the component's panel, which the visitor's page loads.
+s/^(export const EVENTS = \{\.\.\.AREAS, \.\.\.LISTING\};\n)/\/\/ Answered on the logged-in shell by listing\/account.\n$1/m;

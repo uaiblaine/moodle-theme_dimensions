@@ -4,8 +4,8 @@ import{Fragment as Se,useLayoutEffect as P,useReducer as Ue,useRef as v,useState
  *
  * Stage R2 of docs/vitrine-react/PLAN.md drew it for the logged-in shell, stage R4a for the visitor's too,
  * where no star is drawn and the scope may be absent: it draws what the server drew. It implements the fleet
- * contract (moodle-dev/docs/filter-line/CONTRACT.md); amd/src/categoryline.js, which no shell arms since
- * R4a, leaves the tree with R5. block_compass's FilterLine implements the same contract on its own;
+ * contract (moodle-dev/docs/filter-line/CONTRACT.md), as the AMD line it replaced did until R4c removed it.
+ * block_compass's FilterLine implements the same contract on its own;
  * nothing is shared.
  *
  * WHO OWNS WHAT. The mount node is the server's line itself (dim-line), which the listing's

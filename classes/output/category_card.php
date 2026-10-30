@@ -128,7 +128,7 @@ use theme_dimensions\local\landingfields;
  * and where both would open one page only the primary is drawn.
  *
  * The card also carries the facts the filter line's preview decides a criterion on (contract section 6,
- * amd/src/categorypreview.js): the state chip the course counts under (`chip`, the classifier's
+ * js/esm/src/filterline/preview.ts): the state chip the course counts under (`chip`, the classifier's
  * {@see classifier::chip()} of the row's own state, exactly what the scope's filter keeps it by), the value
  * of each filter field ({@see field_values()}) and the start day in the site's timezone (`startday`, the
  * day {@see criteria::day_start()} compares a period's bounds with). The favourite is the star's own
