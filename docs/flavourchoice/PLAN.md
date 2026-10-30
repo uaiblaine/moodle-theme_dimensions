@@ -6,7 +6,7 @@ the priming. S2 #54 (2026100534): the Look submenu, the drawer panel, `flavour.p
 and changed default D3 (section 9). S3 #56 (2026100536): the preferences page link. S5 #60 (2026100538): the look
 cohorts, the deletion observer, the reconcile and emptying tasks and the recommendation. S4: the security read over
 the whole feature found nothing blocking and its three minor points were fixed in #63; the warm-up line is complete
-(`docs/flavourcss/PLAN.md`); the tag waits for the owner. Stage U (upstream) is not started. The owner's
+(`docs/flavourcss/PLAN.md`); the tag waits for the owner. Stage U (upstream) waits for Boost Union's stable 5.3 release (owner, 2026-10-29). The owner's
 decisions are in section 2.
 F1 was reversed the same day: the person's choice now wins over the administrator's flavours.
 Section 9 lists the defaults this plan picked where nothing was decided; each can be overturned
@@ -298,9 +298,10 @@ Each stage is one pull request on `main`, with `[skip ci]` and the local matrix 
 - **Release only after the warm-up work is merged** (section 7). Merged: #52, #57, #59
   (`docs/flavourcss/PLAN.md`).
 - Done 2026-10-29: privacy since S1; the README (the setting, the preference, the cohorts and the warm-up); the
-  security read over S1-S3 and S5 together, whose three minor points #63 fixed (the rest are accepted and recorded
-  in #63's description); the matrix on every stage's head. Left: the tag, when the owner decides; before it, the
-  GitHub pipeline on the commit it goes on.
+  security read over S1-S3 and S5 together: three minor points fixed in #63, the settings page's choices in #67,
+  and the rest with their tests afterwards (log in as, the other theme's page, the return address's session key,
+  the choice page's POST); the matrix on every stage's head. Left: the tag, when the owner decides; before it,
+  the GitHub pipeline on the commit it goes on.
 
 **S5. Smart menus by look** (section 4.7). It can ship with S4 or after it.
 - What:
@@ -328,8 +329,11 @@ Each stage is one pull request on `main`, with `[skip ci]` and the local matrix 
 - Mutation gates on the lock, the keep-instead-of-delete branch, the `component` stamp, the observer's
   priority and its hide call, and the claim check on `component`.
 
-**U. Upstream (optional, any time, no merge by us).** Small Boost Union patches. Each one reduces
-database traffic for every site, whatever this theme does (section 7.2):
+**U. Upstream (optional, no merge by us).** Small Boost Union patches. Each one reduces
+database traffic for every site, whatever this theme does (section 7.2).
+- **Deferred (owner, 2026-10-29) until Boost Union tags its stable release for Moodle 5.3**; this list is kept for
+  tracking. Before proposing any item, re-read it against that release (the line numbers here are `upgrade-503`
+  143e7497's), drop what Boost Union already fixed, and open the issue or pull request on its repository.
 1. Clear the flavour purge flag after it is honoured (section 3). The flag is then removed from
    section 4.2, step 4.
 2. In `smartmenu::build_smartmenu()`, call `clear_user_cachepreferencemenu()` only when the flag is

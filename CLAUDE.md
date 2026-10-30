@@ -683,6 +683,14 @@ rests on:
   so a stale menu or a hand-made request cannot store a flavour that is not offered. The user menu's submenu items
   print `{{{text}}}` and `{{{url}}}` (Boost Union's `core/user_action_menu_submenu_items`), so the renderer hands them
   the ESCAPED title and a `moodle_url`; the drawer's panel prints `{{text}}` and gets the PLAIN one.
+- **Somebody logged in as another user gets no look.** `menu()` answers null and `choose()` refuses, because the
+  choice and the look cohort it moves are that person's; the prime still applies the person's own look.
+- **A page another theme draws drops what this theme primed** (`flavourchoice::unprime()`, from `prime()`): Boost
+  Union's resolver reads its session cache first, so a course or user theme of Boost Union in the same category
+  would otherwise show the chosen look. Only a session the marker says was primed pays the purge.
+- **The choice page's write is `flavourchoice::submitted($form)`**, the moodleform's POST alone (session key,
+  offered option); its return address is `flavourchoice::back_url()`, local and without a session key, and
+  `page_url()` strips the key from the menu links as well. `flavourchoice_guards_test` holds all four.
 - **Core's preference services cannot write the look.** The preference's permission callback is
   `flavourchoice::preference_editable()`, which answers no: `core_user_set_user_preferences` would store a value
   without moving the look cohorts. `choose()` writes through `set_user_preference()`, which asks no callback.

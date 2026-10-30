@@ -131,8 +131,9 @@ final class flavourchoice {
      * Write the chosen flavour into Boost Union's session cache for the page about to be drawn.
      *
      * Steps, each cheap unless the session's choice changed:
-     * 1. Nothing for a page this theme does not draw, a visitor, the guest, or Boost Union's own
-     *    flavour preview, which takes its flavour from the URL.
+     * 1. Nothing for a visitor, the guest, or Boost Union's own flavour preview, which takes its flavour
+     *    from the URL. A page another theme draws drops what this session was primed with
+     *    ({@see self::unprime()}), or Boost Union's resolver would answer it with the chosen look.
      * 2. The marker - this theme's session cache - remembers which choice the session was primed with
      *    and that flavour's record. A different choice (made in another session, or a flavour taken off
      *    the list) purges Boost Union's flavour cache for this session, every category at once, and
@@ -149,6 +150,7 @@ final class flavourchoice {
         global $DB;
 
         if (!self::applies($page)) {
+            self::unprime($page);
             return;
         }
 
@@ -215,7 +217,8 @@ final class flavourchoice {
      * The one write path: the web service of the menu and the form of the choice page both come here.
      * The site default is always a valid answer; any other id must be on the list now, so a stale menu
      * or a hand-made request cannot store a flavour the administrator does not offer. The person then
-     * moves into the cohort of the look they chose ({@see lookcohorts::sync_user()}).
+     * moves into the cohort of the look they chose ({@see lookcohorts::sync_user()}). Somebody logged in
+     * as another user is refused: the choice is that person's, and so is the cohort it moves them into.
      *
      * @param int $flavourid The chosen flavour id, or {@see self::SITE_DEFAULT}.
      * @return bool Whether the choice was recorded.
@@ -223,7 +226,7 @@ final class flavourchoice {
     public static function choose(int $flavourid): bool {
         global $USER;
 
-        if (!isloggedin() || isguestuser()) {
+        if (!isloggedin() || isguestuser() || \core\session\manager::is_loggedinas()) {
             return false;
         }
         if ($flavourid !== self::SITE_DEFAULT && !array_key_exists($flavourid, self::offered())) {
@@ -275,7 +278,8 @@ final class flavourchoice {
     /**
      * The look menu for the current person, or null when there is nothing to choose.
      *
-     * Nothing for a visitor or the guest, and nothing while the setting offers no flavour that still
+     * Nothing for a visitor, the guest or somebody logged in as another user ({@see self::choose()}
+     * refuses them), and nothing while the setting offers no flavour that still
      * exists. The site default is always the first item. Each item's url is the choice page with that
      * flavour preselected: the address without JavaScript, which only shows a form and writes nothing;
      * with JavaScript, theme_dimensions/flavourchoice writes the choice through the web service and
@@ -286,7 +290,7 @@ final class flavourchoice {
      *      url: \moodle_url, iscurrent).
      */
     public static function menu(\moodle_url $returnurl): ?array {
-        if (!isloggedin() || isguestuser()) {
+        if (!isloggedin() || isguestuser() || \core\session\manager::is_loggedinas()) {
             return null;
         }
         $offered = self::offered();
@@ -321,10 +325,53 @@ final class flavourchoice {
      * @return \moodle_url
      */
     public static function page_url(int $flavourid, \moodle_url $returnurl): \moodle_url {
+        $back = new \moodle_url($returnurl);
+        $back->remove_params('sesskey');
+
         return new \moodle_url('/theme/dimensions/flavour.php', [
             'flavour' => $flavourid,
-            'returnurl' => $returnurl->out_as_local_url(false),
+            'returnurl' => $back->out_as_local_url(false),
         ]);
+    }
+
+    /**
+     * Where the choice page sends the person back to: the local address it was given, or the preferences page.
+     *
+     * The address is cleaned here rather than trusted from the caller, and loses its session key: the
+     * choice page redirects to it with a GET after the form's POST, and a page whose address carries an
+     * action and its key would run that action again. Without the key core's action pages refuse it.
+     *
+     * @param string $returnurl The address the choice page was given.
+     * @return \moodle_url
+     */
+    public static function back_url(string $returnurl): \moodle_url {
+        $local = clean_param($returnurl, PARAM_LOCALURL);
+        if ($local === '') {
+            return new \moodle_url('/user/preferences.php');
+        }
+        $back = new \moodle_url($local);
+        $back->remove_params('sesskey');
+
+        return $back;
+    }
+
+    /**
+     * Record the choice the choice page's form carries, if the form was submitted.
+     *
+     * The page's one write, kept here so its rule is testable: only the form's POST writes, and
+     * moodleform answers it only with the session key and an option the form offered; a GET, the
+     * preselection the menu's link carries included, only shows the form.
+     *
+     * @param \theme_dimensions\form\flavourchoice $form The choice page's form.
+     * @return bool|null Null when nothing valid was submitted, else whether {@see self::choose()} recorded it.
+     */
+    public static function submitted(\theme_dimensions\form\flavourchoice $form): ?bool {
+        $data = $form->get_data();
+        if (!$data) {
+            return null;
+        }
+
+        return self::choose((int) $data->flavour);
     }
 
     /**
@@ -341,6 +388,28 @@ final class flavourchoice {
         $theme = $page->theme;
 
         return $theme->name === 'dimensions' || in_array('dimensions', $theme->parents, true);
+    }
+
+    /**
+     * Drop the chosen look from Boost Union's session cache before another theme draws a page.
+     *
+     * The entry prime() wrote lives for the session under the page's category key, and Boost Union's
+     * resolver reads that cache before it computes anything, so a page of the same category drawn by
+     * Boost Union itself (a course or category theme, a user theme, ?theme=) would show the look this
+     * theme applies. Only a session this theme primed pays the purge; the next page this theme draws
+     * primes again.
+     *
+     * @param \moodle_page $page The page whose header is being printed.
+     * @return void
+     */
+    private static function unprime(\moodle_page $page): void {
+        if (during_initial_install() || self::drawn_by_this_theme($page)) {
+            return;
+        }
+        $entry = \cache::make('theme_dimensions', 'flavourchoice')->get(self::MARKER);
+        if (is_object($entry) && $entry->record !== null) {
+            self::forget();
+        }
     }
 
     /**
