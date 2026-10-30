@@ -32,11 +32,11 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  *
  * The component's behaviour is Jest's (js/esm/tests/areas), in both shells' modes. What Jest cannot see is how
  * the shells hand the posters and their panel over and keep out of them: the shared listing's mountAreas()
- * appends the mount, listens first and hands the component the page's client's answers; categorypanel answers
- * with the logged-in service and paints the progress it is told about, and the visitor's module with its own
- * service, its question and its failure (categorypublic_source_test); categoryvitrine tells the component an
- * answer and writes nothing into the posters; the events are spelled alike on every side; the component is
- * named once, in the shared listing; every hook the component reads is written by the templates; and the
+ * appends the mount, listens first and hands the component the page's client's answers; the account's shell
+ * (js/esm/src/listing/account.ts) answers with the logged-in service and paints the progress it is told about,
+ * and the visitor's with its own service, its question and its failure (categorypublic_source_test); the store
+ * tells the component an answer and writes nothing into the posters; the events are spelled alike on every side;
+ * the component is named once, in the shared listing; every hook the component reads is written by the templates; and the
  * component reads layout only where its docblocks say, never at mount.
  *
  * @package    theme_dimensions
@@ -82,7 +82,7 @@ final class areas_component_source_test extends \basic_testcase {
      * @param string $module The AMD module's name, or a path under js/esm/src without its extension.
      * @return string The body, without the signature or the closing brace.
      */
-    private function body(string $name, string $module = 'categorypanel'): string {
+    private function body(string $name, string $module = 'listing/account'): string {
         $path = str_contains($module, '/') ? 'js/esm/src/' . $module . '.ts' : 'amd/src/' . $module . '.js';
         $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
             . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
@@ -164,16 +164,17 @@ final class areas_component_source_test extends \basic_testcase {
             'painted' => 'dim-areas:painted',
         ], $areas);
         $listing = $this->names($events, 'export const LISTING = {');
-        $this->assertSame(['view', 'pending', 'criteria', 'failed', 'autoopened'], array_keys($listing));
+        $this->assertSame([
+            'view' => 'dim-vitrine:view',
+            'pending' => 'dim-vitrine:pending',
+            'criteria' => 'dim-vitrine:criteria',
+            'failed' => 'dim-vitrine:failed',
+            'autoopened' => 'dim-panel:autoopened',
+        ], $listing);
         $panel = $this->read('js/esm/src/areas/panel.ts');
         $this->assertStringContainsString("import {AREAS, LISTING} from '../listing/events';", $panel);
         $this->assertStringContainsString('export const EVENTS = {...AREAS, ...LISTING};', $panel);
-        $vitrine = $this->names($this->read('amd/src/categoryvitrine.js'), 'const EVENTS = {');
-        $this->assertSame(['view', 'pending', 'criteria', 'autoopened', 'failed'], array_keys($vitrine));
-        foreach ($vitrine as $name => $value) {
-            $this->assertSame($value, $listing[$name] ?? null, "The listing spells {$name} otherwise.");
-        }
-        // The store, the visitor's since R4b2, sends the listing's own names.
+        // The store, both shells' since R4b3, sends the listing's own names.
         $store = $this->read('js/esm/src/listing/store.ts');
         $this->assertStringContainsString("import {LISTING, SELECTORS} from './events';", $store);
         $this->assertSame(2, preg_match_all('~new CustomEvent\(LISTING\.(?:pending|criteria),~', $store));
@@ -207,16 +208,14 @@ final class areas_component_source_test extends \basic_testcase {
      * logged-in progress no longer painted.
      */
     public function test_the_mount_is_a_hidden_child_named_after_the_listeners(): void {
-        $init = $this->body('init');
-        $this->assertMatchesRegularExpression(
-            '~if \(!areas \|\| !areas\.querySelector\(SELECTORS\.panel\)\) \{\s*return;\s*\}~',
-            $init
-        );
-        $this->assertStringContainsString("panel: '[data-region=\"dim-panel\"]',", $this->read('amd/src/categorypanel.js'));
-        $this->assertMatchesRegularExpression('~CategoryStar\.init\(\);\s*mountAreas\(\);~', $init);
         $this->assertStringContainsString(
-            'const mountAreas = () => Listing.mountAreas(areas, {}, {ask: ask, painted: paintProgress});',
-            $this->read('amd/src/categorypanel.js'),
+            'Listing.mountAreas(areas, shell.areas.props, shell.areas.client);',
+            $this->body('init', 'listing/store')
+        );
+        $this->assertStringContainsString(
+            "    areas: {\n        props: {},\n        client: {\n"
+                . "            ask: ask,\n            painted: paintPanelProgress,\n",
+            $this->read('js/esm/src/listing/account.ts'),
             'The logged-in shell: no options, its service and its progress.'
         );
         $mount = $this->body('mountAreas', 'listing/mounts');
@@ -251,7 +250,7 @@ final class areas_component_source_test extends \basic_testcase {
 
     /**
      * The component asks its rows through the page's client and calls no service itself; on the logged-in shell
-     * that is categorypanel's service, and the progress of the rows it paints is categorypanel's.
+     * that is the account's shell's service, and the progress of the rows it paints is that shell's.
      *
      * Changes that must make it fail: the question left unanswered (every panel opens into its error); the
      * progress never painted; the component calling a service or reading the session.
@@ -259,7 +258,11 @@ final class areas_component_source_test extends \basic_testcase {
     public function test_the_component_asks_through_the_pages_client_and_calls_no_service(): void {
         $mount = $this->body('mountAreas', 'listing/mounts');
         $this->assertStringContainsString('detail.answer = client.ask(detail.poster, detail.psort);', $mount);
-        $this->assertStringContainsString("methodname: 'theme_dimensions_get_category_rows',", $this->body('ask'));
+        $this->assertStringContainsString('methodname: ROWS_METHOD,', $this->body('ask'));
+        $this->assertStringContainsString(
+            "const ROWS_METHOD = 'theme_dimensions_get_category_rows';",
+            $this->read('js/esm/src/listing/account.ts')
+        );
         $ask = $this->inner('ask');
         $this->assertStringContainsString('areas.dispatchEvent(new CustomEvent(EVENTS.ask, {detail: detail}));', $ask);
         $this->assertStringContainsString("return detail.answer || Promise.reject(", $ask);
@@ -276,35 +279,21 @@ final class areas_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The shared listing names the component, once; both shells mount it, and neither arms the AMD panel.
+     * The shared listing names the component, once, and the store mounts it for both shells.
      *
-     * Changes that must make it fail: a client naming the component itself; an entry or a shell importing the AMD
-     * panel or the posters' painters again (two writers of the same posters, gate js_areas_no_amd_panel); a module
-     * not built.
+     * Changes that must make it fail: an AMD module naming the component itself; a module not built.
      */
     public function test_the_component_is_named_once_and_no_shell_arms_the_amd_panel(): void {
         $this->assertStringContainsString("    areas: '" . self::SPECIFIER . "',\n", $this->read('js/esm/src/listing/mounts.ts'));
-        foreach (['categorypanel', 'categorypublic', 'categoryareapanel', 'categoryposters', 'categoryvitrine'] as $module) {
+        foreach (glob($this->plugin_root() . '/amd/src/*.js') as $file) {
             $this->assertStringNotContainsString(
                 '@moodle/lms/theme_dimensions/areas',
-                $this->read('amd/src/' . $module . '.js'),
-                $module . ' names the component.'
+                (string) file_get_contents($file),
+                basename($file) . ' names the component.'
             );
         }
         $store = $this->read('js/esm/src/listing/store.ts');
         $this->assertStringContainsString('Listing.mountAreas(areas, ', $store, 'The store mounts it.');
-        $clients = [
-            'amd/src/listingaccount.js',
-            'amd/src/listingvisitor.js',
-            'js/esm/src/listing/account.ts',
-            'js/esm/src/listing/visitor.ts',
-            'js/esm/src/listing/store.ts',
-        ];
-        foreach ($clients as $client) {
-            $source = $this->read($client);
-            $this->assertStringNotContainsString("from 'theme_dimensions/categoryareapanel'", $source, $client . ' arms it.');
-            $this->assertStringNotContainsString("from 'theme_dimensions/categoryposters'", $source);
-        }
         foreach (self::MODULES as $module) {
             foreach (['js', 'dev.js', 'dev.js.map'] as $build) {
                 $this->assertFileExists($this->plugin_root() . "/js/esm/build/areas/{$module}.{$build}");
@@ -313,25 +302,25 @@ final class areas_component_source_test extends \basic_testcase {
     }
 
     /**
-     * No AMD module writes into the posters on the logged-in shell: categoryvitrine tells the component the
-     * shells and writes none, and the component writes them.
+     * The listing writes nothing into the posters: the store tells the component an answer and writes none of
+     * them, and the component writes them.
      *
-     * Changes that must make it fail: paintShells() writing a poster's shell again (gate
-     * js_areas_shells_untouched).
+     * Changes that must make it fail: paintAreas() writing a poster's shell again (gate js_areas_shells_untouched).
      */
     public function test_the_listing_writes_nothing_into_the_posters(): void {
-        $shells = $this->body('paintShells', 'categoryvitrine');
+        $shells = $this->body('paintAreas', 'listing/store');
         $this->assertStringNotContainsString('poster.', $shells);
         $this->assertStringNotContainsString('SELECTORS.area', $shells);
         $this->assertMatchesRegularExpression(
-            '~document\.dispatchEvent\(new CustomEvent\(EVENTS\.criteria, \{detail: \{\s*accordion: accordion,~',
+            '~document\.dispatchEvent\(new CustomEvent\(LISTING\.criteria, \{detail: \{\s*'
+                . 'accordion: response\.accordion \|\| \[\],~',
             $shells
         );
-        $vitrine = $this->uncommented($this->read('amd/src/categoryvitrine.js'));
-        $this->assertStringNotContainsString('dataset.ctaurl', $vitrine);
+        $account = $this->uncommented($this->read('js/esm/src/listing/account.ts'));
+        $this->assertStringNotContainsString('dataset.ctaurl', $account);
         $this->assertSame(
             1,
-            substr_count($vitrine, 'SELECTORS.areapanel'),
+            substr_count($account, 'HOOKS.areapanel'),
             'The panel is read once: its cards are never attached.'
         );
         $posters = $this->read('js/esm/src/areas/posters.ts');
@@ -369,15 +358,12 @@ final class areas_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The breakpoints the panel counts its tracks by are the stylesheet's and the shared module's.
+     * The breakpoints the panel counts its tracks by are the stylesheet's.
      */
     public function test_the_breakpoints_are_the_stylesheets_own(): void {
         $model = $this->read('js/esm/src/areas/model.ts');
         $this->assertStringContainsString("export const WIDE = '(max-width: 1199.98px)';", $model);
         $this->assertStringContainsString("export const PHONE = '(max-width: 575.98px)';", $model);
-        $shared = $this->read('amd/src/categoryareapanel.js');
-        $this->assertStringContainsString("const WIDE = '(max-width: 1199.98px)';", $shared);
-        $this->assertStringContainsString("const PHONE = '(max-width: 575.98px)';", $shared);
         $scss = $this->read('scss/category.scss');
         $this->assertMatchesRegularExpression('~@media \(max-width: 1199\.98px\) \{\s*\.dim-panel \{\s*--dim-panel-n: 2;~', $scss);
         $this->assertMatchesRegularExpression('~@media \(max-width: 575\.98px\) \{\s*\.dim-panel \{\s*--dim-panel-n: 1;~', $scss);

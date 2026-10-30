@@ -514,7 +514,7 @@ final class card_markup_test extends \advanced_testcase {
                 . '/preceding-sibling::*[1][self::button][@data-region="dim-line-star"][@data-action="dim-fav"]',
             'dim-fav-count' => '//button[@data-region="dim-line-star"]//*[@data-region="dim-fav-count"]',
             'dim-fav-field' => '//form//input[@type="hidden"][@name="fav"][@data-region="dim-fav-field"]',
-            /* What the filter line's client (categoryline) drives and nothing else draws: the search's
+            /* What the filter line's component (js/esm/src/filterline) drives and nothing else draws: the search's
                icon, pointing at the field it opens; the button that closes the search over the line;
                the listbox, hidden, carrying its id and its two headings; the Filters panel and the
                Organise menu it places under the line; and the menu's "Show as", whose buttons carry

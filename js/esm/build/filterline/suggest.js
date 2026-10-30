@@ -1,7 +1,7 @@
 import{normalise as d}from"./mark";/**
  * The filter line's suggestions: which filters a text offers, and in what order.
  *
- * The rules amd/src/categoryline.js had, which no shell arms since R4a (it leaves the tree with R5). The
+ * The rules the AMD line had before R4a (it left the tree with R4c). The
  * suggestions are the filters already on the page - every scope cell, the favourites star, every option
  * of the Filters panel and its quick dates - whose label or group matches the typed text, accent- and
  * case-insensitively, word starts first and then by count, each with its group and a count the page has

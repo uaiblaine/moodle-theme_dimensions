@@ -33,8 +33,7 @@ use theme_dimensions\output\category_panel;
  *
  * Since stage R4b2 the page arms amd/src/listingvisitor.js, which hands it to the visitor's shell
  * (js/esm/src/listing/visitor.ts) over the shared store (store.ts): the walk starts at the entry, and the
- * shell's own assertions read those two sources ({@see SHELL}); amd/src/categorypublic.js is imported by
- * nothing and leaves with the removal pull request.
+ * shell's own assertions read those two sources ({@see SHELL}).
  *
  * The module runs on a page served to the internet and asks a web service that answers without a
  * session, so the properties pinned here are the ones whose loss is a leak or a cache poisoned for
@@ -92,8 +91,6 @@ final class categorypublic_source_test extends \basic_testcase {
 
     /** @var string[] The logged-in modules nothing a visitor's page loads may name, in code or in a comment. */
     private const LOGGED_IN_NAMES = [
-        'categoryvitrine',
-        'categorypanel',
         'categorystar',
         'listingaccount',
         'listing/account',
@@ -102,8 +99,6 @@ final class categorypublic_source_test extends \basic_testcase {
     /** @var string[] Theme modules a visitor's page may never load: the session's star and the logged-in clients. */
     private const FORBIDDEN_MODULES = [
         'categorystar',
-        'categoryvitrine',
-        'categorypanel',
         'listingaccount',
         self::ESM . 'listing/account',
     ];
@@ -419,10 +414,9 @@ final class categorypublic_source_test extends \basic_testcase {
      * A walk that read the entry file alone would pass a session module pulled in through a shared
      * one. The shared listing (js/esm/src/listing since R4b1, reached from AMD through `core/esm!`) reaches
      * the period's reader and the title marker, and names the three components it mounts, whose relative
-     * imports the walk follows down to the bridge; the visitor's graph holds all of it, and none of the AMD
-     * modules the TypeScript replaced: categorylisting since R4b1, the components' since R4a.
+     * imports the walk follows down to the bridge; the visitor's graph holds all of it.
      *
-     * Changes that must make it fail: the visitor's module importing amd/src/categorylisting.js again (gate
+     * Changes that must make it fail: the visitor's entry loading an AMD module instead of its shell (gate
      * js_public_listing_through_esm).
      */
     public function test_the_import_walk_is_transitive(): void {
@@ -440,11 +434,6 @@ final class categorypublic_source_test extends \basic_testcase {
         }
         foreach (self::SHELL_MODULES as $shell) {
             $this->assertContains($shell, $graph, 'The control: the entry\'s core/esm! import is followed to ' . $shell . '.');
-        }
-        $gone = ['categorypublic', 'categorylisting', 'categorymark', 'daterange', 'categoryline', 'categorypreview',
-            'categoryareapanel', 'categoryposters'];
-        foreach ($gone as $replaced) {
-            $this->assertNotContains($replaced, $graph, $replaced . ' is armed by no shell.');
         }
     }
 
@@ -488,7 +477,7 @@ final class categorypublic_source_test extends \basic_testcase {
      */
     public function test_the_visitors_graph_reaches_each_component_named_once(): void {
         $graph = $this->graph(self::MODULE);
-        $logged = $this->graph('categoryvitrine');
+        $logged = $this->graph('listingaccount');
         $reached = array_merge(self::COMPONENTS, [
             self::ESM . 'filterline/preview',
             self::ESM . 'areas/panel',
@@ -508,10 +497,6 @@ final class categorypublic_source_test extends \basic_testcase {
         );
         foreach ($files as $file) {
             $name = substr($file, strlen($this->plugin_root()) + 1);
-            // The AMD listing the TypeScript replaced, unimported since R4b1, leaves with its source tests (R4c).
-            if ($name === 'amd/src/categorylisting.js') {
-                continue;
-            }
             $text = $this->uncommented((string) file_get_contents($file));
             $count = 0;
             foreach ($specifiers as $specifier) {
@@ -534,12 +519,11 @@ final class categorypublic_source_test extends \basic_testcase {
      * both builds as they are, comments included. A name in a comment is no import, but the rule of R4a
      * is that the visitor's graph says nothing of what the logged-in shell is made of: a component that
      * names the logged-in module answering it is one edit from importing it. The logged-in services are
-     * the next test's. The controls: the logged-in panel module names the star, and a comment alone is
-     * found.
+     * the next test's. The controls: the account's entry names the star, and a comment alone is found.
      *
-     * Changes that must make it fail: a comment naming categoryvitrine in the shared listing (gate
-     * js_public_graph_names_vitrine), categorypanel in the component's panel (gate
-     * js_public_component_names_panel), or the account's shell in the store (gate js_public_graph_names_account).
+     * Changes that must make it fail: a comment naming the account's entry in the shared listing (gate
+     * js_public_graph_names_vitrine), the account's shell in the component's panel (gate
+     * js_public_component_names_panel) or in the store (gate js_public_graph_names_account).
      */
     public function test_nothing_the_walk_reaches_names_the_logged_in_shell(): void {
         $graph = array_values(array_unique(array_merge($this->graph(self::MODULE), $this->graph(self::BRIDGE))));
@@ -547,12 +531,12 @@ final class categorypublic_source_test extends \basic_testcase {
         foreach ($graph as $module) {
             $this->assertSame([], $this->logged_in_names($module), "{$module} names the logged-in shell.");
         }
-        $this->assertContains('categorystar', $this->logged_in_names('categorypanel'), 'The control: a name is found.');
+        $this->assertContains('categorystar', $this->logged_in_names('listingaccount'), 'The control: a name is found.');
         $this->fixture = [
-            'amd/src/entry.js' => "/** Answered by categorypanel. */\nexport const init = () => null;\n",
+            'amd/src/entry.js' => "/** Answered by listingaccount. */\nexport const init = () => null;\n",
             'amd/build/entry.min.js' => 'define([],(function(){}));',
         ];
-        $this->assertSame(['categorypanel'], $this->logged_in_names('entry'), 'A comment alone is found.');
+        $this->assertSame(['listingaccount'], $this->logged_in_names('entry'), 'A comment alone is found.');
     }
 
 
@@ -875,7 +859,6 @@ final class categorypublic_source_test extends \basic_testcase {
      */
     public function test_the_search_is_debounced_and_never_waits_for_a_panel(): void {
         $this->assertMatchesRegularExpression('~^const SEARCH_DEBOUNCE = 300;$~m', $this->source());
-        $this->assertMatchesRegularExpression('~^const SEARCH_DEBOUNCE = 300;$~m', $this->source('categoryvitrine'));
         $listen = $this->body('listen');
         $this->assertMatchesRegularExpression(
             '~form\.addEventListener\(\'input\', \(event\) => \{\s*const search = Listing\.closestOf\(event, SELECTORS\.search\);'
@@ -1002,9 +985,9 @@ final class categorypublic_source_test extends \basic_testcase {
             $this->body('mountAreas', self::ESM . 'listing/mounts')
         );
         $this->assertStringContainsString(
-            'const mountAreas = () => Listing.mountAreas(areas, {}, {ask: ask, painted: paintProgress});',
-            $this->source('categorypanel'),
-            'The logged-in client keeps its buttons: its props are none.'
+            "    areas: {\n        props: {},\n",
+            $this->read('js/esm/src/listing/account.ts', 'The source is missing.'),
+            'The logged-in shell keeps its buttons: its props are none.'
         );
         $panel = $this->read(self::AREAS . 'panel.ts', 'The source is missing.');
         $this->assertStringContainsString("    links: props.links === true,\n", $panel);
@@ -1169,8 +1152,7 @@ final class categorypublic_source_test extends \basic_testcase {
     /**
      * The committed build of the module was made from the source beside it, and loads the TypeScript listing.
      *
-     * The listing's and the components' builds are esm_source_test's. The AMD modules they replaced are named by no build of
-     * the visitor's.
+     * The listing's and the components' builds are esm_source_test's. The entry's build loads its shell alone.
      */
     public function test_the_committed_builds_were_made_from_the_committed_sources(): void {
         $this->assertSame(
@@ -1179,9 +1161,11 @@ final class categorypublic_source_test extends \basic_testcase {
             'amd/build/' . self::MODULE . ' is not this source: rebuild it with grunt amd and commit the build.'
         );
         $this->assertStringContainsString('"core/esm!@moodle/lms/theme_dimensions/listing/visitor"', $this->build(self::MODULE));
-        foreach (['categorypublic', 'categorylisting', 'categoryposters', 'categoryareapanel', 'categoryline'] as $replaced) {
-            $this->assertStringNotContainsString('"theme_dimensions/' . $replaced . '"', $this->build(self::MODULE));
-        }
+        $this->assertStringContainsString(
+            '["exports","core/esm!@moodle/lms/theme_dimensions/listing/visitor"]',
+            $this->build(self::MODULE),
+            'Its shell and nothing else.'
+        );
         $this->assertStringContainsString('@moodle/lms/theme_dimensions/areas/Areas', $this->build(self::ESM . 'listing/mounts'));
     }
 

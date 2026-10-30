@@ -203,7 +203,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'hasquery' => $this->criteria->rawsearch !== '',
             'searchtooshort' => $this->criteria->rawsearch !== '' && $this->criteria->search === '',
             'searchtooshortlabel' => get_string('category_searchtooshort', self::COMPONENT, criteria::MIN_SEARCH_LENGTH),
-            /* The suggestions under the line are the client's (categoryline), drawn from the
+            /* The suggestions under the line are the line component's (js/esm/src/filterline), drawn from the
                controls already on the page: the server gives them an id for the combobox to point
                at and their two headings, so the browser composes no word of them. */
             'suggestid' => 'dim-vitrine-suggest-' . $this->categoryid,
@@ -329,7 +329,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      *
      * A zero cell is not shown unless it is the chosen one ({@see status_group()}), but it is
      * still WRITTEN, carrying `absent`, which the template turns into the hidden attribute: the
-     * client's folding (categoryline) measures the line with every cell of the scope drawn, so
+     * line component's folding (js/esm/src/filterline/measure.ts) measures the line with every cell of the scope drawn, so
      * the step a line takes follows its width and its language and never what the counts happen
      * to be, and a cell an answer brings back is found in place by its value
      * (the listing's paintGroup()). The cells are in {@see criteria::SCOPE}'s order. Every

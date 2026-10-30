@@ -204,10 +204,10 @@ React and TypeScript live in `js/esm/src`, built to `js/esm/build`, tested in `j
 - **The visitor's import walk reads `js/esm`** (`categorypublic_source_test`): an AMD module reaches an ES
   module through `core/esm!` or by naming `@moodle/lms/theme_dimensions/...` for a mount, an ES module
   its siblings by relative import and theme AMD modules by quoted name through the bridge, and the walk
-  starts from the bridge as well as from the visitor's entry, `listingvisitor` (`categorypublic` until R4b2). Since R4a it reaches the three components (the visitor
-  mounts them), so the bridge and every module of `js/esm/src` a component imports name nothing of a session and
-  none of `categoryvitrine`, `categorypanel`, `categorystar`, `listingaccount` or `listing/account`, comments included
-  (the R4a and R4b3 sections).
+  starts from the bridge as well as from the visitor's entry, `listingvisitor`. Since R4a it reaches the three
+  components (the visitor mounts them), so the bridge and every module of `js/esm/src` a component imports name
+  nothing of a session and none of `categorystar`, `listingaccount` or `listing/account`, comments included (the
+  R4a, R4b3 and R4c sections).
 
 ## Code layout
 
@@ -274,12 +274,11 @@ classes/local/category/        The category showcase's decision layer (stage 2):
                                population (the two gates, the clamps, the probe cap, the page),
                                classifier (eleven states, five statements), facets, cards, criteria,
                                scope, page_result, unavailable_exception. See the section below.
-amd/src/category*.js           The showcase's modules (amd/src/covervideo.js + local/coverfilm.js: the cover film). Both
-                               listings are the store in js/esm/src/listing, armed by amd/src/listingaccount.js (R4b3) and
-                               amd/src/listingvisitor.js (R4b2). categorylisting (R4b1), categorypublic (R4b2), categoryvitrine and
-                               categorypanel (R4b3), categoryline, categorypreview, categoryareapanel and categoryposters are
-                               imported by nothing and leave with the removal pull request (R4c).
-js/esm/src/                    The React port (R0-R4b3): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells;
+amd/src/category*.js           The showcase's AMD modules: categorystar (the card's star, AMD until R5), categoryhero (the
+                               appearance editor), categorycoursemodal, and covervideo.js + local/coverfilm.js (the cover film).
+                               Both listings are the store in js/esm/src/listing, armed by amd/src/listingaccount.js (R4b3) and
+                               amd/src/listingvisitor.js (R4b2); the ten AMD listing modules they replaced left in R4c.
+js/esm/src/                    The React port (R0-R4c): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells;
                                listing/: the shared listing (R4b1), its store with the visitor's shell (R4b2) and the
                                account's (R4b3), each started by its AMD entry through core/esm!.
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
@@ -3802,6 +3801,24 @@ maintainer must not lose:
   cannot see it.
 - **Jest's account tests share the module's state**, a settled course included: give each test course ids no other
   test settled.
+
+## The category showcase: the old listing removed (R4c, 2026-10-30)
+
+A removal-only change: `amd/src/{categorylisting,categorypublic,categoryvitrine,categorypanel,categoryline,categorypreview,
+categoryareapanel,categoryposters,daterange,categorymark}.js` and their builds, imported by nothing since R4b3, are gone.
+No kept module, template, string or rule changed what it does.
+
+- **The source tests read the TypeScript now.** `amd_source_test` keeps its name and reads `js/esm/src/listing/store.ts`
+  over the shared listing; `categorypanel_source_test` became `categorystar_source_test`, the star's alone (the panel's
+  contracts are the component's: `areas_component_source_test` and `js/esm/tests/areas`); `categoryline_source_test`,
+  `categorypreview_source_test` and `daterange_source_test` read nothing that is left and were deleted. Where an
+  assertion pinned a contract the ES code carries, it was pointed at that file (the calendar's two-month breakpoint at
+  `daterange/DateRange.tsx`, the listing's event names at `listing/events.ts`).
+- **The visitor's walk names what still exists**: `categorystar`, `listingaccount` and `listing/account`. The gates
+  that inject a logged-in name into the visitor's graph inject those.
+- **Gates**: the 46 on the ten files retired with their scripts, and `js_areas_no_amd_panel` (no AMD panel is left
+  to import); the gates whose mutant named a removed module now name one that exists.
+- Every class and lang string the ten modules wrote is still read by the ES port, so no rule or string went.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

@@ -158,8 +158,9 @@ final class covervideo_source_test extends \basic_testcase {
      * hover alone would start on every press, the play control's included. The pointer half of
      * the query tells the two apart; the play control is the path a finger has.
      *
-     * The delay equals categoryvitrine's PEEK_DELAY (180 ms): a pointer crossing a grid on its way
-     * elsewhere should start nothing, and both features read the same intent off the same gesture.
+     * The delay equals the account's shell's PEEK_DELAY (180 ms, js/esm/src/listing/account.ts): a pointer
+     * crossing a grid on its way elsewhere should start nothing, and both features read the same intent off the
+     * same gesture.
      *
      * Changes that must make it fail: calling start(band) directly instead of through the timer,
      * which starts one film per card a passing pointer crosses.
@@ -172,6 +173,11 @@ final class covervideo_source_test extends \basic_testcase {
             'Both halves: a coarse pointer answers "hover" to a tap, and a fine one that cannot hover has no preview.'
         );
         $this->assertStringContainsString('const INTENT_DELAY = 180;', $source, 'The hover peek\'s own number.');
+        $this->assertStringContainsString(
+            'const PEEK_DELAY = 180;',
+            (string) file_get_contents(dirname(__DIR__, 3) . '/js/esm/src/listing/account.ts'),
+            'And the peek\'s, which it stays in step with.'
+        );
         $this->assertMatchesRegularExpression(
             '~^const hoverable = \(\) => window\.matchMedia\(HOVER_QUERY\)\.matches;$~m',
             $source
@@ -594,10 +600,10 @@ final class covervideo_source_test extends \basic_testcase {
     }
 
     /**
-     * The cluster is revealed by this module's own mark, and never by the vitrine module's.
+     * The cluster is revealed by this module's own mark, and never by the listing's.
      *
-     * dim-js is categoryvitrine's mark, and it also hides the toolbar's no-JavaScript "Filter"
-     * submit. This module runs where that one never does - the whole anonymous shell and the
+     * dim-js is the account's listing mark (js/esm/src/listing/account.ts), and it also hides the toolbar's
+     * no-JavaScript "Filter" submit. This module runs where that one never does - the whole anonymous shell and the
      * guest's pages - and there that submit is the only filter control the reader has. Writing
      * dim-js from here would take it away and put nothing in its place.
      */

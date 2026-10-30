@@ -1216,9 +1216,6 @@ final class course_renderer_test extends \advanced_testcase {
             $requirements,
             'The root\'s posters open panels and its search line is live: the account\'s client is armed for a real account.'
         );
-        foreach (['categoryvitrine', 'categorypanel'] as $retired) {
-            $this->assertStringNotContainsString('theme_dimensions/' . $retired, $requirements, 'One client, not two.');
-        }
 
         // The control: the same viewer on a real category gets the listing and its client.
         $PAGE = new \moodle_page();

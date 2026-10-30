@@ -237,7 +237,7 @@ const viewsOf = (row: Element | null): View[] => (row ? Array.from(row.querySele
 /**
  * Read the line the server drew, or null where it is not a line this component can draw.
  *
- * The same condition as categoryline's arming: a line with its search field and its listbox. The
+ * A line with its search field and its listbox, which is what arms it. The
  * listing's mountLine() asks the same before it mounts, so this answers null only for markup that
  * changed under it.
  *

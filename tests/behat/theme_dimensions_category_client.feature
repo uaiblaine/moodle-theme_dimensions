@@ -171,7 +171,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   @javascript
   Scenario: The tenth appended page hands paging back to the link the server drew
     # The client appends only so many pages into one document - PAGE_WINDOW in
-    # amd/src/categoryvitrine.js, ten - because each one is DOM, an observer entry and memory a
+    # js/esm/src/listing/paint.ts, ten - because each one is DOM, an observer entry and memory a
     # long session never gives back. Past that it stops appending and shows the continue link,
     # which is a real navigation and starts a fresh document with its own page-one baseline.
     # Twelve courses at perpage=1 is the smallest fixture where that boundary is not also the

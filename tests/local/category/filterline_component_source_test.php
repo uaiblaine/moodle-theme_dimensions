@@ -91,7 +91,8 @@ final class filterline_component_source_test extends \advanced_testcase {
      * @return string The body, without the signature or the closing brace.
      */
     private function body(string $name, string $module = 'listing'): string {
-        $text = $module === 'listing' ? $this->listing() : $this->read('amd/src/' . $module . '.js');
+        $text = $module === 'listing' ? $this->listing() : (str_contains($module, '/')
+            ? $this->read('js/esm/src/' . $module . '.ts') : $this->read('amd/src/' . $module . '.js'));
         $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
             . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
         $found = preg_match($pattern, $text, $matches);
@@ -274,7 +275,7 @@ final class filterline_component_source_test extends \advanced_testcase {
         $this->assertStringContainsString('export const DRAWN = LINE_DRAWN;', $component);
         $this->assertStringContainsString(
             "drawnline: '[data-region=\"dim-line\"][data-line-drawn]',",
-            $this->read('amd/src/categoryvitrine.js')
+            $this->read('js/esm/src/listing/events.ts')
         );
     }
 
@@ -343,7 +344,7 @@ final class filterline_component_source_test extends \advanced_testcase {
      *
      * Changes that must make it fail: the scope told in the answer's order; an answer with no status option
      * telling an empty scope (every cell would hide on a page whose state sort was switched off under it);
-     * the logged-in shell repainting categoryline instead of telling the component; tellAnswer() before the
+     * the store repainting the line instead of telling the component; tellAnswer() before the
      * painters (the suggestions would read the panel's old counts).
      */
     public function test_an_answer_is_told_to_the_component_after_the_painters(): void {
@@ -361,28 +362,24 @@ final class filterline_component_source_test extends \advanced_testcase {
         foreach ($parts as $part) {
             $this->assertStringContainsString($part, $answer);
         }
-        $apply = $this->body('applyResponse', 'categoryvitrine');
-        $told = strpos($apply, 'tellAnswer(response);');
+        $apply = $this->body('applyResponse', 'listing/store');
+        $told = strpos($apply, 'Listing.tellAnswer(root, response);');
         $this->assertNotFalse($told);
-        foreach (['paintFilterBadge(response);', 'paintGroups(response);', 'paintFavourites(response);'] as $painter) {
+        $painters = ['Listing.paintFilterBadge(root, response);', 'Listing.paintGroups(root, response);',
+            'Listing.paintFavourites(root, response);'];
+        foreach ($painters as $painter) {
             $this->assertLessThan($told, (int) strpos($apply, $painter), $painter . ' comes after the line is told.');
         }
-        $this->assertStringNotContainsString('Line.', $this->uncommented($this->read('amd/src/categoryvitrine.js')));
-        $this->assertStringNotContainsString("'theme_dimensions/categoryline'", $this->read('amd/src/categoryvitrine.js'));
     }
 
     /**
      * The shared listing names the component, which is built, and both shells hand their line to it.
      *
-     * Changes that must make it fail: a client arming categoryline again or naming the component itself; the
+     * Changes that must make it fail: a client naming the component itself; the
      * visitor's module handing its line to nothing (gate js_public_line_armed); the component not built.
      */
     public function test_both_shells_hand_their_line_to_the_component_named_in_the_listing(): void {
         $this->assertStringContainsString("    line: '" . self::SPECIFIER . "',\n", $this->listing());
-        $this->assertStringContainsString(
-            'const mountLine = () => Listing.mountLine(root, dropTerm);',
-            $this->read('amd/src/categoryvitrine.js')
-        );
         foreach (['FilterLine', 'lazy', 'preview', 'model', 'measure', 'steps', 'suggest', 'mark'] as $module) {
             foreach (['js', 'dev.js'] as $build) {
                 $this->assertFileExists($this->plugin_root() . "/js/esm/build/filterline/{$module}.{$build}");
@@ -391,15 +388,11 @@ final class filterline_component_source_test extends \advanced_testcase {
         $store = $this->uncommented($this->read('js/esm/src/listing/store.ts'));
         $this->assertStringContainsString('Listing.mountLine(root, dropTerm);', $store);
         $this->assertStringContainsString('Listing.tellAnswer(root, response);', $store);
-        foreach (['js/esm/src/listing/store.ts', 'amd/src/categoryvitrine.js'] as $module) {
-            $source = $this->read($module);
-            $this->assertStringNotContainsString("'theme_dimensions/categoryline'", $source, $module . ' arms categoryline.');
-            $this->assertStringNotContainsString(
-                '@moodle/lms/theme_dimensions/filterline',
-                $source,
-                $module . ' names the component: the listing names it, once.'
-            );
-        }
+        $this->assertStringNotContainsString(
+            '@moodle/lms/theme_dimensions/filterline',
+            $this->read('js/esm/src/listing/store.ts'),
+            'The store names the component: the listing names it, once.'
+        );
     }
 
     /**
@@ -411,16 +404,16 @@ final class filterline_component_source_test extends \advanced_testcase {
      * Changes that must make it fail: mountLine() called after mountCalendar().
      */
     public function test_the_line_is_handed_over_before_the_calendar_goes_in(): void {
-        $init = $this->body('init', 'categoryvitrine');
-        $line = strpos($init, "\n    mountLine();");
-        $calendar = strpos($init, "\n    mountCalendar().catch(Notification.exception);");
+        $init = $this->body('init', 'listing/store');
+        $line = strpos($init, "\n    Listing.mountLine(root, dropTerm);");
+        $calendar = strpos($init, "\n    Listing.mountCalendar(root, state, setRange).catch(shell.unmounted);");
         $this->assertNotFalse($line);
         $this->assertNotFalse($calendar);
         $this->assertLessThan($calendar, $line);
     }
 
     /**
-     * The logged-in module reads the component's field without holding the server's, and writes into neither.
+     * The store reads the component's field without holding the server's, and writes into neither.
      *
      * Changes that must make it fail: the input listener bound to the server's field (the component
      * replaces it, and typing would never search); the eraser's handler writing the component's field;
@@ -429,20 +422,20 @@ final class filterline_component_source_test extends \advanced_testcase {
      * carry it).
      */
     public function test_the_logged_in_module_reads_the_line_and_never_writes_into_it(): void {
-        $drop = $this->body('dropTerm', 'categoryvitrine');
+        $drop = $this->body('dropTerm', 'listing/store');
         $this->assertMatchesRegularExpression(
             "~cancelSearch\\(\\);\\s*state\\.query = '';~",
             $drop,
             'A suggestion\'s press carries no term.'
         );
-        $this->assertStringContainsString('paintEraser();', $drop);
-        $erase = $this->body('onErase', 'categoryvitrine');
+        $this->assertStringContainsString('Listing.paintEraser(root);', $drop);
+        $erase = $this->body('onErase', 'listing/store');
         $this->assertMatchesRegularExpression(
             "~if \(search && !search\.closest\(SELECTORS\.drawnline\)\) \{\s*search\.value = '';~",
             $erase
         );
         $this->assertStringContainsString("await onSearch('');", $erase);
-        $listen = $this->body('listen', 'categoryvitrine');
+        $listen = $this->body('listen', 'listing/store');
         $this->assertStringNotContainsString("search.addEventListener('input'", $listen);
         $this->assertStringContainsString("form.addEventListener('input', (event) => {", $listen);
         $target = $this->body('focusTarget');
@@ -451,8 +444,9 @@ final class filterline_component_source_test extends \advanced_testcase {
             $target
         );
         $this->assertMatchesRegularExpression('~\}\s*return opener;\s*$~', $target);
+        $this->assertStringContainsString('const search = Listing.focusTarget(root);', $this->body('focusSearch', 'listing/store'));
         foreach (['onClear', 'onChipRemove'] as $handler) {
-            $this->assertStringContainsString('const search = focusTarget();', $this->body($handler, 'categoryvitrine'));
+            $this->assertStringContainsString("\n    focusSearch();", $this->body($handler, 'listing/store'));
         }
     }
 

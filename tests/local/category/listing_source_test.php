@@ -30,8 +30,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins how the shared listing of js/esm/src/listing reaches the AMD clients, and who writes the history.
  *
- * Stage R4b1 of docs/vitrine-react/R4b.md moved amd/src/categorylisting.js to TypeScript, loaded by the AMD
- * clients through `core/esm!` under a barrel's names. The painters' own rules are read by amd_source_test and
+ * Stage R4b1 of docs/vitrine-react/R4b.md moved the AMD listing to TypeScript, under a barrel's names, and each
+ * page's AMD entry starts its shell through `core/esm!`. The painters' own rules are read by amd_source_test and
  * the component source tests, their behaviour is Jest's (js/esm/tests/listing).
  *
  * @package    theme_dimensions
@@ -130,7 +130,7 @@ final class listing_source_test extends \basic_testcase {
      *
      * Changes that must make it fail: the account's entry loading an AMD client instead of its shell (gate
      * js_vitrine_listing_through_esm; the visitor's entry is js_public_listing_through_esm, read by
-     * categorypublic_source_test's walk); any module importing theme_dimensions/categorylisting again.
+     * categorypublic_source_test's walk).
      */
     public function test_the_amd_clients_load_the_typescript_listing(): void {
         foreach (self::ENTRIES as $entry => $shell) {
@@ -150,9 +150,6 @@ final class listing_source_test extends \basic_testcase {
                 );
             }
             $this->assertStringContainsString('"' . self::SPECIFIER . $shell . '"', $this->read('amd/build/' . $entry . '.min.js'));
-        }
-        foreach (glob($this->plugin_root() . '/amd/src/*.js') as $file) {
-            $this->assertStringNotContainsString("from 'theme_dimensions/categorylisting'", (string) file_get_contents($file));
         }
     }
 

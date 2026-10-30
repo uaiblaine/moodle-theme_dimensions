@@ -73,7 +73,7 @@ describe('theme_dimensions/filterline/model', () => {
         expect(model.scope?.cells.find((cell) => cell.checked)?.value).toBe('enrolled');
     });
 
-    it('reads no line without its field or its listbox, as categoryline arms none', () => {
+    it('reads no line without its field or its listbox, and arms none', () => {
         const {line} = drawPage();
         line.querySelector('[data-region="dim-line-suggest"]')?.remove();
         expect(read(line)).toBeNull();

@@ -1,3 +1,3 @@
-# Load the old AMD client from the account's entry instead of its TypeScript shell: a second listing, with its own
-# counters and its own history writer.
-s/^import \{start\} from 'core\/esm!\@moodle\/lms\/theme_dimensions\/listing\/account';$/import {init as start} from 'theme_dimensions\/categoryvitrine';/m;
+# Start the visitor's client from the account's entry instead of the account's shell: a listing that asks the
+# visitor's service and remembers nothing.
+s/^import \{start\} from 'core\/esm!\@moodle\/lms\/theme_dimensions\/listing\/account';$/import {init as start} from 'theme_dimensions\/listingvisitor';/m;

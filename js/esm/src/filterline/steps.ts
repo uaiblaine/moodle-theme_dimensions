@@ -16,8 +16,8 @@
 /**
  * The filter line's folding steps, as a rule over numbers.
  *
- * The fleet contract's section 2 (moodle-dev/docs/filter-line/CONTRACT.md) and amd/src/categoryline.js's
- * fit(), which no shell arms since R4a: the line takes the first step at which its controls fit
+ * The fleet contract's section 2 (moodle-dev/docs/filter-line/CONTRACT.md), as the AMD line's fit() read it
+ * before R4a: the line takes the first step at which its controls fit
  * on its OWN width - full; Filters without its word; the search as an icon; two lines, the scope on the
  * second and the view toggle in the Organise menu - and the last one whatever it measures.
  *
@@ -59,8 +59,8 @@ export const MORPH_STEPS: Step[] = ['s3', 's4'];
 export const TWO_LINES: Step = 's4';
 
 /**
- * Pixels a control may run past an edge and still fit: categoryline's overflows() reads a control as
- * past the edge only beyond one pixel, which keeps a rounding of a sub-pixel width from folding the line.
+ * Pixels a control may run past an edge and still fit: a control is past the edge only beyond one pixel (the
+ * AMD line's overflows() rule), which keeps a rounding of a sub-pixel width from folding the line.
  */
 export const TOLERANCE = 1;
 

@@ -738,7 +738,7 @@ body.dim-category {
         // its dark half, so the mark follows the colour mode without a rule of ours.
         --dim-mark-bg: var(--bs-highlight-bg, #fff3cd);
         --dim-mark-ink: var(--bs-highlight-color, var(--dim-ink));
-        // The filter line's preview (categorypreview, contract section 6): the ring a card the pointed filter
+        // The filter line's preview (filterline/preview.ts, contract section 6): the ring a card the pointed filter
         // would keep wears, and the receding values a card that would go takes for its own tokens. Every fill is
         // named with its ink: the receding surface with the receding ink (4.6:1), the receding pill with its
         // ink (the none pair, 6.8:1), the film over the image with nothing over it but the band's own tag and
@@ -1818,8 +1818,8 @@ body.dim-category {
     }
 
     // Under the boxes, and the width of its own months: one month (20rem) below md and two side by
-    // side from md up, the breakpoint the client module counts its months with (WIDE in
-    // daterange.js). The ceiling is the viewport, the only box a popover really may not leave: the
+    // side from md up, the breakpoint the calendar's component counts its months with (WIDE in
+    // daterange/DateRange.tsx). The ceiling is the viewport, the only box a popover really may not leave: the
     // region it is positioned against is only as wide as the boxes, so capping it there would
     // squeeze a seven-column grid to the width of the buttons that open it.
     .dim-daterange__pop {
@@ -2737,7 +2737,7 @@ body.dim-category {
     }
 
     // ---- The filter line's preview (stage T4) ---------------------------------------------------------
-    // Pointing at a filter (categorypreview) marks the listing previewing, every card the filter would keep lit
+    // Pointing at a filter (filterline/preview.ts) marks the listing previewing, every card the filter would keep lit
     // and every other dim. A lit card wears a 2px ring in the accent, drawn inside its edge so a rail that
     // scrolls never clips it, and narrower than the 3px focus ring so the two are never mistaken. A dim card
     // recedes by remapping its own tokens - surface, inks, line, the state pills, the star, the call to action
@@ -5052,7 +5052,7 @@ body.dim-category {
         }
     }
 
-    // ---- The filter line, folded by its client (categoryline) ---------------------------------------
+    // ---- The filter line, folded by its component (filterline/) ------------------------------------
     // The client measures the line's OWN width and writes one step on it (dim-line--s1 to s4,
     // moodle-dev/docs/filter-line/CONTRACT.md section 2): full; Filters without its word; the search
     // as an icon (dim-line--folded); two lines, the scope on the second and the view toggle in the
@@ -5552,7 +5552,7 @@ body.dim-category {
     }
 
     // ---- What only one of the two readers gets ------------------------------------------------
-    // The listing's client module (categoryvitrine) marks the body with dim-js; without it the
+    // An account's listing (listing/account.ts) marks the body with dim-js; without it the
     // form's own submit is the only way to filter. These rules come AFTER every rule that sets a
     // display on the same elements: at equal specificity, source order decides.
     &.dim-js .dim-nojs-only {
@@ -5567,7 +5567,7 @@ body.dim-category {
         display: inline-flex;
     }
 
-    // The visitor's live listing (categorypublic) has a mark of its own, dim-public-js, and the
+    // The visitor's live listing (listing/visitor.ts) has a mark of its own, dim-public-js, and the
     // twin of the rule above: it hides the same no-JavaScript submits, because it drives the same
     // controls in place. It never reveals dim-js-only, which the star carries and a visitor has no
     // star; what both clients drive - load more and the continue link - carries dim-live-only,
@@ -5735,8 +5735,8 @@ body.dim-category {
             flex-wrap: wrap;
         }
 
-        // Two months side by side from here up, the width the client module counts two months at
-        // (WIDE in daterange.js): two 7-column months of 40px days, their gap and the padding.
+        // Two months side by side from here up, the width the calendar's component counts two months at
+        // (WIDE in daterange/DateRange.tsx): two 7-column months of 40px days, their gap and the padding.
         .dim-daterange__pop {
             width: 38rem;
         }

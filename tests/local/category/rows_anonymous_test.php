@@ -451,7 +451,7 @@ final class rows_anonymous_test extends \advanced_testcase {
     /**
      * Every poster of a visitor's page opens its panel, at rest and under a criterion, on the page and in the answer.
      *
-     * The visitor's live listing (amd/src/categorypublic.js) opens every poster's panel in place and
+     * The visitor's live listing (js/esm/src/listing/visitor.ts) opens every poster's panel in place and
      * keeps each poster a link to its area's panel, never the link to the area's own page, because a
      * visitor's posters are the areas holding a public course - at rest each counts one - and
      * under a criterion every poster opens, its zero panel included ({@see population::expandable()}).
