@@ -696,6 +696,12 @@ rests on:
 - **The menu reads no table per page.** `offered()` keeps the offered titles in the application cache `flavourmenu`,
   keyed by the current language and the offered ids, so a setting change is a new key and needs no callback; Boost
   Union's flavour events empty it.
+- **The look's mark (`lookmenufavicons`) is cached as a file name and a colour, never as an address**: the address
+  carries the theme revision. `flavourchoice::flavour_favicon()` builds the address Boost Union's `favicon()` puts in
+  the tab, size included, so the browser reuses that fetch; `site_favicon()` mirrors that method's last branch, because
+  the method itself answers with the applied flavour's favicon. `flavourchoice_test` compares both with Boost Union's
+  method in a process of its own: re-read `theme_boost_union\output\core_renderer::favicon()` on every Boost Union
+  update. The brand colour reaches a style attribute only through `safe_colour()`.
 
 - **Smart menus by look ride on one cohort per offered look (S5, `local\lookcohorts`).** Boost Union's smart menus have
   no extension point and cache per user, so the CHOICE (never the applied flavour) is carried into a cohort and Boost

@@ -1,0 +1,38 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/look_mark
+
+    The mark before a look's name in the look menus (the user menu's Look submenu, the drawer's Look panel and
+    the choice page), built by theme_dimensions\local\flavourchoice::menu(): the look's favicon, else a dot in
+    its brand colour, else an empty box of the same size, so the names line up. Decorative: the name beside
+    it says which look it is.
+
+    The image is fetched lazily, so a submenu nobody opens costs no request. The colour reaches the style
+    attribute only in the shapes flavourchoice lets through (no quote, no semicolon).
+
+    Context variables required for this template:
+    * url - The favicon's address, or null
+    * colour - The look's brand colour, or null
+
+    Example context (json):
+    {
+        "url": null,
+        "colour": "#7a1f2b"
+    }
+}}
+<span class="dimensions-look-mark" aria-hidden="true">{{#url}}<img class="dimensions-look-favicon" src="{{url}}" alt="" width="18" height="18" loading="lazy">{{/url}}{{^url}}{{#colour}}<span class="dimensions-look-dot" style="background-color: {{colour}};"></span>{{/colour}}{{/url}}</span>

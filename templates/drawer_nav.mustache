@@ -42,7 +42,8 @@
     * sections - id, label, items (see theme_dimensions/drawer_item)
     * panels - id, parentid, level, title, backlabel, backaria, items, hasurl, url, openlabel
     * appearance - false, or cookieattributes and modes (mode, label, icon, togglelabel, isactive, tabindex)
-    * look - false, or panelid, parentid, backlabel, backaria, current and items (id, text, url, iscurrent)
+    * look - false, or panelid, parentid, backlabel, backaria, current and items (id, text, url, iscurrent, mark: null or
+      theme_dimensions/look_mark's context)
     * language - false, or panelid, parentid, backlabel, backaria, current and items (text, url, lang, iscurrent)
 
     Example context (json):
@@ -173,13 +174,15 @@
                     "id": 0,
                     "text": "Site default",
                     "url": "https://example.com/theme/dimensions/flavour.php?flavour=0",
-                    "iscurrent": true
+                    "iscurrent": true,
+                    "mark": {"url": "https://example.com/theme/image.php/dimensions/theme/1/favicon", "colour": null}
                 },
                 {
                     "id": 3,
                     "text": "Harbour & Co",
                     "url": "https://example.com/theme/dimensions/flavour.php?flavour=3",
-                    "iscurrent": false
+                    "iscurrent": false,
+                    "mark": {"url": null, "colour": "#7a1f2b"}
                 }
             ]
         },
@@ -304,12 +307,14 @@
                 <li class="dimensions-drawer-row">
                     {{#iscurrent}}
                     <span class="dimensions-drawer-item is-current" aria-current="true">
+                        {{#mark}}{{> theme_dimensions/look_mark }}{{/mark}}
                         <span class="dimensions-drawer-text">{{text}}</span>
                         <i class="icon fa fa-check fa-fw dimensions-drawer-chevron" aria-hidden="true"></i>
                     </span>
                     {{/iscurrent}}
                     {{^iscurrent}}
                     <a class="dimensions-drawer-item" href="{{url}}" data-dimensions-flavour="{{id}}">
+                        {{#mark}}{{> theme_dimensions/look_mark }}{{/mark}}
                         <span class="dimensions-drawer-text">{{text}}</span>
                     </a>
                     {{/iscurrent}}
