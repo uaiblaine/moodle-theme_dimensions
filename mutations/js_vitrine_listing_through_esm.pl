@@ -1,2 +1,3 @@
-# Load the AMD listing again from the logged-in client, beside the TypeScript one the components' mounts share.
-s/^import \* as Listing from 'core\/esm!\@moodle\/lms\/theme_dimensions\/listing\/listing';$/import * as Listing from 'theme_dimensions\/categorylisting';/m;
+# Load the old AMD client from the account's entry instead of its TypeScript shell: a second listing, with its own
+# counters and its own history writer.
+s/^import \{start\} from 'core\/esm!\@moodle\/lms\/theme_dimensions\/listing\/account';$/import {init as start} from 'theme_dimensions\/categoryvitrine';/m;

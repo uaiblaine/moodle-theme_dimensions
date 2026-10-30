@@ -165,62 +165,16 @@ final class categorypanel_source_test extends \basic_testcase {
     }
 
     /**
-     * A panel asks for the area's whole subtree, eight courses in the panel's own order, the page's criteria.
+     * A panel's answer is the server's panel context, the top-level cards and the page's own suggestions.
      *
-     * A panel is the whole area, so a course of a subarea is in it, drawn with its overline
-     * (the request names no `direct`: the service has no such parameter, and an unknown key is
-     * refused). The tree's category never travels: a panel is asked about a category below the
-     * page's, and the service drops a cat that is not an admitted category below the one it is asked
-     * about ({@see \theme_dimensions\local\category\population::cat_ids()}), so the page's own
-     * would be a criterion that narrows nothing.
+     * The request is the page's client's: an account's is js/esm/src/listing/account.ts's panelArgs() since R4b3
+     * (listing_account_source_test), the visitor's is visitor.ts's; the shared mount hands the component its answer.
      */
-    public function test_a_panel_asks_for_the_subtree_eight_courses_and_the_pages_criteria(): void {
-        $this->assertMatchesRegularExpression('~^const PANEL_SIZE = 8;$~m', $this->source());
-        $args = $this->body('panelArgs');
-        $this->assertDoesNotMatchRegularExpression(
-            '~\bdirect\b~',
-            $args,
-            'The service takes no direct key: an unknown one is refused.'
-        );
-        $this->assertMatchesRegularExpression('~\bwithcategories: true,~', $args, 'And a panel\'s request, carrying its context.');
-        $this->assertStringContainsString('perpage: PANEL_SIZE,', $args);
-        $this->assertStringContainsString('page: 0,', $args);
-        $this->assertStringContainsString('categoryid: id,', $args, 'It asks about the area, not the page.');
-        $this->assertStringContainsString('sort: psort === PSORT_NAME ? SORT.name : SORT.recent,', $args);
-        $criteria = [
-            'query: params.get(PARAM.query)',
-            "chip: chip === LEGACY_FAVOURITES ? '' : chip,",
-            "fav: params.get(PARAM.fav) === '1' || chip === LEGACY_FAVOURITES,",
-            'filters: filters,',
-            'datefrom: period.from,',
-            'dateto: period.to,',
-        ];
-        foreach ($criteria as $argument) {
-            $this->assertStringContainsString($argument, $args, 'A panel carries the page\'s ' . $argument);
-        }
-        /* The period is the address's read through the calendar's own reading of it, either bound
-           alone or both in order: a hand-edited pair given backwards, which the page put in order,
-           would otherwise reach a service that refuses it and no panel would open. */
-        $this->assertStringContainsString(
-            'const period = DateRange.period(params.get(PARAM.from), params.get(PARAM.to));',
-            $args
-        );
-        $this->assertStringContainsString("import * as DateRange from 'theme_dimensions/daterange';", $this->source());
-        $this->assertDoesNotMatchRegularExpression('~\bcat:~', $args, 'The tree\'s category never travels with a panel.');
-        $this->assertStringContainsString("SORT = {\n    recent: 'recent',\n    name: 'name',\n};", $this->source());
-
-        $ask = $this->body('ask');
-        $this->assertStringContainsString("methodname: 'theme_dimensions_get_category_rows',", $ask);
-        $this->assertStringContainsString('args: panelArgs(id, psort),', $ask);
-        $this->assertStringContainsString(
-            'const mountAreas = () => Listing.mountAreas(areas, {}, {ask: ask, painted: paintProgress});',
-            $this->source(),
-            'The logged-in panel asks through this module and nothing else.'
-        );
+    public function test_a_panels_answer_is_the_servers_context_and_the_pages_suggestions(): void {
         $this->assertStringContainsString(
             'detail.answer = client.ask(detail.poster, detail.psort);',
             $this->body('mountAreas', 'listing/mounts'),
-            'And the shared mount hands the component this module\'s answer.'
+            'The shared mount hands the component the page\'s client\'s answer.'
         );
         /* The answer's context is the server's panel, plus the cards the service returns at the top
            level and the page's own suggestions for a zero panel, which the service cannot know:
@@ -539,7 +493,7 @@ final class categorypanel_source_test extends \basic_testcase {
      * would star a course this page is not allowed to admit exists. The second half is the control:
      * a module that called no service at all would pass the first on its own.
      */
-    public function test_the_star_calls_the_themes_own_service_and_is_armed_once_by_both_modules(): void {
+    public function test_the_star_calls_the_themes_own_service_and_is_armed_once(): void {
         $star = $this->source('categorystar');
         $this->assertStringNotContainsString('core_course_set_favourite_courses', $star);
         $this->assertStringContainsString(
@@ -554,13 +508,12 @@ final class categorypanel_source_test extends \basic_testcase {
             'One listener, whoever calls.'
         );
         $this->assertStringContainsString("document.addEventListener('click', (event) => {", $init, 'Delegated, for later cards.');
-        foreach (['categoryvitrine', 'categorypanel'] as $module) {
-            $this->assertStringContainsString(
-                "import * as CategoryStar from 'theme_dimensions/categorystar';",
-                $this->source($module)
-            );
-            $this->assertStringContainsString('CategoryStar.init();', $this->init_body($module), $module . ' arms the star.');
-        }
+        // An account's listing entry arms it since R4b3 (listing_account_source_test holds the order).
+        $this->assertStringContainsString(
+            "import * as CategoryStar from 'theme_dimensions/categorystar';",
+            $this->source('listingaccount')
+        );
+        $this->assertStringContainsString('CategoryStar.init();', $this->init_body('listingaccount'), 'The entry arms the star.');
     }
 
     /**
@@ -577,14 +530,15 @@ final class categorypanel_source_test extends \basic_testcase {
             $entry = $module === self::SHARED ? $this->body('arm', $module) : $this->init_body($module);
             $this->assertStringContainsString('document.body.classList.add(BODY_CLASS);', $entry);
         }
-        foreach (['categorypanel', self::SHARED, 'categorystar'] as $module) {
+        foreach (['listingaccount', self::SHARED, 'categorystar'] as $module) {
             $this->assertStringNotContainsString(
                 "'dim-js'",
                 $this->source($module),
                 $module . ' never writes the listing\'s mark.'
             );
         }
-        $this->assertStringNotContainsString('BODY_CLASS', $this->source(), 'The logged-in client writes no mark of its own.');
+        // The listing's mark is the account's shell's, written by the store (listing_account_source_test).
+        $this->assertStringNotContainsString('BODY_CLASS', $this->source('listingaccount'), 'The entry writes no mark of its own.');
     }
 
     /**
@@ -966,16 +920,10 @@ final class categorypanel_source_test extends \basic_testcase {
      * pills and hidden posters behind. And the "nothing anywhere" box's second way out is written from
      * each answer.
      *
-     * Changes that must make it fail: the root's panel sending no term (the first assertion).
+     * Changes that must make it fail: a poster the answer does not name left with the last term's pill.
      */
     public function test_at_the_root_a_panel_carries_the_term_alone_and_the_posters_go_back_to_rest(): void {
-        $args = $this->body('panelArgs');
-        $this->assertMatchesRegularExpression(
-            '~if \(isRoot\(\)\) \{\s*params = new URLSearchParams\(\);\s*'
-                . 'if \(address\.has\(PARAM\.query\)\) \{\s*params\.set\(PARAM\.query, address\.get\(PARAM\.query\)\);~',
-            $args,
-            'The root\'s panel carries the term, and a fresh set of parameters holds nothing else.'
-        );
+        // The root's panel request is the page's client's (listing_account_source_test for an account).
         $this->assertStringContainsString(
             "const termOf = () => new URL(window.location.href).searchParams.get(PARAM.query) || '';",
             $this->source(self::SHARED),

@@ -42,7 +42,7 @@ const applyResponse = /* @__PURE__ */ __name(async (response, append, ticket) =>
   state.hasmore = Boolean(response.hasmore);
   const grid = root.querySelector(SELECTORS.grid);
   if (grid) {
-    Listing.paintGrid(root, state, grid, items, append, null);
+    Listing.paintGrid(root, state, grid, items, append, shell.discard);
   }
   const notice = root.querySelector(SELECTORS.notice);
   if (notice) {
@@ -56,6 +56,8 @@ const applyResponse = /* @__PURE__ */ __name(async (response, append, ticket) =>
   Listing.paintCount(root, response);
   Listing.paintChips(root, response);
   Listing.paintGroups(root, response);
+  Listing.paintFavourites(root, response);
+  shell.painted(items);
   Listing.paintPager(root, response, append, items.length ? items[0] : null);
   if (!append) {
     Listing.paintDirect(root, response);
@@ -68,13 +70,13 @@ const paintAreas = /* @__PURE__ */ __name((response) => {
     return;
   }
   const word = response.areas || {};
+  shell.answered(response);
   document.dispatchEvent(new CustomEvent(LISTING.criteria, { detail: {
     accordion: response.accordion || [],
     areas: word,
     filtered: Boolean(word.filtered),
     total: Number(response.total)
   } }));
-  shell.answered(response);
 }, "paintAreas");
 const requestRows = /* @__PURE__ */ __name(async (page, append) => {
   const ticket = ++seq;
@@ -108,8 +110,9 @@ const requestRows = /* @__PURE__ */ __name(async (page, append) => {
     pending.resolve();
   }
 }, "requestRows");
-const apply = /* @__PURE__ */ __name(() => {
+const apply = /* @__PURE__ */ __name((kind) => {
   state.page = 0;
+  shell.changed(kind);
   Listing.writeUrl(state, true);
   shell.written();
   return requestRows(0, false);
@@ -127,7 +130,7 @@ const onSearch = /* @__PURE__ */ __name(async (raw) => {
     notice.hidden = true;
   }
   state.query = term;
-  await apply();
+  await apply("term");
 }, "onSearch");
 const cancelSearch = /* @__PURE__ */ __name(() => {
   window.clearTimeout(searchtimer);
@@ -161,7 +164,7 @@ const onSort = /* @__PURE__ */ __name((sort) => {
     shell.leave(Listing.buildUrl(state));
     return;
   }
-  apply();
+  apply("filter");
 }, "onSort");
 const onTree = /* @__PURE__ */ __name((link) => {
   const id = Number(link.dataset.categoryid);
@@ -174,14 +177,14 @@ const onTree = /* @__PURE__ */ __name((link) => {
   }
   state.cat = cat;
   Listing.markTree(root, state);
-  apply();
+  apply("tree");
 }, "onTree");
 const setRange = /* @__PURE__ */ __name((datefrom, dateto) => {
   const range = period(datefrom, dateto);
   state.datefrom = range.from;
   state.dateto = range.to;
   Listing.paintDates(root, state);
-  apply();
+  apply("period");
 }, "setRange");
 const onChoose = /* @__PURE__ */ __name((input) => {
   const group = input.closest(SELECTORS.group);
@@ -190,21 +193,30 @@ const onChoose = /* @__PURE__ */ __name((input) => {
     onSort(input.value);
     return;
   }
-  if (!name || !name.startsWith(Listing.PARAM.fieldprefix)) {
+  if (name === Listing.PARAM.chip) {
+    state.chip = input.value;
+  } else if (name && name.startsWith(Listing.PARAM.fieldprefix)) {
+    const fieldid = name.slice(Listing.PARAM.fieldprefix.length);
+    if (Number(input.value) > 0) {
+      state.filters[fieldid] = Number(input.value);
+    } else {
+      delete state.filters[fieldid];
+    }
+  } else {
     return;
   }
-  const fieldid = name.slice(Listing.PARAM.fieldprefix.length);
-  if (Number(input.value) > 0) {
-    state.filters[fieldid] = Number(input.value);
-  } else {
-    delete state.filters[fieldid];
-  }
-  apply();
+  apply("filter");
 }, "onChoose");
+const onFav = /* @__PURE__ */ __name(() => {
+  state.fav = !state.fav;
+  Listing.paintFavToggle(root, state.fav);
+  apply("filter");
+}, "onFav");
 const setView = /* @__PURE__ */ __name((view) => {
   state.view = view;
   state.viewchosen = true;
   Listing.paintView(root, view);
+  shell.changed("view");
   Listing.writeUrl(state, true);
   shell.written();
 }, "setView");
@@ -217,6 +229,8 @@ const focusSearch = /* @__PURE__ */ __name(() => {
 const onClear = /* @__PURE__ */ __name(() => {
   cancelSearch();
   state.query = "";
+  state.chip = "";
+  state.fav = false;
   state.filters = {};
   state.datefrom = "";
   state.dateto = "";
@@ -226,7 +240,7 @@ const onClear = /* @__PURE__ */ __name(() => {
     notice.hidden = true;
   }
   Listing.paintControls(root, state);
-  apply();
+  apply("filter");
   focusSearch();
 }, "onClear");
 const onChipRemove = /* @__PURE__ */ __name((chip) => {
@@ -235,7 +249,7 @@ const onChipRemove = /* @__PURE__ */ __name((chip) => {
   }
   shell.normalise(state);
   Listing.paintControls(root, state);
-  apply();
+  apply("filter");
   focusSearch();
   return true;
 }, "onChipRemove");
@@ -264,6 +278,7 @@ const onPopState = /* @__PURE__ */ __name(() => {
   Listing.paintControls(root, state);
   Listing.syncFold();
   shell.written();
+  shell.changed("history");
   requestRows(0, false);
 }, "onPopState");
 const listen = /* @__PURE__ */ __name(() => {
@@ -306,6 +321,11 @@ const listen = /* @__PURE__ */ __name(() => {
       setRange(quick.dataset.from || "", quick.dataset.to || "");
       return;
     }
+    if (Listing.closestOf(event, SELECTORS.fav)) {
+      event.preventDefault();
+      onFav();
+      return;
+    }
     const view = Listing.closestOf(event, SELECTORS.viewbutton);
     if (view) {
       event.preventDefault();
@@ -341,19 +361,23 @@ const init = /* @__PURE__ */ __name((given, categoryid) => {
   const params = new URL(window.location.href).searchParams;
   const range = Listing.periodOf(params);
   const defaultsort = typeof payload.defaultsort === "string" ? payload.defaultsort : "";
-  const sort = Listing.sortOf(params, defaultsort);
+  const remembered = payload.remembered === true;
+  const sort = remembered && typeof payload.sort === "string" ? payload.sort : Listing.sortOf(params, defaultsort);
   state = {
     categoryid,
     page: Number(payload.page) || 0,
     total: Number(payload.total) || 0,
     hasmore: Boolean(payload.hasmore),
     query: typeof payload.query === "string" ? payload.query : "",
-    chip: "",
-    fav: false,
+    chip: typeof payload.chip === "string" ? payload.chip : "",
+    // The server read an older address's favourites chip as the toggle already.
+    fav: payload.fav === true,
     filters: payload.filters && typeof payload.filters === "object" ? Object.assign({}, payload.filters) : {},
     // The organisation, the period and the tree's category are the address's: the toolbar is a GET form.
     defaultsort,
     sort,
+    // Whether every address the store writes names its organisation (the shell's changed() sets it).
+    remembered,
     datefrom: range.from,
     dateto: range.to,
     cat: Listing.catOf(params, sort),
@@ -372,12 +396,12 @@ const init = /* @__PURE__ */ __name((given, categoryid) => {
   shell.written();
   Listing.mountAreas(areas, shell.areas.props, shell.areas.client);
   if (!live) {
-    return true;
+    return false;
   }
   document.body.classList.add(shell.mark);
   markTitles(root.querySelector(SELECTORS.grid), state.query);
   Listing.mountLine(root, dropTerm);
-  Listing.mountCalendar(root, state, setRange).catch(() => null);
+  Listing.mountCalendar(root, state, setRange).catch(shell.unmounted);
   const bar = root.querySelector(SELECTORS.pagerbar);
   if (bar) {
     bar.hidden = true;

@@ -74,6 +74,19 @@ const askAbout = (type: string, id: number): Record<string, unknown> => {
     return detail;
 };
 
+/** A calendar that cannot mount: a region the component cannot be appended to. Returns the spy to restore. */
+const failingCalendar = (): jest.SpyInstance => {
+    document.querySelector('[data-region="dim-vitrine-toolbar"]')?.insertAdjacentHTML('beforeend',
+        '<fieldset data-region="dim-date"><input type="date" name="from"><div data-region="dim-daterange"></div></fieldset>');
+    const append = Element.prototype.append;
+    return jest.spyOn(Element.prototype, 'append').mockImplementation(function(this: Element, ...nodes) {
+        if (this.getAttribute('data-region') === 'dim-daterange') {
+            throw new Error('no calendar');
+        }
+        append.apply(this, nodes);
+    });
+};
+
 beforeEach(() => {
     fetched.mockReset();
     fetched.mockReturnValue(new Promise(() => null));
@@ -125,6 +138,21 @@ describe('theme_dimensions/listing/visitor', () => {
         expect(slice).not.toHaveProperty('withcategories');
         askAbout(AREAS.ask, 9);
         expect(fetched.mock.calls[0][1]).toEqual({loginrequired: false});
+    });
+
+    it('says nothing of a calendar that could not mount: the native fields are the visitor\'s', async() => {
+        const Notification = {exception: jest.fn(() => Promise.resolve())};
+        mockAmdModule('core/notification', Notification);
+        page('?id=7&sort=name');
+        const append = failingCalendar();
+        start(7);
+        append.mockRestore();
+        for (let round = 0; round < 3; round++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        expect(Notification.exception).not.toHaveBeenCalled();
+        expect(document.querySelector('input[name="from"]')).not.toBeNull();
+        expect(fetched).not.toHaveBeenCalled();
     });
 
     it('tells a failure in the page\'s own sentence, never the service\'s, and takes a panel\'s failure over', async() => {

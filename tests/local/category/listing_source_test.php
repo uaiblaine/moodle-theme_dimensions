@@ -41,14 +41,14 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  */
 #[CoversNothing]
 final class listing_source_test extends \basic_testcase {
-    /** @var string The specifier the AMD clients load the listing by. */
-    private const SPECIFIER = 'core/esm!@moodle/lms/theme_dimensions/listing/listing';
+    /** @var string The specifier the AMD entries load their shell under. */
+    private const SPECIFIER = 'core/esm!@moodle/lms/theme_dimensions/listing/';
 
-    /** @var string[] The AMD modules that paint with the shared listing until the store replaces them (R4b3). */
-    private const CLIENTS = ['categoryvitrine', 'categorypanel'];
+    /** @var string[] The AMD entries the pages arm, by the shell each one starts (R4b2, R4b3). */
+    private const ENTRIES = ['listingaccount' => 'account', 'listingvisitor' => 'visitor'];
 
     /** @var string[] The TypeScript that calls the listing by the barrel's names: the store and its shells. */
-    private const SHELLS = ['js/esm/src/listing/store.ts', 'js/esm/src/listing/visitor.ts'];
+    private const SHELLS = ['js/esm/src/listing/store.ts', 'js/esm/src/listing/visitor.ts', 'js/esm/src/listing/account.ts'];
 
     /**
      * Absolute path to the theme root.
@@ -123,24 +123,33 @@ final class listing_source_test extends \basic_testcase {
     }
 
     /**
-     * Every AMD client loads the TypeScript listing through core's ES module loader, and none the AMD one.
+     * Each AMD entry starts its TypeScript shell through core's ES module loader, and no AMD module loads the AMD listing.
      *
-     * A client importing the AMD listing again would run a second copy of the painters, with their own counters.
+     * An entry loading an AMD client again would run a second copy of the listing, with its own counters and its own
+     * history writer, beside the store.
      *
-     * Changes that must make it fail: a client importing theme_dimensions/categorylisting again (gates
-     * js_vitrine_listing_through_esm, js_panel_listing_through_esm; the visitor's entry is
-     * js_public_listing_through_esm, read by categorypublic_source_test's walk).
+     * Changes that must make it fail: the account's entry loading an AMD client instead of its shell (gate
+     * js_vitrine_listing_through_esm; the visitor's entry is js_public_listing_through_esm, read by
+     * categorypublic_source_test's walk); any module importing theme_dimensions/categorylisting again.
      */
     public function test_the_amd_clients_load_the_typescript_listing(): void {
-        foreach (self::CLIENTS as $client) {
-            $source = $this->read('amd/src/' . $client . '.js');
+        foreach (self::ENTRIES as $entry => $shell) {
+            $source = $this->read('amd/src/' . $entry . '.js');
             $this->assertStringContainsString(
-                "\nimport * as Listing from '" . self::SPECIFIER . "';\n",
+                "\nimport {start} from '" . self::SPECIFIER . $shell . "';\n",
                 $source,
-                "{$client} loads the shared listing through core/esm!."
+                "{$entry} starts its shell through core/esm!."
             );
-            $this->assertStringNotContainsString("'theme_dimensions/categorylisting'", $source, "{$client} loads the AMD listing.");
-            $this->assertStringContainsString('"' . self::SPECIFIER . '"', $this->read('amd/build/' . $client . '.min.js'));
+            preg_match_all("~^import [^\n]* from '([^']+)';$~m", $source, $imports);
+            // Its shell, and the star the account's entry arms (AMD until R5): nothing else.
+            foreach ($imports[1] as $import) {
+                $this->assertContains(
+                    $import,
+                    [self::SPECIFIER . $shell, 'theme_dimensions/categorystar'],
+                    "{$entry} loads {$import}."
+                );
+            }
+            $this->assertStringContainsString('"' . self::SPECIFIER . $shell . '"', $this->read('amd/build/' . $entry . '.min.js'));
         }
         foreach (glob($this->plugin_root() . '/amd/src/*.js') as $file) {
             $this->assertStringNotContainsString("from 'theme_dimensions/categorylisting'", (string) file_get_contents($file));
@@ -165,14 +174,13 @@ final class listing_source_test extends \basic_testcase {
             }
         }
         $called = [];
-        $callers = array_merge(array_map(fn(string $client): string => 'amd/src/' . $client . '.js', self::CLIENTS), self::SHELLS);
-        foreach ($callers as $caller) {
+        foreach (self::SHELLS as $caller) {
             preg_match_all('~\bListing\.([A-Za-z]+)~', $this->uncommented($this->read($caller)), $uses);
             $called = array_merge($called, $uses[1]);
         }
         $called = array_values(array_unique($called));
         sort($called);
-        $this->assertGreaterThan(30, count($called), 'The control: the clients\' calls are read.');
+        $this->assertGreaterThan(30, count($called), 'The control: the shells\' calls are read.');
         foreach ($called as $name) {
             $this->assertContains($name, $exported, "A client calls Listing.{$name}, which the barrel does not export.");
         }
@@ -211,7 +219,10 @@ final class listing_source_test extends \basic_testcase {
             $this->assertStringNotContainsString($never, $code, "The store spells {$never}: that is a shell's.");
         }
         $this->assertStringContainsString('document.body.classList.add(shell.mark);', $code);
-        $this->assertStringContainsString("import {current, init} from './store';", $this->read('js/esm/src/listing/visitor.ts'));
+        foreach (['visitor', 'account'] as $shell) {
+            $source = $this->read('js/esm/src/listing/' . $shell . '.ts');
+            $this->assertStringContainsString("import {current, init} from './store';", $source);
+        }
     }
 
     /**

@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **An account's live listing runs on the listing store** (2026100543; R4b3 of `docs/vitrine-react/R4b.md`).
+  `js/esm/src/listing/account.ts` is the logged-in shell the store is handed: the state remembered per category and the
+  remembered organisation, the view preference for a real account, the progress of the enrolled courses on screen, the
+  hover peek with one panel open at a time, the automatic opening's note, a panel's request and its progress, and core's
+  exception dialogue. `course_renderer.php` arms `amd/src/listingaccount.js`, which arms the star and starts the shell
+  through `core/esm!`, in place of `categoryvitrine` and `categorypanel`, which are imported by nothing until the
+  removal pull request. The store tells its shell what changed before it writes the address, hands it the cards it
+  draws and the ones a replaced grid drops, and asks it what to say of a calendar that could not mount (the account's
+  shows core's dialogue, as before; the visitor's says nothing), and now handles the favourites toggle; the visitor's
+  shell takes the new hooks as no-ops. No behaviour changes on either page. Two Behat scenarios (a remembered bare
+  address written out in full in place, Back with a panel open), 11 Jest tests, a source test of the account's shell,
+  24 mutation gates retargeted, 10 retired and 7 new.
 - **block_compass's open-courses line links to the filtered showcase** (2026100542; stage 14f of block_compass's
   ADR-017). `local\hook\block_compass\category_link` answers the optional `\block_compass\hook\category_link`
   hook with `?categoryid=N&chip=open&from=Y-m-d&to=Y-m-d` for each asked category and the bare course index for the

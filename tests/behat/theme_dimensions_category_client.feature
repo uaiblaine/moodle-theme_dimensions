@@ -805,3 +805,48 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Then I should see "Resgate em Altura" in the "[data-region='dim-panel-rail']" "css_element"
     And "[data-region='dim-areas-nomatch']" "css_element" should not be visible
     And "//article[@data-name='Test category']//*[@data-region='dim-poster-pill']" "xpath_element" should not be visible
+
+  @javascript
+  Scenario: Arriving on a remembered bare address writes it out in full without a history entry
+    # The bare address of a category draws a reader's remembered state, and the client writes that
+    # address out in full in place (R4b3): pushed, Back would stop on the bare address, which draws
+    # the same page again, and the reader could never leave it with one press.
+    Given the following "categories" exist:
+      | name           | category | idnumber |
+      | Other category | 0        | OTHERCAT |
+    And the following "courses" exist:
+      | fullname    | shortname | category | customfield_dimensions_model |
+      | Curso Outro | OUTRO     | OTHERCAT | 1                          |
+    And I log in as "student1"
+    And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    When I click on "[data-region='dim-organise'] > summary" "css_element"
+    And I click on "//fieldset[@data-region='dim-sort']//label[normalize-space(.)='A-Z']" "xpath_element"
+    Then the url should match "[?&]sort=name(&|$)"
+    When I am on the "OTHERCAT" "theme_dimensions > Category showcase" page
+    And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    Then the url should match "[?&]sort=name(&|$)"
+    And "//fieldset[@data-region='dim-sort']//input[@value='name'][@checked]" "xpath_element" should exist
+    When I press the "back" button in the browser
+    Then I should see "Curso Outro" in the "[data-region='dim-vitrine-grid']" "css_element"
+    And I should not see "Resgate em Altura" in the "[data-region='dim-vitrine-grid']" "css_element"
+
+  @javascript
+  Scenario: Going back with a panel open puts the criteria back and keeps the panel
+    # Two writers share the address: the store pushes the criteria, the posters' component replaces
+    # its open area. The store hears Back first and asks for the criteria the address names, and the
+    # component keeps the panel the same address still names.
+    Given I log in as "student1"
+    And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    When I click on "//article[@data-name='Open category']//button[@data-region='dim-poster-control']" "xpath_element"
+    Then I should see "Combate a Incendio" in the "[data-region='dim-panel-rail']" "css_element"
+    And the url should match "[?&]open=[0-9]+"
+    When I set the field "Search courses" to "Incendio"
+    Then I should see "1 course for “Incendio”: 1 in 1 area" in the "[data-region='dim-vitrine-count']" "css_element"
+    And the url should match "[?&]q=Incendio"
+    When I press the "back" button in the browser
+    Then "//p[@data-region='dim-vitrine-count'][contains(normalize-space(.), '3 courses in Test category')]" "xpath_element" should exist
+    And the field "Search courses" matches value ""
+    And the url should match "^(?!.*[?&]q=)"
+    And the url should match "[?&]open=[0-9]+"
+    And "//article[@data-name='Open category']//button[@data-region='dim-poster-control'][@aria-expanded='true']" "xpath_element" should exist
+    And I should see "Combate a Incendio" in the "[data-region='dim-panel-rail']" "css_element"

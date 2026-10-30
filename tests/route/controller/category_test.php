@@ -944,8 +944,7 @@ final class category_test extends \core\tests\router\route_testcase {
             $calls['theme_dimensions/listingvisitor'],
             'It is told the category and nothing else.'
         );
-        $this->assertArrayNotHasKey('theme_dimensions/categoryvitrine', $calls, 'Never the logged-in client.');
-        $this->assertArrayNotHasKey('theme_dimensions/categorypanel', $calls);
+        $this->assertArrayNotHasKey('theme_dimensions/listingaccount', $calls, 'Never the logged-in client.');
         $this->assertContains(
             request::STRING_FALLBACK,
             $this->js_strings()[self::COMPONENT] ?? [],

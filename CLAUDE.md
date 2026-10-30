@@ -206,7 +206,8 @@ React and TypeScript live in `js/esm/src`, built to `js/esm/build`, tested in `j
   its siblings by relative import and theme AMD modules by quoted name through the bridge, and the walk
   starts from the bridge as well as from the visitor's entry, `listingvisitor` (`categorypublic` until R4b2). Since R4a it reaches the three components (the visitor
   mounts them), so the bridge and every module of `js/esm/src` a component imports name nothing of a session and
-  none of `categoryvitrine`, `categorypanel` or `categorystar`, comments included (the R4a section).
+  none of `categoryvitrine`, `categorypanel`, `categorystar`, `listingaccount` or `listing/account`, comments included
+  (the R4a and R4b3 sections).
 
 ## Code layout
 
@@ -273,14 +274,14 @@ classes/local/category/        The category showcase's decision layer (stage 2):
                                population (the two gates, the clamps, the probe cap, the page),
                                classifier (eleven states, five statements), facets, cards, criteria,
                                scope, page_result, unavailable_exception. See the section below.
-amd/src/category*.js           The showcase's modules (amd/src/covervideo.js + local/coverfilm.js: the cover film). Its listing clients: categoryvitrine and
-                               categorypanel (an account's) over the shared listing in js/esm/src/listing (R4b1), which
-                               mounts the React components for both; a visitor's is the store (R4b2, below).
-                               categorylisting (R4b1), categorypublic (R4b2), categoryline, categorypreview, categoryareapanel and
-                               categoryposters are imported by nothing and leave with the removal pull request.
-js/esm/src/                    The React port (R0-R4b2): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells;
-                               listing/ (R4b1), the shared listing the AMD clients load through core/esm!, and its
-                               store with the visitor's shell (R4b2), armed by amd/src/listingvisitor.js.
+amd/src/category*.js           The showcase's modules (amd/src/covervideo.js + local/coverfilm.js: the cover film). Both
+                               listings are the store in js/esm/src/listing, armed by amd/src/listingaccount.js (R4b3) and
+                               amd/src/listingvisitor.js (R4b2). categorylisting (R4b1), categorypublic (R4b2), categoryvitrine and
+                               categorypanel (R4b3), categoryline, categorypreview, categoryareapanel and categoryposters are
+                               imported by nothing and leave with the removal pull request (R4c).
+js/esm/src/                    The React port (R0-R4b3): daterange/ (R1), filterline/ (R2), areas/ (R3), on both shells;
+                               listing/: the shared listing (R4b1), its store with the visitor's shell (R4b2) and the
+                               account's (R4b3), each started by its AMD entry through core/esm!.
 classes/output/category_pages.php  The pages strip (T2): local_page's catalogue, asked by class
                                name, under two rules of the theme's own. See its section below.
 templates/category_pages.mustache  The strip's markup, drawn by category_listing above the toolbar.
@@ -3757,6 +3758,50 @@ the S1-S4 and R4a sections binds it. What a maintainer must not lose:
   the module loader, which answers after a timer even for a module already loaded (RequireJS's `nextTick`); Behat read
   that gap as a settled page and counted rows being replaced under it (the visitor's tree scenario, three matrices).
   Gates `js_store_rows_pending`, `js_vitrine_rows_pending`.
+
+## The category showcase: the account's shell (R4b3, 2026-10-29)
+
+Stage R4b3 of `docs/vitrine-react/R4b.md`. An account's live listing is the store driven by `js/esm/src/listing/account.ts`,
+armed by `amd/src/listingaccount.js` (one `js_call_amd` in `course_renderer.php`, where `categoryvitrine` and
+`categorypanel` had two); both AMD modules are imported by nothing until the removal pull request (R4c). What a
+maintainer must not lose:
+
+- **The entry arms the star, then starts the shell.** `categorystar` stays AMD until R5, outside the ES modules' tree and
+  its bridge, so `listingaccount.js` imports it and nothing else beside its shell (gates `js_account_arms_star`,
+  `js_areas_no_amd_panel`). The star's one delegated listener covers the panel's cards.
+- **The Shell gained four hooks, no-ops on the visitor's**: `changed(kind)`, told BEFORE the store writes the address
+  (`term`, `tree`, `period`, `filter`, `view`, `history`), so the account marks the state remembered and the address
+  names its organisation from the first change (gate `js_changed_before_write`); `discard`, every card a replaced grid
+  drops, which the observer must let go; `painted`, the cards an answer drew, appended or not; `unmounted(error)`, a
+  calendar that could not mount over the native fields (the account's is core's dialogue, as `categoryvitrine` had it,
+  gate `js_calendar_failure_told`; the visitor's says nothing). `init` returns whether the
+  listing is live (false for a root with nothing to search: posters only), and the account arms its observer, its cards
+  and its listeners only then. The store also handles the favourites toggle and reads the payload's chip and fav, which
+  the visitor's `normalise` drops.
+- **The search, the tree and the period are not remembered** (`UNREMEMBERED`), as `categoryvitrine` had it; every other
+  change is, after the quiet, and an unchanged state is not sent again. The view preference is written for a real
+  account only (`canpersist`, gate `js_view_preference_real_account`), through `@moodle/lms/core/fetch`'s
+  `performPost`, which is what `core_user/repository`'s `setUserPreference` does. A page drawn from the remembered state
+  writes its address out in full with `replaceState` (gate `js_history_start_replaces`; Behat: Back leaves for the page
+  before).
+- **The shell is handed an answer before the posters' component hears it** (`paintAreas`: `answered`, then
+  `criteria`). The component handles `criteria` synchronously and may open the one area holding every result inside
+  it, and the account's note of that opening is the answer's sentence: told after, the note never showed (the Behat
+  scenario of a search matching one area). Gate `js_answered_before_criteria`.
+- **`leave` navigates through `@moodle/lms/core/location`'s `redirect`**, `window.location.assign` behind a seam Jest can
+  watch (core's `expectRedirect`), and builds the address after the state is remembered.
+- **Every failed page is core's exception dialogue**, an overtaken one's too (`rows` catches each request), and the
+  posters are told only for the latest replacing one (`failed`). The panel's progress fails in silence.
+- **The account's code moved its tests with it**: `listing_account_source_test` holds what `amd_source_test` and
+  `categorypanel_source_test` pinned of the two modules; what is left there reads the shared painters and the dead
+  modules until R4c. The visitor's walk names `listingaccount` and `listing/account` among the logged-in names (gate
+  `js_public_graph_names_account`).
+- **Gates**: 24 retargeted to the shell, the store or the entry; 10 retired (the six line twins, `js_root_live_search`,
+  `js_areas_mount_guard`, `js_vitrine_rows_pending`, `js_panel_listing_through_esm`); 7 new. `js_settle_leaves_pending`
+  is the source shape's alone: `drainPending` filters settled ids, so the mutant sends no second request and Jest
+  cannot see it.
+- **Jest's account tests share the module's state**, a settled course included: give each test course ids no other
+  test settled.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

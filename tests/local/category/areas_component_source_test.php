@@ -278,9 +278,9 @@ final class areas_component_source_test extends \basic_testcase {
     /**
      * The shared listing names the component, once; both shells mount it, and neither arms the AMD panel.
      *
-     * Changes that must make it fail: a client naming the component itself; categorypanel or the visitor's
-     * module importing the AMD panel or the posters' painters again (two writers of the same posters, gate
-     * js_areas_no_amd_panel); a module not built.
+     * Changes that must make it fail: a client naming the component itself; an entry or a shell importing the AMD
+     * panel or the posters' painters again (two writers of the same posters, gate js_areas_no_amd_panel); a module
+     * not built.
      */
     public function test_the_component_is_named_once_and_no_shell_arms_the_amd_panel(): void {
         $this->assertStringContainsString("    areas: '" . self::SPECIFIER . "',\n", $this->read('js/esm/src/listing/mounts.ts'));
@@ -291,10 +291,18 @@ final class areas_component_source_test extends \basic_testcase {
                 $module . ' names the component.'
             );
         }
-        foreach (['amd/src/categorypanel.js', 'js/esm/src/listing/store.ts'] as $client) {
+        $store = $this->read('js/esm/src/listing/store.ts');
+        $this->assertStringContainsString('Listing.mountAreas(areas, ', $store, 'The store mounts it.');
+        $clients = [
+            'amd/src/listingaccount.js',
+            'amd/src/listingvisitor.js',
+            'js/esm/src/listing/account.ts',
+            'js/esm/src/listing/visitor.ts',
+            'js/esm/src/listing/store.ts',
+        ];
+        foreach ($clients as $client) {
             $source = $this->read($client);
-            $this->assertStringContainsString('Listing.mountAreas(areas, ', $source, $client . ' mounts the component.');
-            $this->assertStringNotContainsString("from 'theme_dimensions/categoryareapanel'", $source);
+            $this->assertStringNotContainsString("from 'theme_dimensions/categoryareapanel'", $source, $client . ' arms it.');
             $this->assertStringNotContainsString("from 'theme_dimensions/categoryposters'", $source);
         }
         foreach (self::MODULES as $module) {

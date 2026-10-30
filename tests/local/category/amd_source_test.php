@@ -30,6 +30,10 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins the invariants of amd/src/categoryvitrine.js and of the shared listing it paints with by reading their source.
  *
+ * Since stage R4b3 no page arms categoryvitrine: an account's listing is js/esm/src/listing/account.ts over the
+ * store, and the methods about what that module did moved with its code to listing_account_source_test. What is left
+ * here reads the shared painters and the module's build until the removal pull request (R4c) takes the module.
+ *
  * moodle-plugin-ci has no JavaScript unit-test runner, so the properties of this module whose loss
  * costs a server rather than a screenshot are pinned the way category_scss_test pins class names.
  * They are assertions about spelling, each scoped to the one function it is about through body().
@@ -209,34 +213,6 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * A settled id is unobserved, and settling is what a finished batch does whatever it answered.
-     *
-     * Progress does not change while the page is open, so a settled card needs no more watching.
-     * Without the unobserve the watch list grows with every row appended; and settling in the
-     * `finally` is what stops a batch that failed being asked for again on every scroll.
-     *
-     * Changes that must make it fail: deleting `observer.unobserve(card);` from settle(), or moving
-     * the `settle(batch)` call out of the `finally` into the `try`.
-     */
-    public function test_a_settled_course_is_unobserved_and_every_finished_batch_settles(): void {
-        $settle = $this->body('settle');
-        $this->assertMatchesRegularExpression('~observer\.unobserve\(card\)~', $settle);
-        $this->assertMatchesRegularExpression('~settled\.add\(id\)~', $settle);
-        /* It leaves the pending set too: the observer keeps firing while a batch is in flight, so
-           a card that scrolled out and back would otherwise be asked for again by the next drain. */
-        $this->assertMatchesRegularExpression('~pending\.delete\(id\)~', $settle);
-
-        $drain = $this->body('drainPending');
-        $found = preg_match('~\}\s*finally\s*\{(.*?)\n    \}~s', $drain, $matches);
-        $this->assertSame(1, $found, 'The details drain has no finally block, so a failed batch settles nothing.');
-        $this->assertMatchesRegularExpression(
-            '~settle\(batch\)~',
-            $matches[1],
-            'settle() is not in the finally: a batch that FAILED would be asked again on every scroll.'
-        );
-    }
-
-    /**
      * The live-page window is ten pages, and closing it hands paging to the real link.
      *
      * Without the handover the button keeps appending and the document grows without bound.
@@ -299,75 +275,6 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * The details batch is capped at 24 ids and drains on a fixed 100 ms interval.
-     *
-     * 24 is {@see enrichment::MAX_COURSES}: get_card_details refuses a larger batch. The interval is
-     * fixed because a timeout reset per id sends nothing at all during a continuous scroll.
-     *
-     * Changes that must make it fail: raising BATCH_SIZE; deleting the `.slice(0, BATCH_SIZE)`;
-     * replacing `setInterval` with a `setTimeout` reset per id.
-     */
-    public function test_the_details_batch_is_capped_and_drains_on_a_fixed_interval(): void {
-        $source = $this->source();
-        $this->assertMatchesRegularExpression('~^const BATCH_SIZE = 24;$~m', $source);
-        $this->assertMatchesRegularExpression('~^const BATCH_INTERVAL = 100;$~m', $source);
-        $this->assertMatchesRegularExpression('~\.slice\(0, BATCH_SIZE\)~', $this->body('drainPending'));
-        $this->assertMatchesRegularExpression('~setInterval\(drainPending, BATCH_INTERVAL\)~', $this->init_body());
-    }
-
-    /**
-     * One panel of the grid is open at a time, whichever of the two ways it was opened.
-     *
-     * The disclosure and the hover peek show the same panel, so without this a reader can have
-     * many panels open over the cards at once. Four things must hold, and each fails silently on
-     * its own: the closing loop exists, it spares the disclosure being opened, it closes the
-     * pointer's peek as well, and the toggle listener is registered in the capture phase - a
-     * details element's toggle event does not bubble, so a delegated listener without that flag
-     * is never called.
-     *
-     * Changes that must make it fail: emptying the loop body of closeOthers(); dropping the
-     * `details !== keep` test; removing the closePeeks() call; passing `false` as the toggle
-     * listener's capture flag.
-     */
-    public function test_only_one_panel_of_the_grid_is_open_at_a_time(): void {
-        $listen = $this->body('listen');
-        $this->assertMatchesRegularExpression(
-            '~root\.addEventListener\(\'toggle\',.*?closeOthers\(details\);.*?\}, true\);~s',
-            $listen,
-            'The toggle listener is delegated to the grid AND registered in the capture phase, '
-                . 'which is the only phase a non-bubbling toggle event reaches an ancestor in.'
-        );
-        $closers = $this->body('closeOthers');
-        $this->assertMatchesRegularExpression('~root\.querySelectorAll\(SELECTORS\.details\)~', $closers);
-        $this->assertMatchesRegularExpression('~details\.open = false;~', $closers);
-        $this->assertMatchesRegularExpression('~details !== keep~', $closers, 'The one being opened is spared.');
-        $this->assertMatchesRegularExpression('~closePeeks\(\);~', $closers, 'A peek is a panel too.');
-        // And the other direction: a peek that opens closes the disclosures, and Escape closes both.
-        $this->assertMatchesRegularExpression('~closeOthers\(null\);~', $this->body('openPeek'));
-        $found = preg_match('~event\.key === \'Escape\'\) \{(.*?)\}~s', $listen, $matches);
-        $this->assertSame(1, $found, 'The module handles no Escape key.');
-        $this->assertMatchesRegularExpression('~closeOthers\(null\)~', $matches[1]);
-    }
-
-    /**
-     * A peek never opens over a disclosure the reader opened on the same card.
-     *
-     * The pointer is still inside the card whose summary was just pressed, so the next mouseenter
-     * would promote a peek, and the peek would close that disclosure: the reader's own panel
-     * collapses on a card they never left.
-     *
-     * Changes that must make it fail: removing the `details && details.open` term.
-     */
-    public function test_a_peek_never_replaces_the_disclosure_of_its_own_card(): void {
-        $peek = $this->body('openPeek');
-        $this->assertMatchesRegularExpression(
-            '~const details = card\.querySelector\(SELECTORS\.details\);~',
-            $peek
-        );
-        $this->assertMatchesRegularExpression('~!panel \|\| \(details && details\.open\)~', $peek);
-    }
-
-    /**
      * A row is rendered by the server's own template and never assembled from a string here.
      *
      * One template is what keeps a row from page four identical to a row from page one; markup
@@ -388,74 +295,6 @@ final class amd_source_test extends \basic_testcase {
             'const renderCards = (cards) => Listing.renderCards(cards);',
             $this->source(),
             'The module renders its rows with the shared listing\'s renderer.'
-        );
-    }
-
-    /**
-     * A replaced grid gives its cards back to the observer before it discards them.
-     *
-     * settle() unobserves the ids of a completed batch only. An enrolled card discarded by a
-     * filter before it was ever scrolled into view was never settled, and IntersectionObserver
-     * holds its targets strongly, so every filter change would leak such cards.
-     *
-     * The replace branch is the shared listing's paintGrid(), which hands each card to the caller's
-     * discard() before it goes; this module's discard() is what holds the observer and the pending set.
-     *
-     * Changes that must make it fail: deleting the unobserve from discard(); dropping the discard
-     * loop before replaceChildren; binding paintGrid without this module's discard.
-     */
-    public function test_a_replaced_grid_unobserves_the_cards_it_discards(): void {
-        // The replace branch is in paintGrid(), which applyResponse() skips at the root: it has no course grid.
-        $this->assertStringContainsString('paintGrid(grid, items, append);', $this->body('applyResponse'));
-        $this->assertStringContainsString(
-            'const paintGrid = (grid, items, append) => Listing.paintGrid(root, state, grid, items, append, discard);',
-            $this->source(),
-            'The module hands the shared grid painter its own discard().'
-        );
-        $apply = $this->body('paintGrid');
-        $found = preg_match('~\} else \{(.*?)grid\.replaceChildren~s', $apply, $matches);
-        $this->assertSame(1, $found, 'paintGrid has no replace branch to read.');
-        $this->assertMatchesRegularExpression(
-            '~grid\.querySelectorAll<HTMLElement>\(SELECTORS\.card\)\.forEach\(\(card\) => discard\(card\)\);~',
-            $matches[1],
-            'The replace branch discards its cards without handing them to the caller first.'
-        );
-        $discard = $this->body('discard');
-        $this->assertMatchesRegularExpression(
-            '~observer\.unobserve\(card\)~',
-            $discard,
-            'A discarded card is not given back to the observer.'
-        );
-        $this->assertMatchesRegularExpression(
-            '~pending\.delete\(courseid\)~',
-            $discard,
-            'A discarded card stays in the pending set and is asked about after it is gone.'
-        );
-    }
-
-    /**
-     * An appended page is state of this document and is never written into the address bar.
-     *
-     * The server's page number comes back for both paths, but only a replace is a new address:
-     * after two appends the document holds pages 0 to 2, and writing "page=2" into the address
-     * would hand out a link to a document showing page two alone, with the numbered pager hidden
-     * and no route back to the pages above it.
-     *
-     * Changes that must make it fail: moving `state.page = lastpage;` out of the `!append` branch;
-     * asking for `state.page + 1` instead of `lastpage + 1` in the load-more handler.
-     */
-    public function test_the_appended_page_is_not_the_page_the_address_names(): void {
-        $apply = $this->body('applyResponse');
-        $this->assertMatchesRegularExpression('~lastpage = Number\(response\.page\);~', $apply);
-        $this->assertMatchesRegularExpression(
-            '~if \(!append\) \{\n\s*state\.page = lastpage;\n\s*\}~',
-            $apply,
-            'state.page follows the ADDRESS, so it may only move when the grid was replaced.'
-        );
-        $this->assertMatchesRegularExpression(
-            '~requestRows\(lastpage \+ 1, true\)~',
-            $this->body('listen'),
-            'The next append follows the GRID, so it asks for the page after the last one drawn.'
         );
     }
 
@@ -484,47 +323,6 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * Every rows request carries the page size the address asked for.
-     *
-     * The showcase honours a perpage in its query string, so a listing can be open at a size the
-     * site setting never mentions; a request that does not carry it is answered at the site
-     * default, and the page clamp then turns "page one of a six-row listing" into "page 0 of a
-     * forty-eight-row one" - the whole listing appended over the rows on screen.
-     *
-     * Changes that must make it fail: deleting the perpage line from rowsArgs(); making
-     * pageSizeOf() return 0 unconditionally.
-     */
-    public function test_the_page_size_of_the_address_travels_with_every_rows_request(): void {
-        $this->assertMatchesRegularExpression('~perpage: \x27perpage\x27,~', $this->shared());
-        $this->assertMatchesRegularExpression(
-            '~perpage: state\.pagesize,~',
-            $this->body('rowsArgs'),
-            'The rows request does not carry the page size, so later pages are cut differently.'
-        );
-        $this->assertStringContainsString('args: rowsArgs(page),', $this->body('requestRows'), 'It is the request\'s own.');
-        $reader = $this->body('pageSizeOf');
-        $this->assertMatchesRegularExpression('~params\.get\(PARAM\.perpage\)~', $reader);
-        $this->assertMatchesRegularExpression('~size > 0 \? size : 0~', $reader);
-    }
-
-    /**
-     * The state the observer watches for is the classifier's own, spelled the same on both sides.
-     *
-     * The literal in the module and the constant in PHP are one vocabulary written twice. If the
-     * classifier renames the state, the module stops watching any card and progress never
-     * appears, on a page that is otherwise correct.
-     *
-     * Changes that must make it fail: changing the JavaScript literal.
-     */
-    public function test_the_watched_state_is_the_classifiers_own_spelling(): void {
-        $this->assertStringContainsString(
-            "card.dataset.state !== '" . classifier::STATE_ENROLLED . "'",
-            $this->body('watchCard'),
-            'The module watches a state the classifier does not produce.'
-        );
-    }
-
-    /**
      * An empty option list leaves the group as the page drew it, never emptied.
      *
      * The page was drawn with the state group, then an administrator switched the state sort off,
@@ -539,65 +337,6 @@ final class amd_source_test extends \basic_testcase {
             $this->body('paintGroup'),
             'An empty option list would hide every pill of a group the page still renders.'
         );
-    }
-
-    /**
-     * The favourites toggle is a fetch with a history entry, sent with every request and remembered.
-     *
-     * The toggle combines with the state chip, so it rides beside it in the rows request and in the
-     * remembered state, is written into the address as fav=1 and read back from it - an older
-     * address's favourites chip read as the toggle with no chip, as the server reads it - and is
-     * repainted from every answer. The press is intercepted, because the toggle is a submit button
-     * for a reader without this module.
-     *
-     * Changes that must make it fail: dropping fav from either set of arguments; deleting the
-     * interception or the toggle in onFav(); writing the address without fav; reading the legacy chip
-     * as a chip; not repainting the toggle from an answer.
-     */
-    public function test_the_favourites_toggle_is_a_fetch_sent_with_every_request(): void {
-        $this->assertMatchesRegularExpression('~chip: state\.chip,\s*fav: state\.fav,~', $this->body('rowsArgs'));
-        $this->assertMatchesRegularExpression(
-            '~view: state\.view,\s*chip: state\.chip,\s*fav: state\.fav,\s*filters: filterArgs\(\),~',
-            $this->source(),
-            'The remembered state carries the toggle beside the chip.'
-        );
-        $this->assertStringContainsString("fav: '[data-action=\"dim-fav\"]',", $this->source());
-        $this->assertMatchesRegularExpression(
-            '~if \(closestOf\(event, SELECTORS\.fav\)\) \{[^}]*?event\.preventDefault\(\);\s*onFav\(\);~s',
-            $this->body('listen')
-        );
-        $fav = $this->body('onFav');
-        $steps = [
-            'state.fav = !state.fav;',
-            'state.page = 0;',
-            'paintFavToggle();',
-            'remember(false);',
-            'writeUrl(true);',
-            'requestRows(0, false);',
-        ];
-        foreach ($steps as $step) {
-            $this->assertStringContainsString($step, $fav);
-        }
-        $this->assertStringContainsString('paintFavourites(response);', $this->body('applyResponse'));
-        $this->assertMatchesRegularExpression(
-            "~if \(state\.fav\) \{\s*params\.set\(PARAM\.fav, '1'\);\s*\}~",
-            $this->body('buildUrl')
-        );
-        $read = $this->body('readUrl');
-        $this->assertStringContainsString('state.chip = chipOf(params);', $read);
-        $this->assertStringContainsString('state.fav = favOf(params);', $read);
-        $this->assertStringContainsString(
-            "export const favOf = (params: URLSearchParams): boolean =>\n"
-                . "    params.get(PARAM.fav) === '1' || params.get(PARAM.chip) === LEGACY_FAVOURITES;",
-            $this->shared()
-        );
-        $this->assertMatchesRegularExpression(
-            "~const chip = params\.get\(PARAM\.chip\) \|\| '';\s*return chip === LEGACY_FAVOURITES \? '' : chip;~",
-            $this->body('chipOf')
-        );
-        $this->assertStringContainsString("const LEGACY_FAVOURITES = 'favourites';", $this->shared());
-        $this->assertStringContainsString('PARAM.fav', $this->body('buildUrl'));
-        $this->assertStringContainsString("fav: payload.fav === true,", $this->init_body());
     }
 
     /**
@@ -647,47 +386,6 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringNotContainsString('core_course_set_favourite_courses', $star);
         $this->assertStringContainsString('theme_dimensions_toggle_wishlist', $star);
         $this->assertStringContainsString('CategoryStar.init();', $this->init_body(), 'And this module arms it.');
-    }
-
-    /**
-     * Moving between the two shells LOADS the address; moving inside one fetches into it.
-     *
-     * The grouped organisation draws the posters of the areas and the flat ones draw a course grid
-     * alone, so the two are different documents. A fetch across that line paints an answer into
-     * markup that cannot hold it, and nothing errors. Between the two flat orders the shell is
-     * the same, so a change there is an ordinary fetch with a history entry.
-     *
-     * Changes that must make it fail: replacing the leave() call (whose last line is the
-     * location.assign()) with a requestRows(0, false); widening GROUPED_SORTS beyond the two grouped values
-     * {@see criteria::is_grouped()} accepts.
-     */
-    public function test_the_organisation_is_a_navigation_between_shells_and_a_fetch_inside_one(): void {
-        $source = $this->shared();
-        $this->assertMatchesRegularExpression(
-            "~^export const GROUPED_SORTS = \['', 'category'\];$~m",
-            $source,
-            'The empty value and the named default are the one grouped organisation, as the server has it.'
-        );
-        $sort = $this->body('onSort');
-        $this->assertMatchesRegularExpression(
-            '~if \(was !== isGrouped\(sort\)\) \{\s*leave\(\);\s*return;~',
-            $sort,
-            'A change of shell must load the address rather than fetch into markup that cannot hold it.'
-        );
-        $this->assertStringContainsString(
-            'window.location.assign(buildUrl().toString());',
-            $this->body('leave'),
-            'And what it calls loads the address (once the state it leaves is remembered).'
-        );
-        $this->assertStringContainsString('requestRows(0, false);', $sort, 'And a change inside one shell fetches.');
-
-        // And the chips really reach that function: the sort group is a radio group like the others.
-        $choose = $this->body('onChoose');
-        $this->assertMatchesRegularExpression(
-            '~if \(name === PARAM\.sort\) \{\s*onSort\(input\.value\);~',
-            $choose,
-            'The organisation chips are radios of the same delegated change handler.'
-        );
     }
 
     /**
@@ -784,59 +482,6 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * A replaced answer tells the posters' component each area's shell, and writes none itself.
-     *
-     * The shell - the call to action's address and label a panel shows before its rows arrive -
-     * carries the page's criteria, so a filter changes it; the server composes it for every area,
-     * it travels in the event's accordion and the component writes it, the posters being its alone
-     * since stage R3. The event is what makes the component ask the open panel again. It runs on a
-     * replaced grid and never on an appended page, which is more of the same question.
-     *
-     * Changes that must make it fail: this module writing a poster's shell again (gate
-     * js_areas_shells_untouched).
-     *
-     * The event also carries what the posters need - the answer's areas, whether it narrows, its
-     * total - and the count line and the courses sitting here are painted before it, so the count
-     * is announced first and the panel's status after.
-     */
-    public function test_a_narrowed_page_writes_the_shells_and_tells_the_panel(): void {
-        $paint = $this->body('paintShells');
-        // Since stage R3 the posters are the component's to write: the shells travel in the event's accordion.
-        $this->assertStringNotContainsString('poster.dataset', $paint);
-        $this->assertStringNotContainsString('SELECTORS.area', $paint);
-        $this->assertStringContainsString(
-            "poster.dataset.ctaurl = entry.ctaurl || '';",
-            (string) file_get_contents(dirname(__DIR__, 3) . '/js/esm/src/areas/posters.ts')
-        );
-        $this->assertMatchesRegularExpression(
-            '~document\.dispatchEvent\(new CustomEvent\(EVENTS\.criteria, \{detail: \{\s*accordion: accordion,\s*'
-                . 'areas: areas,\s*filtered: Boolean\(areas\.filtered\),\s*total: Number\(response\.total\),\s*\}\}\)\);~',
-            $paint
-        );
-        $this->assertStringContainsString('const areas = response.areas || {};', $paint);
-        $this->assertStringContainsString("autoopenlabel = areas.autoopenlabel || '';", $paint);
-        $apply = $this->body('applyResponse');
-        $this->assertMatchesRegularExpression(
-            '~if \(!append\) \{\s*paintDirect\(response\);\s*paintShells\(response\);~',
-            $apply
-        );
-        $this->assertLessThan(
-            (int) strpos($apply, 'paintShells(response);'),
-            (int) strpos($apply, 'paintCount(response);'),
-            'The count line is painted before the panel\'s module is told.'
-        );
-        $this->assertMatchesRegularExpression(
-            "~view: 'dim-vitrine:view',\s*pending: 'dim-vitrine:pending',\s*criteria: 'dim-vitrine:criteria',~",
-            $this->source()
-        );
-        // And the view's own event, so the panel's row follows the list view's single track.
-        $this->assertStringContainsString(
-            'document.dispatchEvent(new CustomEvent(LISTING.view, {detail: {view: view}}));',
-            $this->body('paintView')
-        );
-    }
-
-    /**
      * The count line is four regions of the server's, and every answer writes the four.
      *
      * The count line is the number in bold and the sentence after it; "See all as a list" when the
@@ -879,88 +524,6 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * The panel's module is told when a request for new criteria goes out, and whether it narrows.
-     *
-     * Its pills then say "..." and its grids are busy until the answer, so nothing on the posters
-     * jumps. Only a replacing request on a page with areas tells it: an append is more of the same
-     * question. Whether it narrows mirrors {@see criteria::has_filters()}, read off the requested
-     * state: a period narrows with either of its bounds.
-     */
-    public function test_the_panel_module_is_told_a_request_is_out(): void {
-        $rows = $this->body('requestRows');
-        $this->assertMatchesRegularExpression(
-            '~if \(!append && root\.querySelector\(SELECTORS\.area\)\) \{\s*'
-                . 'document\.dispatchEvent\(new CustomEvent\(EVENTS\.pending, \{detail: \{filtered: narrows\(\)\}\}\)\);~',
-            $rows
-        );
-        $this->assertLessThan(
-            (int) strpos($rows, 'await Ajax.call('),
-            (int) strpos($rows, 'EVENTS.pending'),
-            'It is told before the request goes out.'
-        );
-        $this->assertMatchesRegularExpression(
-            "~export const narrows = \(state: ListingState\): boolean => state\.query !== ''\s*\|\| state\.chip !== ''\s*"
-                . "\|\| Boolean\(state\.fav\)\s*\|\| Object\.keys\(state\.filters\)\.length > 0\s*"
-                . "\|\| state\.datefrom !== ''\s*\|\| state\.dateto !== '';~",
-            $this->shared()
-        );
-        $this->assertStringContainsString('const narrows = () => Listing.narrows(state);', $this->source());
-    }
-
-    /**
-     * The panel's module is told when the latest replacing request fails, so its pills and grids stop waiting.
-     *
-     * The pending event makes every pill say "..." and every grid busy until the answer; the answer's
-     * event is the only thing that undoes it, and a failed request sends none. So the catch tells the
-     * panel's module the question will not be answered - only for the latest request (an overtaken
-     * one leaves it to the newer one) and only where the pending event was sent: a replacing request
-     * on a page with areas.
-     */
-    public function test_a_failed_request_tells_the_panel_module_its_answer_is_not_coming(): void {
-        $rows = $this->body('requestRows');
-        $found = preg_match('~\} catch \(error\) \{(.*?)\} finally \{~s', $rows, $matches);
-        $this->assertSame(1, $found, 'The rows request has no catch block.');
-        $this->assertMatchesRegularExpression(
-            '~if \(ticket === seq && !append && root\.querySelector\(SELECTORS\.area\)\) \{\s*'
-                . 'document\.dispatchEvent\(new CustomEvent\(EVENTS\.failed\)\);~',
-            $matches[1],
-            'A failed latest request tells the posters, where the pending event told them one was out.'
-        );
-        $this->assertStringContainsString('Notification.exception(error);', $matches[1], 'And the reader is still told.');
-        $this->assertMatchesRegularExpression(
-            "~autoopened: 'dim-panel:autoopened',\s*failed: 'dim-vitrine:failed',~",
-            $this->source()
-        );
-    }
-
-    /**
-     * An answer overtaken while its cards were rendering paints nothing and tells the panel's module nothing.
-     *
-     * The render is asynchronous, so "the latest request wins" is checked again once it resolves,
-     * as the panel's module does after each of its renders. Checked only before, an older answer
-     * landing while a newer request is out would paint the count line, rewrite the posters, take
-     * the newer request's pending state away and could open an area the newer answer would not -
-     * and nothing closes a panel on its own. The page's state follows the painted answer, so it is
-     * written after the check.
-     */
-    public function test_an_answer_overtaken_while_rendering_paints_nothing(): void {
-        $apply = $this->body('applyResponse');
-        $render = strpos($apply, 'const items = await renderCards(response.cards || []);');
-        $check = strpos($apply, "if (ticket !== seq) {\n        return;\n    }");
-        $state = strpos($apply, 'lastpage = Number(response.page);');
-        $shells = strpos($apply, 'paintShells(response);');
-        $this->assertIsInt($render);
-        $this->assertIsInt($check, 'The answer checks it is still the latest once its cards are rendered.');
-        $this->assertIsInt($state);
-        $this->assertIsInt($shells);
-        $this->assertTrue(
-            $render < $check && $check < $state && $state < $shells,
-            'The check sits between the render and every write, the page\'s state and the panel\'s event included.'
-        );
-        $this->assertStringContainsString('await applyResponse(response, append, ticket);', $this->body('requestRows'));
-    }
-
-    /**
      * The courses sitting here follow the answer's total on a grouped page with areas, the skip link too.
      *
      * A narrowed page shows where its results are, so "Courses in" goes when nothing sitting here
@@ -978,54 +541,6 @@ final class amd_source_test extends \basic_testcase {
         $this->assertStringContainsString('direct.hidden = none;', $direct);
         $this->assertStringContainsString('skip.hidden = none;', $direct);
         $this->assertStringContainsString("directskip: '[data-region=\"dim-direct-skip\"]',", $this->shared());
-    }
-
-    /**
-     * "Clear filters" clears in place and puts the focus in the search box.
-     *
-     * Three controls carry the action - the count row's link, the areas' "nothing matches" box and
-     * the empty listing's - and each is a real address without this module. With it the press is
-     * intercepted, the narrowing criteria, the tree's category and the page are emptied while the
-     * organisation stays (as {@see criteria::keep_params()} keeps it), the controls are repainted
-     * and the page asked again; and the focus goes to the search box, because the control pressed
-     * is about to hide itself and the focus would fall to the body.
-     */
-    public function test_clearing_the_filters_is_a_fetch_that_focuses_the_search_box(): void {
-        $listen = $this->body('listen');
-        $this->assertMatchesRegularExpression(
-            '~const clear = closestOf\(event, SELECTORS\.clearaction\);\s*if \(clear\) \{[^}]*?'
-                . 'event\.preventDefault\(\);\s*onClear\(\);~s',
-            $listen
-        );
-        $this->assertStringContainsString("clearaction: '[data-action=\"dim-clear\"]',", $this->source());
-        $clear = $this->body('onClear');
-        $steps = [
-            "state.query = '';",
-            "state.chip = '';",
-            'state.fav = false;',
-            'state.filters = {};',
-            "state.datefrom = '';",
-            "state.dateto = '';",
-            'state.cat = 0;',
-            'state.page = 0;',
-            'paintControls();',
-            'writeUrl(true);',
-            'requestRows(0, false);',
-        ];
-        foreach ($steps as $step) {
-            $this->assertStringContainsString($step, $clear, 'Clearing no longer runs ' . $step);
-        }
-        $this->assertMatchesRegularExpression(
-            '~const search = focusTarget\(\);\s*if \(search\) \{\s*search\.focus\(\{preventScroll: true\}\);~',
-            $clear,
-            'The focus goes to the search box, without a scroll - or to its icon where the line folded the field away.'
-        );
-        $this->assertStringContainsString('const focusTarget = () => Listing.focusTarget(root);', $this->source());
-        $this->assertLessThan(
-            (int) strpos($clear, 'search.focus('),
-            (int) strpos($clear, 'requestRows(0, false);'),
-            'After the request is out, as the design does it.'
-        );
     }
 
     /**
@@ -1076,21 +591,6 @@ final class amd_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString('window.getComputedStyle(items[0]).transitionDuration', $reveal);
         $this->assertStringContainsString('window.setTimeout(() => pending.resolve(), fade || 0);', $reveal);
-    }
-
-    /**
-     * A course card of the panel is never peeked: init arms the listing's cards and no mini.
-     *
-     * A mini is the card in a smaller presentation with its disclosure out of reach; the peek
-     * would open that unreachable disclosure's copy beside a card in a rail that clips it, and its
-     * progress is the panel module's to ask for. applyResponse arms only the direct grid's cards.
-     */
-    public function test_a_card_of_the_panel_is_never_peeked(): void {
-        $this->assertStringContainsString(
-            'attachCards(Array.from(root.querySelectorAll(SELECTORS.card)).filter((card) => !card.closest(SELECTORS.areapanel)));',
-            $this->init_body()
-        );
-        $this->assertStringContainsString("areapanel: '[data-region=\"dim-panel\"]',", $this->source());
     }
 
     /**
@@ -1228,140 +728,6 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * A tree entry is a filter this module fetches, and it never leaves the page.
-     *
-     * The entries are real addresses, which is what makes the control work with no JavaScript;
-     * with this module the press is intercepted and becomes a fetch with a history entry, exactly
-     * as a chip is. Three things have to hold together and each fails silently on its own: the
-     * press is intercepted at all (without it the browser follows the address and the page
-     * reloads, losing every appended page and the scroll); the criterion goes onto the state and
-     * into the rows request (without it the address, the marking and the filter badge all say the
-     * listing is narrowed while the rows are the whole subtree); and the id comes off the link
-     * rather than out of its address.
-     *
-     * Changes that must make it fail: deleting `event.preventDefault();` from the tree branch;
-     * deleting `state.cat = cat;`; dropping `cat: state.cat` from the rows request.
-     */
-    public function test_a_tree_entry_is_a_filter_this_module_fetches_and_never_a_navigation(): void {
-        $this->assertMatchesRegularExpression("~^    cat: 'cat',$~m", $this->shared(), 'The criterion is a parameter.');
-
-        $listen = $this->body('listen');
-        $this->assertMatchesRegularExpression(
-            '~const branch = closestOf\(event, SELECTORS\.treelink\);\s*if \(branch\) \{'
-                . '[^}]*?event\.preventDefault\(\);\s*onTree\(branch\);~s',
-            $listen,
-            'A tree entry is intercepted: without the preventDefault the browser follows the address.'
-        );
-
-        $tree = $this->body('onTree');
-        $this->assertStringContainsString('const id = Number(link.dataset.categoryid);', $tree);
-        $this->assertStringContainsString(
-            'const cat = id === state.categoryid ? 0 : id;',
-            $tree,
-            "The page's own entry means all of it, which is how the filter is cleared."
-        );
-        $this->assertStringContainsString('state.cat = cat;', $tree);
-        $this->assertStringContainsString('writeUrl(true);', $tree);
-        $this->assertStringContainsString('markTree();', $tree);
-        $this->assertStringContainsString('requestRows(0, false);', $tree);
-        $this->assertStringNotContainsString(
-            'window.location',
-            $tree,
-            'A tree entry is a fetch: the one control of this toolbar that navigates is the organisation.'
-        );
-
-        // Exactly one entry carries the marking, and it is a loop over every link rather than a swap.
-        $mark = $this->body('markTree');
-        $this->assertStringContainsString('root.querySelectorAll<HTMLElement>(SELECTORS.treelink)', $mark);
-        $this->assertStringContainsString(
-            'const on = state.cat === 0 ? id === state.categoryid : id === state.cat;',
-            $mark
-        );
-        $this->assertStringContainsString("link.classList.toggle('dim-tree__link--on', on);", $mark);
-        $this->assertStringContainsString("link.setAttribute('aria-current', 'true');", $mark);
-        $this->assertStringContainsString("link.removeAttribute('aria-current');", $mark);
-        $this->assertStringContainsString('markTree(root, state);', $this->body('paintControls'), 'The back button moves it too.');
-
-        $this->assertStringContainsString('cat: state.cat,', $this->body('rowsArgs'), 'And the request carries it.');
-        /* Nothing else of this module sends it. A panel's request is categorypanel's and asks about
-           a category below the page's, under which the web service would drop this page's cat
-           (categorypanel_source_test holds that half). */
-        $this->assertSame(
-            1,
-            substr_count($this->source(), 'cat: state.cat'),
-            'The tree\'s criterion travels with the rows request and with nothing else.'
-        );
-    }
-
-    /**
-     * The state a reader leaves a category in is remembered on every change, and the address then names it (round I).
-     *
-     * One function sends it, for a real account on a category page only; every control that changes
-     * the remembered state calls it before it writes the address, because from then on the bare
-     * address means that state to this reader and every address names the organisation; the
-     * organisation that changes the shell waits for it (or a second) before loading the page that
-     * reads it; and a page drawn from the remembered state writes its own address out in full.
-     *
-     * Changes that must make it fail: the guard on the account or the root dropped; a control that
-     * changes the state no longer remembering it ("clear filters" above all); the address no longer
-     * naming the organisation for a remembered category; the landing address left bare.
-     */
-    public function test_the_state_left_on_a_category_is_remembered_and_the_address_names_it(): void {
-        $source = $this->source();
-        $this->assertStringContainsString(
-            "const REMEMBER_METHOD = 'theme_dimensions_remember_category_state';",
-            $source
-        );
-        $remember = $this->body('remember');
-        $this->assertMatchesRegularExpression(
-            '~^\s*if \(!state\.canpersist \|\| isRootPage\(\)\) \{\s*return Promise\.resolve\(\);\s*\}\s*'
-                . 'state\.remembered = true;~',
-            $remember,
-            'Only a real account on a category page, and the addresses name the organisation from then on.'
-        );
-        $this->assertStringContainsString('methodname: REMEMBER_METHOD', $remember);
-        $this->assertStringContainsString('if (key === rememberedsent) {', $remember, 'An unchanged state is not sent again.');
-
-        foreach (['onClear', 'onChoose', 'setView', 'onSort'] as $name) {
-            $body = $this->body($name);
-            $at = strpos($body, 'remember(false);');
-            $this->assertIsInt($at, $name . ' does not remember the state it leaves.');
-            $this->assertGreaterThan(
-                $at,
-                strpos($body, 'writeUrl(true);'),
-                $name . ' writes the address before it names the organisation.'
-            );
-        }
-        $this->assertMatchesRegularExpression('~if \(was !== isGrouped\(sort\)\) \{\s*leave\(\);~', $this->body('onSort'));
-        $leave = $this->body('leave');
-        $this->assertMatchesRegularExpression(
-            '~await Promise\.race\(\[\s*remember\(true\),[^;]*REMEMBER_WAIT\)\),\s*\]\);\s*'
-                . 'window\.location\.assign\(buildUrl\(\)\.toString\(\)\);~',
-            $leave,
-            'The page that reads the state is loaded once it is remembered, or once the wait is over.'
-        );
-        $this->assertMatchesRegularExpression(
-            '~readUrl\(\);\s*paintControls\(\);\s*syncFold\(\);\s*[^\n]*\n\s*remember\(false\);~',
-            $this->body('listen'),
-            'Back and forward remember the state they land on.'
-        );
-
-        $this->assertMatchesRegularExpression(
-            "~if \(state\.remembered\) \{\s*params\.set\(PARAM\.sort, state\.sort === '' \? 'category' : state\.sort\);\s*\}~",
-            $this->body('buildUrl'),
-            'A remembered category names its organisation in every address, as criteria::sort_params() does then.'
-        );
-        $init = $this->init_body();
-        $this->assertStringContainsString('remembered: isremembered,', $init);
-        $this->assertMatchesRegularExpression(
-            '~if \(state\.remembered\) \{\s*rememberedsent = JSON\.stringify\(rememberArgs\(\)\);\s*writeUrl\(false\);\s*\}\s*$~',
-            $init,
-            'A page drawn from the remembered state writes its address out in full, last.'
-        );
-        $this->assertStringContainsString('theme_dimensions_remember_category_state', $this->build());
-    }
-
-    /**
      * The address carries the tree's category, and the grouped organisation carries none.
      *
      * {@see criteria} drops the criterion at construction when the organisation is the grouped
@@ -1422,82 +788,6 @@ final class amd_source_test extends \basic_testcase {
             'A reader who widens the page gets the tree back, where the summary cannot give it to them.'
         );
         $this->assertStringContainsString('armTreebox();', $this->init_body());
-    }
-
-    /**
-     * The root arms this module for its search line, and there it asks for the term alone.
-     *
-     * The root searches as the reader types, as a category page does. Three things make that work:
-     * init goes on at a root that draws a search line, the request carries the term and nothing
-     * else there (the web service refuses anything else at the root), and an answer with no course
-     * grid is still painted, posters and all. The state drops what the root does not read, on the
-     * way in and on the way back.
-     *
-     * Changes that must make it fail: making init() return at the root whatever it draws.
-     */
-    public function test_the_root_is_armed_for_its_search_line_and_asks_for_the_term_alone(): void {
-        $init = $this->init_body();
-        $this->assertMatchesRegularExpression(
-            '~if \(isRootPage\(\) && !root\.querySelector\(SELECTORS\.toolbar\)\) \{\s*return;~',
-            $init,
-            'A root with a search line is armed; only one with nothing to search is not.'
-        );
-        $this->assertStringNotContainsString('if (!state.categoryid) {', $init, 'The root is not turned away.');
-        $this->assertStringContainsString('rootOnly();', $init);
-        $this->assertStringContainsString('rootOnly(state);', $this->body('readUrl'), 'And on the way back through the history.');
-        $this->assertStringContainsString('const isRootPage = () => state.categoryid === 0;', $this->source());
-
-        $this->assertMatchesRegularExpression(
-            '~^    if \(isRootPage\(\)\) \{\s*return \{categoryid: 0, query: state\.query\};~m',
-            $this->body('rowsArgs'),
-            'The root asks for its term and nothing else.'
-        );
-        $only = $this->body('rootOnly');
-        $dropped = [
-            'state.chip = \'\';',
-            'state.fav = false;',
-            'state.filters = {};',
-            'state.sort = \'\';',
-            'state.cat = 0;',
-            'state.pagesize = 0;',
-        ];
-        foreach ($dropped as $line) {
-            $this->assertStringContainsString($line, $only);
-        }
-
-        $apply = $this->body('applyResponse');
-        $this->assertMatchesRegularExpression('~if \(grid\) \{\s*paintGrid\(grid, items, append\);\s*\}~', $apply);
-        $this->assertDoesNotMatchRegularExpression(
-            '~if \(!grid\) \{\s*return;~',
-            $apply,
-            'An answer with no course grid - the root\'s - is still painted.'
-        );
-        $this->assertStringContainsString('paintShells(response);', $apply, 'Its posters among it.');
-    }
-
-    /**
-     * A repaint is pending from the request until its rows are painted, one token per request.
-     *
-     * core/ajax's own token ends with the answer and the render's starts later: the template load in between
-     * waits on RequireJS's timer, which Behat reads as a settled page, and a step then counts the rows being
-     * replaced under it.
-     *
-     * Changes that must make it fail: taking no token (gate js_vitrine_rows_pending); releasing it before the
-     * answer is painted, or only on success.
-     */
-    public function test_a_repaint_is_pending_from_the_request_until_it_is_painted(): void {
-        $request = $this->body('requestRows');
-        $this->assertMatchesRegularExpression(
-            "~^    const ticket = \+\+seq;\n(?:    (?:/\*|  )[^\n]*\n)*"
-                . "    const token = new Pending\('theme_dimensions/categoryvitrine:rows'\);\n~",
-            $request
-        );
-        $this->assertMatchesRegularExpression('~\} finally \{\s*restoreMore\(more\);\s*token\.resolve\(\);\s*\}$~', $request);
-        $this->assertLessThan(
-            (int) strpos($request, 'token.resolve();'),
-            (int) strpos($request, 'await applyResponse(response, append, ticket);'),
-            'Released after the rows are painted.'
-        );
     }
 
     /**

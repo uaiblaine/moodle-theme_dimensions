@@ -91,10 +91,22 @@ final class categorypublic_source_test extends \basic_testcase {
     private const LISTING = self::ESM . 'listing/listing';
 
     /** @var string[] The logged-in modules nothing a visitor's page loads may name, in code or in a comment. */
-    private const LOGGED_IN_NAMES = ['categoryvitrine', 'categorypanel', 'categorystar'];
+    private const LOGGED_IN_NAMES = [
+        'categoryvitrine',
+        'categorypanel',
+        'categorystar',
+        'listingaccount',
+        'listing/account',
+    ];
 
     /** @var string[] Theme modules a visitor's page may never load: the session's star and the logged-in clients. */
-    private const FORBIDDEN_MODULES = ['categorystar', 'categoryvitrine', 'categorypanel'];
+    private const FORBIDDEN_MODULES = [
+        'categorystar',
+        'categoryvitrine',
+        'categorypanel',
+        'listingaccount',
+        self::ESM . 'listing/account',
+    ];
 
     /**
      * @var string[] What no module of its graph may carry, in its source or its build: the logged-in
@@ -526,8 +538,8 @@ final class categorypublic_source_test extends \basic_testcase {
      * found.
      *
      * Changes that must make it fail: a comment naming categoryvitrine in the shared listing (gate
-     * js_public_graph_names_vitrine), or categorypanel in the component's panel (gate
-     * js_public_component_names_panel).
+     * js_public_graph_names_vitrine), categorypanel in the component's panel (gate
+     * js_public_component_names_panel), or the account's shell in the store (gate js_public_graph_names_account).
      */
     public function test_nothing_the_walk_reaches_names_the_logged_in_shell(): void {
         $graph = array_values(array_unique(array_merge($this->graph(self::MODULE), $this->graph(self::BRIDGE))));
@@ -658,7 +670,11 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertStringContainsString("state.chip = '';", $this->body('publicOnly'), 'And the state never holds one.');
         $this->assertDoesNotMatchRegularExpression('~\bfav\b~', $args, 'Nor the favourites toggle.');
         $this->assertStringContainsString('state.fav = false;', $this->body('publicOnly'), 'Which the state never holds either.');
-        $this->assertMatchesRegularExpression('~chip: \'\',\s*fav: false,~', $this->source(), 'Not even at load.');
+        $this->assertStringContainsString(
+            "    lastpage = state.page;\n    shell.normalise(state);\n",
+            $this->body('init'),
+            'Not even at load: the payload\'s are dropped before anything reads the state.'
+        );
     }
 
     /**
@@ -812,7 +828,7 @@ final class categorypublic_source_test extends \basic_testcase {
         $apply = $this->body('apply');
         $this->assertStringNotContainsString('navigate(', $apply, 'A change with a panel open is fetched, never loaded.');
         $this->assertMatchesRegularExpression(
-            '~^\s*state\.page = 0;\s*Listing\.writeUrl\(state, true\);\s*shell\.written\(\);'
+            '~^\s*state\.page = 0;\s*shell\.changed\(kind\);\s*Listing\.writeUrl\(state, true\);\s*shell\.written\(\);'
                 . '\s*return requestRows\(0, false\);\s*$~',
             $apply
         );
@@ -824,10 +840,10 @@ final class categorypublic_source_test extends \basic_testcase {
             'The server\'s own fragment for a panel.'
         );
         $this->assertMatchesRegularExpression(
-            '~document\.dispatchEvent\(new CustomEvent\(LISTING\.criteria, \{detail: \{\s*accordion: response\.accordion \|\| \[\],'
-                . '\s*areas: word,.*?\}\}\)\);\s*shell\.answered\(response\);\s*$~s',
+            '~shell\.answered\(response\);\s*document\.dispatchEvent\(new CustomEvent\(LISTING\.criteria, \{detail: \{\s*'
+                . 'accordion: response\.accordion \|\| \[\],\s*areas: word,.*?\}\}\)\);\s*$~s',
             $this->body('paintAreas'),
-            'Every answer is told to the component, which asks the open panel again, and the shell then.'
+            'Every answer is told to the shell, then to the component, which asks the open panel again.'
         );
         $this->assertStringContainsString("\n    answered: linkPosters,\n", $this->source(), 'The posters are pointed again.');
         $this->assertMatchesRegularExpression(
@@ -885,12 +901,12 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~^    cancelSearch\(\);$~m', $this->body('onClear'));
         $this->assertMatchesRegularExpression('~^    return requestRows\(0, false\);$~m', $this->body('apply'));
         $this->assertMatchesRegularExpression(
-            '~notice\.hidden = true;\s*\}\s*state\.query = term;\s*await apply\(\);~',
+            "~notice\\.hidden = true;\\s*\\}\\s*state\\.query = term;\\s*await apply\\('term'\\);~",
             $this->body('onSearch'),
             'The timer applies the term, a panel open or not.'
         );
         $code = $this->code();
-        $this->assertStringContainsString('apply();', $code, 'The control: the code is read.');
+        $this->assertStringContainsString("apply('term');", $code, 'The control: the code is read.');
         foreach (['panelOpen', 'onSubmit'] as $gone) {
             $this->assertStringNotContainsString($gone, $code, 'An open panel no longer turns a change into a page load: ' . $gone);
         }
@@ -1121,7 +1137,7 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertMatchesRegularExpression(
             "~^    Listing\.readUrl\(state\);\s*shell\.normalise\(state\);\s*"
                 . 'Listing\.paintControls\(root, state\);\s*Listing\.syncFold\(\);\s*shell\.written\(\);'
-                . '\s*requestRows\(0, false\);$~',
+                . '\s*shell\.changed\(\'history\'\);\s*requestRows\(0, false\);$~',
             $this->body('onPopState')
         );
         $request = $this->body('requestRows');
@@ -1188,9 +1204,9 @@ final class categorypublic_source_test extends \basic_testcase {
     public function test_the_visitor_hands_its_controls_to_the_components(): void {
         $init = $this->body('init');
         $line = strpos($init, "\n    Listing.mountLine(root, dropTerm);\n");
-        $calendar = strpos($init, "\n    Listing.mountCalendar(root, state, setRange).catch(() => null);\n");
+        $calendar = strpos($init, "\n    Listing.mountCalendar(root, state, setRange).catch(shell.unmounted);\n");
         $areas = strpos($init, "\n    Listing.mountAreas(areas, shell.areas.props, shell.areas.client);\n");
-        $root = strpos($init, "\n    if (!live) {\n        return true;\n    }\n");
+        $root = strpos($init, "\n    if (!live) {\n        return false;\n    }\n");
         $this->assertStringContainsString(
             'const live = !(Listing.isRoot(state) && !root.querySelector(SELECTORS.toolbar));',
             $init,
@@ -1253,7 +1269,7 @@ final class categorypublic_source_test extends \basic_testcase {
         $remove = $this->body('onChipRemove');
         $this->assertStringContainsString("if (!Listing.dropCriterion(state, chip.dataset.param || '')) {", $remove);
         $this->assertMatchesRegularExpression(
-            '~shell\.normalise\(state\);\s*Listing\.paintControls\(root, state\);\s*apply\(\);~',
+            "~shell\\.normalise\\(state\\);\\s*Listing\\.paintControls\\(root, state\\);\\s*apply\\('filter'\\);~",
             $remove
         );
         $this->assertStringContainsString("await onSearch('');", $this->body('onErase'));

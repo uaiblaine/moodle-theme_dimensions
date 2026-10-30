@@ -204,6 +204,7 @@ final class category_scss_test extends \basic_testcase {
             'categoryvitrine.js',
             'categorylisting.js',
             'paint.ts',
+            'account.ts',
             'categoryposters.js',
             'categorypublic.js',
             'categorypanel.js',

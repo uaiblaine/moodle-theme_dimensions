@@ -85,8 +85,7 @@ final class first_paint_budget_test extends \advanced_testcase {
 
     /** @var string[] The theme's AMD modules the logged-in flat page asks for at load, in order: exactly these. */
     private const MODULES = [
-        'theme_dimensions/categoryvitrine',
-        'theme_dimensions/categorypanel',
+        'theme_dimensions/listingaccount',
         'theme_dimensions/covervideo',
         'theme_dimensions/categorycoursemodal',
     ];
