@@ -400,6 +400,41 @@ class behat_theme_dimensions extends behat_base {
     }
 
     /**
+     * Assert that the drawer's current panel, once its slide has ended, sits where the drawer's viewport shows it.
+     *
+     * The viewport clips the panels with overflow hidden, which still makes it a scroll container: a scrolling focus
+     * into a panel still sliding in scrolls it, and the panel then stays drawn to the left of it for as long as another
+     * panel keeps the viewport wider than itself. So this reads the boxes after the slide, and the scroll offset.
+     *
+     * @Then /^the current panel of the drawer is in view$/
+     * @return void
+     * @throws \Behat\Mink\Exception\ExpectationException When the panel is drawn off to the side.
+     */
+    public function the_current_panel_of_the_drawer_is_in_view(): void {
+        $this->require_javascript();
+        $panel = "document.querySelector('[data-region=\"dimensions-drawer-panel\"][data-state=\"current\"]')";
+        $this->getSession()->wait(
+            self::get_timeout() * 1000,
+            "{$panel} !== null && {$panel}.getAnimations().length === 0"
+        );
+        $state = $this->evaluate_script("return (function() {
+            var panel = {$panel};
+            var viewport = panel.closest('.dimensions-drawer-viewport');
+            return {
+                scroll: Math.round(viewport.scrollLeft),
+                offset: Math.round(panel.getBoundingClientRect().left - viewport.getBoundingClientRect().left)
+            };
+        })();");
+        if ((int) $state['scroll'] !== 0 || (int) $state['offset'] !== 0) {
+            throw new \Behat\Mink\Exception\ExpectationException(
+                "The drawer's viewport is scrolled by {$state['scroll']}px and its current panel drawn "
+                    . "{$state['offset']}px from its edge.",
+                $this->getSession()
+            );
+        }
+    }
+
+    /**
      * Give the site's primary navigation a number of custom menu items, one per line of core's custommenuitems.
      *
      * The setting is a multi-line text, which a step table cannot carry. Each item is "Catalogue item N" and links to

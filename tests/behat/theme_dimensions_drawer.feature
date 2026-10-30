@@ -30,6 +30,12 @@ Feature: The mobile drawer of a logged-in account
       | title    | Course list     |
       | itemtype | Dynamic courses |
       | itemmode | Submenu         |
+    # A second sub-panel, so the drawer holds three: a panel left beside the viewport keeps it wider than itself.
+    And the following "theme_boost_union > smart menu item" exists:
+      | menu     | Learning        |
+      | title    | More courses    |
+      | itemtype | Dynamic courses |
+      | itemmode | Submenu         |
 
   Scenario: A student sees who is logged in, continues where they left off and walks into a sub-panel and back
     Given I change window size to "mobile"
@@ -44,6 +50,7 @@ Feature: The mobile drawer of a logged-in account
     # The sub-panel slides in and the focus goes to its way back.
     And I click on "Course list" "link" in the "#dimensions-drawer-panel-root" "css_element"
     And I should see "Algebra" in the "[data-region='dimensions-drawer-panel'][data-state='current']" "css_element"
+    And the current panel of the drawer is in view
     And the focused element is "[data-region='dimensions-drawer-panel'][data-state='current'] [data-action='dimensions-drawer-back']" "css_element"
     And "#dimensions-drawer-panel-root[inert]" "css_element" should exist
     # The way back returns the focus to the row that opened the panel.
