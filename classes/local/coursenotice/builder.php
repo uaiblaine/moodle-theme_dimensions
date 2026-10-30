@@ -403,17 +403,17 @@ final class builder {
                     'label' => get_string('coursenotice_changecategorydiscoverability', self::COMPONENT),
                 ];
             }
-            $notice->add_note(
-                self::KEY_UNLISTEDCATEGORY,
-                notice::TONE_WARN,
-                '',
-                get_string(
+            // A teacher of the course need not be allowed to discover the category: its name is theirs to read only then.
+            if (\local_unlistedcourses\category_access::is_category_discoverable((int) $unlisted->id)) {
+                $text = get_string(
                     'coursenotice_unlistedcategorytext',
                     self::COMPONENT,
                     $unlisted->get_formatted_name(['escape' => false])
-                ),
-                $link
-            );
+                );
+            } else {
+                $text = get_string('coursenotice_unlistedcategoryanon', self::COMPONENT);
+            }
+            $notice->add_note(self::KEY_UNLISTEDCATEGORY, notice::TONE_WARN, '', $text, $link);
         }
         $hidden = $path[self::KEY_HIDDENCATEGORY];
         if ($hidden) {

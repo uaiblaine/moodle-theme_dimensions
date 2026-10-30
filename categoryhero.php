@@ -45,9 +45,8 @@ use theme_dimensions\local\category\branding;
 $id = required_param('id', PARAM_INT);
 
 require_login();
-$coursecat = core_course_category::get($id, MUST_EXIST, true);
-$context = context_coursecat::instance($id);
-require_capability('moodle/category:manage', $context);
+$coursecat = categoryhero_form::editable_category($id);
+$context = $coursecat->get_context();
 
 $url = new moodle_url('/theme/dimensions/categoryhero.php', ['id' => $id]);
 $categoryurl = new moodle_url('/course/index.php', ['categoryid' => $id]);

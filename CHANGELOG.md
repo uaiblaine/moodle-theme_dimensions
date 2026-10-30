@@ -5,6 +5,28 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The course notice no longer names an unlisted category to a viewer who may not discover it** (SEC-03).
+  `coursenotice_unlistedcategorytext` printed the category's name to a teacher of the course alone, against the
+  theme's own policy for category names. Without the right to discover the category the note now reads the new
+  `coursenotice_unlistedcategoryanon`. The hidden-category note is unchanged: hiding cascades. One test, one mutation gate.
+- **The editor no longer names an unlisted colour source** (SEC-02). The sentence under "own colours" printed the name of
+  the category the colours come from whenever core's visibility allowed, even when `local_unlistedcourses` withholds that
+  category from the viewer. It now falls back to the generic sentence there too. One test, one mutation gate.
+- **The category appearance page answers a missing id and a forbidden one alike** (SEC-01). `categoryhero.php` threw
+  `unknowncategory` for an unused id and `nopermissions` for an existing one, an existence oracle. Both now raise the
+  theme's `unavailable_exception` before the category is loaded, from `categoryhero::editable_category()`; every manager
+  passes as before. Three tests, three mutation gates.
+- **The category tree counts only the courses the viewer may discover** (SEC-04). `coursecat_category()` decided the
+  expand arrow from `get_courses_count()`, and in COUNT mode core printed that raw number as "(N)" beside the name
+  (the front page's category list; Boost Union a bare badge under its `categorylistingpresentation` setting), so
+  both told an outsider that unlisted courses exist. The node now reads the filtered direct courses once, only when
+  one of the two branches needs it, rewrites the number in either spelling and drops the span at zero as core does.
+  Two tests, four mutation gates.
+- **Category branding images are always sent cacheability private** (2026100546; SEC-06). The serve path chose public for a
+  visitor, but the URL carries only the content hash, which does not change when a category stops being public, so a
+  shared proxy kept serving the image for the whole hashed lifetime. `branding_test::test_the_image_is_always_sent_private`
+  reads the route's source. One mutation gate.
+
 - **The card's star joins the listing store** (2026100545; R5 of `docs/vitrine-react/PLAN.md`, the code part).
   `amd/src/categorystar.js` is now `js/esm/src/listing/star.ts`, rule for rule: one delegated listener armed once and
   its own `dim-star-js` mark, an optimistic flip, one round trip at a time, `theme_dimensions_toggle_wishlist` through

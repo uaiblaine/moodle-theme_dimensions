@@ -358,6 +358,126 @@ final class course_renderer_test extends \advanced_testcase {
     }
 
     /**
+     * A category whose only course is unlisted carries no live expand arrow for an outsider.
+     *
+     * The course half of core's condition is get_courses_count(), which counts the unlisted
+     * course; the arrow would open onto an empty box and say a course is there. The enrolled
+     * user is the control: access::filter_courses() keeps the course for them, so the arrow stays.
+     */
+    public function test_the_expand_affordance_reflects_the_filtered_course_count(): void {
+        $this->resetAfterTest();
+        $this->core_tree();
+        $generator = self::getDataGenerator();
+
+        $grandparent = $generator->create_category(['name' => 'Grandparent']);
+        $parent = $generator->create_category(['parent' => $grandparent->id, 'name' => 'Parent Category']);
+        $course = $generator->create_course(['category' => $parent->id]);
+        discoverability::set_state((int) $course->id, discoverability::STATE_UNLISTED);
+        $enrolled = $generator->create_user();
+        $generator->enrol_user($enrolled->id, $course->id, 'student');
+        $outsider = $generator->create_user();
+
+        $renderer = $this->renderer();
+
+        $this->setUser($outsider);
+        access::reset_caches();
+        category_access::reset_caches();
+        $html = $renderer->course_category((int) $grandparent->id);
+        $this->assertStringNotContainsString(
+            'with_children',
+            $this->category_node_classes($html, (int) $parent->id),
+            'The only course is unlisted: an outsider must see no expand affordance.'
+        );
+
+        $this->setUser($enrolled);
+        access::reset_caches();
+        category_access::reset_caches();
+        $html = $renderer->course_category((int) $grandparent->id);
+        $this->assertStringContainsString(
+            'with_children',
+            $this->category_node_classes($html, (int) $parent->id),
+            'Control: the enrolled user may discover the course, so the affordance must stay.'
+        );
+    }
+
+    /**
+     * In COUNT mode the number beside a category name counts only the courses this user may discover.
+     *
+     * Core appends " (N)" from the raw get_courses_count() (course/renderer.php:886-890), and Boost Union a
+     * bare badge under its categorylistingpresentation setting; both include unlisted courses, and the
+     * front page's category list prints them, so the test reads both spellings. Two courses, one of
+     * them unlisted: the outsider reads 1, the enrolled user (the control) reads the real 2, and
+     * a category whose every course is withheld prints no span at all, as core prints none at zero.
+     */
+    public function test_the_course_count_beside_a_category_name_is_the_filtered_one(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/theme/boost_union/lib.php');
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+
+        $mixed = $generator->create_category(['name' => 'Mixed Courses']);
+        $generator->create_course(['category' => $mixed->id]);
+        $hidden = $generator->create_course(['category' => $mixed->id]);
+        discoverability::set_state((int) $hidden->id, discoverability::STATE_UNLISTED);
+        $allhidden = $generator->create_category(['name' => 'All Withheld']);
+        $only = $generator->create_course(['category' => $allhidden->id]);
+        discoverability::set_state((int) $only->id, discoverability::STATE_UNLISTED);
+        $alllisted = $generator->create_category(['name' => 'All Listed']);
+        $generator->create_course(['category' => $alllisted->id]);
+        $generator->create_course(['category' => $alllisted->id]);
+
+        $enrolled = $generator->create_user();
+        $generator->enrol_user($enrolled->id, $hidden->id, 'student');
+        $generator->enrol_user($enrolled->id, $only->id, 'student');
+        $outsider = $generator->create_user();
+
+        $renderer = $this->renderer();
+        $chelper = new coursecat_helper();
+        $chelper->set_show_courses(course_renderer::COURSECAT_SHOW_COURSES_COUNT);
+        $this->setAdminUser();
+        $mixedobject = core_course_category::get((int) $mixed->id);
+        $allhiddenobject = core_course_category::get((int) $allhidden->id);
+        $alllistedobject = core_course_category::get((int) $alllisted->id);
+        // Core's " (N)" and Boost Union's bare badge, the number captured from either.
+        $pattern = '~<span[^>]*class="numberofcourse[^"]*"[^>]*>\D*(\d+)\D*</span>~';
+        $spellings = [
+            THEME_BOOST_UNION_SETTING_CATLISTPRES_NOCHANGE => '> (',
+            THEME_BOOST_UNION_SETTING_CATLISTPRES_BOXLIST => 'numberofcourse badge',
+        ];
+
+        foreach ($spellings as $presentation => $spelling) {
+            set_config('categorylistingpresentation', $presentation, 'theme_boost_union');
+
+            $this->setUser($outsider);
+            access::reset_caches();
+            category_access::reset_caches();
+            $html = $this->invoke_category_node($renderer, $chelper, $mixedobject, 0);
+            $this->assertSame(1, preg_match($pattern, $html, $matches), "Precondition ($presentation): the span is there.");
+            $this->assertStringContainsString($spelling, $matches[0], "Precondition: $presentation draws its own spelling.");
+            $this->assertSame('1', $matches[1], "Two courses, one unlisted: the outsider reads one ($presentation).");
+            $this->assertStringNotContainsString(
+                'numberofcourse',
+                $this->invoke_category_node($renderer, $chelper, $allhiddenobject, 0),
+                "Every course withheld: no span, as core prints none at zero ($presentation)."
+            );
+            $html = $this->invoke_category_node($renderer, $chelper, $alllistedobject, 0);
+            $this->assertSame(1, preg_match($pattern, $html, $matches));
+            $this->assertSame('2', $matches[1], "Control: with everything listed the raw number shows ($presentation).");
+
+            $this->setUser($enrolled);
+            access::reset_caches();
+            category_access::reset_caches();
+            $this->assertSame(1, preg_match($pattern, $this->invoke_category_node($renderer, $chelper, $mixedobject, 0), $matches));
+            $this->assertSame('2', $matches[1], "Control: the enrolled user may discover both ($presentation).");
+            $this->assertStringContainsString(
+                'numberofcourse',
+                $this->invoke_category_node($renderer, $chelper, $allhiddenobject, 0),
+                "Control: the enrolled user keeps the span of the category whose course is withheld from others ($presentation)."
+            );
+        }
+    }
+
+    /**
      * A tree whose every child is unlisted offers an outsider no expand-all control.
      *
      * The companion of the test above, one level up: core decides the "Expand all" link from the

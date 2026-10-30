@@ -1688,10 +1688,11 @@ final class branding {
     /**
      * Send the image a request names, or answer 404. Does not return.
      *
-     * Cacheability is private whenever a logged-in requester's own rights decided the answer,
-     * and public for a visitor: that answer depends on the category's stored state alone, and
-     * the URL carries the content hash, so a shared cache holding it cannot serve one person
-     * something another person's rights withheld. A refusal is a bare 404, never
+     * Every answer is sent cacheability private, a visitor's included: send_stored_file()
+     * defaults to public for an anonymous requester, and the URL carries only the content hash,
+     * so it does not change when the category stops being public. A shared proxy would keep
+     * serving the image for the whole hashed lifetime with nothing at the Moodle layer able to
+     * clear it. A refusal is a bare 404, never
      * send_file_not_found(), which throws and renders a full themed error page.
      *
      * The og area sends the derivative or nothing: its URL and the tags that carry it promise
@@ -1723,8 +1724,7 @@ final class branding {
             self::refuse();
         }
         \core\session\manager::write_close();
-        $visitor = !isloggedin();
-        $options = ['cacheability' => $visitor ? 'public' : 'private'];
+        $options = ['cacheability' => 'private'];
         if ($filearea === self::AREA_OGIMAGE) {
             $path = publicfiles::derivative($file);
             if ($path === null) {

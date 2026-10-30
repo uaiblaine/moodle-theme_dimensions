@@ -507,6 +507,44 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
+     * A teacher of the course alone is not told the name of an unlisted category above it.
+     *
+     * Being a teacher of the course is no relationship with the category, so the viewer may not
+     * discover it and the note says only that a category above is unlisted. The controls are a
+     * user with a role in the category, who reads the name on the same note, and the first
+     * assertion, which proves the note exists for the teacher at all.
+     *
+     * @return void
+     */
+    public function test_a_teacher_of_the_course_alone_is_not_told_the_unlisted_categorys_name(): void {
+        global $DB;
+        $category = $this->getDataGenerator()->create_category(['name' => 'Secret Parent']);
+        $course = $this->course(landingfields::MODEL_COURSE, ['category' => $category->id]);
+        $this->set_course_state($course, \local_unlistedcourses\discoverability::STATE_PUBLIC);
+        $this->setAdminUser();
+        $this->unlist_category($category);
+
+        $teacher = $this->member($course, 'editingteacher');
+        $this->setUser($teacher);
+        $this->reset_discoverability();
+        $notice = $this->build($this->page($course));
+        $this->assertArrayHasKey(builder::KEY_UNLISTEDCATEGORY, $notice->notes, 'Precondition: the note is there.');
+        $text = $notice->notes[builder::KEY_UNLISTEDCATEGORY]['text'];
+        $this->assertSame(get_string('coursenotice_unlistedcategoryanon', 'theme_dimensions'), $text);
+        $this->assertStringNotContainsString('Secret Parent', $text);
+
+        $role = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($role, $teacher->id, \core\context\coursecat::instance((int) $category->id));
+        $this->reset_discoverability();
+        $notice = $this->build($this->page($course));
+        $this->assertSame(
+            get_string('coursenotice_unlistedcategorytext', 'theme_dimensions', 'Secret Parent'),
+            $notice->notes[builder::KEY_UNLISTEDCATEGORY]['text'],
+            'Control: with a role in the category the name is theirs to read.'
+        );
+    }
+
+    /**
      * A public course under a hidden category is said to be withheld, with the category named.
      *
      * @return void

@@ -24,8 +24,10 @@
 
 namespace theme_dimensions\form;
 
+use local_unlistedcourses\category_access;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\unavailable_exception;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -494,6 +496,26 @@ class categoryhero extends \moodleform {
     }
 
     /**
+     * The category whose appearance this person may edit, or the theme's one refusal.
+     *
+     * An id that names no category and an id the person may not manage raise the same exception,
+     * before the category is loaded: two answers (core's unknowncategory and nopermissions) would
+     * tell a guesser which ids exist. The capability is asked at the category's own context, so
+     * every manager of it passes, a hidden category included.
+     *
+     * @param int $categoryid The id the request names.
+     * @return \core_course_category The category, hidden ones included.
+     * @throws unavailable_exception When it does not exist or the person may not manage it.
+     */
+    public static function editable_category(int $categoryid): \core_course_category {
+        $context = \core\context\coursecat::instance($categoryid, IGNORE_MISSING);
+        if (!$context || !has_capability('moodle/category:manage', $context)) {
+            throw new unavailable_exception();
+        }
+        return \core_course_category::get($categoryid, MUST_EXIST, true);
+    }
+
+    /**
      * Core's own options for the category description editor, for a category that exists.
      *
      * A copy of core_course_editcategory_form::get_description_editor_options() (5.2), including
@@ -527,9 +549,11 @@ class categoryhero extends \moodleform {
      *
      * Asked about the PARENT, never the category: with a pair of its own the category's resolution
      * names itself, and the sentence is about what unticking the box would give. The source's name
-     * is printed only when the viewer may see that category (core_course_category::get() without
-     * the hidden flag answers null otherwise); a manager of this category is not necessarily one of
-     * the category above it, and a hidden name is not this form's to reveal.
+     * is printed only when the viewer may see that category on both counts: core's visibility
+     * (core_course_category::get() without the hidden flag answers null otherwise) and
+     * local_unlistedcourses' state (an unlisted category is withheld whatever core says). A manager
+     * of this category is not necessarily one of the category above it, and a withheld name is not
+     * this form's to reveal.
      *
      * @param int $categoryid The category being edited.
      * @return string The sentence, HTML: the name in it is formatted and escaped once.
@@ -542,7 +566,7 @@ class categoryhero extends \moodleform {
             return get_string('categoryhero_inheritedtheme', self::COMPONENT);
         }
         $source = \core_course_category::get($from, IGNORE_MISSING);
-        if ($source === null) {
+        if ($source === null || !category_access::is_category_discoverable($from)) {
             return get_string('categoryhero_inheritedabove', self::COMPONENT);
         }
         return get_string('categoryhero_inheritedfrom', self::COMPONENT, $source->get_formatted_name());
