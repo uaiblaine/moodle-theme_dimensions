@@ -126,7 +126,10 @@ const enter = (root, opener) => {
     }
     openers.push(opener);
     show(root, panel);
-    panel.querySelector(SELECTORS.BACK)?.focus();
+    // The panel is still sliding in from the right, and the viewport's overflow hidden is a scroll container:
+    // a plain focus() scrolls it to reveal the control, and the panel stays drawn that far to the left for as
+    // long as another panel keeps the viewport wider than itself. show() has put the control in view already.
+    panel.querySelector(SELECTORS.BACK)?.focus({preventScroll: true});
 };
 
 /**
