@@ -141,11 +141,11 @@ final class listing_source_test extends \basic_testcase {
                 "{$entry} starts its shell through core/esm!."
             );
             preg_match_all("~^import [^\n]* from '([^']+)';$~m", $source, $imports);
-            // Its shell, and the star the account's entry arms (AMD until R5): nothing else.
+            // Its shell and nothing else: the star is the account's shell's since R5.
             foreach ($imports[1] as $import) {
                 $this->assertContains(
                     $import,
-                    [self::SPECIFIER . $shell, 'theme_dimensions/categorystar'],
+                    [self::SPECIFIER . $shell],
                     "{$entry} loads {$import}."
                 );
             }
@@ -154,15 +154,16 @@ final class listing_source_test extends \basic_testcase {
     }
 
     /**
-     * The barrel exports every name an AMD client calls on the listing, and nothing it does not have.
+     * The barrel exports every name a shell calls on the listing, nothing it does not have, and nothing no shell calls.
      *
-     * A name the barrel left out is undefined at run time, in the browser alone.
+     * A name the barrel left out is undefined at run time, in the browser alone; a name no shell calls is one the
+     * barrel kept for a client that is gone (R5 dropped the AMD clients' four).
      *
      * Changes that must make it fail: a name dropped from the barrel (gate js_listing_barrel_complete).
      */
     public function test_the_barrel_exports_every_name_the_amd_clients_call(): void {
         $barrel = $this->uncommented($this->read('js/esm/src/listing/listing.ts'));
-        $this->assertSame(5, preg_match_all('~\} from \'\./(?:address|events|history|mounts|paint)\';~', $barrel));
+        $this->assertSame(4, preg_match_all('~\} from \'\./(?:address|history|mounts|paint)\';~', $barrel));
         preg_match_all('~export \{([^}]*)\} from~s', $barrel, $lists);
         $exported = [];
         foreach ($lists[1] as $list) {
@@ -181,8 +182,11 @@ final class listing_source_test extends \basic_testcase {
         foreach ($called as $name) {
             $this->assertContains($name, $exported, "A client calls Listing.{$name}, which the barrel does not export.");
         }
+        foreach ($exported as $name) {
+            $this->assertContains($name, $called, "The barrel exports {$name}, which no shell calls.");
+        }
         // Each exported name exists in the module the barrel names it from.
-        foreach (['address', 'events', 'history', 'mounts', 'paint'] as $file) {
+        foreach (['address', 'history', 'mounts', 'paint'] as $file) {
             preg_match('~export \{([^}]*)\} from \'\./' . $file . '\';~s', $barrel, $list);
             $source = $this->read('js/esm/src/listing/' . $file . '.ts');
             foreach (preg_split('~[\s,]+~', $list[1], -1, PREG_SPLIT_NO_EMPTY) as $name) {

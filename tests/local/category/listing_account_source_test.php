@@ -103,30 +103,34 @@ final class listing_account_source_test extends \basic_testcase {
     }
 
     /**
-     * The entry arms the star and starts the shell, and loads no AMD module of the posters.
+     * The entry starts the shell and loads nothing else; the shell arms the star, first.
      *
-     * Changes that must make it fail: the star no longer armed (gate js_account_arms_star); the AMD panel imported
-     * again (gate js_areas_no_amd_panel); the entry or its build not made from this source.
+     * The star (./star) is armed whatever the page draws: the root's directory has no listing to arm, and its
+     * panels' cards have stars.
+     *
+     * Changes that must make it fail: the star no longer armed (gate js_account_arms_star); the entry loading
+     * another module (gate js_vitrine_listing_through_esm); the entry or its build not made from this source.
      */
-    public function test_the_entry_arms_the_star_and_starts_the_shell(): void {
+    public function test_the_entry_starts_the_shell_which_arms_the_star(): void {
         $entry = $this->read(self::ENTRY);
-        $this->assertStringContainsString("\nimport * as CategoryStar from 'theme_dimensions/categorystar';\n", $entry);
         $this->assertStringContainsString(
             "\nimport {start} from 'core/esm!@moodle/lms/theme_dimensions/listing/account';\n",
             $entry
         );
-        $this->assertMatchesRegularExpression(
-            '~^    // [^\n]*\n    CategoryStar\.init\(\);\n    start\(\);$~',
-            $this->body('init', self::ENTRY),
-            'The star first, one delegated listener, then the shell.'
-        );
+        $this->assertStringContainsString("\nexport const init = () => start();\n", $entry);
         preg_match_all("~^import [^\n]* from '([^']+)';$~m", $entry, $imports);
-        $this->assertCount(2, $imports[1], 'The star and the shell, nothing else.');
+        $this->assertCount(1, $imports[1], 'The shell, nothing else.');
+        $this->assertMatchesRegularExpression(
+            '~^    // [^\n]*\n    armStar\(\);\n    const found = document\.querySelector<HTMLElement>\(SELECTORS\.root\);~',
+            $this->body('start'),
+            'The star first, before the listing is looked for.'
+        );
         $map = json_decode($this->read('amd/build/listingaccount.min.js.map'), true);
         $this->assertSame($entry, $map['sourcesContent'][0] ?? null, 'amd/build is not this source: rebuild it.');
-        $build = $this->read('amd/build/listingaccount.min.js');
-        $this->assertStringContainsString('"core/esm!@moodle/lms/theme_dimensions/listing/account"', $build);
-        $this->assertStringContainsString('"theme_dimensions/categorystar"', $build);
+        $this->assertStringContainsString(
+            '["exports","core/esm!@moodle/lms/theme_dimensions/listing/account"]',
+            $this->read('amd/build/listingaccount.min.js')
+        );
     }
 
     /**

@@ -333,24 +333,24 @@ final class amd_source_test extends \basic_testcase {
     }
 
     /**
-     * Core's own favourite web service is never called; the theme's guarded one is, from categorystar.
+     * Core's own favourite web service is never called; the theme's guarded one is, from the star.
      *
      * core_course_set_favourite_courses instantiates a course context and checks nothing else,
      * so it would star a course this page is not allowed to admit exists. The positive half is the
      * control: a module that called no web service at all would pass the negative one on its own.
-     * The star is its own module, categorystar, armed by the account's entry (listingaccount);
-     * categorystar_source_test holds the rest.
+     * The star is its own module, js/esm/src/listing/star.ts, armed by the account's shell;
+     * listing_star_source_test holds the rest.
      *
-     * Changes that must make it fail: calling core's service instead of the theme's from categorystar.
+     * Changes that must make it fail: calling core's service instead of the theme's from the star.
      */
     public function test_cores_own_favourite_service_is_never_called(): void {
         $source = $this->sources();
-        $star = (string) file_get_contents($this->plugin_root() . '/amd/src/categorystar.js');
+        $star = $this->read('js/esm/src/listing/star.ts');
         $this->assertStringNotContainsString('core_course_set_favourite_courses', $source);
         $this->assertStringNotContainsString('core_course_set_favourite_courses', $star);
         $this->assertStringContainsString('theme_dimensions_toggle_wishlist', $star);
-        $entry = $this->read('amd/src/listingaccount.js');
-        $this->assertStringContainsString('CategoryStar.init();', $entry, 'And the account\'s entry arms it.');
+        $shell = $this->read('js/esm/src/listing/account.ts');
+        $this->assertStringContainsString("\n    armStar();\n", $shell, 'And the account\'s shell arms it.');
     }
 
     /**
@@ -580,7 +580,7 @@ final class amd_source_test extends \basic_testcase {
      * Nothing of the retired accordion is left in the listing or in its builds.
      *
      * The posters and the panel between their rows, the React component of js/esm/src/areas, replaced it; its
-     * requests, its cache, its "Expand all", its category-card rendering and the star (now categorystar's) left
+     * requests, its cache, its "Expand all", its category-card rendering and the star (now listing/star.ts's) left
      * the listing with it.
      */
     public function test_no_code_of_the_accordion_is_left(): void {

@@ -5,6 +5,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The card's star joins the listing store** (2026100545; R5 of `docs/vitrine-react/PLAN.md`, the code part).
+  `amd/src/categorystar.js` is now `js/esm/src/listing/star.ts`, rule for rule: one delegated listener armed once and
+  its own `dim-star-js` mark, an optimistic flip, one round trip at a time, `theme_dimensions_toggle_wishlist` through
+  `@moodle/lms/core/ajax`, the answer's `favourite` painted, a refusal put back with core's exception dialogue, and no
+  refresh of the favourites count. The account's shell arms it first in `start()`, whatever the page draws, and
+  `amd/src/listingaccount.js` only starts that shell; the visitor's page still never loads it. Dead hooks cleaned up:
+  the barrel `listing.ts` no longer re-exports four names no shell calls (`SCOPE`, `chipOf`, `favOf`, `LINE`), and the
+  templates no longer write four data-region hooks nothing reads (`dim-card-crests`, `dim-card-opens`, `dim-hero`,
+  `dim-panel-tile`). No behaviour changes. A source test and three Jest tests of the star; 5 mutation gates
+  retargeted.
+
 - **The old AMD listing is removed** (2026100544; R4c of `docs/vitrine-react/PLAN.md`). The ten modules the
   listing store and the React components replaced, imported by nothing since R4b3, are deleted with their builds:
   `categorylisting`, `categorypublic`, `categoryvitrine`, `categorypanel`, `categoryline`, `categorypreview`,

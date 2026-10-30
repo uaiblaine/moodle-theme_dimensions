@@ -699,7 +699,8 @@ final class card_markup_test extends \advanced_testcase {
 
         /* The panel's own, in the no-JavaScript copy the page draws and in the client's copy: the
            region and its labelled heading, the regions the client transplants while the header
-           stays, the focus keys it restores the focus by, the rail's two arrows and its tile. */
+           stays, the focus keys it restores the focus by, the rail's two arrows, and its tile kept out of the tab
+           order. */
         $panel = $this->render('category_panel');
         $panelhooks = [
             'dim-panel-section' => '//section[@data-region="dim-panel-section"][@role="region"]'
@@ -714,7 +715,7 @@ final class card_markup_test extends \advanced_testcase {
             'dim-panel-rail' => '//*[@data-region="dim-panel-body"]//ul[@data-region="dim-panel-rail"]',
             'dim-panel-prev' => '//button[@data-action="dim-panel-prev"][@aria-hidden="true"][@tabindex="-1"]',
             'dim-panel-next' => '//button[@data-action="dim-panel-next"][@aria-hidden="true"][@tabindex="-1"]',
-            'dim-panel-tile' => '//ul[@data-region="dim-panel-rail"]//a[@data-region="dim-panel-tile"][@tabindex="-1"]',
+            'the tile' => '//ul[@data-region="dim-panel-rail"]//a[' . self::has_class('dim-panel__tile') . '][@tabindex="-1"]',
             'dim-panel-foot' => '//*[@data-region="dim-panel-foot"]',
             'dim-panel-counter' => '//*[@data-region="dim-panel-foot"]//*[@data-region="dim-panel-counter"][@aria-hidden="true"]',
             'dim-panel-cta' => '//*[@data-region="dim-panel-foot"]//a[@data-region="dim-panel-cta"][@data-focuskey="cta"]',
