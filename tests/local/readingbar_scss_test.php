@@ -266,7 +266,8 @@ final class readingbar_scss_test extends \basic_testcase {
     public function test_the_band_scales_from_the_left(): void {
         $post = $this->stylesheet('post.scss');
 
-        $this->assertSame(1, preg_match('~\.navbar\.fixed-top \{\s*&::after \{([^}]*)\}~', $post, $matches));
+        // The navbar's own declarations (its border) may come before the band's block.
+        $this->assertSame(1, preg_match('~\.navbar\.fixed-top \{[^{}]*?&::after \{([^}]*)\}~', $post, $matches));
         $this->assertStringContainsString('transform: scaleX(var(--dimensions-band-progress, 1));', $matches[1]);
         $this->assertStringContainsString('transform-origin: left center;', $matches[1]);
         $this->assertStringContainsString('background: var(--dimensions-navbar-band);', $matches[1]);
