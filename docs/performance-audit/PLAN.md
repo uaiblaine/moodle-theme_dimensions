@@ -227,6 +227,8 @@ and type, with the call stacks of one of them), `phase2.sh`.
   4x CPU, but the only interaction near it.
 - **C2 confirmed, small.** One press: `filterline/measure` 29 reads (a full remeasure, as C1's load), after-load
   blocking 15 ms, forced 19 ms, INP 72 ms; the press's largest frame is core's click handler in `first.js` (18 ms).
+  **Corrected after #81: the 29 reads are the LOAD's** (the counter runs from document start, and a load alone
+  reads 29); the press itself remeasures nothing. See "C2 corrected" below.
 - **C4 dropped.** Load more with every `focus()` made `preventScroll`, interleaved A/B, 3 loads each: after-load
   forced 87 / 87 ms without, 111 / 85 with. The forced layout of load more is core's and jQuery's scroll listeners
   (`DOMWindow.onscroll` 45 ms, `#document.onscroll` 19 ms) answering a scroll, which the probe's own
@@ -310,14 +312,42 @@ again, the drop kept as a control that must now change nothing, plus phase2.sh's
 
 C1 + C2 is now a few milliseconds a fold, under every target with room: the one-measure rewrite would buy about
 5 ms on a phone load and part of a press's 18-20 ms. Not worth a pull request on its own; kept as a note for the
-next change that touches `filterline/measure.ts`.
+next change that touches `filterline/measure.ts`. (Two of these sentences did not survive #81: the press's 18-20 ms
+is not a remeasure, and the one-measure rewrite is not possible. See the next section.)
+
+### C2 corrected, and the notes landed (#81, 2026-10-31)
+
+#81 (merge 9b167bd, 2026100551, installed on m503/m503b) took the four notes: the line's signature keeps a count's
+number of digits rather than its value (every count is in tabular figures; the star's count is visually hidden and
+left the signature), the open listbox is placed when it opens or when the fold, the search or the width moves,
+`daterange/calendar.ts` keeps one formatter per language and options, and `linearfooter.js` reads no layout while
+the footer is already shown. The one-measure rewrite of C1 was not done: each step changes the controls' layout, so a
+narrower step's width cannot be derived from the widest, and `stepWidths()` already stops at the first try that fits.
+
+Counted afterwards on m503b (`logs/2026-10-31-phase3-notes.log`; the served build checked to carry the change):
+
+| Scenario | `filterline/measure` reads before | after #81 |
+|---|---|---|
+| A load, 1358 px | 29 | 29 |
+| One press, 1358 px (the load included) | 29 | 29 |
+| Twelve scope chip presses (the D2 ledger's cycles, the load included) | - | 29 |
+| Typing "probes" at 390 px, 150 ms a key (the load included) | 89 | 89 |
+| One key at 390 px (the load included) | 53 | 54 |
+
+So **C2 was a misreading**: phase 2's press count included the load's 29 reads, and no press remeasures the line,
+before or after #81. The signature change is still right (an answer that moves a count within its digits no longer
+remeasures), but no scenario measured here produced one. Typing's reads over the load are the answer's legitimate
+remeasure (the search narrows the population and the counts lose digits) and one placement as the list opens: the
+later keys did not re-place the list, so C3's change saves nothing measurable either. The calendar's formatter and
+the footer's early return were not measured. The lesson for the template: subtract the load's count before reading an
+interaction's, or start the counter after the load.
 
 ### Confirmed, ranked by cost
 
 | Rank | Id | Cost (4x CPU) | Proposed fix | Gate |
 |---|---|---|---|---|
 | 1 | H1 (local_dimensions) | 16-20 ms of style for every class change of any element on this page; the phone's first fold 101-118 ms forced against 50-52 without it | local_dimensions: the five selectors keyed on a marker class of the plugin's modals | its own scanning test over `styles.css`; `stylecalib.js` on m503b: a class change on the line back to about 0 |
-| - | C1 + C2 | measured after H1: the phone's first fold 40-41 ms forced against desktop's 33-37 (about 4-7 ms of extra tries); a press 18-20 ms forced, a full remeasure on every answer that moves a count | one measure of the line in its widest step, the narrower steps derived from it; counts out of the signature | the `steps.ts` `settled()` Jest pattern: one layout round per fold |
+| - | C1 + C2 | measured after H1: the phone's first fold 40-41 ms forced against desktop's 33-37 (about 4-7 ms of extra tries); a press 18-20 ms forced and no remeasure (C2's 29 reads were the load's, corrected after #81) | the count's digits, not its value, in the signature (#81); the one-measure rewrite is not possible | the `FilterLine` Jest count test (9 keeps the measure, 10 remeasures) |
 | - | C3 | typing at 150 ms a key: INP 64-72 ms, keys 32-72 ms, 8 layout reads a key (the 152-168 ms of phase 2 was the probe's burst) | none on its own; `placeList` only when the list opens or the fold changes, if C1 + C2's change passes through it | - |
 | 2 | D2 | about 14 permanent `document` keydown listeners a press (core's `enableTooltips()`), each Escape runs them all | announce one container per repaint, not one per card: insert the rendered cards and notify `filterContentUpdated` once for the grid (and once for the panel); report core's listener to the tracker | the listener ledger's count over five presses |
 
@@ -336,6 +366,8 @@ To be filled in phase 3: one row per pull request, with its before/after numbers
 | H1 | local_dimensions #117-#120 (2026100517 / 2026042013 / 2025100613 / 2024100713) | the close chip keyed on page classes and the marker `local-dimensions-modal`, no `:has()` reading `[class...]` | a class change on the line 16-20 ms of style; the phone's first fold 101-118 ms forced | 0 ms of style (`stylecalib.js`); the fold 40-41 ms | `tests/local/selector_cost_test.php` (9 mutations red) |
 | D2 | theme_dimensions #79 (merge 1ff26a4, 2026100550) | `renderCards()` inserts a page of cards in one `appendNodeContents()` into a holder, so core's filter event (and Boost's `enableTooltips()` listener) fires once per repaint, not once per card | `document` keydown +174 over five S1 cycles (phase 2 ledger) | `document` keydown 24 net over the whole page (load, the warm-up cycle and five cycles: 12 presses), 12 of them `enableTooltips()`: one a press (`logs/2026-10-31-phase3-d2.log`) | two Jest tests in `listing/paint.test.ts` (reverting to one insertion per card reddens one) |
 
+| C2, C3, notes | theme_dimensions #81 (merge 9b167bd, 2026100551) | the count's digits in the line's signature; the listbox placed on open, fold, search or width; one `Intl.DateTimeFormat` per language and options; the linear footer's early return while shown | press 29 reads with the load; typing at 390 px 89 | the same: no measured scenario remeasured on a press or re-placed the list per key (C2 was a misreading, "C2 corrected") | three Jest tests (each reddened by reverting its change) and a `linearfooter_source_test` assertion |
+
 The panel (`areas/panel.ts`) is left as it is: its transplant already announces one holder, and its whole render
 announces the template's top-level nodes, the +2 a cycle of the lifecycle series.
 
@@ -347,8 +379,9 @@ Every target holds on the scenarios measured, at 4x CPU, against the Targets abo
   at 150 ms a key INP 56 ms; no load past 50 ms of blocking after the load.
 - Lifecycle: S1-S3 open/close and filter cycles leave the detached DOM flat (8 -> 8 over five filter cycles); core's
   `document` keydown listener grows one a press (about 17 before D2), still unbounded and core's to fix.
-- What is left is noted, not fixed: C1 + C2's one-measure rewrite (about 5 ms a phone load), C3's `placeList` per
-  key, `daterange/calendar.ts`'s formatter per day, `linearfooter.js`'s scroll reads.
+- The notes were taken in #81, with no measured gain: C2 was a misreading (no press remeasures the line), C3's later
+  keys never re-placed the list, and the calendar's and the footer's changes were not measured. Left: the phone's
+  4-7 ms of extra fold tries on a load, which no derivation can remove.
 
 What went back into the template (`moodle-dev/docs/client-performance-audit/README.md`) and the fleet standards:
 
