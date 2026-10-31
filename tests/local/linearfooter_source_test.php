@@ -76,7 +76,11 @@ final class linearfooter_source_test extends \basic_testcase {
 
         $this->assertStringContainsString('const PHONE = 768;', $js);
         $this->assertStringContainsString('const END = 0.25;', $js);
-        $this->assertStringContainsString('if (!enabled || document.body.clientWidth >= PHONE || !nearEnd()) {', $js);
+        // The class is read before any layout: on the way up core has just shown the footer, and a read would force one.
+        $this->assertStringContainsString(
+            'if (!enabled || document.body.classList.contains(SHOWN) || document.body.clientWidth >= PHONE || !nearEnd()) {',
+            $js
+        );
         $this->assertStringContainsString(
             'const left = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;',
             $js

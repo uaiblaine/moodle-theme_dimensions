@@ -154,6 +154,26 @@ export const period = (start: unknown, end: unknown): Period => {
     return {from: first, to: last};
 };
 
+/** The formatters made so far, by language and options: an open month formats about 84 dates a render. */
+const FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * One formatter per language and options, made once: building one costs far more than formatting with it.
+ *
+ * @param {object} options The Intl options.
+ * @param {string|undefined} language The language tag, or undefined for the browser's own default.
+ * @returns {object} The formatter, told the zone is UTC.
+ */
+const formatter = (options: Intl.DateTimeFormatOptions, language: string | undefined): Intl.DateTimeFormat => {
+    const key = JSON.stringify([language ?? null, options]);
+    let made = FORMATTERS.get(key);
+    if (!made) {
+        made = new Intl.DateTimeFormat(language, {timeZone: 'UTC', ...options});
+        FORMATTERS.set(key, made);
+    }
+    return made;
+};
+
 /**
  * One date, written the way a language writes a date.
  *
@@ -172,7 +192,7 @@ export const say = (iso: string, options: Intl.DateTimeFormatOptions, language: 
         return '';
     }
     try {
-        return new Intl.DateTimeFormat(language, {timeZone: 'UTC', ...options}).format(utc(parts));
+        return formatter(options, language).format(utc(parts));
     } catch (error) {
         return iso;
     }

@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The filter line reads less layout** (2026100551). An answer that changes a count without changing its number of
+  digits no longer remeasures the line (every count is drawn in tabular figures, so the widths cannot move; the star's
+  count, visually hidden, no longer counts at all), and the open suggestion list is placed when it opens or when the
+  fold, the search or the width moves, not on every key. The date picker makes one `Intl.DateTimeFormat` per language
+  and options instead of one per day drawn, and the linear navigation footer reads no layout on a scroll while the
+  footer is already shown. Three Jest tests and one source test assertion.
 - **A page of cards is announced to core once** (2026100550). The listing inserted each card it rendered on its own,
   and every insertion fires core's filter event, which Boost answers (`enableTooltips()`) with a `document` keydown
   listener it never removes: about 14 permanent listeners a filter press or a load more, each run by every Escape.

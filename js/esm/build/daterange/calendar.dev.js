@@ -61,13 +61,23 @@ const period = /* @__PURE__ */ __name((start, end) => {
   }
   return { from: first, to: last };
 }, "period");
+const FORMATTERS = /* @__PURE__ */ new Map();
+const formatter = /* @__PURE__ */ __name((options, language) => {
+  const key = JSON.stringify([language ?? null, options]);
+  let made = FORMATTERS.get(key);
+  if (!made) {
+    made = new Intl.DateTimeFormat(language, { timeZone: "UTC", ...options });
+    FORMATTERS.set(key, made);
+  }
+  return made;
+}, "formatter");
 const say = /* @__PURE__ */ __name((iso, options, language) => {
   const parts = parse(iso);
   if (!parts) {
     return "";
   }
   try {
-    return new Intl.DateTimeFormat(language, { timeZone: "UTC", ...options }).format(utc(parts));
+    return formatter(options, language).format(utc(parts));
   } catch (error) {
     return iso;
   }

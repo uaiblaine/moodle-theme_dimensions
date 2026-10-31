@@ -44,6 +44,7 @@ jest.mock('../../src/filterline/measure', () => {
     return Object.assign({}, actual, {
         stepWidths: jest.fn(actual.stepWidths),
         contentWidth: jest.fn(actual.contentWidth),
+        placeList: jest.fn(actual.placeList),
     });
 });
 
@@ -59,6 +60,7 @@ beforeEach(() => {
     const actual = jest.requireActual('../../src/filterline/measure');
     (Measure.stepWidths as jest.Mock).mockReset().mockImplementation(actual.stepWidths);
     (Measure.contentWidth as jest.Mock).mockReset().mockImplementation(actual.contentWidth);
+    (Measure.placeList as jest.Mock).mockReset().mockImplementation(actual.placeList);
     window.matchMedia = jest.fn().mockImplementation((query: string) => ({
         media: query,
         matches: false,
@@ -307,6 +309,19 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(listbox(page.line).querySelector('mark.dim-mark')?.textContent).toBe('pers');
     });
 
+    it('places the listbox when it opens, not on every key typed into it, and again once it reopens', async() => {
+        const page = await mount([], empty);
+        ['P', 'PE', 'PER', 'PERS'].forEach((value) => fireEvent.change(page.field, {target: {value: value}}));
+        expect(listbox(page.line).hidden).toBe(false);
+        expect(Measure.placeList).toHaveBeenCalledTimes(1);
+
+        fireEvent.keyDown(page.field, {key: 'Escape'});
+        expect(listbox(page.line).hidden).toBe(true);
+        fireEvent.change(page.field, {target: {value: 'PERSO'}});
+        expect(listbox(page.line).hidden).toBe(false);
+        expect(Measure.placeList).toHaveBeenCalledTimes(2);
+    });
+
     it('applies a suggestion: the term dropped first, then its very control pressed, and offers what is left', async() => {
         const page = await mount([], empty);
         const control = page.line.querySelector('#dim-cf-12-2') as HTMLInputElement;
@@ -407,10 +422,14 @@ describe('theme_dimensions/filterline/FilterLine', () => {
             (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900]);
             await resize(1200);
             expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
-            // Once measured, new counts are measured again at once.
+            // Once measured, a count with as many digits keeps every width (the counts are tabular figures)...
+            await answer(9);
+            expect(page.line.querySelector('label[for="dim-chip-7-all"]')?.textContent).toBe('All 9');
+            expect(Measure.stepWidths).toHaveBeenCalledTimes(1);
+            // ...and one that gains a digit is measured again at once.
             (Measure.stepWidths as jest.Mock).mockReturnValueOnce([900]);
             (Measure.contentWidth as jest.Mock).mockReturnValueOnce(1200);
-            await answer(9);
+            await answer(10);
             expect(Measure.stepWidths).toHaveBeenCalledTimes(2);
         } finally {
             delete (document as unknown as {fonts?: unknown}).fonts;
