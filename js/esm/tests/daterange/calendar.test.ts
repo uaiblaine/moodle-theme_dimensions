@@ -96,6 +96,23 @@ describe('theme_dimensions/daterange/calendar', () => {
         expect(say('nothing', {dateStyle: 'long'}, 'en')).toBe('');
     });
 
+    it('makes one formatter per language and options, however many days it names', () => {
+        const made = jest.spyOn(Intl, 'DateTimeFormat');
+        try {
+            const days = ['2026-05-04', '2026-05-05', '2026-05-06'];
+            expect(days.map((day) => say(day, {day: 'numeric', month: 'short'}, 'pt-BR'))).toEqual(['4 de mai.', '5 de mai.', '6 de mai.']);
+            expect(made).toHaveBeenCalledTimes(1);
+            expect(say('2026-05-04', {day: 'numeric', month: 'short'}, 'en')).toBe('May 4');
+            expect(made).toHaveBeenCalledTimes(2);
+            // A language Intl refuses is not kept: the ISO date comes back, every time.
+            expect(say('2026-05-04', {dateStyle: 'long'}, 'not a tag')).toBe('2026-05-04');
+            expect(say('2026-05-04', {dateStyle: 'long'}, 'not a tag')).toBe('2026-05-04');
+            expect(made).toHaveBeenCalledTimes(4);
+        } finally {
+            made.mockRestore();
+        }
+    });
+
     it('begins the week on the site\'s weekday and lines the first day up under its name', () => {
         expect(weekdays(0).map((day) => say(day, {weekday: 'short'}, 'en'))).toEqual(
             ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

@@ -68,7 +68,8 @@ const nearEnd = () => {
  * Show the footer again near the end of the page, on a phone, while core has it enabled.
  */
 const onScroll = () => {
-    if (!enabled || document.body.clientWidth >= PHONE || !nearEnd()) {
+    // Core shows the footer on the way up: already shown, there is nothing to add and no layout to read for it.
+    if (!enabled || document.body.classList.contains(SHOWN) || document.body.clientWidth >= PHONE || !nearEnd()) {
         return;
     }
     document.body.classList.add(SHOWN);

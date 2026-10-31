@@ -256,6 +256,8 @@ const FilterLine = ({form}: FilterLineProps) => {
     const menu = useRef<HTMLDivElement>(null);
     const manage = useRef<HTMLDivElement>(null);
     const listbox = useRef<HTMLDivElement>(null);
+    // What the open listbox was last placed for; empty while it is closed.
+    const placed = useRef<string>('');
     const drawn = useRef<boolean>(false);
     // What the native listeners call: this render's functions, which read the live state above.
     const api = useRef<Handlers>({});
@@ -941,11 +943,12 @@ const FilterLine = ({form}: FilterLineProps) => {
     // A width the tries measured so far decide is a fold alone; a line narrowed past them measures the rest.
     api.current.remeasureWidth = (() => (settled(st.widths, st.width) ? refold() : remeasure())) as (...args: never[]) => void;
 
-    // What changes a control's width: the words, the counts, which slots there are.
+    /* What changes a control's width: the words, which slots there are, and how many characters a count has - never
+       its value, because every count on the line is drawn in tabular figures (the pills' and the Filters badge's), so
+       an answer that moves 12 to 15 keeps every width. The star's count is visually hidden and takes no width. */
     const signature = model ? JSON.stringify([
-        model.scope ? model.scope.cells.map((cell) => [cell.label, cell.count, cell.hascount]) : null,
-        model.star ? model.star.count : null,
-        [model.filters.hascount, model.filters.count],
+        model.scope ? model.scope.cells.map((cell) => [cell.label, String(cell.count).length, cell.hascount]) : null,
+        [model.filters.hascount, String(model.filters.count).length],
     ]) : '';
     const measured = useRef<string>(signature);
     useLayoutEffect(() => {
@@ -992,9 +995,18 @@ const FilterLine = ({form}: FilterLineProps) => {
             }
         }
         if (listbox.current && !listbox.current.hidden) {
-            placeList(line, listbox.current, st.fold === null || st.fold.step === 's1' || st.fold.step === 's2', twolines());
+            /* Placed when the list opens and when what places it moves (the fold, the search, the width), not on every
+               key: the field and the line keep their boxes while the reader types, and each placement reads layout. */
+            const fold = st.fold ? `${st.fold.step}${st.fold.folded ? 'f' : ''}` : '';
+            const key = [st.measuredOnce, fold, st.searching, Math.round(st.width)].join('|');
+            if (placed.current !== key) {
+                placed.current = key;
+                placeList(line, listbox.current, st.fold === null || st.fold.step === 's1' || st.fold.step === 's2', twolines());
+            }
             const option = st.active >= 0 ? listbox.current.querySelectorAll(HOOKS.option)[st.active] : null;
             option?.scrollIntoView?.({block: 'nearest'});
+        } else {
+            placed.current = '';
         }
     });
 
