@@ -579,18 +579,25 @@ const reveal = (items: HTMLElement[]): void => {
 /**
  * Render the returned rows into list items, through the server's own card template.
  *
+ * The items are inserted in ONE call, into a holder the caller then empties into the grid: each insertion
+ * announces its node to core's filter event, and Boost's `enableTooltips()` answers every announced node with a
+ * `document` keydown listener it never removes, so one insertion per card left a listener per card for the
+ * rest of the page (the panel's transplant announces its holder once the same way).
+ *
  * @param {Array} cards The card contexts.
  * @returns {Promise} Resolving to the list items, in order.
  */
 export const renderCards = async(cards: object[]): Promise<HTMLElement[]> => {
     const Templates = await load('core/templates');
     const rendered = await Promise.all(cards.map((card) => Templates.renderForPromise(CARD_TEMPLATE, card)));
-    return rendered.map((result) => {
-        const item = document.createElement('li');
-        item.className = 'dim-vitrine__item dim-vitrine__item--enter';
-        Templates.appendNodeContents(item, result.html, result.js);
-        return item;
-    });
+    if (!rendered.length) {
+        return [];
+    }
+    const holder = document.createElement('ul');
+    const html = rendered.map((result) => `<li class="dim-vitrine__item dim-vitrine__item--enter">${result.html}</li>`);
+    const js = rendered.map((result) => result.js).filter((one) => one.trim() !== '');
+    Templates.appendNodeContents(holder, html.join(''), js.join(';\n'));
+    return Array.from(holder.children) as HTMLElement[];
 };
 
 /**

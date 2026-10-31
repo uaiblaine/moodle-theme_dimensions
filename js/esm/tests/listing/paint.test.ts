@@ -246,5 +246,28 @@ describe('theme_dimensions/listing/paint', () => {
         expect(rendered.map((one) => one.name)).toEqual(['theme_dimensions/category_card', 'theme_dimensions/category_card']);
         expect(items.map((item) => item.textContent)).toEqual(['1', '2']);
         expect(items[0].className).toBe('dim-vitrine__item dim-vitrine__item--enter');
+        expect(items.map((item) => item.tagName)).toEqual(['LI', 'LI']);
+    });
+
+    it('announces a whole page of cards to core once, with every card\'s JavaScript', async() => {
+        // Each insertion is one filterContentUpdated, and Boost answers each with a document listener it keeps.
+        const append = jest.fn((element: Element, html: string) => element.insertAdjacentHTML('beforeend', html));
+        mockAmdModule('core/templates', {
+            renderForPromise: jest.fn(async(name: string, context: Record<string, unknown>) =>
+                ({html: `<article>${context.id}</article>`, js: context.id === 2 ? '' : `run(${context.id});`})),
+            appendNodeContents: append,
+        });
+        const items = await renderCards([{id: 1}, {id: 2}, {id: 3}]);
+        expect(append).toHaveBeenCalledTimes(1);
+        expect(append.mock.calls[0][2]).toBe('run(1);;\nrun(3);');
+        expect(items.map((item) => item.textContent)).toEqual(['1', '2', '3']);
+        expect(items.every((item) => item.parentElement === items[0].parentElement)).toBe(true);
+    });
+
+    it('announces nothing for an answer without cards', async() => {
+        const append = jest.fn();
+        mockAmdModule('core/templates', {renderForPromise: jest.fn(), appendNodeContents: append});
+        expect(await renderCards([])).toEqual([]);
+        expect(append).not.toHaveBeenCalled();
     });
 });
