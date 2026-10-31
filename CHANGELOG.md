@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A page of cards is announced to core once** (2026100550). The listing inserted each card it rendered on its own,
+  and every insertion fires core's filter event, which Boost answers (`enableTooltips()`) with a `document` keydown
+  listener it never removes: about 14 permanent listeners a filter press or a load more, each run by every Escape.
+  `renderCards()` now inserts the page's cards in one call into a holder the grid takes them from, as the panel's
+  transplant already did. Two Jest tests.
 - **The look choice page lists the looks evenly** (2026100549). The form group separated its radios with `<br>`, which core's
   flex row reads as an empty item: after a label wide enough to fill the row it wrapped onto a line of its own, a blank
   line between two looks. The group has no separator now, and `scss/look.scss` stacks the radios on that page alone.

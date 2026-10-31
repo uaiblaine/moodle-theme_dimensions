@@ -355,12 +355,14 @@ const reveal = /* @__PURE__ */ __name((items) => {
 const renderCards = /* @__PURE__ */ __name(async (cards) => {
   const Templates = await load("core/templates");
   const rendered = await Promise.all(cards.map((card) => Templates.renderForPromise(CARD_TEMPLATE, card)));
-  return rendered.map((result) => {
-    const item = document.createElement("li");
-    item.className = "dim-vitrine__item dim-vitrine__item--enter";
-    Templates.appendNodeContents(item, result.html, result.js);
-    return item;
-  });
+  if (!rendered.length) {
+    return [];
+  }
+  const holder = document.createElement("ul");
+  const html = rendered.map((result) => `<li class="dim-vitrine__item dim-vitrine__item--enter">${result.html}</li>`);
+  const js = rendered.map((result) => result.js).filter((one) => one.trim() !== "");
+  Templates.appendNodeContents(holder, html.join(""), js.join(";\n"));
+  return Array.from(holder.children);
 }, "renderCards");
 const restoreMore = /* @__PURE__ */ __name((more) => {
   if (!more) {
