@@ -347,11 +347,12 @@ textarea:focus-visible,
 }
 
 /* ---- Navbar: the signature band ----------------------------------------- */
-/* Drawn as a pseudo-element rather than a border-bottom on purpose. Boost Union sets
-   `border-bottom: none` on a dark navbar - deliberately, because a light hairline looks wrong
-   there - with a selector more specific than anything a child theme should be writing to outbid.
-   A pseudo-element is not in that argument at all, and it survives whatever Boost Union does to
-   the navbar's borders and shadows in a future release.
+/* Drawn as a pseudo-element rather than a border-bottom, so it survives whatever core and Boost Union
+   do to the navbar's borders and shadows. The navbar itself has no border: core draws a 1px gray-300
+   line under it (theme/boost/scss/moodle/navbar.scss, the reason its height is 61px) and Boost Union
+   only recolours that line, to the bar's own colour, and in the light mode alone. The band sits inside
+   the box, so the line showed as one more pixel under the band, in the bar's colour or core's grey.
+   Without it the band is the bar's last 3px, in the same 61px.
 
    The band is also the reading progress (C3, scss/readingbar.scss): scaled from the left by
    --dimensions-band-progress, a fraction amd/src/readingbar.js writes on the nav of an activity page
@@ -359,6 +360,8 @@ textarea:focus-visible,
    is 1 and the band is full, which is every other page. Scaled, never resized: a transform moves no
    layout. The origin is the left, which the RTL build flips with the rest of the sheet. */
 .navbar.fixed-top {
+    border-bottom: 0;
+
     &::after {
         position: absolute;
         right: 0;
