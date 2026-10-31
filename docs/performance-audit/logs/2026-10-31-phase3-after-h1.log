@@ -1,0 +1,97 @@
+series start 2026-10-31T16:43:30Z
+== h1-dropped-count load=3.17 3.32 2.71
+h1-dropped-count: longtasks=2 tbt~282 ms loaf=6 forced-layout=162 ms inp~0 ms heap=35.1MB eval=9 -> /tmp/h1-dropped-count.{json,cpuprofile}
+  [1x cpu4 390px] ttfb=137 fcp=420 lcp=420 dcl=695 cls=0.001 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=9
+== after-base-phone-1 load=3.76 3.45 2.76
+after-base-phone-1: longtasks=1 tbt~1 ms loaf=2 forced-layout=83 ms inp~0 ms heap=44.4MB eval=null -> /tmp/after-base-phone-1.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=124 fcp=268 lcp=268 dcl=326 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== after-drop-phone-1 load=3.40 3.38 2.75
+after-drop-phone-1: longtasks=2 tbt~187 ms loaf=4 forced-layout=121 ms inp~0 ms heap=42.2MB eval=null -> /tmp/after-drop-phone-1.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=114 fcp=256 lcp=256 dcl=453 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== after-base-phone-2 load=3.59 3.44 2.79
+after-base-phone-2: longtasks=0 tbt~0 ms loaf=3 forced-layout=102 ms inp~0 ms heap=44.2MB eval=null -> /tmp/after-base-phone-2.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=113 fcp=236 lcp=236 dcl=286 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== after-drop-phone-2 load=3.43 3.41 2.80
+after-drop-phone-2: longtasks=1 tbt~174 ms loaf=3 forced-layout=92 ms inp~0 ms heap=42.4MB eval=null -> /tmp/after-drop-phone-2.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=112 fcp=232 lcp=232 dcl=423 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== after-base-desk-1 load=3.64 3.47 2.83
+after-base-desk-1: longtasks=0 tbt~0 ms loaf=2 forced-layout=92 ms inp~0 ms heap=44.2MB eval=null -> /tmp/after-base-desk-1.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=111 fcp=240 lcp=240 dcl=301 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== after-drop-desk-1 load=4.24 3.63 2.90
+after-drop-desk-1: longtasks=1 tbt~170 ms loaf=3 forced-layout=95 ms inp~0 ms heap=44.8MB eval=null -> /tmp/after-drop-desk-1.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=113 fcp=268 lcp=268 dcl=457 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== after-base-desk-2 load=3.82 3.57 2.90
+after-base-desk-2: longtasks=0 tbt~0 ms loaf=2 forced-layout=83 ms inp~0 ms heap=42.5MB eval=null -> /tmp/after-base-desk-2.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=124 fcp=248 lcp=248 dcl=310 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== after-drop-desk-2 load=3.70 3.57 2.92
+after-drop-desk-2: longtasks=1 tbt~169 ms loaf=3 forced-layout=95 ms inp~0 ms heap=41.7MB eval=null -> /tmp/after-drop-desk-2.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=117 fcp=256 lcp=256 dcl=474 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== after-base-press-1 load=3.77 3.58 2.94
+after-base-press-1: longtasks=1 tbt~26 ms loaf=3 forced-layout=128 ms inp~88 ms heap=38.3MB eval=null -> /tmp/after-base-press-1.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=127 fcp=268 lcp=268 dcl=348 cls=0 dom=1099 req=119 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=1 blocking=26 ms forced-layout=20 ms
+== after-base-press-phone-1 load=3.61 3.55 2.94
+
+Fatal error: Uncaught Facebook\WebDriver\Exception\ElementNotInteractableException: element not interactable
+  (Session info: chrome=150.0.7871.124) in /var/www/html/vendor/php-webdriver/webdriver/lib/Exception/WebDriverException.php:98
+== after-base-press-2 load=3.44 3.52 2.94
+after-base-press-2: longtasks=1 tbt~21 ms loaf=4 forced-layout=110 ms inp~80 ms heap=44.8MB eval=null -> /tmp/after-base-press-2.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=113 fcp=252 lcp=252 dcl=311 cls=0 dom=1099 req=119 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=1 blocking=22 ms forced-layout=18 ms
+== after-base-press-phone-2 load=3.17 3.45 2.93
+
+Fatal error: Uncaught Facebook\WebDriver\Exception\ElementNotInteractableException: element not interactable
+  (Session info: chrome=150.0.7871.124) in /var/www/html/vendor/php-webdriver/webdriver/lib/Exception/WebDriverException.php:98
+== after-base-type-phone-1 load=2.99 3.40 2.91
+after-base-type-phone-1: longtasks=1 tbt~3 ms loaf=5 forced-layout=196 ms inp~56 ms heap=42.5MB eval=null -> /tmp/after-base-type-phone-1.{json,cpuprofile}
+  [3x cpu4 390px] ttfb=137 fcp=276 lcp=276 dcl=345 cls=0 dom=1013 req=116 kb=1 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=1 blocking=0 ms forced-layout=43 ms
+== after-base-type-phone-2 load=3.60 3.53 2.98
+after-base-type-phone-2: longtasks=0 tbt~0 ms loaf=5 forced-layout=167 ms inp~56 ms heap=43MB eval=null -> /tmp/after-base-type-phone-2.{json,cpuprofile}
+  [3x cpu4 390px] ttfb=111 fcp=244 lcp=244 dcl=296 cls=0 dom=1013 req=116 kb=1 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=2 ms forced-layout=64 ms
+== after-count-desk load=3.34 3.47 2.97
+after-count-desk: longtasks=0 tbt~0 ms loaf=3 forced-layout=98 ms inp~0 ms heap=36.5MB eval="{\"other\":4,\"filterline\/measure\":29}" -> /tmp/after-count-desk.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=114 fcp=276 lcp=276 dcl=334 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra="{\"other\":4,\"filterline\/measure\":29}"
+== after-count-phone load=3.87 3.59 3.02
+after-count-phone: longtasks=0 tbt~0 ms loaf=3 forced-layout=101 ms inp~0 ms heap=35MB eval="{\"other\":7,\"filterline\/measure\":45}" -> /tmp/after-count-phone.{json,cpuprofile}
+  [1x cpu4 390px] ttfb=126 fcp=292 lcp=292 dcl=383 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra="{\"other\":7,\"filterline\/measure\":45}"
+== after-count-press load=3.82 3.58 3.02
+after-count-press: longtasks=1 tbt~23 ms loaf=3 forced-layout=131 ms inp~80 ms heap=39.6MB eval="{\"other\":325,\"filterline\/measure\":29,\"filterline\/FilterLine\":1,\"listing\/paint\":1}" -> /tmp/after-count-press.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=208 fcp=384 lcp=384 dcl=476 cls=0 dom=1099 req=120 kb=10 | 
+  lcp-el: dim-hero__title extra="{\"other\":325,\"filterline\/measure\":29,\"filterline\/FilterLine\":1,\"listing\/paint\":1}"
+  after load: loaf=1 blocking=25 ms forced-layout=19 ms
+== after-count-press-phone load=3.70 3.56 3.02
+
+Fatal error: Uncaught Facebook\WebDriver\Exception\ElementNotInteractableException: element not interactable
+  (Session info: chrome=150.0.7871.124) in /var/www/html/vendor/php-webdriver/webdriver/lib/Exception/WebDriverException.php:98
+series end 2026-10-31T16:49:15Z
+
+The line's first fold (the ResizeObserverCallback script of the load, duration/forced ms, five loads each):
+after-base-phone-1 [(49, 47), (38, 36), (43, 41), (45, 43), (41, 39)] median forced 41
+after-drop-phone-1 [(40, 39), (39, 37), (47, 45), (48, 45), (52, 50)] median forced 45
+after-base-phone-2 [(41, 40), (46, 43), (36, 34), (40, 38), (42, 40)] median forced 40
+after-drop-phone-2 [(39, 37), (39, 36), (37, 36), (37, 35), (43, 42)] median forced 36
+after-base-desk-1 [(38, 37), (33, 33), (38, 38), (34, 32), (43, 41)] median forced 37
+after-drop-desk-1 [(34, 34), (32, 31), (42, 40), (35, 34), (48, 45)] median forced 34
+after-base-desk-2 [(32, 30), (35, 34), (34, 33), (34, 33), (36, 35)] median forced 33
+after-drop-desk-2 [(34, 33), (33, 31), (35, 34), (35, 33), (37, 35)] median forced 33
+The control's 9 dropped selectors are core's `.mds-checkbox[class] ...:has(:disabled)` and `.mds-radio[class] ...`
+family: the `[class]` is outside the `:has()`, a false match of the drop's substring test, and the A/B shows they
+cost nothing. TBT of the drop lines is the instrument's (the rule walk), as in phase3-has.
+The press at 390 px was not measured: WebDriver refuses the second visible pill as "not interactable" at that width.

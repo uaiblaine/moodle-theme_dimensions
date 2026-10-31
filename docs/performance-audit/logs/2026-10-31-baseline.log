@@ -1,0 +1,106 @@
+series start 2026-10-31T04:03:16Z
+== s9-desktop load=4.27 5.33 4.89
+s9-desktop: longtasks=0 tbt~0 ms loaf=0 forced-layout=0 ms inp~0 ms heap=29.6MB eval=null -> /tmp/s9-desktop.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=146 fcp=232 lcp=232 dcl=285 cls=0 dom=84 req=49 kb=0 | 
+  lcp-el: auth-loginsteps-shell__title extra=null
+== s1-load load=5.53 5.55 4.98
+s1-load: longtasks=1 tbt~9 ms loaf=4 forced-layout=137 ms inp~0 ms heap=40.3MB eval=null -> /tmp/s1-load.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=240 fcp=384 lcp=384 dcl=477 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== s1-load-admin load=5.14 5.46 4.96
+s1-load-admin: longtasks=2 tbt~23 ms loaf=4 forced-layout=188 ms inp~0 ms heap=50.5MB eval=null -> /tmp/s1-load-admin.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=147 fcp=292 lcp=292 dcl=395 cls=0 dom=1811 req=118 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== s1-filter load=5.22 5.46 4.97
+s1-filter: longtasks=4 tbt~60 ms loaf=7 forced-layout=233 ms inp~96 ms heap=45.6MB eval=null -> /tmp/s1-filter.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=160 fcp=328 lcp=328 dcl=469 cls=0 dom=1099 req=119 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=1 blocking=35 ms forced-layout=22 ms
+== s1-type load=5.87 5.55 5.02
+s1-type: longtasks=2 tbt~61 ms loaf=7 forced-layout=205 ms inp~152 ms heap=45.1MB eval=null -> /tmp/s1-type.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=188 fcp=388 lcp=388 dcl=447 cls=0 dom=1741 req=118 kb=3 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=49 ms forced-layout=24 ms
+== s1-more load=6.27 5.69 5.09
+s1-more: longtasks=3 tbt~73 ms loaf=9 forced-layout=372 ms inp~64 ms heap=28.8MB eval=null -> /tmp/s1-more.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=182 fcp=360 lcp=3360 dcl=455 cls=0 dom=2043 req=124 kb=22 | 
+  lcp-el: dim-card__image extra=null
+  after load: loaf=4 blocking=85 ms forced-layout=165 ms
+  cycle x10 after GC: nodes 10789 -> 10789, listeners 1392 -> 1662, heap 24.9 -> 25.4 MB
+== s1-load-phone load=5.69 5.64 5.12
+s1-load-phone: longtasks=2 tbt~79 ms loaf=4 forced-layout=244 ms inp~0 ms heap=44.4MB eval=null -> /tmp/s1-load-phone.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=126 fcp=260 lcp=260 dcl=359 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== s2-load load=5.76 5.66 5.15
+s2-load: longtasks=0 tbt~0 ms loaf=1 forced-layout=17 ms inp~0 ms heap=42.5MB eval=null -> /tmp/s2-load.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=170 fcp=292 lcp=292 dcl=305 cls=0 dom=873 req=113 kb=0 | 
+  lcp-el: dim-poster__img extra=null
+== s2-open load=5.12 5.52 5.11
+s2-open: longtasks=0 tbt~0 ms loaf=3 forced-layout=76 ms inp~48 ms heap=41MB eval=null -> /tmp/s2-open.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=179 fcp=336 lcp=336 dcl=360 cls=0 dom=955 req=116 kb=6 | 
+  lcp-el: dim-poster__img extra=null
+  after load: loaf=2 blocking=0 ms forced-layout=53 ms
+  cycle x10 after GC: nodes 10189 -> 13209, listeners 2130 -> 2150, heap 27.1 -> 27.5 MB
+== s2-load-phone load=4.49 5.28 5.05
+s2-load-phone: longtasks=0 tbt~0 ms loaf=1 forced-layout=21 ms inp~0 ms heap=40.7MB eval=null -> /tmp/s2-load-phone.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=124 fcp=256 lcp=256 dcl=280 cls=0 dom=874 req=113 kb=0 | 
+  lcp-el: dim-poster__img extra=null
+== s3-load load=5.00 5.35 5.08
+s3-load: longtasks=0 tbt~0 ms loaf=2 forced-layout=63 ms inp~0 ms heap=43.6MB eval=null -> /tmp/s3-load.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=113 fcp=264 lcp=264 dcl=303 cls=0 dom=1428 req=120 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== s3-open load=4.76 5.28 5.06
+s3-open: longtasks=1 tbt~5 ms loaf=5 forced-layout=137 ms inp~56 ms heap=42MB eval=null -> /tmp/s3-open.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=138 fcp=316 lcp=316 dcl=347 cls=0 dom=1714 req=124 kb=12 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=3 blocking=19 ms forced-layout=71 ms
+  cycle x10 after GC: nodes 14639 -> 26289, listeners 2800 -> 2820, heap 27.5 -> 27.9 MB
+== s3-load-phone load=5.06 5.24 5.06
+s3-load-phone: longtasks=1 tbt~31 ms loaf=3 forced-layout=145 ms inp~0 ms heap=41.6MB eval=null -> /tmp/s3-load-phone.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=110 fcp=244 lcp=244 dcl=273 cls=0 dom=1429 req=120 kb=0 | 
+  lcp-el: dim-areas__title extra=null
+== s4-load load=5.39 5.29 5.08
+s4-load: longtasks=0 tbt~0 ms loaf=2 forced-layout=86 ms inp~0 ms heap=31.7MB eval=null -> /tmp/s4-load.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=105 fcp=248 lcp=248 dcl=306 cls=0 dom=1418 req=113 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== s4-filter load=5.23 5.26 5.07
+
+Fatal error: Uncaught Facebook\WebDriver\Exception\ElementNotInteractableException: element not interactable
+  (Session info: chrome=150.0.7871.124) in /var/www/html/vendor/php-webdriver/webdriver/lib/Exception/WebDriverException.php:98
+== s4-more load=5.26 5.27 5.08
+s4-more: longtasks=3 tbt~44 ms loaf=6 forced-layout=168 ms inp~56 ms heap=27.5MB eval=null -> /tmp/s4-more.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=91 fcp=248 lcp=2964 dcl=386 cls=0 dom=2099 req=125 kb=34 | 
+  lcp-el: dim-card__image extra=null
+  after load: loaf=2 blocking=35 ms forced-layout=79 ms
+== s4-load-phone load=5.46 5.31 5.09
+s4-load-phone: longtasks=1 tbt~18 ms loaf=2 forced-layout=110 ms inp~0 ms heap=32MB eval=null -> /tmp/s4-load-phone.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=92 fcp=228 lcp=228 dcl=281 cls=0 dom=1419 req=109 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== s5-scroll load=4.87 5.19 5.06
+s5-scroll: longtasks=1 tbt~49 ms loaf=4 forced-layout=123 ms inp~0 ms heap=28MB eval=null -> /tmp/s5-scroll.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=209 fcp=348 lcp=348 dcl=398 cls=0.026 dom=2182 req=102 kb=0 | 
+  lcp-el: P extra=null
+  after load: loaf=0 blocking=0 ms forced-layout=0 ms
+== s5-index load=5.36 5.36 5.14
+s5-index: longtasks=1 tbt~33 ms loaf=4 forced-layout=159 ms inp~0 ms heap=43.2MB eval=null -> /tmp/s5-index.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=172 fcp=336 lcp=336 dcl=392 cls=0.026 dom=2182 req=102 kb=0 | 
+  lcp-el: P extra=null
+  cycle x10 after GC: nodes 10824 -> 10824, listeners 1566 -> 1566, heap 24.3 -> 24.7 MB
+== s5-scroll-phone load=4.83 5.32 5.15
+s5-scroll-phone: longtasks=2 tbt~78 ms loaf=3 forced-layout=195 ms inp~0 ms heap=27.6MB eval=null -> /tmp/s5-scroll-phone.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=184 fcp=320 lcp=320 dcl=353 cls=0 dom=2178 req=102 kb=0 | 
+  lcp-el: P extra=null
+  after load: loaf=0 blocking=0 ms forced-layout=0 ms
+== s7-load load=6.29 5.79 5.36
+s7-load: longtasks=4 tbt~803 ms loaf=9 forced-layout=926 ms inp~0 ms heap=77.2MB eval=null -> /tmp/s7-load.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=176 fcp=348 lcp=348 dcl=418 cls=0 dom=2177 req=149 kb=4 | 
+  lcp-el: h2 mb-0 extra=null
+== s7-type load=8.65 6.50 5.63
+
+Fatal error: Uncaught Facebook\WebDriver\Exception\ElementNotInteractableException: element not interactable
+  (Session info: chrome=150.0.7871.124) in /var/www/html/vendor/php-webdriver/webdriver/lib/Exception/WebDriverException.php:98
+== s9-phone load=7.69 6.39 5.61
+s9-phone: longtasks=0 tbt~0 ms loaf=0 forced-layout=0 ms inp~0 ms heap=28.5MB eval=null -> /tmp/s9-phone.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=76 fcp=164 lcp=164 dcl=184 cls=0 dom=84 req=49 kb=0 | 
+  lcp-el: auth-loginsteps-shell__title extra=null
+series end 2026-10-31T04:17:53Z

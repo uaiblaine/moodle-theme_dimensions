@@ -1,0 +1,25 @@
+C3 re-measured before its fix, m503b, 2026-10-31 ~05:20 UTC. profile.php --type gained --cadence=<ms>: one character
+at a time through CDP Input.dispatchKeyEvent, <ms> apart. Without it, WebDriver's sendKeys queues the six keys at
+once (all six keydowns start within 0.6 ms) and the first key's frame presents after the whole burst.
+URL /course/index.php?categoryid=15&sort=name, viewer dim_student, CPU 4x, text "probes", 3 loads per line.
+
+== cadence=150 load=5.72 2.91 2.13
+c3-cad150: longtasks=2 tbt~23 ms loaf=7 forced-layout=213 ms inp~72 ms heap=43.9MB
+  [3x cpu4 1358px] ttfb=145 fcp=312 lcp=312 dcl=390 cls=0 dom=1012 req=118 kb=1
+  after load: loaf=1 blocking=11 ms forced-layout=26 ms
+  per key (keypress duration/processing), run 0: 72/58 56/39 48/36 40/26 40/25 32/24
+  run 1: 64/52 40/28 32/24 32/22 48/32 40/31; run 2: 72/56 40/26 40/26 32/25 32/24 32/24
+  the one long frame: the first key (DIV.oninput 29-32 ms, 25-26 forced): it opens the list
+== cadence=0 (sendKeys, the phase 2 shape) load=5.27 3.06 2.21
+c3-cad0: longtasks=2 tbt~90 ms loaf=5 forced-layout=157 ms inp~152 ms heap=46.1MB
+  after load: loaf=1 blocking=85 ms forced-layout=23 ms
+== cadence=150, 390 px, load=5.94 3.58 2.44
+c3-cad150-phone: longtasks=4 tbt~95 ms loaf=7 forced-layout=336 ms inp~64 ms heap=45.9MB
+  after load: loaf=2 blocking=25 ms forced-layout=86 ms
+  per key, run 0: 64/53 32/24 32/22 32/25 32/22 32/23; run 1: 56/48 32/23 32/22 32/22 32/26 32/22
+  run 2: 72/60 40/27 32/26 32/26 32/25 40/26
+  answer frame ~1.4 s after the first key (react-dom scheduler, TimerHandler:setTimeout): 78/84/92 ms long,
+  65/68/78 ms script, 60/63/73 forced, blocking 17/20/29
+== layout reads by caller, 390 px, cadence=150, one run each
+"p" (one key):        filterline/measure 53, other 8   (the load alone is 45: one key reads 8)
+"probes" (six keys):  filterline/measure 89, other 8   (six keys and the answer: 44 over the load)
