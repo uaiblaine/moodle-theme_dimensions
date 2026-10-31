@@ -1,0 +1,30 @@
+After #81 (merge 9b167bd, theme_dimensions 2026100551 on m503b, purged), viewer dim_student, CPU 4x, the leaf page
+/course/index.php?categoryid=15&sort=name. Layout reads (getBoundingClientRect, getComputedStyle) counted from document
+start by phase2.sh's COUNT, by calling module: every count INCLUDES the load's.
+series start 2026-10-31T21:03:01Z
+== notes-count-desk
+notes-count-desk: longtasks=0 tbt~0 ms loaf=4 forced-layout=128 ms inp~0 ms heap=36.7MB eval="{\"other\":4,\"filterline\/measure\":29}" -> /tmp/notes-count-desk.{json,cpuprofile}
+  lcp-el: dim-hero__title extra="{\"other\":4,\"filterline\/measure\":29}"
+== notes-count-press
+notes-count-press: longtasks=1 tbt~30 ms loaf=4 forced-layout=116 ms inp~88 ms heap=41.3MB eval="{\"other\":325,\"filterline\/measure\":29,\"filterline\/FilterLine\":1,\"listing\/paint\":1}" -> /tmp/notes-count-press.{json,cpuprofile}
+  lcp-el: dim-hero__title extra="{\"other\":325,\"filterline\/measure\":29,\"filterline\/FilterLine\":1,\"listing\/paint\":1}"
+  after load: loaf=2 blocking=31 ms forced-layout=20 ms
+== notes-count-type-phone
+notes-count-type-phone: longtasks=2 tbt~18 ms loaf=7 forced-layout=245 ms inp~72 ms heap=33.5MB eval="{\"other\":8,\"filterline\/measure\":89,\"filterline\/FilterLine\":1}" -> /tmp/notes-count-type-phone.{json,cpuprofile}
+  lcp-el: dim-hero__title extra="{\"other\":8,\"filterline\/measure\":89,\"filterline\/FilterLine\":1}"
+  after load: loaf=2 blocking=12 ms forced-layout=66 ms
+== notes-count-type-desk
+notes-count-type-desk: longtasks=4 tbt~21 ms loaf=8 forced-layout=258 ms inp~72 ms heap=36.5MB eval="{\"other\":5,\"filterline\/measure\":50,\"filterline\/FilterLine\":1}" -> /tmp/notes-count-type-desk.{json,cpuprofile}
+  lcp-el: dim-hero__title extra="{\"other\":5,\"filterline\/measure\":50,\"filterline\/FilterLine\":1}"
+  after load: loaf=3 blocking=18 ms forced-layout=66 ms
+series end 2026-10-31T21:03:55Z
+
+Twelve scope chip presses (detached.php, the D2 ledger's cycle: second visible pill | first visible pill, a warm-up
+cycle and five more), COUNT as --init, read after the cycles:
+  {"filterline/measure":29,"filterline/FilterLine":1,"listing/paint":12,"other":3856}
+  pills after the cycles: All 35, Open for enrolment 3, Free access 2, ...; Filters badge 0
+  -> 29 = the load's measure alone: no press remeasured the line.
+
+Before #81, for comparison (logs/2026-10-31-phase2.log and -phase3-c3.log): c1-count 29, c2-press-count 29 (the load
+included, misread in phase 2 as the press's remeasure), "p" at 390 px 53, "probes" at 390 px 89.
+The served FilterLine module was checked to carry the change (its key join) after the purge.
