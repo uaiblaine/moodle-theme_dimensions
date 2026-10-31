@@ -1,0 +1,99 @@
+series start 2026-10-31T07:33:11Z
+== has-base-phone-1 load=7.43 6.04 4.09
+has-base-phone-1: longtasks=3 tbt~118 ms loaf=5 forced-layout=292 ms inp~0 ms heap=43.3MB eval=null -> /tmp/has-base-phone-1.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=201 fcp=368 lcp=368 dcl=454 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== has-drop-phone-1 load=7.95 6.29 4.24
+has-drop-phone-1: longtasks=3 tbt~262 ms loaf=6 forced-layout=218 ms inp~0 ms heap=42.9MB eval=null -> /tmp/has-drop-phone-1.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=249 fcp=440 lcp=440 dcl=700 cls=0.001 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== has-base-phone-2 load=7.48 6.32 4.31
+has-base-phone-2: longtasks=2 tbt~86 ms loaf=5 forced-layout=269 ms inp~0 ms heap=48MB eval=null -> /tmp/has-base-phone-2.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=210 fcp=348 lcp=348 dcl=440 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== has-drop-phone-2 load=9.68 6.89 4.57
+has-drop-phone-2: longtasks=2 tbt~235 ms loaf=6 forced-layout=207 ms inp~0 ms heap=42.7MB eval=null -> /tmp/has-drop-phone-2.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=253 fcp=404 lcp=404 dcl=643 cls=0.001 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== has-base-desk-1 load=8.62 6.83 4.60
+has-base-desk-1: longtasks=2 tbt~26 ms loaf=5 forced-layout=203 ms inp~0 ms heap=45.9MB eval=null -> /tmp/has-base-desk-1.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=209 fcp=372 lcp=372 dcl=478 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== has-drop-desk-1 load=7.96 6.81 4.66
+has-drop-desk-1: longtasks=2 tbt~206 ms loaf=5 forced-layout=136 ms inp~0 ms heap=41.3MB eval=null -> /tmp/has-drop-desk-1.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=173 fcp=328 lcp=328 dcl=581 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== has-base-desk-2 load=7.73 6.86 4.74
+has-base-desk-2: longtasks=2 tbt~26 ms loaf=5 forced-layout=215 ms inp~0 ms heap=45.2MB eval=null -> /tmp/has-base-desk-2.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=178 fcp=328 lcp=328 dcl=419 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== has-drop-desk-2 load=7.05 6.75 4.75
+has-drop-desk-2: longtasks=3 tbt~248 ms loaf=7 forced-layout=189 ms inp~0 ms heap=44.8MB eval=null -> /tmp/has-drop-desk-2.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=245 fcp=392 lcp=392 dcl=653 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== has-base-type-phone-1 load=6.06 6.55 4.73
+has-base-type-phone-1: longtasks=4 tbt~129 ms loaf=8 forced-layout=371 ms inp~72 ms heap=42MB eval=null -> /tmp/has-base-type-phone-1.{json,cpuprofile}
+  [3x cpu4 390px] ttfb=170 fcp=340 lcp=340 dcl=417 cls=0 dom=1013 req=116 kb=1 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=19 ms forced-layout=82 ms
+== has-drop-type-phone-1 load=6.22 6.57 4.80
+has-drop-type-phone-1: longtasks=3 tbt~240 ms loaf=8 forced-layout=214 ms inp~64 ms heap=38.1MB eval=null -> /tmp/has-drop-type-phone-1.{json,cpuprofile}
+  [3x cpu4 390px] ttfb=182 fcp=360 lcp=360 dcl=633 cls=0.001 dom=1013 req=116 kb=1 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=10 ms forced-layout=69 ms
+== has-base-type-phone-2 load=5.12 6.27 4.76
+has-base-type-phone-2: longtasks=4 tbt~114 ms loaf=7 forced-layout=330 ms inp~56 ms heap=45.8MB eval=null -> /tmp/has-base-type-phone-2.{json,cpuprofile}
+  [3x cpu4 390px] ttfb=184 fcp=384 lcp=384 dcl=481 cls=0 dom=1013 req=116 kb=1 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=20 ms forced-layout=84 ms
+== has-drop-type-phone-2 load=3.90 5.86 4.66
+has-drop-type-phone-2: longtasks=3 tbt~196 ms loaf=6 forced-layout=169 ms inp~64 ms heap=40.1MB eval=null -> /tmp/has-drop-type-phone-2.{json,cpuprofile}
+  [3x cpu4 390px] ttfb=131 fcp=328 lcp=328 dcl=534 cls=0 dom=1013 req=116 kb=1 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=6 ms forced-layout=70 ms
+== has-base-press-1 load=3.63 5.64 4.62
+has-base-press-1: longtasks=2 tbt~14 ms loaf=3 forced-layout=95 ms inp~72 ms heap=48.2MB eval=null -> /tmp/has-base-press-1.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=116 fcp=276 lcp=276 dcl=337 cls=0 dom=1099 req=119 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=1 blocking=11 ms forced-layout=18 ms
+== has-drop-press-1 load=3.40 5.43 4.57
+has-drop-press-1: longtasks=2 tbt~182 ms loaf=4 forced-layout=116 ms inp~80 ms heap=47.8MB eval=null -> /tmp/has-drop-press-1.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=133 fcp=252 lcp=252 dcl=432 cls=0 dom=1099 req=119 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=1 blocking=20 ms forced-layout=19 ms
+== has-base-press-2 load=3.31 5.25 4.53
+has-base-press-2: longtasks=2 tbt~31 ms loaf=4 forced-layout=142 ms inp~80 ms heap=48.4MB eval=null -> /tmp/has-base-press-2.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=110 fcp=256 lcp=256 dcl=329 cls=0 dom=1099 req=119 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=1 blocking=18 ms forced-layout=18 ms
+== has-drop-press-2 load=3.08 5.04 4.47
+has-drop-press-2: longtasks=2 tbt~178 ms loaf=6 forced-layout=139 ms inp~72 ms heap=42.6MB eval=null -> /tmp/has-drop-press-2.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=108 fcp=268 lcp=268 dcl=471 cls=0 dom=1099 req=119 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=1 blocking=13 ms forced-layout=18 ms
+== has-base-s9 load=3.41 4.95 4.45
+has-base-s9: longtasks=0 tbt~0 ms loaf=0 forced-layout=0 ms inp~0 ms heap=28.6MB eval=null -> /tmp/has-base-s9.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=86 fcp=172 lcp=172 dcl=192 cls=0 dom=84 req=49 kb=0 | 
+  lcp-el: auth-loginsteps-shell__title extra=null
+== has-drop-s9 load=3.10 4.81 4.41
+has-drop-s9: longtasks=1 tbt~132 ms loaf=1 forced-layout=0 ms inp~0 ms heap=30.5MB eval=null -> /tmp/has-drop-s9.{json,cpuprofile}
+  [5x cpu4 1358px] ttfb=77 fcp=148 lcp=148 dcl=302 cls=0 dom=84 req=49 kb=0 | 
+  lcp-el: auth-loginsteps-shell__title extra=null
+series end 2026-10-31T07:40:26Z
+
+The line's first fold (the ResizeObserverCallback script of the load, duration/forced ms, five loads each):
+has-base-phone-1 [(122, 118), (113, 109), (138, 136), (112, 109), (128, 126)] median forced 118
+has-drop-phone-1 [(49, 47), (51, 48), (53, 50), (61, 58), (57, 54)] median forced 50
+has-base-phone-2 [(102, 99), (102, 100), (103, 101), (106, 103), (109, 107)] median forced 101
+has-drop-phone-2 [(53, 52), (55, 54), (53, 52), (53, 51), (76, 73)] median forced 52
+has-base-desk-1 [(57, 56), (42, 40), (41, 40), (41, 40), (45, 44)] median forced 40
+has-drop-desk-1 [(41, 40), (45, 43), (37, 36), (42, 41), (42, 40)] median forced 40
+has-base-desk-2 [(39, 38), (54, 52), (46, 43), (42, 40), (45, 44)] median forced 43
+has-drop-desk-2 [(50, 48), (42, 40), (42, 40), (56, 55), (46, 43)] median forced 43
+TBT of the drop lines is the instrument's: walking 22,848 rules at DOMContentLoaded is one long task (S9 control:
+0 -> 132 ms). Read forced layout and the fold's frame, not TBT, from this series.
+
+Before the series, one load each at 390 px (stylecalib.js, stylebisect.js): any class change on the line, a class
+no rule names included, costs 16.3-20.5 ms of style; an inherited custom property set on the line costs 0, on the
+body 26.6. Taking out every :has() rule: 0. Taking out only the five whose :has() argument reads [class...]: 0.
+stylesplit.js over a load: each fold try 15.7-17.5 ms of style, 4.1-4.8 of layout (390 px: four tries; 1358: one).

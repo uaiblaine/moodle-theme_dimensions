@@ -1,0 +1,72 @@
+series start 2026-10-31T04:42:05Z
+== c1-count load=1.94 2.73 3.43
+c1-count: longtasks=1 tbt~6 ms loaf=2 forced-layout=75 ms inp~0 ms heap=36.5MB eval="{\"other\":4,\"filterline\/measure\":29}" -> /tmp/c1-count.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=134 fcp=300 lcp=300 dcl=345 cls=0 dom=1712 req=116 kb=0 | 
+  lcp-el: dim-hero__title extra="{\"other\":4,\"filterline\/measure\":29}"
+== c1-count-phone load=2.11 2.74 3.42
+c1-count-phone: longtasks=1 tbt~59 ms loaf=4 forced-layout=198 ms inp~0 ms heap=34.8MB eval="{\"other\":7,\"filterline\/measure\":45}" -> /tmp/c1-count-phone.{json,cpuprofile}
+  [1x cpu4 390px] ttfb=107 fcp=252 lcp=252 dcl=308 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra="{\"other\":7,\"filterline\/measure\":45}"
+== c1-base-phone-1 load=2.09 2.71 3.40
+c1-base-phone-1: longtasks=1 tbt~48 ms loaf=2 forced-layout=133 ms inp~0 ms heap=46.8MB eval=null -> /tmp/c1-base-phone-1.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=106 fcp=224 lcp=224 dcl=268 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== c1-contain-phone-1 load=2.54 2.77 3.41
+c1-contain-phone-1: longtasks=1 tbt~44 ms loaf=3 forced-layout=159 ms inp~0 ms heap=41.2MB eval=null -> /tmp/c1-contain-phone-1.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=114 fcp=240 lcp=240 dcl=301 cls=0 dom=1714 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== c1-base-phone-2 load=2.48 2.73 3.38
+c1-base-phone-2: longtasks=1 tbt~48 ms loaf=3 forced-layout=145 ms inp~0 ms heap=46.8MB eval=null -> /tmp/c1-base-phone-2.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=107 fcp=232 lcp=232 dcl=281 cls=0 dom=1713 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== c1-contain-phone-2 load=2.47 2.71 3.36
+c1-contain-phone-2: longtasks=1 tbt~44 ms loaf=3 forced-layout=143 ms inp~0 ms heap=45.4MB eval=null -> /tmp/c1-contain-phone-2.{json,cpuprofile}
+  [5x cpu4 390px] ttfb=105 fcp=228 lcp=228 dcl=275 cls=0.237 dom=1714 req=114 kb=0 | 
+  lcp-el: dim-hero__title extra=null
+== c2-press-count load=2.36 2.67 3.32
+c2-press-count: longtasks=2 tbt~19 ms loaf=3 forced-layout=94 ms inp~72 ms heap=41.1MB eval="{\"other\":325,\"filterline\/measure\":29,\"filterline\/FilterLine\":1,\"listing\/paint\":1}" -> /tmp/c2-press-count.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=170 fcp=336 lcp=336 dcl=388 cls=0 dom=1099 req=120 kb=10 | 
+  lcp-el: dim-hero__title extra="{\"other\":325,\"filterline\/measure\":29,\"filterline\/FilterLine\":1,\"listing\/paint\":1}"
+  after load: loaf=1 blocking=15 ms forced-layout=19 ms
+== c3-type-count load=2.30 2.65 3.31
+c3-type-count: longtasks=2 tbt~113 ms loaf=4 forced-layout=140 ms inp~168 ms heap=37.9MB eval="{\"other\":78,\"filterline\/measure\":50,\"filterline\/FilterLine\":1}" -> /tmp/c3-type-count.{json,cpuprofile}
+  [1x cpu4 1358px] ttfb=141 fcp=312 lcp=312 dcl=371 cls=0 dom=1012 req=118 kb=7 | 
+  lcp-el: dim-hero__title extra="{\"other\":78,\"filterline\/measure\":50,\"filterline\/FilterLine\":1}"
+  after load: loaf=1 blocking=109 ms forced-layout=26 ms
+== c4-base-1 load=2.59 2.70 3.31
+c4-base-1: longtasks=2 tbt~25 ms loaf=5 forced-layout=194 ms inp~40 ms heap=42.2MB eval=null -> /tmp/c4-base-1.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=116 fcp=260 lcp=284 dcl=314 cls=0 dom=2043 req=123 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=31 ms forced-layout=87 ms
+== c4-noscroll-1 load=2.47 2.65 3.28
+c4-noscroll-1: longtasks=2 tbt~26 ms loaf=6 forced-layout=228 ms inp~40 ms heap=40.9MB eval=null -> /tmp/c4-noscroll-1.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=106 fcp=240 lcp=340 dcl=284 cls=0 dom=2043 req=123 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=3 blocking=31 ms forced-layout=111 ms
+== c4-base-2 load=2.75 2.70 3.28
+c4-base-2: longtasks=2 tbt~29 ms loaf=5 forced-layout=200 ms inp~40 ms heap=41.5MB eval=null -> /tmp/c4-base-2.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=115 fcp=252 lcp=280 dcl=322 cls=0 dom=2043 req=123 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=31 ms forced-layout=87 ms
+== c4-noscroll-2 load=2.65 2.68 3.25
+c4-noscroll-2: longtasks=2 tbt~22 ms loaf=5 forced-layout=193 ms inp~40 ms heap=42.3MB eval=null -> /tmp/c4-noscroll-2.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=106 fcp=260 lcp=272 dcl=311 cls=0 dom=2043 req=123 kb=2 | 
+  lcp-el: dim-hero__title extra=null
+  after load: loaf=2 blocking=28 ms forced-layout=85 ms
+== c5-s3-open load=2.89 2.73 3.26
+c5-s3-open: longtasks=1 tbt~1 ms loaf=4 forced-layout=112 ms inp~56 ms heap=35MB eval="{\"other\":443,\"filterline\/measure\":29,\"areas\/panel\":4}" -> /tmp/c5-s3-open.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=119 fcp=268 lcp=268 dcl=304 cls=0 dom=1714 req=123 kb=2 | 
+  lcp-el: dim-hero__title extra="{\"other\":443,\"filterline\/measure\":29,\"areas\/panel\":4}"
+  after load: loaf=2 blocking=8 ms forced-layout=22 ms
+  cycle x10 after GC: nodes 23310 -> 23310, listeners 4908 -> 4928, heap 33.4 -> 33.8 MB
+== c5-s2-open load=2.48 2.61 3.16
+c5-s2-open: longtasks=0 tbt~0 ms loaf=1 forced-layout=30 ms inp~40 ms heap=41.1MB eval=null -> /tmp/c5-s2-open.{json,cpuprofile}
+  [3x cpu4 1358px] ttfb=125 fcp=272 lcp=272 dcl=269 cls=0 dom=955 req=116 kb=2 | 
+  lcp-el: dim-poster__img extra=null
+  after load: loaf=1 blocking=0 ms forced-layout=30 ms
+  cycle x10 after GC: nodes 15206 -> 15206, listeners 3565 -> 3585, heap 32.7 -> 33.1 MB
+== s4-filter load=2.36 2.58 3.10
+
+Fatal error: Uncaught Facebook\WebDriver\Exception\ElementNotInteractableException: element not interactable
+  (Session info: chrome=150.0.7871.124) in /var/www/html/vendor/php-webdriver/webdriver/lib/Exception/WebDriverException.php:98
+series end 2026-10-31T04:48:32Z

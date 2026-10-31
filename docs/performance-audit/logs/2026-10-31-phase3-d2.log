@@ -1,0 +1,10 @@
+series start 2026-10-31T18:29:41Z
+== d2-after: S1 two presses a cycle, five cycles, theme_dimensions 2026100550 on m503b
+eval after the cycles: [[["article[dim-card] mouseenter",186],["article[dim-card] mouseleave",186],["document click",25],["document keydown",24],["window resize",6],["window load",5],["document focusin",5],["input[] invalid",5]],[["at enableTooltips (\/lib\/requirejs.php\/R\/core\/first.js:7271:645) < at \/lib\/requirejs.php\/R\/core\/first.js:7271:8169 < at Array.forEach (<anonymous>) < at HTMLDocument.<anonymous> (\/lib\/requirejs.php\/R\/core\/first.js:7271:8124)",12],["at w (\/core\/esm\/R\/bootstrap\/dom\/event-handler.js:1:1806) < at Object.on (\/core\/esm\/R\/bootstrap\/dom\/event-handler.js:1:2128) < at \/core\/esm\/R\/bootstrap\/bootstrap.js:1:17353",1],["at w (\/core\/esm\/R\/bootstrap\/dom\/event-handler.js:1:1806) < at Object.on (\/core\/esm\/R\/bootstrap\/dom\/event-handler.js:1:2128) < at \/core\/esm\/R\/bootstrap\/bootstrap.js:1:17397",1],["at dropdownFix (\/lib\/requirejs.php\/R\/core\/first.js:7361:2563) < at _exports.init (\/lib\/requirejs.php\/R\/core\/first.js:7361:4974) < at Object.<anonymous> (\/lib\/requirejs.php\/R\/core\/first.js:7271:840) < at Object.execCb (\/lib\/javascript.php\/R\/lib\/requirejs\/require.min.js:5:16590)",1],["at \/lib\/requirejs.php\/R\/core\/first.js:7361:6117 < at _exports.init (\/lib\/requirejs.php\/R\/core\/first.js:7361:9198) < at Object.<anonymous> (\/lib\/requirejs.php\/R\/core\/first.js:7271:840) < at Object.execCb (\/lib\/javascript.php\/R\/lib\/requirejs\/require.min.js:5:16590)",1]]]
+detached nodes: 8 -> 8 after 5 cycles
+      +0       2 -> 2      div  
+      +0       3 -> 3      ##text
+      +0       1 -> 1      details dim-filters dim-toolbar__filters.dim-line__filters
+      +0       1 -> 1      details dim-organise dim-line__organise
+      +0       1 -> 1      a  
+series end 2026-10-31T18:30:25Z
