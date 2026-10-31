@@ -378,4 +378,25 @@ final class look_menu_test extends \advanced_testcase {
         $this->assertStringContainsString($mark . 'Harbour &amp; Co', $html);
         $this->assertSame(1, substr_count($html, 'dimensions-look-mark'), 'Only the look handed a mark has one.');
     }
+
+    /**
+     * The choice page's radios carry no separator: in core's flex row a <br> is an empty item, and one that wraps
+     * after a full-width label is a blank line between two looks.
+     *
+     * @return void
+     */
+    public function test_the_choice_forms_radios_carry_no_separator(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+        $form = new \theme_dimensions\form\flavourchoice(
+            null,
+            ['options' => [0 => 'Site default', 7 => 'Harbour', 8 => 'Campus']]
+        );
+
+        $html = $form->render();
+
+        $this->assertSame(1, preg_match('~id="fgroup_id_flavourgroup".*?</fieldset>~s', $html, $group));
+        $this->assertSame(3, substr_count($group[0], 'name="flavour"'), 'Control: the three radios are in the group.');
+        $this->assertDoesNotMatchRegularExpression('~<br\b~i', $group[0]);
+    }
 }

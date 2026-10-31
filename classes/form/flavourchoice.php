@@ -58,7 +58,9 @@ class flavourchoice extends \moodleform {
         foreach ($this->_customdata['options'] as $id => $label) {
             $radios[] = $mform->createElement('radio', 'flavour', '', ($marks[$id] ?? '') . s($label), (int) $id);
         }
-        $mform->addGroup($radios, 'flavourgroup', get_string('lookmenu', 'theme_dimensions'), ['<br>'], false);
+        // No separator: core lays a group's elements out in a flex row, where a <br> is an empty item that wraps
+        // onto a line of its own after a label wide enough to fill one. scss/look.scss stacks the radios instead.
+        $mform->addGroup($radios, 'flavourgroup', get_string('lookmenu', 'theme_dimensions'), '', false);
         $mform->setType('flavour', PARAM_INT);
 
         $mform->addElement('hidden', 'returnurl');
