@@ -104,12 +104,17 @@ final class drawer_source_test extends \basic_testcase {
     /**
      * The focus goes to the new panel's back control, and back to the row that opened it on the way out.
      *
+     * The way in focuses without scrolling: the panel is still off to the right, and a scrolling focus moves the
+     * viewport, which leaves the panel drawn to the left of it (theme_dimensions_drawer.feature runs that). The
+     * way back scrolls, so a row far down the parent panel is brought into view; the parent comes in from the
+     * left, where the viewport cannot scroll.
+     *
      * @return void
      */
     public function test_the_focus_follows_the_panels_both_ways(): void {
         $enter = $this->body('enter');
         $this->assertStringContainsString('openers.push(opener);', $enter);
-        $this->assertStringContainsString('panel.querySelector(SELECTORS.BACK)?.focus();', $enter);
+        $this->assertStringContainsString('panel.querySelector(SELECTORS.BACK)?.focus({preventScroll: true});', $enter);
 
         $leave = $this->body('leave');
         $this->assertStringContainsString('const opener = openers.pop();', $leave);

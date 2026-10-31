@@ -14,6 +14,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   back button reads the body's ink through `.text-body` and Boost Union's smart-menu header is a link, and both now
   read the menu's; the back arrow, an image of core's icon, is inverted to white and centred on the title, and the
   row takes one pill, never a second one on the button. Tests `navbar_menu_colour_test` (five brand colours, measured) and two in `post_scss_test`.
+- **A drawer sub-panel opens where it should on a phone** (2026100548). Opening the Look or the language panel moved
+  the focus to the panel's back control while the panel was still sliding in from the right, and the browser scrolled
+  the drawer's viewport (overflow hidden is still a scroll container) to reveal it: the panel was drawn about 213px to
+  the left, a sliver of it in view, for as long as a third panel kept the viewport wider than itself. `amd/src/drawer.js`
+  now focuses with `preventScroll`; the way back keeps its scrolling focus (the parent comes in from the left, where the
+  viewport cannot scroll, and a row far down the parent is still brought into view). A Behat step reads the panel's box
+  after the slide, the drawer scenario gains a third panel, and one mutation gate holds the call.
 - **The look menus can show each look's favicon** (2026100547). The new setting `theme_dimensions/lookmenufavicons`
   (General settings, *Look*, off by default) puts a mark before each name in the user menu's Look submenu, the drawer's
   Look panel and the choice page: the Boost Union flavour's favicon, else a dot in its brand colour, else an empty box of
