@@ -591,9 +591,12 @@ already shaped decisions here:
 - **Only the untouched default is filled in.** `apply_navbar_style()` returns early unless the
   context still says `bg-body`, so an admin's navbarcolor choice and a flavour's
   `look_navbarcolor` both stand (`test_a_chosen_navbar_colour_is_left_alone`).
-- **The signature band is a `::after`, not a `border-bottom`.** Boost Union sets
-  `border-bottom: none` on a dark navbar with a selector a child theme should not be
-  outbidding. A pseudo-element is not in that argument at all.
+- **The signature band is a `::after`, not a `border-bottom`, and the navbar has no border.**
+  Core draws a 1px gray-300 `border-bottom` on `.navbar.fixed-top` (hence its 61px height), and
+  Boost Union only recolours it, to `--bu-navbar-bg` in the light mode alone; it never removes it.
+  Under the band, which sits inside the box, it showed as one more pixel, so `post.scss` sets
+  `border-bottom: 0` on the same selector (equal specificity, later in the sheet) and keeps core's
+  61px. `post_scss_test` holds it.
 - **Settings-driven SCSS goes in the PRE callback, not the extra one.** A Bootstrap variable such
   as `$primary` has to be assigned before Bootstrap compiles, and an `@import` rule is only honoured when it precedes
   every other rule in the stylesheet — the extra SCSS is appended at the end, where the

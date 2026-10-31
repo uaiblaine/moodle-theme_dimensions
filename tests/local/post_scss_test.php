@@ -127,6 +127,22 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
+     * The navbar has no border under its band.
+     *
+     * Core draws a 1px border-bottom on .navbar.fixed-top and Boost Union only recolours it, so without this rule it
+     * showed as a line under the band. The control is the band itself, in the same rule.
+     *
+     * @return void
+     */
+    public function test_the_navbar_has_no_border_under_its_band(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertSame(1, preg_match('/\n\.navbar\.fixed-top \{(.*?)\n\}/s', $scss, $rule));
+        $this->assertStringContainsString('background: var(--dimensions-navbar-band);', $rule[1], 'Control: the band.');
+        $this->assertMatchesRegularExpression('/^\s*border-bottom: 0;/', $rule[1]);
+    }
+
+    /**
      * The navbar's dropdowns answer Boost Union's hover properties on the menu with the theme's own pill.
      *
      * Boost Union sets the menus' hover pair from --bu-navbar-bg and --bu-navbar-dropdown-hover-color with a

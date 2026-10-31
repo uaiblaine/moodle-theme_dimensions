@@ -5,6 +5,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **No line under the navbar's band.** Core draws a 1px gray-300 `border-bottom` on `.navbar.fixed-top`, which Boost
+  Union only recolours (to the bar's colour, in the light mode alone), so it showed as one more pixel under the 3px
+  band. The theme sets it to 0 and keeps core's 61px. One test in `post_scss_test`.
 - **The navbar's dropdowns are a dark slate with the brand colour on the row under the pointer.** Every
   `.navbar .dropdown-menu` (the user menu and its submenus, the language and look menus, smart menus in the bar,
   focus mode's "More") is one dark surface in both colour modes, inset by 8px, with 12px corners; the hovered,
