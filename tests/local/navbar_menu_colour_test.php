@@ -98,6 +98,24 @@ final class navbar_menu_colour_test extends \advanced_testcase {
     }
 
     /**
+     * Core's colour mode helpers, from the top of the file to the end of dark-readable().
+     *
+     * The whole head and not the function alone: core 5.3 has since given dark-readable() a cache and helpers
+     * declared above it, and the function's own text no longer compiles by itself.
+     *
+     * @param string $core The text of theme/boost/scss/moodle/colour-mode.scss.
+     * @return string
+     */
+    private function core_helpers(string $core): string {
+        $function = strpos($core, '@function dark-readable(');
+        $this->assertNotFalse($function, 'Core still declares dark-readable().');
+        $end = strpos($core, "\n}\n", $function);
+        $this->assertNotFalse($end, 'The function ends.');
+
+        return substr($core, 0, $end + 3);
+    }
+
+    /**
      * The menu's Sass, from its surface to the line that decides the pill, whatever that line says.
      *
      * @param string $post The text of scss/post.scss.
@@ -123,7 +141,7 @@ final class navbar_menu_colour_test extends \advanced_testcase {
         $core = (string) file_get_contents($CFG->dirroot . '/theme/boost/scss/moodle/colour-mode.scss');
         $code = '@import "functions"; @import "variables"; $primary: ' . $primary . ';'
             . $this->block($post, '$dim-ds-blue-050:', '$dim-ds-red-800: #51140d;')
-            . $this->block($core, '@function dark-readable(', "    @return \$readable;\n}")
+            . $this->core_helpers($core)
             . $this->menu_block($post)
             . '.probe { s: #{$dimensions-menu-surface}; g: #{$dimensions-menu-highlight};'
             . ' i: #{$dimensions-menu-highlight-ink}; }';
