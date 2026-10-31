@@ -5,6 +5,10 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The look choice page lists the looks evenly** (2026100549). The form group separated its radios with `<br>`, which core's
+  flex row reads as an empty item: after a label wide enough to fill the row it wrapped onto a line of its own, a blank
+  line between two looks. The group has no separator now, and `scss/look.scss` stacks the radios on that page alone.
+  One PHPUnit test per half, two mutation gates.
 - **A drawer sub-panel opens where it should on a phone** (2026100548). Opening the Look or the language panel moved
   the focus to the panel's back control while the panel was still sliding in from the right, and the browser scrolled
   the drawer's viewport (overflow hidden is still a scroll container) to reveal it: the panel was drawn about 213px to

@@ -31,3 +31,14 @@
 .dimensions-drawer-item .dimensions-look-mark {
     margin-inline-end: 0;
 }
+
+/* The choice page's radios, one per line. Core lays a form group out as a wrapping flex row centred on its cross
+   axis by a utility class this sheet cannot outrank, so each radio sets its own alignment.
+   {@see \theme_dimensions\form\flavourchoice::definition()} */
+#page-theme-dimensions-flavour #fgroup_id_flavourgroup .d-flex {
+    flex-direction: column;
+}
+
+#page-theme-dimensions-flavour #fgroup_id_flavourgroup .form-check-inline {
+    align-self: flex-start;
+}
