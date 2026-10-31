@@ -128,7 +128,7 @@
             max-width: none;
             max-height: calc(100vh - #{$navbar-height} - var(--dim-ds-space-md));
             margin: 0;
-            padding: 0 0 var(--dim-ds-space-xs);
+            padding: 0 var(--bs-dropdown-padding-x) var(--dim-ds-space-xs);
             overflow-y: auto;
             overscroll-behavior: contain;
             border-width: 0;

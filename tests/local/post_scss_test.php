@@ -127,21 +127,55 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
-     * The navy dropdowns answer Boost Union's hover properties on the menu, or a hover is navy on navy.
+     * The navbar's dropdowns answer Boost Union's hover properties on the menu with the theme's own pill.
      *
      * Boost Union sets the menus' hover pair from --bu-navbar-bg and --bu-navbar-dropdown-hover-color with a
      * selector this theme does not outrank; the two are inherited from the navbar, whose --bu-navbar-bg is the bar's
-     * own navy. The control is the menu's own navy surface in the same rule.
+     * own colour. The control is the menu's own dark surface in the same rule. The pair itself is measured in
+     * navbar_menu_colour_test.
      *
      * @return void
      */
-    public function test_the_navy_dropdowns_answer_boost_unions_hover_properties(): void {
+    public function test_the_navbar_dropdowns_answer_boost_unions_hover_properties(): void {
         $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
         $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
         $this->assertSame(1, preg_match('/\n\.navbar \.dropdown-menu \{(.*?)\n\}/s', $scss, $rule));
-        $this->assertStringContainsString('--bs-dropdown-bg: var(--dim-ds-surface-inverse-deep);', $rule[1], 'Control.');
-        $this->assertStringContainsString('--bu-navbar-bg: rgba(255, 255, 255, .12);', $rule[1]);
-        $this->assertStringContainsString('--bu-navbar-dropdown-hover-color: var(--dim-ds-text-inverse);', $rule[1]);
+        $this->assertStringContainsString('--bs-dropdown-bg: #{$dimensions-menu-surface};', $rule[1], 'Control.');
+        foreach (['--bu-navbar-bg', '--bs-dropdown-link-hover-bg', '--bs-dropdown-link-active-bg'] as $ground) {
+            $this->assertStringContainsString("{$ground}: #{\$dimensions-menu-highlight};", $rule[1], $ground);
+        }
+        $inks = ['--bu-navbar-dropdown-hover-color', '--bs-dropdown-link-hover-color', '--bs-dropdown-link-active-color'];
+        foreach ($inks as $ink) {
+            $this->assertStringContainsString("{$ink}: #{\$dimensions-menu-highlight-ink};", $rule[1], $ink);
+        }
+    }
+
+    /**
+     * A submenu's title row reads the menu's ink, through the channel core's .text-body reads.
+     *
+     * .text-body is !important, so a plain colour on the back button changes nothing; the row re-points
+     * --bs-body-color-rgb, and the hover re-points it again to the pill's ink. The control is the row's own colour.
+     *
+     * @return void
+     */
+    public function test_a_submenus_title_row_reads_the_menus_ink(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertSame(1, preg_match('/\n\.navbar \.dropdown-menu \.submenu \.header \{(.*?)\n\}/s', $scss, $rule));
+        $this->assertStringContainsString('color: var(--bs-dropdown-color);', $rule[1], 'Control.');
+        $this->assertStringContainsString('--bs-body-color-rgb: #{to-rgb($dim-ds-white)};', $rule[1]);
+        $this->assertStringContainsString('--bs-body-color-rgb: #{to-rgb($dimensions-menu-highlight-ink)};', $rule[1]);
+        $this->assertMatchesRegularExpression(
+            '/\.btn-icon \.icon \{\s*display: block;\s*filter: invert\(1\);\s*\}/',
+            $rule[1],
+            'The arrow is an image: only a filter makes it the menu\'s white.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/a\.carousel-navigation-link \.btn-icon \{\s*--bs-btn-hover-bg: transparent;\s*--bs-btn-active-bg: transparent;\s*\}/',
+            $rule[1],
+            'Inside Boost Union\'s link the link is the row: one pill, not a second one on the button.'
+        );
+        $this->assertStringNotContainsString('!important', $rule[1]);
     }
 
     /**

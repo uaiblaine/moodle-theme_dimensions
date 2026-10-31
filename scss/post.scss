@@ -392,28 +392,122 @@ textarea:focus-visible,
     vertical-align: middle;
 }
 
-/* ---- Dropdowns inside the navy chrome ----------------------------------- */
-/* The navbar carries no colour mode of its own, so its dropdowns would be the page's light
-   surface; these custom properties sit on the menu itself, which is where Bootstrap 5.3 reads them
-   from, so they win without !important. The hover pair is the exception: Boost Union sets it on the
-   same menus with a longer selector (:root:not([data-bs-theme="dark"]) .navbar.navbar-dark
-   .dropdown-menu), from its own --bu-navbar-bg and --bu-navbar-dropdown-hover-color, which on a
-   navy menu below a navy bar would be a hover nobody sees. Those two are inherited from the navbar,
-   so they are answered here, on the menu, where Boost Union's own declarations read them. */
+/* ---- Dropdowns inside the navbar ---------------------------------------- */
+/* One dark surface in both colour modes, a slate drawn from the deepest navy over core's dark grey, so a
+   flavour's brand colour reads on it whatever that colour is. The row under the pointer or the keyboard (and
+   the current one) is a rounded pill in the brand colour, $primary, which each flavour compiles with its own:
+   lifted towards white until the pill stands out from the surface (3:1, a component's contrast, with core's
+   dark-readable()), then its ink is white or the darkest grey, whichever reads better, and the pill is moved
+   away from that ink until the label reads 4.6:1, as core's dark palette asks ($dark-min-contrast). The label
+   wins where the two cannot both hold. */
+$dimensions-menu-surface: mix($dim-ds-blue-900, $dim-ds-gray-800, 40%);
+$dimensions-menu-min-contrast: 4.6;
+
+/* The ink that reads better on a ground: white or the darkest grey. */
+@function dimensions-menu-ink($ground) {
+    @if contrast-ratio($ground, $dim-ds-white) >= contrast-ratio($ground, $dim-ds-gray-900) {
+        @return $dim-ds-white;
+    }
+    @return $dim-ds-gray-900;
+}
+
+/* A ground moved away from its ink in 5% steps until the two reach the contrast. */
+@function dimensions-menu-readable($ground, $ink) {
+    $away: if($ink == $dim-ds-white, $black, $white);
+    $readable: $ground;
+    @for $step from 1 through 20 {
+        @if contrast-ratio($readable, $ink) < $dimensions-menu-min-contrast {
+            $readable: mix($away, $ground, percentage($step * .05));
+        }
+    }
+    @return $readable;
+}
+
+$dimensions-menu-lifted: dark-readable($primary, $dimensions-menu-surface, 3);
+$dimensions-menu-highlight-ink: dimensions-menu-ink($dimensions-menu-lifted);
+$dimensions-menu-highlight: dimensions-menu-readable($dimensions-menu-lifted, $dimensions-menu-highlight-ink);
+
+/* The navbar carries no colour mode of its own, so its dropdowns would be the page's light surface; these
+   custom properties sit on the menu itself, which is where Bootstrap 5.3 reads them from, so they win without
+   !important. The hover pair is the exception: Boost Union sets it on the same menus with a longer selector
+   (:root:not([data-bs-theme="dark"]) .navbar.navbar-dark .dropdown-menu), from its own --bu-navbar-bg and
+   --bu-navbar-dropdown-hover-color, which are inherited from the navbar and would paint the bar's own colour.
+   So those two are answered here, on the menu, where Boost Union's own declarations read them. The padding
+   keeps the pills off the menu's edge, and the dividers inside it. */
 .navbar .dropdown-menu {
-    --bu-navbar-bg: rgba(255, 255, 255, .12);
-    --bu-navbar-dropdown-hover-color: var(--dim-ds-text-inverse);
-    --bs-dropdown-bg: var(--dim-ds-surface-inverse-deep);
+    --bu-navbar-bg: #{$dimensions-menu-highlight};
+    --bu-navbar-dropdown-hover-color: #{$dimensions-menu-highlight-ink};
+    --bs-dropdown-bg: #{$dimensions-menu-surface};
     --bs-dropdown-color: var(--dim-ds-text-inverse);
     --bs-dropdown-link-color: var(--dim-ds-text-inverse);
-    --bs-dropdown-link-hover-bg: rgba(255, 255, 255, .12);
-    --bs-dropdown-link-hover-color: var(--dim-ds-text-inverse);
-    --bs-dropdown-link-active-bg: var(--dim-ds-accent-highlight);
-    --bs-dropdown-link-active-color: var(--dim-ds-text-inverse);
+    --bs-dropdown-link-hover-bg: #{$dimensions-menu-highlight};
+    --bs-dropdown-link-hover-color: #{$dimensions-menu-highlight-ink};
+    --bs-dropdown-link-active-bg: #{$dimensions-menu-highlight};
+    --bs-dropdown-link-active-color: #{$dimensions-menu-highlight-ink};
     --bs-dropdown-border-color: var(--dim-ds-border-inverse);
     --bs-dropdown-divider-bg: var(--dim-ds-border-inverse);
     --bs-dropdown-header-color: var(--dim-ds-blue-100);
     --bs-dropdown-link-disabled-color: var(--dim-ds-blue-200);
+    --bs-dropdown-padding-x: var(--dim-ds-space-xs);
+    --bs-dropdown-border-radius: var(--dim-ds-radius-lg);
+    --bs-dropdown-item-border-radius: var(--dim-ds-radius-md);
+}
+
+/* A submenu's title row (the user menu's Look and Language panels, Boost Union's smart menus). Core draws its
+   back button with .text-body, the page's dark ink, and Boost Union wraps the row in a link when the page has a
+   smart menu, so the title took the link colour: both dark on the menu's dark surface. .text-body's colour is
+   !important and reads --bs-body-color-rgb, so the row re-points that channel instead of outranking it; the
+   button and the link take the pill like any other row. Only a visible focus paints it: core moves the focus to
+   the back button whenever a submenu opens, and with a plain :focus every opened submenu came up highlighted. */
+.navbar .dropdown-menu .submenu .header {
+    --bs-body-color-rgb: #{to-rgb($dim-ds-white)};
+    color: var(--bs-dropdown-color);
+    font-weight: 600;
+
+    .carousel-navigation-link {
+        border-radius: var(--bs-dropdown-item-border-radius);
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .btn-icon {
+        border-radius: var(--bs-dropdown-item-border-radius);
+    }
+
+    /* One pill per row. Core's button alone is the row's control and takes it; inside Boost Union's link the
+       link is the row, and the button paints nothing of its own, not even through Boost Union's rule that fills
+       it from --bs-btn-hover-bg while the link is hovered or focused. */
+    .btn-icon.carousel-navigation-link {
+        --bs-btn-hover-bg: #{$dimensions-menu-highlight};
+        --bs-btn-active-bg: #{$dimensions-menu-highlight};
+    }
+
+    a.carousel-navigation-link .btn-icon {
+        --bs-btn-hover-bg: transparent;
+        --bs-btn-active-bg: transparent;
+    }
+
+    /* The arrow is core's pix icon, an <img> of an SVG drawn in currentColor, which an image never inherits: it
+       comes in black whatever the ink, so it is inverted to the menu's white. As a block it sits in the middle of
+       the button; inline it rode the baseline of a 24px line box, 2px under the title's middle. */
+    .btn-icon .icon {
+        display: block;
+        filter: invert(1);
+    }
+
+    .btn-icon.carousel-navigation-link:hover,
+    .btn-icon.carousel-navigation-link:focus-visible,
+    a.carousel-navigation-link:hover,
+    a.carousel-navigation-link:focus-visible {
+        --bs-body-color-rgb: #{to-rgb($dimensions-menu-highlight-ink)};
+        background-color: $dimensions-menu-highlight;
+        color: $dimensions-menu-highlight-ink;
+
+        /* On a pill whose ink is the dark grey, the arrow keeps its own black. */
+        .icon {
+            filter: if($dimensions-menu-highlight-ink == $dim-ds-white, invert(1), none);
+        }
+    }
 }
 
 /* ---- The notifications popover inside the navy chrome -------------------- */
