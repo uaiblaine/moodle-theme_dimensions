@@ -31,10 +31,9 @@ use theme_dimensions\local\landing\publicfiles;
  * Gives the categories block_compass's open-courses line names their first crest (block_compass ADR-019).
  *
  * Registered in db/hooks.php for \block_compass\hook\category_badges; without the block nothing calls this.
- * Only categories the current user may see are answered (core_course_category::is_uservisible()). The
- * crests come from the branding cache the hero and the showcase fill; a category missing from it is read
- * with one statement for all the misses together, and the cache is not filled from here: a full branding
- * build costs seven statements a category, which the line must not pay.
+ * Only categories the current user may see are answered, by core's rule (first_crests() says how). A full
+ * branding build costs seven statements a category, which the line must not pay: this listener keeps its
+ * own small entry per category in the branding cache and reads its misses in one statement.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -68,43 +67,64 @@ class category_badges {
         }
     }
 
+    /** @var string Key prefix of this listener's entries in the categorybranding cache, beside branding's int keys. */
+    private const KEY = 'compasscrest_';
+
     /**
-     * The first crest of each visible category among the given ones.
+     * The first crest of each category among the given ones that the current user may see.
+     *
+     * Each category's entry - its visible flag, its context record and its first crest - lives in the
+     * categorybranding cache under its own key, so branding::forget_all() drops it whenever it drops the
+     * branding (an editor save, a category updated, moved or deleted). The misses are read in one statement.
+     * Who may see a category is core's own rule, core_course_category::can_view_category(), asked with the
+     * cached flag and the preloaded context, so a warm answer reads nothing.
      *
      * @param int[] $categoryids Category ids.
-     * @return array Category id => ['url' => string, 'alt' => string], for the categories that have one.
+     * @return array Category id => ['url' => string, 'alt' => string], for the visible categories that have one.
      */
     public static function first_crests(array $categoryids): array {
-        $visible = [];
-        foreach (\core_course_category::get_many($categoryids) as $categoryid => $category) {
-            if ($category->is_uservisible()) {
-                $visible[] = (int) $categoryid;
+        $ids = [];
+        foreach ($categoryids as $categoryid) {
+            if ((int) $categoryid > 0) {
+                $ids[(int) $categoryid] = self::KEY . (int) $categoryid;
             }
         }
-        if (!$visible) {
+        if (!$ids) {
             return [];
         }
-
-        $first = [];
-        $missing = [];
         $cache = \core_cache\cache::make(branding::COMPONENT, branding::CACHE);
-        foreach ($cache->get_many($visible) as $categoryid => $payload) {
-            if (!is_array($payload)) {
-                $missing[] = (int) $categoryid;
-                continue;
-            }
-            $badges = $payload['badges'] ?? [];
-            if ($badges) {
-                $area = (string) array_key_first($badges);
-                $first[(int) $categoryid] = [$area, $badges[$area]];
+        $entries = [];
+        $missing = [];
+        $cached = $cache->get_many(array_values($ids));
+        foreach ($ids as $categoryid => $key) {
+            if (is_array($cached[$key] ?? null)) {
+                $entries[$categoryid] = $cached[$key];
+            } else {
+                $missing[] = $categoryid;
             }
         }
         if ($missing) {
-            $first += self::first_badge_files($missing);
+            $fresh = self::read($missing);
+            $toset = [];
+            foreach ($fresh as $categoryid => $entry) {
+                $toset[self::KEY . $categoryid] = $entry;
+            }
+            if ($toset) {
+                $cache->set_many($toset);
+            }
+            $entries += $fresh;
         }
 
         $crests = [];
-        foreach ($first as $categoryid => [$area, $badge]) {
+        foreach ($entries as $categoryid => $entry) {
+            if ($entry['crest'] === null) {
+                continue;
+            }
+            \core\context_helper::preload_from_record((object) $entry['ctx']);
+            if (!\core_course_category::can_view_category((object) ['id' => $categoryid, 'visible' => $entry['visible']])) {
+                continue;
+            }
+            [$area, $badge] = $entry['crest'];
             $crests[$categoryid] = [
                 'url' => branding::badge_url($categoryid, $area, $badge)->out(false),
                 'alt' => publicfiles::badge_alt((string) $badge['filename']),
@@ -114,12 +134,14 @@ class category_badges {
     }
 
     /**
-     * The first badge file of each given category, read in one statement.
+     * The entries of the given categories, read in one statement: visible flag, context record, first crest.
      *
-     * @param int[] $categoryids Category ids missing from the branding cache.
-     * @return array Category id => [area, ['contextid' => int, 'contenthash' => string, 'filename' => string]].
+     * A category that no longer exists has no entry.
+     *
+     * @param int[] $categoryids Category ids missing from the cache.
+     * @return array Category id => ['visible' => int, 'ctx' => array, 'crest' => [area, badge] or null].
      */
-    private static function first_badge_files(array $categoryids): array {
+    private static function read(array $categoryids): array {
         global $DB;
 
         [$catsql, $params] = $DB->get_in_or_equal($categoryids, SQL_PARAMS_NAMED, 'cat');
@@ -129,31 +151,51 @@ class category_badges {
             'component' => branding::COMPONENT,
             'dot' => '.',
         ];
-        // Index: context (contextlevel, instanceid); files (contextid, component, filearea, itemid). Bound: three
-        // areas of at most one file each, for at most the line's twenty categories.
-        $sql = "SELECT f.id, ctx.instanceid, f.contextid, f.filearea, f.contenthash, f.filename
-                  FROM {context} ctx
-                  JOIN {files} f ON f.contextid = ctx.id
+        // Index: course_categories by its primary key; context (contextlevel, instanceid); files (contextid,
+        // component, filearea, itemid). Bound: the asked categories (the line's twenty at most), three areas
+        // of at most one file each. The first column is unique: the file's id, or the category's negated.
+        $sql = "SELECT COALESCE(f.id, -cc.id) AS rowkey, cc.id AS categoryid, cc.visible,
+                       ctx.id AS ctxid, ctx.path AS ctxpath, ctx.depth AS ctxdepth, ctx.contextlevel AS ctxlevel,
+                       ctx.instanceid AS ctxinstance, ctx.locked AS ctxlocked,
+                       f.filearea, f.contextid, f.contenthash, f.filename
+                  FROM {course_categories} cc
+                  JOIN {context} ctx ON ctx.contextlevel = :level AND ctx.instanceid = cc.id
+             LEFT JOIN {files} f ON f.contextid = ctx.id
                                 AND f.component = :component
                                 AND f.filearea {$areasql}
                                 AND f.itemid = 0
                                 AND f.filename <> :dot
-                 WHERE ctx.contextlevel = :level
-                   AND ctx.instanceid {$catsql}";
+                 WHERE cc.id {$catsql}";
         $order = array_flip(branding::AREA_BADGES);
-        $first = [];
+        $entries = [];
         foreach ($DB->get_records_sql($sql, $params) as $row) {
-            $categoryid = (int) $row->instanceid;
-            $area = (string) $row->filearea;
-            if (isset($first[$categoryid]) && $order[$first[$categoryid][0]] <= $order[$area]) {
+            $categoryid = (int) $row->categoryid;
+            $entries[$categoryid] ??= [
+                'visible' => (int) $row->visible,
+                'ctx' => [
+                    'ctxid' => (int) $row->ctxid,
+                    'ctxpath' => (string) $row->ctxpath,
+                    'ctxdepth' => (int) $row->ctxdepth,
+                    'ctxlevel' => (int) $row->ctxlevel,
+                    'ctxinstance' => (int) $row->ctxinstance,
+                    'ctxlocked' => (int) $row->ctxlocked,
+                ],
+                'crest' => null,
+            ];
+            if ($row->filearea === null) {
                 continue;
             }
-            $first[$categoryid] = [$area, [
+            $area = (string) $row->filearea;
+            $current = $entries[$categoryid]['crest'];
+            if ($current !== null && $order[$current[0]] <= $order[$area]) {
+                continue;
+            }
+            $entries[$categoryid]['crest'] = [$area, [
                 'contextid' => (int) $row->contextid,
                 'contenthash' => (string) $row->contenthash,
                 'filename' => (string) $row->filename,
             ]];
         }
-        return $first;
+        return $entries;
     }
 }
