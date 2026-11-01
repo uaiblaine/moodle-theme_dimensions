@@ -6,7 +6,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 ## Unreleased (v5.3-r1-dev)
 
 - **block_compass's open-for-enrolment line names each category's crest and tells courses from events**
-  (2026100553; block_compass ADR-019, stage S4). Two listeners on hooks the block added in its 2026100524.
+  (2026100554; block_compass ADR-019, stage S4). Two listeners on hooks the block added in its 2026100524.
   - **`category_badges`** answers each category the line names with the category's first crest, in area order
     with gaps closed, and its file name as the text. It answers only categories the reader may see, by core's
     `core_course_category::can_view_category()`. It keeps a small entry per category (visible flag, context record,
