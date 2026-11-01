@@ -454,6 +454,118 @@ $dimensions-menu-highlight: dimensions-menu-readable($dimensions-menu-lifted, $d
     --bs-dropdown-padding-x: var(--dim-ds-space-xs);
     --bs-dropdown-border-radius: var(--dim-ds-radius-lg);
     --bs-dropdown-item-border-radius: var(--dim-ds-radius-md);
+
+    /* Two pills side by side, the chosen row and the one under the pointer, would read as one block. */
+    .dropdown-item + .dropdown-item {
+        margin-top: var(--dim-ds-space-3xs);
+    }
+
+    /* Core rings every a.dropdown-toggle on any focus, a mouse click included, with a square box-shadow in the
+       page's primary and outline 0, which also takes the theme's ring away from the keyboard. Inside these menus
+       the row's pill is the focus, and the keyboard keeps the theme's ring. */
+    .dropdown-item:focus {
+        box-shadow: none;
+    }
+
+    .dropdown-item:focus-visible {
+        outline: var(--dim-ds-focus-ring-width) solid var(--dim-ds-focus-ring);
+    }
+}
+
+/* A smart menu (or a custom menu parent) collapsed into the "More" menu expands in place, and core paints its rows
+   gray-100, a light ground the menu's white ink cannot be read on, and sizes it to its content, so its pills ended
+   short of the toggle's. The rows take the menu's own ground and pill, and the submenu the toggle's width. Core's
+   selectors are repeated under .navbar, which is what outranks them. */
+.navbar .dropdownmoremenu > .dropdown-menu .dropdown-submenu > .dropdown-menu {
+    width: auto;
+
+    .dropdown-item {
+        background-color: transparent;
+
+        &:hover,
+        &:focus {
+            color: var(--bs-dropdown-link-hover-color);
+            background-color: var(--bs-dropdown-link-hover-bg);
+        }
+    }
+}
+
+/* The user, language and colour mode menus' toggles. Core draws them as square buttons the navbar's full height,
+   and Bootstrap's open .btn reads --bs-btn-active-border-color, which Moodle's .btn never sets, so the border of an
+   open menu fell back to currentColor: a white square round the toggle. The open (and hovered) toggle is a rounded
+   pill inset from the bar instead, in the tint the navbar's pills hover with, drawn behind the label so the button
+   keeps its size and the menu its anchor; the keyboard's ring goes round the pill. */
+.navbar .usermenu,
+.navbar .langmenu,
+.navbar .colourmodemenu {
+    > .dropdown > .dropdown-toggle {
+        --bs-btn-active-border-color: transparent;
+        position: relative;
+        z-index: 0;
+
+        &::before {
+            position: absolute;
+            inset: var(--dim-ds-space-xs) 0;
+            z-index: -1;
+            border-radius: var(--dim-ds-radius-md);
+            content: "";
+            transition: background-color var(--dim-ds-motion-fast) ease-in-out;
+        }
+
+        &:hover::before,
+        &:focus-visible::before,
+        &.show::before {
+            background-color: var(--dimensions-pill-hover, var(--dim-ds-surface-subtle));
+        }
+
+        &:focus {
+            box-shadow: none;
+        }
+
+        &:focus-visible {
+            outline: 0;
+
+            &::before {
+                outline: var(--dim-ds-focus-ring-width) solid var(--dim-ds-focus-ring);
+                outline-offset: 2px;
+            }
+        }
+    }
+}
+
+/* The user menu's "Log out" is a red pill at rest and a brighter red under the pointer or the keyboard, with core's
+   logout glyph at the row's end. Core prints the row with no class or icon of its own (user_get_user_navigation_info()
+   names it by its address alone), so the address is the hook, and the glyph is a ::after, core's Font Awesome
+   pattern. Both grounds are the design system's reds, the resting one darkened towards red-800, each moved away from
+   the ink until the label reads 4.6:1, with the same functions as the menu's pill. Its own custom properties sit on
+   the row, where Bootstrap's hover reads them, so the menu's brand-colour pair never reaches it. */
+$dimensions-menu-logout-ink: dimensions-menu-ink($dim-ds-red-500);
+$dimensions-menu-logout: dimensions-menu-readable(mix($dim-ds-red-800, $dim-ds-red-500, 60%), $dimensions-menu-logout-ink);
+$dimensions-menu-logout-hover: dimensions-menu-readable($dim-ds-red-500, $dimensions-menu-logout-ink);
+
+.navbar .usermenu .dropdown-menu a.dropdown-item[href*="/login/logout.php"] {
+    --bs-dropdown-link-color: #{$dimensions-menu-logout-ink};
+    --bs-dropdown-link-hover-color: #{$dimensions-menu-logout-ink};
+    --bs-dropdown-link-hover-bg: #{$dimensions-menu-logout-hover};
+    --bs-dropdown-link-active-color: #{$dimensions-menu-logout-ink};
+    --bs-dropdown-link-active-bg: #{$dimensions-menu-logout-hover};
+    display: flex;
+    gap: var(--dim-ds-space-xs);
+    align-items: center;
+    justify-content: space-between;
+    background-color: $dimensions-menu-logout;
+    color: $dimensions-menu-logout-ink;
+
+    &:hover,
+    &:focus {
+        background-color: $dimensions-menu-logout-hover;
+        color: $dimensions-menu-logout-ink;
+    }
+
+    &::after {
+        font: var(--fa-font-solid);
+        content: fa-content($fa-var-right-from-bracket);
+    }
 }
 
 /* A submenu's title row (the user menu's Look and Language panels, Boost Union's smart menus). Core draws its

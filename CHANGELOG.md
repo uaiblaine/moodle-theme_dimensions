@@ -14,11 +14,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   opens, once per event. The open day is kept in the address (`day=`, only inside the month's grid), so a reload
   reopens the drawer. Answer addresses reach a link only when they are http(s) or relative. The links C2 drew stay
   as the fallback. PHPUnit, Jest, four Behat scenarios, 18 mutation gates.
+- **Navbar menus: rows apart, a rounded open toggle, a readable submenu in "More"** (CSS only, no version bump).
+  The rows of the navbar's dropdowns stand 2px apart, so the chosen row and the hovered one no longer read as one
+  block. The user, language and colour mode toggles lose the white square an open Bootstrap button drew round them
+  (Moodle's `.btn` never sets `--bs-btn-active-border-color`, so the border fell back to the ink) and show a rounded
+  pill in the navbar pills' hover tint, with the keyboard's ring round it. A smart menu collapsed into "More" takes
+  the menu's ground instead of core's gray-100 (white ink on a light row) and its toggle's width, and core's square
+  focus box-shadow on a clicked `a.dropdown-toggle` gives way to the row's pill, with the theme's ring restored for
+  the keyboard. The user menu's "Log out" is a red pill with core's logout glyph at its end: the design system's
+  reds, darkened at rest and brighter under the pointer or the keyboard, each moved by the menu's own functions until
+  the label reads 4.6:1 (measured 9.8:1 and 5.3:1). Pinned in `post_scss_test` and `navbar_menu_colour_test`.
 - **The user menu's Messages entry opens the messaging drawer on a phone again** (2026100556). The entry clicked the
   hidden navbar toggle while its own click was still bubbling, and core_message's drawer, which closes on any
   activation outside itself and its toggle, closed again on that same click. The entry now opens the drawer once its
   click has finished.
-
 - **The calendar page** (2026100555), stage C2 of `docs/calendar/PROPOSAL.md`. A page of the theme's own
   (`/theme/dimensions/calendar.php`, answered by a route where the router is on) draws the month on the range
   service: events spanning several days as bars that continue into the next week, a day cell that adapts how much it
@@ -39,7 +48,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
     for 2. The nouns come from four new strings (`compass_kind_course(s)`, `compass_kind_event(s)`). It reads
     nothing, and the block uses the field only while it is visible to everyone, as the theme creates it.
   - Both are registered in `db/hooks.php` as optional, as the two earlier block_compass listeners are.
-    PHPUnit under `tests/local/hook/block_compass/`.
+    PHPUnit under `tests/local/hook/block_compass/`. Behat: `theme_dimensions_compass.feature` (`@block_compass`)
+    draws the line in a browser with a crested and a plain category, a course, an event and the pill's tooltip,
+    under axe, through a new step that gives a category a crest.
 - **The calendar's range service** (2026100552), stage C1 of `docs/calendar/PROPOSAL.md`.
   `theme_dimensions_get_calendar_range` answers one month grid (at most 42 days, in the viewer's timezone) in one call:
   core's events, with the exact visibility of core's month view (a parity test per role), each event once with its
