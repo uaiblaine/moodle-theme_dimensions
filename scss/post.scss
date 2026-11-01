@@ -490,6 +490,27 @@ $dimensions-menu-highlight: dimensions-menu-readable($dimensions-menu-lifted, $d
     }
 }
 
+/* The current page's row in the primary navigation's "More" menu is a clear row with a tick, as core draws it, in the
+   menu's own ink. Core's moremenu.scss paints that row (.active or aria-current, the React mount's "page" and the
+   legacy markup's "true") in --mds-text-default or $dropdown-link-color, dark inks for a light menu, and its pill
+   under the pointer in the Bootstrap pair's compiled colours, never the flavour's pill. Core's selectors are repeated
+   under .navbar, which is what outranks them; the tick is a ::before and takes the row's colour. */
+.navbar .more-nav,
+.navbar .moremenu {
+    .dropdown-item[aria-current="page"],
+    .dropdown-item[aria-current="true"],
+    .dropdown-item.active {
+        color: var(--bs-dropdown-link-color);
+
+        &:hover,
+        &:focus,
+        &:focus-within {
+            color: var(--bs-dropdown-link-hover-color);
+            background-color: var(--bs-dropdown-link-hover-bg);
+        }
+    }
+}
+
 /* The user, language and colour mode menus' toggles. Core draws them as square buttons the navbar's full height,
    and Bootstrap's open .btn reads --bs-btn-active-border-color, which Moodle's .btn never sets, so the border of an
    open menu fell back to currentColor: a white square round the toggle. The open (and hovered) toggle is a rounded

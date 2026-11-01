@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The current page's row in the navbar's "More" menu reads on the dark menu** (2026100558). Core's
+  `moremenu.scss` paints that row (`.active` or `aria-current`, in the React mount and the legacy markup alike) in
+  `--mds-text-default` or `$dropdown-link-color`, dark inks for a light menu, so on the theme's dark surface the
+  row and its tick were dark on dark, and under the pointer its pill took Bootstrap's compiled pair instead of the
+  flavour's. The row keeps core's clear ground and tick in the menu's own ink, and takes the pill every other row
+  takes under the pointer or the keyboard. Pinned in `post_scss_test`, against core's rule as the control.
 - **The calendar's day drawer and event popover** (2026100557), stage C3 of `docs/calendar/PROPOSAL.md`. A day
   opens a drawer beside the month (an agenda sheet under it on a phone, where the month shows one dot per key) with
   an all-day strip and an hour column that lays overlapping events side by side. An event opens a popover (a sheet

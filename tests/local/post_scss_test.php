@@ -234,6 +234,50 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
+     * The current page's row in "More" is in the menu's ink, and its pill under the pointer is the menu's pill.
+     *
+     * Core's moremenu.scss paints that row in --mds-text-default (the React mount) or $dropdown-link-color (the
+     * legacy markup), dark inks on the theme's dark surface, and hovers it in Bootstrap's compiled pair. The control
+     * is core's own rule, read from the stack's checkout: if core stops painting the row, this pin is the one to
+     * revisit.
+     *
+     * @return void
+     */
+    public function test_the_current_row_in_more_reads_on_the_dark_menu(): void {
+        global $CFG;
+
+        $core = file_get_contents($CFG->dirroot . '/theme/boost/scss/moodle/moremenu.scss');
+        $this->assertNotFalse($core, 'Precondition: core\'s stylesheet is readable.');
+        $this->assertMatchesRegularExpression(
+            '/\.more-nav \{\s*\.dropdown-item\[aria-current="page"\],\s*\.dropdown-item\.active \{'
+                . '[^}]*color: var\(--mds-text-default\);/',
+            $core,
+            'Control: core paints the React row in a dark ink.'
+        );
+
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertSame(
+            1,
+            preg_match('/\n\.navbar \.more-nav,\n\.navbar \.moremenu \{(.*?)\n\}/s', $scss, $rule),
+            'One rule for the React and the legacy markup, under .navbar.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.dropdown-item\[aria-current="page"\],\s*\.dropdown-item\[aria-current="true"\],\s*\.dropdown-item\.active \{\s*'
+                . 'color: var\(--bs-dropdown-link-color\);/',
+            $rule[1],
+            'The resting row, and so its tick, in the menu\'s ink.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/&:hover,\s*&:focus,\s*&:focus-within \{\s*color: var\(--bs-dropdown-link-hover-color\);\s*'
+                . 'background-color: var\(--bs-dropdown-link-hover-bg\);/',
+            $rule[1],
+            'Under the pointer or the keyboard, the pill every other row takes.'
+        );
+        $this->assertStringNotContainsString('!important', $rule[1]);
+    }
+
+    /**
      * An open navbar menu's toggle is a rounded pill, never a square in the ink's colour.
      *
      * Bootstrap's open .btn reads --bs-btn-active-border-color, which Moodle's .btn never sets, so the border fell
