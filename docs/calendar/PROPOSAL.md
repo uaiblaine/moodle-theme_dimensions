@@ -255,6 +255,63 @@ A route `/r.php/theme_dimensions/calendar` (the showcase's shape) linked from th
 and the calendar blocks keep using core. Whether to redirect core's month and day views to the new page is an
 owner decision (D1).
 
+### 5.7 Core's calendar blocks (owner, 2026-11-01)
+
+Two core blocks draw a calendar of their own on every page that carries them: `block_calendar_month` (the mini
+month) and `block_calendar_upcoming` (the next events). Left alone they would look like core's calendar and show
+what core shows, which is not what the theme's page shows: no event courses, no "open events" layer, the unlisted
+category events the range drops, none of the viewer's keys or filters. The owner asked to redo them visually and to
+apply the page's rules where a renderer can, and otherwise to explain the gap in the theme's documentation and
+recommend switching the blocks off.
+
+What the code allows (read in core 5.3):
+
+- **Both blocks render through the `core_calendar` renderer.** Each calls `calendar_get_view()` and then
+  `$this->page->get_renderer('core_calendar')->render_from_template($template, $data)`:
+  - the month block uses `core_calendar/calendar_mini` and sets `$data->iscalendarblock`;
+  - the upcoming block uses `core_calendar/calendar_upcoming_mini`.
+
+  The renderer factory derives `theme_dimensions\output\core_calendar_renderer`. Neither Boost nor Boost Union has
+  one, so the theme's would extend `\core_calendar_renderer` and override `render_from_template()`, guarded by the
+  template name and by `iscalendarblock`. Core's own calendar page uses the same renderer, and those guards leave
+  it alone.
+- **A renderer that only filters `$data` holds for the first paint alone.** The month block's previous and next
+  buttons run in the browser:
+  1. `core_calendar/view_manager` asks `core_calendar_get_calendar_monthly_view`;
+  2. it renders the template named in `data-template` with that answer.
+
+  So the second month is core's again, whatever the first one hid.
+- **So the theme replaces the blocks' content, not their data.** For those two templates the override returns the
+  theme's own mount, wired with the range service (`theme_dimensions_get_calendar_range`):
+  - a mini month with dots per key, today and the selected day, navigating through the range service;
+  - a short agenda of the next events, with the event courses and the open layer.
+
+  Every month the block shows then follows the page's rules and the viewer's saved keys and filters.
+
+  Its first paint must stay visible without JavaScript. Two options; the measurement decides:
+  - the server draws the next events from the same range classes;
+  - the core markup stays under the mount until it mounts.
+
+  The block's header, its region and its settings stay core's: only the content changes.
+- **What a renderer cannot reach, and the documentation says so:**
+  - the Moodle App, which calls core's web services directly;
+  - core's own `calendar/view.php` until the D1 redirect (after C3);
+  - the iCal export (`calendar/export_execute.php`);
+  - any other client of core's calendar web services.
+
+  They keep core's rules, so a category event of an unlisted category stays visible there. The theme's README and
+  docs say this in a short section with the recommendation: where the difference matters, switch off the export
+  and point the app's users to the web calendar.
+  The section also lists `block_timeline`. It is already React, reads only action events, and stays core's.
+- **A setting keeps the way back.** "Draw the calendar blocks with the theme's calendar" is on by default. Off, the
+  override passes the call through untouched, and the documentation recommends removing the two blocks from the
+  default block regions if a site keeps them core's but wants one set of rules.
+
+Tests:
+- the renderer factory returns the theme's class (as `myprofile_renderer_test` does);
+- the two templates are replaced, core's page is not, and the setting off restores core's output;
+- the mount's answer never names what the range would drop.
+
 ## 6. Risks and how they are held
 
 - **Visibility parity.** The new page must never show an event core would hide, nor hide one core would show.
@@ -278,6 +335,7 @@ owner decision (D1).
 | C1 | Range service plus `core_events` and `event_courses` sources, parity and visibility tests, measurement. **Built 2026-11-01, uncommitted, section 10.** | Parity test green on both DBs; numbers recorded. |
 | C2 | Page route, toolbar, month grid with spanning bars and adaptive density, key chips, category tree, preference persistence. | Behat smoke; a11y spec met. |
 | C3 | Day drawer (desktop) and agenda sheet (phone), event popover, overlaps. | Behat smoke on desktop and phone widths. |
+| C3b | Core's calendar blocks (section 5.7): `theme_dimensions\output\core_calendar_renderer` replaces the content of `block_calendar_month` and `block_calendar_upcoming` with the theme's mini month and short agenda on the range service, behind a default-on setting; a README section on what a renderer cannot reach (app, export, core's page before D1) with the recommendation to switch those off where the rules matter. | Factory and replacement tests, setting off = core's output byte for byte; Behat smoke of both blocks. |
 | C4 | Week time grid. | |
 | C5 | Create and edit through core's modal, drag to move, iCal link. | |
 | C6 | Trails source, when that format exists. | |
