@@ -120,6 +120,10 @@ const onAction = (event) => {
 /**
  * Open the messaging drawer in place, as its own toggle does; the entry's address is the fallback.
  *
+ * Only once this click has finished: core_message/message_drawer closes the drawer on any activation on the document
+ * outside the drawer and its toggle, and this click, still on its way up from the entry, is one. Opened at once, the
+ * drawer was closed again by the same click before it was ever painted.
+ *
  * @param {Event} event The click on the messages entry.
  */
 const onMessages = (event) => {
@@ -128,7 +132,7 @@ const onMessages = (event) => {
         return;
     }
     event.preventDefault();
-    control.click();
+    window.setTimeout(() => control.click());
 };
 
 /**
