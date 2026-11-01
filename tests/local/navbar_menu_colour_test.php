@@ -206,6 +206,45 @@ final class navbar_menu_colour_test extends \advanced_testcase {
     }
 
     /**
+     * The user menu's "Log out" is a red pill whose label reads at rest and under the pointer, brighter when hovered.
+     *
+     * Its two grounds come from the design system's reds through the menu's own functions, compiled here with core's
+     * Sass. The control is that both grounds are reds (the red channel leads) and differ: a block that compiled the
+     * menu's brand pill instead would pass the contrast and fail these.
+     *
+     * @return void
+     */
+    public function test_the_logout_row_is_a_readable_red_brighter_on_hover(): void {
+        global $CFG;
+
+        $post = (string) file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $core = (string) file_get_contents($CFG->dirroot . '/theme/boost/scss/moodle/colour-mode.scss');
+        $pattern = '/\$dimensions-menu-logout-ink:.*?\n\$dimensions-menu-logout-hover:[^\n]*\n/s';
+        $this->assertSame(1, preg_match($pattern, $post, $logout), 'The logout grounds are decided in one block.');
+        $code = '@import "functions"; @import "variables"; $primary: #0f6cbf;'
+            . $this->block($post, '$dim-ds-blue-050:', '$dim-ds-red-800: #51140d;')
+            . $this->core_helpers($core)
+            . $this->menu_block($post)
+            . $logout[0]
+            . '.probe { r: #{$dimensions-menu-logout}; h: #{$dimensions-menu-logout-hover};'
+            . ' i: #{$dimensions-menu-logout-ink}; }';
+        $compiler = new \core_scss();
+        $compiler->setImportPaths([$CFG->root . '/lib/bundles/bootstrap/scss']);
+        $css = $compiler->compileString($code)->getCss();
+        $this->assertSame(1, preg_match('~r:\s*#([0-9a-f]{6});\s*h:\s*#([0-9a-f]{6});\s*i:\s*#([0-9a-f]{3,6});~i', $css, $m), $css);
+        [$rest, $hover] = ['#' . strtolower($m[1]), '#' . strtolower($m[2])];
+        $ink = strtolower($m[3]) === 'fff' ? '#ffffff' : '#' . strtolower($m[3]);
+
+        foreach (['rest' => $rest, 'hover' => $hover] as $state => $ground) {
+            [$red, $green, $blue] = array_map('hexdec', str_split(ltrim($ground, '#'), 2));
+            $this->assertGreaterThan(max($green, $blue), $red, "The {$state} ground {$ground} is a red.");
+            $this->assertGreaterThanOrEqual(self::LABEL, $this->contrast($ground, $ink), "{$ink} on {$ground}");
+        }
+        $this->assertContains($ink, ['#ffffff', '#1f1f1f'], 'White or the darkest grey, never a third ink.');
+        $this->assertGreaterThan($this->luminance($rest), $this->luminance($hover), 'The hover is the more intense red.');
+    }
+
+    /**
      * The surface does not move with the brand colour: one dark menu for every flavour.
      *
      * @return void

@@ -5,11 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Navbar menus: rows apart, a rounded open toggle, a readable submenu in "More"** (CSS only, no version bump).
+  The rows of the navbar's dropdowns stand 2px apart, so the chosen row and the hovered one no longer read as one
+  block. The user, language and colour mode toggles lose the white square an open Bootstrap button drew round them
+  (Moodle's `.btn` never sets `--bs-btn-active-border-color`, so the border fell back to the ink) and show a rounded
+  pill in the navbar pills' hover tint, with the keyboard's ring round it. A smart menu collapsed into "More" takes
+  the menu's ground instead of core's gray-100 (white ink on a light row) and its toggle's width, and core's square
+  focus box-shadow on a clicked `a.dropdown-toggle` gives way to the row's pill, with the theme's ring restored for
+  the keyboard. The user menu's "Log out" is a red pill with core's logout glyph at its end: the design system's
+  reds, darkened at rest and brighter under the pointer or the keyboard, each moved by the menu's own functions until
+  the label reads 4.6:1 (measured 9.8:1 and 5.3:1). Pinned in `post_scss_test` and `navbar_menu_colour_test`.
 - **The user menu's Messages entry opens the messaging drawer on a phone again** (2026100556). The entry clicked the
   hidden navbar toggle while its own click was still bubbling, and core_message's drawer, which closes on any
   activation outside itself and its toggle, closed again on that same click. The entry now opens the drawer once its
   click has finished.
-
 - **The calendar page** (2026100555), stage C2 of `docs/calendar/PROPOSAL.md`. A page of the theme's own
   (`/theme/dimensions/calendar.php`, answered by a route where the router is on) draws the month on the range
   service: events spanning several days as bars that continue into the next week, a day cell that adapts how much it
