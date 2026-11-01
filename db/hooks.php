@@ -82,4 +82,9 @@ $callbacks = [
         'hook' => \block_compass\hook\category_badges::class,
         'callback' => \theme_dimensions\local\hook\block_compass\category_badges::class . '::answer',
     ],
+    // Optional, like the three above: without block_compass this hook class does not exist.
+    [
+        'hook' => \block_compass\hook\course_kinds::class,
+        'callback' => \theme_dimensions\local\hook\block_compass\course_kinds::class . '::answer',
+    ],
 ];

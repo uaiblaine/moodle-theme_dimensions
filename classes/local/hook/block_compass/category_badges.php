@@ -35,6 +35,13 @@ use theme_dimensions\local\landing\publicfiles;
  * branding build costs seven statements a category, which the line must not pay: this listener keeps its
  * own small entry per category in the branding cache and reads its misses in one statement.
  *
+ * Core's visibility is the rule applied here, not local_unlistedcourses' category discoverability: the block
+ * names only categories whose path holds no unlisted category (its catalogue drops them before it asks), and
+ * reading the unlisted set here would cost every response a read. The crest's address re-checks both on its own
+ * ({@see branding::resolve()}), so an address that reached a page nevertheless serves nothing to a reader who
+ * may not see the category; an entry written by a read that raced an update can at worst name a file the route
+ * then refuses.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

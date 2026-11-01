@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **block_compass's open-for-enrolment line names each category's crest and tells courses from events**
+  (2026100553; block_compass ADR-019, stage S4). Two listeners on hooks the block added in its 2026100524.
+  - **`category_badges`** answers each category the line names with the category's first crest, in area order
+    with gaps closed, and its file name as the text. It answers only categories the reader may see, by core's
+    `core_course_category::can_view_category()`. It keeps a small entry per category (visible flag, context record,
+    first crest) in the `categorybranding` cache under `compasscrest_<id>`, so `branding::forget_all()` drops it
+    with the branding. A warm answer reads nothing; the misses are read in one statement.
+  - **`course_kinds`** names the enrolment page model field (`dimensions_model`), with course for 1 and event
+    for 2. The nouns come from four new strings (`compass_kind_course(s)`, `compass_kind_event(s)`). It reads
+    nothing, and the block uses the field only while it is visible to everyone, as the theme creates it.
+  - Both are registered in `db/hooks.php` as optional, as the two earlier block_compass listeners are.
+    PHPUnit under `tests/local/hook/block_compass/`.
+
 - **The calendar's range service** (2026100552), stage C1 of `docs/calendar/PROPOSAL.md`.
   `theme_dimensions_get_calendar_range` answers one month grid (at most 42 days, in the viewer's timezone) in one call:
   core's events, with the exact visibility of core's month view (a parity test per role), each event once with its
