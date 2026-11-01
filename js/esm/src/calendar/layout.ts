@@ -26,12 +26,15 @@
  *   what the bars left: one item on a day with room is a CARD, a few that fit are LINES, more than fit is a SUMMARY
  *   (the lines that fit, then "+N" for the rest and the hidden bars, with a dot per key of what was left out).
  * - The count of a day is every item touching it, bars included: the day button's label says it.
+ * - On a phone the month draws a dot row per day instead ({@see dayDots()}): a dot per key with items, from the
+ *   answer's per-day counts, at most {@see DOTS}, then a "+".
  *
  * @module     theme_dimensions/calendar/layout
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+import {KEYS} from './model';
 import type {Item, Key} from './model';
 import type {Zone} from './days';
 
@@ -235,4 +238,19 @@ export const dayCounts = (days: string[], placed: Placed[]): Map<string, number>
         });
     });
     return counts;
+};
+
+/** A phone day's dots: one per key with items, and whether keys were left out. */
+export type Dots = {keys: Key[], more: boolean};
+
+/**
+ * The dots of a day on a phone, from the answer's per-day counts by key: the keys with items in the chips' order,
+ * at most DOTS of them, and "+" when more keys have items.
+ *
+ * @param {object|undefined} counts The day's counts by key (answer.days[].counts), or nothing for a day it lacks.
+ * @returns {object} The dots.
+ */
+export const dayDots = (counts: Record<string, number> | undefined): Dots => {
+    const keys = KEYS.filter((key) => (counts?.[key] || 0) > 0);
+    return {keys: keys.slice(0, DOTS), more: keys.length > DOTS};
 };

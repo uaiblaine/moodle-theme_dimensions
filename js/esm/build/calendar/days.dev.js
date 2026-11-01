@@ -37,6 +37,7 @@ const formatterIn = /* @__PURE__ */ __name((language, options, timezone) => {
 const zone = /* @__PURE__ */ __name((timezone, language) => {
   const days = formatterIn("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }, timezone);
   const times = formatterIn(language, { hour: "2-digit", minute: "2-digit" }, timezone);
+  const clock = formatterIn("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }, timezone);
   const memo = /* @__PURE__ */ new Map();
   return {
     /**
@@ -61,7 +62,18 @@ const zone = /* @__PURE__ */ __name((timezone, language) => {
      * @param {number} timestamp The instant, in seconds.
      * @returns {string} The time.
      */
-    time: /* @__PURE__ */ __name((timestamp) => times.format(new Date(timestamp * 1e3)), "time")
+    time: /* @__PURE__ */ __name((timestamp) => times.format(new Date(timestamp * 1e3)), "time"),
+    /**
+     * The minutes since the day's midnight an instant falls on in the zone, as the wall clock reads them: the
+     * hour column's position (a day of a daylight-saving change keeps 24 rows; its clock decides the row).
+     *
+     * @param {number} timestamp The instant, in seconds.
+     * @returns {number} 0 to 1439.
+     */
+    minutes: /* @__PURE__ */ __name((timestamp) => {
+      const parts = Object.fromEntries(clock.formatToParts(new Date(Math.floor(timestamp) * 1e3)).map((part) => [part.type, part.value]));
+      return Number(parts.hour) % 24 * 60 + Number(parts.minute);
+    }, "minutes")
   };
 }, "zone");
 export {

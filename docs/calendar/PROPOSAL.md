@@ -746,3 +746,127 @@ service.
 
 **Deferred to C3:** the drawer, the popover, the phone's dots and agenda sheet, the overlaps, and "feriado" in the
 day label (no holiday source yet).
+
+## 13. C3 plan (2026-11-01)
+
+C3 replaces C2's two seams: a day opens the **day drawer** (desktop) or the **agenda sheet** (phone) instead of
+core's day view, and an item opens the **event popover** (a bottom sheet on a phone) instead of its own page. Both
+seams keep their `href`, so a middle click, a copied link and the no-JavaScript agenda still lead where C2 led.
+Holidays stay deferred: no holiday source exists, and "feriado" is not drawn until one does. Core's redirect (D1)
+comes as its own small change after C3 merges, so this stage leaves `calendar/view.php` alone.
+
+### 13.1 Server
+
+The answer already carries the whole grid, so the drawer and the sheet need no new service. Two small additions:
+
+- **The open day travels in the address.** `day=YYYY-MM-DD`, read by `page` and kept only when it falls inside the
+  month's grid window (`page::grid()`); anything else is dropped, never refused, like every other value. The script
+  entry's forward carries it. It is not part of the saved state: a reload reopens the drawer, a new visit does not.
+- **The popover's description** comes lazily from core's `core_calendar_get_calendar_event_by_id` (ajax, core's own
+  visibility check through the event vault and `calendar_view_event_allowed()`), only for `source = core` items,
+  only when the popover opens, one request per event per page life (a cache in the client). Event courses have no
+  `{event}` row: their popover draws the answer's course facts and no description.
+
+### 13.2 Client
+
+- **`overlap.ts`** (pure, Jest-tested): for a day, the timed items (not all-day, duration above zero) laid out in
+  columns: sort by start, then longer first; an item takes the first column whose last item ended at or before its
+  start; a cluster of mutually overlapping items shares one column count. It also answers, per item, the other
+  items whose interval intersects its own. A point item (a deadline, duration 0) never overlaps anything. All-day
+  and multi-day items go to the all-day strip and never count as overlaps.
+- **`DayDrawer.tsx`** (desktop, container width at or above the grid's phone breakpoint):
+  - a `<section role="region">` beside the grid, labelled by its heading (the long date), which narrows the grid;
+    not modal: the grid stays usable, and moving the selected day with the keyboard while the drawer is open
+    changes the drawer's day (its heading is `aria-live="polite"`);
+  - an all-day strip (all-day items, multi-day bars that cover the day, event courses), then an hour column with
+    the overlap layout, the earliest item scrolled into view, then "no items" when the day is empty;
+  - a close button; Escape closes it and gives the focus back to the day; the address gains and loses `day=`
+    through the calendar's one history writer (`history.ts`, `replaceState` for a day change, so Back leaves the
+    month rather than walking the days).
+- **Phone** (container width below the breakpoint, measured by the grid's existing `ResizeObserver`, never the
+  viewport): the month draws one dot row per day (one dot per key with items, from `days[].counts`, at most four,
+  then "+"), and the selected day's agenda is a sheet under the grid with the same content as the drawer, as a list
+  (no hour column). The day button's label still carries the count.
+- **`EventPopover.tsx`**, one at a time, anchored to the bar or line that opened it (flipped to stay inside the
+  viewport; a bottom sheet on a phone):
+  - `role="dialog"`, labelled by the item's name, non-modal: the focus moves to its heading on open; Escape, the
+    close button or a press outside close it and give the focus back to the item; Tab past its last control closes
+    it and moves on;
+  - content: the name; the kind chip (the key's colour and name); the time range in the viewer's timezone (`Intl`,
+    as C2 places items), "all day" or the span for multi-day items; the place (`location`, or for an event course
+    its venue and city); the modality; an **overlap warning** naming the other timed items it intersects; the course
+    (a link to its page); the description (a placeholder while it loads, nothing if core refuses or it is empty);
+    for an event course, the participant count (D3: a number; avatars wait for a capability-checked source);
+  - actions: the primary is the item's own (core's `action` when `actionable`, with its name; for an event course
+    the viewer may join, `join`; else "Open", the item's `itemHref()`); "Open" stays as a secondary link when the
+    primary is something else; the course's page is the third.
+  - The description is core's formatted HTML (`format_text` output from core's exporter), drawn as trusted server
+    HTML in one place, with a comment saying where it comes from.
+- **Behaviour**: the description request takes a Pending token and a ticket (the latest open popover wins; closing
+  before the answer drops it); the drawer and the popover close on a month change; nothing measures layout on the
+  mount path.
+- **Look**: the drawer, the sheet, the popover and the dots on the `--dim-cal-*` tokens, light and dark; the
+  popover's surface reads the theme's elevation tokens through the fallback chain; no `:has()` on a shared attribute.
+
+### 13.3 Keyboard and screen reader (changes to 11.3)
+
+- Enter on a day opens the drawer (desktop) or the sheet (phone) and moves the focus to its heading; Escape returns
+  it to the day.
+- Enter or Space on a bar or a line opens the popover; Escape returns to the opener.
+- The overlap warning is text in the popover, not colour alone; the drawer marks an overlapping item with a visible
+  label as well as its column.
+
+### 13.4 Tests and gates
+
+- **PHPUnit:** `day=` kept inside the window and dropped outside it, malformed, or on another month; the forward
+  carries it; the template draws the drawer's server shell closed and the agenda unchanged.
+- **Jest:** `overlap.ts` (columns, clusters, touching ends, point items, all-day exclusion); the drawer's and the
+  popover's keyboard contract; the popover's primary action per item shape (action event, event course to join,
+  plain event); the description request (cache, latest wins, refusal draws nothing); the phone dots from counts.
+- **Behat** (`@theme_dimensions_calendar`):
+  - desktop: a day opens the drawer listing its items and the address keeps `day=` through a reload; an event
+    opens the popover with its name and its description, Escape closes it; two overlapping events show the warning;
+  - phone width: the month shows dots, a day opens the agenda sheet, an event opens the popover as a sheet.
+- **Gates** for every guard (the `day=` window, the description's latest-wins and cache, the overlap rule's
+  boundaries, the primary-action choice), swept on both database families before the commit.
+
+## 14. C3 results (2026-11-01)
+
+Branch `calendar-c3`, built from section 13.
+
+**Server:** `page::PARAM_DAY` and `page::day_from_request()` (the `day=` value, kept inside `page::grid()`'s window,
+dropped otherwise, carried by the script entry's forward); `calendar_page` passes the day and seventeen strings.
+
+**Client:** `overlap.ts`, `DayDrawer.tsx`, `EventPopover.tsx` and `description.ts` are new; `Calendar.tsx`,
+`MonthGrid.tsx`, `WeekRow.tsx`, `DayCell.tsx`, `Bar.tsx`, `model.ts`, `layout.ts`, `days.ts` and `strings.ts` changed.
+
+**Where the build left the plan:**
+- **The phone breakpoint** is read from the frame the grid shares with the drawer, not from the grid itself: the
+  grid's own width would cross the breakpoint as soon as the drawer narrowed it.
+- **The hour column has no inner scroll.** Its rows run from the first item's hour to the last one's end
+  (`overlap.hourWindow()`, at least four hours, inside the day), so every item is visible without scrolling, and
+  "the earliest item scrolled into view" is no longer needed. A timed item is at least one row tall: its mark and
+  name on the first line, its time on the second; the place is left to the popover.
+- **The popover takes the focus once it is placed** (anchored, or drawn as a sheet), never while it is still
+  hidden: a browser refuses `focus()` on a hidden element, which jsdom does not model, so Jest passed and Behat
+  failed until this changed. The `cal_js_pop_focus_shown` gate holds it.
+- **Answer addresses go through `model.safeHref()`** (http(s) or relative, else a fallback) before any `href`:
+  the item's own URL, core's action URL and the course URL. The security read asked for it.
+- **The description** is the calendar's one trusted HTML sink, in `EventPopover.tsx`, fed only by
+  `description.ts`.
+
+**Security read:** two findings, both fixed before the gates (M1: an answer URL reached an `href` unchecked; M2: no
+test pinned the trusted HTML sink as the only one, fed only by core's description); no blocking finding left.
+
+**Gates:**
+- **Mutation sweep:** the C3 block's 18 gates and C2's re-pointed `cal_js_history_push`, 19 in all, went red on
+  pgsql and mariadb (`mdl mutate --fast --branch MOODLE_503_STABLE --only <19 gates>`, exit 0 on both).
+- **Local matrix:** `mdl ci moodle-theme_dimensions --matrix --behat --keep-logs` passed 4/4 legs. Every leg ran
+  PHPUnit 1,848 tests (16 skipped) and Behat 183 scenarios (179 passed, 4 skipped: the perf probe); Jest 305. The
+  four new calendar scenarios (drawer and reload, popover and Escape, overlap, phone) are among the passed.
+
+**Not verified:** the page by eye on a stack (no password typed into a login page); the layout was measured in a
+static page built from the compiled theme CSS, and the rest rests on Behat and on the owner's review.
+
+**Left for later:** holidays ("feriado", no source yet); core's redirect (D1) as its own small change; C3b, CV,
+C4-C6.

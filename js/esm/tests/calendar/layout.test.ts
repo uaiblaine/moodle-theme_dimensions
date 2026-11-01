@@ -21,7 +21,9 @@
  */
 
 import {gridWeeks, zone} from '../../src/calendar/days';
-import {CARD_MIN, HEADER, PAD, ROW_DEFAULT, SLOT, barSlots, cellPlan, dayCounts, place, weekLayout} from '../../src/calendar/layout';
+import {
+    CARD_MIN, HEADER, PAD, ROW_DEFAULT, SLOT, barSlots, cellPlan, dayCounts, dayDots, place, weekLayout,
+} from '../../src/calendar/layout';
 import {at, item} from './fixture';
 
 const UTC = zone('UTC', 'en');
@@ -145,5 +147,22 @@ describe('dayCounts', () => {
         const counts = dayCounts(WEEKS.flat(), placed);
         expect([counts.get('2026-11-08'), counts.get('2026-11-09'), counts.get('2026-11-10'), counts.get('2026-11-11'),
             counts.get('2026-11-12')]).toEqual([0, 1, 2, 1, 0]);
+    });
+});
+
+describe('the phone\'s dots', () => {
+    it('draws a dot per key with items, in the chips\' order, from the day\'s counts', () => {
+        expect(dayDots({open: 1, site: 2, group: 0, activity: 3})).toEqual({keys: ['site', 'activity', 'open'], more: false});
+    });
+
+    it('draws at most four, then "+"', () => {
+        const four = ['site', 'category', 'course', 'group'];
+        expect(dayDots({site: 1, category: 1, course: 1, group: 1})).toEqual({keys: four, more: false});
+        expect(dayDots({site: 1, category: 1, course: 1, group: 1, user: 1})).toEqual({keys: four, more: true});
+    });
+
+    it('draws nothing for an empty day, or a day the answer lacks', () => {
+        expect(dayDots({site: 0})).toEqual({keys: [], more: false});
+        expect(dayDots(undefined)).toEqual({keys: [], more: false});
     });
 });

@@ -13,11 +13,14 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *   what the bars left: one item on a day with room is a CARD, a few that fit are LINES, more than fit is a SUMMARY
  *   (the lines that fit, then "+N" for the rest and the hidden bars, with a dot per key of what was left out).
  * - The count of a day is every item touching it, bars included: the day button's label says it.
+ * - On a phone the month draws a dot row per day instead ({@see dayDots()}): a dot per key with items, from the
+ *   answer's per-day counts, at most {@see DOTS}, then a "+".
  *
  * @module     theme_dimensions/calendar/layout
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+import { KEYS } from "./model";
 const HEADER = 30;
 const SLOT = 24;
 const LINE = 22;
@@ -125,6 +128,10 @@ const dayCounts = /* @__PURE__ */ __name((days, placed) => {
   });
   return counts;
 }, "dayCounts");
+const dayDots = /* @__PURE__ */ __name((counts) => {
+  const keys = KEYS.filter((key) => (counts?.[key] || 0) > 0);
+  return { keys: keys.slice(0, DOTS), more: keys.length > DOTS };
+}, "dayDots");
 export {
   CARD_MIN,
   DOTS,
@@ -137,6 +144,7 @@ export {
   barSlots,
   cellPlan,
   dayCounts,
+  dayDots,
   place,
   weekLayout
 };

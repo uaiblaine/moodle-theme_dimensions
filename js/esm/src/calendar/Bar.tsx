@@ -14,12 +14,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * One week's piece of a spanning bar: a link to the item, in the slot the row gave it.
+ * One week's piece of a spanning bar: a link to the item that opens its popover, in the slot the row gave it.
  *
  * The bar sits in the week row's own grid (grid-column: start / span n, grid-row: its slot under the day numbers),
  * with open ends where the item goes on before or after the week. Its label is the item's name and its WHOLE span,
  * whichever week's piece the reader meets. It is out of the Tab order: the grid's keyboard reaches it from a day it
- * covers (F2, then Tab).
+ * covers (F2, then Tab). A press, Enter or Space opens the popover (the page's delegated listener, on data-cal-pop);
+ * its href, the item's own page, is what a middle click or a copied link follows.
  *
  * @module     theme_dimensions/calendar/Bar
  * @copyright  2026 Anderson Blaine
@@ -69,6 +70,7 @@ const Bar = ({segment, week, look}: BarProps) => {
             tabIndex={-1}
             aria-label={barLabel(item, first, last, look)}
             data-cal-item=""
+            data-cal-pop=""
             data-first={week[segment.start]}
             data-last={week[segment.end]}
             data-source={item.source}

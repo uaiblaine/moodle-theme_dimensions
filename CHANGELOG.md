@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The calendar's day drawer and event popover** (2026100557), stage C3 of `docs/calendar/PROPOSAL.md`. A day
+  opens a drawer beside the month (an agenda sheet under it on a phone, where the month shows one dot per key) with
+  an all-day strip and an hour column that lays overlapping events side by side. An event opens a popover (a sheet
+  on a phone) with its kind, time in the viewer's timezone, place, modality, a warning naming the events it
+  overlaps, its course, its description and its actions: core's action when it has one, joining for an event
+  course, else Open. The description comes from core's `core_calendar_get_calendar_event_by_id` when the popover
+  opens, once per event. The open day is kept in the address (`day=`, only inside the month's grid), so a reload
+  reopens the drawer. Answer addresses reach a link only when they are http(s) or relative. The links C2 drew stay
+  as the fallback. PHPUnit, Jest, four Behat scenarios, 18 mutation gates.
 - **Navbar menus: rows apart, a rounded open toggle, a readable submenu in "More"** (CSS only, no version bump).
   The rows of the navbar's dropdowns stand 2px apart, so the chosen row and the hovered one no longer read as one
   block. The user, language and colour mode toggles lose the white square an open Bootstrap button drew round them

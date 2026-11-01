@@ -22,13 +22,17 @@
  * - ArrowLeft and ArrowRight move a day, ArrowUp and ArrowDown a week, Home and End to the week's first and last
  *   day; a move past the grid's days goes to that day's month (the page asks the range for it);
  * - PageUp and PageDown go to the previous and next month, on the same day number or the month's last;
- * - Enter and Space press the day button, which opens the day (core's day view in C2, the drawer in C3);
+ * - Enter and Space press the day button, which opens the day: the drawer beside the grid, or on a phone the sheet
+ *   under it (Calendar.tsx);
  * - F2 on a day that has items moves into them: the first item of the day takes the focus, Tab and Shift+Tab cycle
  *   the day's items (its bars, its own items, its "+N"), Escape goes back to the day. The items are links and
  *   buttons out of the Tab order, so Tab from a day leaves the grid as from any other control.
  *
- * The rows' height is measured by ONE ResizeObserver on the rows' container, never per cell and never read on the
- * mount path (its first entry is the first measure); until then the stylesheet's height stands (layout.ROW_DEFAULT).
+ * ONE ResizeObserver measures the grid, never per cell and never read on the mount path (its first entries are the
+ * first measures): the rows' container, whose height decides the density (until then the stylesheet's height stands,
+ * layout.ROW_DEFAULT), and the frame the grid shares with the drawer, whose width decides the phone layout
+ * ({@see PHONE}). The frame, not the grid: the open drawer narrows the grid, and the grid's own width would flip the
+ * layout to the phone's the moment the drawer opened.
  *
  * @module     theme_dimensions/calendar/MonthGrid
  * @copyright  2026 Anderson Blaine
@@ -39,7 +43,7 @@ import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import type {KeyboardEvent} from 'react';
 import {WEEK, say, shift, shiftMonth} from '../daterange/calendar';
 import {ROW_DEFAULT, barSlots, dayCounts, weekLayout} from './layout';
-import type {Placed} from './layout';
+import type {Dots, Placed} from './layout';
 import type {Look} from './look';
 import WeekRow from './WeekRow';
 
@@ -53,10 +57,15 @@ type MonthGridProps = {
     selected: string,
     focusing: number,
     captionid: string,
+    dots: Map<string, Dots> | null,
     onSelect: (iso: string) => void,
     onMonth: (iso: string) => void,
     onOpen: (iso: string) => void,
+    onWidth: (width: number) => void,
 };
+
+/** The frame's width under which the month is a phone's, in px: the dots and the sheet. */
+export const PHONE = 576;
 
 /** The weekday names' format. */
 const WEEKDAY: Intl.DateTimeFormatOptions = {weekday: 'short'};
@@ -99,13 +108,15 @@ export const stepFrom = (key: string, iso: string, week: string[]): {day: string
  * @returns {object} The grid.
  */
 const MonthGrid = (props: MonthGridProps) => {
-    const {look, month, weeks, placed, today, selected, focusing, captionid, onSelect, onMonth, onOpen} = props;
+    const {look, month, weeks, placed, today, selected, focusing, captionid, dots, onSelect, onMonth, onOpen} = props;
     const [height, setHeight] = useState<number>(ROW_DEFAULT);
     const [itemsday, setItemsday] = useState<string | null>(null);
     const grid = useRef<HTMLDivElement | null>(null);
     const rows = useRef<HTMLDivElement | null>(null);
     const count = useRef<number>(weeks.length);
     count.current = weeks.length;
+    const width = useRef<(width: number) => void>(props.onWidth);
+    width.current = props.onWidth;
 
     const days = useMemo(() => weeks.flat(), [weeks]);
     const counts = useMemo(() => dayCounts(days, placed), [days, placed]);
@@ -117,13 +128,22 @@ const MonthGrid = (props: MonthGridProps) => {
         if (!element || typeof ResizeObserver === 'undefined') {
             return undefined;
         }
+        const frame = grid.current?.parentElement || null;
         const observer = new ResizeObserver((entries) => {
-            const box = entries[entries.length - 1].contentRect;
-            if (box.height > 0 && count.current > 0) {
-                setHeight(Math.round(box.height / count.current));
-            }
+            entries.forEach((entry) => {
+                const box = entry.contentRect;
+                if (entry.target === element && box.height > 0 && count.current > 0) {
+                    setHeight(Math.round(box.height / count.current));
+                }
+                if (entry.target === frame && box.width > 0) {
+                    width.current(box.width);
+                }
+            });
         });
         observer.observe(element);
+        if (frame) {
+            observer.observe(frame);
+        }
         return () => observer.disconnect();
     }, []);
 
@@ -193,7 +213,7 @@ const MonthGrid = (props: MonthGridProps) => {
     return (
         <div
             ref={grid}
-            className="dim-cal__grid"
+            className={`dim-cal__grid${dots ? ' dim-cal__grid--phone' : ''}`}
             role="grid"
             aria-labelledby={captionid}
             data-region="dim-cal-grid"
@@ -221,6 +241,7 @@ const MonthGrid = (props: MonthGridProps) => {
                         selected={selected}
                         counts={counts}
                         look={look}
+                        dots={dots}
                         onOpen={onOpen}
                     />
                 ))}

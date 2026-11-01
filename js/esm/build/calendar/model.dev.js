@@ -5,9 +5,10 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *
  * The answer is the range service's (classes/local/calendar/range.php, get_calendar_range's returns); the state is
  * classes/local/calendar/state.php's canonical array, and {@see query()} spells it as state::query() does, so an
- * address the client writes is one the server reads back as the same state. Two seams C3 replaces live here alone:
- * {@see itemHref()} (an item opens its own page; C3 opens the popover) and {@see dayHref()} (a day opens core's day
- * view; C3 opens the drawer).
+ * address the client writes is one the server reads back as the same state. An item opens the event popover and a
+ * day the day drawer (or the phone's sheet); the two addresses they opened in C2 stay here as their fallbacks:
+ * {@see itemHref()} is every item's href (a middle click, a copied link) and the popover's "Open", {@see dayHref()}
+ * the drawer's link to core's day view. The popover's primary action is chosen in one place, {@see primaryOf()}.
  *
  * @module     theme_dimensions/calendar/model
  * @copyright  2026 Anderson Blaine
@@ -17,6 +18,8 @@ import { parse } from "../daterange/calendar";
 const KEYS = ["site", "category", "course", "group", "user", "activity", "other", "open"];
 const RANGE_METHOD = "theme_dimensions_get_calendar_range";
 const REMEMBER_METHOD = "theme_dimensions_remember_calendar_state";
+const EVENT_METHOD = "core_calendar_get_calendar_event_by_id";
+const DAY_PARAM = "day";
 const DEFAULT_STATE = {
   off: [],
   categoryid: 0,
@@ -60,13 +63,25 @@ const query = /* @__PURE__ */ __name((state) => {
   pairs.push(["colour", state.colour]);
   return pairs;
 }, "query");
-const address = /* @__PURE__ */ __name((base, month, state) => {
+const address = /* @__PURE__ */ __name((base, month, state, day = "") => {
   const url = new URL(base, window.location.href);
   url.search = "";
   url.searchParams.append("month", month);
+  if (day !== "") {
+    url.searchParams.append(DAY_PARAM, day);
+  }
   query(state).forEach(([name, value]) => url.searchParams.append(name, value));
   return url.toString();
 }, "address");
+const withDay = /* @__PURE__ */ __name((href, day) => {
+  const url = new URL(href, window.location.href);
+  if (day === "") {
+    url.searchParams.delete(DAY_PARAM);
+  } else {
+    url.searchParams.set(DAY_PARAM, day);
+  }
+  return url.toString();
+}, "withDay");
 const isMonth = /* @__PURE__ */ __name((month) => parse(`${String(month)}-01`) !== null && /^\d{4}-\d{2}$/.test(String(month)), "isMonth");
 const readAddress = /* @__PURE__ */ __name((href) => {
   const params = new URL(href, window.location.href).searchParams;
@@ -111,11 +126,20 @@ const emptyAnswer = /* @__PURE__ */ __name((days) => ({
   categories: [],
   days: days.map((date) => ({ date, counts: Object.fromEntries(KEYS.map((key) => [key, 0])) }))
 }), "emptyAnswer");
-const itemHref = /* @__PURE__ */ __name((item, courses, home) => {
-  if (item.url !== "") {
-    return item.url;
+const safeHref = /* @__PURE__ */ __name((url, fallback) => {
+  try {
+    const { protocol } = new URL(url, window.location.href);
+    return url !== "" && (protocol === "http:" || protocol === "https:") ? url : fallback;
+  } catch {
+    return fallback;
   }
-  return courses.get(item.courseid)?.url || home;
+}, "safeHref");
+const itemHref = /* @__PURE__ */ __name((item, courses, home) => {
+  const own = safeHref(item.url, "");
+  if (own !== "") {
+    return own;
+  }
+  return safeHref(courses.get(item.courseid)?.url ?? "", safeHref(home, "/"));
 }, "itemHref");
 const dayHref = /* @__PURE__ */ __name((calendar, iso) => {
   const parts = parse(iso);
@@ -129,6 +153,17 @@ const dayHref = /* @__PURE__ */ __name((calendar, iso) => {
   }
   return url.toString();
 }, "dayHref");
+const primaryOf = /* @__PURE__ */ __name((item, courses, home) => {
+  const actionUrl = item.action === null ? "" : safeHref(item.action.url, "");
+  if (item.action !== null && item.action.actionable && actionUrl !== "") {
+    return { kind: "action", name: item.action.name, url: actionUrl };
+  }
+  const course = courses.get(item.courseid);
+  if (item.source === "course" && course && (course.join === "open" || course.join === "free" || course.join === "key")) {
+    return { kind: "join", join: course.join, url: safeHref(course.landingurl, itemHref(item, courses, home)) };
+  }
+  return { kind: "open", url: itemHref(item, courses, home) };
+}, "primaryOf");
 const monthHref = /* @__PURE__ */ __name((calendar, month) => {
   const url = new URL(calendar, window.location.href);
   url.search = "";
@@ -140,7 +175,9 @@ const monthHref = /* @__PURE__ */ __name((calendar, month) => {
 }, "monthHref");
 const hex = /* @__PURE__ */ __name((value) => /^#[0-9a-f]{6}$/i.test(String(value)) ? String(value) : null, "hex");
 export {
+  DAY_PARAM,
   DEFAULT_STATE,
+  EVENT_METHOD,
   KEYS,
   RANGE_METHOD,
   REMEMBER_METHOD,
@@ -153,9 +190,12 @@ export {
   keysOn,
   monthHref,
   normalise,
+  primaryOf,
   query,
   rangeArgs,
   readAddress,
-  sameState
+  safeHref,
+  sameState,
+  withDay
 };
 //# sourceMappingURL=model.dev.js.map

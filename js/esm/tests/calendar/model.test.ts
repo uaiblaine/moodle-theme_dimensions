@@ -22,9 +22,10 @@
 
 import {gridWeeks, monthAfter} from '../../src/calendar/days';
 import {
-    DEFAULT_STATE, address, dayHref, emptyAnswer, itemHref, monthHref, normalise, query, rangeArgs, readAddress,
+    DEFAULT_STATE, address, dayHref, emptyAnswer, itemHref, monthHref, normalise, primaryOf, query, rangeArgs, readAddress, safeHref,
+    withDay,
 } from '../../src/calendar/model';
-import type {State} from '../../src/calendar/model';
+import type {Course, State} from '../../src/calendar/model';
 import {fill} from '../../src/calendar/strings';
 import {item} from './fixture';
 
@@ -63,6 +64,20 @@ describe('the address', () => {
     it('drops a malformed month', () => {
         expect(readAddress(`${PAGE}?month=2026-13`).month).toBeNull();
     });
+
+    it('carries the open day, which names no state', () => {
+        const written = new URL(address(PAGE, '2026-11', DEFAULT_STATE, '2026-11-17'));
+        expect(written.searchParams.get('day')).toBe('2026-11-17');
+        expect(new URL(address(PAGE, '2026-11', DEFAULT_STATE)).searchParams.has('day')).toBe(false);
+        expect(readAddress(`${PAGE}?month=2026-11&day=2026-11-17`).state).toBeNull();
+    });
+
+    it('sets and takes out the open day and leaves the rest of the address as written', () => {
+        const opened = withDay(`${PAGE}?month=2026-11`, '2026-11-17');
+        expect(opened).toBe(`${PAGE}?month=2026-11&day=2026-11-17`);
+        expect(withDay(opened, '2026-11-18')).toBe(`${PAGE}?month=2026-11&day=2026-11-18`);
+        expect(withDay(opened, '')).toBe(`${PAGE}?month=2026-11`);
+    });
 });
 
 describe('the seams', () => {
@@ -78,6 +93,66 @@ describe('the seams', () => {
         const url = new URL(dayHref('http://localhost/calendar/view.php', '2026-11-07'));
         expect(Object.fromEntries(url.searchParams)).toEqual({view: 'day', 'cal_d': '7', 'cal_m': '11', 'cal_y': '2026'});
         expect(new URL(monthHref('http://localhost/calendar/view.php', '2026-02')).searchParams.get('cal_m')).toBe('2');
+    });
+});
+
+describe('the popover\'s primary action', () => {
+    const HOME = 'https://example.com/';
+    /**
+     * An event course of the answer's dictionary.
+     *
+     * @param {string} join What the viewer may do now.
+     * @returns {object} The course.
+     */
+    const course = (join: string): Course => ({
+        id: 4, fullname: 'Seminar', shortname: 'S', categoryid: 3, url: 'https://example.com/course/view.php?id=4', image: '',
+        model: 2, modality: 1, city: '', venue: '', landingurl: 'https://example.com/landing/4', enrolled: false, participants: 8,
+        join: join,
+    });
+
+    it('is core\'s action, under its name, when the viewer can act now', () => {
+        const submit = 'https://example.com/submit';
+        const action = item({id: 1, actionevent: true, action: {name: 'Add submission', url: submit, itemcount: 1, actionable: true}});
+        expect(primaryOf(action, new Map(), HOME)).toEqual({kind: 'action', name: 'Add submission', url: submit});
+    });
+
+    it('is "Open" for an action the viewer cannot take now', () => {
+        const waiting = item({id: 1, url: 'https://example.com/mod', actionevent: true, action: {name: 'Add submission',
+            url: 'https://example.com/submit', itemcount: 1, actionable: false}});
+        expect(primaryOf(waiting, new Map(), HOME)).toEqual({kind: 'open', url: 'https://example.com/mod'});
+    });
+
+    it('is the way in for an event course the viewer may join, to its landing page', () => {
+        const entry = item({id: 4, source: 'course', key: 'open', courseid: 4, url: 'https://example.com/landing/4'});
+        ['open', 'free', 'key'].forEach((join) => {
+            expect(primaryOf(entry, new Map([[4, course(join)]]), HOME))
+                .toEqual({kind: 'join', join: join, url: 'https://example.com/landing/4'});
+        });
+    });
+
+    it('is "Open" for an event course the viewer may not join, and for a course event that names a join', () => {
+        const entry = item({id: 4, source: 'course', key: 'course', courseid: 4, url: 'https://example.com/landing/4'});
+        expect(primaryOf(entry, new Map([[4, course('')]]), HOME)).toEqual({kind: 'open', url: 'https://example.com/landing/4'});
+        const event = item({id: 5, source: 'core', key: 'course', courseid: 4, url: 'https://example.com/event/5'});
+        expect(primaryOf(event, new Map([[4, course('open')]]), HOME)).toEqual({kind: 'open', url: 'https://example.com/event/5'});
+    });
+});
+
+describe('an address from the answer', () => {
+    it('is kept only as a web address', () => {
+        expect(safeHref('https://example.com/a', '#')).toBe('https://example.com/a');
+        expect(safeHref('/mod/assign/view.php?id=3', '#')).toBe('/mod/assign/view.php?id=3');
+        expect(safeHref('javascript:alert(1)', '#')).toBe('#');
+        expect(safeHref('data:text/html,x', '#')).toBe('#');
+        expect(safeHref('', '#')).toBe('#');
+    });
+
+    it('never leads a primary action to a script', () => {
+        const bad = 'javascript:alert(1)';
+        const action = item({id: 1, url: 'https://example.com/mod', actionevent: true,
+            action: {name: 'Add submission', url: bad, itemcount: 1, actionable: true}});
+        expect(primaryOf(action, new Map(), 'https://example.com/')).toEqual({kind: 'open', url: 'https://example.com/mod'});
+        expect(itemHref(item({id: 2, url: bad}), new Map(), 'https://example.com/')).toBe('https://example.com/');
     });
 });
 

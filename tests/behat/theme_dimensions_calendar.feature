@@ -4,8 +4,9 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
   As somebody studying on a Dimensions site
   I need each multi-day event drawn once, the keys and categories to narrow it, and my choices kept
 
-  # Thin smoke tests of the page (docs/calendar/PROPOSAL.md, stage C2): that the route serves it, that the client
-  # draws and narrows it, and that the server's agenda stands without JavaScript. What the range answers, to whom,
+  # Thin smoke tests of the page (docs/calendar/PROPOSAL.md, stages C2 and C3): that the route serves it, that the
+  # client draws and narrows it, that a day opens its drawer (its sheet on a phone) and an event its popover, and that
+  # the server's agenda stands without JavaScript. What the range answers, to whom,
   # is PHPUnit's (tests/local/calendar), and the layout and the keyboard contract are Jest's (js/esm/tests/calendar).
   # March 2027 is fixed so the scenarios do not move with the day they run on; the page is asked for it by address.
 
@@ -31,6 +32,9 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
       | name                 | eventtype | course | timestart              | timeduration |
       | Spring seminar       | course    | PROJ   | ##2 March 2027 00:00## | 864000       |
       | Other area meeting   | course    | OTHER  | ##9 March 2027 14:00## | 3600         |
+    And the following "events" exist:
+      | name              | eventtype | course | timestart              | timeduration | description             |
+      | Mentoring session | course    | PROJ   | ##9 March 2027 14:30## | 3600         | Bring your project plan |
     And the following "events" exist:
       | name                 | eventtype | timestart              | timeduration |
       | Platform maintenance | site      | ##4 March 2027 10:00## | 3600         |
@@ -93,6 +97,52 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And I press the page_down key
     And the focused element is "[data-role='day'][data-day='2027-04-04']" "css_element"
     And I should see "April 2027" in the "[data-region='dim-cal-caption']" "css_element"
+
+  @javascript
+  Scenario: A day opens its drawer, which a reload keeps open and its button closes
+    Given I log in as "student1"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03"
+    When I click on "[data-role='day'][data-day='2027-03-09']" "css_element"
+    Then I should see "Other area meeting" in the "[data-region='dim-cal-day']" "css_element"
+    And I should see "Mentoring session" in the "[data-region='dim-cal-day']" "css_element"
+    And the url should match "day=2027-03-09"
+    And I reload the page
+    And I should see "Mentoring session" in the "[data-region='dim-cal-day']" "css_element"
+    And I click on "[data-action='dim-cal-day-close']" "css_element"
+    And "[data-region='dim-cal-day']" "css_element" should not exist
+
+  @javascript
+  Scenario: An event opens its popover with its description, and Escape closes it
+    Given I log in as "student1"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03"
+    When I click on "//div[@data-region='dim-cal-grid']//a[@data-cal-pop][contains(normalize-space(.), 'Mentoring session')]" "xpath_element"
+    Then I should see "Mentoring session" in the "[data-region='dim-cal-popover']" "css_element"
+    And I should see "Bring your project plan" in the "[data-region='dim-cal-popover']" "css_element"
+    And I press the escape key
+    And "[data-region='dim-cal-popover']" "css_element" should not exist
+
+  @javascript
+  Scenario: Two events that overlap say so in the popover and in the drawer
+    Given I log in as "student1"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03"
+    When I click on "//div[@data-region='dim-cal-grid']//a[@data-cal-pop][contains(normalize-space(.), 'Mentoring session')]" "xpath_element"
+    Then I should see "Overlaps with Other area meeting" in the "[data-region='dim-cal-overlap']" "css_element"
+    And I press the escape key
+    And I click on "[data-role='day'][data-day='2027-03-09']" "css_element"
+    And I should see "Overlaps" in the "//section[@data-region='dim-cal-day']//a[contains(normalize-space(.), 'Mentoring session')]" "xpath_element"
+
+  @javascript
+  Scenario: On a phone the month is dots, a day opens its agenda sheet and an event its popover as a sheet
+    Given I log in as "student1"
+    And I change viewport size to "mobile"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03"
+    Then "[role='gridcell'][data-day='2027-03-09'] .dim-cal__daydot" "css_element" should exist
+    And ".dim-cal__bar" "css_element" should not exist
+    And I click on "[data-role='day'][data-day='2027-03-09']" "css_element"
+    And ".dim-cal__drawer--sheet[data-region='dim-cal-day']" "css_element" should exist
+    And I should see "Mentoring session" in the "[data-region='dim-cal-day']" "css_element"
+    And I click on "//section[@data-region='dim-cal-day']//a[@data-cal-pop][contains(normalize-space(.), 'Mentoring session')]" "xpath_element"
+    And ".dim-cal__pop--sheet[data-region='dim-cal-popover']" "css_element" should exist
 
   Scenario: Without JavaScript the month is an agenda, with core's calendar a link away
     Given I log in as "student1"

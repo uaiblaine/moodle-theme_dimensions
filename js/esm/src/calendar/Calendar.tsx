@@ -14,7 +14,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The calendar page's client: the toolbar, the key chips, the category picker, "More filters" and the month grid.
+ * The calendar page's client: the toolbar, the key chips, the category picker, "More filters", the month grid, the
+ * day drawer (the agenda sheet on a phone) and the event popover.
  *
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws, never moved (a node that leaves the
  * document is unmounted). The props carry the range's first answer, so the first paint asks for nothing; once the
@@ -28,30 +29,38 @@
  * - A change of keys or filters is remembered after a quiet ({@see QUIET}), never on every press, and an unchanged
  *   state is not sent again; a Pending token (theme_dimensions/calendar:remember) spans the quiet and the request.
  * - Every key off asks the range nothing: the answer is the window's days at zero.
+ * - A day opens the drawer, or on a phone the sheet (DayDrawer.tsx); the open day is `day=` in the address, written
+ *   with replaceState (Back leaves the month rather than walking the days) and taken out when it closes. Moving the
+ *   selected day while it is open moves it; a month change closes it and the popover.
+ * - An item opens the popover (EventPopover.tsx) on a press, Enter or Space, through one delegated listener on the
+ *   elements marked data-cal-pop; a modified press and a middle click follow the item's href.
+ * - The phone layout is the frame's width, measured by the grid's one ResizeObserver (MonthGrid.tsx PHONE).
  *
  * @module     theme_dimensions/calendar/Calendar
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import type {KeyboardEvent, MouseEvent} from 'react';
 import {fetchOne} from '@moodle/lms/core/ajax';
 import Pending from '@moodle/lms/core/pending';
-import {redirect} from '@moodle/lms/core/location';
 import {load} from '../amd';
 import {parse, say, shiftMonth} from '../daterange/calendar';
 import CategoryPicker from './CategoryPicker';
+import DayDrawer from './DayDrawer';
 import {gridWeeks, zone as zoneOf} from './days';
+import EventPopover from './EventPopover';
 import {writeAddress} from './history';
 import KeyChips from './KeyChips';
-import {place} from './layout';
+import {dayDots, place} from './layout';
 import type {Look} from './look';
 import {
     KEYS,
     RANGE_METHOD,
     REMEMBER_METHOD,
+    DAY_PARAM,
     address,
-    dayHref,
     emptyAnswer,
     keysOn,
     monthHref,
@@ -59,9 +68,11 @@ import {
     rangeArgs,
     readAddress,
     sameState,
+    withDay,
 } from './model';
 import type {Answer, Key, Props, State} from './model';
-import MonthGrid from './MonthGrid';
+import MonthGrid, {PHONE} from './MonthGrid';
+import {itemKey, overlapsOf} from './overlap';
 import MoreFilters from './MoreFilters';
 import {load as loadStrings} from './strings';
 import type {Strings} from './strings';
@@ -77,6 +88,9 @@ type Shown = {month: string, answer: Answer};
 
 /** How a request writes the address. */
 type Write = 'push' | 'replace' | 'none';
+
+/** The open popover: the item's key and the element that opened it. */
+type Popped = {key: string, opener: HTMLElement};
 
 /**
  * Show core's message for a failure.
@@ -97,6 +111,17 @@ const report = (failure: unknown): Promise<void> =>
 export const openingDay = (month: string, today: string): string => (today.startsWith(month) ? today : `${month}-01`);
 
 /**
+ * The open day an address names, kept only when the month's grid holds it (local\calendar\page::day_from_request()).
+ *
+ * @param {string|null} day The day the address names.
+ * @param {string} month The month shown.
+ * @param {number} firstday The weekday a week begins on.
+ * @returns {string|null} The day, or null.
+ */
+export const openableDay = (day: string | null, month: string, firstday: number): string | null =>
+    (day && gridWeeks(month, firstday).flat().includes(day) ? day : null);
+
+/**
  * The page.
  *
  * @param {object} props The server's props; see Props.
@@ -108,8 +133,12 @@ const Calendar = (props: Props) => {
     const [strings, setStrings] = useState<Strings | null>(null);
     const [shown, setShown] = useState<Shown>({month: props.month, answer: props.answer});
     const [state, setState] = useState<State>(() => normalise(props.state));
-    const [selected, setSelected] = useState<string>(() => openingDay(props.month, props.today));
+    const [openday, setOpenday] = useState<string | null>(() => openableDay(props.day, props.month, firstday));
+    const [selected, setSelected] = useState<string>(() => openday || openingDay(props.month, props.today));
     const [focusing, setFocusing] = useState<number>(0);
+    const [dayfocus, setDayfocus] = useState<number>(0);
+    const [popped, setPopped] = useState<Popped | null>(null);
+    const [phone, setPhone] = useState<boolean>(false);
 
     const root = useRef<HTMLDivElement | null>(null);
     const ticket = useRef<number>(0);
@@ -119,6 +148,10 @@ const Calendar = (props: Props) => {
     const quiet = useRef<ReturnType<typeof setTimeout> | null>(null);
     const holding = useRef<Pending | null>(null);
     const latest = useRef<State>(normalise(props.state));
+    const opened = useRef<string | null>(openday);
+    opened.current = openday;
+    const showing = useRef<string>(shown.month);
+    showing.current = shown.month;
 
     const zone = useMemo(() => zoneOf(props.timezone, language), [props.timezone, language]);
     const weeks = useMemo(() => gridWeeks(shown.month, firstday), [shown.month, firstday]);
@@ -144,7 +177,9 @@ const Calendar = (props: Props) => {
         const onPop = (): void => {
             const read = readAddress(window.location.href);
             const month = read.month || props.month;
-            request(month, read.state || normalise(props.state), 'none', openingDay(month, props.today), false);
+            const day = openableDay(new URL(window.location.href).searchParams.get(DAY_PARAM), month, firstday);
+            request(month, read.state || normalise(props.state), 'none', day || openingDay(month, props.today), false);
+            setOpenday(day);
         };
         window.addEventListener('popstate', onPop);
         return () => {
@@ -190,8 +225,14 @@ const Calendar = (props: Props) => {
      */
     const request = async(month: string, next: State, write: Write, select: string, focus: boolean): Promise<void> => {
         const seq = ++ticket.current;
+        // A month change closes the drawer and the popover; within the month the open day stays in the address.
+        const moved = month !== showing.current;
+        if (moved) {
+            setOpenday(null);
+            setPopped(null);
+        }
         if (write !== 'none') {
-            writeAddress(address(props.urls.page, month, next), write === 'push');
+            writeAddress(address(props.urls.page, month, next, moved ? '' : opened.current || ''), write === 'push');
         }
         const pending = new Pending('theme_dimensions/calendar:range');
         const days = gridWeeks(month, firstday).flat();
@@ -279,12 +320,110 @@ const Calendar = (props: Props) => {
     };
 
     /**
-     * Open a day: core's day view in C2 (model.dayHref(), the seam C3 replaces with the drawer).
+     * Open a day: the drawer, or the phone's sheet, with the focus on its heading; the address gains the day.
      *
      * @param {string} iso The day.
      * @returns {void}
      */
-    const openDay = (iso: string): void => redirect(dayHref(props.urls.calendar, iso));
+    const openDay = (iso: string): void => {
+        setSelected(iso);
+        setOpenday(iso);
+        setDayfocus((tick) => tick + 1);
+        writeAddress(withDay(window.location.href, iso), false);
+    };
+
+    /**
+     * Close the day, the focus back on its button; the address loses the day.
+     *
+     * @returns {void}
+     */
+    const closeDay = (): void => {
+        setOpenday(null);
+        setFocusing((tick) => tick + 1);
+        writeAddress(withDay(window.location.href, ''), false);
+    };
+
+    /**
+     * Select a day; while one is open, the drawer follows it.
+     *
+     * @param {string} iso The day.
+     * @returns {void}
+     */
+    const selectDay = (iso: string): void => {
+        setSelected(iso);
+        setFocusing((tick) => tick + 1);
+        if (opened.current !== null) {
+            setOpenday(iso);
+            writeAddress(withDay(window.location.href, iso), false);
+        }
+    };
+
+    /**
+     * Close the popover, the focus back on the item that opened it when asked.
+     *
+     * @param {boolean} refocus Whether the focus goes back to the item.
+     * @returns {void}
+     */
+    const closePopover = useCallback((refocus: boolean): void => {
+        setPopped((was) => {
+            if (was && refocus) {
+                was.opener.focus();
+            }
+            return null;
+        });
+    }, []);
+
+    /**
+     * The element of an item press, or null: an element marked data-cal-pop inside the page.
+     *
+     * @param {EventTarget} target What was pressed.
+     * @returns {HTMLElement|null}
+     */
+    const popTarget = (target: EventTarget | null): HTMLElement | null => {
+        const element = target instanceof Element ? target.closest<HTMLElement>('[data-cal-pop]') : null;
+        return element && root.current?.contains(element) ? element : null;
+    };
+
+    /**
+     * Open the popover of the item an element stands for.
+     *
+     * @param {HTMLElement} element The bar, line, card or drawer item.
+     * @returns {void}
+     */
+    const popFrom = (element: HTMLElement): void => {
+        setPopped({key: `${element.dataset.source || ''}-${element.dataset.id || ''}`, opener: element});
+    };
+
+    /**
+     * A plain press on an item opens its popover; a modified one follows its href.
+     *
+     * @param {object} event The press.
+     * @returns {void}
+     */
+    const onPress = (event: MouseEvent): void => {
+        const element = popTarget(event.target);
+        if (!element || event.defaultPrevented || event.button !== 0
+            || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
+        event.preventDefault();
+        popFrom(element);
+    };
+
+    /**
+     * Enter or Space on an item opens its popover.
+     *
+     * @param {object} event The key press.
+     * @returns {void}
+     */
+    const onItemKey = (event: KeyboardEvent): void => {
+        const element = popTarget(event.target);
+        if (!element || event.defaultPrevented || (event.key !== 'Enter' && event.key !== ' ')) {
+            return;
+        }
+        event.preventDefault();
+        popFrom(element);
+    };
 
     if (!strings) {
         return null;
@@ -306,6 +445,9 @@ const Calendar = (props: Props) => {
     const cities = [...new Set([...props.options.city, ...shown.answer.courses.map((course) => course.city)])]
         .filter((city) => city !== '').sort((a, b) => a.localeCompare(b, language));
     const caption = say(`${shown.month}-01`, {month: 'long', year: 'numeric'}, language);
+    const dots = phone ? new Map(shown.answer.days.map((entry) => [entry.date, dayDots(entry.counts)])) : null;
+    const poppedentry = popped ? placed.find((entry) => itemKey(entry.item) === popped.key) || null : null;
+    const drawn = openday !== null && weeks.flat().includes(openday) ? openday : null;
     /**
      * Move a month from the selected day, the focus left where it is.
      *
@@ -315,7 +457,13 @@ const Calendar = (props: Props) => {
     const step = (offset: number): void => toDay(shiftMonth(parse(selected) ? selected : `${shown.month}-01`, offset), false);
 
     return (
-        <div ref={root} className="dim-cal__app" data-region="dim-cal-app">
+        <div
+            ref={root}
+            className={`dim-cal__app${phone ? ' dim-cal__app--phone' : ''}`}
+            data-region="dim-cal-app"
+            onClick={onPress}
+            onKeyDown={onItemKey}
+        >
             <div className="dim-cal__toolbar">
                 <h1 className="dim-cal__title">{strings.calendar_title}</h1>
                 <button type="button" className="btn btn-secondary dim-cal__today" onClick={() => toDay(props.today, false)}>
@@ -369,23 +517,49 @@ const Calendar = (props: Props) => {
                     onChange={change}
                 />
             </div>
-            <MonthGrid
-                look={look}
-                month={shown.month}
-                weeks={weeks}
-                placed={placed}
-                today={props.today}
-                selected={weeks.flat().includes(selected) ? selected : openingDay(shown.month, props.today)}
-                focusing={focusing}
-                captionid={CAPTION}
-                onSelect={(iso) => {
-                    setSelected(iso);
-                    setFocusing((tick) => tick + 1);
-                }}
-                onMonth={(iso) => toDay(iso, true)}
-                onOpen={openDay}
-            />
+            <div
+                className={`dim-cal__body${drawn !== null && !phone ? ' dim-cal__body--drawer' : ''}`}
+                data-region="dim-cal-body"
+            >
+                <MonthGrid
+                    look={look}
+                    month={shown.month}
+                    weeks={weeks}
+                    placed={placed}
+                    today={props.today}
+                    selected={weeks.flat().includes(selected) ? selected : openingDay(shown.month, props.today)}
+                    focusing={focusing}
+                    captionid={CAPTION}
+                    dots={dots}
+                    onSelect={selectDay}
+                    onMonth={(iso) => toDay(iso, true)}
+                    onOpen={openDay}
+                    onWidth={(width) => setPhone(width < PHONE)}
+                />
+                {drawn !== null ? (
+                    <DayDrawer
+                        look={look}
+                        iso={drawn}
+                        placed={placed}
+                        variant={phone ? 'sheet' : 'drawer'}
+                        calendar={props.urls.calendar}
+                        focusing={dayfocus}
+                        onClose={closeDay}
+                    />
+                ) : null}
+            </div>
             {shown.answer.truncated ? <p className="dim-cal__status">{strings.calendar_truncated}</p> : null}
+            {popped && poppedentry ? (
+                <EventPopover
+                    look={look}
+                    entry={poppedentry}
+                    overlaps={overlapsOf(poppedentry, placed, zone)}
+                    opener={popped.opener}
+                    sheet={phone}
+                    modalities={props.options.modality}
+                    onClose={closePopover}
+                />
+            ) : null}
         </div>
     );
 };

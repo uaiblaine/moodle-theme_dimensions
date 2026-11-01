@@ -20,7 +20,9 @@
  * holds can span the following days' columns. The day button is the grid's one Tab stop when the day is the
  * selected one (roving tabindex); its label is the long date, the count of every item touching the day and "today"
  * when it is. The content draws one of three densities (calendar/layout.ts): a card, lines, or a summary ending in
- * "+N" with a dot per key of what was left out, a button that opens the day and names it.
+ * "+N" with a dot per key of what was left out, a button that opens the day and names it. On a phone the content is
+ * a dot per key with items instead (layout.ts dayDots()), hidden from the screen reader: the day button's label
+ * says the count, and the day's sheet lists the items.
  *
  * @module     theme_dimensions/calendar/DayCell
  * @copyright  2026 Anderson Blaine
@@ -30,7 +32,7 @@
 import type {CSSProperties, ReactNode} from 'react';
 import {say} from '../daterange/calendar';
 import {itemHref} from './model';
-import type {CellPlan, Placed} from './layout';
+import type {CellPlan, Dots, Placed} from './layout';
 import {colourStyle, keyClass, placeOf, whenOf} from './look';
 import type {Look} from './look';
 import {fill} from './strings';
@@ -53,6 +55,7 @@ type DayCellProps = {
     contentRow: number,
     look: Look,
     bars: ReactNode,
+    dots: Dots | null,
     onOpen: (iso: string) => void,
 };
 
@@ -100,6 +103,9 @@ const line = (entry: Placed, iso: string, look: Look) => (
         style={colourStyle(entry.item, look)}
         tabIndex={-1}
         data-cal-item=""
+        data-cal-pop=""
+        data-source={entry.item.source}
+        data-id={entry.item.id}
         data-first={iso}
         data-last={iso}
     >
@@ -115,7 +121,7 @@ const line = (entry: Placed, iso: string, look: Look) => (
  * @param {object} props See DayCellProps.
  * @returns {object} The gridcell.
  */
-const DayCell = ({iso, column, month, today, selected, count, plan, contentRow, look, bars, onOpen}: DayCellProps) => {
+const DayCell = ({iso, column, month, today, selected, count, plan, contentRow, look, bars, dots, onOpen}: DayCellProps) => {
     const other = !iso.startsWith(month);
     const istoday = iso === today;
     const ground = ['dim-cal__ground'];
@@ -146,7 +152,13 @@ const DayCell = ({iso, column, month, today, selected, count, plan, contentRow, 
                 onClick={() => onOpen(iso)}
             >{Number(iso.slice(8, 10))}</button>
             {bars}
-            {plan.density === 'none' ? null : (
+            {dots ? (
+                <span className="dim-cal__daydots" style={{gridColumn: column + 1, gridRow: 2}} aria-hidden="true">
+                    {dots.keys.map((key) => <span key={key} className={`dim-cal__daydot dim-cal-key--${key}`}></span>)}
+                    {dots.more ? <span className="dim-cal__daydotmore">+</span> : null}
+                </span>
+            ) : null}
+            {dots || plan.density === 'none' ? null : (
                 <div className="dim-cal__content" style={{gridColumn: column + 1, gridRow: contentRow} as CSSProperties}>
                     {card ? (
                         <a
@@ -155,6 +167,9 @@ const DayCell = ({iso, column, month, today, selected, count, plan, contentRow, 
                             style={colourStyle(card, look)}
                             tabIndex={-1}
                             data-cal-item=""
+                            data-cal-pop=""
+                            data-source={card.source}
+                            data-id={card.id}
                             data-first={iso}
                             data-last={iso}
                         >

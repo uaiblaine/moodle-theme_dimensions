@@ -161,6 +161,39 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
+     * The open day travels in the props alone: the server's layer draws no drawer, open or closed, and the
+     * no-JavaScript agenda is the same with the day as without it.
+     *
+     * @return void
+     */
+    public function test_the_open_day_is_the_clients_and_the_agenda_is_unchanged(): void {
+        global $PAGE;
+        [$renderable, $window, $answer] = $this->build(new state());
+        $day = $window->days[10];
+        $opened = new calendar_page(
+            self::month_start()->format('Y-m'),
+            self::month_start()->format('Y-m-d'),
+            0,
+            \core_date::get_user_timezone(),
+            $window,
+            $answer,
+            new state(),
+            tree::for_scope(scope::for_viewer()),
+            $day
+        );
+        $this->assertSame('', $renderable->props()['day'], 'The control: no day, no open day.');
+        $this->assertSame($day, $opened->props()['day']);
+
+        $renderer = $PAGE->get_renderer('core');
+        $closed = $renderer->render($renderable);
+        $open = $renderer->render($opened);
+        $strip = static fn(string $html): string => (string) preg_replace('~data-react-props="[^"]*"~', '', $html);
+        $this->assertSame($strip($closed), $strip($open), 'Only the props differ.');
+        $this->assertStringContainsString('>Enrolment week</a>', $open, 'The agenda is drawn.');
+        $this->assertStringNotContainsString('dim-cal-day', $open, 'The server draws no drawer.');
+    }
+
+    /**
      * Every string the client reads exists in both languages, and is the list the client names.
      *
      * @return void

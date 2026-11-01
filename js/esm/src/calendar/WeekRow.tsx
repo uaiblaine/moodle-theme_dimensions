@@ -17,7 +17,8 @@
  * One week row of the grid: seven days, the bars in their slots, each day's content under them.
  *
  * The row is a grid of its own: a 30px row for the day numbers, one row per bar slot it draws, and the rest for the
- * days' content, so a bar never zigzags and a day's content starts under the lowest bar of its row.
+ * days' content, so a bar never zigzags and a day's content starts under the lowest bar of its row. On a phone
+ * (`dots` handed) the row draws no bar and no content: each day its number and its dot row.
  *
  * @module     theme_dimensions/calendar/WeekRow
  * @copyright  2026 Anderson Blaine
@@ -27,7 +28,7 @@
 import Bar from './Bar';
 import DayCell from './DayCell';
 import {HEADER, SLOT, cellPlan} from './layout';
-import type {WeekLayout} from './layout';
+import type {Dots, WeekLayout} from './layout';
 import type {Look} from './look';
 
 /** What a row is handed. */
@@ -40,6 +41,7 @@ type WeekRowProps = {
     selected: string,
     counts: Map<string, number>,
     look: Look,
+    dots: Map<string, Dots> | null,
     onOpen: (iso: string) => void,
 };
 
@@ -49,8 +51,9 @@ type WeekRowProps = {
  * @param {object} props See WeekRowProps.
  * @returns {object} The row.
  */
-const WeekRow = ({week, layout, height, month, today, selected, counts, look, onOpen}: WeekRowProps) => {
-    const rows = `${HEADER}px${layout.used ? ` repeat(${layout.used}, ${SLOT}px)` : ''} minmax(0, 1fr)`;
+const WeekRow = ({week, layout, height, month, today, selected, counts, look, dots, onOpen}: WeekRowProps) => {
+    const used = dots ? 0 : layout.used;
+    const rows = `${HEADER}px${used ? ` repeat(${used}, ${SLOT}px)` : ''} minmax(0, 1fr)`;
     return (
         <div className="dim-cal__week" role="row" style={{gridTemplateRows: rows}}>
             {week.map((iso, column) => (
@@ -63,9 +66,10 @@ const WeekRow = ({week, layout, height, month, today, selected, counts, look, on
                     selected={iso === selected}
                     count={counts.get(iso) || 0}
                     plan={cellPlan(layout.timed[column], layout.hidden[column], layout.used, height)}
-                    contentRow={layout.used + 2}
+                    contentRow={used + 2}
                     look={look}
-                    bars={layout.bars.filter((segment) => segment.start === column).map((segment) => (
+                    dots={dots ? dots.get(iso) || {keys: [], more: false} : null}
+                    bars={dots ? null : layout.bars.filter((segment) => segment.start === column).map((segment) => (
                         <Bar
                             key={`${segment.placed.item.source}-${segment.placed.item.id}`}
                             segment={segment}

@@ -18,9 +18,10 @@
  *
  * The answer is the range service's (classes/local/calendar/range.php, get_calendar_range's returns); the state is
  * classes/local/calendar/state.php's canonical array, and {@see query()} spells it as state::query() does, so an
- * address the client writes is one the server reads back as the same state. Two seams C3 replaces live here alone:
- * {@see itemHref()} (an item opens its own page; C3 opens the popover) and {@see dayHref()} (a day opens core's day
- * view; C3 opens the drawer).
+ * address the client writes is one the server reads back as the same state. An item opens the event popover and a
+ * day the day drawer (or the phone's sheet); the two addresses they opened in C2 stay here as their fallbacks:
+ * {@see itemHref()} is every item's href (a middle click, a copied link) and the popover's "Open", {@see dayHref()}
+ * the drawer's link to core's day view. The popover's primary action is chosen in one place, {@see primaryOf()}.
  *
  * @module     theme_dimensions/calendar/model
  * @copyright  2026 Anderson Blaine
@@ -117,6 +118,7 @@ export type Option = {value: number, label: string};
 /** The page's props, as calendar_page::props() builds them. */
 export type Props = {
     month: string,
+    day: string,
     today: string,
     firstday: number,
     timezone: string,
@@ -132,6 +134,12 @@ export const RANGE_METHOD = 'theme_dimensions_get_calendar_range';
 
 /** The service that stores the state. */
 export const REMEMBER_METHOD = 'theme_dimensions_remember_calendar_state';
+
+/** Core's service an event's description is read from, with core's own visibility check. */
+export const EVENT_METHOD = 'core_calendar_get_calendar_event_by_id';
+
+/** The address parameter of the open day (local\calendar\page::PARAM_DAY): navigation, never state. */
+export const DAY_PARAM = 'day';
 
 /** A fresh page's state (new state()). */
 export const DEFAULT_STATE: State = {
@@ -208,18 +216,40 @@ export const query = (state: State): Array<[string, string]> => {
 };
 
 /**
- * The page's address for a month and a state.
+ * The page's address for a month, a state and the open day.
  *
  * @param {string} base The page's address without a query (urls.page).
  * @param {string} month The month, YYYY-MM.
  * @param {object} state The state.
+ * @param {string} day The open day, YYYY-MM-DD, or '' for none.
  * @returns {string} The address.
  */
-export const address = (base: string, month: string, state: State): string => {
+export const address = (base: string, month: string, state: State, day = ''): string => {
     const url = new URL(base, window.location.href);
     url.search = '';
     url.searchParams.append('month', month);
+    if (day !== '') {
+        url.searchParams.append(DAY_PARAM, day);
+    }
     query(state).forEach(([name, value]) => url.searchParams.append(name, value));
+    return url.toString();
+};
+
+/**
+ * An address with its open day set, or taken out: the rest of it is left as written, so opening a day never turns
+ * a bare address into one naming the state.
+ *
+ * @param {string} href The address.
+ * @param {string} day The open day, YYYY-MM-DD, or '' to take it out.
+ * @returns {string} The address.
+ */
+export const withDay = (href: string, day: string): string => {
+    const url = new URL(href, window.location.href);
+    if (day === '') {
+        url.searchParams.delete(DAY_PARAM);
+    } else {
+        url.searchParams.set(DAY_PARAM, day);
+    }
     return url.toString();
 };
 
@@ -306,9 +336,29 @@ export const emptyAnswer = (days: string[]): Answer => ({
 });
 
 /**
+ * An address from the answer, kept only when it is a web address: relative, http or https.
+ *
+ * Every address the server builds and the page puts in an href goes through here, so a `javascript:` or `data:`
+ * address an activity module put in an action event never runs on a click.
+ *
+ * @param {string} url The address the answer carries.
+ * @param {string} fallback What to use instead.
+ * @returns {string} The address as given, or the fallback.
+ */
+export const safeHref = (url: string, fallback: string): string => {
+    try {
+        const {protocol} = new URL(url, window.location.href);
+        return url !== '' && (protocol === 'http:' || protocol === 'https:') ? url : fallback;
+    } catch {
+        return fallback;
+    }
+};
+
+/**
  * Where an item leads: its own page, else its course's page, else the site's home (calendar_page::item_url()).
  *
- * The one place an item's opening is decided: C3 opens the popover here instead.
+ * The item's href and the popover's "Open": with JavaScript a press opens the popover, and this address is what a
+ * middle click, a copied link and the no-JavaScript agenda follow.
  *
  * @param {object} item The item.
  * @param {Map} courses The answer's courses by id.
@@ -316,17 +366,18 @@ export const emptyAnswer = (days: string[]): Answer => ({
  * @returns {string} The address.
  */
 export const itemHref = (item: Item, courses: Map<number, Course>, home: string): string => {
-    if (item.url !== '') {
-        return item.url;
+    const own = safeHref(item.url, '');
+    if (own !== '') {
+        return own;
     }
-    return courses.get(item.courseid)?.url || home;
+    return safeHref(courses.get(item.courseid)?.url ?? '', safeHref(home, '/'));
 };
 
 /**
  * Core's day view of a day, spelled with core's day, month and year parameters, which calendar/view.php turns into
  * the day in the viewer's own timezone: the client computes no timestamp.
  *
- * The one place a day's opening is decided: C3 opens the drawer here instead.
+ * A day opens the drawer; the drawer links this address, where core's own day view (and its event editing) stays.
  *
  * @param {string} calendar Core's calendar/view.php address (urls.calendar).
  * @param {string} iso The day, YYYY-MM-DD.
@@ -343,6 +394,37 @@ export const dayHref = (calendar: string, iso: string): string => {
         url.searchParams.set('cal_y', String(parts.y));
     }
     return url.toString();
+};
+
+/** The popover's primary action: core's action, the event course's way in, or the item's own page. */
+export type Primary =
+    {kind: 'action', name: string, url: string}
+    | {kind: 'join', join: 'open' | 'free' | 'key', url: string}
+    | {kind: 'open', url: string};
+
+/**
+ * The popover's primary action for an item: the item's own, never a guess.
+ *
+ * - An action event core says the viewer can act on now (`actionable`) leads to core's action, under its name.
+ * - An event course the viewer may join (the answer's `join`, local_unlistedcourses' next action as the showcase
+ *   reads it) leads to its landing page, whose enrolment is the way in.
+ * - Anything else is "Open", {@see itemHref()}.
+ *
+ * @param {object} item The item.
+ * @param {Map} courses The answer's courses by id.
+ * @param {string} home The site's home.
+ * @returns {object} The primary action.
+ */
+export const primaryOf = (item: Item, courses: Map<number, Course>, home: string): Primary => {
+    const actionUrl = item.action === null ? '' : safeHref(item.action.url, '');
+    if (item.action !== null && item.action.actionable && actionUrl !== '') {
+        return {kind: 'action', name: item.action.name, url: actionUrl};
+    }
+    const course = courses.get(item.courseid);
+    if (item.source === 'course' && course && (course.join === 'open' || course.join === 'free' || course.join === 'key')) {
+        return {kind: 'join', join: course.join, url: safeHref(course.landingurl, itemHref(item, courses, home))};
+    }
+    return {kind: 'open', url: itemHref(item, courses, home)};
 };
 
 /**

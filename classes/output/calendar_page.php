@@ -58,6 +58,7 @@ class calendar_page implements renderable, templatable {
     /** @var string[] The strings the client reads, handed to it with the page so its first paint asks for none. */
     public const STRINGS = [
         'calendar_actiononly',
+        'calendar_allday',
         'calendar_barlabel',
         'calendar_category',
         'calendar_categoryall',
@@ -69,16 +70,25 @@ class calendar_page implements renderable, templatable {
         'calendar_city',
         'calendar_cityany',
         'calendar_classic',
+        'calendar_classicday',
         'calendar_clearfilters',
+        'calendar_close',
         'calendar_colourby',
         'calendar_colourbycategory',
         'calendar_colourbykey',
+        'calendar_course',
+        'calendar_coursepage',
+        'calendar_dayempty',
         'calendar_dayitems_many',
         'calendar_dayitems_none',
         'calendar_dayitems_one',
         'calendar_daylabel',
         'calendar_daytoday',
+        'calendar_descriptionloading',
         'calendar_filtercount',
+        'calendar_join_free',
+        'calendar_join_key',
+        'calendar_join_open',
         'calendar_key_activity',
         'calendar_key_category',
         'calendar_key_course',
@@ -94,7 +104,13 @@ class calendar_page implements renderable, templatable {
         'calendar_morefilters',
         'calendar_morelabel',
         'calendar_nextmonth',
+        'calendar_open',
         'calendar_overdue',
+        'calendar_overlapmark',
+        'calendar_overlaps',
+        'calendar_participants_many',
+        'calendar_participants_one',
+        'calendar_place',
         'calendar_prevmonth',
         'calendar_recursive',
         'calendar_span',
@@ -104,6 +120,7 @@ class calendar_page implements renderable, templatable {
         'calendar_until',
         'calendar_view',
         'calendar_viewmonth',
+        'calendar_when',
         'calendar_withsub',
     ];
 
@@ -131,6 +148,9 @@ class calendar_page implements renderable, templatable {
     /** @var array The categories the picker offers. */
     private array $tree;
 
+    /** @var string The day the drawer opens on, YYYY-MM-DD, inside the window; '' for none. */
+    private string $day;
+
     /**
      * Hold what the page draws; {@see page::handle()} computes every part.
      *
@@ -142,6 +162,7 @@ class calendar_page implements renderable, templatable {
      * @param array $answer The range's answer for the window.
      * @param state $state What the page shows.
      * @param array $tree The categories the picker offers ({@see \theme_dimensions\local\calendar\tree}).
+     * @param string $day The day the drawer opens on, kept by {@see page::day_from_request()}; '' for none.
      */
     public function __construct(
         string $month,
@@ -151,7 +172,8 @@ class calendar_page implements renderable, templatable {
         window $window,
         array $answer,
         state $state,
-        array $tree
+        array $tree,
+        string $day = ''
     ) {
         $this->month = $month;
         $this->today = $today;
@@ -161,6 +183,7 @@ class calendar_page implements renderable, templatable {
         $this->answer = $answer;
         $this->state = $state;
         $this->tree = $tree;
+        $this->day = $day;
     }
 
     /**
@@ -197,7 +220,8 @@ class calendar_page implements renderable, templatable {
     /**
      * Where an item leads: its own page, else its course's page, else the site's home.
      *
-     * The C2 seam of opening an item; C3 opens the popover instead.
+     * The no-JavaScript agenda's link, and the client's fallback (model.ts itemHref()): with JavaScript an item
+     * opens the event popover, and this address stays the item's href for a middle click or a copied link.
      *
      * @param array $item A range item.
      * @param array $courses The answer's courses, keyed by id.
@@ -255,6 +279,7 @@ class calendar_page implements renderable, templatable {
     public function props(): array {
         return [
             'month' => $this->month,
+            'day' => $this->day,
             'today' => $this->today,
             'firstday' => $this->firstday,
             'timezone' => $this->timezone,
