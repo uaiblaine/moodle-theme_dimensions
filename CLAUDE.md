@@ -97,7 +97,8 @@ sh mutations/gate-fast.sh <gate>:<test file> [...]           # prove a gate (mpc
   executes its JavaScript - the panel, the listing client, the cover film), PHP 8.4
   and MariaDB, and anything visual - the Browser pane needs the owner's stacks. So a cloud session
   pushes its own branch, opens the pull request with `[skip ci]` on every commit, and leaves the
-  merge to the owner, who runs `mdl ci moodle-theme_dimensions --matrix --behat` first.
+  merge to the owner, who runs the gate the change's tier asks first (fleet `CLAUDE.md` section 4;
+  `mdl ci moodle-theme_dimensions --matrix --behat` for a tier-3 change).
 - **What it CAN measure: computed styles and boxes, not pixels of the page.** A throwaway PHPUnit
   test copied into the `mpci` install's plugin directory (never into this repository; run with
   `vendor/bin/phpunit` from `/tmp/mpci/MOODLE_503_STABLE/moodle`, then deleted) can write a template
