@@ -1185,6 +1185,31 @@ final class population {
     }
 
     /**
+     * The rows among these that the showcase would list to this scope's viewer: {@see gate()}, for a caller outside the listing.
+     *
+     * The calendar's "open events" layer asks it of a handful of event courses over the root scope
+     * (scope(new criteria(0))), so a course reaches the calendar exactly when the showcase would list it, by
+     * the same core and local_unlistedcourses rules, never by a rule of the calendar's own. The rows carry
+     * what records() selects (id, category, visible, liststate and the context preload columns); the list
+     * goes to the plugin's probe as the population's does, so keep it to a page.
+     *
+     * An anonymous scope admits nothing here, and a row outside the scope's admitted categories is dropped.
+     *
+     * @param scope $scope An admitted scope whose categories hold every row's category.
+     * @param \stdClass[] $records The rows, keyed by course id.
+     * @return \stdClass[] The rows this viewer may see, same keys, same order.
+     */
+    public static function admitted(scope $scope, array $records): array {
+        // A row whose category the scope never admitted (outside a narrowed root) is not this scope's to answer,
+        // because gate() reads a missing clamp as no clamp.
+        $known = array_flip($scope->population_categories());
+        $rows = array_filter($records, static fn(\stdClass $row): bool => isset($known[(int) $row->category]));
+        // The listing's statement gates an anonymous scope and gate() passes its rows through; a caller outside the
+        // listing has no such statement, so it is answered nothing.
+        return $scope->anonymous ? [] : self::gate($scope, $rows);
+    }
+
+    /**
      * The course-level gates over the population rows, core first, then the plugin.
      *
      * For a logged-in viewer, in order per course: core's visibility (a

@@ -28,6 +28,7 @@ $string['brandheading'] = 'Brand';
 $string['cachedef_categorybranding'] = 'The appearance of a course category on the category showcase: its layout, colours, tagline and the name of its hero image.';
 $string['cachedef_flavourchoice'] = 'Which Boost Union flavour the session last applied as the person\'s chosen look, with that flavour\'s settings.';
 $string['cachedef_flavourmenu'] = 'The look a person may pick in the user menu: the offered Boost Union flavours, their titles and their marks.';
+$string['calendarrangeunavailable'] = 'This part of the calendar is not available.';
 $string['category_allempty'] = 'No course matches the search and the filters.';
 $string['category_allemptyhint'] = 'Try another term or clear the filters.';
 $string['category_apply'] = 'Apply';

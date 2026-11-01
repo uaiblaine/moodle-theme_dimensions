@@ -28,6 +28,7 @@ $string['brandheading'] = 'Marca';
 $string['cachedef_categorybranding'] = 'A aparência de uma categoria de cursos na vitrine: layout, cor, chamada e o nome da imagem do hero.';
 $string['cachedef_flavourchoice'] = 'Qual flavour do Boost Union a sessão aplicou por último como o visual escolhido pela pessoa, com as configurações desse flavour.';
 $string['cachedef_flavourmenu'] = 'Os visuais que a pessoa pode escolher no menu do usuário: os flavours do Boost Union oferecidos, seus títulos e suas marcas.';
+$string['calendarrangeunavailable'] = 'Esta parte do calendário não está disponível.';
 $string['category_allempty'] = 'Nenhum curso corresponde à busca e aos filtros.';
 $string['category_allemptyhint'] = 'Tente outro termo ou limpe os filtros.';
 $string['category_apply'] = 'Aplicar';

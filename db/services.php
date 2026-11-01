@@ -24,9 +24,10 @@
  * lib/ajax/service-nologin.php and so is not loginrequired: it serves only a public
  * category's listing, refuses every logged-in session, and is closed until the site opens it
  * (publicaccess::client_enabled()). The sixth answers the mobile drawer of a logged-in account
- * when it is first shown, about the session's own user only. The seventh records a switch of focus
- * mode made in place, in the session alone, and so keeps a writable session. None is part of a
- * service such as the mobile one.
+ * when it is first shown, about the session's own user only. The calendar range answers the
+ * theme's calendar page for a logged-in account (its class docblock gives its order of checks). The
+ * focus mode one records a switch made in place, in the session alone, and so keeps a writable
+ * session. None is part of a service such as the mobile one.
  * Registered on upgrade, so any change here ships with a version bump.
  *
  * @package    theme_dimensions
@@ -74,6 +75,16 @@ $functions = [
     'theme_dimensions_get_drawer_summary' => [
         'classname' => 'theme_dimensions\external\get_drawer_summary',
         'description' => 'The mobile drawer\'s deferred summary: what to continue and how many courses are in progress.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
+    'theme_dimensions_get_calendar_range' => [
+        'classname' => 'theme_dimensions\external\get_calendar_range',
+        'description' => 'One month grid of the calendar: the events once each, the event courses, the courses, '
+            . 'the categories and the day counts.',
         'type' => 'read',
         'ajax' => true,
         'readonlysession' => true,
