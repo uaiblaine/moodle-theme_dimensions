@@ -45,9 +45,12 @@ jobs:
   # is absent.
   #
   # block_compass is optional and NOT in version.php: the theme answers its
-  # course_badges hook (the crests on the block's cards) only where it is
-  # installed. It is here only to exercise that hook's callback; its tests
-  # skip themselves where the block is absent.
+  # course_badges, category_badges and course_kinds hooks (the crests on the
+  # block's cards and open-for-enrolment line, and its courses told from
+  # events) only where it is installed. It is here to exercise those
+  # callbacks and theme_dimensions_compass.feature; the PHPUnit tests skip
+  # themselves where the block is absent, and a site without it excludes the
+  # feature with --tags '~@block_compass'.
   #
   # behat-suite is required for a theme: core runs a theme's own features in a
   # suite named after the theme, never in the default one

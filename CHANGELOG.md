@@ -39,7 +39,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
     for 2. The nouns come from four new strings (`compass_kind_course(s)`, `compass_kind_event(s)`). It reads
     nothing, and the block uses the field only while it is visible to everyone, as the theme creates it.
   - Both are registered in `db/hooks.php` as optional, as the two earlier block_compass listeners are.
-    PHPUnit under `tests/local/hook/block_compass/`.
+    PHPUnit under `tests/local/hook/block_compass/`. Behat: `theme_dimensions_compass.feature` (`@block_compass`)
+    draws the line in a browser with a crested and a plain category, a course, an event and the pill's tooltip,
+    under axe, through a new step that gives a category a crest.
 - **The calendar's range service** (2026100552), stage C1 of `docs/calendar/PROPOSAL.md`.
   `theme_dimensions_get_calendar_range` answers one month grid (at most 42 days, in the viewer's timezone) in one call:
   core's events, with the exact visibility of core's month view (a parity test per role), each event once with its
