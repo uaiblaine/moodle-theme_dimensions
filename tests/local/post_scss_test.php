@@ -195,6 +195,113 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
+     * The navbar's menu rows are pills apart, and a submenu collapsed into "More" is one of them.
+     *
+     * Two pills touching (the chosen row and the hovered one) read as one block; core rings a focused
+     * a.dropdown-toggle with a square box-shadow on a mouse click and takes the keyboard's outline away; and core
+     * paints the rows of a submenu expanded inside "More" gray-100, under the menu's white ink, at their content's
+     * width. The control is the menu rule's own surface.
+     *
+     * @return void
+     */
+    public function test_the_navbar_menu_rows_are_pills_apart(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertSame(1, preg_match('/\n\.navbar \.dropdown-menu \{(.*?)\n\}/s', $scss, $rule));
+        $this->assertStringContainsString('--bs-dropdown-bg: #{$dimensions-menu-surface};', $rule[1], 'Control.');
+        $this->assertMatchesRegularExpression(
+            '/\.dropdown-item \+ \.dropdown-item \{\s*margin-top: var\(--dim-ds-space-3xs\);\s*\}/',
+            $rule[1],
+            'A gap between two rows.'
+        );
+        $this->assertMatchesRegularExpression('/\.dropdown-item:focus \{\s*box-shadow: none;\s*\}/', $rule[1]);
+        $this->assertMatchesRegularExpression(
+            '/\.dropdown-item:focus-visible \{\s*outline: var\(--dim-ds-focus-ring-width\) solid var\(--dim-ds-focus-ring\);\s*\}/',
+            $rule[1],
+            'The keyboard keeps the theme\'s ring.'
+        );
+
+        $submenu = '\.navbar \.dropdownmoremenu > \.dropdown-menu \.dropdown-submenu > \.dropdown-menu';
+        $this->assertSame(1, preg_match('/\n' . $submenu . ' \{(.*?)\n\}/s', $scss, $nested));
+        $this->assertMatchesRegularExpression('/^\s*width: auto;/', $nested[1], 'As wide as its toggle.');
+        $this->assertMatchesRegularExpression(
+            '/\.dropdown-item \{\s*background-color: transparent;/',
+            $nested[1],
+            'The menu\'s ground, not core\'s gray-100.'
+        );
+        $this->assertStringContainsString('background-color: var(--bs-dropdown-link-hover-bg);', $nested[1]);
+        $this->assertStringNotContainsString('!important', $rule[1] . $nested[1]);
+    }
+
+    /**
+     * An open navbar menu's toggle is a rounded pill, never a square in the ink's colour.
+     *
+     * Bootstrap's open .btn reads --bs-btn-active-border-color, which Moodle's .btn never sets, so the border fell
+     * back to currentColor round a toggle core squares at the bar's full height. The pill is the ::before, in the
+     * navbar pills' hover tint, and the keyboard's ring goes round it. The control is the three menus in the
+     * selector.
+     *
+     * @return void
+     */
+    public function test_an_open_navbar_menu_toggle_is_a_rounded_pill(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $this->assertSame(
+            1,
+            preg_match('/\n\.navbar \.usermenu,\n\.navbar \.langmenu,\n\.navbar \.colourmodemenu \{(.*?)\n\}/s', $scss, $rule),
+            'Control: one rule for the three toggles.'
+        );
+        $this->assertStringContainsString('> .dropdown > .dropdown-toggle {', $rule[1]);
+        $this->assertStringContainsString('--bs-btn-active-border-color: transparent;', $rule[1], 'No square border.');
+        $this->assertMatchesRegularExpression(
+            '/&::before \{[^}]*border-radius: var\(--dim-ds-radius-md\);[^}]*content: "";/s',
+            $rule[1],
+            'The rounded pill.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/&\.show::before \{\s*background-color: var\(--dimensions-pill-hover, var\(--dim-ds-surface-subtle\)\);/',
+            $rule[1],
+            'Painted while the menu is open.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/&::before \{\s*outline: var\(--dim-ds-focus-ring-width\) solid var\(--dim-ds-focus-ring\);\s*outline-offset: 2px;/',
+            $rule[1],
+            'The keyboard\'s ring round the pill.'
+        );
+        $this->assertStringNotContainsString('!important', $rule[1]);
+    }
+
+    /**
+     * The user menu's "Log out" row is found by its address and carries core's logout glyph at its end.
+     *
+     * Core prints the row with no class of its own, so the address is the only hook. Its grounds sit on the row,
+     * both at rest and under the pointer, so the menu's brand pill never reaches it; the colours themselves are
+     * measured in navbar_menu_colour_test. The control is the selector itself.
+     *
+     * @return void
+     */
+    public function test_the_logout_row_is_a_red_pill_with_its_glyph(): void {
+        $scss = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        $this->assertNotFalse($scss, 'Precondition: the stylesheet is readable.');
+        $selector = '\.navbar \.usermenu \.dropdown-menu a\.dropdown-item\[href\*="\/login\/logout\.php"\]';
+        $this->assertSame(1, preg_match('/\n' . $selector . ' \{(.*?)\n\}/s', $scss, $rule), 'Control: one rule.');
+        $this->assertMatchesRegularExpression('/^\s*--bs-dropdown-link-hover-bg: #\{\$dimensions-menu-logout-hover\};/m', $rule[1]);
+        $this->assertMatchesRegularExpression('/^    background-color: \$dimensions-menu-logout;/m', $rule[1], 'Red at rest.');
+        $this->assertMatchesRegularExpression(
+            '/&:hover,\s*&:focus \{\s*background-color: \$dimensions-menu-logout-hover;/',
+            $rule[1],
+            'The brighter red under the pointer and the keyboard.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/&::after \{\s*font: var\(--fa-font-solid\);\s*content: fa-content\(\$fa-var-right-from-bracket\);\s*\}/',
+            $rule[1],
+            'Core\'s logout glyph.'
+        );
+        $this->assertStringContainsString('justify-content: space-between;', $rule[1], 'The glyph at the row\'s end.');
+        $this->assertStringNotContainsString('!important', $rule[1]);
+    }
+
+    /**
      * The primary drawer covers the navbar by stepping the navbar down, never by raising the drawer.
      *
      * Core sizes the drawers' shared backdrop from the first drawer's z-index once, so a raised primary drawer would
