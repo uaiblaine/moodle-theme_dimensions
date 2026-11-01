@@ -238,6 +238,31 @@ class behat_theme_dimensions extends behat_base {
     }
 
     /**
+     * Give a category its first crest: a PNG made by GD, stored as the category's branding form would.
+     *
+     * @Given /^the category "(?P<idnumber>(?:[^"]|\\")*)" has a crest$/
+     * @param string $idnumber The category idnumber.
+     * @return void
+     */
+    public function the_category_has_a_crest(string $idnumber): void {
+        global $DB;
+        $categoryid = (int) $DB->get_field('course_categories', 'id', ['idnumber' => $idnumber], MUST_EXIST);
+        $image = imagecreatetruecolor(80, 88);
+        imagefill($image, 0, 0, imagecolorallocate($image, 7, 0, 147));
+        ob_start();
+        imagepng($image);
+        imagedestroy($image);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \core\context\coursecat::instance($categoryid)->id,
+            'component' => 'theme_dimensions',
+            'filearea' => \theme_dimensions\local\category\branding::AREA_BADGES[0],
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'brasao.png',
+        ], (string) ob_get_clean());
+    }
+
+    /**
      * Tap a control with a touch pointer, in the order a browser really delivers one.
      *
      * Selenium drives a mouse, so no click step produces what a finger does. A touch pointer has
