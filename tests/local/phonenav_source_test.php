@@ -174,6 +174,8 @@ final class phonenav_source_test extends \basic_testcase {
         $this->assertStringContainsString("main.querySelectorAll(SELECTORS.ENTRY).forEach((entry) => {", $js);
 
         $this->assertStringContainsString('control.form.requestSubmit(control);', $js);
+        // Core's message drawer closes on the click that would open it, unless the opening waits for it to finish.
+        $this->assertStringContainsString('window.setTimeout(() => control.click());', $js);
         $this->assertStringContainsString("dropdown.addEventListener('show.bs.dropdown', () => {", $js);
         $this->assertStringContainsString("getString('navbarphone_unread', 'theme_dimensions', count)", $js);
     }

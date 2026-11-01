@@ -14,6 +14,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   opens, once per event. The open day is kept in the address (`day=`, only inside the month's grid), so a reload
   reopens the drawer. Answer addresses reach a link only when they are http(s) or relative. The links C2 drew stay
   as the fallback. PHPUnit, Jest, four Behat scenarios, 18 mutation gates.
+- **The user menu's Messages entry opens the messaging drawer on a phone again** (2026100556). The entry clicked the
+  hidden navbar toggle while its own click was still bubbling, and core_message's drawer, which closes on any
+  activation outside itself and its toggle, closed again on that same click. The entry now opens the drawer once its
+  click has finished.
+
 - **The calendar page** (2026100555), stage C2 of `docs/calendar/PROPOSAL.md`. A page of the theme's own
   (`/theme/dimensions/calendar.php`, answered by a route where the router is on) draws the month on the range
   service: events spanning several days as bars that continue into the next week, a day cell that adapts how much it
