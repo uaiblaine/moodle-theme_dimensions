@@ -15,7 +15,7 @@ design records behind it (the decisions D1-D39, the stage and round status block
 the blueprints this file cites) are that private record's and are **not part of this repository**,
 so this file and `mutations/gates.conf` are what a maintainer has here. It owns one table
 (`theme_dimensions_cat`, the branding of a category on the category showcase - institutional
-content whose one personal datum is the `usermodified` authorship stamp) and six user preferences;
+content whose one personal datum is the `usermodified` authorship stamp) and seven user preferences;
 the privacy provider is a request, userlist and user preference provider: the stamp is exported
 and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
@@ -1483,6 +1483,31 @@ trend is `tests/behat/theme_dimensions_perf.feature`, skipped unless the site se
 `$CFG->behat_theme_dimensions_perfprobe = true;` (or the runner `THEME_DIMENSIONS_PERFPROBE=1`), run with
 `mdl behat m503b @theme_dimensions_perf`; read the browser's counts from the cold series, and measure under
 `mdl fast <stack> on` for production-like numbers.
+
+## The calendar page (C2)
+
+The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service under it is C1's (`classes/local/calendar/`).
+
+- **One decision for both entries**: `local\calendar\page::handle()` (visitor to login, guest and non-Gregorian viewer to
+  core's calendar, then `require_login()`), called by the route `/theme_dimensions/calendar` and by `calendar.php`, which
+  303s to the route while the router is configured. The page embeds `range::answer()` for the month grid (whole weeks,
+  `page::grid()`), so the first paint asks for nothing.
+- **The state** (`local\calendar\state`, preference `theme_dimensions_calendar`) is one whole: an address naming any of
+  `state::STATE_PARAMS` wins, a bare one (the month alone included) reads the saved state. Every value is dropped, never
+  refused, outside its vocabulary; a category the range refuses is dropped by `page::scope_for()`. The keys travel as the
+  ones ON, with an empty `keys[]` member for none. Written by `theme_dimensions_remember_calendar_state` only.
+- **The client is `js/esm/src/calendar/`**: `Calendar.tsx` mounts on the node `calendar_page.mustache` draws and hides the
+  server's layer once drawn; `layout.ts` (slots, density, counts) is pure; `history.ts` is its one address writer
+  (`listing_source_test` names the two writers); `strings.ts` lists the strings, equal to `calendar_page::STRINGS`; the
+  item and day seams C3 replaces are `model.ts`'s `itemHref()` and `dayHref()`. The client reads instants in the VIEWER's
+  timezone through Intl (`days.ts` `zone()`), never the browser's; core's day and month views are linked by
+  `cal_d`/`cal_m`/`cal_y`, so the client computes no timestamp.
+- **Item elements carry `data-first`/`data-last`, never `data-from`**: `esm_source_test`'s import parser reads `from"` in the
+  minified build as a specifier.
+- Tests: `tests/local/calendar/{state,page,calendar_component_source}_test.php`, `tests/output/calendar_page_test.php`,
+  `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
+  `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,
+  Behat `theme_dimensions_calendar.feature`; gates in the "C2 calendar page" block of `mutations/gates.conf`.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

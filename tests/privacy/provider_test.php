@@ -33,6 +33,7 @@ use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\calendar\state as calendar_state;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\remembered;
 use theme_dimensions\local\flavourchoice;
@@ -65,19 +66,22 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * The metadata names the six preferences, the one table (its authorship stamp and when it was saved)
+     * The metadata names the seven preferences, the one table (its authorship stamp and when it was saved)
      * and the cohort subsystem, which keeps the look cohorts' memberships.
      *
      * @return void
      */
-    public function test_the_metadata_names_the_six_preferences_and_the_branding_stamp(): void {
+    public function test_the_metadata_names_the_seven_preferences_and_the_branding_stamp(): void {
         $collection = provider::get_metadata(new collection('theme_dimensions'));
 
         $items = $collection->get_collection();
-        $this->assertCount(8, $items);
-        $this->assertInstanceOf(subsystem_link::class, $items[7]);
-        $this->assertEquals('core_cohort', $items[7]->get_name());
-        $this->assertEquals('privacy:metadata:core_cohort', $items[7]->get_summary());
+        $this->assertCount(9, $items);
+        $this->assertInstanceOf(subsystem_link::class, $items[8]);
+        $this->assertEquals('core_cohort', $items[8]->get_name());
+        $this->assertEquals('privacy:metadata:core_cohort', $items[8]->get_summary());
+        $this->assertInstanceOf(user_preference::class, $items[7]);
+        $this->assertEquals(calendar_state::PREFERENCE, $items[7]->get_name());
+        $this->assertEquals('privacy:metadata:preference:calendar_state', $items[7]->get_summary());
         $this->assertInstanceOf(user_preference::class, $items[6]);
         $this->assertEquals(flavourchoice::PREFERENCE, $items[6]->get_name());
         $this->assertEquals('privacy:metadata:preference:flavour', $items[6]->get_summary());
@@ -185,6 +189,36 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         provider::export_user_preferences((int) $other->id);
         $preferences = writer::with_context(\context_system::instance())->get_user_preferences('theme_dimensions');
         $this->assertObjectNotHasProperty(remembered::PREFERENCE, $preferences, 'Nothing was ever left by this person.');
+    }
+
+    /**
+     * The calendar page's stored state is exported whole, by its own name; a person who never left one exports nothing.
+     *
+     * @return void
+     */
+    public function test_the_calendar_state_is_exported_when_there_is_one(): void {
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        (new calendar_state(['group'], 0, true, [], [], 'Natal'))->save();
+        $stored = get_user_preferences(calendar_state::PREFERENCE, null, $user);
+        $this->assertNotNull($stored, 'Precondition: the state is stored.');
+
+        provider::export_user_preferences((int) $user->id);
+        $preferences = writer::with_context(\context_system::instance())->get_user_preferences('theme_dimensions');
+        $this->assertSame($stored, $preferences->{calendar_state::PREFERENCE}->value);
+        $this->assertStringContainsString('Natal', $preferences->{calendar_state::PREFERENCE}->value);
+        $this->assertSame(
+            get_string('privacy:metadata:preference:calendar_state', 'theme_dimensions'),
+            $preferences->{calendar_state::PREFERENCE}->description
+        );
+
+        writer::reset();
+        $other = $this->getDataGenerator()->create_user();
+        provider::export_user_preferences((int) $other->id);
+        $preferences = writer::with_context(\context_system::instance())->get_user_preferences('theme_dimensions');
+        $this->assertObjectNotHasProperty(calendar_state::PREFERENCE, $preferences, 'Nothing was ever left by this person.');
     }
 
     /**

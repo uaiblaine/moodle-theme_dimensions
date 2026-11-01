@@ -308,6 +308,21 @@ class behat_theme_dimensions extends behat_base {
     }
 
     /**
+     * Put the keyboard focus on a day button of the calendar page's grid, where Tab lands on the selected day.
+     *
+     * Core has no step that focuses an element without pressing it, and pressing a day opens core's day view; the
+     * grid's keyboard is then driven with core's "I press the ... key".
+     *
+     * @Given /^I focus the calendar day "(?P<day>\d{4}-\d{2}-\d{2})"$/
+     * @param string $day The day, YYYY-MM-DD.
+     * @return void
+     */
+    public function i_focus_the_calendar_day(string $day): void {
+        $this->require_javascript();
+        $this->execute_script("document.querySelector('[data-role=\"day\"][data-day=\"{$day}\"]').focus();");
+    }
+
+    /**
      * Switch focus mode's master switch on, with the stylesheet that goes with it.
      *
      * The switch ships off, and while it is off lib.php compiles no focus mode stylesheet; the Behat

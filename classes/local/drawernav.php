@@ -117,6 +117,59 @@ final class drawernav {
         'auto' => 'fa-circle-half-stroke',
     ];
 
+    /** @var string The navigation key of the calendar: core's guest node, and the row the drawer adds for an account. */
+    public const CALENDAR = 'calendar';
+
+    /**
+     * The theme's calendar page, where the drawer's calendar row leads (docs/calendar/PROPOSAL.md, decision D1).
+     *
+     * Core's own calendar stays reachable from that page's toolbar ("Classic calendar").
+     *
+     * @return \core\url
+     */
+    public static function calendar_url(): \core\url {
+        return \theme_dimensions\local\calendar\page::url();
+    }
+
+    /**
+     * Browse with the calendar row: core adds its calendar node for the guest account alone, so an account's drawer
+     * gains one after core's own nodes (My courses, else Dashboard, else Home), unless a node already carries the key,
+     * Boost Union's "hide nodes in the primary navigation" setting names the calendar, or none of core's nodes is
+     * there to stand beside (a navigation the site emptied gets nothing added).
+     *
+     * @param array $browse The Browse rows, each with the node's key under 'key'.
+     * @param \moodle_page $page The page being rendered, whose theme carries Boost Union's removed nodes.
+     * @return array The rows.
+     */
+    private static function with_calendar(array $browse, \moodle_page $page): array {
+        $keys = array_column($browse, 'key');
+        if (in_array(self::CALENDAR, $keys, true)) {
+            return $browse;
+        }
+        if (in_array(self::CALENDAR, (array) ($page->theme->removedprimarynavitems ?? []), true)) {
+            return $browse;
+        }
+        $row = [
+            'text' => get_string('calendar', 'calendar'),
+            'url' => self::calendar_url()->out(),
+            'icon' => self::ICONS[self::CALENDAR],
+            'iscurrent' => (string) $page->pagetype === \theme_dimensions\local\calendar\page::PAGETYPE,
+            'haschildren' => false,
+            'panelid' => '',
+            'tooltip' => '',
+            'attributes' => [],
+            'key' => self::CALENDAR,
+        ];
+        foreach (['mycourses', 'myhome', 'home'] as $anchor) {
+            $after = array_search($anchor, $keys, true);
+            if ($after !== false) {
+                array_splice($browse, $after + 1, 0, [$row]);
+                return $browse;
+            }
+        }
+        return $browse;
+    }
+
     /**
      * Whether the feature is switched on.
      *
@@ -184,11 +237,19 @@ final class drawernav {
                 }
                 continue;
             }
+            if ((string) ($node['key'] ?? '') === self::CALENDAR) {
+                $node['url'] = self::calendar_url();
+            }
             $item = self::item($node, self::ROOT, $rootlabel, 0, $panels, $counter, true);
             if ($item !== null) {
-                $browse[] = $item;
+                $browse[] = $item + ['key' => (string) ($node['key'] ?? '')];
             }
         }
+        $browse = self::with_calendar($browse, $page);
+        $browse = array_map(static function (array $item): array {
+            unset($item['key']);
+            return $item;
+        }, $browse);
         if ($browse) {
             array_unshift($sections, ['id' => '', 'label' => get_string('drawer_browse', self::COMPONENT), 'items' => $browse]);
         }

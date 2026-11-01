@@ -1,0 +1,655 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// The theme's calendar page (docs/calendar/PROPOSAL.md, stage C2). Every rule is scoped under the body class
+// local\calendar\page adds (body.dim-calendar): the file is concatenated into the theme's main SCSS and reaches
+// every page otherwise; tests/local/calendar_scss_test.php asserts the scope.
+//
+// The key colours are tokens, three per key (tint: the fill, edge: the border and the dot, ink: the text on the
+// tint), declared once below from the design system's primitives and once for the dark colour mode with core's
+// dark-readable(); calendar_scss_test compiles both blocks and measures every pair (ink on tint at 4.5:1, edge on
+// the card surface at 3:1). An item reads its colours through three local properties (--dim-cal-tint, -edge,
+// -ink) that its key class points at the key's tokens, and that the client sets to a category's branding pair
+// when the reader colours by category: the pair travels whole, ink with its ground.
+
+body.dim-calendar {
+    --dim-cal-site-tint: #{$dim-ds-gray-100};
+    --dim-cal-site-edge: #{$dim-ds-gray-600};
+    --dim-cal-site-ink: #{$dim-ds-gray-800};
+    --dim-cal-category-tint: #{$dim-ds-cyan-100};
+    --dim-cal-category-edge: #{$dim-ds-cyan-800};
+    --dim-cal-category-ink: #{$dim-ds-cyan-800};
+    --dim-cal-course-tint: #{$dim-ds-blue-050};
+    --dim-cal-course-edge: #{$dim-ds-blue-500};
+    --dim-cal-course-ink: #{$dim-ds-blue-700};
+    --dim-cal-group-tint: #{$dim-ds-green-050};
+    --dim-cal-group-edge: #{$dim-ds-green-700};
+    --dim-cal-group-ink: #{$dim-ds-green-800};
+    --dim-cal-user-tint: #{$dim-ds-yellow-100};
+    --dim-cal-user-edge: #{$dim-ds-yellow-800};
+    --dim-cal-user-ink: #{$dim-ds-yellow-800};
+    --dim-cal-activity-tint: #{$dim-ds-blue-100};
+    --dim-cal-activity-edge: #{$dim-ds-blue-400};
+    --dim-cal-activity-ink: #{$dim-ds-blue-800};
+    --dim-cal-other-tint: #{$dim-ds-white};
+    --dim-cal-other-edge: #{$dim-ds-gray-600};
+    --dim-cal-other-ink: #{$dim-ds-gray-800};
+    --dim-cal-open-tint: #{$dim-ds-white};
+    --dim-cal-open-edge: #{$dim-ds-blue-500};
+    --dim-cal-open-ink: #{$dim-ds-blue-700};
+    --dim-cal-overdue-tint: #{$dim-ds-red-100};
+    --dim-cal-overdue-edge: #{$dim-ds-red-500};
+    --dim-cal-overdue-ink: #{$dim-ds-red-800};
+    --dim-cal-surface: #{$dim-ds-white};
+    --dim-cal-surface-quiet: #{$dim-ds-gray-050};
+}
+
+// The dark half: a key's fill is its edge mixed into core's raised dark surface, its ink a light primitive lifted
+// until it reads on that fill, its edge lifted until it reads as a mark on the raised surface.
+:root[data-bs-theme="dark"] body.dim-calendar {
+    --dim-cal-site-tint: #{mix($dim-ds-gray-600, $dark-surface-raised, 30%)};
+    --dim-cal-site-edge: #{dark-readable($dim-ds-gray-600, $dark-surface-raised, 3)};
+    --dim-cal-site-ink: #{dark-readable($dim-ds-gray-100, mix($dim-ds-gray-600, $dark-surface-raised, 30%))};
+    --dim-cal-category-tint: #{mix($dim-ds-cyan-800, $dark-surface-raised, 45%)};
+    --dim-cal-category-edge: #{dark-readable($dim-ds-cyan-800, $dark-surface-raised, 3)};
+    --dim-cal-category-ink: #{dark-readable($dim-ds-cyan-100, mix($dim-ds-cyan-800, $dark-surface-raised, 45%))};
+    --dim-cal-course-tint: #{mix($dim-ds-blue-500, $dark-surface-raised, 30%)};
+    --dim-cal-course-edge: #{dark-readable($dim-ds-blue-500, $dark-surface-raised, 3)};
+    --dim-cal-course-ink: #{dark-readable($dim-ds-blue-050, mix($dim-ds-blue-500, $dark-surface-raised, 30%))};
+    --dim-cal-group-tint: #{mix($dim-ds-green-700, $dark-surface-raised, 35%)};
+    --dim-cal-group-edge: #{dark-readable($dim-ds-green-700, $dark-surface-raised, 3)};
+    --dim-cal-group-ink: #{dark-readable($dim-ds-green-050, mix($dim-ds-green-700, $dark-surface-raised, 35%))};
+    --dim-cal-user-tint: #{mix($dim-ds-yellow-800, $dark-surface-raised, 45%)};
+    --dim-cal-user-edge: #{dark-readable($dim-ds-yellow-800, $dark-surface-raised, 3)};
+    --dim-cal-user-ink: #{dark-readable($dim-ds-yellow-100, mix($dim-ds-yellow-800, $dark-surface-raised, 45%))};
+    --dim-cal-activity-tint: #{mix($dim-ds-blue-400, $dark-surface-raised, 30%)};
+    --dim-cal-activity-edge: #{dark-readable($dim-ds-blue-400, $dark-surface-raised, 3)};
+    --dim-cal-activity-ink: #{dark-readable($dim-ds-blue-100, mix($dim-ds-blue-400, $dark-surface-raised, 30%))};
+    --dim-cal-other-tint: #{$dark-surface-raised};
+    --dim-cal-other-edge: #{dark-readable($dim-ds-gray-600, $dark-surface-raised, 3)};
+    --dim-cal-other-ink: #{dark-readable($dim-ds-gray-100, $dark-surface-raised)};
+    --dim-cal-open-tint: #{$dark-surface-raised};
+    --dim-cal-open-edge: #{dark-readable($dim-ds-blue-500, $dark-surface-raised, 3)};
+    --dim-cal-open-ink: #{dark-readable($dim-ds-blue-050, $dark-surface-raised)};
+    --dim-cal-overdue-tint: #{mix($dim-ds-red-500, $dark-surface-raised, 30%)};
+    --dim-cal-overdue-edge: #{dark-readable($dim-ds-red-500, $dark-surface-raised, 3)};
+    --dim-cal-overdue-ink: #{dark-readable($dim-ds-red-100, mix($dim-ds-red-500, $dark-surface-raised, 30%))};
+    --dim-cal-surface: #{$dark-surface-raised};
+    --dim-cal-surface-quiet: #{$dark-surface-page};
+}
+
+body.dim-calendar {
+    // Each key class points the item's three local colours at its key's tokens.
+    @each $key in site, category, course, group, user, activity, other, open, overdue {
+        .dim-cal-key--#{$key} {
+            --dim-cal-tint: var(--dim-cal-#{$key}-tint);
+            --dim-cal-edge: var(--dim-cal-#{$key}-edge);
+            --dim-cal-ink: var(--dim-cal-#{$key}-ink);
+        }
+    }
+
+    .dim-cal {
+        color: var(--dim-ds-text-body, var(--bs-body-color));
+    }
+
+    .dim-cal :focus-visible {
+        outline: var(--dim-ds-focus-ring-width, 3px) solid var(--dim-ds-focus-ring, var(--bs-primary));
+        outline-offset: 2px;
+    }
+
+    // The server's layer: the toolbar, the form and the agenda, whole without JavaScript.
+    .dim-cal__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .75rem;
+        align-items: center;
+        margin-bottom: .75rem;
+    }
+
+    .dim-cal__title {
+        margin: 0 .75rem 0 0;
+        color: var(--dim-ds-text-heading, var(--bs-primary));
+        font-size: 1.625rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__caption {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 500;
+    }
+
+    .dim-cal__spacer {
+        flex: 1 1 auto;
+    }
+
+    .dim-cal__step {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+    }
+
+    .dim-cal__views {
+        display: inline-flex;
+        overflow: hidden;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__view {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.125rem;
+        padding: 0 .875rem;
+        border: 0;
+        background: transparent;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+    }
+
+    .dim-cal__view--active,
+    .dim-cal__view[aria-pressed="true"] {
+        background: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+        color: var(--dim-ds-text-on-tint, var(--bs-primary-text-emphasis));
+        font-weight: 600;
+    }
+
+    .dim-cal__form,
+    .dim-cal__chips,
+    .dim-cal__filters,
+    .dim-cal__chiprow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+        align-items: center;
+        margin-bottom: .75rem;
+    }
+
+    .dim-cal__chips {
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .dim-cal__chip {
+        display: inline-flex;
+        gap: .5rem;
+        align-items: center;
+        min-height: 2rem;
+        padding: 0 .75rem 0 .625rem;
+        border: 1px solid var(--dim-cal-edge);
+        border-radius: var(--dim-ds-radius-pill, 50rem);
+        background: var(--dim-cal-tint);
+        color: var(--dim-cal-ink);
+        font-size: .8125rem;
+        font-weight: 500;
+    }
+
+    .dim-cal__chip.dim-cal-key--open {
+        border-style: dashed;
+    }
+
+    .dim-cal__chip[aria-pressed="false"] {
+        border-color: var(--dim-ds-border-default, var(--bs-border-color));
+        background: var(--dim-cal-surface);
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        text-decoration: line-through;
+    }
+
+    .dim-cal__swatch {
+        width: .625rem;
+        height: .625rem;
+        border-radius: 50%;
+        background: var(--dim-cal-edge);
+    }
+
+    .dim-cal__chip[aria-pressed="false"] .dim-cal__swatch {
+        background: var(--dim-ds-border-strong, var(--bs-border-color));
+    }
+
+    .dim-cal__chipcount {
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__field {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .8125rem;
+    }
+
+    .dim-cal__check {
+        display: flex;
+        gap: .5rem;
+        align-items: center;
+        font-size: .875rem;
+    }
+
+    .dim-cal__badge {
+        margin-left: .375rem;
+        padding: 1px .4375rem;
+        border-radius: var(--dim-ds-radius-pill, 50rem);
+        background: var(--dim-ds-interactive-primary, var(--bs-primary));
+        color: var(--dim-ds-text-inverse, var(--bs-white));
+        font-size: .6875rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__more {
+        position: relative;
+    }
+
+    .dim-cal__more > summary {
+        list-style: none;
+    }
+
+    .dim-cal__panel,
+    .dim-cal__popover {
+        display: flex;
+        flex-direction: column;
+        gap: .875rem;
+        min-width: 18rem;
+        padding: 1rem;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-surface);
+        box-shadow: var(--dim-ds-shadow-md, none);
+        color: var(--dim-ds-text-body, var(--bs-body-color));
+    }
+
+    .dim-cal__panel fieldset,
+    .dim-cal__popover fieldset {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .25rem 1rem;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .dim-cal__panel legend,
+    .dim-cal__popover legend {
+        width: 100%;
+        margin-bottom: .25rem;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .8125rem;
+    }
+
+    .dim-cal__agenda {
+        padding: 1rem;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__agendatitle {
+        font-size: 1.25rem;
+    }
+
+    .dim-cal__agendaday {
+        margin-top: 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__agendalist {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-cal__agendaitem {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+        align-items: baseline;
+        padding: .25rem 0 .25rem .5rem;
+        border-inline-start: 3px solid var(--dim-cal-edge);
+    }
+
+    .dim-cal__agendawhen {
+        min-width: 5rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__agendakey {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .8125rem;
+    }
+
+    // The client's layer.
+    .dim-cal__picker {
+        position: relative;
+    }
+
+    .dim-cal__popover {
+        position: absolute;
+        top: calc(100% + .25rem);
+        right: 0;
+        z-index: 20;
+    }
+
+    .dim-cal__pickerbtn {
+        display: inline-flex;
+        gap: .375rem;
+        align-items: center;
+    }
+
+    .dim-cal__pickernote {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-weight: 400;
+    }
+
+    .dim-cal__tree {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        max-height: 20rem;
+        margin: 0;
+        padding: 0;
+        overflow-y: auto;
+        list-style: none;
+    }
+
+    .dim-cal__treerow {
+        display: flex;
+        gap: .5rem;
+        align-items: center;
+        min-height: 2rem;
+        padding: 0 .5rem;
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        cursor: pointer;
+    }
+
+    .dim-cal__treerow[aria-selected="true"] {
+        background: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+        color: var(--dim-ds-text-on-tint, var(--bs-primary-text-emphasis));
+        font-weight: 600;
+    }
+
+    .dim-cal__treetoggle {
+        display: inline-flex;
+        width: 1rem;
+        justify-content: center;
+    }
+
+    .dim-cal__treeswatch {
+        width: .625rem;
+        height: .625rem;
+        border: 1px solid var(--dim-cal-ink, transparent);
+        border-radius: 3px;
+        background: var(--dim-cal-tint, transparent);
+    }
+
+    .dim-cal__treecount {
+        margin-left: auto;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .75rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // The grid: a header row and one row per week, every row a grid of seven columns.
+    .dim-cal__grid {
+        overflow: hidden;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__weekdays,
+    .dim-cal__week {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .dim-cal__weekday {
+        display: flex;
+        align-items: center;
+        height: 1.875rem;
+        padding: 0 .625rem;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .75rem;
+        font-weight: 600;
+        letter-spacing: .02em;
+    }
+
+    // The rows' height is the density's input, measured by one ResizeObserver on this element (never per cell).
+    .dim-cal__weeks {
+        display: grid;
+        grid-auto-rows: minmax(9.25rem, 1fr);
+    }
+
+    .dim-cal__week {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        border-top: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+    }
+
+    // A day's cell lends its children to the week's grid, so a bar can span several days' columns.
+    .dim-cal__day {
+        display: contents;
+    }
+
+    .dim-cal__ground {
+        border-inline-start: 1px solid var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__ground--weekend,
+    .dim-cal__ground--other {
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    .dim-cal__ground--selected {
+        background: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+    }
+
+    .dim-cal__daynum {
+        z-index: 1;
+        align-self: start;
+        justify-self: start;
+        width: 1.625rem;
+        height: 1.625rem;
+        margin: .25rem 0 0 .375rem;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--dim-ds-text-body, var(--bs-body-color));
+        font-size: .8125rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__daynum:hover {
+        background: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+    }
+
+    .dim-cal__daynum--other {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-weight: 500;
+    }
+
+    .dim-cal__daynum--today,
+    .dim-cal__daynum--today:hover {
+        background: var(--dim-ds-interactive-primary, var(--bs-primary));
+        color: var(--dim-ds-text-inverse, var(--bs-white));
+    }
+
+    .dim-cal__bar {
+        z-index: 1;
+        display: flex;
+        gap: .25rem;
+        align-items: center;
+        align-self: center;
+        min-width: 0;
+        height: 1.25rem;
+        margin: 0 .25rem;
+        padding: 0 .5rem;
+        overflow: hidden;
+        border: 1px solid var(--dim-cal-edge);
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        background: var(--dim-cal-tint);
+        color: var(--dim-cal-ink);
+        font-size: .75rem;
+        font-weight: 500;
+        text-decoration: none;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dim-cal__bar.dim-cal-key--open {
+        border-style: dashed;
+    }
+
+    .dim-cal__bar--clipstart {
+        margin-inline-start: 0;
+        border-start-start-radius: 0;
+        border-end-start-radius: 0;
+    }
+
+    .dim-cal__bar--clipend {
+        margin-inline-end: 0;
+        border-start-end-radius: 0;
+        border-end-end-radius: 0;
+    }
+
+    .dim-cal__content {
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        padding: .25rem .375rem 0;
+        overflow: hidden;
+    }
+
+    .dim-cal__card {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        padding: .375rem .5rem;
+        border: 1px solid var(--dim-cal-edge);
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: var(--dim-cal-tint);
+        color: var(--dim-cal-ink);
+        font-size: .75rem;
+        text-decoration: none;
+    }
+
+    .dim-cal__cardtitle {
+        display: -webkit-box;
+        overflow: hidden;
+        font-size: .8125rem;
+        font-weight: 600;
+        line-height: 1.25;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .dim-cal__cardmeta {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dim-cal__line {
+        display: flex;
+        gap: .375rem;
+        align-items: center;
+        min-width: 0;
+        height: 1.25rem;
+        padding: 0 .25rem;
+        border-radius: var(--dim-ds-radius-xs, 4px);
+        color: var(--dim-ds-text-body, var(--bs-body-color));
+        font-size: .75rem;
+        text-decoration: none;
+    }
+
+    .dim-cal__line:hover {
+        background: var(--dim-ds-surface-subtle, var(--bs-tertiary-bg));
+    }
+
+    .dim-cal__line--overdue {
+        color: var(--dim-cal-overdue-ink);
+    }
+
+    .dim-cal__dot {
+        flex: none;
+        width: .4375rem;
+        height: .4375rem;
+        border-radius: 50%;
+        background: var(--dim-cal-edge);
+    }
+
+    .dim-cal__time {
+        flex: none;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dim-cal__overflow {
+        display: flex;
+        gap: .375rem;
+        align-items: center;
+        height: 1.25rem;
+        padding: 0 .25rem;
+        border: 0;
+        border-radius: var(--dim-ds-radius-xs, 4px);
+        background: transparent;
+        color: var(--dim-ds-text-link, var(--bs-link-color));
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__moredots {
+        display: flex;
+        gap: 3px;
+    }
+
+    .dim-cal__moredots > span {
+        width: .375rem;
+        height: .375rem;
+        border-radius: 50%;
+        background: var(--dim-cal-edge);
+    }
+
+    .dim-cal__status {
+        margin: .5rem 0 0;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .8125rem;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .dim-cal__chip,
+        .dim-cal__daynum,
+        .dim-cal__line {
+            transition: background-color var(--dim-ds-motion-fast, 150ms) var(--dim-ds-motion-ease, ease);
+        }
+    }
+}

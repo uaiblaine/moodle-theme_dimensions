@@ -312,6 +312,72 @@ Tests:
 - the two templates are replaced, core's page is not, and the setting off restores core's output;
 - the mount's answer never names what the range would drop.
 
+### 5.8 A public calendar of public categories (owner, 2026-11-01: feasibility)
+
+The owner asked whether a visitor who is not logged in can open a calendar that shows only the events of public
+course categories, either as the main page in a visitor mode or as a page of its own.
+
+**Feasible, and best as the same page in a visitor mode**, the showcase's two-shell pattern (`visitor.ts` /
+`account.ts` over one store). The facts:
+
+- **Who is public is already decided, and fail-closed.** local_unlistedcourses'
+  `category_discoverability::public_ids()` gives the categories whose own row says public, and `are_public($ids)`
+  gives the effective answer: every ancestor visible, none unlisted. That takes four statements whatever the
+  number of categories. The theme's anonymous category route already rests on it through
+  `publicaccess::is_public()`.
+- **C1's sources cannot serve a visitor as they are,** and must not be bent to:
+  - `scope` is built from the viewer's courses and groups;
+  - `core_events` keeps core's closure, whose `is_uservisible()` ends in `has_capability()`, which refuses user id
+    0 under `forcelogin` (`accesslib.php`, as the landing page section of the theme's CLAUDE.md records).
+
+  A visitor source of its own is short and has no viewer in it.
+- **The visitor source reads one statement.** `{event}` rows with `eventtype = 'category'`, `courseid = 0`,
+  `groupid = 0`, `visible = 1`, the category among the effective public ids, and the start inside the window or
+  the span overlapping it. It rides core's `groupid-courseid-categoryid-visible-userid` index. Names and locations
+  are formatted in the category's context with the filters off. The creator (`userid`) is never answered.
+- **Optional second layer: public event courses.** Event courses (`dimensions_model = 2`) that
+  `discoverability::are_public()` serves anonymously, with the public landing page as their action ("Inscrever-se"
+  leads there; the landing page decides the rest). This is the visitor's version of the "open events" layer, and
+  an owner decision (V1).
+- **The service is the showcase visitor's twin.** `theme_dimensions_get_public_calendar_range` keeps the
+  `loginrequired => false` path through `service-nologin.php` and the order of `get_public_category_rows`' eleven
+  steps:
+  - it refuses a logged-in session (the guest included), which gets the normal page;
+  - it refuses a `cachekey`;
+  - it refuses a second call in one request;
+  - it forces the language it is sent and gives it back;
+  - it never calls `validate_context()` and never reads `$USER`.
+- **The switch is opt-in and sits beside the gate.** A setting "Public calendar" is off unless a stored `'1'`, read
+  beside `publicaccess`, never inside it, as `categorypublicclient` is. The page is `noindex` unless the site is
+  open to search engines.
+- **The page:**
+  - The same route answers a visitor when the switch is on, never through `require_login`; the landing route's
+    shape decides that the visitor is refused before any lookup when the switch is off.
+  - The grid, chips and density are the same components, with the key set reduced to "Categoria" and, if V1, the
+    open events.
+  - No saved state, no "Novo evento", no drawer action that needs a session.
+  - The visitor's import walk (`categorypublic_source_test`) extends to the calendar's entry, so no session module
+    is reachable.
+- **Limits a renderer or a page cannot lift:**
+  - **Description images.** An event description with an image is served by core's `calendar` file area, which
+    calls `require_login()` under `forcelogin` (`filelib.php`, `event_description`). The visitor's popover shows
+    the description as text only, or its images go through the theme's own public file route, as the landing page
+    does. That is V2.
+  - **No caching across requests** (the theme's D39 / OD-5): no cache of the public calendar without the owner's
+    sign-off in both repositories.
+  - **Other events stay hidden.** Site events, course events, group and user events are never shown to a visitor:
+    core has no notion of a public course event, and the owner asked for categories.
+- **A page of its own** would duplicate the grid, the keyboard contract and the density rules for a smaller key set.
+  It only pays off if the public calendar should look different (an embeddable agenda for an institutional site,
+  for instance). In that case it is a thin template over the same visitor service, not a second calendar.
+
+Decisions (owner, 2026-11-01: every recommendation taken):
+- **V1:** should public event courses show beside the category events? **Decided:** yes, with "Inscrever-se"
+  leading to the public landing page.
+- **V2:** should description images show (through the theme's file route) or should the text show alone?
+  **Decided:** the text alone first.
+- **V3:** should the setting default to off? **Decided:** off.
+
 ## 6. Risks and how they are held
 
 - **Visibility parity.** The new page must never show an event core would hide, nor hide one core would show.
@@ -336,6 +402,7 @@ Tests:
 | C2 | Page route, toolbar, month grid with spanning bars and adaptive density, key chips, category tree, preference persistence. | Behat smoke; a11y spec met. |
 | C3 | Day drawer (desktop) and agenda sheet (phone), event popover, overlaps. | Behat smoke on desktop and phone widths. |
 | C3b | Core's calendar blocks (section 5.7): `theme_dimensions\output\core_calendar_renderer` replaces the content of `block_calendar_month` and `block_calendar_upcoming` with the theme's mini month and short agenda on the range service, behind a default-on setting; a README section on what a renderer cannot reach (app, export, core's page before D1) with the recommendation to switch those off where the rules matter. | Factory and replacement tests, setting off = core's output byte for byte; Behat smoke of both blocks. |
+| CV | Public calendar (section 5.8): the visitor source over public categories (plus public event courses, V1), `theme_dimensions_get_public_calendar_range` on the nologin path with the showcase visitor's step order, the opt-in setting, the same page in a visitor mode with the reduced key set, the visitor import walk extended. After C3, which brings the popover. | The anonymous refusal order pinned like `pws_*`; a non-public, unlisted or hidden category's event never answered, each with its control; the visitor walk green; Behat as a visitor. |
 | C4 | Week time grid. | |
 | C5 | Create and edit through core's modal, drag to move, iCal link. | |
 | C6 | Trails source, when that format exists. | |
@@ -523,3 +590,159 @@ Measured with the C0 probe's data shape (`range_budget_test`), against section 9
 
 MDL Shield: the owner decided (2026-11-01) on one full review at the end of the series, once the theme's calendar
 is mature, instead of one per stage. Each stage keeps its own security read (the `security-diff-read` questions).
+
+## 11. C2 plan (2026-11-01)
+
+C2 puts the page in front of the C1 service: the route, the server-drawn shell, the month grid with spanning bars and
+adaptive density, the key chips, the category tree, the "Mais filtros" panel and the saved state. The day drawer and
+the popover are C3; until then a day opens core's day view and an event opens its own page.
+
+### 11.1 Server
+
+- **Route and script.** `classes/route/controller/calendar.php` serves `/r.php/theme_dimensions/calendar`, the
+  category showcase's shape (`#[route]`, `require_login`, the guest sent to core's calendar). The script entry is
+  `calendar.php`: it answers 303 to the route while the router is configured and serves the page itself otherwise,
+  as `landing.php` does.
+  - Query: `month=YYYY-MM` (default this month, viewer's timezone), plus the narrowing and the filters as the
+    service spells them. A missing or out-of-vocabulary value is dropped, never refused, as the showcase does.
+  - A viewer whose calendar type is not Gregorian is redirected to core's `calendar/view.php` (C1 refuses it).
+- **The page draws its first answer.** `output\calendar_page` (a renderable) and `calendar_page.mustache` draw
+  four parts:
+  - the toolbar: the title, "Hoje", previous and next as real links, the month caption, the view switch with Month
+    alone active;
+  - the chips as a GET form;
+  - the category picker and the "Mais filtros" panel;
+  - the mount node.
+
+  The page embeds the range answer for the six-week grid as the component's props, so the first paint costs no
+  request. The props also carry the category tree the picker offers: the viewer's calendar categories and their
+  ancestors, names and branding pairs, only what `category_access` and core let them see.
+- **No JavaScript.** The template draws the month's items as a plain agenda grouped by day, under a notice linking
+  core's calendar. The client replaces it on mount.
+- **The saved state** is one user preference, `theme_dimensions_calendar`: the keys that are off, the category, the
+  subtree flag, model, modality, city and "only things to do".
+  - It is written by a new service, `theme_dimensions_remember_calendar_state` (write, ajax), which re-validates
+    the vocabulary as `remembered::record()` does for the showcase.
+  - It is read on every page load; an address that names anything wins over it, as on the showcase.
+  - It is declared, exported and deleted in the privacy provider, the seventh preference.
+- **Navigation (D1).** The theme's drawer entry for the calendar (`classes/local/drawernav.php`) points to the new
+  page; core's page stays reachable from it ("Calendário clássico") until C3's redirect decision.
+
+### 11.2 Client (`js/esm/src/calendar/`)
+
+- `core/` reuses `daterange/calendar.ts`'s timezone-free date maths (`weeks()`, `weekdays()`, `say()`). It is
+  imported, never copied; whether the file moves is the implementer's call, as long as `daterange` and its source
+  tests stay green.
+- `layout.ts`, pure and Jest-tested, holds three things:
+  - **The bar slots** (section 4): clip per week row; sort by start, then longer first, then title; take the
+    lowest free slot; the hidden slots become "+N" per day.
+  - **The density level per cell**: card for one item, lines, summary. It comes from the row height, measured by
+    one `ResizeObserver` per grid, never per cell, with no layout read on the mount path (the filter-line lesson).
+  - **The day counts** for the aria labels.
+- **Components:**
+  - `Calendar.tsx` (state, fetch, history);
+  - `MonthGrid.tsx`, `WeekRow.tsx`, `DayCell.tsx`, `Bar.tsx`;
+  - `KeyChips.tsx`, `CategoryPicker.tsx` (a tree with search and "include subcategories"), `MoreFilters.tsx`.
+
+  Mounted the showcase's way (`mounts.ts` pattern, core's `react_autoinit`); AMD only through `amd.ts`. The service
+  is called with `core/ajax`.
+- **Behaviour:**
+  - The latest request wins: a ticket checked after every await, and a Pending token from the request to the
+    painted grid.
+  - Month navigation writes the address (`history.pushState`, one writer).
+  - A change of keys or filters is remembered after a quiet, never on every press.
+- **The look:**
+  - The mockup's (C0 canvas), on the theme's tokens.
+  - The key colours are tokens `--dim-cal-<key>-{tint,edge,ink}` declared on `body.dim-calendar` with dark
+    counterparts. A contrast test computes every pair: ink on tint at least 4.5:1, edge on the card surface at
+    least 3:1.
+  - "Colour by category" uses the branding pair as it travels, ink with its ground.
+  - Nothing in the sheet is `:has()` keyed on a shared attribute. No BS5-only class needs a polyfill (5.3 only).
+
+### 11.3 Keyboard and screen reader (the spec, before code)
+
+- The grid is `role="grid"` with a `columnheader` row. Each day is a `gridcell` holding one day button, with a
+  roving tabindex: one stop in the Tab order, on the selected day, today by default.
+- **Keys:**
+  - arrows move by day or by week;
+  - Home and End go to the week's first and last day;
+  - PageUp and PageDown go to the previous and next month (fetched; the focus lands on the same day number or the
+    month's last);
+  - Enter opens the day: core's day view in C2, the drawer in C3;
+  - F2 or Enter on a day that has items moves into them; Tab cycles them; Escape goes back to the day.
+- **Labels:**
+  - The day button's label is the long date, the item count, and "hoje" or "feriado" when they apply.
+  - A bar is a button whose label carries its title and its whole span ("10 a 12 de novembro").
+  - "+N mais" names the day it opens.
+- **Announcements:** the month caption is `aria-live="polite"`; a chip is a toggle button with `aria-pressed`; the
+  category tree is `role="tree"` with `aria-expanded` and `aria-selected`.
+- **Motion:** none beyond the theme's motion tokens, and none under `prefers-reduced-motion`.
+
+### 11.4 Tests and gates
+
+- **PHPUnit:**
+  - the route and the script, including the guest, a non-Gregorian viewer and the dropped vocabulary;
+  - the renderable's context, with the embedded answer equal to `range::answer()`;
+  - the preference service: the vocabulary, a stale category, and that it writes nothing else;
+  - the privacy export and deletion of the new preference;
+  - the drawer link;
+  - the contrast pairs;
+  - an import-graph test that the component reaches AMD only through the bridge.
+- **Jest:** `layout.ts` (slots, wrap across weeks, clipping marks, "+N", density per row height) and the
+  components' keyboard contract.
+- **Behat** (`@theme_dimensions_calendar`), on a student with a 10-day event and a key of each kind:
+  - the event appears once as a bar;
+  - a chip hides its key;
+  - the category narrows;
+  - the state survives a reload;
+  - the month moves with the keyboard;
+  - the no-JavaScript agenda lists the month.
+- **Gates** for every guard, swept on both database families before the commit.
+
+## 12. C2 results (2026-11-01)
+
+Branch `calendar-c2`, built from section 11.
+
+**Server:**
+- `calendar.php` and `classes/route/controller/calendar.php`;
+- `classes/local/calendar/{page,state,tree}.php` (the one decision, the saved state's vocabulary, the category
+  tree);
+- `classes/output/calendar_page.php` with `templates/calendar_page.mustache`;
+- `classes/external/remember_calendar_state.php`;
+- `scss/calendar.scss`;
+- the seventh preference in the privacy provider and the uninstall;
+- the drawer's calendar row in `classes/local/drawernav.php`.
+
+**Client:** `js/esm/src/calendar/` (18 sources).
+
+**Choices the plan left open:**
+- **The view switch** draws Month only, as a current marker: a disabled Week or Day cannot take the focus, so its
+  "coming soon" would be unreachable.
+- **Keys.** Enter opens the day; F2 moves into its items.
+- **Day links** use core's `cal_d`/`cal_m`/`cal_y`, so neither side computes a timestamp.
+- **Timezone.** Items are placed in the viewer's timezone through `Intl`, never the browser's.
+- **Bars.** An item is a bar when it spans more than one day or is an event course.
+- **The saved state** also holds the colouring choice; a stale category is stored as none.
+- **"Mais filtros"** applies each change at once and remembers after an 800 ms quiet.
+- **The calendar has its own single history writer**, `calendar/history.ts`.
+- **The colour tokens** are `--dim-cal-*`, the theme's component prefix. A first version used `--dimensions-*`,
+  which only `post.scss` may declare, and `family_tokens_test` caught it.
+
+**Security read:**
+- no blocking finding;
+- three test gaps closed: the uninstall of the preference, the script entry's forward without a lookup, and the
+  service's login and context gates.
+
+**Gates:**
+- **Mutation sweep:** the C2 block's 27 gates went red on pgsql and mariadb
+  (`mdl mutate --fast --branch MOODLE_503_STABLE --only <C2 gates>`, exit 0 on both).
+- **Local matrix:** `mdl ci moodle-theme_dimensions --matrix --behat --keep-logs` passed 4/4 legs. Every leg ran
+  PHPUnit 1,817 tests (16 skipped) and Behat 179 scenarios (175 passed, 4 skipped: the perf probe). The six new
+  calendar scenarios are among the passed.
+
+**Not verified:** the page by eye. Claude does not type a password into a login page, so the look rests on Behat
+and on the owner's review. Until a stack runs the bumped version, the live page's remember call has no registered
+service.
+
+**Deferred to C3:** the drawer, the popover, the phone's dots and agenda sheet, the overlaps, and "feriado" in the
+day label (no holiday source yet).

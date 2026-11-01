@@ -44,6 +44,7 @@ function xmldb_theme_dimensions_uninstall() {
         \theme_dimensions\output\category_hero::PREFERENCE_FOLDED,
         \theme_dimensions\output\course_notice::PREFERENCE_COLLAPSED,
         \theme_dimensions\local\flavourchoice::PREFERENCE,
+        \theme_dimensions\local\calendar\state::PREFERENCE,
     ];
     foreach ($preferences as $name) {
         $DB->delete_records('user_preferences', ['name' => $name]);

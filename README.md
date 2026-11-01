@@ -380,10 +380,11 @@ fallback hero image a file in the system context; core deletes them with the cat
 or with the theme. The branding is cached per category (cache `categorybranding`), with
 nothing a viewer's rights decide in it.
 
-The theme also stores six user preferences: the focus mode reading width, the category view
+The theme also stores seven user preferences: the focus mode reading width, the category view
 (cards or list), how a person left each of their most recent category pages (organisation, view
 and filters, at most twenty categories), whether they folded a category page's header, whether
-they folded the course notice, and the Boost Union flavour they chose as their look
+they folded the course notice, the event keys, category and filters they left the theme's calendar
+page in (`theme_dimensions_calendar`, at `/theme/dimensions/calendar.php`), and the Boost Union flavour they chose as their look
 (`theme_dimensions_flavour`), chosen in the user menu's *Look* submenu, the mobile drawer or the page
 `/theme/dimensions/flavour.php`, which the *Look* link of the preferences page opens. Uninstalling the theme deletes them. Which flavour a session last
 applied as that look is kept in the session only (cache `flavourchoice`).
@@ -416,7 +417,7 @@ course custom field categories (*Course landing page* and *Focus mode*), whose v
 course editors type about their courses. Focus mode keeps its state in the session only.
 
 All personal data is covered by the Privacy API (the look cohorts' memberships through core's cohort
-subsystem, which the theme's metadata links): a data request exports the six preferences and,
+subsystem, which the theme's metadata links): a data request exports the seven preferences and,
 in each category whose branding the person last saved, that they saved it and when; a deletion
 request clears that stamp (`usermodified` becomes 0) and keeps the branding, which is the
 category's institutional content.

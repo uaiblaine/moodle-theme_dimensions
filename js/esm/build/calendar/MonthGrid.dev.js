@@ -1,0 +1,190 @@
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+import { jsxDEV } from "react/jsx-dev-runtime";
+/**
+ * The month grid and its keyboard (docs/calendar/PROPOSAL.md section 11.3).
+ *
+ * role="grid" labelled by the month's caption, a columnheader row of weekdays, then a row per week whose seven
+ * gridcells each hold one day button. One day button is in the Tab order, the selected day's (roving tabindex):
+ *
+ * - ArrowLeft and ArrowRight move a day, ArrowUp and ArrowDown a week, Home and End to the week's first and last
+ *   day; a move past the grid's days goes to that day's month (the page asks the range for it);
+ * - PageUp and PageDown go to the previous and next month, on the same day number or the month's last;
+ * - Enter and Space press the day button, which opens the day (core's day view in C2, the drawer in C3);
+ * - F2 on a day that has items moves into them: the first item of the day takes the focus, Tab and Shift+Tab cycle
+ *   the day's items (its bars, its own items, its "+N"), Escape goes back to the day. The items are links and
+ *   buttons out of the Tab order, so Tab from a day leaves the grid as from any other control.
+ *
+ * The rows' height is measured by ONE ResizeObserver on the rows' container, never per cell and never read on the
+ * mount path (its first entry is the first measure); until then the stylesheet's height stands (layout.ROW_DEFAULT).
+ *
+ * @module     theme_dimensions/calendar/MonthGrid
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { WEEK, say, shift, shiftMonth } from "../daterange/calendar";
+import { ROW_DEFAULT, barSlots, dayCounts, weekLayout } from "./layout";
+import WeekRow from "./WeekRow";
+const WEEKDAY = { weekday: "short" };
+const stepFrom = /* @__PURE__ */ __name((key, iso, week) => {
+  switch (key) {
+    case "ArrowLeft":
+      return { day: shift(iso, -1), month: false };
+    case "ArrowRight":
+      return { day: shift(iso, 1), month: false };
+    case "ArrowUp":
+      return { day: shift(iso, -WEEK), month: false };
+    case "ArrowDown":
+      return { day: shift(iso, WEEK), month: false };
+    case "Home":
+      return { day: week[0], month: false };
+    case "End":
+      return { day: week[week.length - 1], month: false };
+    case "PageUp":
+      return { day: shiftMonth(iso, -1), month: true };
+    case "PageDown":
+      return { day: shiftMonth(iso, 1), month: true };
+    default:
+      return null;
+  }
+}, "stepFrom");
+const MonthGrid = /* @__PURE__ */ __name((props) => {
+  const { look, month, weeks, placed, today, selected, focusing, captionid, onSelect, onMonth, onOpen } = props;
+  const [height, setHeight] = useState(ROW_DEFAULT);
+  const [itemsday, setItemsday] = useState(null);
+  const grid = useRef(null);
+  const rows = useRef(null);
+  const count = useRef(weeks.length);
+  count.current = weeks.length;
+  const days = useMemo(() => weeks.flat(), [weeks]);
+  const counts = useMemo(() => dayCounts(days, placed), [days, placed]);
+  const slots = barSlots(height);
+  const layouts = useMemo(() => weeks.map((week) => weekLayout(week, placed, slots)), [weeks, placed, slots]);
+  useEffect(() => {
+    const element = rows.current;
+    if (!element || typeof ResizeObserver === "undefined") {
+      return void 0;
+    }
+    const observer = new ResizeObserver((entries) => {
+      const box = entries[entries.length - 1].contentRect;
+      if (box.height > 0 && count.current > 0) {
+        setHeight(Math.round(box.height / count.current));
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  useLayoutEffect(() => {
+    if (focusing) {
+      grid.current?.querySelector(`[data-role="day"][data-day="${selected}"]`)?.focus();
+    }
+  }, [focusing]);
+  const itemsOf = /* @__PURE__ */ __name((iso) => Array.from(grid.current?.querySelectorAll("[data-cal-item]") || []).filter((element) => (element.dataset.first || "") <= iso && iso <= (element.dataset.last || "")), "itemsOf");
+  const onKeyDown = /* @__PURE__ */ __name((event) => {
+    const target = event.target;
+    if (itemsday !== null && target.hasAttribute("data-cal-item")) {
+      const items = itemsOf(itemsday);
+      if (event.key === "Tab" && items.length) {
+        event.preventDefault();
+        const index = items.indexOf(target);
+        items[(index + (event.shiftKey ? items.length - 1 : 1)) % items.length].focus();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        const day = itemsday;
+        setItemsday(null);
+        grid.current?.querySelector(`[data-role="day"][data-day="${day}"]`)?.focus();
+      }
+      return;
+    }
+    if (target.dataset.role !== "day") {
+      return;
+    }
+    const iso = target.dataset.day || selected;
+    if (event.key === "F2") {
+      const items = itemsOf(iso);
+      if (items.length) {
+        event.preventDefault();
+        setItemsday(iso);
+        items[0].focus();
+      }
+      return;
+    }
+    const week = weeks.find((row) => row.includes(iso)) || weeks[0];
+    const step = stepFrom(event.key, iso, week);
+    if (!step || step.day === "") {
+      return;
+    }
+    event.preventDefault();
+    if (step.month || !days.includes(step.day)) {
+      onMonth(step.day);
+    } else {
+      onSelect(step.day);
+    }
+  }, "onKeyDown");
+  return /* @__PURE__ */ jsxDEV(
+    "div",
+    {
+      ref: grid,
+      className: "dim-cal__grid",
+      role: "grid",
+      "aria-labelledby": captionid,
+      "data-region": "dim-cal-grid",
+      onKeyDown,
+      onBlur: (event) => {
+        if (!grid.current?.contains(event.relatedTarget)) {
+          setItemsday(null);
+        }
+      },
+      children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekdays", role: "row", children: weeks[0].map((iso) => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekday", role: "columnheader", children: say(iso, WEEKDAY, look.language) }, iso, false, {
+          fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
+          lineNumber: 209,
+          columnNumber: 21
+        })) }, void 0, false, {
+          fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
+          lineNumber: 207,
+          columnNumber: 13
+        }),
+        /* @__PURE__ */ jsxDEV("div", { ref: rows, className: "dim-cal__weeks", role: "rowgroup", children: weeks.map((week, index) => /* @__PURE__ */ jsxDEV(
+          WeekRow,
+          {
+            week,
+            layout: layouts[index],
+            height,
+            month,
+            today,
+            selected,
+            counts,
+            look,
+            onOpen
+          },
+          week[0],
+          false,
+          {
+            fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
+            lineNumber: 214,
+            columnNumber: 21
+          }
+        )) }, void 0, false, {
+          fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
+          lineNumber: 212,
+          columnNumber: 13
+        })
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
+      lineNumber: 194,
+      columnNumber: 9
+    }
+  );
+}, "MonthGrid");
+var MonthGrid_default = MonthGrid;
+export {
+  MonthGrid_default as default,
+  stepFrom
+};
+//# sourceMappingURL=MonthGrid.dev.js.map

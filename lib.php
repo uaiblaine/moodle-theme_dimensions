@@ -69,6 +69,10 @@ function theme_dimensions_get_main_scss_content($theme) {
     // Then the category showcase, scoped under the body class its renderer adds.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/category.scss');
 
+    // Then the theme's calendar page, scoped under the body class local\calendar\page adds; it declares its key
+    // tokens from the primitives post.scss writes and core's dark-readable().
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/calendar.scss');
+
     // And the category appearance form, scoped under the body class that page adds. It is a
     // second file rather than a section of the one above because the two share no scope: the
     // showcase's tokens are declared under its own body class and never reach the editor.
