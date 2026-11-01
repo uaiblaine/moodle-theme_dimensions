@@ -4,3 +4,4 @@ filter:
     - vendor
     - docs/category/probe
     - docs/vitrine-react/probe
+    - docs/calendar/probe

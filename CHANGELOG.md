@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The calendar's range service** (2026100552), stage C1 of `docs/calendar/PROPOSAL.md`.
+  `theme_dimensions_get_calendar_range` answers one month grid (at most 42 days, in the viewer's timezone) in one call:
+  core's events, with the exact visibility of core's month view (a parity test per role), each event once with its
+  span; the event courses the viewer is enrolled in; and the event courses they could join now, admitted by the
+  showcase's own decision layer and local_unlistedcourses' next action. Courses and categories come once each, with no
+  image data URI, no formatted HTML and no description; day counts per key. Narrowing by a category's whole subtree or
+  by one course, keys that spare the vault where they can, and model, modality, city and "only things to do" filters.
+  One deliberate difference from core: a category event of a category local_unlistedcourses withholds is dropped. For
+  a student with 25 courses: 531 statements, about 140 ms and 109 KB, against core's month service at 675, 1.2 s and
+  11.5 MB. Nothing on a page uses it yet (C2). PHPUnit under `tests/local/calendar/`, 35 mutation gates.
 - **The filter line reads less layout** (2026100551). An answer that changes a count without changing its number of
   digits no longer remeasures the line (every count is drawn in tabular figures, so the widths cannot move; the star's
   count, visually hidden, no longer counts at all), and the open suggestion list is placed when it opens or when the
