@@ -91,6 +91,14 @@ $functions = [
         'loginrequired' => true,
         'capabilities' => '',
     ],
+    'theme_dimensions_remember_calendar_state' => [
+        'classname' => 'theme_dimensions\external\remember_calendar_state',
+        'description' => 'Remember the keys, the category and the filters the reader left the calendar page in.',
+        'type' => 'write',
+        'ajax' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
     'theme_dimensions_get_public_category_rows' => [
         'classname' => 'theme_dimensions\external\get_public_category_rows',
         'description' => 'One page of a public category\'s showcase, for a visitor: the cards, the counts and the facets.',

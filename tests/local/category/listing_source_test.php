@@ -227,10 +227,12 @@ final class listing_source_test extends \basic_testcase {
     }
 
     /**
-     * One module of js/esm/src writes the history, and it replaces the panel's address without pushing.
+     * One module per page writes the history, and the listing's replaces the panel's address without pushing.
      *
      * The posters' component replaces its open area and never pushes, or every opening would be a step of Back;
-     * two writers spelling the calls themselves is how one pushes where the other replaces.
+     * two writers spelling the calls themselves is how one pushes where the other replaces. The calendar page has
+     * its own writer, calendar/history.ts (the listing's keeps the showcase's forms in step after each write, which
+     * the calendar has none of), and no other module of calendar/ writes either.
      *
      * Changes that must make it fail: a history call spelled outside history.ts, the panel's own included (gate
      * js_history_one_writer); the panel's write pushing (gate js_history_keeps_entry); the criteria pushed whatever
@@ -239,8 +241,9 @@ final class listing_source_test extends \basic_testcase {
     public function test_only_the_history_module_writes_the_address(): void {
         $sources = $this->esm_sources();
         $this->assertContains('js/esm/src/listing/history.ts', $sources, 'The control: the tree is read.');
+        $this->assertContains('js/esm/src/calendar/history.ts', $sources, 'The control: the calendar is read.');
         foreach ($sources as $path) {
-            if ($path === 'js/esm/src/listing/history.ts') {
+            if ($path === 'js/esm/src/listing/history.ts' || $path === 'js/esm/src/calendar/history.ts') {
                 continue;
             }
             $this->assertDoesNotMatchRegularExpression(

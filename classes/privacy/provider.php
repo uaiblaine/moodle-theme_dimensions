@@ -33,6 +33,7 @@ use core_privacy\local\request\transform;
 use core_privacy\local\request\user_preference_provider;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use theme_dimensions\local\calendar\state as calendar_state;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\remembered;
 use theme_dimensions\local\flavourchoice;
@@ -44,11 +45,12 @@ use theme_dimensions\output\course_notice;
 /**
  * Privacy Subsystem implementation for theme_dimensions.
  *
- * The theme owns six pieces of personal data that are user preferences: the reading column
+ * The theme owns seven pieces of personal data that are user preferences: the reading column
  * width a person chose in focus mode, the view (cards or list) they chose on a category page,
  * the organisation, view and filters they left each of their most recent category pages in,
  * whether they folded the header of the category pages, whether they folded the course
- * notice of the course pages, and the Boost Union flavour they chose as their look. Its one table holds the branding of
+ * notice of the course pages, the Boost Union flavour they chose as their look, and the event
+ * keys, category and filters they left the theme's calendar page in. Its one table holds the branding of
  * categories - a layout, two colours, a tagline, public texts - and its only user-linked column
  * is usermodified, the id of the user who last saved a category's branding, kept as an
  * authorship stamp. That stamp is personal data, so the provider is a request provider as well:
@@ -112,6 +114,10 @@ class provider implements
         $collection->add_user_preference(
             flavourchoice::PREFERENCE,
             'privacy:metadata:preference:flavour'
+        );
+        $collection->add_user_preference(
+            calendar_state::PREFERENCE,
+            'privacy:metadata:preference:calendar_state'
         );
         $collection->add_subsystem_link('core_cohort', [], 'privacy:metadata:core_cohort');
 
@@ -288,6 +294,17 @@ class provider implements
                 category_hero::PREFERENCE_FOLDED,
                 $folded ? get_string('yes') : get_string('no'),
                 get_string('privacy:metadata:preference:category_herofolded', 'theme_dimensions')
+            );
+        }
+
+        // The stored JSON, as the category state is exported: what the person left the calendar in, whole.
+        $calendar = get_user_preferences(calendar_state::PREFERENCE, null, $userid);
+        if ($calendar !== null) {
+            writer::export_user_preference(
+                'theme_dimensions',
+                calendar_state::PREFERENCE,
+                (string) $calendar,
+                get_string('privacy:metadata:preference:calendar_state', 'theme_dimensions')
             );
         }
 

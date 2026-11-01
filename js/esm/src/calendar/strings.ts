@@ -1,0 +1,113 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * The calendar page's strings: read once, then filled in place.
+ *
+ * The page hands every one of them to core's string cache with itself (calendar_page::STRINGS, through
+ * strings_for_js), so {@see load()} resolves without a request. A label with a count or a date is filled here from
+ * the string read once ({@see fill()}, core's own placeholders, {$a} and {$a->name}), rather than asked of
+ * stringUtils again for each of the forty-two days of a grid. calendar_component_source_test holds the list against
+ * the server's.
+ *
+ * @module     theme_dimensions/calendar/strings
+ * @copyright  2026 Anderson Blaine
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+import {getStrings} from '@moodle/lms/core/stringUtils';
+
+/** The component. */
+const COMPONENT = 'theme_dimensions';
+
+/** Every string the page reads, in calendar_page::STRINGS' order. */
+export const KEYS = [
+    'calendar_actiononly',
+    'calendar_barlabel',
+    'calendar_category',
+    'calendar_categoryall',
+    'calendar_categorycourses',
+    'calendar_categorynone',
+    'calendar_categorysearch',
+    'calendar_categorysearchplaceholder',
+    'calendar_categorytree',
+    'calendar_city',
+    'calendar_cityany',
+    'calendar_classic',
+    'calendar_clearfilters',
+    'calendar_colourby',
+    'calendar_colourbycategory',
+    'calendar_colourbykey',
+    'calendar_dayitems_many',
+    'calendar_dayitems_none',
+    'calendar_dayitems_one',
+    'calendar_daylabel',
+    'calendar_daytoday',
+    'calendar_filtercount',
+    'calendar_key_activity',
+    'calendar_key_category',
+    'calendar_key_course',
+    'calendar_key_group',
+    'calendar_key_open',
+    'calendar_key_other',
+    'calendar_key_site',
+    'calendar_key_user',
+    'calendar_keys',
+    'calendar_modality',
+    'calendar_model',
+    'calendar_moreaction',
+    'calendar_morefilters',
+    'calendar_morelabel',
+    'calendar_nextmonth',
+    'calendar_overdue',
+    'calendar_prevmonth',
+    'calendar_recursive',
+    'calendar_span',
+    'calendar_title',
+    'calendar_today',
+    'calendar_truncated',
+    'calendar_until',
+    'calendar_view',
+    'calendar_viewmonth',
+    'calendar_withsub',
+] as const;
+
+/** One string's name. */
+export type StringKey = typeof KEYS[number];
+
+/** The strings, by name. */
+export type Strings = Record<StringKey, string>;
+
+/**
+ * Read every string once.
+ *
+ * @returns {Promise} The strings, by name.
+ */
+export const load = (): Promise<Strings> => getStrings(KEYS.map((key) => ({key: key, component: COMPONENT})))
+    .then((values) => Object.fromEntries(KEYS.map((key, index) => [key, values[index]])) as Strings);
+
+/**
+ * A string with its placeholders filled, as core fills them: {$a} with a value, {$a->name} with a field.
+ *
+ * @param {string} template The string as read.
+ * @param {object|string|number} values A value for {$a}, or the fields for {$a->name}.
+ * @returns {string} The filled string.
+ */
+export const fill = (template: string, values: Record<string, string | number> | string | number): string => {
+    if (typeof values !== 'object') {
+        return template.split('{$a}').join(String(values));
+    }
+    return template.replace(/\{\$a->([a-z0-9_]+)\}/gi, (whole, name: string) => (name in values ? String(values[name]) : whole));
+};

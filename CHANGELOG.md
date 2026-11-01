@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The calendar page** (2026100555), stage C2 of `docs/calendar/PROPOSAL.md`. A page of the theme's own
+  (`/theme/dimensions/calendar.php`, answered by a route where the router is on) draws the month on the range
+  service: events spanning several days as bars that continue into the next week, a day cell that adapts how much it
+  shows to the space it has, key chips, the category tree (the whole subtree), and "More filters" (model, modality,
+  city, only things to do). The first paint carries the month's data; without JavaScript the page shows the month as
+  an agenda. The viewer's last keys, category and filters are kept in a seventh user preference,
+  `theme_dimensions_calendar`, written through `theme_dimensions_remember_calendar_state`, exported and deleted by
+  the privacy provider and removed on uninstall. Full keyboard contract on the grid; a calendar row in the theme's
+  drawer. Core's calendar is untouched (decision D1). PHPUnit, Jest, six Behat scenarios, 27 mutation gates.
 - **block_compass's open-for-enrolment line names each category's crest and tells courses from events**
   (2026100554; block_compass ADR-019, stage S4). Two listeners on hooks the block added in its 2026100524.
   - **`category_badges`** answers each category the line names with the category's first crest, in area order
@@ -17,7 +26,6 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
     nothing, and the block uses the field only while it is visible to everyone, as the theme creates it.
   - Both are registered in `db/hooks.php` as optional, as the two earlier block_compass listeners are.
     PHPUnit under `tests/local/hook/block_compass/`.
-
 - **The calendar's range service** (2026100552), stage C1 of `docs/calendar/PROPOSAL.md`.
   `theme_dimensions_get_calendar_range` answers one month grid (at most 42 days, in the viewer's timezone) in one call:
   core's events, with the exact visibility of core's month view (a parity test per role), each event once with its

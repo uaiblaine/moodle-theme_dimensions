@@ -235,8 +235,9 @@ enderer_base
         $browse = $context['sections'][0];
         $this->assertSame(get_string('drawer_browse', 'theme_dimensions'), $browse['label']);
         $this->assertSame(drawernav::SECTION_PREFIX . '1', $browse['id']);
-        $this->assertCount(3, $browse['items'], 'The divider is dropped.');
-        [$home, $mycourses, $custom] = $browse['items'];
+        $this->assertCount(4, $browse['items'], 'The divider is dropped and the calendar row added.');
+        [$home, $mycourses, $calendar, $custom] = $browse['items'];
+        $this->assertSame('fa-regular fa-calendar', $calendar['icon']);
         $this->assertSame('fa fa-house', $home['icon']);
         $this->assertFalse($home['iscurrent']);
         $this->assertSame('fa fa-graduation-cap', $mycourses['icon']);
@@ -425,5 +426,70 @@ enderer_base
             ['text', 'url', 'icon', 'iscurrent', 'haschildren', 'panelid', 'tooltip', 'attributes'],
             array_keys($context['sections'][0]['items'][0])
         );
+    }
+
+    /**
+     * An account's drawer gains the calendar row after core's nodes, leading to the theme's calendar page (D1).
+     *
+     * Its controls: no row where none of core's nodes stands (a navigation the site emptied), none where Boost Union
+     * hides the calendar, and a node already carrying the key (core's guest node) is pointed at the page instead of
+     * being doubled.
+     *
+     * @return void
+     */
+    public function test_the_calendar_row_leads_to_the_theme_calendar(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $CFG->routerconfigured = false;
+
+        $core = [
+            ['key' => 'myhome', 'text' => 'Dashboard', 'url' => new \moodle_url('/my/'), 'isactive' => false,
+                'haschildren' => 0, 'children' => []],
+            ['key' => 'mycourses', 'text' => 'My courses', 'url' => new \moodle_url('/my/courses.php'),
+                'isactive' => false, 'haschildren' => 0, 'children' => []],
+            (object) ['sort' => 3, 'text' => 'Custom', 'url' => 'https://example.com/x', 'isactive' => false,
+                'haschildren' => 0, 'children' => []],
+        ];
+        $items = $this->context($core)['sections'][0]['items'];
+        $this->assertSame(['Dashboard', 'My courses', get_string('calendar', 'calendar'), 'Custom'], array_column($items, 'text'));
+        $this->assertSame((new \moodle_url('/theme/dimensions/calendar.php'))->out(), $items[2]['url']);
+        $this->assertFalse($items[2]['iscurrent']);
+
+        // A navigation with none of core's nodes gains nothing.
+        $bare = $this->context([(object) ['text' => 'Bare']])['sections'][0]['items'];
+        $this->assertSame(['Bare'], array_column($bare, 'text'));
+
+        // Core's own calendar node (the guest's) is pointed at the page, not doubled.
+        $withnode = array_merge($core, [['key' => 'calendar', 'text' => 'Calendar', 'isactive' => false, 'haschildren' => 0,
+            'children' => [], 'url' => new \moodle_url('/calendar/view.php', ['view' => 'month'])]]);
+        $items = $this->context($withnode)['sections'][0]['items'];
+        $this->assertCount(1, array_filter($items, static fn(array $item): bool => $item['text'] === 'Calendar'
+            || $item['text'] === get_string('calendar', 'calendar')));
+        $this->assertContains((new \moodle_url('/theme/dimensions/calendar.php'))->out(), array_column($items, 'url'));
+        $this->assertNotContains((new \moodle_url('/calendar/view.php', ['view' => 'month']))->out(), array_column($items, 'url'));
+
+        // Boost Union's hidden nodes win.
+        $page = $this->page();
+        $page->theme->removedprimarynavitems = ['calendar'];
+        $hidden = drawernav::context($core, [], $page, $this->core_renderer())['sections'][0]['items'];
+        $this->assertSame(['Dashboard', 'My courses', 'Custom'], array_column($hidden, 'text'));
+    }
+
+    /**
+     * The calendar row is the current one on the calendar page itself.
+     *
+     * @return void
+     */
+    public function test_the_calendar_row_is_current_on_the_calendar_page(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $page = $this->page();
+        $page->set_pagetype(\theme_dimensions\local\calendar\page::PAGETYPE);
+        $core = [['key' => 'mycourses', 'text' => 'My courses', 'url' => new \moodle_url('/my/courses.php'), 'isactive' => false,
+            'haschildren' => 0, 'children' => []]];
+        $items = drawernav::context($core, [], $page, $this->core_renderer())['sections'][0]['items'];
+        $this->assertTrue($items[1]['iscurrent']);
+        $this->assertFalse($items[0]['iscurrent']);
     }
 }

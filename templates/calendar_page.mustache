@@ -1,0 +1,235 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/calendar_page
+
+    The theme's calendar page (docs/calendar/PROPOSAL.md, stage C2). Two layers:
+
+    - the server's (data-region="dim-cal-server"), whole without JavaScript: the
+      toolbar's links, one GET form for the key chips, the category and the
+      "More" filters, and the month's items as an agenda grouped by day, under
+      a notice linking core's calendar;
+    - the mount node of calendar/Calendar, whose props carry the first range
+      answer; the component hides the server's layer once it has drawn its own.
+
+    Every text arrives in the plain spelling and is escaped here, once; the
+    props are JSON in a double-stashed attribute, which the browser decodes.
+    The form's empty keys[] member makes a submission with every chip cleared
+    still name the keys (none on); the hidden recursive=0 before the checkbox
+    is what a cleared checkbox submits.
+
+    Example context (json):
+    {
+        "month": "2026-11",
+        "caption": "November 2026",
+        "action": "https://example.com/r.php/theme_dimensions/calendar",
+        "todayurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11",
+        "prevurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-10",
+        "nexturl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-12",
+        "classicurl": "https://example.com/calendar/view.php?view=month",
+        "clearurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11&recursive=1",
+        "keys": [
+            {
+                "key": "site",
+                "label": "Site",
+                "checked": true,
+                "count": 2
+            },
+            {
+                "key": "group",
+                "label": "Group",
+                "checked": false,
+                "count": 0
+            }
+        ],
+        "categories": [
+            {
+                "id": 3,
+                "label": "School & Government",
+                "selected": true
+            }
+        ],
+        "hascategories": true,
+        "nocategory": false,
+        "recursive": true,
+        "models": [
+            {
+                "value": 1,
+                "label": "Course",
+                "checked": false
+            }
+        ],
+        "modalities": [
+            {
+                "value": 1,
+                "label": "Online",
+                "checked": true
+            }
+        ],
+        "cities": [
+            {
+                "value": "Recife",
+                "selected": false
+            }
+        ],
+        "actiononly": false,
+        "colourkey": true,
+        "colourcategory": false,
+        "filtercount": 1,
+        "truncated": false,
+        "agenda": [
+            {
+                "label": "Tuesday, 10 November 2026",
+                "items": [
+                    {
+                        "name": "Public innovation seminar",
+                        "url": "https://example.com/course/view.php?id=4",
+                        "when": "10 November to 12 November",
+                        "key": "course",
+                        "keylabel": "Course"
+                    }
+                ]
+            }
+        ],
+        "agendaempty": false,
+        "component": "@moodle/lms/theme_dimensions/calendar/Calendar",
+        "props": "{}"
+    }
+}}
+<div class="dim-cal" data-region="dim-cal">
+    <div class="dim-cal__server" data-region="dim-cal-server">
+        <div class="dim-cal__toolbar">
+            <h1 class="dim-cal__title">{{#str}} calendar_title, theme_dimensions {{/str}}</h1>
+            <a class="btn btn-secondary dim-cal__today" href="{{todayurl}}">{{#str}} calendar_today, theme_dimensions {{/str}}</a>
+            <a class="btn btn-secondary dim-cal__step" href="{{prevurl}}" aria-label="{{#str}} calendar_prevmonth, theme_dimensions {{/str}}">
+                <i class="fa fa-chevron-left" aria-hidden="true"></i>
+            </a>
+            <a class="btn btn-secondary dim-cal__step" href="{{nexturl}}" aria-label="{{#str}} calendar_nextmonth, theme_dimensions {{/str}}">
+                <i class="fa fa-chevron-right" aria-hidden="true"></i>
+            </a>
+            <p class="dim-cal__caption">{{caption}}</p>
+            <div class="dim-cal__views" role="group" aria-label="{{#str}} calendar_view, theme_dimensions {{/str}}">
+                <span class="dim-cal__view dim-cal__view--active">{{#str}} calendar_viewmonth, theme_dimensions {{/str}}</span>
+            </div>
+            <a class="dim-cal__classic" href="{{classicurl}}">{{#str}} calendar_classic, theme_dimensions {{/str}}</a>
+        </div>
+        <form class="dim-cal__form" method="get" action="{{action}}">
+            <input type="hidden" name="month" value="{{month}}">
+            <input type="hidden" name="keys[]" value="">
+            <fieldset class="dim-cal__chips">
+                <legend class="visually-hidden">{{#str}} calendar_keys, theme_dimensions {{/str}}</legend>
+                {{#keys}}
+                <label class="dim-cal__chip dim-cal-key--{{key}}">
+                    <input type="checkbox" name="keys[]" value="{{key}}"{{#checked}} checked{{/checked}}>
+                    <span class="dim-cal__chiplabel">{{label}}</span>
+                    <span class="dim-cal__chipcount">{{count}}</span>
+                </label>
+                {{/keys}}
+            </fieldset>
+            <div class="dim-cal__filters">
+                <label class="dim-cal__field">
+                    <span>{{#str}} calendar_category, theme_dimensions {{/str}}</span>
+                    <select class="form-select" name="categoryid">
+                        <option value="0"{{#nocategory}} selected{{/nocategory}}>{{#str}} calendar_categoryall, theme_dimensions {{/str}}</option>
+                        {{#categories}}
+                        <option value="{{id}}"{{#selected}} selected{{/selected}}>{{label}}</option>
+                        {{/categories}}
+                    </select>
+                </label>
+                <input type="hidden" name="recursive" value="0">
+                <label class="dim-cal__check">
+                    <input type="checkbox" name="recursive" value="1"{{#recursive}} checked{{/recursive}}>
+                    {{#str}} calendar_recursive, theme_dimensions {{/str}}
+                </label>
+                <details class="dim-cal__more">
+                    <summary class="btn btn-secondary">
+                        {{#str}} calendar_morefilters, theme_dimensions {{/str}}
+                        {{#filtercount}}<span class="dim-cal__badge">{{filtercount}}</span>{{/filtercount}}
+                    </summary>
+                    <div class="dim-cal__panel">
+                        <fieldset>
+                            <legend>{{#str}} calendar_model, theme_dimensions {{/str}}</legend>
+                            {{#models}}
+                            <label class="dim-cal__check">
+                                <input type="checkbox" name="model[]" value="{{value}}"{{#checked}} checked{{/checked}}>
+                                {{label}}
+                            </label>
+                            {{/models}}
+                        </fieldset>
+                        <fieldset>
+                            <legend>{{#str}} calendar_modality, theme_dimensions {{/str}}</legend>
+                            {{#modalities}}
+                            <label class="dim-cal__check">
+                                <input type="checkbox" name="modality[]" value="{{value}}"{{#checked}} checked{{/checked}}>
+                                {{label}}
+                            </label>
+                            {{/modalities}}
+                        </fieldset>
+                        <label class="dim-cal__field">
+                            <span>{{#str}} calendar_city, theme_dimensions {{/str}}</span>
+                            <select class="form-select" name="city">
+                                <option value="">{{#str}} calendar_cityany, theme_dimensions {{/str}}</option>
+                                {{#cities}}
+                                <option value="{{value}}"{{#selected}} selected{{/selected}}>{{value}}</option>
+                                {{/cities}}
+                            </select>
+                        </label>
+                        <label class="dim-cal__check">
+                            <input type="checkbox" name="actiononly" value="1"{{#actiononly}} checked{{/actiononly}}>
+                            {{#str}} calendar_actiononly, theme_dimensions {{/str}}
+                        </label>
+                        <fieldset>
+                            <legend>{{#str}} calendar_colourby, theme_dimensions {{/str}}</legend>
+                            <label class="dim-cal__check">
+                                <input type="radio" name="colour" value="key"{{#colourkey}} checked{{/colourkey}}>
+                                {{#str}} calendar_colourbykey, theme_dimensions {{/str}}
+                            </label>
+                            <label class="dim-cal__check">
+                                <input type="radio" name="colour" value="category"{{#colourcategory}} checked{{/colourcategory}}>
+                                {{#str}} calendar_colourbycategory, theme_dimensions {{/str}}
+                            </label>
+                        </fieldset>
+                        <a class="dim-cal__clear" href="{{clearurl}}">{{#str}} calendar_clearfilters, theme_dimensions {{/str}}</a>
+                    </div>
+                </details>
+                <button type="submit" class="btn btn-primary">{{#str}} calendar_apply, theme_dimensions {{/str}}</button>
+            </div>
+        </form>
+        <section class="dim-cal__agenda" data-region="dim-cal-agenda" aria-labelledby="dim-cal-agenda-title">
+            <h2 class="dim-cal__agendatitle" id="dim-cal-agenda-title">{{caption}}</h2>
+            <p class="dim-cal__notice">
+                {{#str}} calendar_noscript, theme_dimensions {{/str}}
+                <a href="{{classicurl}}">{{#str}} calendar_classic, theme_dimensions {{/str}}</a>
+            </p>
+            {{#truncated}}<p class="dim-cal__notice">{{#str}} calendar_truncated, theme_dimensions {{/str}}</p>{{/truncated}}
+            {{#agendaempty}}<p class="dim-cal__empty">{{#str}} calendar_agendaempty, theme_dimensions {{/str}}</p>{{/agendaempty}}
+            {{#agenda}}
+            <h3 class="dim-cal__agendaday">{{label}}</h3>
+            <ul class="dim-cal__agendalist">
+                {{#items}}
+                <li class="dim-cal__agendaitem dim-cal-key--{{key}}">
+                    <span class="dim-cal__agendawhen">{{when}}</span>
+                    <a href="{{url}}">{{name}}</a>
+                    <span class="dim-cal__agendakey">{{keylabel}}</span>
+                </li>
+                {{/items}}
+            </ul>
+            {{/agenda}}
+        </section>
+    </div>
+    <div class="dim-cal__mount" data-region="dim-cal-mount" data-react-component="{{component}}" data-react-props="{{props}}"></div>
+</div>
