@@ -93,24 +93,40 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * No layout is read anywhere in the tree, and the rows are measured by one ResizeObserver per grid.
+     * No layout is read on the mount path: the one read of the tree is the popover's, when it opens, and the grid is
+     * measured by one ResizeObserver, which watches the rows (the density) and the frame the drawer shares (the phone).
      *
      * @return void
      */
     public function test_no_layout_read_and_one_observer(): void {
         $observers = 0;
+        $reads = '~getBoundingClientRect|getClientRects|offset(?:Height|Width|Top|Left)|client(?:Height|Width)'
+            . '|scroll(?:Height|Width|Top|Left)|getComputedStyle~';
         foreach ($this->sources() as $path => $source) {
-            $this->assertDoesNotMatchRegularExpression(
-                '~getBoundingClientRect|getClientRects|offset(?:Height|Width|Top|Left)|client(?:Height|Width)'
-                    . '|scroll(?:Height|Width)|getComputedStyle~',
-                $source,
-                "{$path} reads the layout."
-            );
+            if ($path !== 'EventPopover.tsx') {
+                $this->assertDoesNotMatchRegularExpression($reads, $source, "{$path} reads the layout.");
+            }
             $observers += substr_count($source, 'new ResizeObserver(');
         }
+        $popover = $this->sources()['EventPopover.tsx'];
+        $this->assertSame(2, preg_match_all($reads, $popover), 'The opener\'s box and the popover\'s own.');
+        $this->assertMatchesRegularExpression(
+            '~useLayoutEffect\(\(\) => \{\s*if \(sheet \|\| !dialog\.current\) \{.*?getBoundingClientRect\(\);.*?'
+                . 'getBoundingClientRect\(\);.*?\}, \[item\.source, item\.id, opener, sheet\]\);~s',
+            $popover,
+            'Both reads are in the effect of an opening, never of the page\'s mount.'
+        );
         $this->assertSame(1, $observers);
-        $this->assertStringContainsString('new ResizeObserver(', $this->sources()['MonthGrid.tsx']);
-        $this->assertStringContainsString('observer.observe(element);', $this->sources()['MonthGrid.tsx']);
+        $grid = $this->sources()['MonthGrid.tsx'];
+        $this->assertStringContainsString('new ResizeObserver(', $grid);
+        $this->assertStringContainsString('observer.observe(element);', $grid);
+        $this->assertStringContainsString('const frame = grid.current?.parentElement || null;', $grid);
+        $this->assertStringContainsString('observer.observe(frame);', $grid);
+        $this->assertStringContainsString(
+            'onWidth={(width) => setPhone(width < PHONE)}',
+            $this->sources()['Calendar.tsx'],
+            'The phone is the frame\'s width, never the viewport\'s.'
+        );
     }
 
     /**
@@ -123,6 +139,12 @@ final class calendar_component_source_test extends \basic_testcase {
         foreach (['mount', 'range', 'remember'] as $name) {
             $this->assertStringContainsString("new Pending('theme_dimensions/calendar:{$name}')", $source);
         }
+        $this->assertMatchesRegularExpression(
+            "~const pending = new Pending\('theme_dimensions/calendar:description'\);"
+                . '.*?\.finally\(\(\) => pending\.resolve\(\)\);~s',
+            $this->sources()['EventPopover.tsx'],
+            'The description\'s token spans the request, whichever popover it was for.'
+        );
         $this->assertMatchesRegularExpression(
             '~useEffect\(\(\) => \{\s*painting\.current\?\.resolve\(\);~',
             $source,
@@ -145,22 +167,174 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The two seams C3 replaces are one function each: where an item leads, where a day opens.
+     * C2's two seams are C3's fallbacks, one function each: an item's href (and the popover's "Open"), and the
+     * drawer's link to core's day view. Nothing redirects: a day opens the drawer, an item the popover.
      *
      * @return void
      */
-    public function test_the_seams_are_one_function_each(): void {
-        $definitions = ['itemHref' => 0, 'dayHref' => 0];
-        $redirects = 0;
+    public function test_the_seams_are_the_fallbacks(): void {
+        $definitions = ['itemHref' => 0, 'dayHref' => 0, 'primaryOf' => 0];
         foreach ($this->sources() as $path => $source) {
             foreach (array_keys($definitions) as $name) {
                 $definitions[$name] += substr_count($source, "export const {$name} = ");
             }
-            $redirects += substr_count($source, 'redirect(');
+            $this->assertStringNotContainsString('redirect(', $source, $path);
+            $this->assertStringNotContainsString('core/location', $source, $path);
         }
-        $this->assertSame(['itemHref' => 1, 'dayHref' => 1], $definitions);
-        $this->assertSame(1, $redirects, 'A day is opened in one place.');
-        $this->assertStringContainsString('redirect(dayHref(props.urls.calendar, iso))', $this->sources()['Calendar.tsx']);
+        $this->assertSame(['itemHref' => 1, 'dayHref' => 1, 'primaryOf' => 1], $definitions);
+        foreach (['Bar.tsx', 'DayCell.tsx', 'DayDrawer.tsx'] as $path) {
+            $this->assertStringContainsString('href={itemHref(', $this->sources()[$path], $path);
+            $this->assertStringContainsString('data-cal-pop=""', $this->sources()[$path], $path);
+        }
+        $this->assertStringContainsString('href={dayHref(calendar, iso)}', $this->sources()['DayDrawer.tsx']);
+        $this->assertStringContainsString('onClick={onPress}', $this->sources()['Calendar.tsx']);
+    }
+
+    /**
+     * A day is opened, moved and closed in the address with replaceState, through the calendar's one writer.
+     *
+     * @return void
+     */
+    public function test_the_open_day_is_replaced_in_the_address(): void {
+        $calendar = $this->sources()['Calendar.tsx'];
+        $this->assertSame(2, substr_count($calendar, 'writeAddress(withDay(window.location.href, iso), false);'));
+        $this->assertSame(1, substr_count($calendar, "writeAddress(withDay(window.location.href, ''), false);"));
+        $this->assertSame(0, preg_match('~writeAddress\(withDay\([^;]*, true\)~', $calendar), 'A day never pushes.');
+        $this->assertStringContainsString(
+            "writeAddress(address(props.urls.page, month, next, moved ? '' : opened.current || ''), write === 'push');",
+            $calendar,
+            'A month change drops the day; a change of state keeps it.'
+        );
+    }
+
+    /**
+     * The description: one request per event per page life (the cache), the latest opening's answer alone shown.
+     *
+     * @return void
+     */
+    public function test_the_description_is_cached_and_the_latest_wins(): void {
+        $description = $this->sources()['description.ts'];
+        $this->assertMatchesRegularExpression(
+            '~let known = cache\.get\(id\);\s*if \(known === undefined\) \{\s*known = fetchOne<EventAnswer>\('
+                . '\{methodname: EVENT_METHOD, args: \{eventid: id\}\}\).*?cache\.set\(id, known\);~s',
+            $description
+        );
+        $this->assertStringContainsString(".catch(() => '');", $description, 'A refusal draws nothing.');
+        $this->assertStringContainsString(
+            "export const EVENT_METHOD = 'core_calendar_get_calendar_event_by_id';",
+            $this->sources()['model.ts']
+        );
+        $popover = $this->sources()['EventPopover.tsx'];
+        $this->assertMatchesRegularExpression(
+            '~const turn = \+\+ticket\.current;.*?description\(item\.id\)\s*\.then\(\(html\) => \{\s*'
+                . 'if \(turn === ticket\.current\) \{\s*setText\(html\);~s',
+            $popover
+        );
+        $this->assertMatchesRegularExpression('~return \(\) => \{\s*ticket\.current\+\+;\s*\};~', $popover, 'Closing drops it.');
+        $this->assertStringContainsString("if (item.source !== 'core') {", $popover, 'An event course has no {event} row.');
+    }
+
+    /**
+     * The overlap rule's boundaries: touching ends, point items, the clusters, the all-day and multi-day strip.
+     *
+     * @return void
+     */
+    public function test_the_overlap_rule(): void {
+        $overlap = $this->sources()['overlap.ts'];
+        $this->assertStringContainsString(
+            'export const intersects = (a: Item, b: Item): boolean => a.timeduration > 0 && b.timeduration > 0'
+                . "\n    && a.timestart < b.timestart + b.timeduration && b.timestart < a.timestart + a.timeduration;",
+            $overlap
+        );
+        $this->assertStringContainsString("if (entry.item.timeduration <= 0) {\n            laid.push(", $overlap);
+        $this->assertStringContainsString('if (start >= clusterend) {', $overlap);
+        $this->assertStringContainsString('let column = ends.findIndex((last) => last <= start);', $overlap);
+        $this->assertStringContainsString('if (entry.bar || isAllDay(entry.item, zone)) {', $overlap);
+    }
+
+    /**
+     * The popover takes the focus when it is shown, once per opened item, and the drawer's hour column spans the
+     * day's busy hours with no scroll box of its own.
+     *
+     * @return void
+     */
+    public function test_the_popover_focus_waits_for_it_to_be_shown_and_the_hours_are_windowed(): void {
+        $popover = $this->sources()['EventPopover.tsx'];
+        $this->assertStringContainsString('if ((sheet || at !== null) && focused.current !== key) {', $popover);
+        $this->assertStringContainsString('focused.current = key;', $popover);
+        $overlap = $this->sources()['overlap.ts'];
+        $this->assertStringContainsString('let from = Math.max(0, Math.floor(earliest / 60) - 1);', $overlap);
+        $this->assertStringContainsString('let to = Math.min(24, Math.ceil(latest / 60) + 1);', $overlap);
+        $drawer = $this->sources()['DayDrawer.tsx'];
+        $this->assertStringNotContainsString('scrollIntoView', $drawer);
+        $this->assertStringContainsString('hourWindow(plan.hours, look.zone)', $drawer);
+    }
+
+    /**
+     * The popover's primary action is the item's own: core's action only when actionable, the way in only for an event
+     * course with one, else "Open".
+     *
+     * @return void
+     */
+    public function test_the_primary_action_choice(): void {
+        $model = $this->sources()['model.ts'];
+        $this->assertStringContainsString(
+            "if (item.action !== null && item.action.actionable && actionUrl !== '') {",
+            $model
+        );
+        $this->assertStringContainsString(
+            "if (item.source === 'course' && course && (course.join === 'open' || course.join === 'free' "
+                . "|| course.join === 'key')) {",
+            $model
+        );
+        $this->assertStringContainsString("return {kind: 'open', url: itemHref(item, courses, home)};", $model);
+        $this->assertStringContainsString(
+            'const primary = primaryOf(item, look.courses, look.home);',
+            $this->sources()['EventPopover.tsx']
+        );
+    }
+
+    /**
+     * An address the answer supplies reaches an href only as a web address (relative, http or https), never a script.
+     *
+     * @return void
+     */
+    public function test_answer_addresses_are_checked_before_an_href(): void {
+        $model = $this->sources()['model.ts'];
+        $this->assertStringContainsString(
+            "return url !== '' && (protocol === 'http:' || protocol === 'https:') ? url : fallback;",
+            $model
+        );
+        $this->assertStringContainsString("const own = safeHref(item.url, '');", $model);
+        $this->assertStringContainsString("const actionUrl = item.action === null ? '' : safeHref(item.action.url, '');", $model);
+        $this->assertStringContainsString('url: safeHref(course.landingurl, itemHref(item, courses, home))', $model);
+        $this->assertStringContainsString(
+            'href={safeHref(course.url, look.home)}',
+            $this->sources()['EventPopover.tsx']
+        );
+    }
+
+    /**
+     * The one trusted-HTML sink is the popover's description, fed by description() alone.
+     *
+     * @return void
+     */
+    public function test_the_one_html_sink_is_the_description(): void {
+        $sinks = [];
+        foreach ($this->sources() as $name => $source) {
+            if (substr_count($source, 'dangerouslySetInnerHTML') > 0) {
+                $sinks[$name] = substr_count($source, 'dangerouslySetInnerHTML');
+            }
+        }
+        $this->assertSame(['EventPopover.tsx' => 1], $sinks, 'One sink, in the popover.');
+        $popover = $this->sources()['EventPopover.tsx'];
+        $this->assertStringContainsString('dangerouslySetInnerHTML={{__html: text}}', $popover);
+        $this->assertStringContainsString('const [text, setText] = useState<string | null>(null);', $popover);
+        // The state behind the sink is set to nothing, to null, or to description()'s answer: three calls, no more.
+        $this->assertSame(3, substr_count($popover, 'setText('));
+        $this->assertSame(1, substr_count($popover, 'setText(html);'));
+        $this->assertMatchesRegularExpression('~description\(item\.id\)\s*\.then\(\(html\) => \{\s*'
+            . 'if \(turn === ticket\.current\) \{\s*setText\(html\);~s', $popover);
     }
 
     /**
@@ -176,7 +350,10 @@ final class calendar_component_source_test extends \basic_testcase {
             $history
         );
         $calendar = $this->sources()['Calendar.tsx'];
-        $this->assertStringContainsString("writeAddress(address(props.urls.page, month, next), write === 'push');", $calendar);
+        $this->assertStringContainsString(
+            "writeAddress(address(props.urls.page, month, next, moved ? '' : opened.current || ''), write === 'push');",
+            $calendar
+        );
         $this->assertStringContainsString("request(iso.slice(0, 7), state, 'push', iso, focus);", $calendar);
         $this->assertStringContainsString("request(shown.month, next, 'replace', selected, false);", $calendar);
     }

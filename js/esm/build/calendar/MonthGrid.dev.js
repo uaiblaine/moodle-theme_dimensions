@@ -10,13 +10,17 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * - ArrowLeft and ArrowRight move a day, ArrowUp and ArrowDown a week, Home and End to the week's first and last
  *   day; a move past the grid's days goes to that day's month (the page asks the range for it);
  * - PageUp and PageDown go to the previous and next month, on the same day number or the month's last;
- * - Enter and Space press the day button, which opens the day (core's day view in C2, the drawer in C3);
+ * - Enter and Space press the day button, which opens the day: the drawer beside the grid, or on a phone the sheet
+ *   under it (Calendar.tsx);
  * - F2 on a day that has items moves into them: the first item of the day takes the focus, Tab and Shift+Tab cycle
  *   the day's items (its bars, its own items, its "+N"), Escape goes back to the day. The items are links and
  *   buttons out of the Tab order, so Tab from a day leaves the grid as from any other control.
  *
- * The rows' height is measured by ONE ResizeObserver on the rows' container, never per cell and never read on the
- * mount path (its first entry is the first measure); until then the stylesheet's height stands (layout.ROW_DEFAULT).
+ * ONE ResizeObserver measures the grid, never per cell and never read on the mount path (its first entries are the
+ * first measures): the rows' container, whose height decides the density (until then the stylesheet's height stands,
+ * layout.ROW_DEFAULT), and the frame the grid shares with the drawer, whose width decides the phone layout
+ * ({@see PHONE}). The frame, not the grid: the open drawer narrows the grid, and the grid's own width would flip the
+ * layout to the phone's the moment the drawer opened.
  *
  * @module     theme_dimensions/calendar/MonthGrid
  * @copyright  2026 Anderson Blaine
@@ -26,6 +30,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { WEEK, say, shift, shiftMonth } from "../daterange/calendar";
 import { ROW_DEFAULT, barSlots, dayCounts, weekLayout } from "./layout";
 import WeekRow from "./WeekRow";
+const PHONE = 576;
 const WEEKDAY = { weekday: "short" };
 const stepFrom = /* @__PURE__ */ __name((key, iso, week) => {
   switch (key) {
@@ -50,13 +55,15 @@ const stepFrom = /* @__PURE__ */ __name((key, iso, week) => {
   }
 }, "stepFrom");
 const MonthGrid = /* @__PURE__ */ __name((props) => {
-  const { look, month, weeks, placed, today, selected, focusing, captionid, onSelect, onMonth, onOpen } = props;
+  const { look, month, weeks, placed, today, selected, focusing, captionid, dots, onSelect, onMonth, onOpen } = props;
   const [height, setHeight] = useState(ROW_DEFAULT);
   const [itemsday, setItemsday] = useState(null);
   const grid = useRef(null);
   const rows = useRef(null);
   const count = useRef(weeks.length);
   count.current = weeks.length;
+  const width = useRef(props.onWidth);
+  width.current = props.onWidth;
   const days = useMemo(() => weeks.flat(), [weeks]);
   const counts = useMemo(() => dayCounts(days, placed), [days, placed]);
   const slots = barSlots(height);
@@ -66,13 +73,22 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
     if (!element || typeof ResizeObserver === "undefined") {
       return void 0;
     }
+    const frame = grid.current?.parentElement || null;
     const observer = new ResizeObserver((entries) => {
-      const box = entries[entries.length - 1].contentRect;
-      if (box.height > 0 && count.current > 0) {
-        setHeight(Math.round(box.height / count.current));
-      }
+      entries.forEach((entry) => {
+        const box = entry.contentRect;
+        if (entry.target === element && box.height > 0 && count.current > 0) {
+          setHeight(Math.round(box.height / count.current));
+        }
+        if (entry.target === frame && box.width > 0) {
+          width.current(box.width);
+        }
+      });
     });
     observer.observe(element);
+    if (frame) {
+      observer.observe(frame);
+    }
     return () => observer.disconnect();
   }, []);
   useLayoutEffect(() => {
@@ -126,7 +142,7 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
     "div",
     {
       ref: grid,
-      className: "dim-cal__grid",
+      className: `dim-cal__grid${dots ? " dim-cal__grid--phone" : ""}`,
       role: "grid",
       "aria-labelledby": captionid,
       "data-region": "dim-cal-grid",
@@ -139,11 +155,11 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
       children: [
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekdays", role: "row", children: weeks[0].map((iso) => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekday", role: "columnheader", children: say(iso, WEEKDAY, look.language) }, iso, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 209,
+          lineNumber: 229,
           columnNumber: 21
         })) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 207,
+          lineNumber: 227,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("div", { ref: rows, className: "dim-cal__weeks", role: "rowgroup", children: weeks.map((week, index) => /* @__PURE__ */ jsxDEV(
@@ -157,18 +173,19 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
             selected,
             counts,
             look,
+            dots,
             onOpen
           },
           week[0],
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-            lineNumber: 214,
+            lineNumber: 234,
             columnNumber: 21
           }
         )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 212,
+          lineNumber: 232,
           columnNumber: 13
         })
       ]
@@ -177,13 +194,14 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-      lineNumber: 194,
+      lineNumber: 214,
       columnNumber: 9
     }
   );
 }, "MonthGrid");
 var MonthGrid_default = MonthGrid;
 export {
+  PHONE,
   MonthGrid_default as default,
   stepFrom
 };

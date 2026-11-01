@@ -40,7 +40,8 @@ use theme_dimensions\output\calendar_page;
  * 4. A calendar type other than the Gregorian goes to core's calendar: the range refuses it ({@see window}).
  * 5. The month and the state are read, every value outside its vocabulary dropped ({@see state}); a category the
  *    range refuses (gone, hidden, unlisted) is dropped like any other value, so a stale saved category or a shared
- *    link to a withheld one shows the whole calendar and says nothing about the id.
+ *    link to a withheld one shows the whole calendar and says nothing about the id. The open day ({@see PARAM_DAY})
+ *    is kept only inside the month grid's window ({@see day_from_request()}).
  * 6. The month grid's window, the range's answer ({@see range::answer()}) and the category tree are computed once
  *    and handed to the renderable, which embeds them: the first paint costs no request.
  *
@@ -54,6 +55,14 @@ final class page {
 
     /** @var string The body class every rule of scss/calendar.scss is scoped under. */
     public const BODY_CLASS = 'dim-calendar';
+
+    /**
+     * @var string The address parameter of the day the drawer (or the phone's sheet) shows, YYYY-MM-DD.
+     *
+     * Navigation like the month, never state: it is not in {@see state::STATE_PARAMS} and never saved, so a reload
+     * reopens the drawer and a new visit does not, and an address naming only the month and the day is still bare.
+     */
+    public const PARAM_DAY = 'day';
 
     /** @var \core\url|null Where to send the client, or null. */
     public readonly ?\core\url $redirect;
@@ -145,6 +154,37 @@ final class page {
     }
 
     /**
+     * Whether a string is a real day, YYYY-MM-DD: the shape and the calendar both (no 31 November).
+     *
+     * @param string $day The candidate.
+     * @return bool
+     */
+    public static function is_day(string $day): bool {
+        return preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $day, $parts) === 1
+            && checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
+    }
+
+    /**
+     * The day the request opens, kept only inside the month grid's window; anything else is dropped, never refused.
+     *
+     * The window is {@see grid()}'s, the days the answer embedded for the client covers: a day of the neighbours'
+     * weeks shown around the month is kept, a day of any other month is not, so the client is never asked to open a
+     * day it holds no answer for.
+     *
+     * @param string $month The month shown, YYYY-MM.
+     * @param int $firstday The weekday a week begins on, 0 for Sunday.
+     * @return string The day, YYYY-MM-DD, or '' for none.
+     */
+    public static function day_from_request(string $month, int $firstday): string {
+        $day = (string) optional_param(self::PARAM_DAY, '', PARAM_RAW);
+        if (!self::is_day($day)) {
+            return '';
+        }
+        [$from, $to] = self::grid($month, $firstday);
+        return $day >= $from && $day <= $to ? $day : '';
+    }
+
+    /**
      * Now, in the viewer's timezone.
      *
      * @return \DateTimeImmutable
@@ -174,7 +214,11 @@ final class page {
     }
 
     /**
-     * The state parameters of the current request a redirect to the route must carry, and the month.
+     * The state parameters of the current request a redirect to the route must carry, the month and the open day.
+     *
+     * The day is forwarded when it is a real day, without judging it against the month's window: that needs the
+     * viewer's first weekday, and the page behind the route judges it ({@see day_from_request()}), as it judges
+     * the category forwarded here as written.
      *
      * @return array name => value.
      */
@@ -183,6 +227,10 @@ final class page {
         $month = optional_param(state::PARAM_MONTH, '', PARAM_RAW);
         if ($month !== '') {
             $params[state::PARAM_MONTH] = self::month_from_request();
+        }
+        $day = (string) optional_param(self::PARAM_DAY, '', PARAM_RAW);
+        if (self::is_day($day)) {
+            $params[self::PARAM_DAY] = $day;
         }
         $named = state::from_request();
         return $named === null ? $params : $params + $named->query();
@@ -233,6 +281,7 @@ final class page {
         $root = $state->categoryid ? scope::for_viewer() : $scope;
 
         $firstday = (int) calendar_get_starting_weekday();
+        $day = self::day_from_request($month, $firstday);
         [$from, $to] = self::grid($month, $firstday);
         $window = window::from_iso($from, $to);
         // Every key off asks no source: the answer is the window's days, each at zero (the service reads [] as all).
@@ -242,7 +291,8 @@ final class page {
         $PAGE->set_context($context);
         $PAGE->set_pagetype(self::PAGETYPE);
         $PAGE->set_pagelayout('standard');
-        $PAGE->set_url(self::url([state::PARAM_MONTH => $month] + $state->query()));
+        $opened = $day !== '' ? [self::PARAM_DAY => $day] : [];
+        $PAGE->set_url(self::url([state::PARAM_MONTH => $month] + $opened + $state->query()));
         $PAGE->set_title(get_string('calendar_title', 'theme_dimensions'));
         $PAGE->set_heading('');
         $PAGE->add_body_class(self::BODY_CLASS);
@@ -256,7 +306,8 @@ final class page {
             $window,
             $answer,
             $state,
-            tree::for_scope($root)
+            tree::for_scope($root),
+            $day
         ));
     }
 }

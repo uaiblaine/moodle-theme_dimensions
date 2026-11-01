@@ -5,7 +5,8 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * One week row of the grid: seven days, the bars in their slots, each day's content under them.
  *
  * The row is a grid of its own: a 30px row for the day numbers, one row per bar slot it draws, and the rest for the
- * days' content, so a bar never zigzags and a day's content starts under the lowest bar of its row.
+ * days' content, so a bar never zigzags and a day's content starts under the lowest bar of its row. On a phone
+ * (`dots` handed) the row draws no bar and no content: each day its number and its dot row.
  *
  * @module     theme_dimensions/calendar/WeekRow
  * @copyright  2026 Anderson Blaine
@@ -14,8 +15,9 @@ import { jsxDEV } from "react/jsx-dev-runtime";
 import Bar from "./Bar";
 import DayCell from "./DayCell";
 import { HEADER, SLOT, cellPlan } from "./layout";
-const WeekRow = /* @__PURE__ */ __name(({ week, layout, height, month, today, selected, counts, look, onOpen }) => {
-  const rows = `${HEADER}px${layout.used ? ` repeat(${layout.used}, ${SLOT}px)` : ""} minmax(0, 1fr)`;
+const WeekRow = /* @__PURE__ */ __name(({ week, layout, height, month, today, selected, counts, look, dots, onOpen }) => {
+  const used = dots ? 0 : layout.used;
+  const rows = `${HEADER}px${used ? ` repeat(${used}, ${SLOT}px)` : ""} minmax(0, 1fr)`;
   return /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__week", role: "row", style: { gridTemplateRows: rows }, children: week.map((iso, column) => /* @__PURE__ */ jsxDEV(
     DayCell,
     {
@@ -26,9 +28,10 @@ const WeekRow = /* @__PURE__ */ __name(({ week, layout, height, month, today, se
       selected: iso === selected,
       count: counts.get(iso) || 0,
       plan: cellPlan(layout.timed[column], layout.hidden[column], layout.used, height),
-      contentRow: layout.used + 2,
+      contentRow: used + 2,
       look,
-      bars: layout.bars.filter((segment) => segment.start === column).map((segment) => /* @__PURE__ */ jsxDEV(
+      dots: dots ? dots.get(iso) || { keys: [], more: false } : null,
+      bars: dots ? null : layout.bars.filter((segment) => segment.start === column).map((segment) => /* @__PURE__ */ jsxDEV(
         Bar,
         {
           segment,
@@ -39,7 +42,7 @@ const WeekRow = /* @__PURE__ */ __name(({ week, layout, height, month, today, se
         false,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/WeekRow.tsx",
-          lineNumber: 69,
+          lineNumber: 73,
           columnNumber: 25
         }
       )),
@@ -49,12 +52,12 @@ const WeekRow = /* @__PURE__ */ __name(({ week, layout, height, month, today, se
     false,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/WeekRow.tsx",
-      lineNumber: 57,
+      lineNumber: 60,
       columnNumber: 17
     }
   )) }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/WeekRow.tsx",
-    lineNumber: 55,
+    lineNumber: 58,
     columnNumber: 9
   });
 }, "WeekRow");

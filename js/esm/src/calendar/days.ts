@@ -70,6 +70,7 @@ export const gridWeeks = (month: string, firstday: number): string[][] => {
 export type Zone = {
     day: (timestamp: number) => string,
     time: (timestamp: number) => string,
+    minutes: (timestamp: number) => number,
 };
 
 /**
@@ -93,11 +94,12 @@ const formatterIn = (language: string | undefined, options: Intl.DateTimeFormatO
  *
  * @param {string} timezone The viewer's timezone, as the server names it.
  * @param {string|undefined} language The language tag, for the time.
- * @returns {object} day() and time().
+ * @returns {object} day(), time() and minutes().
  */
 export const zone = (timezone: string, language: string | undefined): Zone => {
     const days = formatterIn('en-CA', {year: 'numeric', month: '2-digit', day: '2-digit'}, timezone);
     const times = formatterIn(language, {hour: '2-digit', minute: '2-digit'}, timezone);
+    const clock = formatterIn('en-GB', {hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}, timezone);
     const memo = new Map<number, string>();
     return {
         /**
@@ -124,5 +126,17 @@ export const zone = (timezone: string, language: string | undefined): Zone => {
          * @returns {string} The time.
          */
         time: (timestamp: number): string => times.format(new Date(timestamp * 1000)),
+        /**
+         * The minutes since the day's midnight an instant falls on in the zone, as the wall clock reads them: the
+         * hour column's position (a day of a daylight-saving change keeps 24 rows; its clock decides the row).
+         *
+         * @param {number} timestamp The instant, in seconds.
+         * @returns {number} 0 to 1439.
+         */
+        minutes: (timestamp: number): number => {
+            const parts = Object.fromEntries(clock.formatToParts(new Date(Math.floor(timestamp) * 1000))
+                .map((part) => [part.type, part.value]));
+            return (Number(parts.hour) % 24) * 60 + Number(parts.minute);
+        },
     };
 };

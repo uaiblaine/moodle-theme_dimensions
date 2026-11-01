@@ -2,12 +2,13 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * One week's piece of a spanning bar: a link to the item, in the slot the row gave it.
+ * One week's piece of a spanning bar: a link to the item that opens its popover, in the slot the row gave it.
  *
  * The bar sits in the week row's own grid (grid-column: start / span n, grid-row: its slot under the day numbers),
  * with open ends where the item goes on before or after the week. Its label is the item's name and its WHOLE span,
  * whichever week's piece the reader meets. It is out of the Tab order: the grid's keyboard reaches it from a day it
- * covers (F2, then Tab).
+ * covers (F2, then Tab). A press, Enter or Space opens the popover (the page's delegated listener, on data-cal-pop);
+ * its href, the item's own page, is what a middle click or a copied link follows.
  *
  * @module     theme_dimensions/calendar/Bar
  * @copyright  2026 Anderson Blaine
@@ -40,6 +41,7 @@ const Bar = /* @__PURE__ */ __name(({ segment, week, look }) => {
       tabIndex: -1,
       "aria-label": barLabel(item, first, last, look),
       "data-cal-item": "",
+      "data-cal-pop": "",
       "data-first": week[segment.start],
       "data-last": week[segment.end],
       "data-source": item.source,
@@ -47,7 +49,7 @@ const Bar = /* @__PURE__ */ __name(({ segment, week, look }) => {
       children: [
         segment.clipstart ? /* @__PURE__ */ jsxDEV("span", { "aria-hidden": "true", children: "\u2039 " }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Bar.tsx",
-          lineNumber: 77,
+          lineNumber: 79,
           columnNumber: 34
         }) : null,
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__name", children: [
@@ -55,12 +57,12 @@ const Bar = /* @__PURE__ */ __name(({ segment, week, look }) => {
           place !== "" ? ` \xB7 ${place}` : ""
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Bar.tsx",
-          lineNumber: 78,
+          lineNumber: 80,
           columnNumber: 13
         }),
         segment.clipend ? /* @__PURE__ */ jsxDEV("span", { "aria-hidden": "true", children: " \u203A" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Bar.tsx",
-          lineNumber: 79,
+          lineNumber: 81,
           columnNumber: 32
         }) : null
       ]
@@ -69,7 +71,7 @@ const Bar = /* @__PURE__ */ __name(({ segment, week, look }) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/Bar.tsx",
-      lineNumber: 65,
+      lineNumber: 66,
       columnNumber: 9
     }
   );

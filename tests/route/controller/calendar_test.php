@@ -210,6 +210,44 @@ final class calendar_test extends \core\tests\router\route_testcase {
     }
 
     /**
+     * The open day reaches the client when the month's grid holds it, and the page's address keeps it.
+     *
+     * @return void
+     */
+    public function test_the_open_day_inside_the_grid_is_kept(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $response = $this->request(['month' => '2026-11', 'day' => '2026-11-17']);
+
+        $body = (string) $response->getBody();
+        $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
+        $this->assertSame('2026-11-17', $this->props($body)['day']);
+        $this->assertSame('2026-11-17', $PAGE->url->param('day'), 'A reload reopens the drawer.');
+    }
+
+    /**
+     * An open day of another month is dropped, never refused: the page is served without it.
+     *
+     * Its control is test_the_open_day_inside_the_grid_is_kept.
+     *
+     * @return void
+     */
+    public function test_an_open_day_outside_the_grid_is_dropped(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $response = $this->request(['month' => '2026-11', 'day' => '2027-01-20']);
+
+        $body = (string) $response->getBody();
+        $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
+        $this->assertSame('', $this->props($body)['day']);
+        $this->assertNull($PAGE->url->param('day'));
+    }
+
+    /**
      * A POST is refused: every control of the page is a GET form or a link.
      *
      * @return void

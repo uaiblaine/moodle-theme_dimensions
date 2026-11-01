@@ -166,6 +166,89 @@ final class page_test extends \advanced_testcase {
     }
 
     /**
+     * Open days and what the page keeps of them, for November 2026 from Sunday (grid 2026-11-01 to 2026-12-05).
+     *
+     * @return array
+     */
+    public static function days(): array {
+        return [
+            'a day of the month' => ['2026-11', '2026-11-17', '2026-11-17'],
+            'the grid\'s first day' => ['2026-11', '2026-11-01', '2026-11-01'],
+            'the next month\'s day the grid shows' => ['2026-11', '2026-12-05', '2026-12-05'],
+            'the day after the grid' => ['2026-11', '2026-12-06', ''],
+            'the day before the grid' => ['2026-11', '2026-10-31', ''],
+            'a day of another month' => ['2026-11', '2027-01-20', ''],
+            'a day that does not exist' => ['2026-11', '2026-11-31', ''],
+            'a date without its zeros' => ['2026-11', '2026-11-7', ''],
+            'a timestamp' => ['2026-11', '1794787200', ''],
+            'not a day' => ['2026-11', 'tomorrow', ''],
+            'nothing' => ['2026-11', '', ''],
+        ];
+    }
+
+    /**
+     * The open day is kept inside the month grid's window alone; outside it, malformed or impossible, it is dropped.
+     *
+     * @param string $month The month shown.
+     * @param string $day The day the address names.
+     * @param string $kept What the page keeps.
+     * @return void
+     */
+    #[DataProvider('days')]
+    public function test_the_open_day_is_kept_inside_the_window_only(string $month, string $day, string $kept): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $_GET = ['month' => $month, page::PARAM_DAY => $day];
+        $this->assertSame($kept, page::day_from_request($month, 0));
+    }
+
+    /**
+     * The window follows the first weekday: the same day is inside one grid and outside the other.
+     *
+     * @return void
+     */
+    public function test_the_window_follows_the_first_weekday(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $_GET = [page::PARAM_DAY => '2026-10-26'];
+        $this->assertSame('2026-10-26', page::day_from_request('2026-11', 1), 'Monday first: the grid opens on 26 October.');
+        $this->assertSame('', page::day_from_request('2026-11', 0), 'Sunday first: the grid opens on 1 November.');
+    }
+
+    /**
+     * The open day is navigation, never state: an address naming the month and the day is still bare.
+     *
+     * @return void
+     */
+    public function test_the_open_day_is_not_state(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $this->assertNotContains(page::PARAM_DAY, state::STATE_PARAMS);
+        $_GET = ['month' => '2026-11', page::PARAM_DAY => '2026-11-17'];
+        $this->assertNull(state::from_request());
+    }
+
+    /**
+     * The script's forward carries a real day as written, and drops one that is not a day; the page judges the window.
+     *
+     * @return void
+     */
+    public function test_the_forward_carries_the_open_day(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $_GET = ['month' => '2026-11', page::PARAM_DAY => '2027-01-20'];
+        $before = (int) $DB->perf_get_reads();
+        $params = page::forwarded_params();
+        $this->assertSame(0, (int) $DB->perf_get_reads() - $before);
+        $this->assertSame(['month' => '2026-11', page::PARAM_DAY => '2027-01-20'], $params, 'Forwarded as written, not judged.');
+
+        $_GET = ['month' => '2026-11', page::PARAM_DAY => '2026-11-31'];
+        $this->assertSame(['month' => '2026-11'], page::forwarded_params());
+    }
+
+    /**
      * Core's month and day views are spelled with core's day, month and year, never a timestamp.
      *
      * @return void

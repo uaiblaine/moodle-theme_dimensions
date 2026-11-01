@@ -1504,10 +1504,19 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   `cal_d`/`cal_m`/`cal_y`, so the client computes no timestamp.
 - **Item elements carry `data-first`/`data-last`, never `data-from`**: `esm_source_test`'s import parser reads `from"` in the
   minified build as a specifier.
+- **C3: the day drawer and the event popover** (PROPOSAL section 13). A day opens `DayDrawer.tsx` (the phone's sheet below
+  `MonthGrid.PHONE`, the width of the frame the grid shares with the drawer, read by the grid's one ResizeObserver: the
+  grid's own width would flip when the drawer narrows it). The open day is `day=` (`page::PARAM_DAY`), navigation and never
+  state, kept by `page::day_from_request()` inside `page::grid()`'s window, written with replaceState. An item marked
+  `data-cal-pop` opens `EventPopover.tsx` through one delegated listener in `Calendar.tsx`; `itemHref()` and `dayHref()`
+  stay the fallbacks. The day's layout is `overlap.ts` (pure); the description is core's
+  `core_calendar_get_calendar_event_by_id` through `description.ts` (cached per event, a refusal reads as ''), the
+  calendar's one trusted HTML sink. The popover's two box reads are the tree's only layout reads, on an opening.
 - Tests: `tests/local/calendar/{state,page,calendar_component_source}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,
-  Behat `theme_dimensions_calendar.feature`; gates in the "C2 calendar page" block of `mutations/gates.conf`.
+  Behat `theme_dimensions_calendar.feature`; gates in the "C2 calendar page" and "C3 calendar drawer and popover" blocks
+  of `mutations/gates.conf`.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 
