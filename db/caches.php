@@ -30,7 +30,9 @@ $definitions = [
     // viewer-independent, holding no count and no course name (branding::CACHED_KEYS is the
     // whole payload). An entry holds the category's RESOLVED colour pair, which may be an
     // ancestor's, so the whole cache is dropped when the editor saves, when a category is deleted
-    // and when one is updated (a move among them).
+    // and when one is updated (a move among them). The block_compass category_badges listener keeps
+    // its own small entries here too, under compasscrest_<id> beside branding's integer keys, so
+    // they go with every one of those drops (local\hook\block_compass\category_badges).
     'categorybranding' => [
         'mode' => \core_cache\store::MODE_APPLICATION,
         'simplekeys' => true,
