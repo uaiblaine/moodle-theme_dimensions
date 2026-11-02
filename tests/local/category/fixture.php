@@ -194,6 +194,40 @@ trait fixture {
     }
 
     /**
+     * Let tool_courserating rate every course, or skip the test where the plugin is not installed.
+     *
+     * The plugin is optional (the theme asks it by class name) and a CI dependency, so a test that needs it runs in
+     * CI and skips cleanly elsewhere. Under PHPUnit its ratingmode setting defaults to RATEBY_NOONE; its generator's
+     * set_config() reindexes every course's summary row to the new mode, so the rows are the plugin's own.
+     *
+     * @return \tool_courserating_generator The plugin's generator, to rate with.
+     */
+    protected function ratings_on(): \tool_courserating_generator {
+        if (!class_exists('tool_courserating\helper')) {
+            $this->markTestSkipped('tool_courserating is not installed.');
+        }
+        $generator = self::getDataGenerator()->get_plugin_generator('tool_courserating');
+        $generator->set_config(\tool_courserating\constants::SETTING_RATINGMODE, \tool_courserating\constants::RATEBY_ANYTIME);
+        return $generator;
+    }
+
+    /**
+     * Rate a course through tool_courserating's own API, one new user per rating, so its summary row is the plugin's.
+     *
+     * @param int $courseid The course.
+     * @param int[] $ratings The ratings, 1 to 5.
+     * @param int $reviews How many of them, the first ones, carry a review.
+     * @return void
+     */
+    protected function rate(int $courseid, array $ratings, int $reviews = 0): void {
+        $generator = self::getDataGenerator();
+        $plugin = $generator->get_plugin_generator('tool_courserating');
+        foreach (array_values($ratings) as $index => $rating) {
+            $plugin->create_rating((int) $generator->create_user()->id, $courseid, $rating, $index < $reviews ? 'Muito bom.' : '');
+        }
+    }
+
+    /**
      * The course ids of one resolved page, in display order.
      *
      * @param int $categoryid The root.

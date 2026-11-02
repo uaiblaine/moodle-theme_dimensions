@@ -314,6 +314,119 @@ final class card_markup_test extends \advanced_testcase {
     }
 
     /**
+     * A rated card opens its meta line with the rating: a hidden amber glyph and digits, one sentence for a reader.
+     *
+     * The glyph is no control and sits outside the action cluster, whose star is the favourite; the digits and the
+     * glyph are hidden from a screen reader, which is told the rating's sentence once. A card with a rating and no
+     * other fact still draws its meta line; a card with neither draws none, which is the control.
+     */
+    public function test_a_rated_card_opens_its_meta_line_with_the_rating(): void {
+        $this->resetAfterTest();
+        $context = $this->example_context('category_card');
+        $this->assertTrue($context['hasrating'], 'Precondition: the example is a rated card.');
+        $xpath = $this->render_context('category_card', $context);
+
+        $lines = $xpath->query('//p[' . self::has_class('dim-card__meta') . ']');
+        $this->assertSame(1, $lines->length, 'One meta line.');
+        $line = $lines->item(0);
+        $rating = $xpath->query('./*[1][' . self::has_class('dim-card__rating') . ']', $line);
+        $this->assertSame(1, $rating->length, 'The rating opens the line.');
+        $shown = $xpath->query('./span[@aria-hidden="true"]', $rating->item(0));
+        $this->assertSame(1, $shown->length);
+        $this->assertSame('4.7 (23)', trim($shown->item(0)->textContent), 'The average and the count, as shown.');
+        $glyphs = $xpath->query(
+            './i[' . self::has_class('fa-star') . '][' . self::has_class('dim-card__ratingstar') . ']',
+            $shown->item(0)
+        );
+        $this->assertSame(1, $glyphs->length, 'The amber glyph.');
+        $this->assertSame('true', $glyphs->item(0)->getAttribute('aria-hidden'));
+        $told = $xpath->query('./span[' . self::has_class('visually-hidden') . ']', $rating->item(0));
+        $this->assertSame('Rating 4.7 out of 5, 23 ratings', $told->item(0)->textContent, 'What a screen reader is told.');
+        $this->assertStringEndsWith(' · 36 hours · In-person · São Paulo', $line->textContent, 'The other facts follow.');
+        $this->assertSame(
+            0,
+            $xpath->query('//button//*[' . self::has_class('dim-card__ratingstar') . ']')->length,
+            'The rating is no button.'
+        );
+        $this->assertSame(
+            0,
+            $xpath->query('//*[' . self::has_class('dim-card__actions') . ']//*[' . self::has_class('dim-card__rating') . ']')
+                ->length,
+            'Nor is it in the action cluster, where the favourite star is.'
+        );
+
+        $alone = $this->render_context('category_card', ['meta' => ''] + $context);
+        $lines = $alone->query('//p[' . self::has_class('dim-card__meta') . ']');
+        $this->assertSame(1, $lines->length, 'A rating with no other fact still draws the line.');
+        $this->assertStringNotContainsString('·', $lines->item(0)->textContent);
+
+        $neither = $this->render_context('category_card', ['meta' => '', 'hasrating' => false, 'rating' => null] + $context);
+        $this->assertSame(0, $neither->query('//p[' . self::has_class('dim-card__meta') . ']')->length, 'Control: no line.');
+        $unrated = $this->render_context('category_card', ['hasrating' => false, 'rating' => null] + $context);
+        $this->assertSame(0, $unrated->query('//*[' . self::has_class('dim-card__rating') . ']')->length);
+        $this->assertSame(
+            '36 hours · In-person · São Paulo',
+            trim($unrated->query('//p[' . self::has_class('dim-card__meta') . ']')->item(0)->textContent)
+        );
+    }
+
+    /**
+     * The dialogue's rating block: the average told once, the distribution as progress elements, the plugin's trigger.
+     *
+     * The bars are <progress> elements whose maximum is the count, never a width in a style attribute (a CSS-context
+     * sink). The reviews' trigger is tool_courserating's own: an element its document listener finds by
+     * `.tool_courserating-cfield .tool_courserating-ratings`, named by the course id in its class, and the hook the
+     * theme's dialogue closes on. Without reviews the reader may see, no trigger; without a rating, no block.
+     */
+    public function test_the_dialogues_rating_block_is_the_plugins_trigger_and_progress_rows(): void {
+        $this->resetAfterTest();
+        $context = $this->example_context('category_card_modal');
+        $xpath = $this->render_context('category_card_modal', $context);
+        $blocks = $xpath->query('//section[@data-region="dim-cmodal-rating"]');
+        $this->assertSame(1, $blocks->length);
+        $block = $blocks->item(0);
+        $this->assertSame(0, $xpath->query('.//*[@style]', $block)->length, 'No style attribute anywhere in the block.');
+        $this->assertSame('Ratings', trim($xpath->query('./h3', $block)->item(0)->textContent));
+        $told = $xpath->query(
+            './/*[' . self::has_class('dim-cmodal__ratingavg') . ']/span[' . self::has_class('visually-hidden') . ']',
+            $block
+        );
+        $this->assertSame('Rating 4.7 out of 5, 23 ratings', $told->item(0)->textContent);
+        $this->assertSame(5, $xpath->query('.//*[' . self::has_class('dim-cmodal__stars') . ']/i', $block)->length);
+
+        $bars = $xpath->query('.//li[' . self::has_class('dim-cmodal__ratingrow') . ']/progress', $block);
+        $this->assertSame(5, $bars->length, 'Five rows, from five stars down to one.');
+        $this->assertSame(['17', '4', '1', '1', '0'], array_map(fn($bar) => $bar->getAttribute('value'), iterator_to_array($bars)));
+        foreach ($bars as $bar) {
+            $this->assertSame('23', $bar->getAttribute('max'), 'Each bar is out of the whole count.');
+            $this->assertNotSame('', $bar->getAttribute('aria-label'));
+        }
+        $this->assertSame('5 stars: 17', $bars->item(0)->getAttribute('aria-label'));
+
+        $triggers = $xpath->query(
+            './/*[' . self::has_class('tool_courserating-cfield') . ']//*[' . self::has_class('tool_courserating-ratings') . ']',
+            $block
+        );
+        $this->assertSame(1, $triggers->length, 'The plugin\'s listener finds its trigger.');
+        $trigger = $triggers->item(0);
+        $this->assertStringContainsString('tool_courserating-ratings-courseid-42', $trigger->getAttribute('class'));
+        $this->assertSame('dim-cmodal-reviews', $trigger->getAttribute('data-region'));
+        $this->assertSame('button', $trigger->nodeName);
+        $this->assertSame('button', $trigger->getAttribute('type'));
+        $this->assertSame('Read 9 reviews', trim($trigger->textContent));
+
+        $context['rating']['hasreviewslink'] = false;
+        $noreviews = $this->render_context('category_card_modal', $context);
+        $this->assertSame(1, $noreviews->query('//section[@data-region="dim-cmodal-rating"]')->length, 'Control: the block.');
+        $this->assertSame(0, $noreviews->query('//*[@data-region="dim-cmodal-reviews"]')->length, 'No reviews, no trigger.');
+
+        $context['rating'] = null;
+        $context['hasrating'] = false;
+        $unrated = $this->render_context('category_card_modal', $context);
+        $this->assertSame(0, $unrated->query('//section[@data-region="dim-cmodal-rating"]')->length, 'No rating, no block.');
+    }
+
+    /**
      * The custom properties the stylesheet declares for the badges, light block and dark block.
      *
      * The split is the line the FIRST dark selector opens on: everything before it is the
@@ -949,7 +1062,11 @@ final class card_markup_test extends \advanced_testcase {
             $parts->query('//a[' . self::has_class('dim-cmodal__button--secondary') . '][@href]')->length
         );
         $this->assertSame(1, $parts->query('//a[' . self::has_class('dim-cmodal__button--primary') . '][@href]')->length);
-        $this->assertSame(0, $parts->query('//button')->length, 'Control: an open course draws no closed button.');
+        $this->assertSame(
+            0,
+            $parts->query('//*[@data-region="dim-cmodal-actions"]//button')->length,
+            'Control: an open course draws no closed button.'
+        );
 
         $context = $this->example_context('category_card_modal');
         $context['primary'] = [

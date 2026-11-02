@@ -751,4 +751,41 @@ final class rows_anonymous_test extends \advanced_testcase {
         $warm = $dialogue(false);
         $this->assertGreaterThan($warm, $dialogue(true), 'Control: the dialogue reads the contacts the cache does not hold.');
     }
+
+    /**
+     * A rated card tells a visitor what it tells an account: the same rating, in both rows answers and on the page.
+     *
+     * tool_courserating shows a course's rating to whoever may see the course listed, so the aggregate follows the
+     * card on both shells. The visitor's answer is the anonymous page's card for card with the rating in it, the
+     * rating survives the returns' allowlist, and a logged-in reader's answer carries the very same rating for the
+     * same course. The public course nobody rated is the control on every side.
+     */
+    public function test_a_rated_card_tells_a_visitor_what_it_tells_an_account(): void {
+        $this->seed(true, true);
+        $this->ratings_on();
+        $this->rate($this->ids['public'], [5, 4]);
+        $root = $this->ids['root'];
+        $expected = dialogue::rating_line(4.5, 2);
+
+        $answer = $this->ask($root, ['sort' => 'name', 'pagesize' => 96]);
+        $cards = array_column(self::cards($answer), null, 'id');
+        $this->assertTrue($cards[$this->ids['public']]['hasrating'], 'The visitor is told the rating.');
+        $this->assertSame($expected, $cards[$this->ids['public']]['rating']);
+        $this->assertFalse($cards[$this->ids['alpha']]['hasrating'], 'Control: a course nobody rated.');
+        $this->assertNull($cards[$this->ids['alpha']]['rating']);
+
+        $context = $this->page($root, ['sort' => 'name', 'perpage' => 96]);
+        $this->assertSame(self::cards($context), self::cards($answer), 'The anonymous page\'s cards, the rating included.');
+
+        $cleaned = external_api::clean_returnvalue(get_category_rows::execute_returns(), $answer);
+        $cleanedcards = array_column($cleaned['cards'], null, 'id');
+        $this->assertSame($expected, $cleanedcards[$this->ids['public']]['rating'], 'Through the allowlist, whole.');
+
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $this->become(self::getDataGenerator()->create_user());
+        $account = rows::fetch(\core_course_category::get($root, MUST_EXIST, true), ['sort' => 'name', 'pagesize' => 96]);
+        $accountcards = array_column(self::cards($account), null, 'id');
+        $this->assertSame($expected, $accountcards[$this->ids['public']]['rating'], 'An account is told the same.');
+        $this->assertFalse($accountcards[$this->ids['alpha']]['hasrating']);
+    }
 }

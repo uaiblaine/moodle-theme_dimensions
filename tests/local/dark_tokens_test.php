@@ -213,6 +213,7 @@ final class dark_tokens_test extends \basic_testcase {
             $pairs["success on {$short}"] = ['--dim-ds-text-success', $ground, 4.5];
             $pairs["focus ring on {$short}"] = ['--dim-ds-focus-ring', $ground, 3.0];
             $pairs["strong line on {$short}"] = ['--dim-ds-border-strong', $ground, 3.0];
+            $pairs["rating star on {$short}"] = ['--dim-ds-accent-rating', $ground, 3.0];
         }
         $pairs['ink on the tint'] = ['--dim-ds-text-on-tint', '--dim-ds-interactive-primary-tint', 4.5];
         $pairs['link on the tint'] = ['--dim-ds-text-link', '--dim-ds-interactive-primary-tint', 4.5];
@@ -268,6 +269,28 @@ final class dark_tokens_test extends \basic_testcase {
         $this->assertStringContainsString('--dim-ds-text-success: var(--dim-ds-green-700);', $light);
         $this->assertGreaterThanOrEqual(4.5, branding::contrast('#edeefb', '#050073'), 'On-tint ink on the light tint.');
         $this->assertGreaterThanOrEqual(4.5, branding::contrast('#f2f3f5', '#2f6b00'), 'Success ink on the subtle surface.');
+    }
+
+    /**
+     * The rating's amber, derived from the palette in the light block, clears 3:1 on the three light surfaces.
+     *
+     * Its light value is a Sass expression over a primitive, not a primitive or an alias of one, so it is compiled
+     * here with the primitives and measured against the light surfaces' own primitives.
+     *
+     * @return void
+     */
+    public function test_the_rating_amber_reads_on_the_light_surfaces(): void {
+        $scss = $this->scss();
+        $light = $this->body($scss, "\n:root {", '--dim-ds-surface-page');
+        $this->assertSame(1, preg_match('/^\s*--dim-ds-accent-rating: (#\{[^;]+\});$/m', $light, $declared));
+        preg_match_all('/^\$dim-ds-[a-z]+(?:-\d+)?: #[0-9a-f]{3,6};$/m', $scss, $primitives);
+        $compiler = new \core_scss();
+        $compiler->append_raw_scss(implode("\n", $primitives[0]) . "\n.light { --amber: {$declared[1]}; }");
+        $this->assertSame(1, preg_match('/--amber:\s*(#[0-9a-f]{6})/', $compiler->to_css(), $amber));
+        foreach (['#ffffff' => 'the card', '#f8f9fa' => 'the page', '#f2f3f5' => 'the subtle surface'] as $ground => $name) {
+            $ratio = branding::contrast($ground, $amber[1]);
+            $this->assertGreaterThanOrEqual(3.0, $ratio, sprintf('The amber %s on %s reads %.2f:1.', $amber[1], $name, $ratio));
+        }
     }
 
     /**

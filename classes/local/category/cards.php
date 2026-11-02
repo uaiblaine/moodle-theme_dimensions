@@ -45,6 +45,10 @@ use theme_dimensions\local\landingfields;
  * here: only the course dialogue shows them, and it fetches them for one course
  * when it opens ({@see dialogue}), so a page pays nothing for what nobody opened.
  *
+ * One more layer belongs to an optional plugin: tool_courserating's average and count for the page's rated
+ * courses ({@see ratings()}), one statement on its summary table, and nothing at all where the plugin is not
+ * installed or rates no course anywhere ({@see ratings_enabled()}).
+ *
  * The images reproduce core's own choice - the first file of the course's
  * overviewfiles area, in filename order, that passes the site's accepted
  * types, within courseoverviewfileslimit, and is a real image - from one
@@ -85,6 +89,23 @@ final class cards {
     ];
 
     /**
+     * @var string The class tool_courserating is asked by: the plugin is optional and never declared, so it is present
+     *   exactly when its helper class loads.
+     */
+    private const RATING_HELPER = 'tool_courserating\helper';
+
+    /**
+     * @var string The predicate of a rated course on {tool_courserating_summary}: the course's effective mode, as the
+     *   plugin recorded it, rates, and somebody has rated it. It mirrors the plugin's own decision to show a course's
+     *   rating at all, \tool_courserating\api::reindex_course() and update_course_rating_in_custom_field() (a
+     *   ratingmode of RATEBY_NOONE prints nothing, and no rating prints nothing unless the site asks for empty stars,
+     *   which the showcase never draws). The mode is read from the row, never re-derived from the settings: the row is
+     *   what the plugin applies, kept current by its reindex and its course observers. :ratingnoone is
+     *   {@see rated_params()}'s.
+     */
+    public const RATED = 'ratingmode <> :ratingnoone AND cntall > 0';
+
+    /**
      * The course rows of the page, one statement.
      *
      * @param int[] $courseids The page's ids.
@@ -106,6 +127,67 @@ final class cards {
             }
         }
         return $ordered;
+    }
+
+    /**
+     * Whether tool_courserating is installed and rates any course on this site: when not, nothing of it is read.
+     *
+     * The plugin is asked by class name, as local_page is ({@see \theme_dimensions\output\category_pages}), and then
+     * by its own {@see \tool_courserating\helper::course_ratings_enabled_anywhere()}, which reads two settings and no
+     * table: off by default everywhere and no per-course override allowed means no course can carry a rating.
+     *
+     * @return bool
+     */
+    public static function ratings_enabled(): bool {
+        return class_exists(self::RATING_HELPER) && \tool_courserating\helper::course_ratings_enabled_anywhere();
+    }
+
+    /**
+     * The parameters of {@see RATED}: the plugin's own constant, never a copy of its value.
+     *
+     * Call only after {@see ratings_enabled()}: the constant's class is the plugin's.
+     *
+     * @return array
+     */
+    public static function rated_params(): array {
+        return ['ratingnoone' => \tool_courserating\constants::RATEBY_NOONE];
+    }
+
+    /**
+     * The average and the count of tool_courserating's ratings for the page's rated courses, one statement.
+     *
+     * Driven by the page's ids, never the population's: the summary table holds one row per course of the site. A
+     * course the plugin does not rate, or nobody rated yet, is absent from the answer ({@see RATED}). The aggregate
+     * follows the card on both shells, the visitor's included: the plugin shows a rating to whoever may see the course
+     * in a listing (\tool_courserating\permission::can_view_ratings()), and a page lists only those.
+     *
+     * @param int[] $courseids The page's ids.
+     * @return \stdClass[] courseid => {avg: float, count: int}, for the page's rated courses only.
+     */
+    public static function ratings(array $courseids): array {
+        global $DB;
+
+        $courseids = array_map('intval', $courseids);
+        if (!$courseids || !self::ratings_enabled()) {
+            return [];
+        }
+        [$insql, $params] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'rat');
+        // Rides the summary's unique index on courseid.
+        $records = $DB->get_records_select(
+            'tool_courserating_summary',
+            "courseid {$insql} AND " . self::RATED,
+            $params + self::rated_params(),
+            '',
+            'courseid, avgrating, cntall'
+        );
+        $ratings = [];
+        foreach ($records as $record) {
+            $ratings[(int) $record->courseid] = (object) [
+                'avg' => (float) $record->avgrating,
+                'count' => (int) $record->cntall,
+            ];
+        }
+        return $ratings;
     }
 
     /**

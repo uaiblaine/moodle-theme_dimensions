@@ -37,8 +37,11 @@ use theme_dimensions\local\category\guard;
  * What a course's dialogue shows beyond its card, fetched when a reader asks for it: one course per call.
  *
  * The answer is content only - the excerpt, the fact tiles, the programme's first lines and their two
- * labels ({@see dialogue::content()}). Never a state, a button or an address: those are the page's
- * decision, carried by the card the dialogue opened from, so the dialogue cannot contradict its card.
+ * labels and, with tool_courserating rating the course, its rating block ({@see dialogue::content()},
+ * {@see dialogue::rating()}). Never a state, a button or an address: those are the page's decision,
+ * carried by the card the dialogue opened from, so the dialogue cannot contradict its card. The rating
+ * block's one control is the plugin's own trigger of its reviews popup, offered only where the plugin's
+ * own rule lets this viewer read them.
  *
  * The order is a security property:
  *
@@ -139,6 +142,35 @@ class get_course_dialogue extends external_api {
             ),
             'haslearn' => new external_value(PARAM_BOOL, 'Whether there is a programme to list.'),
             'learnlabel' => new external_value(PARAM_TEXT, 'The heading of that checklist.'),
+            'rating' => new external_single_structure([
+                'avg' => new external_value(PARAM_TEXT, 'The average to one decimal, in the reader\'s language.'),
+                'count' => new external_value(PARAM_INT, 'How many ratings.'),
+                'label' => new external_value(PARAM_TEXT, 'The sentence a screen reader is told for the average and the count.'),
+                'courseid' => new external_value(PARAM_INT, 'The course, for tool_courserating\'s own trigger of its reviews.'),
+                'heading' => new external_value(PARAM_TEXT, 'The heading of the block.'),
+                'counttext' => new external_value(PARAM_TEXT, 'The count, spelt.'),
+                'stars' => new external_multiple_structure(
+                    new external_single_structure([
+                        'icon' => new external_value(PARAM_NOTAGS, 'The Font Awesome classes of the star: full, half or empty.'),
+                    ]),
+                    'The five stars of the average, decorative.'
+                ),
+                'distribution' => new external_multiple_structure(
+                    new external_single_structure([
+                        'stars' => new external_value(PARAM_INT, 'The rating this row counts, from five down to one.'),
+                        'count' => new external_value(PARAM_INT, 'How many gave it.'),
+                        'label' => new external_value(PARAM_TEXT, 'The row, spelt for a screen reader.'),
+                    ]),
+                    'The distribution, five rows.'
+                ),
+                'reviews' => new external_value(PARAM_INT, 'How many of the ratings carry a review.'),
+                'hasreviewslink' => new external_value(
+                    PARAM_BOOL,
+                    'Whether the block offers the plugin\'s reviews popup: there are reviews and the viewer may read them.'
+                ),
+                'reviewslabel' => new external_value(PARAM_TEXT, 'The text of that offer, empty where there is none.'),
+            ], 'The course\'s tool_courserating rating, null where the dialogue draws none.', VALUE_REQUIRED, null, NULL_ALLOWED),
+            'hasrating' => new external_value(PARAM_BOOL, 'Whether the dialogue draws the rating block.'),
         ]);
     }
 }

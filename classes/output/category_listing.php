@@ -367,6 +367,9 @@ class category_listing implements \core\output\named_templatable, \core\output\r
            with the opening dates, and the prerequisite of a conditional card. A visitor's card carries neither. */
         $nextactions = $result->anonymous ? [] : cards::next_actions($rows);
         $prerequisites = $result->anonymous ? [] : cards::prerequisites($rows);
+        /* tool_courserating's aggregate over the page's ids, on both shells: a rating is shown to whoever may see the
+           course listed, as the plugin decides. Nothing is read without the plugin or where it rates no course. */
+        $ratings = cards::ratings($ids);
 
         $showstar = !$result->anonymous && isloggedin() && !isguestuser();
         // The filter fields, for the facts the filter line's preview reads off each card: read once, cached by core.
@@ -393,7 +396,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
                 $nextactions[$courseid]['opens'] ?? null,
                 // The dialogue's kicker names the course's own category on every page, the listed one included.
                 $result->categorynames[(int) $row->category] ?? null,
-                $fields
+                $fields,
+                $ratings[$courseid] ?? null
             );
             $cardcontexts[] = $card->export_for_template($output);
         }

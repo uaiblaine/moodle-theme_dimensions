@@ -130,6 +130,14 @@ use theme_dimensions\local\landingfields;
  * {@see may_enter()}), the primary one the state's word over that same rule,
  * and where both would open one page only the primary is drawn.
  *
+ * A course tool_courserating rates, and somebody rated, opens its meta line with
+ * the rating (`rating`: the average to one decimal in the reader's language, the
+ * count, and the sentence a screen reader is told instead of the glyph and the
+ * digits), on both shells: the plugin shows the aggregate to whoever may see the
+ * course listed. The listing reads it once for the page
+ * ({@see \theme_dimensions\local\category\cards::ratings()}); the card spells
+ * it as the dialogue does ({@see \theme_dimensions\local\category\dialogue::rating_line()}).
+ *
  * The card also carries the facts the filter line's preview decides a criterion on (contract section 6,
  * js/esm/src/filterline/preview.ts): the state chip the course counts under (`chip`, the classifier's
  * {@see classifier::chip()} of the row's own state, exactly what the scope's filter keeps it by), the value
@@ -233,6 +241,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @param int|null $opens When a method refusing this viewer only for its window opens, per the same batch.
      * @param string|null $kicker The course's own category, plain, or null where it may not be named (the dialogue's kicker).
      * @param \core_customfield\field_controller[] $fields The page's filter fields, fieldid => field ({@see field_values()}).
+     * @param \stdClass|null $rating The course's rating, {avg, count} ({@see \theme_dimensions\local\category\cards::ratings()}),
+     *   null for a course the plugin does not rate, nobody rated, or a site without the plugin.
      */
     public function __construct(
         /** @var \stdClass The course row. */
@@ -259,6 +269,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
         private readonly ?string $kicker = null,
         /** @var \core_customfield\field_controller[] The page's filter fields, fieldid => field. */
         private readonly array $fields = [],
+        /** @var \stdClass|null tool_courserating's aggregate for this course, {avg, count}, or null where it has none. */
+        private readonly ?\stdClass $rating = null,
     ) {
     }
 
@@ -327,6 +339,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $start = (int) $this->course->startdate;
         // A visitor's card states a start day only where it prints one: an event's date tile.
         $hasstartday = !$this->anonymous || ($isevent && $start > 0);
+        $rating = $this->rating === null ? null : dialogue::rating_line($this->rating->avg, $this->rating->count);
 
         return (object) [
             'id' => $courseid,
@@ -349,6 +362,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'haskind' => $kindkey !== null,
             'datetile' => $this->datetile($isevent),
             'meta' => $this->meta($isevent),
+            'rating' => $rating,
+            'hasrating' => $rating !== null,
             'state' => $state ?? '',
             'chip' => $this->anonymous ? '' : classifier::chip((string) ($this->row->state ?? classifier::STATE_NONE)),
             'fieldvalues' => $this->field_values(),

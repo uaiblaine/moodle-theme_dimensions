@@ -276,6 +276,32 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Then "Busca Terrestre" "dialogue" should not exist
     And the focused element is "//article[@data-region='dim-card'][contains(., 'Busca Terrestre')]//a[@data-region='dim-card-more']" "xpath_element"
 
+  @javascript @tool_courserating
+  Scenario: A rated course shows its rating on the card and in the dialogue, whose reviews open the plugin's popup
+    # tool_courserating is optional for this theme: the theme's CI installs it, and a site without it excludes this
+    # scenario with --tags '~@tool_courserating'. A Behat site rates every course by default (the plugin turns itself
+    # off under PHPUnit only), and the plugin's own generator writes the ratings, so its summary row is its own. The
+    # rules (the predicate, the statement, the reviews' condition) are PHPUnit's; this is the wiring: the card's meta
+    # line, the block the service fills, and the plugin's listener opening its popup once the theme's dialogue closed.
+    Given the following "users" exist:
+      | username | firstname | lastname | email                |
+      | student2 | Sara      | Student  | student2@example.com |
+    And the following "tool_courserating > ratings" exist:
+      | user     | course | rating | review     |
+      | student1 | RESG   | 5      | Excelente. |
+      | student2 | RESG   | 4      |            |
+    And I log in as "student1"
+    And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    Then "//article[@data-region='dim-card'][contains(., 'Resgate em Altura')]//p[contains(@class, 'dim-card__meta')]/span[contains(@class, 'dim-card__rating')][contains(normalize-space(.), '4.5 (2)')]" "xpath_element" should exist
+    And "//article[@data-region='dim-card'][contains(., 'Curso Online')]//*[contains(@class, 'dim-card__rating')]" "xpath_element" should not exist
+    When I click on "//article[@data-region='dim-card'][contains(., 'Resgate em Altura')]//a[@data-region='dim-card-more']" "xpath_element"
+    Then "Resgate em Altura" "dialogue" should be visible
+    And I should see "2 ratings" in the "Resgate em Altura" "dialogue"
+    And "//section[@data-region='dim-cmodal-rating']//progress[@max='2'][@value='1'][@aria-label='5 stars: 1']" "xpath_element" should exist
+    When I click on "Read 1 review" "button" in the "Resgate em Altura" "dialogue"
+    Then "Course reviews" "dialogue" should be visible
+    And "Resgate em Altura" "dialogue" should not exist
+
   @javascript
   Scenario: A-Z reorders the flat listing where it stands, and the address says so
     # A-Z and Recent are the same shell - a bare grid with no posters - so moving between them
