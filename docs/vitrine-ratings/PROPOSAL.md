@@ -296,3 +296,38 @@ wire.
 - **L3 cannot use m503b for the after**: every 5.3 stack mounts the live checkout, so the before/after of L2 is
   measured in two `mdl ci` installs on one host (the base and the branch), with the probe opted in, rather than on
   the shared stack.
+
+## 11. L3 results (2026-11-02): L2 against L1
+
+Measured in two `mdl ci` installs on the M4 mini (one host for both sides), not on a shared stack (section 10):
+throwaway detached worktrees of L1 (1c24a26, the base) and L2 (55944db), each reduced to
+`theme_dimensions_perf.feature`, with the probe opted in and its medians printed to the Behat log. Run in the
+order base, L2, base, L2; each cell is the median of five loads, and the two runs of each side are given. The
+installs serve HTML without compression (`php -S`), so bytes are decoded bytes; `cachejs` is on there, unlike on
+the stacks, so the script counts differ from section 10.2. The student's root and grouped pages draw no cards:
+they are the controls, and moved only by the host's noise.
+
+| page | mode | metric | L1 (base) | L2 | change |
+|---|---|---|---|---|---|
+| student, flat | cold | FCP | 5,708 / 5,764 | 5,404 / 5,400 | about −330 ms (−6 %) |
+| student, flat | cold | TBT | 334 / 421 | 279 / 230 | about −120 ms (−32 %) |
+| student, flat | cold | INP (scope chip press) | 120 / 112 | 64 / 56 | about −55 ms (−48 %) |
+| student, flat | warm | FCP / TBT | 492, 632 / 33, 114 | 484, 464 / 42, 37 | within noise |
+| student, flat | both | DOM nodes | 1,674 | 1,534 | −140 (−8 %) |
+| student, flat | both | HTML bytes | 271,595 | 220,241 | −51 KB (−19 %) |
+| visitor, flat | cold | FCP | 5,036 / 5,256 | 4,804 / 4,804 | about −340 ms (−7 %) |
+| visitor, flat | cold | TBT | 127 / 156 | 138 / 141 | within noise |
+| visitor, flat | both | DOM nodes | 860 | 720 | −140 (−16 %) |
+| visitor, flat | both | HTML bytes | 150,942 | 98,497 | −52 KB (−35 %) |
+| student, root (control) | cold | FCP / TBT | 4,852, 5,060 / 225, 445 | 4,868, 4,916 / 245, 222 | none expected |
+| student, grouped (control) | cold | FCP / TBT | 4,912, 5,100 / 237, 403 | 5,044, 4,904 / 255, 219 | none expected |
+
+- **The DOM count understates the template.** A `<template>`'s content is a document fragment, outside the page's
+  element count, so the −140 nodes are the details panels; the templates' 500-1,000 inert elements were parse and
+  memory cost that no DOM count shows, and they are what the HTML bytes column measures.
+- **The press got cheaper**: the scope chip's INP halved on the student's page, because the client renders every card
+  of a rows answer through `category_card`, which no longer nests the dialogue.
+- **The second base run was the noisiest** (its controls moved too: root cold TBT 445), so the TBT change is the
+  least certain number here; FCP, INP, bytes and nodes moved the same way in both pairs.
+- The first opening of a dialogue now waits for one request; the probe does not press "More information", so that
+  latency is not in this table (the Behat dialogue scenario of the matrix waits on it and passed on all four legs).
