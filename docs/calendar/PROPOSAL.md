@@ -1565,8 +1565,14 @@ where the server falls back to its opening day, and applies no year bound, so a 
 week can show a different week than a reload (handled in C5); the toolbar's arrows are not clamped at 1900 or 2999,
 and the page then opens the current month or week.
 
-**Gates:** 36 in the "C4 week view" block of `mutations/gates.conf` (20 server and template, 16 client), every `.pl`
-  dry-applied against its file (all 36 live). `cal_js_history_push` (C2) re-pointed to the shell's new address line.
+**Gates:**
+- **Mutation sweep:** the "C4 week view" block and the four re-pointed gates (47) went red on pgsql and mariadb; the
+  gates the fixes added (`c4_day_newline`, `c4_month_newline`, `c4_strip_span`) and the re-pointed
+  `navbar_dropdown_hover_answered`, whose claim now names the test that holds it, went red on both after them. Swept
+  from worktrees of the commits.
+- **Tier 2:** `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat` passed every step on 1bf8b25:
+  PHPUnit 1,980 (16 skipped), Behat 195 scenarios (191 passed, 4 skipped), Jest 381. The run before the strip fix
+  failed the week scenario: the all-day strip's grid took one day track and squeezed the bars.
 
 **Where the build left the plan:**
 - **`view` and `week` are read through `page::scalar_param()`, not `optional_param()`.** Core's `param::clean()` throws
