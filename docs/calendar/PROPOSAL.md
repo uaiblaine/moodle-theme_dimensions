@@ -1367,7 +1367,15 @@ caller's category list (its one caller passes `publicaccess::public_ids()`, and 
 for a listed category's event); the collision order between two refusal reasons is not pinned, as in the twin; no
 test asserts `ajax => true` on the new function.
 
-**Gates:** _placeholder: the owner runs the sweep of the CV block and the matrix._
+**Gates:**
+- **Mutation sweep:** 56 `cv_*` gates went red on pgsql and mariadb (`mdl mutate --fast --branch MOODLE_503_STABLE
+  --only <56 gates>`, swept from a worktree of the commit). The first sweep showed two gates that reddened nothing:
+  `cv_keys_nested` removed only the filter, which the cleaner then survived, and now puts back the reader that threw;
+  `cv_landing_bulk_site` broke a second lock (local_unlistedcourses' predicate refuses the site and non-positive ids
+  itself), so it was dropped and the guard stays ungated.
+- **Tier 3:** `mdl ci moodle-theme_dimensions --matrix --behat --keep-logs` passed 4/4 legs: PHPUnit 1,942 (16 skipped),
+  Behat 193 scenarios (189 passed, 4 skipped), Jest 327. On PHP 8.4 with MariaDB one scenario failed on the first run
+  and passed on the automatic re-run.
 
 **Fast checks run** (m503b, PHP 8.4, PostgreSQL 18; `mdl ci` on the Mac mini, PHP 8.3, PostgreSQL): every touched or
 new PHPUnit file green; the external tests (`get_public_calendar_range_test`, `readonly_session_test`,
