@@ -86,6 +86,7 @@ final class window_test extends \basic_testcase {
             'impossible date' => ['2026-02-30', '2026-03-02'],
             'a time' => ['2026-11-01 00:00', '2026-11-02'],
             'words' => ['today', 'tomorrow'],
+            'a trailing newline' => ["2026-11-01\n", '2026-11-02'],
             'empty' => ['', ''],
         ];
     }

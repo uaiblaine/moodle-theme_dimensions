@@ -162,7 +162,7 @@ final class window {
      * @throws refusal On a malformed or impossible date.
      */
     private static function midnight(string $iso, \DateTimeZone $timezone): \DateTimeImmutable {
-        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $iso, $parts)) {
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $iso, $parts)) {
             throw new refusal();
         }
         if (!checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])) {

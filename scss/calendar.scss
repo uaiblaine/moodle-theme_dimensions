@@ -23,8 +23,12 @@
 // the card surface at 3:1). An item reads its colours through three local properties (--dim-cal-tint, -edge,
 // -ink) that its key class points at the key's tokens, and that the client sets to a category's branding pair
 // when the reader colours by category: the pair travels whole, ink with its ground.
+//
+// Core's calendar blocks drawn with the theme's calendar (local\calendar\blocks) are on any page, so their rules are
+// scoped under their own root, .dim-calblock, which declares the same tokens.
 
-body.dim-calendar {
+body.dim-calendar,
+.dim-calblock {
     --dim-cal-site-tint: #{$dim-ds-gray-100};
     --dim-cal-site-edge: #{$dim-ds-gray-600};
     --dim-cal-site-ink: #{$dim-ds-gray-800};
@@ -58,7 +62,8 @@ body.dim-calendar {
 
 // The dark half: a key's fill is its edge mixed into core's raised dark surface, its ink a light primitive lifted
 // until it reads on that fill, its edge lifted until it reads as a mark on the raised surface.
-:root[data-bs-theme="dark"] body.dim-calendar {
+:root[data-bs-theme="dark"] body.dim-calendar,
+:root[data-bs-theme="dark"] .dim-calblock {
     --dim-cal-site-tint: #{mix($dim-ds-gray-600, $dark-surface-raised, 30%)};
     --dim-cal-site-edge: #{dark-readable($dim-ds-gray-600, $dark-surface-raised, 3)};
     --dim-cal-site-ink: #{dark-readable($dim-ds-gray-100, mix($dim-ds-gray-600, $dark-surface-raised, 30%))};
@@ -820,6 +825,223 @@ body.dim-calendar {
         font-size: .8125rem;
     }
 
+    // The view switch's links, in the server's layer, read as the client's buttons do.
+    a.dim-cal__view {
+        text-decoration: none;
+    }
+
+    // The week (C4, WeekGrid.tsx): a gutter for the row headers and the hour labels, then seven day columns, in three
+    // rows. The hour body is one 2.5rem row per hour of the week's window (--dim-cal-hourcount), never a scroll box;
+    // its items are placed in shares of the window and of the day's width, as the drawer's are.
+    .dim-cal__weekgrid {
+        overflow: hidden;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__weekrow {
+        display: grid;
+        grid-template-columns: 3.5rem repeat(7, minmax(0, 1fr));
+    }
+
+    .dim-cal__weekstrip,
+    .dim-cal__weekhours {
+        border-top: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+    }
+
+    .dim-cal__weekgutter {
+        padding: .25rem .375rem;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .6875rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__weekgutter--strip {
+        display: flex;
+        align-items: center;
+    }
+
+    .dim-cal__weekgutter--hours {
+        display: grid;
+        grid-template-rows: repeat(var(--dim-cal-hourcount, 24), 2.5rem);
+        padding: 0 .375rem;
+    }
+
+    .dim-cal__weekheadcell {
+        display: flex;
+        justify-content: center;
+        padding: .25rem;
+        border-inline-start: 1px solid var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
+    }
+
+    .dim-cal__weekhead {
+        display: flex;
+        flex-direction: column;
+        gap: .125rem;
+        align-items: center;
+        padding: .25rem .5rem;
+        border: 0;
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: transparent;
+        color: var(--dim-ds-text-body, var(--bs-body-color));
+    }
+
+    .dim-cal__weekhead:hover {
+        background: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+    }
+
+    .dim-cal__weekdayname {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__weekdaynum {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__weekhead--today .dim-cal__weekdaynum {
+        background: var(--dim-ds-interactive-primary, var(--bs-primary));
+        color: var(--dim-ds-text-inverse, var(--bs-white));
+    }
+
+    // The strip is a grid of its own under the day columns: a zero-height first row, then one row per bar slot, so the
+    // month's bars (Bar.tsx, slot + 2) sit in it unchanged. It is one item of the week row, so it spans the seven day
+    // tracks; left to auto-placement it would take the first one alone and squeeze every bar into a day's width.
+    .dim-cal__weekstripgrid {
+        grid-column: 2 / -1;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        min-height: 1.75rem;
+        padding-bottom: .25rem;
+    }
+
+    .dim-cal__weekcol {
+        position: relative;
+        height: calc(var(--dim-cal-hourcount, 24) * 2.5rem);
+        border-inline-start: 1px solid var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
+        background-image:
+            repeating-linear-gradient(
+                to bottom,
+                var(--dim-ds-border-subtle, var(--bs-border-color-translucent)) 0 1px,
+                transparent 1px 2.5rem
+            );
+    }
+
+    .dim-cal__weekcol--selected {
+        background-color: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+    }
+
+    .dim-cal__weekitem {
+        position: absolute;
+        top: var(--dim-cal-top, 0);
+        left: calc(100% * var(--dim-cal-share-left, 0));
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 .25rem;
+        align-content: flex-start;
+        width: calc(100% * var(--dim-cal-share-width, 1));
+        height: var(--dim-cal-height, 2.5rem);
+        min-height: 2.5rem;
+        padding: .125rem .375rem;
+        overflow: hidden;
+        border: 1px solid var(--dim-cal-edge);
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        background: var(--dim-cal-tint);
+        color: var(--dim-cal-ink);
+        font-size: .75rem;
+        line-height: 1.2;
+        text-decoration: none;
+    }
+
+    .dim-cal__weekitem.dim-cal-key--open,
+    .dim-cal__weekitem--point {
+        border-style: dashed;
+    }
+
+    .dim-cal__weekitem--point {
+        height: auto;
+    }
+
+    .dim-cal__weekitem .dim-cal__overlapmark {
+        flex: 0 0 auto;
+    }
+
+    .dim-cal__weekname,
+    .dim-cal__weekwhen {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dim-cal__weekname {
+        flex: 1 1 0;
+        font-weight: 600;
+    }
+
+    .dim-cal__weekwhen {
+        flex: 1 1 100%;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // Now, in today's column: a rule on the overdue key's edge, read by no screen reader.
+    .dim-cal__now {
+        position: absolute;
+        z-index: 2;
+        top: var(--dim-cal-top, 0);
+        right: 0;
+        left: 0;
+        border-top: 2px solid var(--dim-cal-overdue-edge);
+        pointer-events: none;
+    }
+
+    // The phone's week: seven days as an agenda, each day's header opening its sheet.
+    .dim-cal__weekagenda {
+        display: flex;
+        flex-direction: column;
+        gap: .75rem;
+    }
+
+    .dim-cal__weekagendaday {
+        padding: .75rem;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__weekagendatitle {
+        margin: 0 0 .5rem;
+        font-size: 1rem;
+    }
+
+    .dim-cal__weekagendatitle .dim-cal__weekhead {
+        flex-direction: row;
+        padding: .25rem .375rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__weekagendatitle .dim-cal__weekhead--today {
+        color: var(--dim-ds-interactive-primary, var(--bs-primary));
+    }
+
+    .dim-cal__weekagendalist {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
     // The event popover: anchored beside its opener on a desktop, a bottom sheet on a phone.
     .dim-cal__pop {
         position: fixed;
@@ -910,10 +1132,46 @@ body.dim-calendar {
         font-size: .875rem;
     }
 
+    // The public calendar's description is text (decision V2): its paragraphs are the line breaks it carries.
+    .dim-cal__popdesc--text {
+        white-space: pre-line;
+    }
+
     .dim-cal__popactions {
         display: flex;
         flex-wrap: wrap;
         gap: .5rem;
+    }
+
+    // Stage C5: core's Edit and Delete sit in the popover's row of actions; their wrapper only carries core's markers.
+    .dim-cal__popedit {
+        display: contents;
+    }
+
+    // While a drag is on, the items let the pointer through to the day under them, whose cell names the drop's day
+    // (no layout is read), and that day is outlined as core's limits judge it.
+    .dim-cal__app--moving [data-cal-item] {
+        pointer-events: none;
+    }
+
+    .dim-cal__day[data-cal-over="valid"] > .dim-cal__ground {
+        box-shadow: inset 0 0 0 2px var(--dim-ds-focus-ring, var(--bs-primary));
+    }
+
+    .dim-cal__day[data-cal-over="invalid"] > .dim-cal__ground {
+        box-shadow: inset 0 0 0 2px var(--dim-cal-overdue-edge);
+    }
+
+    .dim-cal__bar[draggable="true"],
+    .dim-cal__line[draggable="true"],
+    .dim-cal__card[draggable="true"] {
+        cursor: grab;
+    }
+
+    // The footer under both layers: core's iCal export, where core's calendar offers it.
+    .dim-cal__footer {
+        margin-top: .75rem;
+        font-size: .875rem;
     }
 
     // The phone's month: a dot row per day under its number, from the answer's counts by key.
@@ -945,6 +1203,187 @@ body.dim-calendar {
         .dim-cal__chip,
         .dim-cal__daynum,
         .dim-cal__line {
+            transition: background-color var(--dim-ds-motion-fast, 150ms) var(--dim-ds-motion-ease, ease);
+        }
+    }
+}
+
+// The calendar blocks: the mini month and the short agenda (docs/calendar/PROPOSAL.md section 17).
+.dim-calblock {
+    color: var(--dim-ds-text-body, var(--bs-body-color));
+
+    // A dot reads its key's edge, the token measured as a mark on both surfaces.
+    @each $key in site, category, course, group, user, activity, other, open, overdue {
+        .dim-cal-key--#{$key} {
+            --dim-cal-edge: var(--dim-cal-#{$key}-edge);
+        }
+    }
+
+    :focus-visible {
+        outline: var(--dim-ds-focus-ring-width, 3px) solid var(--dim-ds-focus-ring, var(--bs-primary));
+        outline-offset: 2px;
+    }
+
+    .dim-calblock__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .25rem;
+        margin-bottom: .5rem;
+    }
+
+    .dim-calblock__caption {
+        color: var(--dim-ds-text-heading, var(--bs-body-color));
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .dim-calblock__nav {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        text-decoration: none;
+    }
+
+    .dim-calblock__nav:hover,
+    .dim-calblock__caption:hover {
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    .dim-calblock__grid {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+
+    .dim-calblock__weekday {
+        padding: .25rem 0;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .75rem;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .dim-calblock__weekday abbr {
+        text-decoration: none;
+        cursor: default;
+    }
+
+    .dim-calblock__cell {
+        padding: 1px;
+        text-align: center;
+        vertical-align: top;
+    }
+
+    .dim-calblock__day {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 2.25rem;
+        padding: .125rem 0;
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        color: inherit;
+        font-variant-numeric: tabular-nums;
+        text-decoration: none;
+    }
+
+    .dim-calblock__day:hover {
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    .dim-calblock__cell--outside .dim-calblock__day {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+    }
+
+    // Today is the course key's pair inverted: its ink as the ground, its tint as the text, a pair measured at 4.5:1.
+    .dim-calblock__cell--today .dim-calblock__num {
+        border-radius: 50%;
+        background: var(--dim-cal-course-ink);
+        color: var(--dim-cal-course-tint);
+        font-weight: 600;
+    }
+
+    .dim-calblock__num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        font-size: .8125rem;
+    }
+
+    .dim-calblock__dots {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+        min-height: .375rem;
+        font-size: .625rem;
+        line-height: 1;
+    }
+
+    .dim-calblock__dot,
+    .dim-calblock__mark {
+        flex: 0 0 auto;
+        width: .375rem;
+        height: .375rem;
+        border-radius: 50%;
+        background: var(--dim-cal-edge);
+    }
+
+    .dim-calblock__agenda {
+        margin: 0 0 .75rem;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-calblock__item {
+        display: flex;
+        gap: .5rem;
+        align-items: baseline;
+        padding: .375rem 0;
+    }
+
+    .dim-calblock__item + .dim-calblock__item {
+        border-top: 1px solid var(--dim-cal-surface-quiet);
+    }
+
+    .dim-calblock__mark {
+        width: .5rem;
+        height: .5rem;
+    }
+
+    .dim-calblock__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .dim-calblock__name {
+        font-weight: 500;
+        overflow-wrap: anywhere;
+    }
+
+    .dim-calblock__when,
+    .dim-calblock__course {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .8125rem;
+    }
+
+    .dim-calblock__empty {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+    }
+
+    .dim-calblock__full {
+        font-weight: 500;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .dim-calblock__day,
+        .dim-calblock__nav {
             transition: background-color var(--dim-ds-motion-fast, 150ms) var(--dim-ds-motion-ease, ease);
         }
     }

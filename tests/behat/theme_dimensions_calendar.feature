@@ -144,6 +144,35 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And I click on "//section[@data-region='dim-cal-day']//a[@data-cal-pop][contains(normalize-space(.), 'Mentoring session')]" "xpath_element"
     And ".dim-cal__pop--sheet[data-region='dim-cal-popover']" "css_element" should exist
 
+  # The week view (docs/calendar/PROPOSAL.md section 21): its layout and keyboard are Jest's, these are the page.
+  @javascript
+  Scenario: The week view shows two overlapping events side by side and keeps the view through a reload
+    Given I log in as "student1"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03&day=2027-03-09"
+    When I click on "[data-region='dim-cal-app'] [data-action='dim-cal-view-week']" "css_element"
+    Then "[data-region='dim-cal-weekgrid']" "css_element" should exist
+    And the url should match "view=week"
+    And "//div[@data-region='dim-cal-weekcol'][@data-day='2027-03-09']//a[@data-column='0'][@data-columns='2'][contains(normalize-space(.), 'Other area meeting')]" "xpath_element" should exist
+    And "//div[@data-region='dim-cal-weekcol'][@data-day='2027-03-09']//a[@data-column='1'][@data-columns='2'][contains(normalize-space(.), 'Mentoring session')]" "xpath_element" should exist
+    And I should see "Spring seminar" in the "[data-region='dim-cal-weekstrip']" "css_element"
+    And I reload the page
+    And "[data-region='dim-cal-weekgrid']" "css_element" should exist
+    And the url should match "view=week"
+    And "[data-region='dim-cal-app'] [data-action='dim-cal-view-week'][aria-pressed='true']" "css_element" should exist
+    And I should see "Mentoring session" in the "[data-region='dim-cal-weekgrid']" "css_element"
+
+  @javascript
+  Scenario: On a phone the week is an agenda of seven days, and a day's header opens its sheet
+    Given I log in as "student1"
+    And I change viewport size to "mobile"
+    When I visit "/theme/dimensions/calendar.php?view=week&week=2027-03-09"
+    Then "[data-region='dim-cal-weekagenda']" "css_element" should exist
+    And "[data-region='dim-cal-weekgrid']" "css_element" should not exist
+    And I should see "Mentoring session" in the "[data-region='dim-cal-weekagenda'] section[data-day='2027-03-09']" "css_element"
+    And I click on "[data-region='dim-cal-weekagenda'] [data-role='day'][data-day='2027-03-09']" "css_element"
+    And ".dim-cal__drawer--sheet[data-region='dim-cal-day']" "css_element" should exist
+    And I should see "Other area meeting" in the "[data-region='dim-cal-day']" "css_element"
+
   Scenario: Without JavaScript the month is an agenda, with core's calendar a link away
     Given I log in as "student1"
     When I visit "/theme/dimensions/calendar.php?month=2027-03"
@@ -186,3 +215,63 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And I log in as "student1"
     When I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
     Then the url should match "calendar/view\.php"
+
+  # Core's calendar blocks drawn with the theme's calendar (docs/calendar/PROPOSAL.md section 17): the decision and the
+  # data are PHPUnit's (tests/local/calendar/blocks_test.php, tests/output/core_calendar_renderer_test.php), the arrows
+  # and the keyboard Jest's (js/esm/tests/calendar/block.test.ts). The blocks draw the month of now and the next days,
+  # so these scenarios read dates relative to today rather than March 2027.
+  @javascript
+  Scenario: The month block draws the theme's month: a day leads to the page's drawer, an arrow moves the month in place
+    Given the following "blocks" exist:
+      | blockname      | contextlevel | reference | pagetypepattern | defaultregion |
+      | calendar_month | System       | 1         | my-index        | content       |
+    And I log in as "student1"
+    When I visit "/my/"
+    # The default Dashboard already carries a calendar block in the closed block drawer: read the one this scenario adds.
+    Then "#block-region-content [data-region='dim-calblock-month'].dim-calblock-js" "css_element" should exist
+    And I click on "#block-region-content [data-region='dim-calblock-month'] a[aria-current='date']" "css_element"
+    And the url should match "day=\d{4}-\d{2}-\d{2}"
+    And "[data-region='dim-cal-day']" "css_element" should exist
+    And I visit "/my/"
+    And I click on "(//*[@id='block-region-content']//div[@data-region='dim-calblock-month']//a[@data-action='dim-calblock-nav'])[2]" "xpath_element"
+    And I should see "##first day of next month##%B %Y##" in the "#block-region-content [data-region='dim-calblock-status']" "css_element"
+    And the url should match "/my/"
+
+  Scenario: The upcoming block lists the next events from the theme's calendar and ends with the full calendar
+    Given the following "blocks" exist:
+      | blockname         | contextlevel | reference | pagetypepattern | defaultregion |
+      | calendar_upcoming | System       | 1         | my-index        | content       |
+    And the following "events" exist:
+      | name            | eventtype | timestart          | timeduration |
+      | Upcoming review | site      | ##tomorrow 10:00## | 3600         |
+    And I log in as "student1"
+    When I visit "/my/"
+    Then I should see "Upcoming review" in the "[data-region='dim-calblock-upcoming']" "css_element"
+    And I should not see "Platform maintenance" in the "[data-region='dim-calblock-upcoming']" "css_element"
+    And I click on "Full calendar" "link" in the "[data-region='dim-calblock-upcoming']" "css_element"
+    And the url should match "theme_dimensions/calendar|theme/dimensions/calendar\.php"
+
+  # Stage C5 (docs/calendar/PROPOSAL.md section 23): creating is core's form, reached from the page's "New event", which
+  # the page draws only when core would. Who may edit what is PHPUnit's (tests/local/calendar/editing_test.php).
+  @javascript
+  Scenario: An administrator creates an event from "New event" with core's form and sees it in the month
+    Given I log in as "admin"
+    When I visit "/theme/dimensions/calendar.php?month=2027-03"
+    And I click on "[data-region='dim-cal-app'] [data-action='dim-cal-new']" "css_element"
+    And I set the field "Event title" to "Planning meeting"
+    And I press "Save"
+    Then I should see "Planning meeting" in the "[data-region='dim-cal-app'] [data-region='dim-cal-grid']" "css_element"
+    And I reload the page
+    And I should see "Planning meeting" in the "[data-region='dim-cal-app'] [data-region='dim-cal-grid']" "css_element"
+
+  @javascript
+  Scenario: "New event" is drawn only for an account core lets add an event
+    Given I log in as "student1"
+    When I visit "/theme/dimensions/calendar.php?month=2027-03"
+    Then "[data-region='dim-cal-app'] [data-action='dim-cal-new']" "css_element" should exist
+    And the following "permission overrides" exist:
+      | capability                       | permission | role | contextlevel | reference |
+      | moodle/calendar:manageownentries | Prohibit   | user | System       |           |
+    And I reload the page
+    And I should see "March 2027" in the "[data-region='dim-cal-caption']" "css_element"
+    And "[data-region='dim-cal-app'] [data-action='dim-cal-new']" "css_element" should not exist

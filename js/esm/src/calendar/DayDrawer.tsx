@@ -27,8 +27,9 @@
  * - The sheet: the same content as a list, no hour column.
  *
  * An overlapping item carries a visible label as well as its column. Every item is a link to its own page that
- * opens the popover on a press (the page's delegated listener, Calendar.tsx), as the grid's items do. The drawer
- * links core's own day view, the address a day opened in C2 (model.ts dayHref()).
+ * opens the popover on a press (the page's delegated listener), as the grid's items do. Handed core's calendar, the
+ * drawer links core's own day view, the address a day opened in C2 (model.ts dayHref()); the visitor's page hands
+ * none, because core's calendar asks a visitor to log in.
  *
  * @module     theme_dimensions/calendar/DayDrawer
  * @copyright  2026 Anderson Blaine
@@ -36,7 +37,7 @@
  */
 
 import {useLayoutEffect, useMemo, useRef} from 'react';
-import type {CSSProperties, KeyboardEvent} from 'react';
+import type {CSSProperties, KeyboardEvent, ReactNode} from 'react';
 import {say} from '../daterange/calendar';
 import type {Placed} from './layout';
 import {colourStyle, keyClass, placeOf, whenOf} from './look';
@@ -60,8 +61,9 @@ type DayDrawerProps = {
     iso: string,
     placed: Placed[],
     variant: 'drawer' | 'sheet',
-    calendar: string,
+    calendar: string | null,
     focusing: number,
+    action?: ReactNode,
     onClose: () => void,
 };
 
@@ -145,7 +147,7 @@ const link = (entry: Placed, when: string, overlapping: boolean, look: Look, ext
  * @param {object} props See DayDrawerProps.
  * @returns {object} The region.
  */
-const DayDrawer = ({look, iso, placed, variant, calendar, focusing, onClose}: DayDrawerProps) => {
+const DayDrawer = ({look, iso, placed, variant, calendar, focusing, action, onClose}: DayDrawerProps) => {
     const heading = useRef<HTMLHeadingElement | null>(null);
     const plan = useMemo(() => dayPlan(iso, placed, look.zone), [iso, placed, look.zone]);
     const labels = useMemo(() => hourLabels(look.language), [look.language]);
@@ -197,6 +199,7 @@ const DayDrawer = ({look, iso, placed, variant, calendar, focusing, onClose}: Da
                 <h2 ref={heading} className="dim-cal__drawertitle" id={HEADING} tabIndex={-1} aria-live="polite">
                     {say(iso, LONG_DAY, look.language)}
                 </h2>
+                {action}
                 <button
                     type="button"
                     className="btn btn-icon dim-cal__close"
@@ -229,7 +232,9 @@ const DayDrawer = ({look, iso, placed, variant, calendar, focusing, onClose}: Da
                         'dim-cal__dayitem--line'))}
                 </div>
             ) : null}
-            <a className="dim-cal__dayclassic" href={dayHref(calendar, iso)}>{look.strings.calendar_classicday}</a>
+            {calendar !== null ? (
+                <a className="dim-cal__dayclassic" href={dayHref(calendar, iso)}>{look.strings.calendar_classicday}</a>
+            ) : null}
         </section>
     );
 };

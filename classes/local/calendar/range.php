@@ -122,16 +122,21 @@ final class range {
      * @param scope $scope The viewer's calendar sets.
      * @param string[] $on The keys that are on ({@see keys::parse()}).
      * @param filters $filters The "More" filters.
-     * @return array ['from', 'to', 'truncated', 'events', 'courses', 'categories', 'days'].
+     * @param bool $withediting Whether `editing` carries core's editing answers ({@see editing::entries()}): on for the
+     *     page and its service, off for the blocks, which draw no editing and are not charged for it.
+     * @return array ['from', 'to', 'truncated', 'events', 'courses', 'categories', 'days', 'editing'].
      */
-    public static function answer(window $window, scope $scope, array $on, filters $filters): array {
+    public static function answer(window $window, scope $scope, array $on, filters $filters, bool $withediting = true): array {
         $enrolments = null;
         $items = [];
         $truncated = false;
         $joins = [];
+        $entries = [];
 
         if (array_intersect(keys::CORE, $on)) {
-            $items = array_merge($items, (new core_events())->items($window, $scope, $on));
+            $coreevents = new core_events($withediting);
+            $items = array_merge($items, $coreevents->items($window, $scope, $on));
+            $entries = $coreevents->editing();
         }
         if (array_intersect([keys::COURSE, keys::OPEN], $on)) {
             $enrolments = classifier::enrolments($scope->viewerid);
@@ -194,7 +199,25 @@ final class range {
             'courses' => self::courses($referenced, $values, $categories, $enrolments ?? [], array_keys($eventcourseids), $joins),
             'categories' => array_values($categories),
             'days' => self::days($window, $kept),
+            'editing' => self::kept_entries($entries, $kept),
         ];
+    }
+
+    /**
+     * Core's editing answers for the core items the filters kept, and no other: an entry names an event by its id.
+     *
+     * @param array[] $entries The core source's entries.
+     * @param array[] $kept The kept items.
+     * @return array[] The entries of kept core items, in the source's order.
+     */
+    private static function kept_entries(array $entries, array $kept): array {
+        $ids = [];
+        foreach ($kept as $item) {
+            if ($item['source'] === core_events::SOURCE) {
+                $ids[$item['id']] = true;
+            }
+        }
+        return array_values(array_filter($entries, static fn(array $entry): bool => isset($ids[$entry['id']])));
     }
 
     /**
@@ -369,7 +392,7 @@ final class range {
      * @param array[] $items The kept items.
      * @return array[] One entry per day: ['date' => YYYY-MM-DD, 'counts' => key => int, every key present].
      */
-    private static function days(window $window, array $items): array {
+    public static function days(window $window, array $items): array {
         $days = [];
         foreach ($window->days as $date) {
             $days[] = ['date' => $date, 'counts' => array_fill_keys(keys::ALL, 0)];

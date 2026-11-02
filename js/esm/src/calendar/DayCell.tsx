@@ -102,6 +102,7 @@ const line = (entry: Placed, iso: string, look: Look) => (
         href={itemHref(entry.item, look.courses, look.home)}
         style={colourStyle(entry.item, look)}
         tabIndex={-1}
+        draggable={look.movable?.(entry.item) ? true : undefined}
         data-cal-item=""
         data-cal-pop=""
         data-source={entry.item.source}
@@ -138,7 +139,7 @@ const DayCell = ({iso, column, month, today, selected, count, plan, contentRow, 
     const card = plan.density === 'card' ? plan.shown[0].item : null;
     const place = card ? placeOf(card, look) : '';
     return (
-        <div className="dim-cal__day" role="gridcell" data-day={iso}>
+        <div className="dim-cal__day" role="gridcell" data-day={iso} data-cal-drop={look.movable ? iso : undefined}>
             <div className={ground.join(' ')} style={{gridColumn: column + 1, gridRow: '1 / -1'}} aria-hidden="true"></div>
             <button
                 type="button"
@@ -166,6 +167,7 @@ const DayCell = ({iso, column, month, today, selected, count, plan, contentRow, 
                             href={itemHref(card, look.courses, look.home)}
                             style={colourStyle(card, look)}
                             tabIndex={-1}
+                            draggable={look.movable?.(card) ? true : undefined}
                             data-cal-item=""
                             data-cal-pop=""
                             data-source={card.source}

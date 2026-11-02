@@ -27,10 +27,12 @@ namespace theme_dimensions\output;
 use core\output\renderable;
 use core\output\renderer_base;
 use core\output\templatable;
+use theme_dimensions\local\calendar\editing;
 use theme_dimensions\local\calendar\keys;
 use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\calendar\range;
 use theme_dimensions\local\calendar\state;
+use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\calendar\window;
 use theme_dimensions\local\landingfields;
 
@@ -47,6 +49,17 @@ use theme_dimensions\local\landingfields;
  * Every text in the props is in the plain spelling (the answer's own, format_string() with escape off), for the
  * client's textContent; the template's double stashes escape the server's layer once.
  *
+ * In the week view ({@see page::VIEW_WEEK}) the window is the week's seven days: the toolbar's links move by the week,
+ * the view switch is two links, and the agenda lists the week's days.
+ *
+ * For an account the props carry core's editing answers ({@see editing}: "New event", the form's context) and the
+ * page's footer links core's iCal export where core's calendar offers it (stage C5).
+ *
+ * In its visitor mode ({@see page::handle()}'s public calendar) the page draws the visitor's two keys and nothing that
+ * needs a session or a login: no category, no "More" filters, no link to core's calendar (which asks a visitor to log
+ * in), no editing and no export, and the mount names the visitor's shell, {@see COMPONENT_PUBLIC}, whose props carry no
+ * tree, no field options, no editing answers and no address of core's calendar.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -54,6 +67,9 @@ use theme_dimensions\local\landingfields;
 class calendar_page implements renderable, templatable {
     /** @var string The component the mount node names. */
     public const COMPONENT = '@moodle/lms/theme_dimensions/calendar/Calendar';
+
+    /** @var string The component a visitor's mount node names: the visitor's shell, which reaches nothing of a session. */
+    public const COMPONENT_PUBLIC = '@moodle/lms/theme_dimensions/calendar/PublicCalendar';
 
     /** @var string[] The strings the client reads, handed to it with the page so its first paint asks for none. */
     public const STRINGS = [
@@ -84,7 +100,9 @@ class calendar_page implements renderable, templatable {
         'calendar_dayitems_one',
         'calendar_daylabel',
         'calendar_daytoday',
+        'calendar_delete',
         'calendar_descriptionloading',
+        'calendar_edit',
         'calendar_filtercount',
         'calendar_join_free',
         'calendar_join_key',
@@ -103,7 +121,10 @@ class calendar_page implements renderable, templatable {
         'calendar_moreaction',
         'calendar_morefilters',
         'calendar_morelabel',
+        'calendar_newevent',
+        'calendar_neweventon',
         'calendar_nextmonth',
+        'calendar_nextweek',
         'calendar_open',
         'calendar_overdue',
         'calendar_overlapmark',
@@ -112,14 +133,18 @@ class calendar_page implements renderable, templatable {
         'calendar_participants_one',
         'calendar_place',
         'calendar_prevmonth',
+        'calendar_prevweek',
         'calendar_recursive',
         'calendar_span',
+        'calendar_timed',
         'calendar_title',
         'calendar_today',
         'calendar_truncated',
         'calendar_until',
         'calendar_view',
         'calendar_viewmonth',
+        'calendar_viewweek',
+        'calendar_weekempty',
         'calendar_when',
         'calendar_withsub',
     ];
@@ -151,6 +176,15 @@ class calendar_page implements renderable, templatable {
     /** @var string The day the drawer opens on, YYYY-MM-DD, inside the window; '' for none. */
     private string $day;
 
+    /** @var bool Whether the page is drawn for a visitor who is not logged in: the public calendar. */
+    private bool $visitor;
+
+    /** @var string The view, page::VIEW_MONTH or page::VIEW_WEEK. */
+    private string $view;
+
+    /** @var string The week's first day, YYYY-MM-DD, in the week view; '' in the month view. */
+    private string $week;
+
     /**
      * Hold what the page draws; {@see page::handle()} computes every part.
      *
@@ -163,6 +197,9 @@ class calendar_page implements renderable, templatable {
      * @param state $state What the page shows.
      * @param array $tree The categories the picker offers ({@see \theme_dimensions\local\calendar\tree}).
      * @param string $day The day the drawer opens on, kept by {@see page::day_from_request()}; '' for none.
+     * @param bool $visitor Whether the page is the public calendar, drawn for a visitor.
+     * @param string $view The view, {@see page::VIEW_MONTH} or {@see page::VIEW_WEEK}.
+     * @param string $week The week's first day in the week view ({@see page::week_from_request()}); '' in the month's.
      */
     public function __construct(
         string $month,
@@ -173,7 +210,10 @@ class calendar_page implements renderable, templatable {
         array $answer,
         state $state,
         array $tree,
-        string $day = ''
+        string $day = '',
+        bool $visitor = false,
+        string $view = page::VIEW_MONTH,
+        string $week = ''
     ) {
         $this->month = $month;
         $this->today = $today;
@@ -184,6 +224,9 @@ class calendar_page implements renderable, templatable {
         $this->state = $state;
         $this->tree = $tree;
         $this->day = $day;
+        $this->visitor = $visitor;
+        $this->week = $view === page::VIEW_WEEK ? $week : '';
+        $this->view = $this->week !== '' ? page::VIEW_WEEK : page::VIEW_MONTH;
     }
 
     /**
@@ -277,10 +320,32 @@ class calendar_page implements renderable, templatable {
      * @return array
      */
     public function props(): array {
+        if ($this->visitor) {
+            return [
+                'month' => $this->month,
+                'view' => $this->view,
+                'week' => $this->week,
+                'day' => $this->day,
+                'today' => $this->today,
+                'now' => time(),
+                'firstday' => $this->firstday,
+                'timezone' => $this->timezone,
+                'answer' => $this->answer,
+                'keys' => visitor::on($this->state->on()),
+                'modalities' => self::options(landingfields::SHORTNAME_MODALITY),
+                'urls' => [
+                    'page' => page::url()->out(false),
+                    'home' => (new \core\url('/'))->out(false),
+                ],
+            ];
+        }
         return [
             'month' => $this->month,
+            'view' => $this->view,
+            'week' => $this->week,
             'day' => $this->day,
             'today' => $this->today,
+            'now' => time(),
             'firstday' => $this->firstday,
             'timezone' => $this->timezone,
             'answer' => $this->answer,
@@ -296,11 +361,21 @@ class calendar_page implements renderable, templatable {
                 'calendar' => (new \core\url('/calendar/view.php'))->out(false),
                 'home' => (new \core\url('/'))->out(false),
             ],
+            // Core's own answers ({@see editing}): whether core's calendar shows this viewer "New event", and the
+            // context and the course core's site calendar hands its event form.
+            'edits' => [
+                'create' => editing::create(),
+                'context' => editing::form_context(),
+                'course' => (int) SITEID,
+            ],
         ];
     }
 
     /**
-     * The month's items as an agenda: each item once, under the first day of the month it touches.
+     * The shown span's items as an agenda: each item once, under the first day of the span it touches.
+     *
+     * The span is the month's own days (the neighbours' days are the grid's padding), or in the week view the whole
+     * window, the week's seven days.
      *
      * @return array[] One entry per day that has items: ['label', 'items' => [['name', 'url', 'when', 'key', 'keylabel']]].
      */
@@ -316,10 +391,9 @@ class calendar_page implements renderable, templatable {
             $last = $start + max(0, $item['timeduration'] - 1);
             $first = max($this->window->day_index($start), 0);
             $end = $this->window->day_index($last);
-            // The month's own days only: the neighbours' days are the grid's padding.
             $index = null;
             for ($i = $first; $i <= $end; $i++) {
-                if (str_starts_with($this->window->days[$i], $this->month)) {
+                if ($this->week !== '' || str_starts_with($this->window->days[$i], $this->month)) {
                     $index = $i;
                     break;
                 }
@@ -357,26 +431,77 @@ class calendar_page implements renderable, templatable {
     }
 
     /**
+     * What the toolbar draws for the view: the caption, "Today", previous and next, and the view switch's two links.
+     *
+     * In the week view the caption is the week's span and the links move by the week; in the month view by the month.
+     * Every link carries the state (or the visitor's keys), never the open day: the server's layer opens no drawer.
+     *
+     * @param array $query The address parameters naming the state or the keys.
+     * @return array The toolbar's part of the context.
+     */
+    private function toolbar(array $query): array {
+        $timezone = \core_date::get_user_timezone_object();
+        $todayweek = page::week_start($this->today, $this->firstday);
+        $weekof = page::week_start(page::opening_day($this->month), $this->firstday);
+        $weekparams = static fn(string $week): array => [page::PARAM_VIEW => page::VIEW_WEEK, page::PARAM_WEEK => $week];
+        $parts = [
+            'weekview' => $this->week !== '',
+            'week' => $this->week,
+            'monthurl' => page::url([state::PARAM_MONTH => $this->month] + $query)->out(false),
+            'weekurl' => page::url($weekparams($this->week !== '' ? $this->week : $weekof) + $query)->out(false),
+        ];
+        if ($this->week === '') {
+            return $parts + [
+                'caption' => userdate(
+                    \DateTimeImmutable::createFromFormat('!Y-m-d', $this->month . '-01', $timezone)->getTimestamp(),
+                    get_string('strftimemonthyear', 'langconfig')
+                ),
+                'todayurl' => page::url([state::PARAM_MONTH => substr($this->today, 0, 7)] + $query)->out(false),
+                'prevurl' => page::url([state::PARAM_MONTH => self::month_at($this->month, -1)] + $query)->out(false),
+                'nexturl' => page::url([state::PARAM_MONTH => self::month_at($this->month, 1)] + $query)->out(false),
+            ];
+        }
+        [$from, $to] = page::week($this->week);
+        $at = static fn(string $day): int => \DateTimeImmutable::createFromFormat('!Y-m-d', $day, $timezone)->getTimestamp();
+        $utc = new \DateTimeZone('UTC');
+        $shifted = static fn(int $days): string => \DateTimeImmutable::createFromFormat('!Y-m-d', $from, $utc)
+            ->modify(($days >= 0 ? '+' : '') . $days . ' days')->format('Y-m-d');
+        return $parts + [
+            'caption' => get_string('calendar_span', 'theme_dimensions', (object) [
+                'from' => userdate($at($from), get_string('strftimedateshort', 'langconfig')),
+                'to' => userdate($at($to), get_string('strftimedate', 'langconfig')),
+            ]),
+            'todayurl' => page::url($weekparams($todayweek) + $query)->out(false),
+            'prevurl' => page::url($weekparams($shifted(-7)) + $query)->out(false),
+            'nexturl' => page::url($weekparams($shifted(7)) + $query)->out(false),
+        ];
+    }
+
+    /**
      * The template context.
      *
      * @param renderer_base $output The renderer.
      * @return array
      */
     public function export_for_template(renderer_base $output): array {
-        $query = $this->state->query();
+        $on = $this->state->on();
+        $query = $this->visitor ? visitor::query($on) : $this->state->query();
         $counts = array_fill_keys(keys::ALL, 0);
         foreach ($this->answer['events'] as $item) {
             $counts[$item['key']]++;
         }
-        $on = $this->state->on();
         $keyrows = [];
-        foreach (keys::ALL as $key) {
+        foreach ($this->visitor ? visitor::KEYS : keys::ALL as $key) {
             $keyrows[] = [
                 'key' => $key,
                 'label' => self::key_label($key),
                 'checked' => in_array($key, $on, true),
                 'count' => $counts[$key],
             ];
+        }
+
+        if ($this->visitor) {
+            return $this->visitor_context($keyrows, $query);
         }
 
         $categories = [];
@@ -399,17 +524,9 @@ class calendar_page implements renderable, templatable {
             + ($this->state->city !== '' ? 1 : 0) + ($this->state->actiononly ? 1 : 0);
         $agenda = $this->agenda();
 
-        return [
+        return $this->toolbar($query) + [
             'month' => $this->month,
-            'caption' => userdate(
-                \DateTimeImmutable::createFromFormat('!Y-m-d', $this->month . '-01', \core_date::get_user_timezone_object())
-                    ->getTimestamp(),
-                get_string('strftimemonthyear', 'langconfig')
-            ),
             'action' => page::url()->out(false),
-            'todayurl' => page::url([state::PARAM_MONTH => substr($this->today, 0, 7)] + $query)->out(false),
-            'prevurl' => page::url([state::PARAM_MONTH => self::month_at($this->month, -1)] + $query)->out(false),
-            'nexturl' => page::url([state::PARAM_MONTH => self::month_at($this->month, 1)] + $query)->out(false),
             'classicurl' => page::classic($this->month)->out(false),
             'clearurl' => page::url([state::PARAM_MONTH => $this->month] + (new state())->query())->out(false),
             'keys' => $keyrows,
@@ -432,6 +549,29 @@ class calendar_page implements renderable, templatable {
             'agendaempty' => empty($agenda),
             'component' => self::COMPONENT,
             'props' => json_encode($props, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'exporturl' => editing::export_url(),
+        ];
+    }
+
+    /**
+     * The template context of the public calendar: the toolbar's links, the two chips and the agenda, nothing else.
+     *
+     * @param array $keyrows The chips, the visitor's two.
+     * @param array $query The address parameters naming the keys ({@see visitor::query()}).
+     * @return array
+     */
+    private function visitor_context(array $keyrows, array $query): array {
+        $agenda = $this->agenda();
+        return $this->toolbar($query) + [
+            'visitor' => true,
+            'month' => $this->month,
+            'action' => page::url()->out(false),
+            'keys' => $keyrows,
+            'truncated' => !empty($this->answer['truncated']),
+            'agenda' => $agenda,
+            'agendaempty' => empty($agenda),
+            'component' => self::COMPONENT_PUBLIC,
+            'props' => json_encode($this->props(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         ];
     }
 }

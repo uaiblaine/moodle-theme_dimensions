@@ -32,10 +32,28 @@
     still name the keys (none on); the hidden recursive=0 before the checkbox
     is what a cleared checkbox submits.
 
+    With weekview set (stage C4) the toolbar's links move by the week, the
+    caption is the week's span and the agenda lists the week's seven days;
+    the view switch is two links, the current one aria-current="page". The
+    form keeps the view and the week, so applying it stays on the week.
+
+    With visitor set (the public calendar, stage CV) the page draws the two
+    chips a visitor has and nothing that needs a session or a login: no
+    category, no "More" filters and no link to core's calendar.
+
+    exporturl (stage C5) is core's calendar/export.php where core's calendar
+    offers it to this account; the footer carries it outside both layers, so
+    it reads the same with and without JavaScript. A visitor has none.
+
     Example context (json):
     {
+        "visitor": false,
+        "weekview": false,
+        "week": "",
         "month": "2026-11",
         "caption": "November 2026",
+        "monthurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11",
+        "weekurl": "https://example.com/r.php/theme_dimensions/calendar?view=week&week=2026-11-15",
         "action": "https://example.com/r.php/theme_dimensions/calendar",
         "todayurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11",
         "prevurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-10",
@@ -107,7 +125,8 @@
         ],
         "agendaempty": false,
         "component": "@moodle/lms/theme_dimensions/calendar/Calendar",
-        "props": "{}"
+        "props": "{}",
+        "exporturl": "https://example.com/calendar/export.php"
     }
 }}
 <div class="dim-cal" data-region="dim-cal">
@@ -115,20 +134,39 @@
         <div class="dim-cal__toolbar">
             <h1 class="dim-cal__title">{{#str}} calendar_title, theme_dimensions {{/str}}</h1>
             <a class="btn btn-secondary dim-cal__today" href="{{todayurl}}">{{#str}} calendar_today, theme_dimensions {{/str}}</a>
+            {{#weekview}}
+            <a class="btn btn-secondary dim-cal__step" href="{{prevurl}}" aria-label="{{#str}} calendar_prevweek, theme_dimensions {{/str}}">
+                <i class="fa fa-chevron-left" aria-hidden="true"></i>
+            </a>
+            <a class="btn btn-secondary dim-cal__step" href="{{nexturl}}" aria-label="{{#str}} calendar_nextweek, theme_dimensions {{/str}}">
+                <i class="fa fa-chevron-right" aria-hidden="true"></i>
+            </a>
+            {{/weekview}}
+            {{^weekview}}
             <a class="btn btn-secondary dim-cal__step" href="{{prevurl}}" aria-label="{{#str}} calendar_prevmonth, theme_dimensions {{/str}}">
                 <i class="fa fa-chevron-left" aria-hidden="true"></i>
             </a>
             <a class="btn btn-secondary dim-cal__step" href="{{nexturl}}" aria-label="{{#str}} calendar_nextmonth, theme_dimensions {{/str}}">
                 <i class="fa fa-chevron-right" aria-hidden="true"></i>
             </a>
+            {{/weekview}}
             <p class="dim-cal__caption">{{caption}}</p>
             <div class="dim-cal__views" role="group" aria-label="{{#str}} calendar_view, theme_dimensions {{/str}}">
-                <span class="dim-cal__view dim-cal__view--active">{{#str}} calendar_viewmonth, theme_dimensions {{/str}}</span>
+                <a class="dim-cal__view{{^weekview}} dim-cal__view--active{{/weekview}}" href="{{monthurl}}" data-region="dim-cal-view-month"{{^weekview}} aria-current="page"{{/weekview}}>{{#str}} calendar_viewmonth, theme_dimensions {{/str}}</a>
+                <a class="dim-cal__view{{#weekview}} dim-cal__view--active{{/weekview}}" href="{{weekurl}}" data-region="dim-cal-view-week"{{#weekview}} aria-current="page"{{/weekview}}>{{#str}} calendar_viewweek, theme_dimensions {{/str}}</a>
             </div>
+            {{^visitor}}
             <a class="dim-cal__classic" href="{{classicurl}}">{{#str}} calendar_classic, theme_dimensions {{/str}}</a>
+            {{/visitor}}
         </div>
         <form class="dim-cal__form" method="get" action="{{action}}">
+            {{#weekview}}
+            <input type="hidden" name="view" value="week">
+            <input type="hidden" name="week" value="{{week}}">
+            {{/weekview}}
+            {{^weekview}}
             <input type="hidden" name="month" value="{{month}}">
+            {{/weekview}}
             <input type="hidden" name="keys[]" value="">
             <fieldset class="dim-cal__chips">
                 <legend class="visually-hidden">{{#str}} calendar_keys, theme_dimensions {{/str}}</legend>
@@ -141,6 +179,7 @@
                 {{/keys}}
             </fieldset>
             <div class="dim-cal__filters">
+                {{^visitor}}
                 <label class="dim-cal__field">
                     <span>{{#str}} calendar_category, theme_dimensions {{/str}}</span>
                     <select class="form-select" name="categoryid">
@@ -206,14 +245,22 @@
                         <a class="dim-cal__clear" href="{{clearurl}}">{{#str}} calendar_clearfilters, theme_dimensions {{/str}}</a>
                     </div>
                 </details>
+                {{/visitor}}
                 <button type="submit" class="btn btn-primary">{{#str}} calendar_apply, theme_dimensions {{/str}}</button>
             </div>
         </form>
         <section class="dim-cal__agenda" data-region="dim-cal-agenda" aria-labelledby="dim-cal-agenda-title">
             <h2 class="dim-cal__agendatitle" id="dim-cal-agenda-title">{{caption}}</h2>
             <p class="dim-cal__notice">
-                {{#str}} calendar_noscript, theme_dimensions {{/str}}
+                {{#visitor}}
+                {{#weekview}}{{#str}} calendar_publicnoscriptweek, theme_dimensions {{/str}}{{/weekview}}
+                {{^weekview}}{{#str}} calendar_publicnoscript, theme_dimensions {{/str}}{{/weekview}}
+                {{/visitor}}
+                {{^visitor}}
+                {{#weekview}}{{#str}} calendar_noscriptweek, theme_dimensions {{/str}}{{/weekview}}
+                {{^weekview}}{{#str}} calendar_noscript, theme_dimensions {{/str}}{{/weekview}}
                 <a href="{{classicurl}}">{{#str}} calendar_classic, theme_dimensions {{/str}}</a>
+                {{/visitor}}
             </p>
             {{#truncated}}<p class="dim-cal__notice">{{#str}} calendar_truncated, theme_dimensions {{/str}}</p>{{/truncated}}
             {{#agendaempty}}<p class="dim-cal__empty">{{#str}} calendar_agendaempty, theme_dimensions {{/str}}</p>{{/agendaempty}}
@@ -232,4 +279,9 @@
         </section>
     </div>
     <div class="dim-cal__mount" data-region="dim-cal-mount" data-react-component="{{component}}" data-react-props="{{props}}"></div>
+    {{#exporturl}}
+    <p class="dim-cal__footer" data-region="dim-cal-footer">
+        <a href="{{exporturl}}" data-region="dim-cal-export">{{#str}} calendar_export, theme_dimensions {{/str}}</a>
+    </p>
+    {{/exporturl}}
 </div>

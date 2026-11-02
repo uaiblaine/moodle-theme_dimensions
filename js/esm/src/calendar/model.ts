@@ -83,7 +83,23 @@ export type Course = {
 /** One category of the answer's dictionary, with its branding pair. */
 export type Category = {id: number, name: string, bg: string, ink: string};
 
-/** The range's whole answer for one window. */
+/**
+ * Core's editing answers for one event the viewer may edit (local\calendar\editing::entries()): the summary's Edit,
+ * core's candelete and draggable, the series' count, and the drop limits as days with core's messages.
+ */
+export type Edit = {
+    id: number,
+    edit: boolean,
+    delete: boolean,
+    drag: boolean,
+    count: number,
+    minday: string,
+    maxday: string,
+    minerror: string,
+    maxerror: string,
+};
+
+/** The range's whole answer for one window; `editing` is the logged-in range's (the visitor's is empty). */
 export type Answer = {
     from: string,
     to: string,
@@ -92,6 +108,7 @@ export type Answer = {
     courses: Course[],
     categories: Category[],
     days: Array<{date: string, counts: Record<string, number>}>,
+    editing?: Edit[],
 };
 
 /** The colourings (state::COLOURS). */
@@ -115,11 +132,17 @@ export type TreeNode = {id: number, name: string, parent: number, depth: number,
 /** One option of a course select field. */
 export type Option = {value: number, label: string};
 
+/** Core's answers for creating (calendar_page::props()): whether "New event" shows, and what core's form is handed. */
+export type Edits = {create: boolean, context: number, course: number};
+
 /** The page's props, as calendar_page::props() builds them. */
 export type Props = {
     month: string,
+    view: string,
+    week: string,
     day: string,
     today: string,
+    now: number,
     firstday: number,
     timezone: string,
     answer: Answer,
@@ -127,16 +150,8 @@ export type Props = {
     tree: TreeNode[],
     options: {model: Option[], modality: Option[], city: string[]},
     urls: {page: string, calendar: string, home: string},
+    edits?: Edits,
 };
-
-/** The range service. */
-export const RANGE_METHOD = 'theme_dimensions_get_calendar_range';
-
-/** The service that stores the state. */
-export const REMEMBER_METHOD = 'theme_dimensions_remember_calendar_state';
-
-/** Core's service an event's description is read from, with core's own visibility check. */
-export const EVENT_METHOD = 'core_calendar_get_calendar_event_by_id';
 
 /** The address parameter of the open day (local\calendar\page::PARAM_DAY): navigation, never state. */
 export const DAY_PARAM = 'day';

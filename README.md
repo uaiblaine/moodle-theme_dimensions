@@ -289,6 +289,49 @@ php theme/dimensions/cli/build_flavour_css.php --all --dry-run
 With local_page installed, a category page names that category's pages under its hero, as the
 plugin's own rules let the reader see them.
 
+### The calendar blocks
+
+Moodle's *Calendar* (month) and *Upcoming events* blocks show the theme's calendar: a month with a
+dot per event key and a short agenda of the next events, from the same events as the theme's
+calendar page (`/theme/dimensions/calendar.php`), under the keys and filters the reader saved there.
+Each day and event leads to that page. The page itself shows a month or a week (the switch above the grid,
+`?view=week`), and a visitor of the public calendar gets both. The agenda keeps Moodle's own *Upcoming events
+look-ahead* and *Maximum upcoming events* preferences. On a course page, for a visitor or the guest account, and
+for a calendar type other than the Gregorian, both blocks keep Moodle's own content. The setting
+*Draw the calendar blocks with the theme's calendar* (`theme_dimensions/calendarblocks`, on by
+default) switches this off.
+
+The theme's calendar withholds what Moodle's shows in one case: an event of a category that
+local_unlistedcourses keeps unlisted for the reader. A theme can only change what its pages draw,
+so these keep Moodle's own rules and still show such an event:
+
+- the Moodle App, which reads Moodle's calendar web services directly;
+- the calendar export (iCal, `calendar/export.php`) and its subscription URL;
+- Moodle's own calendar for the upcoming view and for a course's calendar (the theme sends only the
+  site's month and day views to its page);
+- any other client of Moodle's calendar web services;
+- the *Timeline* block, which stays Moodle's own.
+
+Where that difference matters, switch the calendar export off (*Site administration > Appearance >
+Calendar*, untick *Enable calendar export*). A site that switches the theme's blocks off should also
+remove the *Calendar* and *Upcoming events* blocks from the default block regions (the Dashboard and
+the site home), so that every calendar a reader meets follows one set of rules.
+
+### The public calendar
+
+The setting *Public calendar* (`theme_dimensions/calendarpublic`, off by default) opens the theme's
+calendar page (`/theme/dimensions/calendar.php`) to visitors who are not logged in, even while the
+site forces login. A visitor sees two kinds of items and nothing else: the events of the course
+categories local_unlistedcourses marks public (with every category above them visible and none
+unlisted), each leading to the category's public page, and the public event courses (courses of the
+event model whose landing page is public), each leading to its landing page. Descriptions are shown
+as text, without images. The page draws them from the web service
+`theme_dimensions_get_public_calendar_range`, which answers without a session
+(`lib/ajax/service-nologin.php`) and refuses any logged-in session. Nothing of a visitor is stored,
+nothing is cached between requests, and the page is marked `noindex` unless the site is open to
+search engines. The theme adds no link to it in a visitor's navigation: share its address. Off, a
+visitor who opens it is sent to the login page; the guest account keeps Moodle's own calendar.
+
 
 Requirements
 ------------

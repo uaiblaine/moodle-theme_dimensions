@@ -1,0 +1,2 @@
+# Put back the reader that throws on a nested key member, which an anonymous page cannot survive.
+s/        \$members = array_filter\(\$raw, static fn\(\$member\): bool => is_scalar\(\$member\)\);\n        return self::on\(array_map\(static fn\(\$member\): string => clean_param\(\(string\) \$member, PARAM_ALPHA\), \$members\)\);/        return self::on(optional_param_array(state::PARAM_KEYS, [], PARAM_ALPHA));/;

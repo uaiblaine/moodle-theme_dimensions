@@ -343,13 +343,13 @@ final class state {
         $off = $keys === null ? [] : array_diff(keys::ALL, $keys);
         return new self(
             $off,
-            (int) optional_param(self::PARAM_CATEGORY, 0, PARAM_INT),
-            (bool) optional_param(self::PARAM_RECURSIVE, 1, PARAM_BOOL),
+            (int) self::scalar_param(self::PARAM_CATEGORY, 0, PARAM_INT),
+            (bool) self::scalar_param(self::PARAM_RECURSIVE, 1, PARAM_BOOL),
             self::array_param(self::PARAM_MODEL, PARAM_INT) ?? [],
             self::array_param(self::PARAM_MODALITY, PARAM_INT) ?? [],
-            (string) optional_param(self::PARAM_CITY, '', PARAM_TEXT),
-            (bool) optional_param(self::PARAM_ACTIONONLY, 0, PARAM_BOOL),
-            (string) optional_param(self::PARAM_COLOUR, self::COLOUR_KEY, PARAM_ALPHA)
+            (string) self::scalar_param(self::PARAM_CITY, '', PARAM_TEXT),
+            (bool) self::scalar_param(self::PARAM_ACTIONONLY, 0, PARAM_BOOL),
+            (string) self::scalar_param(self::PARAM_COLOUR, self::COLOUR_KEY, PARAM_ALPHA)
         );
     }
 
@@ -380,7 +380,29 @@ final class state {
         if (!is_array($raw)) {
             return [];
         }
-        return optional_param_array($name, [], $type);
+        // A list among the members is dropped, and a key optional_param_array() would refuse: clean() throws for a list.
+        $members = array_filter(
+            $raw,
+            static fn($member, $key): bool => is_scalar($member) && preg_match('/^[a-z0-9_-]+$/i', (string) $key) === 1,
+            ARRAY_FILTER_USE_BOTH
+        );
+        return clean_param_array($members, $type);
+    }
+
+    /**
+     * A scalar parameter of the request, or its default when it is absent or a list.
+     *
+     * optional_param() throws for a list (core\param::clean()), which would answer a hand-typed `city[]=x` with an
+     * error page; the list is dropped, as {@see array_param()} drops its own strays.
+     *
+     * @param string $name The parameter.
+     * @param mixed $default The value for an absent or listed parameter.
+     * @param string $type The PARAM_* type.
+     * @return mixed The cleaned value.
+     */
+    private static function scalar_param(string $name, mixed $default, string $type): mixed {
+        $raw = $_POST[$name] ?? $_GET[$name] ?? null;
+        return is_array($raw) ? $default : optional_param($name, $default, $type);
     }
 
     /**
