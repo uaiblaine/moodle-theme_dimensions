@@ -98,7 +98,7 @@ final class page_test extends \advanced_testcase {
         $this->setUser(self::getDataGenerator()->create_user());
         $_GET = ['month' => '2027-02'];
         $this->assertSame('2027-02', page::month_from_request());
-        foreach (['2027-13', '27-02', '2027-2', 'x', '0999-01'] as $bad) {
+        foreach (['2027-13', '27-02', '2027-2', 'x', '0999-01', "2027-02\n"] as $bad) {
             $_GET = ['month' => $bad];
             $this->assertSame(page::today()->format('Y-m'), page::month_from_request(), $bad);
         }
@@ -182,6 +182,7 @@ final class page_test extends \advanced_testcase {
             'a date without its zeros' => ['2026-11', '2026-11-7', ''],
             'a timestamp' => ['2026-11', '1794787200', ''],
             'not a day' => ['2026-11', 'tomorrow', ''],
+            'a day with a trailing newline' => ['2026-11', "2026-11-20\n", ''],
             'nothing' => ['2026-11', '', ''],
         ];
     }
@@ -304,6 +305,7 @@ final class page_test extends \advanced_testcase {
             'a year before the month\'s bounds' => ['1899-12-31', 0, '2027-02', '2027-01-31'],
             'a year after them' => ['3000-01-01', 0, '2027-02', '2027-01-31'],
             'not a day' => ['next', 0, '2027-02', '2027-01-31'],
+            'a day with a trailing newline' => ["2026-11-18\n", 0, '2027-02', '2027-01-31'],
             'nothing, Monday first' => ['', 1, '2027-02', '2027-02-01'],
         ];
     }

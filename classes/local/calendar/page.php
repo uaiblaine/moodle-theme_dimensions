@@ -166,7 +166,7 @@ final class page {
     public static function month_from_request(): string {
         $month = self::scalar_param(state::PARAM_MONTH);
         if (
-            preg_match('/^(\d{4})-(\d{2})$/', $month, $parts)
+            preg_match('/^(\d{4})-(\d{2})$/D', $month, $parts)
             && (int) $parts[2] >= 1 && (int) $parts[2] <= 12
             && (int) $parts[1] >= 1900 && (int) $parts[1] <= 2999
         ) {
@@ -182,7 +182,7 @@ final class page {
      * @return bool
      */
     public static function is_day(string $day): bool {
-        return preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $day, $parts) === 1
+        return preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $day, $parts) === 1
             && checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
     }
 
