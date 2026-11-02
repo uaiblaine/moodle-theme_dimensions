@@ -5,6 +5,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Behat beside tool_mulib**: `tests/behat/blacklist.json` keeps tool_mulib's file upload context out of the
+  theme's suite, whose upload steps it would define a second time (every scenario failed before its first step on a
+  site with tool_mulib 5.3 installed). Tests only; no version change.
 - **tool_courserating's ratings on the showcase** (2026100566), stage R1 of `docs/vitrine-ratings/PROPOSAL.md`
   (card variant A, the dialogue's rating block, decision 4). The plugin stays optional, asked by class name: absent,
   or rating no course anywhere, nothing of it is read. Present, the page reads its summary table once, over the page's

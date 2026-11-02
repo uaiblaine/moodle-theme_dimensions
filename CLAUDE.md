@@ -645,6 +645,12 @@ already shaped decisions here:
   `behat-init` output the whole time and was missed, because the init was judged by its exit
   status and its last lines. After any change to a SCSS callback:
   `grep -c "call to debugging()" /tmp/bh.log` should be 0.
+- **`tests/behat/blacklist.json` drops tool_mulib's `behat_tool_mulib_files` from the dimensions suite.** That
+  context `extends behat_repository_upload` to reuse core's upload steps, so in a theme suite that overrides
+  `behat_repository_upload` (this theme does, through Boost Union's override) core's upload steps are defined twice
+  and every scenario fails before its first step. Core reads only the file's basename and unsets a missing key, so
+  the entry is inert where tool_mulib is absent (`mdl ci`, GitHub). No theme feature uses a muform filemanager; one
+  that ever does needs the entry gone and another way out of the clash.
 - **Behat serves theme CSS built at init time.** `behat/cli/init.php` pre-builds every
   theme's stylesheet, and nothing in a scenario rebuilds it — so a SCSS change tests as a
   no-op until `init.php` runs again (the fast path, no `--drop`, is enough: its log says
