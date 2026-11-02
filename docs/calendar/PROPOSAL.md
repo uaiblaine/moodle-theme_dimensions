@@ -1559,8 +1559,8 @@ Branch `calendar-c4`, built from section 21 on top of CV (afdff08), uncommitted,
 - **Security read:** one blocking finding, fixed. `is_day()`, `month_from_request()` and `window::from_iso()` matched
 `/^...$/`, whose `$` also matches before a final newline, so `week=2026-11-15%0A` passed `is_day()` and
 `week_start()` then called `format()` on false: an error page, on the public calendar too. The month had carried the
-same flaw since C2. The three patterns now end in `$/D`, with a newline row in each test (gates `c4_day_newline`,
-`c4_month_newline`, `c4_window_newline`). Kept as notes: the client's `readSpan()` falls back to the month's 1st
+same flaw since C2. The three patterns now end in `$/D`, with a newline row in each test (gates `c4_day_newline` and
+`c4_month_newline`; the window's anchor is a second lock, since its parse refuses the day anyway). Kept as notes: the client's `readSpan()` falls back to the month's 1st
 where the server falls back to its opening day, and applies no year bound, so a history step onto an out-of-bounds
 week can show a different week than a reload (handled in C5); the toolbar's arrows are not clamped at 1900 or 2999,
 and the page then opens the current month or week.
