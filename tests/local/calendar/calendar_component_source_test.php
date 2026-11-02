@@ -88,8 +88,9 @@ final class calendar_component_source_test extends \basic_testcase {
                 $bridged += $module === '../amd' ? 1 : 0;
             }
         }
-        $this->assertSame(1, $bridged, 'The page reports a failure through the bridge, once.');
+        $this->assertSame(2, $bridged, 'The page reports a failure through the bridge, the blocks\' client paints through it.');
         $this->assertStringContainsString("load('core/notification')", $this->sources()['Calendar.tsx']);
+        $this->assertStringContainsString("load('core/templates')", $this->sources()['block.ts']);
     }
 
     /**
@@ -177,6 +178,10 @@ final class calendar_component_source_test extends \basic_testcase {
         foreach ($this->sources() as $path => $source) {
             foreach (array_keys($definitions) as $name) {
                 $definitions[$name] += substr_count($source, "export const {$name} = ");
+            }
+            if ($path === 'block.ts') {
+                // The month block's client leaves only where its arrow already leads, when it cannot paint.
+                continue;
             }
             $this->assertStringNotContainsString('redirect(', $source, $path);
             $this->assertStringNotContainsString('core/location', $source, $path);
@@ -356,5 +361,45 @@ final class calendar_component_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString("request(iso.slice(0, 7), state, 'push', iso, focus);", $calendar);
         $this->assertStringContainsString("request(shown.month, next, 'replace', selected, false);", $calendar);
+    }
+
+    /**
+     * The month block's client: the latest press wins after each await, a Pending token spans the press to the paint,
+     * a failure follows the arrow's own link and nothing else redirects, the page's links are bare, the dots are the
+     * page's, and the strings a day's label reads are the ones the renderer hands over.
+     *
+     * @return void
+     */
+    public function test_the_month_blocks_client(): void {
+        $block = $this->sources()['block.ts'];
+        $this->assertMatchesRegularExpression(
+            '~const seq = \(tickets\.get\(root\) \?\? 0\) \+ 1;\s*tickets\.set\(root, seq\);.*?'
+                . 'await fetchOne<Answer>.*?if \(seq !== tickets\.get\(root\)\) \{\s*return;\s*\}.*?'
+                . 'await templates\.renderForPromise\(TEMPLATE, made\);\s*if \(seq !== tickets\.get\(root\)\) \{\s*return;\s*\}'
+                . '\s*templates\.replaceNodeContents\(body, html, js\);~s',
+            $block
+        );
+        $this->assertStringContainsString("const pending = new Pending('theme_dimensions/calendar:block');", $block);
+        $this->assertMatchesRegularExpression('~\} finally \{\s*pending\.resolve\(\);\s*\}~', $block);
+        $this->assertSame(2, substr_count($block, 'redirect('), 'No root to paint, and a failure of the latest press.');
+        $this->assertMatchesRegularExpression(
+            '~\} catch \(failure\) \{\s*if \(seq === tickets\.get\(root\)\) \{\s*redirect\(href\);~',
+            $block
+        );
+        $this->assertMatchesRegularExpression(
+            "~url\.search = '';\s*url\.searchParams\.set\('month', month\);\s*if \(day !== ''\) \{\s*"
+                . 'url\.searchParams\.set\(DAY_PARAM, day\);~',
+            $block,
+            'The page\'s links name the month and the day alone: the page reads the saved state.'
+        );
+        $this->assertStringContainsString('const dots = dayDots(dayCounts);', $block);
+        $this->assertStringNotContainsString('history', $block);
+        preg_match('~const STRING_KEYS = \[(.*?)\] as const;~s', $block, $list);
+        preg_match_all("~'([a-z_]+)'~", $list[1] ?? '', $names);
+        $this->assertSame(
+            array_values(array_diff(blocks::STRINGS, ['calendar_nextmonth', 'calendar_prevmonth'])),
+            $names[1],
+            'The renderer hands over what the label reads, and the two the partial prints.'
+        );
     }
 }

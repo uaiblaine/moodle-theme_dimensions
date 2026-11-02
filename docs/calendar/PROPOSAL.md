@@ -982,3 +982,212 @@ the redirect off for that reader's session.
 
 **Not verified:** the redirect by eye on a stack; the Moodle App, which calls core's web services and never opens
 `view.php`.
+
+## 17. C3b plan (2026-11-01)
+
+C3b draws core's two calendar blocks with the theme's calendar (section 5.7): `block_calendar_month` becomes a mini
+month on the range, `block_calendar_upcoming` a short agenda on the range. The block's header, region, settings and
+footer stay core's; only the content changes. Decisions settled by the owner (2026-11-01), written here so they are
+not reopened: a renderer, four conditions, a server-drawn first paint, the page's saved state, core's upcoming
+preferences, and the range's answer as the only source.
+
+### 17.1 Server
+
+- **What core really passes (read in core 5.3).** Both blocks call `calendar_get_view()` and then
+  `$this->page->get_renderer('core_calendar')->render_from_template($template, $data)`:
+  - the month block asks for the view `monthblock`, and `calendar_get_view()` names the template
+    `core_calendar/calendar_month` for every month view but `mini` and `minithree` (the only two that get
+    `core_calendar/calendar_mini`); the block then sets `$data->iscalendarblock = true`. Core's own month page renders
+    the same template without the flag (`core_calendar/view_manager` adds it only in the browser, for the block's own
+    arrows), so **the guard is `core_calendar/calendar_month` with `iscalendarblock` set**, not `calendar_mini`, which
+    no block renders. Section 5.7 named the wrong template; the flag is what keeps core's page out.
+  - the upcoming block asks for `upcoming_mini`, rendered as `core_calendar/calendar_upcoming_mini` (which includes
+    the partial `core_calendar/upcoming_mini`; only the outer name reaches the renderer).
+  - The month block's `start_layout()`/`complete_layout()` wrapper (`div.maincalendar[data-region=calendar]`) and its
+    footer (`core_calendar/footer_options`: "Full calendar", and the export and subscription links) are other calls
+    and stay core's; so does the upcoming block's "Go to calendar..." footer, written with `html_writer` in the block.
+- **The renderer.** `classes/output/core_calendar_renderer.php`, `theme_dimensions\output\core_calendar_renderer
+  extends \core_calendar_renderer`, derived by the renderer factory (neither Boost nor Boost Union has one). It
+  overrides `render_from_template()` alone: it asks `local\calendar\blocks::kind()` which block the call is (month,
+  upcoming or none) and `blocks::applies()` whether the theme answers; any miss is `parent::render_from_template()`
+  with the same arguments, untouched. The decision is pure, like `coreview::target()`: every input is an argument.
+- **When the theme's content replaces core's** (each refusal is a reason core's output stays):
+  1. the call is one of the two blocks (the template name, and for the month the flag);
+  2. the setting `theme_dimensions/calendarblocks` is on: an `admin_setting_configcheckbox` that ships on and is read
+     as off only for an explicit `'0'`, beside `calendarcoreview`, with en and pt_br strings;
+  3. the page's course is the site (`$this->page->course->id`, which the block reads too): a course's block shows that
+     course's events, and the range has no course scope, the same reason C3r leaves course calendars to core;
+  4. the viewer is a real account, `coreview::account()` (a visitor and the guest keep core's);
+  5. the calendar type is the Gregorian, `coreview::gregorian()` (the range refuses any other).
+- **The data.** The saved state as the page reads it for a bare address (`state::saved()`), its category through
+  `page::scope_for()` (a category the range refuses is dropped, never named), then `range::answer()`, the page's own
+  orchestration. Nothing new reaches the database: no SQL is added. Core's `calendar_get_view()` has already run when
+  the renderer is called (the block calls it first) and its data is discarded; the renderer cannot avoid that cost,
+  and does not try. A category page's block is narrowed by core to that category; the theme's reads the saved state,
+  as the page does for a bare address: the page's rules are the viewer's, not the page's.
+- **The mini month** (`output\calendar_block_month`, `templates/calendar_block_month.mustache` around the partial
+  `calendar_block_month_body.mustache`):
+  - the month of now in the viewer's timezone, laid out as `page::grid()` lays it (whole weeks on the site's first
+    weekday), the neighbours' days marked as outside the month;
+  - each day a link to the page with `month=` (the day's own month) and `day=`, which opens the drawer; today marked
+    (`aria-current="date"`); dots per key from the answer's `days[].counts` in the keys' order, at most four, then
+    "+" (`blocks::dots()`, the PHP twin of `layout.ts`'s `dayDots()`);
+  - the caption a link to the page's month; previous and next links to the page's adjacent months;
+  - the links are bare (`month`, `day`): the page reads the saved state for a bare address, which is the state the
+    block drew.
+- **The short agenda** (`output\calendar_block_upcoming`, `templates/calendar_block_upcoming.mustache`):
+  - core's upcoming window, read as core reads it (`calendar_get_view()`, view `upcoming_mini`): from the start of the
+    current hour in the viewer's timezone to `calendar_lookahead` days later, less a second; the lookahead is the
+    preference `calendar_lookahead` over the site's `$CFG->calendar_lookahead` over `CALENDAR_DEFAULT_UPCOMING_LOOKAHEAD`
+    (21), the count the preference `calendar_maxevents` over `$CFG->calendar_maxevents` over
+    `CALENDAR_DEFAULT_UPCOMING_MAXEVENTS` (10) (`blocks::lookahead()`, `blocks::maxevents()`);
+  - an item is kept as core's event vault keeps one with its duration (`timestart >= from` or `timestart + duration >
+    from`, and `timestart <= to`), so an ongoing event stays; sorted by start, then source and id; the first
+    `maxevents`;
+  - the range answers at most 42 days per window, and a reader's lookahead may be a year: the window is walked in
+    42-day pieces, an item seen twice kept once, and the walk stops as soon as a piece leaves `maxevents` items (every
+    later piece only adds items that start later);
+  - each item links where the page's items link: its own address, else its course's page, else the site's home
+    (`calendar_page::item_url()`'s rule, `model.ts`'s `itemHref()`), every address checked to be http(s) first
+    (`blocks::safe_url()`, the twin of `safeHref()`);
+  - it ends with "Full calendar", a link to the page.
+- **Never answer what the range drops.** Both blocks are built from `range::answer()` alone; nothing of core's `$data`
+  reaches the theme's markup.
+
+### 17.2 Client
+
+- **The mini month's arrows** go through the range service in a small client, `js/esm/src/calendar/block.ts`, armed by
+  `amd/src/calendarblock.js` (the `js_call_amd` bridge, as `listingaccount.js` is) on a page whose month block the
+  theme drew:
+  - one delegated click listener per block root; a modified click and a middle click follow the link;
+  - the month after or before, its grid (`days.ts`'s `gridWeeks()`), `fetchOne()` of
+    `theme_dimensions_get_calendar_range` with the block's state (`model.ts`'s `rangeArgs()`, and `emptyAnswer()` when
+    every key is off), the context built in `block.ts` (dots by `layout.ts`'s `dayDots()`, labels from `strings.ts`'s
+    `fill()`), rendered with `core/templates` (through `amd.ts`) from the same partial the server drew;
+  - the latest press wins (a ticket checked after each await) and a Pending token spans the request to the painted
+    month; a refusal or a failure follows the link the arrow already is.
+- **Without JavaScript** every link works: the arrows open the page's adjacent month, a day opens the page's drawer.
+- **The short agenda has no client**: nothing in it moves.
+- The look: `scss/calendar.scss`, a `.dim-calblock` scope beside `body.dim-calendar`; the key tokens declared on both
+  roots (light and dark), the dots on the key classes; no `:has()`, no `!important`, no literal colour.
+
+### 17.3 Keyboard and screen reader
+
+- The mini month is a table: a caption-less `thead` of weekday abbreviations (`abbr` with the full name), one link
+  per day whose accessible name is the long date, the item count and "today" (the page's `calendar_daylabel`); the
+  dots are `aria-hidden`.
+- With JavaScript the grid has one Tab stop (today when it is shown, else the 1st), arrows move by day and week,
+  Home and End to the week's ends, PageUp and PageDown to the previous and next month (fetched, the focus on the same
+  day number or the month's last); Enter follows the link. Without it every day is a link in the Tab order.
+- The month caption is announced through a polite live region outside the painted body after a move.
+- The agenda is a list: each item a link with its name, the time as text beside it, the key's dot `aria-hidden` and
+  the key's name for screen readers.
+
+### 17.4 Tests and gates
+
+- **PHPUnit** (`tests/output/core_calendar_renderer_test.php`, `tests/local/calendar/blocks_test.php`):
+  - the factory returns the theme's renderer (as `myprofile_renderer_test` does);
+  - `kind()`: the month template with and without the flag, the upcoming template, any other name;
+  - `applies()`: each condition of 17.1 refused beside its control (the same call, accepted once the one reason is
+    gone);
+  - through the renderer: both blocks replaced; core's month page (the template without the flag) and every refusal
+    left as core's output byte for byte (the uniqid core draws per render aside);
+  - the dropped item: a category event of an unlisted category is in neither block, beside a listed category's
+    event in both (the saved state narrowed to their parent, as the range's own test narrows);
+  - the saved state: a key off drops its items from both blocks, beside the default;
+  - lookahead and maxevents: core's defaults, the site's settings and the reader's preferences, each pinned by an
+    item just inside and one just outside, and the agenda's count capped; a lookahead past 42 days is walked;
+  - the template draws the month's links (`day=`, the adjacent months) and the agenda's "Full calendar".
+- **Jest** (`js/esm/tests/calendar/block.test.ts`): the context built from an answer (dots, outside days, today,
+  labels, links); the arrow's fetch, the latest press winning, the refusal following the link; the keyboard.
+- **Behat** (`theme_dimensions_calendar.feature`): one scenario per block on the dashboard, each showing an event of
+  the month with a link to the page.
+- **Gates**: a "C3b calendar blocks" block in `mutations/gates.conf`, one per guard (each condition, the template name
+  and the flag, the dropped item, the lookahead and the count), each with the test it must redden; every `.pl`
+  dry-applied against its target.
+- **Tier 2** (PHP and JS, no SQL added: the blocks call the range classes as the page does): one full leg with
+  Behat (`mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat`), plus `security-diff-read`, since the
+  blocks show events under the range's visibility rules.
+
+## 18. C3b results (2026-11-01)
+
+Branch `calendar-c3b`, built from section 17, uncommitted, no `version.php` bump.
+
+**What exists:**
+- `classes/local/calendar/blocks.php`: the decision (`kind()`, `applies()`, `enabled()`), core's upcoming parity
+  (`lookahead()`, `maxevents()`, `upcoming_window()`, `upcoming_keeps()`), the data (`month()`, `upcoming()`, both
+  given "now"), `dots()`, `safe_url()` and `item_url()`;
+- `classes/output/core_calendar_renderer.php` (the override of `render_from_template()` alone),
+  `classes/output/calendar_block_month.php` and `classes/output/calendar_block_upcoming.php`;
+- `templates/calendar_block_month.mustache` around `templates/calendar_block_month_body.mustache`, and
+  `templates/calendar_block_upcoming.mustache`;
+- the client `js/esm/src/calendar/block.ts` (built to `js/esm/build/calendar/block*`) and its `js_call_amd` bridge
+  `amd/src/calendarblock.js` (built to `amd/build`);
+- the setting `theme_dimensions/calendarblocks` beside `calendarcoreview`, five strings in en and pt_br;
+- the `.dim-calblock` rules in `scss/calendar.scss`, the key tokens declared on that root as well as on the page's;
+- the README section "The calendar blocks";
+- tests: `tests/local/calendar/blocks_test.php` (18), `tests/local/calendar/blocks_budget_test.php` (1),
+  `tests/output/core_calendar_renderer_test.php` (11), a new case in `calendar_component_source_test`, the second root
+  in `calendar_scss_test`, Jest `js/esm/tests/calendar/block.test.ts` (10), and two scenarios at the end of
+  `theme_dimensions_calendar.feature`;
+- 28 gates in the "C3b calendar blocks" block of `mutations/gates.conf`.
+
+**Where the build left the plan:**
+- **The month block's template is `core_calendar/calendar_month`, not `calendar_mini`** (17.1): the decision named the
+  mini template, core passes the month one with the flag. `blocks_test::test_the_template_names_are_the_ones_core_passes`
+  reads both names from `calendar_get_view()` and the flag from the block's source, so a core change reddens it.
+- **The agenda walks the window in growing pieces**: 7 days, then 14, then 28 and 42 (the range's cap), stopping once a
+  piece fills the count. One piece for the whole lookahead cost 532 statements at 25 courses; the walk costs 226,
+  because a range answer pays core's module callbacks for every item of its window and a busy week fills the count. A
+  sparse lookahead pays one more range call per piece. Gate `cal_blocks_walk_stop` (the budget test) holds the stop.
+- **Item links are kept only when absolute http(s)** (`blocks::safe_url()`), stricter than `safeHref()`, which also takes
+  a relative address: the server builds every address absolute, and a relative one is never answered.
+- **The client reads the weekday names back from the server's paint** (the `abbr` of each head cell), so a moved month
+  keeps core's spelling of them; the caption and the day labels are the client's (`Intl`), as the page's are.
+- **The selected day of 5.7** is not drawn: a block has no selection; today is marked (`aria-current="date"`).
+- **Two existing tests follow the new client**: `calendar_component_source_test` counts two bridge imports (the page's
+  notification, the block's templates) and lets `block.ts` redirect, where its failure follows the arrow's own link;
+  `calendar_scss_test` accepts the blocks' root beside the body class and compiles the token blocks under both.
+- **Core's footers stay core's**, as 17.1 says: the month block's "Full calendar" leads to `calendar/view.php`, which
+  C3r sends to the page; the upcoming block's "Go to calendar..." leads to core's upcoming view, which stays core's. So
+  the agenda shows the theme's "Full calendar" and core's footer link below it.
+
+**Measurement** (`blocks_budget_test`, m503b, PHP 8.4, PostgreSQL 18, the C1 baseline's shape at 25 courses, "now"
+on the 10th of the seeded month at 09:00, each render after one warm call with every per-request memo reset):
+
+| One render | Statements | ms | Bytes |
+|---|---|---|---|
+| Core's month block (`calendar_get_view('monthblock')` and its template) | 733 | 865-906 | 948,484 |
+| The theme's month (`blocks::month()` and its template) | 533 | 105-113 | 24,738 |
+| Core's upcoming block (`calendar_get_view('upcoming_mini')` and its template) | 13 | 23-25 | 14,860 |
+| The theme's agenda, one 22-day piece (first build) | 532 | 97-101 | 6,012 |
+| The theme's agenda, walked (7-day first piece) | 226 | 45 | 6,012 |
+
+Core's half runs whatever the theme does: the block calls `calendar_get_view()` before the renderer, and the theme
+discards that data. So a page with the month block pays core's 733 statements and the theme's 533 on top; with the
+upcoming block, core's 13 and the theme's 226. The budget test holds the theme's halves at 586 and 249 statements (a
+tenth over) and the theme's month below core's.
+
+**Security read:** no blocking finding. One should-fix was refuted against core: the read took a category page's
+block to narrow to that category, as `block_calendar_month::get_content()` means to, but that code reads
+`!empty($this->page->category)` and `moodle_page` has no `__isset()`, so the test is always false and core's block
+never narrows; the upcoming block has no narrowing at all. The theme keeps core's effective behaviour (the viewer's
+saved state on every page) and says why in `blocks::scope()`. Notes kept: the month client reads the state drawn at
+page time (a change in another tab shows on reload); `data-page` is server-written and not scheme-checked again in
+the client; a very long lookahead with no event cap walks the whole window, at the reader's own preference.
+
+**Gates:**
+- **Mutation sweep:** the 28 C3b gates went red on pgsql and mariadb
+  (`mdl mutate --fast --branch MOODLE_503_STABLE --only <28 gates>`, exit 0 on both).
+- **Tier 2:** `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat` passed every step but Behat, where
+  one scenario of 190 failed: the month block's "today" click hit the default Dashboard's own calendar block, which
+  sits in the closed block drawer and is not interactable. The scenario now reads the block in `#block-region-content`;
+  the whole calendar feature then passed on m503b (16 of 16 scenarios, `tool_mulib`'s duplicate step left out of the
+  generated `behat.yml` for that run and put back after). PHPUnit 1,908 (16 skipped), Jest 316.
+
+**Not verified:**
+- Behat on the last day of a month near midnight (the blocks read today).
+- The blocks by eye on a stack (no password typed into a login page), light and dark.
+- A screen reader over the mini month; the keyboard contract is Jest's.
+- MariaDB and PHP 8.3 for the PHPUnit cases (run on m503b only, PHP 8.4 and PostgreSQL).
+- The Moodle App, the iCal export and core's other calendar clients, which the README says a renderer cannot reach.

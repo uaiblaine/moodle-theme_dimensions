@@ -1,0 +1,84 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/calendar_block_month
+
+    block_calendar_month's content drawn with the theme's calendar
+    (docs/calendar/PROPOSAL.md section 17): the root the client arms, the
+    month itself (theme_dimensions/calendar_block_month_body, which the client
+    paints again on a move) and a polite live region outside it, which says
+    the new month's caption after a move.
+
+    The root carries what the client needs to ask for another month: the
+    month shown, today, the week's first day, the page's address and the
+    state the block drew (JSON in a double-stashed attribute, which the
+    browser decodes).
+
+    Data attributes required for JS:
+    * data-region="dim-calblock-month", data-month, data-today, data-firstday,
+      data-page, data-state
+    * data-region="dim-calblock-body"
+    * data-region="dim-calblock-status"
+
+    Example context (json):
+    {
+        "month": "2026-11",
+        "today": "2026-11-03",
+        "firstday": 0,
+        "pageurl": "https://example.com/r.php/theme_dimensions/calendar",
+        "state": "{\"off\":[],\"categoryid\":0}",
+        "caption": "November 2026",
+        "monthurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11",
+        "prevmonth": "2026-10",
+        "prevurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-10",
+        "nextmonth": "2026-12",
+        "nexturl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-12",
+        "weekdays": [
+            {
+                "short": "Sun",
+                "long": "Sunday"
+            }
+        ],
+        "weeks": [
+            {
+                "days": [
+                    {
+                        "date": "2026-11-03",
+                        "number": 3,
+                        "url": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11&day=2026-11-03",
+                        "label": "Tuesday, 3 November 2026, 2 items, today",
+                        "outside": false,
+                        "today": true,
+                        "dots": [
+                            {
+                                "key": "site"
+                            }
+                        ],
+                        "more": false
+                    }
+                ]
+            }
+        ]
+    }
+}}
+<div class="dim-calblock dim-calblock--month" data-region="dim-calblock-month" data-month="{{month}}" data-today="{{today}}"
+    data-firstday="{{firstday}}" data-page="{{pageurl}}" data-state="{{state}}">
+    <div data-region="dim-calblock-body">
+        {{> theme_dimensions/calendar_block_month_body}}
+    </div>
+    <div class="visually-hidden" aria-live="polite" data-region="dim-calblock-status"></div>
+</div>

@@ -1,0 +1,98 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/calendar_block_month_body
+
+    The month of the month block (theme_dimensions/calendar_block_month): the
+    arrows and the caption, links to the theme's calendar page, then the days
+    as a table, each day a link to the page with that day open. A day's dots
+    are its keys with items (at most four, then "+"), hidden from a screen
+    reader, whose name for the day is its label: the date, the count and
+    "today". Drawn by the server, and by js/esm/src/calendar/block.ts after a
+    move, from a context built the same way.
+
+    Data attributes required for JS:
+    * data-action="dim-calblock-nav" with data-month (the month it leads to)
+    * data-region="dim-calblock-weekday" (the client reads the names back)
+    * data-region="dim-calblock-day" with data-date
+
+    Example context (json):
+    {
+        "caption": "November 2026",
+        "monthurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11",
+        "prevmonth": "2026-10",
+        "prevurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-10",
+        "nextmonth": "2026-12",
+        "nexturl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-12",
+        "weekdays": [
+            {
+                "short": "Sun",
+                "long": "Sunday"
+            }
+        ],
+        "weeks": [
+            {
+                "days": [
+                    {
+                        "date": "2026-11-03",
+                        "number": 3,
+                        "url": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11&day=2026-11-03",
+                        "label": "Tuesday, 3 November 2026, 2 items, today",
+                        "outside": false,
+                        "today": true,
+                        "dots": [
+                            {
+                                "key": "site"
+                            }
+                        ],
+                        "more": true
+                    }
+                ]
+            }
+        ]
+    }
+}}
+<div class="dim-calblock__head">
+    <a class="dim-calblock__nav" href="{{prevurl}}" data-action="dim-calblock-nav" data-month="{{prevmonth}}"
+        aria-label="{{#str}}calendar_prevmonth, theme_dimensions{{/str}}"><i class="fa fa-chevron-left" aria-hidden="true"></i></a>
+    <a class="dim-calblock__caption" href="{{monthurl}}">{{caption}}</a>
+    <a class="dim-calblock__nav" href="{{nexturl}}" data-action="dim-calblock-nav" data-month="{{nextmonth}}"
+        aria-label="{{#str}}calendar_nextmonth, theme_dimensions{{/str}}"><i class="fa fa-chevron-right" aria-hidden="true"></i></a>
+</div>
+<table class="dim-calblock__grid">
+    <thead>
+        <tr>
+            {{#weekdays}}
+            <th scope="col" class="dim-calblock__weekday" data-region="dim-calblock-weekday"><abbr title="{{long}}">{{short}}</abbr></th>
+            {{/weekdays}}
+        </tr>
+    </thead>
+    <tbody>
+        {{#weeks}}
+        <tr>
+            {{#days}}
+            <td class="dim-calblock__cell{{#outside}} dim-calblock__cell--outside{{/outside}}{{#today}} dim-calblock__cell--today{{/today}}">
+                <a class="dim-calblock__day" href="{{url}}" data-region="dim-calblock-day" data-date="{{date}}" aria-label="{{label}}"{{#today}} aria-current="date"{{/today}}>
+                    <span class="dim-calblock__num">{{number}}</span>
+                    <span class="dim-calblock__dots" aria-hidden="true">{{#dots}}<span class="dim-calblock__dot dim-cal-key--{{key}}"></span>{{/dots}}{{#more}}<span class="dim-calblock__dotmore">+</span>{{/more}}</span>
+                </a>
+            </td>
+            {{/days}}
+        </tr>
+        {{/weeks}}
+    </tbody>
+</table>

@@ -30,7 +30,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use theme_dimensions\local\category\branding;
 
 /**
- * scss/calendar.scss: scoped under the page's body class, and every key colour pair computed in both colour modes.
+ * scss/calendar.scss: scoped under the page's body class or the calendar blocks' root, and every key colour pair
+ * computed in both colour modes.
  *
  * The key tokens are compiled from the stylesheet itself (the two token blocks, over the design system's primitives
  * from post.scss and core's colour-mode helpers, as dark_tokens_test compiles the theme's dark half), and each pair
@@ -50,6 +51,18 @@ final class calendar_scss_test extends \advanced_testcase {
 
     /** @var string The dark token block's selector. */
     private const DARK = ':root[data-bs-theme="dark"] body.dim-calendar';
+
+    /** @var string The calendar blocks' root (local\calendar\blocks), on any page. */
+    private const BLOCK = '.dim-calblock';
+
+    /** @var string The dark colour mode over the blocks' root. */
+    private const DARK_BLOCK = ':root[data-bs-theme="dark"] .dim-calblock';
+
+    /** @var string The light token block's selector, as written: the page and the blocks declare the same tokens. */
+    private const TOKENS = self::SCOPE . ",\n" . self::BLOCK;
+
+    /** @var string The dark token block's selector, as written. */
+    private const DARK_TOKENS = self::DARK . ",\n" . self::DARK_BLOCK;
 
     /** @var string[] The keys that carry a colour triple: the eight keys and the overdue warning. */
     private const KEYS = ['site', 'category', 'course', 'group', 'user', 'activity', 'other', 'open', 'overdue'];
@@ -99,18 +112,23 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * Every top-level rule is the page's: the body class, or the dark colour mode over it.
+     * Every top-level rule is the page's or the blocks': the body class or the blocks' root, or the dark mode over one.
      *
      * @return void
      */
     public function test_every_rule_is_scoped_to_the_calendar_page(): void {
         $selectors = $this->top_level_selectors($this->scss());
-        $this->assertGreaterThanOrEqual(3, count($selectors), 'The control: the rules are read.');
+        $this->assertGreaterThanOrEqual(4, count($selectors), 'The control: the rules are read.');
         foreach ($selectors as $selector) {
             foreach (explode(',', $selector) as $part) {
-                $this->assertContains(trim($part), [self::SCOPE, self::DARK], "Unscoped: {$selector}");
+                $this->assertContains(
+                    trim($part),
+                    [self::SCOPE, self::DARK, self::BLOCK, self::DARK_BLOCK],
+                    "Unscoped: {$selector}"
+                );
             }
         }
+        $this->assertContains(self::BLOCK, $selectors, 'The blocks have rules of their own.');
     }
 
     /**
@@ -159,7 +177,7 @@ final class calendar_scss_test extends \advanced_testcase {
             . "\n\$prefix: bs-;\n\$white: \$mds-color-gray-white;\n\$gray-800: \$mds-color-gray-800;\n"
             . "\$gray-900: \$mds-color-gray-900;\n@import \"moodle/colour-mode\";\n"
             . implode("\n", $primitives[0])
-            . "\n.light {" . $this->block(self::SCOPE) . "\n}\n.dark {" . $this->block(self::DARK) . "\n}"
+            . "\n.light {" . $this->block(self::TOKENS) . "\n}\n.dark {" . $this->block(self::DARK_TOKENS) . "\n}"
         );
         $css = $compiler->to_css();
         $modes = [];
