@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **tool_courserating's ratings on the showcase** (2026100563), stage R1 of `docs/vitrine-ratings/PROPOSAL.md`
+- **tool_courserating's ratings on the showcase** (2026100566), stage R1 of `docs/vitrine-ratings/PROPOSAL.md`
   (card variant A, the dialogue's rating block, decision 4). The plugin stays optional, asked by class name: absent,
   or rating no course anywhere, nothing of it is read. Present, the page reads its summary table once, over the page's
   ids (`cards::ratings()`: `ratingmode <> RATEBY_NOONE AND cntall > 0`, the plugin's own rule for showing a rating),
@@ -18,7 +18,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   3:1 on a dark surface). New strings `category_rating_*`. tool_courserating joins `ci.yml`'s
   `plugin-dependencies` (`MOODLE_405_STABLE`, which supports 5.3). PHPUnit, Behat (a rated course on the card and in
   the dialogue) and new mutation gates.
-- **The showcase card's "More information" is a link, and its dialogue is fetched when it opens** (2026100562), stage
+- **The showcase card's "More information" is a link, and its dialogue is fetched when it opens** (2026100565), stage
   L2 of `docs/vitrine-ratings/PROPOSAL.md` (decisions V1, open at once, buttons on the card). The card no longer
   draws its details panel nor an inert copy of its dialogue: "More information" links to the card's own page (the
   course, the landing page or the enrolment page; no link where the card has none), which is the whole of it without
@@ -32,7 +32,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   and the rows answers lose `detailsid`, `excerpt`, `facts`, `learn` and `learnlabel`. The visitor's page no longer
   loads the dialogue's module. New string `category_modal_failed`. PHPUnit (a new service test), Jest, Behat (the
   dialogue scenario and a no-JavaScript link scenario), 12 new mutation gates, 3 retired.
-- **The category showcase card has no hover peek** (2026100561), stage L1 of `docs/vitrine-ratings/PROPOSAL.md`. The
+- **The category showcase card has no hover peek** (2026100564), stage L1 of `docs/vitrine-ratings/PROPOSAL.md`. The
   copy of the card's details panel that opened beside a card after 180 ms of hover is gone, with its timer, its
   styles and the `dim-card--peeking` class. The "More information" disclosure and the course dialogue are
   unchanged, and the cover film keeps its own 180 ms intent delay. Jest and the source tests no longer pin the
