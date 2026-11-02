@@ -33,17 +33,17 @@ import { fetchOne } from "@moodle/lms/core/ajax";
 import Pending from "@moodle/lms/core/pending";
 import { load } from "../amd";
 import { parse, say, shiftMonth } from "../daterange/calendar";
+import { RANGE_METHOD, REMEMBER_METHOD } from "./account";
 import CategoryPicker from "./CategoryPicker";
 import DayDrawer from "./DayDrawer";
 import { gridWeeks, zone as zoneOf } from "./days";
+import { description } from "./description";
 import EventPopover from "./EventPopover";
 import { writeAddress } from "./history";
 import KeyChips from "./KeyChips";
 import { dayDots, place } from "./layout";
 import {
   KEYS,
-  RANGE_METHOD,
-  REMEMBER_METHOD,
   DAY_PARAM,
   address,
   emptyAnswer,
@@ -372,6 +372,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             KeyChips,
             {
               strings,
+              keys: KEYS,
               off: state.off,
               counts,
               onToggle: (key) => change({ off: state.off.includes(key) ? state.off.filter((other) => other !== key) : [...state.off, key] })
@@ -386,7 +387,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
           ),
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__spacer" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 505,
+            lineNumber: 506,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(
@@ -402,7 +403,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 506,
+              lineNumber: 507,
               columnNumber: 17
             }
           ),
@@ -418,7 +419,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 513,
+              lineNumber: 514,
               columnNumber: 17
             }
           )
@@ -454,7 +455,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                  lineNumber: 524,
+                  lineNumber: 525,
                   columnNumber: 17
                 }
               ),
@@ -473,7 +474,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                  lineNumber: 540,
+                  lineNumber: 541,
                   columnNumber: 21
                 }
               ) : null
@@ -483,13 +484,13 @@ const Calendar = /* @__PURE__ */ __name((props) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 520,
+            lineNumber: 521,
             columnNumber: 13
           }
         ),
         shown.answer.truncated ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__status", children: strings.calendar_truncated }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 551,
+          lineNumber: 552,
           columnNumber: 39
         }) : null,
         popped && poppedentry ? /* @__PURE__ */ jsxDEV(
@@ -501,13 +502,15 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             opener: popped.opener,
             sheet: phone,
             modalities: props.options.modality,
+            describe: description,
+            plain: "",
             onClose: closePopover
           },
           void 0,
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 553,
+            lineNumber: 554,
             columnNumber: 17
           }
         ) : null

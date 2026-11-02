@@ -149,6 +149,32 @@ final class calendar_test extends \core\tests\router\route_testcase {
     }
 
     /**
+     * With the public calendar on, a visitor is served the visitor's page through the same route, under forced login:
+     * the route asks nothing of the login before the shared decision.
+     *
+     * The control is the visitor sent to log in with the switch off (the test above).
+     *
+     * @return void
+     */
+    public function test_a_visitor_gets_the_public_calendar_when_it_is_on(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->forcelogin = 1;
+        set_config(\theme_dimensions\local\calendar\visitor::SETTING, '1', 'theme_dimensions');
+        $this->setUser(null);
+
+        $response = $this->request(['month' => '2026-11', 'keys' => ['open']]);
+
+        $body = (string) $response->getBody();
+        $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
+        $this->assertStringContainsString('data-react-component="' . calendar_page::COMPONENT_PUBLIC . '"', $body);
+        $props = $this->props($body);
+        $this->assertSame(['open'], $props['keys']);
+        $this->assertSame('2026-11', $props['month']);
+        $this->assertFalse(isloggedin());
+    }
+
+    /**
      * The guest account is core's calendar's, as core's primary navigation links it.
      *
      * @return void

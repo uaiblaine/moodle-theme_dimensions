@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The key chips: one toggle button per key, in its key's colours, with the count of the range on screen.
+ * The key chips: one toggle button per key it is handed, in its key's colours, with the count of the range on screen.
  *
  * A chip is a button with aria-pressed. A chip off is a key the range is not asked for, so it carries no count:
  * the server never counted it.
@@ -24,13 +24,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {KEYS} from './model';
 import type {Key} from './model';
 import type {Strings} from './strings';
 
 /** What the chips are handed. */
 type KeyChipsProps = {
     strings: Strings,
+    keys: readonly Key[],
     off: Key[],
     counts: Record<string, number>,
     onToggle: (key: Key) => void,
@@ -70,9 +70,9 @@ export const keyLabel = (strings: Strings, key: Key): string => {
  * @param {object} props See KeyChipsProps.
  * @returns {object} The group of chips.
  */
-const KeyChips = ({strings, off, counts, onToggle}: KeyChipsProps) => (
+const KeyChips = ({strings, keys, off, counts, onToggle}: KeyChipsProps) => (
     <div className="dim-cal__chiprow" role="group" aria-label={strings.calendar_keys} data-region="dim-cal-chips">
-        {KEYS.map((key) => {
+        {keys.map((key) => {
             const on = !off.includes(key);
             return (
                 <button

@@ -154,4 +154,34 @@ final class publicaccess {
         }
         return (bool) $predicate::is_public($categoryid);
     }
+
+    /**
+     * Every category whose public page may be served anonymously, in one batch: {@see is_public()} for the whole site.
+     *
+     * The same composition as is_public(), never a second rule: the surface's switches first, then the predicate class,
+     * then the plugin's own answer for the categories whose own row says public, read through its batched
+     * are_public() (four statements whatever their number). The root is never among them: it holds no category of
+     * its own. The visitor's calendar asks it ({@see \theme_dimensions\local\calendar\source\public_events}).
+     *
+     * @param string|null $predicate The predicate class; tests pass a nonexistent one to pin the fail-closed answer.
+     * @return int[] Category ids, ascending; empty whenever is_public() would refuse every one.
+     */
+    public static function public_ids(?string $predicate = null): array {
+        if (!self::enabled()) {
+            return [];
+        }
+        $predicate = $predicate ?? self::PREDICATE;
+        if (!class_exists($predicate)) {
+            // Fail closed: no predicate, no public category.
+            return [];
+        }
+        $candidates = array_map('intval', $predicate::public_ids());
+        if (!$candidates) {
+            return [];
+        }
+        $ids = array_keys(array_filter($predicate::are_public($candidates)));
+        $ids = array_map('intval', $ids);
+        sort($ids);
+        return $ids;
+    }
 }

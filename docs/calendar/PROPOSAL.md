@@ -1191,3 +1191,196 @@ the client; a very long lookahead with no event cap walks the whole window, at t
 - A screen reader over the mini month; the keyboard contract is Jest's.
 - MariaDB and PHP 8.3 for the PHPUnit cases (run on m503b only, PHP 8.4 and PostgreSQL).
 - The Moodle App, the iCal export and core's other calendar clients, which the README says a renderer cannot reach.
+
+## 19. CV plan (2026-11-02)
+
+CV opens the calendar page to a visitor who is not logged in, for the events of public categories and, by V1, the
+public event courses (section 5.8). Decisions settled by the owner (2026-11-01), written here so they are not
+reopened: the same page in a visitor mode, a visitor source with no viewer in it, a nologin service that is the
+showcase visitor's twin, a switch that ships off and is read beside `publicaccess`, text-only descriptions (V2), no
+saved state and no cache across requests (D39/OD-5).
+
+### 19.1 Server
+
+- **The switch.** `theme_dimensions/calendarpublic`, an `admin_setting_configcheckbox` that ships off and reads on only
+  for a stored `'1'` (`local\calendar\visitor::enabled()`), beside `calendarcoreview` and `calendarblocks`, with en and
+  pt_br strings. It is read beside `publicaccess`, never inside it: `category\publicaccess::is_public()` keeps gating
+  every public category page, image route and head tag whatever the calendar's switch says.
+- **Who is public, batched.** Two adapters, each failing closed when its predicate class is missing:
+  - `category\publicaccess::public_ids()`: the surface's switches (`enabled()`, which folds the showcase's), then
+    local_unlistedcourses' `category_discoverability::public_ids()` read through `are_public()` (four statements
+    whatever the number of categories);
+  - `landing\publicaccess::are_public($courseids)`: `discoverability::are_public()`, the landing page's own gate in bulk.
+- **The visitor's sources** (`classes/local/calendar/source/`), no viewer anywhere in them:
+  - `public_events`: one statement over `{event}`: `eventtype = 'category'`, `courseid = 0`, `groupid = 0`,
+    `visible = 1`, no component, the category among the effective public ids, the start inside the window or the span
+    overlapping it. It rides core's `groupid-courseid-categoryid-visible-userid` index. The name and the location are
+    `format_string()` in the category's context with the filters off; `userid` is never selected. The description is
+    `content_to_text()` of the row (V2: text, no image, no file area). The item's address is the public category page
+    (`links::category_page()`), the only category page a visitor can open.
+  - `public_courses` (V1): event courses (`dimensions_model = 2`) whose dates meet the window and whose own state row
+    says public, at most `event_courses::OPEN_CANDIDATES` read earliest first, then `landing\publicaccess::are_public()`
+    over them, at most `event_courses::OPEN_CAP` answered (`truncated` beyond). Key `open`; the address is the landing
+    page (`links::page()`); `join` is `open`, so the popover's primary action is "Inscrever-se" (`calendar_join_open`)
+    leading there.
+- **The answer** (`local\calendar\publicrange::answer()`): `range::answer()`'s shape key for key, so the grid, the
+  drawer and the popover draw it unchanged, plus `descriptions` (`[{id, text}]` for the category events that have one).
+  The course dictionary is the visitor's: the landing page as `url` and `landingurl`, no image (core's
+  `course/overviewfiles` asks for a login under forcelogin), no participant count, `enrolled` false. A category is
+  named only when it is one of the effective public ids, with its branding pair. Nothing is cached.
+- **The service** `theme_dimensions_get_public_calendar_range` (read, ajax, `loginrequired => false`, through
+  `lib/ajax/service-nologin.php`), in `get_public_category_rows`' step order:
+  1. `validate_parameters()` (`from`, `to`, `keys[]`, `lang`);
+  2. one call per request (a static counter, counted before anything can refuse);
+  3. a `cachekey` refused;
+  4. a logged-in session refused, the guest included (`isloggedin()`), with the one refusal;
+  5. the cheap shape checks: the window in UTC (`window::from_iso()`), the keys against the visitor's two;
+  6. the language it is sent forced, given back in a `finally`;
+  7. the switch (`visitor::enabled()`), then the site's calendar type (Gregorian only), with the one refusal;
+  8. the page's context set to the system's, never `validate_context()`;
+  9. the window in the site's timezone and `publicrange::answer()`.
+
+  It never reads `$USER`. The one refusal is `local\calendar\refusal` (`calendarrangeunavailable`), the range's own.
+  The returns are `get_calendar_range::execute_returns()` plus `descriptions`.
+- **The page** (`page::handle()`): the first step splits. A visitor with the switch off goes to the login page before any
+  lookup, as today; with it on, `page::visitor()` serves the page without `require_login()`: a calendar type other
+  than the Gregorian goes to the login page too (one refusal); the month, the open day and the keys are read from the
+  address alone (`visitor::on_from_request()`: the two keys, an empty `keys[]` member for none, anything else
+  dropped); the answer is embedded; `opengraph::for_calendar()` is armed, so the head carries the canonical address and
+  `noindex` unless the site is open to search engines. The guest account still goes to core's calendar, and a real
+  account is served as before.
+- **The renderable** (`calendar_page`) gains a visitor mode: the component `calendar/PublicCalendar`, the two chips,
+  no category, no "More filters", no classic link, a no-JavaScript notice without core's calendar, and props without
+  the tree, the options or core's calendar address.
+- **Navigation.** The theme gives a visitor no navigation of its own: `guestnav` only replaces core's login text with
+  the "Log in" and "Create account" actions, and `drawernav` (where the calendar row lives) applies to real accounts.
+  So the visitor reaches the page by its address (shared, or linked from an institutional site); no visitor link is
+  added in CV. C3r stays as it is: core's `calendar/view.php` keeps a visitor, whose own `require_login()` decides.
+
+### 19.2 Client
+
+- **A shell of its own, `js/esm/src/calendar/PublicCalendar.tsx`**, over the shared components (`MonthGrid`,
+  `DayDrawer`, `EventPopover`, `KeyChips`, `layout`, `overlap`, `model`, `days`, `look`, `strings`, `history`), as the
+  showcase's `visitor.ts` sits beside `account.ts`. It names one service, `theme_dimensions_get_public_calendar_range`,
+  through `fetchOne(..., {loginrequired: false})` with no cachekey, and sends `Config.language`.
+- **What moves out of the shared modules,** so the visitor's graph reaches nothing of a session:
+  - the account's two services (`RANGE_METHOD`, `REMEMBER_METHOD`) leave `model.ts` for `calendar/account.ts`, which
+    `Calendar.tsx` and `block.ts` import;
+  - core's event service (`EVENT_METHOD`) moves into `description.ts`;
+  - `EventPopover` stops importing `description.ts`: it is handed `describe` (the account passes `description`, the
+    one feeder of the trusted sink; the visitor passes `null`) and `plain` (the visitor's text, drawn as text);
+  - `DayDrawer`'s link to core's day view is drawn only when it is handed core's calendar address (the visitor hands
+    none);
+  - `KeyChips` draws the keys it is handed.
+- **Behaviour:** the latest request wins (a ticket after the await), a Pending token from the request to the painted
+  grid, the address written by `history.ts` (a month pushed, a change of keys replaced, `day=` replaced), Back and
+  Forward read it again. A failure loads the address of what was asked for, which the server draws (the showcase
+  visitor's rule). Nothing is remembered.
+
+### 19.3 Keyboard and screen reader
+
+Unchanged from 11.3 and 13.3: the same grid, chips, drawer and popover. The visitor's popover has no course page link
+and draws its description as a paragraph of text.
+
+### 19.4 Tests and gates
+
+- **PHPUnit:**
+  - `tests/local/calendar/public_events_test.php`: an event of an effective public category answered; never answered,
+    each beside its control (the same request answered once the one reason is gone): a merely listed category, an
+    unlisted one, a hidden one, a public one under a hidden ancestor, a non-category event type, an event hidden
+    (`visible = 0`), a group's or a course's id on the row, an event outside the window; the span overlapping the window
+    kept; the creator never answered; filters off; the surface's switch and a missing predicate fail closed.
+  - `tests/local/calendar/public_courses_test.php`: a public event course answered, with the landing page and `join`;
+    a listed, unlisted, hidden one and one under an unlisted category never, each with its control; a plain course
+    model never; the cap.
+  - `tests/external/get_public_calendar_range_test.php`: the refusal order pinned like the `pws_*` tests (a second
+    call, a cachekey, a logged-in account, the guest, the switch never saved, `'0'` and `'yes'`, each the same bytes,
+    each beside its control); a malformed window or key refused before any statement; the language spoken and given
+    back; the answer equal to `publicrange::answer()`; nothing of a non-public category or course in any string.
+  - `tests/local/calendar/page_test.php` (or a new `page_visitor_test.php`): the switch off sends a visitor to the login
+    page before any lookup; on, the page is served without `require_login()`, with the visitor's component, the two
+    keys and the head tags (noindex, with its control); the guest still goes to core's calendar.
+  - `categorypublic_source_test` walks from `calendar/PublicCalendar` too: no session module (the account's shell,
+    `account.ts`, `description.ts`, the picker, the filters, the blocks' client) and no logged-in service anywhere in
+    its graph, comments included.
+  - `calendar_component_source_test` follows the moved constants and the popover's two props.
+- **Jest** (`js/esm/tests/calendar/PublicCalendar.test.tsx`): the first paint from the props, the two chips, a chip
+  asking the visitor's service with `loginrequired: false` and the page's language, the latest answer winning, a
+  failure loading the address, the popover's text description and "Inscrever-se" to the landing page, no classic link.
+- **Behat** (`theme_dimensions_calendar_public.feature`): as a visitor with the switch on, a public category's event
+  and a public event course on the month, the popover's description; the switch off sends the visitor to the login
+  page (the control).
+- **Gates:** a "CV public calendar" block in `mutations/gates.conf`, one gate per guard, each with its `#   ->` test.
+- **Tier 3**: a nologin web service, SQL and an authentication path. `mdl ci moodle-theme_dimensions --matrix --behat`,
+  `security-diff-read` over the diff, and the sweep of the CV gates on both database families.
+
+## 20. CV results (2026-11-02)
+
+Branch `calendar-cv`, built from section 19, uncommitted, no `version.php` bump.
+
+**What exists:**
+- the switch `theme_dimensions/calendarpublic` (`classes/local/calendar/visitor.php`: `enabled()`, the two keys, the keys
+  read from the address and written back), beside `calendarblocks`, with en and pt_br strings;
+- who is public in bulk: `category\publicaccess::public_ids()` and `landing\publicaccess::are_public()`;
+- the visitor's sources `classes/local/calendar/source/public_events.php` and `public_courses.php`, and the answer
+  `classes/local/calendar/publicrange.php` (`range::days()` became public for it);
+- the service `classes/external/get_public_calendar_range.php`, registered in `db/services.php`;
+- the page's visitor branch (`page::visitor()`, `page::to_login()`), `calendar_page`'s visitor mode
+  (`COMPONENT_PUBLIC`, `visitor_context()`), the template's `{{#visitor}}` branches and one string,
+  `opengraph::for_calendar()`;
+- the client `js/esm/src/calendar/PublicCalendar.tsx` and `account.ts`, with `EventPopover`, `DayDrawer`, `KeyChips`,
+  `description.ts`, `model.ts`, `Calendar.tsx` and `block.ts` changed as 19.2 says, builds under `js/esm/build/calendar/`;
+- one SCSS rule (`.dim-cal__popdesc--text`), a README section "The public calendar", a CLAUDE.md bullet;
+- tests: `tests/local/calendar/public_events_test.php` (7), `public_courses_test.php` (6), `page_visitor_test.php` (7),
+  `tests/external/get_public_calendar_range_test.php` (10), a route case in `tests/route/controller/calendar_test.php`,
+  two cases in `categorypublic_source_test`, one in `calendar_component_source_test` and the sink test there extended,
+  `readonly_session_test` naming the second session-less read, the showcase fixture resetting the new call counter,
+  Jest `js/esm/tests/calendar/PublicCalendar.test.tsx` (11), Behat `theme_dimensions_calendar_public.feature` (3);
+- 56 gates in the "CV public calendar" block of `mutations/gates.conf`, every `.pl` dry-applied against its file
+  (none dead).
+
+**Where the build left the plan:**
+- **The page's test is a file of its own**, `page_visitor_test.php`, beside `page_test.php`.
+- **The service refuses a key outside the two as an invalid parameter**, the twin's rule for a malformed request; the
+  page drops one, as the logged-in page drops every value outside its vocabulary.
+- **A failure goes through `core/location`'s `redirect()`**, not `window.location.assign()`: Jest cannot stub the
+  latter in jsdom, and core's module is the mockable door to the same call. `calendar_component_source_test` allows
+  the visitor's shell that one redirect, in its catch.
+- **The popover's "Course page" link is drawn only when the course's page differs from its landing page.** In the
+  visitor's dictionary both are the landing page, which the primary action already opens; on the logged-in page the
+  two always differ, so nothing changes there.
+- **The visitor's popover shows the modality** of an event course: its props carry the modality field's options.
+- **The head tags are the Open Graph registry's**, so the page also prints `og:title` ("Calendar"), `og:site_name`,
+  `og:url` and `og:locale` beside the canonical link and `noindex`.
+- **A description is cut at 2,000 characters** (`public_events::MAX_DESCRIPTION`), a bound on an anonymous payload.
+  `html_to_text()` writes an image as its alternative text in brackets, emphasis as `_x_` and a strong as capitals.
+- **One guard was dropped as dead before the sweep**: `publicrange::answer()` filtered the keys again through
+  `visitor::on()`, but it asks only the two keys' sources, so a key outside them asked nothing either way.
+- **Navigation:** none added for a visitor, as 19.1 says. Core's `calendar/view.php` keeps a visitor (C3r's rule), so
+  under forced login it asks for a login even while the public calendar is on.
+
+**Security read:** no blocking finding; the refusal order matches `get_public_category_rows` step for step, and every
+"never answered" case has its control. Fixed: a nested `keys[][]` reached `optional_param_array()`, which throws, so an
+anonymous page answered 500; `visitor::on_from_request()` now drops a member that is a list (gate `cv_keys_nested`).
+Notes kept: category events have no cap per window (an owner decision below); `public_events::items()` trusts its
+caller's category list (its one caller passes `publicaccess::public_ids()`, and the service test scans the whole answer
+for a listed category's event); the collision order between two refusal reasons is not pinned, as in the twin; no
+test asserts `ajax => true` on the new function.
+
+**Gates:** _placeholder: the owner runs the sweep of the CV block and the matrix._
+
+**Fast checks run** (m503b, PHP 8.4, PostgreSQL 18; `mdl ci` on the Mac mini, PHP 8.3, PostgreSQL): every touched or
+new PHPUnit file green; the external tests (`get_public_calendar_range_test`, `readonly_session_test`,
+`get_public_category_rows_test`) need the service registered, so they ran under a temporary bump to 2026100561,
+reverted afterwards with the PHPUnit site re-initialised; `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE
+--only phpcs,phpdoc,phplint,mustache,grunt,jest` passed every step. Six gates were applied by hand and each reddened
+its test (`cv_courses_state`, `cv_js_popover_no_core`, `cv_events_filter_off`, `cv_ws_loggedin`,
+`cv_ws_returns_descriptions`, `cv_ws_lang_restore`).
+
+**Not verified:**
+- Behat: the three scenarios were not run (the new feature needs `mdl behat-init` first).
+- The service over HTTP through `lib/ajax/service-nologin.php` under forced login (a curl of a real request), and the
+  page by eye, light and dark.
+- MariaDB and PHP 8.3 for the PHPUnit cases.
+- The mutation sweep beyond the six gates above.
+- A screen reader over the visitor's page; the keyboard contract is the shared components' (Jest).

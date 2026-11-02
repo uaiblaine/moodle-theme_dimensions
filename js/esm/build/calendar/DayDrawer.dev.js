@@ -15,8 +15,9 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * - The sheet: the same content as a list, no hour column.
  *
  * An overlapping item carries a visible label as well as its column. Every item is a link to its own page that
- * opens the popover on a press (the page's delegated listener, Calendar.tsx), as the grid's items do. The drawer
- * links core's own day view, the address a day opened in C2 (model.ts dayHref()).
+ * opens the popover on a press (the page's delegated listener), as the grid's items do. Handed core's calendar, the
+ * drawer links core's own day view, the address a day opened in C2 (model.ts dayHref()); the visitor's page hands
+ * none, because core's calendar asks a visitor to log in.
  *
  * @module     theme_dimensions/calendar/DayDrawer
  * @copyright  2026 Anderson Blaine
@@ -62,22 +63,22 @@ const link = /* @__PURE__ */ __name((entry, when, overlapping, look, extra, styl
       children: [
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__daywhen", children: when }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 134,
+          lineNumber: 135,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__dayname", children: entry.item.name }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 135,
+          lineNumber: 136,
           columnNumber: 13
         }),
         place !== "" ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__dayplace", children: place }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 136,
+          lineNumber: 137,
           columnNumber: 29
         }) : null,
         overlapping ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__overlapmark", children: look.strings.calendar_overlapmark }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 137,
+          lineNumber: 138,
           columnNumber: 28
         }) : null
       ]
@@ -86,7 +87,7 @@ const link = /* @__PURE__ */ __name((entry, when, overlapping, look, extra, styl
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-      lineNumber: 125,
+      lineNumber: 126,
       columnNumber: 9
     }
   );
@@ -127,7 +128,7 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, placed, variant, calendar
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__drawerhead", children: [
           /* @__PURE__ */ jsxDEV("h2", { ref: heading, className: "dim-cal__drawertitle", id: HEADING, tabIndex: -1, "aria-live": "polite", children: say(iso, LONG_DAY, look.language) }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-            lineNumber: 197,
+            lineNumber: 198,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(
@@ -140,7 +141,7 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, placed, variant, calendar
               onClick: onClose,
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-xmark", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-                lineNumber: 207,
+                lineNumber: 208,
                 columnNumber: 21
               })
             },
@@ -148,29 +149,29 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, placed, variant, calendar
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-              lineNumber: 200,
+              lineNumber: 201,
               columnNumber: 17
             }
           )
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 196,
+          lineNumber: 197,
           columnNumber: 13
         }),
         empty ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__dayempty", children: look.strings.calendar_dayempty }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 210,
+          lineNumber: 211,
           columnNumber: 22
         }) : null,
         plan.allday.length ? /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__allday", "data-region": "dim-cal-allday", children: plan.allday.map((entry) => link(entry, allday(entry), false, look, "dim-cal__dayitem--allday")) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 212,
+          lineNumber: 213,
           columnNumber: 17
         }) : null,
         variant === "drawer" && plan.hours.length ? /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__hours", "data-region": "dim-cal-hours", style: rows(span), children: [
           labels.slice(span.from, span.to).map((label, hour) => /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__hour", "aria-hidden": "true", children: label }, span.from + hour, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-            lineNumber: 219,
+            lineNumber: 220,
             columnNumber: 25
           })),
           plan.hours.map((laid) => link(
@@ -183,7 +184,7 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, placed, variant, calendar
           ))
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 217,
+          lineNumber: 218,
           columnNumber: 17
         }) : null,
         variant === "sheet" && plan.hours.length ? /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__daylist", "data-region": "dim-cal-hours", children: plan.hours.map((laid) => link(
@@ -194,21 +195,21 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, placed, variant, calendar
           "dim-cal__dayitem--line"
         )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 227,
+          lineNumber: 228,
           columnNumber: 17
         }) : null,
-        /* @__PURE__ */ jsxDEV("a", { className: "dim-cal__dayclassic", href: dayHref(calendar, iso), children: look.strings.calendar_classicday }, void 0, false, {
+        calendar !== null ? /* @__PURE__ */ jsxDEV("a", { className: "dim-cal__dayclassic", href: dayHref(calendar, iso), children: look.strings.calendar_classicday }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 232,
-          columnNumber: 13
-        })
+          lineNumber: 234,
+          columnNumber: 17
+        }) : null
       ]
     },
     void 0,
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-      lineNumber: 188,
+      lineNumber: 189,
       columnNumber: 9
     }
   );

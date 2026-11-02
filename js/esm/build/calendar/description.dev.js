@@ -17,7 +17,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import { fetchOne } from "@moodle/lms/core/ajax";
-import { EVENT_METHOD } from "./model";
+const EVENT_METHOD = "core_calendar_get_calendar_event_by_id";
 const cache = /* @__PURE__ */ new Map();
 const description = /* @__PURE__ */ __name((id) => {
   let known = cache.get(id);
@@ -29,6 +29,7 @@ const description = /* @__PURE__ */ __name((id) => {
 }, "description");
 const forget = /* @__PURE__ */ __name(() => cache.clear(), "forget");
 export {
+  EVENT_METHOD,
   description,
   forget
 };

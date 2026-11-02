@@ -117,6 +117,41 @@ final class categorypublic_source_test extends \basic_testcase {
         'core_course_set_favourite_courses',
     ];
 
+    /** @var string The public calendar's entry: the component its page mounts for a visitor (stage CV). */
+    private const CALENDAR = self::ESM . 'calendar/PublicCalendar';
+
+    /** @var string The one service the public calendar may call. */
+    private const CALENDAR_METHOD = 'theme_dimensions_get_public_calendar_range';
+
+    /** @var string[] The logged-in calendar's modules, which nothing the public calendar loads may load. */
+    private const CALENDAR_FORBIDDEN_MODULES = [
+        self::ESM . 'calendar/Calendar',
+        self::ESM . 'calendar/account',
+        self::ESM . 'calendar/description',
+        self::ESM . 'calendar/CategoryPicker',
+        self::ESM . 'calendar/MoreFilters',
+        self::ESM . 'calendar/block',
+        'calendarblock',
+    ];
+
+    /** @var string[] Their names, which nothing the public calendar loads may say either, comments included. */
+    private const CALENDAR_LOGGED_IN_NAMES = [
+        'calendar/Calendar',
+        'calendar/account',
+        'calendar/description',
+        'calendar/CategoryPicker',
+        'calendar/MoreFilters',
+        'calendar/block',
+        'calendarblock',
+    ];
+
+    /** @var string[] The services of a session the public calendar's graph may not name: the account's, and core's. */
+    private const CALENDAR_FORBIDDEN_STRINGS = [
+        'theme_dimensions_get_calendar_range',
+        'theme_dimensions_remember_calendar_state',
+        'core_calendar_get_calendar_event_by_id',
+    ];
+
     /** @var array|null Files by their path under the theme root, read instead of the tree when a test sets them. */
     private ?array $fixture = null;
 
@@ -1257,5 +1292,73 @@ final class categorypublic_source_test extends \basic_testcase {
             $remove
         );
         $this->assertStringContainsString("await onSearch('');", $this->body('onErase'));
+    }
+
+    /**
+     * The public calendar's whole import graph reaches nothing of a session (stage CV).
+     *
+     * The page mounts calendar/PublicCalendar for a visitor, over the calendar's shared modules (the grid, the drawer,
+     * the popover, the chips). Walked as the listing's entry is: every module it loads, in its source and both builds,
+     * comments included. The controls: the walk reaches the shared modules, and from the logged-in shell it finds the
+     * modules it forbids here, so a name the walk could not see is not what keeps this green.
+     *
+     * Changes that must make it fail: the popover importing the description module again (gate cv_js_popover_no_core);
+     * a shared module naming the account's services (gate cv_js_model_no_account); the visitor's shell importing the
+     * logged-in one or its picker.
+     */
+    public function test_the_public_calendar_reaches_nothing_of_a_session(): void {
+        $graph = $this->graph(self::CALENDAR);
+        foreach (['MonthGrid', 'DayDrawer', 'EventPopover', 'KeyChips', 'model', 'strings', 'history'] as $shared) {
+            $this->assertContains(self::ESM . 'calendar/' . $shared, $graph, 'The control: the walk reaches ' . $shared . '.');
+        }
+        $logged = $this->graph(self::ESM . 'calendar/Calendar');
+        foreach ([self::ESM . 'calendar/description', self::ESM . 'calendar/account'] as $module) {
+            $this->assertContains($module, $logged, 'The control: the logged-in shell reaches ' . $module . '.');
+        }
+
+        foreach (self::CALENDAR_FORBIDDEN_MODULES as $module) {
+            $this->assertNotContains($module, $graph, $module . ' is loaded on the public calendar.');
+        }
+        foreach ($graph as $module) {
+            $text = $this->source($module) . "\n" . $this->build($module);
+            foreach (self::CALENDAR_LOGGED_IN_NAMES as $name) {
+                $this->assertStringNotContainsString($name, $text, "{$module} names {$name}.");
+            }
+            foreach (array_merge(self::FORBIDDEN_STRINGS, self::CALENDAR_FORBIDDEN_STRINGS) as $forbidden) {
+                $this->assertStringNotContainsString($forbidden, $text, "{$module} names {$forbidden}.");
+            }
+            $this->assertNotContains('core_user/repository', $this->imports($module), $module . ' imports preferences.');
+        }
+    }
+
+    /**
+     * The public calendar calls its own service and no other, posted with login not required and no cachekey.
+     *
+     * Changes that must make it fail: the service named otherwise; login required (gate cv_js_nologin); a cachekey
+     * passed; a second call site.
+     */
+    public function test_the_public_calendar_calls_only_its_service_and_never_with_a_cachekey(): void {
+        $source = $this->source(self::CALENDAR);
+        $this->assertSame(
+            '@moodle/lms/theme_dimensions/calendar/PublicCalendar',
+            \theme_dimensions\output\calendar_page::COMPONENT_PUBLIC
+        );
+        $this->assertStringContainsString('export default PublicCalendar;', $source);
+        $this->assertMatchesRegularExpression("~^export const METHOD = '" . self::CALENDAR_METHOD . "';$~m", $source);
+        $this->assertSame(1, substr_count($source, 'methodname:'), 'One call site.');
+        $this->assertSame(1, substr_count($source, 'fetchOne<'), 'One call of the service.');
+        preg_match_all("~'((?:theme_dimensions|core)_[a-z_]+)'~", $source, $services);
+        $this->assertSame([self::CALENDAR_METHOD], array_values(array_unique($services[1])), 'No other service is named.');
+        $this->assertMatchesRegularExpression(
+            '~return fetchOne<PublicAnswer>\(\{\s*methodname: METHOD,\s*args: args,\s*\}, \{loginrequired: false\}\);~',
+            $source
+        );
+        $this->assertStringNotContainsString('cachekey', $this->code(self::CALENDAR));
+        $this->assertStringContainsString('lang: Config.language,', $source, 'The page\'s language is sent.');
+        foreach ($this->graph(self::CALENDAR) as $module) {
+            if ($module !== self::CALENDAR) {
+                $this->assertStringNotContainsString('fetchOne', $this->code($module), $module . ' calls a service.');
+            }
+        }
     }
 }

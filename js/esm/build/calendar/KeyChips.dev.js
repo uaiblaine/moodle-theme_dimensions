@@ -2,7 +2,7 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The key chips: one toggle button per key, in its key's colours, with the count of the range on screen.
+ * The key chips: one toggle button per key it is handed, in its key's colours, with the count of the range on screen.
  *
  * A chip is a button with aria-pressed. A chip off is a key the range is not asked for, so it carries no count:
  * the server never counted it.
@@ -11,7 +11,6 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-import { KEYS } from "./model";
 const keyLabel = /* @__PURE__ */ __name((strings, key) => {
   switch (key) {
     case "site":
@@ -32,7 +31,7 @@ const keyLabel = /* @__PURE__ */ __name((strings, key) => {
       return strings.calendar_key_other;
   }
 }, "keyLabel");
-const KeyChips = /* @__PURE__ */ __name(({ strings, off, counts, onToggle }) => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__chiprow", role: "group", "aria-label": strings.calendar_keys, "data-region": "dim-cal-chips", children: KEYS.map((key) => {
+const KeyChips = /* @__PURE__ */ __name(({ strings, keys, off, counts, onToggle }) => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__chiprow", role: "group", "aria-label": strings.calendar_keys, "data-region": "dim-cal-chips", children: keys.map((key) => {
   const on = !off.includes(key);
   return /* @__PURE__ */ jsxDEV(
     "button",

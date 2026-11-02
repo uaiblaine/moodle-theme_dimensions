@@ -47,9 +47,11 @@ import {fetchOne} from '@moodle/lms/core/ajax';
 import Pending from '@moodle/lms/core/pending';
 import {load} from '../amd';
 import {parse, say, shiftMonth} from '../daterange/calendar';
+import {RANGE_METHOD, REMEMBER_METHOD} from './account';
 import CategoryPicker from './CategoryPicker';
 import DayDrawer from './DayDrawer';
 import {gridWeeks, zone as zoneOf} from './days';
+import {description} from './description';
 import EventPopover from './EventPopover';
 import {writeAddress} from './history';
 import KeyChips from './KeyChips';
@@ -57,8 +59,6 @@ import {dayDots, place} from './layout';
 import type {Look} from './look';
 import {
     KEYS,
-    RANGE_METHOD,
-    REMEMBER_METHOD,
     DAY_PARAM,
     address,
     emptyAnswer,
@@ -497,6 +497,7 @@ const Calendar = (props: Props) => {
             <div className="dim-cal__toolbar">
                 <KeyChips
                     strings={strings}
+                    keys={KEYS}
                     off={state.off}
                     counts={counts}
                     onToggle={(key: Key) => change({off: state.off.includes(key)
@@ -557,6 +558,8 @@ const Calendar = (props: Props) => {
                     opener={popped.opener}
                     sheet={phone}
                     modalities={props.options.modality}
+                    describe={description}
+                    plain=""
                     onClose={closePopover}
                 />
             ) : null}

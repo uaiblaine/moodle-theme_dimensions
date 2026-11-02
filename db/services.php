@@ -25,7 +25,10 @@
  * category's listing, refuses every logged-in session, and is closed until the site opens it
  * (publicaccess::client_enabled()). The sixth answers the mobile drawer of a logged-in account
  * when it is first shown, about the session's own user only. The calendar range answers the
- * theme's calendar page for a logged-in account (its class docblock gives its order of checks). The
+ * theme's calendar page for a logged-in account (its class docblock gives its order of checks); its
+ * public twin answers a visitor over service-nologin.php, the showcase visitor's way, for the public
+ * categories' events and the public event courses alone, closed until the site opens it
+ * (local\calendar\visitor::enabled()). The
  * focus mode one records a switch made in place, in the session alone, and so keeps a writable
  * session. None is part of a service such as the mobile one.
  * Registered on upgrade, so any change here ships with a version bump.
@@ -102,6 +105,15 @@ $functions = [
     'theme_dimensions_get_public_category_rows' => [
         'classname' => 'theme_dimensions\external\get_public_category_rows',
         'description' => 'One page of a public category\'s showcase, for a visitor: the cards, the counts and the facets.',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => false,
+        'capabilities' => '',
+    ],
+    'theme_dimensions_get_public_calendar_range' => [
+        'classname' => 'theme_dimensions\external\get_public_calendar_range',
+        'description' => 'One month grid of the public calendar, for a visitor: the public categories\' events and the '
+            . 'public event courses.',
         'type' => 'read',
         'ajax' => true,
         'loginrequired' => false,

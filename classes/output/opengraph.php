@@ -200,6 +200,31 @@ class opengraph implements \core\output\named_templatable, \core\output\renderab
     }
 
     /**
+     * The tags for the public calendar, served to a visitor.
+     *
+     * The page's title ("Calendar") and the site's name; no description and no image, because the calendar has no
+     * reviewed public text of its own and nothing a site wrote for its front page speaks for it. Armed so that the head
+     * carries the canonical address and, unless the site is open to search engines, noindex: the rule of every public
+     * page of the theme.
+     *
+     * @param \core\url $url The page's own canonical address.
+     * @return opengraph The tags.
+     */
+    public static function for_calendar(\core\url $url): opengraph {
+        global $SITE;
+
+        $sitename = format_string($SITE->fullname, true, ['context' => \core\context\system::instance(), 'escape' => false]);
+        return new opengraph(
+            get_string('calendar_title', 'theme_dimensions'),
+            null,
+            $url->out(false),
+            $sitename,
+            self::locale(),
+            null
+        );
+    }
+
+    /**
      * The opening of a rich text as one short plain line.
      *
      * Rendered first, so that a filter, a multilang span and an entity all read as the reader

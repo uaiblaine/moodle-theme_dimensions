@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A public calendar of public categories** (2026100561), stage CV of `docs/calendar/PROPOSAL.md`. With the new
+  setting `theme_dimensions/calendarpublic` (off by default) a visitor who is not logged in opens the theme's calendar
+  page in a visitor mode: the category events of categories local_unlistedcourses serves anonymously (every ancestor
+  visible, none unlisted) and the public event courses, whose "Inscrever-se" leads to the public landing page.
+  Descriptions travel as plain text; no creator, participant or image is answered. A new service,
+  `theme_dimensions_get_public_calendar_range`, answers the month through `service-nologin.php` in the order of the
+  showcase's visitor service: it refuses a session (the guest included), a cache key and a second call, and speaks
+  the language it is sent. The page is `noindex` unless the site is open to search engines. PHPUnit, Jest, Behat as
+  a visitor, 57 mutation gates.
 - **Core's calendar blocks drawn with the theme's calendar** (2026100560), stage C3b of `docs/calendar/PROPOSAL.md`.
   `theme_dimensions\output\core_calendar_renderer` replaces the content of `block_calendar_month` (a mini month with
   dots per key; a day opens the page's drawer, the arrows move the month in place through the range service) and

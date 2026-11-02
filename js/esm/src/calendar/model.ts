@@ -129,15 +129,6 @@ export type Props = {
     urls: {page: string, calendar: string, home: string},
 };
 
-/** The range service. */
-export const RANGE_METHOD = 'theme_dimensions_get_calendar_range';
-
-/** The service that stores the state. */
-export const REMEMBER_METHOD = 'theme_dimensions_remember_calendar_state';
-
-/** Core's service an event's description is read from, with core's own visibility check. */
-export const EVENT_METHOD = 'core_calendar_get_calendar_event_by_id';
-
 /** The address parameter of the open day (local\calendar\page::PARAM_DAY): navigation, never state. */
 export const DAY_PARAM = 'day';
 

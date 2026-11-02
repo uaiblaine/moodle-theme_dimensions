@@ -26,6 +26,7 @@ namespace theme_dimensions\local\calendar;
 
 use theme_dimensions\local\landing\links;
 use theme_dimensions\output\calendar_page;
+use theme_dimensions\output\opengraph;
 
 /**
  * The calendar page's answer: a redirect, or the page with its first range answer embedded.
@@ -34,7 +35,9 @@ use theme_dimensions\output\calendar_page;
  * ({@see \theme_dimensions\route\controller\calendar}) and the script `calendar.php`, which answers 303 to the
  * route while the router is configured. The order is the decision:
  *
- * 1. A visitor goes to the login page, with this page as the place to come back to.
+ * 1. A visitor goes to the login page, with this page as the place to come back to, before anything is looked up,
+ *    unless the public calendar is switched on ({@see visitor::enabled()}): then the visitor is served the public
+ *    calendar ({@see visitor()}), never through require_login().
  * 2. The guest account goes to core's calendar, which is the guest's (core's primary navigation links it there).
  * 3. require_login() for a real account: the site policy, a forced password change and the rest of core's gate.
  *    Then the "classic for this session" flag is cleared ({@see coreview}): opening the page ends the choice.
@@ -257,6 +260,72 @@ final class page {
     }
 
     /**
+     * The visitor's one refusal: the login page, with this page's address as the place to come back to.
+     *
+     * @return self
+     */
+    private static function to_login(): self {
+        global $SESSION;
+
+        $SESSION->wantsurl = self::url(self::forwarded_params())->out(false);
+        return new self(new \core\url(get_login_url()), null);
+    }
+
+    /**
+     * The public calendar for a visitor who is not logged in: the same page in its visitor mode.
+     *
+     * No require_login(): forcelogin is a set of explicit reads in core, none of which is made here (the public
+     * category page's rule). A calendar type other than the Gregorian is the one refusal, the login page, as the range
+     * refuses it. The keys come from the address alone ({@see visitor::on_from_request()}): nothing is saved and
+     * nothing of a session is read. The answer is the visitor's ({@see publicrange::answer()}), and the head tags are
+     * armed ({@see opengraph::for_calendar()}): the canonical address, and noindex unless the site is open to search
+     * engines.
+     *
+     * @return self The page, or the login page.
+     */
+    private static function visitor(): self {
+        global $PAGE;
+
+        try {
+            window::require_gregorian();
+        } catch (refusal $refusal) {
+            return self::to_login();
+        }
+
+        $month = self::month_from_request();
+        $on = visitor::on_from_request();
+        $firstday = (int) calendar_get_starting_weekday();
+        $day = self::day_from_request($month, $firstday);
+        [$from, $to] = self::grid($month, $firstday);
+        $window = window::from_iso($from, $to);
+        $answer = publicrange::answer($window, $on);
+
+        $PAGE->set_context(\core\context\system::instance());
+        $PAGE->set_pagetype(self::PAGETYPE);
+        $PAGE->set_pagelayout('standard');
+        $opened = $day !== '' ? [self::PARAM_DAY => $day] : [];
+        $PAGE->set_url(self::url([state::PARAM_MONTH => $month] + $opened + visitor::query($on)));
+        $PAGE->set_title(get_string('calendar_title', 'theme_dimensions'));
+        $PAGE->set_heading('');
+        $PAGE->add_body_class(self::BODY_CLASS);
+        $PAGE->requires->strings_for_js(calendar_page::STRINGS, 'theme_dimensions');
+        opengraph::set(opengraph::for_calendar(self::url()));
+
+        return new self(null, new calendar_page(
+            $month,
+            self::today()->format('Y-m-d'),
+            $firstday,
+            \core_date::get_user_timezone(),
+            $window,
+            $answer,
+            visitor::state($on),
+            [],
+            $day,
+            true
+        ));
+    }
+
+    /**
      * Decide the page.
      *
      * @return self The answer: a redirect or a page.
@@ -266,8 +335,10 @@ final class page {
 
         require_once($CFG->dirroot . '/calendar/lib.php');
         if (!isloggedin()) {
-            $SESSION->wantsurl = self::url(self::forwarded_params())->out(false);
-            return new self(new \core\url(get_login_url()), null);
+            if (visitor::enabled()) {
+                return self::visitor();
+            }
+            return self::to_login();
         }
         if (isguestuser()) {
             return new self(self::core_calendar(), null);

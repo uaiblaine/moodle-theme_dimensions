@@ -27,8 +27,9 @@
  * - The sheet: the same content as a list, no hour column.
  *
  * An overlapping item carries a visible label as well as its column. Every item is a link to its own page that
- * opens the popover on a press (the page's delegated listener, Calendar.tsx), as the grid's items do. The drawer
- * links core's own day view, the address a day opened in C2 (model.ts dayHref()).
+ * opens the popover on a press (the page's delegated listener), as the grid's items do. Handed core's calendar, the
+ * drawer links core's own day view, the address a day opened in C2 (model.ts dayHref()); the visitor's page hands
+ * none, because core's calendar asks a visitor to log in.
  *
  * @module     theme_dimensions/calendar/DayDrawer
  * @copyright  2026 Anderson Blaine
@@ -60,7 +61,7 @@ type DayDrawerProps = {
     iso: string,
     placed: Placed[],
     variant: 'drawer' | 'sheet',
-    calendar: string,
+    calendar: string | null,
     focusing: number,
     onClose: () => void,
 };
@@ -229,7 +230,9 @@ const DayDrawer = ({look, iso, placed, variant, calendar, focusing, onClose}: Da
                         'dim-cal__dayitem--line'))}
                 </div>
             ) : null}
-            <a className="dim-cal__dayclassic" href={dayHref(calendar, iso)}>{look.strings.calendar_classicday}</a>
+            {calendar !== null ? (
+                <a className="dim-cal__dayclassic" href={dayHref(calendar, iso)}>{look.strings.calendar_classicday}</a>
+            ) : null}
         </section>
     );
 };

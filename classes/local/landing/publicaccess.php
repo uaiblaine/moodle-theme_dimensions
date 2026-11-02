@@ -68,4 +68,35 @@ final class publicaccess {
         }
         return (bool) $predicate::is_public($courseid);
     }
+
+    /**
+     * Whether each of these courses' landing pages may be served anonymously: {@see is_public()} for a list.
+     *
+     * The plugin's batched answer (four statements whatever the number of courses), under the same rule: the site
+     * and an id that is not positive are never public, and a missing predicate fails closed for every id.
+     *
+     * @param int[] $courseids The course ids.
+     * @param string|null $predicate The predicate class; tests pass a nonexistent one to pin the fail-closed answer.
+     * @return int[] The ids that are public, in the order given.
+     */
+    public static function are_public(array $courseids, ?string $predicate = null): array {
+        $ids = [];
+        foreach ($courseids as $courseid) {
+            $courseid = (int) $courseid;
+            if ($courseid > 0 && $courseid != SITEID) {
+                $ids[$courseid] = $courseid;
+            }
+        }
+        $predicate = $predicate ?? self::PREDICATE;
+        if (!$ids || !class_exists($predicate)) {
+            return [];
+        }
+        $public = [];
+        foreach ($predicate::are_public(array_values($ids)) as $courseid => $answer) {
+            if ($answer) {
+                $public[] = (int) $courseid;
+            }
+        }
+        return $public;
+    }
 }
