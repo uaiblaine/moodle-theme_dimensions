@@ -1654,7 +1654,9 @@ a-f, the flows and the mockup); local_unlistedcourses 5a owns the rule. What the
   tests** (`fixture::completed_instance()`), because the classifier reads the row and the enabled list,
   never the plugin: those run under `mdl ci`. The resolver's and the batch's conditional tests ask the
   plugin and skip without it, as the enrol_apply ones do; the gates that need either plugin are named
-  in the stage 5b block of `mutations/gates.conf`.
+  in the stage 5b block of `mutations/gates.conf`. GitHub's CI installs none of enrol_apply,
+  enrol_autoenrol, enrol_coursecompleted and auth_loginsteps, so those tests skip there; `.mdl-ci.yml`
+  installs all four in `mdl ci` and `mdl mutate --fast`, without which their ten gates read green.
 
 ## Competency pages
 

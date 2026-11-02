@@ -1,0 +1,22 @@
+# Local-only extra plugins for moodle-dev's `mdl ci` (bin/lib/local-extras.sh there).
+# GitHub's CI never reads this file, and it is export-ignored. The theme asks each of these
+# plugins at run time and declares none of them, and its ci.yml installs none, so the tests
+# that need one skip on GitHub and the mutation gates that only those tests can redden read
+# green there (the stage 5b block and the loginshell block of mutations/gates.conf):
+#   enrol_apply           the pending, waiting-list and switched-off application tests
+#   enrol_autoenrol       the autoenrol adapter and the classifier's autoenrol rules
+#   enrol_coursecompleted the resolver's conditional prerequisite
+#   auth_loginsteps       the second factor on the plugin's shell (private: GitHub cannot install it)
+extra-plugins:
+  - repo: moodle-enrol_apply
+    path: enrol/apply
+    branches: [MOODLE_503_STABLE]
+  - repo: moodle-enrol_autoenrol
+    path: enrol/autoenrol
+    branches: [MOODLE_503_STABLE]
+  - repo: moodle-enrol_coursecompleted
+    path: enrol/coursecompleted
+    branches: [MOODLE_503_STABLE]
+  - repo: moodle-auth_loginsteps
+    path: auth/loginsteps
+    branches: [MOODLE_503_STABLE]

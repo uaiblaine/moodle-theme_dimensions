@@ -158,6 +158,41 @@ final class category_hero_test extends \advanced_testcase {
     }
 
     /**
+     * A teacher of a hidden course has it listed and counted, and is still not told how many courses are hidden.
+     *
+     * The population admits a hidden course on the capability in the COURSE's context, which a
+     * teacher holds in their own course; the hidden count is a number about the category, so the
+     * hero asks for the capability in the CATEGORY's context. The control is the total: it counts
+     * the hidden course, so the population did hand the hero a hidden count to withhold.
+     */
+    public function test_a_teacher_of_a_hidden_course_is_not_told_the_hidden_count(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $categoryid = (int) $generator->create_category()->id;
+        $generator->create_course(['category' => $categoryid]);
+        $hidden = $generator->create_course(['category' => $categoryid, 'visible' => 0]);
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $hidden->id, 'editingteacher');
+        $categorycontext = \core\context\coursecat::instance($categoryid);
+        $this->assertTrue(has_capability('moodle/course:viewhiddencourses', \core\context\course::instance($hidden->id), $teacher));
+        $this->assertFalse(has_capability('moodle/course:viewhiddencourses', $categorycontext, $teacher));
+
+        $this->become($teacher);
+        $result = population::resolve(new criteria($categoryid));
+        $this->assertContains((int) $hidden->id, $result->ids(), 'The control: the hidden course is the teacher\'s to see.');
+        $this->assertSame(1, $result->hidden, 'And the population counted it as hidden.');
+
+        self::forget();
+        $context = $this->export($this->hero($categoryid));
+        $this->assertSame(2, $context->stats[0]['value'], 'The total counts the hidden course.');
+        $this->assertNotContains(
+            get_string('categoryhero_stat_hidden', 'theme_dimensions'),
+            array_column($context->stats, 'label'),
+            'The hidden count is the category\'s staff number, not the teacher\'s.'
+        );
+    }
+
+    /**
      * The hero draws the category's own crests, with the file name as their alternative text.
      *
      * One rule in three parts: the crests are the category's and inherit nothing (a parent with
