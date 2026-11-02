@@ -317,14 +317,16 @@ local_unlistedcourses keeps unlisted for the reader. A theme can only change wha
 so these keep Moodle's own rules and still show such an event:
 
 - the Moodle App, which reads Moodle's calendar web services directly;
-- the calendar export (iCal, `calendar/export.php`) and its subscription URL;
-- Moodle's own calendar for the upcoming view and for a course's calendar (the theme sends only the
-  site's month and day views to its page);
 - any other client of Moodle's calendar web services;
 - the *Timeline* block, which stays Moodle's own.
 
-Where that difference matters, switch the calendar export off (*Site administration > Appearance >
-Calendar*, untick *Enable calendar export*). A site that switches the theme's blocks off should also
+While *Send core's calendar to the theme's calendar* is on, every view of Moodle's calendar
+(`calendar/view.php`, the upcoming view and a course's calendar included) leads to the theme's page,
+and the calendar export's feed (`calendar/export_execute.php`, the subscription URL the export page
+hands out) is answered by the theme's copy of Moodle's script, which leaves out the same category
+events; switched off, both are Moodle's own again. Where the difference matters with the setting off,
+switch the calendar export off (*Site administration > Appearance > Calendar*, untick *Enable
+calendar export*). A site that switches the theme's blocks off should also
 remove the *Calendar* and *Upcoming events* blocks from the default block regions (the Dashboard and
 the site home), so that every calendar a reader meets follows one set of rules.
 
@@ -411,6 +413,7 @@ Settings
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Course landing page | The page model, modality and study format a new course starts with; existing courses never change. |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
+| Calendar | `theme_dimensions/calendarcoreview` (on by default: Moodle's calendar and its iCal feed lead to the theme's calendar), `theme_dimensions/calendarblocks` (on by default: the calendar blocks drawn with the theme's calendar) and `theme_dimensions/calendarpublic` (off by default: the public calendar for visitors). |
 
 
 Brazil-specific today

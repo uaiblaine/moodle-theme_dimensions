@@ -213,12 +213,64 @@ describe('the keyboard', () => {
         expect(ranges()).toHaveLength(1);
     });
 
-    it('Enter opens the day\'s drawer, never core\'s day view, which the drawer links', async() => {
-        await mount(props());
+    it('Enter opens the day\'s drawer, which links no view of core\'s calendar', async() => {
+        const page = await mount(props());
         fireEvent.click(day('2026-11-17'));
         const drawer = await waitFor(() => region());
-        expect(drawer.querySelector<HTMLAnchorElement>('.dim-cal__dayclassic')?.href)
-            .toContain('view=day&cal_d=17&cal_m=11&cal_y=2026');
+        expect(drawer.dataset.day).toBe('2026-11-17');
+        expect(page.querySelector('a[href*="calendar/view.php"]')).toBeNull();
+    });
+
+    it('opens a day on a click anywhere on it but its items, which open their popover alone', async() => {
+        await mount(props([item({id: 3, name: 'Mentoring', timestart: at('2026-11-12', 14)})]));
+        const ground = (iso: string): HTMLElement => day(iso).parentElement?.querySelector('.dim-cal__ground') as HTMLElement;
+        fireEvent.click(ground('2026-11-19'), {detail: 1});
+        await waitFor(() => expect(region().dataset.day).toBe('2026-11-19'));
+        expect(new URL(window.location.href).searchParams.get('day')).toBe('2026-11-19');
+        await act(async() => {
+            fireEvent.click(gridItem(3), {detail: 1});
+        });
+        // The item's click does not open its day.
+        expect(region().dataset.day).toBe('2026-11-19');
+        expect(popover()?.dataset.id).toBe('3');
+    });
+
+    it('marks the day the mouse is over, and not one a finger touches', async() => {
+        await mount(props());
+        const cell = day('2026-11-19').parentElement as HTMLElement;
+        const ground = cell.querySelector('.dim-cal__ground') as HTMLElement;
+        /**
+         * Move a pointer of a type over the ground, or out of it to the page (jsdom has no PointerEvent of its own).
+         *
+         * @param {string} type pointerover or pointerout.
+         * @param {string} pointer The pointer's type.
+         * @returns {void}
+         */
+        const move = (type: string, pointer: string): void => {
+            const event = new MouseEvent(type, {bubbles: true, relatedTarget: type === 'pointerout' ? document.body : null});
+            Object.defineProperty(event, 'pointerType', {value: pointer});
+            act(() => {
+                ground.dispatchEvent(event);
+            });
+        };
+        move('pointerover', 'touch');
+        expect(cell.hasAttribute('data-cal-hover')).toBe(false);
+        move('pointerout', 'touch');
+        move('pointerover', 'mouse');
+        expect(cell.hasAttribute('data-cal-hover')).toBe(true);
+        move('pointerout', 'mouse');
+        expect(cell.hasAttribute('data-cal-hover')).toBe(false);
+    });
+
+    it('marks Saturday and Sunday by their date, whatever day the week begins on', async() => {
+        await mount(props([], {firstday: 1}));
+        const weekend = (iso: string): boolean => (day(iso).parentElement?.querySelector('.dim-cal__ground') as HTMLElement)
+            .classList.contains('dim-cal__ground--weekend');
+        expect([weekend('2026-11-14'), weekend('2026-11-15')]).toEqual([true, true]);
+        expect([weekend('2026-11-13'), weekend('2026-11-16')]).toEqual([false, false]);
+        const headers = Array.from(document.querySelectorAll<HTMLElement>('.dim-cal__weekday'));
+        expect(headers.map((header) => header.classList.contains('dim-cal__weekday--weekend')))
+            .toEqual([false, false, false, false, false, true, true]);
     });
 
     it('F2 moves into the day\'s items, Tab cycles them, Escape goes back to the day', async() => {
@@ -261,18 +313,122 @@ describe('the keyboard', () => {
 });
 
 describe('the keys and the filters', () => {
-    it('a chip is a toggle button; off, its key is not asked for and the address is replaced', async() => {
+    it('the event types are one button and a dropdown of checkboxes; unchecked, a key is not asked for', async() => {
         const replace = jest.spyOn(window.history, 'replaceState');
         await mount(props([item({id: 1, key: 'group'})]));
-        const chip = document.querySelector<HTMLElement>('[data-region="dim-cal-chips"] [data-key="group"]') as HTMLElement;
-        expect(chip.getAttribute('aria-pressed')).toBe('true');
+        const button = document.querySelector<HTMLElement>('[data-action="dim-cal-types"]') as HTMLElement;
+        const panel = document.getElementById(button.getAttribute('aria-controls') || '') as HTMLElement;
+        expect(button.textContent).toBe('Event typesAll');
+        expect(button.getAttribute('aria-expanded')).toBe('false');
+        expect(panel.hidden).toBe(true);
+        fireEvent.click(button);
+        expect(button.getAttribute('aria-expanded')).toBe('true');
+        expect(panel.hidden).toBe(false);
+        const boxes = Array.from(panel.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
+        expect(boxes.map((box) => box.dataset.key)).toEqual(['site', 'category', 'course', 'group', 'user', 'activity', 'other',
+            'open']);
+        expect(boxes.every((box) => box.checked && box.closest('label') !== null)).toBe(true);
+        const group = boxes[3];
+        expect(group.closest('label')?.textContent).toBe('Group1');
         await act(async() => {
-            fireEvent.click(chip);
+            fireEvent.click(group);
         });
-        expect(chip.getAttribute('aria-pressed')).toBe('false');
+        expect(group.checked).toBe(false);
+        expect(group.closest('label')?.textContent).toBe('Group');
+        expect(button.textContent).toBe('Event types7 of 8');
         expect(ranges()[0].keys).toEqual(['site', 'category', 'course', 'user', 'activity', 'other', 'open']);
         expect(replace.mock.calls.some(([, , url]) => String(url).includes('keys%5B%5D=site'))).toBe(true);
         replace.mockRestore();
+    });
+
+    it('the dropdown closes on Escape with the focus back on its button, and on a press outside', async() => {
+        await mount(props());
+        const button = document.querySelector<HTMLElement>('[data-action="dim-cal-types"]') as HTMLElement;
+        const panel = document.getElementById(button.getAttribute('aria-controls') || '') as HTMLElement;
+        fireEvent.click(button);
+        const box = panel.querySelector<HTMLInputElement>('input[data-key="site"]') as HTMLInputElement;
+        box.focus();
+        fireEvent.keyDown(box, {key: 'Escape'});
+        expect(panel.hidden).toBe(true);
+        expect(document.activeElement).toBe(button);
+        fireEvent.click(button);
+        expect(panel.hidden).toBe(false);
+        fireEvent.mouseDown(document.body);
+        expect(panel.hidden).toBe(true);
+    });
+
+    it('Escape closes the dropdown after "Select all" and after a checkbox, from wherever the focus is', async() => {
+        await mount(props([], {state: {
+            off: ['site', 'group'], categoryid: 0, recursive: true, model: [], modality: [], city: '', actiononly: false,
+            colour: 'key',
+        }}));
+        const button = document.querySelector<HTMLElement>('[data-action="dim-cal-types"]') as HTMLElement;
+        const panel = document.getElementById(button.getAttribute('aria-controls') || '') as HTMLElement;
+        fireEvent.click(button);
+        const all = panel.querySelector<HTMLButtonElement>('[data-action="dim-cal-types-all"]') as HTMLButtonElement;
+        await act(async() => {
+            fireEvent.click(all);
+        });
+        // The pressed button is disabled now: the focus is outside the dropdown, on the body.
+        document.body.focus();
+        fireEvent.keyDown(document.body, {key: 'Escape'});
+        expect(panel.hidden).toBe(true);
+        expect(button.getAttribute('aria-expanded')).toBe('false');
+        expect(document.activeElement).toBe(button);
+        fireEvent.click(button);
+        expect(panel.hidden).toBe(false);
+        await act(async() => {
+            fireEvent.click(panel.querySelector('input[data-key="user"]') as HTMLElement);
+        });
+        (document.activeElement as HTMLElement | null)?.blur();
+        fireEvent.keyDown(document.body, {key: 'Escape'});
+        expect(panel.hidden).toBe(true);
+        expect(document.activeElement).toBe(button);
+        // The listener is gone with the dropdown: a later Escape moves nothing.
+        const elsewhere = day('2026-11-17');
+        elsewhere.focus();
+        fireEvent.keyDown(elsewhere, {key: 'Escape'});
+        expect(document.activeElement).toBe(elsewhere);
+    });
+
+    it('"Select all" turns every key back on in one change', async() => {
+        await mount(props([], {state: {
+            off: ['site', 'group'], categoryid: 0, recursive: true, model: [], modality: [], city: '', actiononly: false,
+            colour: 'key',
+        }}));
+        const all = document.querySelector<HTMLButtonElement>('[data-action="dim-cal-types-all"]') as HTMLButtonElement;
+        expect(all.disabled).toBe(false);
+        expect(document.querySelector('[data-action="dim-cal-types"]')?.textContent).toBe('Event types6 of 8');
+        await act(async() => {
+            fireEvent.click(all);
+        });
+        expect(ranges()).toHaveLength(1);
+        expect(ranges()[0].keys).toHaveLength(8);
+        expect(all.disabled).toBe(true);
+    });
+
+    it('"Clear filters" is drawn only while a filter is applied, and puts keys, filters and scope back at once', async() => {
+        await mount(props());
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).toBeNull();
+        document.body.replaceChildren();
+        await mount(props([], {state: {
+            off: ['site'], categoryid: 3, recursive: false, model: [1], modality: [1], city: 'Recife', actiononly: true,
+            colour: 'category',
+        }}));
+        const clear = document.querySelector<HTMLElement>('[data-action="dim-cal-clear"]') as HTMLElement;
+        expect(clear.closest('[data-region="dim-cal-more"]')).toBeNull();
+        expect(document.querySelector('[data-region="dim-cal-more"] .dim-cal__clear')).toBeNull();
+        await act(async() => {
+            fireEvent.click(clear);
+        });
+        expect(ranges()).toHaveLength(1);
+        expect(ranges()[0]).toEqual(expect.objectContaining({
+            keys: ['site', 'category', 'course', 'group', 'user', 'activity', 'other', 'open'],
+            categoryid: 0, recursive: true, model: [], modality: [], city: '', actiononly: false,
+        }));
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).toBeNull();
+        expect(document.activeElement).toBe(document.querySelector('[data-action="dim-cal-types"]'));
+        expect(window.location.search).toContain('colour=category');
     });
 
     it('every key off asks the range nothing', async() => {
@@ -711,6 +867,60 @@ describe('the event popover', () => {
         ]);
     });
 
+    it('offers no "Open" for a personal event, never the site\'s home, and keeps its description', async() => {
+        describeWith(() => Promise.resolve({event: {description: '<p>Dentist</p>'}}));
+        await mount(props([item({id: 6, key: 'user', eventtype: 'user', name: 'Appointment', url: '', courseid: 0})]));
+        await act(async() => {
+            fireEvent.click(gridItem(6));
+        });
+        const dialog = popover() as HTMLElement;
+        await waitFor(() => expect(dialog.querySelector('[data-region="dim-cal-description"]')?.textContent).toBe('Dentist'));
+        expect(dialog.querySelectorAll('.dim-cal__popactions a')).toHaveLength(0);
+        expect(dialog.querySelector('a[href="http://localhost/"]')).toBeNull();
+    });
+
+    it('draws an event course\'s cover: its image, else its category\'s colours, with the date tile', async() => {
+        const course = {
+            id: 4, fullname: 'Fair', shortname: 'F', categoryid: 3, url: 'https://example.com/course/view.php?id=4',
+            image: 'https://example.com/pluginfile.php/9/course/overviewfiles/fair.jpg', model: 2, modality: 1, city: '',
+            venue: '', landingurl: 'https://example.com/landing/4', enrolled: false, participants: 3, join: '',
+        };
+        const entry = item({id: 4, source: 'course', key: 'open', courseid: 4, name: 'Fair', timestart: at('2026-11-19', 9),
+            url: 'https://example.com/landing/4'});
+        const given = props([entry]);
+        await mount({...given, answer: {...given.answer, courses: [course],
+            categories: [{id: 3, name: 'School', bg: '#0a4a85', ink: '#ffffff'}]}});
+        await act(async() => {
+            fireEvent.click(gridItem(4, 'course'));
+        });
+        const band = popover()?.querySelector<HTMLElement>('[data-region="dim-cal-popcover"]') as HTMLElement;
+        const image = band.querySelector('img') as HTMLImageElement;
+        expect(image.getAttribute('src')).toBe(course.image);
+        expect(image.getAttribute('alt')).toBe('');
+        expect(band.querySelector('.dim-cal__poptile')?.textContent).toBe('Nov19');
+        expect(band.querySelector('.dim-cal__poptile')?.getAttribute('aria-hidden')).toBe('true');
+        expect(band.getAttribute('style') || '').not.toContain('url(');
+        fireEvent.keyDown(popover() as HTMLElement, {key: 'Escape'});
+
+        document.body.replaceChildren();
+        await mount({...given, answer: {...given.answer, courses: [{...course, image: ''}],
+            categories: [{id: 3, name: 'School', bg: '#0a4a85', ink: '#ffffff'}]}});
+        await act(async() => {
+            fireEvent.click(gridItem(4, 'course'));
+        });
+        const plain = popover()?.querySelector<HTMLElement>('[data-region="dim-cal-popcover"]') as HTMLElement;
+        expect(plain.querySelector('img')).toBeNull();
+        expect(plain.style.getPropertyValue('--dim-cal-cover-bg')).toBe('#0a4a85');
+        fireEvent.keyDown(popover() as HTMLElement, {key: 'Escape'});
+
+        document.body.replaceChildren();
+        await mount(props([item({id: 7, timestart: at('2026-11-19', 9)})]));
+        await act(async() => {
+            fireEvent.click(gridItem(7));
+        });
+        expect(popover()?.querySelector('[data-region="dim-cal-popcover"]')).toBeNull();
+    });
+
     it('closes on Tab past its last control, and on a press outside, the focus back on the item', async() => {
         describeWith(() => Promise.resolve({event: {description: ''}}));
         await mount(props([item({id: 2, name: 'Mentoring', timestart: at('2026-11-17', 14)})]));
@@ -994,6 +1204,9 @@ describe('editing, core\'s (C5)', () => {
         await mount(props([], {edits: EDITS, day: '2026-11-10'}));
         const button = region().querySelector<HTMLElement>('[data-action="dim-cal-new"]') as HTMLElement;
         expect(button.getAttribute('aria-label')).toBe('New event on Tuesday, November 10, 2026');
+        expect(button.getAttribute('title')).toBe('New event on Tuesday, November 10, 2026');
+        expect(button.textContent).toBe('');
+        expect(button.querySelector('.fa-plus')).not.toBeNull();
         await act(async() => {
             fireEvent.click(button);
         });
@@ -1001,6 +1214,72 @@ describe('editing, core\'s (C5)', () => {
         document.body.replaceChildren();
         await mount(props([], {day: '2026-11-10'}));
         expect(region().querySelector('[data-action="dim-cal-new"]')).toBeNull();
+    });
+
+    it('draws the working hours on an empty day while creation is offered, under the "nothing" line', async() => {
+        await mount(props([], {edits: EDITS, day: '2026-11-10'}));
+        expect(region().textContent).toContain('Nothing on this day.');
+        const rows = Array.from(region().querySelectorAll<HTMLElement>('.dim-cal__hour')).map((row) => row.dataset.hour);
+        expect(rows).toEqual(['8', '9', '10', '11', '12', '13', '14', '15', '16', '17']);
+        await act(async() => {
+            fireEvent.doubleClick(region().querySelector('.dim-cal__hour[data-hour="9"]') as HTMLElement);
+        });
+        expect(modal.setStartTime).toHaveBeenCalledWith(at('2026-11-10', 9));
+        document.body.replaceChildren();
+        await mount(props([], {day: '2026-11-10'}));
+        expect(region().textContent).toContain('Nothing on this day.');
+        expect(region().querySelector('.dim-cal__hour')).toBeNull();
+    });
+
+    it('opens core\'s form on a day\'s ground at a double-click, and not on its controls', async() => {
+        await mount(props([item({id: 3, name: 'Mentoring', timestart: at('2026-11-12', 14)})], {edits: EDITS}));
+        const ground = day('2026-11-10').parentElement?.querySelector('.dim-cal__ground') as HTMLElement;
+        await act(async() => {
+            fireEvent.doubleClick(ground);
+        });
+        expect(modal.setStartTime).toHaveBeenCalledWith(at('2026-11-10', 10));
+        expect(modal.show).toHaveBeenCalledTimes(1);
+        await act(async() => {
+            fireEvent.doubleClick(day('2026-11-11'));
+            fireEvent.doubleClick(gridItem(3));
+        });
+        expect(modal.show).toHaveBeenCalledTimes(1);
+    });
+
+    it('opens the day on the first click of a double-click and creates on that day, whatever the second lands on', async() => {
+        await mount(props([], {edits: EDITS}));
+        const ground = (iso: string): HTMLElement => day(iso).parentElement?.querySelector('.dim-cal__ground') as HTMLElement;
+        await act(async() => {
+            fireEvent.click(ground('2026-11-19'), {detail: 1});
+        });
+        expect(region().dataset.day).toBe('2026-11-19');
+        // The drawer narrowed the grid: the second click and the double-click land on the next day's ground.
+        await act(async() => {
+            fireEvent.click(ground('2026-11-20'), {detail: 2});
+            fireEvent.doubleClick(ground('2026-11-20'), {detail: 2});
+        });
+        // The second click opens nothing.
+        expect(region().dataset.day).toBe('2026-11-19');
+        expect(modal.setStartTime).toHaveBeenCalledWith(at('2026-11-19', 10));
+        expect(modal.show).toHaveBeenCalledTimes(1);
+    });
+
+    it('opens core\'s form at the hour of a double-clicked hour row of the drawer', async() => {
+        await mount(props([item({id: 3, name: 'Mentoring', timestart: at('2026-11-10', 14)})], {edits: EDITS, day: '2026-11-10'}));
+        const row = region().querySelector<HTMLElement>('.dim-cal__hour[data-hour="14"]') as HTMLElement;
+        await act(async() => {
+            fireEvent.doubleClick(row);
+        });
+        expect(modal.setStartTime).toHaveBeenCalledWith(at('2026-11-10', 14));
+    });
+
+    it('listens to no double-click while core would not show "New event"', async() => {
+        await mount(props([item({id: 3, timestart: at('2026-11-10', 14)})], {day: '2026-11-10'}));
+        await act(async() => {
+            fireEvent.doubleClick(day('2026-11-12').parentElement?.querySelector('.dim-cal__ground') as HTMLElement);
+            fireEvent.doubleClick(region().querySelector('.dim-cal__hour') as HTMLElement);
+        });
+        expect(modal.show).not.toHaveBeenCalled();
     });
 
     it('asks for the window shown again when core says an event was saved, writing nothing', async() => {

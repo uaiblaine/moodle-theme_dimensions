@@ -43,6 +43,8 @@ type WeekRowProps = {
     look: Look,
     dots: Map<string, Dots> | null,
     onOpen: (iso: string) => void,
+    onGround?: (iso: string, hour: number | null, clicks: number) => void,
+    onCreate?: (iso: string, hour: number | null) => void,
 };
 
 /**
@@ -51,7 +53,8 @@ type WeekRowProps = {
  * @param {object} props See WeekRowProps.
  * @returns {object} The row.
  */
-const WeekRow = ({week, layout, height, month, today, selected, counts, look, dots, onOpen}: WeekRowProps) => {
+const WeekRow = (props: WeekRowProps) => {
+    const {week, layout, height, month, today, selected, counts, look, dots, onOpen, onGround, onCreate} = props;
     const used = dots ? 0 : layout.used;
     const rows = `${HEADER}px${used ? ` repeat(${used}, ${SLOT}px)` : ''} minmax(0, 1fr)`;
     return (
@@ -78,6 +81,8 @@ const WeekRow = ({week, layout, height, month, today, selected, counts, look, do
                         />
                     ))}
                     onOpen={onOpen}
+                    onGround={onGround}
+                    onCreate={onCreate}
                 />
             ))}
         </div>

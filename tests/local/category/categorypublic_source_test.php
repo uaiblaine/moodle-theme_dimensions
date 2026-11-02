@@ -1329,7 +1329,7 @@ final class categorypublic_source_test extends \basic_testcase {
      */
     public function test_the_public_calendar_reaches_nothing_of_a_session(): void {
         $graph = $this->graph(self::CALENDAR);
-        $shareds = ['MonthGrid', 'WeekGrid', 'weeks', 'ViewSwitch', 'DayDrawer', 'EventPopover', 'KeyChips', 'model', 'strings'];
+        $shareds = ['MonthGrid', 'WeekGrid', 'weeks', 'ViewSwitch', 'DayDrawer', 'EventPopover', 'EventTypes', 'model', 'strings'];
         foreach ([...$shareds, 'history'] as $shared) {
             $this->assertContains(self::ESM . 'calendar/' . $shared, $graph, 'The control: the walk reaches ' . $shared . '.');
         }

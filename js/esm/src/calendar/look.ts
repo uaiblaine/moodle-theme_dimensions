@@ -84,6 +84,22 @@ export const colourStyle = (item: Item, look: Look): CSSProperties => {
 };
 
 /**
+ * The ground of an event course's cover without an image: its category's branding pair, each colour checked again
+ * (hex()), as two local properties; none when the course's category is not in the answer or has no pair, so the band
+ * keeps its key's colours (scss/calendar.scss .dim-cal__popcover).
+ *
+ * @param {object} course The course.
+ * @param {object} look The page's look.
+ * @returns {object} The local properties.
+ */
+export const coverStyle = (course: Course, look: Look): CSSProperties => {
+    const category = look.categories.get(course.categoryid);
+    const bg = category ? hex(category.bg) : null;
+    const ink = category ? hex(category.ink) : null;
+    return bg && ink ? {'--dim-cal-cover-bg': bg, '--dim-cal-cover-ink': ink} as CSSProperties : {};
+};
+
+/**
  * Where an item happens: its location, else its course's city and venue, else its course's name.
  *
  * @param {object} item The item.

@@ -27,9 +27,10 @@
  * - The sheet: the same content as a list, no hour column.
  *
  * An overlapping item carries a visible label as well as its column. Every item is a link to its own page that
- * opens the popover on a press (the page's delegated listener), as the grid's items do. Handed core's calendar, the
- * drawer links core's own day view, the address a day opened in C2 (model.ts dayHref()); the visitor's page hands
- * none, because core's calendar asks a visitor to log in.
+ * opens the popover on a press (the page's delegated listener), as the grid's items do. Handed onCreate (the page
+ * offers "New event"), a double-click on an hour row of the column opens core's form at that hour; the "New event"
+ * "+" button in its head is the keyboard's way. On a day with nothing on it the column is still drawn while creation
+ * is offered (the working hours, EMPTY_WINDOW), under the "nothing on this day" line.
  *
  * @module     theme_dimensions/calendar/DayDrawer
  * @copyright  2026 Anderson Blaine
@@ -37,12 +38,12 @@
  */
 
 import {useLayoutEffect, useMemo, useRef} from 'react';
-import type {CSSProperties, KeyboardEvent, ReactNode} from 'react';
+import type {CSSProperties, KeyboardEvent, MouseEvent, ReactNode} from 'react';
 import {say} from '../daterange/calendar';
 import type {Placed} from './layout';
 import {colourStyle, keyClass, placeOf, whenOf} from './look';
 import type {Look} from './look';
-import {dayHref, itemHref} from './model';
+import {itemHref} from './model';
 import {dayPlan, hourWindow, itemKey} from './overlap';
 import type {HourWindow, Laid} from './overlap';
 
@@ -51,6 +52,12 @@ const LONG_DAY: Intl.DateTimeFormatOptions = {weekday: 'long', day: 'numeric', m
 
 /** The day and month of a multi-day item's ends. */
 const SPAN_DAY: Intl.DateTimeFormatOptions = {day: 'numeric', month: 'short'};
+
+/**
+ * The column's hours on a day with nothing on it, while creation is offered: the working day, 08:00 to 18:00, where a
+ * double-click is most useful. A day with items keeps overlap.ts hourWindow()'s window.
+ */
+export const EMPTY_WINDOW: HourWindow = {from: 8, to: 18};
 
 /** The id of the heading, which labels the region. */
 export const HEADING = 'dim-cal-day-heading';
@@ -61,9 +68,9 @@ type DayDrawerProps = {
     iso: string,
     placed: Placed[],
     variant: 'drawer' | 'sheet',
-    calendar: string | null,
     focusing: number,
     action?: ReactNode,
+    onCreate?: (hour: number) => void,
     onClose: () => void,
 };
 
@@ -147,11 +154,14 @@ const link = (entry: Placed, when: string, overlapping: boolean, look: Look, ext
  * @param {object} props See DayDrawerProps.
  * @returns {object} The region.
  */
-const DayDrawer = ({look, iso, placed, variant, calendar, focusing, action, onClose}: DayDrawerProps) => {
+const DayDrawer = ({look, iso, placed, variant, focusing, action, onCreate, onClose}: DayDrawerProps) => {
     const heading = useRef<HTMLHeadingElement | null>(null);
     const plan = useMemo(() => dayPlan(iso, placed, look.zone), [iso, placed, look.zone]);
     const labels = useMemo(() => hourLabels(look.language), [look.language]);
-    const span = useMemo(() => hourWindow(plan.hours, look.zone), [plan, look.zone]);
+    const span = useMemo(
+        () => (plan.hours.length ? hourWindow(plan.hours, look.zone) : EMPTY_WINDOW),
+        [plan, look.zone]
+    );
 
     useLayoutEffect(() => {
         if (focusing) {
@@ -169,6 +179,20 @@ const DayDrawer = ({look, iso, placed, variant, calendar, focusing, action, onCl
         if (event.key === 'Escape' && !event.defaultPrevented) {
             event.preventDefault();
             onClose();
+        }
+    };
+
+    /**
+     * A double-click on an hour row (not on an item) opens core's form at that hour.
+     *
+     * @param {object} event The double-click.
+     * @returns {void}
+     */
+    const onDoubleClick = (event: MouseEvent): void => {
+        const row = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-hour]') : null;
+        if (onCreate && row) {
+            event.preventDefault();
+            onCreate(Number(row.dataset.hour));
         }
     };
 
@@ -216,10 +240,17 @@ const DayDrawer = ({look, iso, placed, variant, calendar, focusing, action, onCl
                     {plan.allday.map((entry) => link(entry, allday(entry), false, look, 'dim-cal__dayitem--allday'))}
                 </div>
             ) : null}
-            {variant === 'drawer' && plan.hours.length ? (
-                <div className="dim-cal__hours" data-region="dim-cal-hours" style={rows(span)}>
+            {variant === 'drawer' && (plan.hours.length || onCreate) ? (
+                <div
+                    className="dim-cal__hours"
+                    data-region="dim-cal-hours"
+                    style={rows(span)}
+                    onDoubleClick={onCreate ? onDoubleClick : undefined}
+                >
                     {labels.slice(span.from, span.to).map((label, hour) => (
-                        <span key={span.from + hour} className="dim-cal__hour" aria-hidden="true">{label}</span>
+                        <span key={span.from + hour} className="dim-cal__hour" data-hour={span.from + hour} aria-hidden="true">
+                            {label}
+                        </span>
                     ))}
                     {plan.hours.map((laid) => link(laid.entry, whenOf(laid.entry.item, look), laid.overlaps.length > 0, look,
                         laid.entry.item.timeduration > 0 ? 'dim-cal__dayitem--timed' : 'dim-cal__dayitem--point',
@@ -231,9 +262,6 @@ const DayDrawer = ({look, iso, placed, variant, calendar, focusing, action, onCl
                     {plan.hours.map((laid) => link(laid.entry, whenOf(laid.entry.item, look), laid.overlaps.length > 0, look,
                         'dim-cal__dayitem--line'))}
                 </div>
-            ) : null}
-            {calendar !== null ? (
-                <a className="dim-cal__dayclassic" href={dayHref(calendar, iso)}>{look.strings.calendar_classicday}</a>
             ) : null}
         </section>
     );

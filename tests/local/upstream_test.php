@@ -156,6 +156,27 @@ final class upstream_test extends \advanced_testcase {
     }
 
     /**
+     * The upstream of a script copied whole is the script, verbatim, read as text: core's iCal feed, which the theme's
+     * calendar answers in its place (classes/local/calendar/ical.php).
+     *
+     * @return void
+     */
+    public function test_a_whole_file_upstream_is_the_script_itself(): void {
+        global $CFG;
+
+        $entries = array_column(upstream::entries(), null, 'snapshot');
+        $entry = $entries['classes/local/calendar/ical.php.export_execute.upstream'];
+
+        $this->assertSame('calendar/export_execute.php', $entry['source']);
+        $this->assertSame('classes/local/calendar/ical.php', $entry['copy']);
+        $raw = (string) file_get_contents($CFG->dirroot . '/calendar/export_execute.php');
+        $this->assertSame(upstream::masked($raw), $entry['text']);
+        $this->assertStringNotContainsString('TO' . 'DO', $entry['text'], 'The leftover gate refuses the marker.');
+        $this->assertSame(strlen($raw) + substr_count($raw, 'TO' . 'DO'), strlen($entry['text']), 'One byte per marker.');
+        $this->assertStringContainsString("define('NO_MOODLE_COOKIES', true);", $entry['text']);
+    }
+
+    /**
      * A function the file does not declare is an error, never an empty upstream.
      *
      * @return void

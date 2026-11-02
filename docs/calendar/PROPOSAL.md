@@ -1966,3 +1966,167 @@ what is merged: each is the current behaviour plus the alternative.
 17. **The CI host ci@192.168.1.222** cannot receive a run from a worktree nested in a checkout (`rsync` does not
     create the parent of `<repo>/.claude/worktrees/<name>`); the Mac mini can. Nested worktrees are also unsafe in a
     mounted checkout (section 24's runs): worktrees belong beside the repository, not inside it.
+
+## 27. R1: the owner's review of 2026-11-02
+
+The owner reviewed C0-C5 on 2026-11-02 and asked for ten changes (the visual ones drawn on the Design canvas page
+"Ajustes (2 nov)"). Branch `calendar-r1`, from main ec33cfb. This section is the plan, written before the code.
+
+### 27.1 Server
+
+1. **No classic calendar** (item 1; closes section 26 item 8). The "Classic calendar" links go (the template's two,
+   the client's toolbar and drawer links, `page::classic()`, `calendar_page`'s `classicurl` and the props'
+   `urls.calendar`, `model.ts` `monthHref()` and `dayHref()`, the strings `calendar_classic` and
+   `calendar_classicday`). `coreview` loses the `classic=1` marker and the session flag, and `page::handle()` stops
+   clearing it. `coreview::target()` now sends EVERY `/calendar/view.php` request of a real account:
+   - `view=day` opens the page's month of that day with the drawer on the day; any other view (`month`, `upcoming`,
+     `upcoming_mini`, none, anything) opens the month of the day the address names (core's own date rule, unchanged);
+   - `course` other than the site (and above 0) names a course: the page opens with that course's category as its
+     scope when the viewer may open the course (`can_access_course()`, the rule core's own export applies to a course
+     calendar), else the plain page; the course's category is never written into an address for a course the viewer
+     cannot open, so the redirect is no oracle of a course's category. The page's own `scope_for()` still drops a
+     category the range refuses. Without a course, `category` (or `categoryid`) is forwarded as before.
+   - Still core's: the setting off or another site theme, a visitor and the guest (the page sends them back), a
+     calendar type other than the Gregorian. `export.php`, `managesubscriptions.php`, `import.php`, `event.php` and
+     `delete.php` are not `view.php` and stay core's.
+   The course lookup is the one statement of the decision, read lazily through a closure (`coreview::course_category()`)
+   so `target()` stays pure for its tests and a request without a course pays nothing.
+2. **iCal filtered by the theme's rule** (item 2). Core's `calendar/export_execute.php` exports the category events of
+   every category (`preset_what=all|categories` sets `$paramcategory = true`, read as "all categories" by core's
+   retrieval strategy), so a category event the page withholds (local_unlistedcourses' `filter_categories()`) leaks
+   into the feed. `after_config` dispatches for every script, `NO_MOODLE_COOKIES` ones included (lib/setup.php ends with
+   it, after the session, the language and `$PAGE` exist), so the callback gains a `/calendar/export_execute.php`
+   branch: while `coreview::enabled()` holds (the same switch: the site runs this theme and `calendarcoreview` is not
+   `'0'`), `local\calendar\ical::serve()` answers and the request ends. `ical` is a copy of core's script, kept in
+   step with a whole-file snapshot (`classes/local/calendar/ical.php.export_execute.upstream`, a new `upstream::FILES`
+   kind read from core's file as text, so `upstream_test` reddens when core changes it). Same parameters, the same
+   token check (moved into `ical::authenticated()`, line for line), the same output; one change: the events go through
+   `ical::admitted()`, which drops an event of a category `source\core_events::admitted_categories()` withholds (the
+   predicate the range applies, now shared) or of a category that no longer exists. Course events are kept as the range
+   keeps them: the range reads the viewer's own calendar courses and withholds none of them, and the feed reads the
+   viewer's enrolled courses, so nothing more is withheld there.
+3. **Settings in their own tab** (item 10): `calendarcoreview`, `calendarblocks` and `calendarpublic` move from the
+   Identity tab to a new "Calendar" tab after the category showcase's, names and defaults unchanged.
+
+### 27.2 Client and stylesheet
+
+4. **Full width** (item 3): under `body.dim-calendar`, from md up, `#page.drawers .main-inner` drops Boost's
+   `$course-content-maxwidth` cap (Boost Union's `coursecontentmaxwidth`), as `scss/category.scss` does.
+5. **The drawer beside the grid** (item 5). Measured on m503b (1114 x 870 pane, the 830px cap of m503 put in place):
+   the drawer opens beside the grid (frame 784px, grid 416px, drawer 352px), but at the TOP of the frame
+   (`align-items: start`), and a six-week month is ~920px tall: opening a day of the lower weeks, scrolled to it, put
+   the drawer at -137px, above the viewport and under the navbar. The drawer becomes sticky under the navbar with its
+   own height capped to the viewport (`position: sticky`, `max-height`, `overflow-y: auto`: the drawer may scroll, its
+   hour column still never does on its own), and 24.5rem wide (392px, the mockup's 392-400px).
+6. **Weekends marked** (item 4): `days.ts` `isWeekend()` reads the day of week of the date (Saturday, Sunday) whatever
+   the first weekday; the month's grounds and weekday headers and the week's strip grounds, hour columns and headers
+   carry `--weekend`; the stylesheet draws a 135-degree hatch (`--dim-cal-weekend-hatch`, a token of both modes) over
+   the quiet surface, measured against the day numbers' ink.
+7. **Event types as a dropdown** (item 6): `EventTypes.tsx` replaces `KeyChips.tsx` on both shells: one toolbar button
+   "Event types" showing "All" or a badge "N of M", a panel of real checkboxes (swatch, name, count) and a "Select all"
+   link, on `popover.ts`'s disclosure (Escape closes and gives the focus back, a press outside closes). Nothing changes
+   on the server: the same `off` / `keys[]`. "Clear filters" leaves "More filters" for a toolbar button drawn while
+   any filter is applied (`model.ts` `filtered()`: a key off, any "More filters" value, a category scope other than
+   the whole calendar with subcategories) and resets the three in one change (`cleared()`), the colouring kept. The
+   showcase's "Clear all" is drawn from two criteria up because each criterion there has a chip of its own to remove;
+   the calendar's filters have none, so one criterion draws it. On the public calendar it is drawn while a key is off.
+8. **Double-click to create** (item 7): while "New event" is offered, a double-click on a day's ground (the month's
+   cells, the week's all-day strip) opens core's form at `moves.ts` `dayStart()`, and on an hour row of the drawer's
+   hour column or the week's hour body at that hour (`hourStart()`, handed to core's `setStartTime()`). The hour rows
+   are elements carrying `data-hour`, so no layout is read. A single click keeps its meaning; the drawer's "+" stays
+   the keyboard's way.
+9. **No "Open" to the Dashboard** (item 8): `primaryOf()` answers `none` for an item whose own address is empty and
+   whose course is not in the answer (no course, or the site); the popover then draws no primary and no "Open", and
+   its course link no longer falls back to the home. `itemHref()` keeps its home fallback for the grid's links, which
+   need an `href` to be links at all (a middle click, the no-JavaScript agenda).
+10. **The event course's cover** (item 9): the popover of an event course (source `course`) opens with an 88px band:
+    the course's image (`<img alt="">`, never a style url) or, without one, the course category's branding pair (the
+    answer's `categories`, `look.ts` `coverStyle()`, each colour through `hex()`), else the key's colours; on it a date
+    tile (the month's abbreviation and the day). The public answer sends no image (`publicrange.php`: core's
+    `course/overviewfiles` asks a visitor to log in), so a visitor sees the colour band.
+
+### 27.3 Tests and gates
+
+- PHPUnit: `coreview_test` (every view sent, the day view's day, the course's category and its refusal, the cases that
+  stay core's with their controls), `page_test`, `calendar_page_test`, `ical_test` (the withheld category's event is in
+  core's legacy read and not in the theme's feed, the admitted one in both, the token check), `upstream_test` (the
+  whole-file kind), `calendar_scss_test` (the cap dropped, the hatch token, the sticky drawer),
+  `calendar_component_source_test` (no source names `calendar/view.php`; the new guards).
+- Jest: weekends, the dropdown, "Clear filters", the double-click, the popover's primary and cover.
+- Behat: the feature's classic scenario goes; the key-chip and filter steps follow the dropdown.
+- Gates: a new "R1" block; the C3r gates whose guards are deleted are deleted with them.
+
+## 28. R1 results (2026-11-02)
+
+Branch `calendar-r1`, built from section 27, with one addition the owner sent during the round.
+
+**The owner's addition (folded into items 5 and 7):** a click anywhere on a day (its ground, its empty space, its dot
+row on a phone; not its day button, items, bars or "+N", which keep their own clicks) opens the day, in the month and
+in the week (the strip and the hour body), on both shells; the day under the mouse is marked (`DayCell.tsx`
+`hoverMark()` sets `data-cal-hover` for `pointerType === 'mouse'` alone, both halves gated as the showcase's hover is;
+the stylesheet paints it under `@media (hover: hover)` with `--dim-cal-surface-hover`, measured in both modes). The day
+button stays the keyboard's way in. A double-click fires two clicks first, and the first one opens the drawer, which
+narrows the grid, so the second click and the double-click can land on the next day's ground (measured shape, not a
+guess: the grid loses 24.5rem plus the gap). Chosen: the first click opens the day and remembers it
+(`Calendar.tsx` `pressGround()`, `pressed`), the second click (`event.detail > 1`) opens nothing, and the double-click
+creates on the remembered day and hour (`createOnGround`), whatever element it lands on.
+
+**What item 5's cause was.** Measured on m503b in the Browser pane (1114 x 870, an account's page, the 830px cap of
+m503 put back by a style rule): the drawer opened beside the grid (frame 784px, grid 416px, drawer 352px) but at the
+frame's top, `align-items: start`; the six-week month was 920px tall, so with the page scrolled 524px to open a day of
+the last week the drawer's box was at -137px, wholly under the navbar and above the viewport. The phone threshold never
+tripped at desktop widths (the frame is measured, and stayed over 576px). The fix: the drawer is sticky under the navbar
+with its height capped to the viewport (its own scroll; the hour column still never scrolls on its own) and 24.5rem
+wide, the page takes the whole column (item 3), and a click anywhere on a day opens it (the addition above), where
+before only the 26px day number did.
+
+**Where the build left the plan:**
+- `coreview::course_category()` is handed to `target()` as a closure (`\Closure::fromCallable`), so the decision stays
+  pure for its tests and a request without a course looks nothing up.
+- The feed's copy is split into `serve()` (the parameters, the switch, the headers), `authenticated()` (core's token
+  check, line for line, loose comparisons included), `feed()` (core's selection and serialisation) and `period()`
+  (core's switch), each with a test. One documented divergence beyond the withholding: an empty `preset_what` or
+  `preset_time`, on which core's script dies of a TypeError, is sent to the export page. That divergence is also how a
+  real request proved the theme answers the address: `export_execute.php?...&preset_what=` answered 303 to
+  `export.php` on m503b, where core's script cannot.
+- "Clear filters" is `EventTypes.tsx` `ClearFilters`, shared by both shells; the event types' "Select all" is a button
+  styled as a link (it acts, it leads nowhere).
+- The popover's actions are their own component (`PopActions`) and the grid's creation helpers live outside the
+  components (`creator()`, `atHourOf()`, `groundHandlers()`, `moves.ts` `createStart()`): eslint's complexity cap (20)
+  counts every conditional of a component's body.
+- Kept: the server's no-JavaScript layer still draws the key chips as checkboxes of its GET form; the dropdown is the
+  client's.
+- `popover.ts` joins the visitor's graph (through `EventTypes.tsx`); it names nothing of a session.
+
+**Settings.** The three calendar settings are on the new "Calendar" tab (`theme_dimensions_calendar`), names and
+defaults unchanged; nothing needs an upgrade to be seen. The strings `calendar_classic` and `calendar_classicday` are
+gone, `calendar_noscript*` lost their link sentence, and `calendarcoreview(_desc)` describe the new reach.
+
+**Gates.** The R1 block of `mutations/gates.conf` holds 23 new gates; nine C3r gates and three CV gates whose guards
+were deleted went with them; `upstream_function_entries`, `cal_page_require_login`, `cal_redirect_day_param` and
+`cv_js_popover_no_core` were brought back to the code they break. Not swept here (the main session runs
+`mdl mutate --fast`).
+
+**Not verified in this round:** PHPUnit (the PHPUnit site of m503b and m503 is "initialised for different version",
+another plugin's `version.php` moved, and re-initialising a shared stack is the main session's call); Behat; the page
+by eye after the change (m503b serves the old ESM build and stylesheet until a purge, which is not this round's to do).
+
+**Security read.** A read of R1 raised three should-fix items, all closed. (1) The feed withheld a category event only by
+local_unlistedcourses' rule while the page also requires `is_uservisible()`: `core_events::shown_categories()` is now the one
+predicate (core's visibility, then the unlisted rule) and `ical::admitted()` asks it. Core's own feed already drops a hidden
+category's event, because its event factory asks the requesting user, so the hidden case is defence in depth, not a reachable
+leak through `feed()`; the test asserts the filter directly and the feed beside it. The page's behaviour is unchanged.
+(2) `coreview::course_category()` named the category of any course the viewer may open, so a withheld or hidden category's id
+reached the redirect address: it now names the category only when `scope::accepts_category()` accepts it, the rule
+`scope::for_viewer()` itself now calls. (3) `ical::serve()` set the session user before the feed, but only by the order of two
+statements: `ical::feed_as()` now does both (session first, then `feed()`), `serve()` only sends what it returns, and a test
+runs the feed with the admin holding the session and an unlisted category the token's student may not see. New gates:
+`cal_r1_ical_hidden`, `cal_r1_ical_session_order`, `cal_r1_course_category_accepted`; the patterns of
+`cal_scope_category_refused` and `cal_scope_unlisted_refused` follow the extracted method.
+
+**Sweep (2026-11-02).** The R1 block plus the two moved scope gates, 31 gates, on both databases (`mdl mutate --fast
+--branch MOODLE_503_STABLE --db pgsql|mariadb --only ...`): 30 reddened their named tests on both. The 31st,
+`cal_r1_scope_hidden` (the `is_uservisible()` term of `scope::accepts_category()` alone), reddened nothing on either: both
+callers look the category up with `core_course_category::get()` without `$alwaysreturnhidden`, which already answers null
+for a category hidden from the viewer. The term stays as the second lock and the gate was dropped, the reason recorded in
+`mutations/gates.conf`.

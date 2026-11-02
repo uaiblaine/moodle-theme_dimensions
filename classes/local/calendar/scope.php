@@ -106,6 +106,22 @@ final class scope {
     }
 
     /**
+     * Whether the current viewer may narrow the calendar to a category: the one rule of {@see for_viewer()}.
+     *
+     * The category exists, core lets the viewer see it and local_unlistedcourses does not withhold it. Shared with
+     * the redirect that sends a course calendar's address with its category ({@see coreview::course_category()}),
+     * so an address never names a category the page would refuse.
+     *
+     * @param \core_course_category|null $category The category, null when it does not exist.
+     * @return bool
+     */
+    public static function accepts_category(?\core_course_category $category): bool {
+        return $category !== null
+            && $category->is_uservisible()
+            && (bool) category_access::filter_categories([(int) $category->id => $category]);
+    }
+
+    /**
      * The current user's calendar sets, narrowed by a course, else by a category.
      *
      * @param int $categoryid The category to narrow to, 0 for none.
@@ -137,11 +153,7 @@ final class scope {
         } else if ($categoryid !== 0) {
             $category = \core_course_category::get($categoryid, IGNORE_MISSING);
             // A category local_unlistedcourses withholds is refused like a nonexistent one: no existence oracle.
-            if (
-                !$category
-                || !$category->is_uservisible()
-                || !category_access::filter_categories([(int) $category->id => $category])
-            ) {
+            if (!self::accepts_category($category)) {
                 throw new refusal();
             }
             $tree = [(int) $category->id];

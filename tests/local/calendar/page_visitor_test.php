@@ -160,7 +160,7 @@ final class page_visitor_test extends \advanced_testcase {
         $context = $this->context($this->handle());
         $this->assertSame(calendar_page::COMPONENT_PUBLIC, $context['component']);
         $this->assertSame(visitor::KEYS, array_column($context['keys'], 'key'));
-        foreach (['categories', 'models', 'modalities', 'cities', 'classicurl', 'clearurl'] as $absent) {
+        foreach (['categories', 'models', 'modalities', 'cities', 'clearurl'] as $absent) {
             $this->assertArrayNotHasKey($absent, $context, $absent . ' is the logged-in page\'s.');
         }
         $props = json_decode($context['props'], true);
@@ -272,7 +272,7 @@ final class page_visitor_test extends \advanced_testcase {
         $this->assertStringContainsString('data-react-component="' . calendar_page::COMPONENT_PUBLIC . '"', $html);
         $this->assertStringContainsString('Feira publica', $html);
         $this->assertSame(2, substr_count($html, 'type="checkbox" name="keys[]"'), 'Two chips and no third.');
-        foreach (['name="categoryid"', 'name="model[]"', 'calendar/view.php', 'dim-cal__classic'] as $absent) {
+        foreach (['name="categoryid"', 'name="model[]"', 'calendar/view.php'] as $absent) {
             $this->assertStringNotContainsString($absent, $html, $absent . ' is the logged-in page\'s.');
         }
         $this->assertStringContainsString(get_string('calendar_publicnoscript', 'theme_dimensions'), $html);

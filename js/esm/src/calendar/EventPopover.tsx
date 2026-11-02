@@ -30,11 +30,16 @@
  *   ticket is taken per opening and checked when the answer comes, so an answer for an item no longer shown, or
  *   for a popover already closed, is dropped; a Pending token (theme_dimensions/calendar:description) spans it.
  *   The visitor's page hands no `describe` and a `plain` text instead (decision V2), drawn as text.
- * - The actions: the primary is model.ts primaryOf()'s; "Open" stays beside it when the primary is something else;
- *   the course's page comes third.
+ * - The actions: the primary is model.ts primaryOf()'s; "Open" stays beside it when the primary is something else
+ *   and the item has a page of its own; the course's page comes third. An item with no page of its own (a personal
+ *   event, a site event) has neither: the popover never leads to the site's home (PROPOSAL.md section 27.2).
+ * - An event course (source `course`) opens with its cover: the course's image, an <img> with an empty alt (never a
+ *   url in a style), else its category's branding pair (look.ts coverStyle()), else its key's colours, and a date tile
+ *   (the month's abbreviation and the day), hidden from the screen reader, which reads the date in the facts.
  *
  * The position is measured when the popover opens, never on the page's mount: the opener's box and the popover's
- * own, read once in a layout effect, and {@see anchor()} keeps it inside the viewport.
+ * own, and the fixed navbar's bottom, read once in a layout effect, and {@see anchor()} keeps it inside the viewport
+ * below the navbar.
  *
  * @module     theme_dimensions/calendar/EventPopover
  * @copyright  2026 Anderson Blaine
@@ -45,11 +50,11 @@ import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {CSSProperties, KeyboardEvent, ReactNode} from 'react';
 import Pending from '@moodle/lms/core/pending';
 import {say} from '../daterange/calendar';
-import {keyLabel} from './KeyChips';
+import {keyLabel} from './EventTypes';
 import type {Placed} from './layout';
-import {colourStyle, keyClass, placeOf, whenOf} from './look';
+import {colourStyle, coverStyle, keyClass, placeOf, whenOf} from './look';
 import type {Look} from './look';
-import {itemHref, primaryOf, safeHref} from './model';
+import {itemHref, opens, primaryOf, safeHref} from './model';
 import type {Course, Item, Option, Primary} from './model';
 import {isAllDay} from './overlap';
 import {fill} from './strings';
@@ -65,6 +70,9 @@ const DAY: Intl.DateTimeFormatOptions = {weekday: 'long', day: 'numeric', month:
 
 /** The day and month of a span's ends. */
 const SPAN_DAY: Intl.DateTimeFormatOptions = {day: 'numeric', month: 'long'};
+
+/** The month of the cover's date tile. */
+const TILE_MONTH: Intl.DateTimeFormatOptions = {month: 'short'};
 
 /** A box, as getBoundingClientRect() reads one. */
 export type Box = {top: number, left: number, bottom: number, right: number};
@@ -87,24 +95,46 @@ type EventPopoverProps = {
 };
 
 /**
- * Where the popover goes: under its opener when it fits, else above, else on the side with more room; its left edge
- * on the opener's, pulled inside the viewport. Pure.
+ * Where the popover goes: under its opener when it fits, else above when that fits, else on the side with more room;
+ * its left edge on the opener's, pulled inside the viewport. It never goes above `reserved` + the gap, the bottom of
+ * the page's fixed navbar read once on opening, so a bar in the first rows flips below its opener instead of
+ * hiding the popover's cover under the navbar. Only when neither side holds the popover is its height capped
+ * (`maxHeight`) so it scrolls inside. Pure.
  *
  * @param {object} opener The opener's box.
  * @param {object} size The popover's size.
  * @param {object} viewport The viewport's size.
- * @returns {object} {top, left} in px, for a fixed position.
+ * @param {number} reserved The viewport's top that is not the page's own: the fixed navbar's bottom, 0 without one.
+ * @returns {object} {top, left, maxHeight?} in px, for a fixed position.
  */
-export const anchor = (opener: Box, size: Size, viewport: Size): {top: number, left: number} => {
+export const anchor = (
+    opener: Box,
+    size: Size,
+    viewport: Size,
+    reserved: number = 0
+): {top: number, left: number, maxHeight?: number} => {
+    const least = reserved + GAP;
+    const most = viewport.height - GAP;
     const below = opener.bottom + GAP;
     const above = opener.top - GAP - size.height;
     let top = below;
-    if (below + size.height > viewport.height - GAP) {
-        top = above >= GAP || opener.top > viewport.height - opener.bottom ? above : below;
+    if (below + size.height > most) {
+        top = above >= least || opener.top - GAP - least > most - below ? above : below;
     }
-    top = Math.max(GAP, Math.min(top, viewport.height - GAP - size.height));
+    const height = Math.min(size.height, most - least);
+    top = Math.max(least, Math.min(top, most - height));
     const left = Math.max(GAP, Math.min(opener.left, viewport.width - GAP - size.width));
-    return {top: top, left: left};
+    return size.height > height ? {top: top, left: left, maxHeight: height} : {top: top, left: left};
+};
+
+/**
+ * The bottom of the page's fixed navbar in the viewport, 0 when there is none.
+ *
+ * @returns {number} px.
+ */
+const navbarBottom = (): number => {
+    const bar = document.querySelector<HTMLElement>('.navbar.fixed-top');
+    return bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0;
 };
 
 /**
@@ -150,6 +180,34 @@ export const primaryLabel = (primary: Primary, look: Look): string => {
     }
 };
 
+/**
+ * The cover of an event course's popover, or null for anything else.
+ *
+ * @param {object} entry The placed item.
+ * @param {object} look The page's look.
+ * @returns {object|null} The cover.
+ */
+const cover = (entry: Placed, look: Look) => {
+    const course = entry.item.source === 'course' ? look.courses.get(entry.item.courseid) : undefined;
+    if (!course) {
+        return null;
+    }
+    const image = safeHref(course.image, '');
+    return (
+        <div
+            className={`dim-cal__popcover ${keyClass(entry.item)}`}
+            style={coverStyle(course, look)}
+            data-region="dim-cal-popcover"
+        >
+            {image !== '' ? <img className="dim-cal__popcoverimg" src={image} alt="" /> : null}
+            <span className="dim-cal__poptile" aria-hidden="true">
+                <span className="dim-cal__poptilemonth">{say(entry.first, TILE_MONTH, look.language)}</span>
+                <span className="dim-cal__poptileday">{Number(entry.first.slice(8, 10))}</span>
+            </span>
+        </div>
+    );
+};
+
 /** What the popover says of an item beyond its name and time. */
 type Facts = {place: string, modality: string, course: Course | null, participants: number | null};
 
@@ -174,6 +232,37 @@ export const factsOf = (item: Item, look: Look, modalities: Option[]): Facts => 
 };
 
 /**
+ * The popover's actions: the primary, "Open" beside another primary when the item has a page of its own, the course's
+ * page, and the editing actions it is handed. Nothing here falls back to the site's home.
+ *
+ * @param {object} props The item, its course, the page's look and the editing actions.
+ * @returns {object} The row.
+ */
+const PopActions = ({item, course, look, actions}: {item: Item, course: Course | null, look: Look, actions?: ReactNode}) => {
+    const primary = primaryOf(item, look.courses, look.home);
+    const open = opens(item, look.courses) ? itemHref(item, look.courses, look.home) : '';
+    const coursepage = course && course.url !== course.landingurl ? safeHref(course.url, '') : '';
+    return (
+        <div className="dim-cal__popactions">
+            {primary.kind !== 'none' ? (
+                <a className="btn btn-primary" href={primary.url} data-action={`dim-cal-${primary.kind}`}>
+                    {primaryLabel(primary, look)}
+                </a>
+            ) : null}
+            {primary.kind !== 'open' && open !== '' ? (
+                <a className="btn btn-secondary" href={open} data-action="dim-cal-open">{look.strings.calendar_open}</a>
+            ) : null}
+            {coursepage !== '' ? (
+                <a className="btn btn-link" href={coursepage} data-action="dim-cal-course">
+                    {look.strings.calendar_coursepage}
+                </a>
+            ) : null}
+            {actions}
+        </div>
+    );
+};
+
+/**
  * The popover.
  *
  * @param {object} props See EventPopoverProps.
@@ -187,7 +276,7 @@ const EventPopover = (props: EventPopoverProps) => {
     const ticket = useRef<number>(0);
     const focused = useRef<string>('');
     const [text, setText] = useState<string | null>(null);
-    const [at, setAt] = useState<{top: number, left: number} | null>(null);
+    const [at, setAt] = useState<{top: number, left: number, maxHeight?: number} | null>(null);
 
     // The description: one request per event per page life, the latest opening's answer alone shown.
     useEffect(() => {
@@ -219,7 +308,12 @@ const EventPopover = (props: EventPopoverProps) => {
         }
         const box = opener.getBoundingClientRect();
         const own = dialog.current.getBoundingClientRect();
-        setAt(anchor(box, {width: own.width, height: own.height}, {width: window.innerWidth, height: window.innerHeight}));
+        setAt(anchor(
+            box,
+            {width: own.width, height: own.height},
+            {width: window.innerWidth, height: window.innerHeight},
+            navbarBottom()
+        ));
     }, [item.source, item.id, opener, sheet]);
 
     // The focus moves to the heading once the popover is SHOWN, once per opened item: while it is measuring it is
@@ -276,12 +370,14 @@ const EventPopover = (props: EventPopoverProps) => {
     };
 
     const {place, modality, course, participants} = factsOf(item, look, modalities);
-    const primary = primaryOf(item, look.courses, look.home);
-    const open = itemHref(item, look.courses, look.home);
     const style: CSSProperties = {...colourStyle(item, look)};
     if (at) {
         style.top = `${at.top}px`;
         style.left = `${at.left}px`;
+        if (at.maxHeight !== undefined) {
+            style.maxHeight = `${at.maxHeight}px`;
+            style.overflowY = 'auto';
+        }
     }
 
     return (
@@ -296,6 +392,7 @@ const EventPopover = (props: EventPopoverProps) => {
             style={style}
             onKeyDown={onKeyDown}
         >
+            {cover(entry, look)}
             <div className="dim-cal__pophead">
                 <span className={`dim-cal__kind ${keyClass(item)}`}>
                     <span className="dim-cal__swatch" aria-hidden="true"></span>
@@ -348,20 +445,7 @@ const EventPopover = (props: EventPopoverProps) => {
                     dangerouslySetInnerHTML={{__html: text}}
                 ></div>
             ) : null}
-            <div className="dim-cal__popactions">
-                <a className="btn btn-primary" href={primary.url} data-action={`dim-cal-${primary.kind}`}>
-                    {primaryLabel(primary, look)}
-                </a>
-                {primary.kind !== 'open' ? (
-                    <a className="btn btn-secondary" href={open} data-action="dim-cal-open">{look.strings.calendar_open}</a>
-                ) : null}
-                {course && course.url !== course.landingurl ? (
-                    <a className="btn btn-link" href={safeHref(course.url, look.home)} data-action="dim-cal-course">
-                        {look.strings.calendar_coursepage}
-                    </a>
-                ) : null}
-                {actions}
-            </div>
+            <PopActions item={item} course={course} look={look} actions={actions} />
         </div>
     );
 };

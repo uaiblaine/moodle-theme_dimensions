@@ -250,17 +250,6 @@ final class page_test extends \advanced_testcase {
     }
 
     /**
-     * Core's month and day views are spelled with core's day, month and year, never a timestamp, and the classic marker.
-     *
-     * @return void
-     */
-    public function test_the_classic_calendar_address(): void {
-        $this->resetAfterTest();
-        $url = page::classic('2026-02');
-        $this->assertSame(['view' => 'month', 'cal_d' => '1', 'cal_m' => '2', 'cal_y' => '2026', 'classic' => '1'], $url->params());
-    }
-
-    /**
      * A category the range would refuse is dropped from the state; one the viewer may narrow to is kept.
      *
      * @return void

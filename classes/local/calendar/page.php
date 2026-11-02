@@ -40,7 +40,6 @@ use theme_dimensions\output\opengraph;
  *    calendar ({@see visitor()}), never through require_login().
  * 2. The guest account goes to core's calendar, which is the guest's (core's primary navigation links it there).
  * 3. require_login() for a real account: the site policy, a forced password change and the rest of core's gate.
- *    Then the "classic for this session" flag is cleared ({@see coreview}): opening the page ends the choice.
  * 4. A calendar type other than the Gregorian goes to core's calendar: the range refuses it ({@see window}).
  * 5. The view, the month or the week, and the state are read, every value outside its vocabulary dropped ({@see state},
  *    {@see span()}); a category the range refuses (gone, hidden, unlisted) is dropped like any other value, so a stale
@@ -126,27 +125,6 @@ final class page {
         $url = \core\router\util::get_path_for_callable([\theme_dimensions\route\controller\calendar::class, 'view'], []);
         $url->params($params);
         return $url;
-    }
-
-    /**
-     * Core's own month view of a month: the classic calendar the page keeps reachable (decision D1).
-     *
-     * Spelled with core's day, month and year parameters, which calendar/view.php turns into a time in the
-     * viewer's own timezone (make_timestamp()), so neither this class nor the client computes a timestamp.
-     * The classic marker keeps {@see coreview} from sending the reader straight back to this page.
-     *
-     * @param string $month The month, YYYY-MM, known to be one.
-     * @return \core\url
-     */
-    public static function classic(string $month): \core\url {
-        [$year, $number] = explode('-', $month);
-        return new \core\url('/calendar/view.php', [
-            'view' => 'month',
-            'cal_d' => 1,
-            'cal_m' => (int) $number,
-            'cal_y' => (int) $year,
-            coreview::PARAM_CLASSIC => 1,
-        ]);
     }
 
     /**
@@ -471,7 +449,7 @@ final class page {
      * @return self The answer: a redirect or a page.
      */
     public static function handle(): self {
-        global $CFG, $PAGE, $SESSION;
+        global $CFG, $PAGE;
 
         require_once($CFG->dirroot . '/calendar/lib.php');
         if (!isloggedin()) {
@@ -484,7 +462,6 @@ final class page {
             return new self(self::core_calendar(), null);
         }
         require_login(null, false);
-        unset($SESSION->{coreview::SESSION_FLAG});
         try {
             window::require_gregorian();
         } catch (refusal $refusal) {

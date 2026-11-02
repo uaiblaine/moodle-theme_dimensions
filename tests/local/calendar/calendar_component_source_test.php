@@ -198,7 +198,7 @@ final class calendar_component_source_test extends \basic_testcase {
             $observers += substr_count($source, 'new ResizeObserver(');
         }
         $popover = $this->sources()['EventPopover.tsx'];
-        $this->assertSame(2, preg_match_all($reads, $popover), 'The opener\'s box and the popover\'s own.');
+        $this->assertSame(3, preg_match_all($reads, $popover), 'The opener\'s box, the popover\'s own and the navbar\'s.');
         $this->assertMatchesRegularExpression(
             '~useLayoutEffect\(\(\) => \{\s*if \(sheet \|\| !dialog\.current\) \{.*?getBoundingClientRect\(\);.*?'
                 . 'getBoundingClientRect\(\);.*?\}, \[item\.source, item\.id, opener, sheet\]\);~s',
@@ -264,7 +264,7 @@ final class calendar_component_source_test extends \basic_testcase {
      * @return void
      */
     public function test_the_seams_are_the_fallbacks(): void {
-        $definitions = ['itemHref' => 0, 'dayHref' => 0, 'primaryOf' => 0];
+        $definitions = ['itemHref' => 0, 'primaryOf' => 0];
         foreach ($this->sources() as $path => $source) {
             foreach (array_keys($definitions) as $name) {
                 $definitions[$name] += substr_count($source, "export const {$name} = ");
@@ -285,12 +285,11 @@ final class calendar_component_source_test extends \basic_testcase {
             $this->assertStringNotContainsString('redirect(', $source, $path);
             $this->assertStringNotContainsString('core/location', $source, $path);
         }
-        $this->assertSame(['itemHref' => 1, 'dayHref' => 1, 'primaryOf' => 1], $definitions);
+        $this->assertSame(['itemHref' => 1, 'primaryOf' => 1], $definitions);
         foreach (['Bar.tsx', 'DayCell.tsx', 'DayDrawer.tsx'] as $path) {
             $this->assertStringContainsString('href={itemHref(', $this->sources()[$path], $path);
             $this->assertStringContainsString('data-cal-pop=""', $this->sources()[$path], $path);
         }
-        $this->assertStringContainsString('href={dayHref(calendar, iso)}', $this->sources()['DayDrawer.tsx']);
         $this->assertStringContainsString('onClick={onPress}', $this->sources()['Calendar.tsx']);
     }
 
@@ -397,6 +396,19 @@ final class calendar_component_source_test extends \basic_testcase {
             $model
         );
         $this->assertStringContainsString("return {kind: 'open', url: itemHref(item, courses, home)};", $model);
+        // An item with no page of its own has no primary: never the site's home (R1).
+        $this->assertMatchesRegularExpression("~if \\(!opens\\(item, courses\\)\\) \\{\\s*return \\{kind: 'none'\\};~", $model);
+        $this->assertStringContainsString(
+            "safeHref(item.url, '') !== '' || safeHref(courses.get(item.courseid)?.url ?? '', '') !== ''",
+            $model
+        );
+        $popover = $this->sources()['EventPopover.tsx'];
+        $this->assertStringContainsString(
+            "const open = opens(item, look.courses) ? itemHref(item, look.courses, look.home) : '';",
+            $popover
+        );
+        $this->assertStringContainsString("{primary.kind !== 'none' ? (", $popover);
+        $this->assertStringContainsString("{primary.kind !== 'open' && open !== '' ? (", $popover);
         $this->assertStringContainsString(
             'const primary = primaryOf(item, look.courses, look.home);',
             $this->sources()['EventPopover.tsx']
@@ -417,10 +429,17 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString("const own = safeHref(item.url, '');", $model);
         $this->assertStringContainsString("const actionUrl = item.action === null ? '' : safeHref(item.action.url, '');", $model);
         $this->assertStringContainsString('url: safeHref(course.landingurl, itemHref(item, courses, home))', $model);
+        $popover = $this->sources()['EventPopover.tsx'];
         $this->assertStringContainsString(
-            'href={safeHref(course.url, look.home)}',
-            $this->sources()['EventPopover.tsx']
+            "const coursepage = course && course.url !== course.landingurl ? safeHref(course.url, '') : '';",
+            $popover
         );
+        $this->assertStringContainsString("const image = safeHref(course.image, '');", $popover);
+        $this->assertStringNotContainsString('look.home', str_replace(
+            ['primaryOf(item, look.courses, look.home)', 'itemHref(item, look.courses, look.home)'],
+            '',
+            $popover
+        ), 'The popover leads to the home through nothing of its own.');
     }
 
     /**
@@ -460,22 +479,88 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The visitor's page links nothing of core's calendar, which asks a visitor to log in: the drawer draws its link
-     * only when it is handed core's address, and the visitor's shell hands none and draws no classic link of its own.
+     * The owner's review of 2026-11-02 (R1, PROPOSAL.md section 27.2), read where PHPUnit can see it; Jest is the
+     * behaviour gate (js/esm/tests/calendar). A weekend is the date's own weekday; a double-click creates only while
+     * core would show "New event"; "Clear filters" is drawn only while a filter is applied.
      *
      * @return void
      */
-    public function test_the_visitors_page_links_nothing_of_cores_calendar(): void {
-        $drawer = $this->sources()['DayDrawer.tsx'];
-        $this->assertMatchesRegularExpression(
-            '~\{calendar !== null \? \(\s*<a className="dim-cal__dayclassic" href=\{dayHref\(calendar, iso\)\}>~',
-            $drawer
+    public function test_the_owners_review_guards(): void {
+        $sources = $this->sources();
+        $this->assertStringContainsString('return weekday === 0 || weekday === 6;', $sources['days.ts']);
+        $this->assertStringContainsString(').getUTCDay();', $sources['days.ts']);
+        $this->assertStringContainsString(
+            'create: Create): Create | undefined => (edits?.create ? create : undefined);',
+            $sources['Calendar.tsx']
         );
-        $public = $this->sources()['PublicCalendar.tsx'];
-        $this->assertStringContainsString('calendar={null}', $public);
-        $this->assertStringNotContainsString('dim-cal__classic', $public);
-        $this->assertStringNotContainsString('monthHref', $public);
-        $this->assertStringContainsString('calendar={props.urls.calendar}', $this->sources()['Calendar.tsx'], 'Control.');
+        $this->assertSame(2, substr_count($sources['Calendar.tsx'], 'onCreate={createOnGround}'), 'The month and the week.');
+        $this->assertStringContainsString('onCreate={atHourOf(createAt, drawn)}', $sources['Calendar.tsx']);
+        $this->assertSame(2, substr_count($sources['Calendar.tsx'], ' = creator(props.edits, '));
+        $this->assertStringContainsString('{...groundHandlers(iso, onGround, onCreate)}', $sources['DayCell.tsx']);
+        $this->assertMatchesRegularExpression(
+            '~\.\.\.\(onCreate \? \{\s*onDoubleClick: \(event: MouseEvent\): void => \{~',
+            $sources['DayCell.tsx']
+        );
+        $this->assertStringContainsString("target.closest('a, button, [data-cal-item]') === null", $sources['DayCell.tsx']);
+        // A press on the ground opens the day; the second click of a double-click opens nothing, and the double-click
+        // creates on the day the first one pressed.
+        $this->assertMatchesRegularExpression(
+            '~const pressGround = \(iso: string, hour: number \| null, clicks: number\): void => \{\s*if \(clicks > 1\) \{\s*'
+                . 'return;\s*\}\s*pressed\.current = \{iso: iso, hour: hour\};\s*openDay\(iso\);~',
+            $sources['Calendar.tsx']
+        );
+        $this->assertStringContainsString('const at = pressed.current || {iso: iso, hour: hour};', $sources['Calendar.tsx']);
+        $this->assertStringContainsString("if (event.pointerType !== 'mouse') {", $sources['DayCell.tsx']);
+        $this->assertStringContainsString('<ClearFilters shown={filtered(state)}', $sources['Calendar.tsx']);
+        $this->assertStringNotContainsString('dim-cal__clear', $sources['MoreFilters.tsx'], 'Clear filters left the panel.');
+        $this->assertStringContainsString(
+            '<ClearFilters shown={on.length !== VISITOR_KEYS.length}',
+            $sources['PublicCalendar.tsx']
+        );
+        $this->assertStringNotContainsString('PublicCalendar', implode('', array_keys(array_filter(
+            $sources,
+            static fn(string $source): bool => str_contains($source, 'onCreate=')
+        ))), 'The visitor\'s page creates nothing.');
+    }
+
+    /**
+     * The event popover keeps below the fixed navbar, read from its box when it opens, and the event types' dropdown
+     * closes on Escape through a document listener that exists only while it is open (the list re-renders under a press
+     * of "Select all", and the focus falls outside the dropdown). Jest holds the behaviour.
+     *
+     * @return void
+     */
+    public function test_the_popover_clears_the_navbar_and_escape_is_the_documents(): void {
+        $sources = $this->sources();
+        $popover = $sources['EventPopover.tsx'];
+        $this->assertStringContainsString("document.querySelector<HTMLElement>('.navbar.fixed-top')", $popover);
+        $this->assertStringContainsString('navbarBottom()', $popover);
+        $this->assertStringContainsString('const least = reserved + GAP;', $popover);
+        $this->assertStringContainsString('Math.max(least, Math.min(top, most - height))', $popover);
+        $types = $sources['EventTypes.tsx'];
+        $this->assertMatchesRegularExpression(
+            "~document\\.addEventListener\\('keydown', escape\\);"
+                . "\\s*return \\(\\) => document\\.removeEventListener\\('keydown', escape\\);"
+                . "\\s*\\}, \\[open, shut\\]\\);~",
+            $types
+        );
+        $this->assertStringContainsString("if (event.key === 'Escape') {\n                shut(true);", $types);
+    }
+
+    /**
+     * No page links a view of core's calendar any more (R1): core's calendar/view.php leads to the page, so a link to it
+     * would only come back; the drawer and the toolbar draw none, and neither shell is handed core's address.
+     *
+     * @return void
+     */
+    public function test_no_page_links_cores_calendar_view(): void {
+        $sources = $this->sources();
+        foreach ($sources as $path => $source) {
+            $this->assertStringNotContainsString('calendar/view.php', $source, $path);
+            $this->assertStringNotContainsString('classic', $source, $path);
+            $this->assertStringNotContainsString('urls.calendar', $source, $path);
+        }
+        $this->assertStringContainsString('urls: {page: string, home: string},', $sources['model.ts'], 'The control.');
     }
 
     /**

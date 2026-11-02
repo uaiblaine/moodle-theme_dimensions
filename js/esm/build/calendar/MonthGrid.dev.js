@@ -12,6 +12,9 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * - PageUp and PageDown go to the previous and next month, on the same day number or the month's last;
  * - Enter and Space press the day button, which opens the day: the drawer beside the grid, or on a phone the sheet
  *   under it (Calendar.tsx);
+ * - A click anywhere on a day but its controls (onGround handed) opens it as its button does, a convenience for the
+ *   pointer: the button stays the keyboard's way in. A double-click there opens core's form for a new event on that
+ *   day while the page offers "New event" (onCreate handed); the keyboard's way is the drawer's "New event";
  * - F2 on a day that has items moves into them: the first item of the day takes the focus, Tab and Shift+Tab cycle
  *   the day's items (its bars, its own items, its "+N"), Escape goes back to the day. The items are links and
  *   buttons out of the Tab order, so Tab from a day leaves the grid as from any other control.
@@ -29,6 +32,7 @@ import { jsxDEV } from "react/jsx-dev-runtime";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { WEEK, say, shift, shiftMonth } from "../daterange/calendar";
 import { ROW_DEFAULT, barSlots, dayCounts, weekLayout } from "./layout";
+import { isWeekend } from "./days";
 import WeekRow from "./WeekRow";
 const PHONE = 576;
 const WEEKDAY = { weekday: "short" };
@@ -153,13 +157,23 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
         }
       },
       children: [
-        /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekdays", role: "row", children: weeks[0].map((iso) => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekday", role: "columnheader", children: say(iso, WEEKDAY, look.language) }, iso, false, {
+        /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekdays", role: "row", children: weeks[0].map((iso) => /* @__PURE__ */ jsxDEV(
+          "div",
+          {
+            className: `dim-cal__weekday${isWeekend(iso) ? " dim-cal__weekday--weekend" : ""}`,
+            role: "columnheader",
+            children: say(iso, WEEKDAY, look.language)
+          },
+          iso,
+          false,
+          {
+            fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
+            lineNumber: 235,
+            columnNumber: 21
+          }
+        )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 229,
-          columnNumber: 21
-        })) }, void 0, false, {
-          fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 227,
+          lineNumber: 233,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("div", { ref: rows, className: "dim-cal__weeks", role: "rowgroup", children: weeks.map((week, index) => /* @__PURE__ */ jsxDEV(
@@ -174,18 +188,20 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
             counts,
             look,
             dots,
-            onOpen
+            onOpen,
+            onGround: props.onGround,
+            onCreate: props.onCreate
           },
           week[0],
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-            lineNumber: 234,
+            lineNumber: 244,
             columnNumber: 21
           }
         )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 232,
+          lineNumber: 242,
           columnNumber: 13
         })
       ]
@@ -194,7 +210,7 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-      lineNumber: 214,
+      lineNumber: 220,
       columnNumber: 9
     }
   );

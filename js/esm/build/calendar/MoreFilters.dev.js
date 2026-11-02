@@ -5,9 +5,9 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * The "More filters" panel (decision D5): the course model, the modality, the city, "only what I have to do" and
  * the colouring (decision D6).
  *
- * A disclosure: the button says how many filters are on, the panel applies every change at once (the page asks
- * the range again and remembers the state after a quiet), and "Clear filters" puts every filter of the panel
- * back, the colouring and the category included in neither.
+ * A disclosure: the button says how many filters are on, and the panel applies every change at once (the page asks
+ * the range again and remembers the state after a quiet). "Clear filters" is the toolbar's, beside this button
+ * (Calendar.tsx, R1): it puts back the keys and the category scope as well as these.
  *
  * @module     theme_dimensions/calendar/MoreFilters
  * @copyright  2026 Anderson Blaine
@@ -207,24 +207,7 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
             fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
             lineNumber: 150,
             columnNumber: 17
-          }),
-          /* @__PURE__ */ jsxDEV(
-            "button",
-            {
-              type: "button",
-              className: "btn btn-link dim-cal__clear",
-              disabled: count === 0,
-              onClick: () => onChange({ model: [], modality: [], city: "", actiononly: false }),
-              children: strings.calendar_clearfilters
-            },
-            void 0,
-            false,
-            {
-              fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-              lineNumber: 165,
-              columnNumber: 17
-            }
-          )
+          })
         ]
       },
       void 0,

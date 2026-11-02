@@ -22,7 +22,7 @@
     - the server's (data-region="dim-cal-server"), whole without JavaScript: the
       toolbar's links, one GET form for the key chips, the category and the
       "More" filters, and the month's items as an agenda grouped by day, under
-      a notice linking core's calendar;
+      a notice;
     - the mount node of calendar/Calendar, whose props carry the first range
       answer; the component hides the server's layer once it has drawn its own.
 
@@ -39,7 +39,7 @@
 
     With visitor set (the public calendar, stage CV) the page draws the two
     chips a visitor has and nothing that needs a session or a login: no
-    category, no "More" filters and no link to core's calendar.
+    category and no "More" filters.
 
     exporturl (stage C5) is core's calendar/export.php where core's calendar
     offers it to this account; the footer carries it outside both layers, so
@@ -58,7 +58,6 @@
         "todayurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11",
         "prevurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-10",
         "nexturl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-12",
-        "classicurl": "https://example.com/calendar/view.php?view=month",
         "clearurl": "https://example.com/r.php/theme_dimensions/calendar?month=2026-11&recursive=1",
         "keys": [
             {
@@ -155,9 +154,6 @@
                 <a class="dim-cal__view{{^weekview}} dim-cal__view--active{{/weekview}}" href="{{monthurl}}" data-region="dim-cal-view-month"{{^weekview}} aria-current="page"{{/weekview}}>{{#str}} calendar_viewmonth, theme_dimensions {{/str}}</a>
                 <a class="dim-cal__view{{#weekview}} dim-cal__view--active{{/weekview}}" href="{{weekurl}}" data-region="dim-cal-view-week"{{#weekview}} aria-current="page"{{/weekview}}>{{#str}} calendar_viewweek, theme_dimensions {{/str}}</a>
             </div>
-            {{^visitor}}
-            <a class="dim-cal__classic" href="{{classicurl}}">{{#str}} calendar_classic, theme_dimensions {{/str}}</a>
-            {{/visitor}}
         </div>
         <form class="dim-cal__form" method="get" action="{{action}}">
             {{#weekview}}
@@ -259,7 +255,6 @@
                 {{^visitor}}
                 {{#weekview}}{{#str}} calendar_noscriptweek, theme_dimensions {{/str}}{{/weekview}}
                 {{^weekview}}{{#str}} calendar_noscript, theme_dimensions {{/str}}{{/weekview}}
-                <a href="{{classicurl}}">{{#str}} calendar_classic, theme_dimensions {{/str}}</a>
                 {{/visitor}}
             </p>
             {{#truncated}}<p class="dim-cal__notice">{{#str}} calendar_truncated, theme_dimensions {{/str}}</p>{{/truncated}}

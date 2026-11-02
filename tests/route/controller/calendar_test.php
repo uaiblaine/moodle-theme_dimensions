@@ -128,7 +128,7 @@ final class calendar_test extends \core\tests\router\route_testcase {
         $this->assertSame('2026-11', $props['month']);
         $this->assertSame(['Seminar & workshop'], array_column($props['answer']['events'], 'name'));
         $this->assertStringContainsString('Seminar &amp; workshop', $body, 'The agenda lists the month, escaped once.');
-        $this->assertStringContainsString(page::classic('2026-11')->out(), $body, 'Core\'s calendar stays reachable.');
+        $this->assertStringNotContainsString('calendar/view.php', $body, 'The page links no view of core\'s calendar.');
     }
 
     /**

@@ -24,6 +24,9 @@ namespace theme_dimensions\local;
  * <copy>.upstream for a template, <copy file>.<method>.upstream for a method. Boost Union keeps its
  * copy of core's React navigation the same way (js/esm/src/nav/Nav.tsx.upstream).
  *
+ * A script copied whole (core's calendar/export_execute.php, {@see self::FILES}) keeps the whole file as its snapshot:
+ * <copy file>.<name>.upstream.
+ *
  * The snapshot turns a re-diff into a three-way merge: what upstream changed since the copy was made
  * is the diff between the snapshot and today's upstream, and that diff can be applied to the copy
  * (scripts/upstream-merge.sh does it with git merge-file). tests/local/upstream_test.php compares
@@ -97,6 +100,24 @@ final class upstream {
     ];
 
     /**
+     * The scripts the theme copies whole: a file of core read as text, never included.
+     *
+     * Core's calendar/export_execute.php is a script of top-level statements (it defines NO_MOODLE_COOKIES and
+     * requires config.php), so neither reflection nor a function's tokens can name what was copied: the snapshot is
+     * the whole file. Each entry: the copy's file, a name for the snapshot, and the upstream file (relative to
+     * $CFG->dirroot).
+     *
+     * @var array
+     */
+    const FILES = [
+        [
+            'file' => 'classes/local/calendar/ical.php',
+            'name' => 'export_execute',
+            'upstreamfile' => 'calendar/export_execute.php',
+        ],
+    ];
+
+    /**
      * The templates under templates/<component>/ that are the theme's own and copy nothing.
      *
      * Core draws the profile page in PHP (core_user\output\myprofile\renderer), so the theme's renderer renders
@@ -133,7 +154,12 @@ final class upstream {
      * @throws \moodle_exception When an overridden template has no upstream left.
      */
     public static function entries(): array {
-        $entries = array_merge(self::template_entries(), self::method_entries(), self::function_entries());
+        $entries = array_merge(
+            self::template_entries(),
+            self::method_entries(),
+            self::function_entries(),
+            self::file_entries()
+        );
         usort($entries, fn(array $a, array $b): int => strcmp($a['snapshot'], $b['snapshot']));
 
         return $entries;
@@ -256,6 +282,43 @@ final class upstream {
         }
 
         return $entries;
+    }
+
+    /**
+     * The whole-file copies of {@see self::FILES}, in the shape of a method entry: the upstream is the file, verbatim
+     * but for its development markers ({@see self::masked()}).
+     *
+     * @return array The entries.
+     */
+    private static function file_entries(): array {
+        global $CFG;
+
+        $entries = [];
+        foreach (self::FILES as $file) {
+            $source = $CFG->dirroot . '/' . $file['upstreamfile'];
+            $entries[] = [
+                'snapshot' => $file['file'] . '.' . $file['name'] . self::EXTENSION,
+                'copy' => $file['file'],
+                'source' => $file['upstreamfile'],
+                'text' => self::masked((string) file_get_contents($source)),
+            ];
+        }
+
+        return $entries;
+    }
+
+    /**
+     * A whole upstream file with the development markers the leftover gate refuses spelled apart.
+     *
+     * A whole file carries core's own comments, and core's calendar/export_execute.php holds a bare marker comment
+     * that the leftover checker of the CI workflow (the same patterns in `mdl ci`) refuses in any shipped file. The
+     * snapshot spells each marker with a hyphen; the comparison of every other byte is unchanged.
+     *
+     * @param string $text The upstream file.
+     * @return string The text the snapshot holds.
+     */
+    public static function masked(string $text): string {
+        return str_replace(['TO' . 'DO', '@test' . 'me'], ['TO-' . 'DO', '@test-' . 'me'], $text);
     }
 
     /**

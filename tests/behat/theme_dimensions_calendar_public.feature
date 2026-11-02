@@ -41,8 +41,9 @@ Feature: A visitor sees the public categories' events on the theme's calendar on
     And I should not see "Internal meeting"
     And I should not see "Internal congress"
     And "[data-region='dim-cal-server']" "css_element" should not be visible
-    And "[data-region='dim-cal-chips'] [data-key='site']" "css_element" should not exist
-    And "//a[contains(@class, 'dim-cal__classic')]" "xpath_element" should not exist
+    And "[data-region='dim-cal-types'] input[data-key='site']" "css_element" should not exist
+    And "[data-region='dim-cal-types'] input[data-key='category']" "css_element" should exist
+    And "//a[contains(@href, 'calendar/view.php')]" "xpath_element" should not exist
     When I click on "//div[@data-region='dim-cal-grid']//a[@data-cal-pop][contains(normalize-space(.), 'Public open day')]" "xpath_element"
     Then I should see "Bring a pen" in the "[data-region='dim-cal-description']" "css_element"
     And I press the escape key
@@ -55,7 +56,8 @@ Feature: A visitor sees the public categories' events on the theme's calendar on
     Given the following config values are set as admin:
       | calendarpublic | 1 | theme_dimensions |
     And I visit "/theme/dimensions/calendar.php?month=2027-03"
-    When I click on "[data-region='dim-cal-chips'] [data-key='category']" "css_element"
+    When I click on "[data-action='dim-cal-types']" "css_element"
+    And I click on "[data-region='dim-cal-types'] input[data-key='category']" "css_element"
     Then I should not see "Public open day" in the "[data-region='dim-cal-grid']" "css_element"
     And I should see "Open congress" in the "[data-region='dim-cal-grid']" "css_element"
     And the url should match "keys%5B%5D=open|keys\[\]=open"

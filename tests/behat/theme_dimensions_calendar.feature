@@ -1,5 +1,5 @@
 @theme @theme_dimensions @theme_dimensions_calendar
-Feature: The theme's calendar page shows a month with spanning bars, key chips, a category tree and a saved state
+Feature: The theme's calendar page shows a month with spanning bars, event types, a category tree and a saved state
   In order to see what my month holds at a glance
   As somebody studying on a Dimensions site
   I need each multi-day event drawn once, the keys and categories to narrow it, and my choices kept
@@ -58,14 +58,21 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And "[data-region='dim-cal-server']" "css_element" should not be visible
 
   @javascript
-  Scenario: A key chip switched off hides its key
+  Scenario: An event type unchecked in the dropdown hides its key, and "Clear filters" brings it back
     Given I log in as "student1"
     And I visit "/theme/dimensions/calendar.php?month=2027-03"
-    And "[data-region='dim-cal-chips'] [data-key='site'][aria-pressed='true']" "css_element" should exist
-    When I click on "[data-region='dim-cal-chips'] [data-key='site']" "css_element"
-    Then "[data-region='dim-cal-chips'] [data-key='site'][aria-pressed='false']" "css_element" should exist
+    And I should see "All" in the "[data-action='dim-cal-types']" "css_element"
+    And "[data-action='dim-cal-clear']" "css_element" should not exist
+    When I click on "[data-action='dim-cal-types']" "css_element"
+    And "[data-region='dim-cal-types'] .dim-cal-key--site .dim-cal__chipcount" "css_element" should exist
+    And I click on "[data-region='dim-cal-types'] input[data-key='site']" "css_element"
+    Then "[data-region='dim-cal-types'] .dim-cal-key--site .dim-cal__chipcount" "css_element" should not exist
+    And I should see "7 of 8" in the "[data-action='dim-cal-types']" "css_element"
     And I should not see "Platform maintenance" in the "[data-region='dim-cal-grid']" "css_element"
     And I should see "Read chapter four" in the "[data-region='dim-cal-grid']" "css_element"
+    And I click on "[data-action='dim-cal-clear']" "css_element"
+    And I should see "Platform maintenance" in the "[data-region='dim-cal-grid']" "css_element"
+    And "[data-action='dim-cal-clear']" "css_element" should not exist
 
   @javascript
   Scenario: The category tree narrows the month to a category
@@ -81,10 +88,11 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
   Scenario: The keys and filters a reader leaves are there on the next visit
     Given I log in as "student1"
     And I visit "/theme/dimensions/calendar.php?month=2027-03"
-    And I click on "[data-region='dim-cal-chips'] [data-key='site']" "css_element"
-    And "[data-region='dim-cal-chips'] [data-key='site'][aria-pressed='false']" "css_element" should exist
+    And I click on "[data-action='dim-cal-types']" "css_element"
+    And I click on "[data-region='dim-cal-types'] input[data-key='site']" "css_element"
+    And "[data-region='dim-cal-types'] .dim-cal-key--site .dim-cal__chipcount" "css_element" should not exist
     When I visit "/theme/dimensions/calendar.php?month=2027-03"
-    Then "[data-region='dim-cal-chips'] [data-key='site'][aria-pressed='false']" "css_element" should exist
+    Then I should see "7 of 8" in the "[data-action='dim-cal-types']" "css_element"
     And I should not see "Platform maintenance" in the "[data-region='dim-cal-grid']" "css_element"
 
   @javascript
@@ -173,16 +181,16 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And ".dim-cal__drawer--sheet[data-region='dim-cal-day']" "css_element" should exist
     And I should see "Other area meeting" in the "[data-region='dim-cal-day']" "css_element"
 
-  Scenario: Without JavaScript the month is an agenda, with core's calendar a link away
+  Scenario: Without JavaScript the month is an agenda, with no link to core's calendar view
     Given I log in as "student1"
     When I visit "/theme/dimensions/calendar.php?month=2027-03"
     Then I should see "Spring seminar" in the "[data-region='dim-cal-agenda']" "css_element"
     And I should see "Platform maintenance" in the "[data-region='dim-cal-agenda']" "css_element"
     And I should see "Other area meeting" in the "[data-region='dim-cal-agenda']" "css_element"
-    And "Classic calendar" "link" should exist in the "[data-region='dim-cal-agenda']" "css_element"
+    And "//a[contains(@href, 'calendar/view.php')]" "xpath_element" should not exist in the "[data-region='dim-cal']" "css_element"
 
-  # Core's month and day views lead to the page (docs/calendar/PROPOSAL.md section 15): the decision is PHPUnit's
-  # (tests/local/calendar/coreview_test.php), these are the redirect itself.
+  # Core's calendar leads to the page, whatever its view (docs/calendar/PROPOSAL.md sections 15 and 27): the decision
+  # is PHPUnit's (tests/local/calendar/coreview_test.php), these are the redirect itself.
   Scenario: Core's month view lands on the theme's page, on the month its address named
     Given I log in as "student1"
     When I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
@@ -196,18 +204,11 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     Then the url should match "day=2027-03-09"
     And I should see "Mentoring session" in the "[data-region='dim-cal-day']" "css_element"
 
-  Scenario: The page's classic calendar link reaches core's calendar, which a reload keeps until the page is opened again
+  Scenario: Core's upcoming view lands on the theme's page too
     Given I log in as "student1"
-    And I visit "/theme/dimensions/calendar.php?month=2027-03"
-    When I click on "Classic calendar" "link" in the "[data-region='dim-cal-agenda']" "css_element"
-    Then the url should match "calendar/view\.php"
-    And I reload the page
-    And the url should match "calendar/view\.php"
-    And I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
-    And the url should match "calendar/view\.php"
-    And I visit "/theme/dimensions/calendar.php?month=2027-03"
-    And I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
-    And the url should match "month=2027-03"
+    When I visit "/calendar/view.php?view=upcoming&cal_d=1&cal_m=3&cal_y=2027"
+    Then the url should match "month=2027-03"
+    And I should see "Spring seminar" in the "[data-region='dim-cal-agenda']" "css_element"
 
   Scenario: With the setting off core's month view answers as it always did
     Given the following config values are set as admin:

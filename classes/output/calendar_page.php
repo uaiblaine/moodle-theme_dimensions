@@ -41,7 +41,7 @@ use theme_dimensions\local\landingfields;
  *
  * Two layers in one template. The server's layer works without JavaScript: the toolbar's previous, next and today
  * are links, the key chips, the category and the "More" filters are one GET form, and the month's items are a
- * plain agenda grouped by day under a notice linking core's calendar. The client's layer is the mount node of
+ * plain agenda grouped by day under a notice. The client's layer is the mount node of
  * `calendar/Calendar`, whose props embed the range's answer for the month grid ({@see range::answer()}, computed
  * once by {@see page::handle()}), so the first paint asks for nothing; the component hides the server's layer
  * when it has drawn its own.
@@ -56,9 +56,8 @@ use theme_dimensions\local\landingfields;
  * page's footer links core's iCal export where core's calendar offers it (stage C5).
  *
  * In its visitor mode ({@see page::handle()}'s public calendar) the page draws the visitor's two keys and nothing that
- * needs a session or a login: no category, no "More" filters, no link to core's calendar (which asks a visitor to log
- * in), no editing and no export, and the mount names the visitor's shell, {@see COMPONENT_PUBLIC}, whose props carry no
- * tree, no field options, no editing answers and no address of core's calendar.
+ * needs a session or a login: no category, no "More" filters, no editing and no export, and the mount names the
+ * visitor's shell, {@see COMPONENT_PUBLIC}, whose props carry no tree, no field options and no editing answers.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -85,8 +84,6 @@ class calendar_page implements renderable, templatable {
         'calendar_categorytree',
         'calendar_city',
         'calendar_cityany',
-        'calendar_classic',
-        'calendar_classicday',
         'calendar_clearfilters',
         'calendar_close',
         'calendar_colourby',
@@ -103,6 +100,9 @@ class calendar_page implements renderable, templatable {
         'calendar_delete',
         'calendar_descriptionloading',
         'calendar_edit',
+        'calendar_eventtypes',
+        'calendar_eventtypes_all',
+        'calendar_eventtypes_some',
         'calendar_filtercount',
         'calendar_join_free',
         'calendar_join_key',
@@ -135,6 +135,7 @@ class calendar_page implements renderable, templatable {
         'calendar_prevmonth',
         'calendar_prevweek',
         'calendar_recursive',
+        'calendar_selectall',
         'calendar_span',
         'calendar_timed',
         'calendar_title',
@@ -358,7 +359,6 @@ class calendar_page implements renderable, templatable {
             ],
             'urls' => [
                 'page' => page::url()->out(false),
-                'calendar' => (new \core\url('/calendar/view.php'))->out(false),
                 'home' => (new \core\url('/'))->out(false),
             ],
             // Core's own answers ({@see editing}): whether core's calendar shows this viewer "New event", and the
@@ -527,7 +527,6 @@ class calendar_page implements renderable, templatable {
         return $this->toolbar($query) + [
             'month' => $this->month,
             'action' => page::url()->out(false),
-            'classicurl' => page::classic($this->month)->out(false),
             'clearurl' => page::url([state::PARAM_MONTH => $this->month] + (new state())->query())->out(false),
             'keys' => $keyrows,
             'categories' => $categories,
