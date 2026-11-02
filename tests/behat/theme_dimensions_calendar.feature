@@ -186,3 +186,38 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And I log in as "student1"
     When I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
     Then the url should match "calendar/view\.php"
+
+  # Core's calendar blocks drawn with the theme's calendar (docs/calendar/PROPOSAL.md section 17): the decision and the
+  # data are PHPUnit's (tests/local/calendar/blocks_test.php, tests/output/core_calendar_renderer_test.php), the arrows
+  # and the keyboard Jest's (js/esm/tests/calendar/block.test.ts). The blocks draw the month of now and the next days,
+  # so these scenarios read dates relative to today rather than March 2027.
+  @javascript
+  Scenario: The month block draws the theme's month: a day leads to the page's drawer, an arrow moves the month in place
+    Given the following "blocks" exist:
+      | blockname      | contextlevel | reference | pagetypepattern | defaultregion |
+      | calendar_month | System       | 1         | my-index        | content       |
+    And I log in as "student1"
+    When I visit "/my/"
+    # The default Dashboard already carries a calendar block in the closed block drawer: read the one this scenario adds.
+    Then "#block-region-content [data-region='dim-calblock-month'].dim-calblock-js" "css_element" should exist
+    And I click on "#block-region-content [data-region='dim-calblock-month'] a[aria-current='date']" "css_element"
+    And the url should match "day=\d{4}-\d{2}-\d{2}"
+    And "[data-region='dim-cal-day']" "css_element" should exist
+    And I visit "/my/"
+    And I click on "(//*[@id='block-region-content']//div[@data-region='dim-calblock-month']//a[@data-action='dim-calblock-nav'])[2]" "xpath_element"
+    And I should see "##first day of next month##%B %Y##" in the "#block-region-content [data-region='dim-calblock-status']" "css_element"
+    And the url should match "/my/"
+
+  Scenario: The upcoming block lists the next events from the theme's calendar and ends with the full calendar
+    Given the following "blocks" exist:
+      | blockname         | contextlevel | reference | pagetypepattern | defaultregion |
+      | calendar_upcoming | System       | 1         | my-index        | content       |
+    And the following "events" exist:
+      | name            | eventtype | timestart          | timeduration |
+      | Upcoming review | site      | ##tomorrow 10:00## | 3600         |
+    And I log in as "student1"
+    When I visit "/my/"
+    Then I should see "Upcoming review" in the "[data-region='dim-calblock-upcoming']" "css_element"
+    And I should not see "Platform maintenance" in the "[data-region='dim-calblock-upcoming']" "css_element"
+    And I click on "Full calendar" "link" in the "[data-region='dim-calblock-upcoming']" "css_element"
+    And the url should match "theme_dimensions/calendar|theme/dimensions/calendar\.php"

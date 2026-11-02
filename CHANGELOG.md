@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Core's calendar blocks drawn with the theme's calendar** (2026100560), stage C3b of `docs/calendar/PROPOSAL.md`.
+  `theme_dimensions\output\core_calendar_renderer` replaces the content of `block_calendar_month` (a mini month with
+  dots per key; a day opens the page's drawer, the arrows move the month in place through the range service) and
+  `block_calendar_upcoming` (the next events by core's own lookahead and count preferences, event courses included,
+  ending in "Full calendar"), drawn by the server from the range classes, so the blocks show only what the page would
+  show the reader and work without JavaScript. Core's output stays on a course page, for a visitor or the guest, on a
+  non-Gregorian calendar and with the new setting `theme_dimensions/calendarblocks` (on by default) switched off.
+  The README says what a renderer cannot reach (the app, the iCal export, block_timeline). PHPUnit, Jest, two Behat
+  scenarios, 28 mutation gates.
 - **Core's calendar month and day views lead to the theme's calendar page** (2026100559), stage C3r of
   `docs/calendar/PROPOSAL.md` (decision D1). `calendar/view.php?view=month|day` answers a 303 to the page with the same
   month, day (the drawer opens on it) and category, decided in the `after_config` callback before core's view does

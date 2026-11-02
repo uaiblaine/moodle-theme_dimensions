@@ -23,8 +23,12 @@
 // the card surface at 3:1). An item reads its colours through three local properties (--dim-cal-tint, -edge,
 // -ink) that its key class points at the key's tokens, and that the client sets to a category's branding pair
 // when the reader colours by category: the pair travels whole, ink with its ground.
+//
+// Core's calendar blocks drawn with the theme's calendar (local\calendar\blocks) are on any page, so their rules are
+// scoped under their own root, .dim-calblock, which declares the same tokens.
 
-body.dim-calendar {
+body.dim-calendar,
+.dim-calblock {
     --dim-cal-site-tint: #{$dim-ds-gray-100};
     --dim-cal-site-edge: #{$dim-ds-gray-600};
     --dim-cal-site-ink: #{$dim-ds-gray-800};
@@ -58,7 +62,8 @@ body.dim-calendar {
 
 // The dark half: a key's fill is its edge mixed into core's raised dark surface, its ink a light primitive lifted
 // until it reads on that fill, its edge lifted until it reads as a mark on the raised surface.
-:root[data-bs-theme="dark"] body.dim-calendar {
+:root[data-bs-theme="dark"] body.dim-calendar,
+:root[data-bs-theme="dark"] .dim-calblock {
     --dim-cal-site-tint: #{mix($dim-ds-gray-600, $dark-surface-raised, 30%)};
     --dim-cal-site-edge: #{dark-readable($dim-ds-gray-600, $dark-surface-raised, 3)};
     --dim-cal-site-ink: #{dark-readable($dim-ds-gray-100, mix($dim-ds-gray-600, $dark-surface-raised, 30%))};
@@ -945,6 +950,187 @@ body.dim-calendar {
         .dim-cal__chip,
         .dim-cal__daynum,
         .dim-cal__line {
+            transition: background-color var(--dim-ds-motion-fast, 150ms) var(--dim-ds-motion-ease, ease);
+        }
+    }
+}
+
+// The calendar blocks: the mini month and the short agenda (docs/calendar/PROPOSAL.md section 17).
+.dim-calblock {
+    color: var(--dim-ds-text-body, var(--bs-body-color));
+
+    // A dot reads its key's edge, the token measured as a mark on both surfaces.
+    @each $key in site, category, course, group, user, activity, other, open, overdue {
+        .dim-cal-key--#{$key} {
+            --dim-cal-edge: var(--dim-cal-#{$key}-edge);
+        }
+    }
+
+    :focus-visible {
+        outline: var(--dim-ds-focus-ring-width, 3px) solid var(--dim-ds-focus-ring, var(--bs-primary));
+        outline-offset: 2px;
+    }
+
+    .dim-calblock__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .25rem;
+        margin-bottom: .5rem;
+    }
+
+    .dim-calblock__caption {
+        color: var(--dim-ds-text-heading, var(--bs-body-color));
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .dim-calblock__nav {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        text-decoration: none;
+    }
+
+    .dim-calblock__nav:hover,
+    .dim-calblock__caption:hover {
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    .dim-calblock__grid {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+
+    .dim-calblock__weekday {
+        padding: .25rem 0;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .75rem;
+        font-weight: 500;
+        text-align: center;
+    }
+
+    .dim-calblock__weekday abbr {
+        text-decoration: none;
+        cursor: default;
+    }
+
+    .dim-calblock__cell {
+        padding: 1px;
+        text-align: center;
+        vertical-align: top;
+    }
+
+    .dim-calblock__day {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 2.25rem;
+        padding: .125rem 0;
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        color: inherit;
+        font-variant-numeric: tabular-nums;
+        text-decoration: none;
+    }
+
+    .dim-calblock__day:hover {
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    .dim-calblock__cell--outside .dim-calblock__day {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+    }
+
+    // Today is the course key's pair inverted: its ink as the ground, its tint as the text, a pair measured at 4.5:1.
+    .dim-calblock__cell--today .dim-calblock__num {
+        border-radius: 50%;
+        background: var(--dim-cal-course-ink);
+        color: var(--dim-cal-course-tint);
+        font-weight: 600;
+    }
+
+    .dim-calblock__num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        font-size: .8125rem;
+    }
+
+    .dim-calblock__dots {
+        display: flex;
+        gap: 2px;
+        align-items: center;
+        min-height: .375rem;
+        font-size: .625rem;
+        line-height: 1;
+    }
+
+    .dim-calblock__dot,
+    .dim-calblock__mark {
+        flex: 0 0 auto;
+        width: .375rem;
+        height: .375rem;
+        border-radius: 50%;
+        background: var(--dim-cal-edge);
+    }
+
+    .dim-calblock__agenda {
+        margin: 0 0 .75rem;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-calblock__item {
+        display: flex;
+        gap: .5rem;
+        align-items: baseline;
+        padding: .375rem 0;
+    }
+
+    .dim-calblock__item + .dim-calblock__item {
+        border-top: 1px solid var(--dim-cal-surface-quiet);
+    }
+
+    .dim-calblock__mark {
+        width: .5rem;
+        height: .5rem;
+    }
+
+    .dim-calblock__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .dim-calblock__name {
+        font-weight: 500;
+        overflow-wrap: anywhere;
+    }
+
+    .dim-calblock__when,
+    .dim-calblock__course {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .8125rem;
+    }
+
+    .dim-calblock__empty {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+    }
+
+    .dim-calblock__full {
+        font-weight: 500;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .dim-calblock__day,
+        .dim-calblock__nav {
             transition: background-color var(--dim-ds-motion-fast, 150ms) var(--dim-ds-motion-ease, ease);
         }
     }

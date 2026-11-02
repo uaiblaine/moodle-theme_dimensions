@@ -289,6 +289,33 @@ php theme/dimensions/cli/build_flavour_css.php --all --dry-run
 With local_page installed, a category page names that category's pages under its hero, as the
 plugin's own rules let the reader see them.
 
+### The calendar blocks
+
+Moodle's *Calendar* (month) and *Upcoming events* blocks show the theme's calendar: a month with a
+dot per event key and a short agenda of the next events, from the same events as the theme's
+calendar page (`/theme/dimensions/calendar.php`), under the keys and filters the reader saved there.
+Each day and event leads to that page. The agenda keeps Moodle's own *Upcoming events look-ahead*
+and *Maximum upcoming events* preferences. On a course page, for a visitor or the guest account, and
+for a calendar type other than the Gregorian, both blocks keep Moodle's own content. The setting
+*Draw the calendar blocks with the theme's calendar* (`theme_dimensions/calendarblocks`, on by
+default) switches this off.
+
+The theme's calendar withholds what Moodle's shows in one case: an event of a category that
+local_unlistedcourses keeps unlisted for the reader. A theme can only change what its pages draw,
+so these keep Moodle's own rules and still show such an event:
+
+- the Moodle App, which reads Moodle's calendar web services directly;
+- the calendar export (iCal, `calendar/export.php`) and its subscription URL;
+- Moodle's own calendar for the upcoming view and for a course's calendar (the theme sends only the
+  site's month and day views to its page);
+- any other client of Moodle's calendar web services;
+- the *Timeline* block, which stays Moodle's own.
+
+Where that difference matters, switch the calendar export off (*Site administration > Appearance >
+Calendar*, untick *Enable calendar export*). A site that switches the theme's blocks off should also
+remove the *Calendar* and *Upcoming events* blocks from the default block regions (the Dashboard and
+the site home), so that every calendar a reader meets follows one set of rules.
+
 
 Requirements
 ------------
