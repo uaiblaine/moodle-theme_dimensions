@@ -257,6 +257,19 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
+     * The week's all-day strip spans the seven day tracks of its row: one grid item, it would otherwise take the first
+     * track alone and squeeze every bar into a day's width.
+     *
+     * @return void
+     */
+    public function test_the_week_strip_spans_the_day_columns(): void {
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__weekstripgrid\s*\{[^}]*grid-column:\s*2\s*/\s*-1;~',
+            $this->scss()
+        );
+    }
+
+    /**
      * The file is compiled into the theme's main SCSS.
      *
      * @return void

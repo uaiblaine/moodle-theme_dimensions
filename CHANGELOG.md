@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The calendar's week view** (2026100562), stage C4 of `docs/calendar/PROPOSAL.md` (decision D4). The view switch
+  offers Month and Week; `view=week` and `week=YYYY-MM-DD` travel in the address as navigation, never as saved state,
+  and any real day names the week holding it on the viewer's first weekday. The week is seven day columns with an
+  all-day strip (multi-day bars, event courses), an hour body laid out like the drawer's (overlapping events side by
+  side, windowed to the week's items, no inner scroll) and a line at now; on a phone it is a seven-day agenda. The
+  public calendar has it too. A list in the address (`?month[]=`, `?view[]=`, `?model[][]=` and the rest) is now
+  dropped like any value outside its vocabulary instead of answering an error page, on the page and in the saved
+  state. Four mutation gates that no longer matched their code are re-pointed. PHPUnit, Jest, two Behat scenarios,
+  42 mutation gates.
 - **A public calendar of public categories** (2026100561), stage CV of `docs/calendar/PROPOSAL.md`. With the new
   setting `theme_dimensions/calendarpublic` (off by default) a visitor who is not logged in opens the theme's calendar
   page in a visitor mode: the category events of categories local_unlistedcourses serves anonymously (every ancestor

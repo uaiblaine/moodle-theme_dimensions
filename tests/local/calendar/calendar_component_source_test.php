@@ -94,8 +94,9 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * No layout is read on the mount path: the one read of the tree is the popover's, when it opens, and the grid is
-     * measured by one ResizeObserver, which watches the rows (the density) and the frame the drawer shares (the phone).
+     * No layout is read on the mount path: the one read of the tree is the popover's, when it opens, and each grid is
+     * measured by one ResizeObserver: the month's watches the rows (the density) and the frame the drawer shares (the
+     * phone), the week's the frame alone.
      *
      * @return void
      */
@@ -117,7 +118,9 @@ final class calendar_component_source_test extends \basic_testcase {
             $popover,
             'Both reads are in the effect of an opening, never of the page\'s mount.'
         );
-        $this->assertSame(1, $observers);
+        $this->assertSame(2, $observers, 'One per grid, never per cell.');
+        $this->assertSame(1, substr_count($this->sources()['WeekGrid.tsx'], 'new ResizeObserver('));
+        $this->assertStringContainsString('const frame = root.current?.parentElement || null;', $this->sources()['WeekGrid.tsx']);
         $grid = $this->sources()['MonthGrid.tsx'];
         $this->assertStringContainsString('new ResizeObserver(', $grid);
         $this->assertStringContainsString('observer.observe(element);', $grid);
@@ -215,9 +218,9 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertSame(1, substr_count($calendar, "writeAddress(withDay(window.location.href, ''), false);"));
         $this->assertSame(0, preg_match('~writeAddress\(withDay\([^;]*, true\)~', $calendar), 'A day never pushes.');
         $this->assertStringContainsString(
-            "writeAddress(address(props.urls.page, month, next, moved ? '' : opened.current || ''), write === 'push');",
+            "writeAddress(inSpan(address(props.urls.page, monthOfSpan(span, select), next, kept), span), write === 'push');",
             $calendar,
-            'A month change drops the day; a change of state keeps it.'
+            'A move drops the day; a change of state keeps it.'
         );
     }
 
@@ -402,11 +405,11 @@ final class calendar_component_source_test extends \basic_testcase {
         );
         $calendar = $this->sources()['Calendar.tsx'];
         $this->assertStringContainsString(
-            "writeAddress(address(props.urls.page, month, next, moved ? '' : opened.current || ''), write === 'push');",
+            "writeAddress(inSpan(address(props.urls.page, monthOfSpan(span, select), next, kept), span), write === 'push');",
             $calendar
         );
-        $this->assertStringContainsString("request(iso.slice(0, 7), state, 'push', iso, focus);", $calendar);
-        $this->assertStringContainsString("request(shown.month, next, 'replace', selected, false);", $calendar);
+        $this->assertStringContainsString("request(spanOf(shown.span.view, iso, firstday), state, 'push', iso, focus);", $calendar);
+        $this->assertStringContainsString("request(shown.span, next, 'replace', selected, false);", $calendar);
     }
 
     /**
@@ -447,5 +450,73 @@ final class calendar_component_source_test extends \basic_testcase {
             $names[1],
             'The renderer hands over what the label reads, and the two the partial prints.'
         );
+    }
+    /**
+     * The week view (stage C4): what each gate of the "C4 week view" block breaks, read where PHPUnit can see it. The
+     * behaviour is Jest's (js/esm/tests/calendar/weeks.test.ts and WeekGrid.test.tsx).
+     *
+     * - The week's days start on the viewer's first weekday, and the address names the view and the week as the server
+     *   reads them back (exactly `view=week`, the month dropped from a week's address).
+     * - The strip holds the bars and the whole-day items; the hour window is the whole week's; the "now" line is drawn
+     *   only inside it, and moves with the time elapsed since the paint.
+     * - Each shell asks for the span's own days, once; a view switch pushes an entry and keeps the open day its span
+     *   holds; the visitor's address carries the span too.
+     * - The week grid's one Tab stop roves, a header past the week's ends fetches the adjacent week, and the phone draws
+     *   the agenda.
+     *
+     * @return void
+     */
+    public function test_the_week_view(): void {
+        $weeks = $this->sources()['weeks.ts'];
+        $this->assertStringContainsString('return shift(iso, -((utc(parts).getUTCDay() - firstday + WEEK) % WEEK));', $weeks);
+        $this->assertStringContainsString(
+            ".filter(([name]) => name !== 'month' && name !== VIEW_PARAM && name !== WEEK_PARAM);",
+            $weeks
+        );
+        $this->assertStringContainsString("if (params.get(VIEW_PARAM) !== 'week') {", $weeks);
+        $this->assertStringContainsString('.filter((entry) => entry.bar || isAllDay(entry.item, zone))', $weeks);
+        $this->assertStringContainsString('window: timed.length ? hourWindow(timed, zone) : null,', $weeks);
+        $this->assertStringContainsString(
+            'if (column < 0 || minutes < window.from * 60 || minutes >= window.to * 60) {',
+            $weeks
+        );
+
+        $grid = $this->sources()['WeekGrid.tsx'];
+        $this->assertStringContainsString(
+            'const line = nowLine(days, (Number(now) || 0) + elapsed, look.zone, plan.window);',
+            $grid
+        );
+        $this->assertStringContainsString('tabIndex={roving && iso !== selected ? -1 : 0}', $grid);
+        $this->assertMatchesRegularExpression(
+            '~if \(days\.includes\(day\)\) \{\s*onSelect\(day\);\s*\} else \{\s*onWeek\(day\);\s*\}~',
+            $grid
+        );
+        $this->assertStringContainsString(
+            "if (phone) {\n        return (\n            <div ref={root} className=\"dim-cal__weekview\"",
+            $grid
+        );
+
+        foreach (['Calendar.tsx', 'PublicCalendar.tsx'] as $shell) {
+            $source = $this->sources()[$shell];
+            $this->assertStringContainsString('const days = spanDays(span, firstday);', $source, $shell . ': its own days.');
+            $this->assertStringContainsString(
+                'const kept = opened.current !== null && (!moved || (switched && days.includes(opened.current)))'
+                    . " ? opened.current : '';",
+                $source,
+                $shell
+            );
+            $this->assertMatchesRegularExpression(
+                "~request\(spanOf\(view, selected, firstday\), (?:state|on), 'push', selected, false\);~",
+                $source
+            );
+            $this->assertStringContainsString('<WeekGrid', $source);
+            $this->assertStringContainsString('<ViewSwitch strings={strings} view={shown.span.view} onView={toView} />', $source);
+        }
+        $this->assertStringContainsString('rangeArgs(days[0], days[days.length - 1], next)', $this->sources()['Calendar.tsx']);
+        $this->assertStringContainsString(
+            'const target = inSpan(publicAddress(props.urls.page, monthOfSpan(span, select), keys, kept), span);',
+            $this->sources()['PublicCalendar.tsx']
+        );
+        $this->assertStringNotContainsString('remember', $this->sources()['weeks.ts'], 'The view is never remembered.');
     }
 }

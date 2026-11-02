@@ -176,4 +176,45 @@ final class state_test extends \advanced_testcase {
         $this->assertSame([], $stray->models);
         $this->assertDebuggingNotCalled();
     }
+
+    /**
+     * A list where one value belongs, or a list among an array's members, is dropped: optional_param() throws for it.
+     *
+     * @return void
+     */
+    public function test_a_list_in_the_address_is_dropped(): void {
+        $_GET = ['categoryid' => '0', 'recursive' => '0', 'city' => 'Natal', 'actiononly' => '1', 'colour' => 'category'];
+        $_GET += ['model' => ['1', '2'], 'keys' => ['site']];
+        $read = state::from_request();
+        $this->assertSame(
+            [false, 'Natal', true, 'category', [1, 2]],
+            [$read->recursive, $read->city, $read->actiononly, $read->colour, array_map('intval', $read->models)],
+            'The control: the scalars and the members are read.'
+        );
+
+        $_GET = [
+            'categoryid' => ['3'],
+            'recursive' => ['0'],
+            'city' => ['Natal'],
+            'actiononly' => ['1'],
+            'colour' => ['category'],
+            'model' => ['1', ['2']],
+            'modality' => [['1']],
+            'keys' => ['site', ['group']],
+        ];
+        $dropped = state::from_request();
+        $this->assertSame(
+            [0, true, '', false, state::COLOUR_KEY, [1], []],
+            [
+                $dropped->categoryid,
+                $dropped->recursive,
+                $dropped->city,
+                $dropped->actiononly,
+                $dropped->colour,
+                array_map('intval', $dropped->models),
+                $dropped->modalities,
+            ]
+        );
+        $this->assertSame(array_values(array_diff(keys::ALL, ['site'])), array_values($dropped->off));
+    }
 }

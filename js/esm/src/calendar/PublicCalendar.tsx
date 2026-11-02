@@ -27,8 +27,10 @@
  *   the page's language.
  * - The latest request wins: a ticket is taken per request and checked after the await. A Pending token
  *   (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - The address has one writer (calendar/history.ts): a month moved pushes an entry, a chip and the open day replace
- *   it; Back and Forward read the address again.
+ * - The month view and the week view (stage C4), as on the logged-in page: what is shown is a span with its answer,
+ *   one call of the service either way (calendar/weeks.ts).
+ * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a chip
+ *   and the open day replace it; Back and Forward read the address again.
  * - A failure loads the address of what was asked for, which the server draws: a visitor is never shown the server's
  *   words.
  * - The description is the answer's own text (decision V2), drawn as text; nothing is asked of core.
@@ -47,7 +49,7 @@ import {fetchOne} from '@moodle/lms/core/ajax';
 import Config from '@moodle/lms/core/config';
 import {redirect} from '@moodle/lms/core/location';
 import Pending from '@moodle/lms/core/pending';
-import {parse, say, shiftMonth} from '../daterange/calendar';
+import {parse} from '../daterange/calendar';
 import DayDrawer from './DayDrawer';
 import {gridWeeks, zone as zoneOf} from './days';
 import EventPopover from './EventPopover';
@@ -61,6 +63,22 @@ import MonthGrid, {PHONE} from './MonthGrid';
 import {itemKey, overlapsOf} from './overlap';
 import {load as loadStrings} from './strings';
 import type {Strings} from './strings';
+import ViewSwitch from './ViewSwitch';
+import WeekGrid from './WeekGrid';
+import {
+    dayIn,
+    inSpan,
+    monthOfSpan,
+    openingOf,
+    readSpan,
+    selectedIn,
+    spanDays,
+    spanKey,
+    spanLabels,
+    spanOf,
+    stepSpan,
+} from './weeks';
+import type {Span, View} from './weeks';
 
 /** The one web service the visitor's calendar calls, answered without a session. */
 export const METHOD = 'theme_dimensions_get_public_calendar_range';
@@ -80,8 +98,11 @@ export type PublicAnswer = Answer & {descriptions: Array<{id: number, text: stri
 /** The page's props, as calendar_page::props() builds them in its visitor mode. */
 export type PublicProps = {
     month: string,
+    view: string,
+    week: string,
     day: string,
     today: string,
+    now: number,
     firstday: number,
     timezone: string,
     answer: PublicAnswer,
@@ -90,8 +111,8 @@ export type PublicProps = {
     urls: {page: string, home: string},
 };
 
-/** What the grid shows: a month and its answer, always together. */
-type Shown = {month: string, answer: PublicAnswer};
+/** What the page shows: a month or a week and its answer, always together. */
+type Shown = {span: Span, answer: PublicAnswer};
 
 /** How a request writes the address. */
 type Write = 'push' | 'replace' | 'none';
@@ -193,15 +214,22 @@ export const emptyPublicAnswer = (days: string[]): PublicAnswer => ({...emptyAns
 const openingDay = (month: string, today: string): string => (today.startsWith(month) ? today : `${month}-01`);
 
 /**
- * The open day an address names, kept only when the month's grid holds it (local\calendar\page::day_from_request()).
+ * The open day an address names, kept only when the span's days hold it (local\calendar\page::day_from_request()).
  *
  * @param {string|null} day The day the address names.
- * @param {string} month The month shown.
- * @param {number} firstday The weekday a week begins on.
+ * @param {Array} days The days shown.
  * @returns {string|null} The day, or null.
  */
-const openableDay = (day: string | null, month: string, firstday: number): string | null =>
-    (day && gridWeeks(month, firstday).flat().includes(day) ? day : null);
+const openableDay = (day: string | null, days: string[]): string | null => (day && days.includes(day) ? day : null);
+
+/**
+ * The span the server's props name: the week when they say so and name one, else the month.
+ *
+ * @param {object} props The server's props.
+ * @returns {object} The span.
+ */
+const propsSpan = (props: PublicProps): Span =>
+    (props.view === 'week' && parse(props.week) ? {view: 'week', week: String(props.week)} : {view: 'month', month: props.month});
 
 /**
  * The public calendar.
@@ -213,10 +241,10 @@ const PublicCalendar = (props: PublicProps) => {
     const language = document.documentElement.lang || undefined;
     const firstday = Number(props.firstday) || 0;
     const [strings, setStrings] = useState<Strings | null>(null);
-    const [shown, setShown] = useState<Shown>({month: props.month, answer: props.answer});
+    const [shown, setShown] = useState<Shown>(() => ({span: propsSpan(props), answer: props.answer}));
     const [on, setOn] = useState<Key[]>(() => visitorKeys(props.keys));
-    const [openday, setOpenday] = useState<string | null>(() => openableDay(props.day, props.month, firstday));
-    const [selected, setSelected] = useState<string>(() => openday || openingDay(props.month, props.today));
+    const [openday, setOpenday] = useState<string | null>(() => openableDay(props.day, spanDays(propsSpan(props), firstday)));
+    const [selected, setSelected] = useState<string>(() => openday || openingOf(propsSpan(props), props.today));
     const [focusing, setFocusing] = useState<number>(0);
     const [dayfocus, setDayfocus] = useState<number>(0);
     const [popped, setPopped] = useState<Popped | null>(null);
@@ -228,11 +256,13 @@ const PublicCalendar = (props: PublicProps) => {
     const mounting = useRef<Pending | null>(null);
     const opened = useRef<string | null>(openday);
     opened.current = openday;
-    const showing = useRef<string>(shown.month);
-    showing.current = shown.month;
+    const showing = useRef<Span>(shown.span);
+    showing.current = shown.span;
 
     const zone = useMemo(() => zoneOf(props.timezone, language), [props.timezone, language]);
-    const weeks = useMemo(() => gridWeeks(shown.month, firstday), [shown.month, firstday]);
+    const month = monthOfSpan(shown.span, selected);
+    const weeks = useMemo(() => gridWeeks(month, firstday), [month, firstday]);
+    const days = useMemo(() => spanDays(shown.span, firstday), [shown.span, firstday]);
     const placed = useMemo(() => place(shown.answer.events, zone), [shown.answer, zone]);
     const texts = useMemo(
         () => new Map((shown.answer.descriptions || []).map((entry) => [entry.id, entry.text])),
@@ -257,10 +287,10 @@ const PublicCalendar = (props: PublicProps) => {
          */
         const onPop = (): void => {
             const read = readPublicAddress(window.location.href);
-            const month = read.month || props.month;
-            const day = openableDay(new URL(window.location.href).searchParams.get(DAY_PARAM), month, firstday);
+            const span = readSpan(window.location.href, firstday, read.month || props.month);
+            const day = openableDay(new URL(window.location.href).searchParams.get(DAY_PARAM), spanDays(span, firstday));
             setOn(read.on);
-            request(month, read.on, 'none', day || openingDay(month, props.today), false);
+            request(span, read.on, 'none', day || openingOf(span, props.today), false);
             setOpenday(day);
         };
         window.addEventListener('popstate', onPop);
@@ -292,28 +322,33 @@ const PublicCalendar = (props: PublicProps) => {
     }, [shown]);
 
     /**
-     * Ask for a month and the keys on, and show the answer if it is still the latest request's.
+     * Ask for a span and the keys on, and show the answer if it is still the latest request's.
      *
-     * @param {string} month The month, YYYY-MM.
+     * @param {object} span The month or the week.
      * @param {Array} keys The keys on.
      * @param {string} write How the address is written: push, replace or none.
-     * @param {string} select The day to select once the month is shown.
+     * @param {string} select The day to select once the span is shown.
      * @param {boolean} focus Whether the focus follows the selected day.
      * @returns {Promise} Settles once the answer is taken or dropped.
      */
-    const request = async(month: string, keys: Key[], write: Write, select: string, focus: boolean): Promise<void> => {
+    const request = async(span: Span, keys: Key[], write: Write, select: string, focus: boolean): Promise<void> => {
         const seq = ++ticket.current;
-        const moved = month !== showing.current;
+        const days = spanDays(span, firstday);
+        // A move closes the drawer and the popover; a view switch keeps the open day its span holds.
+        const moved = spanKey(span) !== spanKey(showing.current);
+        const switched = span.view !== showing.current.view;
+        const kept = opened.current !== null && (!moved || (switched && days.includes(opened.current))) ? opened.current : '';
         if (moved) {
-            setOpenday(null);
             setPopped(null);
+            if (kept === '') {
+                setOpenday(null);
+            }
         }
-        const target = publicAddress(props.urls.page, month, keys, moved ? '' : opened.current || '');
+        const target = inSpan(publicAddress(props.urls.page, monthOfSpan(span, select), keys, kept), span);
         if (write !== 'none') {
             writeAddress(target, write === 'push');
         }
         const pending = new Pending('theme_dimensions/calendar:range');
-        const days = gridWeeks(month, firstday).flat();
         try {
             const answer = keys.length
                 ? await ask(publicArgs(days[0], days[days.length - 1], keys))
@@ -324,7 +359,7 @@ const PublicCalendar = (props: PublicProps) => {
             }
             painting.current?.resolve();
             painting.current = pending;
-            setShown({month: month, answer: answer});
+            setShown({span: span, answer: answer});
             setSelected(select);
             if (focus) {
                 setFocusing((tick) => tick + 1);
@@ -347,18 +382,30 @@ const PublicCalendar = (props: PublicProps) => {
     const toggle = (key: Key): void => {
         const next = on.includes(key) ? on.filter((other) => other !== key) : visitorKeys([...on, key]);
         setOn(next);
-        request(shown.month, next, 'replace', selected, false);
+        request(shown.span, next, 'replace', selected, false);
     };
 
     /**
-     * Go to the month a day is in, selecting the day.
+     * Go to the month or the week a day is in, in the view shown, selecting the day.
      *
      * @param {string} iso The day.
      * @param {boolean} focus Whether the focus follows.
      * @returns {void}
      */
     const toDay = (iso: string, focus: boolean): void => {
-        request(iso.slice(0, 7), on, 'push', iso, focus);
+        request(spanOf(shown.span.view, iso, firstday), on, 'push', iso, focus);
+    };
+
+    /**
+     * Switch the view, keeping the selected day: the week holding it, or its month.
+     *
+     * @param {string} view The view.
+     * @returns {void}
+     */
+    const toView = (view: View): void => {
+        if (view !== shown.span.view) {
+            request(spanOf(view, selected, firstday), on, 'push', selected, false);
+        }
     };
 
     /**
@@ -484,17 +531,18 @@ const PublicCalendar = (props: PublicProps) => {
     shown.answer.events.forEach((item) => {
         counts[item.key] = (counts[item.key] || 0) + 1;
     });
-    const caption = say(`${shown.month}-01`, {month: 'long', year: 'numeric'}, language);
+    const week = shown.span.view === 'week';
+    const labels = spanLabels(shown.span, days, strings, language);
     const dots = phone ? new Map(shown.answer.days.map((entry) => [entry.date, dayDots(entry.counts)])) : null;
     const poppedentry = popped ? placed.find((entry) => itemKey(entry.item) === popped.key) || null : null;
-    const drawn = openday !== null && weeks.flat().includes(openday) ? openday : null;
+    const drawn = dayIn(openday, days);
     /**
-     * Move a month from the selected day, the focus left where it is.
+     * Move a month or a week from the selected day, the focus left where it is.
      *
-     * @param {number} offset Whole months.
+     * @param {number} offset Whole months or weeks.
      * @returns {void}
      */
-    const step = (offset: number): void => toDay(shiftMonth(parse(selected) ? selected : `${shown.month}-01`, offset), false);
+    const step = (offset: number): void => toDay(stepSpan(shown.span, parse(selected) ? selected : days[0], offset), false);
 
     return (
         <div
@@ -513,7 +561,7 @@ const PublicCalendar = (props: PublicProps) => {
                     type="button"
                     className="btn btn-secondary dim-cal__step"
                     data-action="dim-cal-prev"
-                    aria-label={strings.calendar_prevmonth}
+                    aria-label={labels.previous}
                     onClick={() => step(-1)}
                 >
                     <i className="fa fa-chevron-left" aria-hidden="true"></i>
@@ -522,16 +570,14 @@ const PublicCalendar = (props: PublicProps) => {
                     type="button"
                     className="btn btn-secondary dim-cal__step"
                     data-action="dim-cal-next"
-                    aria-label={strings.calendar_nextmonth}
+                    aria-label={labels.next}
                     onClick={() => step(1)}
                 >
                     <i className="fa fa-chevron-right" aria-hidden="true"></i>
                 </button>
-                <p className="dim-cal__caption" id={CAPTION} aria-live="polite" data-region="dim-cal-caption">{caption}</p>
+                <p className="dim-cal__caption" id={CAPTION} aria-live="polite" data-region="dim-cal-caption">{labels.caption}</p>
                 <span className="dim-cal__spacer"></span>
-                <div className="dim-cal__views" role="group" aria-label={strings.calendar_view}>
-                    <span className="dim-cal__view dim-cal__view--active" aria-current="true">{strings.calendar_viewmonth}</span>
-                </div>
+                <ViewSwitch strings={strings} view={shown.span.view} onView={toView} />
             </div>
             <div className="dim-cal__toolbar">
                 <KeyChips
@@ -546,21 +592,39 @@ const PublicCalendar = (props: PublicProps) => {
                 className={`dim-cal__body${drawn !== null && !phone ? ' dim-cal__body--drawer' : ''}`}
                 data-region="dim-cal-body"
             >
-                <MonthGrid
-                    look={look}
-                    month={shown.month}
-                    weeks={weeks}
-                    placed={placed}
-                    today={props.today}
-                    selected={weeks.flat().includes(selected) ? selected : openingDay(shown.month, props.today)}
-                    focusing={focusing}
-                    captionid={CAPTION}
-                    dots={dots}
-                    onSelect={selectDay}
-                    onMonth={(iso) => toDay(iso, true)}
-                    onOpen={openDay}
-                    onWidth={(width) => setPhone(width < PHONE)}
-                />
+                {week ? (
+                    <WeekGrid
+                        look={look}
+                        days={days}
+                        placed={placed}
+                        today={props.today}
+                        now={props.now}
+                        selected={selectedIn(selected, shown.span, days, props.today)}
+                        focusing={focusing}
+                        captionid={CAPTION}
+                        phone={phone}
+                        onSelect={selectDay}
+                        onWeek={(iso) => toDay(iso, true)}
+                        onOpen={openDay}
+                        onWidth={(width) => setPhone(width < PHONE)}
+                    />
+                ) : (
+                    <MonthGrid
+                        look={look}
+                        month={month}
+                        weeks={weeks}
+                        placed={placed}
+                        today={props.today}
+                        selected={weeks.flat().includes(selected) ? selected : openingDay(month, props.today)}
+                        focusing={focusing}
+                        captionid={CAPTION}
+                        dots={dots}
+                        onSelect={selectDay}
+                        onMonth={(iso) => toDay(iso, true)}
+                        onOpen={openDay}
+                        onWidth={(width) => setPhone(width < PHONE)}
+                    />
+                )}
                 {drawn !== null ? (
                     <DayDrawer
                         look={look}

@@ -294,8 +294,9 @@ plugin's own rules let the reader see them.
 Moodle's *Calendar* (month) and *Upcoming events* blocks show the theme's calendar: a month with a
 dot per event key and a short agenda of the next events, from the same events as the theme's
 calendar page (`/theme/dimensions/calendar.php`), under the keys and filters the reader saved there.
-Each day and event leads to that page. The agenda keeps Moodle's own *Upcoming events look-ahead*
-and *Maximum upcoming events* preferences. On a course page, for a visitor or the guest account, and
+Each day and event leads to that page. The page itself shows a month or a week (the switch above the grid,
+`?view=week`), and a visitor of the public calendar gets both. The agenda keeps Moodle's own *Upcoming events
+look-ahead* and *Maximum upcoming events* preferences. On a course page, for a visitor or the guest account, and
 for a calendar type other than the Gregorian, both blocks keep Moodle's own content. The setting
 *Draw the calendar blocks with the theme's calendar* (`theme_dimensions/calendarblocks`, on by
 default) switches this off.

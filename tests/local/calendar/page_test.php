@@ -98,7 +98,7 @@ final class page_test extends \advanced_testcase {
         $this->setUser(self::getDataGenerator()->create_user());
         $_GET = ['month' => '2027-02'];
         $this->assertSame('2027-02', page::month_from_request());
-        foreach (['2027-13', '27-02', '2027-2', 'x', '0999-01'] as $bad) {
+        foreach (['2027-13', '27-02', '2027-2', 'x', '0999-01', "2027-02\n"] as $bad) {
             $_GET = ['month' => $bad];
             $this->assertSame(page::today()->format('Y-m'), page::month_from_request(), $bad);
         }
@@ -182,6 +182,7 @@ final class page_test extends \advanced_testcase {
             'a date without its zeros' => ['2026-11', '2026-11-7', ''],
             'a timestamp' => ['2026-11', '1794787200', ''],
             'not a day' => ['2026-11', 'tomorrow', ''],
+            'a day with a trailing newline' => ['2026-11', "2026-11-20\n", ''],
             'nothing' => ['2026-11', '', ''],
         ];
     }
@@ -281,5 +282,321 @@ final class page_test extends \advanced_testcase {
         $this->assertNull($scope->tree, 'The scope is the whole calendar.');
         [, $missing] = page::scope_for(new state([], 999999));
         $this->assertSame(0, $missing->categoryid);
+    }
+
+    /**
+     * Weeks the address names and the first day the page keeps, with the month it falls back on.
+     *
+     * February 2027 opens on a Monday, so its 1st's week begins on 31 January for a reader whose week begins on Sunday.
+     *
+     * @return array
+     */
+    public static function weeks(): array {
+        return [
+            'a Wednesday, Sunday first' => ['2026-11-18', 0, '2027-02', '2026-11-15'],
+            'a Wednesday, Monday first' => ['2026-11-18', 1, '2027-02', '2026-11-16'],
+            'the first day itself' => ['2026-11-15', 0, '2027-02', '2026-11-15'],
+            'a Sunday, Monday first' => ['2026-11-15', 1, '2027-02', '2026-11-09'],
+            'across a month' => ['2026-11-01', 1, '2027-02', '2026-10-26'],
+            'across a year' => ['2027-01-01', 0, '2027-02', '2026-12-27'],
+            'a Saturday first' => ['2026-11-18', 6, '2027-02', '2026-11-14'],
+            'a date without its zeros' => ['2026-11-7', 0, '2027-02', '2027-01-31'],
+            'a day that does not exist' => ['2026-02-30', 0, '2027-02', '2027-01-31'],
+            'a year before the month\'s bounds' => ['1899-12-31', 0, '2027-02', '2027-01-31'],
+            'a year after them' => ['3000-01-01', 0, '2027-02', '2027-01-31'],
+            'not a day' => ['next', 0, '2027-02', '2027-01-31'],
+            'a day with a trailing newline' => ["2026-11-18\n", 0, '2027-02', '2027-01-31'],
+            'nothing, Monday first' => ['', 1, '2027-02', '2027-02-01'],
+        ];
+    }
+
+    /**
+     * A real day names the week holding it, written as its first day on the viewer's first weekday; anything else is
+     * the week holding the month's opening day.
+     *
+     * @param string $week The week the address names.
+     * @param int $firstday The first weekday.
+     * @param string $month The month the address names.
+     * @param string $start The week's first day the page keeps.
+     * @return void
+     */
+    #[DataProvider('weeks')]
+    public function test_the_week_is_snapped_to_its_first_day(string $week, int $firstday, string $month, string $start): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $_GET = [page::PARAM_WEEK => $week];
+        $this->assertSame($start, page::week_from_request($month, $firstday));
+        $this->assertSame([$start, (new \DateTimeImmutable($start))->modify('+6 days')->format('Y-m-d')], page::week($start));
+    }
+
+    /**
+     * The view is the week for exactly `week`, the month for anything else, a list included: dropped, never refused.
+     *
+     * @return void
+     */
+    public function test_the_view_is_dropped_outside_its_vocabulary(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $_GET = [page::PARAM_VIEW => 'week'];
+        $this->assertSame(page::VIEW_WEEK, page::view_from_request(), 'The control: the week is read.');
+        foreach (['month', 'Week', 'weeks', 'day', '', '1'] as $other) {
+            $_GET = [page::PARAM_VIEW => $other];
+            $this->assertSame(page::VIEW_MONTH, page::view_from_request(), $other);
+        }
+        $_GET = [];
+        $this->assertSame(page::VIEW_MONTH, page::view_from_request());
+    }
+
+    /**
+     * A list where one value is expected is dropped, never an exception: optional_param() would throw, and the public
+     * calendar would answer a visitor with an error page.
+     *
+     * @return void
+     */
+    public function test_a_list_for_the_view_or_the_week_is_dropped(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $_GET = [page::PARAM_VIEW => ['week'], page::PARAM_WEEK => ['2026-11-18'], 'month' => '2027-02'];
+        $this->assertSame(page::VIEW_MONTH, page::view_from_request());
+        $this->assertSame('2027-01-31', page::week_from_request('2027-02', 0));
+        $this->assertSame(['month' => '2027-02'], page::forwarded_params());
+        $_GET = [page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-18'];
+        $this->assertSame('2026-11-15', page::week_from_request('2027-02', 0), 'The control: one value is read.');
+    }
+
+    /**
+     * A list for the month or the open day is dropped too, in the readers and in the script's forward: optional_param()
+     * would throw, and the public calendar would answer a visitor with an error page.
+     *
+     * @return void
+     */
+    public function test_a_list_for_the_month_or_the_day_is_dropped(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $_GET = ['month' => '2027-02', page::PARAM_DAY => '2027-02-10'];
+        $this->assertSame('2027-02', page::month_from_request(), 'The control: one value is read.');
+        $this->assertSame('2027-02-10', page::day_from_request('2027-02', 0));
+        $this->assertSame(['month' => '2027-02', page::PARAM_DAY => '2027-02-10'], page::forwarded_params());
+        $_GET = ['month' => ['2027-02'], page::PARAM_DAY => ['2027-02-10']];
+        $this->assertSame(page::today()->format('Y-m'), page::month_from_request());
+        $this->assertSame('', page::day_from_request('2027-02', 0));
+        $this->assertSame([], page::forwarded_params());
+    }
+
+    /**
+     * A list for the page's address reaches an account's page as the bare month, never an error.
+     *
+     * @return void
+     */
+    public function test_an_account_is_served_the_page_for_a_list_in_the_address(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        $this->resetAfterTest();
+        $CFG->routerconfigured = false;
+        $this->as_viewer(self::getDataGenerator()->create_user());
+        $_GET = [
+            'month' => ['2027-02'],
+            page::PARAM_DAY => ['2027-02-10'],
+            page::PARAM_VIEW => ['week'],
+            page::PARAM_WEEK => ['2027-02-10'],
+            'city' => ['Natal'],
+            'categoryid' => ['3'],
+        ];
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $props = page::handle()->page->props();
+        $this->assertSame(
+            [page::VIEW_MONTH, page::today()->format('Y-m'), ''],
+            [$props['view'], $props['month'], $props['day']]
+        );
+
+        self::forget_calendar();
+        $_GET = ['month' => '2027-02', page::PARAM_DAY => '2027-02-10'];
+        $_GET += [page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2027-02-10'];
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $props = page::handle()->page->props();
+        $this->assertSame(
+            [page::VIEW_WEEK, '2027-02', '2027-02-10'],
+            [$props['view'], $props['month'], $props['day']],
+            'The control.'
+        );
+    }
+
+    /**
+     * What the request shows in each view: the window is the week's seven days or the month's grid, the open day kept
+     * inside it alone, and the week view's month the open day's, else the week's first day's.
+     *
+     * @return void
+     */
+    public function test_the_span_of_each_view(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $_GET = [page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-12-02', page::PARAM_DAY => '2026-12-02'];
+        $this->assertSame([page::VIEW_WEEK, '2026-12', '2026-11-29', '2026-12-02', '2026-11-29', '2026-12-05'], page::span(0));
+        $_GET = [page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-12-02'];
+        $this->assertSame([page::VIEW_WEEK, '2026-11', '2026-11-29', '', '2026-11-29', '2026-12-05'], page::span(0));
+        $_GET = ['month' => '2027-05', page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-12-02'];
+        $_GET[page::PARAM_DAY] = '2026-12-04';
+        $this->assertSame(
+            [page::VIEW_WEEK, '2026-12', '2026-11-29', '2026-12-04', '2026-11-29', '2026-12-05'],
+            page::span(0),
+            'The week decides the window and the month, whatever month the address names.'
+        );
+        $_GET = ['month' => '2026-11', page::PARAM_WEEK => '2026-12-02', page::PARAM_DAY => '2026-11-17'];
+        $this->assertSame(
+            [page::VIEW_MONTH, '2026-11', '', '2026-11-17', '2026-11-01', '2026-12-05'],
+            page::span(0),
+            'Without the view the week is ignored: the month\'s grid.'
+        );
+        window::from_iso('2026-11-29', '2026-12-05', new \DateTimeZone('UTC'));
+    }
+
+    /**
+     * Open days in the week view, for the week of 15 November 2026 from Sunday, with their month-view control.
+     *
+     * @return array
+     */
+    public static function week_days(): array {
+        return [
+            'the week\'s first day' => ['2026-11-15', '2026-11-15'],
+            'its last day' => ['2026-11-21', '2026-11-21'],
+            'the day after it' => ['2026-11-22', ''],
+            'the day before it' => ['2026-11-14', ''],
+            'a day that does not exist' => ['2026-11-31', ''],
+        ];
+    }
+
+    /**
+     * The open day is kept inside the week alone in the week view; the same day may be inside the month's grid.
+     *
+     * @param string $day The day the address names.
+     * @param string $kept What the week view keeps.
+     * @return void
+     */
+    #[DataProvider('week_days')]
+    public function test_the_open_day_is_kept_inside_the_week_only(string $day, string $kept): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $_GET = [page::PARAM_DAY => $day];
+        $this->assertSame($kept, page::day_from_request('2026-11', 0, '2026-11-15'));
+        if ($day === '2026-11-22' || $day === '2026-11-14') {
+            $this->assertSame('', page::day_from_request('2026-12', 0, '2026-11-15'), 'The week decides, not the month.');
+        }
+        if ($day === '2026-11-22') {
+            $this->assertSame($day, page::day_from_request('2026-11', 0), 'The control: the month\'s grid holds it.');
+        }
+    }
+
+    /**
+     * The view and the week are navigation, never state: an address naming only them and the day is still bare.
+     *
+     * @return void
+     */
+    public function test_the_view_and_the_week_are_not_state(): void {
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $this->assertNotContains(page::PARAM_VIEW, state::STATE_PARAMS);
+        $this->assertNotContains(page::PARAM_WEEK, state::STATE_PARAMS);
+        $_GET = [page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-15', page::PARAM_DAY => '2026-11-17'];
+        $this->assertNull(state::from_request());
+        $_GET[state::PARAM_CITY] = 'Natal';
+        $this->assertNotNull(state::from_request(), 'The control: a state parameter names the state.');
+    }
+
+    /**
+     * The script's forward carries the week view and a real week as written, without a lookup; the page snaps the
+     * week; another view and a malformed week are dropped.
+     *
+     * @return void
+     */
+    public function test_the_forward_carries_the_view_and_the_week(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $_GET = [page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-18', page::PARAM_DAY => '2026-11-17'];
+        $before = (int) $DB->perf_get_reads();
+        $params = page::forwarded_params();
+        $this->assertSame(0, (int) $DB->perf_get_reads() - $before);
+        $this->assertSame(
+            [page::PARAM_DAY => '2026-11-17', page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-18'],
+            $params,
+            'Forwarded as written, not snapped.'
+        );
+
+        $_GET = [page::PARAM_VIEW => 'month', page::PARAM_WEEK => '2026-11-31'];
+        $this->assertSame([], page::forwarded_params());
+    }
+
+    /**
+     * The page's own address for each view: the month alone, or the view and the week, the open day after them.
+     *
+     * @return void
+     */
+    public function test_the_address_of_each_view(): void {
+        $this->assertSame(
+            [page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-15', page::PARAM_DAY => '2026-11-17'],
+            page::span_params(page::VIEW_WEEK, '2026-11', '2026-11-15', '2026-11-17')
+        );
+        $this->assertSame(['month' => '2026-11'], page::span_params(page::VIEW_MONTH, '2026-11', '', ''));
+    }
+
+    /**
+     * The week view's first paint embeds range::answer() for the week's seven days, and its address keeps the view and
+     * the week (a reload shows the same week); the month view's control embeds the month's grid.
+     *
+     * @return void
+     */
+    public function test_the_week_views_first_paint_is_the_ranges_answer_for_the_week(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        $this->resetAfterTest();
+        $CFG->routerconfigured = false;
+        $generator = self::getDataGenerator();
+        $student = $generator->create_user();
+        $course = $generator->create_course();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $this->setAdminUser();
+        $start = self::month_start();
+        foreach (['Inside the week' => 1, 'The next week' => 8] as $name => $offset) {
+            $generator->create_event([
+                'name' => $name,
+                'eventtype' => 'course',
+                'courseid' => $course->id,
+                'timestart' => $start->modify('+' . $offset . ' days 09:00')->getTimestamp(),
+                'timeduration' => HOURSECS,
+            ]);
+        }
+        $this->as_viewer($student);
+        $firstday = (int) calendar_get_starting_weekday();
+        $asked = $start->modify('+1 day')->format('Y-m-d');
+        $week = page::week_start($asked, $firstday);
+        [$from, $to] = page::week($week);
+
+        $_GET = [page::PARAM_VIEW => 'week', page::PARAM_WEEK => $asked];
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $answer = page::handle();
+        $this->assertNull($answer->redirect);
+        $props = $answer->page->props();
+        $this->assertSame([page::VIEW_WEEK, $week], [$props['view'], $props['week']]);
+        $this->assertSame([$from, $to], [$props['answer']['from'], $props['answer']['to']]);
+        $this->assertSame(['Inside the week'], array_column($props['answer']['events'], 'name'));
+        $url = $GLOBALS['PAGE']->url;
+        $this->assertSame([page::VIEW_WEEK, $week, null], [$url->param('view'), $url->param('week'), $url->param('month')]);
+        self::forget_calendar();
+        $state = new state();
+        $this->assertSame(
+            range::answer(window::from_iso($from, $to), scope::for_viewer(), $state->on(), $state->filters()),
+            $props['answer'],
+            'The answer the service would give for the week.'
+        );
+
+        self::forget_calendar();
+        $_GET = ['month' => $start->format('Y-m')];
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $props = page::handle()->page->props();
+        $this->assertSame([page::VIEW_MONTH, ''], [$props['view'], $props['week']], 'The control: the month view.');
+        $this->assertSame(page::grid($start->format('Y-m'), $firstday)[0], $props['answer']['from']);
+        $this->assertContains('The next week', array_column($props['answer']['events'], 'name'));
     }
 }
