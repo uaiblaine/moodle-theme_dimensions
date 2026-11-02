@@ -330,12 +330,15 @@ const Calendar = (props: Props) => {
         };
     }, []);
 
-    // The server's layer goes in the frame this layer is first painted in, and the mount is settled.
+    // The server's layer goes in the frame this layer is first painted in, and the mount is settled. The page's
+    // root is marked mounted in the same frame: that class retires the placeholder and cancels the stylesheet's
+    // fail-safe, which brings the server's layer back when this module never draws (PROPOSAL section 29).
     useLayoutEffect(() => {
         if (!strings) {
             return;
         }
         const page = root.current?.closest('[data-region="dim-cal"]');
+        page?.classList.add('dim-cal--mounted');
         const server = page?.querySelector<HTMLElement>('[data-region="dim-cal-server"]');
         if (server) {
             server.hidden = true;

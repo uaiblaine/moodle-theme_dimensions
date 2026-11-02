@@ -5,6 +5,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Calendar R1b: the category events you create, and the first paint** (2026100568),
+  `docs/calendar/PROPOSAL.md` section 29. The site view's categories include every category where the viewer may
+  create category events (core's form asks `moodle/category:manage` with doanything; core's view asks it without, so
+  an administrator with no role in a category never saw the events they created). Core's `calendar_categories` session
+  cache is no longer read by the theme (it holds core's narrower answer). The calendar page no longer flashes the
+  no-JavaScript list before the grid: under core's `body.jsenabled` the server's layer is replaced by a placeholder
+  with the grid's footprint until the client marks the root `dim-cal--mounted`, and the list comes back by itself
+  after four seconds if the client never mounts. The gap between the navbar and the calendar's title is halved (83px to
+  41px at 1440x900, measured, section 29.3), and the page carries no block region, block drawer or "Add a block" button
+  (section 29.4: no block loaded, block editing locked, on both the account and the visitor page).
+  PHPUnit, Jest and new mutation gates (R1b block).
 - **The calendar after the owner's review of 2026-11-02** (2026100567), round R1 of `docs/calendar/PROPOSAL.md` (sections 27-28).
   The "Classic calendar" links are gone, with the `classic=1` marker and its session flag: every view of core's
   `calendar/view.php` now leads a real account to the theme's page (the day view to that day's drawer, a course

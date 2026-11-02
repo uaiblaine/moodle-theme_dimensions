@@ -255,11 +255,11 @@ final class scope_test extends \advanced_testcase {
     }
 
     /**
-     * The site view reads core's session cache and never sets it; core's own path does.
+     * The site view neither reads core's session cache nor sets it: core's own path sets it, the scope ignores it.
      *
      * @return void
      */
-    public function test_the_site_view_never_writes_the_session_cache(): void {
+    public function test_the_site_view_neither_reads_nor_writes_the_session_cache(): void {
         global $CFG;
         require_once($CFG->dirroot . '/calendar/lib.php');
         [$student] = $this->tree();
@@ -272,10 +272,53 @@ final class scope_test extends \advanced_testcase {
         $this->assertNotEmpty($sets->categories);
         $this->assertFalse($cache->get('site'), 'The scope computed the set and kept it to itself.');
 
-        // The control: core fills it, and the scope then reads what core wrote.
+        // The control: core fills it, and the scope then ignores what core wrote (a planted value changes nothing).
         \calendar_information::create(self::at(2), SITEID);
         $this->assertNotFalse($cache->get('site'));
-        $this->assertEqualsCanonicalizing($cache->get('site'), scope::for_viewer()->categories);
+        $before = $sets->categories;
+        $cache->set('site', [-1]);
+        $this->assertEqualsCanonicalizing($before, scope::for_viewer()->categories);
+        $this->assertEquals([-1], $cache->get('site'));
+    }
+
+    /**
+     * An event the viewer may create is an event the viewer sees: the site view holds the categories core's create
+     * form offers (moodle/category:manage with doanything), where core's set holds only the categories managed by role.
+     *
+     * @return void
+     */
+    public function test_the_site_view_holds_every_category_the_viewer_may_create_events_in(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $managed = $generator->create_category();
+        $other = $generator->create_category();
+        $student = $generator->create_user();
+        $manager = $generator->create_user();
+        $roleid = $generator->create_role();
+        assign_capability('moodle/category:manage', CAP_ALLOW, $roleid, \context_system::instance()->id);
+        role_assign($roleid, $manager->id, \context_coursecat::instance($managed->id)->id);
+        $CFG->calendar_adminseesall = 0;
+
+        $sites = [];
+        foreach (['admin' => get_admin(), 'manager' => $manager, 'student' => $student] as $name => $user) {
+            $this->as_viewer($user);
+            $core = self::core_sets(\calendar_information::create(self::at(2), SITEID))[3];
+            $sites[$name] = [$core, scope::for_viewer()->categories];
+        }
+        $ids = [(int) $managed->id, (int) $other->id];
+
+        // The administrator holds no role in any category: core's set lacks them, the theme's has both.
+        $this->assertSame([], array_intersect($ids, $sites['admin'][0]));
+        $this->assertEqualsCanonicalizing($ids, array_intersect($ids, $sites['admin'][1]));
+        // A manager by role is in both sets, for the one category only.
+        $this->assertSame([(int) $managed->id], array_values(array_intersect($ids, $sites['manager'][0])));
+        $this->assertEqualsCanonicalizing($sites['manager'][0], $sites['manager'][1]);
+        // A student with no rights gets neither, in either set.
+        $this->assertSame([], array_intersect($ids, $sites['student'][0]));
+        $this->assertSame([], array_intersect($ids, $sites['student'][1]));
+        $this->assertSame(0, $DB->count_records('event'), 'The fixture created no event: the sets are what is compared.');
     }
 
     /**

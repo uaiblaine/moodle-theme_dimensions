@@ -524,6 +524,24 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
+     * Both shells mark the page's root mounted in the frame they hide the server's layer in (PROPOSAL section 29): the
+     * class retires the placeholder and cancels the stylesheet's fail-safe. Jest holds the behaviour.
+     *
+     * @return void
+     */
+    public function test_the_mounted_mark_is_set_with_the_server_layer_hidden(): void {
+        $sources = $this->sources();
+        foreach (['Calendar.tsx', 'PublicCalendar.tsx'] as $file) {
+            $this->assertMatchesRegularExpression(
+                '~page\?\.classList\.add\(\'dim-cal--mounted\'\);\s*const server = page\?\.querySelector<HTMLElement>'
+                . '\(\'\[data-region="dim-cal-server"\]\'\);\s*if \(server\) \{\s*server\.hidden = true;~',
+                $sources[$file],
+                $file
+            );
+        }
+    }
+
+    /**
      * The event popover keeps below the fixed navbar, read from its box when it opens, and the event types' dropdown
      * closes on Escape through a document listener that exists only while it is open (the list re-renders under a press
      * of "Select all", and the focus falls outside the dropdown). Jest holds the behaviour.

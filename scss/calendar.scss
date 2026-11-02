@@ -109,6 +109,22 @@ body.dim-calendar {
         }
     }
 
+    // Half the gap between the navbar and the calendar's title (owner, 2026-11-02; PROPOSAL section 29.3). Measured at
+    // 1440x900: Boost's .main-inner margin-top 40px and padding-top 24px, the page header's 16px (drawn by a child of
+    // #page-header, which the rule below cannot shrink) and 3px more put the title 83px under the navbar; 12px and
+    // 10px put it 41px under. The body class puts these one class above Boost's #page.drawers .main-inner, with no
+    // !important.
+    #page.drawers .main-inner {
+        margin-top: 12px;
+        padding-top: 10px;
+    }
+
+    #page-header {
+        margin-block: 0;
+        padding-block: 0;
+        min-height: 0;
+    }
+
     // Each key class points the item's three local colours at its key's tokens.
     @each $key in site, category, course, group, user, activity, other, open, overdue {
         .dim-cal-key--#{$key} {
@@ -453,6 +469,101 @@ body.dim-calendar {
         color: var(--dim-ds-text-muted, var(--bs-secondary-color));
         font-size: .75rem;
         font-variant-numeric: tabular-nums;
+    }
+
+    // The first paint (PROPOSAL section 29). Core writes jsenabled on the body before the first paint, so under it the
+    // server's no-JavaScript layer is held out of sight and the placeholder, with the grid's footprint, stands in its
+    // place; Calendar.tsx marks the root dim-cal--mounted when it draws, which lifts both rules. If that never happens
+    // (a module that failed to load), the two animations bring the server's layer back and retire the placeholder after
+    // four seconds; the mark removes the animations with the rules. Without jsenabled the placeholder stays display:none.
+    .dim-cal__placeholder {
+        display: none;
+    }
+
+    &.jsenabled .dim-cal:not(.dim-cal--mounted) {
+        .dim-cal__server {
+            max-height: 0;
+            overflow: hidden;
+            visibility: hidden;
+            animation: dim-cal-reveal .1s linear 4s forwards;
+        }
+
+        .dim-cal__placeholder {
+            display: block;
+            animation: dim-cal-retire .1s linear 4s forwards;
+        }
+    }
+
+    @keyframes dim-cal-reveal {
+        to {
+            max-height: 1000000px;
+            overflow: visible;
+            visibility: visible;
+        }
+    }
+
+    @keyframes dim-cal-retire {
+        to {
+            max-height: 0;
+            overflow: hidden;
+            visibility: hidden;
+        }
+    }
+
+    // The toolbar's height (a 2.25rem row and its margin, twice: the toolbar and the filters) and the month's frame:
+    // the weekday band (1.875rem) over six weeks of the grid's minimum row (9.25rem), the rows and the seven columns
+    // drawn as lines of the border tokens. The week view keeps the frame's shape with a header, a strip and ten hours.
+    .dim-cal__ghosttools {
+        height: 4.5rem;
+    }
+
+    .dim-cal__ghostframe {
+        overflow: hidden;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__ghosthead {
+        height: 1.875rem;
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    .dim-cal__ghostbody {
+        height: 55.5rem;
+        border-top: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        background-image:
+            linear-gradient(
+                90deg,
+                var(--dim-ds-border-subtle, var(--bs-border-color-translucent)) 1px,
+                transparent 1px
+            ),
+            linear-gradient(
+                180deg,
+                transparent calc(9.25rem - 1px),
+                var(--dim-ds-border-default, var(--bs-border-color)) calc(9.25rem - 1px)
+            );
+        background-size: calc(100% / 7) 100%, 100% 9.25rem;
+    }
+
+    .dim-cal__placeholder--week .dim-cal__ghosthead {
+        height: 3.5rem;
+    }
+
+    .dim-cal__placeholder--week .dim-cal__ghostbody {
+        height: 28rem;
+        background-size: calc(100% / 7) 100%, 100% 2.5rem;
+        background-image:
+            linear-gradient(
+                90deg,
+                var(--dim-ds-border-subtle, var(--bs-border-color-translucent)) 1px,
+                transparent 1px
+            ),
+            linear-gradient(
+                180deg,
+                transparent calc(2.5rem - 1px),
+                var(--dim-ds-border-subtle, var(--bs-border-color-translucent)) calc(2.5rem - 1px)
+            );
     }
 
     // The grid: a header row and one row per week, every row a grid of seven columns.
