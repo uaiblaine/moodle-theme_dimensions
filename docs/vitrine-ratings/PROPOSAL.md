@@ -331,3 +331,32 @@ they are the controls, and moved only by the host's noise.
   least certain number here; FCP, INP, bytes and nodes moved the same way in both pairs.
 - The first opening of a dialogue now waits for one request; the probe does not press "More information", so that
   latency is not in this table (the Behat dialogue scenario of the matrix waits on it and passed on all four legs).
+
+## 12. R2 results (2026-11-02): R1 against L2, both with tool_courserating and ratings
+
+Same harness and host as section 11 (the M4 mini, base and after alternated twice). Both sides install
+tool_courserating (an uncommitted local extra of the throwaway clones) and the probe fixture seeds ratings on two
+thirds of the flat page's courses through the plugin's API (five raters, one review each), so the only difference is
+R1's code: L2 at 55944db draws no rating, R1 at 2bbfb90 draws the card's line (the dialogue's block is fetched on
+opening and is not on the page).
+
+| page | mode | metric | L2 + plugin | R1 | change |
+|---|---|---|---|---|---|
+| student, flat | both | HTML bytes | 220,464 / 220,646 | 224,791 / 224,850 | +4.3 KB (+2 %) |
+| student, flat | both | DOM nodes | 1,535 | 1,611 | +76 (4 per rated card) |
+| student, flat | cold | FCP | 5,480 / 5,372 | 5,400 / 5,404 | within noise |
+| student, flat | cold | TBT | 266 / 233 | 246 / 259 | within noise |
+| student, flat | cold | INP | 80 / 56 | 56 / 56 | within noise |
+| visitor, flat | both | HTML bytes / DOM nodes | 98,716 / 721 | 103,165 / 799 | +4.4 KB, +78 |
+| visitor, flat | cold | FCP / TBT | 4,828, 4,796 / 159, 133 | 4,784, 4,892 / 128, 161 | within noise |
+| student, root (control) | cold | FCP / TBT | 4,928, 4,864 / 271, 231 | 4,840, 4,860 / 224, 222 | none expected |
+| student, grouped (control) | cold | FCP / TBT | 5,020, 4,988 / 265, 304 | 4,948, 5,012 / 235, 309 | none expected |
+
+- **The server**: one statement per page on the plugin's summary table, flat in the page size (`cards_test`); on the
+  5,000-course set it costs 0.02-0.03 ms in PostgreSQL and 0.12-0.17 ms through the DML layer (section 6.1). With the
+  plugin absent or rating nothing, no statement (`cards_test`).
+- **Section 6.1's worry is gone**: drawn into every card, the dialogue's rating block would have added 17-35 % to the
+  listing; with the dialogue fetched (L2) the page pays the card's line alone, about 2 %.
+- **Net of the series** (section 11 and this one): from L1 to R1, the student's flat page goes from 271.6 KB to
+  224.8 KB of HTML (−17 %) and 1,674 to 1,611 DOM nodes while gaining the ratings; the visitor's from 150.9 KB to
+  103.2 KB (−32 %).
