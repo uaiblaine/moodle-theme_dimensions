@@ -32,7 +32,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * over the shared store, and amd/src/listingaccount.js, its entry.
  *
  * Stage R4b3 of docs/vitrine-react/R4b.md replaced the account's two AMD clients with this shell: what only an
- * account has (the remembered state, the view preference, the progress, the peek, the panel's request) is the shell's,
+ * account has (the remembered state, the view preference, the progress, the panel's request) is the shell's,
  * and what both shells do (the tickets, the appended page, the tree, the chips, clear) is the store's, read here for
  * the gates that were written over the account's client. Their behaviour is Jest's (js/esm/tests/listing); these are
  * the PHPUnit side the mutation sweep can redden, each scoped to one function through body().
@@ -204,12 +204,12 @@ final class listing_account_source_test extends \basic_testcase {
     }
 
     /**
-     * One panel of the grid is open at a time, whichever of the two ways it was opened.
+     * One panel of the grid is open at a time.
      *
      * The toggle listener is delegated in the capture phase: a details element's toggle event does not bubble.
      *
      * Changes that must make it fail: emptying the loop of closeOthers() (gate js_one_panel_at_a_time); dropping the
-     * `details !== keep` test or the closePeeks() call; the toggle heard in the bubble phase.
+     * `details !== keep` test; the toggle heard in the bubble phase.
      */
     public function test_only_one_panel_of_the_grid_is_open_at_a_time(): void {
         $listen = $this->body('listen');
@@ -220,26 +220,9 @@ final class listing_account_source_test extends \basic_testcase {
         $closers = $this->body('closeOthers');
         $this->assertStringContainsString('root.querySelectorAll<HTMLDetailsElement>(HOOKS.details)', $closers);
         $this->assertMatchesRegularExpression('~if \(details !== keep\) \{\s*details\.open = false;\s*\}~', $closers);
-        $this->assertStringContainsString('closePeeks();', $closers, 'A peek is a panel too.');
-        $this->assertStringContainsString('closeOthers(null);', $this->body('openPeek'));
         $found = preg_match("~event\\.key === 'Escape'\\) \\{(.*?)\\}~s", $listen, $matches);
         $this->assertSame(1, $found, 'The shell handles no Escape key.');
         $this->assertStringContainsString('closeOthers(null);', $matches[1]);
-    }
-
-    /**
-     * A peek never opens over a disclosure the reader opened on the same card, and only for a fine pointer.
-     */
-    public function test_a_peek_never_replaces_the_disclosure_of_its_own_card(): void {
-        $peek = $this->body('openPeek');
-        $this->assertStringContainsString('const details = card.querySelector<HTMLDetailsElement>(HOOKS.details);', $peek);
-        $this->assertStringContainsString('if (!panel || (details && details.open)) {', $peek);
-        $this->assertStringContainsString("peek.setAttribute('aria-hidden', 'true');", $peek);
-        $this->assertStringContainsString(
-            "const peekable = (): boolean => window.matchMedia('(pointer: fine)').matches\n"
-                . "    && window.innerWidth >= PEEK_MIN_WIDTH\n    && current().view === 'cards';",
-            $this->read(self::SHELL)
-        );
     }
 
     /**

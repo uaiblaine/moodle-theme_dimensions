@@ -1265,7 +1265,7 @@ service, no `fetchOne` (`listing_source_test::test_the_store_reaches_no_shell`, 
 | A change of shell (`leave`) | `window.location.assign` | `@moodle/lms/core/location`'s `redirect`, after the state is remembered |
 | Posters' props | `{links: true, quiet: 120, autoopen: false}` | `{}` |
 
-- The account's `start()` arms its observer (the progress of the enrolled cards, batched by 24), the peek, its
+- The account's `start()` arms its observer (the progress of the enrolled cards, batched by 24), its
   listeners and the remembered state only when `init()` returns true. The guest is kept out at the arming, never by a
   loosened refusal: every service refuses it, and an armed module would hide the no-JavaScript submits and the
   numbered pager, the only controls a guest has (gate `listing_client_armed_for_real_account`) [stage 6].

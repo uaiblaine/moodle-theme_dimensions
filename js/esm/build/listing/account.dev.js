@@ -4,7 +4,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * The logged-in shell of the showcase listing: what only an account has, over the shared store.
  *
  * The listing's and a panel's rows, the progress of the enrolled courses on screen (once per course), the state
- * remembered per category and the view preference, the hover peek, the automatic opening's note and the dim-js mark;
+ * remembered per category and the view preference, the automatic opening's note and the dim-js mark;
  * a failure is core's exception dialogue; it arms the card's star (./star). Armed by amd/src/listingaccount.js for a
  * real account only, never the guest (course_renderer.php); the visitor's page never loads it
  * (categorypublic_source_test).
@@ -25,7 +25,6 @@ import { current, init } from "./store";
 const HOOKS = {
   details: '[data-region="dim-card-details"]',
   panel: '[data-region="dim-card-panel"]',
-  peek: ".dim-card__peek",
   progress: '[data-region="dim-card-progress"]',
   areapanel: '[data-region="dim-panel"]',
   countnotetext: '[data-region="dim-vitrine-countnotetext"]'
@@ -41,9 +40,6 @@ const VIEW_DEBOUNCE = 500;
 const BATCH_SIZE = 24;
 const BATCH_INTERVAL = 100;
 const OBSERVER_MARGIN = "200px";
-const PEEK_DELAY = 180;
-const PEEK_WIDTH = 340;
-const PEEK_MIN_WIDTH = 576;
 const PANEL_SIZE = 8;
 const LEGACY_FAVOURITES = "favourites";
 const PSORT_NAME = "name";
@@ -58,7 +54,6 @@ let autoopenlabel = "";
 let viewtimer;
 let remembertimer;
 let rememberedsent = "";
-let peektimer;
 let observer = null;
 const pending = /* @__PURE__ */ new Set();
 const settled = /* @__PURE__ */ new Set();
@@ -237,56 +232,16 @@ const watchCard = /* @__PURE__ */ __name((card) => {
   }
   observer.observe(card);
 }, "watchCard");
-const peekable = /* @__PURE__ */ __name(() => window.matchMedia("(pointer: fine)").matches && window.innerWidth >= PEEK_MIN_WIDTH && current().view === "cards", "peekable");
-const closePeeks = /* @__PURE__ */ __name(() => {
-  window.clearTimeout(peektimer);
-  root.querySelectorAll(".dim-card--peeking").forEach((card) => card.classList.remove("dim-card--peeking"));
-}, "closePeeks");
 const closeOthers = /* @__PURE__ */ __name((keep) => {
   root.querySelectorAll(HOOKS.details).forEach((details) => {
     if (details !== keep) {
       details.open = false;
     }
   });
-  closePeeks();
 }, "closeOthers");
-const openPeek = /* @__PURE__ */ __name((card) => {
-  const panel = card.querySelector(HOOKS.panel);
-  const details = card.querySelector(HOOKS.details);
-  if (!panel || details && details.open) {
-    return;
-  }
-  closeOthers(null);
-  let peek = card.querySelector(HOOKS.peek);
-  if (!peek) {
-    peek = document.createElement("div");
-    peek.className = "dim-card__peek";
-    peek.setAttribute("aria-hidden", "true");
-    const clone = panel.cloneNode(true);
-    while (clone.firstChild) {
-      peek.append(clone.firstChild);
-    }
-    card.append(peek);
-  }
-  const grid = root.querySelector(SELECTORS.grid);
-  const edge = grid ? grid.getBoundingClientRect().right : window.innerWidth;
-  peek.classList.toggle("dim-card__peek--flip", card.getBoundingClientRect().right + PEEK_WIDTH > edge);
-  card.classList.add("dim-card--peeking");
-}, "openPeek");
 const attachCards = /* @__PURE__ */ __name((cards) => {
   cards.forEach((card) => {
     watchCard(card);
-    card.addEventListener("mouseenter", () => {
-      window.clearTimeout(peektimer);
-      if (!peekable()) {
-        return;
-      }
-      peektimer = window.setTimeout(() => openPeek(card), PEEK_DELAY);
-    });
-    card.addEventListener("mouseleave", () => {
-      window.clearTimeout(peektimer);
-      card.classList.remove("dim-card--peeking");
-    });
   });
 }, "attachCards");
 const painted = /* @__PURE__ */ __name((items) => {
