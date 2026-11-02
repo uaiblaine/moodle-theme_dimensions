@@ -37,7 +37,7 @@
  */
 
 import {useLayoutEffect, useMemo, useRef} from 'react';
-import type {CSSProperties, KeyboardEvent} from 'react';
+import type {CSSProperties, KeyboardEvent, ReactNode} from 'react';
 import {say} from '../daterange/calendar';
 import type {Placed} from './layout';
 import {colourStyle, keyClass, placeOf, whenOf} from './look';
@@ -63,6 +63,7 @@ type DayDrawerProps = {
     variant: 'drawer' | 'sheet',
     calendar: string | null,
     focusing: number,
+    action?: ReactNode,
     onClose: () => void,
 };
 
@@ -146,7 +147,7 @@ const link = (entry: Placed, when: string, overlapping: boolean, look: Look, ext
  * @param {object} props See DayDrawerProps.
  * @returns {object} The region.
  */
-const DayDrawer = ({look, iso, placed, variant, calendar, focusing, onClose}: DayDrawerProps) => {
+const DayDrawer = ({look, iso, placed, variant, calendar, focusing, action, onClose}: DayDrawerProps) => {
     const heading = useRef<HTMLHeadingElement | null>(null);
     const plan = useMemo(() => dayPlan(iso, placed, look.zone), [iso, placed, look.zone]);
     const labels = useMemo(() => hourLabels(look.language), [look.language]);
@@ -198,6 +199,7 @@ const DayDrawer = ({look, iso, placed, variant, calendar, focusing, onClose}: Da
                 <h2 ref={heading} className="dim-cal__drawertitle" id={HEADING} tabIndex={-1} aria-live="polite">
                     {say(iso, LONG_DAY, look.language)}
                 </h2>
+                {action}
                 <button
                     type="button"
                     className="btn btn-icon dim-cal__close"

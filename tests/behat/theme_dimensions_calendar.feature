@@ -250,3 +250,28 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And I should not see "Platform maintenance" in the "[data-region='dim-calblock-upcoming']" "css_element"
     And I click on "Full calendar" "link" in the "[data-region='dim-calblock-upcoming']" "css_element"
     And the url should match "theme_dimensions/calendar|theme/dimensions/calendar\.php"
+
+  # Stage C5 (docs/calendar/PROPOSAL.md section 23): creating is core's form, reached from the page's "New event", which
+  # the page draws only when core would. Who may edit what is PHPUnit's (tests/local/calendar/editing_test.php).
+  @javascript
+  Scenario: An administrator creates an event from "New event" with core's form and sees it in the month
+    Given I log in as "admin"
+    When I visit "/theme/dimensions/calendar.php?month=2027-03"
+    And I click on "[data-region='dim-cal-app'] [data-action='dim-cal-new']" "css_element"
+    And I set the field "Event title" to "Planning meeting"
+    And I press "Save"
+    Then I should see "Planning meeting" in the "[data-region='dim-cal-app'] [data-region='dim-cal-grid']" "css_element"
+    And I reload the page
+    And I should see "Planning meeting" in the "[data-region='dim-cal-app'] [data-region='dim-cal-grid']" "css_element"
+
+  @javascript
+  Scenario: "New event" is drawn only for an account core lets add an event
+    Given I log in as "student1"
+    When I visit "/theme/dimensions/calendar.php?month=2027-03"
+    Then "[data-region='dim-cal-app'] [data-action='dim-cal-new']" "css_element" should exist
+    And the following "permission overrides" exist:
+      | capability                       | permission | role | contextlevel | reference |
+      | moodle/calendar:manageownentries | Prohibit   | user | System       |           |
+    And I reload the page
+    And I should see "March 2027" in the "[data-region='dim-cal-caption']" "css_element"
+    And "[data-region='dim-cal-app'] [data-action='dim-cal-new']" "css_element" should not exist

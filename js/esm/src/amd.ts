@@ -58,11 +58,17 @@ export type NotificationModule = {
     exception: (error: unknown) => Promise<void>,
 };
 
-/** Every AMD module the ESM tree may load, by its RequireJS name. */
-type Modules = {
+/**
+ * Every AMD module the ESM tree may load, by its RequireJS name.
+ *
+ * An interface, so a module that only one page loads can add the AMD modules it needs by declaration merging
+ * (`declare module '../amd'`, as the logged-in calendar adds core's calendar modules): the bridge then names none
+ * of them, and the visitor's walk, which reads the bridge, meets none of them either.
+ */
+export interface Modules {
     'core/templates': TemplatesModule,
     'core/notification': NotificationModule,
-};
+}
 
 /** The name of an AMD module the ESM tree may load. */
 export type ModuleName = keyof Modules;

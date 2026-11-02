@@ -395,7 +395,13 @@ const WeekGrid = (props: WeekGridProps) => {
                         style={{gridTemplateRows: `0 repeat(${used}, 1.5rem)`}}
                     >
                         {days.map((iso, column) => (
-                            <div key={iso} className="dim-cal__day" role="gridcell" data-day={iso}>
+                            <div
+                                key={iso}
+                                className="dim-cal__day"
+                                role="gridcell"
+                                data-day={iso}
+                                data-cal-drop={look.movable ? iso : undefined}
+                            >
                                 <div
                                     className={`dim-cal__ground${iso === selected ? ' dim-cal__ground--selected' : ''}`}
                                     style={{gridColumn: column + 1, gridRow: '1 / -1'}}

@@ -65,13 +65,15 @@ const inSpan = /* @__PURE__ */ __name((href, span) => {
   rest.forEach(([name, value]) => url.searchParams.append(name, value));
   return url.toString();
 }, "inSpan");
-const readSpan = /* @__PURE__ */ __name((href, firstday, month) => {
+const readSpan = /* @__PURE__ */ __name((href, firstday, month, today) => {
   const params = new URL(href, window.location.href).searchParams;
   if (params.get(VIEW_PARAM) !== "week") {
     return { view: "month", month };
   }
-  const week = params.get(WEEK_PARAM);
-  return { view: "week", week: weekStart(parse(week) ? String(week) : `${month}-01`, firstday) };
+  const week = String(params.get(WEEK_PARAM) || "");
+  const year = Number(week.slice(0, 4));
+  const valid = parse(week) !== null && year >= 1900 && year <= 2999;
+  return { view: "week", week: weekStart(valid ? week : openingOf({ view: "month", month }, today), firstday) };
 }, "readSpan");
 const weekCaption = /* @__PURE__ */ __name((days, strings, language) => fill(strings.calendar_span, { from: say(days[0], FROM_DAY, language), to: say(days[days.length - 1], TO_DAY, language) }), "weekCaption");
 const spanLabels = /* @__PURE__ */ __name((span, days, strings, language) => {

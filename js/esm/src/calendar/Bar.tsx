@@ -69,6 +69,7 @@ const Bar = ({segment, week, look}: BarProps) => {
             style={style}
             tabIndex={-1}
             aria-label={barLabel(item, first, last, look)}
+            draggable={look.movable?.(item) ? true : undefined}
             data-cal-item=""
             data-cal-pop=""
             data-first={week[segment.start]}

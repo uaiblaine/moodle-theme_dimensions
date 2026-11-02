@@ -1528,6 +1528,14 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   `WeekGrid.tsx` and `ViewSwitch.tsx`; one range call per span. Every address read that `optional_param()` would throw
   on for a list goes through `page::scalar_param()` (page) or `state::scalar_param()` (state), which drop a list; the
   public calendar answers a visitor, so a list must never be an error page.
+- **C5: editing is core's** (PROPOSAL sections 23-24). `local\calendar\editing` passes core's answers through: "New event"
+  is `calendar_user_can_add_event(get_site())`, the iCal link core's footer offer, and the answer's `editing` lists core's
+  canedit events with candelete, draggable and the limits, read through `draglimits` (a `calendar_event_exporter` subclass
+  calling core's protected limit methods; `editing_test`'s parity case compares every entry with `calendar_get_view()`'s
+  export). The blocks ask the range with editing off. The client reaches core's form, `crud` and `repository` through
+  `calendar/editing.ts`, which adds them to the bridge's `Modules` interface by declaration merging, so the bridge (in the
+  visitor's walk) names none of them. Core triggers its calendar events with jQuery on the body: listen with jQuery.
+  The popover's actions are keyed per event, because jQuery caches the markers core's `registerRemove()` reads.
 - Tests: `tests/local/calendar/{state,page,calendar_component_source}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,

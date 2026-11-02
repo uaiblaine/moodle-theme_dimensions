@@ -1638,3 +1638,287 @@ two found eslint's complexity cap on the two shells (above) and a stylelint mult
 column rule, both fixed.
 
 **Gates:** _placeholder: the owner runs the sweep of the C4 block and the tier-2 leg with Behat._
+
+## 23. C5 plan (2026-11-02)
+
+C5 brings creating, editing, moving and deleting to the page, and the iCal link (section 7). Decisions settled by the
+owner (2026-11-02), written here so they are not reopened:
+
+- **Everything stays core's.** Core's form, capabilities, permission checks, events and web services do the work:
+  `core_calendar/modal_event_form` and core's `crud` and `repository` modules, reached through the theme's AMD bridge as
+  the page reaches other core AMD. The theme draws no form of its own and writes no event itself. Who may create, edit,
+  delete and move is decided by what core's month view decides, read in core first (23.1).
+- **"New event"** goes in the toolbar, and in the drawer for the open day with that day prefilled. It is shown only when
+  core would show it to this viewer: core's check, made on the server and passed to the client, never decided there.
+  When the modal saves, the page asks for the current window again with the same Pending and ticket discipline as
+  navigation.
+- **Edit and Delete** are buttons in the popover, only for the items core says the viewer may edit or delete. Delete
+  goes through core's own confirmation.
+- **Drag to move** only for the items core's month view lets the viewer drag, by core's own rule, through
+  `core_calendar_update_event_start_day`, on the month grid and the week's all-day strip; it asks again on success and
+  shows core's error on a failure. Its keyboard alternative is the Edit form, which moves an event; no "Move to…"
+  control unless it is cheap.
+- **The iCal link** leads to core's `calendar/export.php`, shown only when core would offer export to this viewer. The
+  page draws no export of its own.
+- **The visitor's calendar has none of this**: no New, Edit, Delete, drag or iCal; its import walk reaches no module that
+  needs a session and no core calendar module that writes.
+- **The classic link stays.** Whether to remove it now that C5 covers creating and editing is an owner decision (23.5).
+
+### 23.1 What core decides, read in core 5.3
+
+- **New event.** Core's month view draws "New event" (`core_calendar/add_event_button`) when its export carries
+  `defaulteventcontext`, which `month_exporter::get_default_add_context()` sets to the course context when
+  `calendar_user_can_add_event($course)`. On `calendar/view.php` the course is the site, so the answer is
+  `calendar_get_allowed_types()` for the site: `moodle/calendar:manageownentries` in the system context or
+  `moodle/calendar:manageentries` in the site course's, and never for a visitor or the guest. Core's `crud` hands the
+  modal that context and the calendar's course, and a start time only when today is not on the screen (the first
+  day's `neweventtimestamp`, the day at the current time of day); its day view hands the day the same way.
+- **Edit, delete, drag.** Core's event exporter (`event_exporter_base::get_other_values()`) answers
+  `canedit = calendar_edit_event_allowed($legacy, true)` (the manual edit: an activity's event only for
+  `moodle/course:manageactivities` and a module that implements `core_calendar_event_timestart_updated`, a component's
+  event never, a subscription URL's event never) and `candelete = calendar_delete_event_allowed($legacy)` (never an
+  activity's or a component's). `calendar_event_exporter` adds `draggable = canedit`, then takes it back when the
+  activity's (or for a course event the course's) `core_calendar_get_valid_event_timestart_range` callback answers
+  `false`, and otherwise adds `mindaytimestamp`/`maxdaytimestamp` with their error strings. `month_detailed` marks
+  `draggable="true"` on exactly those; the summary modal draws Delete under `candelete` and Edit under `canedit` only
+  for an event without a course module (`^isactionevent`).
+- **Move.** `core_calendar_update_event_start_day` re-checks `calendar_edit_event_allowed($legacy, true)`, validates the
+  event's context, and moves the start DAY only, keeping the time of day, inside the same limits; anything else is its
+  exception, which core's month view shows with `core/notification`'s `exception()`. A drop outside the limits never
+  reaches the service: core shows `errorinvaliddate` with the limit's own message.
+- **Export.** `calendar/export.php` serves any logged-in account while `$CFG->enablecalendarexport` is on. Core's
+  calendar page offers it from its footer ("Import or export calendars", `footer_options_exporter`) only while
+  `enablecalendarexport` is on AND `calendar_user_can_add_event($course)`; the page follows that offer, and links
+  `export.php` itself.
+
+### 23.2 Server
+
+- **`classes/local/calendar/editing.php`**, core's decisions and nothing of the theme's:
+  - `create()`: `calendar_user_can_add_event(get_site())` for a real account, else false;
+  - `form_context()`: the site course's context id, the one core's site calendar hands its form for a new event and
+    for an edit (the fragment is validated in it, which every account passes);
+  - `export_url()`: `calendar/export.php` while `enablecalendarexport` is on and `create()` holds, else '';
+  - `entries(array $events)`: for core's event entities, one entry per event core's exporter says the viewer may edit,
+    `{id, edit, delete, drag, count, minday, maxday, minerror, maxerror}`: `edit` is the summary modal's Edit (canedit,
+    no course module), `delete` core's `candelete`, `drag` core's `draggable`, the limits as days in the viewer's
+    timezone, and `count` the series' events for core's delete confirmation (one statement for every repeated event of
+    the window). The limits come from core's own protected methods through `draglimits`, a subclass of
+    `calendar_event_exporter` that sets the event and the module instance and calls them, the module instances read
+    the way core's month view reads them (`events_related_objects_cache`, one statement per module name, and only for
+    the events the viewer may edit).
+- **The answer gains `editing`**, a list beside the dictionaries (an item carries nothing new: a student's month is
+  hundreds of items and a handful of entries, and the 25-course weight bound of section 9.2 has 1.4 KB of headroom).
+  `core_events` builds it from the entities it already holds, for the items the range keeps; `range::answer()` returns
+  it for the page and the service, and the blocks ask it with editing off (they draw no editing). The visitor's answer
+  carries it empty (`publicrange` keeps the shape key for key). `get_calendar_range`'s returns allowlist the entry's
+  nine fields.
+- **The page's props** (the account's alone) gain `edits: {create, context, course}`: whether core would show "New
+  event", the form's context and the site's course id.
+- **The iCal link** is drawn by the server, in a footer after the mount (`data-region="dim-cal-footer"`), so it is the
+  same with and without JavaScript and the client draws nothing for it; never in the visitor's context.
+- **Strings**: `calendar_delete`, `calendar_edit`, `calendar_export`, `calendar_newevent`, `calendar_neweventon`, en and
+  pt_br; the client's four in `calendar_page::STRINGS` and `strings.ts`.
+- No web service, capability, table or SQL of the theme's is added: one statement of `{event}` by `repeatid` (core's
+  count, batched) and core's own reads. **Tier 2**, by section 4: PHP and JavaScript that pass core's decisions through.
+
+### 23.3 Client
+
+- **The bridge** (`amd.ts`): `Modules` becomes an exported interface, so the logged-in calendar's module adds core's
+  calendar modules to it by declaration merging and the bridge itself names none of them (the visitor's walk reads the
+  bridge).
+- **`calendar/editing.ts`** (the account's alone, like `account.ts`): adds `core_calendar/modal_event_form`,
+  `core_calendar/crud`, `core_calendar/repository`, `core_calendar/events` and `jquery` to the bridge's type, and:
+  - `openForm()`: one `ModalEventForm.create()` per page, as core's `crud` keeps one; a new event gets the context, the
+    course and the start, an edit the event id and the context, as core's `registerEditListeners` hands them;
+  - `armDelete(element)`: core's `crud.registerRemove()` on the popover's actions, which carry core's event markers
+    (`data-type="event"`, `data-event-id`, `-title`, `-count`), so core's confirmation and core's
+    `core_calendar_delete_calendar_events` do the rest;
+  - `listen()`: core's `created`, `updated` and `deleted` events on the body (jQuery's, which a native listener never
+    hears), once per page, each asking the page to refresh;
+  - `moveStart(id, day)`: core's `repository.updateEventStartDay()`.
+- **`calendar/moves.ts`** (pure): the entries by item, the drop's guard (a flagged item, a day inside its limits, a
+  different day) and its refusal message, the instant a day names in the viewer's timezone (`instantOf()`, Intl's zone
+  data, noon for a move, the current time of day for a new event, as core's `neweventtimestamp`), and the new event's
+  start: none while the span shows today, else its first day (core's `crud` rule); the open day for the drawer's.
+- **`calendar/EditActions.tsx`** (the account's): the popover's Edit and Delete, keyed per item so jQuery's data cache
+  never answers for another event.
+- **Shared components**, which name nothing of a session: `Look` gains an optional `movable(item)`; `Bar`, the month's
+  lines and cards draw `draggable="true"` and the month's cells and the week strip's cells `data-cal-drop` only when it
+  answers true; `EventPopover` gains an `actions` slot, and a press inside another dialogue (core's modal over the page)
+  is not a press outside; `DayDrawer` gains an `action` slot.
+- **`Calendar.tsx`**: "New event" in the toolbar when `edits.create`, and in the drawer with the day; the popover's
+  actions; drag handlers delegated on the root (`dragstart`, `dragover`, `drop`, `dragend`), the items' pointer events off
+  while a drag is on so the pointer finds the day under it (no layout read); a refresh is `request()` for the span
+  shown with the state shown, writing nothing (the ticket and `calendar:range` as navigation), after a save, a delete
+  and a move; a move takes `theme_dimensions/calendar:move` until its refresh is asked.
+- **The hour body is not a drop target**: core's service moves the day and keeps the time, so a drop at an hour would
+  promise a time core does not set. A timed item moves on the month grid, or through Edit.
+
+### 23.4 Keyboard and screen reader (extends 11.3, 13.3 and 21.3)
+
+- "New event" is a button in the toolbar's Tab order; the drawer's is labelled "New event on <long date>". Core's modal
+  takes the focus and gives it back to the button that opened it.
+- Edit and Delete follow the popover's own actions, in its Tab order; Tab past the last still closes the popover. Core's
+  form and confirmation open over it and the popover stays, so the focus comes back to the pressed button; after a
+  delete the item is gone, the popover closes and the focus goes to the selected day.
+- **Drag is a pointer gesture; its keyboard alternative is Edit**: core's form moves an event's start. An activity's
+  date is the activity's setting (the popover's "Open" leads there), as on core's calendar, whose summary has no Edit for
+  it either. No "Move to…" control.
+- A refused drop says why in core's dialogue (`errorinvaliddate` and the limit's message); the drop target is outlined
+  while it is under the pointer.
+
+### 23.5 Tests and gates
+
+- **PHPUnit:**
+  - `tests/local/calendar/editing_test.php`: `create()` allowed (an account with `manageownentries`) and not (the same
+    account with it prohibited; the guest; a visitor), each beside its control; `export_url()` with the setting on and
+    off and the offer's capability held and not; the entries: a student's own event (edit, delete, drag), a course
+    event (none for a student, an entry for the teacher), an activity's due date (no Edit and no Delete, the drag by
+    the module's callback), a course event's limit (the course start as `minday`), a subscription URL's event (none,
+    beside the same event without the URL), a repeated event's `count`; parity with core: for an admin and a student,
+    every event of `calendar_get_view()`'s month has an entry exactly when core's `canedit`, with `delete`, `drag` and the
+    limits equal to core's `candelete`, `draggable`, `mindaytimestamp` and `maxdaytimestamp`.
+  - `range_test` and `get_calendar_range_test`: the answer's `editing` holds only the kept items' entries, and the
+    service returns it through its allowlist; the blocks' answer carries none.
+  - `calendar_page_test`: the props' `edits` and the footer's iCal link, each shown and not shown beside its control;
+    `page_visitor_test` and `get_public_calendar_range_test`: no `edits`, no link, `editing` empty.
+  - `range_budget_test` and `blocks_budget_test` keep their bounds.
+  - `calendar_component_source_test` (the bridge's uses, core's calendar modules named in `editing.ts` alone, the refresh
+    through `request()`, the move's Pending) and `categorypublic_source_test` (the visitor's walk forbids
+    `calendar/editing`, `calendar/EditActions`, core's calendar CRUD modules and their services).
+- **Jest:** `moves.test.ts` (the guard, the limits, the instants across a daylight-saving change and far zones, the new
+  event's start); `Calendar.test.tsx`: "New event" only when flagged, the modal handed core's context and the day; Edit and
+  Delete only when flagged, with core's markers; a save, a delete and a move each asking the window again under the
+  ticket; drag only on flagged items, a refused day showing core's message and asking nothing; the keyboard (the
+  buttons' order and focus).
+- **Behat** (`theme_dimensions_calendar.feature`, scoped to the page's own regions): a teacher creates an event from
+  "New event" and sees it in the month; a student whose `manageownentries` is prohibited sees no "New event", beside
+  the student who has it.
+- **Gates:** a "C5 editing" block in `mutations/gates.conf`, one gate per guard, each `.pl` dry-applied.
+- **Tier 2**: one full leg with Behat, `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat`, and the sweep
+  of the C5 block on both database families. The change passes capabilities through rather than deciding any, so a
+  `security-diff-read` over `editing.php` and `EditActions.tsx` is cheap insurance, not a requirement of the tier.
+- **Owner decisions** listed, not blocking: the classic link; the iCal link's offer (core's footer rule, or every account
+  `export.php` serves); a drop on the week's hour body.
+
+## 24. C5 results (2026-11-02)
+
+Branch `calendar-c5`, built from section 23 on top of C4 (b7692d3), uncommitted, no `version.php` bump.
+
+**What exists:**
+- **Server:** `classes/local/calendar/editing.php` (`create()`, `form_context()`, `export_url()`, `entries()`, `ENTRY_KEYS`) and
+  `classes/local/calendar/draglimits.php` (the `calendar_event_exporter` subclass); `core_events` reads the entries when
+  asked (`new core_events(true)`, `editing()`); `range::answer()` gains `$withediting` (default on) and the `editing` key,
+  filtered to the kept items; `blocks` asks with editing off; `publicrange` answers `editing` empty;
+  `get_calendar_range`'s returns allowlist the nine fields (the public service inherits them). `calendar_page` puts
+  `edits: {create, context, course}` in the account's props and `exporturl` in its context; the template's footer
+  (`data-region="dim-cal-footer"`) links core's export after the mount. Five strings in en and pt_br
+  (`calendar_delete`, `calendar_edit`, `calendar_export`, `calendar_newevent`, `calendar_neweventon`), four of them in
+  `calendar_page::STRINGS` and `strings.ts`. The SCSS rules for the actions, the drag and the footer in
+  `scss/calendar.scss`. A C5 note in the repo's `CLAUDE.md`.
+- **Client:** `calendar/editing.ts`, `calendar/moves.ts` and `calendar/EditActions.tsx` are new; `amd.ts` (`Modules` an
+  exported interface), `Calendar.tsx`, `EventPopover.tsx`, `DayDrawer.tsx`, `DayCell.tsx`, `Bar.tsx`, `WeekGrid.tsx`,
+  `look.ts`, `model.ts`, `strings.ts` changed; builds under `js/esm/build/`.
+- **Tests:** `tests/local/calendar/editing_test.php` (8, all new: "New event" with its four refusals and controls, the
+  export both ways, each viewer's entries with an assignment's limits and a teacher's override, the parity with core's
+  month export for the administrator, a teacher and a student, a series' count, a URL subscription beside a file import,
+  the kept items and the blocks' empty list, the service's allowlist); `calendar_page_test` (1 new: the props and the
+  footer, each with its control); `page_visitor_test` (two cases extended: no `edits`, no export, `editing` empty, and the
+  account's control); `calendar_component_source_test` (1 new, `test_editing_is_cores`, and the bridge count 2 to 3);
+  `categorypublic_source_test` (the walk forbids `calendar/editing`, `calendar/EditActions`, core's calendar editing
+  modules and services; the logged-in graph's control reaches the two). Jest: `moves.test.ts` (10), 13 cases in
+  `Calendar.test.tsx`, 1 in `PublicCalendar.test.tsx`, 1 in `weeks.test.ts`. Two Behat scenarios at the end of
+  `theme_dimensions_calendar.feature`.
+- **Security read:** no blocking finding: core re-checks every write itself (the form's fragment and submit service,
+the delete service, `update_event_start_day` with its own limits), so a forged client call does no more than core
+allows; the theme writes no event row. Fixed: the delete confirmation's `data-event-title` carried the plain name into
+core's HTML body and now carries the escaped spelling core's templates use; Edit now passes the event's course to
+core's form as core's crud does; the drag limits' messages are `PARAM_TEXT`, cleaned by `editing::plain()`. Notes
+kept: the drag limits are days in the viewer's timezone where core compares timestamps, so a DST boundary can make
+the client's verdict a day off (core's service still decides); the iCal link goes to `export.php` where core's
+footer offers `managesubscriptions.php` under the same gate (an owner decision); a real browser drag was not run.
+
+**Gates:** 40 in the "C5 editing" block of `mutations/gates.conf` (21 server and template, 19 client), each `.pl`
+  dry-applied with `perl -0777 -p` against its file: every one of the spec's 1,379 lines changes its target, none dead.
+  Two server gates were also applied by hand against `editing_test` (`c5_limits_group`: 1 failure; `c5_entries_drag`:
+  2 failures), the files restored after each.
+
+**Where the build left the plan:**
+- **The modinfo prime.** Core's `calendar_edit_event_allowed()` reads an activity event's modinfo by course id; with the
+  static cache's ten courses and the events in date order, that was 32 statements for 50 assignment dates at 25
+  courses. `editing::editable()` asks the activity events course by course, each course's modinfo built from one
+  statement of course rows: a cache prime like `core_events::prime()`, deciding nothing. Measured on the C0 probe's shape
+  (PHP 8.4, PostgreSQL 18, a student): 117 to 123 statements at 5 courses, 536 to 562 at 25 (25 of the 26 are core's
+  `{groups}` row per group event in `calendar_edit_event_allowed()`); 108,970 to 109,311 bytes. `range_budget_test` and
+  `blocks_budget_test` keep their bounds (585 and 586).
+- **A preload of the module contexts was tried and dropped**: it saved nothing (the contexts were cached already) and
+  cost one statement.
+- **The logged-in page always marks the drop days** (`data-cal-drop`): `Look.movable` is set on the account's page
+  whether or not its answer lists anything, and a mark without a drag is inert. `draggable` is drawn only where core's
+  answer says so; the visitor's page draws neither (`PublicCalendar.test.tsx`).
+- **Delete is armed per popover**, not on the page's mount: `EditActions` hands its wrapper to core's
+  `registerRemove()` when it mounts, under `theme_dimensions/calendar:delete`, so a page whose answer lists nothing
+  loads none of core's calendar modules. Opening the form takes `theme_dimensions/calendar:form`.
+- **A press inside any `role="dialog"` is not "outside"** the popover (core's modal root carries the role), so the popover
+  stays under core's form and confirmation; Escape and Tab still close it.
+- **The Behat control is in the same scenario**: student1 sees "New event", then a permission override prohibits
+  `moodle/calendar:manageownentries` for the authenticated user role and a reload draws none.
+- **The security read's F2 is folded in** (coordinator, 2026-11-02): `weeks.ts`' `readSpan()` takes today and falls back
+  to the week of the month's opening day (today when the month holds it), and refuses a year outside 1900 to 2999, as
+  `page::week_from_request()` does; pinned in `weeks.test.ts` and `calendar_component_source_test::test_the_week_view`,
+  gates `c5_js_readspan_opening` and `c5_js_readspan_years`.
+
+**Not verified:**
+- Behat: the two scenarios were not run (no Behat in this stage's turn). Uncertain: that core's modal's "Event title" and
+  "Save" are reached as core's own `I create a calendar event` step reaches them; that the refresh after core's
+  `created` event lands before the step reads the grid (the page's `calendar:range` token spans it, core's form its own).
+- Core's modules in a browser: Jest mocks `jquery`, `core_calendar/modal_event_form`, `crud`, `repository` and `events`.
+  That the AMD build of `modal_event_form` answers the class itself (`return _exports.default`) and `repository` its named
+  exports was read in core's build, not run. That core's jQuery events reach the page's jQuery listener, and the HTML5
+  drag with the items' pointer events off, need a browser.
+- The week strip as a drop target has no Jest case (the month's day cells do).
+- The page by eye, light and dark; a screen reader over the new buttons.
+- MariaDB and PHP 8.3 for the PHPUnit cases (run on m503b only, PHP 8.4 and PostgreSQL).
+- The mutation sweep of the C5 block (dry-applied, two applied by hand).
+
+**Owner decisions, not blocking:**
+- The page's "Classic calendar" link: keep it, or remove it now that C5 creates and edits.
+- The iCal link's offer: core's footer rule (the export switch and `calendar_user_can_add_event()`, built), or every
+  account `export.php` serves (the switch alone).
+- A drop on the week's hour body: core's service moves the day and keeps the time, so the body is no drop target; a drop
+  there could move the day and say that the time stays.
+- A "Move to…" control as the drag's keyboard twin: not built; Edit's form is the keyboard path.
+
+**Fast checks run** (m503b, PHP 8.4, PostgreSQL 18, after `mdl phpunit-init m503b`; `mdl ci` on the Mac mini, PHP 8.3,
+PostgreSQL): `editing_test` 8 tests, `calendar_page_test` 9, `page_visitor_test` 9, `calendar_component_source_test` 18,
+`categorypublic_source_test` 21, `range_test` 4, `get_calendar_range_test` 3, `get_public_calendar_range_test` 10,
+`core_events_test` 4, `blocks_test` 18, `range_budget_test` 2, `blocks_budget_test` 1, `esm_source_test` 4,
+`calendar_scss_test` 5, `page_test` 50, all green; `marketplace_readiness_test` 9 (1 skipped by design). Jest: the
+calendar's ten suites 200 tests. `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --only
+phpcs,phpdoc,phplint,mustache,grunt,jest` passed every step (Jest 31 suites, 406 tests) on its second run: the first
+found a `{@see` split across two lines in `get_calendar_range`'s docblock (phpdoc), fixed.
+
+**Gates:**
+- **Mutation sweep:** the "C5 editing" block (40) went red on pgsql and mariadb; after the security read's fixes,
+  `--changed` over that commit (80 gates: the five it added, the ones on its files and the ones whose tests it
+  touched) went red on both. Swept from worktrees of the commits.
+- **Tier 2:** `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat` passed every step on d3d1e6e:
+  PHPUnit 1,991 (16 skipped), Behat 197 scenarios (193 passed, 4 skipped), Jest 407.
+
+## 25. C6: not built (2026-11-02)
+
+The stages table gives C6 as "Trails source, when that format exists". It does not exist yet. A trail today is a list
+of competencies inside a learning plan (`local_dimensions/classes/plan_trail_cache.php`). It has no dates of its own
+and no milestones; the only date anywhere near it is the plan's due date, `{competency_plan}.duedate`. There is no
+trails course format and no model value for one, so a "trails" source has nothing to read that the owner has defined.
+
+The range already has the seam for it (section 5.5, "Sources behind an interface"): a source gets the resolved course
+and category sets and the keys, and a source whose key is off is not asked. When a trails format exists, C6 is that
+source plus its key.
+
+**Owner decision.** Either:
+- wait for the trails format and build C6 then, as the table says; or
+- build a smaller C6 now: a "learning plans" source that shows each of the viewer's own plans on its due date (a point
+  item under its own key, leading to the plan's page), read through core's competency API so the plan's own
+  visibility rules decide. It would be the viewer's own plans only, never another user's, and never on the public
+  calendar.

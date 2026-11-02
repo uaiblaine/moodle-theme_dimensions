@@ -28,6 +28,7 @@ use core_calendar\local\api;
 use core_calendar\local\event\entities\action_event_interface;
 use core_calendar\local\event\entities\event_interface;
 use local_unlistedcourses\category_access;
+use theme_dimensions\local\calendar\editing;
 use theme_dimensions\local\calendar\keys;
 use theme_dimensions\local\calendar\range;
 use theme_dimensions\local\calendar\scope;
@@ -62,6 +63,9 @@ use theme_dimensions\local\calendar\window;
  * that, one statement for the window's activity events ({@see action_rows()}), and the item says it in
  * `actionevent`.
  *
+ * Asked with editing on ({@see __construct()}), it also keeps core's editing answers for the events it turned into items
+ * ({@see editing::entries()}, read back with {@see editing()}): the entities are here, and nowhere after.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -69,6 +73,31 @@ use theme_dimensions\local\calendar\window;
 final class core_events implements source {
     /** @var string The source name items carry. */
     public const SOURCE = 'core';
+
+    /** @var bool Whether core's editing answers are read for the items. */
+    private bool $withediting;
+
+    /** @var array[] Core's editing answers for the last call's items ({@see editing::entries()}). */
+    private array $editing = [];
+
+    /**
+     * A source of core's events.
+     *
+     * @param bool $withediting Whether to read core's editing answers too: the page and its service do, the blocks,
+     *     which draw no editing, do not.
+     */
+    public function __construct(bool $withediting = false) {
+        $this->withediting = $withediting;
+    }
+
+    /**
+     * Core's editing answers for the items of the last call, one per event core lets the viewer edit.
+     *
+     * @return array[] Entries with exactly the keys of editing::ENTRY_KEYS.
+     */
+    public function editing(): array {
+        return $this->editing;
+    }
 
     /**
      * The keys this source's items can carry.
@@ -92,6 +121,7 @@ final class core_events implements source {
         $events = self::unwithheld(self::events($window, $scope, $on));
         $types = self::action_rows($events);
         $items = [];
+        $kept = [];
         $now = time();
         foreach ($events as $event) {
             $key = keys::classify($event);
@@ -99,7 +129,9 @@ final class core_events implements source {
                 continue;
             }
             $items[] = self::item($event, $key, isset($types[(int) $event->get_id()]), $now);
+            $kept[] = $event;
         }
+        $this->editing = $this->withediting ? editing::entries($kept) : [];
         return $items;
     }
 

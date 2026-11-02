@@ -71,7 +71,8 @@ final class calendar_component_source_test extends \basic_testcase {
 
     /**
      * AMD is reached through the bridge alone: no module of the calendar imports core's loader or calls RequireJS, and
-     * the one AMD module asked for is a name of the bridge's.
+     * every AMD module asked for is a name of the bridge's type: the page's notification, the blocks' templates, and
+     * core's calendar editing (stage C5), which the editing door adds to the type itself.
      *
      * @return void
      */
@@ -88,9 +89,95 @@ final class calendar_component_source_test extends \basic_testcase {
                 $bridged += $module === '../amd' ? 1 : 0;
             }
         }
-        $this->assertSame(2, $bridged, 'The page reports a failure through the bridge, the blocks\' client paints through it.');
+        $this->assertSame(3, $bridged, 'The page\'s failures, the blocks\' painting and core\'s editing go through the bridge.');
         $this->assertStringContainsString("load('core/notification')", $this->sources()['Calendar.tsx']);
         $this->assertStringContainsString("load('core/templates')", $this->sources()['block.ts']);
+        $this->assertStringContainsString("load('core_calendar/repository')", $this->sources()['editing.ts']);
+    }
+
+    /**
+     * Editing is core's (stage C5): core's calendar modules are named in the editing door alone, which adds them to the
+     * bridge's type; the page refreshes through its own request, writing nothing; "New event", Edit, Delete and the drag
+     * follow core's answers; a drop outside core's limits asks nothing; the visitor's shell has none of it.
+     *
+     * @return void
+     */
+    public function test_editing_is_cores(): void {
+        $sources = $this->sources();
+        foreach ($sources as $path => $source) {
+            if ($path !== 'editing.ts') {
+                $this->assertStringNotContainsString('core_calendar/', $source, "{$path} names one of core's calendar modules.");
+            }
+        }
+        $bridge = (string) file_get_contents(dirname(__DIR__, 3) . '/js/esm/src/amd.ts');
+        $this->assertStringContainsString('export interface Modules {', $bridge);
+        $this->assertStringNotContainsString('core_calendar', $bridge, 'The bridge names none of core\'s calendar modules.');
+        $editing = $sources['editing.ts'];
+        $this->assertStringContainsString("declare module '../amd' {", $editing);
+        foreach (['modal_event_form', 'crud', 'repository', 'events'] as $module) {
+            $this->assertStringContainsString("'core_calendar/{$module}'", $editing);
+        }
+        $this->assertStringContainsString('crud.registerRemove(jquery(element));', $editing);
+        $this->assertStringContainsString('repository.updateEventStartDay(eventid, daytimestamp)', $editing);
+        $this->assertMatchesRegularExpression(
+            '~modal\.setCourseId\(request\.course\);\s*if \(request\.event !== null\) \{\s*'
+                . 'modal\.setEventId\(request\.event\);~',
+            $editing
+        );
+
+        $page = $sources['Calendar.tsx'];
+        $this->assertStringContainsString("return request(showing.current, state, 'none', selected, false);", $page);
+        $this->assertStringContainsString('onChange((change) => changes.current(change));', $page);
+        $this->assertStringContainsString('(edits?.create ? (', $page);
+        $this->assertStringContainsString('if (!entry || !edit || !edit.drag) {', $page);
+        $this->assertMatchesRegularExpression(
+            "~const refusal = dropRefusal\(move\.edit, day\);\s*if \(refusal\) \{.*?return;\s*\}\s*"
+                . "if \(day === move\.from\) \{\s*return;\s*\}\s*"
+                . "const pending = new Pending\('theme_dimensions/calendar:move'\);~s",
+            $page
+        );
+        $this->assertStringContainsString(".then(() => refresh('updated'))", $page);
+        $this->assertStringContainsString('key={itemKey(poppededit.item)}', $page, 'jQuery\'s cache: one wrapper per event.');
+        $this->assertStringContainsString('movable: movable,', $page);
+        $this->assertStringContainsString(
+            'form(poppededit.item.id, null, poppededit.item.courseid)',
+            $page,
+            'Core\'s edit: the event\'s course.'
+        );
+
+        $actions = $sources['EditActions.tsx'];
+        $this->assertStringContainsString('data-type="event"', $actions);
+        $this->assertStringContainsString('if (!edit.edit && !edit.delete) {', $actions);
+        $this->assertStringContainsString(
+            'data-event-title={escapeHtml(item.name)}',
+            $actions,
+            'Core shows the attribute as HTML.'
+        );
+        $this->assertStringContainsString('{edit.edit ? (', $actions);
+        $this->assertStringContainsString('{edit.delete ? (', $actions);
+        $this->assertStringContainsString('if (!edit.delete || !root.current) {', $actions);
+
+        $moves = $sources['moves.ts'];
+        $this->assertStringContainsString("(item.source === 'core' ? edits.get(item.id) || null : null)", $moves);
+        $this->assertStringContainsString("if (edit.minday !== '' && day < edit.minday) {", $moves);
+        $this->assertStringContainsString("if (edit.maxday !== '' && day > edit.maxday) {", $moves);
+        $this->assertStringContainsString('(own.includes(today) || !own.length ? null', $moves);
+
+        $this->assertStringContainsString('draggable={look.movable?.(item) ? true : undefined}', $sources['Bar.tsx']);
+        $this->assertSame(2, substr_count($sources['DayCell.tsx'], 'draggable={look.movable?.('), 'A line and a card.');
+        foreach (['DayCell.tsx', 'WeekGrid.tsx'] as $path) {
+            $this->assertStringContainsString('data-cal-drop={look.movable ? iso : undefined}', $sources[$path], $path);
+        }
+        $this->assertStringNotContainsString('draggable', $sources['WeekGrid.tsx'], 'The hour body is no drag surface.');
+        $this->assertStringContainsString(
+            "const over = target instanceof Element && target.closest('[role=\"dialog\"]') !== null;",
+            $sources['EventPopover.tsx']
+        );
+
+        $public = $sources['PublicCalendar.tsx'];
+        foreach (['movable', 'EditActions', './editing', 'edits', 'actions='] as $absent) {
+            $this->assertStringNotContainsString($absent, $public, "The visitor's shell has no {$absent}.");
+        }
     }
 
     /**
@@ -518,5 +605,11 @@ final class calendar_component_source_test extends \basic_testcase {
             $this->sources()['PublicCalendar.tsx']
         );
         $this->assertStringNotContainsString('remember', $this->sources()['weeks.ts'], 'The view is never remembered.');
+        // The address's week falls back and is bounded as page::week_from_request() does it (security read F2).
+        $this->assertStringContainsString('const valid = parse(week) !== null && year >= 1900 && year <= 2999;', $weeks);
+        $this->assertStringContainsString(
+            "weekStart(valid ? week : openingOf({view: 'month', month: month}, today), firstday)",
+            $weeks
+        );
     }
 }

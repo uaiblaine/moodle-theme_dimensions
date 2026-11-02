@@ -170,6 +170,8 @@ final class page_visitor_test extends \advanced_testcase {
         $this->assertSame(['page', 'home'], array_keys($props['urls']), 'No address of core\'s calendar.');
         $this->assertSame(['Feira publica'], array_column($props['answer']['events'], 'name'));
         $this->assertArrayHasKey('descriptions', $props['answer']);
+        $this->assertSame([], $props['answer']['editing'], 'A visitor edits nothing.');
+        $this->assertArrayNotHasKey('exporturl', $context, 'Nor exports.');
         $this->assertSame(page::PAGETYPE, $GLOBALS['PAGE']->pagetype);
         $this->assertFalse(isloggedin(), 'Nobody was logged in to serve it.');
     }
@@ -187,6 +189,8 @@ final class page_visitor_test extends \advanced_testcase {
         self::forget_calendar();
         $context = $this->context($this->handle());
         $this->assertSame(calendar_page::COMPONENT, $context['component'], 'Control: an account\'s page.');
+        $this->assertArrayHasKey('exporturl', $context, 'Control: an account\'s page answers the export.');
+        $this->assertArrayHasKey('edits', json_decode($context['props'], true), 'And "New event".');
         $this->setUser(null);
         $this->assertSame(calendar_page::COMPONENT_PUBLIC, $this->context($this->handle())['component']);
     }

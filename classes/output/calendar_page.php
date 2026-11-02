@@ -27,6 +27,7 @@ namespace theme_dimensions\output;
 use core\output\renderable;
 use core\output\renderer_base;
 use core\output\templatable;
+use theme_dimensions\local\calendar\editing;
 use theme_dimensions\local\calendar\keys;
 use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\calendar\range;
@@ -51,10 +52,13 @@ use theme_dimensions\local\landingfields;
  * In the week view ({@see page::VIEW_WEEK}) the window is the week's seven days: the toolbar's links move by the week,
  * the view switch is two links, and the agenda lists the week's days.
  *
+ * For an account the props carry core's editing answers ({@see editing}: "New event", the form's context) and the
+ * page's footer links core's iCal export where core's calendar offers it (stage C5).
+ *
  * In its visitor mode ({@see page::handle()}'s public calendar) the page draws the visitor's two keys and nothing that
  * needs a session or a login: no category, no "More" filters, no link to core's calendar (which asks a visitor to log
- * in), and the mount names the visitor's shell, {@see COMPONENT_PUBLIC}, whose props carry no tree, no field options
- * and no address of core's calendar.
+ * in), no editing and no export, and the mount names the visitor's shell, {@see COMPONENT_PUBLIC}, whose props carry no
+ * tree, no field options, no editing answers and no address of core's calendar.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -96,7 +100,9 @@ class calendar_page implements renderable, templatable {
         'calendar_dayitems_one',
         'calendar_daylabel',
         'calendar_daytoday',
+        'calendar_delete',
         'calendar_descriptionloading',
+        'calendar_edit',
         'calendar_filtercount',
         'calendar_join_free',
         'calendar_join_key',
@@ -115,6 +121,8 @@ class calendar_page implements renderable, templatable {
         'calendar_moreaction',
         'calendar_morefilters',
         'calendar_morelabel',
+        'calendar_newevent',
+        'calendar_neweventon',
         'calendar_nextmonth',
         'calendar_nextweek',
         'calendar_open',
@@ -353,6 +361,13 @@ class calendar_page implements renderable, templatable {
                 'calendar' => (new \core\url('/calendar/view.php'))->out(false),
                 'home' => (new \core\url('/'))->out(false),
             ],
+            // Core's own answers ({@see editing}): whether core's calendar shows this viewer "New event", and the
+            // context and the course core's site calendar hands its event form.
+            'edits' => [
+                'create' => editing::create(),
+                'context' => editing::form_context(),
+                'course' => (int) SITEID,
+            ],
         ];
     }
 
@@ -534,6 +549,7 @@ class calendar_page implements renderable, templatable {
             'agendaempty' => empty($agenda),
             'component' => self::COMPONENT,
             'props' => json_encode($props, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'exporturl' => editing::export_url(),
         ];
     }
 
