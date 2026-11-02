@@ -1708,6 +1708,58 @@ final class population_test extends \advanced_testcase {
     }
 
     /**
+     * A field filter narrows a visitor's numbers too: the hero's total counts what the filter left.
+     *
+     * The logged-in page recounts its total chip by chip, so only a visitor's page keeps the first count
+     * of the population, taken after the filter; the test above cannot see that line. The control is the
+     * unfiltered page, which holds the course the filter takes away.
+     *
+     * @param bool $statesort The mode.
+     */
+    #[DataProvider('modes_provider')]
+    public function test_a_field_filter_narrows_a_visitors_count(bool $statesort): void {
+        $this->resetAfterTest();
+        $this->mode($statesort);
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        set_config(facets::SETTING, landingfields::SHORTNAME_MODEL, 'theme_dimensions');
+        $fieldid = (int) landingfields::get_field(landingfields::SHORTNAME_MODEL)->get('id');
+        $handler = \core_course\customfield\course_handler::create();
+
+        $generator = self::getDataGenerator();
+        $root = $generator->create_category();
+        $this->set_category_state((int) $root->id, category_discoverability::STATE_PUBLIC);
+        $events = [];
+        foreach ([landingfields::MODEL_EVENT, landingfields::MODEL_EVENT, landingfields::MODEL_COURSE] as $model) {
+            $course = $generator->create_course(['category' => $root->id]);
+            $handler->instance_form_save((object) [
+                'id' => $course->id,
+                'customfield_' . landingfields::SHORTNAME_MODEL => $model,
+            ]);
+            $this->set_course_state((int) $course->id, discoverability::STATE_PUBLIC);
+            if ($model === landingfields::MODEL_EVENT) {
+                $events[] = (int) $course->id;
+            }
+        }
+
+        $this->become(null);
+        $all = population::resolve(new criteria($root->id, ['anonymous' => true, 'sort' => criteria::SORT_NAME]));
+        $this->assertSame(3, $all->total, 'The control: the visitor is listed all three courses.');
+        $this->assertSame(3, $all->counts['total']);
+
+        self::forget();
+        $filtered = population::resolve(new criteria($root->id, [
+            'anonymous' => true,
+            'sort' => criteria::SORT_NAME,
+            'fields' => [$fieldid => landingfields::MODEL_EVENT],
+        ]));
+        $this->assertEqualsCanonicalizing($events, $filtered->ids());
+        $this->assertSame(2, $filtered->total);
+        $this->assertSame(2, $filtered->counts['total'], 'The hero counts what the filter left, not the population.');
+    }
+
+    /**
      * Rows come grouped by state first - the viewer's own, then what they can join, then the rest - and in core order inside.
      */
     public function test_state_groups_come_first_then_core_order_unless_the_hatch_is_off(): void {

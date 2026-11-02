@@ -419,10 +419,11 @@ class category_hero implements renderable, templatable {
      * The numbers of the panel, every one post-filter: the total, the viewer's enrolments, the hidden courses.
      *
      * The enrolment count is offered when the viewer has one. The hidden count is a staff
-     * number and is shown behind the capability that names it: the population also admits a
-     * hidden course to a student actively enrolled in it, and "hidden from students" is not
-     * a line for that student's own hero. In the SQL-cut mode (categorystatesort off) the
-     * population holds the total alone.
+     * number about the category and is shown behind the capability that names it, in the
+     * category's context: the population admits a hidden course on that capability in the
+     * COURSE's context, which a teacher holds in their own hidden course, and "hidden from
+     * students" is not a line for that teacher's hero. In the SQL-cut mode (categorystatesort
+     * off) the population holds the total alone.
      *
      * @param \core\context $context The category's context.
      * @return array Entries of ['value' => int, 'label' => string].
