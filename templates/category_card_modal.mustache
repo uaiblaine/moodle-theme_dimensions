@@ -17,33 +17,48 @@
 {{!
     @template theme_dimensions/category_card_modal
 
-    The contents of one course's "More information" dialogue, drawn by the card itself inside an
-    inert <template> element: category_card includes it with the CARD's context, so the image, the
-    state pill, the title, the excerpt, the facts and the programme are the card's own keys, and
-    only the kicker, the tiles' label and the two buttons are the dialogue's (the card's `modal`).
-    The server draws it into every card and the listing's client modules draw it into every card
-    they render, from the same context, so a card appended by a fetch opens the same dialogue.
+    The sheet and the actions of one course's "More information" dialogue, rendered in the browser by
+    categorycoursemodal into core/modal's body and footer (the frame is category_course_modal).
 
-    Two parts, each named by a hook: the sheet (the cover with the pill, the kicker and the title
-    over its gradient, then the summary and the checklist beside the fact tiles) and the actions.
-    categorycoursemodal moves the sheet into core/modal's body and the actions into its footer,
-    and gives the title the id core/modal's root is labelled by - which is why the title carries
-    core's own title hook and no id of its own: a page holds many of these and the dialogue one.
+    Two halves, as the dialogue has two kinds of content. What the card already decided arrives from
+    the card's own markup when the reader presses its link: the cover (imageurl), the state pill
+    (badge), the title (fullname), the kicker and the two buttons (primary, secondary), which the card
+    writes onto its link from its context's modal keys. What only the dialogue shows - the excerpt, the
+    fact tiles and the programme's first lines with their labels - is theme_dimensions_get_course_dialogue's
+    answer. The dialogue opens at once with the first half and loading set, which draws a skeleton in
+    the content region; the module renders this template again once the answer is in and moves only the
+    new content region into the open dialogue, so the title that labels it is never replaced. A failed
+    request keeps the header and the buttons and says so in one sentence, with the course's own page.
 
-    The primary button is a link, or - for a course whose enrolment opens later - a button that
-    is aria-disabled, never disabled: a disabled button leaves the focus order, and a screen reader
-    must still reach the one place the opening date is printed and hear why it does nothing. Every
-    icon is decorative; the words carry the meaning.
+    Three parts, each named by a hook: the sheet (the cover with the pill, the kicker and the title over
+    its gradient, then the content region), the content region inside it, and the actions. The title
+    carries core's own title hook and no id of its own: the module gives it the id core/modal's root is
+    labelled by, and a page holds many cards and one dialogue.
+
+    The primary button is a link, or - for a course whose enrolment opens later - a button that is
+    aria-disabled, never disabled: a disabled button leaves the focus order, and a screen reader must
+    still reach the one place the opening date is printed and hear why it does nothing. Every icon is
+    decorative; the words carry the meaning.
 
     Every text value arrives in the plain spelling and is escaped here.
 
     Example context (json):
     {
-        "id": 42,
         "fullname": "Pre-hospital Care & Rescue",
         "imageurl": "https://example.com/pluginfile.php/31/course/overviewfiles/capa.jpg",
         "hasimage": true,
         "badge": {"label": "Open for enrolment", "classes": "dim-badge dim-badge--open", "icon": "fa-right-to-bracket"},
+        "kicker": "Brigade",
+        "haskicker": true,
+        "primary": {"label": "Enrol", "url": "https://example.com/theme/dimensions/landing.php?id=42", "disabled": false, "note": "", "icon": "fa-arrow-right"},
+        "hasprimary": true,
+        "secondary": {"label": "Course page", "url": "https://example.com/course/view.php?id=42"},
+        "hassecondary": true,
+        "loading": false,
+        "failed": false,
+        "failedlabel": "",
+        "failedurl": "",
+        "failedlink": "",
         "excerpt": "Pre-hospital care course for volunteer brigade members.",
         "hasexcerpt": true,
         "facts": [
@@ -52,18 +67,10 @@
             {"label": "Venue", "value": "Central Campus · São Paulo", "icon": "fa-location-dot"}
         ],
         "hasfacts": true,
+        "factslabel": "Course information",
         "learn": ["Victim triage", "Immobilisation", "Safe transport"],
         "haslearn": true,
-        "learnlabel": "What you will learn",
-        "modal": {
-            "kicker": "Brigade",
-            "haskicker": true,
-            "factslabel": "Course information",
-            "primary": {"label": "Enrol", "url": "https://example.com/theme/dimensions/landing.php?id=42", "disabled": false, "note": "", "icon": "fa-arrow-right"},
-            "hasprimary": true,
-            "secondary": {"label": "Course page", "url": "https://example.com/course/view.php?id=42"},
-            "hassecondary": true
-        }
+        "learnlabel": "What you will learn"
     }
 }}
 <div class="dim-cmodal__sheet" data-region="dim-cmodal-sheet">
@@ -71,15 +78,28 @@
         {{#hasimage}}
         <img class="dim-cmodal__image" src="{{imageurl}}" alt="" decoding="async">
         {{/hasimage}}
-        <span class="dim-cmodal__pill {{badge.classes}}"><i class="fa {{badge.icon}}" aria-hidden="true"></i> {{badge.label}}</span>
+        {{#badge}}
+        <span class="dim-cmodal__pill {{classes}}"><i class="fa {{icon}}" aria-hidden="true"></i> {{label}}</span>
+        {{/badge}}
         <div class="dim-cmodal__heading">
-            {{#modal.haskicker}}
-            <p class="dim-cmodal__kicker">{{modal.kicker}}</p>
-            {{/modal.haskicker}}
+            {{#haskicker}}
+            <p class="dim-cmodal__kicker">{{kicker}}</p>
+            {{/haskicker}}
             <h2 class="dim-cmodal__title" data-region="title" tabindex="-1">{{fullname}}</h2>
         </div>
     </div>
-    <div class="dim-cmodal__columns">
+    <div class="dim-cmodal__columns" data-region="dim-cmodal-content"{{#loading}} aria-busy="true"{{/loading}}>
+        {{#loading}}
+        <div class="dim-cmodal__skeleton" aria-hidden="true">
+            <span class="dim-cmodal__bone"></span>
+            <span class="dim-cmodal__bone"></span>
+            <span class="dim-cmodal__bone dim-cmodal__bone--short"></span>
+        </div>
+        {{/loading}}
+        {{#failed}}
+        <p class="dim-cmodal__failed">{{failedlabel}} <a href="{{failedurl}}">{{failedlink}}</a></p>
+        {{/failed}}
+        {{^loading}}{{^failed}}
         <div class="dim-cmodal__main">
             {{#hasexcerpt}}
             <p class="dim-cmodal__summary">{{excerpt}}</p>
@@ -94,24 +114,25 @@
             {{/haslearn}}
         </div>
         {{#hasfacts}}
-        <ul class="dim-cmodal__facts" aria-label="{{modal.factslabel}}">
+        <ul class="dim-cmodal__facts" aria-label="{{factslabel}}">
             {{#facts}}
             <li class="dim-cmodal__fact"><span class="dim-cmodal__facticon"><i class="fa {{icon}}" aria-hidden="true"></i></span><span class="dim-cmodal__facttext"><span class="dim-cmodal__factlabel">{{label}}</span> <b class="dim-cmodal__factvalue">{{value}}</b></span></li>
             {{/facts}}
         </ul>
         {{/hasfacts}}
+        {{/failed}}{{/loading}}
     </div>
 </div>
 <div class="dim-cmodal__actions" data-region="dim-cmodal-actions">
-    {{#modal.secondary}}
+    {{#secondary}}
     <a class="btn dim-cmodal__button dim-cmodal__button--secondary" href="{{url}}">{{label}}</a>
-    {{/modal.secondary}}
-    {{#modal.primary}}
+    {{/secondary}}
+    {{#primary}}
     {{#disabled}}
     <button type="button" class="btn dim-cmodal__button dim-cmodal__button--closed" aria-disabled="true" data-region="dim-cmodal-closed"><i class="fa {{icon}}" aria-hidden="true"></i> {{label}}<span class="visually-hidden"> {{note}}</span></button>
     {{/disabled}}
     {{^disabled}}
     <a class="btn dim-cmodal__button dim-cmodal__button--primary" href="{{url}}">{{label}} <i class="fa {{icon}}" aria-hidden="true"></i></a>
     {{/disabled}}
-    {{/modal.primary}}
+    {{/primary}}
 </div>

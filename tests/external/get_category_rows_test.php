@@ -791,6 +791,10 @@ final class get_category_rows_test extends \advanced_testcase {
         sort($declared);
 
         $this->assertSame($declared, $exported);
+        // The dialogue's content is fetched when it opens (get_course_dialogue): no card carries it any more.
+        foreach (['detailsid', 'excerpt', 'facts', 'learn', 'learnlabel'] as $gone) {
+            $this->assertNotContains($gone, $declared, "The rows still carry {$gone}.");
+        }
 
         // The badge is a structure of its own, and an allowlist one level down drops a key just as silently.
         $badge = array_keys((array) $fetched['cards'][0]['badge']);
@@ -800,13 +804,14 @@ final class get_category_rows_test extends \advanced_testcase {
         $this->assertSame($declaredbadge, $badge);
         $this->assertContains('icon', $declaredbadge);
 
-        // So is the course dialogue's own structure, which the client renders into every card it draws.
+        // So is the course dialogue's own structure, which every card draws onto its "More information" link.
         $modal = array_keys((array) $fetched['cards'][0]['modal']);
         $declaredmodal = array_keys(get_category_rows::card_structure()->keys['modal']->keys);
         sort($modal);
         sort($declaredmodal);
         $this->assertSame($declaredmodal, $modal);
         $this->assertContains('secondary', $declaredmodal);
+        $this->assertNotContains('factslabel', $declaredmodal, 'The tiles\' label comes with the fetched content.');
     }
 
     /**

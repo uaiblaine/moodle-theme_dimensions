@@ -59,6 +59,15 @@ $functions = [
         'loginrequired' => true,
         'capabilities' => '',
     ],
+    'theme_dimensions_get_course_dialogue' => [
+        'classname' => 'theme_dimensions\external\get_course_dialogue',
+        'description' => 'The content of one course\'s "More information" dialogue: excerpt, facts and programme.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
     'theme_dimensions_toggle_wishlist' => [
         'classname' => 'theme_dimensions\external\toggle_wishlist',
         'description' => 'Star or unstar a course of the showcase: core\'s own favourite, written through the theme\'s gates.',

@@ -24,7 +24,6 @@
 
 namespace theme_dimensions\local\category;
 
-use core_course_category;
 use local_unlistedcourses\access;
 use theme_dimensions\local\landing\publicfiles;
 use theme_dimensions\local\landingfields;
@@ -32,16 +31,19 @@ use theme_dimensions\local\landingfields;
 /**
  * What a page of cards needs beyond its ids, read once per layer over the page slice and never per course.
  *
- * Four layers, one statement each, every one bounded by the page size:
+ * Three layers, one statement each, every one bounded by the page size:
  * the course rows themselves, the landing page custom field values
- * ({@see landingfields::values_many()}), the course images, and the course
- * contacts. Two more are read only for the cards that need them, so a page
- * without such a card pays nothing for them: the routes beside a relationship and
- * the opening dates ({@see next_actions()}), and the prerequisite of a conditional card
+ * ({@see landingfields::values_many()}) and the course images. Two more are read
+ * only for the cards that need them, so a page without such a card pays nothing
+ * for them: the routes beside a relationship and the opening dates
+ * ({@see next_actions()}), and the prerequisite of a conditional card
  * ({@see prerequisites()}). Never build core_course_list_element one at a time for these:
- * get_course_contacts(), get_custom_fields() and has_course_overviewfiles()
- * each fall back to a per-course query, and the last one has no bulk
- * escape hatch in core at all.
+ * get_custom_fields() and has_course_overviewfiles() each fall back to a
+ * per-course query, and the last one has no bulk escape hatch in core at all.
+ *
+ * The course contacts, the summary, the venue and the programme are not read
+ * here: only the course dialogue shows them, and it fetches them for one course
+ * when it opens ({@see dialogue}), so a page pays nothing for what nobody opened.
  *
  * The images reproduce core's own choice - the first file of the course's
  * overviewfiles area, in filename order, that passes the site's accepted
@@ -53,36 +55,29 @@ use theme_dimensions\local\landingfields;
  * would load one course at a time. It is only compared, so that an entry
  * already right is not written again ({@see warm_course_image_cache()}).
  *
- * The contacts go through core's own bulk method,
- * {@see core_course_category::preload_course_contacts()}, which fills the
- * coursecontacts cache; warm, it costs nothing.
- *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class cards {
-    /** @var string The columns a card needs from {course}. */
-    private const COURSE_FIELDS = 'id, category, fullname, shortname, idnumber, summary, summaryformat, '
-        . 'startdate, enddate, visible, cacherev, timemodified';
+    /** @var string The columns a card needs from {course}; the summary is the dialogue's ({@see dialogue::COURSE_FIELDS}). */
+    private const COURSE_FIELDS = 'id, category, fullname, shortname, idnumber, startdate, enddate, visible, cacherev, '
+        . 'timemodified';
 
     /**
      * @var string[] The landing page fields a card reads, and the only ones {@see values()} asks for.
      *
      * {@see \theme_dimensions\output\category_card} reads the model (the kind, the date tile, the call to
-     * action, the crests' gate), the modality, the workload, the city and the venue (the meta line and the
-     * facts, with the names of the workload, the modality and the city), the programme (what you will
-     * learn) and the four crests. A card that starts reading another value names its field here, or reads
-     * the empty value: cards_test compares the card's keys read this way with every field read, and reads
-     * the card's source for the keys it compares.
+     * action, the crests' gate), the modality, the workload and the city (the meta line) and the four
+     * crests. The venue and the programme are the dialogue's ({@see dialogue::SHORTNAMES}). A card that
+     * starts reading another value names its field here, or reads the empty value: cards_test compares the
+     * card's keys read this way with every field read, and reads the card's source for the keys it compares.
      */
     public const CARD_SHORTNAMES = [
         landingfields::SHORTNAME_MODEL,
         landingfields::SHORTNAME_MODALITY,
         landingfields::SHORTNAME_WORKLOAD,
         landingfields::SHORTNAME_CITY,
-        landingfields::SHORTNAME_VENUE,
-        landingfields::SHORTNAME_PROGRAMME,
         landingfields::SHORTNAME_CREST1,
         landingfields::SHORTNAME_CREST2,
         landingfields::SHORTNAME_CREST3,
@@ -268,46 +263,6 @@ final class cards {
         if ($writes) {
             $cache->set_many($writes);
         }
-    }
-
-    /**
-     * The course contacts of the page, through core's bulk preload.
-     *
-     * @param \stdClass[] $rows Population rows carrying the context preload columns, keyed by course id.
-     * @return array courseid => [userid => ['fullname' => plain, 'rolename' => plain]], for every row given.
-     */
-    public static function contacts(array $rows): array {
-        $contacts = [];
-        if (!$rows) {
-            return $contacts;
-        }
-        $courses = [];
-        foreach ($rows as $courseid => $row) {
-            $courses[(int) $courseid] = (object) ['id' => (int) $courseid, 'managers' => []];
-            $contacts[(int) $courseid] = [];
-        }
-        $contexts = population::page_contexts($rows);
-        core_course_category::preload_course_contacts($courses);
-        foreach ($courses as $courseid => $course) {
-            foreach ($course->managers ?? [] as $manager) {
-                $userid = (int) $manager->id;
-                if (isset($contacts[$courseid][$userid])) {
-                    continue;
-                }
-                // The same spelling core_course_list_element::get_course_contacts() uses for the role name.
-                $role = (object) [
-                    'id' => $manager->roleid,
-                    'name' => $manager->rolename,
-                    'shortname' => $manager->roleshortname,
-                    'coursealias' => $manager->rolecoursealias,
-                ];
-                $contacts[$courseid][$userid] = [
-                    'fullname' => fullname($manager),
-                    'rolename' => role_get_name($role, $contexts[$courseid], ROLENAME_ALIAS),
-                ];
-            }
-        }
-        return $contacts;
     }
 
     /**

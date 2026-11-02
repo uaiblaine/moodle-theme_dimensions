@@ -185,6 +185,10 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             /* The root included: its search line is the listing's own, live as on a category page, and its
                posters open panels as a category's do (js/esm/src/listing/account.ts, with the stars). */
             $this->page->requires->js_call_amd('theme_dimensions/listingaccount', 'init');
+            /* The course dialogue's module, under the same rule: it fetches a course's content from a service
+               that refuses the guest. Without it "More information" is the link to the card's own page, which
+               is what the guest and the visitor follow. */
+            $this->page->requires->js_call_amd('theme_dimensions/categorycoursemodal', 'init');
         }
 
         /* The cover film's module is armed for EVERYBODY and on every one of these pages, which
@@ -195,11 +199,6 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
            where category cards live, so an arming that skipped the root would skip the whole
            feature; the same line stands in request.php for the anonymous shell. */
         $this->page->requires->js_call_amd('theme_dimensions/covervideo', 'init');
-
-        /* The course dialogue's module, for the same reasons and as widely: it calls no web service, it
-           reads the dialogue every card draws for itself, and without it "More information" is the
-           native disclosure every reader had before. Repeated in request.php for the anonymous shell. */
-        $this->page->requires->js_call_amd('theme_dimensions/categorycoursemodal', 'init');
 
         // The hero is drawn by the core renderer's full_header(), which core calls after this
         // method returns; it is armed here because this is where the counts are known. The root

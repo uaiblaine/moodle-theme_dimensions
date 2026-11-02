@@ -70,6 +70,15 @@ Feature: The category showcase lists what a person may discover, and its filters
     And I should not see "No enrolment available" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should not see "You can also enrol now"
 
+  Scenario: Without JavaScript, More information leads to the course's own page
+    # "More information" is a link to the card's page: for a learner, the landing page of a course that chose a
+    # model. With JavaScript the course dialogue opens instead (theme_dimensions_category_client.feature).
+    Given I am on the "TESTCAT" "theme_dimensions > Category showcase" page logged in as "student1"
+    When I click on "//article[@data-region='dim-card'][contains(., 'Resgate em Altura')]//a[@data-region='dim-card-more']" "xpath_element"
+    Then the url should match "landing"
+    And I should see "Resgate em Altura"
+    And "body.dim-category" "css_element" should not exist
+
   Scenario: An administrator keeps seeing the unlisted course and the unlisted subcategory
     Given I log in as "admin"
     When I am on the "TESTCAT" "theme_dimensions > Category showcase" page

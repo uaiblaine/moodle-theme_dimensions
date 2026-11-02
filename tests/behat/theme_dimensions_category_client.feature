@@ -253,11 +253,12 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
 
   @javascript
   Scenario: More information opens the course in a dialogue with its two ways in, and Escape gives the focus back
-    # With JavaScript the card's "More information" opens core/modal instead of its inline panel, so no
-    # disclosure opens behind it. A self enrolment enabled on the new course makes it open, and the admin may
-    # walk into any course: "Enrol" goes to the landing page and "Course page" to the course - the pair that stays two
-    # (for a learner both would open the landing page, and the dialogue draws one). The dialogue is found by its
-    # title; the summary gets the focus back when it closes.
+    # With JavaScript the card's "More information" link opens core/modal instead of the course's page. A self
+    # enrolment enabled on the new course makes it open, and the admin may walk into any course: "Enrol" goes to the
+    # landing page and "Course page" to the course - the pair that stays two (for a learner both would open the
+    # landing page, and the dialogue draws one). The dialogue opens at once with the card's half and is filled by
+    # theme_dimensions_get_course_dialogue; the press stays pending until the content is painted, so the skeleton
+    # is gone by the next step. The dialogue is found by its title; the link gets the focus back when it closes.
     Given the following config values are set as admin:
       | status | 0 | enrol_self |
     And the following "courses" exist:
@@ -265,14 +266,15 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | Busca Terrestre | BUSCA     | TESTCAT  | 1                          |
     And I log in as "admin"
     And I am on the "TESTCAT" "theme_dimensions > Category showcase" page
-    When I click on "//article[@data-region='dim-card'][contains(., 'Busca Terrestre')]//summary" "xpath_element"
+    When I click on "//article[@data-region='dim-card'][contains(., 'Busca Terrestre')]//a[@data-region='dim-card-more']" "xpath_element"
     Then "Busca Terrestre" "dialogue" should be visible
     And "Enrol" "link" should exist in the "Busca Terrestre" "dialogue"
     And "Course page" "link" should exist in the "Busca Terrestre" "dialogue"
-    And "//article[@data-region='dim-card'][contains(., 'Busca Terrestre')]//details[@open]" "xpath_element" should not exist
+    And "//*[@data-region='dim-cmodal-content'][not(@aria-busy)]" "xpath_element" should exist
+    And "body.dim-category" "css_element" should exist
     When I press the escape key
     Then "Busca Terrestre" "dialogue" should not exist
-    And the focused element is "//article[@data-region='dim-card'][contains(., 'Busca Terrestre')]//summary" "xpath_element"
+    And the focused element is "//article[@data-region='dim-card'][contains(., 'Busca Terrestre')]//a[@data-region='dim-card-more']" "xpath_element"
 
   @javascript
   Scenario: A-Z reorders the flat listing where it stands, and the address says so

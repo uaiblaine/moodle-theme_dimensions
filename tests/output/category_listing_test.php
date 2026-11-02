@@ -33,6 +33,7 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\cards;
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\dialogue;
 use theme_dimensions\local\category\facets;
 use theme_dimensions\local\category\page_result;
 use theme_dimensions\local\category\population;
@@ -59,6 +60,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  */
 #[CoversClass(category_listing::class)]
 #[CoversClass(category_card::class)]
+#[CoversClass(dialogue::class)]
 #[CoversClass(category_toolbar::class)]
 #[CoversClass(category_panel::class)]
 final class category_listing_test extends \advanced_testcase {
@@ -183,6 +185,8 @@ final class category_listing_test extends \advanced_testcase {
      * Each state prints its badge and its call to action; the muted ones print none.
      */
     public function test_each_state_prints_its_badge_and_call_to_action(): void {
+        global $DB;
+
         $viewer = $this->seed();
         $this->become($viewer);
         /* The flat organisation: one of the fixture's courses sits in the child, and the grouped
@@ -211,8 +215,12 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertNull($enrolled->overline, 'A course in the listed root has no overline.');
         $hours = get_string('landing_hours', 'theme_dimensions', '36');
         $this->assertSame($hours . ' · In-person · São Paulo', $enrolled->meta);
-        $this->assertSame('Resumo do curso.', $enrolled->excerpt);
-        $this->assertSame(['Um', 'Dois', 'Três'], $enrolled->learn);
+        // The summary and the programme are the dialogue's, fetched when it opens; the card carries neither.
+        $this->assertObjectNotHasProperty('excerpt', $enrolled);
+        $this->assertObjectNotHasProperty('learn', $enrolled);
+        $content = dialogue::content($DB->get_record('course', ['id' => $this->ids['enrolled']], dialogue::COURSE_FIELDS));
+        $this->assertSame('Resumo do curso.', $content['excerpt']);
+        $this->assertSame(['Um', 'Dois', 'Três'], $content['learn']);
         $this->assertTrue($enrolled->showstar);
         $this->assertFalse($enrolled->favourite);
 
@@ -460,7 +468,7 @@ final class category_listing_test extends \advanced_testcase {
             $row->state = $state;
             $row->startsat = 0;
             $row->endsat = 0;
-            $card = new category_card($course, $row, $value, null, [], null, true, false, $routes, $pre);
+            $card = new category_card($course, $row, $value, null, null, true, false, $routes, $pre);
             return $card->export_for_template($renderer);
         };
         $route = [['kind' => 'self', 'instanceid' => 1]];
@@ -582,7 +590,7 @@ final class category_listing_test extends \advanced_testcase {
             $row->state = $state;
             $row->startsat = 0;
             $row->endsat = 0;
-            $card = new category_card($courses[$id], $row, $values[$id], null, [], null, true, $anonymous, [], null, $opens);
+            $card = new category_card($courses[$id], $row, $values[$id], null, null, true, $anonymous, [], null, $opens);
             return $card->export_for_template($renderer);
         };
         $line = get_string(
@@ -1220,6 +1228,8 @@ final class category_listing_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_anonymous_listing_points_at_the_public_page_and_shows_no_star(): void {
+        global $DB;
+
         $this->seed_public();
         $viewer = self::getDataGenerator()->create_user();
 
@@ -1281,7 +1291,8 @@ final class category_listing_test extends \advanced_testcase {
 
         // The whole page, unpaged: the modelled public course links to its landing page and offers it as
         // the call to action, the one without a model links nowhere at all (the enrolment page would
-        // answer a visitor with the login form), and no card names a course contact to the internet.
+        // answer a visitor with the login form), and no card names a course contact to the internet:
+        // the contacts are the course dialogue's, which a visitor never opens.
         $cards = $this->cards($this->export(['anonymous' => true]));
         $card = $cards[$this->ids['public']];
         $this->assertFalse($card->showstar);
@@ -1289,13 +1300,13 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertSame(get_string('category_cta_landing', 'theme_dimensions'), $card->cta['label']);
         $this->assertSame(links::page((int) $card->id)->out(false), $card->cta['url']);
         $this->assertTrue($card->cta['primary']);
-        $contactlabel = get_string('category_contact', 'theme_dimensions');
         $this->assertTrue($cards[$this->ids['public']]->hasurl);
         $this->assertSame(links::page($this->ids['public'])->out(false), $cards[$this->ids['public']]->url);
         $this->assertFalse($cards[$this->ids['nomodel']]->hasurl, 'Nowhere a visitor may go.');
         $this->assertNull($cards[$this->ids['nomodel']]->url);
         $this->assertFalse($cards[$this->ids['nomodel']]->hascta);
-        $this->assertNotContains($contactlabel, array_column($cards[$this->ids['public']]->facts, 'label'));
+        $this->assertObjectNotHasProperty('facts', $cards[$this->ids['public']]);
+        $this->assertStringNotContainsString('Tereza Contato', json_encode($cards[$this->ids['public']]));
 
         // Control: the same listing for somebody logged in still belongs to core's category page.
         $this->become($viewer);
@@ -1311,7 +1322,10 @@ final class category_listing_test extends \advanced_testcase {
         );
         $this->assertTrue($this->cards($context)[$this->ids['public']]->showstar, 'Control: a person gets the star.');
         $cards = $this->cards($context);
-        $publicfacts = $cards[$this->ids['public']]->facts;
+        // Control: the contact is real, and named to a person - in the dialogue, not on the card.
+        $public = $DB->get_record('course', ['id' => $this->ids['public']], dialogue::COURSE_FIELDS);
+        $publicfacts = dialogue::content($public)['facts'];
+        $contactlabel = get_string('category_contact', 'theme_dimensions');
         $this->assertContains($contactlabel, array_column($publicfacts, 'label'), 'Control: named to a person.');
         $this->assertStringContainsString('Tereza Contato', implode(' ', array_column($publicfacts, 'value')));
         $this->assertTrue($cards[$this->ids['nomodel']]->hasurl, 'Control: a person gets the enrolment page.');
@@ -1460,7 +1474,7 @@ final class category_listing_test extends \advanced_testcase {
         $renderer = $PAGE->get_renderer('core');
 
         $build = function (\stdClass $populationrow) use ($course, $values, $renderer): \stdClass {
-            $card = new category_card($course, $populationrow, $values, null, [], null, false);
+            $card = new category_card($course, $populationrow, $values, null, null, false);
             return $card->export_for_template($renderer);
         };
 

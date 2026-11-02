@@ -208,6 +208,7 @@ $string['category_modal_coursepage'] = 'Course page';
 $string['category_modal_enrol'] = 'Enrol';
 $string['category_modal_eventpage'] = 'Event page';
 $string['category_modal_facts'] = 'Course information';
+$string['category_modal_failed'] = 'The details of this course could not be loaded.';
 $string['category_modal_free'] = 'Free access';
 $string['category_modal_opens'] = 'Enrolment from {$a}';
 $string['category_modal_opensformat'] = '%d/%m/%Y';

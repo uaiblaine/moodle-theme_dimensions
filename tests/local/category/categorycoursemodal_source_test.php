@@ -101,26 +101,29 @@ final class categorycoursemodal_source_test extends \basic_testcase {
     }
 
     /**
-     * A press on a card's summary keeps the disclosure shut and opens the dialogue, and only on a card that carries one.
+     * A plain press on a card's link opens the dialogue instead of the page, and a modified press follows the link.
      *
-     * The summary toggles its details as the click's default action - from the keyboard as well - so preventing it
-     * is the one line between the dialogue and the panel opening behind it. A card with no dialogue returns BEFORE
-     * that line: its disclosure is the only way to its details.
+     * Following the link is the default action of the click - from the keyboard (Enter) as well - so preventing it is
+     * the one line between the dialogue and the course page. A press with a modifier or another button (a new tab, a
+     * new window) and a link whose card names no course return BEFORE that line: the link is the fallback.
      */
-    public function test_a_press_on_the_summary_opens_the_dialogue_instead_of_the_disclosure(): void {
+    public function test_a_plain_press_on_the_link_opens_the_dialogue_instead_of_the_page(): void {
         $click = $this->body('onClick');
-        $guard = strpos($click, 'if (!parts) {');
+        $modified = strpos($click, 'if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {');
+        $nocourse = strpos($click, 'if (courseid === null) {');
         $prevent = strpos($click, 'event.preventDefault();');
-        $this->assertNotFalse($guard, 'A card with no dialogue is left to its disclosure.');
-        $this->assertNotFalse($prevent, 'The press must not also toggle the disclosure.');
-        $this->assertLessThan($prevent, $guard, 'And it is left alone before anything is prevented.');
-        $this->assertStringContainsString('open(summary, parts)', $click);
+        $this->assertNotFalse($modified, 'A modified press, or another button, follows the link.');
+        $this->assertNotFalse($nocourse, 'A card that names no course is left to its link.');
+        $this->assertNotFalse($prevent, 'A plain press must not also follow the link.');
+        $this->assertLessThan($prevent, $modified, 'Both are left alone before anything is prevented.');
+        $this->assertLessThan($prevent, $nocourse);
+        $this->assertStringContainsString('open(link, courseid)', $click);
         $this->assertStringContainsString("document.addEventListener('click', onClick);", $this->body('init'));
-        $this->assertStringContainsString("summary: '[data-region=\"dim-card-details\"] > summary',", $this->source());
+        $this->assertStringContainsString("more: '[data-region=\"dim-card-more\"]',", $this->source());
     }
 
     /**
-     * The dialogue is core/modal: removed on close, the focus given back to the summary, the plugin's class on its root.
+     * The dialogue is core/modal: removed on close, the focus given back to the link, the plugin's class on its root.
      *
      * The class is what every rule of the stylesheet is qualified by and the token root it reads; core/modal
      * appends the root to the body, outside every element of the listing that declares a token.
@@ -129,12 +132,13 @@ final class categorycoursemodal_source_test extends \basic_testcase {
         $source = $this->source();
         // Imported on the first press, not with the page: see test_core_modal_is_imported_on_the_first_press.
         $this->assertStringContainsString("const Modal = await import('core/modal');", $this->body('open'));
-        $this->assertStringContainsString("const TEMPLATE = 'theme_dimensions/category_course_modal';", $source);
+        $this->assertStringContainsString("const FRAME = 'theme_dimensions/category_course_modal';", $source);
+        $this->assertStringContainsString("const SHEET = 'theme_dimensions/category_card_modal';", $source);
         $this->assertStringContainsString("const ROOT_CLASS = 'dim-cmodal';", $source);
         $open = $this->body('open');
-        $this->assertStringContainsString('template: TEMPLATE,', $open);
+        $this->assertStringContainsString('template: FRAME,', $open);
         $this->assertStringContainsString('removeOnClose: true,', $open);
-        $this->assertStringContainsString('returnElement: summary,', $open);
+        $this->assertStringContainsString('returnElement: link,', $open);
         $this->assertStringContainsString('root.classList.add(ROOT_CLASS);', $open);
         $this->assertStringContainsString('body.append(sheet);', $open);
         $this->assertStringContainsString('footer.append(actions);', $open);
@@ -152,7 +156,7 @@ final class categorycoursemodal_source_test extends \basic_testcase {
     }
 
     /**
-     * The footer's shadow follows the scroll of the sheet, and is set once the dialogue is on screen.
+     * The footer's shadow follows the scroll of the sheet, and is set once the dialogue is on screen and once it is filled.
      */
     public function test_the_footer_is_raised_while_the_sheet_has_more_to_scroll(): void {
         $this->assertStringContainsString(
@@ -163,25 +167,109 @@ final class categorycoursemodal_source_test extends \basic_testcase {
         $open = $this->body('open');
         $this->assertStringContainsString("body.addEventListener('scroll', () => raise(body, footer), {passive: true});", $open);
         $this->assertLessThan(strrpos($open, 'raise(body, footer);'), strpos($open, 'await modal.show();'));
+        $this->assertLessThan(strrpos($open, 'raise(body, footer);'), strpos($open, 'await fill('));
     }
 
     /**
-     * The module asks the server for nothing and reads data attributes only.
+     * The dialogue opens at once with what the card holds, and only its content region is filled afterwards.
      *
-     * It runs on the anonymous shell, where the showcase's web services refuse every reader; and a class selector
-     * is a hook a stylesheet rename can silently break.
+     * The page's decision about the course - the buttons, the kicker - is read off the card's link, never asked of the
+     * service; the cover, the pill and the title off the card's markup. The sheet is rendered with the skeleton before
+     * core/modal shows it, and the answer replaces the content region alone, so the title holding the id the dialogue
+     * is labelled by is never replaced. A failure is the content region's too: one sentence and the course's page.
      */
-    public function test_it_calls_no_service_and_addresses_hooks_only(): void {
+    public function test_the_dialogue_opens_with_the_cards_half_and_fills_its_content_region_alone(): void {
+        $card = $this->body('fromCard');
+        $reads = [
+            'data.primary',
+            'data.primaryUrl',
+            'data.primaryClosed',
+            'data.primaryIcon',
+            'data.secondary',
+            'data.secondaryUrl',
+            'data.kicker',
+            'SELECTORS.cover',
+            'SELECTORS.pill',
+            'SELECTORS.cardtitle',
+        ];
+        foreach ($reads as $read) {
+            $this->assertStringContainsString($read, $card, "The card's half reads {$read}.");
+        }
+        $open = $this->body('open');
+        $this->assertStringContainsString('const request = content(courseid);', $open);
+        $this->assertStringContainsString('const parts = await render(Object.assign({}, head, {loading: true}));', $open);
+        $this->assertLessThan(strpos($open, 'await fill('), strpos($open, 'await modal.show();'), 'Shown, then filled.');
+        $this->assertLessThan(
+            strpos($open, 'await modal.show();'),
+            strpos($open, 'const request = content(courseid);'),
+            'The request is under way before the dialogue is built.'
+        );
+
+        $fill = $this->body('fill');
+        $this->assertStringContainsString('const region = body.querySelector(SELECTORS.content);', $fill);
+        $this->assertStringContainsString('region.replaceWith(fresh);', $fill);
+        $this->assertStringContainsString('await failure(link)', $fill);
+        $this->assertStringContainsString("key: 'category_modal_failed'", $this->body('failure'));
+        $this->assertStringContainsString('failedurl: link.href', $this->body('failure'));
+        $this->assertNotSame('', get_string('category_modal_failed', 'theme_dimensions'));
+    }
+
+    /**
+     * The content is asked for on intent, once per course for the page's life, and the press reuses what it finds.
+     *
+     * A pointer or the focus resting on the link for the cover film's own INTENT_DELAY starts the request; a finger is
+     * gated out of both halves of the hover, because it brackets every tap with an over and an out (the repository's
+     * CLAUDE.md, "Hover logic gates BOTH halves"). An answer is kept per course; a failure is forgotten, so the next
+     * opening asks again.
+     */
+    public function test_the_content_is_asked_for_on_intent_and_kept_per_course(): void {
         $source = $this->source();
-        foreach (['core/ajax', 'fetch(', 'XMLHttpRequest'] as $call) {
-            $this->assertStringNotContainsString($call, $source, 'The dialogue asks the server for nothing: ' . $call);
+        $this->assertStringContainsString('const INTENT_DELAY = 180;', $source);
+        $film = (string) file_get_contents($this->plugin_root() . '/amd/src/local/coverfilm.js');
+        $this->assertStringContainsString('const INTENT_DELAY = 180;', $film, 'In step with the cover film\'s delay.');
+        foreach (['onPointerOver', 'onPointerOut'] as $half) {
+            $this->assertStringContainsString(
+                "if (event.pointerType === 'touch') {\n        return;\n    }",
+                $this->body($half),
+                "{$half} leaves a finger alone."
+            );
+        }
+        $this->assertStringContainsString('intend(link);', $this->body('onFocusIn'));
+        $this->assertStringContainsString('forget();', $this->body('onFocusOut'));
+        $intend = $this->body('intend');
+        $this->assertStringContainsString('if (courseid === null || answers.has(courseid)) {', $intend);
+        $this->assertStringContainsString('}, INTENT_DELAY),', $intend);
+        $this->assertStringContainsString('content(courseid);', $intend);
+
+        $content = $this->body('content');
+        $this->assertStringContainsString('if (!answers.has(courseid)) {', $content, 'One request per course.');
+        $this->assertStringContainsString("methodname: METHOD, args: {courseid: courseid}", $content);
+        $this->assertStringContainsString('request.catch(() => answers.delete(courseid));', $content, 'A failure is forgotten.');
+        $this->assertStringContainsString('return answers.get(courseid);', $content);
+        $init = $this->body('init');
+        foreach (['pointerover', 'pointerout', 'focusin', 'focusout'] as $event) {
+            $this->assertStringContainsString("document.addEventListener('{$event}', ", $init);
+        }
+    }
+
+    /**
+     * The module calls one service, the dialogue's, and reads data attributes only.
+     *
+     * A class selector is a hook a stylesheet rename can silently break. The pill's classes are copied, not hooked.
+     */
+    public function test_it_calls_one_service_and_addresses_hooks_only(): void {
+        $source = $this->source();
+        $this->assertStringContainsString("const METHOD = 'theme_dimensions_get_course_dialogue';", $source);
+        $this->assertSame(1, substr_count($source, 'methodname:'), 'One call, the dialogue\'s.');
+        foreach (['fetch(', 'XMLHttpRequest', 'fetchOne'] as $call) {
+            $this->assertStringNotContainsString($call, $source, 'No other way to the server: ' . $call);
         }
         $selectors = $this->body('SELECTORS');
         preg_match_all("~: '([^']+)',~", $selectors, $matches);
-        $this->assertCount(6, $matches[1]);
+        $this->assertCount(9, $matches[1]);
         foreach ($matches[1] as $selector) {
             $this->assertMatchesRegularExpression(
-                '~^(template)?\[data-region="[a-z-]+"\]~',
+                '~^\[data-region="[a-z-]+"\]$~',
                 $selector,
                 'A class selector here is a hook a stylesheet rename can silently break: ' . $selector
             );
@@ -189,24 +277,33 @@ final class categorycoursemodal_source_test extends \basic_testcase {
     }
 
     /**
-     * Both shells arm the module, for everybody: the logged-in one outside the listing client's guard.
+     * Only a real account's page arms the module: never the guest's, never a visitor's (decision V1).
      *
-     * The indentation is what makes the assertion bite: at eight spaces the call is a statement of the method, and
-     * inside the listing client's `if` it would be at twelve - which would leave the guest's dialogue unarmed.
+     * The service it calls refuses the guest, so the arming sits inside the listing client's own guard, where the
+     * indentation is twelve spaces; a visitor's "More information" is the link to the public landing page.
      */
-    public function test_both_shells_arm_the_module(): void {
+    public function test_only_a_real_accounts_page_arms_the_module(): void {
         $renderer = (string) file_get_contents($this->plugin_root() . '/classes/output/core/course_renderer.php');
-        $this->assertMatchesRegularExpression(
-            "~^        \\\$this->page->requires->js_call_amd\\('theme_dimensions/categorycoursemodal', 'init'\\);$~m",
+        $found = preg_match(
+            "~\n        if \(isloggedin\(\) && !isguestuser\(\)\) \{\n(.*?)\n        \}\n~s",
             $renderer,
-            'The logged-in shell arms it outside the listing client\'s guard.'
+            $guard
         );
-        $request = (string) file_get_contents($this->plugin_root() . '/classes/local/category/request.php');
+        $this->assertSame(1, $found, 'The listing client\'s guard is where it was.');
         $this->assertMatchesRegularExpression(
-            "~^        \\\$PAGE->requires->js_call_amd\\('theme_dimensions/categorycoursemodal', 'init'\\);$~m",
-            $request,
-            'A visitor\'s card opens the same dialogue.'
+            "~^            \\\$this->page->requires->js_call_amd\\('theme_dimensions/categorycoursemodal', 'init'\\);$~m",
+            $guard[1],
+            'The logged-in shell arms it inside the real account\'s guard.'
         );
+        $this->assertSame(1, substr_count($renderer, "js_call_amd('theme_dimensions/categorycoursemodal'"), 'Once.');
+        $request = (string) file_get_contents($this->plugin_root() . '/classes/local/category/request.php');
+        $this->assertStringNotContainsString(
+            "js_call_amd('theme_dimensions/categorycoursemodal'",
+            $request,
+            'A visitor\'s "More information" is the link to the public landing page.'
+        );
+        // Control: the visitor's page still arms its own modules, so a missing call above is a decision.
+        $this->assertStringContainsString("js_call_amd('theme_dimensions/covervideo', 'init');", $request);
     }
 
     /**
@@ -219,16 +316,18 @@ final class categorycoursemodal_source_test extends \basic_testcase {
             'amd/build is not this source: rebuild it with grunt amd and commit both files.'
         );
         $build = (string) file_get_contents($this->plugin_root() . '/amd/build/categorycoursemodal.min.js');
-        $this->assertStringContainsString('dim-card-modal', $build);
+        $this->assertStringContainsString('dim-card-more', $build);
         $this->assertStringContainsString('theme_dimensions/category_course_modal', $build);
+        $this->assertStringContainsString('theme_dimensions_get_course_dialogue', $build);
     }
 
     /**
-     * core/modal is imported on the first press, and the press is pending until the dialogue is on screen.
+     * core/modal is imported on the first press, and the press is pending until the dialogue's content is painted.
      *
-     * Changes that must make it fail: the modal stack imported with the page again (every reader pays for a dialogue
-     * most never open); the press not held as pending, so a reader of the page (Behat) finds neither the disclosure
-     * nor the dialogue between the press and the import; the pending never resolved, so the page never settles.
+     * Changes that must make it fail: the modal stack, the service's client or the template engine imported with the
+     * page again (every reader pays for a dialogue most never open); the press not held as pending, so a reader of the
+     * page (Behat) finds neither the dialogue nor its content between the press and the paint; the pending never
+     * resolved, so the page never settles; the fill not awaited, so the pending ends on a skeleton.
      */
     public function test_core_modal_is_imported_on_the_first_press(): void {
         preg_match_all("~^import [^\n]* from '([^']+)';$~m", $this->source(), $imports);
@@ -237,6 +336,7 @@ final class categorycoursemodal_source_test extends \basic_testcase {
         $this->assertStringContainsString("const pending = new Pending('theme_dimensions/categorycoursemodal:open');", $click);
         $this->assertStringContainsString('pending.resolve();', $click);
         $this->assertStringContainsString('.catch(report)', $click);
+        $this->assertStringContainsString('await fill(body, head, request, link);', $this->body('open'));
         $this->assertStringContainsString("await import('core/notification');", $this->body('report'));
     }
 }

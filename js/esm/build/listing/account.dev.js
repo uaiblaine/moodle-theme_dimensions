@@ -23,8 +23,6 @@ import * as Listing from "./listing";
 import { arm as armStar } from "./star";
 import { current, init } from "./store";
 const HOOKS = {
-  details: '[data-region="dim-card-details"]',
-  panel: '[data-region="dim-card-panel"]',
   progress: '[data-region="dim-card-progress"]',
   areapanel: '[data-region="dim-panel"]',
   countnotetext: '[data-region="dim-vitrine-countnotetext"]'
@@ -232,13 +230,6 @@ const watchCard = /* @__PURE__ */ __name((card) => {
   }
   observer.observe(card);
 }, "watchCard");
-const closeOthers = /* @__PURE__ */ __name((keep) => {
-  root.querySelectorAll(HOOKS.details).forEach((details) => {
-    if (details !== keep) {
-      details.open = false;
-    }
-  });
-}, "closeOthers");
 const attachCards = /* @__PURE__ */ __name((cards) => {
   cards.forEach((card) => {
     watchCard(card);
@@ -320,20 +311,6 @@ const paintPanelProgress = /* @__PURE__ */ __name(async (panel) => {
   }
 }, "paintPanelProgress");
 const listen = /* @__PURE__ */ __name(() => {
-  root.addEventListener("toggle", (event) => {
-    const details = event.target;
-    if (!(details instanceof HTMLDetailsElement) || !details.open) {
-      return;
-    }
-    if (details.matches(HOOKS.details)) {
-      closeOthers(details);
-    }
-  }, true);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeOthers(null);
-    }
-  });
   document.addEventListener(LISTING.autoopened, paintAutoOpened);
 }, "listen");
 const nothing = /* @__PURE__ */ __name(() => void 0, "nothing");

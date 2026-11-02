@@ -27,6 +27,7 @@ namespace theme_dimensions\output;
 use core_course\customfield\course_handler;
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\dialogue;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\publicfiles;
 use theme_dimensions\local\landing\redirector;
@@ -37,17 +38,15 @@ use theme_dimensions\local\landingfields;
  *
  * Everything a card says about a course is decided here from data the
  * listing already read in bulk: the population row (state, favourite,
- * visibility), the course row, the landing page values, the image and the
- * contacts. Nothing in this class queries the database - a page of forty-eight
+ * visibility), the course row, the landing page values and the image.
+ * Nothing in this class queries the database - a page of forty-eight
  * cards builds forty-eight of these and must cost no statement for it - and
  * the one context it asks for was preloaded by the population. With filterall
  * on, format_string() still loads each course context's filters; the render
  * budget tests assert that precondition.
  *
  * Names and every other plain-text value leave in the PLAIN spelling for the
- * template's double stashes. There is no final HTML in a card at all: the
- * summary and the programme are reduced to text, because a card shows an
- * excerpt and a checklist, not a document.
+ * template's double stashes. There is no final HTML in a card at all.
  *
  * The crests over the image are the COURSE's own landing page badges and never the
  * category's ({@see badges()}); a course without a landing page model shows none.
@@ -119,11 +118,15 @@ use theme_dimensions\local\landingfields;
  * visitor may actually read; a public course that chose no landing page model has
  * nothing to send a visitor to, so it gets no call to action at all.
  *
- * "More information" opens a dialogue with JavaScript (round I, lot C2), whose
- * own keys are under `modal` ({@see modal()}); the card's other keys - the
- * image, the pill, the title, the excerpt, the facts and the programme - are
- * read by its template from the card itself. Its two buttons decide nothing of
- * their own: the secondary one is the card's link ({@see url()} with
+ * "More information" is a link to the card's own page ({@see url()}), and with
+ * JavaScript it opens a dialogue (round I, lot C2; stage L2 of
+ * docs/vitrine-ratings/PROPOSAL.md). What the page decided stays on the card:
+ * the kicker and the two buttons under `modal` ({@see modal()}), which the
+ * template writes onto the link, and the cover, the pill and the title the
+ * card already prints. What only the dialogue shows - the excerpt, the facts,
+ * the programme - is fetched when it opens
+ * ({@see \theme_dimensions\local\category\dialogue}). Its two buttons decide
+ * nothing of their own: the secondary one is the card's link ({@see url()} with
  * {@see may_enter()}), the primary one the state's word over that same rule,
  * and where both would open one page only the primary is drawn.
  *
@@ -193,12 +196,6 @@ class category_card implements \core\output\renderable, \core\output\templatable
      */
     private const PRINTED_FIELDS = [landingfields::SHORTNAME_MODEL, landingfields::SHORTNAME_MODALITY];
 
-    /** @var int How many characters of the summary the panel shows. */
-    public const EXCERPT_LENGTH = 240;
-
-    /** @var int How many lines of the programme the panel lists: the first five. */
-    public const LEARN_LINES = 5;
-
     /**
      * @var array The primary button of the dialogue for the three states it relabels: state => [label key, icon].
      *
@@ -209,15 +206,6 @@ class category_card implements \core\output\renderable, \core\output\templatable
         classifier::STATE_ENROLLED => ['category_modal_continue', 'fa-play'],
         classifier::STATE_FREE => ['category_modal_free', 'fa-arrow-right'],
         classifier::STATE_OPEN => ['category_modal_enrol', 'fa-arrow-right'],
-    ];
-
-    /** @var array The decorative icon of a dialogue fact tile, by the kind of fact it states. */
-    private const FACT_ICONS = [
-        'date' => 'fa-calendar-day',
-        'hours' => 'fa-clock',
-        'mode' => 'fa-display',
-        'place' => 'fa-location-dot',
-        'contact' => 'fa-user',
     ];
 
     /**
@@ -237,7 +225,6 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @param \stdClass $row The population row: state and favourite for a logged-in viewer, visible, category.
      * @param \stdClass $values The course's landing page values ({@see landingfields::values()} shape, filters off).
      * @param \moodle_url|null $image The card image, or null for the flat fallback.
-     * @param array $contacts userid => ['fullname' => plain, 'rolename' => plain].
      * @param string|null $overline The course's own subcategory, plain, or null when it sits in the listed root.
      * @param bool $showstar Whether the favourite star is drawn (a logged-in, non-guest viewer on the logged-in shell).
      * @param bool $anonymous Whether the anonymous shell is drawing, which knows no viewer state.
@@ -256,8 +243,6 @@ class category_card implements \core\output\renderable, \core\output\templatable
         private readonly \stdClass $values,
         /** @var \moodle_url|null The card image. */
         private readonly ?\moodle_url $image,
-        /** @var array The course contacts. */
-        private readonly array $contacts,
         /** @var string|null The subcategory overline. */
         private readonly ?string $overline,
         /** @var bool Whether the star is drawn. */
@@ -338,9 +323,6 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $favourite = !$this->anonymous && !empty($this->row->favourite);
         $kindkey = $this->values->model === landingfields::MODEL_COURSE ? 'landingfield_model_course'
             : ($isevent ? 'landingfield_model_event' : null);
-        $facts = $this->facts($isevent);
-        $learn = $this->learn();
-        $excerpt = $this->excerpt($context);
         $badges = $this->badges();
         $start = (int) $this->course->startdate;
         // A visitor's card states a start day only where it prints one: an event's date tile.
@@ -390,15 +372,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'starlabel' => get_string($favourite ? 'category_star_remove' : 'category_star_add', self::COMPONENT, $fullname),
             'starlabeladd' => get_string('category_star_add', self::COMPONENT, $fullname),
             'starlabelremove' => get_string('category_star_remove', self::COMPONENT, $fullname),
-            'detailsid' => 'dim-card-details-' . $courseid,
             'detailslabel' => self::text('category_details'),
-            'excerpt' => $excerpt,
-            'hasexcerpt' => $excerpt !== '',
-            'facts' => $facts,
-            'hasfacts' => !empty($facts),
-            'learn' => $learn,
-            'haslearn' => !empty($learn),
-            'learnlabel' => self::text('category_learn'),
             'modal' => $this->modal($state, $url, $held, $openslabel, $isevent, $cta),
         ];
     }
@@ -436,7 +410,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
     }
 
     /**
-     * The dialogue's own keys: the kicker, the label of the fact tiles and its two buttons.
+     * The dialogue's keys the page decides: the kicker and its two buttons, written onto the card's link.
      *
      * The SECONDARY button is the card's own link, whatever it is ({@see url()} with {@see may_enter()}): the
      * course for somebody who may walk in, else the landing page of a course that chose a model, else the standard
@@ -468,7 +442,6 @@ class category_card implements \core\output\renderable, \core\output\templatable
         return [
             'kicker' => $kicker,
             'haskicker' => $kicker !== '',
-            'factslabel' => self::text('category_modal_facts'),
             'primary' => $primary,
             'hasprimary' => $primary !== null,
             'secondary' => $secondary,
@@ -794,12 +767,12 @@ class category_card implements \core\output\renderable, \core\output\templatable
     private function meta(bool $isevent): string {
         $parts = [];
         if ($isevent) {
-            $dateline = $this->dateline();
+            $dateline = dialogue::dateline($this->course, self::text('strftimedatefullshort', 'langconfig'));
             if ($dateline !== null) {
                 $parts[] = $dateline;
             }
         } else if ($this->values->workload !== null) {
-            $parts[] = $this->hours_label();
+            $parts[] = dialogue::hours((float) $this->values->workload);
         }
         $modality = landingfields::option_label(landingfields::SHORTNAME_MODALITY, $this->values->modality);
         if ($modality !== null) {
@@ -809,156 +782,5 @@ class category_card implements \core\output\renderable, \core\output\templatable
             $parts[] = $this->values->city;
         }
         return implode(' · ', $parts);
-    }
-
-    /**
-     * The panel's fact rows, labelled with the stored field names as the landing page's card does.
-     *
-     * @param bool $isevent Whether the course chose the event model.
-     * @return array Rows of ['label' => plain, 'value' => plain, 'icon' => the dialogue tile's decorative icon].
-     */
-    private function facts(bool $isevent): array {
-        $names = $this->values->names;
-        $facts = [];
-        if ($isevent) {
-            $dateline = $this->dateline();
-            if ($dateline !== null) {
-                $facts[] = ['label' => self::text('date', 'core'), 'value' => $dateline, 'icon' => self::FACT_ICONS['date']];
-            }
-        } else if ($this->values->workload !== null && isset($names[landingfields::SHORTNAME_WORKLOAD])) {
-            $facts[] = [
-                'label' => $names[landingfields::SHORTNAME_WORKLOAD],
-                'value' => $this->hours_label(),
-                'icon' => self::FACT_ICONS['hours'],
-            ];
-        }
-        $modality = landingfields::option_label(landingfields::SHORTNAME_MODALITY, $this->values->modality);
-        if ($modality !== null && isset($names[landingfields::SHORTNAME_MODALITY])) {
-            $facts[] = [
-                'label' => $names[landingfields::SHORTNAME_MODALITY],
-                'value' => $modality,
-                'icon' => self::FACT_ICONS['mode'],
-            ];
-        }
-        if ($this->values->modality === landingfields::MODALITY_INPERSON) {
-            $place = array_filter([$this->values->venue, $this->values->city]);
-            if ($place && isset($names[landingfields::SHORTNAME_CITY])) {
-                $facts[] = [
-                    'label' => $names[landingfields::SHORTNAME_CITY],
-                    'value' => implode(' · ', $place),
-                    'icon' => self::FACT_ICONS['place'],
-                ];
-            }
-        }
-        // The course contacts are named to a logged-in reader only: the landing page, the theme's
-        // other anonymous surface, names nobody to the internet either.
-        if ($this->contacts && !$this->anonymous) {
-            $people = [];
-            foreach ($this->contacts as $contact) {
-                $people[] = $contact['fullname'] . ' (' . $contact['rolename'] . ')';
-            }
-            $facts[] = [
-                'label' => self::text('category_contact'),
-                'value' => implode(', ', $people),
-                'icon' => self::FACT_ICONS['contact'],
-            ];
-        }
-        return $facts;
-    }
-
-    /**
-     * The event's date line: the start date, and the end date after a dash on a multi-day event.
-     *
-     * @return string|null The line, or null without a start date.
-     */
-    private function dateline(): ?string {
-        $start = (int) $this->course->startdate;
-        if (!$start) {
-            return null;
-        }
-        $format = self::text('strftimedatefullshort', 'langconfig');
-        $end = (int) $this->course->enddate;
-        if ($end && usergetmidnight($start) !== usergetmidnight($end)) {
-            return userdate($start, $format) . ' – ' . userdate($end, $format);
-        }
-        return userdate($start, $format);
-    }
-
-    /**
-     * The workload text, the landing page's spelling.
-     *
-     * @return string
-     */
-    private function hours_label(): string {
-        $hours = format_float($this->values->workload, 1, true, true);
-        return get_string('landing_hours', self::COMPONENT, $hours);
-    }
-
-    /**
-     * The summary reduced to one paragraph of text.
-     *
-     * Formatted with the text filters OFF, like the landing page textareas of a
-     * listing ({@see landingfields::values_many()} says why: a filtered
-     * format_text() in each course's context is a recordset plus every
-     * active filter's own reads, per card). The pluginfile rewrite is kept so
-     * nothing in the text refers to a draft area.
-     *
-     * @param \core\context\course $context The course context, preloaded.
-     * @return string Plain text, shortened; '' when the summary is empty.
-     */
-    private function excerpt(\core\context\course $context): string {
-        global $CFG;
-
-        $summary = (string) ($this->course->summary ?? '');
-        if (trim($summary) === '') {
-            return '';
-        }
-        // Not loaded on the paging web service's path: it reaches here without a course login or a file area read.
-        require_once($CFG->libdir . '/filelib.php');
-        $html = file_rewrite_pluginfile_urls($summary, 'pluginfile.php', $context->id, 'course', 'summary', null);
-        $html = format_text($html, (int) $this->course->summaryformat, [
-            'context' => $context,
-            'filter' => false,
-            'overflowdiv' => false,
-            'para' => false,
-        ]);
-        $text = implode(' ', self::lines($html));
-        return $text === '' ? '' : shorten_text($text, self::EXCERPT_LENGTH);
-    }
-
-    /**
-     * The first lines of the programme, one checklist item each.
-     *
-     * @return string[] Up to LEARN_LINES plain lines.
-     */
-    private function learn(): array {
-        $programme = $this->values->programme;
-        if ($programme === null || trim((string) $programme) === '') {
-            return [];
-        }
-        return array_slice(self::lines((string) $programme), 0, self::LEARN_LINES);
-    }
-
-    /**
-     * Reduce HTML to its non-empty lines of text, one per block element.
-     *
-     * A block boundary becomes a line break, every other tag disappears,
-     * entities are decoded and whitespace collapsed - what a card's excerpt
-     * and checklist need, at a fraction of html_to_text()'s cost per card.
-     *
-     * @param string $html The HTML.
-     * @return string[] The lines, trimmed, empty ones dropped, plain spelling.
-     */
-    private static function lines(string $html): array {
-        $html = preg_replace('~<br\s*/?>|</?(?:p|div|li|ul|ol|h[1-6]|tr|blockquote|pre)\b[^>]*>~i', "\n", $html);
-        $text = html_entity_decode(strip_tags((string) $html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $lines = [];
-        foreach (preg_split('/\R/u', $text) as $line) {
-            $line = trim((string) preg_replace('/[ \t\x{00A0}]+/u', ' ', $line));
-            if ($line !== '') {
-                $lines[] = $line;
-            }
-        }
-        return $lines;
     }
 }
