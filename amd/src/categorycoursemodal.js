@@ -404,10 +404,11 @@ const open = async(link, courseid) => {
     body.addEventListener('scroll', () => raise(body, footer), {passive: true});
     /* The reviews are tool_courserating's popup, opened by that plugin's listener on the document from its own
        trigger in the rating block: this dialogue closes on the way, so two dialogues never stack, and the press
-       goes on to the document untouched. */
+       goes on to the document untouched. destroy(), as core's own close button does under removeOnClose: hide()
+       alone would leave the closed dialogue in the page. */
     root.addEventListener('click', (event) => {
         if (event.target instanceof Element && event.target.closest(SELECTORS.reviews)) {
-            modal.hide();
+            modal.destroy();
         }
     });
     await modal.show();

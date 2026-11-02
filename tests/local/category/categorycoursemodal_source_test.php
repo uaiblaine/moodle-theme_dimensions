@@ -358,7 +358,7 @@ final class categorycoursemodal_source_test extends \basic_testcase {
         );
         $this->assertSame(1, $found, 'The dialogue\'s root listens for the press.');
         $this->assertStringContainsString('event.target.closest(SELECTORS.reviews)', $listener[1]);
-        $this->assertStringContainsString('modal.hide();', $listener[1], 'It closes the dialogue.');
+        $this->assertStringContainsString('modal.destroy();', $listener[1], 'It closes and removes the dialogue.');
         foreach (['preventDefault', 'stopPropagation', 'stopImmediatePropagation'] as $stop) {
             $this->assertStringNotContainsString($stop, $listener[1], 'The press goes on to the plugin: ' . $stop);
         }
