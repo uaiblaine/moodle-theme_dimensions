@@ -1899,3 +1899,21 @@ phpcs,phpdoc,phplint,mustache,grunt,jest` passed every step (Jest 31 suites, 406
 found a `{@see` split across two lines in `get_calendar_range`'s docblock (phpdoc), fixed.
 
 **Gates:** _placeholder: the owner runs the sweep of the C5 block and the tier-2 leg with Behat._
+
+## 25. C6: not built (2026-11-02)
+
+The stages table gives C6 as "Trails source, when that format exists". It does not exist yet. A trail today is a list
+of competencies inside a learning plan (`local_dimensions/classes/plan_trail_cache.php`). It has no dates of its own
+and no milestones; the only date anywhere near it is the plan's due date, `{competency_plan}.duedate`. There is no
+trails course format and no model value for one, so a "trails" source has nothing to read that the owner has defined.
+
+The range already has the seam for it (section 5.5, "Sources behind an interface"): a source gets the resolved course
+and category sets and the keys, and a source whose key is off is not asked. When a trails format exists, C6 is that
+source plus its key.
+
+**Owner decision.** Either:
+- wait for the trails format and build C6 then, as the table says; or
+- build a smaller C6 now: a "learning plans" source that shows each of the viewer's own plans on its due date (a point
+  item under its own key, leading to the plan's page), read through core's competency API so the plan's own
+  visibility rules decide. It would be the viewer's own plans only, never another user's, and never on the public
+  calendar.
