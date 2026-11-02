@@ -94,6 +94,11 @@ final class dialogue {
     /**
      * The dialogue's content for one course the caller has already admitted.
      *
+     * Checks nothing itself. The caller must have decided, in this order, core's
+     * {@see \core_course_category::can_view_course_info()} for this viewer and then
+     * {@see \local_unlistedcourses\access::filter_courses()} for this course, as
+     * {@see \theme_dimensions\external\get_course_dialogue::execute()} and {@see enrichment::details()} do.
+     *
      * @param \stdClass $course The course row, with at least {@see COURSE_FIELDS}.
      * @return array excerpt (plain), hasexcerpt, facts (rows of label, value and icon), hasfacts, factslabel,
      *   learn (plain lines), haslearn, learnlabel.

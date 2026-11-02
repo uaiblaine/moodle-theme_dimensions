@@ -160,6 +160,55 @@ final class get_course_dialogue_test extends \advanced_testcase {
     }
 
     /**
+     * Core's question admits what the course's visible flag alone would refuse: a viewer who may view hidden courses.
+     *
+     * The capability is held in the course's category context through a fresh role, not by the admin. A plain user
+     * asking for the same hidden course is the control that the course is hidden from the ones without it.
+     */
+    public function test_a_viewer_of_hidden_courses_is_admitted_to_a_hidden_course(): void {
+        $this->prepare();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $hidden = (int) $generator->create_course(['category' => $category->id, 'visible' => 0])->id;
+        $viewer = $this->user_with(
+            'moodle/course:viewhiddencourses',
+            \core\context\coursecat::instance((int) $category->id)
+        );
+
+        $this->become($generator->create_user());
+        $response = $this->call($hidden);
+        $this->assertTrue($response['error'], 'Control: a plain user was answered for a hidden course.');
+        $this->assertSame(guard::ERROR_COURSE, $response['exception']->errorcode);
+
+        $this->become($viewer);
+        $this->assertNotSame('', $this->answer($hidden)['learnlabel']);
+    }
+
+    /**
+     * The plugin's relationship rescue is honoured: an enrolled viewer is answered for a course the plugin withholds.
+     *
+     * An unlisted course is withheld from a viewer with no tie to it; being enrolled in it is a relationship that keeps
+     * it discoverable. A viewer with no tie is the control that the course is withheld.
+     */
+    public function test_an_enrolled_viewer_is_admitted_to_an_unlisted_course(): void {
+        $this->prepare();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $unlisted = (int) $generator->create_course(['category' => $category->id])->id;
+        $this->set_course_state($unlisted, discoverability::STATE_UNLISTED);
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $unlisted, 'student');
+
+        $this->become($generator->create_user());
+        $response = $this->call($unlisted);
+        $this->assertTrue($response['error'], 'Control: an unrelated viewer was answered for an unlisted course.');
+        $this->assertSame(guard::ERROR_COURSE, $response['exception']->errorcode);
+
+        $this->become($student);
+        $this->assertNotSame('', $this->answer($unlisted)['learnlabel']);
+    }
+
+    /**
      * The guest account is refused before anything is looked up: the same refusal, and the same reads, whatever the id.
      *
      * A course the guest may see and an id nothing holds would cost different reads if either were looked up first.
