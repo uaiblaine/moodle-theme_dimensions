@@ -37,6 +37,7 @@ use theme_dimensions\output\calendar_page;
  * 1. A visitor goes to the login page, with this page as the place to come back to.
  * 2. The guest account goes to core's calendar, which is the guest's (core's primary navigation links it there).
  * 3. require_login() for a real account: the site policy, a forced password change and the rest of core's gate.
+ *    Then the "classic for this session" flag is cleared ({@see coreview}): opening the page ends the choice.
  * 4. A calendar type other than the Gregorian goes to core's calendar: the range refuses it ({@see window}).
  * 5. The month and the state are read, every value outside its vocabulary dropped ({@see state}); a category the
  *    range refuses (gone, hidden, unlisted) is dropped like any other value, so a stale saved category or a shared
@@ -113,6 +114,7 @@ final class page {
      *
      * Spelled with core's day, month and year parameters, which calendar/view.php turns into a time in the
      * viewer's own timezone (make_timestamp()), so neither this class nor the client computes a timestamp.
+     * The classic marker keeps {@see coreview} from sending the reader straight back to this page.
      *
      * @param string $month The month, YYYY-MM, known to be one.
      * @return \core\url
@@ -124,6 +126,7 @@ final class page {
             'cal_d' => 1,
             'cal_m' => (int) $number,
             'cal_y' => (int) $year,
+            coreview::PARAM_CLASSIC => 1,
         ]);
     }
 
@@ -270,6 +273,7 @@ final class page {
             return new self(self::core_calendar(), null);
         }
         require_login(null, false);
+        unset($SESSION->{coreview::SESSION_FLAG});
         try {
             window::require_gregorian();
         } catch (refusal $refusal) {

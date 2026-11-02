@@ -96,6 +96,8 @@ $string['calendar_view'] = 'View';
 $string['calendar_viewmonth'] = 'Month';
 $string['calendar_when'] = 'When';
 $string['calendar_withsub'] = 'with subcategories';
+$string['calendarcoreview'] = 'Send core\'s month and day calendar views to the theme\'s calendar';
+$string['calendarcoreview_desc'] = 'Core\'s calendar month and day views (the address /calendar/view.php with view=month or view=day) lead logged-in readers to the theme\'s calendar page, keeping the month, the day and the category the address named. Core\'s upcoming view, the course calendar, event editing, the guest account and calendar types other than the Gregorian stay on core\'s calendar, and so does a reader who opens it from the page\'s "Classic calendar" link, until they open the theme\'s page again. Off, core\'s views answer as they always did.';
 $string['calendarrangeunavailable'] = 'This part of the calendar is not available.';
 $string['category_allempty'] = 'No course matches the search and the filters.';
 $string['category_allemptyhint'] = 'Try another term or clear the filters.';

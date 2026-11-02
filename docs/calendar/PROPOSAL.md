@@ -870,3 +870,115 @@ static page built from the compiled theme CSS, and the rest rests on Behat and o
 
 **Left for later:** holidays ("feriado", no source yet); core's redirect (D1) as its own small change; C3b, CV,
 C4-C6.
+
+## 15. C3r plan: core's month and day views lead to the page (decision D1, 2026-11-01)
+
+D1 put the page beside core's calendar until C3 brought the drawer and the popover; C3 is merged, so core's
+`calendar/view.php` now sends the reader of its month and day views to the page. Core's other views, the course
+calendar and core's event editing stay where they are, and the page's "Classic calendar" link still reaches core's
+page, since creating and editing events stays core's until C5.
+
+### 15.1 What is sent, and what is not
+
+The decision is one pure class, `classes/local/calendar/coreview.php`, called from the theme's existing
+`after_config` callback (`classes/local/hook/after_config.php`) on `$SCRIPT === '/calendar/view.php'`. after_config is
+the only moment before core's view does its work (calendar_get_view(), ~1.2 s on the C0 baseline). The callback
+decides inside a try and redirects outside it, as its other branches do. A request is sent to the page only when
+all of these hold, in this order (each one a reason core's page must keep answering):
+
+1. **The setting is on, and the site runs this theme.** `theme_dimensions/calendarcoreview`, an
+   `admin_setting_configcheckbox` that ships on, read off only as an explicit `'0'` (fleet rule), is the site's way
+   back. `$CFG->theme` must be `dimensions` (as `flavourcss\planner` requires): the page is drawn by this theme's CSS
+   and client, so a site that has the theme installed but runs another keeps core's calendar.
+2. **`view` is `month` or `day`.** Core's default view is `upcoming` (no `view` parameter), which stays core's, as do
+   `upcoming_mini` and any other value.
+3. **The course is the site.** `course` read with core's default, `SITEID`; a course calendar stays core's (the page
+   has no course scope), and so does an explicit `course=0`, which core refuses.
+4. **A real account.** Logged in and not the guest: the page sends a visitor to the login page and the guest to core's
+   calendar ({@see page::handle()} steps 1-2), so sending either there would loop. A visitor stays on core's page,
+   whose own `require_login()` (with guest auto-login) decides.
+5. **The Gregorian calendar.** The page sends any other calendar type back to core's (`window::require_gregorian()`),
+   so the same check stands here, for the same reason.
+6. **Not "classic for this session".** Opening core's calendar from the page's "Classic calendar" link carries
+   `classic=1`; that request is never sent, and for a real account it sets `$SESSION->theme_dimensions_calendar_classic`
+   to the account's id. While the flag holds the requesting account's id, core's calendar answers (the session
+   survives a login, so a flag another account or a visitor left counts for no one): its own month arrows (AJAX, which push `view.php` addresses without the marker), its
+   view switch and a reload all stay there. Opening the theme's page clears the flag (`page::handle()`, after
+   `require_login()`). The flag is navigation, like `day=`: never saved, gone with the session.
+
+The target carries what core's address meant, in the page's vocabulary:
+- **the month and the day.** `cal_d`, `cal_m` and `cal_y`, when all three form a valid date (core's own rule,
+  `checkdate()`), give them as written (core reads them as Gregorian); otherwise `time` (a timestamp, the current time
+  when absent) is read in the viewer's timezone (`core_date::get_user_timezone_object()`). The month view sends
+  `month=YYYY-MM`; the day view sends `month` and `day=YYYY-MM-DD`, so the drawer opens on that day.
+- **the category.** Core reads `category` (and writes `categoryid` into its own page address, which it then ignores);
+  either is forwarded as the page's `categoryid`, and the page drops one the range refuses, as it does every value.
+- nothing else: `lookahead`, `course=SITEID` and unknown parameters are dropped.
+
+The redirect is a 303 through `redirect()`, never a 301, for the reason `calendar.php` gives.
+
+### 15.2 The page's side
+
+- `page::classic()` and the client's `monthHref()` add `classic=1`.
+- `page::handle()` clears the session flag once the reader is a real account on the page.
+- The setting and its strings (`calendarcoreview`, `calendarcoreview_desc`, en and pt_br) go on the calendar's
+  settings tab; there is none yet, so it goes beside the drawer's calendar row setting if one exists, else on the
+  tab that holds the drawer's settings.
+
+### 15.3 Tests and gates
+
+- **PHPUnit** (`tests/local/calendar/coreview_test.php`), each refusal with its control: month and day sent with the
+  month, the day and the category; `upcoming`, an absent `view`, a course calendar, a visitor, the guest, a
+  non-Gregorian type (the `test_calendar_type` core ships for tests, if available), the session flag and the setting
+  off each kept on core's page, beside the same request sent once the one reason is gone; `classic=1` sets the flag
+  and is not sent; the page clears the flag; `time` read in the viewer's timezone across midnight (a viewer in a
+  timezone where the UTC date differs); an invalid `cal_*` date falls back to `time`; `page::classic()` carries the
+  marker, and a request built from it is never sent (the loop guard).
+- **Jest:** `monthHref()` carries `classic=1`.
+- **Behat:** core's month view lands on the page; the day view opens the drawer on that day; the page's "Classic
+  calendar" reaches core's calendar and a reload stays there; the setting off leaves core's page.
+- **Gates** for every guard of 15.1, swept on both database families before the commit.
+- **Tier 2** (PHP and JS, no SQL, nothing PHP-version-specific): one full leg with Behat
+  (`mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat`), plus `security-diff-read`, since this is a
+  redirect decided from session state.
+
+## 16. C3r results (2026-11-01)
+
+Branch `calendar-c3r`, built from section 15 (whose text already carries the security read's changes).
+
+**What exists:** `classes/local/calendar/coreview.php` (the decision, `account()`, `gregorian()`, `enabled()`); a
+`/calendar/view.php` branch in `classes/local/hook/after_config.php`; the `classic=1` marker on `page::classic()` and
+on the client's `monthHref()` and `dayHref()`; the flag cleared in `page::handle()`; the setting `calendarcoreview`
+beside the drawer's settings, with its strings.
+
+**Where the build left the plan:**
+- **`dayHref()` carries the marker too.** The drawer's "this day in the classic calendar" link opens core's day
+  view, which would otherwise come straight back to the page.
+- **Gates are `cal_redirect_*`** (`cal_core_*` was taken by the event source's), 21 of them.
+
+**Security read:** no blocking finding. Fixed:
+- the flag is the account's id, written only for a real account and counted only for that account (the session
+  survives a login, so a visitor's or another account's flag decided for the next reader);
+- the account and the calendar type moved out of the callback into `coreview::account()` and `coreview::gregorian()`,
+  so a guest counted as real (a redirect loop) reddens a test;
+- the redirect needs the site's theme to be this one;
+- `course` is read with core's default (`SITEID`), so an explicit `course=0` stays core's;
+- a five-digit `cal_y` falls back to `time`.
+
+Kept as a note: `classic=1` changes the session on a GET without `sesskey`; a third party's link can at most switch
+the redirect off for that reader's session.
+
+**The sweep found two gaps the tests had:**
+- `setUser()` starts an empty session, so the test of the page clearing the flag passed with the clear deleted; it
+  now sets the flag after `setUser()`.
+- An absent flag read as `0` matched the visitor's account `0`, so the real-account guard could be deleted unseen; an
+  absent flag now matches no account.
+
+**Gates:**
+- **Mutation sweep:** the 21 `cal_redirect_*` gates went red on pgsql and mariadb
+  (`mdl mutate --fast --branch MOODLE_503_STABLE --only <21 gates>`, exit 0 on both).
+- **Tier 2:** `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat` passed every step. Counts are in
+  the pull request.
+
+**Not verified:** the redirect by eye on a stack; the Moodle App, which calls core's web services and never opens
+`view.php`.

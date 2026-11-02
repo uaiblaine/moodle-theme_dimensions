@@ -151,6 +151,7 @@ const dayHref = /* @__PURE__ */ __name((calendar, iso) => {
     url.searchParams.set("cal_m", String(parts.m));
     url.searchParams.set("cal_y", String(parts.y));
   }
+  url.searchParams.set("classic", "1");
   return url.toString();
 }, "dayHref");
 const primaryOf = /* @__PURE__ */ __name((item, courses, home) => {
@@ -171,6 +172,7 @@ const monthHref = /* @__PURE__ */ __name((calendar, month) => {
   url.searchParams.set("cal_d", "1");
   url.searchParams.set("cal_m", String(Number(month.slice(5, 7))));
   url.searchParams.set("cal_y", String(Number(month.slice(0, 4))));
+  url.searchParams.set("classic", "1");
   return url.toString();
 }, "monthHref");
 const hex = /* @__PURE__ */ __name((value) => /^#[0-9a-f]{6}$/i.test(String(value)) ? String(value) : null, "hex");
