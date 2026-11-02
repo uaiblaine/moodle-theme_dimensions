@@ -625,7 +625,6 @@ body.dim-category {
 
     // ---- Tokens, declared on the two roots this feature paints ----------------------------
     .dim-vitrine,
-    .dim-card__panel,
     .dim-cmodal {
         --dim-surface: var(--bs-body-bg, #fff);
         --dim-surface-subtle: var(--bs-tertiary-bg, #f8f9fa);
@@ -2538,7 +2537,7 @@ body.dim-category {
         font-size: .78rem;
     }
 
-    // The trailing action cluster: the call to action, the disclosure, and LAST the star.
+    // The trailing action cluster: the call to action, "More information", and LAST the star.
     .dim-card__actions {
         display: flex;
         flex-wrap: wrap;
@@ -2557,10 +2556,7 @@ body.dim-category {
         font-weight: 600;
     }
 
-    .dim-card__details {
-        display: inline-block;
-    }
-
+    // "More information": a link to the card's own page, which the course dialogue intercepts for an account.
     .dim-card__summary {
         padding: 6px 12px;
         border: 1px solid var(--dim-control-line);
@@ -2569,83 +2565,12 @@ body.dim-category {
         color: var(--dim-muted);
         font-size: .8125rem;
         font-weight: 600;
-        list-style: none;
-        cursor: pointer;
-
-        &::-webkit-details-marker {
-            display: none;
-        }
 
         &:hover,
         &:focus-visible {
             background: var(--dim-surface-subtle);
             color: var(--dim-ink);
         }
-    }
-
-    // The panel is anchored to the CARD, under it, so opening it never resizes the row.
-    .dim-card__panel {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        left: 0;
-        z-index: 20;
-        margin-top: 4px;
-        padding: 16px;
-        border: 1px solid var(--dim-line);
-        border-radius: var(--dim-radius);
-        background: var(--dim-surface);
-        box-shadow: var(--dim-shadow-lift);
-        color: var(--dim-ink);
-    }
-
-    .dim-card__paneltitle {
-        margin: 0 0 6px;
-        font-size: .9375rem;
-        font-weight: 700;
-        line-height: 1.3;
-    }
-
-    // Long-form text of the design is set in the reading face, the panel's prose included.
-    .dim-card__panel p {
-        font-family: var(--dim-ds-font-reading);
-    }
-
-    .dim-card__excerpt {
-        margin: 0;
-        color: var(--dim-muted);
-        font-size: .8125rem;
-        line-height: 1.55;
-    }
-
-    .dim-card__facts,
-    .dim-card__learn {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin: 8px 0 0;
-        padding: 0;
-        list-style: none;
-        font-size: .8125rem;
-        color: var(--dim-muted);
-
-        b {
-            color: var(--dim-ink);
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-        }
-    }
-
-    .dim-card__learn .fa {
-        margin-right: 6px;
-        color: var(--dim-ds-text-success, #2f6b00);
-        font-size: .75rem;
-    }
-
-    .dim-card__learnlabel {
-        margin: 12px 0 0;
-        font-size: .8125rem;
-        font-weight: 600;
     }
 
     .dim-card__star {
@@ -4475,7 +4400,7 @@ body.dim-category {
     // ---- The mini: the course card itself, in a smaller presentation (the card's own template) ----
     // A 16:9 band, the title stretched over the card, the star alone at the bottom-right, and
     // neither the call to action nor "More information": the card's page is its title, and the
-    // disclosure is out of reach on purpose.
+    // link is out of reach on purpose.
     .dim-panel__rail .dim-card {
         --dim-card-crest-w: 40px;
         --dim-card-crest-h: 44px;
@@ -4644,7 +4569,7 @@ body.dim-category {
         padding: 0;
     }
 
-    .dim-panel__rail .dim-card__details {
+    .dim-panel__rail .dim-card__summary {
         display: none;
     }
 
@@ -5630,25 +5555,19 @@ body.dim-category {
         opacity: 0;
     }
 
-    // ---- Narrow screens: one column, the panel inline, the disclosure alone -------------------
+    // ---- Narrow screens: one column, "More information" on a line of its own --------------------
     @media (max-width: 575.98px) {
         .dim-vitrine__grid {
             grid-template-columns: 1fr;
         }
 
-        .dim-card__panel {
-            position: static;
-            margin-top: 8px;
-        }
-
-        .dim-card__details {
-            display: block;
+        .dim-card__summary {
             flex: 1 1 100%;
         }
 
         // In the list view the action cluster is sized by its content, and on a phone that content
-        // holds the disclosure at its full width, which runs past the card and scrolls the page
-        // sideways. Here the cluster takes its own line and the disclosure wraps inside it.
+        // holds the link at its full width, which runs past the card and scrolls the page
+        // sideways. Here the cluster takes its own line and the link wraps inside it.
         .dim-vitrine--list .dim-card__actions {
             flex: 1 1 100%;
             min-width: 0;
@@ -6006,6 +5925,32 @@ body.dim-category {
         color: var(--dim-ink);
     }
 
+    // The content's place while it is fetched: three quiet bars across both columns, which pulse only where
+    // motion is allowed (below). The failure's one sentence takes the same place.
+    .dim-cmodal__skeleton {
+        display: flex;
+        flex-direction: column;
+        grid-column: 1 / -1;
+        gap: 10px;
+    }
+
+    .dim-cmodal__bone {
+        display: block;
+        height: 12px;
+        border-radius: var(--dim-radius-sm);
+        background: var(--dim-surface-strong);
+    }
+
+    .dim-cmodal__bone--short {
+        width: 60%;
+    }
+
+    .dim-cmodal__failed {
+        grid-column: 1 / -1;
+        margin: 0;
+        color: var(--dim-muted);
+    }
+
     .dim-cmodal__summary {
         margin: 0;
         font-family: var(--dim-ds-font-reading);
@@ -6207,9 +6152,23 @@ body.dim-category {
         }
     }
 
+    @keyframes dim-cmodal-pulse {
+        from {
+            opacity: 1;
+        }
+
+        to {
+            opacity: .45;
+        }
+    }
+
     @media (prefers-reduced-motion: no-preference) {
         .dim-cmodal.show .modal-dialog {
             animation: dim-cmodal-in 300ms cubic-bezier(0, 0, .2, 1);
+        }
+
+        .dim-cmodal__bone {
+            animation: dim-cmodal-pulse 900ms ease-in-out infinite alternate;
         }
     }
 
@@ -6340,7 +6299,6 @@ body.dim-category {
 // Each pair's contrast is beside it, over the 4.5:1 floor. Keep the dark blocks at the foot of
 // the file: card_markup_test reads everything before the first dark selector as the light half.
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
-:root[data-bs-theme="dark"] body.dim-category .dim-card__panel,
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
     --dim-badge-enrolled-bg: #4456ff;
     --dim-badge-enrolled-fg: #fff; // 5.2:1.
@@ -6378,7 +6336,6 @@ body.dim-category {
 // hole in the page; the tint of a pressed quiet control is the strong surface; the open poster's
 // ring is the design system's light violet.
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
-:root[data-bs-theme="dark"] body.dim-category .dim-card__panel,
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
     --dim-cta: var(--dim-ds-blue-400, #4456ff);
     --dim-cta-hover: var(--dim-ds-blue-500, #2a31c9);
@@ -6401,7 +6358,6 @@ body.dim-category {
 // directions instead of only one. Light mode keeps the emphasis token.
 :root[data-bs-theme="dark"] body.dim-category .dim-hero,
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
-:root[data-bs-theme="dark"] body.dim-category .dim-card__panel,
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
     --dim-hero-page-primary-ink: var(--dim-ds-blue-200, #adb2f0);
     --dim-primary-ink: var(--dim-ds-blue-200, #adb2f0);
@@ -6425,7 +6381,6 @@ body.dim-category {
 // none pair's dark half through the badge tokens it reads (7.4:1), and its film is the dark surface at the
 // light film's weight.
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
-:root[data-bs-theme="dark"] body.dim-category .dim-card__panel,
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
     --dim-preview-ring: var(--dim-ds-blue-300, #7c84ff);
     --dim-recede-surface: var(--bs-body-bg, #212529);

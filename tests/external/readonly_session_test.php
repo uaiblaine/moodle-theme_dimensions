@@ -38,7 +38,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  * Core's contract for a read-only session is the one write_close() checks
  * (lib/classes/session/manager.php, the array_session_diff() of $SESSION taken at session start
  * and at close): no $SESSION key added, removed or changed. That is what is asserted here around
- * the showcase's two logged-in reads, the mobile drawer's summary and the calendar range, the way the
+ * the showcase's three logged-in reads, the mobile drawer's summary and the calendar range, the way the
  * clients make them (the range builds core's calendar sets without the session-only key bitmask core
  * writes into $SESSION, see \theme_dimensions\local\calendar\scope).
  * $USER is not compared, as core
@@ -56,6 +56,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  */
 #[CoversClass(get_category_rows::class)]
 #[CoversClass(get_card_details::class)]
+#[CoversClass(get_course_dialogue::class)]
 #[CoversClass(get_drawer_summary::class)]
 #[CoversClass(get_calendar_range::class)]
 final class readonly_session_test extends \advanced_testcase {
@@ -88,6 +89,7 @@ final class readonly_session_test extends \advanced_testcase {
         return [
             'theme_dimensions_get_category_rows' => ['categoryid' => $categoryid],
             'theme_dimensions_get_card_details' => ['courseids' => [$courseid]],
+            'theme_dimensions_get_course_dialogue' => ['courseid' => $courseid],
             'theme_dimensions_get_drawer_summary' => [],
             'theme_dimensions_get_calendar_range' => ['from' => '2026-11-01', 'to' => '2026-11-30'],
         ];
@@ -225,6 +227,9 @@ final class readonly_session_test extends \advanced_testcase {
             } else if ($name === 'theme_dimensions_get_calendar_range') {
                 // The window was built and walked: core's sets were computed on the way to the thirty days.
                 $this->assertCount(30, $result['data']['days'], $name);
+            } else if ($name === 'theme_dimensions_get_course_dialogue') {
+                // Admitted and built: the labels come only past the refusals.
+                $this->assertNotSame('', $result['data']['learnlabel'], $name);
             } else {
                 $this->assertSame([(int) $course->id], array_map('intval', array_column($result['data']['details'], 'id')), $name);
             }

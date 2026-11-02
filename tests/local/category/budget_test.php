@@ -39,7 +39,7 @@ require_once(__DIR__ . '/fixture.php');
  * The statement and cost budgets of the category showcase: zero slopes, ceilings and a cost bound.
  *
  * A "first render" here is the whole decision layer for page one of the
- * logged-in shell: {@see population::resolve()} and the four per-page layers
+ * logged-in shell: {@see population::resolve()} and the three per-page layers
  * of {@see cards}. Reads are perf_get_reads() deltas on a request that has
  * been reset the way a new one would be - every per-request memo dropped, the
  * context cache emptied - with the shared MUC layers left warm. Each run's
@@ -60,13 +60,13 @@ final class budget_test extends \advanced_testcase {
     use fixture;
 
     /** @var int The most reads a warm first render may cost, whatever the subtree holds: the measured value. */
-    private const WARM_CEILING = 16;
+    private const WARM_CEILING = 14;
 
     /**
      * @var int The same ceiling with the page cut in SQL, which pays its exception-list statements and a
      *   count the PHP cut does not: the measured value, the same on PostgreSQL and on MariaDB.
      */
-    private const WARM_CEILING_SQL = 19;
+    private const WARM_CEILING_SQL = 17;
 
     /** @var int Peak memory a first render of two hundred courses may add, in bytes; the measured peak is about 600 KB. */
     private const COST_MEMORY = 8 * 1024 * 1024;
@@ -137,7 +137,7 @@ final class budget_test extends \advanced_testcase {
     }
 
     /**
-     * One first render: the decision layer and the four per-page layers.
+     * One first render: the decision layer and the three per-page layers.
      *
      * The flat organisation, because what is metered here is the cost of a page
      * of cards and {@see seed()} spreads its courses across the root's children:
@@ -158,12 +158,11 @@ final class budget_test extends \advanced_testcase {
         cards::records($result->ids());
         cards::values($result->rows);
         cards::images($result->rows);
-        cards::contacts($result->rows);
         return $result;
     }
 
     /**
-     * Export every card of one resolved page, the way the listing does: four bulk reads, then no read.
+     * Export every card of one resolved page, the way the listing does: three bulk reads, then no read.
      *
      * @param int $rootid The category.
      * @param int $pagesize The page size.
@@ -178,7 +177,6 @@ final class budget_test extends \advanced_testcase {
         $courses = cards::records($ids);
         $values = cards::values($rows);
         $images = cards::images($rows);
-        $contacts = cards::contacts($rows);
         $renderer = $PAGE->get_renderer('core');
         $cards = [];
         foreach ($ids as $courseid) {
@@ -187,7 +185,6 @@ final class budget_test extends \advanced_testcase {
                 $rows[$courseid],
                 $values[$courseid],
                 $images[$courseid] ?? null,
-                $contacts[$courseid] ?? [],
                 null,
                 true
             );
@@ -379,7 +376,7 @@ final class budget_test extends \advanced_testcase {
         $categoryid = (int) $category->id;
         $renderer = $PAGE->get_renderer('core');
 
-        // The four bulk reads, then the exports alone - which is what the meter wraps.
+        // The three bulk reads, then the exports alone - which is what the meter wraps.
         $prepared = function (int $pagesize) use ($categoryid): array {
             $result = population::resolve(new criteria($categoryid, ['pagesize' => $pagesize]));
             $rows = $result->rows;
@@ -389,11 +386,10 @@ final class budget_test extends \advanced_testcase {
                 cards::records($result->ids()),
                 cards::values($rows),
                 cards::images($rows),
-                cards::contacts($rows),
             ];
         };
         $exportall = function (array $prepared) use ($renderer): void {
-            [$ids, $rows, $courses, $values, $images, $contacts] = $prepared;
+            [$ids, $rows, $courses, $values, $images] = $prepared;
             /* What a real request still holds at this point and the meter does not: the page's
                course contexts, which the three bulk readers each rebuild from the preload
                columns the population's own statement carried. Rebuilding them costs nothing and
@@ -407,7 +403,6 @@ final class budget_test extends \advanced_testcase {
                     $rows[$courseid],
                     $values[$courseid],
                     $images[$courseid] ?? null,
-                    $contacts[$courseid] ?? [],
                     null,
                     true
                 );
@@ -1442,7 +1437,7 @@ final class budget_test extends \advanced_testcase {
      *
      * customfield_picture's get_file() is a {files} statement per stored badge, which put up to four statements
      * per card into the bulk reads of a catalogue with crests. landingfields::values_many() reads every badge file
-     * of the page at once, so the four layers cost the same at four cards and at twenty-four with four crests each;
+     * of the page at once, so the three layers cost the same at four cards and at twenty-four with four crests each;
      * every card measured must carry its four, or the fixture would measure a slope over nothing.
      */
     public function test_four_crests_per_card_cost_the_bulk_reads_nothing_per_card(): void {
@@ -1486,7 +1481,6 @@ final class budget_test extends \advanced_testcase {
                 $this->assertCount(4, $value->crests, "Course {$courseid} carries its four crests.");
             }
             cards::images($result->rows);
-            cards::contacts($result->rows);
         };
         // Warm what a second request would find warm.
         $bulk(24);

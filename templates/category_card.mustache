@@ -31,8 +31,8 @@
     (the enrolment matrix's decision D2: the sentence beside the call to action
     that goes there); in the same place, the opening line, only on a card whose
     way in is refused until an enrolment window opens, with that date (plain
-    text, its icon decorative); then the trailing action cluster - the call to action, the native details disclosure
-    whose panel is anchored to the card, and last the favourite star, so that in
+    text, its icon decorative); then the trailing action cluster - the call to action, the "More information"
+    link, and last the favourite star, so that in
     list view it falls into the cluster's flow beside the button instead of over
     the kind glyph. The star is drawn only for a logged-in viewer and stays
     hidden until a client module marks the body (the star's dim-star-js, or
@@ -53,7 +53,8 @@
     renamed hook reddens the markup test instead of silently disarming a
     behaviour. The article (dim-card) carries the course id and the classifier
     state, which is how the modules know which cards to ask progress for;
-    dim-card-details names the disclosure and dim-card-panel its inner panel;
+    dim-card-more is the "More information" link, dim-card-cover the cover and
+    dim-card-pill the state pill, which the course dialogue copies;
     dim-card-titlelink takes the focus on the first appended card when no load-more button or next-page
     link remains; dim-card-title, the heading rather than the link, is where the
     search term is marked, because a visitor's card with no page to open draws
@@ -78,11 +79,16 @@
     page's first paint (eager), and the first such cover is fetched ahead of
     every other image (priority) only where the hero paints no picture.
 
-    The card carries its own "More information" dialogue, drawn into an inert
-    <template> (dim-card-modal) by category_card_modal from this same context.
-    Without JavaScript nothing reads it and the disclosure opens its panel in
-    place; categorycoursemodal intercepts the summary and opens the dialogue
-    instead, so the disclosure is the fallback and never a second path to keep.
+    "More information" is a link to the card's own page (url: the course, the
+    landing page or the enrolment page), drawn only where the card has one;
+    without JavaScript it leads there, where everything about the course is.
+    For an account, categorycoursemodal intercepts it and opens the course
+    dialogue at once from what the card holds - the cover, the pill, the title,
+    and the page's decision written onto the link from modal: the kicker
+    (data-kicker), the primary button (data-primary with its icon, and either
+    data-primary-url or, for an enrolment that opens later, data-primary-closed
+    carrying what a screen reader is told) and the secondary one (data-secondary,
+    data-secondary-url) - then fills it with the content it fetches.
 
     Example context (json):
     {
@@ -126,23 +132,10 @@
         "starlabel": "Add to favourites: Pre-hospital Care & Rescue",
         "starlabeladd": "Add to favourites: Pre-hospital Care & Rescue",
         "starlabelremove": "Remove from favourites: Pre-hospital Care & Rescue",
-        "detailsid": "dim-card-details-42",
         "detailslabel": "More information",
-        "excerpt": "Pre-hospital care course for volunteer brigade members.",
-        "hasexcerpt": true,
-        "facts": [
-            {"label": "Workload", "value": "36 hours", "icon": "fa-clock"},
-            {"label": "Modality", "value": "In-person", "icon": "fa-display"},
-            {"label": "Contact", "value": "Terry Teacher (Teacher)", "icon": "fa-user"}
-        ],
-        "hasfacts": true,
-        "learn": ["Victim triage", "Immobilisation", "Safe transport"],
-        "haslearn": true,
-        "learnlabel": "What you will learn",
         "modal": {
             "kicker": "Brigade",
             "haskicker": true,
-            "factslabel": "Course information",
             "primary": {"label": "Enrol now", "url": "https://example.com/enrol/index.php?id=42", "disabled": false, "note": "", "icon": "fa-arrow-right"},
             "hasprimary": true,
             "secondary": {"label": "Course page", "url": "https://example.com/theme/dimensions/landing.php?id=42"},
@@ -153,7 +146,7 @@
 <article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}>
     <div class="dim-card__media{{#hasimage}} dim-card__media--image{{/hasimage}}">
         {{#hasimage}}
-        <img class="dim-card__image" src="{{imageurl}}" alt=""{{^eager}} loading="lazy"{{/eager}}{{#priority}} fetchpriority="high"{{/priority}} decoding="async" width="320" height="150">
+        <img class="dim-card__image" data-region="dim-card-cover" src="{{imageurl}}" alt=""{{^eager}} loading="lazy"{{/eager}}{{#priority}} fetchpriority="high"{{/priority}} decoding="async" width="320" height="150">
         {{/hasimage}}
         {{#datetile}}
         <span class="dim-card__datetile"><b>{{day}}</b><span>{{month}}</span></span>
@@ -180,7 +173,7 @@
                 {{/badges}}
             </ul>
             {{/hasbadges}}
-            <span class="dim-card__badge {{badge.classes}}"><i class="fa {{badge.icon}}" aria-hidden="true"></i> {{badge.label}}</span>
+            <span class="dim-card__badge {{badge.classes}}" data-region="dim-card-pill"><i class="fa {{badge.icon}}" aria-hidden="true"></i> {{badge.label}}</span>
             {{#ishidden}}
             <span class="dim-card__badge {{hiddenbadge.classes}}"><i class="fa fa-eye-slash" aria-hidden="true"></i> {{hiddenbadge.label}}</span>
             {{/ishidden}}
@@ -196,36 +189,12 @@
             {{#cta}}
             <a class="btn btn-sm dim-card__cta {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}}" href="{{url}}">{{label}}</a>
             {{/cta}}
-            <details class="dim-card__details" id="{{detailsid}}" data-region="dim-card-details">
-                <summary class="btn btn-sm dim-card__summary">{{detailslabel}}</summary>
-                <div class="dim-card__panel" data-region="dim-card-panel">
-                    <h4 class="dim-card__paneltitle">{{fullname}}</h4>
-                    {{#hasexcerpt}}
-                    <p class="dim-card__excerpt">{{excerpt}}</p>
-                    {{/hasexcerpt}}
-                    {{#hasfacts}}
-                    <ul class="dim-card__facts">
-                        {{#facts}}
-                        <li><span class="dim-card__factlabel">{{label}}:</span> <b>{{value}}</b></li>
-                        {{/facts}}
-                    </ul>
-                    {{/hasfacts}}
-                    {{#haslearn}}
-                    <p class="dim-card__learnlabel">{{learnlabel}}</p>
-                    <ul class="dim-card__learn">
-                        {{#learn}}
-                        <li><i class="fa fa-check" aria-hidden="true"></i> {{.}}</li>
-                        {{/learn}}
-                    </ul>
-                    {{/haslearn}}
-                </div>
-            </details>
+            {{#hasurl}}
+            <a class="btn btn-sm dim-card__summary" href="{{url}}" data-region="dim-card-more"{{#modal}}{{#haskicker}} data-kicker="{{kicker}}"{{/haskicker}}{{#primary}} data-primary="{{label}}" data-primary-icon="{{icon}}"{{#disabled}} data-primary-closed="{{note}}"{{/disabled}}{{^disabled}} data-primary-url="{{url}}"{{/disabled}}{{/primary}}{{#secondary}} data-secondary="{{label}}" data-secondary-url="{{url}}"{{/secondary}}{{/modal}}>{{detailslabel}}</a>
+            {{/hasurl}}
             {{#showstar}}
             <button type="button" class="dim-card__star dim-js-only" aria-pressed="{{#favourite}}true{{/favourite}}{{^favourite}}false{{/favourite}}" data-action="dim-star" data-courseid="{{id}}" data-star-add="{{starlabeladd}}" data-star-remove="{{starlabelremove}}"><i class="{{#favourite}}fa-solid{{/favourite}}{{^favourite}}fa-regular{{/favourite}} fa-star" aria-hidden="true"></i><span class="visually-hidden" data-region="dim-star-label">{{starlabel}}</span></button>
             {{/showstar}}
         </div>
     </div>
-    <template data-region="dim-card-modal">
-        {{> theme_dimensions/category_card_modal }}
-    </template>
 </article>

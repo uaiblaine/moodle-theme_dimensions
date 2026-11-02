@@ -199,9 +199,9 @@ final class request {
            marks the body; without it a visitor sees the still alone. */
         $PAGE->requires->js_call_amd('theme_dimensions/covervideo', 'init');
 
-        /* A visitor's card opens the same course dialogue: the module calls no web service, and the
-           dialogue is drawn into the card by the server, from what the visitor's card may say. */
-        $PAGE->requires->js_call_amd('theme_dimensions/categorycoursemodal', 'init');
+        /* No course dialogue for a visitor (decision V1 of docs/vitrine-ratings/PROPOSAL.md): its content is
+           fetched from a service a session alone may call, and a visitor's "More information" is the link to
+           the course's public landing page, which already says everything about it. */
 
         /* The visitor's live listing, only while the site has opened its web service: off, the page
            is the plain form it always was. Every session left at step 1, so this page is a visitor's

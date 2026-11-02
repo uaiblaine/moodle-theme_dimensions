@@ -1416,7 +1416,6 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~color:\s*#fff;~', $badge);
         $this->assertStringNotContainsString('--dim-surface', $badge, 'The dark surface is never the badge\'s ink.');
         $dark = ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-vitrine,\s*'
-            . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-card__panel,\s*'
             . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-cmodal \{[^}]*';
         $this->assertMatchesRegularExpression(
             '~' . $dark . '--dim-cta:\s*var\(--dim-ds-blue-400, #4456ff\);~',
@@ -1576,7 +1575,6 @@ final class category_scss_test extends \basic_testcase {
         $this->assertStringContainsString('--dim-area-lift: 0;', $scss);
         $this->assertStringContainsString('--dim-area-tint: .1;', $scss);
         $dark = ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-vitrine,\s*'
-            . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-card__panel,\s*'
             . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-cmodal \{[^}]*';
         $this->assertMatchesRegularExpression('~' . $dark . '--dim-area-edge:\s*rgba\(255, 255, 255, \.45\);~', $scss);
         $this->assertMatchesRegularExpression('~' . $dark . '--dim-area-lift:\s*\.45;~', $scss);
@@ -1680,7 +1678,7 @@ final class category_scss_test extends \basic_testcase {
     public function test_the_course_dialogue_declares_its_tokens_on_its_own_root(): void {
         $scss = $this->stylesheet('category.scss');
         $this->assertMatchesRegularExpression(
-            '~\n    \.dim-vitrine,\s*\.dim-card__panel,\s*\.dim-cmodal \{\s*--dim-surface:~',
+            '~\n    \.dim-vitrine,\s*\.dim-cmodal \{\s*--dim-surface:~',
             $scss,
             'The listing\'s tokens are declared on the dialogue\'s root as well.'
         );
@@ -1735,6 +1733,15 @@ final class category_scss_test extends \basic_testcase {
                 . '\.dim-cmodal\.show \.modal-dialog \{\s*animation-name: dim-cmodal-sheet;~',
             $scss
         );
+        // The skeleton the dialogue opens with is quiet: its bars pulse only where motion is allowed, beside the entrance.
+        $this->assertSame(1, substr_count($scss, 'animation: dim-cmodal-pulse '));
+        $this->assertMatchesRegularExpression(
+            '~@media \(prefers-reduced-motion: no-preference\) \{\s*\.dim-cmodal\.show \.modal-dialog \{[^}]*\}\s*'
+                . '\.dim-cmodal__bone \{\s*animation: dim-cmodal-pulse 900ms~',
+            $scss
+        );
+        $bone = $this->rule_body($scss, '.dim-cmodal__bone');
+        $this->assertStringNotContainsString('animation', $bone, 'Outside the gate, the bars stand still.');
         // The phone's bottom sheet.
         $this->assertMatchesRegularExpression(
             '~@media \(max-width: 575\.98px\) \{\s*\.dim-cmodal\.modal \{[^}]*--bs-modal-margin:\s*0;[^}]*\}\s*'
@@ -1904,7 +1911,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertSame(0, preg_match_all('~(?<![\w-])(?:opacity|filter)\s*:~', $dim), 'No opacity, no filter.');
         // Every pill not already the receding pair (none's) recedes, its fill with its ink.
         $tokens = $this->rule_body(substr($scss, 0, (int) strpos($scss, ':root[data-bs-theme="dark"]')), '.dim-vitrine,'
-            . "\n" . '    .dim-card__panel,' . "\n" . '    .dim-cmodal');
+            . "\n" . '    .dim-cmodal');
         preg_match_all('~--dim-badge-([a-z]+)-bg:\s*([^;]+);~', $tokens, $declared, PREG_SET_ORDER);
         $none = array_column($declared, 2, 1)['none'] ?? '';
         $coloured = array_filter($declared, static fn(array $badge): bool => $badge[2] !== $none);
@@ -1952,7 +1959,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertNotFalse($split);
         $light = substr($scss, 0, $split);
         $darkhalf = substr($scss, $split);
-        $roots = $this->rule_body($light, '.dim-vitrine,' . "\n" . '    .dim-card__panel,' . "\n" . '    .dim-cmodal');
+        $roots = $this->rule_body($light, '.dim-vitrine,' . "\n" . '    .dim-cmodal');
         $tokens = [
             '--dim-preview-ring',
             '--dim-recede-surface',
@@ -1972,7 +1979,6 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~--dim-recede-pill-bg:\s*var\(--dim-badge-none-bg\);~', $roots);
         $this->assertMatchesRegularExpression('~--dim-recede-pill-fg:\s*var\(--dim-badge-none-fg\);~', $roots);
         $dark = ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-vitrine,\s*'
-            . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-card__panel,\s*'
             . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-cmodal \{([^}]*)\}';
         $this->assertSame(1, preg_match('~' . $dark . '\s*$~', $darkhalf, $last), 'The preview\'s dark block closes the file.');
         foreach (['--dim-preview-ring', '--dim-recede-surface', '--dim-recede-ink', '--dim-recede-film'] as $token) {

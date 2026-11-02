@@ -39,9 +39,9 @@ use theme_dimensions\local\landing\links;
  * Builds the context of one page of the showcase: the navigation tree, the toolbar, the grid, the pager.
  *
  * The one listing both shells render. It is handed a resolved
- * {@see page_result} and reads what the cards need in four bulk statements
- * through {@see cards} - the course rows, the landing page values, the images,
- * the contacts - then builds one {@see category_card} per row without
+ * {@see page_result} and reads what the cards need in three bulk statements
+ * through {@see cards} - the course rows, the landing page values, the images -
+ * then builds one {@see category_card} per row without
  * touching the database again. The toolbar comes from {@see category_toolbar}
  * and the pager is core's own paging bar over real links, so every page of
  * the listing has an address and works with JavaScript off.
@@ -357,14 +357,12 @@ class category_listing implements \core\output\named_templatable, \core\output\r
         $rows = $result->rows;
         $ids = $result->ids();
 
-        // The bulk reads of the page, one statement each (three for a visitor); nothing per card after this.
+        // The bulk reads of the page, one statement each; nothing per card after this.
         $courses = cards::records($ids);
         $values = cards::values($rows);
         /* The public shell's covers go through the theme's own file route: core's route for the
            course image answers a visitor with the login page while the site forces login. */
         $images = cards::images($rows, $result->anonymous);
-        /* A visitor's card names nobody ({@see category_card}), so the preload is not paid for them. */
-        $contacts = $result->anonymous ? [] : cards::contacts($rows);
         /* The two layers only some cards need, each read for those cards alone: the routes beside a relationship
            with the opening dates, and the prerequisite of a conditional card. A visitor's card carries neither. */
         $nextactions = $result->anonymous ? [] : cards::next_actions($rows);
@@ -387,7 +385,6 @@ class category_listing implements \core\output\named_templatable, \core\output\r
                 $row,
                 $values[$courseid],
                 $images[$courseid] ?? null,
-                $contacts[$courseid] ?? [],
                 $overline,
                 $showstar,
                 $result->anonymous,

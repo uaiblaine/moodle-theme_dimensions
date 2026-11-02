@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - The category card excerpt in a process that has not loaded lib/filelib.php
+ * Theme Dimensions - The course dialogue's excerpt in a process that has not loaded lib/filelib.php
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -25,21 +25,20 @@
 namespace theme_dimensions\external;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-use theme_dimensions\output\category_card;
+use theme_dimensions\local\category\dialogue;
 
 /**
- * A card's excerpt rewrites the pluginfile URLs of the course summary, which needs lib/filelib.php.
+ * The dialogue's excerpt rewrites the pluginfile URLs of the course summary, which needs lib/filelib.php.
  *
- * With `courseoverviewfileslimit` at 0 the card images return before their own require of that file, and the
- * landing fields load it only when they format a textarea, so a card can reach the excerpt without it (the
- * category rows web service has no course login to load it either). The card is built from hand-made values for
- * that reason: the landing fields' reader would load the file first. No test can see that state in its own process: PHPUnit
- * has loaded filelib.php long before a test starts. The call runs in a child PHP process that boots the test
- * site as admin/tool/phpunit/cli/util.php does (PHPUNIT_UTIL: lib/setup.php and nothing more). A boot that
- * rebuilds the caches may include the file, so a child that finds it loaded is run once more.
+ * theme_dimensions_get_course_dialogue reaches the excerpt through lib/ajax/service.php, which bootstraps no
+ * lib/filelib.php and runs no course login that would load it, and the excerpt is built before the landing page
+ * values, whose textarea would load it first ({@see dialogue::content()}). No test can see that state in its own
+ * process: PHPUnit has loaded filelib.php long before a test starts. The call runs in a child PHP process that
+ * boots the test site as admin/tool/phpunit/cli/util.php does (PHPUNIT_UTIL: lib/setup.php and nothing more). A
+ * boot that rebuilds the caches may include the file, so a child that finds it loaded is run once more.
  */
-#[CoversClass(category_card::class)]
-final class get_category_rows_without_filelib_test extends \advanced_testcase {
+#[CoversClass(dialogue::class)]
+final class get_course_dialogue_without_filelib_test extends \advanced_testcase {
     /** @var string The child script; argv: Composer's autoload.php, lib/phpunit/bootstrap.php, the course id. */
     private const CHILD = <<<'PHP'
         <?php
@@ -49,28 +48,13 @@ final class get_category_rows_without_filelib_test extends \advanced_testcase {
         \core\session\manager::set_user(get_admin());
         $result = ['loadedbefore' => function_exists('file_rewrite_pluginfile_urls')];
         try {
-            $course = get_course((int) $argv[3]);
-            $values = (object) [
-                'model' => \theme_dimensions\local\landingfields::MODEL_COURSE,
-                'workload' => null,
-                'modality' => 0,
-                'city' => null,
-                'venue' => null,
-                'programme' => null,
-                'crests' => [],
-                'names' => [],
-            ];
-            $card = new \theme_dimensions\output\category_card(
-                $course,
-                (object) ['state' => 'none', 'visible' => 1, 'category' => $course->category],
-                $values,
-                null,
-                [],
-                null,
-                false,
-                true
+            $course = $DB->get_record(
+                'course',
+                ['id' => (int) $argv[3]],
+                \theme_dimensions\local\category\dialogue::COURSE_FIELDS,
+                MUST_EXIST
             );
-            $result['excerpt'] = $card->export_for_template($PAGE->get_renderer('core'))->excerpt;
+            $result['excerpt'] = \theme_dimensions\local\category\dialogue::content($course)['excerpt'];
         } catch (\Throwable $e) {
             $result['error'] = get_class($e) . ': ' . $e->getMessage();
         }
@@ -84,7 +68,6 @@ final class get_category_rows_without_filelib_test extends \advanced_testcase {
         // The child process reads the test database, so the rows must be committed rather than rolled back.
         $this->preventResetByRollback();
         $this->resetAfterTest();
-        set_config('courseoverviewfileslimit', 0);
         $generator = self::getDataGenerator();
         $category = $generator->create_category();
         $course = $generator->create_course([
@@ -112,7 +95,7 @@ final class get_category_rows_without_filelib_test extends \advanced_testcase {
      */
     private function run_child(int $courseid): array {
         global $CFG, $DB;
-        $script = make_request_directory() . '/category_rows_child.php';
+        $script = make_request_directory() . '/course_dialogue_child.php';
         file_put_contents($script, self::CHILD);
         $loader = new \ReflectionClass(\Composer\Autoload\ClassLoader::class);
         $command = [

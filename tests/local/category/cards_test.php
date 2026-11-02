@@ -33,13 +33,17 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/fixture.php');
 
 /**
- * Tests for the four per-page layers: one statement each, never one per course, and core's own choice of image.
+ * Tests for the three per-page layers: one statement each, never one per course, and core's own choice of image.
+ *
+ * The course contacts, the summary, the venue and the programme are not among them: the course dialogue reads them
+ * for one course when it opens ({@see dialogue}), and the tests below say which values each reader asks for.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(cards::class)]
+#[CoversClass(dialogue::class)]
 final class cards_test extends \advanced_testcase {
     use fixture;
 
@@ -117,10 +121,9 @@ final class cards_test extends \advanced_testcase {
             'records' => fn(array $page) => cards::records(array_keys($page)),
             'values' => fn(array $page) => cards::values($page),
             'images' => fn(array $page) => cards::images($page),
-            'contacts' => fn(array $page) => cards::contacts($page),
         ];
         foreach ($layers as $layer => $read) {
-            // Warm the shared layers once (image info, course contacts), then meter a second request.
+            // Warm the shared layers once (image info), then meter a second request.
             $read($twelve);
             $small = $this->reads(fn() => $read($two));
             $large = $this->reads(fn() => $read($twelve));
@@ -132,19 +135,22 @@ final class cards_test extends \advanced_testcase {
         foreach ($two as $courseid => $row) {
             $this->assertSame(landingfields::MODEL_EVENT, $values[(int) $courseid]->model);
             $this->assertStringStartsWith('City ', $values[(int) $courseid]->city);
-            $this->assertStringContainsString('Programme ', $values[(int) $courseid]->programme);
+            $this->assertNull($values[(int) $courseid]->programme, 'The programme is the dialogue\'s, not the card\'s.');
         }
-        // The card's textarea is the landing page's minus the filter pass: same text, same cleaning.
-        $first = (int) array_key_first($two);
-        $this->assertSame(landingfields::values($first)->programme, $values[$first]->programme, 'No filter changes this text.');
         $records = cards::records(array_keys($twelve));
         $this->assertSame(array_keys($twelve), array_keys($records), 'Rows come back in the order asked.');
         $this->assertObjectHasProperty('fullname', reset($records));
-        $contacts = cards::contacts($two);
-        foreach ($two as $courseid => $row) {
-            $this->assertSame(fullname($teacher), $contacts[(int) $courseid][(int) $teacher->id]['fullname']);
-            $this->assertNotSame('', $contacts[(int) $courseid][(int) $teacher->id]['rolename']);
-        }
+        $this->assertObjectNotHasProperty('summary', reset($records), 'The summary is the dialogue\'s, not the card\'s.');
+
+        // The dialogue's textarea is the landing page's minus the filter pass: same text, same cleaning.
+        $first = (int) array_key_first($two);
+        $own = landingfields::values_many([$first], false, dialogue::SHORTNAMES)[$first];
+        $this->assertSame(landingfields::values($first)->programme, $own->programme, 'No filter changes this text.');
+        // And it names the course's contacts, which no layer of the page reads any more.
+        $content = dialogue::content($DB->get_record('course', ['id' => $first], dialogue::COURSE_FIELDS));
+        $this->assertCount(1, $content['learn']);
+        $this->assertStringStartsWith('Programme ', $content['learn'][0]);
+        $this->assertStringContainsString(fullname($teacher), implode(' ', array_column($content['facts'], 'value')));
     }
 
     /**
@@ -364,14 +370,14 @@ final class cards_test extends \advanced_testcase {
     }
 
     /**
-     * The values the card reads are the same whether the listing reads the card's fields only or every field.
+     * The values the card and the dialogue read are the same whether each reads its own fields only or every field.
      *
-     * cards::values() hands values_many() the card's own fields (cards::CARD_SHORTNAMES). Over stored values,
-     * stored empty values, courses with no row at all (two of them, so the shared default is shared) and a
-     * programme whose DEFAULT text is not empty, every key the card reads must equal what the full read gives and
-     * what a read of the course alone gives - the latter shares nothing. The keys compared are the ones
-     * category_card's source reads, so a card that starts reading another value reddens this test until its field
-     * is named. And the names are the card fields' alone: the other fields are not read at all.
+     * cards::values() hands values_many() the card's own fields (cards::CARD_SHORTNAMES), the course dialogue its
+     * own (dialogue::SHORTNAMES). Over stored values, stored empty values, courses with no row at all (two of them,
+     * so the shared default is shared) and a programme whose DEFAULT text is not empty, every key a reader reads must
+     * equal what the full read gives and what a read of the course alone gives - the latter shares nothing. The keys
+     * compared are the ones each reader's source reads, so a reader that starts reading another value reddens this
+     * test until its field is named. And the names are each reader's fields' alone: the other fields are not read.
      */
     public function test_the_card_reads_its_values_alike_with_its_fields_only(): void {
         global $CFG;
@@ -437,44 +443,64 @@ final class cards_test extends \advanced_testcase {
             \core\context\course::instance($courseid);
         }
 
-        // The keys category_card reads off its values, from its own source.
-        preg_match_all('/\$this->values->([a-z]+)|\$values->([a-z]+)/', file_get_contents(
-            __DIR__ . '/../../../classes/output/category_card.php'
-        ), $matches);
-        $read = array_values(array_unique(array_filter(array_merge($matches[1], $matches[2]))));
-        sort($read);
-        $compared = ['city', 'crests', 'modality', 'model', 'names', 'programme', 'venue', 'workload'];
-        $this->assertSame($compared, $read, 'The card reads exactly the keys compared here.');
-
-        $card = static function (\stdClass $values): array {
-            $keys = [];
-            foreach (['city', 'modality', 'model', 'programme', 'venue', 'workload'] as $key) {
-                $keys[$key] = $values->$key;
-            }
-            $keys['crests'] = array_map(static fn(\stored_file $file): int => (int) $file->get_id(), $values->crests);
-            $keys['names'] = array_intersect_key($values->names, array_flip(cards::CARD_SHORTNAMES));
-            return $keys;
-        };
-        $only = landingfields::values_many($ids, false, cards::CARD_SHORTNAMES);
+        /* Each reader of the values, its own fields and the keys it reads off them, from its own source: the card
+           over the page's values, and the course dialogue over one course's. */
+        $readers = [
+            'category_card' => [
+                __DIR__ . '/../../../classes/output/category_card.php',
+                cards::CARD_SHORTNAMES,
+                ['city', 'crests', 'modality', 'model', 'workload'],
+            ],
+            'dialogue' => [
+                __DIR__ . '/../../../classes/local/category/dialogue.php',
+                dialogue::SHORTNAMES,
+                ['city', 'modality', 'model', 'names', 'programme', 'venue', 'workload'],
+            ],
+        ];
         $all = landingfields::values_many($ids, false);
-        foreach ($ids as $courseid) {
-            $alone = landingfields::values_many([$courseid], false);
-            $this->assertSame($card($alone[$courseid]), $card($only[$courseid]), "Course {$courseid}, against itself alone.");
-            $this->assertSame($card($all[$courseid]), $card($only[$courseid]), "Course {$courseid}, against every field.");
-            $this->assertSame(
-                [],
-                array_diff(array_keys($only[$courseid]->names), cards::CARD_SHORTNAMES),
-                'Only the card\'s fields are read.'
-            );
+        $byreader = [];
+        foreach ($readers as $reader => [$file, $shortnames, $compared]) {
+            preg_match_all('/\$this->values->([a-z]+)|\$values->([a-z]+)/', file_get_contents($file), $matches);
+            $read = array_values(array_unique(array_filter(array_merge($matches[1], $matches[2]))));
+            sort($read);
+            $this->assertSame($compared, $read, "The {$reader} reads exactly the keys compared here.");
+
+            $keysof = static function (\stdClass $values) use ($compared, $shortnames): array {
+                $keys = [];
+                foreach ($compared as $key) {
+                    $keys[$key] = match ($key) {
+                        'crests' => array_map(static fn(\stored_file $file): int => (int) $file->get_id(), $values->crests),
+                        'names' => array_intersect_key($values->names, array_flip($shortnames)),
+                        default => $values->$key,
+                    };
+                }
+                return $keys;
+            };
+            $only = landingfields::values_many($ids, false, $shortnames);
+            foreach ($ids as $courseid) {
+                $alone = landingfields::values_many([$courseid], false);
+                $this->assertSame($keysof($alone[$courseid]), $keysof($only[$courseid]), "{$reader}, course {$courseid} alone.");
+                $this->assertSame($keysof($all[$courseid]), $keysof($only[$courseid]), "{$reader}, course {$courseid}, all.");
+                $this->assertSame(
+                    [],
+                    array_diff(array_keys($only[$courseid]->names), $shortnames),
+                    "Only the {$reader}'s fields are read."
+                );
+            }
+            $byreader[$reader] = $only;
         }
+        $dialogue = $byreader['dialogue'];
         $this->assertSame(
             landingfields::values_many([$bare], false)[$bare]->programme,
-            $only[$alsobare]->programme,
+            $dialogue[$alsobare]->programme,
             'The shared default reads the default text, formatted as the course alone formats it.'
         );
-        $this->assertStringContainsString('Default programme', (string) $only[$alsobare]->programme, 'Precondition.');
+        $this->assertStringContainsString('Default programme', (string) $dialogue[$alsobare]->programme, 'Precondition.');
+        $only = $byreader['category_card'];
         $this->assertSame('Rio & Co', $only[$stored]->city);
         $this->assertSame(40.0, $only[$stored]->workload);
+        $this->assertNull($only[$stored]->venue, 'The venue is the dialogue\'s, not the card\'s.');
+        $this->assertSame('Sede', $dialogue[$stored]->venue);
         $this->assertSame(landingfields::FORMAT_TUTORED, $all[$stored]->format, 'Control: the full read has the format.');
         $this->assertSame(0, $only[$stored]->format, 'A field the card does not read keeps its empty value.');
     }

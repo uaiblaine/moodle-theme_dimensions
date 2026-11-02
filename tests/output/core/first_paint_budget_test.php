@@ -71,29 +71,41 @@ final class first_paint_budget_test extends \advanced_testcase {
     /** @var string A valid 1x1 PNG, the cover. */
     private const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
-    /** @var int HTML bytes one more card adds to a logged-in flat listing: measured 4,666 and 4,693 (2026-10-27), + 3 %. */
-    private const CARD_BYTES = 4834;
+    /**
+     * @var int HTML bytes one more card adds to a logged-in flat listing: measured 2,383 (2026-11-01, stage L2: the
+     *   card's details panel and its inert dialogue left it), + 3 %.
+     */
+    private const CARD_BYTES = 2455;
 
-    /** @var int HTML bytes of a logged-in flat listing without its cards: measured 17,081 and 17,305, + 3 %. */
-    private const LISTING_BYTES = 17825;
+    /**
+     * @var int HTML bytes of a logged-in flat listing without its cards: measured 17,326 (2026-11-01, stage L2), + 3 %.
+     *   21 bytes over the largest earlier measurement (17,305), inside the run-to-run spread above: the intercept is
+     *   what the listing costs beside its cards, which stage L2 did not change.
+     */
+    private const LISTING_BYTES = 17846;
 
-    /** @var int HTML bytes one more card adds to a visitor's listing: measured 4,438 (2026-10-27), + 3 %. */
-    private const PUBLIC_CARD_BYTES = 4572;
+    /** @var int HTML bytes one more card adds to a visitor's listing: measured 2,095 (2026-11-01, stage L2), + 3 %. */
+    private const PUBLIC_CARD_BYTES = 2158;
 
     /** @var int HTML bytes of the hero of a category with no branding row, logged in: measured 5,540 and 5,550, + 3 %. */
     private const HERO_BYTES = 5717;
 
-    /** @var string[] The theme's AMD modules the logged-in flat page asks for at load, in order: exactly these. */
+    /**
+     * @var string[] The theme's AMD modules the logged-in flat page asks for at load, in order: exactly these. The
+     *   course dialogue is armed beside the account's shell, for a real account only (stage L2).
+     */
     private const MODULES = [
         'theme_dimensions/listingaccount',
-        'theme_dimensions/covervideo',
         'theme_dimensions/categorycoursemodal',
+        'theme_dimensions/covervideo',
     ];
 
-    /** @var string[] The theme's AMD modules the visitor's page asks for at load, the live listing open: exactly these. */
+    /**
+     * @var string[] The theme's AMD modules the visitor's page asks for at load, the live listing open: exactly these.
+     *   No course dialogue: a visitor's "More information" is the link to the public landing page (decision V1).
+     */
     private const PUBLIC_MODULES = [
         'theme_dimensions/covervideo',
-        'theme_dimensions/categorycoursemodal',
         'theme_dimensions/listingvisitor',
     ];
 

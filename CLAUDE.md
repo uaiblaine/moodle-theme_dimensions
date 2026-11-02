@@ -274,9 +274,10 @@ db/install.xml, db/caches.php, db/events.php, db/uninstall.php  The branding tab
 classes/local/category/        The category showcase's decision layer (stage 2):
                                population (the two gates, the clamps, the probe cap, the page),
                                classifier (eleven states, five statements), facets, cards, criteria,
-                               scope, page_result, unavailable_exception. See "The category showcase".
+                               scope, page_result, unavailable_exception, and dialogue (the course
+                               dialogue's fetched content). See "The category showcase".
 amd/src/category*.js           The showcase's AMD modules left: categoryhero (the appearance editor) and categorycoursemodal
-                               (the course dialogue); covervideo.js + local/coverfilm.js are the cover film.
+                               (the course dialogue, a real account's only); covervideo.js + local/coverfilm.js are the cover film.
 amd/src/listing{account,visitor}.js  The js_call_amd bridges of the two shells, each loading its shell through core/esm!.
 js/esm/src/                    The showcase's client: daterange/, filterline/, areas/ (the three React components, on both
                                shells) and listing/ (the shared listing, its store, the shells visitor.ts and account.ts).
@@ -1222,15 +1223,16 @@ decision ids (D1-D39, OD-n) are the private design record's.
 - **The server draws the whole page, and it works without JavaScript.** Every region is a `category_*.mustache`
   template rendered by `classes/output/category_*.php`: the toolbar is a real GET form (the filter line, the Filters
   panel, Organise, the view toggle), the chips are radios, the posters are links to `?open=`, the pager is numbered,
-  the details are a native `<details>`. A client moves the page the server drew; it composes no number and no
+  "More information" is a link to the card's own page. A client moves the page the server drew; it composes no number and no
   sentence (the count line, the chips, "Clear all", the Filter badge all come from the server, in the page and in
   every rows answer).
 - **The hero** is armed by `course_category()` (it runs BEFORE `$OUTPUT->header()`) in `category_hero`'s static
   registry and drawn by the core renderer's `full_header()`; any miss of the guards resets the registry first. The
   band below the header is switched off by SHAPE (`secondarymoremenu` in any context while a hero is armed), and
   `core_renderer_test`'s drift test is the one to read after a Boost Union update [stage 4].
-- **The services**: `get_category_rows`, `get_card_details`, `toggle_wishlist` and `remember_category_state` for an
-  account; `get_public_category_rows` (`loginrequired => false`, answered by `service-nologin.php`) for a visitor.
+- **The services**: `get_category_rows`, `get_card_details`, `get_course_dialogue`, `toggle_wishlist` and
+  `remember_category_state` for an account; `get_public_category_rows` (`loginrequired => false`, answered by
+  `service-nologin.php`) for a visitor.
   The two rows functions return one shape (`get_category_rows::execute_returns()`, key for key), so one store paints
   both [stage 6, S1-S4].
 - **The client is the ES tree `js/esm/src`**, built to `js/esm/build` (section "The ESM tree (R0)"):
@@ -1240,8 +1242,9 @@ decision ids (D1-D39, OD-n) are the private design record's.
     `store.ts`, and the two shells `visitor.ts` and `account.ts`;
   - `areas/` (the posters and the panel, `Areas.tsx`), `filterline/` (`FilterLine.tsx`), `daterange/`
     (`DateRange.tsx`): the three React components, on both shells;
-  - AMD left on these pages: the two entries below, `covervideo` with `local/coverfilm` (the card's film),
-    `categorycoursemodal` (the course dialogue) and, on the appearance editor, `categoryhero`. `js_call_amd` cannot
+  - AMD left on these pages: the two entries below, `covervideo` with `local/coverfilm` (the card's film, armed for
+    everybody), `categorycoursemodal` (the course dialogue, armed beside `listingaccount` for a real account only)
+    and, on the appearance editor, `categoryhero`. `js_call_amd` cannot
     name an ES module (it cleans the name to `PARAM_ALPHANUMEXT`), so each shell has an AMD entry that loads it
     through `core/esm!@moodle/lms/theme_dimensions/listing/<shell>`.
 
@@ -1259,7 +1262,8 @@ service, no `fetchOne` (`listing_source_test::test_the_store_reaches_no_shell`, 
 | Shell | `listing/visitor.ts`, `start(categoryid)` | `listing/account.ts`, `start()` |
 | AMD entry | `amd/src/listingvisitor.js` | `amd/src/listingaccount.js` |
 | Armed by | `request::handle()`, only while `publicaccess::client_enabled()` | `course_category()`, inside `isloggedin() && !isguestuser()` |
-| Service | `get_public_category_rows`, `fetchOne(..., {loginrequired: false})` | `get_category_rows`, `get_card_details`, `remember_category_state` |
+| Service | `get_public_category_rows`, `fetchOne(..., {loginrequired: false})` | `get_category_rows`, `get_card_details`, `remember_category_state`; `get_course_dialogue` from `categorycoursemodal` |
+| "More information" | the link to the public landing page, no dialogue (decision V1); none without a model | `categorycoursemodal`'s dialogue; the link without JavaScript |
 | Mark | `dim-public-js` | `dim-js` |
 | A failure | loads the request's address, told in `category_publicfallback` | core's exception dialogue |
 | A change of shell (`leave`) | `window.location.assign` | `@moodle/lms/core/location`'s `redirect`, after the state is remembered |
@@ -1282,6 +1286,20 @@ service, no `fetchOne` (`listing_source_test::test_the_store_reaches_no_shell`, 
   core's favourite service. `amd/src/listingaccount.js` is the `js_call_amd` bridge only and imports its shell alone.
 
 ### Invariants
+
+- **The course dialogue: the page's decision stays on the card, the content is fetched** [L2]. "More information" is
+  `<a data-region="dim-card-more" href="{{url}}">`, drawn only when `hasurl`, carrying the card's `modal` keys as
+  `data-kicker`, `data-primary` (`-url` or `-closed`, `-icon`) and `data-secondary` (`-url`). `categorycoursemodal`
+  intercepts a plain press (a modified one follows the link), opens `core/modal` AT ONCE with those, the cover
+  (`dim-card-cover`), the pill (`dim-card-pill`) and the title, a skeleton in `dim-cmodal-content`, and replaces that
+  region alone with `theme_dimensions_get_course_dialogue`'s answer rendered from `category_card_modal` (the title
+  holds the id the dialogue is labelled by). The request starts on intent (pointer or focus on the link for
+  `INTENT_DELAY`, 180 ms, a finger gated out of both halves) and is kept per course for the page's life; the
+  `categorycoursemodal:open` token spans the press to the painted content. The service returns content only, never a
+  state, a button or an address: its order is `validate_parameters()`, `require_login()`, the guest refused, the
+  SYSTEM context, the site course, then core's `can_view_course_info()` and `access::filter_courses()` exactly as
+  `enrichment::details()` asks them, one refusal for every miss, and only then `dialogue::content()` (the excerpt
+  first: it requires `lib/filelib.php` itself). The page reads no contacts, summary, venue or programme any more.
 
 - **The visitor's import graph reaches no session module.** `categorypublic_source_test` walks it transitively from
   `listingvisitor` and from the bridge `js/esm/src/amd.ts`, across `core/esm!`, relative imports, quoted
@@ -1398,8 +1416,8 @@ Server and data:
 
 Client and stylesheet:
 
-- **`toggle` and media events do not bubble**: a delegated listener for them is a CAPTURE one (the account's
-  one-disclosure rule, `Areas.tsx`, `FilterLine.tsx`, the film's `timeupdate`) [stage 6, round G].
+- **`toggle` and media events do not bubble**: a delegated listener for them is a CAPTURE one (`Areas.tsx`,
+  `FilterLine.tsx`, the film's `timeupdate`) [stage 6, round G].
 - **A disabled button cannot take the focus**: `restoreMore()` runs before focusing "Load more" [stage 6].
 - **Every row the client inserts carries `dim-vitrine__item--enter` (`opacity: 0`)**, and `reveal()` is the one place
   it comes off: a path that skips it paints readable rows invisible [D2b].
@@ -1457,7 +1475,8 @@ Client and stylesheet:
   `category_listing_markup_test`, `category_hero_test`, `category_pages_test`, `category_card_modal_test`),
   `tests/output/core/course_renderer_test.php` (the logged-in entry, the render budget),
   `tests/output/core/first_paint_budget_test.php` (the exact AMD modules and strings a page asks for at load, on
-  both shells), `tests/external/` (one per service) and the route's `category_test`.
+  both shells), `tests/external/` (one per service; the dialogue's is `get_course_dialogue_test`, with
+  `get_course_dialogue_without_filelib_test` for its legacy library) and the route's `category_test`.
 - PHPUnit, client source: `categorypublic_source_test` (the visitor's graph), `listing_source_test` (the store, the
   history, the entries), `listing_account_source_test`, `amd_source_test` (the shared listing's contracts, read in
   `listing/store.ts`), `areas_component_source_test`, `filterline_component_source_test`,
@@ -1468,11 +1487,13 @@ Client and stylesheet:
   `js/esm/tests/visitor/page.ts` from an anonymous page and re-render `js/esm/tests/filterline/toolbar.ts` when the
   toolbar's or the posters' templates change. The components' guards are mutation-checked by hand; the sweep runs
   PHPUnit alone.
-- Behat: `theme_dimensions_category.feature` (the server-drawn page and the editor),
-  `theme_dimensions_category_client.feature` (the account), `theme_dimensions_category_public_client.feature` (the
-  visitor), `theme_dimensions_category_pages.feature` (`@local_page`).
-- Gates: `mutations/gates.conf`, grouped by stage and round in file order. A pattern that matches nothing is a hard
-  exit for `mdl mutate`: dry-match every line after moving code between functions.
+- Behat: `theme_dimensions_category.feature` (the server-drawn page and the editor, "More information" as a link),
+  `theme_dimensions_category_client.feature` (the account, the course dialogue),
+  `theme_dimensions_category_public_client.feature` (the visitor), `theme_dimensions_category_pages.feature`
+  (`@local_page`).
+- Gates: `mutations/gates.conf`, grouped by stage and round in file order (the dialogue's service: the `dialogue_*`
+  gates of the L2 block). A pattern that matches nothing is a hard exit for `mdl mutate`: dry-match every line after
+  moving code between functions.
 
 ### The performance probe (R0)
 

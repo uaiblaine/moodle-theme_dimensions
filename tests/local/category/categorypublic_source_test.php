@@ -96,11 +96,15 @@ final class categorypublic_source_test extends \basic_testcase {
         'listing/account',
     ];
 
-    /** @var string[] Theme modules a visitor's page may never load: the session's star and the logged-in clients. */
+    /**
+     * @var string[] Theme modules a visitor's page may never load: the session's star, the logged-in clients and the
+     *   course dialogue, whose content comes from a service a session alone may call (decision V1).
+     */
     private const FORBIDDEN_MODULES = [
         self::ESM . 'listing/star',
         'listingaccount',
         self::ESM . 'listing/account',
+        'categorycoursemodal',
     ];
 
     /**
@@ -112,6 +116,7 @@ final class categorypublic_source_test extends \basic_testcase {
         'setUserPreference',
         'theme_dimensions_get_category_rows',
         'theme_dimensions_get_card_details',
+        'theme_dimensions_get_course_dialogue',
         'theme_dimensions_toggle_wishlist',
         'theme_dimensions_remember_category_state',
         'core_course_set_favourite_courses',

@@ -133,8 +133,8 @@ final class card_markup_test extends \advanced_testcase {
         );
         $this->assertSame($star, $cluster->lastElementChild, 'The star is the LAST member of the cluster.');
 
-        $summary = $xpath->query('.//summary', $cluster);
-        $this->assertSame(1, $summary->length, 'The disclosure sits in the cluster too, before the star.');
+        $more = $xpath->query('.//a[@data-region="dim-card-more"]', $cluster);
+        $this->assertSame(1, $more->length, '"More information" sits in the cluster too, before the star.');
 
         $media = $xpath->query('//div[' . self::has_class('dim-card__media') . ']');
         $this->assertSame(1, $media->length);
@@ -423,8 +423,12 @@ final class card_markup_test extends \advanced_testcase {
         $card = $this->render('category_card');
         $cardhooks = [
             'dim-card' => '//*[@data-region="dim-card"][@data-courseid][@data-state]',
-            'dim-card-details' => '//details[@data-region="dim-card-details"]',
-            'dim-card-panel' => '//details[@data-region="dim-card-details"]//*[@data-region="dim-card-panel"]',
+            // The "More information" link: the card's own page, with the page's decision for the dialogue written onto it.
+            'dim-card-more' => '//div[' . self::has_class('dim-card__actions') . ']/a[@data-region="dim-card-more"][@href]'
+                . '[@data-kicker][@data-primary][@data-primary-icon][@data-primary-url][@data-secondary][@data-secondary-url]',
+            // What the dialogue copies from the card's own markup: the cover and the state pill.
+            'dim-card-cover' => '//img[@data-region="dim-card-cover"][' . self::has_class('dim-card__image') . ']',
+            'dim-card-pill' => '//span[@data-region="dim-card-pill"][' . self::has_class('dim-card__badge') . ']',
             'dim-card-titlelink' => '//a[@data-region="dim-card-titlelink"]',
             // The heading, where the search term is marked, around the link and the plain title alike.
             'dim-card-title' => '//h3[@data-region="dim-card-title"][' . self::has_class('dim-card__title') . ']'
@@ -432,18 +436,32 @@ final class card_markup_test extends \advanced_testcase {
             'dim-card-progress' => '//*[@data-region="dim-card-progress"][@hidden]',
             'dim-star' => '//button[@data-action="dim-star"][@data-star-add][@data-star-remove]',
             'dim-star-label' => '//button[@data-action="dim-star"]//*[@data-region="dim-star-label"]',
-            // The course dialogue the card carries, inert, and the two parts categorycoursemodal moves into core/modal.
-            'dim-card-modal' => '//article[@data-region="dim-card"]/template[@data-region="dim-card-modal"]',
-            'dim-cmodal-sheet' => '//template[@data-region="dim-card-modal"]/*[@data-region="dim-cmodal-sheet"]',
-            'dim-cmodal-actions' => '//template[@data-region="dim-card-modal"]/*[@data-region="dim-cmodal-actions"]',
-            // Core's own title hook on the cover's title: core/modal's label, and Behat's dialogue selector.
-            'title' => '//*[@data-region="dim-cmodal-sheet"]//h2[@data-region="title"]',
         ];
         foreach ($cardhooks as $hook => $query) {
             $this->assertSame(
                 1,
                 $card->query($query)->length,
                 "The card no longer writes the {$hook} hook the client module addresses."
+            );
+        }
+        // The card carries no dialogue of its own any more: its content is fetched when it opens.
+        $this->assertSame(0, $card->query('//template | //details')->length, 'No inert dialogue, no disclosure.');
+
+        /* The dialogue's parts, which categorycoursemodal renders and moves into core/modal: the sheet with its content
+           region, and the actions. */
+        $parts = $this->render('category_card_modal');
+        $parthooks = [
+            'dim-cmodal-sheet' => '/div/*[@data-region="dim-cmodal-sheet"]',
+            'dim-cmodal-content' => '//*[@data-region="dim-cmodal-sheet"]//*[@data-region="dim-cmodal-content"]',
+            'dim-cmodal-actions' => '/div/*[@data-region="dim-cmodal-actions"]',
+            // Core's own title hook on the cover's title: core/modal's label, and Behat's dialogue selector.
+            'title' => '//*[@data-region="dim-cmodal-sheet"]//h2[@data-region="title"]',
+        ];
+        foreach ($parthooks as $hook => $query) {
+            $this->assertSame(
+                1,
+                $parts->query($query)->length,
+                "The dialogue's parts no longer write the {$hook} hook the client module addresses."
             );
         }
 
@@ -925,6 +943,7 @@ final class card_markup_test extends \advanced_testcase {
             $this->assertSame('true', $icon->getAttribute('aria-hidden'), 'Every icon is decoration.');
         }
         $this->assertSame(3, $parts->query('//ul[@aria-label]/li[' . self::has_class('dim-cmodal__fact') . ']')->length);
+        $this->assertSame(0, $parts->query('//*[@aria-busy]')->length, 'Control: the content is painted, nothing pending.');
         $this->assertSame(
             1,
             $parts->query('//a[' . self::has_class('dim-cmodal__button--secondary') . '][@href]')->length
@@ -933,7 +952,7 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertSame(0, $parts->query('//button')->length, 'Control: an open course draws no closed button.');
 
         $context = $this->example_context('category_card_modal');
-        $context['modal']['primary'] = [
+        $context['primary'] = [
             'label' => 'Inscrições a partir de 14/11/2026',
             'url' => null,
             'disabled' => true,
@@ -950,6 +969,31 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertStringContainsString('As inscrições deste curso ainda não abriram.', $button->textContent);
         $this->assertSame(1, substr_count($closed->document->textContent, '14/11/2026'), 'The date, once.');
         $this->assertSame(0, $closed->query('//a[' . self::has_class('dim-cmodal__button--primary') . ']')->length);
+
+        /* The sheet the dialogue opens with: the card's half, a skeleton in the content region marked busy and none of
+           the content; and the failure's: its one sentence and the course's page, no skeleton. */
+        $loading = $this->render_context('category_card_modal', ['loading' => true] + $context);
+        $region = $loading->query('//*[@data-region="dim-cmodal-content"][@aria-busy="true"]');
+        $this->assertSame(1, $region->length, 'The content region is busy while it is fetched.');
+        $this->assertSame(
+            1,
+            $loading->query('.//*[' . self::has_class('dim-cmodal__skeleton') . '][@aria-hidden="true"]', $region->item(0))->length
+        );
+        $this->assertSame(0, $loading->query('//*[' . self::has_class('dim-cmodal__fact') . ']')->length);
+        $this->assertSame(1, $loading->query('//h2[@data-region="title"]')->length, 'The title is there from the start.');
+        $this->assertSame(1, $loading->query('//*[@data-region="dim-cmodal-closed"]')->length, 'And the buttons.');
+        $failed = $this->render_context('category_card_modal', [
+            'failed' => true,
+            'failedlabel' => 'Os detalhes deste curso não puderam ser carregados.',
+            'failedurl' => 'https://example.com/course/view.php?id=42',
+            'failedlink' => 'Página do curso',
+        ] + $context);
+        $this->assertSame(
+            1,
+            $failed->query('//*[@data-region="dim-cmodal-content"]/p[' . self::has_class('dim-cmodal__failed') . ']'
+                . '/a[@href="https://example.com/course/view.php?id=42"]')->length
+        );
+        $this->assertSame(0, $failed->query('//*[' . self::has_class('dim-cmodal__fact') . '] | //*[@aria-busy]')->length);
     }
 
     /**

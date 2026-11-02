@@ -5,6 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The showcase card's "More information" is a link, and its dialogue is fetched when it opens** (2026100562), stage
+  L2 of `docs/vitrine-ratings/PROPOSAL.md` (decisions V1, open at once, buttons on the card). The card no longer
+  draws its details panel nor an inert copy of its dialogue: "More information" links to the card's own page (the
+  course, the landing page or the enrolment page; no link where the card has none), which is the whole of it without
+  JavaScript, for the guest and for a visitor. For a real account `categorycoursemodal` opens the dialogue at once
+  with the cover, the pill, the title and the two buttons the card holds (the page's decision, written onto the
+  link), shows a skeleton, and fills it from the new account-only web service `theme_dimensions_get_course_dialogue`
+  (one course per call; the excerpt, the facts, the programme; the guest refused before any lookup, discoverability
+  as `enrichment::details()` asks it, one refusal for every miss). The request starts on intent (180 ms of pointer or
+  focus on the link) and each answer is kept for the page's life; a failure keeps the header and the buttons and
+  says so in one sentence. The page no longer reads the course contacts, the summary, the venue or the programme,
+  and the rows answers lose `detailsid`, `excerpt`, `facts`, `learn` and `learnlabel`. The visitor's page no longer
+  loads the dialogue's module. New string `category_modal_failed`. PHPUnit (a new service test), Jest, Behat (the
+  dialogue scenario and a no-JavaScript link scenario), 12 new mutation gates, 3 retired.
 - **The category showcase card has no hover peek** (2026100561), stage L1 of `docs/vitrine-ratings/PROPOSAL.md`. The
   copy of the card's details panel that opened beside a card after 180 ms of hover is gone, with its timer, its
   styles and the `dim-card--peeking` class. The "More information" disclosure and the course dialogue are

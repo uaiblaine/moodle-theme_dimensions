@@ -58,15 +58,14 @@ let batches: Array<{ids: number[], resolve: (answer: object) => void}>;
 let rememberAnswers: boolean;
 
 /**
- * A card as the server draws it, with its disclosure and its progress slot.
+ * A card as the server draws it, with its "More information" link and its progress slot.
  *
  * @param {number} id The course id.
  * @param {string} state The classifier's state.
  * @returns {string}
  */
 const cardOf = (id: number, state = 'enrolled'): string => `<li><article data-region="dim-card" data-courseid="${id}" `
-    + `data-state="${state}"><details data-region="dim-card-details"><summary>More</summary>`
-    + `<div data-region="dim-card-panel">About ${id}</div></details>`
+    + `data-state="${state}"><a data-region="dim-card-more" href="#course-${id}">More</a>`
     + '<span data-region="dim-card-progress" hidden></span></article></li>';
 
 /**
@@ -290,23 +289,14 @@ describe('theme_dimensions/listing/account', () => {
         expect(watched).toEqual(['51']);
     });
 
-    it('opens one panel at a time and closes it on Escape', () => {
+    it('leaves the card\'s "More information" link to the course dialogue\'s module', () => {
         page();
         start();
-        const [first, second] = Array.from(document.querySelectorAll<HTMLElement>('[data-region="dim-card"]'));
-        const opened = first.querySelector('details') as HTMLDetailsElement;
-        opened.open = true;
-        opened.dispatchEvent(new Event('toggle'));
-
-        // A disclosure's toggle does not bubble: the listing hears it in the capture phase, and closes the others.
-        const disclosure = second.querySelector('details') as HTMLDetailsElement;
-        disclosure.open = true;
-        disclosure.dispatchEvent(new Event('toggle'));
-        expect(opened.open).toBe(false);
-        expect(disclosure.open).toBe(true);
-
-        document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
-        expect(disclosure.open).toBe(false);
+        const link = document.querySelector('[data-region="dim-card-more"]') as HTMLAnchorElement;
+        const press = new MouseEvent('click', {bubbles: true, cancelable: true});
+        link.dispatchEvent(press);
+        // The shell intercepts nothing of it: the dialogue's AMD module does, for a real account, or the link is followed.
+        expect(press.defaultPrevented).toBe(false);
     });
 
     it('shows core\'s dialogue for a calendar that could not mount, over the native fields', async() => {

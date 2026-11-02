@@ -204,25 +204,17 @@ final class listing_account_source_test extends \basic_testcase {
     }
 
     /**
-     * One panel of the grid is open at a time.
+     * The shell holds no card disclosure: "More information" is a link the course dialogue's module intercepts.
      *
-     * The toggle listener is delegated in the capture phase: a details element's toggle event does not bubble.
-     *
-     * Changes that must make it fail: emptying the loop of closeOthers() (gate js_one_panel_at_a_time); dropping the
-     * `details !== keep` test; the toggle heard in the bubble phase.
+     * The card's details panel, its one-open-at-a-time rule and its Escape left with stage L2; what the shell still
+     * hears on its own is the automatic opening's note.
      */
-    public function test_only_one_panel_of_the_grid_is_open_at_a_time(): void {
-        $listen = $this->body('listen');
-        $this->assertMatchesRegularExpression(
-            "~root\\.addEventListener\\('toggle',.*?closeOthers\\(details\\);.*?\\}, true\\);~s",
-            $listen
-        );
-        $closers = $this->body('closeOthers');
-        $this->assertStringContainsString('root.querySelectorAll<HTMLDetailsElement>(HOOKS.details)', $closers);
-        $this->assertMatchesRegularExpression('~if \(details !== keep\) \{\s*details\.open = false;\s*\}~', $closers);
-        $found = preg_match("~event\\.key === 'Escape'\\) \\{(.*?)\\}~s", $listen, $matches);
-        $this->assertSame(1, $found, 'The shell handles no Escape key.');
-        $this->assertStringContainsString('closeOthers(null);', $matches[1]);
+    public function test_the_shell_holds_no_card_disclosure(): void {
+        $source = $this->read(self::SHELL);
+        foreach (['dim-card-details', 'dim-card-panel', 'closeOthers', "'toggle'", 'Escape', 'HTMLDetailsElement'] as $gone) {
+            $this->assertStringNotContainsString($gone, $source, "The account's shell still names {$gone}.");
+        }
+        $this->assertStringContainsString('document.addEventListener(LISTING.autoopened, paintAutoOpened);', $this->body('listen'));
     }
 
     /**

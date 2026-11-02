@@ -60,6 +60,7 @@ require_once(__DIR__ . '/fixture.php');
  */
 #[CoversClass(rows::class)]
 #[CoversClass(category_listing::class)]
+#[CoversClass(dialogue::class)]
 final class rows_anonymous_test extends \advanced_testcase {
     use fixture;
 
@@ -703,14 +704,16 @@ final class rows_anonymous_test extends \advanced_testcase {
     }
 
     /**
-     * A visitor's cards cost no course-contact read, and a logged-in reader's do.
+     * No export of cards reads the course contacts, a visitor's or a person's: only the course dialogue names them.
      *
      * A statement count cannot see this on its own: the contacts are served from a cache that
-     * stays warm in the meter, so the meter empties it inside the metered call. The logged-in
-     * copy of the same result is the control that the contacts really cost a statement here,
-     * and the warm run is the control that the visitor's cost is not the cache's.
+     * stays warm in the meter, so the meter empties it inside the metered call. The dialogue's
+     * content for the same course is the control that the contacts really cost a statement with
+     * the cache empty, and the warm runs are the control that the exports' cost is not the cache's.
      */
-    public function test_a_visitors_export_reads_no_course_contacts(): void {
+    public function test_no_export_of_cards_reads_course_contacts(): void {
+        global $DB;
+
         $this->seed(true, true);
         $this->become(null);
         $result = population::resolve(new criteria($this->ids['root'], ['anonymous' => true, 'sort' => 'name']));
@@ -731,11 +734,21 @@ final class rows_anonymous_test extends \advanced_testcase {
             });
         };
         $export($result, false);
-        $warm = $export($result, false);
-        $cold = $export($result, true);
-        $control = $export($loggedin, true);
+        $this->assertSame($export($result, false), $export($result, true), 'A visitor\'s export: the same reads, cache empty.');
+        $export($loggedin, false);
+        $this->assertSame($export($loggedin, false), $export($loggedin, true), 'A person\'s export: the same reads, cache empty.');
 
-        $this->assertSame($warm, $cold, 'A visitor\'s export reads the same with the contacts cache empty.');
-        $this->assertGreaterThan($cold, $control, 'The same page for a reader who is shown contacts reads more.');
+        $course = $DB->get_record('course', ['id' => $this->ids['public']], dialogue::COURSE_FIELDS);
+        $dialogue = function (bool $cold) use ($course): int {
+            return $this->reads(static function () use ($course, $cold): void {
+                if ($cold) {
+                    \cache::make('core', 'coursecontacts')->purge();
+                }
+                dialogue::content($course);
+            });
+        };
+        $dialogue(false);
+        $warm = $dialogue(false);
+        $this->assertGreaterThan($warm, $dialogue(true), 'Control: the dialogue reads the contacts the cache does not hold.');
     }
 }

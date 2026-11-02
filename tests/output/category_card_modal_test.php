@@ -31,6 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\category\cards;
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
+use theme_dimensions\local\category\dialogue;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\redirector;
@@ -56,6 +57,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(category_card::class)]
+#[CoversClass(dialogue::class)]
 final class category_card_modal_test extends \advanced_testcase {
     use \theme_dimensions\local\category\fixture;
 
@@ -169,8 +171,35 @@ final class category_card_modal_test extends \advanced_testcase {
         if ($anonymous) {
             $this->become(null);
         }
-        $card = new category_card($courses[$id], $row, $values[$id], null, [], null, !$anonymous, $anonymous);
+        $card = new category_card($courses[$id], $row, $values[$id], null, null, !$anonymous, $anonymous);
         return $card->export_for_template($PAGE->get_renderer('core'));
+    }
+
+    /**
+     * The dialogue's sheet as categorycoursemodal renders it from a card: what the card holds, and no content.
+     *
+     * The module reads the kicker and the buttons off the attributes the card writes from its modal keys, and the
+     * title and the pill off the card's markup; this is the same context, built from the card's own keys.
+     *
+     * @param \stdClass $card The card context.
+     * @return string The rendered sheet and actions.
+     */
+    private function sheet(\stdClass $card): string {
+        global $PAGE;
+        $modal = json_decode(json_encode($card->modal), true);
+        return $PAGE->get_renderer('core')->render_from_template('theme_dimensions/category_card_modal', [
+            'fullname' => $card->fullname,
+            'hasimage' => false,
+            'badge' => json_decode(json_encode($card->badge), true),
+            'kicker' => $modal['kicker'],
+            'haskicker' => $modal['haskicker'],
+            'primary' => $modal['primary'],
+            'hasprimary' => $modal['hasprimary'],
+            'secondary' => $modal['secondary'],
+            'hassecondary' => $modal['hassecondary'],
+            'loading' => false,
+            'failed' => false,
+        ]);
     }
 
     /**
@@ -346,10 +375,15 @@ final class category_card_modal_test extends \advanced_testcase {
         $this->assertSame(get_string('category_modal_opensnote', self::COMPONENT), $primary['note']);
         $this->assertSame(links::page($this->ids['ahead'])->out(false), $card->modal['secondary']['url'], 'The page stays.');
 
-        $html = $PAGE->get_renderer('core')->render_from_template(
-            'theme_dimensions/category_card_modal',
-            json_decode(json_encode($card), true)
-        );
+        // The card carries the closed button onto its link: its label and what a screen reader is told, and no address.
+        $cardhtml = $PAGE->get_renderer('core')->render_from_template('theme_dimensions/category_card', $card);
+        $this->assertMatchesRegularExpression('~<a [^>]*data-region="dim-card-more"[^>]*>~', $cardhtml);
+        preg_match('~<a [^>]*data-region="dim-card-more"[^>]*>~', $cardhtml, $link);
+        $this->assertStringContainsString('data-primary="' . s($primary['label']) . '"', $link[0]);
+        $this->assertStringContainsString('data-primary-closed="' . s($primary['note']) . '"', $link[0]);
+        $this->assertStringNotContainsString('data-primary-url=', $link[0], 'A closed button goes nowhere.');
+
+        $html = $this->sheet($card);
         $this->assertSame(1, substr_count($html, $date), 'The date is on the button and nowhere else.');
         $this->assertStringNotContainsString(s($card->openslabel), $html, 'Nor is the card\'s own opening line.');
         $this->assertMatchesRegularExpression(
@@ -363,16 +397,21 @@ final class category_card_modal_test extends \advanced_testcase {
             'A screen reader hears why it does nothing.'
         );
 
-        // The control: an open course draws a link, not a closed button.
+        // The control: an open course draws a link, not a closed button, and its card writes the address.
         $open = $this->cards()[$this->ids['open']];
         $this->assertFalse($open->modal['primary']['disabled']);
+        $openhtml = $PAGE->get_renderer('core')->render_from_template('theme_dimensions/category_card', $open);
+        $this->assertStringContainsString('data-primary-url="' . s($open->modal['primary']['url']) . '"', $openhtml);
+        $this->assertStringNotContainsString('data-primary-closed=', $openhtml);
     }
 
     /**
      * The kicker is the course's own category on every page, the listed one included; the tiles carry icons core has.
+     *
+     * The tiles are the dialogue's fetched content ({@see dialogue::content()}), the kicker the card's.
      */
     public function test_the_kicker_names_the_courses_category_and_every_fact_has_an_icon(): void {
-        global $CFG;
+        global $CFG, $DB;
 
         $learner = $this->seed();
         course_handler::create()->instance_form_save((object) [
@@ -389,8 +428,9 @@ final class category_card_modal_test extends \advanced_testcase {
         $this->assertTrue($open->modal['haskicker']);
 
         $map = file_get_contents($CFG->root . '/lib/bundles/fontawesome/scss/_variables.scss');
-        $this->assertGreaterThanOrEqual(3, count($open->facts), 'Precondition: workload, mode and place.');
-        foreach ($open->facts as $fact) {
+        $content = dialogue::content($DB->get_record('course', ['id' => $this->ids['open']], dialogue::COURSE_FIELDS));
+        $this->assertGreaterThanOrEqual(3, count($content['facts']), 'Precondition: workload, mode and place.');
+        foreach ($content['facts'] as $fact) {
             $this->assertMatchesRegularExpression('~^fa-[a-z0-9-]+$~', $fact['icon']);
             $this->assertMatchesRegularExpression(
                 '~^\s*"' . preg_quote(substr($fact['icon'], 3), '~') . '":\s~m',

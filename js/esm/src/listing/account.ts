@@ -40,8 +40,6 @@ import type {Rows, Shell} from './store';
 
 /** Hooks the account's shell reads beside the shared ones. */
 const HOOKS = {
-    details: '[data-region="dim-card-details"]',
-    panel: '[data-region="dim-card-panel"]',
     progress: '[data-region="dim-card-progress"]',
     areapanel: '[data-region="dim-panel"]',
     countnotetext: '[data-region="dim-vitrine-countnotetext"]',
@@ -431,21 +429,6 @@ const watchCard = (card: HTMLElement): void => {
 };
 
 /**
- * Leave at most one panel of the grid open: the one being opened, and nothing beside it. Closing a disclosure
- * fires its own toggle with open false, which the listener ignores.
- *
- * @param {HTMLDetailsElement|null} keep The disclosure being opened, or null to close them all.
- * @returns {void}
- */
-const closeOthers = (keep: HTMLDetailsElement | null): void => {
-    root.querySelectorAll<HTMLDetailsElement>(HOOKS.details).forEach((details) => {
-        if (details !== keep) {
-            details.open = false;
-        }
-    });
-};
-
-/**
  * Attach every per-card behaviour, so a row from page four behaves like a row from page one.
  *
  * @param {Array} cards The cards to arm.
@@ -584,28 +567,11 @@ const paintPanelProgress = async(panel: HTMLElement): Promise<void> => {
 };
 
 /**
- * Wire what only an account's listing hears: the one open panel, Escape, and the automatic opening.
+ * Wire what only an account's listing hears: the automatic opening.
  *
  * @returns {void}
  */
 const listen = (): void => {
-    /* In the capture phase: a details element's toggle event does not bubble, so a listener on the listing only
-       ever hears it on the way down; delegated, so a card appended by load more behaves like one the server drew. */
-    root.addEventListener('toggle', (event) => {
-        const details = event.target;
-        if (!(details instanceof HTMLDetailsElement) || !details.open) {
-            return;
-        }
-        if (details.matches(HOOKS.details)) {
-            closeOthers(details);
-        }
-    }, true);
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            // Whatever is open: the disclosure the reader pressed.
-            closeOthers(null);
-        }
-    });
     // The posters' component opened the one area holding every result: the count line says so.
     document.addEventListener(LISTING.autoopened, paintAutoOpened);
 };
@@ -678,8 +644,8 @@ export const start = (): void => {
     }, {rootMargin: OBSERVER_MARGIN});
     window.setInterval(drainPending, BATCH_INTERVAL);
 
-    /* A course card inside the panel between the posters is a smaller presentation with its disclosure out of reach:
-       its progress is asked in one batch with the panel's rows. */
+    /* A course card inside the panel between the posters is a smaller presentation with its "More information" out of
+       reach: its progress is asked in one batch with the panel's rows. */
     attachCards(Array.from(root.querySelectorAll<HTMLElement>(SELECTORS.card)).filter((card) => !card.closest(HOOKS.areapanel)));
     listen();
 

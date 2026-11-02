@@ -89,10 +89,10 @@ use theme_dimensions\local\category\rows;
  * Which strings are PARAM_RAW, and why. PARAM_TEXT is validated on the way out:
  * clean_returnvalue() throws invalid_response_exception - for the whole
  * response, not the row - whenever strip_tags() would change the value, which a
- * bare "<" followed by a non-space does. The card's excerpt and programme lines
- * are html_entity_decode()d out of the course summary and the landing page
- * textareas, so a course whose summary holds "&lt;3" decodes to "<3" and would
- * fail the page for everyone. So every string composed from a language string
+ * bare "<" followed by a non-space does. A course's name or a landing page value
+ * (the meta line's city) holding "&lt;3" decodes to "<3" and would fail the page
+ * for everyone, as the course dialogue's excerpt would its own answer
+ * ({@see get_course_dialogue}). So every string composed from a language string
  * is PARAM_TEXT, and every string carrying a course's own name or content is
  * PARAM_RAW - as is every sentence carrying a category's name or the search
  * term (the count line, the panel's subtitle and zero state, the summary's
@@ -670,29 +670,10 @@ class get_category_rows extends external_api {
             'starlabel' => new external_value(PARAM_RAW, 'The star\'s label in its current state.'),
             'starlabeladd' => new external_value(PARAM_RAW, 'The label of the star once it means "add".'),
             'starlabelremove' => new external_value(PARAM_RAW, 'The label of the star once it means "remove".'),
-            'detailsid' => new external_value(PARAM_ALPHANUMEXT, 'The element id of the details disclosure.'),
-            'detailslabel' => new external_value(PARAM_TEXT, 'The summary text of that disclosure.'),
-            'excerpt' => new external_value(PARAM_RAW, 'The course summary reduced to one shortened paragraph.'),
-            'hasexcerpt' => new external_value(PARAM_BOOL, 'Whether there is an excerpt.'),
-            'facts' => new external_multiple_structure(
-                new external_single_structure([
-                    'label' => new external_value(PARAM_RAW, 'The row label, as the site stored the field name.'),
-                    'value' => new external_value(PARAM_RAW, 'The row value.'),
-                    'icon' => new external_value(PARAM_ALPHANUMEXT, 'The Font Awesome icon of the dialogue\'s tile, decorative.'),
-                ]),
-                'The fact rows of the panel.'
-            ),
-            'hasfacts' => new external_value(PARAM_BOOL, 'Whether there are fact rows.'),
-            'learn' => new external_multiple_structure(
-                new external_value(PARAM_RAW, 'One line of the programme.'),
-                'The first lines of the programme, one checklist item each.'
-            ),
-            'haslearn' => new external_value(PARAM_BOOL, 'Whether there is a programme to list.'),
-            'learnlabel' => new external_value(PARAM_TEXT, 'The heading of that checklist.'),
+            'detailslabel' => new external_value(PARAM_TEXT, 'The text of the card\'s "More information" link.'),
             'modal' => new external_single_structure([
                 'kicker' => new external_value(PARAM_RAW, 'The course\'s own category, plain; empty where it is not named.'),
                 'haskicker' => new external_value(PARAM_BOOL, 'Whether the dialogue names the category.'),
-                'factslabel' => new external_value(PARAM_TEXT, 'The label of the fact tiles.'),
                 'primary' => new external_single_structure([
                     'label' => new external_value(PARAM_TEXT, 'The button text; a disabled one carries its opening date.'),
                     'url' => new external_value(
@@ -712,7 +693,7 @@ class get_category_rows extends external_api {
                     'url' => new external_value(PARAM_URL, 'The card\'s own link.'),
                 ], 'The secondary button, null where it goes nowhere or repeats the primary.', VALUE_REQUIRED, null, NULL_ALLOWED),
                 'hassecondary' => new external_value(PARAM_BOOL, 'Whether there is a secondary button.'),
-            ], 'The course dialogue\'s own keys; the rest of it is read from the card.'),
+            ], 'The course dialogue\'s keys the page decides, written onto the card\'s link; its content is fetched.'),
         ], 'One card, the context its own template renders.');
     }
 }
