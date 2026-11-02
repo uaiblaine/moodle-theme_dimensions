@@ -1898,7 +1898,12 @@ calendar's ten suites 200 tests. `mdl ci moodle-theme_dimensions --branch MOODLE
 phpcs,phpdoc,phplint,mustache,grunt,jest` passed every step (Jest 31 suites, 406 tests) on its second run: the first
 found a `{@see` split across two lines in `get_calendar_range`'s docblock (phpdoc), fixed.
 
-**Gates:** _placeholder: the owner runs the sweep of the C5 block and the tier-2 leg with Behat._
+**Gates:**
+- **Mutation sweep:** the "C5 editing" block (40) went red on pgsql and mariadb; after the security read's fixes,
+  `--changed` over that commit (80 gates: the five it added, the ones on its files and the ones whose tests it
+  touched) went red on both. Swept from worktrees of the commits.
+- **Tier 2:** `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat` passed every step on d3d1e6e:
+  PHPUnit 1,991 (16 skipped), Behat 197 scenarios (193 passed, 4 skipped), Jest 407.
 
 ## 25. C6: not built (2026-11-02)
 
