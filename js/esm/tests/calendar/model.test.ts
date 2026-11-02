@@ -91,8 +91,14 @@ describe('the seams', () => {
 
     it('a day opens core\'s day view by its day, month and year, with no timestamp', () => {
         const url = new URL(dayHref('http://localhost/calendar/view.php', '2026-11-07'));
-        expect(Object.fromEntries(url.searchParams)).toEqual({view: 'day', 'cal_d': '7', 'cal_m': '11', 'cal_y': '2026'});
+        expect(Object.fromEntries(url.searchParams)).toEqual({view: 'day', 'cal_d': '7', 'cal_m': '11', 'cal_y': '2026', classic: '1'});
         expect(new URL(monthHref('http://localhost/calendar/view.php', '2026-02')).searchParams.get('cal_m')).toBe('2');
+    });
+
+    it('both classic addresses carry the marker that keeps core\'s calendar from sending the reader back', () => {
+        const month = new URL(monthHref('http://localhost/calendar/view.php', '2026-02'));
+        expect(Object.fromEntries(month.searchParams)).toEqual({view: 'month', 'cal_d': '1', 'cal_m': '2', 'cal_y': '2026', classic: '1'});
+        expect(new URL(dayHref('http://localhost/calendar/view.php', '2026-11-07')).searchParams.get('classic')).toBe('1');
     });
 });
 

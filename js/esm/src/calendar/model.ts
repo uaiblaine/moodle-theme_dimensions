@@ -378,6 +378,7 @@ export const itemHref = (item: Item, courses: Map<number, Course>, home: string)
  * the day in the viewer's own timezone: the client computes no timestamp.
  *
  * A day opens the drawer; the drawer links this address, where core's own day view (and its event editing) stays.
+ * The classic marker keeps the theme from sending the reader straight back (coreview.php).
  *
  * @param {string} calendar Core's calendar/view.php address (urls.calendar).
  * @param {string} iso The day, YYYY-MM-DD.
@@ -393,6 +394,7 @@ export const dayHref = (calendar: string, iso: string): string => {
         url.searchParams.set('cal_m', String(parts.m));
         url.searchParams.set('cal_y', String(parts.y));
     }
+    url.searchParams.set('classic', '1');
     return url.toString();
 };
 
@@ -441,6 +443,7 @@ export const monthHref = (calendar: string, month: string): string => {
     url.searchParams.set('cal_d', '1');
     url.searchParams.set('cal_m', String(Number(month.slice(5, 7))));
     url.searchParams.set('cal_y', String(Number(month.slice(0, 4))));
+    url.searchParams.set('classic', '1');
     return url.toString();
 };
 

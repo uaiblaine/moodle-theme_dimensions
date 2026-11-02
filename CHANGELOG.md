@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Core's calendar month and day views lead to the theme's calendar page** (2026100559), stage C3r of
+  `docs/calendar/PROPOSAL.md` (decision D1). `calendar/view.php?view=month|day` answers a 303 to the page with the same
+  month, day (the drawer opens on it) and category, decided in the `after_config` callback before core's view does
+  its work. Core keeps its upcoming view, course calendars, visitors and the guest, non-Gregorian calendar types and
+  any site whose theme is another one. The page's "Classic calendar" links carry `classic=1`, which keeps that
+  account on core's calendar for the session until it opens the page again. A new setting,
+  `theme_dimensions/calendarcoreview` (on by default), is the site's way back. PHPUnit, Jest, four Behat scenarios,
+  21 mutation gates.
 - **The current page's row in the navbar's "More" menu reads on the dark menu** (2026100558). Core's
   `moremenu.scss` paints that row (`.active` or `aria-current`, in the React mount and the legacy markup alike) in
   `--mds-text-default` or `$dropdown-link-color`, dark inks for a light menu, so on the theme's dark surface the

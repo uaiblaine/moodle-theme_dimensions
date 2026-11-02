@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\local\hook;
 
+use theme_dimensions\local\calendar\coreview;
 use theme_dimensions\local\category\request;
 use theme_dimensions\local\guesthome;
 use theme_dimensions\local\landing\redirector;
@@ -37,7 +38,7 @@ use theme_dimensions\local\landing\redirector;
  * callback reads the request shape and delegates every real decision to
  * {@see redirector}, which is where the unit tests live.
  *
- * Three request shapes are read. /enrol/index.php and /course/info.php are
+ * Four request shapes are read. /enrol/index.php and /course/info.php are
  * ghosted over the COURSE they name, the first of them then forwarded to the
  * landing page; /course/index.php?categoryid=N is forwarded for a VISITOR to the
  * public page of a category the site serves anonymously, and otherwise ghosted
@@ -45,6 +46,10 @@ use theme_dimensions\local\landing\redirector;
  * same as a guessed course one. Without it the theme's renderer would withhold
  * the category from every listing and the page itself would still name it in
  * the heading, the breadcrumb and the title.
+ *
+ * /calendar/view.php is the fourth: core's month and day views are forwarded to the theme's calendar page
+ * ({@see coreview}), before core's view spends its ~1.2 s on a page the reader never sees. The marker
+ * `classic=1` of the page's "Classic calendar" link is read here too, and keeps core's calendar for the session.
  *
  * The two answers of the category branch cannot collide: the forward is only
  * ever taken by somebody who is not logged in, and the ghost only by somebody
@@ -57,13 +62,14 @@ use theme_dimensions\local\landing\redirector;
  * router's requests load lib/setup.php too (moodle_bootstrap_middleware::load_full_moodle()),
  * where $SCRIPT is /r.php - which is why that branch reads no $SCRIPT at all.
  *
- * The category branch has no unit test, and cannot have one: the callback
+ * The category and calendar branches have no unit test, and cannot have one: the callback
  * reads $SCRIPT and ends the request with redirect(). Its guards are Behat
  * scenarios - "Guessing the URL of an unlisted category reveals nothing about
  * it" in tests/behat/theme_dimensions_unlisted.feature, with the
  * listed category beside it as the control, and the visitor forward in
  * tests/behat/theme_dimensions_category.feature, with the public
- * category as the case and a listed and an unlisted one as its controls.
+ * category as the case and a listed and an unlisted one as its controls. The calendar decision is
+ * coreview_test's, and the redirect is theme_dimensions_calendar.feature's.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -124,6 +130,27 @@ class after_config {
             }
             if ($ghosted) {
                 redirect(redirector::ghost_url());
+            }
+            return;
+        }
+        if ($script === '/calendar/view.php') {
+            // Decide inside the try and redirect outside it, as in the branches above.
+            try {
+                $target = coreview::target(
+                    coreview::request_params(),
+                    coreview::enabled(),
+                    coreview::account(),
+                    coreview::gregorian(),
+                    $GLOBALS['SESSION'],
+                    \core_date::get_user_timezone_object(),
+                    time()
+                );
+            } catch (\Throwable $exception) {
+                // A forwarding convenience must never take core's calendar down.
+                return;
+            }
+            if ($target !== null) {
+                redirect($target);
             }
             return;
         }

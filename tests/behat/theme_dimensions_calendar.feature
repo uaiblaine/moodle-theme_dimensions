@@ -151,3 +151,38 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And I should see "Platform maintenance" in the "[data-region='dim-cal-agenda']" "css_element"
     And I should see "Other area meeting" in the "[data-region='dim-cal-agenda']" "css_element"
     And "Classic calendar" "link" should exist in the "[data-region='dim-cal-agenda']" "css_element"
+
+  # Core's month and day views lead to the page (docs/calendar/PROPOSAL.md section 15): the decision is PHPUnit's
+  # (tests/local/calendar/coreview_test.php), these are the redirect itself.
+  Scenario: Core's month view lands on the theme's page, on the month its address named
+    Given I log in as "student1"
+    When I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
+    Then the url should match "month=2027-03"
+    And I should see "Spring seminar" in the "[data-region='dim-cal-agenda']" "css_element"
+
+  @javascript
+  Scenario: Core's day view lands on the theme's page with that day's drawer open
+    Given I log in as "student1"
+    When I visit "/calendar/view.php?view=day&cal_d=9&cal_m=3&cal_y=2027"
+    Then the url should match "day=2027-03-09"
+    And I should see "Mentoring session" in the "[data-region='dim-cal-day']" "css_element"
+
+  Scenario: The page's classic calendar link reaches core's calendar, which a reload keeps until the page is opened again
+    Given I log in as "student1"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03"
+    When I click on "Classic calendar" "link" in the "[data-region='dim-cal-agenda']" "css_element"
+    Then the url should match "calendar/view\.php"
+    And I reload the page
+    And the url should match "calendar/view\.php"
+    And I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
+    And the url should match "calendar/view\.php"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03"
+    And I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
+    And the url should match "month=2027-03"
+
+  Scenario: With the setting off core's month view answers as it always did
+    Given the following config values are set as admin:
+      | calendarcoreview | 0 | theme_dimensions |
+    And I log in as "student1"
+    When I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
+    Then the url should match "calendar/view\.php"

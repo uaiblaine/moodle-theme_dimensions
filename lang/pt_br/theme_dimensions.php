@@ -96,6 +96,8 @@ $string['calendar_view'] = 'Visualização';
 $string['calendar_viewmonth'] = 'Mês';
 $string['calendar_when'] = 'Quando';
 $string['calendar_withsub'] = 'com subcategorias';
+$string['calendarcoreview'] = 'Enviar as visões de mês e de dia do calendário do core ao calendário do tema';
+$string['calendarcoreview_desc'] = 'As visões de mês e de dia do calendário do core (o endereço /calendar/view.php com view=month ou view=day) levam quem está conectado à página de calendário do tema, mantendo o mês, o dia e a categoria do endereço. A visão de próximos eventos do core, o calendário do curso, a edição de eventos, a conta de visitante e os tipos de calendário diferentes do gregoriano continuam no calendário do core, assim como quem o abre pelo link "Calendário clássico" da página, até abrir a página do tema de novo. Desligado, as visões do core respondem como sempre responderam.';
 $string['calendarrangeunavailable'] = 'Esta parte do calendário não está disponível.';
 $string['category_allempty'] = 'Nenhum curso corresponde à busca e aos filtros.';
 $string['category_allemptyhint'] = 'Tente outro termo ou limpe os filtros.';
