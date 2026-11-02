@@ -1304,11 +1304,12 @@ final class categorypublic_source_test extends \basic_testcase {
      *
      * Changes that must make it fail: the popover importing the description module again (gate cv_js_popover_no_core);
      * a shared module naming the account's services (gate cv_js_model_no_account); the visitor's shell importing the
-     * logged-in one or its picker.
+     * logged-in one or its picker. The week view's modules (stage C4) are shared and walked like the month's.
      */
     public function test_the_public_calendar_reaches_nothing_of_a_session(): void {
         $graph = $this->graph(self::CALENDAR);
-        foreach (['MonthGrid', 'DayDrawer', 'EventPopover', 'KeyChips', 'model', 'strings', 'history'] as $shared) {
+        $shareds = ['MonthGrid', 'WeekGrid', 'weeks', 'ViewSwitch', 'DayDrawer', 'EventPopover', 'KeyChips', 'model', 'strings'];
+        foreach ([...$shareds, 'history'] as $shared) {
             $this->assertContains(self::ESM . 'calendar/' . $shared, $graph, 'The control: the walk reaches ' . $shared . '.');
         }
         $logged = $this->graph(self::ESM . 'calendar/Calendar');

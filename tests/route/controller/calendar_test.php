@@ -311,4 +311,33 @@ final class calendar_test extends \core\tests\router\route_testcase {
         $this->assertNotSame(200, $status, 'The policy is asked for before the page.');
         $this->assertStringNotContainsString(calendar_page::COMPONENT, $body);
     }
+    /**
+     * The route serves the week view the address names, its week snapped to the first weekday, and writes the view, the
+     * week and the open day into the page's address, which is what a reload asks for again; a day outside the week is
+     * dropped, never refused.
+     *
+     * @return void
+     */
+    public function test_the_week_view_is_served_and_kept_in_the_address(): void {
+        global $CFG, $PAGE;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $week = page::week_start('2026-11-18', (int) calendar_get_starting_weekday());
+        [$from, $to] = page::week($week);
+
+        $response = $this->request([page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-18', 'day' => $to]);
+
+        $body = (string) $response->getBody();
+        $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
+        $props = $this->props($body);
+        $this->assertSame(['week', $week, $to], [$props['view'], $props['week'], $props['day']]);
+        $this->assertSame([$from, $to], [$props['answer']['from'], $props['answer']['to']]);
+        $this->assertSame(['week', $week, $to], [$PAGE->url->param('view'), $PAGE->url->param('week'), $PAGE->url->param('day')]);
+
+        $response = $this->request([page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-18', 'day' => '2026-11-30']);
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('', $this->props((string) $response->getBody())['day'], 'A day outside the week is dropped.');
+        $this->assertNull($PAGE->url->param('day'));
+    }
 }

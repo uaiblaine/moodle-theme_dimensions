@@ -118,8 +118,11 @@ export type Option = {value: number, label: string};
 /** The page's props, as calendar_page::props() builds them. */
 export type Props = {
     month: string,
+    view: string,
+    week: string,
     day: string,
     today: string,
+    now: number,
     firstday: number,
     timezone: string,
     answer: Answer,

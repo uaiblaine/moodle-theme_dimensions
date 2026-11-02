@@ -91,8 +91,11 @@ const course = (id: number): Course => ({
  */
 const props = (given: PublicAnswer = publicAnswer(), more: Partial<PublicProps> = {}): PublicProps => ({
     month: '2026-11',
+    view: 'month',
+    week: '',
     day: '',
     today: '2026-11-17',
+    now: at('2026-11-17', 10),
     firstday: 0,
     timezone: 'UTC',
     answer: given,

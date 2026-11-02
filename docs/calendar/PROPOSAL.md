@@ -1384,3 +1384,234 @@ its test (`cv_courses_state`, `cv_js_popover_no_core`, `cv_events_filter_off`, `
 - MariaDB and PHP 8.3 for the PHPUnit cases.
 - The mutation sweep beyond the six gates above.
 - A screen reader over the visitor's page; the keyboard contract is the shared components' (Jest).
+
+## 21. C4 plan (2026-11-02)
+
+C4 brings the week time grid (decision D4: month and drawer first, week now). The view switch C2 drew as "Month only,
+a current marker" becomes two real choices, Month and Week, on the logged-in page and on the public calendar alike.
+Decisions settled by the owner (2026-11-02), written here so they are not reopened: the view and the week travel in the
+address as navigation, never in the saved state; seven day columns from the viewer's first weekday; an all-day strip,
+an hour body with the drawer's overlap layout windowed over the week (no inner scroll) and a "now" line on today; a week
+is one range call; a phone draws a 7-day agenda list; C3r's redirect targets are unchanged; the visitor gets the week
+under the same rules.
+
+**Core has no week view to map.** Core 5.3's `calendar/view.php` knows `day`, `month` and `upcoming` (and the blocks'
+`mini`, `minithree`, `monthblock`, `upcoming_mini` through `calendar_get_view()`); there is no `view=week`, so C3r has
+nothing to send and no owner decision is open there.
+
+### 21.1 Server
+
+- **Two address parameters, navigation like `day=`.** `view` (`page::PARAM_VIEW`) is `week` or nothing: any other
+  value, `month` included, reads as the month and is dropped from the page's address. `week` (`page::PARAM_WEEK`) names
+  the week by a day, YYYY-MM-DD. Neither is in `state::STATE_PARAMS`, so an address naming only the view, the week and
+  the day is still bare and reads the saved state, and neither is ever saved.
+- **The week is read, never refused.** `page::week_from_request($month, $firstday)`: a real day (`page::is_day()`)
+  names the week holding it, written back as that week's first day on the viewer's first weekday
+  (`calendar_get_starting_weekday()`), so a link shared by a reader whose week starts on another day still opens the
+  week it meant; anything else (malformed, impossible, absent) is the week holding the month's opening day (today when
+  the month asked for holds it, else its 1st). `page::week($start)` is the seven days, `[from, to]`.
+- **The open day follows the view's window.** `page::day_from_request()` gains the week: inside the week's seven days in
+  week view, inside the month grid's window otherwise; dropped elsewhere, as today.
+- **The month a week view names** is the open day's when there is one, else the week's first day's: it is what the
+  no-JavaScript "Month" link and the client's switch back to the month open.
+- **One range call per week.** In week view `page::handle()` and `page::visitor()` ask `range::answer()` (the visitor
+  `publicrange::answer()`) for the week's seven days, embedded in the props, so the first paint asks for nothing.
+  The page's own address is `view=week&week=<first day>` plus the open day and the state (or the visitor's keys).
+  No SQL is added: both answers are the existing range classes over a shorter window.
+- **The script's forward** carries `view=week` and a real `week` day as written; the page behind the route judges them.
+- **The renderable** (`calendar_page`) gains the view, the week and `now` (the server's clock, the client's "now" line;
+  the client never reads the browser's clock except as time elapsed since the paint). Its no-JavaScript layer in week
+  view: the caption is the week's span ("2 November to 8 November 2026"), previous and next lead to the adjacent weeks
+  (labelled "Previous week", "Next week"), "Today" to the week holding today, the agenda lists the week's seven days
+  (not the month's), and the view switch is two links, the current one `aria-current="page"`. The month view gains the
+  "Week" link (the week holding the month's opening day). The visitor's layer the same, with its keys.
+- **Strings:** `calendar_nextweek`, `calendar_prevweek`, `calendar_timed` (the hour body's row header),
+  `calendar_viewweek`, `calendar_weekempty`, in en and pt_br, and in `calendar_page::STRINGS` and `strings.ts` alike.
+
+### 21.2 Client (`js/esm/src/calendar/`)
+
+- **`weeks.ts`, pure and Jest-tested:**
+  - the arithmetic: `weekStart(iso, firstday)`, `weekDays(start)` (seven days, timezone-free, as `days.ts` does), and the
+    view's address parameters (`VIEW_PARAM`, `WEEK_PARAM`, `inSpan()` writing them into an address the page already
+    builds, `readSpan()` reading them back as the server does);
+  - **`weekPlan(days, placed, zone)`**: the **all-day strip** (every item that is a bar of the month grid or fills whole
+    days, `overlap.isAllDay()`) laid out with `layout.weekLayout()`'s slots, so a multi-day bar spans the week's columns
+    and never zigzags, every slot shown; the **hour body**, one column per day, each `overlap.dayPlan()`'s hour items in
+    the drawer's columns; and the **hour window** of the whole week, `overlap.hourWindow()` over every day's hour items at
+    once (the earliest start and the latest end of the week, an hour of padding either side, at least four hours), so
+    every timed item shows without an inner scroll; no window when the week has no timed item;
+  - `nowLine(days, now, zone, window)`: the column of the day `now` falls on and its share of the window, or nothing
+    when the day is not in the week or the time is outside the window;
+  - the keyboard's moves (21.3), `stepWeekFrom()` for the day headers and `moveInWeek()` for the items.
+- **`WeekGrid.tsx`**: the time grid on a desktop, the agenda list on a phone. One ResizeObserver, on the frame it
+  shares with the drawer (the month grid's rule: the frame, not the grid), never read on the mount path; the phone
+  breakpoint is `MonthGrid.PHONE`. Items carry `data-cal-pop` and their href (`itemHref()`), so the shells' delegated
+  listener opens the popover as it does for the month's. A timed item says "Overlaps" in words when it overlaps, as the
+  drawer's do, and carries its column (`data-column`, `data-columns`). The "now" line is a mark in today's column,
+  `aria-hidden`; its time moves with the minutes elapsed since the paint.
+- **`ViewSwitch.tsx`**: two toggle buttons (`aria-pressed`) in the toolbar's group, shared by both shells.
+- **The shells** (`Calendar.tsx`, `PublicCalendar.tsx`): what is shown becomes a span, a month or a week, with its
+  answer. A request asks for the span's days (the month grid's, or the week's seven: one range call either way, the
+  latest request winning, a Pending token to the paint). The address is written by `history.ts` as before: a week moved
+  and a view switched push an entry, a change of keys or filters and the open day replace it. A view switch keeps the
+  selected day (the week holding it, or its month) and keeps the open day when the new span holds it. "Today", the
+  arrows and PageUp/PageDown move by the span. The caption is the week's span in week view. Back and Forward read the
+  view and the week again. The saved state is unchanged: the view is never sent to `remember_calendar_state`.
+- **Phone**: below the breakpoint the week is seven sections, each a day header (a button that opens that day's agenda
+  sheet, `DayDrawer`'s sheet) and the day's items as a list (the strip's first, then the timed ones by start), "Nothing
+  on this day." for an empty one.
+- **Look**: `scss/calendar.scss`, under `body.dim-calendar`: the week grid on the `--dim-cal-*` tokens and the drawer's
+  hour rows (2.5rem an hour), the strip's bars as the month's, the "now" line on the overdue edge token; no `:has()`, no
+  `!important`, no literal colour, no clamp/min/max in a length.
+
+### 21.3 Keyboard and screen reader (the spec, before code; extends 11.3 and 13.3)
+
+- **The week is `role="grid"`**, labelled by the caption (the week's span, `aria-live="polite"`), in three rows: a header
+  row of seven `columnheader` cells, each holding the day's button; the all-day row, a `rowheader` ("All day") and seven
+  `gridcell`s holding the bars that start on that day (a bar's label is its name and its whole span, as in the month);
+  the hour row, a `rowheader` ("At set times", the hour labels `aria-hidden`) and seven `gridcell`s, each a day's timed
+  items. A screen reader's table navigation reads a column's header (the long date) with each cell.
+- **One Tab stop**, the selected day's header button (roving tabindex); the items are out of the Tab order (`tabindex
+  -1`), reached by the arrows. Tab from anywhere in the grid leaves it.
+- **On a day header:**
+  - ArrowLeft and ArrowRight move a day; past the week's ends the adjacent week is fetched and the focus lands on that
+    day's header;
+  - Home and End go to the week's first and last day;
+  - PageUp and PageDown go to the previous and next week, on the same weekday;
+  - Enter or Space opens the day: the drawer beside the grid (desktop), with the focus on its heading;
+  - ArrowDown or F2 moves into the day's items: the first of its strip, else its first timed item; nothing when the day
+    has none.
+- **On an item:**
+  - ArrowDown and ArrowUp move to the next and previous item of the same day, strip first then by start time; ArrowUp
+    from the first item goes back to the day's header;
+  - ArrowLeft and ArrowRight move to the neighbouring day's item nearest in time (the strip counts as the top of the
+    day), or to that day's header when it has none; nothing at the week's ends;
+  - Home and End go to the day's first and last item;
+  - Enter or Space opens the popover (13.3); Escape returns to the day's header.
+- **Labels:** a day header's label is the month's day label (the long date, the item count, "today"),
+  `aria-current="date"` on today; a timed item reads its name, its time and "Overlaps" when it does; the "now" line is
+  not read.
+- **Phone:** a list, every day header and item in the natural Tab order; Enter on a day header opens its sheet.
+
+### 21.4 Tests and gates
+
+- **PHPUnit:**
+  - `page_test`: `view` dropped outside its vocabulary; the week snapped to the viewer's first weekday (Sunday and Monday
+    first, across a month and a year boundary), a malformed week falling back to the opening day's week; the open day
+    kept inside the week alone in week view, beside its month-view control; the forward carrying `view` and `week`; the
+    view and the week are not state.
+  - `calendar_test` (the route): the week view's first paint embeds `range::answer()` for the seven days, with the view,
+    the week and the address keeping `view=week`; the month view's control; a bare week address reads the saved state.
+  - `page_visitor_test`: the visitor's week, its seven days from `publicrange::answer()`.
+  - `calendar_page_test`: the no-JavaScript layer in week view (the week's caption, the adjacent weeks' links, the
+    week's agenda, the switch's links), beside the month's; `now` in the props.
+  - `calendar_component_source_test` and `categorypublic_source_test`: what the gates' JS lines read (21.2), one
+    ResizeObserver per grid, and the visitor's walk reaching `WeekGrid`, `weeks` and `ViewSwitch` with nothing of a
+    session.
+- **Jest** (`js/esm/tests/calendar/weeks.test.ts`, `WeekGrid.test.tsx`, and cases in `Calendar.test.tsx` and
+  `PublicCalendar.test.tsx`): the columns from each first weekday; the week arithmetic across a month, a year and a
+  daylight-saving change (the same wall-clock hour in the same row on both sides); overlaps side by side; the strip
+  (multi-day bars across columns, clipped at the week's ends, whole-day items, event courses); the hour window over the
+  week; the "now" line on today only and inside the window; the view switch (address, one range call of seven days,
+  back to the month); the keyboard contract of 21.3; the phone's agenda.
+- **Behat** (`theme_dimensions_calendar.feature`, the page's own regions): the week view shows the two overlapping
+  events side by side and keeps `view=week` through a reload; on a phone the week is the agenda list and a day header
+  opens its sheet.
+- **Gates:** a "C4 week view" block in `mutations/gates.conf`, one gate per guard (the view's vocabulary, the week's
+  snapping and fallback, the open day's window in week view, the forward, the week's window in the first paint, the
+  visitor's week, the agenda's span, the strip's membership, the week's hour window, the "now" line's guards, the address
+  and history writes, the one range call), each with its `#   ->` test; every `.pl` dry-applied against its target.
+- **Tier 2** (PHP and JS, no SQL added, nothing PHP-version-specific): one full leg with Behat,
+  `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat`, and the sweep of the C4 block on both database
+  families. The anonymous page reads two more address values, so a `security-diff-read` over the visitor branch is
+  cheap insurance, not a requirement of the tier.
+
+## 22. C4 results (2026-11-02)
+
+Branch `calendar-c4`, built from section 21 on top of CV (afdff08), uncommitted, no `version.php` bump.
+
+**What exists:**
+- **Server:** `page::PARAM_VIEW`, `PARAM_WEEK`, `VIEW_MONTH`, `VIEW_WEEK`; `page::view_from_request()`,
+  `week_from_request()`, `week_start()`, `week()`, `opening_day()`, `span()` (the view, the month, the week, the open
+  day and the window, once, for both entries), `span_params()` (the page's own address for either view) and
+  `scalar_param()`; `day_from_request()` judges the open day against the week in the week view; the script's forward
+  carries `view` and `week`. `calendar_page` takes the view and the week, puts `view`, `week` and `now` in the props
+  (both modes), and draws the week's toolbar (`toolbar()`: caption, "Today", the adjacent weeks, the switch's two
+  links) and the week's agenda. The template's view switch is two links; its form keeps `view` and `week` in the week
+  view. Seven strings in en and pt_br (`calendar_nextweek`, `calendar_noscriptweek`, `calendar_prevweek`,
+  `calendar_publicnoscriptweek`, `calendar_timed`, `calendar_viewweek`, `calendar_weekempty`), five of them in
+  `calendar_page::STRINGS` and `strings.ts`.
+- **Client:** `js/esm/src/calendar/weeks.ts` (pure), `WeekGrid.tsx` and `ViewSwitch.tsx` are new; `Calendar.tsx`,
+  `PublicCalendar.tsx`, `model.ts` (the props' `view`, `week`, `now`) and `strings.ts` changed; builds under
+  `js/esm/build/calendar/`. The week rules in `scss/calendar.scss`, under `body.dim-calendar`.
+- **Tests:** `page_test` (48 cases, 25 new: the view's vocabulary, a list dropped, the week snapped from four first weekdays across a
+  month and a year with its fallbacks, the span of each view, the open day inside the week, not state, the forward,
+  the address of each view, the week's first paint equal to `range::answer()` for the seven days), `page_visitor_test`
+  (8, 1 new: the visitor's week equal to `publicrange::answer()`; the props' key list updated), `calendar_page_test`
+  (8, 2 new: the week's server layer beside the month's, the week's agenda across a month's edge), the route's
+  `calendar_test` (11, 1 new: the week served and kept in the address), `calendar_component_source_test` (17, 1 new and
+  three updated), the visitor's walk reaching `WeekGrid`, `weeks` and `ViewSwitch`; Jest `weeks.test.ts` (25) and
+  `WeekGrid.test.tsx` (29), the two shells' fixtures given `view`, `week` and `now`; two Behat scenarios in
+  `theme_dimensions_calendar.feature`.
+- **Helpers the shells share** (`weeks.ts`): `spanLabels()` (the caption and the arrows' labels per view), `dayIn()`,
+  `selectedIn()`, `openingOf()`, `stepSpan()`; they keep each shell's component under eslint's complexity cap of 20,
+  which the CI leg's `eslint:react` applies and the stack's `mdl grunt` does not.
+- **Gates:** 36 in the "C4 week view" block of `mutations/gates.conf` (20 server and template, 16 client), every `.pl`
+  dry-applied against its file (all 36 live). `cal_js_history_push` (C2) re-pointed to the shell's new address line.
+
+**Where the build left the plan:**
+- **`view` and `week` are read through `page::scalar_param()`, not `optional_param()`.** Core's `param::clean()` throws
+  on a list, so `?view[]=week` would have answered the public calendar's visitor with an error page; a list now reads
+  as nothing, like any value outside the vocabulary (gate `c4_page_view_list`). `month` and `day` kept
+  `optional_param()` here, as C2 and C3 wrote them; the follow-up below moved them too.
+- **The week's year is bounded as the month's is** (1900 to 2999): a week of year 1 would begin in year 0, which the
+  range's window cannot spell.
+- **Two more strings than planned**, `calendar_noscriptweek` and `calendar_publicnoscriptweek`: the no-JavaScript notice
+  said "the month is listed here" over the week's agenda.
+- **The strip reuses `Bar.tsx` unchanged** (its row is its slot plus two): the strip's grid starts with a zero-height
+  row. The strip is drawn even when empty, a 1.75rem row under its "All day" header, so the hour body never jumps.
+- **One ResizeObserver per grid**, so two in the tree (the month's and the week's), each watching the frame the drawer
+  shares; `calendar_component_source_test` counts one per grid instead of one in all.
+- **Enter and Space on an item are not the week's**: `moveInWeek()` answers nothing for them and the key reaches the
+  shell's delegated listener, which opens the popover, as on the month.
+- **The header row's corner cell is `role="presentation"`**, not an empty columnheader, so a screen reader announces no
+  blank header.
+- **`openableDay()`** (exported by `Calendar.tsx`) now takes the span's days instead of a month and a first weekday.
+- **The "now" line ticks once a minute** from the server's `now` plus the time elapsed since the paint. `today` is not
+  ticked: a page left open past midnight moves the line to the next column while the header still marks the old day
+  until a reload.
+- **Existing tests that followed the change:** `calendar_component_source_test` (the address line, the history writer,
+  the observers), `page_visitor_test` (the props' key list), the two shells' Jest fixtures.
+- **A list in the address is never an error page, on either page** (follow-up). `month` and `day` now read through
+  `page::scalar_param()` (the readers and the script's forward), the logged-in state's scalars (`categoryid`,
+  `recursive`, `city`, `actiononly`, `colour`) through `state::scalar_param()`, and `state::array_param()` drops a member
+  that is itself a list (`model[][]=1` threw in `clean()`). Gates `c4_page_month_list`, `c4_page_day_list`,
+  `c4_page_forward_month_list`, `c4_page_forward_day_list`, `c4_state_scalar_list`, `c4_state_member_list`. The four dead
+  gates listed below were re-pointed in the same change.
+
+**Pre-existing dead gates found by the dry-apply** (all four dead at afdff08 already, none touched here):
+`cal_page_visitor_login` and `cal_page_require_login` (`page.php`, since CV and C3r rewrote `handle()`'s first lines),
+`navbar_dropdown_hover_answered` (`scss/post.scss`) and `js_linearfooter_near_end` (`amd/src/linearfooter.js`). The
+sweep stops at a dead pattern, so they need re-pointing before the next full sweep.
+
+**Not verified:**
+- Behat: the two new scenarios were not run (no Behat in this stage's turn). Uncertain: that the "mobile" viewport's
+  frame stays under the 576px breakpoint in the week as it does in the month; that Behat sees the agenda only after the
+  ResizeObserver's first entry (the month's phone scenario relies on the same). The stylesheet reaches Behat only after
+  `mdl behat-init`.
+- The page by eye, light and dark (no password typed into a login page), and a screen reader over the week's grid; the
+  keyboard contract is Jest's.
+- The server and template gates' sweep: the 16 client gates were checked by hand against Jest on a scratch copy (each
+  reddened at least one test); the 20 server and template gates were dry-applied only.
+- MariaDB and PHP 8.3 for the PHPUnit cases (run on m503b only, PHP 8.4 and PostgreSQL).
+
+**Fast checks run** (m503b, PHP 8.4, PostgreSQL 18, after `mdl phpunit-init m503b`; `mdl ci` on the Mac mini, PHP 8.3,
+PostgreSQL): `page_test` 48 tests, `page_visitor_test` 8, `calendar_page_test` 8, the route's `calendar_test` 11,
+`calendar_component_source_test` 17, `categorypublic_source_test` 21, `esm_source_test` 4, `calendar_scss_test` 5, all
+green; `marketplace_readiness_test` 9 (1 skipped by design: a theme's selectors are not plugin-scoped). Jest: the
+calendar's nine suites 175 tests. `mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --only
+phpcs,phpdoc,phplint,mustache,grunt,jest` passed every step (Jest 30 suites, 381 tests), on its third run: the first
+two found eslint's complexity cap on the two shells (above) and a stylelint multi-line declaration in the week's
+column rule, both fixed.
+
+**Gates:** _placeholder: the owner runs the sweep of the C4 block and the tier-2 leg with Behat._

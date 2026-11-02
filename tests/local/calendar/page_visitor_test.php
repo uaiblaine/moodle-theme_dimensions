@@ -164,7 +164,8 @@ final class page_visitor_test extends \advanced_testcase {
             $this->assertArrayNotHasKey($absent, $context, $absent . ' is the logged-in page\'s.');
         }
         $props = json_decode($context['props'], true);
-        $expected = ['month', 'day', 'today', 'firstday', 'timezone', 'answer', 'keys', 'modalities', 'urls'];
+        $expected = ['month', 'view', 'week', 'day', 'today', 'now', 'firstday', 'timezone', 'answer', 'keys', 'modalities'];
+        $expected[] = 'urls';
         $this->assertSame($expected, array_keys($props));
         $this->assertSame(['page', 'home'], array_keys($props['urls']), 'No address of core\'s calendar.');
         $this->assertSame(['Feira publica'], array_column($props['answer']['events'], 'name'));
@@ -271,5 +272,65 @@ final class page_visitor_test extends \advanced_testcase {
             $this->assertStringNotContainsString($absent, $html, $absent . ' is the logged-in page\'s.');
         }
         $this->assertStringContainsString(get_string('calendar_publicnoscript', 'theme_dimensions'), $html);
+    }
+    /**
+     * A list in the address is dropped for a visitor, never an error page: the bare month, the month view, no open day,
+     * the keys of a list that holds a list read as none.
+     *
+     * @return void
+     */
+    public function test_a_list_in_the_address_is_dropped_for_a_visitor(): void {
+        $this->seed('1');
+        $month = self::month_start()->format('Y-m');
+        $day = self::month_start()->modify('+9 days')->format('Y-m-d');
+        $context = $this->context($this->handle([page::PARAM_DAY => $day, page::PARAM_VIEW => 'week', page::PARAM_WEEK => $day]));
+        $props = json_decode($context['props'], true);
+        $this->assertSame([page::VIEW_WEEK, $month, $day], [$props['view'], $props['month'], $props['day']], 'The control.');
+
+        $props = json_decode($this->context($this->handle([
+            'month' => [$month],
+            page::PARAM_DAY => [$day],
+            page::PARAM_VIEW => ['week'],
+            page::PARAM_WEEK => [$day],
+            'keys' => [['category']],
+        ]))['props'], true);
+        $this->assertSame(
+            [page::VIEW_MONTH, page::today()->format('Y-m'), '', []],
+            [$props['view'], $props['month'], $props['day'], $props['keys']]
+        );
+    }
+
+    /**
+     * A visitor gets the week view too, under the same rules: the visitor's answer for the week's seven days, the
+     * visitor's keys in its address; a week that does not hold the event is the control.
+     *
+     * @return void
+     */
+    public function test_a_visitor_gets_the_week(): void {
+        $this->seed('1');
+        $day = self::month_start()->modify('+9 days')->format('Y-m-d');
+        $context = $this->context($this->handle([page::PARAM_VIEW => 'week', page::PARAM_WEEK => $day, 'keys' => ['category']]));
+        $week = page::week_start($day, (int) calendar_get_starting_weekday());
+        [$from, $to] = page::week($week);
+        $this->assertTrue($context['weekview']);
+        $this->assertSame(calendar_page::COMPONENT_PUBLIC, $context['component']);
+        $props = json_decode($context['props'], true);
+        $this->assertSame([page::VIEW_WEEK, $week, ['category']], [$props['view'], $props['week'], $props['keys']]);
+        $this->assertSame([$from, $to], [$props['answer']['from'], $props['answer']['to']]);
+        $this->assertSame(['Feira publica'], array_column($props['answer']['events'], 'name'));
+        $url = $GLOBALS['PAGE']->url;
+        $this->assertSame([page::VIEW_WEEK, $week, null], [$url->param('view'), $url->param('week'), $url->param('month')]);
+        self::forget_calendar();
+        $this->assertSame(
+            json_decode(json_encode(publicrange::answer(window::from_iso($from, $to), ['category'])), true),
+            $props['answer'],
+            'The visitor\'s answer for the week.'
+        );
+
+        self::forget_calendar();
+        $later = self::month_start()->modify('+20 days')->format('Y-m-d');
+        $context = $this->context($this->handle([page::PARAM_VIEW => 'week', page::PARAM_WEEK => $later]));
+        $props = json_decode($context['props'], true);
+        $this->assertSame([], $props['answer']['events'], 'The control: another week holds no event.');
     }
 }

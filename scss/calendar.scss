@@ -825,6 +825,221 @@ body.dim-calendar {
         font-size: .8125rem;
     }
 
+    // The view switch's links, in the server's layer, read as the client's buttons do.
+    a.dim-cal__view {
+        text-decoration: none;
+    }
+
+    // The week (C4, WeekGrid.tsx): a gutter for the row headers and the hour labels, then seven day columns, in three
+    // rows. The hour body is one 2.5rem row per hour of the week's window (--dim-cal-hourcount), never a scroll box;
+    // its items are placed in shares of the window and of the day's width, as the drawer's are.
+    .dim-cal__weekgrid {
+        overflow: hidden;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__weekrow {
+        display: grid;
+        grid-template-columns: 3.5rem repeat(7, minmax(0, 1fr));
+    }
+
+    .dim-cal__weekstrip,
+    .dim-cal__weekhours {
+        border-top: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+    }
+
+    .dim-cal__weekgutter {
+        padding: .25rem .375rem;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .6875rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__weekgutter--strip {
+        display: flex;
+        align-items: center;
+    }
+
+    .dim-cal__weekgutter--hours {
+        display: grid;
+        grid-template-rows: repeat(var(--dim-cal-hourcount, 24), 2.5rem);
+        padding: 0 .375rem;
+    }
+
+    .dim-cal__weekheadcell {
+        display: flex;
+        justify-content: center;
+        padding: .25rem;
+        border-inline-start: 1px solid var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
+    }
+
+    .dim-cal__weekhead {
+        display: flex;
+        flex-direction: column;
+        gap: .125rem;
+        align-items: center;
+        padding: .25rem .5rem;
+        border: 0;
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: transparent;
+        color: var(--dim-ds-text-body, var(--bs-body-color));
+    }
+
+    .dim-cal__weekhead:hover {
+        background: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+    }
+
+    .dim-cal__weekdayname {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__weekdaynum {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__weekhead--today .dim-cal__weekdaynum {
+        background: var(--dim-ds-interactive-primary, var(--bs-primary));
+        color: var(--dim-ds-text-inverse, var(--bs-white));
+    }
+
+    // The strip is a grid of its own under the day columns: a zero-height first row, then one row per bar slot, so the
+    // month's bars (Bar.tsx, slot + 2) sit in it unchanged.
+    .dim-cal__weekstripgrid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        min-height: 1.75rem;
+        padding-bottom: .25rem;
+    }
+
+    .dim-cal__weekcol {
+        position: relative;
+        height: calc(var(--dim-cal-hourcount, 24) * 2.5rem);
+        border-inline-start: 1px solid var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
+        background-image:
+            repeating-linear-gradient(
+                to bottom,
+                var(--dim-ds-border-subtle, var(--bs-border-color-translucent)) 0 1px,
+                transparent 1px 2.5rem
+            );
+    }
+
+    .dim-cal__weekcol--selected {
+        background-color: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+    }
+
+    .dim-cal__weekitem {
+        position: absolute;
+        top: var(--dim-cal-top, 0);
+        left: calc(100% * var(--dim-cal-share-left, 0));
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 .25rem;
+        align-content: flex-start;
+        width: calc(100% * var(--dim-cal-share-width, 1));
+        height: var(--dim-cal-height, 2.5rem);
+        min-height: 2.5rem;
+        padding: .125rem .375rem;
+        overflow: hidden;
+        border: 1px solid var(--dim-cal-edge);
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        background: var(--dim-cal-tint);
+        color: var(--dim-cal-ink);
+        font-size: .75rem;
+        line-height: 1.2;
+        text-decoration: none;
+    }
+
+    .dim-cal__weekitem.dim-cal-key--open,
+    .dim-cal__weekitem--point {
+        border-style: dashed;
+    }
+
+    .dim-cal__weekitem--point {
+        height: auto;
+    }
+
+    .dim-cal__weekitem .dim-cal__overlapmark {
+        flex: 0 0 auto;
+    }
+
+    .dim-cal__weekname,
+    .dim-cal__weekwhen {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dim-cal__weekname {
+        flex: 1 1 0;
+        font-weight: 600;
+    }
+
+    .dim-cal__weekwhen {
+        flex: 1 1 100%;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // Now, in today's column: a rule on the overdue key's edge, read by no screen reader.
+    .dim-cal__now {
+        position: absolute;
+        z-index: 2;
+        top: var(--dim-cal-top, 0);
+        right: 0;
+        left: 0;
+        border-top: 2px solid var(--dim-cal-overdue-edge);
+        pointer-events: none;
+    }
+
+    // The phone's week: seven days as an agenda, each day's header opening its sheet.
+    .dim-cal__weekagenda {
+        display: flex;
+        flex-direction: column;
+        gap: .75rem;
+    }
+
+    .dim-cal__weekagendaday {
+        padding: .75rem;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__weekagendatitle {
+        margin: 0 0 .5rem;
+        font-size: 1rem;
+    }
+
+    .dim-cal__weekagendatitle .dim-cal__weekhead {
+        flex-direction: row;
+        padding: .25rem .375rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__weekagendatitle .dim-cal__weekhead--today {
+        color: var(--dim-ds-interactive-primary, var(--bs-primary));
+    }
+
+    .dim-cal__weekagendalist {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
     // The event popover: anchored beside its opener on a desktop, a bottom sheet on a phone.
     .dim-cal__pop {
         position: fixed;

@@ -42,12 +42,12 @@ use theme_dimensions\output\opengraph;
  * 3. require_login() for a real account: the site policy, a forced password change and the rest of core's gate.
  *    Then the "classic for this session" flag is cleared ({@see coreview}): opening the page ends the choice.
  * 4. A calendar type other than the Gregorian goes to core's calendar: the range refuses it ({@see window}).
- * 5. The month and the state are read, every value outside its vocabulary dropped ({@see state}); a category the
- *    range refuses (gone, hidden, unlisted) is dropped like any other value, so a stale saved category or a shared
- *    link to a withheld one shows the whole calendar and says nothing about the id. The open day ({@see PARAM_DAY})
- *    is kept only inside the month grid's window ({@see day_from_request()}).
- * 6. The month grid's window, the range's answer ({@see range::answer()}) and the category tree are computed once
- *    and handed to the renderable, which embeds them: the first paint costs no request.
+ * 5. The view, the month or the week, and the state are read, every value outside its vocabulary dropped ({@see state},
+ *    {@see span()}); a category the range refuses (gone, hidden, unlisted) is dropped like any other value, so a stale
+ *    saved category or a shared link to a withheld one shows the whole calendar and says nothing about the id. The
+ *    open day ({@see PARAM_DAY}) is kept only inside the shown window ({@see day_from_request()}).
+ * 6. The window (the month grid's, or the week's seven days), the range's answer ({@see range::answer()}) and the
+ *    category tree are computed once and handed to the renderable, which embeds them: the first paint costs no request.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -67,6 +67,22 @@ final class page {
      * reopens the drawer and a new visit does not, and an address naming only the month and the day is still bare.
      */
     public const PARAM_DAY = 'day';
+
+    /**
+     * @var string The address parameter of the view: {@see VIEW_WEEK}, or absent for the month.
+     *
+     * Navigation like the open day, never state: an address naming only the view and the week is still bare.
+     */
+    public const PARAM_VIEW = 'view';
+
+    /** @var string The address parameter of the week shown, a day of it, YYYY-MM-DD; written as the week's first day. */
+    public const PARAM_WEEK = 'week';
+
+    /** @var string The month view, the page's default: never written into an address. */
+    public const VIEW_MONTH = 'month';
+
+    /** @var string The week view. */
+    public const VIEW_WEEK = 'week';
 
     /** @var \core\url|null Where to send the client, or null. */
     public readonly ?\core\url $redirect;
@@ -148,7 +164,7 @@ final class page {
      * @return string YYYY-MM.
      */
     public static function month_from_request(): string {
-        $month = (string) optional_param(state::PARAM_MONTH, '', PARAM_RAW);
+        $month = self::scalar_param(state::PARAM_MONTH);
         if (
             preg_match('/^(\d{4})-(\d{2})$/', $month, $parts)
             && (int) $parts[2] >= 1 && (int) $parts[2] <= 12
@@ -171,22 +187,23 @@ final class page {
     }
 
     /**
-     * The day the request opens, kept only inside the month grid's window; anything else is dropped, never refused.
+     * The day the request opens, kept only inside the shown window; anything else is dropped, never refused.
      *
-     * The window is {@see grid()}'s, the days the answer embedded for the client covers: a day of the neighbours'
-     * weeks shown around the month is kept, a day of any other month is not, so the client is never asked to open a
-     * day it holds no answer for.
+     * The window is the one the answer embedded for the client covers: the month grid's ({@see grid()}), where a day of
+     * the neighbours' weeks shown around the month is kept and a day of any other month is not, or in the week view the
+     * week's seven days ({@see week()}). So the client is never asked to open a day it holds no answer for.
      *
      * @param string $month The month shown, YYYY-MM.
      * @param int $firstday The weekday a week begins on, 0 for Sunday.
+     * @param string $week The week shown, its first day, YYYY-MM-DD; '' for the month view.
      * @return string The day, YYYY-MM-DD, or '' for none.
      */
-    public static function day_from_request(string $month, int $firstday): string {
-        $day = (string) optional_param(self::PARAM_DAY, '', PARAM_RAW);
+    public static function day_from_request(string $month, int $firstday, string $week = ''): string {
+        $day = self::scalar_param(self::PARAM_DAY);
         if (!self::is_day($day)) {
             return '';
         }
-        [$from, $to] = self::grid($month, $firstday);
+        [$from, $to] = $week !== '' ? self::week($week) : self::grid($month, $firstday);
         return $day >= $from && $day <= $to ? $day : '';
     }
 
@@ -220,23 +237,147 @@ final class page {
     }
 
     /**
-     * The state parameters of the current request a redirect to the route must carry, the month and the open day.
+     * A request parameter as one value, or '' when it is absent or a list.
      *
-     * The day is forwarded when it is a real day, without judging it against the month's window: that needs the
-     * viewer's first weekday, and the page behind the route judges it ({@see day_from_request()}), as it judges
-     * the category forwarded here as written.
+     * optional_param() throws for a list (core\param::clean()), which on the public calendar would answer a visitor's
+     * `view[]=week` with an error page; the page drops a value outside its vocabulary instead.
+     *
+     * @param string $name The parameter.
+     * @return string
+     */
+    public static function scalar_param(string $name): string {
+        $raw = $_POST[$name] ?? $_GET[$name] ?? '';
+        return is_scalar($raw) ? (string) $raw : '';
+    }
+
+    /**
+     * The view the request names: the week for exactly {@see VIEW_WEEK}, the month for anything else, never refused.
+     *
+     * @return string {@see VIEW_MONTH} or {@see VIEW_WEEK}.
+     */
+    public static function view_from_request(): string {
+        return self::scalar_param(self::PARAM_VIEW) === self::VIEW_WEEK ? self::VIEW_WEEK : self::VIEW_MONTH;
+    }
+
+    /**
+     * The first day of the week holding a day, on the viewer's first weekday; calendar days counted in UTC, as grid() does.
+     *
+     * @param string $day A real day, YYYY-MM-DD ({@see is_day()}).
+     * @param int $firstday The weekday a week begins on, 0 for Sunday.
+     * @return string YYYY-MM-DD.
+     */
+    public static function week_start(string $day, int $firstday): string {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $day, new \DateTimeZone('UTC'));
+        $lead = ((int) $date->format('w') - $firstday + 7) % 7;
+        return $date->modify('-' . $lead . ' days')->format('Y-m-d');
+    }
+
+    /**
+     * A week's first and last day.
+     *
+     * @param string $start The week's first day, YYYY-MM-DD.
+     * @return string[] [from, to], YYYY-MM-DD: seven days, one window.
+     */
+    public static function week(string $start): array {
+        $first = \DateTimeImmutable::createFromFormat('!Y-m-d', $start, new \DateTimeZone('UTC'));
+        return [$start, $first->modify('+6 days')->format('Y-m-d')];
+    }
+
+    /**
+     * The day a month opens on: today when the month holds it, else its 1st.
+     *
+     * @param string $month The month, YYYY-MM.
+     * @return string YYYY-MM-DD.
+     */
+    public static function opening_day(string $month): string {
+        $today = self::today()->format('Y-m-d');
+        return str_starts_with($today, $month) ? $today : $month . '-01';
+    }
+
+    /**
+     * The week the request names, as its first day; anything else is the week holding the month's opening day.
+     *
+     * A real day names the week holding it, written back as that week's first day on the viewer's first weekday: a link
+     * shared by a reader whose week begins on another day still opens the week it meant. A malformed or impossible
+     * value, or one outside the years a month may name ({@see month_from_request()}), is dropped, never refused.
+     *
+     * @param string $month The month the request names, YYYY-MM ({@see month_from_request()}).
+     * @param int $firstday The weekday a week begins on, 0 for Sunday.
+     * @return string The week's first day, YYYY-MM-DD.
+     */
+    public static function week_from_request(string $month, int $firstday): string {
+        $week = self::scalar_param(self::PARAM_WEEK);
+        // The month's own bounds: a week of year 1 would start in year 0, which the range's window cannot spell.
+        if (!self::is_day($week) || (int) $week < 1900 || (int) $week > 2999) {
+            $week = self::opening_day($month);
+        }
+        return self::week_start($week, $firstday);
+    }
+
+    /**
+     * What the request shows: the view, the month, the week, the open day and the window the range is asked for.
+     *
+     * In the week view the month is the open day's, else the week's first day's: the month a switch back to the month
+     * view opens.
+     *
+     * @param int $firstday The weekday a week begins on, 0 for Sunday.
+     * @return array [view, month, week ('' in the month view), open day ('' for none), from, to].
+     */
+    public static function span(int $firstday): array {
+        $month = self::month_from_request();
+        if (self::view_from_request() !== self::VIEW_WEEK) {
+            $day = self::day_from_request($month, $firstday);
+            [$from, $to] = self::grid($month, $firstday);
+            return [self::VIEW_MONTH, $month, '', $day, $from, $to];
+        }
+        $week = self::week_from_request($month, $firstday);
+        $day = self::day_from_request($month, $firstday, $week);
+        [$from, $to] = self::week($week);
+        return [self::VIEW_WEEK, substr($day !== '' ? $day : $week, 0, 7), $week, $day, $from, $to];
+    }
+
+    /**
+     * The page's own address parameters for what it shows, the state's or the visitor's keys' aside.
+     *
+     * @param string $view {@see VIEW_MONTH} or {@see VIEW_WEEK}.
+     * @param string $month The month, YYYY-MM.
+     * @param string $week The week's first day, YYYY-MM-DD, in the week view.
+     * @param string $day The open day, or ''.
+     * @return array name => value.
+     */
+    public static function span_params(string $view, string $month, string $week, string $day): array {
+        $params = $view === self::VIEW_WEEK
+            ? [self::PARAM_VIEW => self::VIEW_WEEK, self::PARAM_WEEK => $week]
+            : [state::PARAM_MONTH => $month];
+        return $day !== '' ? $params + [self::PARAM_DAY => $day] : $params;
+    }
+
+    /**
+     * The state parameters of the current request a redirect to the route must carry, the month, the open day, the
+     * view and the week.
+     *
+     * The day and the week are forwarded when each is a real day, without judging the day against the window or
+     * snapping the week to its first day: both need the viewer's first weekday, and the page behind the route judges
+     * them ({@see span()}), as it judges the category forwarded here as written.
      *
      * @return array name => value.
      */
     public static function forwarded_params(): array {
         $params = [];
-        $month = optional_param(state::PARAM_MONTH, '', PARAM_RAW);
+        $month = self::scalar_param(state::PARAM_MONTH);
         if ($month !== '') {
             $params[state::PARAM_MONTH] = self::month_from_request();
         }
-        $day = (string) optional_param(self::PARAM_DAY, '', PARAM_RAW);
+        $day = self::scalar_param(self::PARAM_DAY);
         if (self::is_day($day)) {
             $params[self::PARAM_DAY] = $day;
+        }
+        if (self::view_from_request() === self::VIEW_WEEK) {
+            $params[self::PARAM_VIEW] = self::VIEW_WEEK;
+        }
+        $week = self::scalar_param(self::PARAM_WEEK);
+        if (self::is_day($week)) {
+            $params[self::PARAM_WEEK] = $week;
         }
         $named = state::from_request();
         return $named === null ? $params : $params + $named->query();
@@ -292,19 +433,16 @@ final class page {
             return self::to_login();
         }
 
-        $month = self::month_from_request();
         $on = visitor::on_from_request();
         $firstday = (int) calendar_get_starting_weekday();
-        $day = self::day_from_request($month, $firstday);
-        [$from, $to] = self::grid($month, $firstday);
+        [$view, $month, $week, $day, $from, $to] = self::span($firstday);
         $window = window::from_iso($from, $to);
         $answer = publicrange::answer($window, $on);
 
         $PAGE->set_context(\core\context\system::instance());
         $PAGE->set_pagetype(self::PAGETYPE);
         $PAGE->set_pagelayout('standard');
-        $opened = $day !== '' ? [self::PARAM_DAY => $day] : [];
-        $PAGE->set_url(self::url([state::PARAM_MONTH => $month] + $opened + visitor::query($on)));
+        $PAGE->set_url(self::url(self::span_params($view, $month, $week, $day) + visitor::query($on)));
         $PAGE->set_title(get_string('calendar_title', 'theme_dimensions'));
         $PAGE->set_heading('');
         $PAGE->add_body_class(self::BODY_CLASS);
@@ -321,7 +459,9 @@ final class page {
             visitor::state($on),
             [],
             $day,
-            true
+            true,
+            $view,
+            $week
         ));
     }
 
@@ -351,13 +491,11 @@ final class page {
             return new self(self::core_calendar(), null);
         }
 
-        $month = self::month_from_request();
         [$scope, $state] = self::scope_for(state::for_request());
         $root = $state->categoryid ? scope::for_viewer() : $scope;
 
         $firstday = (int) calendar_get_starting_weekday();
-        $day = self::day_from_request($month, $firstday);
-        [$from, $to] = self::grid($month, $firstday);
+        [$view, $month, $week, $day, $from, $to] = self::span($firstday);
         $window = window::from_iso($from, $to);
         // Every key off asks no source: the answer is the window's days, each at zero (the service reads [] as all).
         $answer = range::answer($window, $scope, $state->on(), $state->filters());
@@ -366,8 +504,7 @@ final class page {
         $PAGE->set_context($context);
         $PAGE->set_pagetype(self::PAGETYPE);
         $PAGE->set_pagelayout('standard');
-        $opened = $day !== '' ? [self::PARAM_DAY => $day] : [];
-        $PAGE->set_url(self::url([state::PARAM_MONTH => $month] + $opened + $state->query()));
+        $PAGE->set_url(self::url(self::span_params($view, $month, $week, $day) + $state->query()));
         $PAGE->set_title(get_string('calendar_title', 'theme_dimensions'));
         $PAGE->set_heading('');
         $PAGE->add_body_class(self::BODY_CLASS);
@@ -382,7 +519,10 @@ final class page {
             $answer,
             $state,
             tree::for_scope($root),
-            $day
+            $day,
+            false,
+            $view,
+            $week
         ));
     }
 }

@@ -144,6 +144,35 @@ Feature: The theme's calendar page shows a month with spanning bars, key chips, 
     And I click on "//section[@data-region='dim-cal-day']//a[@data-cal-pop][contains(normalize-space(.), 'Mentoring session')]" "xpath_element"
     And ".dim-cal__pop--sheet[data-region='dim-cal-popover']" "css_element" should exist
 
+  # The week view (docs/calendar/PROPOSAL.md section 21): its layout and keyboard are Jest's, these are the page.
+  @javascript
+  Scenario: The week view shows two overlapping events side by side and keeps the view through a reload
+    Given I log in as "student1"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03&day=2027-03-09"
+    When I click on "[data-region='dim-cal-app'] [data-action='dim-cal-view-week']" "css_element"
+    Then "[data-region='dim-cal-weekgrid']" "css_element" should exist
+    And the url should match "view=week"
+    And "//div[@data-region='dim-cal-weekcol'][@data-day='2027-03-09']//a[@data-column='0'][@data-columns='2'][contains(normalize-space(.), 'Other area meeting')]" "xpath_element" should exist
+    And "//div[@data-region='dim-cal-weekcol'][@data-day='2027-03-09']//a[@data-column='1'][@data-columns='2'][contains(normalize-space(.), 'Mentoring session')]" "xpath_element" should exist
+    And I should see "Spring seminar" in the "[data-region='dim-cal-weekstrip']" "css_element"
+    And I reload the page
+    And "[data-region='dim-cal-weekgrid']" "css_element" should exist
+    And the url should match "view=week"
+    And "[data-region='dim-cal-app'] [data-action='dim-cal-view-week'][aria-pressed='true']" "css_element" should exist
+    And I should see "Mentoring session" in the "[data-region='dim-cal-weekgrid']" "css_element"
+
+  @javascript
+  Scenario: On a phone the week is an agenda of seven days, and a day's header opens its sheet
+    Given I log in as "student1"
+    And I change viewport size to "mobile"
+    When I visit "/theme/dimensions/calendar.php?view=week&week=2027-03-09"
+    Then "[data-region='dim-cal-weekagenda']" "css_element" should exist
+    And "[data-region='dim-cal-weekgrid']" "css_element" should not exist
+    And I should see "Mentoring session" in the "[data-region='dim-cal-weekagenda'] section[data-day='2027-03-09']" "css_element"
+    And I click on "[data-region='dim-cal-weekagenda'] [data-role='day'][data-day='2027-03-09']" "css_element"
+    And ".dim-cal__drawer--sheet[data-region='dim-cal-day']" "css_element" should exist
+    And I should see "Other area meeting" in the "[data-region='dim-cal-day']" "css_element"
+
   Scenario: Without JavaScript the month is an agenda, with core's calendar a link away
     Given I log in as "student1"
     When I visit "/theme/dimensions/calendar.php?month=2027-03"

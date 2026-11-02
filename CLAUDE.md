@@ -1522,6 +1522,12 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   `get_public_category_rows`' twin in step order. The visitor's graph may name nothing of a session:
   `calendar/account.ts` holds the account's two services, `description.ts` core's, and `EventPopover` is handed
   `describe` (the account's sink feeder) or `plain` (the visitor's text); `categorypublic_source_test` walks it.
+- **C4: the week view** (PROPOSAL sections 21-22). `view=week` and `week=` (`page::PARAM_VIEW`, `PARAM_WEEK`; a day of
+  the week, snapped to the viewer's first weekday by `page::week_start()`) are navigation and never state: not saved,
+  not in `state::query()`, written with the open day. The client's week is `weeks.ts` (pure arithmetic and the address),
+  `WeekGrid.tsx` and `ViewSwitch.tsx`; one range call per span. Every address read that `optional_param()` would throw
+  on for a list goes through `page::scalar_param()` (page) or `state::scalar_param()` (state), which drop a list; the
+  public calendar answers a visitor, so a list must never be an error page.
 - Tests: `tests/local/calendar/{state,page,calendar_component_source}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,
