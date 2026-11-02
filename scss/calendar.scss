@@ -914,8 +914,10 @@ body.dim-calendar {
     }
 
     // The strip is a grid of its own under the day columns: a zero-height first row, then one row per bar slot, so the
-    // month's bars (Bar.tsx, slot + 2) sit in it unchanged.
+    // month's bars (Bar.tsx, slot + 2) sit in it unchanged. It is one item of the week row, so it spans the seven day
+    // tracks; left to auto-placement it would take the first one alone and squeeze every bar into a day's width.
     .dim-cal__weekstripgrid {
+        grid-column: 2 / -1;
         display: grid;
         grid-template-columns: repeat(7, minmax(0, 1fr));
         min-height: 1.75rem;
