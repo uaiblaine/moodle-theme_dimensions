@@ -254,3 +254,45 @@ ratings stage only adds the card's line and a field to the service.
 4. **tool_courserating in CI: yes.** It joins `plugin-dependencies` in `ci.yml` (public,
    `marinaglancy/moodle-tool_courserating`), in stage R1, so the rating tests run in CI as well as on the stacks.
 5. **The order: the lighter card first** (L0-L3), then the ratings (R1-R2).
+
+## 10. L0 results (2026-11-02)
+
+The baseline before any change, on m503b. The stack served the live checkout: origin/main 5474224 plus the
+calendar's uncommitted C3b edits (calendar blocks, a core_calendar renderer), which reach no showcase code. Xdebug
+loaded, `cachejs` off, MUC on the stack's Redis (moved the day before, so cold numbers differ from older series).
+
+### 10.1 The server (`loadprobe.php --run`, three warm runs, two cold)
+
+| viewer | page | reads warm | ms warm | reads cold | ms cold | listing bytes | hero bytes |
+|---|---|---|---|---|---|---|---|
+| student | area, 24 cards | 35 | 35-44 | 199 | 280-502 | 152,708 | 4,207 |
+| student | area, 48 cards | 35 | 44-49 | 199 | 266-271 | 276,516 | 4,271 |
+| student | leaf, 24 cards | 39 | 26-30 | | | 139,769 | 4,345 |
+| student | root, 10 posters | 35 | 81-83 | | | 38,118 | 4,723 |
+| manager | area, 24 cards | 38 | 36-47 | | | 158,870 | 13,566 |
+| visitor | area, 24 cards | 25 | 22-27 | 70 | 148 | 132,209 | 1,712 |
+
+### 10.2 The browser (`theme_dimensions_perf.feature`, medians of five runs, 4x CPU, 150 ms / 1.6 Mbps)
+
+| page | mode | FCP | LCP | TBT | CLS | INP | long tasks | DOM nodes | HTML decoded / transferred | scripts before load |
+|---|---|---|---|---|---|---|---|---|---|---|
+| student, flat | cold | 5,328 | 5,328 | 667 | 0 | 96 | 7 | 1,684 | 269,545 / 26,210 | 103 |
+| student, flat | warm | 536 | 536 | 9 | 0 | 72 | 3 | 1,683 | 269,545 / 26,212 | 19 |
+| student, root | cold | 5,136 | 5,136 | 605 | 0 | 52 | 6 | 957 | 149,001 / 19,575 | 100 |
+| student, root | warm | 504 | 504 | 2 | 0 | 40 | 4 | 956 | 149,001 / 19,573 | 47 |
+| student, grouped | cold | 5,052 | 5,052 | 585 | 0 | 48 | 5 | 1,202 | 174,374 / 23,429 | 108 |
+| student, grouped | warm | 528 | 528 | 17 | 0 | 48 | 4 | 1,201 | 174,374 / 23,430 | 47 |
+| visitor, flat | cold | 5,296 | 5,296 | 299 | 0 | 56 | 5 | 859 | 147,360 / 14,446 | 14 |
+| visitor, flat | warm | 504 | 504 | 15 | 0 | 48 | 4 | 859 | 147,360 / 14,447 | 17 |
+
+Times in ms. The student's flat page is the one L2 changes most: 1,684 DOM nodes and 270 KB of HTML for 26 KB on the
+wire.
+
+- **Every theme_dimensions Behat scenario fails on m503 and m503b since 2026-10-30**, before its first step:
+  `tool_mulib`'s 5.3 branch (mounted that day) declares `behat_tool_mulib_files extends behat_repository_upload`,
+  which re-exposes core's upload steps in the `dimensions` suite, where `behat_theme_dimensions_behat_repository_upload`
+  already overrides them. The probe ran after deleting that context from the suite in the generated `behat.yml`
+  (restored afterwards). `mdl ci --behat` does not install tool_mulib and is unaffected. The fix belongs to the owner.
+- **L3 cannot use m503b for the after**: every 5.3 stack mounts the live checkout, so the before/after of L2 is
+  measured in two `mdl ci` installs on one host (the base and the branch), with the probe opted in, rather than on
+  the shared stack.
