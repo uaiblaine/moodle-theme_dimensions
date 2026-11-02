@@ -26,6 +26,7 @@
 use theme_boost_union\admin_settingspage_tabs_with_tertiary;
 use theme_dimensions\local\calendar\blocks;
 use theme_dimensions\local\calendar\coreview;
+use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\filterfields_setting;
 use theme_dimensions\local\category\population;
@@ -355,6 +356,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $title = get_string('calendarblocks', 'theme_dimensions', null, true);
         $description = get_string('calendarblocks_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: The calendar page and its web service for visitors who are not logged in. Default off, and read as on
+        // only for an explicit '1' ({@see visitor::enabled()}): a page and an endpoint on the internet are opened on purpose.
+        $name = 'theme_dimensions/' . visitor::SETTING;
+        $title = get_string('calendarpublic', 'theme_dimensions', null, true);
+        $description = get_string('calendarpublic_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
         $tab->add($setting);
 
         // Setting: The context bar on activity pages and the course page. Default on, and read as on unless an

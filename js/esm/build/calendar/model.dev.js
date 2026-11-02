@@ -16,9 +16,6 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  */
 import { parse } from "../daterange/calendar";
 const KEYS = ["site", "category", "course", "group", "user", "activity", "other", "open"];
-const RANGE_METHOD = "theme_dimensions_get_calendar_range";
-const REMEMBER_METHOD = "theme_dimensions_remember_calendar_state";
-const EVENT_METHOD = "core_calendar_get_calendar_event_by_id";
 const DAY_PARAM = "day";
 const DEFAULT_STATE = {
   off: [],
@@ -179,10 +176,7 @@ const hex = /* @__PURE__ */ __name((value) => /^#[0-9a-f]{6}$/i.test(String(valu
 export {
   DAY_PARAM,
   DEFAULT_STATE,
-  EVENT_METHOD,
   KEYS,
-  RANGE_METHOD,
-  REMEMBER_METHOD,
   address,
   dayHref,
   emptyAnswer,

@@ -37,7 +37,8 @@ import {load} from '../amd';
 import {say, shift} from '../daterange/calendar';
 import {gridWeeks, monthAfter} from './days';
 import {dayDots} from './layout';
-import {DAY_PARAM, RANGE_METHOD, emptyAnswer, keysOn, normalise, rangeArgs} from './model';
+import {RANGE_METHOD} from './account';
+import {DAY_PARAM, emptyAnswer, keysOn, normalise, rangeArgs} from './model';
 import type {Answer, State} from './model';
 import {fill} from './strings';
 

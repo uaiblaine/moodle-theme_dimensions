@@ -316,6 +316,21 @@ Calendar*, untick *Enable calendar export*). A site that switches the theme's bl
 remove the *Calendar* and *Upcoming events* blocks from the default block regions (the Dashboard and
 the site home), so that every calendar a reader meets follows one set of rules.
 
+### The public calendar
+
+The setting *Public calendar* (`theme_dimensions/calendarpublic`, off by default) opens the theme's
+calendar page (`/theme/dimensions/calendar.php`) to visitors who are not logged in, even while the
+site forces login. A visitor sees two kinds of items and nothing else: the events of the course
+categories local_unlistedcourses marks public (with every category above them visible and none
+unlisted), each leading to the category's public page, and the public event courses (courses of the
+event model whose landing page is public), each leading to its landing page. Descriptions are shown
+as text, without images. The page draws them from the web service
+`theme_dimensions_get_public_calendar_range`, which answers without a session
+(`lib/ajax/service-nologin.php`) and refuses any logged-in session. Nothing of a visitor is stored,
+nothing is cached between requests, and the page is marked `noindex` unless the site is open to
+search engines. The theme adds no link to it in a visitor's navigation: share its address. Off, a
+visitor who opens it is sent to the login page; the guest account keeps Moodle's own calendar.
+
 
 Requirements
 ------------

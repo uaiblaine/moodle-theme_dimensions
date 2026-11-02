@@ -1513,6 +1513,15 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   stay the fallbacks. The day's layout is `overlap.ts` (pure); the description is core's
   `core_calendar_get_calendar_event_by_id` through `description.ts` (cached per event, a refusal reads as ''), the
   calendar's one trusted HTML sink. The popover's two box reads are the tree's only layout reads, on an opening.
+- **CV: the public calendar** (PROPOSAL section 19). `page::handle()`'s first step splits: a visitor goes to the login
+  page before any lookup unless `local\calendar\visitor::enabled()` (setting `calendarpublic`, on only for a stored
+  `'1'`, read beside `category\publicaccess`, never inside it); on, `page::visitor()` serves the same page without
+  `require_login()`, mounting `calendar/PublicCalendar.tsx`. The visitor's answer is `publicrange::answer()` over
+  `source\public_events` (one `{event}` statement over `category\publicaccess::public_ids()`) and
+  `source\public_courses` (`landing\publicaccess::are_public()`); its service `get_public_calendar_range` is
+  `get_public_category_rows`' twin in step order. The visitor's graph may name nothing of a session:
+  `calendar/account.ts` holds the account's two services, `description.ts` core's, and `EventPopover` is handed
+  `describe` (the account's sink feeder) or `plain` (the visitor's text); `categorypublic_source_test` walks it.
 - Tests: `tests/local/calendar/{state,page,calendar_component_source}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,

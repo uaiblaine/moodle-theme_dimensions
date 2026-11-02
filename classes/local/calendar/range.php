@@ -369,7 +369,7 @@ final class range {
      * @param array[] $items The kept items.
      * @return array[] One entry per day: ['date' => YYYY-MM-DD, 'counts' => key => int, every key present].
      */
-    private static function days(window $window, array $items): array {
+    public static function days(window $window, array $items): array {
         $days = [];
         foreach ($window->days as $date) {
             $days[] = ['date' => $date, 'counts' => array_fill_keys(keys::ALL, 0)];

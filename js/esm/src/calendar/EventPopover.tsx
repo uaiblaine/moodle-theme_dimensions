@@ -25,9 +25,11 @@
  *   span for a multi-day item. The place is the item's location, or an event course's venue and city.
  * - The overlap warning is text naming the other timed items the item intersects (calendar/overlap.ts), never
  *   colour alone.
- * - The description is read lazily, for core's events alone (calendar/description.ts). The latest popover wins: a
+ * - The description is read lazily, for core's events alone, through the `describe` it is handed: the logged-in page
+ *   hands core's own formatted description, the one feeder of the trusted sink below. The latest popover wins: a
  *   ticket is taken per opening and checked when the answer comes, so an answer for an item no longer shown, or
  *   for a popover already closed, is dropped; a Pending token (theme_dimensions/calendar:description) spans it.
+ *   The visitor's page hands no `describe` and a `plain` text instead (decision V2), drawn as text.
  * - The actions: the primary is model.ts primaryOf()'s; "Open" stays beside it when the primary is something else;
  *   the course's page comes third.
  *
@@ -43,7 +45,6 @@ import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {CSSProperties, KeyboardEvent} from 'react';
 import Pending from '@moodle/lms/core/pending';
 import {say} from '../daterange/calendar';
-import {description} from './description';
 import {keyLabel} from './KeyChips';
 import type {Placed} from './layout';
 import {colourStyle, keyClass, placeOf, whenOf} from './look';
@@ -79,6 +80,8 @@ type EventPopoverProps = {
     opener: HTMLElement,
     sheet: boolean,
     modalities: Option[],
+    describe: ((id: number) => Promise<string>) | null,
+    plain: string,
     onClose: (refocus: boolean) => void,
 };
 
@@ -175,7 +178,7 @@ export const factsOf = (item: Item, look: Look, modalities: Option[]): Facts => 
  * @param {object} props See EventPopoverProps.
  * @returns {object} The dialogue.
  */
-const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, onClose}: EventPopoverProps) => {
+const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, describe, plain, onClose}: EventPopoverProps) => {
     const {item} = entry;
     const dialog = useRef<HTMLDivElement | null>(null);
     const heading = useRef<HTMLHeadingElement | null>(null);
@@ -187,13 +190,13 @@ const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, onClose
     // The description: one request per event per page life, the latest opening's answer alone shown.
     useEffect(() => {
         const turn = ++ticket.current;
-        if (item.source !== 'core') {
+        if (item.source !== 'core' || describe === null) {
             setText('');
             return undefined;
         }
         setText(null);
         const pending = new Pending('theme_dimensions/calendar:description');
-        description(item.id)
+        describe(item.id)
             .then((html) => {
                 if (turn === ticket.current) {
                     setText(html);
@@ -204,7 +207,7 @@ const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, onClose
         return () => {
             ticket.current++;
         };
-    }, [item.source, item.id]);
+    }, [item.source, item.id, describe]);
 
     // The position, measured once the popover is drawn for this item: an opening, never the page's mount.
     useLayoutEffect(() => {
@@ -327,10 +330,13 @@ const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, onClose
                 </p>
             ) : null}
             {text === null ? <p className="dim-cal__poploading">{look.strings.calendar_descriptionloading}</p> : null}
+            {plain !== '' ? (
+                <p className="dim-cal__popdesc dim-cal__popdesc--text" data-region="dim-cal-description">{plain}</p>
+            ) : null}
             {text ? (
-                // Core's own formatted HTML: core_calendar_get_calendar_event_by_id's description, which core's
-                // event exporter ran through format_text() for this viewer, via description(); nothing else may reach it.
-                // The one trusted sink of the calendar.
+                // Core's own formatted HTML: core's event service's description, which core's event exporter ran
+                // through format_text() for this viewer, handed in as describe by the logged-in page alone; nothing
+                // else may reach it. The one trusted sink of the calendar.
                 <div
                     className="dim-cal__popdesc"
                     data-region="dim-cal-description"
@@ -344,7 +350,7 @@ const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, onClose
                 {primary.kind !== 'open' ? (
                     <a className="btn btn-secondary" href={open} data-action="dim-cal-open">{look.strings.calendar_open}</a>
                 ) : null}
-                {course ? (
+                {course && course.url !== course.landingurl ? (
                     <a className="btn btn-link" href={safeHref(course.url, look.home)} data-action="dim-cal-course">
                         {look.strings.calendar_coursepage}
                     </a>

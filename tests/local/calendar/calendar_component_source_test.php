@@ -183,6 +183,15 @@ final class calendar_component_source_test extends \basic_testcase {
                 // The month block's client leaves only where its arrow already leads, when it cannot paint.
                 continue;
             }
+            if ($path === 'PublicCalendar.tsx') {
+                // The visitor's shell leaves only for the address it asked for, when its service fails.
+                $this->assertSame(1, substr_count($source, 'redirect('), $path);
+                $this->assertMatchesRegularExpression(
+                    '~\} catch \{\s*pending\.resolve\(\);\s*if \(seq === ticket\.current\) \{\s*redirect\(target\);~',
+                    $source
+                );
+                continue;
+            }
             $this->assertStringNotContainsString('redirect(', $source, $path);
             $this->assertStringNotContainsString('core/location', $source, $path);
         }
@@ -227,16 +236,21 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString(".catch(() => '');", $description, 'A refusal draws nothing.');
         $this->assertStringContainsString(
             "export const EVENT_METHOD = 'core_calendar_get_calendar_event_by_id';",
-            $this->sources()['model.ts']
+            $description,
+            'Core\'s service is named where it is asked, never in a module the visitor\'s page shares.'
         );
         $popover = $this->sources()['EventPopover.tsx'];
         $this->assertMatchesRegularExpression(
-            '~const turn = \+\+ticket\.current;.*?description\(item\.id\)\s*\.then\(\(html\) => \{\s*'
+            '~const turn = \+\+ticket\.current;.*?describe\(item\.id\)\s*\.then\(\(html\) => \{\s*'
                 . 'if \(turn === ticket\.current\) \{\s*setText\(html\);~s',
             $popover
         );
         $this->assertMatchesRegularExpression('~return \(\) => \{\s*ticket\.current\+\+;\s*\};~', $popover, 'Closing drops it.');
-        $this->assertStringContainsString("if (item.source !== 'core') {", $popover, 'An event course has no {event} row.');
+        $this->assertStringContainsString(
+            "if (item.source !== 'core' || describe === null) {",
+            $popover,
+            'An event course has no {event} row, and the visitor\'s page asks core nothing.'
+        );
     }
 
     /**
@@ -338,8 +352,40 @@ final class calendar_component_source_test extends \basic_testcase {
         // The state behind the sink is set to nothing, to null, or to description()'s answer: three calls, no more.
         $this->assertSame(3, substr_count($popover, 'setText('));
         $this->assertSame(1, substr_count($popover, 'setText(html);'));
-        $this->assertMatchesRegularExpression('~description\(item\.id\)\s*\.then\(\(html\) => \{\s*'
+        $this->assertMatchesRegularExpression('~describe\(item\.id\)\s*\.then\(\(html\) => \{\s*'
             . 'if \(turn === ticket\.current\) \{\s*setText\(html\);~s', $popover);
+        // What describe() is: core's description on the logged-in page, nothing on the visitor's.
+        $this->assertStringContainsString('describe={description}', $this->sources()['Calendar.tsx']);
+        $this->assertStringContainsString("import {description} from './description';", $this->sources()['Calendar.tsx']);
+        $this->assertStringContainsString('describe={null}', $this->sources()['PublicCalendar.tsx']);
+        $feeders = [];
+        foreach ($this->sources() as $name => $source) {
+            if (preg_match('~describe=\{(?!null\})~', $source)) {
+                $feeders[] = $name;
+            }
+        }
+        $this->assertSame(['Calendar.tsx'], $feeders, 'One page hands the sink a feeder.');
+        // The visitor's text is drawn as text.
+        $this->assertStringContainsString('data-region="dim-cal-description">{plain}</p>', $popover);
+    }
+
+    /**
+     * The visitor's page links nothing of core's calendar, which asks a visitor to log in: the drawer draws its link
+     * only when it is handed core's address, and the visitor's shell hands none and draws no classic link of its own.
+     *
+     * @return void
+     */
+    public function test_the_visitors_page_links_nothing_of_cores_calendar(): void {
+        $drawer = $this->sources()['DayDrawer.tsx'];
+        $this->assertMatchesRegularExpression(
+            '~\{calendar !== null \? \(\s*<a className="dim-cal__dayclassic" href=\{dayHref\(calendar, iso\)\}>~',
+            $drawer
+        );
+        $public = $this->sources()['PublicCalendar.tsx'];
+        $this->assertStringContainsString('calendar={null}', $public);
+        $this->assertStringNotContainsString('dim-cal__classic', $public);
+        $this->assertStringNotContainsString('monthHref', $public);
+        $this->assertStringContainsString('calendar={props.urls.calendar}', $this->sources()['Calendar.tsx'], 'Control.');
     }
 
     /**

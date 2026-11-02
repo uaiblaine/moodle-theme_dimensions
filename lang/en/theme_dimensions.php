@@ -86,6 +86,7 @@ $string['calendar_participants_many'] = '{$a} participants';
 $string['calendar_participants_one'] = '1 participant';
 $string['calendar_place'] = 'Where';
 $string['calendar_prevmonth'] = 'Previous month';
+$string['calendar_publicnoscript'] = 'Without JavaScript the month is listed here, day by day.';
 $string['calendar_recursive'] = 'Include subcategories';
 $string['calendar_span'] = '{$a->from} to {$a->to}';
 $string['calendar_title'] = 'Calendar';
@@ -103,6 +104,8 @@ $string['calendarblocks'] = 'Draw the calendar blocks with the theme\'s calendar
 $string['calendarblocks_desc'] = 'The month calendar block and the upcoming events block show the theme\'s calendar: a month with a dot per event key and a short agenda, from the same events as the theme\'s calendar page, under the reader\'s saved keys and filters, each day and event leading to that page. They keep Moodle\'s own content on a course page (which shows that course\'s events), for a visitor and the guest account, and for calendar types other than the Gregorian. Off, both blocks show Moodle\'s own calendar, which follows Moodle\'s rules rather than the page\'s: remove them from the default block regions if the site should show one set of rules.';
 $string['calendarcoreview'] = 'Send core\'s month and day calendar views to the theme\'s calendar';
 $string['calendarcoreview_desc'] = 'Core\'s calendar month and day views (the address /calendar/view.php with view=month or view=day) lead logged-in readers to the theme\'s calendar page, keeping the month, the day and the category the address named. Core\'s upcoming view, the course calendar, event editing, the guest account and calendar types other than the Gregorian stay on core\'s calendar, and so does a reader who opens it from the page\'s "Classic calendar" link, until they open the theme\'s page again. Off, core\'s views answer as they always did.';
+$string['calendarpublic'] = 'Public calendar';
+$string['calendarpublic_desc'] = 'The theme\'s calendar page answers visitors who are not logged in, even while the site forces login: the events of the public course categories (those local_unlistedcourses marks public, with every category above them visible and none unlisted) and the public event courses, each leading to its public page. Descriptions are shown as text, without images. Nothing of a visitor is stored, and the page is not indexed unless the site is open to search engines. Off, a visitor who opens the page is sent to the login page.';
 $string['calendarrangeunavailable'] = 'This part of the calendar is not available.';
 $string['category_allempty'] = 'No course matches the search and the filters.';
 $string['category_allemptyhint'] = 'Try another term or clear the filters.';

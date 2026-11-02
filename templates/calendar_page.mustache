@@ -32,8 +32,13 @@
     still name the keys (none on); the hidden recursive=0 before the checkbox
     is what a cleared checkbox submits.
 
+    With visitor set (the public calendar, stage CV) the page draws the two
+    chips a visitor has and nothing that needs a session or a login: no
+    category, no "More" filters and no link to core's calendar.
+
     Example context (json):
     {
+        "visitor": false,
         "month": "2026-11",
         "caption": "November 2026",
         "action": "https://example.com/r.php/theme_dimensions/calendar",
@@ -125,7 +130,9 @@
             <div class="dim-cal__views" role="group" aria-label="{{#str}} calendar_view, theme_dimensions {{/str}}">
                 <span class="dim-cal__view dim-cal__view--active">{{#str}} calendar_viewmonth, theme_dimensions {{/str}}</span>
             </div>
+            {{^visitor}}
             <a class="dim-cal__classic" href="{{classicurl}}">{{#str}} calendar_classic, theme_dimensions {{/str}}</a>
+            {{/visitor}}
         </div>
         <form class="dim-cal__form" method="get" action="{{action}}">
             <input type="hidden" name="month" value="{{month}}">
@@ -141,6 +148,7 @@
                 {{/keys}}
             </fieldset>
             <div class="dim-cal__filters">
+                {{^visitor}}
                 <label class="dim-cal__field">
                     <span>{{#str}} calendar_category, theme_dimensions {{/str}}</span>
                     <select class="form-select" name="categoryid">
@@ -206,14 +214,18 @@
                         <a class="dim-cal__clear" href="{{clearurl}}">{{#str}} calendar_clearfilters, theme_dimensions {{/str}}</a>
                     </div>
                 </details>
+                {{/visitor}}
                 <button type="submit" class="btn btn-primary">{{#str}} calendar_apply, theme_dimensions {{/str}}</button>
             </div>
         </form>
         <section class="dim-cal__agenda" data-region="dim-cal-agenda" aria-labelledby="dim-cal-agenda-title">
             <h2 class="dim-cal__agendatitle" id="dim-cal-agenda-title">{{caption}}</h2>
             <p class="dim-cal__notice">
+                {{#visitor}}{{#str}} calendar_publicnoscript, theme_dimensions {{/str}}{{/visitor}}
+                {{^visitor}}
                 {{#str}} calendar_noscript, theme_dimensions {{/str}}
                 <a href="{{classicurl}}">{{#str}} calendar_classic, theme_dimensions {{/str}}</a>
+                {{/visitor}}
             </p>
             {{#truncated}}<p class="dim-cal__notice">{{#str}} calendar_truncated, theme_dimensions {{/str}}</p>{{/truncated}}
             {{#agendaempty}}<p class="dim-cal__empty">{{#str}} calendar_agendaempty, theme_dimensions {{/str}}</p>{{/agendaempty}}

@@ -86,6 +86,7 @@ $string['calendar_participants_many'] = '{$a} participantes';
 $string['calendar_participants_one'] = '1 participante';
 $string['calendar_place'] = 'Onde';
 $string['calendar_prevmonth'] = 'Mês anterior';
+$string['calendar_publicnoscript'] = 'Sem JavaScript o mês é listado aqui, dia a dia.';
 $string['calendar_recursive'] = 'Incluir subcategorias';
 $string['calendar_span'] = '{$a->from} a {$a->to}';
 $string['calendar_title'] = 'Calendário';
@@ -103,6 +104,8 @@ $string['calendarblocks'] = 'Desenhar os blocos de calendário com o calendário
 $string['calendarblocks_desc'] = 'O bloco de calendário do mês e o bloco de próximos eventos mostram o calendário do tema: um mês com um ponto por chave de evento e uma agenda curta, com os mesmos eventos da página de calendário do tema, sob as chaves e os filtros salvos de quem lê, cada dia e cada evento levando àquela página. Eles mantêm o conteúdo do próprio Moodle na página de um curso (que mostra os eventos daquele curso), para quem não está conectado e para a conta de visitante, e para tipos de calendário diferentes do gregoriano. Desligado, os dois blocos mostram o calendário do próprio Moodle, que segue as regras do Moodle e não as da página: retire-os das regiões de blocos padrão se o site deve mostrar um só conjunto de regras.';
 $string['calendarcoreview'] = 'Enviar as visões de mês e de dia do calendário do core ao calendário do tema';
 $string['calendarcoreview_desc'] = 'As visões de mês e de dia do calendário do core (o endereço /calendar/view.php com view=month ou view=day) levam quem está conectado à página de calendário do tema, mantendo o mês, o dia e a categoria do endereço. A visão de próximos eventos do core, o calendário do curso, a edição de eventos, a conta de visitante e os tipos de calendário diferentes do gregoriano continuam no calendário do core, assim como quem o abre pelo link "Calendário clássico" da página, até abrir a página do tema de novo. Desligado, as visões do core respondem como sempre responderam.';
+$string['calendarpublic'] = 'Calendário público';
+$string['calendarpublic_desc'] = 'A página de calendário do tema responde a quem não está conectado, mesmo com o login obrigatório no site: os eventos das categorias de cursos públicas (as que o local_unlistedcourses marca como públicas, com todas as categorias acima delas visíveis e nenhuma fora da lista) e os cursos de evento públicos, cada um levando à sua página pública. As descrições aparecem como texto, sem imagens. Nada de quem visita é guardado, e a página não é indexada a menos que o site esteja aberto aos mecanismos de busca. Desligado, quem não está conectado e abre a página é enviado à página de login.';
 $string['calendarrangeunavailable'] = 'Esta parte do calendário não está disponível.';
 $string['category_allempty'] = 'Nenhum curso corresponde à busca e aos filtros.';
 $string['category_allemptyhint'] = 'Tente outro termo ou limpe os filtros.';

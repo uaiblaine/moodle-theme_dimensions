@@ -31,6 +31,7 @@ use theme_dimensions\local\calendar\keys;
 use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\calendar\range;
 use theme_dimensions\local\calendar\state;
+use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\calendar\window;
 use theme_dimensions\local\landingfields;
 
@@ -47,6 +48,11 @@ use theme_dimensions\local\landingfields;
  * Every text in the props is in the plain spelling (the answer's own, format_string() with escape off), for the
  * client's textContent; the template's double stashes escape the server's layer once.
  *
+ * In its visitor mode ({@see page::handle()}'s public calendar) the page draws the visitor's two keys and nothing that
+ * needs a session or a login: no category, no "More" filters, no link to core's calendar (which asks a visitor to log
+ * in), and the mount names the visitor's shell, {@see COMPONENT_PUBLIC}, whose props carry no tree, no field options
+ * and no address of core's calendar.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -54,6 +60,9 @@ use theme_dimensions\local\landingfields;
 class calendar_page implements renderable, templatable {
     /** @var string The component the mount node names. */
     public const COMPONENT = '@moodle/lms/theme_dimensions/calendar/Calendar';
+
+    /** @var string The component a visitor's mount node names: the visitor's shell, which reaches nothing of a session. */
+    public const COMPONENT_PUBLIC = '@moodle/lms/theme_dimensions/calendar/PublicCalendar';
 
     /** @var string[] The strings the client reads, handed to it with the page so its first paint asks for none. */
     public const STRINGS = [
@@ -151,6 +160,9 @@ class calendar_page implements renderable, templatable {
     /** @var string The day the drawer opens on, YYYY-MM-DD, inside the window; '' for none. */
     private string $day;
 
+    /** @var bool Whether the page is drawn for a visitor who is not logged in: the public calendar. */
+    private bool $visitor;
+
     /**
      * Hold what the page draws; {@see page::handle()} computes every part.
      *
@@ -163,6 +175,7 @@ class calendar_page implements renderable, templatable {
      * @param state $state What the page shows.
      * @param array $tree The categories the picker offers ({@see \theme_dimensions\local\calendar\tree}).
      * @param string $day The day the drawer opens on, kept by {@see page::day_from_request()}; '' for none.
+     * @param bool $visitor Whether the page is the public calendar, drawn for a visitor.
      */
     public function __construct(
         string $month,
@@ -173,7 +186,8 @@ class calendar_page implements renderable, templatable {
         array $answer,
         state $state,
         array $tree,
-        string $day = ''
+        string $day = '',
+        bool $visitor = false
     ) {
         $this->month = $month;
         $this->today = $today;
@@ -184,6 +198,7 @@ class calendar_page implements renderable, templatable {
         $this->state = $state;
         $this->tree = $tree;
         $this->day = $day;
+        $this->visitor = $visitor;
     }
 
     /**
@@ -277,6 +292,22 @@ class calendar_page implements renderable, templatable {
      * @return array
      */
     public function props(): array {
+        if ($this->visitor) {
+            return [
+                'month' => $this->month,
+                'day' => $this->day,
+                'today' => $this->today,
+                'firstday' => $this->firstday,
+                'timezone' => $this->timezone,
+                'answer' => $this->answer,
+                'keys' => visitor::on($this->state->on()),
+                'modalities' => self::options(landingfields::SHORTNAME_MODALITY),
+                'urls' => [
+                    'page' => page::url()->out(false),
+                    'home' => (new \core\url('/'))->out(false),
+                ],
+            ];
+        }
         return [
             'month' => $this->month,
             'day' => $this->day,
@@ -363,20 +394,24 @@ class calendar_page implements renderable, templatable {
      * @return array
      */
     public function export_for_template(renderer_base $output): array {
-        $query = $this->state->query();
+        $on = $this->state->on();
+        $query = $this->visitor ? visitor::query($on) : $this->state->query();
         $counts = array_fill_keys(keys::ALL, 0);
         foreach ($this->answer['events'] as $item) {
             $counts[$item['key']]++;
         }
-        $on = $this->state->on();
         $keyrows = [];
-        foreach (keys::ALL as $key) {
+        foreach ($this->visitor ? visitor::KEYS : keys::ALL as $key) {
             $keyrows[] = [
                 'key' => $key,
                 'label' => self::key_label($key),
                 'checked' => in_array($key, $on, true),
                 'count' => $counts[$key],
             ];
+        }
+
+        if ($this->visitor) {
+            return $this->visitor_context($keyrows, $query);
         }
 
         $categories = [];
@@ -432,6 +467,36 @@ class calendar_page implements renderable, templatable {
             'agendaempty' => empty($agenda),
             'component' => self::COMPONENT,
             'props' => json_encode($props, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        ];
+    }
+
+    /**
+     * The template context of the public calendar: the toolbar's links, the two chips and the agenda, nothing else.
+     *
+     * @param array $keyrows The chips, the visitor's two.
+     * @param array $query The address parameters naming the keys ({@see visitor::query()}).
+     * @return array
+     */
+    private function visitor_context(array $keyrows, array $query): array {
+        $agenda = $this->agenda();
+        return [
+            'visitor' => true,
+            'month' => $this->month,
+            'caption' => userdate(
+                \DateTimeImmutable::createFromFormat('!Y-m-d', $this->month . '-01', \core_date::get_user_timezone_object())
+                    ->getTimestamp(),
+                get_string('strftimemonthyear', 'langconfig')
+            ),
+            'action' => page::url()->out(false),
+            'todayurl' => page::url([state::PARAM_MONTH => substr($this->today, 0, 7)] + $query)->out(false),
+            'prevurl' => page::url([state::PARAM_MONTH => self::month_at($this->month, -1)] + $query)->out(false),
+            'nexturl' => page::url([state::PARAM_MONTH => self::month_at($this->month, 1)] + $query)->out(false),
+            'keys' => $keyrows,
+            'truncated' => !empty($this->answer['truncated']),
+            'agenda' => $agenda,
+            'agendaempty' => empty($agenda),
+            'component' => self::COMPONENT_PUBLIC,
+            'props' => json_encode($this->props(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         ];
     }
 }
