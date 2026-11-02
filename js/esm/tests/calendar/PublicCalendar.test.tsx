@@ -177,6 +177,8 @@ describe('the first paint', () => {
         const page = await mount(props(publicAnswer([fair()])));
         expect(fetched).not.toHaveBeenCalled();
         expect(page.querySelector<HTMLElement>('[data-region="dim-cal-server"]')?.hidden).toBe(true);
+        // The root is marked mounted: the stylesheet retires its placeholder and cancels the server layer's fail-safe.
+        expect(page.classList.contains('dim-cal--mounted')).toBe(true);
         expect(gridItem(5)).not.toBeNull();
     });
 

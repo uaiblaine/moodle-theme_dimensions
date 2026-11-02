@@ -31,7 +31,7 @@ use local_unlistedcourses\category_access;
  *
  * The sets are core's own: this class mirrors {@see \calendar_information::create()} and its
  * {@see \calendar_information::set_sources()} line for line, and must be re-read against them on every core
- * upgrade (scope_test compares the two set for set, for the site, a category and a course). Three differences,
+ * upgrade (scope_test compares the two set for set, for the site, a category and a course). Four differences,
  * all deliberate:
  *
  * - The filters are built with calendar_set_filters($courses, true). Core calls it without the flag, which
@@ -45,8 +45,15 @@ use local_unlistedcourses\category_access;
  *   get_all_children_ids(). Core keeps the category and its direct children only (get_children(), the
  *   "lib.php:1146" gap of docs/calendar/PROPOSAL.md section 2.5), while its category events already use the
  *   whole subtree; $recursive off is core's reading, kept for the parity test.
- * - The site view's category cache (calendar_categories, MODE_SESSION) is read and never set: a set would write
- *   $SESSION under the read-only session the range service declares.
+ * - The site view's category cache (calendar_categories, MODE_SESSION) is neither read nor set: a set would write
+ *   $SESSION under the read-only session the range service declares, and a read would return core's narrower
+ *   answer (see the next item) for up to 15 minutes.
+ * - The site view's categories also include every category where the viewer may create category events, in the
+ *   sense of core's form ({@see \calendar_get_allowed_types()}: moodle/category:manage WITH doanything). Core's
+ *   site view asks that capability without doanything, so a site administrator with no role in any category
+ *   sees no category event, including those they created through core's form. An event the viewer may create
+ *   is an event the viewer sees (PROPOSAL section 29). A viewer who manages a category by role is in both sets,
+ *   and one with no right in either.
  *
  * The narrowing refuses with the one {@see refusal}: a course that is not one of the viewer's calendar
  * courses (whether it exists or not), a category that does not exist, that core does not let the viewer
@@ -217,38 +224,32 @@ final class scope {
     }
 
     /**
-     * The categories of the site view: those holding one of the viewer's courses, those they manage, and their parents.
+     * The categories of the site view: those holding one of the viewer's courses, those they may manage, and their parents.
      *
-     * The site branch of {@see \calendar_information::set_sources()}, reading its session cache (core's cache, key and
-     * value, so a viewer who opened core's calendar first pays nothing here) but never writing it: the cache is
-     * MODE_SESSION, and a set would write $SESSION under the read-only session the range service declares. A miss
-     * is computed again by the next call.
+     * The site branch of {@see \calendar_information::set_sources()} with one difference: "may manage" is core's
+     * create check ({@see \calendar_get_allowed_types()}, moodle/category:manage with doanything), so a category
+     * event the viewer may create is one they see. Core's session cache (calendar_categories) is not read, because
+     * it holds core's narrower answer, nor written, because the cache is MODE_SESSION and a set would write $SESSION
+     * under the read-only session the range service declares.
      *
      * @param \stdClass[] $courses The viewer's calendar courses.
      * @return int[]
      */
     private static function site_categories(array $courses): array {
-        global $USER;
-
         $coursecategories = array_flip(array_map(static fn($course) => $course->category, $courses));
-        $cache = \cache::make('core', 'calendar_categories');
-        $categories = $cache->get('site');
-        if ($categories === false) {
-            $found = [];
-            foreach (\core_course_category::get_all() as $category) {
-                if (
-                    isset($coursecategories[$category->id])
-                    || has_capability('moodle/category:manage', $category->get_context(), $USER, false)
-                ) {
-                    $found[$category->id] = true;
-                    foreach ($category->get_parents() as $parentid) {
-                        $found[$parentid] = true;
-                    }
+        $found = [];
+        foreach (\core_course_category::get_all() as $category) {
+            if (
+                isset($coursecategories[$category->id])
+                || has_capability('moodle/category:manage', $category->get_context())
+            ) {
+                $found[$category->id] = true;
+                foreach ($category->get_parents() as $parentid) {
+                    $found[$parentid] = true;
                 }
             }
-            $categories = array_keys($found);
         }
-        return $categories;
+        return array_keys($found);
     }
 
     /**

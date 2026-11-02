@@ -138,6 +138,8 @@ describe('the first paint', () => {
         const page = await mount(props([item({id: 1, name: 'Seminar', timestart: at('2026-11-10'), timeduration: 3 * 86400})]));
         expect(fetched).not.toHaveBeenCalled();
         expect(page.querySelector<HTMLElement>('[data-region="dim-cal-server"]')?.hidden).toBe(true);
+        // The root is marked mounted: the stylesheet retires its placeholder and cancels the server layer's fail-safe.
+        expect(page.classList.contains('dim-cal--mounted')).toBe(true);
         expect(page.querySelectorAll('.dim-cal__bar')).toHaveLength(1);
     });
 

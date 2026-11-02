@@ -33,10 +33,10 @@
  * @return bool
  */
 function xmldb_theme_dimensions_upgrade($oldversion) {
-    if ($oldversion < 2026100568) {
+    if ($oldversion < 2026100569) {
         // The page model select gains its third line, the trail.
         \theme_dimensions\local\landingfields::add_trail_option();
-        upgrade_plugin_savepoint(true, 2026100568, 'theme', 'dimensions');
+        upgrade_plugin_savepoint(true, 2026100569, 'theme', 'dimensions');
     }
     return true;
 }

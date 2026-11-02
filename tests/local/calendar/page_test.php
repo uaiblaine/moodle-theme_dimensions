@@ -588,4 +588,46 @@ final class page_test extends \advanced_testcase {
         $this->assertSame(page::grid($start->format('Y-m'), $firstday)[0], $props['answer']['from']);
         $this->assertContains('The next week', array_column($props['answer']['events'], 'name'));
     }
+
+    /**
+     * The page carries no block region: with a block on the page's context and page type, and edit mode on, the page the
+     * decision prepares offers no block markup and no add-block control (so the layout draws no drawer and no toggle),
+     * where the same page without the decision offers both.
+     *
+     * @return void
+     */
+    public function test_the_page_offers_no_block_region(): void {
+        global $CFG, $USER;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        $this->resetAfterTest();
+        $CFG->routerconfigured = false;
+        $this->setAdminUser();
+        $USER->editing = 1;
+        self::getDataGenerator()->create_block('html', [
+            'parentcontextid' => \core\context\system::instance()->id,
+            'pagetypepattern' => '*',
+            'defaultregion' => 'side-pre',
+            'configdata' => base64_encode(serialize((object) [
+                'text' => 'A block the calendar must not show',
+                'format' => FORMAT_HTML,
+            ])),
+        ]);
+        self::forget_calendar();
+
+        $control = self::page_with_blocks();
+        $GLOBALS['PAGE'] = $control;
+        [$markup, $button] = self::block_drawer_inputs($control);
+        $this->assertStringContainsString('A block the calendar must not show', $markup, 'The control: the block is offered.');
+        $this->assertNotSame('', $button, 'The control: edit mode offers the add-block button.');
+
+        $_GET = ['month' => self::month_start()->format('Y-m')];
+        $GLOBALS['PAGE'] = new \moodle_page();
+        $answer = page::handle();
+        $this->assertNull($answer->redirect);
+        [$markup, $button] = self::block_drawer_inputs($GLOBALS['PAGE']);
+        $this->assertStringNotContainsString('A block the calendar must not show', $markup);
+        $this->assertStringNotContainsString('data-block=', $markup);
+        $this->assertSame('', $button, 'No add-block button in edit mode.');
+        $this->assertFalse($GLOBALS['PAGE']->blocks->region_has_content('side-pre', $GLOBALS['PAGE']->get_renderer('core')));
+    }
 }
