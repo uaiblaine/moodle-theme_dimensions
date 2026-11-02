@@ -25,12 +25,18 @@
 /**
  * Upgrade steps.
  *
- * The plugin starts from db/install.xml and db/install.php: there is no upgrade history to replay,
- * so this function has nothing to do until the first upgrade step is written.
+ * The plugin starts from db/install.xml and db/install.php, which provision every field as
+ * {@see \theme_dimensions\local\landingfields::definitions()} has it now; a step here brings a
+ * site provisioned before a change up to it.
  *
  * @param int $oldversion The version we are upgrading from.
  * @return bool
  */
 function xmldb_theme_dimensions_upgrade($oldversion) {
+    if ($oldversion < 2026100568) {
+        // The page model select gains its third line, the trail.
+        \theme_dimensions\local\landingfields::add_trail_option();
+        upgrade_plugin_savepoint(true, 2026100568, 'theme', 'dimensions');
+    }
     return true;
 }

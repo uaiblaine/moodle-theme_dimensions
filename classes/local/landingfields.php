@@ -185,6 +185,14 @@ class landingfields {
     /** @var int Stored value of the page model select for "event". */
     public const MODEL_EVENT = 2;
 
+    /**
+     * @var int Stored value of the page model select for "trail", the line appended for the trail model.
+     *
+     * A trail is a course whose steps are its mod_subcourse activities ({@see trail\trail}); the line is
+     * offered only where that plugin is installed and enabled ({@see trail\trail::hides_option()}).
+     */
+    public const MODEL_TRAIL = 3;
+
     /** @var int Stored value of the modality select for "online". */
     public const MODALITY_ONLINE = 1;
 
@@ -262,7 +270,8 @@ class landingfields {
                 'stringkey' => 'landingfield_model',
                 'config' => [
                     'options' => get_string('landingfield_model_course', self::COMPONENT) . "\n" .
-                        get_string('landingfield_model_event', self::COMPONENT),
+                        get_string('landingfield_model_event', self::COMPONENT) . "\n" .
+                        get_string('landingfield_model_trail', self::COMPONENT),
                     'defaultvalue' => '',
                 ],
             ],
@@ -1294,6 +1303,39 @@ class landingfields {
             return false;
         }
         $lines[] = get_string('landingfield_modality_hybrid', self::COMPONENT);
+        $config['options'] = implode("\n", $lines);
+        $DB->update_record('customfield_field', (object) [
+            'id' => $field->get('id'),
+            'configdata' => json_encode($config),
+            'timemodified' => time(),
+        ]);
+        self::reset_field_cache();
+        return true;
+    }
+
+    /**
+     * Append the trail option to the page model select of a site provisioned before it.
+     *
+     * The same step as {@see add_hybrid_option()}, for the same reasons: the line is appended
+     * only to a select that still holds exactly the two lines it was created with (course and
+     * event), because the stored value of an option is its position.
+     *
+     * @return bool Whether the option was appended.
+     */
+    public static function add_trail_option(): bool {
+        global $DB;
+
+        self::reset_field_cache();
+        $field = self::get_field(self::SHORTNAME_MODEL);
+        if (!$field) {
+            return false;
+        }
+        $config = (array) $field->get('configdata');
+        $lines = preg_split("/\s*\n\s*/", trim((string) ($config['options'] ?? '')));
+        if (count(array_filter($lines, 'strlen')) !== 2) {
+            return false;
+        }
+        $lines[] = get_string('landingfield_model_trail', self::COMPONENT);
         $config['options'] = implode("\n", $lines);
         $DB->update_record('customfield_field', (object) [
             'id' => $field->get('id'),

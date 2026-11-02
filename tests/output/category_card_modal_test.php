@@ -176,6 +176,25 @@ final class category_card_modal_test extends \advanced_testcase {
     }
 
     /**
+     * A trail's card is tagged as a trail, beside an event and a course that keep their own tags.
+     */
+    public function test_a_trail_card_names_its_kind(): void {
+        $this->seed();
+        $trail = self::getDataGenerator()->create_course(['category' => $this->ids['root'], 'fullname' => 'Trilha Aberta']);
+        course_handler::create()->instance_form_save((object) [
+            'id' => $trail->id,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_TRAIL,
+        ]);
+
+        $cards = $this->cards();
+
+        $this->assertSame(get_string('landingfield_model_trail', self::COMPONENT), $cards[(int) $trail->id]->kindlabel);
+        $this->assertSame(get_string('landingfield_model_event', self::COMPONENT), $cards[$this->ids['event']]->kindlabel);
+        $this->assertSame(get_string('landingfield_model_course', self::COMPONENT), $cards[$this->ids['open']]->kindlabel);
+        $this->assertFalse($cards[$this->ids['openplain']]->haskind, 'A course with no model has no tag.');
+    }
+
+    /**
      * The dialogue's sheet as categorycoursemodal renders it from a card: what the card holds, and no content.
      *
      * The module reads the kicker and the buttons off the attributes the card writes from its modal keys, and the

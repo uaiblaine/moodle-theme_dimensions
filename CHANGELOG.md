@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The Trail page model, stage T0** (2026100568), `docs/trail/PLAN.md`. The page model select gains a third line,
+  *Trail* (`landingfields::MODEL_TRAIL`), appended by the branch's first upgrade step on a site provisioned with two
+  lines (`landingfields::add_trail_option()`). A trail's steps are its Subcourse activities, read by one reader for
+  the landing page and the calendar (`local\trail\trail`, `local\trail\step`): course order, the window from the
+  referenced course's start date to the activity's expected completion date or the course's end date, one statement
+  for the references of any number of trails. mod_subcourse is optional: without it the Trail line is left out of the
+  course form, the default for new courses and the calendar's model filter. The showcase's cards tag a trail as one.
+  Nothing draws a trail yet (T1).
 - **The calendar after the owner's review of 2026-11-02** (2026100567), round R1 of `docs/calendar/PROPOSAL.md` (sections 27-28).
   The "Classic calendar" links are gone, with the `classic=1` marker and its session flag: every view of core's
   `calendar/view.php` now leads a real account to the theme's page (the day view to that day's drawer, a course

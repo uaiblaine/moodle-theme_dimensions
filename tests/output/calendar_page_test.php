@@ -35,6 +35,7 @@ use theme_dimensions\local\calendar\scope;
 use theme_dimensions\local\calendar\state;
 use theme_dimensions\local\calendar\tree;
 use theme_dimensions\local\calendar\window;
+use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -138,6 +139,31 @@ final class calendar_page_test extends \advanced_testcase {
         $this->assertSame([$this->ids['parent'], $this->ids['child']], array_column($props['tree'], 'id'));
         $this->assertSame([0, $this->ids['parent']], array_column($props['tree'], 'parent'));
         $this->assertSame([0, 1], array_column($props['tree'], 'courses'));
+    }
+
+    /**
+     * The model filter offers the trail line only while mod_subcourse is enabled (decision Q9).
+     *
+     * @return void
+     */
+    public function test_the_model_filter_leaves_the_trail_out_without_the_module(): void {
+        if (\core_component::get_component_directory('mod_subcourse') === null) {
+            $this->markTestSkipped('mod_subcourse is not installed.');
+        }
+        // Another test of this process may have read the select with other lines.
+        landingfields::reset_field_cache();
+        [$renderable] = $this->build(new state([]));
+        $this->assertContains(
+            landingfields::MODEL_TRAIL,
+            array_column($renderable->props()['options']['model'], 'value'),
+            'Precondition: offered with the module.'
+        );
+
+        \core\plugininfo\mod::enable_plugin('subcourse', 0);
+
+        $values = array_column($renderable->props()['options']['model'], 'value');
+        $this->assertNotContains(landingfields::MODEL_TRAIL, $values);
+        $this->assertContains(landingfields::MODEL_EVENT, $values, 'The other lines stay.');
     }
 
     /**

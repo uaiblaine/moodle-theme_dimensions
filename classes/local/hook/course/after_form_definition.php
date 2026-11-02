@@ -31,6 +31,7 @@ use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\offer;
 use theme_dimensions\local\landing\publicaccess;
 use theme_dimensions\local\landingfields;
+use theme_dimensions\local\trail\trail;
 
 /**
  * Adjusts the parts of the course settings form made of the fields this theme provisions.
@@ -61,7 +62,43 @@ class after_form_definition {
         self::add_landing_link($hook->formwrapper->get_course(), $hook->mform);
         self::warn_open_ended_event($hook->formwrapper->get_course(), $hook->mform);
         self::hide_inapplicable_fields($hook->mform);
+        self::hide_unavailable_model($hook->formwrapper->get_course(), $hook->mform);
         self::remove_focusmode_field($hook->mform);
+    }
+
+    /**
+     * Leave the trail line out of the page model select while trails are not available (decision Q9).
+     *
+     * Only the choice goes; the line stays in the field's configuration ({@see trail::hides_option()}). A
+     * course already saved as a trail keeps the choice, so the form still shows what the course holds and a
+     * save leaves it as it is: the page reads such a course as a course without steps.
+     *
+     * @param \stdClass $course The course being edited (no id when it is being created).
+     * @param \MoodleQuickForm $mform The course form.
+     * @return void
+     */
+    private static function hide_unavailable_model(\stdClass $course, \MoodleQuickForm $mform): void {
+        $name = 'customfield_' . landingfields::SHORTNAME_MODEL;
+        if (!$mform->elementExists($name) || !trail::hides_option(landingfields::SHORTNAME_MODEL, landingfields::MODEL_TRAIL)) {
+            return;
+        }
+        if (!empty($course->id) && landingfields::model((int) $course->id) === landingfields::MODEL_TRAIL) {
+            return;
+        }
+        $element = $mform->getElement($name);
+        if (!$element instanceof \MoodleQuickForm_select) {
+            return;
+        }
+        // Rebuilt rather than removeOption(): that one searches the element's values, which are unset until the
+        // form receives its data, after this hook.
+        $offered = [];
+        foreach ($element->_options as $option) {
+            if ((int) $option['attr']['value'] !== landingfields::MODEL_TRAIL) {
+                $offered[$option['attr']['value']] = $option['text'];
+            }
+        }
+        $element->removeOptions();
+        $element->loadArray($offered);
     }
 
     /**
