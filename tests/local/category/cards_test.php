@@ -557,4 +557,143 @@ final class cards_test extends \advanced_testcase {
         $this->assertSame(2, $sets() - $before, 'The wrong entry and the missing one, and nothing else.');
         $this->assertSame($images[(int) $third->id]->out_as_local_url(), $cache->get((int) $third->id));
     }
+
+    /**
+     * The ratings layer is one statement over the page's ids, the same for two cards and for twelve.
+     *
+     * Every course of the category is rated, so each page's answer is asserted beside its cost: a layer that read
+     * nothing would be flat at zero. Driven by the ids it is handed, never by the population: the answer holds the
+     * page's courses and none of the others, though every one of them is rated.
+     */
+    public function test_the_ratings_layer_is_one_statement_over_the_page(): void {
+        $this->resetAfterTest();
+        $this->ratings_on();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        for ($i = 0; $i < 12; $i++) {
+            $course = $generator->create_course(['category' => $category->id]);
+            $this->rate((int) $course->id, [5, 4, 4]);
+        }
+        $this->become($generator->create_user());
+        $ids = array_keys($this->rows((int) $category->id));
+        $this->assertCount(12, $ids);
+        $two = array_slice($ids, 0, 2);
+
+        // Warm the plugin's settings, which a second request finds in core's config cache.
+        cards::ratings($ids);
+        $small = $this->reads(fn() => cards::ratings($two));
+        $large = $this->reads(fn() => cards::ratings($ids));
+        $this->assertSame(1, $small, 'One statement for two cards.');
+        $this->assertSame($small, $large, "{$small} reads for two cards, {$large} for twelve.");
+
+        $ratings = cards::ratings($two);
+        $expected = array_map('intval', $two);
+        $answered = array_keys($ratings);
+        sort($expected);
+        sort($answered);
+        $this->assertSame($expected, $answered, 'The page\'s ids, and only those.');
+        foreach ($ratings as $rating) {
+            $this->assertEqualsWithDelta(4.33, $rating->avg, 0.001);
+            $this->assertSame(3, $rating->count);
+        }
+        $this->assertSame([], cards::ratings([]), 'No page, no statement and no answer.');
+    }
+
+    /**
+     * Rated nowhere, the layer reads nothing and answers nothing; the plugin's own switch is the one read.
+     *
+     * The control is the same page with ratings on, which costs its statement and answers its course.
+     */
+    public function test_the_ratings_layer_reads_nothing_where_the_plugin_rates_no_course(): void {
+        $this->resetAfterTest();
+        $plugin = $this->ratings_on();
+        $generator = self::getDataGenerator();
+        $course = $generator->create_course();
+        $this->rate((int) $course->id, [3]);
+        $ids = [(int) $course->id];
+
+        cards::ratings($ids);
+        $this->assertSame(1, $this->reads(fn() => cards::ratings($ids)), 'Control: rated somewhere, one statement.');
+        $this->assertCount(1, cards::ratings($ids));
+
+        $plugin->set_config(\tool_courserating\constants::SETTING_RATINGMODE, \tool_courserating\constants::RATEBY_NOONE);
+        $plugin->set_config(\tool_courserating\constants::SETTING_PERCOURSE, 0);
+        $this->assertFalse(cards::ratings_enabled());
+        cards::ratings($ids);
+        $this->assertSame(0, $this->reads(fn() => cards::ratings($ids)), 'Rated nowhere: no statement.');
+        $this->assertSame([], cards::ratings($ids));
+    }
+
+    /**
+     * A course is on the layer when the summary row the plugin keeps says it rates the course AND somebody rated it.
+     *
+     * Three courses take each term away in turn: one whose recorded mode is RATEBY_NOONE although its row still counts
+     * ratings (the mode is read from the row, never re-derived from the settings, which still rate everybody here),
+     * one the plugin rates and nobody rated, and the rated one, which is the control. The dialogue's block applies
+     * the same predicate to one course.
+     */
+    public function test_the_ratings_layer_holds_a_course_rated_and_rating(): void {
+        $this->resetAfterTest();
+        $this->ratings_on();
+        $generator = self::getDataGenerator();
+        $disabled = (int) $generator->create_course()->id;
+        $unrated = (int) $generator->create_course()->id;
+        $rated = (int) $generator->create_course()->id;
+        $this->rate($disabled, [5, 1]);
+        $this->rate($rated, [4, 5]);
+        // The plugin's own model writes the mode, and keeps the counters: only the mode term can refuse this row.
+        $summary = \tool_courserating\local\models\summary::get_for_course($disabled);
+        $summary->set('ratingmode', \tool_courserating\constants::RATEBY_NOONE);
+        $summary->save();
+
+        $rows = [];
+        foreach ([$disabled, $unrated, $rated] as $courseid) {
+            $rows[$courseid] = \tool_courserating\local\models\summary::get_for_course($courseid);
+        }
+        $this->assertSame(2, (int) $rows[$disabled]->get('cntall'), 'Precondition: the disabled course counts its ratings.');
+        $this->assertSame(
+            \tool_courserating\constants::RATEBY_ANYTIME,
+            (int) $rows[$unrated]->get('ratingmode'),
+            'Precondition: the plugin rates the course nobody rated.'
+        );
+        $this->assertSame(0, (int) $rows[$unrated]->get('cntall'));
+
+        $ratings = cards::ratings([$disabled, $unrated, $rated]);
+        $this->assertSame([$rated], array_keys($ratings), 'Only the course rated and rating.');
+        $this->assertEqualsWithDelta(4.5, $ratings[$rated]->avg, 0.001);
+        $this->assertSame(2, $ratings[$rated]->count);
+
+        $this->assertNull(dialogue::rating($disabled), 'The dialogue reads the same predicate: the mode term.');
+        $this->assertNull(dialogue::rating($unrated), 'And the count term.');
+        $this->assertNotNull(dialogue::rating($rated), 'Control.');
+    }
+
+    /**
+     * The card and the dialogue spell a rating alike: one decimal in the reader's language, the count, one sentence.
+     *
+     * Asks nothing of the plugin. One rating takes the singular sentence; a whole average keeps its decimal, as the
+     * plugin prints it.
+     */
+    public function test_a_rating_is_spelt_once_for_the_card_and_the_dialogue(): void {
+        $this->resetAfterTest();
+        $this->assertSame([
+            'avg' => format_float(4.666, 1, true),
+            'count' => 23,
+            'label' => get_string('category_rating_label', 'theme_dimensions', (object) [
+                'avg' => format_float(4.666, 1, true),
+                'count' => 23,
+            ]),
+        ], dialogue::rating_line(4.666, 23));
+        $this->assertSame('4.7', dialogue::rating_line(4.666, 23)['avg']);
+        $this->assertSame('Rating 4.7 out of 5, 23 ratings', dialogue::rating_line(4.666, 23)['label']);
+        $this->assertSame('Rating 4.0 out of 5, 1 rating', dialogue::rating_line(4.0, 1)['label']);
+
+        $stars = array_column(dialogue::stars(3.6), 'icon');
+        $this->assertSame(
+            ['fa-solid fa-star', 'fa-solid fa-star', 'fa-solid fa-star', 'fa-solid fa-star-half-stroke', 'fa-regular fa-star'],
+            $stars
+        );
+        $this->assertSame(array_fill(0, 5, 'fa-solid fa-star'), array_column(dialogue::stars(4.8), 'icon'), 'Rounded up.');
+        $this->assertSame('fa-regular fa-star', dialogue::stars(4.2)[4]['icon'], 'Under a quarter is empty.');
+    }
 }

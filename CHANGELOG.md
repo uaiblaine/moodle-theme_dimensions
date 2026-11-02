@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **tool_courserating's ratings on the showcase** (2026100566), stage R1 of `docs/vitrine-ratings/PROPOSAL.md`
+  (card variant A, the dialogue's rating block, decision 4). The plugin stays optional, asked by class name: absent,
+  or rating no course anywhere, nothing of it is read. Present, the page reads its summary table once, over the page's
+  ids (`cards::ratings()`: `ratingmode <> RATEBY_NOONE AND cntall > 0`, the plugin's own rule for showing a rating),
+  and a rated card opens its meta line with an amber star, the average to one decimal in the reader's language and the
+  count, with one sentence for a screen reader; on both shells, as the plugin shows a rating to whoever may see the
+  course listed. The rows answers gain `rating` and `hasrating`. For an account, `theme_dimensions_get_course_dialogue`
+  also returns the course's rating block (the average, five stars, the count, the distribution as `<progress>` rows,
+  and, where the plugin lets the viewer read reviews, its own trigger of its reviews popup, on whose press the
+  theme's dialogue closes). New token `--dim-ds-accent-rating`, derived from the palette (3.9:1 on the white card,
+  3:1 on a dark surface). New strings `category_rating_*`. tool_courserating joins `ci.yml`'s
+  `plugin-dependencies` (`MOODLE_405_STABLE`, which supports 5.3). PHPUnit, Behat (a rated course on the card and in
+  the dialogue) and new mutation gates.
 - **The showcase card's "More information" is a link, and its dialogue is fetched when it opens** (2026100565), stage
   L2 of `docs/vitrine-ratings/PROPOSAL.md` (decisions V1, open at once, buttons on the card). The card no longer
   draws its details panel nor an inert copy of its dialogue: "More information" links to the card's own page (the

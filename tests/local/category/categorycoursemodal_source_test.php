@@ -266,7 +266,7 @@ final class categorycoursemodal_source_test extends \basic_testcase {
         }
         $selectors = $this->body('SELECTORS');
         preg_match_all("~: '([^']+)',~", $selectors, $matches);
-        $this->assertCount(9, $matches[1]);
+        $this->assertCount(10, $matches[1]);
         foreach ($matches[1] as $selector) {
             $this->assertMatchesRegularExpression(
                 '~^\[data-region="[a-z-]+"\]$~',
@@ -338,5 +338,39 @@ final class categorycoursemodal_source_test extends \basic_testcase {
         $this->assertStringContainsString('.catch(report)', $click);
         $this->assertStringContainsString('await fill(body, head, request, link);', $this->body('open'));
         $this->assertStringContainsString("await import('core/notification');", $this->body('report'));
+    }
+
+    /**
+     * A press on the rating block's "Read reviews" closes the dialogue and goes on to tool_courserating's listener.
+     *
+     * The trigger is the plugin's own (category_card_modal draws it to match its document listener), so the theme
+     * opens nothing for it: the dialogue's root hears the press on its way up, closes the dialogue so two never stack,
+     * and stops neither the press nor its default action, which the plugin's listener on the document prevents
+     * itself. Changes that must make it fail: the listener gone, the close gone, or the press stopped on the way.
+     */
+    public function test_a_press_on_the_reviews_closes_the_dialogue_and_reaches_the_plugin(): void {
+        $this->assertStringContainsString("reviews: '[data-region=\"dim-cmodal-reviews\"]',", $this->body('SELECTORS'));
+        $open = $this->body('open');
+        $found = preg_match(
+            "~\n    root\.addEventListener\('click', \(event\) => \{\n(.*?)\n    \}\);~s",
+            $open,
+            $listener
+        );
+        $this->assertSame(1, $found, 'The dialogue\'s root listens for the press.');
+        $this->assertStringContainsString('event.target.closest(SELECTORS.reviews)', $listener[1]);
+        $this->assertStringContainsString('modal.destroy();', $listener[1], 'It closes and removes the dialogue.');
+        foreach (['preventDefault', 'stopPropagation', 'stopImmediatePropagation'] as $stop) {
+            $this->assertStringNotContainsString($stop, $listener[1], 'The press goes on to the plugin: ' . $stop);
+        }
+        // Control: the root listener is the one place; the page-wide press handler still prevents a card link's default.
+        $this->assertStringContainsString('event.preventDefault();', $this->body('onClick'));
+
+        $template = (string) file_get_contents($this->plugin_root() . '/templates/category_card_modal.mustache');
+        $this->assertMatchesRegularExpression(
+            '~<span class="tool_courserating-cfield"><button type="button" class="[^"]*\btool_courserating-ratings '
+                . 'tool_courserating-ratings-courseid-\{\{courseid\}\}" data-region="dim-cmodal-reviews">~',
+            $template,
+            'The trigger matches the plugin\'s listener and carries the hook the dialogue closes on.'
+        );
     }
 }

@@ -30,6 +30,13 @@
     new content region into the open dialogue, so the title that labels it is never replaced. A failed
     request keeps the header and the buttons and says so in one sentence, with the course's own page.
 
+    With tool_courserating rating the course, the answer carries a rating block too, below the excerpt: the
+    average large, its five stars and the count (hidden from a screen reader, which is told the rating's
+    sentence), the distribution as five progress elements (never a width written into a style attribute),
+    and, where the plugin lets the viewer read its reviews, the plugin's own trigger of its reviews popup: an
+    element matching its listener's .tool_courserating-cfield .tool_courserating-ratings, named by the class
+    tool_courserating-ratings-courseid-<id>, which categorycoursemodal lets through after closing this dialogue.
+
     Three parts, each named by a hook: the sheet (the cover with the pill, the kicker and the title over
     its gradient, then the content region), the content region inside it, and the actions. The title
     carries core's own title hook and no id of its own: the module gives it the id core/modal's root is
@@ -70,7 +77,33 @@
         "factslabel": "Course information",
         "learn": ["Victim triage", "Immobilisation", "Safe transport"],
         "haslearn": true,
-        "learnlabel": "What you will learn"
+        "learnlabel": "What you will learn",
+        "rating": {
+            "avg": "4.7",
+            "count": 23,
+            "label": "Rating 4.7 out of 5, 23 ratings",
+            "courseid": 42,
+            "heading": "Ratings",
+            "counttext": "23 ratings",
+            "stars": [
+                {"icon": "fa-solid fa-star"},
+                {"icon": "fa-solid fa-star"},
+                {"icon": "fa-solid fa-star"},
+                {"icon": "fa-solid fa-star"},
+                {"icon": "fa-solid fa-star-half-stroke"}
+            ],
+            "distribution": [
+                {"stars": 5, "count": 17, "label": "5 stars: 17"},
+                {"stars": 4, "count": 4, "label": "4 stars: 4"},
+                {"stars": 3, "count": 1, "label": "3 stars: 1"},
+                {"stars": 2, "count": 1, "label": "2 stars: 1"},
+                {"stars": 1, "count": 0, "label": "1 star: 0"}
+            ],
+            "reviews": 9,
+            "hasreviewslink": true,
+            "reviewslabel": "Read 9 reviews"
+        },
+        "hasrating": true
     }
 }}
 <div class="dim-cmodal__sheet" data-region="dim-cmodal-sheet">
@@ -104,6 +137,26 @@
             {{#hasexcerpt}}
             <p class="dim-cmodal__summary">{{excerpt}}</p>
             {{/hasexcerpt}}
+            {{#rating}}
+            <section class="dim-cmodal__rating" data-region="dim-cmodal-rating">
+                <h3 class="dim-cmodal__learnlabel">{{heading}}</h3>
+                <div class="dim-cmodal__ratingsummary">
+                    <p class="dim-cmodal__ratingavg"><span aria-hidden="true">{{avg}}</span><span class="visually-hidden">{{label}}</span></p>
+                    <div class="dim-cmodal__ratingside" aria-hidden="true">
+                        <span class="dim-cmodal__stars">{{#stars}}<i class="{{icon}}" aria-hidden="true"></i>{{/stars}}</span>
+                        <span class="dim-cmodal__ratingcount">{{counttext}}</span>
+                    </div>
+                </div>
+                <ul class="dim-cmodal__distribution">
+                    {{#distribution}}
+                    <li class="dim-cmodal__ratingrow"><span class="dim-cmodal__rowstars" aria-hidden="true">{{stars}} <i class="fa fa-star" aria-hidden="true"></i></span><progress class="dim-cmodal__bar" max="{{rating.count}}" value="{{count}}" aria-label="{{label}}"></progress><span class="dim-cmodal__rowcount" aria-hidden="true">{{count}}</span></li>
+                    {{/distribution}}
+                </ul>
+                {{#hasreviewslink}}
+                <span class="tool_courserating-cfield"><button type="button" class="btn btn-link dim-cmodal__reviews tool_courserating-ratings tool_courserating-ratings-courseid-{{courseid}}" data-region="dim-cmodal-reviews">{{reviewslabel}}</button></span>
+                {{/hasreviewslink}}
+            </section>
+            {{/rating}}
             {{#haslearn}}
             <h3 class="dim-cmodal__learnlabel">{{learnlabel}}</h3>
             <ul class="dim-cmodal__learn">

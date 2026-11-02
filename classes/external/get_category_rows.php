@@ -630,6 +630,12 @@ class get_category_rows extends external_api {
                 'month' => new external_value(PARAM_TEXT, 'The abbreviated month.'),
             ], 'The event\'s date tile, null off an event with a start date.', VALUE_REQUIRED, null, NULL_ALLOWED),
             'meta' => new external_value(PARAM_RAW, 'The line under the title: date or workload, modality, city.'),
+            'rating' => new external_single_structure([
+                'avg' => new external_value(PARAM_TEXT, 'The average to one decimal, in the reader\'s language.'),
+                'count' => new external_value(PARAM_INT, 'How many ratings.'),
+                'label' => new external_value(PARAM_TEXT, 'The sentence a screen reader is told for the average and the count.'),
+            ], 'tool_courserating\'s rating opening the meta line, null where none.', VALUE_REQUIRED, null, NULL_ALLOWED),
+            'hasrating' => new external_value(PARAM_BOOL, 'Whether the card carries a rating.'),
             'state' => new external_value(PARAM_ALPHA, 'The classifier state, empty on an anonymous card.'),
             'chip' => new external_value(PARAM_ALPHA, 'The state chip the course counts under, empty on an anonymous card.'),
             'fieldvalues' => new external_value(

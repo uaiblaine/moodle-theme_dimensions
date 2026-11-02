@@ -21,8 +21,8 @@ and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
 on Boost Union's `upgrade-503` branch until Boost Union tags its 5.3 release. Hard-depends on
 `theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);
-`customfield_picture`, `auth_loginsteps` and `local_page` are optional and asked for at run time, never
-declared (the first through `landingfields::picture_type_available()`, the other two by class name). CI is the moodle-an-hochschulen reusable workflow, one job in
+`customfield_picture`, `auth_loginsteps`, `local_page` and `tool_courserating` are optional and asked for at run time,
+never declared (the first through `landingfields::picture_type_available()`, the other three by class name). CI is the moodle-an-hochschulen reusable workflow, one job in
 `.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
 branch in `plugin-dependencies` at the same time (`upgrade-503` today, its stable branch once tagged).
 The theme is mounted on the shared stack **m503** at `theme/dimensions`; the 5.2 history below
@@ -1232,7 +1232,7 @@ decision ids (D1-D39, OD-n) are the private design record's.
   `core_renderer_test`'s drift test is the one to read after a Boost Union update [stage 4].
 - **The services**: `get_category_rows`, `get_card_details`, `get_course_dialogue`, `toggle_wishlist` and
   `remember_category_state` for an account; `get_public_category_rows` (`loginrequired => false`, answered by
-  `service-nologin.php`) for a visitor.
+  `service-nologin.php`) for a visitor. The card's `rating` key (tool_courserating's, below) is in both rows answers.
   The two rows functions return one shape (`get_category_rows::execute_returns()`, key for key), so one store paints
   both [stage 6, S1-S4].
 - **The client is the ES tree `js/esm/src`**, built to `js/esm/build` (section "The ESM tree (R0)"):
@@ -1300,6 +1300,28 @@ service, no `fetchOne` (`listing_source_test::test_the_store_reaches_no_shell`, 
   SYSTEM context, the site course, then core's `can_view_course_info()` and `access::filter_courses()` exactly as
   `enrichment::details()` asks them, one refusal for every miss, and only then `dialogue::content()` (the excerpt
   first: it requires `lib/filelib.php` itself). The page reads no contacts, summary, venue or programme any more.
+
+- **tool_courserating's ratings: one statement over the page slice, on the plugin's own predicate** [R1]. The plugin
+  is optional and asked by class name (`cards::ratings_enabled()`: the helper class loads, then the plugin's own
+  `helper::course_ratings_enabled_anywhere()`, a config read); without it, or rating no course, nothing is read.
+  Present, `cards::ratings($ids)` is ONE statement on `{tool_courserating_summary}` over the page's ids, never the
+  population's, with `cards::RATED` (`ratingmode <> RATEBY_NOONE AND cntall > 0`, the plugin's constant as a
+  parameter, the mode read from the row the plugin keeps, mirroring `api::reindex_course()` and
+  `update_course_rating_in_custom_field()`). `category_listing::export_cards()` reads it on BOTH shells (the plugin
+  shows the aggregate to whoever may see the course listed) and hands each card its `{avg, count}`; the card's
+  `rating` key is `{avg, count, label}` from `dialogue::rating_line()` (`format_float($avg, 1, true)`, so `4,7` in
+  pt_br) plus `hasrating`, and its meta line opens with an amber glyph and the digits, `aria-hidden`, beside a
+  visually hidden sentence; a rating with no other fact still draws the line. The amber is `--dim-ds-accent-rating`
+  (`post.scss`, the hue of `--dim-ds-yellow-800` at 75 % saturation and 40 % lightness: 3.9:1 on the white card; its
+  dark half lifted by `dark-readable(..., $min: 3)`, both measured in `dark_tokens_test`). The account's dialogue gets
+  `rating` from `get_course_dialogue` (`dialogue::rating()`, the same predicate over one row: the average, five stars
+  as the plugin's thresholds draw them, the count, the distribution as `<progress max=count>` rows, never a width
+  in a style attribute, and `hasreviewslink` = `cntreviews > 0` AND `permission::can_view_reviews()`). The reviews
+  link is the PLUGIN's trigger (`.tool_courserating-cfield .tool_courserating-ratings` with
+  `tool_courserating-ratings-courseid-<id>`, which its document listener in `rating.js` opens); `categorycoursemodal`
+  closes the theme's dialogue on that press from a listener on its root and stops nothing, so the press reaches the
+  plugin and two dialogues never stack. Its tests skip without the plugin (`fixture::ratings_on()`), which is a CI
+  dependency; under PHPUnit the plugin rates nothing by default, so no other test pays the statement.
 
 - **The visitor's import graph reaches no session module.** `categorypublic_source_test` walks it transitively from
   `listingvisitor` and from the bridge `js/esm/src/amd.ts`, across `core/esm!`, relative imports, quoted
@@ -1406,6 +1428,9 @@ Server and data:
 - **local_page stays optional**: `category_pages::CATALOGUE` is asked through `class_exists()` and
   `method_exists()`, with no try/catch around the call, and the strip is built by the two page entries, never by the
   listing's export (which every search re-runs) [T2].
+- **tool_courserating stays optional, and its summary row is the plugin's**: test data goes through its generator
+  (`fixture::rate()`) and its own model, never a raw insert; a course the plugin stops rating keeps no counters after
+  its reindex, so the mode term is tested by writing the row's mode through `summary::get_for_course()` [R1].
 - **Do not read a renderer class constant before a renderer exists** (`category_listing::BODY_CLASS`, not the course
   renderer's: its parent is loaded by the renderer factory) [stage 5].
 - **Under PHPUnit `$OUTPUT->header()` renders nothing**: read the hero and the fold form from
@@ -1492,7 +1517,7 @@ Client and stylesheet:
   `theme_dimensions_category_public_client.feature` (the visitor), `theme_dimensions_category_pages.feature`
   (`@local_page`).
 - Gates: `mutations/gates.conf`, grouped by stage and round in file order (the dialogue's service: the `dialogue_*`
-  gates of the L2 block). A pattern that matches nothing is a hard exit for `mdl mutate`: dry-match every line after
+  gates of the L2 block; the ratings: the R1 block after it). A pattern that matches nothing is a hard exit for `mdl mutate`: dry-match every line after
   moving code between functions.
 
 ### The performance probe (R0)

@@ -52,6 +52,13 @@ jobs:
   # themselves where the block is absent, and a site without it excludes the
   # feature with --tags '~@block_compass'.
   #
+  # tool_courserating is optional and NOT in version.php: the category
+  # showcase prints its ratings on the course cards and in the course dialogue
+  # where it is installed and rates some course, and reads nothing of it where
+  # it is not. It is here so the rating tests run against the real plugin
+  # (upstream's MOODLE_405_STABLE, whose $plugin->supported is [405, 503]); the
+  # tests skip themselves where it is absent.
+  #
   # behat-suite is required for a theme: core runs a theme's own features in a
   # suite named after the theme, never in the default one
   # (behat_config_util::get_behat_suites()), so without it every Behat job
@@ -69,3 +76,4 @@ jobs:
         uaiblaine/moodle-customfield_picture,master
         uaiblaine/moodle-local_page,main
         uaiblaine/moodle-block_compass,MOODLE_503_STABLE
+        marinaglancy/moodle-tool_courserating,MOODLE_405_STABLE

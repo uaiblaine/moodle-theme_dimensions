@@ -289,6 +289,17 @@ php theme/dimensions/cli/build_flavour_css.php --all --dry-run
 With local_page installed, a category page names that category's pages under its hero, as the
 plugin's own rules let the reader see them.
 
+### Course ratings
+
+With tool_courserating installed, a course card whose course the plugin rates and somebody has rated
+opens its meta line with the rating - a star, the average and the number of ratings - for every
+reader who sees the card, the visitor of a public category included, as the plugin itself shows a
+rating to whoever may see the course listed. The course dialogue of a logged-in reader adds the
+plugin's rating block: the average, its stars and the distribution of the ratings and, where the
+course holds reviews the plugin lets the reader see, a link that opens the plugin's own reviews
+popup. The theme only reads the plugin's summary table, one statement per page of cards, and keeps
+nothing of its own; a site without the plugin, or one where it rates no course, reads nothing.
+
 ### The calendar blocks
 
 Moodle's *Calendar* (month) and *Upcoming events* blocks show the theme's calendar: a month with a
@@ -354,6 +365,7 @@ Requirements
 | [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) (recommended) | The field type of the landing pages' four badges and their share picture. Without it, or with the Picture type disabled, those five fields are not created and nothing draws them; the theme's recommendation in Boost Union's overview says so. Install it later and use that recommendation's fix to create them. |
 | auth_loginsteps | Its logo and identity provider data on the login page, its own shell for the second factor and privileged session pages, and the CPF mask of the login form (`logincpfmask`). The theme asks it by class name and never requires it. |
 | [local_page](https://github.com/uaiblaine/moodle-local_page) | The pages strip on a category page. Without it the strip is simply not drawn. |
+| [tool_courserating](https://github.com/marinaglancy/moodle-tool_courserating) | The course ratings on the showcase's cards and in its course dialogue (*Course ratings* above). Without it, or where it rates no course, nothing is drawn or read. The theme asks it by class name and never requires it. |
 
 
 Installation

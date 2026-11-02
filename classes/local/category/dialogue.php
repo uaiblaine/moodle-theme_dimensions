@@ -39,8 +39,9 @@ use theme_dimensions\local\landingfields;
  * until somebody opens one.
  *
  * The reads are one course's: its landing page values ({@see landingfields::values_many()} over
- * {@see SHORTNAMES}, the textareas unfiltered as a listing reads them) and core's contacts for it. The
- * course row is the caller's, read with {@see COURSE_FIELDS}.
+ * {@see SHORTNAMES}, the textareas unfiltered as a listing reads them), core's contacts for it and, with
+ * tool_courserating installed and rating somewhere, its summary row ({@see rating()}). The course row is the
+ * caller's, read with {@see COURSE_FIELDS}.
  *
  * Every value leaves in the PLAIN spelling for the template's double stashes: the summary and the
  * programme are reduced to text, because the dialogue shows an excerpt and a checklist, not a document.
@@ -101,7 +102,7 @@ final class dialogue {
      *
      * @param \stdClass $course The course row, with at least {@see COURSE_FIELDS}.
      * @return array excerpt (plain), hasexcerpt, facts (rows of label, value and icon), hasfacts, factslabel,
-     *   learn (plain lines), haslearn, learnlabel.
+     *   learn (plain lines), haslearn, learnlabel, rating ({@see rating()}, null where it draws none) and hasrating.
      */
     public static function content(\stdClass $course): array {
         $courseid = (int) $course->id;
@@ -112,6 +113,7 @@ final class dialogue {
         $values = landingfields::values_many([$courseid], false, self::SHORTNAMES)[$courseid];
         $facts = self::facts($course, $values, self::contacts($courseid, $context));
         $learn = self::learn($values);
+        $rating = self::rating($courseid);
         return [
             'excerpt' => $excerpt,
             'hasexcerpt' => $excerpt !== '',
@@ -121,6 +123,8 @@ final class dialogue {
             'learn' => $learn,
             'haslearn' => !empty($learn),
             'learnlabel' => get_string('category_learn', self::COMPONENT),
+            'rating' => $rating,
+            'hasrating' => $rating !== null,
         ];
     }
 
@@ -154,6 +158,137 @@ final class dialogue {
      */
     public static function hours(float $workload): string {
         return get_string('landing_hours', self::COMPONENT, format_float($workload, 1, true, true));
+    }
+
+    /**
+     * A course's rating as the card's meta line and the dialogue's block both spell it, as {@see hours()} is shared.
+     *
+     * The average to one decimal in the reader's language (4,7 in pt_br), the count, and the one sentence a
+     * screen reader is told in place of the glyph and the digits.
+     *
+     * @param float $avg The average, tool_courserating's avgrating.
+     * @param int $count How many ratings, its cntall.
+     * @return array ['avg' => plain, 'count' => int, 'label' => plain].
+     */
+    public static function rating_line(float $avg, int $count): array {
+        $avgtext = format_float($avg, 1, true);
+        $a = (object) ['avg' => $avgtext, 'count' => $count];
+        if ($count === 1) {
+            $label = get_string('category_rating_label_one', self::COMPONENT, $a);
+        } else {
+            $label = get_string('category_rating_label', self::COMPONENT, $a);
+        }
+        return ['avg' => $avgtext, 'count' => $count, 'label' => $label];
+    }
+
+    /**
+     * The dialogue's rating block for one course, or null where it draws none.
+     *
+     * None without tool_courserating, on a site where it rates no course, and for a course the plugin does not rate
+     * or nobody rated: {@see cards::RATED}, the card's own predicate, over the one summary row. The caller has already
+     * admitted the course for this viewer, so the aggregate follows the card, as it does on the page.
+     *
+     * The reviews are never shown here. When the course holds some and the plugin lets this viewer read them
+     * ({@see \tool_courserating\permission::can_view_reviews()}: its allowreviews setting, hidden reviews to its
+     * reports capability only), the block offers the plugin's own popup through its own trigger
+     * (`hasreviewslink`), which its document listener opens.
+     *
+     * @param int $courseid The course, already admitted.
+     * @return array|null The rating_line() keys and courseid, heading, counttext, stars (five, each a Font Awesome
+     *   class list), distribution (five rows from five stars down to one: stars, count, label), reviews,
+     *   hasreviewslink and reviewslabel; null where the dialogue draws no block.
+     */
+    public static function rating(int $courseid): ?array {
+        global $DB;
+
+        if (!cards::ratings_enabled()) {
+            return null;
+        }
+        // Rides the summary's unique index on courseid.
+        $record = $DB->get_record_select(
+            'tool_courserating_summary',
+            'courseid = :courseid AND ' . cards::RATED,
+            ['courseid' => $courseid] + cards::rated_params(),
+            'courseid, avgrating, cntall, cntreviews, cnt01, cnt02, cnt03, cnt04, cnt05'
+        );
+        if (!$record) {
+            return null;
+        }
+        $avg = (float) $record->avgrating;
+        $count = (int) $record->cntall;
+        $line = self::rating_line($avg, $count);
+
+        $counts = [
+            5 => (int) $record->cnt05,
+            4 => (int) $record->cnt04,
+            3 => (int) $record->cnt03,
+            2 => (int) $record->cnt02,
+            1 => (int) $record->cnt01,
+        ];
+        $distribution = [];
+        foreach ($counts as $stars => $rowcount) {
+            $a = (object) ['stars' => $stars, 'count' => $rowcount];
+            if ($stars === 1) {
+                $rowlabel = get_string('category_rating_row_one', self::COMPONENT, $a);
+            } else {
+                $rowlabel = get_string('category_rating_row', self::COMPONENT, $a);
+            }
+            $distribution[] = ['stars' => $stars, 'count' => $rowcount, 'label' => $rowlabel];
+        }
+
+        $reviews = (int) $record->cntreviews;
+        $hasreviewslink = $reviews > 0 && \tool_courserating\permission::can_view_reviews($courseid);
+        $reviewslabel = '';
+        if ($hasreviewslink) {
+            if ($reviews === 1) {
+                $reviewslabel = get_string('category_rating_reviews_one', self::COMPONENT);
+            } else {
+                $reviewslabel = get_string('category_rating_reviews', self::COMPONENT, $reviews);
+            }
+        }
+        if ($count === 1) {
+            $counttext = get_string('category_rating_count_one', self::COMPONENT);
+        } else {
+            $counttext = get_string('category_rating_count', self::COMPONENT, $count);
+        }
+
+        return $line + [
+            'courseid' => $courseid,
+            'heading' => get_string('category_rating_heading', self::COMPONENT),
+            'counttext' => $counttext,
+            'stars' => self::stars($avg),
+            'distribution' => $distribution,
+            'reviews' => $reviews,
+            'hasreviewslink' => $hasreviewslink,
+            'reviewslabel' => $reviewslabel,
+        ];
+    }
+
+    /**
+     * The five stars of an average, full, half or empty, as tool_courserating draws them.
+     *
+     * The plugin's own thresholds (\tool_courserating\external\stars_exporter::star()): of each star's share of the
+     * average, under a quarter is empty, from three quarters it is full, and a half between; the average is first
+     * rounded to a twentieth as the plugin rounds it.
+     *
+     * @param float $avg The average.
+     * @return array Five rows, ['icon' => the Font Awesome classes of that star].
+     */
+    public static function stars(float $avg): array {
+        $avg = round($avg * 20) / 20;
+        $stars = [];
+        for ($i = 0; $i < 5; $i++) {
+            $share = max(0.0, min(1.0, $avg - $i));
+            if ($share >= 0.75) {
+                $icon = 'fa-solid fa-star';
+            } else if ($share >= 0.25) {
+                $icon = 'fa-solid fa-star-half-stroke';
+            } else {
+                $icon = 'fa-regular fa-star';
+            }
+            $stars[] = ['icon' => $icon];
+        }
+        return $stars;
     }
 
     /**

@@ -23,7 +23,11 @@
 
     Anatomy: a media band holding the course image (or the flat fallback the
     stylesheet paints), the event's date tile and the kind pill; a body with the
-    subcategory overline, the title and its link, the meta line, then the badge
+    subcategory overline, the title and its link, the meta line (opened, for a
+    course tool_courserating rates and somebody rated, by its rating: an amber
+    glyph, the average and the count, all hidden from a screen reader, which is
+    told the rating's sentence instead; a rating with no other fact still draws
+    the line), then the badge
     row - the course's crests, the state pill (the design system's own pair of
     tokens, never a Bootstrap utility, with a decorative icon before its
     sentence) and, for staff, the hidden badge; then the route line, only on a
@@ -112,6 +116,8 @@
         "haskind": true,
         "datetile": null,
         "meta": "36 hours · In-person · São Paulo",
+        "rating": {"avg": "4.7", "count": 23, "label": "Rating 4.7 out of 5, 23 ratings"},
+        "hasrating": true,
         "state": "scheduled",
         "chip": "scheduled",
         "fieldvalues": "12:1 14:0",
@@ -161,9 +167,14 @@
             <span class="dim-card__over">{{overline}}</span>
             {{/hasoverline}}
             <h3 class="dim-card__title" data-region="dim-card-title">{{#hasurl}}<a href="{{url}}" title="{{fullname}}" data-region="dim-card-titlelink">{{fullname}}</a>{{/hasurl}}{{^hasurl}}<span title="{{fullname}}">{{fullname}}</span>{{/hasurl}}</h3>
+            {{#hasrating}}
+            <p class="dim-card__meta"><span class="dim-card__rating"><span aria-hidden="true"><i class="fa fa-star dim-card__ratingstar" aria-hidden="true"></i> {{rating.avg}} ({{rating.count}})</span><span class="visually-hidden">{{rating.label}}</span></span>{{#meta}} · {{meta}}{{/meta}}</p>
+            {{/hasrating}}
+            {{^hasrating}}
             {{#meta}}
             <p class="dim-card__meta">{{meta}}</p>
             {{/meta}}
+            {{/hasrating}}
         </div>
         <div class="dim-card__row">
             {{#hasbadges}}

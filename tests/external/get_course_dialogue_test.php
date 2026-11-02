@@ -300,10 +300,13 @@ final class get_course_dialogue_test extends \advanced_testcase {
 
         $content = $this->answer((int) $course->id);
         $this->assertSame(
-            ['excerpt', 'hasexcerpt', 'facts', 'hasfacts', 'factslabel', 'learn', 'haslearn', 'learnlabel'],
+            ['excerpt', 'hasexcerpt', 'facts', 'hasfacts', 'factslabel', 'learn', 'haslearn', 'learnlabel', 'rating', 'hasrating'],
             array_keys($content),
             'Content only: no state, no button, no address.'
         );
+        // Nobody rated the course, or the plugin is absent or off (its PHPUnit default): no block.
+        $this->assertNull($content['rating']);
+        $this->assertFalse($content['hasrating']);
         $this->assertSame('Primeiros socorros & resgate. Eu <3 brigadas.', $content['excerpt']);
         $this->assertTrue($content['hasexcerpt']);
         $names = landingfields::values((int) $course->id)->names;
@@ -400,5 +403,107 @@ final class get_course_dialogue_test extends \advanced_testcase {
         $this->assertCount(3, explode(', ', $facts[count($facts) - 1]['value']), 'Precondition: three contacts.');
         $this->assertSame($smallreads, $largereads, "{$smallreads} reads for one contact against {$largereads} for three.");
         $this->assertGreaterThan(0, $smallreads, 'Precondition: the meter measures the reads.');
+    }
+
+    /**
+     * A rated course's dialogue carries the rating block: the average, five stars, the distribution, the reviews.
+     *
+     * Through the framework, so the block survives the returns' allowlist. Read for that one course from the summary row
+     * the plugin keeps, the card's predicate applied: a course the plugin rates and nobody rated draws no block.
+     */
+    public function test_a_rated_course_carries_its_rating_block(): void {
+        $this->prepare();
+        $this->ratings_on();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $rated = (int) $generator->create_course(['category' => $category->id])->id;
+        $unrated = (int) $generator->create_course(['category' => $category->id])->id;
+        // Five ratings, two of them with a review: 5, 5, 4, 3, 1 is an average of 3.6.
+        $this->rate($rated, [5, 5, 4, 3, 1], 2);
+        $this->become($generator->create_user());
+
+        $content = $this->answer($rated);
+        $this->assertTrue($content['hasrating']);
+        $rating = $content['rating'];
+        $this->assertSame(format_float(3.6, 1, true), $rating['avg']);
+        $this->assertSame(5, $rating['count']);
+        $this->assertSame(dialogue::rating_line(3.6, 5)['label'], $rating['label']);
+        $this->assertSame($rated, $rating['courseid']);
+        $this->assertSame(get_string('category_rating_heading', 'theme_dimensions'), $rating['heading']);
+        $this->assertSame(get_string('category_rating_count', 'theme_dimensions', 5), $rating['counttext']);
+        $this->assertSame(dialogue::stars(3.6), $rating['stars']);
+        $this->assertCount(5, $rating['stars']);
+        $this->assertSame([5, 4, 3, 2, 1], array_column($rating['distribution'], 'stars'), 'Five stars down to one.');
+        $this->assertSame([2, 1, 1, 0, 1], array_column($rating['distribution'], 'count'));
+        $this->assertSame(
+            get_string('category_rating_row_one', 'theme_dimensions', (object) ['stars' => 1, 'count' => 1]),
+            $rating['distribution'][4]['label']
+        );
+        $this->assertSame(2, $rating['reviews']);
+        $this->assertTrue($rating['hasreviewslink'], 'Reviews the plugin lets this viewer read.');
+        $this->assertSame(get_string('category_rating_reviews', 'theme_dimensions', 2), $rating['reviewslabel']);
+
+        $none = $this->answer($unrated);
+        $this->assertFalse($none['hasrating'], 'Rated by the plugin, rated by nobody: no block.');
+        $this->assertNull($none['rating']);
+    }
+
+    /**
+     * The reviews' trigger needs reviews AND the plugin's own leave to read them; each missing term takes it away.
+     *
+     * A course with ratings and no review offers nothing to read; with reviews, the plugin's allowreviews setting set
+     * to "no" refuses them to everybody, and the trigger goes with it. The course with reviews under the default
+     * setting is the control. The block itself stays in every case.
+     */
+    public function test_the_reviews_trigger_needs_reviews_the_viewer_may_read(): void {
+        $this->prepare();
+        $plugin = $this->ratings_on();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $reviewed = (int) $generator->create_course(['category' => $category->id])->id;
+        $silent = (int) $generator->create_course(['category' => $category->id])->id;
+        $this->rate($reviewed, [4, 2], 1);
+        $this->rate($silent, [4, 2]);
+        $this->become($generator->create_user());
+
+        $this->assertTrue($this->answer($reviewed)['rating']['hasreviewslink'], 'Control: reviews the viewer may read.');
+        $silentrating = $this->answer($silent)['rating'];
+        $this->assertSame(0, $silentrating['reviews'], 'Precondition: ratings without a review.');
+        $this->assertFalse($silentrating['hasreviewslink'], 'No review, nothing to read.');
+        $this->assertSame('', $silentrating['reviewslabel']);
+
+        $plugin->set_config(\tool_courserating\constants::SETTING_ALLOWREVIEWS, \tool_courserating\constants::ALLOWREVIEWS_NO);
+        $refused = $this->answer($reviewed)['rating'];
+        $this->assertSame(1, $refused['reviews'], 'Precondition: the review is still counted.');
+        $this->assertFalse($refused['hasreviewslink'], 'The plugin refuses the reviews: no trigger.');
+        $this->assertSame('', $refused['reviewslabel']);
+    }
+
+    /**
+     * Under "hidden" reviews the trigger is the reports capability's alone: a reviewer gets it, a plain viewer does not.
+     *
+     * The same course and the same review for both viewers; the plain viewer with the default setting is the control
+     * that the review is readable at all.
+     */
+    public function test_hidden_reviews_are_offered_to_the_reports_capability_only(): void {
+        $this->prepare();
+        $plugin = $this->ratings_on();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $course = (int) $generator->create_course(['category' => $category->id])->id;
+        $this->rate($course, [4, 2], 1);
+        $viewer = $generator->create_user();
+        $reviewer = $generator->create_user();
+        $roleid = $generator->create_role();
+        assign_capability('tool/courserating:reports', CAP_ALLOW, $roleid, \context_course::instance($course)->id, true);
+        $generator->enrol_user($reviewer->id, $course, $roleid);
+
+        $this->become($viewer);
+        $this->assertTrue($this->answer($course)['rating']['hasreviewslink'], 'Control: visible reviews, a plain viewer.');
+
+        $plugin->set_config(\tool_courserating\constants::SETTING_ALLOWREVIEWS, \tool_courserating\constants::ALLOWREVIEWS_HIDDEN);
+        $this->assertFalse($this->answer($course)['rating']['hasreviewslink'], 'Hidden reviews: not for a plain viewer.');
+        $this->become($reviewer);
+        $this->assertTrue($this->answer($course)['rating']['hasreviewslink'], 'Hidden reviews: the reports capability reads them.');
     }
 }

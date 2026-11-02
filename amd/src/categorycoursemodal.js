@@ -25,6 +25,10 @@
  * the facts, the programme), rendered from the same template, category_card_modal. A failed request keeps
  * the header and the buttons and says so in one sentence, with the course's page.
  *
+ * The content may carry tool_courserating's rating block, whose "Read reviews" is that plugin's own trigger: its
+ * document listener opens its reviews popup. This module only closes the dialogue on that press and lets the event
+ * through, so two dialogues never stack.
+ *
  * The request starts before the press where the reader shows intent: a pointer resting on the link, or
  * the focus reaching it, for INTENT_DELAY. Answers are kept per course for the page's life, so a second
  * opening asks nothing, and the press reuses an answer, or the request, it finds.
@@ -58,6 +62,8 @@ const SELECTORS = {
     sheet: '[data-region="dim-cmodal-sheet"]',
     content: '[data-region="dim-cmodal-content"]',
     actions: '[data-region="dim-cmodal-actions"]',
+    // The rating block's trigger of tool_courserating's reviews popup, which that plugin's own listener opens.
+    reviews: '[data-region="dim-cmodal-reviews"]',
     // Core's own title hook, on the title the cover carries: what core/modal's root is labelled by.
     title: '[data-region="title"]',
 };
@@ -396,6 +402,15 @@ const open = async(link, courseid) => {
     body.append(sheet);
     footer.append(actions);
     body.addEventListener('scroll', () => raise(body, footer), {passive: true});
+    /* The reviews are tool_courserating's popup, opened by that plugin's listener on the document from its own
+       trigger in the rating block: this dialogue closes on the way, so two dialogues never stack, and the press
+       goes on to the document untouched. destroy(), as core's own close button does under removeOnClose: hide()
+       alone would leave the closed dialogue in the page. */
+    root.addEventListener('click', (event) => {
+        if (event.target instanceof Element && event.target.closest(SELECTORS.reviews)) {
+            modal.destroy();
+        }
+    });
     await modal.show();
     // On screen: another card may be pressed once this one is closed, whatever its content is still doing.
     opening = false;
