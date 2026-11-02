@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **The showcase card's "More information" is a link, and its dialogue is fetched when it opens** (2026100562), stage
+- **The showcase card's "More information" is a link, and its dialogue is fetched when it opens** (2026100565), stage
   L2 of `docs/vitrine-ratings/PROPOSAL.md` (decisions V1, open at once, buttons on the card). The card no longer
   draws its details panel nor an inert copy of its dialogue: "More information" links to the card's own page (the
   course, the landing page or the enrolment page; no link where the card has none), which is the whole of it without
@@ -19,7 +19,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   and the rows answers lose `detailsid`, `excerpt`, `facts`, `learn` and `learnlabel`. The visitor's page no longer
   loads the dialogue's module. New string `category_modal_failed`. PHPUnit (a new service test), Jest, Behat (the
   dialogue scenario and a no-JavaScript link scenario), 12 new mutation gates, 3 retired.
-- **The category showcase card has no hover peek** (2026100561), stage L1 of `docs/vitrine-ratings/PROPOSAL.md`. The
+- **The category showcase card has no hover peek** (2026100564), stage L1 of `docs/vitrine-ratings/PROPOSAL.md`. The
   copy of the card's details panel that opened beside a card after 180 ms of hover is gone, with its timer, its
   styles and the `dim-card--peeking` class. The "More information" disclosure and the course dialogue are
   unchanged, and the cover film keeps its own 180 ms intent delay. Jest and the source tests no longer pin the
