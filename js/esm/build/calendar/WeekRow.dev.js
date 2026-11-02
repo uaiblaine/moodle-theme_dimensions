@@ -15,7 +15,8 @@ import { jsxDEV } from "react/jsx-dev-runtime";
 import Bar from "./Bar";
 import DayCell from "./DayCell";
 import { HEADER, SLOT, cellPlan } from "./layout";
-const WeekRow = /* @__PURE__ */ __name(({ week, layout, height, month, today, selected, counts, look, dots, onOpen }) => {
+const WeekRow = /* @__PURE__ */ __name((props) => {
+  const { week, layout, height, month, today, selected, counts, look, dots, onOpen, onGround, onCreate } = props;
   const used = dots ? 0 : layout.used;
   const rows = `${HEADER}px${used ? ` repeat(${used}, ${SLOT}px)` : ""} minmax(0, 1fr)`;
   return /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__week", role: "row", style: { gridTemplateRows: rows }, children: week.map((iso, column) => /* @__PURE__ */ jsxDEV(
@@ -42,22 +43,24 @@ const WeekRow = /* @__PURE__ */ __name(({ week, layout, height, month, today, se
         false,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/WeekRow.tsx",
-          lineNumber: 73,
+          lineNumber: 76,
           columnNumber: 25
         }
       )),
-      onOpen
+      onOpen,
+      onGround,
+      onCreate
     },
     iso,
     false,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/WeekRow.tsx",
-      lineNumber: 60,
+      lineNumber: 63,
       columnNumber: 17
     }
   )) }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/WeekRow.tsx",
-    lineNumber: 58,
+    lineNumber: 61,
     columnNumber: 9
   });
 }, "WeekRow");

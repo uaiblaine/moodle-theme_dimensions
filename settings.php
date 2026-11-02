@@ -342,30 +342,6 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
         $tab->add($setting);
 
-        // Setting: Core's month and day calendar views lead to the theme's calendar page. Default on, and read as on
-        // unless an explicit '0' was stored ({@see coreview::enabled()}), so no upgrade step writes it.
-        $name = 'theme_dimensions/' . coreview::SETTING;
-        $title = get_string('calendarcoreview', 'theme_dimensions', null, true);
-        $description = get_string('calendarcoreview_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
-        $tab->add($setting);
-
-        // Setting: Core's month and upcoming calendar blocks drawn with the theme's calendar. Default on, and read as
-        // on unless an explicit '0' was stored ({@see blocks::enabled()}), so no upgrade step writes it.
-        $name = 'theme_dimensions/' . blocks::SETTING;
-        $title = get_string('calendarblocks', 'theme_dimensions', null, true);
-        $description = get_string('calendarblocks_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
-        $tab->add($setting);
-
-        // Setting: The calendar page and its web service for visitors who are not logged in. Default off, and read as on
-        // only for an explicit '1' ({@see visitor::enabled()}): a page and an endpoint on the internet are opened on purpose.
-        $name = 'theme_dimensions/' . visitor::SETTING;
-        $title = get_string('calendarpublic', 'theme_dimensions', null, true);
-        $description = get_string('calendarpublic_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
-        $tab->add($setting);
-
         // Setting: The context bar on activity pages and the course page. Default on, and read as on unless an
         // explicit '0' was stored ({@see readingbar::context_enabled()}), so no upgrade step writes it.
         $name = 'theme_dimensions/' . readingbar::SETTING_CONTEXT;
@@ -707,6 +683,39 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             ['maxfiles' => 1, 'accepted_types' => 'web_image']
         );
         $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+
+        // Add tab to settings page.
+        $page->add($tab);
+
+        // Create calendar tab: the theme's calendar page, core's calendar sent to it, the blocks and the public calendar.
+        $tab = new admin_settingpage(
+            'theme_dimensions_calendar',
+            get_string('calendartab', 'theme_dimensions', null, true)
+        );
+
+        // Setting: Core's calendar and its iCal feed lead to the theme's calendar and its feed. Default on, and read as
+        // on unless an explicit '0' was stored ({@see coreview::enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . coreview::SETTING;
+        $title = get_string('calendarcoreview', 'theme_dimensions', null, true);
+        $description = get_string('calendarcoreview_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: Core's month and upcoming calendar blocks drawn with the theme's calendar. Default on, and read as
+        // on unless an explicit '0' was stored ({@see blocks::enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . blocks::SETTING;
+        $title = get_string('calendarblocks', 'theme_dimensions', null, true);
+        $description = get_string('calendarblocks_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: The calendar page and its web service for visitors who are not logged in. Default off, and read as on
+        // only for an explicit '1' ({@see visitor::enabled()}): a page and an endpoint on the internet are opened on purpose.
+        $name = 'theme_dimensions/' . visitor::SETTING;
+        $title = get_string('calendarpublic', 'theme_dimensions', null, true);
+        $description = get_string('calendarpublic_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
         $tab->add($setting);
 
         // Add tab to settings page.

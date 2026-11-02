@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - Tests for the decision that sends core's month and day views to the calendar page
+ * Theme Dimensions - Tests for the decision that sends core's calendar to the calendar page
  *
  * @package    theme_dimensions
  * @category   test
@@ -29,6 +29,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 defined('MOODLE_INTERNAL') || die();
+
+require_once(__DIR__ . '/fixture.php');
 
 /**
  * Every refusal of {@see coreview} beside the same request sent once its one reason is gone.
@@ -44,6 +46,8 @@ defined('MOODLE_INTERNAL') || die();
 #[CoversClass(coreview::class)]
 #[CoversClass(page::class)]
 final class coreview_test extends \advanced_testcase {
+    use fixture;
+
     /**
      * Forget the request parameters and the router a test built.
      *
@@ -52,6 +56,7 @@ final class coreview_test extends \advanced_testcase {
     protected function tearDown(): void {
         $_GET = [];
         \core\di::reset_container();
+        self::forget_calendar();
         parent::tearDown();
     }
 
@@ -62,8 +67,8 @@ final class coreview_test extends \advanced_testcase {
      * Decide a request the way the callback does, with every input a real, Gregorian, setting-on reader unless given.
      *
      * @param array $request The request's parameters.
-     * @param array $with Overrides: enabled, account (0 for a visitor or the guest), gregorian, session (a stdClass),
-     *     timezone, now.
+     * @param array $with Overrides: enabled, account (0 for a visitor or the guest), gregorian, timezone, now,
+     *     categoryof (a course's category the viewer may open; by default every course is in category 40 + its id).
      * @return \core\url|null
      */
     private function decide(array $request, array $with = []): ?\core\url {
@@ -72,9 +77,9 @@ final class coreview_test extends \advanced_testcase {
             $with['enabled'] ?? true,
             $with['account'] ?? self::ACCOUNT,
             $with['gregorian'] ?? true,
-            $with['session'] ?? new \stdClass(),
             new \DateTimeZone($with['timezone'] ?? 'UTC'),
-            $with['now'] ?? 1800000000
+            $with['now'] ?? 1800000000,
+            $with['categoryof'] ?? fn(int $courseid): int => 40 + $courseid
         );
     }
 
@@ -123,22 +128,16 @@ final class coreview_test extends \advanced_testcase {
     }
 
     /**
-     * The views that stay on core's page, each beside the same request sent once the one reason is gone.
+     * The requests that stay on core's page, each beside the same request sent once the one reason is gone.
      *
      * @return array
      */
     public static function kept_on_core(): array {
         $month = ['view' => 'month', 'cal_d' => 1, 'cal_m' => 3, 'cal_y' => 2027];
         return [
-            'upcoming' => [['view' => 'upcoming'] + $month, [], ['view' => 'month'] + $month],
-            'no view at all' => [['cal_d' => 1, 'cal_m' => 3, 'cal_y' => 2027], [], $month],
-            'the mini upcoming view' => [['view' => 'upcoming_mini'] + $month, [], $month],
-            'a course calendar' => [$month + ['course' => (int) SITEID + 1], [], $month + ['course' => (int) SITEID]],
-            'an explicit course 0, which core refuses' => [$month + ['course' => 0], [], $month],
             'a visitor or the guest' => [$month, ['account' => 0], $month],
             'another calendar type' => [$month, ['gregorian' => false], $month],
             'the setting off' => [$month, ['enabled' => false], $month],
-            'classic for this session' => [$month, ['session' => (object) [coreview::SESSION_FLAG => self::ACCOUNT]], $month],
         ];
     }
 
@@ -155,6 +154,123 @@ final class coreview_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->assertNull($this->decide($request, $with));
         $this->assertNotNull($this->decide($control), 'The same request, with its one reason gone.');
+    }
+
+    /**
+     * Every view of core's calendar is sent: the day view with its day's drawer, any other view to the month alone.
+     *
+     * @return array
+     */
+    public static function views(): array {
+        return [
+            'month' => ['month', false],
+            'day' => ['day', true],
+            'upcoming' => ['upcoming', false],
+            'the mini upcoming view' => ['upcoming_mini', false],
+            'no view at all' => [null, false],
+            'a view core does not know' => ['nonsense', false],
+        ];
+    }
+
+    /**
+     * A view is sent to the month of the day its address names; only the day view opens that day.
+     *
+     * @param string|null $view The view, or null for none.
+     * @param bool $opensday Whether the day's drawer opens.
+     * @return void
+     */
+    #[DataProvider('views')]
+    public function test_every_view_is_sent(?string $view, bool $opensday): void {
+        $this->resetAfterTest();
+        $request = ['cal_d' => 9, 'cal_m' => 3, 'cal_y' => 2027] + ($view === null ? [] : ['view' => $view]);
+        $target = $this->decide($request);
+        $this->assertNotNull($target);
+        $this->assertSame('2027-03', $target->param('month'));
+        $this->assertSame($opensday ? '2027-03-09' : null, $target->param('day'));
+    }
+
+    /**
+     * A course calendar is sent narrowed to the course's category; a course the viewer may not open names none.
+     *
+     * The category is asked of the closure only for an address naming a real course: the site's and 0 are no course.
+     *
+     * @return void
+     */
+    public function test_a_course_calendar_is_sent_with_its_category(): void {
+        $this->resetAfterTest();
+        $month = ['view' => 'month', 'cal_d' => 1, 'cal_m' => 3, 'cal_y' => 2027];
+        $asked = [];
+        $categoryof = function (int $courseid) use (&$asked): int {
+            $asked[] = $courseid;
+            return $courseid === 12 ? 5 : 0;
+        };
+
+        $course = $this->decide($month + ['course' => 12], ['categoryof' => $categoryof]);
+        $this->assertSame(['month' => '2027-03', 'categoryid' => '5'], $course->params());
+
+        $closed = $this->decide($month + ['course' => 13, 'category' => 8], ['categoryof' => $categoryof]);
+        $this->assertSame(['month' => '2027-03'], $closed->params(), 'A course the viewer may not open: the plain page.');
+
+        $site = $this->decide($month + ['course' => (int) SITEID, 'category' => 8], ['categoryof' => $categoryof]);
+        $this->assertSame('8', $site->param('categoryid'), 'The site course is no course: the category is read.');
+        $zero = $this->decide($month + ['course' => 0], ['categoryof' => $categoryof]);
+        $this->assertSame(['month' => '2027-03'], $zero->params(), 'An explicit 0, which core refuses: the plain page.');
+        $this->assertSame([12, 13], $asked, 'Only a real course is looked up.');
+    }
+
+    /**
+     * The category a course calendar is sent with is the course's, and only for an account that may open the course.
+     *
+     * @return void
+     */
+    public function test_the_course_category_is_read_for_an_account_that_may_open_the_course(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $course = $generator->create_course(['category' => $category->id]);
+        $student = $generator->create_user();
+        $stranger = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+
+        $this->setUser($student);
+        $this->assertSame((int) $category->id, coreview::course_category((int) $course->id));
+        $this->setUser($stranger);
+        $this->assertSame(0, coreview::course_category((int) $course->id), 'Not enrolled: no category.');
+        $this->assertSame(0, coreview::course_category((int) $course->id + 1000), 'No such course: no category.');
+        $this->setAdminUser();
+        $this->assertSame((int) $category->id, coreview::course_category((int) $course->id), 'Access without enrolment.');
+    }
+
+    /**
+     * A course's category is named only when the page would accept it as a scope.
+     *
+     * An unlisted category (local_unlistedcourses) and a hidden one (core) are refused by the page, so a course in
+     * either names no category; the listed control is named, and the admin, who sees both, gets both.
+     *
+     * @return void
+     */
+    public function test_a_withheld_or_hidden_category_is_not_named(): void {
+        $this->resetAfterTest();
+        $generator = self::getDataGenerator();
+        $listed = $generator->create_category();
+        $unlisted = $generator->create_category();
+        $hidden = $generator->create_category(['visible' => 0]);
+        $this->set_category_state((int) $unlisted->id, \local_unlistedcourses\category_discoverability::STATE_UNLISTED);
+        $student = $generator->create_user();
+        $courses = [];
+        foreach (['listed' => $listed, 'unlisted' => $unlisted, 'hidden' => $hidden] as $name => $category) {
+            $courses[$name] = (int) $generator->create_course(['category' => $category->id])->id;
+            $generator->enrol_user($student->id, $courses[$name], 'student');
+        }
+
+        $this->as_viewer($student);
+        $this->assertSame((int) $listed->id, coreview::course_category($courses['listed']), 'The control.');
+        $this->assertSame(0, coreview::course_category($courses['unlisted']), 'Withheld by local_unlistedcourses.');
+        $this->assertSame(0, coreview::course_category($courses['hidden']), 'Hidden by core.');
+
+        $this->setAdminUser();
+        self::forget_calendar();
+        $this->assertSame((int) $hidden->id, coreview::course_category($courses['hidden']), 'Core lets the admin see it.');
     }
 
     /**
@@ -179,43 +295,6 @@ final class coreview_test extends \advanced_testcase {
     }
 
     /**
-     * The classic marker sets the session flag and is never sent; the flag keeps the next requests on core's page.
-     *
-     * @return void
-     */
-    public function test_the_classic_marker_sets_the_flag_and_is_not_sent(): void {
-        $this->resetAfterTest();
-        $session = new \stdClass();
-        $request = ['view' => 'month', 'cal_d' => 1, 'cal_m' => 3, 'cal_y' => 2027];
-
-        $this->assertNull($this->decide($request + ['classic' => 1], ['session' => $session]));
-        $this->assertSame(self::ACCOUNT, $session->{coreview::SESSION_FLAG});
-        $this->assertNull($this->decide($request, ['session' => $session]), 'The arrows and the reload stay on core.');
-        $this->assertNotNull($this->decide($request), 'Without the marker, and without the flag, it is sent.');
-    }
-
-    /**
-     * The flag is the account's: a visitor's marker writes none, and a flag another account wrote keeps no one on core.
-     *
-     * The session survives a login, so a flag set before it must not decide for the account that logs in.
-     *
-     * @return void
-     */
-    public function test_the_flag_belongs_to_the_account_that_set_it(): void {
-        $this->resetAfterTest();
-        $request = ['view' => 'month', 'cal_d' => 1, 'cal_m' => 3, 'cal_y' => 2027];
-
-        $session = new \stdClass();
-        $this->assertNull($this->decide($request + ['classic' => 1], ['account' => 0, 'session' => $session]));
-        $this->assertObjectNotHasProperty(coreview::SESSION_FLAG, $session, 'A visitor\'s marker writes no flag.');
-
-        $session = (object) [coreview::SESSION_FLAG => self::ACCOUNT + 1];
-        $this->assertNotNull($this->decide($request, ['session' => $session]), 'Another account\'s flag does not count.');
-        $session = (object) [coreview::SESSION_FLAG => self::ACCOUNT];
-        $this->assertNull($this->decide($request, ['session' => $session]), 'This account\'s flag does.');
-    }
-
-    /**
      * The account the callback reads is the complement of the page's bounces: 0 for a visitor and the guest.
      *
      * @return void
@@ -229,49 +308,6 @@ final class coreview_test extends \advanced_testcase {
         $user = self::getDataGenerator()->create_user();
         $this->setUser($user);
         $this->assertSame((int) $user->id, coreview::account());
-    }
-
-    /**
-     * Every address the page spells for core's calendar carries the marker, and is never sent (the loop guard).
-     *
-     * @return void
-     */
-    public function test_the_pages_own_classic_address_is_never_sent(): void {
-        $this->resetAfterTest();
-        $session = new \stdClass();
-        $params = page::classic('2027-03')->params();
-        $this->assertSame('1', (string) $params['classic']);
-
-        $this->assertNull($this->decide($params, ['session' => $session]));
-        $this->assertSame(self::ACCOUNT, $session->{coreview::SESSION_FLAG});
-        unset($params['classic']);
-        $this->assertNotNull($this->decide($params), 'Without the marker the same address is sent.');
-    }
-
-    /**
-     * The page clears the flag once the reader is a real account on it; the guest and the visitor never reach that line.
-     *
-     * @return void
-     */
-    public function test_the_page_clears_the_flag(): void {
-        global $SESSION;
-        $this->resetAfterTest();
-
-        $this->setGuestUser();
-        $SESSION->{coreview::SESSION_FLAG} = self::ACCOUNT;
-        page::handle();
-        $this->assertSame(
-            self::ACCOUNT,
-            $SESSION->{coreview::SESSION_FLAG},
-            'The guest is sent to core\'s calendar, which keeps the choice.'
-        );
-
-        // Set after setUser(), which starts an empty session: the flag must be there when the page opens.
-        $user = self::getDataGenerator()->create_user();
-        $this->setUser($user);
-        $SESSION->{coreview::SESSION_FLAG} = (int) $user->id;
-        $this->assertNotNull(page::handle()->page);
-        $this->assertObjectNotHasProperty(coreview::SESSION_FLAG, $SESSION);
     }
 
     /**
@@ -370,13 +406,11 @@ final class coreview_test extends \advanced_testcase {
             'cal_m' => '3',
             'cal_y' => '2027',
             'category' => '5',
-            'classic' => '1',
         ];
         $params = coreview::request_params();
         $this->assertSame('day', $params['view']);
         $this->assertSame(9, $params['cal_d']);
         $this->assertSame(5, $params['category']);
-        $this->assertSame(1, $params['classic']);
         $this->assertSame(0, $params['time']);
         unset($_GET['course']);
         $this->assertSame((int) SITEID, coreview::request_params()['course'], 'An absent course is the site, as in core.');

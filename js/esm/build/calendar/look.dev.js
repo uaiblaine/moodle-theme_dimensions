@@ -27,6 +27,12 @@ const colourStyle = /* @__PURE__ */ __name((item, look) => {
   }
   return { "--dim-cal-tint": bg, "--dim-cal-edge": ink, "--dim-cal-ink": ink };
 }, "colourStyle");
+const coverStyle = /* @__PURE__ */ __name((course, look) => {
+  const category = look.categories.get(course.categoryid);
+  const bg = category ? hex(category.bg) : null;
+  const ink = category ? hex(category.ink) : null;
+  return bg && ink ? { "--dim-cal-cover-bg": bg, "--dim-cal-cover-ink": ink } : {};
+}, "coverStyle");
 const placeOf = /* @__PURE__ */ __name((item, look) => {
   if (item.location !== "") {
     return item.location;
@@ -52,6 +58,7 @@ const barLabel = /* @__PURE__ */ __name((item, first, last, look) => {
 export {
   barLabel,
   colourStyle,
+  coverStyle,
   keyClass,
   placeOf,
   whenOf

@@ -16,11 +16,11 @@
 /**
  * The public calendar's client: the visitor's shell of the calendar page (docs/calendar/PROPOSAL.md section 19).
  *
- * The same grid, chips, drawer and popover as the logged-in page, over the shared modules of calendar/, with what a
- * visitor has: two keys (the public categories' events, and the public event courses), nothing saved, no category,
- * no "More" filters and no link to core's calendar, which asks a visitor to log in. Mounted by core's react_autoinit
- * on the node calendar_page.mustache draws in its visitor mode; the props carry the first answer, so the first paint
- * asks for nothing.
+ * The same grid, event types' dropdown, drawer and popover as the logged-in page, over the shared modules of
+ * calendar/, with what a visitor has: two keys (the public categories' events, and the public event courses), nothing
+ * saved, no category and no "More" filters. "Clear filters" is drawn while a key is off and turns both back on.
+ * Mounted by core's react_autoinit on the node calendar_page.mustache draws in its visitor mode; the props carry the
+ * first answer, so the first paint asks for nothing.
  *
  * - One service, {@see METHOD}, answered without a session: one call site ({@see ask()}), posted with login not
  *   required and no cachekey (a cachekey would turn it into a GET answered with ninety days of public caching), with
@@ -53,8 +53,8 @@ import {parse} from '../daterange/calendar';
 import DayDrawer from './DayDrawer';
 import {gridWeeks, zone as zoneOf} from './days';
 import EventPopover from './EventPopover';
+import EventTypes, {ClearFilters} from './EventTypes';
 import {writeAddress} from './history';
-import KeyChips from './KeyChips';
 import {dayDots, place} from './layout';
 import type {Look} from './look';
 import {DAY_PARAM, emptyAnswer, isMonth, withDay} from './model';
@@ -374,15 +374,42 @@ const PublicCalendar = (props: PublicProps) => {
     };
 
     /**
-     * Switch a key on or off: show it, and replace the address.
+     * Show the keys on, and replace the address; the same keys ask nothing.
      *
-     * @param {string} key The key.
+     * @param {Array} keys The keys on.
      * @returns {void}
      */
-    const toggle = (key: Key): void => {
-        const next = on.includes(key) ? on.filter((other) => other !== key) : visitorKeys([...on, key]);
+    const keep = (keys: readonly Key[]): void => {
+        const next = visitorKeys(keys);
+        if (next.length === on.length && next.every((key) => on.includes(key))) {
+            return;
+        }
         setOn(next);
         request(shown.span, next, 'replace', selected, false);
+    };
+
+    /**
+     * A press on a day's ground opens the day, as its button does; the second click of a double-click opens nothing.
+     *
+     * @param {string} iso The day.
+     * @param {number|null} hour The hour row pressed, unused: a visitor creates nothing.
+     * @param {number} clicks The press's click count.
+     * @returns {void}
+     */
+    const pressGround = (iso: string, hour: number | null, clicks: number): void => {
+        if (clicks <= 1) {
+            openDay(iso);
+        }
+    };
+
+    /**
+     * Turn every key back on, the focus on the event types' button.
+     *
+     * @returns {void}
+     */
+    const clear = (): void => {
+        root.current?.querySelector<HTMLElement>('[data-action="dim-cal-types"]')?.focus();
+        keep(VISITOR_KEYS);
     };
 
     /**
@@ -580,13 +607,15 @@ const PublicCalendar = (props: PublicProps) => {
                 <ViewSwitch strings={strings} view={shown.span.view} onView={toView} />
             </div>
             <div className="dim-cal__toolbar">
-                <KeyChips
+                <EventTypes
                     strings={strings}
                     keys={VISITOR_KEYS}
                     off={VISITOR_KEYS.filter((key) => !on.includes(key))}
                     counts={counts}
-                    onToggle={toggle}
+                    onChange={(off: Key[]) => keep(VISITOR_KEYS.filter((key) => !off.includes(key)))}
                 />
+                <span className="dim-cal__spacer"></span>
+                <ClearFilters shown={on.length !== VISITOR_KEYS.length} label={strings.calendar_clearfilters} onClear={clear} />
             </div>
             <div
                 className={`dim-cal__body${drawn !== null && !phone ? ' dim-cal__body--drawer' : ''}`}
@@ -606,6 +635,7 @@ const PublicCalendar = (props: PublicProps) => {
                         onSelect={selectDay}
                         onWeek={(iso) => toDay(iso, true)}
                         onOpen={openDay}
+                        onGround={pressGround}
                         onWidth={(width) => setPhone(width < PHONE)}
                     />
                 ) : (
@@ -622,6 +652,7 @@ const PublicCalendar = (props: PublicProps) => {
                         onSelect={selectDay}
                         onMonth={(iso) => toDay(iso, true)}
                         onOpen={openDay}
+                        onGround={pressGround}
                         onWidth={(width) => setPhone(width < PHONE)}
                     />
                 )}
@@ -631,7 +662,6 @@ const PublicCalendar = (props: PublicProps) => {
                         iso={drawn}
                         placed={placed}
                         variant={phone ? 'sheet' : 'drawer'}
-                        calendar={null}
                         focusing={dayfocus}
                         onClose={closeDay}
                     />

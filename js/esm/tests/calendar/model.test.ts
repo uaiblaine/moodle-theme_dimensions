@@ -22,7 +22,8 @@
 
 import {gridWeeks, monthAfter} from '../../src/calendar/days';
 import {
-    DEFAULT_STATE, address, dayHref, emptyAnswer, itemHref, monthHref, normalise, primaryOf, query, rangeArgs, readAddress, safeHref,
+    DEFAULT_STATE, address, cleared, emptyAnswer, filtered, itemHref, normalise, opens, primaryOf, query, rangeArgs, readAddress,
+    safeHref,
     withDay,
 } from '../../src/calendar/model';
 import type {Course, State} from '../../src/calendar/model';
@@ -89,16 +90,13 @@ describe('the seams', () => {
         expect(itemHref(item({id: 1, url: '', courseid: 9}), courses, 'https://example.com/')).toBe('https://example.com/');
     });
 
-    it('a day opens core\'s day view by its day, month and year, with no timestamp', () => {
-        const url = new URL(dayHref('http://localhost/calendar/view.php', '2026-11-07'));
-        expect(Object.fromEntries(url.searchParams)).toEqual({view: 'day', 'cal_d': '7', 'cal_m': '11', 'cal_y': '2026', classic: '1'});
-        expect(new URL(monthHref('http://localhost/calendar/view.php', '2026-02')).searchParams.get('cal_m')).toBe('2');
-    });
-
-    it('both classic addresses carry the marker that keeps core\'s calendar from sending the reader back', () => {
-        const month = new URL(monthHref('http://localhost/calendar/view.php', '2026-02'));
-        expect(Object.fromEntries(month.searchParams)).toEqual({view: 'month', 'cal_d': '1', 'cal_m': '2', 'cal_y': '2026', classic: '1'});
-        expect(new URL(dayHref('http://localhost/calendar/view.php', '2026-11-07')).searchParams.get('classic')).toBe('1');
+    it('an item opens a page of its own only with its own address or a course of the answer', () => {
+        const courses = new Map([[4, {url: 'https://example.com/course/view.php?id=4'} as never]]);
+        expect(opens(item({id: 1, url: 'https://example.com/mod'}), courses)).toBe(true);
+        expect(opens(item({id: 1, url: '', courseid: 4}), courses)).toBe(true);
+        expect(opens(item({id: 1, url: '', courseid: 0}), courses)).toBe(false);
+        expect(opens(item({id: 1, url: '', courseid: 1}), courses)).toBe(false);
+        expect(opens(item({id: 1, url: 'javascript:alert(1)', courseid: 9}), courses)).toBe(false);
     });
 });
 
@@ -136,6 +134,15 @@ describe('the popover\'s primary action', () => {
         });
     });
 
+    it('is none for a personal event and a site event: never the site\'s home', () => {
+        const personal = item({id: 6, source: 'core', key: 'user', courseid: 0, url: ''});
+        expect(primaryOf(personal, new Map(), HOME)).toEqual({kind: 'none'});
+        const site = item({id: 7, source: 'core', key: 'site', courseid: 1, url: ''});
+        expect(primaryOf(site, new Map([[4, course('')]]), HOME)).toEqual({kind: 'none'});
+        const own = item({id: 8, source: 'core', key: 'user', courseid: 0, url: 'https://example.com/mod'});
+        expect(primaryOf(own, new Map(), HOME)).toEqual({kind: 'open', url: 'https://example.com/mod'});
+    });
+
     it('is "Open" for an event course the viewer may not join, and for a course event that names a join', () => {
         const entry = item({id: 4, source: 'course', key: 'course', courseid: 4, url: 'https://example.com/landing/4'});
         expect(primaryOf(entry, new Map([[4, course('')]]), HOME)).toEqual({kind: 'open', url: 'https://example.com/landing/4'});
@@ -159,6 +166,28 @@ describe('an address from the answer', () => {
             action: {name: 'Add submission', url: bad, itemcount: 1, actionable: true}});
         expect(primaryOf(action, new Map(), 'https://example.com/')).toEqual({kind: 'open', url: 'https://example.com/mod'});
         expect(itemHref(item({id: 2, url: bad}), new Map(), 'https://example.com/')).toBe('https://example.com/');
+    });
+});
+
+describe('the filters applied', () => {
+    it('are any key off, any "More filters" value and any category scope but the whole calendar', () => {
+        expect(filtered(DEFAULT_STATE)).toBe(false);
+        expect(filtered({...DEFAULT_STATE, colour: 'category'})).toBe(false);
+        const each: Array<Partial<typeof DEFAULT_STATE>> = [
+            {off: ['site']}, {model: [1]}, {modality: [2]}, {city: 'Recife'}, {actiononly: true}, {categoryid: 5},
+            {recursive: false},
+        ];
+        each.forEach((fields) => expect(filtered({...DEFAULT_STATE, ...fields})).toBe(true));
+    });
+
+    it('are put back in one change, the colouring kept', () => {
+        const busy = {
+            ...DEFAULT_STATE, off: ['site', 'group'] as typeof DEFAULT_STATE.off, model: [1], modality: [2], city: 'Recife',
+            actiononly: true, categoryid: 5, recursive: false, colour: 'category' as const,
+        };
+        const back = normalise({...busy, ...cleared()});
+        expect(filtered(back)).toBe(false);
+        expect(back.colour).toBe('category');
     });
 });
 

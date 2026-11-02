@@ -18,11 +18,16 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  *   ticket is taken per opening and checked when the answer comes, so an answer for an item no longer shown, or
  *   for a popover already closed, is dropped; a Pending token (theme_dimensions/calendar:description) spans it.
  *   The visitor's page hands no `describe` and a `plain` text instead (decision V2), drawn as text.
- * - The actions: the primary is model.ts primaryOf()'s; "Open" stays beside it when the primary is something else;
- *   the course's page comes third.
+ * - The actions: the primary is model.ts primaryOf()'s; "Open" stays beside it when the primary is something else
+ *   and the item has a page of its own; the course's page comes third. An item with no page of its own (a personal
+ *   event, a site event) has neither: the popover never leads to the site's home (PROPOSAL.md section 27.2).
+ * - An event course (source `course`) opens with its cover: the course's image, an <img> with an empty alt (never a
+ *   url in a style), else its category's branding pair (look.ts coverStyle()), else its key's colours, and a date tile
+ *   (the month's abbreviation and the day), hidden from the screen reader, which reads the date in the facts.
  *
  * The position is measured when the popover opens, never on the page's mount: the opener's box and the popover's
- * own, read once in a layout effect, and {@see anchor()} keeps it inside the viewport.
+ * own, and the fixed navbar's bottom, read once in a layout effect, and {@see anchor()} keeps it inside the viewport
+ * below the navbar.
  *
  * @module     theme_dimensions/calendar/EventPopover
  * @copyright  2026 Anderson Blaine
@@ -31,26 +36,34 @@ import { jsxDEV } from "react/jsx-dev-runtime";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Pending from "@moodle/lms/core/pending";
 import { say } from "../daterange/calendar";
-import { keyLabel } from "./KeyChips";
-import { colourStyle, keyClass, placeOf, whenOf } from "./look";
-import { itemHref, primaryOf, safeHref } from "./model";
+import { keyLabel } from "./EventTypes";
+import { colourStyle, coverStyle, keyClass, placeOf, whenOf } from "./look";
+import { itemHref, opens, primaryOf, safeHref } from "./model";
 import { isAllDay } from "./overlap";
 import { fill } from "./strings";
 const TITLE = "dim-cal-pop-title";
 const GAP = 8;
 const DAY = { weekday: "long", day: "numeric", month: "long" };
 const SPAN_DAY = { day: "numeric", month: "long" };
-const anchor = /* @__PURE__ */ __name((opener, size, viewport) => {
+const TILE_MONTH = { month: "short" };
+const anchor = /* @__PURE__ */ __name((opener, size, viewport, reserved = 0) => {
+  const least = reserved + GAP;
+  const most = viewport.height - GAP;
   const below = opener.bottom + GAP;
   const above = opener.top - GAP - size.height;
   let top = below;
-  if (below + size.height > viewport.height - GAP) {
-    top = above >= GAP || opener.top > viewport.height - opener.bottom ? above : below;
+  if (below + size.height > most) {
+    top = above >= least || opener.top - GAP - least > most - below ? above : below;
   }
-  top = Math.max(GAP, Math.min(top, viewport.height - GAP - size.height));
+  const height = Math.min(size.height, most - least);
+  top = Math.max(least, Math.min(top, most - height));
   const left = Math.max(GAP, Math.min(opener.left, viewport.width - GAP - size.width));
-  return { top, left };
+  return size.height > height ? { top, left, maxHeight: height } : { top, left };
 }, "anchor");
+const navbarBottom = /* @__PURE__ */ __name(() => {
+  const bar = document.querySelector(".navbar.fixed-top");
+  return bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0;
+}, "navbarBottom");
 const whenText = /* @__PURE__ */ __name((entry, look) => {
   if (entry.first !== entry.last) {
     return fill(look.strings.calendar_span, {
@@ -78,6 +91,51 @@ const primaryLabel = /* @__PURE__ */ __name((primary, look) => {
       return look.strings.calendar_open;
   }
 }, "primaryLabel");
+const cover = /* @__PURE__ */ __name((entry, look) => {
+  const course = entry.item.source === "course" ? look.courses.get(entry.item.courseid) : void 0;
+  if (!course) {
+    return null;
+  }
+  const image = safeHref(course.image, "");
+  return /* @__PURE__ */ jsxDEV(
+    "div",
+    {
+      className: `dim-cal__popcover ${keyClass(entry.item)}`,
+      style: coverStyle(course, look),
+      "data-region": "dim-cal-popcover",
+      children: [
+        image !== "" ? /* @__PURE__ */ jsxDEV("img", { className: "dim-cal__popcoverimg", src: image, alt: "" }, void 0, false, {
+          fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+          lineNumber: 202,
+          columnNumber: 29
+        }) : null,
+        /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__poptile", "aria-hidden": "true", children: [
+          /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__poptilemonth", children: say(entry.first, TILE_MONTH, look.language) }, void 0, false, {
+            fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+            lineNumber: 204,
+            columnNumber: 17
+          }),
+          /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__poptileday", children: Number(entry.first.slice(8, 10)) }, void 0, false, {
+            fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+            lineNumber: 205,
+            columnNumber: 17
+          })
+        ] }, void 0, true, {
+          fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+          lineNumber: 203,
+          columnNumber: 13
+        })
+      ]
+    },
+    void 0,
+    true,
+    {
+      fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+      lineNumber: 197,
+      columnNumber: 9
+    }
+  );
+}, "cover");
 const factsOf = /* @__PURE__ */ __name((item, look, modalities) => {
   const course = look.courses.get(item.courseid) || null;
   const eventcourse = course !== null && item.source === "course";
@@ -88,6 +146,33 @@ const factsOf = /* @__PURE__ */ __name((item, look, modalities) => {
     participants: eventcourse ? course.participants : null
   };
 }, "factsOf");
+const PopActions = /* @__PURE__ */ __name(({ item, course, look, actions }) => {
+  const primary = primaryOf(item, look.courses, look.home);
+  const open = opens(item, look.courses) ? itemHref(item, look.courses, look.home) : "";
+  const coursepage = course && course.url !== course.landingurl ? safeHref(course.url, "") : "";
+  return /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__popactions", children: [
+    primary.kind !== "none" ? /* @__PURE__ */ jsxDEV("a", { className: "btn btn-primary", href: primary.url, "data-action": `dim-cal-${primary.kind}`, children: primaryLabel(primary, look) }, void 0, false, {
+      fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+      lineNumber: 248,
+      columnNumber: 17
+    }) : null,
+    primary.kind !== "open" && open !== "" ? /* @__PURE__ */ jsxDEV("a", { className: "btn btn-secondary", href: open, "data-action": "dim-cal-open", children: look.strings.calendar_open }, void 0, false, {
+      fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+      lineNumber: 253,
+      columnNumber: 17
+    }) : null,
+    coursepage !== "" ? /* @__PURE__ */ jsxDEV("a", { className: "btn btn-link", href: coursepage, "data-action": "dim-cal-course", children: look.strings.calendar_coursepage }, void 0, false, {
+      fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+      lineNumber: 256,
+      columnNumber: 17
+    }) : null,
+    actions
+  ] }, void 0, true, {
+    fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
+    lineNumber: 246,
+    columnNumber: 9
+  });
+}, "PopActions");
 const EventPopover = /* @__PURE__ */ __name((props) => {
   const { look, entry, overlaps, opener, sheet, modalities, describe, plain, actions, onClose } = props;
   const { item } = entry;
@@ -122,7 +207,12 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
     }
     const box = opener.getBoundingClientRect();
     const own = dialog.current.getBoundingClientRect();
-    setAt(anchor(box, { width: own.width, height: own.height }, { width: window.innerWidth, height: window.innerHeight }));
+    setAt(anchor(
+      box,
+      { width: own.width, height: own.height },
+      { width: window.innerWidth, height: window.innerHeight },
+      navbarBottom()
+    ));
   }, [item.source, item.id, opener, sheet]);
   useLayoutEffect(() => {
     const key = `${item.source}-${item.id}`;
@@ -158,12 +248,14 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
     }
   }, "onKeyDown");
   const { place, modality, course, participants } = factsOf(item, look, modalities);
-  const primary = primaryOf(item, look.courses, look.home);
-  const open = itemHref(item, look.courses, look.home);
   const style = { ...colourStyle(item, look) };
   if (at) {
     style.top = `${at.top}px`;
     style.left = `${at.left}px`;
+    if (at.maxHeight !== void 0) {
+      style.maxHeight = `${at.maxHeight}px`;
+      style.overflowY = "auto";
+    }
   }
   return /* @__PURE__ */ jsxDEV(
     "div",
@@ -178,17 +270,18 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
       style,
       onKeyDown,
       children: [
+        cover(entry, look),
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__pophead", children: [
           /* @__PURE__ */ jsxDEV("span", { className: `dim-cal__kind ${keyClass(item)}`, children: [
             /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__swatch", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-              lineNumber: 301,
+              lineNumber: 398,
               columnNumber: 21
             }),
             keyLabel(look.strings, item.key)
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 300,
+            lineNumber: 397,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(
@@ -201,7 +294,7 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
               onClick: () => onClose(true),
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-xmark", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-                lineNumber: 311,
+                lineNumber: 408,
                 columnNumber: 21
               })
             },
@@ -209,91 +302,91 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-              lineNumber: 304,
+              lineNumber: 401,
               columnNumber: 17
             }
           )
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 299,
+          lineNumber: 396,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("h2", { ref: heading, className: "dim-cal__poptitle", id: TITLE, tabIndex: -1, children: item.name }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 314,
+          lineNumber: 411,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("dl", { className: "dim-cal__popfacts", children: [
           /* @__PURE__ */ jsxDEV("dt", { children: look.strings.calendar_when }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 316,
+            lineNumber: 413,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("dd", { children: whenText(entry, look) }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 317,
+            lineNumber: 414,
             columnNumber: 17
           }),
           place !== "" ? /* @__PURE__ */ jsxDEV("dt", { children: look.strings.calendar_place }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 318,
+            lineNumber: 415,
             columnNumber: 33
           }) : null,
           place !== "" ? /* @__PURE__ */ jsxDEV("dd", { children: place }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 319,
+            lineNumber: 416,
             columnNumber: 33
           }) : null,
           modality !== "" ? /* @__PURE__ */ jsxDEV("dt", { children: look.strings.calendar_modality }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 320,
+            lineNumber: 417,
             columnNumber: 36
           }) : null,
           modality !== "" ? /* @__PURE__ */ jsxDEV("dd", { children: modality }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 321,
+            lineNumber: 418,
             columnNumber: 36
           }) : null,
           course ? /* @__PURE__ */ jsxDEV("dt", { children: look.strings.calendar_course }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 322,
+            lineNumber: 419,
             columnNumber: 27
           }) : null,
           course ? /* @__PURE__ */ jsxDEV("dd", { children: course.fullname }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 323,
+            lineNumber: 420,
             columnNumber: 27
           }) : null
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 315,
+          lineNumber: 412,
           columnNumber: 13
         }),
         participants !== null ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__popnote", children: participants === 1 ? look.strings.calendar_participants_one : fill(look.strings.calendar_participants_many, participants) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 326,
+          lineNumber: 423,
           columnNumber: 17
         }) : null,
         overlaps.length ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__overlapwarn", "data-region": "dim-cal-overlap", children: [
           /* @__PURE__ */ jsxDEV("i", { className: "fa fa-triangle-exclamation", "aria-hidden": "true" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 333,
+            lineNumber: 430,
             columnNumber: 21
           }),
           fill(look.strings.calendar_overlaps, overlaps.map((other) => other.item.name).join(", "))
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 332,
+          lineNumber: 429,
           columnNumber: 17
         }) : null,
         text === null ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__poploading", children: look.strings.calendar_descriptionloading }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 337,
+          lineNumber: 434,
           columnNumber: 30
         }) : null,
         plain !== "" ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__popdesc dim-cal__popdesc--text", "data-region": "dim-cal-description", children: plain }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 339,
+          lineNumber: 436,
           columnNumber: 17
         }) : null,
         text ? (
@@ -311,31 +404,14 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-              lineNumber: 345,
+              lineNumber: 442,
               columnNumber: 17
             }
           )
         ) : null,
-        /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__popactions", children: [
-          /* @__PURE__ */ jsxDEV("a", { className: "btn btn-primary", href: primary.url, "data-action": `dim-cal-${primary.kind}`, children: primaryLabel(primary, look) }, void 0, false, {
-            fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 352,
-            columnNumber: 17
-          }),
-          primary.kind !== "open" ? /* @__PURE__ */ jsxDEV("a", { className: "btn btn-secondary", href: open, "data-action": "dim-cal-open", children: look.strings.calendar_open }, void 0, false, {
-            fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 356,
-            columnNumber: 21
-          }) : null,
-          course && course.url !== course.landingurl ? /* @__PURE__ */ jsxDEV("a", { className: "btn btn-link", href: safeHref(course.url, look.home), "data-action": "dim-cal-course", children: look.strings.calendar_coursepage }, void 0, false, {
-            fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-            lineNumber: 359,
-            columnNumber: 21
-          }) : null,
-          actions
-        ] }, void 0, true, {
+        /* @__PURE__ */ jsxDEV(PopActions, { item, course, look, actions }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 351,
+          lineNumber: 448,
           columnNumber: 13
         })
       ]
@@ -344,7 +420,7 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-      lineNumber: 288,
+      lineNumber: 384,
       columnNumber: 9
     }
   );

@@ -5,6 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The calendar after the owner's review of 2026-11-02** (2026100567), round R1 of `docs/calendar/PROPOSAL.md` (sections 27-28).
+  The "Classic calendar" links are gone, with the `classic=1` marker and its session flag: every view of core's
+  `calendar/view.php` now leads a real account to the theme's page (the day view to that day's drawer, a course
+  calendar to the course's category when the reader may open the course). Core's iCal feed
+  (`calendar/export_execute.php`) is answered by the theme's copy of it (`local\calendar\ical`, tracked by a whole-file
+  snapshot) under the same setting, which leaves out the events of the categories the page withholds. The page takes
+  the whole width; weekends carry a hatch; the day drawer holds still beside the grid under the navbar (it sat above
+  the viewport when a day of the lower weeks was opened); the event types are one dropdown of checkboxes; "Clear
+  filters" moved to the toolbar and resets the types, the filters and the category scope; a click anywhere on a day
+  opens it (the day under the mouse is marked), and a double-click on a day or an hour opens core's form where "New
+  event" is offered; a personal event's popover offers no "Open" to the
+  Dashboard; an event course's popover opens with its cover and a date tile. The three calendar settings moved to
+  their own "Calendar" tab. New strings `calendar_eventtypes*`, `calendar_selectall`, `calendartab`; strings
+  `calendar_classic` and `calendar_classicday` removed. PHPUnit, Jest, Behat and new mutation gates (R1 block).
 - **Behat beside tool_mulib**: `tests/behat/blacklist.json` keeps tool_mulib's file upload context out of the
   theme's suite, whose upload steps it would define a second time (every scenario failed before its first step on a
   site with tool_mulib 5.3 installed). Tests only; no version change.

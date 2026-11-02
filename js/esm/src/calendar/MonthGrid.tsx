@@ -24,6 +24,9 @@
  * - PageUp and PageDown go to the previous and next month, on the same day number or the month's last;
  * - Enter and Space press the day button, which opens the day: the drawer beside the grid, or on a phone the sheet
  *   under it (Calendar.tsx);
+ * - A click anywhere on a day but its controls (onGround handed) opens it as its button does, a convenience for the
+ *   pointer: the button stays the keyboard's way in. A double-click there opens core's form for a new event on that
+ *   day while the page offers "New event" (onCreate handed); the keyboard's way is the drawer's "New event";
  * - F2 on a day that has items moves into them: the first item of the day takes the focus, Tab and Shift+Tab cycle
  *   the day's items (its bars, its own items, its "+N"), Escape goes back to the day. The items are links and
  *   buttons out of the Tab order, so Tab from a day leaves the grid as from any other control.
@@ -45,6 +48,7 @@ import {WEEK, say, shift, shiftMonth} from '../daterange/calendar';
 import {ROW_DEFAULT, barSlots, dayCounts, weekLayout} from './layout';
 import type {Dots, Placed} from './layout';
 import type {Look} from './look';
+import {isWeekend} from './days';
 import WeekRow from './WeekRow';
 
 /** What the grid is handed. */
@@ -61,6 +65,8 @@ type MonthGridProps = {
     onSelect: (iso: string) => void,
     onMonth: (iso: string) => void,
     onOpen: (iso: string) => void,
+    onGround?: (iso: string, hour: number | null, clicks: number) => void,
+    onCreate?: (iso: string, hour: number | null) => void,
     onWidth: (width: number) => void,
 };
 
@@ -226,7 +232,11 @@ const MonthGrid = (props: MonthGridProps) => {
         >
             <div className="dim-cal__weekdays" role="row">
                 {weeks[0].map((iso) => (
-                    <div key={iso} className="dim-cal__weekday" role="columnheader">{say(iso, WEEKDAY, look.language)}</div>
+                    <div
+                        key={iso}
+                        className={`dim-cal__weekday${isWeekend(iso) ? ' dim-cal__weekday--weekend' : ''}`}
+                        role="columnheader"
+                    >{say(iso, WEEKDAY, look.language)}</div>
                 ))}
             </div>
             <div ref={rows} className="dim-cal__weeks" role="rowgroup">
@@ -243,6 +253,8 @@ const MonthGrid = (props: MonthGridProps) => {
                         look={look}
                         dots={dots}
                         onOpen={onOpen}
+                        onGround={props.onGround}
+                        onCreate={props.onCreate}
                     />
                 ))}
             </div>

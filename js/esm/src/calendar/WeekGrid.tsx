@@ -28,6 +28,9 @@
  *   day's items, ArrowLeft and ArrowRight the neighbouring day's nearest in time, Escape goes back to the header, and
  *   Enter or Space is left to the shell's delegated listener, which opens the popover (weeks.ts moveInWeek()).
  * - Every item is a link to its own page marked data-cal-pop, as the month's are, out of the Tab order.
+ * - Saturday and Sunday (days.ts isWeekend()) carry the weekend's hatch, in the header, the strip and the hour body.
+ * - While the page offers "New event" (onCreate handed), a double-click on a day's ground in the strip opens core's form
+ *   on that day, and on an hour row of the body (an element carrying data-hour, so no layout is read) at that hour.
  * - The "now" line marks today's column at the server's time plus the minutes since the paint (the browser's clock is
  *   read only as time elapsed), aria-hidden.
  * - ONE ResizeObserver, on the frame the week shares with the drawer, never read on the mount path: below
@@ -39,10 +42,11 @@
  */
 
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import type {CSSProperties, KeyboardEvent, ReactNode} from 'react';
+import type {CSSProperties, KeyboardEvent, MouseEvent, ReactNode} from 'react';
 import {say} from '../daterange/calendar';
 import Bar from './Bar';
-import {dayLabel} from './DayCell';
+import {dayLabel, hoverMark, isGround} from './DayCell';
+import {isWeekend} from './days';
 import {dayCounts} from './layout';
 import type {Placed} from './layout';
 import {colourStyle, keyClass, whenOf} from './look';
@@ -70,6 +74,8 @@ type WeekGridProps = {
     onSelect: (iso: string) => void,
     onWeek: (iso: string) => void,
     onOpen: (iso: string) => void,
+    onGround?: (iso: string, hour: number | null, clicks: number) => void,
+    onCreate?: (iso: string, hour: number | null) => void,
     onWidth: (width: number) => void,
 };
 
@@ -94,6 +100,16 @@ const hourLabels = (language: string | undefined): string[] => {
 };
 
 /**
+ * The hours of a window, from its first to the one before its end.
+ *
+ * @param {number} from The first hour.
+ * @param {number} to The hour after the last.
+ * @returns {Array} The hours.
+ */
+export const hours = (from: number, to: number): number[] =>
+    Array.from({length: Math.max(to - from, 0)}, (unused, at) => from + at);
+
+/**
  * What the agenda and the strip say of a whole-day item's time: "All day", or its span.
  *
  * @param {object} entry The placed item.
@@ -112,6 +128,7 @@ const alldayWhen = (entry: Placed, look: Look): string => (entry.first === entry
  */
 const WeekGrid = (props: WeekGridProps) => {
     const {look, days, placed, today, now, selected, focusing, captionid, phone, onSelect, onWeek, onOpen} = props;
+    const {onGround, onCreate} = props;
     const [elapsed, setElapsed] = useState<number>(0);
     const root = useRef<HTMLDivElement | null>(null);
     const cursor = useRef<Cursor | null>(null);
@@ -230,6 +247,63 @@ const WeekGrid = (props: WeekGridProps) => {
         event.preventDefault();
         go(next);
     };
+
+    /**
+     * The hour row a press landed on, or null outside the hour body's rows.
+     *
+     * @param {object} event The press.
+     * @returns {number|null}
+     */
+    const hourOf = (event: MouseEvent): number | null => {
+        const slot = (event.target as Element).closest<HTMLElement>('[data-hour]');
+        return slot ? Number(slot.dataset.hour) : null;
+    };
+
+    /**
+     * A click in the strip or the hour body, off every item: the day opens, as its header does.
+     *
+     * @param {object} event The click.
+     * @param {string} iso The day.
+     * @returns {void}
+     */
+    const onClick = (event: MouseEvent, iso: string): void => {
+        if (onGround && isGround(event.target)) {
+            onGround(iso, hourOf(event), event.detail);
+        }
+    };
+
+    /**
+     * A double-click in the strip or the hour body: core's form on the day, at the hour row's hour when it is one.
+     *
+     * @param {object} event The double-click.
+     * @param {string} iso The day.
+     * @returns {void}
+     */
+    const onDoubleClick = (event: MouseEvent, iso: string): void => {
+        if (!onCreate || !isGround(event.target)) {
+            return;
+        }
+        event.preventDefault();
+        onCreate(iso, hourOf(event));
+    };
+
+    /**
+     * The pointer handlers a day's part of the strip or the body carries while a press opens the day.
+     *
+     * @param {string} iso The day.
+     * @returns {object} The handlers.
+     */
+    const pressing = (iso: string) => (onGround ? {
+        /**
+         * A click on the day's part opens the day.
+         *
+         * @param {object} event The click.
+         * @returns {void}
+         */
+        onClick: (event: MouseEvent): void => onClick(event, iso),
+        onPointerEnter: hoverMark(true),
+        onPointerLeave: hoverMark(false),
+    } : {});
 
     /**
      * A day's header button, in the grid or the agenda.
@@ -373,7 +447,11 @@ const WeekGrid = (props: WeekGridProps) => {
                 <div className="dim-cal__weekrow dim-cal__weekheads" role="row">
                     <div className="dim-cal__weekgutter" role="presentation"></div>
                     {days.map((iso) => (
-                        <div key={iso} className="dim-cal__weekheadcell" role="columnheader">
+                        <div
+                            key={iso}
+                            className={`dim-cal__weekheadcell${isWeekend(iso) ? ' dim-cal__weekheadcell--weekend' : ''}`}
+                            role="columnheader"
+                        >
                             {header(iso, true, (
                                 <>
                                     <span className="dim-cal__weekdayname" aria-hidden="true">
@@ -401,9 +479,12 @@ const WeekGrid = (props: WeekGridProps) => {
                                 role="gridcell"
                                 data-day={iso}
                                 data-cal-drop={look.movable ? iso : undefined}
+                                {...pressing(iso)}
+                                onDoubleClick={onCreate ? (event) => onDoubleClick(event, iso) : undefined}
                             >
                                 <div
-                                    className={`dim-cal__ground${iso === selected ? ' dim-cal__ground--selected' : ''}`}
+                                    className={`dim-cal__ground${isWeekend(iso) ? ' dim-cal__ground--weekend' : ''}`
+                                        + `${iso === selected ? ' dim-cal__ground--selected' : ''}`}
                                     style={{gridColumn: column + 1, gridRow: '1 / -1'}}
                                     aria-hidden="true"
                                 ></div>
@@ -430,11 +511,17 @@ const WeekGrid = (props: WeekGridProps) => {
                         {days.map((iso, column) => (
                             <div
                                 key={iso}
-                                className={`dim-cal__weekcol${iso === selected ? ' dim-cal__weekcol--selected' : ''}`}
+                                className={`dim-cal__weekcol${isWeekend(iso) ? ' dim-cal__weekcol--weekend' : ''}`
+                                    + `${iso === selected ? ' dim-cal__weekcol--selected' : ''}`}
                                 role="gridcell"
                                 data-region="dim-cal-weekcol"
                                 data-day={iso}
+                                {...pressing(iso)}
+                                onDoubleClick={onCreate ? (event) => onDoubleClick(event, iso) : undefined}
                             >
+                                {onCreate && plan.window ? hours(plan.window.from, plan.window.to).map((hour) => (
+                                    <span key={hour} className="dim-cal__slot" data-hour={hour} aria-hidden="true"></span>
+                                )) : null}
                                 {line !== null && line.column === column ? (
                                     <span
                                         className="dim-cal__now"

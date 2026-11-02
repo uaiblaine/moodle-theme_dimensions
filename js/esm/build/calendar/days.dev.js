@@ -27,6 +27,10 @@ const gridWeeks = /* @__PURE__ */ __name((month, firstday) => {
   const start = shift(first, -lead);
   return rows.map((row, index) => Array.from({ length: WEEK }, (unused, slot) => shift(start, index * WEEK + slot)));
 }, "gridWeeks");
+const isWeekend = /* @__PURE__ */ __name((iso) => {
+  const weekday = new Date(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)))).getUTCDay();
+  return weekday === 0 || weekday === 6;
+}, "isWeekend");
 const formatterIn = /* @__PURE__ */ __name((language, options, timezone) => {
   try {
     return new Intl.DateTimeFormat(language, { ...options, timeZone: timezone });
@@ -78,6 +82,7 @@ const zone = /* @__PURE__ */ __name((timezone, language) => {
 }, "zone");
 export {
   gridWeeks,
+  isWeekend,
   monthAfter,
   monthParts,
   zone

@@ -29,8 +29,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import type {CSSProperties, ReactNode} from 'react';
+import type {CSSProperties, MouseEvent, PointerEvent, ReactNode} from 'react';
 import {say} from '../daterange/calendar';
+import {isWeekend} from './days';
 import {itemHref} from './model';
 import type {CellPlan, Dots, Placed} from './layout';
 import {colourStyle, keyClass, placeOf, whenOf} from './look';
@@ -57,6 +58,8 @@ type DayCellProps = {
     bars: ReactNode,
     dots: Dots | null,
     onOpen: (iso: string) => void,
+    onGround?: (iso: string, hour: number | null, clicks: number) => void,
+    onCreate?: (iso: string, hour: number | null) => void,
 };
 
 /**
@@ -117,18 +120,98 @@ const line = (entry: Placed, iso: string, look: Look) => (
 );
 
 /**
+ * Whether a press landed on a day's ground: anywhere in the day but on one of its controls (the day button, an item, a
+ * bar, "+N"), whose own clicks keep their meaning (an item's opens its popover, never the day too).
+ *
+ * @param {EventTarget} target What was pressed.
+ * @returns {boolean}
+ */
+export const isGround = (target: EventTarget | null): boolean =>
+    target instanceof Element && target.closest('a, button, [data-cal-item]') === null;
+
+/**
+ * The day's hover mark, for a mouse alone: a finger brackets every tap with an enter and a leave, so both halves are
+ * gated by the pointer's type, as the showcase's hover logic is. The mark is an attribute on the day's container, which
+ * the stylesheet paints under `(hover: hover)`; nothing is rendered again.
+ *
+ * @param {boolean} on Whether the pointer enters (true) or leaves.
+ * @returns {Function} The handler.
+ */
+export const hoverMark = (on: boolean) => (event: PointerEvent<HTMLElement>): void => {
+    if (event.pointerType !== 'mouse') {
+        return;
+    }
+    if (on) {
+        event.currentTarget.setAttribute('data-cal-hover', '');
+    } else {
+        event.currentTarget.removeAttribute('data-cal-hover');
+    }
+};
+
+/**
+ * The handlers of a day's container: a click on its ground opens the day (its click count handed on, so the first of a
+ * double-click opens it and the second nothing), a double-click there opens core's form for a new event on the day,
+ * and the mouse's hover mark; each only when the page hands what it calls.
+ *
+ * @param {string} iso The day.
+ * @param {Function|undefined} onGround What a press on the ground does.
+ * @param {Function|undefined} onCreate What a double-click on the ground does.
+ * @returns {object} The handlers.
+ */
+const groundHandlers = (
+    iso: string,
+    onGround: DayCellProps['onGround'],
+    onCreate: DayCellProps['onCreate']
+) => ({
+    ...(onGround ? {
+        /**
+         * A click on the ground opens the day.
+         *
+         * @param {object} event The click.
+         * @returns {void}
+         */
+        onClick: (event: MouseEvent): void => {
+            if (isGround(event.target)) {
+                onGround(iso, null, event.detail);
+            }
+        },
+        onPointerEnter: hoverMark(true),
+        onPointerLeave: hoverMark(false),
+    } : {}),
+    ...(onCreate ? {
+        /**
+         * A double-click on the ground opens core's form for a new event on the day.
+         *
+         * @param {object} event The double-click.
+         * @returns {void}
+         */
+        onDoubleClick: (event: MouseEvent): void => {
+            if (isGround(event.target)) {
+                event.preventDefault();
+                onCreate(iso, null);
+            }
+        },
+    } : {}),
+});
+
+/**
  * The day.
  *
  * @param {object} props See DayCellProps.
  * @returns {object} The gridcell.
  */
-const DayCell = ({iso, column, month, today, selected, count, plan, contentRow, look, bars, dots, onOpen}: DayCellProps) => {
+const DayCell = (props: DayCellProps) => {
+    const {iso, column, month, today, selected, count, plan, contentRow, look, bars, dots, onOpen, onGround, onCreate} = props;
     const other = !iso.startsWith(month);
     const istoday = iso === today;
     const ground = ['dim-cal__ground'];
     if (other) {
         ground.push('dim-cal__ground--other');
     }
+    if (isWeekend(iso)) {
+        ground.push('dim-cal__ground--weekend');
+    }
+
     const numclasses = ['dim-cal__daynum'];
     if (other) {
         numclasses.push('dim-cal__daynum--other');
@@ -139,7 +222,13 @@ const DayCell = ({iso, column, month, today, selected, count, plan, contentRow, 
     const card = plan.density === 'card' ? plan.shown[0].item : null;
     const place = card ? placeOf(card, look) : '';
     return (
-        <div className="dim-cal__day" role="gridcell" data-day={iso} data-cal-drop={look.movable ? iso : undefined}>
+        <div
+            className="dim-cal__day"
+            role="gridcell"
+            data-day={iso}
+            data-cal-drop={look.movable ? iso : undefined}
+            {...groundHandlers(iso, onGround, onCreate)}
+        >
             <div className={ground.join(' ')} style={{gridColumn: column + 1, gridRow: '1 / -1'}} aria-hidden="true"></div>
             <button
                 type="button"

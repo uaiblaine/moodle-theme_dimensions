@@ -27,6 +27,7 @@ import type {ReactElement} from 'react';
 import {fetchOne} from '@moodle/lms/core/ajax';
 import Calendar from '../../src/calendar/Calendar';
 import {forget} from '../../src/calendar/description';
+import {forget as forgetEditing} from '../../src/calendar/editing';
 import type {Item, Props} from '../../src/calendar/model';
 import PublicCalendar from '../../src/calendar/PublicCalendar';
 import type {PublicProps} from '../../src/calendar/PublicCalendar';
@@ -303,7 +304,7 @@ describe('the view switch', () => {
         jest.useFakeTimers();
         await mount(<Calendar {...week()} />);
         await act(async() => {
-            fireEvent.click(document.querySelector('[data-region="dim-cal-chips"] [data-key="site"]') as HTMLElement);
+            fireEvent.click(document.querySelector('[data-region="dim-cal-types"] [data-key="site"]') as HTMLElement);
         });
         await act(async() => {
             jest.advanceTimersByTime(1000);
@@ -573,5 +574,59 @@ describe('the visitor\'s week', () => {
         await waitFor(() => expect(document.querySelector('[data-region="dim-cal-grid"]')).not.toBeNull());
         expect(fetched.mock.calls[0][0].args).toEqual(expect.objectContaining({from: '2026-11-01', to: '2026-12-05'}));
         expect(new URL(window.location.href).searchParams.get('month')).toBe('2026-11');
+    });
+});
+
+describe('the weekend and a double-click (R1)', () => {
+    it('marks Saturday and Sunday in the header, the strip and the hour body', async() => {
+        await mount(<Calendar {...week([item({id: 1, name: 'Mentoring', timestart: at('2026-11-17', 14)})])} />);
+        const marked = (selector: string, weekend: string): string[] => Array.from(document.querySelectorAll<HTMLElement>(selector))
+            .map((element) => (element.classList.contains(weekend) ? 'w' : '-'));
+        expect(marked('.dim-cal__weekheadcell', 'dim-cal__weekheadcell--weekend')).toEqual(['w', '-', '-', '-', '-', '-', 'w']);
+        expect(marked('.dim-cal__weekstrip .dim-cal__ground', 'dim-cal__ground--weekend')).toEqual(['w', '-', '-', '-', '-', '-', 'w']);
+        expect(marked('[data-region="dim-cal-weekcol"]', 'dim-cal__weekcol--weekend')).toEqual(['w', '-', '-', '-', '-', '-', 'w']);
+    });
+
+    it('opens core\'s form at a double-clicked hour of the body, and on a day of the strip', async() => {
+        const modal = {setContextId: jest.fn(), setCourseId: jest.fn(), setEventId: jest.fn(), setStartTime: jest.fn(), show: jest.fn()};
+        mockAmdModule('jquery', () => ({on: () => undefined}));
+        mockAmdModule('core_calendar/events', {created: 'c', updated: 'u', deleted: 'd'});
+        mockAmdModule('core_calendar/modal_event_form', {create: jest.fn(() => Promise.resolve(modal))});
+        forgetEditing();
+        await mount(<Calendar {...week([item({id: 1, name: 'Mentoring', timestart: at('2026-11-17', 14)})],
+            {edits: {create: true, context: 2, course: 1}})} />);
+        const column = document.querySelector<HTMLElement>('[data-region="dim-cal-weekcol"][data-day="2026-11-18"]') as HTMLElement;
+        const slot = column.querySelector<HTMLElement>('.dim-cal__slot[data-hour="14"]') as HTMLElement;
+        await act(async() => {
+            fireEvent.doubleClick(slot);
+        });
+        expect(modal.setStartTime).toHaveBeenLastCalledWith(at('2026-11-18', 14));
+        const strip = document.querySelector<HTMLElement>('.dim-cal__weekstrip .dim-cal__day[data-day="2026-11-19"] .dim-cal__ground');
+        await act(async() => {
+            fireEvent.doubleClick(strip as HTMLElement);
+        });
+        expect(modal.setStartTime).toHaveBeenLastCalledWith(at('2026-11-19', 10));
+        await act(async() => {
+            fireEvent.doubleClick(named('Mentoring'));
+        });
+        expect(modal.show).toHaveBeenCalledTimes(2);
+    });
+
+    it('opens a day on a click in its column or its strip, and not on an item', async() => {
+        await mount(<Calendar {...week([item({id: 1, name: 'Mentoring', timestart: at('2026-11-17', 14)})])} />);
+        fireEvent.click(document.querySelector('[data-region="dim-cal-weekcol"][data-day="2026-11-18"]') as HTMLElement, {detail: 1});
+        await waitFor(() => expect(document.querySelector('[data-region="dim-cal-day"]')?.getAttribute('data-day')).toBe('2026-11-18'));
+        await act(async() => {
+            fireEvent.click(named('Mentoring'), {detail: 1});
+        });
+        expect(document.querySelector('[data-region="dim-cal-day"]')?.getAttribute('data-day')).toBe('2026-11-18');
+        fireEvent.click(document.querySelector('.dim-cal__weekstrip .dim-cal__day[data-day="2026-11-20"] .dim-cal__ground') as HTMLElement,
+            {detail: 1});
+        await waitFor(() => expect(document.querySelector('[data-region="dim-cal-day"]')?.getAttribute('data-day')).toBe('2026-11-20'));
+    });
+
+    it('draws no hour row to double-click while core would not show "New event"', async() => {
+        await mount(<Calendar {...week([item({id: 1, name: 'Mentoring', timestart: at('2026-11-17', 14)})])} />);
+        expect(document.querySelector('.dim-cal__slot')).toBeNull();
     });
 });

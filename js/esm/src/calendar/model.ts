@@ -19,9 +19,8 @@
  * The answer is the range service's (classes/local/calendar/range.php, get_calendar_range's returns); the state is
  * classes/local/calendar/state.php's canonical array, and {@see query()} spells it as state::query() does, so an
  * address the client writes is one the server reads back as the same state. An item opens the event popover and a
- * day the day drawer (or the phone's sheet); the two addresses they opened in C2 stay here as their fallbacks:
- * {@see itemHref()} is every item's href (a middle click, a copied link) and the popover's "Open", {@see dayHref()}
- * the drawer's link to core's day view. The popover's primary action is chosen in one place, {@see primaryOf()}.
+ * day the day drawer (or the phone's sheet); {@see itemHref()}, the address an item opened in C2, stays every item's
+ * href (a middle click, a copied link). The popover's primary action is chosen in one place, {@see primaryOf()}.
  *
  * @module     theme_dimensions/calendar/model
  * @copyright  2026 Anderson Blaine
@@ -149,7 +148,7 @@ export type Props = {
     state: State,
     tree: TreeNode[],
     options: {model: Option[], modality: Option[], city: string[]},
-    urls: {page: string, calendar: string, home: string},
+    urls: {page: string, home: string},
     edits?: Edits,
 };
 
@@ -372,8 +371,9 @@ export const safeHref = (url: string, fallback: string): string => {
 /**
  * Where an item leads: its own page, else its course's page, else the site's home (calendar_page::item_url()).
  *
- * The item's href and the popover's "Open": with JavaScript a press opens the popover, and this address is what a
- * middle click, a copied link and the no-JavaScript agenda follow.
+ * The item's href in the grid, the drawer and the agenda: with JavaScript a press opens the popover, and this address
+ * is what a middle click and a copied link follow. The home is the fallback only because a link needs an href; the
+ * popover never offers it ({@see primaryOf()}).
  *
  * @param {object} item The item.
  * @param {Map} courses The answer's courses by id.
@@ -388,36 +388,26 @@ export const itemHref = (item: Item, courses: Map<number, Course>, home: string)
     return safeHref(courses.get(item.courseid)?.url ?? '', safeHref(home, '/'));
 };
 
-/**
- * Core's day view of a day, spelled with core's day, month and year parameters, which calendar/view.php turns into
- * the day in the viewer's own timezone: the client computes no timestamp.
- *
- * A day opens the drawer; the drawer links this address, where core's own day view (and its event editing) stays.
- * The classic marker keeps the theme from sending the reader straight back (coreview.php).
- *
- * @param {string} calendar Core's calendar/view.php address (urls.calendar).
- * @param {string} iso The day, YYYY-MM-DD.
- * @returns {string} The address.
- */
-export const dayHref = (calendar: string, iso: string): string => {
-    const parts = parse(iso);
-    const url = new URL(calendar, window.location.href);
-    url.search = '';
-    url.searchParams.set('view', 'day');
-    if (parts) {
-        url.searchParams.set('cal_d', String(parts.d));
-        url.searchParams.set('cal_m', String(parts.m));
-        url.searchParams.set('cal_y', String(parts.y));
-    }
-    url.searchParams.set('classic', '1');
-    return url.toString();
-};
-
-/** The popover's primary action: core's action, the event course's way in, or the item's own page. */
+/** The popover's primary action: core's action, the event course's way in, the item's own page, or none. */
 export type Primary =
     {kind: 'action', name: string, url: string}
     | {kind: 'join', join: 'open' | 'free' | 'key', url: string}
-    | {kind: 'open', url: string};
+    | {kind: 'open', url: string}
+    | {kind: 'none'};
+
+/**
+ * Whether an item has a page of its own to open: its own address, or its course's (a real course: the answer's
+ * dictionary never holds the site course).
+ *
+ * A personal event and a site event have neither; their href in the grid falls back to the site's home only because a
+ * link needs one ({@see itemHref()}), and the popover offers no "Open" for them.
+ *
+ * @param {object} item The item.
+ * @param {Map} courses The answer's courses by id.
+ * @returns {boolean}
+ */
+export const opens = (item: Item, courses: Map<number, Course>): boolean =>
+    safeHref(item.url, '') !== '' || safeHref(courses.get(item.courseid)?.url ?? '', '') !== '';
 
 /**
  * The popover's primary action for an item: the item's own, never a guess.
@@ -425,7 +415,8 @@ export type Primary =
  * - An action event core says the viewer can act on now (`actionable`) leads to core's action, under its name.
  * - An event course the viewer may join (the answer's `join`, local_unlistedcourses' next action as the showcase
  *   reads it) leads to its landing page, whose enrolment is the way in.
- * - Anything else is "Open", {@see itemHref()}.
+ * - An item with a page of its own ({@see opens()}) is "Open", {@see itemHref()}.
+ * - Anything else (a personal event, a site event) has none: never the site's home.
  *
  * @param {object} item The item.
  * @param {Map} courses The answer's courses by id.
@@ -441,26 +432,36 @@ export const primaryOf = (item: Item, courses: Map<number, Course>, home: string
     if (item.source === 'course' && course && (course.join === 'open' || course.join === 'free' || course.join === 'key')) {
         return {kind: 'join', join: course.join, url: safeHref(course.landingurl, itemHref(item, courses, home))};
     }
+    if (!opens(item, courses)) {
+        return {kind: 'none'};
+    }
     return {kind: 'open', url: itemHref(item, courses, home)};
 };
 
 /**
- * Core's own month view of a month (calendar\page::classic()): the classic calendar the page keeps reachable.
+ * Whether any filter is applied: a key off, a "More filters" value, or a category scope other than the whole calendar
+ * with its subcategories. The colouring is how the page draws, not a filter.
  *
- * @param {string} calendar Core's calendar/view.php address (urls.calendar).
- * @param {string} month The month, YYYY-MM.
- * @returns {string} The address.
+ * @param {object} state The state.
+ * @returns {boolean}
  */
-export const monthHref = (calendar: string, month: string): string => {
-    const url = new URL(calendar, window.location.href);
-    url.search = '';
-    url.searchParams.set('view', 'month');
-    url.searchParams.set('cal_d', '1');
-    url.searchParams.set('cal_m', String(Number(month.slice(5, 7))));
-    url.searchParams.set('cal_y', String(Number(month.slice(0, 4))));
-    url.searchParams.set('classic', '1');
-    return url.toString();
-};
+export const filtered = (state: State): boolean => state.off.length > 0 || state.model.length > 0
+    || state.modality.length > 0 || state.city !== '' || state.actiononly || state.categoryid !== 0 || !state.recursive;
+
+/**
+ * The fields "Clear filters" puts back, in one change: every key on, no "More filters" value, the whole calendar.
+ *
+ * @returns {object} The fields, the colouring left as it is.
+ */
+export const cleared = (): Partial<State> => ({
+    off: [],
+    model: [],
+    modality: [],
+    city: '',
+    actiononly: false,
+    categoryid: 0,
+    recursive: true,
+});
 
 /**
  * A colour the server certified, as #rrggbb, or null: what reaches a style property is checked again here.

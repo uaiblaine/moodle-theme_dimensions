@@ -6,9 +6,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * The answer is the range service's (classes/local/calendar/range.php, get_calendar_range's returns); the state is
  * classes/local/calendar/state.php's canonical array, and {@see query()} spells it as state::query() does, so an
  * address the client writes is one the server reads back as the same state. An item opens the event popover and a
- * day the day drawer (or the phone's sheet); the two addresses they opened in C2 stay here as their fallbacks:
- * {@see itemHref()} is every item's href (a middle click, a copied link) and the popover's "Open", {@see dayHref()}
- * the drawer's link to core's day view. The popover's primary action is chosen in one place, {@see primaryOf()}.
+ * day the day drawer (or the phone's sheet); {@see itemHref()}, the address an item opened in C2, stays every item's
+ * href (a middle click, a copied link). The popover's primary action is chosen in one place, {@see primaryOf()}.
  *
  * @module     theme_dimensions/calendar/model
  * @copyright  2026 Anderson Blaine
@@ -138,19 +137,7 @@ const itemHref = /* @__PURE__ */ __name((item, courses, home) => {
   }
   return safeHref(courses.get(item.courseid)?.url ?? "", safeHref(home, "/"));
 }, "itemHref");
-const dayHref = /* @__PURE__ */ __name((calendar, iso) => {
-  const parts = parse(iso);
-  const url = new URL(calendar, window.location.href);
-  url.search = "";
-  url.searchParams.set("view", "day");
-  if (parts) {
-    url.searchParams.set("cal_d", String(parts.d));
-    url.searchParams.set("cal_m", String(parts.m));
-    url.searchParams.set("cal_y", String(parts.y));
-  }
-  url.searchParams.set("classic", "1");
-  return url.toString();
-}, "dayHref");
+const opens = /* @__PURE__ */ __name((item, courses) => safeHref(item.url, "") !== "" || safeHref(courses.get(item.courseid)?.url ?? "", "") !== "", "opens");
 const primaryOf = /* @__PURE__ */ __name((item, courses, home) => {
   const actionUrl = item.action === null ? "" : safeHref(item.action.url, "");
   if (item.action !== null && item.action.actionable && actionUrl !== "") {
@@ -160,32 +147,36 @@ const primaryOf = /* @__PURE__ */ __name((item, courses, home) => {
   if (item.source === "course" && course && (course.join === "open" || course.join === "free" || course.join === "key")) {
     return { kind: "join", join: course.join, url: safeHref(course.landingurl, itemHref(item, courses, home)) };
   }
+  if (!opens(item, courses)) {
+    return { kind: "none" };
+  }
   return { kind: "open", url: itemHref(item, courses, home) };
 }, "primaryOf");
-const monthHref = /* @__PURE__ */ __name((calendar, month) => {
-  const url = new URL(calendar, window.location.href);
-  url.search = "";
-  url.searchParams.set("view", "month");
-  url.searchParams.set("cal_d", "1");
-  url.searchParams.set("cal_m", String(Number(month.slice(5, 7))));
-  url.searchParams.set("cal_y", String(Number(month.slice(0, 4))));
-  url.searchParams.set("classic", "1");
-  return url.toString();
-}, "monthHref");
+const filtered = /* @__PURE__ */ __name((state) => state.off.length > 0 || state.model.length > 0 || state.modality.length > 0 || state.city !== "" || state.actiononly || state.categoryid !== 0 || !state.recursive, "filtered");
+const cleared = /* @__PURE__ */ __name(() => ({
+  off: [],
+  model: [],
+  modality: [],
+  city: "",
+  actiononly: false,
+  categoryid: 0,
+  recursive: true
+}), "cleared");
 const hex = /* @__PURE__ */ __name((value) => /^#[0-9a-f]{6}$/i.test(String(value)) ? String(value) : null, "hex");
 export {
   DAY_PARAM,
   DEFAULT_STATE,
   KEYS,
   address,
-  dayHref,
+  cleared,
   emptyAnswer,
+  filtered,
   hex,
   isMonth,
   itemHref,
   keysOn,
-  monthHref,
   normalise,
+  opens,
   primaryOf,
   query,
   rangeArgs,

@@ -25,6 +25,7 @@
 namespace theme_dimensions\local\hook;
 
 use theme_dimensions\local\calendar\coreview;
+use theme_dimensions\local\calendar\ical;
 use theme_dimensions\local\category\request;
 use theme_dimensions\local\guesthome;
 use theme_dimensions\local\landing\redirector;
@@ -38,7 +39,7 @@ use theme_dimensions\local\landing\redirector;
  * callback reads the request shape and delegates every real decision to
  * {@see redirector}, which is where the unit tests live.
  *
- * Four request shapes are read. /enrol/index.php and /course/info.php are
+ * Five request shapes are read. /enrol/index.php and /course/info.php are
  * ghosted over the COURSE they name, the first of them then forwarded to the
  * landing page; /course/index.php?categoryid=N is forwarded for a VISITOR to the
  * public page of a category the site serves anonymously, and otherwise ghosted
@@ -47,9 +48,12 @@ use theme_dimensions\local\landing\redirector;
  * the category from every listing and the page itself would still name it in
  * the heading, the breadcrumb and the title.
  *
- * /calendar/view.php is the fourth: core's month and day views are forwarded to the theme's calendar page
- * ({@see coreview}), before core's view spends its ~1.2 s on a page the reader never sees. The marker
- * `classic=1` of the page's "Classic calendar" link is read here too, and keeps core's calendar for the session.
+ * /calendar/view.php is the fourth: every view of core's calendar is forwarded to the theme's calendar page
+ * ({@see coreview}), before core's view spends its ~1.2 s on a page the reader never sees. The fifth is
+ * /calendar/export_execute.php, core's iCal feed, answered by the theme's copy of it ({@see ical}) under the same
+ * switch, so the feed withholds the categories the page withholds. That script defines NO_MOODLE_COOKIES; the hook
+ * still runs for it, since lib/setup.php dispatches after_config for every web request, last, once the session (an
+ * empty one there), the language and $PAGE exist.
  *
  * The two answers of the category branch cannot collide: the forward is only
  * ever taken by somebody who is not logged in, and the ghost only by somebody
@@ -77,7 +81,8 @@ use theme_dimensions\local\landing\redirector;
  */
 class after_config {
     /**
-     * Point the guest home, ghost an unreachable course or category, and forward /enrol/index.php to the landing page.
+     * Point the guest home, ghost an unreachable course or category, forward /enrol/index.php to the landing page and
+     * core's calendar to the theme's, and serve core's iCal feed with the theme's withholding.
      *
      * @param \core\hook\after_config $hook The hook.
      */
@@ -141,9 +146,9 @@ class after_config {
                     coreview::enabled(),
                     coreview::account(),
                     coreview::gregorian(),
-                    $GLOBALS['SESSION'],
                     \core_date::get_user_timezone_object(),
-                    time()
+                    time(),
+                    \Closure::fromCallable([coreview::class, 'course_category'])
                 );
             } catch (\Throwable $exception) {
                 // A forwarding convenience must never take core's calendar down.
@@ -151,6 +156,15 @@ class after_config {
             }
             if ($target !== null) {
                 redirect($target);
+            }
+            return;
+        }
+        if ($script === '/calendar/export_execute.php') {
+            // The feed is served outside any catch: a failure of the withholding must not fall back to core's feed,
+            // which would hand out what the theme withholds.
+            if (coreview::enabled()) {
+                ical::serve();
+                die();
             }
             return;
         }

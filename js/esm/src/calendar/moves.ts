@@ -152,3 +152,28 @@ export const toolbarStart = (own: string[], today: string, now: number, zone: Zo
  */
 export const dayStart = (day: string, now: number, zone: Zone, timezone: string): number =>
     instantOf(day, zone.minutes(now), timezone);
+
+/**
+ * The start core's form is handed for a new event at an hour of a day: the day at that hour of its wall clock in the
+ * viewer's timezone, what a double-click on an hour row opens (core's modal_event_form setStartTime()).
+ *
+ * @param {string} day The day, YYYY-MM-DD.
+ * @param {number} hour The hour, 0 to 23.
+ * @param {string} timezone The viewer's timezone.
+ * @returns {number} The instant.
+ */
+export const hourStart = (day: string, hour: number, timezone: string): number => instantOf(day, hour * 60, timezone);
+
+/**
+ * The start core's form is handed for a new event created on the grid: at the hour when one is named
+ * ({@see hourStart()}), else the day at the current time of day ({@see dayStart()}).
+ *
+ * @param {string} day The day, YYYY-MM-DD.
+ * @param {number|null} hour The hour, 0 to 23, or null.
+ * @param {number} now The server's clock, in seconds.
+ * @param {object} zone The viewer's zone reader.
+ * @param {string} timezone The viewer's timezone.
+ * @returns {number} The instant.
+ */
+export const createStart = (day: string, hour: number | null, now: number, zone: Zone, timezone: string): number =>
+    (hour === null ? dayStart(day, now, zone, timezone) : hourStart(day, hour, timezone));

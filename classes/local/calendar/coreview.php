@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - Where core's month and day views lead to
+ * Theme Dimensions - Where core's calendar view leads to
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -25,24 +25,22 @@
 namespace theme_dimensions\local\calendar;
 
 /**
- * The decision to send a request for core's month or day view to the theme's calendar page, and the address it goes to.
+ * The decision to send a request for core's calendar view to the theme's calendar page, and the address it goes to.
  *
- * Pure: the request, the setting, the account and the calendar type arrive as arguments, so every branch is
- * PHPUnit's, and the callback ({@see \theme_dimensions\local\hook\after_config}) only reads them. Each refusal is a
- * reason core's page must keep answering; the order is docs/calendar/PROPOSAL.md section 15.1:
+ * Pure: the request, the setting, the account and the calendar type arrive as arguments, and the one lookup (a
+ * course's category) through a closure, so every branch is PHPUnit's, and the callback
+ * ({@see \theme_dimensions\local\hook\after_config}) only reads them. Every view of core's calendar is sent
+ * (docs/calendar/PROPOSAL.md section 27.1); each refusal left is a reason core's page must keep answering:
  *
  * 1. The setting is off, or the site's theme is not this one (the page is drawn by this theme's CSS and client).
- * 2. The request carries the classic marker ({@see PARAM_CLASSIC}): it is not sent, and for a real account it sets
- *    the session flag to that account's id.
- * 3. The view is neither `month` nor `day` (core's default, `upcoming`, stays core's).
- * 4. The course is not the site, read with core's default (`SITEID`): the page has no course scope, and an explicit
- *    `course=0` is left to core, which refuses it.
- * 5. Nobody real is logged in: the page sends a visitor to login and the guest to core's calendar, so sending either
+ * 2. Nobody real is logged in: the page sends a visitor to login and the guest to core's calendar, so sending either
  *    there would loop. The account is {@see account()}, the same two facts page::handle() bounces on.
- * 6. The calendar type is not the Gregorian: the page sends it back ({@see window::require_gregorian()}).
- * 7. The session flag holds this account's id: the reader chose core's calendar, and its AJAX month arrows and view
- *    switch push addresses without the marker. A flag written for another account (the session survives a login)
- *    does not count.
+ * 3. The calendar type is not the Gregorian: the page sends it back ({@see window::require_gregorian()}).
+ *
+ * What is sent: the day view opens the month of its day with that day's drawer; every other view (month, upcoming, none,
+ * anything) opens the month of the day the address names. A course other than the site narrows the page to the
+ * course's category when the viewer may open the course ({@see course_category()}), else nothing; without a course, the
+ * category the address names is forwarded. The page drops a category the range refuses, as it drops every value.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -55,14 +53,11 @@ final class coreview {
     /** @var string The setting; a checkbox that ships on and is off only when an explicit '0' is stored. */
     public const SETTING = 'calendarcoreview';
 
-    /** @var string The marker the page's "Classic calendar" links carry. */
-    public const PARAM_CLASSIC = 'classic';
-
-    /** @var string The session property that keeps core's calendar answering; navigation, never saved. */
-    public const SESSION_FLAG = 'theme_dimensions_calendar_classic';
-
     /** @var string The theme whose page this is: the site theme must be it, as flavourcss\planner requires. */
     public const THEME = 'dimensions';
+
+    /** @var string The one view whose address opens a day's drawer. */
+    public const VIEW_DAY = 'day';
 
     /**
      * Whether core's views are sent to the page: the site runs this theme, and the setting is on unless an explicit
@@ -114,8 +109,31 @@ final class coreview {
             'time' => (int) optional_param('time', 0, PARAM_INT),
             'category' => (int) optional_param('category', 0, PARAM_INT),
             'categoryid' => (int) optional_param('categoryid', 0, PARAM_INT),
-            self::PARAM_CLASSIC => (int) optional_param(self::PARAM_CLASSIC, 0, PARAM_INT),
         ];
+    }
+
+    /**
+     * The category of a course the account may open, else 0: the scope a course calendar's address is sent with.
+     *
+     * The rule is core's own for a course calendar's export (calendar/export_execute.php, MDL-74915): the course exists
+     * and can_access_course() lets the viewer in, which a manager who is not enrolled passes too. A course the viewer
+     * may not open names no category, so the redirect tells nobody where a course sits; nor does a course in a category
+     * the page would refuse as a scope ({@see scope::accepts_category()}: hidden by core, or withheld by
+     * local_unlistedcourses), whose id would otherwise land in the address.
+     *
+     * @param int $courseid The course the address names, neither 0 nor the site.
+     * @return int The category id, or 0.
+     */
+    public static function course_category(int $courseid): int {
+        global $DB;
+
+        $course = $DB->get_record('course', ['id' => $courseid], 'id, category, visible');
+        if (!$course || !can_access_course($course)) {
+            return 0;
+        }
+        // Only a category the page would accept as a scope: the rule of scope::for_viewer(), not a copy of it.
+        $category = \core_course_category::get((int) $course->category, IGNORE_MISSING);
+        return scope::accepts_category($category ?: null) ? (int) $category->id : 0;
     }
 
     /**
@@ -125,9 +143,10 @@ final class coreview {
      * @param bool $enabled Whether the setting is on ({@see enabled()}).
      * @param int $account The account making the request, 0 for a visitor or the guest ({@see account()}).
      * @param bool $gregorian Whether the viewer's calendar type is the Gregorian.
-     * @param \stdClass $session The session object; the classic marker of a real account writes {@see SESSION_FLAG}.
      * @param \DateTimeZone $timezone The viewer's timezone.
      * @param int $now The current time, for a request that names no day.
+     * @param \Closure $categoryof The category of a course the viewer may open, 0 otherwise ({@see course_category()}),
+     *     asked only for an address naming a course.
      * @return \core\url|null
      */
     public static function target(
@@ -135,39 +154,28 @@ final class coreview {
         bool $enabled,
         int $account,
         bool $gregorian,
-        \stdClass $session,
         \DateTimeZone $timezone,
-        int $now
+        int $now,
+        \Closure $categoryof
     ): ?\core\url {
         if (!$enabled) {
-            return null;
-        }
-        if (!empty($request[self::PARAM_CLASSIC])) {
-            if ($account > 0) {
-                $session->{self::SESSION_FLAG} = $account;
-            }
-            return null;
-        }
-        $view = (string) ($request['view'] ?? '');
-        if ($view !== 'month' && $view !== 'day') {
-            return null;
-        }
-        if ((int) ($request['course'] ?? SITEID) !== (int) SITEID) {
             return null;
         }
         if ($account <= 0 || !$gregorian) {
             return null;
         }
-        if (($session->{self::SESSION_FLAG} ?? null) === $account) {
-            return null;
-        }
 
         $day = self::day($request, $timezone, $now);
         $params = [state::PARAM_MONTH => substr($day, 0, 7)];
-        if ($view === 'day') {
+        if ((string) ($request['view'] ?? '') === self::VIEW_DAY) {
             $params[page::PARAM_DAY] = $day;
         }
-        $category = (int) ($request['category'] ?? 0) ?: (int) ($request['categoryid'] ?? 0);
+        $courseid = (int) ($request['course'] ?? SITEID);
+        if ($courseid > 0 && $courseid !== (int) SITEID) {
+            $category = (int) $categoryof($courseid);
+        } else {
+            $category = (int) ($request['category'] ?? 0) ?: (int) ($request['categoryid'] ?? 0);
+        }
         if ($category > 0) {
             $params[state::PARAM_CATEGORY] = $category;
         }

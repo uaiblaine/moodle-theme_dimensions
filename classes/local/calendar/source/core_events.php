@@ -56,7 +56,7 @@ use theme_dimensions\local\calendar\window;
  *
  * A category event whose category local_unlistedcourses withholds from the viewer is dropped ({@see unwithheld()}):
  * a documented difference from core's calendar, which shows it, kept so the range names no category the
- * showcase hides.
+ * showcase hides. The theme's iCal feed withholds the same categories ({@see admitted_categories()}).
  *
  * The entity has no type: an activity event that came back without an action is either a plain event (a
  * quiz's opening) or an action event whose callback returned nothing (submitted, done). Its row is read for
@@ -185,11 +185,41 @@ final class core_events implements source {
         if (!$categories) {
             return $events;
         }
-        $listed = category_access::filter_categories($categories);
+        $listed = self::admitted_categories($categories);
         return array_values(array_filter($events, static function (event_interface $event) use ($listed): bool {
             $proxy = $event->get_category();
             return !$proxy || isset($listed[(int) $proxy->get('id')]);
         }));
+    }
+
+    /**
+     * The categories among these that local_unlistedcourses lets the current viewer see: the calendar's withholding.
+     *
+     * The one predicate of the range's category events ({@see unwithheld()}) and of the theme's iCal feed
+     * ({@see \theme_dimensions\local\calendar\ical::admitted()}), so the two withhold the same categories.
+     *
+     * @param \core_course_category[] $categories The categories, keyed by id.
+     * @return \core_course_category[] Those admitted, with their keys.
+     */
+    public static function admitted_categories(array $categories): array {
+        return category_access::filter_categories($categories);
+    }
+
+    /**
+     * The categories among these whose events the current viewer's calendar shows: those core lets the viewer see
+     * ({@see visible()}'s category rule) and that {@see admitted_categories()} keeps.
+     *
+     * What the theme's iCal feed asks, so the feed exports a category event under the two facts the page applies.
+     *
+     * @param \core_course_category[] $categories The categories, keyed by id.
+     * @return \core_course_category[] Those shown, with their keys.
+     */
+    public static function shown_categories(array $categories): array {
+        $visible = array_filter(
+            $categories,
+            static fn(\core_course_category $category): bool => $category->is_uservisible()
+        );
+        return $visible ? self::admitted_categories($visible) : [];
     }
 
     /**

@@ -16,6 +16,9 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  *   day's items, ArrowLeft and ArrowRight the neighbouring day's nearest in time, Escape goes back to the header, and
  *   Enter or Space is left to the shell's delegated listener, which opens the popover (weeks.ts moveInWeek()).
  * - Every item is a link to its own page marked data-cal-pop, as the month's are, out of the Tab order.
+ * - Saturday and Sunday (days.ts isWeekend()) carry the weekend's hatch, in the header, the strip and the hour body.
+ * - While the page offers "New event" (onCreate handed), a double-click on a day's ground in the strip opens core's form
+ *   on that day, and on an hour row of the body (an element carrying data-hour, so no layout is read) at that hour.
  * - The "now" line marks today's column at the server's time plus the minutes since the paint (the browser's clock is
  *   read only as time elapsed), aria-hidden.
  * - ONE ResizeObserver, on the frame the week shares with the drawer, never read on the mount path: below
@@ -28,7 +31,8 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { say } from "../daterange/calendar";
 import Bar from "./Bar";
-import { dayLabel } from "./DayCell";
+import { dayLabel, hoverMark, isGround } from "./DayCell";
+import { isWeekend } from "./days";
 import { dayCounts } from "./layout";
 import { colourStyle, keyClass, whenOf } from "./look";
 import { itemHref } from "./model";
@@ -42,9 +46,11 @@ const hourLabels = /* @__PURE__ */ __name((language) => {
   const format = new Intl.DateTimeFormat(language, { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
   return Array.from({ length: 24 }, (unused, hour) => format.format(new Date(Date.UTC(1970, 0, 1, hour))));
 }, "hourLabels");
+const hours = /* @__PURE__ */ __name((from, to) => Array.from({ length: Math.max(to - from, 0) }, (unused, at) => from + at), "hours");
 const alldayWhen = /* @__PURE__ */ __name((entry, look) => entry.first === entry.last ? look.strings.calendar_allday : `${say(entry.first, SPAN_DAY, look.language)}\u2013${say(entry.last, SPAN_DAY, look.language)}`, "alldayWhen");
 const WeekGrid = /* @__PURE__ */ __name((props) => {
   const { look, days, placed, today, now, selected, focusing, captionid, phone, onSelect, onWeek, onOpen } = props;
+  const { onGround, onCreate } = props;
   const [elapsed, setElapsed] = useState(0);
   const root = useRef(null);
   const cursor = useRef(null);
@@ -137,6 +143,33 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
     event.preventDefault();
     go(next);
   }, "onKeyDown");
+  const hourOf = /* @__PURE__ */ __name((event) => {
+    const slot = event.target.closest("[data-hour]");
+    return slot ? Number(slot.dataset.hour) : null;
+  }, "hourOf");
+  const onClick = /* @__PURE__ */ __name((event, iso) => {
+    if (onGround && isGround(event.target)) {
+      onGround(iso, hourOf(event), event.detail);
+    }
+  }, "onClick");
+  const onDoubleClick = /* @__PURE__ */ __name((event, iso) => {
+    if (!onCreate || !isGround(event.target)) {
+      return;
+    }
+    event.preventDefault();
+    onCreate(iso, hourOf(event));
+  }, "onDoubleClick");
+  const pressing = /* @__PURE__ */ __name((iso) => onGround ? {
+    /**
+     * A click on the day's part opens the day.
+     *
+     * @param {object} event The click.
+     * @returns {void}
+     */
+    onClick: /* @__PURE__ */ __name((event) => onClick(event, iso), "onClick"),
+    onPointerEnter: hoverMark(true),
+    onPointerLeave: hoverMark(false)
+  } : {}, "pressing");
   const header = /* @__PURE__ */ __name((iso, roving, content) => /* @__PURE__ */ jsxDEV(
     "button",
     {
@@ -154,7 +187,7 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
     false,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-      lineNumber: 243,
+      lineNumber: 317,
       columnNumber: 9
     }
   ), "header");
@@ -185,17 +218,17 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
         children: [
           overlapping ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__overlapmark", children: look.strings.calendar_overlapmark }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-            lineNumber: 288,
+            lineNumber: 362,
             columnNumber: 32
           }) : null,
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__weekname", children: item.name }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-            lineNumber: 289,
+            lineNumber: 363,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__weekwhen", children: whenOf(item, look) }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-            lineNumber: 290,
+            lineNumber: 364,
             columnNumber: 17
           })
         ]
@@ -204,7 +237,7 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-        lineNumber: 274,
+        lineNumber: 348,
         columnNumber: 13
       }
     );
@@ -221,17 +254,17 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
       children: [
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__daywhen", children: when }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-          lineNumber: 314,
+          lineNumber: 388,
           columnNumber: 17
         }),
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__dayname", children: entry.item.name }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-          lineNumber: 315,
+          lineNumber: 389,
           columnNumber: 17
         }),
         overlapping ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__overlapmark", children: look.strings.calendar_overlapmark }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-          lineNumber: 316,
+          lineNumber: 390,
           columnNumber: 32
         }) : null
       ]
@@ -240,12 +273,12 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-      lineNumber: 305,
+      lineNumber: 379,
       columnNumber: 13
     }
   ) }, itemKey(entry.item), false, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-    lineNumber: 304,
+    lineNumber: 378,
     columnNumber: 9
   }), "agendaItem");
   const agendaDay = /* @__PURE__ */ __name((iso, column) => {
@@ -254,16 +287,16 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
     return /* @__PURE__ */ jsxDEV("section", { className: "dim-cal__weekagendaday", "data-day": iso, children: [
       /* @__PURE__ */ jsxDEV("h3", { className: "dim-cal__weekagendatitle", children: header(iso, false, /* @__PURE__ */ jsxDEV("span", { children: say(iso, LONG_DAY, look.language) }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-        lineNumber: 335,
+        lineNumber: 409,
         columnNumber: 41
       })) }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-        lineNumber: 334,
+        lineNumber: 408,
         columnNumber: 17
       }),
       empty ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__dayempty", children: look.strings.calendar_dayempty }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-        lineNumber: 337,
+        lineNumber: 411,
         columnNumber: 26
       }) : /* @__PURE__ */ jsxDEV("ul", { className: "dim-cal__weekagendalist", children: [
         strip.map((segment) => agendaItem(segment.placed, alldayWhen(segment.placed, look), false)),
@@ -274,23 +307,23 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
         ))
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-        lineNumber: 338,
+        lineNumber: 412,
         columnNumber: 21
       })
     ] }, iso, true, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-      lineNumber: 333,
+      lineNumber: 407,
       columnNumber: 13
     });
   }, "agendaDay");
   if (phone) {
     return /* @__PURE__ */ jsxDEV("div", { ref: root, className: "dim-cal__weekview", "data-region": "dim-cal-week", children: /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekagenda", "data-region": "dim-cal-weekagenda", "aria-labelledby": captionid, role: "group", children: days.map(agendaDay) }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-      lineNumber: 351,
+      lineNumber: 425,
       columnNumber: 17
     }) }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-      lineNumber: 350,
+      lineNumber: 424,
       columnNumber: 13
     });
   }
@@ -313,38 +346,48 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
           /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekrow dim-cal__weekheads", role: "row", children: [
             /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekgutter", role: "presentation" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-              lineNumber: 374,
+              lineNumber: 448,
               columnNumber: 21
             }),
-            days.map((iso) => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekheadcell", role: "columnheader", children: header(iso, true, /* @__PURE__ */ jsxDEV(Fragment, { children: [
-              /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__weekdayname", "aria-hidden": "true", children: say(iso, WEEKDAY, look.language) }, void 0, false, {
+            days.map((iso) => /* @__PURE__ */ jsxDEV(
+              "div",
+              {
+                className: `dim-cal__weekheadcell${isWeekend(iso) ? " dim-cal__weekheadcell--weekend" : ""}`,
+                role: "columnheader",
+                children: header(iso, true, /* @__PURE__ */ jsxDEV(Fragment, { children: [
+                  /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__weekdayname", "aria-hidden": "true", children: say(iso, WEEKDAY, look.language) }, void 0, false, {
+                    fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
+                    lineNumber: 457,
+                    columnNumber: 37
+                  }),
+                  /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__weekdaynum", "aria-hidden": "true", children: Number(iso.slice(8, 10)) }, void 0, false, {
+                    fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
+                    lineNumber: 460,
+                    columnNumber: 37
+                  })
+                ] }, void 0, true, {
+                  fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
+                  lineNumber: 456,
+                  columnNumber: 33
+                }))
+              },
+              iso,
+              false,
+              {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                lineNumber: 379,
-                columnNumber: 37
-              }),
-              /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__weekdaynum", "aria-hidden": "true", children: Number(iso.slice(8, 10)) }, void 0, false, {
-                fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                lineNumber: 382,
-                columnNumber: 37
-              })
-            ] }, void 0, true, {
-              fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-              lineNumber: 378,
-              columnNumber: 33
-            })) }, iso, false, {
-              fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-              lineNumber: 376,
-              columnNumber: 25
-            }))
+                lineNumber: 450,
+                columnNumber: 25
+              }
+            ))
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-            lineNumber: 373,
+            lineNumber: 447,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekrow dim-cal__weekstrip", role: "row", "data-region": "dim-cal-weekstrip", children: [
             /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekgutter dim-cal__weekgutter--strip", role: "rowheader", children: look.strings.calendar_allday }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-              lineNumber: 389,
+              lineNumber: 467,
               columnNumber: 21
             }),
             /* @__PURE__ */ jsxDEV(
@@ -360,11 +403,13 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
                     role: "gridcell",
                     "data-day": iso,
                     "data-cal-drop": look.movable ? iso : void 0,
+                    ...pressing(iso),
+                    onDoubleClick: onCreate ? (event) => onDoubleClick(event, iso) : void 0,
                     children: [
                       /* @__PURE__ */ jsxDEV(
                         "div",
                         {
-                          className: `dim-cal__ground${iso === selected ? " dim-cal__ground--selected" : ""}`,
+                          className: `dim-cal__ground${isWeekend(iso) ? " dim-cal__ground--weekend" : ""}${iso === selected ? " dim-cal__ground--selected" : ""}`,
                           style: { gridColumn: column + 1, gridRow: "1 / -1" },
                           "aria-hidden": "true"
                         },
@@ -372,13 +417,13 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
                         false,
                         {
                           fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                          lineNumber: 405,
+                          lineNumber: 485,
                           columnNumber: 33
                         }
                       ),
                       plan.strip.bars.filter((segment) => segment.start === column).map((segment) => /* @__PURE__ */ jsxDEV(Bar, { segment, week: days, look }, itemKey(segment.placed.item), false, {
                         fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                        lineNumber: 411,
+                        lineNumber: 492,
                         columnNumber: 37
                       }))
                     ]
@@ -387,7 +432,7 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
                   true,
                   {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                    lineNumber: 398,
+                    lineNumber: 476,
                     columnNumber: 29
                   }
                 ))
@@ -396,13 +441,13 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                lineNumber: 392,
+                lineNumber: 470,
                 columnNumber: 21
               }
             )
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-            lineNumber: 388,
+            lineNumber: 466,
             columnNumber: 17
           }),
           plan.window ? /* @__PURE__ */ jsxDEV(
@@ -416,27 +461,34 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
                 /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__weekgutter dim-cal__weekgutter--hours", role: "rowheader", children: [
                   /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: look.strings.calendar_timed }, void 0, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                    lineNumber: 425,
+                    lineNumber: 506,
                     columnNumber: 29
                   }),
                   labels.slice(plan.window.from, plan.window.to).map((label, hour) => /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__hour", "aria-hidden": "true", children: label }, hour, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                    lineNumber: 427,
+                    lineNumber: 508,
                     columnNumber: 33
                   }))
                 ] }, void 0, true, {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                  lineNumber: 424,
+                  lineNumber: 505,
                   columnNumber: 25
                 }),
                 days.map((iso, column) => /* @__PURE__ */ jsxDEV(
                   "div",
                   {
-                    className: `dim-cal__weekcol${iso === selected ? " dim-cal__weekcol--selected" : ""}`,
+                    className: `dim-cal__weekcol${isWeekend(iso) ? " dim-cal__weekcol--weekend" : ""}${iso === selected ? " dim-cal__weekcol--selected" : ""}`,
                     role: "gridcell",
                     "data-region": "dim-cal-weekcol",
                     "data-day": iso,
+                    ...pressing(iso),
+                    onDoubleClick: onCreate ? (event) => onDoubleClick(event, iso) : void 0,
                     children: [
+                      onCreate && plan.window ? hours(plan.window.from, plan.window.to).map((hour) => /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__slot", "data-hour": hour, "aria-hidden": "true" }, hour, false, {
+                        fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
+                        lineNumber: 523,
+                        columnNumber: 37
+                      })) : null,
                       line !== null && line.column === column ? /* @__PURE__ */ jsxDEV(
                         "span",
                         {
@@ -449,7 +501,7 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
                         false,
                         {
                           fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                          lineNumber: 439,
+                          lineNumber: 526,
                           columnNumber: 37
                         }
                       ) : null,
@@ -460,7 +512,7 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
                   true,
                   {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-                    lineNumber: 431,
+                    lineNumber: 512,
                     columnNumber: 29
                   }
                 ))
@@ -470,7 +522,7 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
             true,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-              lineNumber: 418,
+              lineNumber: 499,
               columnNumber: 21
             }
           ) : null
@@ -480,24 +532,25 @@ const WeekGrid = /* @__PURE__ */ __name((props) => {
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-        lineNumber: 361,
+        lineNumber: 435,
         columnNumber: 13
       }
     ),
     !plan.window && !plan.strip.bars.length ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__dayempty", "data-region": "dim-cal-weekempty", children: look.strings.calendar_weekempty }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-      lineNumber: 453,
+      lineNumber: 540,
       columnNumber: 17
     }) : null
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/WeekGrid.tsx",
-    lineNumber: 360,
+    lineNumber: 434,
     columnNumber: 9
   });
 }, "WeekGrid");
 var WeekGrid_default = WeekGrid;
 export {
   TICK,
-  WeekGrid_default as default
+  WeekGrid_default as default,
+  hours
 };
 //# sourceMappingURL=WeekGrid.dev.js.map

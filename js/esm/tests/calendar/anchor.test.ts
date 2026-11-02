@@ -41,4 +41,23 @@ describe('the popover\'s anchor', () => {
         expect(placed.top).toBeGreaterThanOrEqual(8);
         expect(placed.top + tall.height).toBeLessThanOrEqual(VIEWPORT.height - 8);
     });
+
+    it('stays under the fixed navbar: flips below an opener near the top, and never rises above it', () => {
+        // A bar at the top of the viewport, a 60px navbar: above would start at -8 px.
+        expect(anchor({top: 70, left: 50, bottom: 90, right: 200}, SIZE, VIEWPORT, 60)).toEqual({top: 98, left: 50});
+        // Pushed below by the navbar offset where the old placement put it at the viewport's edge.
+        const flipped = anchor({top: 740, left: 50, bottom: 760, right: 200}, {width: 300, height: 600}, VIEWPORT, 60);
+        expect(flipped.top).toBeGreaterThanOrEqual(68);
+        expect(flipped.top + 600).toBeLessThanOrEqual(792);
+        // Above, when it fits under the navbar: the offset is the least top.
+        expect(anchor({top: 700, left: 50, bottom: 720, right: 200}, SIZE, VIEWPORT, 60).top).toBe(492);
+    });
+
+    it('caps the height, to scroll inside, only when neither side holds it under the navbar', () => {
+        const capped = anchor({top: 390, left: 50, bottom: 410, right: 200}, {width: 300, height: 760}, VIEWPORT, 60);
+        expect(capped.top).toBe(68);
+        expect(capped.maxHeight).toBe(724);
+        expect(anchor({top: 390, left: 50, bottom: 410, right: 200}, {width: 300, height: 700}, VIEWPORT, 60).maxHeight)
+            .toBeUndefined();
+    });
 });

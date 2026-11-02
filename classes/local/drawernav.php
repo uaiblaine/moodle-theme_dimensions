@@ -123,8 +123,6 @@ final class drawernav {
     /**
      * The theme's calendar page, where the drawer's calendar row leads (docs/calendar/PROPOSAL.md, decision D1).
      *
-     * Core's own calendar stays reachable from that page's toolbar ("Classic calendar").
-     *
      * @return \core\url
      */
     public static function calendar_url(): \core\url {

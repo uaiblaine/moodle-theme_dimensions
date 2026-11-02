@@ -253,7 +253,95 @@ final class calendar_scss_test extends \advanced_testcase {
         $this->resetAfterTest();
         $modes = $this->compiled();
         $this->assertSame(array_keys($modes['light']), array_keys($modes['dark']));
-        $this->assertCount(count(self::KEYS) * 3 + 2, $modes['light']);
+        $this->assertCount(count(self::KEYS) * 3 + 4, $modes['light']);
+    }
+
+    /**
+     * The weekend's hatch is a token of both modes, faint over the quiet surface, and text keeps its contrast on it.
+     *
+     * The plain item's ink (the `other` key's) stands for every text drawn over a weekend's ground, the day numbers
+     * included, which are darker in the light mode and lighter in the dark one.
+     *
+     * @return void
+     */
+    public function test_the_weekend_hatch_is_faint_and_keeps_the_text_readable(): void {
+        $this->resetAfterTest();
+        $measured = 0;
+        foreach ($this->compiled() as $mode => $tokens) {
+            $hatch = $tokens['--dim-cal-weekend-hatch'] ?? '';
+            $this->assertMatchesRegularExpression('/^#[0-9a-f]{6}$/', $hatch, "{$mode}: the hatch compiles to a colour.");
+            $this->assertNotSame($tokens['--dim-cal-surface-quiet'], $hatch, "{$mode}: the hatch shows.");
+            $this->assertLessThan(1.5, branding::contrast($tokens['--dim-cal-surface-quiet'], $hatch), "{$mode}: faint.");
+            $this->assertGreaterThanOrEqual(4.5, branding::contrast($hatch, $tokens['--dim-cal-other-ink']), "{$mode}: text.");
+            $measured++;
+        }
+        $this->assertSame(2, $measured);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__ground--weekend,\s*\.dim-cal__weekcol--weekend \{\s*background-color: var\(--dim-cal-surface-quiet\);'
+                . '\s*background-image:\s*repeating-linear-gradient\(\s*135deg,\s*var\(--dim-cal-weekend-hatch\) 0 1px,~',
+            $this->scss()
+        );
+    }
+
+    /**
+     * A day under the mouse is told apart from the card surface, and text and every key's mark keep their contrast on it;
+     * the hover is drawn only where the pointer can hover, on the mark the client sets for a mouse alone.
+     *
+     * @return void
+     */
+    public function test_the_day_hover_reads_in_both_modes(): void {
+        $this->resetAfterTest();
+        $measured = 0;
+        foreach ($this->compiled() as $mode => $tokens) {
+            $hover = $tokens['--dim-cal-surface-hover'] ?? '';
+            $this->assertMatchesRegularExpression('/^#[0-9a-f]{6}$/', $hover, "{$mode}: the hover compiles to a colour.");
+            $this->assertNotSame($tokens['--dim-cal-surface'], $hover, "{$mode}: the hover shows.");
+            $this->assertGreaterThanOrEqual(4.5, branding::contrast($hover, $tokens['--dim-cal-other-ink']), "{$mode}: text.");
+            foreach (self::KEYS as $key) {
+                $this->assertGreaterThanOrEqual(
+                    3.0,
+                    branding::contrast($hover, $tokens["--dim-cal-{$key}-edge"]),
+                    "{$mode} {$key}: edge on the hover."
+                );
+            }
+            $measured++;
+        }
+        $this->assertSame(2, $measured);
+        $this->assertMatchesRegularExpression(
+            '~@media \(hover: hover\) \{\s*\.dim-cal__day\[data-cal-hover\] > \.dim-cal__ground,\s*'
+                . '\.dim-cal__weekcol\[data-cal-hover\] \{\s*background-color: var\(--dim-cal-surface-hover\);~',
+            $this->scss()
+        );
+    }
+
+    /**
+     * The page takes the whole column: Boost's cap of the standard layout's .main-inner is dropped from md up, under
+     * the page's body class, which outranks Boost's .pagelayout-standard selector.
+     *
+     * @return void
+     */
+    public function test_the_page_takes_the_whole_width(): void {
+        $this->assertMatchesRegularExpression(
+            '~^body\.dim-calendar \{\s*@media \(min-width: 768px\) \{\s*#page\.drawers \.main-inner \{\s*max-width: none;\s*\}~m',
+            $this->scss()
+        );
+    }
+
+    /**
+     * The day drawer sits beside the grid in a 24.5rem column and holds still under the navbar while the month scrolls.
+     *
+     * @return void
+     */
+    public function test_the_drawer_is_a_sticky_side_column(): void {
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__body--drawer \{\s*grid-template-columns: minmax\(0, 1fr\) 24\.5rem;~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__drawer--drawer \{\s*position: sticky;\s*top: calc\(#\{\$navbar-height\} \+ 1rem\);~',
+            $scss
+        );
     }
 
     /**

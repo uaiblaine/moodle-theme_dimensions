@@ -58,6 +58,8 @@ body.dim-calendar,
     --dim-cal-overdue-ink: #{$dim-ds-red-800};
     --dim-cal-surface: #{$dim-ds-white};
     --dim-cal-surface-quiet: #{$dim-ds-gray-050};
+    --dim-cal-weekend-hatch: #{$dim-ds-gray-200};
+    --dim-cal-surface-hover: #{$dim-ds-blue-050};
 }
 
 // The dark half: a key's fill is its edge mixed into core's raised dark surface, its ink a light primitive lifted
@@ -93,9 +95,20 @@ body.dim-calendar,
     --dim-cal-overdue-ink: #{dark-readable($dim-ds-red-100, mix($dim-ds-red-500, $dark-surface-raised, 30%))};
     --dim-cal-surface: #{$dark-surface-raised};
     --dim-cal-surface-quiet: #{$dark-surface-page};
+    --dim-cal-weekend-hatch: #{$dark-surface-raised};
+    --dim-cal-surface-hover: #{mix($dim-ds-blue-500, $dark-surface-page, 30%)};
 }
 
 body.dim-calendar {
+    // The page takes the whole column (owner, 2026-11-02): Boost caps .main-inner of the standard layout at
+    // $course-content-maxwidth (Boost Union's coursecontentmaxwidth) from md up, which left the grid and the day drawer
+    // side by side in 830px. The body class outranks Boost's .pagelayout-standard selector by one class.
+    @media (min-width: 768px) {
+        #page.drawers .main-inner {
+            max-width: none;
+        }
+    }
+
     // Each key class points the item's three local colours at its key's tokens.
     @each $key in site, category, course, group, user, activity, other, open, overdue {
         .dim-cal-key--#{$key} {
@@ -362,6 +375,38 @@ body.dim-calendar {
         font-weight: 400;
     }
 
+    // The event types' dropdown (EventTypes.tsx): opens under its button at the toolbar's start.
+    .dim-cal__typespanel {
+        right: auto;
+        left: 0;
+        gap: .5rem;
+        min-width: 16rem;
+    }
+
+    .dim-cal__typesall {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-weight: 400;
+    }
+
+    .dim-cal__typecheck {
+        gap: .625rem;
+    }
+
+    .dim-cal__typecheck .dim-cal__chiplabel {
+        flex: 1 1 auto;
+    }
+
+    .dim-cal__selectall {
+        align-self: flex-start;
+        padding: 0;
+        font-size: .8125rem;
+    }
+
+    // An hour row of the drawer's column and of the week's body, the target of a double-click that creates an event.
+    .dim-cal__slot {
+        min-width: 0;
+    }
+
     .dim-cal__tree {
         display: flex;
         flex-direction: column;
@@ -458,9 +503,40 @@ body.dim-calendar {
         background: var(--dim-cal-surface);
     }
 
-    .dim-cal__ground--weekend,
     .dim-cal__ground--other {
         background: var(--dim-cal-surface-quiet);
+    }
+
+    // A Saturday or a Sunday (days.ts isWeekend()): a fine 135-degree hatch over the quiet surface, light enough that
+    // the day numbers keep their contrast (calendar_scss_test measures the ink on the hatch).
+    .dim-cal__ground--weekend,
+    .dim-cal__weekcol--weekend {
+        background-color: var(--dim-cal-surface-quiet);
+        background-image:
+            repeating-linear-gradient(
+                135deg,
+                var(--dim-cal-weekend-hatch) 0 1px,
+                transparent 1px .5rem
+            );
+    }
+
+    .dim-cal__weekday--weekend,
+    .dim-cal__weekheadcell--weekend {
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    // A day the mouse is over (DayCell.tsx hoverMark(), set for a mouse alone): a click anywhere on it opens it. The
+    // hatch of a weekend stays over the hover's colour.
+    @media (hover: hover) {
+        .dim-cal__day[data-cal-hover] > .dim-cal__ground,
+        .dim-cal__weekcol[data-cal-hover] {
+            background-color: var(--dim-cal-surface-hover);
+            cursor: pointer;
+        }
+
+        .dim-cal__day[data-cal-hover] > .dim-cal__content {
+            cursor: pointer;
+        }
     }
 
     .dim-cal__ground--selected {
@@ -660,7 +736,17 @@ body.dim-calendar {
     }
 
     .dim-cal__body--drawer {
-        grid-template-columns: minmax(0, 1fr) 22rem;
+        grid-template-columns: minmax(0, 1fr) 24.5rem;
+    }
+
+    // A six-week month is taller than a laptop's viewport, and the drawer starts at the frame's top: opened on a day of
+    // the lower weeks it sat above the viewport (PROPOSAL.md section 27.2). So it holds still under the navbar while the
+    // grid scrolls, and scrolls its own content when that is taller than the viewport; its hour column never does.
+    .dim-cal__drawer--drawer {
+        position: sticky;
+        top: calc(#{$navbar-height} + 1rem);
+        max-height: calc(100vh - #{$navbar-height} - 2rem);
+        overflow-y: auto;
     }
 
     .dim-cal__drawer {
@@ -690,7 +776,14 @@ body.dim-calendar {
         font-weight: 600;
     }
 
-    .dim-cal__close {
+    .dim-cal__drawertitle {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .dim-cal__close,
+    .dim-cal__newevent--icon {
+        flex: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -821,10 +914,6 @@ body.dim-calendar {
         border-style: dashed;
     }
 
-    .dim-cal__dayclassic {
-        font-size: .8125rem;
-    }
-
     // The view switch's links, in the server's layer, read as the client's buttons do.
     a.dim-cal__view {
         text-decoration: none;
@@ -926,6 +1015,8 @@ body.dim-calendar {
 
     .dim-cal__weekcol {
         position: relative;
+        display: grid;
+        grid-template-rows: repeat(var(--dim-cal-hourcount, 24), 2.5rem);
         height: calc(var(--dim-cal-hourcount, 24) * 2.5rem);
         border-inline-start: 1px solid var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
         background-image:
@@ -933,6 +1024,21 @@ body.dim-calendar {
                 to bottom,
                 var(--dim-ds-border-subtle, var(--bs-border-color-translucent)) 0 1px,
                 transparent 1px 2.5rem
+            );
+    }
+
+    // The weekend's hatch under the hour lines: both images, the lines first so they stay on top.
+    .dim-cal__weekcol--weekend {
+        background-image:
+            repeating-linear-gradient(
+                to bottom,
+                var(--dim-ds-border-subtle, var(--bs-border-color-translucent)) 0 1px,
+                transparent 1px 2.5rem
+            ),
+            repeating-linear-gradient(
+                135deg,
+                var(--dim-cal-weekend-hatch) 0 1px,
+                transparent 1px .5rem
             );
     }
 
@@ -1074,6 +1180,53 @@ body.dim-calendar {
         overflow-y: auto;
         border-end-start-radius: 0;
         border-end-end-radius: 0;
+    }
+
+    // An event course's cover (EventPopover.tsx): its image, else its category's branding pair (look.ts coverStyle()),
+    // else its key's colours; the date tile on it.
+    .dim-cal__popcover {
+        position: relative;
+        height: 5.5rem;
+        margin: -1rem -1rem 0;
+        overflow: hidden;
+        border-start-start-radius: var(--dim-ds-radius-lg, 12px);
+        border-start-end-radius: var(--dim-ds-radius-lg, 12px);
+        background: var(--dim-cal-cover-bg, var(--dim-cal-edge));
+    }
+
+    .dim-cal__popcoverimg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .dim-cal__poptile {
+        position: absolute;
+        bottom: .625rem;
+        left: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 3rem;
+        padding: .25rem .5rem;
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: var(--dim-cal-surface);
+        box-shadow: var(--dim-ds-shadow-sm, none);
+        color: var(--dim-ds-text-heading, var(--bs-emphasis-color));
+        line-height: 1.1;
+    }
+
+    .dim-cal__poptilemonth {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .6875rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__poptileday {
+        font-size: 1.25rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
     }
 
     .dim-cal__kind {

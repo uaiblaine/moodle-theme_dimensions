@@ -2,8 +2,9 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The calendar page's client: the toolbar, the key chips, the category picker, "More filters", the month grid or the
- * week (WeekGrid.tsx, stage C4), the day drawer (the agenda sheet on a phone) and the event popover.
+ * The calendar page's client: the toolbar, the event types' dropdown, the category picker, "More filters" and "Clear
+ * filters", the month grid or the week (WeekGrid.tsx, stage C4), the day drawer (the agenda sheet on a phone) and the
+ * event popover.
  *
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws, never moved (a node that leaves the
  * document is unmounted). The props carry the range's first answer, so the first paint asks for nothing; once the
@@ -27,9 +28,12 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * - An item opens the popover (EventPopover.tsx) on a press, Enter or Space, through one delegated listener on the
  *   elements marked data-cal-pop; a modified press and a middle click follow the item's href.
  * - The phone layout is the frame's width, measured by the shown grid's one ResizeObserver (MonthGrid.tsx PHONE).
+ * - "Clear filters" is drawn while any filter is applied (model.ts filtered()) and puts the keys, "More filters" and
+ *   the category scope back in one change (cleared()); the focus goes to the event types' button, which stays.
  * - Editing is core's (stage C5, PROPOSAL.md section 23): "New event" in the toolbar and in the drawer only when the
- *   server says core would show it (props.edits), the popover's Edit and Delete (EditActions.tsx) and the drag only for
- *   what core's answer lists (answer.editing). Core's form, confirmation and move service do the work (editing.ts);
+ *   server says core would show it (props.edits), and so only then a double-click on a day's ground or an hour row
+ *   (R1, section 27.2: {@see creator()}), the popover's Edit and Delete (EditActions.tsx) and the drag only for what
+ *   core's answer lists (answer.editing). Core's form, confirmation and move service do the work (editing.ts);
  *   when core says something changed, or a move is done, the span shown is asked again with the state shown, through
  *   the same ticket and Pending token as navigation, writing nothing.
  * - A drag is delegated on the root: the items let the pointer through while it is on (a class on the root), so the
@@ -51,18 +55,19 @@ import DayDrawer from "./DayDrawer";
 import { gridWeeks, zone as zoneOf } from "./days";
 import { description } from "./description";
 import EditActions from "./EditActions";
+import EventTypes, { ClearFilters } from "./EventTypes";
 import { moveStart, onChange, openForm, refuse } from "./editing";
 import EventPopover from "./EventPopover";
 import { writeAddress } from "./history";
-import KeyChips from "./KeyChips";
 import { dayDots, place } from "./layout";
 import {
   KEYS,
   DAY_PARAM,
   address,
+  cleared,
   emptyAnswer,
+  filtered,
   keysOn,
-  monthHref,
   normalise,
   rangeArgs,
   readAddress,
@@ -72,7 +77,7 @@ import {
 import MonthGrid, { PHONE } from "./MonthGrid";
 import { itemKey, overlapsOf } from "./overlap";
 import MoreFilters from "./MoreFilters";
-import { MOVE_MINUTE, dayStart, dropRefusal, editOf, editsOf, instantOf, toolbarStart } from "./moves";
+import { MOVE_MINUTE, createStart, dayStart, dropRefusal, editOf, editsOf, instantOf, toolbarStart } from "./moves";
 import { fill, load as loadStrings } from "./strings";
 import ViewSwitch from "./ViewSwitch";
 import WeekGrid from "./WeekGrid";
@@ -92,26 +97,33 @@ import {
 const QUIET = 800;
 const LONG_DAY = { weekday: "long", day: "numeric", month: "long", year: "numeric" };
 const CAPTION = "dim-cal-caption";
+const creator = /* @__PURE__ */ __name((edits, create) => edits?.create ? create : void 0, "creator");
+const atHourOf = /* @__PURE__ */ __name((create, iso) => create ? (hour) => create(iso, hour) : void 0, "atHourOf");
 const report = /* @__PURE__ */ __name((failure) => load("core/notification").then((notification) => notification.exception(failure)), "report");
 const openingDay = /* @__PURE__ */ __name((month, today) => today.startsWith(month) ? today : `${month}-01`, "openingDay");
 const openableDay = /* @__PURE__ */ __name((day, days) => day && days.includes(day) ? day : null, "openableDay");
 const propsSpan = /* @__PURE__ */ __name((props) => props.view === "week" && parse(props.week) ? { view: "week", week: String(props.week) } : { view: "month", month: props.month }, "propsSpan");
 const dropCell = /* @__PURE__ */ __name((target) => target instanceof Element ? target.closest("[data-cal-drop]") : null, "dropCell");
-const newEventButton = /* @__PURE__ */ __name((edits, label, name, onOpen) => edits?.create ? /* @__PURE__ */ jsxDEV(
+const newEventButton = /* @__PURE__ */ __name((edits, label, name, onOpen, icon = false) => edits?.create ? /* @__PURE__ */ jsxDEV(
   "button",
   {
     type: "button",
-    className: "btn btn-primary dim-cal__newevent",
+    className: icon ? "btn btn-primary dim-cal__newevent dim-cal__newevent--icon" : "btn btn-primary dim-cal__newevent",
     "aria-label": name,
+    title: icon ? name : void 0,
     "data-action": "dim-cal-new",
     onClick: onOpen,
-    children: label
+    children: icon ? /* @__PURE__ */ jsxDEV("i", { className: "fa fa-plus", "aria-hidden": "true" }, void 0, false, {
+      fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
+      lineNumber: 235,
+      columnNumber: 17
+    }) : label
   },
   void 0,
   false,
   {
     fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-    lineNumber: 189,
+    lineNumber: 227,
     columnNumber: 5
   }
 ) : null, "newEventButton");
@@ -145,6 +157,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
   const showing = useRef(shown.span);
   showing.current = shown.span;
   const moving = useRef(null);
+  const pressed = useRef(null);
   const over = useRef(null);
   const changes = useRef(() => void 0);
   const zone = useMemo(() => zoneOf(props.timezone, language), [props.timezone, language]);
@@ -421,6 +434,23 @@ const Calendar = /* @__PURE__ */ __name((props) => {
   const drawn = dayIn(openday, days);
   const own = week ? days : days.filter((iso) => iso.startsWith(month));
   const step = /* @__PURE__ */ __name((offset) => toDay(stepSpan(shown.span, parse(selected) ? selected : days[0], offset), false), "step");
+  const createAt = creator(props.edits, (iso, hour) => form(null, createStart(iso, hour, props.now, zone, props.timezone)));
+  const pressGround = /* @__PURE__ */ __name((iso, hour, clicks) => {
+    if (clicks > 1) {
+      return;
+    }
+    pressed.current = { iso, hour };
+    openDay(iso);
+  }, "pressGround");
+  const createOnGround = creator(props.edits, (iso, hour) => {
+    const at = pressed.current || { iso, hour };
+    pressed.current = null;
+    form(null, createStart(at.iso, at.hour, props.now, zone, props.timezone));
+  });
+  const clear = /* @__PURE__ */ __name(() => {
+    root.current?.querySelector('[data-action="dim-cal-types"]')?.focus();
+    change(cleared());
+  }, "clear");
   return /* @__PURE__ */ jsxDEV(
     "div",
     {
@@ -437,12 +467,12 @@ const Calendar = /* @__PURE__ */ __name((props) => {
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar", children: [
           /* @__PURE__ */ jsxDEV("h1", { className: "dim-cal__title", children: strings.calendar_title }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 716,
+            lineNumber: 790,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-secondary dim-cal__today", onClick: () => toDay(props.today, false), children: strings.calendar_today }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 717,
+            lineNumber: 791,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(
@@ -455,7 +485,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
               onClick: () => step(-1),
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-left", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                lineNumber: 727,
+                lineNumber: 801,
                 columnNumber: 21
               })
             },
@@ -463,7 +493,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 720,
+              lineNumber: 794,
               columnNumber: 17
             }
           ),
@@ -477,7 +507,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
               onClick: () => step(1),
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-right", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                lineNumber: 736,
+                lineNumber: 810,
                 columnNumber: 21
               })
             },
@@ -485,23 +515,23 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 729,
+              lineNumber: 803,
               columnNumber: 17
             }
           ),
           /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__caption", id: CAPTION, "aria-live": "polite", "data-region": "dim-cal-caption", children: labels.caption }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 738,
+            lineNumber: 812,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__spacer" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 739,
+            lineNumber: 813,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(ViewSwitch, { strings, view: shown.span.view, onView: toView }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 740,
+            lineNumber: 814,
             columnNumber: 17
           }),
           newEventButton(
@@ -509,38 +539,33 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             strings.calendar_newevent,
             strings.calendar_newevent,
             () => form(null, toolbarStart(own, props.today, props.now, zone, props.timezone))
-          ),
-          /* @__PURE__ */ jsxDEV("a", { className: "dim-cal__classic", href: monthHref(props.urls.calendar, month), children: strings.calendar_classic }, void 0, false, {
-            fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 743,
-            columnNumber: 17
-          })
+          )
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 715,
+          lineNumber: 789,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar", children: [
           /* @__PURE__ */ jsxDEV(
-            KeyChips,
+            EventTypes,
             {
               strings,
               keys: KEYS,
               off: state.off,
               counts,
-              onToggle: (key) => change({ off: state.off.includes(key) ? state.off.filter((other) => other !== key) : [...state.off, key] })
+              onChange: (off) => change({ off })
             },
             void 0,
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 746,
+              lineNumber: 819,
               columnNumber: 17
             }
           ),
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__spacer" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 754,
+            lineNumber: 826,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(
@@ -556,7 +581,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 755,
+              lineNumber: 827,
               columnNumber: 17
             }
           ),
@@ -572,13 +597,18 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 762,
+              lineNumber: 834,
               columnNumber: 17
             }
-          )
+          ),
+          /* @__PURE__ */ jsxDEV(ClearFilters, { shown: filtered(state), label: strings.calendar_clearfilters, onClear: clear }, void 0, false, {
+            fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
+            lineNumber: 840,
+            columnNumber: 17
+          })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 745,
+          lineNumber: 818,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV(
@@ -602,13 +632,15 @@ const Calendar = /* @__PURE__ */ __name((props) => {
                   onSelect: selectDay,
                   onWeek: (iso) => toDay(iso, true),
                   onOpen: openDay,
+                  onGround: pressGround,
+                  onCreate: createOnGround,
                   onWidth: (width) => setPhone(width < PHONE)
                 },
                 void 0,
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                  lineNumber: 774,
+                  lineNumber: 847,
                   columnNumber: 21
                 }
               ) : /* @__PURE__ */ jsxDEV(
@@ -626,13 +658,15 @@ const Calendar = /* @__PURE__ */ __name((props) => {
                   onSelect: selectDay,
                   onMonth: (iso) => toDay(iso, true),
                   onOpen: openDay,
+                  onGround: pressGround,
+                  onCreate: createOnGround,
                   onWidth: (width) => setPhone(width < PHONE)
                 },
                 void 0,
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                  lineNumber: 790,
+                  lineNumber: 865,
                   columnNumber: 21
                 }
               ),
@@ -643,21 +677,22 @@ const Calendar = /* @__PURE__ */ __name((props) => {
                   iso: drawn,
                   placed,
                   variant: phone ? "sheet" : "drawer",
-                  calendar: props.urls.calendar,
                   focusing: dayfocus,
                   action: newEventButton(
                     props.edits,
                     strings.calendar_newevent,
                     fill(strings.calendar_neweventon, say(drawn, LONG_DAY, language)),
-                    () => form(null, dayStart(drawn, props.now, zone, props.timezone))
+                    () => form(null, dayStart(drawn, props.now, zone, props.timezone)),
+                    true
                   ),
+                  onCreate: atHourOf(createAt, drawn),
                   onClose: closeDay
                 },
                 void 0,
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                  lineNumber: 807,
+                  lineNumber: 884,
                   columnNumber: 21
                 }
               ) : null
@@ -667,13 +702,13 @@ const Calendar = /* @__PURE__ */ __name((props) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 769,
+            lineNumber: 842,
             columnNumber: 13
           }
         ),
         shown.answer.truncated ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__status", children: strings.calendar_truncated }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 821,
+          lineNumber: 898,
           columnNumber: 39
         }) : null,
         popped && poppedentry ? /* @__PURE__ */ jsxDEV(
@@ -700,7 +735,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                lineNumber: 833,
+                lineNumber: 910,
                 columnNumber: 25
               }
             ) : null,
@@ -710,7 +745,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 823,
+            lineNumber: 900,
             columnNumber: 17
           }
         ) : null
@@ -720,7 +755,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-      lineNumber: 704,
+      lineNumber: 778,
       columnNumber: 9
     }
   );
@@ -728,6 +763,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
 var Calendar_default = Calendar;
 export {
   QUIET,
+  creator,
   Calendar_default as default,
   openableDay,
   openingDay,

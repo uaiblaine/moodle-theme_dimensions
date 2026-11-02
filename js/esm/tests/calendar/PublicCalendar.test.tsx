@@ -180,12 +180,14 @@ describe('the first paint', () => {
         expect(gridItem(5)).not.toBeNull();
     });
 
-    it('draws the two chips and nothing that needs a session or a login', async() => {
+    it('draws the two event types and nothing that needs a session or a login', async() => {
         const page = await mount(props());
-        const chips = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-chips"] [data-key]'));
-        expect(chips.map((chip) => chip.dataset.key)).toEqual(['category', 'open']);
-        expect(chips.every((chip) => chip.getAttribute('aria-pressed') === 'true')).toBe(true);
-        expect(page.querySelector('.dim-cal__classic')).toBeNull();
+        const boxes = Array.from(page.querySelectorAll<HTMLInputElement>('[data-region="dim-cal-types"] input[data-key]'));
+        expect(boxes.map((box) => box.dataset.key)).toEqual(['category', 'open']);
+        expect(boxes.every((box) => box.checked)).toBe(true);
+        expect(page.querySelector('[data-action="dim-cal-types"]')?.textContent).toBe('Event typesAll');
+        expect(page.querySelector('[data-action="dim-cal-clear"]')).toBeNull();
+        expect(page.querySelector('a[href*="calendar/view.php"]')).toBeNull();
         expect(page.querySelector('[role="tree"]')).toBeNull();
         expect(page.textContent).not.toContain(STRINGS.calendar_morefilters);
         expect(page.textContent).not.toContain(STRINGS.calendar_category + ' ');
@@ -197,8 +199,9 @@ describe('the service', () => {
         const replace = jest.spyOn(window.history, 'replaceState');
         await mount(props());
         await act(async() => {
-            fireEvent.click(document.querySelector('[data-region="dim-cal-chips"] [data-key="category"]') as HTMLElement);
+            fireEvent.click(document.querySelector('[data-region="dim-cal-types"] [data-key="category"]') as HTMLElement);
         });
+        expect(document.querySelector('[data-action="dim-cal-types"]')?.textContent).toBe('Event types1 of 2');
         expect(calls()).toHaveLength(1);
         const [request, options] = calls()[0];
         expect(request.methodname).toBe(METHOD);
@@ -206,6 +209,18 @@ describe('the service', () => {
         expect(options).toEqual({loginrequired: false});
         expect(replace.mock.calls.some(([, , url]) => String(url).includes('keys%5B%5D=open'))).toBe(true);
         replace.mockRestore();
+    });
+
+    it('"Clear filters" turns both keys back on in one request, and is gone', async() => {
+        await mount(props(publicAnswer(), {keys: ['open']}));
+        const clear = document.querySelector<HTMLElement>('[data-action="dim-cal-clear"]') as HTMLElement;
+        await act(async() => {
+            fireEvent.click(clear);
+        });
+        expect(calls()).toHaveLength(1);
+        expect(calls()[0][0].args.keys).toEqual(['category', 'open']);
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).toBeNull();
+        expect(document.activeElement).toBe(document.querySelector('[data-action="dim-cal-types"]'));
     });
 
     it('both keys off ask nothing; a month moved asks again and pushes the address', async() => {
@@ -290,6 +305,13 @@ describe('the popover', () => {
         expect(dialog.querySelector('[data-region="dim-cal-description"]')).toBeNull();
     });
 
+    it('a click on a day\'s ground opens it for a visitor too', async() => {
+        await mount(props(publicAnswer([fair()])));
+        const cell = document.querySelector<HTMLElement>('[data-role="day"][data-day="2026-11-12"]')?.parentElement as HTMLElement;
+        fireEvent.click(cell.querySelector('.dim-cal__ground') as HTMLElement, {detail: 1});
+        await waitFor(() => expect(document.querySelector('[data-region="dim-cal-day"]')?.getAttribute('data-day')).toBe('2026-11-12'));
+    });
+
     it('the day drawer has no link to core\'s calendar', async() => {
         await mount(props(publicAnswer([fair()])));
         fireEvent.click(document.querySelector('[data-role="day"][data-day="2026-11-10"]') as HTMLElement);
@@ -298,7 +320,7 @@ describe('the popover', () => {
             expect(found).not.toBeNull();
             return found as HTMLElement;
         });
-        expect(drawer.querySelector('.dim-cal__dayclassic')).toBeNull();
+        expect(drawer.querySelector('a[href*="calendar/view.php"]')).toBeNull();
         expect(drawer.textContent).toContain('Fair');
     });
 });

@@ -66,6 +66,19 @@ export const gridWeeks = (month: string, firstday: number): string[][] => {
     return rows.map((row, index) => Array.from({length: WEEK}, (unused, slot) => shift(start, index * WEEK + slot)));
 };
 
+/**
+ * Whether a day is a Saturday or a Sunday: read from the date itself, whatever weekday the viewer's week begins on.
+ *
+ * The weekday of a calendar day counted in UTC, as the grid counts its days, so no timezone moves it.
+ *
+ * @param {string} iso The day, YYYY-MM-DD.
+ * @returns {boolean}
+ */
+export const isWeekend = (iso: string): boolean => {
+    const weekday = new Date(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)))).getUTCDay();
+    return weekday === 0 || weekday === 6;
+};
+
 /** What reads an instant in the viewer's timezone. */
 export type Zone = {
     day: (timestamp: number) => string,

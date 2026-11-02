@@ -14,8 +14,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The calendar page's client: the toolbar, the key chips, the category picker, "More filters", the month grid or the
- * week (WeekGrid.tsx, stage C4), the day drawer (the agenda sheet on a phone) and the event popover.
+ * The calendar page's client: the toolbar, the event types' dropdown, the category picker, "More filters" and "Clear
+ * filters", the month grid or the week (WeekGrid.tsx, stage C4), the day drawer (the agenda sheet on a phone) and the
+ * event popover.
  *
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws, never moved (a node that leaves the
  * document is unmounted). The props carry the range's first answer, so the first paint asks for nothing; once the
@@ -39,9 +40,12 @@
  * - An item opens the popover (EventPopover.tsx) on a press, Enter or Space, through one delegated listener on the
  *   elements marked data-cal-pop; a modified press and a middle click follow the item's href.
  * - The phone layout is the frame's width, measured by the shown grid's one ResizeObserver (MonthGrid.tsx PHONE).
+ * - "Clear filters" is drawn while any filter is applied (model.ts filtered()) and puts the keys, "More filters" and
+ *   the category scope back in one change (cleared()); the focus goes to the event types' button, which stays.
  * - Editing is core's (stage C5, PROPOSAL.md section 23): "New event" in the toolbar and in the drawer only when the
- *   server says core would show it (props.edits), the popover's Edit and Delete (EditActions.tsx) and the drag only for
- *   what core's answer lists (answer.editing). Core's form, confirmation and move service do the work (editing.ts);
+ *   server says core would show it (props.edits), and so only then a double-click on a day's ground or an hour row
+ *   (R1, section 27.2: {@see creator()}), the popover's Edit and Delete (EditActions.tsx) and the drag only for what
+ *   core's answer lists (answer.editing). Core's form, confirmation and move service do the work (editing.ts);
  *   when core says something changed, or a move is done, the span shown is asked again with the state shown, through
  *   the same ticket and Pending token as navigation, writing nothing.
  * - A drag is delegated on the root: the items let the pointer through while it is on (a class on the root), so the
@@ -65,11 +69,11 @@ import DayDrawer from './DayDrawer';
 import {gridWeeks, zone as zoneOf} from './days';
 import {description} from './description';
 import EditActions from './EditActions';
+import EventTypes, {ClearFilters} from './EventTypes';
 import {moveStart, onChange, openForm, refuse} from './editing';
 import type {Change} from './editing';
 import EventPopover from './EventPopover';
 import {writeAddress} from './history';
-import KeyChips from './KeyChips';
 import {dayDots, place} from './layout';
 import type {Placed} from './layout';
 import type {Look} from './look';
@@ -77,9 +81,10 @@ import {
     KEYS,
     DAY_PARAM,
     address,
+    cleared,
     emptyAnswer,
+    filtered,
     keysOn,
-    monthHref,
     normalise,
     rangeArgs,
     readAddress,
@@ -90,7 +95,7 @@ import type {Answer, Edit, Edits, Item, Key, Props, State} from './model';
 import MonthGrid, {PHONE} from './MonthGrid';
 import {itemKey, overlapsOf} from './overlap';
 import MoreFilters from './MoreFilters';
-import {MOVE_MINUTE, dayStart, dropRefusal, editOf, editsOf, instantOf, toolbarStart} from './moves';
+import {MOVE_MINUTE, createStart, dayStart, dropRefusal, editOf, editsOf, instantOf, toolbarStart} from './moves';
 import {fill, load as loadStrings} from './strings';
 import type {Strings} from './strings';
 import ViewSwitch from './ViewSwitch';
@@ -130,6 +135,32 @@ type Popped = {key: string, opener: HTMLElement};
 
 /** A drag under way: the item, core's answer for it and the day it starts on. */
 type Moving = {item: Item, edit: Edit, from: string};
+
+/** Where a day's ground was pressed: the day, and the hour row of the week's body when it was one. */
+type Pressed = {iso: string, hour: number | null};
+
+/** What creates an event on the grid: a day, and an hour or null. */
+type Create = (iso: string, hour: number | null) => void;
+
+/**
+ * What creates an event on the grid, only while core would show "New event" (props.edits): undefined otherwise, so
+ * nothing listens to a double-click.
+ *
+ * @param {object|undefined} edits Core's answers for creating.
+ * @param {Function} create What opens core's form.
+ * @returns {Function|undefined}
+ */
+export const creator = (edits: Edits | undefined, create: Create): Create | undefined => (edits?.create ? create : undefined);
+
+/**
+ * The drawer's creation at an hour of its day, or undefined when nothing creates.
+ *
+ * @param {Function|undefined} create What creates an event on the grid.
+ * @param {string} iso The drawer's day.
+ * @returns {Function|undefined}
+ */
+const atHourOf = (create: Create | undefined, iso: string): ((hour: number) => void) | undefined =>
+    (create ? (hour: number) => create(iso, hour) : undefined);
 
 /**
  * Show core's message for a failure.
@@ -183,17 +214,25 @@ const dropCell = (target: EventTarget | null): HTMLElement | null =>
  * @param {string} label The button's text.
  * @param {string} name The button's accessible name.
  * @param {Function} onOpen What it does.
+ * @param {boolean} icon Whether it is the "+" icon button (the day drawer's) rather than the text button.
  * @returns {object|null} The button, or nothing.
  */
-const newEventButton = (edits: Edits | undefined, label: string, name: string, onOpen: () => void) => (edits?.create ? (
+const newEventButton = (
+    edits: Edits | undefined,
+    label: string,
+    name: string,
+    onOpen: () => void,
+    icon: boolean = false
+) => (edits?.create ? (
     <button
         type="button"
-        className="btn btn-primary dim-cal__newevent"
+        className={icon ? 'btn btn-primary dim-cal__newevent dim-cal__newevent--icon' : 'btn btn-primary dim-cal__newevent'}
         aria-label={name}
+        title={icon ? name : undefined}
         data-action="dim-cal-new"
         onClick={onOpen}
     >
-        {label}
+        {icon ? <i className="fa fa-plus" aria-hidden="true"></i> : label}
     </button>
 ) : null);
 
@@ -242,6 +281,7 @@ const Calendar = (props: Props) => {
     const showing = useRef<Span>(shown.span);
     showing.current = shown.span;
     const moving = useRef<Moving | null>(null);
+    const pressed = useRef<Pressed | null>(null);
     const over = useRef<HTMLElement | null>(null);
     const changes = useRef<(change: Change) => void>(() => undefined);
 
@@ -699,6 +739,40 @@ const Calendar = (props: Props) => {
      * @returns {void}
      */
     const step = (offset: number): void => toDay(stepSpan(shown.span, parse(selected) ? selected : days[0], offset), false);
+    // Core's form for a new event on a day, at its hour when one is named (the drawer's hour rows).
+    const createAt = creator(props.edits, (iso, hour) => form(null, createStart(iso, hour, props.now, zone, props.timezone)));
+    /**
+     * A press on a day's ground (anywhere in the day but its controls) opens the day, as its button does. The first
+     * click of a double-click is one too: it opens the drawer, which narrows the grid, so the second click may land on
+     * another day; the double-click therefore creates on the day the first click named ({@see createOnGround}).
+     *
+     * @param {string} iso The day.
+     * @param {number|null} hour The hour row pressed in the week's body, or null.
+     * @param {number} clicks The press's click count (event.detail): the second of a double-click opens nothing.
+     * @returns {void}
+     */
+    const pressGround = (iso: string, hour: number | null, clicks: number): void => {
+        if (clicks > 1) {
+            return;
+        }
+        pressed.current = {iso: iso, hour: hour};
+        openDay(iso);
+    };
+    // A double-click on a day's ground creates on the day (and hour) its first click pressed.
+    const createOnGround = creator(props.edits, (iso, hour) => {
+        const at = pressed.current || {iso: iso, hour: hour};
+        pressed.current = null;
+        form(null, createStart(at.iso, at.hour, props.now, zone, props.timezone));
+    });
+    /**
+     * Put every filter back: the keys, "More filters" and the category scope, the focus on the event types' button.
+     *
+     * @returns {void}
+     */
+    const clear = (): void => {
+        root.current?.querySelector<HTMLElement>('[data-action="dim-cal-types"]')?.focus();
+        change(cleared());
+    };
 
     return (
         <div
@@ -740,16 +814,14 @@ const Calendar = (props: Props) => {
                 <ViewSwitch strings={strings} view={shown.span.view} onView={toView} />
                 {newEventButton(props.edits, strings.calendar_newevent, strings.calendar_newevent,
                     () => form(null, toolbarStart(own, props.today, props.now, zone, props.timezone)))}
-                <a className="dim-cal__classic" href={monthHref(props.urls.calendar, month)}>{strings.calendar_classic}</a>
             </div>
             <div className="dim-cal__toolbar">
-                <KeyChips
+                <EventTypes
                     strings={strings}
                     keys={KEYS}
                     off={state.off}
                     counts={counts}
-                    onToggle={(key: Key) => change({off: state.off.includes(key)
-                        ? state.off.filter((other) => other !== key) : [...state.off, key]})}
+                    onChange={(off: Key[]) => change({off: off})}
                 />
                 <span className="dim-cal__spacer"></span>
                 <CategoryPicker
@@ -765,6 +837,7 @@ const Calendar = (props: Props) => {
                     options={{model: props.options.model, modality: props.options.modality, city: cities}}
                     onChange={change}
                 />
+                <ClearFilters shown={filtered(state)} label={strings.calendar_clearfilters} onClear={clear} />
             </div>
             <div
                 className={`dim-cal__body${drawn !== null && !phone ? ' dim-cal__body--drawer' : ''}`}
@@ -784,6 +857,8 @@ const Calendar = (props: Props) => {
                         onSelect={selectDay}
                         onWeek={(iso) => toDay(iso, true)}
                         onOpen={openDay}
+                        onGround={pressGround}
+                        onCreate={createOnGround}
                         onWidth={(width) => setPhone(width < PHONE)}
                     />
                 ) : (
@@ -800,6 +875,8 @@ const Calendar = (props: Props) => {
                         onSelect={selectDay}
                         onMonth={(iso) => toDay(iso, true)}
                         onOpen={openDay}
+                        onGround={pressGround}
+                        onCreate={createOnGround}
                         onWidth={(width) => setPhone(width < PHONE)}
                     />
                 )}
@@ -809,11 +886,11 @@ const Calendar = (props: Props) => {
                         iso={drawn}
                         placed={placed}
                         variant={phone ? 'sheet' : 'drawer'}
-                        calendar={props.urls.calendar}
                         focusing={dayfocus}
                         action={newEventButton(props.edits, strings.calendar_newevent,
                             fill(strings.calendar_neweventon, say(drawn, LONG_DAY, language)),
-                            () => form(null, dayStart(drawn, props.now, zone, props.timezone)))}
+                            () => form(null, dayStart(drawn, props.now, zone, props.timezone)), true)}
+                        onCreate={atHourOf(createAt, drawn)}
                         onClose={closeDay}
                     />
                 ) : null}

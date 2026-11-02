@@ -1588,11 +1588,22 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   `calendar/editing.ts`, which adds them to the bridge's `Modules` interface by declaration merging, so the bridge (in the
   visitor's walk) names none of them. Core triggers its calendar events with jQuery on the body: listen with jQuery.
   The popover's actions are keyed per event, because jQuery caches the markers core's `registerRemove()` reads.
+- **R1: the owner's review** (PROPOSAL sections 27-28). No page links a view of core's calendar (no classic marker, no
+  session flag): `coreview::target()` sends every `/calendar/view.php` request of a real account, a course calendar
+  with its course's category through `coreview::course_category()` (core's `can_access_course()`, so the redirect names
+  no category of a course the reader cannot open). `/calendar/export_execute.php` is answered by `local\calendar\ical`,
+  a copy of core's script kept in step by the whole-file snapshot `ical.php.export_execute.upstream`
+  (`upstream::FILES`); its one change is `ical::admitted()`, over `source\core_events::admitted_categories()`, the
+  range's predicate. The after_config branch serves it outside any catch: a failure must not fall back to core's feed.
+  The client's event types are `EventTypes.tsx` (popover.ts's disclosure, real checkboxes); "Clear filters" is the
+  toolbar's (`model.ts` `filtered()`/`cleared()`); a double-click creates through `createAt` only while `props.edits`
+  offers "New event", on hour rows carrying `data-hour` (no layout read); the day drawer is sticky under the navbar.
 - Tests: `tests/local/calendar/{state,page,calendar_component_source}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,
   Behat `theme_dimensions_calendar.feature`; gates in the "C2 calendar page" and "C3 calendar drawer and popover" blocks
-  of `mutations/gates.conf`.
+  of `mutations/gates.conf`, and R1's in its own. `tests/local/calendar/ical_test.php` holds the feed against core's own
+  read of the same request.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 
