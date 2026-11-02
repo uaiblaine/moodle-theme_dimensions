@@ -149,6 +149,32 @@ final class calendar_test extends \core\tests\router\route_testcase {
     }
 
     /**
+     * With the public calendar on, a visitor is served the visitor's page through the same route, under forced login:
+     * the route asks nothing of the login before the shared decision.
+     *
+     * The control is the visitor sent to log in with the switch off (the test above).
+     *
+     * @return void
+     */
+    public function test_a_visitor_gets_the_public_calendar_when_it_is_on(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->forcelogin = 1;
+        set_config(\theme_dimensions\local\calendar\visitor::SETTING, '1', 'theme_dimensions');
+        $this->setUser(null);
+
+        $response = $this->request(['month' => '2026-11', 'keys' => ['open']]);
+
+        $body = (string) $response->getBody();
+        $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
+        $this->assertStringContainsString('data-react-component="' . calendar_page::COMPONENT_PUBLIC . '"', $body);
+        $props = $this->props($body);
+        $this->assertSame(['open'], $props['keys']);
+        $this->assertSame('2026-11', $props['month']);
+        $this->assertFalse(isloggedin());
+    }
+
+    /**
      * The guest account is core's calendar's, as core's primary navigation links it.
      *
      * @return void
@@ -284,5 +310,34 @@ final class calendar_test extends \core\tests\router\route_testcase {
         }
         $this->assertNotSame(200, $status, 'The policy is asked for before the page.');
         $this->assertStringNotContainsString(calendar_page::COMPONENT, $body);
+    }
+    /**
+     * The route serves the week view the address names, its week snapped to the first weekday, and writes the view, the
+     * week and the open day into the page's address, which is what a reload asks for again; a day outside the week is
+     * dropped, never refused.
+     *
+     * @return void
+     */
+    public function test_the_week_view_is_served_and_kept_in_the_address(): void {
+        global $CFG, $PAGE;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        $week = page::week_start('2026-11-18', (int) calendar_get_starting_weekday());
+        [$from, $to] = page::week($week);
+
+        $response = $this->request([page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-18', 'day' => $to]);
+
+        $body = (string) $response->getBody();
+        $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
+        $props = $this->props($body);
+        $this->assertSame(['week', $week, $to], [$props['view'], $props['week'], $props['day']]);
+        $this->assertSame([$from, $to], [$props['answer']['from'], $props['answer']['to']]);
+        $this->assertSame(['week', $week, $to], [$PAGE->url->param('view'), $PAGE->url->param('week'), $PAGE->url->param('day')]);
+
+        $response = $this->request([page::PARAM_VIEW => 'week', page::PARAM_WEEK => '2026-11-18', 'day' => '2026-11-30']);
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('', $this->props((string) $response->getBody())['day'], 'A day outside the week is dropped.');
+        $this->assertNull($PAGE->url->param('day'));
     }
 }

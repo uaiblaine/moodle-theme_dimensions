@@ -31,7 +31,13 @@ import type {Zone} from './days';
 import {fill} from './strings';
 import type {Strings} from './strings';
 
-/** What every item view needs from the page. */
+/**
+ * What every item view needs from the page.
+ *
+ * `movable` is handed by a page that lets core move events (the logged-in one): it answers whether core lets the viewer
+ * drag an item, and while it is there the views draw `draggable` on such an item and mark the days a drop may land on
+ * (`data-cal-drop`). A page without it draws neither.
+ */
 export type Look = {
     strings: Strings,
     zone: Zone,
@@ -40,6 +46,7 @@ export type Look = {
     courses: Map<number, Course>,
     categories: Map<number, Category>,
     home: string,
+    movable?: (item: Item) => boolean,
 };
 
 /** The day and month of a span's ends. */

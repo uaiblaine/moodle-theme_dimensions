@@ -31,7 +31,9 @@
  */
 
 import {fetchOne} from '@moodle/lms/core/ajax';
-import {EVENT_METHOD} from './model';
+
+/** Core's service an event's description is read from, with core's own visibility check. */
+export const EVENT_METHOD = 'core_calendar_get_calendar_event_by_id';
 
 /** What core's service answers, in the part read here. */
 type EventAnswer = {event: {description?: string | null}};

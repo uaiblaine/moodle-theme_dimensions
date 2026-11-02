@@ -40,6 +40,7 @@ const Bar = /* @__PURE__ */ __name(({ segment, week, look }) => {
       style,
       tabIndex: -1,
       "aria-label": barLabel(item, first, last, look),
+      draggable: look.movable?.(item) ? true : void 0,
       "data-cal-item": "",
       "data-cal-pop": "",
       "data-first": week[segment.start],
@@ -49,7 +50,7 @@ const Bar = /* @__PURE__ */ __name(({ segment, week, look }) => {
       children: [
         segment.clipstart ? /* @__PURE__ */ jsxDEV("span", { "aria-hidden": "true", children: "\u2039 " }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Bar.tsx",
-          lineNumber: 79,
+          lineNumber: 80,
           columnNumber: 34
         }) : null,
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__name", children: [
@@ -57,12 +58,12 @@ const Bar = /* @__PURE__ */ __name(({ segment, week, look }) => {
           place !== "" ? ` \xB7 ${place}` : ""
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Bar.tsx",
-          lineNumber: 80,
+          lineNumber: 81,
           columnNumber: 13
         }),
         segment.clipend ? /* @__PURE__ */ jsxDEV("span", { "aria-hidden": "true", children: " \u203A" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Bar.tsx",
-          lineNumber: 81,
+          lineNumber: 82,
           columnNumber: 32
         }) : null
       ]
