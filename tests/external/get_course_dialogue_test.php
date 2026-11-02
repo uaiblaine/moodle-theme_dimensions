@@ -478,4 +478,32 @@ final class get_course_dialogue_test extends \advanced_testcase {
         $this->assertFalse($refused['hasreviewslink'], 'The plugin refuses the reviews: no trigger.');
         $this->assertSame('', $refused['reviewslabel']);
     }
+
+    /**
+     * Under "hidden" reviews the trigger is the reports capability's alone: a reviewer gets it, a plain viewer does not.
+     *
+     * The same course and the same review for both viewers; the plain viewer with the default setting is the control
+     * that the review is readable at all.
+     */
+    public function test_hidden_reviews_are_offered_to_the_reports_capability_only(): void {
+        $this->prepare();
+        $plugin = $this->ratings_on();
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $course = (int) $generator->create_course(['category' => $category->id])->id;
+        $this->rate($course, [4, 2], 1);
+        $viewer = $generator->create_user();
+        $reviewer = $generator->create_user();
+        $roleid = $generator->create_role();
+        assign_capability('tool/courserating:reports', CAP_ALLOW, $roleid, \context_course::instance($course)->id, true);
+        $generator->enrol_user($reviewer->id, $course, $roleid);
+
+        $this->become($viewer);
+        $this->assertTrue($this->answer($course)['rating']['hasreviewslink'], 'Control: visible reviews, a plain viewer.');
+
+        $plugin->set_config(\tool_courserating\constants::SETTING_ALLOWREVIEWS, \tool_courserating\constants::ALLOWREVIEWS_HIDDEN);
+        $this->assertFalse($this->answer($course)['rating']['hasreviewslink'], 'Hidden reviews: not for a plain viewer.');
+        $this->become($reviewer);
+        $this->assertTrue($this->answer($course)['rating']['hasreviewslink'], 'Hidden reviews: the reports capability reads them.');
+    }
 }

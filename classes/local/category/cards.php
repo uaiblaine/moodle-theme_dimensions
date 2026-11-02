@@ -101,7 +101,11 @@ final class cards {
      *   ratingmode of RATEBY_NOONE prints nothing, and no rating prints nothing unless the site asks for empty stars,
      *   which the showcase never draws). The mode is read from the row, never re-derived from the settings: the row is
      *   what the plugin applies, kept current by its reindex and its course observers. :ratingnoone is
-     *   {@see rated_params()}'s.
+     *   {@see rated_params()}'s. That is a deliberate choice over the live
+     *   {@see \tool_courserating\helper::get_course_rating_mode()}: after a change of the site's mode or of a course's
+     *   override the row lags until the plugin's reindex task runs (the settings' updated callback schedules it;
+     *   \tool_courserating\observer::course_updated() reindexes only with per-course settings on), exactly as the
+     *   plugin's own course-listing custom field lags, and the showcase follows the plugin's record.
      */
     public const RATED = 'ratingmode <> :ratingnoone AND cntall > 0';
 
@@ -160,6 +164,9 @@ final class cards {
      * course the plugin does not rate, or nobody rated yet, is absent from the answer ({@see RATED}). The aggregate
      * follows the card on both shells, the visitor's included: the plugin shows a rating to whoever may see the course
      * in a listing (\tool_courserating\permission::can_view_ratings()), and a page lists only those.
+     *
+     * The caller must pass only course ids the page has already admitted: this reads the plugin's summary for whatever
+     * ids it is given and checks no viewer. The enabled term reads the summary row's recorded mode ({@see RATED}).
      *
      * @param int[] $courseids The page's ids.
      * @return \stdClass[] courseid => {avg: float, count: int}, for the page's rated courses only.
