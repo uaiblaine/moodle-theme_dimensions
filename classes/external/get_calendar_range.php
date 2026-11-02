@@ -256,8 +256,8 @@ class get_calendar_range extends external_api {
                 'count' => new external_value(PARAM_INT, 'The events of its series, 1 for a single event.'),
                 'minday' => new external_value(PARAM_ALPHANUMEXT, 'The earliest day it may move to, YYYY-MM-DD, empty for none.'),
                 'maxday' => new external_value(PARAM_ALPHANUMEXT, 'The latest day it may move to, YYYY-MM-DD, empty for none.'),
-                'minerror' => new external_value(PARAM_RAW, 'Core\'s message for a day before minday, plain.'),
-                'maxerror' => new external_value(PARAM_RAW, 'Core\'s message for a day after maxday, plain.'),
+                'minerror' => new external_value(PARAM_TEXT, 'Core\'s message for a day before minday, plain.'),
+                'maxerror' => new external_value(PARAM_TEXT, 'Core\'s message for a day after maxday, plain.'),
             ]), 'Core\'s editing answers, one per event the viewer may edit; empty for everything else.'),
         ]);
     }

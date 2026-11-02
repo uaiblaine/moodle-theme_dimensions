@@ -559,11 +559,17 @@ const Calendar = (props: Props) => {
      *
      * @param {number|null} event The event to edit, or null for a new one.
      * @param {number|null} start A new event's start, or null for core's default.
+     * @param {number|null} course An edited event's course, as core reads it off the event; null for the page's.
      * @returns {void}
      */
-    const form = (event: number | null, start: number | null): void => {
+    const form = (event: number | null, start: number | null, course: number | null = null): void => {
         const pending = new Pending('theme_dimensions/calendar:form');
-        openForm({context: props.edits?.context || 0, course: props.edits?.course || 0, event: event, start: start})
+        openForm({
+            context: props.edits?.context || 0,
+            course: course ?? (props.edits?.course || 0),
+            event: event,
+            start: start,
+        })
             .catch(report)
             .finally(() => pending.resolve());
     };
@@ -829,7 +835,7 @@ const Calendar = (props: Props) => {
                             item={poppededit.item}
                             edit={poppededit.edit}
                             strings={strings}
-                            onEdit={() => form(poppededit.item.id, null)}
+                            onEdit={() => form(poppededit.item.id, null, poppededit.item.courseid)}
                             onFailure={report}
                         />
                     ) : null}

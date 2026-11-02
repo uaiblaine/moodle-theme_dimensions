@@ -25,6 +25,7 @@
 namespace theme_dimensions\local\calendar;
 
 use core_external\external_api;
+use core_external\external_value;
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\external\get_calendar_range;
 
@@ -374,6 +375,28 @@ final class editing_test extends \advanced_testcase {
         $this->assertSame([], range::answer($window, scope::for_viewer(), keys::ALL, new filters(), false)['editing']);
         $nocore = range::answer($window, scope::for_viewer(), [keys::COURSE], new filters());
         $this->assertSame([], $nocore['editing'], 'No key of core\'s, no entry.');
+    }
+
+    /**
+     * A limit's message holding markup is returned as plain text the service's PARAM_TEXT accepts; a plain one is kept.
+     *
+     * @return void
+     */
+    public function test_a_limit_message_is_plain_text(): void {
+        $plain = 'Not before the start of "Algebra" & co.';
+        $this->assertSame($plain, editing::plain($plain), 'Control: a plain message is kept as it is.');
+        $marked = editing::plain('Not before <b>the start</b> of <a href="#">Algebra</a>');
+        $this->assertSame('Not before the start of Algebra', $marked);
+        $returns = new external_value(PARAM_TEXT, 'A message.');
+        $keys = get_calendar_range::execute_returns()->keys['editing']->content->keys;
+        $this->assertSame([PARAM_TEXT, PARAM_TEXT], [$keys['minerror']->type, $keys['maxerror']->type], 'Core\'s type.');
+        $this->assertSame($marked, external_api::clean_returnvalue($returns, $marked), 'The service accepts it.');
+        try {
+            external_api::clean_returnvalue($returns, 'Not before <b>the start</b>');
+            $this->fail('Control: the unprocessed message is what PARAM_TEXT refuses.');
+        } catch (\invalid_response_exception) {
+            $this->assertTrue(true);
+        }
     }
 
     /**

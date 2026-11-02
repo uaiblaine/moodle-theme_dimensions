@@ -1829,7 +1829,16 @@ Branch `calendar-c5`, built from section 23 on top of C4 (b7692d3), uncommitted,
   modules and services; the logged-in graph's control reaches the two). Jest: `moves.test.ts` (10), 13 cases in
   `Calendar.test.tsx`, 1 in `PublicCalendar.test.tsx`, 1 in `weeks.test.ts`. Two Behat scenarios at the end of
   `theme_dimensions_calendar.feature`.
-- **Gates:** 40 in the "C5 editing" block of `mutations/gates.conf` (21 server and template, 19 client), each `.pl`
+- **Security read:** no blocking finding: core re-checks every write itself (the form's fragment and submit service,
+the delete service, `update_event_start_day` with its own limits), so a forged client call does no more than core
+allows; the theme writes no event row. Fixed: the delete confirmation's `data-event-title` carried the plain name into
+core's HTML body and now carries the escaped spelling core's templates use; Edit now passes the event's course to
+core's form as core's crud does; the drag limits' messages are `PARAM_TEXT`, cleaned by `editing::plain()`. Notes
+kept: the drag limits are days in the viewer's timezone where core compares timestamps, so a DST boundary can make
+the client's verdict a day off (core's service still decides); the iCal link goes to `export.php` where core's
+footer offers `managesubscriptions.php` under the same gate (an owner decision); a real browser drag was not run.
+
+**Gates:** 40 in the "C5 editing" block of `mutations/gates.conf` (21 server and template, 19 client), each `.pl`
   dry-applied with `perl -0777 -p` against its file: every one of the spec's 1,379 lines changes its target, none dead.
   Two server gates were also applied by hand against `editing_test` (`c5_limits_group`: 1 failure; `c5_entries_drag`:
   2 failures), the files restored after each.

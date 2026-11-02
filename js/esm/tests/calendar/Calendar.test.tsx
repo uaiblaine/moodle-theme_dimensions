@@ -1049,9 +1049,24 @@ describe('editing, core\'s (C5)', () => {
         expect(wrapped).toContain(actions);
     });
 
+    it('hands core\'s delete the title in the escaped spelling core\'s templates carry, a plain one unchanged', async() => {
+        describeWith(() => Promise.resolve({event: {description: ''}}));
+        const name = 'Q&A <b>"quoted"</b> it\'s';
+        await mount(editable([item({id: 1, name: name, timestart: at('2026-11-17', 9)})], [entry({id: 1})]));
+        await act(async() => {
+            fireEvent.click(gridItem(1));
+        });
+        const actions = popover()?.querySelector<HTMLElement>('[data-region="dim-cal-edit"]') as HTMLElement;
+        // Core reads the decoded value and shows it as HTML: it must be the text a double stash would have written.
+        expect(actions.getAttribute('data-event-title')).toBe(
+            'Q&amp;A &lt;b&gt;&quot;quoted&quot;&lt;/b&gt; it&#039;s'
+        );
+        expect(actions.getAttribute('data-event-title')).not.toBe(name);
+    });
+
     it('edits through core\'s form, and closes the popover once core deleted the event', async() => {
         describeWith(() => Promise.resolve({event: {description: ''}}));
-        await mount(editable([item({id: 1, name: 'Mine', timestart: at('2026-11-17', 9)})], [entry({id: 1})]));
+        await mount(editable([item({id: 1, name: 'Mine', courseid: 7, timestart: at('2026-11-17', 9)})], [entry({id: 1})]));
         await act(async() => {
             fireEvent.click(gridItem(1));
         });
@@ -1060,7 +1075,9 @@ describe('editing, core\'s (C5)', () => {
         });
         expect(modal.setEventId).toHaveBeenCalledWith(1);
         expect(modal.setContextId).toHaveBeenCalledWith(2);
-        expect(modal.setCourseId).not.toHaveBeenCalled();
+        // Core's edit hands the event's own course, not the page's (EDITS.course is 1).
+        expect(modal.setCourseId).toHaveBeenCalledWith(7);
+        expect(modal.setStartTime).not.toHaveBeenCalled();
         expect(modal.show).toHaveBeenCalledTimes(1);
         const dialogue = document.createElement('div');
         dialogue.setAttribute('role', 'dialog');

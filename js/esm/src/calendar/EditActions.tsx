@@ -43,6 +43,17 @@ type EditActionsProps = {
 };
 
 /**
+ * Escape a name the way Mustache's double stash does: core's crud reads the attribute back and shows it as HTML, and
+ * React's own escaping is undone when the DOM decodes the attribute.
+ *
+ * @param {string} name The plain name.
+ * @returns {string}
+ */
+const escapeHtml = (name: string): string => name.replace(/[&<>"']/g, (char) => (
+    {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#039;'}[char] as string
+));
+
+/**
  * Edit and Delete, as core's answer allows them; nothing when it allows neither.
  *
  * @param {object} props See EditActionsProps.
@@ -70,7 +81,7 @@ const EditActions = ({item, edit, strings, onEdit, onFailure}: EditActionsProps)
             data-region="dim-cal-edit"
             data-type="event"
             data-event-id={item.id}
-            data-event-title={item.name}
+            data-event-title={escapeHtml(item.name)}
             data-event-count={edit.count}
         >
             {edit.edit ? (

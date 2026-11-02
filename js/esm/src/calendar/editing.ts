@@ -142,10 +142,10 @@ export const openForm = async(request: FormRequest): Promise<void> => {
         });
     }
     const modal = await form;
+    modal.setCourseId(request.course);
     if (request.event !== null) {
         modal.setEventId(request.event);
     } else {
-        modal.setCourseId(request.course);
         if (request.start !== null) {
             modal.setStartTime(request.start);
         }

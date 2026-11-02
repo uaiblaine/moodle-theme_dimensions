@@ -120,8 +120,8 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('crud.registerRemove(jquery(element));', $editing);
         $this->assertStringContainsString('repository.updateEventStartDay(eventid, daytimestamp)', $editing);
         $this->assertMatchesRegularExpression(
-            '~if \(request\.event !== null\) \{\s*modal\.setEventId\(request\.event\);\s*\} else \{\s*'
-                . 'modal\.setCourseId\(request\.course\);~',
+            '~modal\.setCourseId\(request\.course\);\s*if \(request\.event !== null\) \{\s*'
+                . 'modal\.setEventId\(request\.event\);~',
             $editing
         );
 
@@ -139,10 +139,20 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString(".then(() => refresh('updated'))", $page);
         $this->assertStringContainsString('key={itemKey(poppededit.item)}', $page, 'jQuery\'s cache: one wrapper per event.');
         $this->assertStringContainsString('movable: movable,', $page);
+        $this->assertStringContainsString(
+            'form(poppededit.item.id, null, poppededit.item.courseid)',
+            $page,
+            'Core\'s edit: the event\'s course.'
+        );
 
         $actions = $sources['EditActions.tsx'];
         $this->assertStringContainsString('data-type="event"', $actions);
         $this->assertStringContainsString('if (!edit.edit && !edit.delete) {', $actions);
+        $this->assertStringContainsString(
+            'data-event-title={escapeHtml(item.name)}',
+            $actions,
+            'Core shows the attribute as HTML.'
+        );
         $this->assertStringContainsString('{edit.edit ? (', $actions);
         $this->assertStringContainsString('{edit.delete ? (', $actions);
         $this->assertStringContainsString('if (!edit.delete || !root.current) {', $actions);

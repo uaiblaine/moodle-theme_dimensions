@@ -17,6 +17,7 @@ import { jsxDEV } from "react/jsx-dev-runtime";
 import { useEffect, useRef } from "react";
 import Pending from "@moodle/lms/core/pending";
 import { armDelete } from "./editing";
+const escapeHtml = /* @__PURE__ */ __name((name) => name.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]), "escapeHtml");
 const EditActions = /* @__PURE__ */ __name(({ item, edit, strings, onEdit, onFailure }) => {
   const root = useRef(null);
   useEffect(() => {
@@ -37,17 +38,17 @@ const EditActions = /* @__PURE__ */ __name(({ item, edit, strings, onEdit, onFai
       "data-region": "dim-cal-edit",
       "data-type": "event",
       "data-event-id": item.id,
-      "data-event-title": item.name,
+      "data-event-title": escapeHtml(item.name),
       "data-event-count": edit.count,
       children: [
         edit.edit ? /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-secondary", "data-action": "dim-cal-edit", onClick: onEdit, children: strings.calendar_edit }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EditActions.tsx",
-          lineNumber: 77,
+          lineNumber: 88,
           columnNumber: 17
         }) : null,
         edit.delete ? /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-outline-danger", "data-action": "delete", children: strings.calendar_delete }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EditActions.tsx",
-          lineNumber: 82,
+          lineNumber: 93,
           columnNumber: 17
         }) : null
       ]
@@ -56,7 +57,7 @@ const EditActions = /* @__PURE__ */ __name(({ item, edit, strings, onEdit, onFai
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/EditActions.tsx",
-      lineNumber: 67,
+      lineNumber: 78,
       columnNumber: 9
     }
   );

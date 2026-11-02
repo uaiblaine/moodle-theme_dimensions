@@ -133,11 +133,23 @@ final class editing {
                 'count' => $repeats ? max(1, $counts[(int) $repeats->get_id()] ?? 0) : 1,
                 'minday' => isset($limits['mindaytimestamp']) ? $day((int) $limits['mindaytimestamp']) : '',
                 'maxday' => isset($limits['maxdaytimestamp']) ? $day((int) $limits['maxdaytimestamp']) : '',
-                'minerror' => (string) ($limits['mindayerror'] ?? ''),
-                'maxerror' => (string) ($limits['maxdayerror'] ?? ''),
+                'minerror' => self::plain((string) ($limits['mindayerror'] ?? '')),
+                'maxerror' => self::plain((string) ($limits['maxdayerror'] ?? '')),
             ];
         }
         return $entries;
+    }
+
+    /**
+     * A limit's message as plain text, as the service's PARAM_TEXT return carries it: core's exporter returns the same
+     * type, and a callback's string may hold markup (an activity's name), which PARAM_TEXT would reject with the whole
+     * response.
+     *
+     * @param string $message The message a callback gave.
+     * @return string The message without markup, unchanged by PARAM_TEXT.
+     */
+    public static function plain(string $message): string {
+        return clean_param($message, PARAM_TEXT);
     }
 
     /**
