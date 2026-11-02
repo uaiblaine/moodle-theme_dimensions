@@ -328,6 +328,25 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
+     * The space between the navbar and the calendar's title is halved (PROPOSAL section 29.3): .main-inner pays 12px
+     * above and 10px inside instead of Boost's 40px and 24px, under the body class and with no !important. Measured at
+     * 1440x900 on m503b: 83px of gap before, 41px after.
+     *
+     * @return void
+     */
+    public function test_the_gap_under_the_navbar_is_halved(): void {
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression(
+            '~^body\.dim-calendar \{.*?^    #page\.drawers \.main-inner \{\s*margin-top: 12px;\s*padding-top: 10px;\s*\}~ms',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~^    #page-header \{\s*margin-block: 0;\s*padding-block: 0;\s*min-height: 0;\s*\}~m',
+            $scss
+        );
+    }
+
+    /**
      * The day drawer sits beside the grid in a 24.5rem column and holds still under the navbar while the month scrolls.
      *
      * @return void
@@ -342,6 +361,34 @@ final class calendar_scss_test extends \advanced_testcase {
             '~\.dim-cal__drawer--drawer \{\s*position: sticky;\s*top: calc\(#\{\$navbar-height\} \+ 1rem\);~',
             $scss
         );
+    }
+
+    /**
+     * The first paint (PROPOSAL section 29): under core's jsenabled the server's layer is held out and the placeholder
+     * stands in, a fail-safe animation brings the server back and retires the placeholder after a delay, the mounted
+     * mark lifts the lot, and without jsenabled the placeholder is never shown.
+     *
+     * @return void
+     */
+    public function test_the_first_paint_shows_a_placeholder_and_the_server_comes_back_if_the_client_never_draws(): void {
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression('~\.dim-cal__placeholder \{\s*display: none;\s*\}~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~&\.jsenabled \.dim-cal:not\(\.dim-cal--mounted\) \{\s*\.dim-cal__server \{[^}]*max-height: 0;[^}]*'
+            . 'visibility: hidden;[^}]*animation: dim-cal-reveal [^;]*\b4s forwards;~',
+            $scss,
+            'The server is held out from the first paint and revealed after a delay.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__placeholder \{\s*display: block;\s*animation: dim-cal-retire [^;]*\b4s forwards;~',
+            $scss,
+            'The placeholder is shown under jsenabled and retired by the same delay.'
+        );
+        $this->assertMatchesRegularExpression('~@keyframes dim-cal-reveal \{\s*to \{[^}]*visibility: visible;~', $scss);
+        $this->assertMatchesRegularExpression('~@keyframes dim-cal-retire \{\s*to \{[^}]*visibility: hidden;~', $scss);
+        // The control: the hold is only under jsenabled, so the page without JavaScript keeps the server's layer whole.
+        $this->assertStringNotContainsString('.dim-cal__server', substr($scss, 0, (int) strpos($scss, '&.jsenabled')));
+        $this->assertSame(1, substr_count($scss, '&.jsenabled'));
     }
 
     /**

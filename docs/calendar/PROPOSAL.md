@@ -2130,3 +2130,132 @@ runs the feed with the admin holding the session and an unlisted category the to
 callers look the category up with `core_course_category::get()` without `$alwaysreturnhidden`, which already answers null
 for a category hidden from the viewer. The term stays as the second lock and the gate was dropped, the reason recorded in
 `mutations/gates.conf`.
+
+## 29. R1b: the category events you create, and the first paint (2026-11-02)
+
+Branch `calendar-r1b`, from main 71a5582. Two defects the owner hit on m503b (Moodle 5.3); the cause of each was measured
+before the change.
+
+### 29.1 Category events the viewer created do not show
+
+**Symptom.** The administrator (no enrolment, no role in any category, `$CFG->calendar_adminseesall` = 0) created
+category events in categories 1 and 5 through core's form, and they appear neither on the theme's calendar nor in core's
+month view.
+
+**Cause.** Two questions in core's `calendar/lib.php` ask the same capability differently. The create form
+(`calendar_get_allowed_types()`, ~2105) asks `has_capability('moodle/category:manage', $catcontext)` WITH doanything, so an
+administrator is offered every category. The view (`calendar_information::set_sources()`, ~1240-1255) asks
+`has_capability('moodle/category:manage', $category->get_context(), $USER, false)` WITHOUT doanything, and otherwise
+only the categories holding one of the viewer's calendar courses. An administrator with no role and no course gets an
+empty category set, so `api::get_events()` is handed no category and the events they just created are not read.
+`scope::site_categories()` mirrored the view line for line, and added core's session cache (`calendar_categories`,
+15 minutes) on top, which would have kept core's narrower answer in front of any change.
+
+**Change.** The owner's intent: an event the viewer may create is an event the viewer sees.
+- `scope::site_categories()` asks the capability as the create form does (doanything on), so the site view's categories
+  are those holding one of the viewer's courses, those where the viewer may manage category events, and the parents of
+  both, as before. A category manager by role is in both sets; a viewer with no right gets neither.
+- Core's `calendar_categories` cache is neither read nor written by the theme (it was read, never written). Nothing else
+  in the theme reads it (`grep calendar_categories`: `scope.php` alone).
+- Narrowed views (a category, a course) keep their sets. The withholding is unchanged and downstream: the range drops the
+  events of a category local_unlistedcourses withholds (`core_events::unwithheld()`) and of one core hides from the viewer
+  (`visible()`), so widening the set names no category the showcase hides.
+- Documented as the fourth difference from core in `scope.php`'s class docblock (the cache item changed from "read, never
+  set" to "neither read nor set"); `scope_test` compares the sets with core's set for set.
+- **The iCal feed needs nothing.** Core's `export_execute.php` hands the retrieval `$paramcategory = true`, which reads as
+  "all categories", so the feed never used this set; `ical::admitted()` already applies the page's visibility and
+  withholding. `ical_test` (6 tests) is unchanged and green.
+
+**Tests.**
+- `scope_test::test_the_site_view_holds_every_category_the_viewer_may_create_events_in`: the administrator control (core's
+  set lacks both categories, the theme's has both), a manager by role (one category, equal in both sets), a student with no
+  rights (neither, in either set).
+- `scope_test::test_the_site_view_neither_reads_nor_writes_the_session_cache` (the old cache test, now planting a value core
+  would have returned and asserting the scope ignores it).
+- Gates (R1b block of `mutations/gates.conf`): `cal_r1b_manage_doanything` (doanything off again) and `cal_r1b_cache_read`.
+
+### 29.2 The flash on first paint
+
+**Symptom.** Every load shows the server's no-JavaScript layer (the toolbar of key checkboxes and the month as a
+day-by-day list) and then swaps to the grid.
+
+**Cause.** `Calendar.tsx` / `PublicCalendar.tsx` set `hidden` on `[data-region="dim-cal-server"]` in a layout effect, which
+runs only once the module has loaded and the first range answer's props are parsed; until then the browser paints the
+server's layer, which is the whole point of the no-JavaScript page.
+
+**Change.** Core writes `jsenabled` on `body` before the first paint (`scss/compactnav.scss` relies on it). Under it:
+- `body.dim-calendar.jsenabled .dim-cal:not(.dim-cal--mounted) .dim-cal__server` is held out of sight
+  (`max-height: 0; overflow: hidden; visibility: hidden`), and `.dim-cal__placeholder` is shown in its place. The template
+  draws the placeholder between the server's layer and the mount node: `aria-hidden`, no text, a tool band (4.5rem, the
+  two toolbars), and a frame with a weekday band over six empty week rows (the month: 1.875rem plus 6 x 9.25rem, the grid's
+  minimum row) or a header and ten 2.5rem hour rows (the week); the rows and the seven columns are gradients of the border
+  tokens, so both colour modes follow the theme. Without `jsenabled` the placeholder is `display: none`, so the
+  no-JavaScript page is unchanged.
+- **Fail-safe.** Two animations with a 4 s delay and `forwards` (`dim-cal-reveal` restores the server's layer,
+  `dim-cal-retire` hides the placeholder) run while the root lacks `dim-cal--mounted`. A module that never loads (as
+  happened once right after a purge) therefore leaves the list after four seconds. They are plain keyframes, no `!important`.
+- **The mark.** Both shells add `dim-cal--mounted` to the `[data-region="dim-cal"]` root in the layout effect that hides
+  the server's layer, in the same frame as the first grid; the rules above stop matching (`:not(.dim-cal--mounted)`), which
+  cancels the animations and the placeholder at once. The existing `hidden` stays.
+- The public page and both views (month, week) use the same template and the same effect.
+- Measured footprint is by construction (the grid's own constants), not by a browser run here: the placeholder's exactness
+  against the real grid, notably the week's hour count (the grid sizes it to the window of the answer) is for the owner's
+  eye after a purge. The week placeholder is an approximation of ten hours.
+
+**Tests.** `calendar_scss_test::test_the_first_paint_shows_a_placeholder_and_the_server_comes_back_if_the_client_never_draws`
+(the rule under `body.jsenabled`, the reveal and retire animations at 4 s, the placeholder `display: none` otherwise, no
+rule on the server's layer outside the jsenabled one), `calendar_page_test` (the placeholder between server and mount, month
+and week shapes), `calendar_component_source_test::test_the_mounted_mark_is_set_with_the_server_layer_hidden`, Jest
+(`dim-cal--mounted` after the first paint in `Calendar.test.tsx` and `PublicCalendar.test.tsx`). The Behat scenarios that
+assert the server's layer "should not be visible" are unchanged: once the grid mounts the layer is `hidden` as before.
+Gates (R1b block): `cal_r1b_server_held_always`, `cal_r1b_failsafe_delay`, `cal_r1b_placeholder_always`,
+`cal_r1b_placeholder_markup`, `cal_r1b_js_mounted_mark`.
+
+### 29.3 Half the gap under the navbar (owner, 2026-11-02)
+
+**Measured** (1440x900, m503b, in the Browser pane): the fixed navbar ends at y=61 and the calendar's title starts at
+y=144, 83px lower: Boost's `#topofscroll.main-inner` margin-top 40px and padding-top 24px, the page header's 16px (drawn
+by a child of `#page-header`, `.w-100`, which the element's own rule cannot shrink) and 3px more.
+
+**Change** (`scss/calendar.scss`, under `body.dim-calendar`, so the account page and the visitor page alike): `#page.drawers
+.main-inner` pays `margin-top: 12px; padding-top: 10px`; `#page-header` pays no margin, padding or minimum height. One
+class more than Boost's `#page.drawers .main-inner`, no `!important`. Measured after a purge: the title at y=102, 41px
+under the navbar.
+
+**Expected** (computed from the rules, not seen in a browser; needs a look after a purge): 20 + 12 + 0 + 20 = about 52px
+instead of about 100px, `#region-main` at y~93 (was 140), the first row at y~113 (was ~161). If the 16px of the header
+turns out to sit on a child of `#page-header` (a heading wrapper), not on the element, a rule for that child is still due.
+Pinned by `calendar_scss_test::test_the_gap_under_the_navbar_is_halved`.
+
+### 29.4 No block region on the calendar page (owner, 2026-11-02)
+
+**Mechanism read.** Boost Union's `layout/drawers.php` (the `standard` layout) draws the block drawer and its toggle when
+`$hasblocks`: block markup in `side-pre`, or a non-empty `$OUTPUT->addblockbutton()`. Core's `show_only_fake_blocks(true)`
+(`lib/blocklib.php`) loads no block instance and creates no theme-required one, so no region has content; but it does not
+touch the add-block control, which `addblockbutton()` draws in edit mode from the page's regions and
+`user_can_edit_blocks()` alone. So edit mode would still have shown "Add a block", the drawer and its toggle.
+
+**Change** (`page.php`, `without_blocks()`, called by both branches, the account's and the visitor's, before the header):
+`$PAGE->blocks->show_only_fake_blocks(true)` and `$PAGE->force_lock_all_blocks()` (user_can_edit_blocks() false for
+everyone, administrators included). With both, `$hasblocks` is false in edit mode as out of it. No layout of the theme and
+no `config.php` change.
+
+**Tests.** `page_test::test_the_page_offers_no_block_region` (an HTML block on the system context, every page type,
+`side-pre`; an administrator in edit mode; the control page without the decision offers the block markup and the add-block
+button, the calendar page offers neither and `region_has_content()` is false) and
+`page_visitor_test::test_a_visitor_page_offers_no_block_region` (a visitor is shown no block by core anyway, so the two
+switches are read: fake-blocks-only on, editing locked, the control page the other way). Gates (R1b block):
+`cal_r1b_blocks_shown`, `cal_r1b_blocks_unlocked`.
+
+### 29.5 Gates (2026-11-02)
+
+- `mdl mutate --fast --branch MOODLE_503_STABLE --only <the nine cal_r1b_* gates>`, pgsql and mariadb: 9/9 reddened their
+  named tests on both.
+- `mdl ci moodle-theme_dimensions --matrix --behat`: all four legs passed (8.4/8.3 x pgsql/mariadb).
+- Seen on m503b as the admin at 1440x900 after a purge: the admin's own category events show; the title 41px under the
+  navbar (83px before); no block drawer or toggle; the placeholder and the four-second fallback checked in a copy of the
+  page with scripts off and `jsenabled` set by hand (server layer hidden at first paint, back after four seconds; no
+  placeholder without `jsenabled`).
+- After a purge, `styles.php` first serves the previous revision's sheet under the new revision's address while it
+  compiles, and the browser caches it: judge a stylesheet change from a fresh fetch (`cache: 'reload'`), never from the
+  first page after a purge.

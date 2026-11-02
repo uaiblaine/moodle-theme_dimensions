@@ -26,6 +26,13 @@
     - the mount node of calendar/Calendar, whose props carry the first range
       answer; the component hides the server's layer once it has drawn its own.
 
+    A third element, the placeholder (data-region="dim-cal-placeholder"), is
+    drawn only under core's body.jsenabled, in the server's place and with the
+    grid's footprint, so the first paint is neither the agenda nor a jump; the
+    component marks the root dim-cal--mounted when it draws, and without that
+    mark the server's layer comes back by itself after a few seconds
+    (scss/calendar.scss). Without JavaScript the placeholder is never shown.
+
     Every text arrives in the plain spelling and is escaped here, once; the
     props are JSON in a double-stashed attribute, which the browser decodes.
     The form's empty keys[] member makes a submission with every chip cleared
@@ -272,6 +279,13 @@
             </ul>
             {{/agenda}}
         </section>
+    </div>
+    <div class="dim-cal__placeholder dim-cal__placeholder--{{#weekview}}week{{/weekview}}{{^weekview}}month{{/weekview}}" data-region="dim-cal-placeholder" aria-hidden="true">
+        <div class="dim-cal__ghosttools"></div>
+        <div class="dim-cal__ghostframe">
+            <div class="dim-cal__ghosthead"></div>
+            <div class="dim-cal__ghostbody"></div>
+        </div>
     </div>
     <div class="dim-cal__mount" data-region="dim-cal-mount" data-react-component="{{component}}" data-react-props="{{props}}"></div>
     {{#exporturl}}

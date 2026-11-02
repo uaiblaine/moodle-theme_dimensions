@@ -337,4 +337,31 @@ final class page_visitor_test extends \advanced_testcase {
         $props = json_decode($context['props'], true);
         $this->assertSame([], $props['answer']['events'], 'The control: another week holds no event.');
     }
+
+    /**
+     * The visitor's page carries no block region either: core's block manager is set to load no block and no one may edit
+     * blocks on it, where the same page without the decision (the control) loads blocks and lets an administrator edit.
+     *
+     * A visitor is shown no block by core's own capability check, so the observable is the two switches the decision flips
+     * (the page_test one covers the markup an account would see).
+     *
+     * @return void
+     */
+    public function test_a_visitor_page_offers_no_block_region(): void {
+        $this->seed('1');
+        $fake = new \ReflectionProperty(\block_manager::class, 'fakeblocksonly');
+
+        $control = self::page_with_blocks();
+        $this->assertFalse($fake->getValue($control->blocks), 'The control: blocks load.');
+        $this->setAdminUser();
+        $this->assertTrue($control->user_can_edit_blocks(), 'The control: an administrator may edit blocks.');
+        $this->setUser(null);
+        self::forget_calendar();
+
+        $context = $this->context($this->handle());
+        $this->assertTrue($context['visitor']);
+        $this->assertTrue($fake->getValue($GLOBALS['PAGE']->blocks), 'No block is loaded.');
+        $this->setAdminUser();
+        $this->assertFalse($GLOBALS['PAGE']->user_can_edit_blocks(), 'Not even an administrator edits blocks here.');
+    }
 }

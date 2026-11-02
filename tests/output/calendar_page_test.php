@@ -161,6 +161,31 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
+     * The first paint's placeholder (PROPOSAL section 29): one per page, empty of text and hidden from assistive
+     * technology, before the mount node and after the server's layer, in the month's shape and in the week's.
+     *
+     * @return void
+     */
+    public function test_the_template_draws_the_placeholder_between_the_server_layer_and_the_mount(): void {
+        global $PAGE;
+        [$renderable] = $this->build(new state(['group']));
+        $html = $PAGE->get_renderer('core')->render($renderable);
+
+        $this->assertSame(1, substr_count($html, 'data-region="dim-cal-placeholder"'));
+        $this->assertMatchesRegularExpression(
+            '~<div class="dim-cal__placeholder dim-cal__placeholder--month" data-region="dim-cal-placeholder" '
+            . 'aria-hidden="true">\s*<div class="dim-cal__ghosttools"></div>\s*<div class="dim-cal__ghostframe">'
+            . '\s*<div class="dim-cal__ghosthead"></div>'
+            . '\s*<div class="dim-cal__ghostbody"></div>\s*</div>\s*</div>~',
+            $html
+        );
+        $server = strpos($html, 'data-region="dim-cal-server"');
+        $placeholder = strpos($html, 'data-region="dim-cal-placeholder"');
+        $mount = strpos($html, 'data-region="dim-cal-mount"');
+        $this->assertTrue($server < $placeholder && $placeholder < $mount, 'The order: server, placeholder, mount.');
+    }
+
+    /**
      * The open day travels in the props alone: the server's layer draws no drawer, open or closed, and the
      * no-JavaScript agenda is the same with the day as without it.
      *
@@ -337,6 +362,7 @@ final class calendar_page_test extends \advanced_testcase {
         $this->assertMatchesRegularExpression('~data-region="dim-cal-view-week" aria-current="page">~', $html);
         $this->assertMatchesRegularExpression('~href="[^"]*month=' . $month . '[^"]*" data-region="dim-cal-view-month">~', $html);
         $this->assertStringContainsString('<input type="hidden" name="view" value="week">', $html);
+        $this->assertStringContainsString('dim-cal__placeholder--week" data-region="dim-cal-placeholder"', $html);
         $this->assertStringContainsString('<input type="hidden" name="week" value="' . $week . '">', $html);
         $this->assertStringNotContainsString('<input type="hidden" name="month"', $html);
         $this->assertSame(1, substr_count($html, '>Mentoring B</a>'), 'The week\'s timed event, listed once.');

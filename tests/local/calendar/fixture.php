@@ -77,6 +77,36 @@ trait fixture {
     }
 
     /**
+     * What the layout's block drawer would be drawn from on a page: the markup of its block region and the add-block control.
+     *
+     * Both are what Boost Union's drawers.php reads to decide on the drawer and its toggle (a block in the region, or a
+     * non-empty add-block control in edit mode).
+     *
+     * @param \moodle_page $page A page whose layout, context and page type are set.
+     * @return string[] [the region's block markup, the add-block button].
+     */
+    protected static function block_drawer_inputs(\moodle_page $page): array {
+        // The header does this on a real request, before the layout runs.
+        $page->blocks->load_blocks();
+        $output = $page->get_renderer('core');
+        return [$output->blocks('side-pre'), $output->addblockbutton()];
+    }
+
+    /**
+     * A page as the calendar page is, but with core's own block handling: the control of {@see block_drawer_inputs()}.
+     *
+     * @return \moodle_page
+     */
+    protected static function page_with_blocks(): \moodle_page {
+        $page = new \moodle_page();
+        $page->set_context(\core\context\system::instance());
+        $page->set_pagetype(page::PAGETYPE);
+        $page->set_pagelayout('standard');
+        $page->set_url('/theme/dimensions/calendar.php');
+        return $page;
+    }
+
+    /**
      * Midnight of the first day of next month, in the current user's timezone: a month wholly in the future.
      *
      * @return \DateTimeImmutable
