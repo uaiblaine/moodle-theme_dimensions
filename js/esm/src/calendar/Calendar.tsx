@@ -14,8 +14,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The calendar page's client: the toolbar, the key chips, the category picker, "More filters", the month grid, the
- * day drawer (the agenda sheet on a phone) and the event popover.
+ * The calendar page's client: the toolbar, the key chips, the category picker, "More filters", the month grid or the
+ * week (WeekGrid.tsx, stage C4), the day drawer (the agenda sheet on a phone) and the event popover.
  *
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws, never moved (a node that leaves the
  * document is unmounted). The props carry the range's first answer, so the first paint asks for nothing; once the
@@ -24,17 +24,29 @@
  *
  * - The latest request wins: a ticket is taken per request and checked after the await; a superseded answer is
  *   dropped. A Pending token (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - The address has one writer (calendar/history.ts): a month moved pushes an entry, a change of state replaces it;
- *   Back and Forward read the address again (popstate) and ask for what it names, writing nothing.
+ * - What is shown is a span, a month or a week (calendar/weeks.ts), with its answer: one range call either way. The
+ *   view switch keeps the selected day (the week holding it, or its month), and the open day when the new span holds
+ *   it. The view and the week are navigation, in the address and never in the remembered state.
+ * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a
+ *   change of state replaces it; Back and Forward read the address again (popstate) and ask for what it names, writing
+ *   nothing.
  * - A change of keys or filters is remembered after a quiet ({@see QUIET}), never on every press, and an unchanged
  *   state is not sent again; a Pending token (theme_dimensions/calendar:remember) spans the quiet and the request.
  * - Every key off asks the range nothing: the answer is the window's days at zero.
  * - A day opens the drawer, or on a phone the sheet (DayDrawer.tsx); the open day is `day=` in the address, written
  *   with replaceState (Back leaves the month rather than walking the days) and taken out when it closes. Moving the
- *   selected day while it is open moves it; a month change closes it and the popover.
+ *   selected day while it is open moves it; a month or week change closes it and the popover.
  * - An item opens the popover (EventPopover.tsx) on a press, Enter or Space, through one delegated listener on the
  *   elements marked data-cal-pop; a modified press and a middle click follow the item's href.
- * - The phone layout is the frame's width, measured by the grid's one ResizeObserver (MonthGrid.tsx PHONE).
+ * - The phone layout is the frame's width, measured by the shown grid's one ResizeObserver (MonthGrid.tsx PHONE).
+ * - Editing is core's (stage C5, PROPOSAL.md section 23): "New event" in the toolbar and in the drawer only when the
+ *   server says core would show it (props.edits), the popover's Edit and Delete (EditActions.tsx) and the drag only for
+ *   what core's answer lists (answer.editing). Core's form, confirmation and move service do the work (editing.ts);
+ *   when core says something changed, or a move is done, the span shown is asked again with the state shown, through
+ *   the same ticket and Pending token as navigation, writing nothing.
+ * - A drag is delegated on the root: the items let the pointer through while it is on (a class on the root), so the
+ *   day under the pointer is the cell it finds (data-cal-drop), and no layout is read. A day outside core's limits is
+ *   refused with core's message before anything is asked (moves.ts dropRefusal()).
  *
  * @module     theme_dimensions/calendar/Calendar
  * @copyright  2026 Anderson Blaine
@@ -42,23 +54,27 @@
  */
 
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import type {KeyboardEvent, MouseEvent} from 'react';
+import type {DragEvent, KeyboardEvent, MouseEvent} from 'react';
 import {fetchOne} from '@moodle/lms/core/ajax';
 import Pending from '@moodle/lms/core/pending';
 import {load} from '../amd';
-import {parse, say, shiftMonth} from '../daterange/calendar';
+import {parse, say} from '../daterange/calendar';
+import {RANGE_METHOD, REMEMBER_METHOD} from './account';
 import CategoryPicker from './CategoryPicker';
 import DayDrawer from './DayDrawer';
 import {gridWeeks, zone as zoneOf} from './days';
+import {description} from './description';
+import EditActions from './EditActions';
+import {moveStart, onChange, openForm, refuse} from './editing';
+import type {Change} from './editing';
 import EventPopover from './EventPopover';
 import {writeAddress} from './history';
 import KeyChips from './KeyChips';
 import {dayDots, place} from './layout';
+import type {Placed} from './layout';
 import type {Look} from './look';
 import {
     KEYS,
-    RANGE_METHOD,
-    REMEMBER_METHOD,
     DAY_PARAM,
     address,
     emptyAnswer,
@@ -70,27 +86,50 @@ import {
     sameState,
     withDay,
 } from './model';
-import type {Answer, Key, Props, State} from './model';
+import type {Answer, Edit, Edits, Item, Key, Props, State} from './model';
 import MonthGrid, {PHONE} from './MonthGrid';
 import {itemKey, overlapsOf} from './overlap';
 import MoreFilters from './MoreFilters';
-import {load as loadStrings} from './strings';
+import {MOVE_MINUTE, dayStart, dropRefusal, editOf, editsOf, instantOf, toolbarStart} from './moves';
+import {fill, load as loadStrings} from './strings';
 import type {Strings} from './strings';
+import ViewSwitch from './ViewSwitch';
+import WeekGrid from './WeekGrid';
+import {
+    dayIn,
+    inSpan,
+    monthOfSpan,
+    openingOf,
+    readSpan,
+    selectedIn,
+    spanDays,
+    spanKey,
+    spanLabels,
+    spanOf,
+    stepSpan,
+} from './weeks';
+import type {Span, View} from './weeks';
 
 /** How long a state must hold still before it is remembered, in ms. */
 export const QUIET = 800;
 
+/** The long date the drawer's "New event" names. */
+const LONG_DAY: Intl.DateTimeFormatOptions = {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'};
+
 /** The id of the month's caption, which labels the grid. */
 const CAPTION = 'dim-cal-caption';
 
-/** What the grid shows: a month and its answer, always together. */
-type Shown = {month: string, answer: Answer};
+/** What the page shows: a month or a week and its answer, always together. */
+type Shown = {span: Span, answer: Answer};
 
 /** How a request writes the address. */
 type Write = 'push' | 'replace' | 'none';
 
 /** The open popover: the item's key and the element that opened it. */
 type Popped = {key: string, opener: HTMLElement};
+
+/** A drag under way: the item, core's answer for it and the day it starts on. */
+type Moving = {item: Item, edit: Edit, from: string};
 
 /**
  * Show core's message for a failure.
@@ -111,15 +150,64 @@ const report = (failure: unknown): Promise<void> =>
 export const openingDay = (month: string, today: string): string => (today.startsWith(month) ? today : `${month}-01`);
 
 /**
- * The open day an address names, kept only when the month's grid holds it (local\calendar\page::day_from_request()).
+ * The open day an address names, kept only when the span's days hold it (local\calendar\page::day_from_request()).
  *
  * @param {string|null} day The day the address names.
- * @param {string} month The month shown.
- * @param {number} firstday The weekday a week begins on.
+ * @param {Array} days The days shown.
  * @returns {string|null} The day, or null.
  */
-export const openableDay = (day: string | null, month: string, firstday: number): string | null =>
-    (day && gridWeeks(month, firstday).flat().includes(day) ? day : null);
+export const openableDay = (day: string | null, days: string[]): string | null => (day && days.includes(day) ? day : null);
+
+/**
+ * The span the server's props name: the week when they say so and name one, else the month.
+ *
+ * @param {object} props The server's props.
+ * @returns {object} The span.
+ */
+export const propsSpan = (props: {month: string, view?: string, week?: string}): Span =>
+    (props.view === 'week' && parse(props.week) ? {view: 'week', week: String(props.week)} : {view: 'month', month: props.month});
+
+/**
+ * The day cell a drag is over, or null: the element marked data-cal-drop that holds the target.
+ *
+ * @param {EventTarget} target What the pointer is over.
+ * @returns {HTMLElement|null}
+ */
+const dropCell = (target: EventTarget | null): HTMLElement | null =>
+    (target instanceof Element ? target.closest<HTMLElement>('[data-cal-drop]') : null);
+
+/**
+ * "New event", only when core would show it: a button that opens core's form.
+ *
+ * @param {object|undefined} edits Core's answers for creating.
+ * @param {string} label The button's text.
+ * @param {string} name The button's accessible name.
+ * @param {Function} onOpen What it does.
+ * @returns {object|null} The button, or nothing.
+ */
+const newEventButton = (edits: Edits | undefined, label: string, name: string, onOpen: () => void) => (edits?.create ? (
+    <button
+        type="button"
+        className="btn btn-primary dim-cal__newevent"
+        aria-label={name}
+        data-action="dim-cal-new"
+        onClick={onOpen}
+    >
+        {label}
+    </button>
+) : null);
+
+/**
+ * The popover's item with core's answer for it, when core lets the viewer edit it.
+ *
+ * @param {Map} edits Core's answers by event id.
+ * @param {object|null} entry The popover's placed item.
+ * @returns {object|null} The item and its entry, or null.
+ */
+const editedOf = (edits: Map<number, Edit>, entry: Placed | null): {item: Item, edit: Edit} | null => {
+    const edit = entry ? editOf(edits, entry.item) : null;
+    return entry && edit ? {item: entry.item, edit: edit} : null;
+};
 
 /**
  * The page.
@@ -131,14 +219,15 @@ const Calendar = (props: Props) => {
     const language = document.documentElement.lang || undefined;
     const firstday = Number(props.firstday) || 0;
     const [strings, setStrings] = useState<Strings | null>(null);
-    const [shown, setShown] = useState<Shown>({month: props.month, answer: props.answer});
+    const [shown, setShown] = useState<Shown>(() => ({span: propsSpan(props), answer: props.answer}));
     const [state, setState] = useState<State>(() => normalise(props.state));
-    const [openday, setOpenday] = useState<string | null>(() => openableDay(props.day, props.month, firstday));
-    const [selected, setSelected] = useState<string>(() => openday || openingDay(props.month, props.today));
+    const [openday, setOpenday] = useState<string | null>(() => openableDay(props.day, spanDays(propsSpan(props), firstday)));
+    const [selected, setSelected] = useState<string>(() => openday || openingOf(propsSpan(props), props.today));
     const [focusing, setFocusing] = useState<number>(0);
     const [dayfocus, setDayfocus] = useState<number>(0);
     const [popped, setPopped] = useState<Popped | null>(null);
     const [phone, setPhone] = useState<boolean>(false);
+    const [dragging, setDragging] = useState<boolean>(false);
 
     const root = useRef<HTMLDivElement | null>(null);
     const ticket = useRef<number>(0);
@@ -150,12 +239,18 @@ const Calendar = (props: Props) => {
     const latest = useRef<State>(normalise(props.state));
     const opened = useRef<string | null>(openday);
     opened.current = openday;
-    const showing = useRef<string>(shown.month);
-    showing.current = shown.month;
+    const showing = useRef<Span>(shown.span);
+    showing.current = shown.span;
+    const moving = useRef<Moving | null>(null);
+    const over = useRef<HTMLElement | null>(null);
+    const changes = useRef<(change: Change) => void>(() => undefined);
 
     const zone = useMemo(() => zoneOf(props.timezone, language), [props.timezone, language]);
-    const weeks = useMemo(() => gridWeeks(shown.month, firstday), [shown.month, firstday]);
+    const month = monthOfSpan(shown.span, selected);
+    const weeks = useMemo(() => gridWeeks(month, firstday), [month, firstday]);
+    const days = useMemo(() => spanDays(shown.span, firstday), [shown.span, firstday]);
     const placed = useMemo(() => place(shown.answer.events, zone), [shown.answer, zone]);
+    const edits = useMemo(() => editsOf(shown.answer), [shown.answer]);
 
     useEffect(() => {
         mounting.current = new Pending('theme_dimensions/calendar:mount');
@@ -176,14 +271,16 @@ const Calendar = (props: Props) => {
          */
         const onPop = (): void => {
             const read = readAddress(window.location.href);
-            const month = read.month || props.month;
-            const day = openableDay(new URL(window.location.href).searchParams.get(DAY_PARAM), month, firstday);
-            request(month, read.state || normalise(props.state), 'none', day || openingDay(month, props.today), false);
+            const span = readSpan(window.location.href, firstday, read.month || props.month, props.today);
+            const day = openableDay(new URL(window.location.href).searchParams.get(DAY_PARAM), spanDays(span, firstday));
+            request(span, read.state || normalise(props.state), 'none', day || openingOf(span, props.today), false);
             setOpenday(day);
         };
         window.addEventListener('popstate', onPop);
+        onChange((change) => changes.current(change));
         return () => {
             window.removeEventListener('popstate', onPop);
+            onChange(() => undefined);
             mounting.current?.resolve();
             painting.current?.resolve();
             holding.current?.resolve();
@@ -214,28 +311,32 @@ const Calendar = (props: Props) => {
     }, [shown]);
 
     /**
-     * Ask the range for a month and a state, and show the answer if it is still the latest request's.
+     * Ask the range for a span and a state, and show the answer if it is still the latest request's.
      *
-     * @param {string} month The month, YYYY-MM.
+     * @param {object} span The month or the week.
      * @param {object} next The state.
      * @param {string} write How the address is written: push, replace or none.
-     * @param {string} select The day to select once the month is shown.
+     * @param {string} select The day to select once the span is shown.
      * @param {boolean} focus Whether the focus follows the selected day.
      * @returns {Promise} Settles once the answer is taken or dropped.
      */
-    const request = async(month: string, next: State, write: Write, select: string, focus: boolean): Promise<void> => {
+    const request = async(span: Span, next: State, write: Write, select: string, focus: boolean): Promise<void> => {
         const seq = ++ticket.current;
-        // A month change closes the drawer and the popover; within the month the open day stays in the address.
-        const moved = month !== showing.current;
+        const days = spanDays(span, firstday);
+        // A move closes the drawer and the popover; a view switch keeps the open day its span holds.
+        const moved = spanKey(span) !== spanKey(showing.current);
+        const switched = span.view !== showing.current.view;
+        const kept = opened.current !== null && (!moved || (switched && days.includes(opened.current))) ? opened.current : '';
         if (moved) {
-            setOpenday(null);
             setPopped(null);
+            if (kept === '') {
+                setOpenday(null);
+            }
         }
         if (write !== 'none') {
-            writeAddress(address(props.urls.page, month, next, moved ? '' : opened.current || ''), write === 'push');
+            writeAddress(inSpan(address(props.urls.page, monthOfSpan(span, select), next, kept), span), write === 'push');
         }
         const pending = new Pending('theme_dimensions/calendar:range');
-        const days = gridWeeks(month, firstday).flat();
         try {
             const answer = keysOn(next).length
                 ? await fetchOne<Answer>({methodname: RANGE_METHOD, args: rangeArgs(days[0], days[days.length - 1], next)})
@@ -246,7 +347,7 @@ const Calendar = (props: Props) => {
             }
             painting.current?.resolve();
             painting.current = pending;
-            setShown({month: month, answer: answer});
+            setShown({span: span, answer: answer});
             setSelected(select);
             if (focus) {
                 setFocusing((tick) => tick + 1);
@@ -304,19 +405,31 @@ const Calendar = (props: Props) => {
             return;
         }
         setState(next);
-        request(shown.month, next, 'replace', selected, false);
+        request(shown.span, next, 'replace', selected, false);
         remember(next);
     };
 
     /**
-     * Go to the month a day is in, selecting the day.
+     * Go to the month or the week a day is in, in the view shown, selecting the day.
      *
      * @param {string} iso The day.
      * @param {boolean} focus Whether the focus follows.
      * @returns {void}
      */
     const toDay = (iso: string, focus: boolean): void => {
-        request(iso.slice(0, 7), state, 'push', iso, focus);
+        request(spanOf(shown.span.view, iso, firstday), state, 'push', iso, focus);
+    };
+
+    /**
+     * Switch the view, keeping the selected day: the week holding it, or its month.
+     *
+     * @param {string} view The view.
+     * @returns {void}
+     */
+    const toView = (view: View): void => {
+        if (view !== shown.span.view) {
+            request(spanOf(view, selected, firstday), state, 'push', selected, false);
+        }
     };
 
     /**
@@ -425,6 +538,133 @@ const Calendar = (props: Props) => {
         popFrom(element);
     };
 
+    /**
+     * Ask again for the span shown with the state shown, writing nothing: after core created, changed, deleted or moved
+     * an event. A delete takes the item away, so its popover closes and the focus goes to the selected day.
+     *
+     * @param {string} change What core said changed.
+     * @returns {Promise} Settles once the answer is taken or dropped.
+     */
+    const refresh = (change: Change): Promise<void> => {
+        if (change === 'deleted') {
+            setPopped(null);
+            setFocusing((tick) => tick + 1);
+        }
+        return request(showing.current, state, 'none', selected, false);
+    };
+    changes.current = refresh;
+
+    /**
+     * Open core's event form, a Pending token spanning its opening.
+     *
+     * @param {number|null} event The event to edit, or null for a new one.
+     * @param {number|null} start A new event's start, or null for core's default.
+     * @param {number|null} course An edited event's course, as core reads it off the event; null for the page's.
+     * @returns {void}
+     */
+    const form = (event: number | null, start: number | null, course: number | null = null): void => {
+        const pending = new Pending('theme_dimensions/calendar:form');
+        openForm({
+            context: props.edits?.context || 0,
+            course: course ?? (props.edits?.course || 0),
+            event: event,
+            start: start,
+        })
+            .catch(report)
+            .finally(() => pending.resolve());
+    };
+
+    /**
+     * Clear the drop mark and the drag.
+     *
+     * @returns {void}
+     */
+    const endDrag = (): void => {
+        over.current?.removeAttribute('data-cal-over');
+        over.current = null;
+        moving.current = null;
+        setDragging(false);
+    };
+
+    /**
+     * Start a drag on an item core lets the viewer drag; any other drag inside the page is not the page's.
+     *
+     * @param {object} event The drag's start.
+     * @returns {void}
+     */
+    const onDragStart = (event: DragEvent): void => {
+        const element = popTarget(event.target);
+        const key = element ? `${element.dataset.source}-${element.dataset.id}` : '';
+        const entry = placed.find((one) => itemKey(one.item) === key) || null;
+        const edit = entry ? editOf(edits, entry.item) : null;
+        if (!entry || !edit || !edit.drag) {
+            return;
+        }
+        moving.current = {item: entry.item, edit: edit, from: zone.day(entry.item.timestart)};
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', String(entry.item.id));
+        setDragging(true);
+    };
+
+    /**
+     * Over a day: take the drop, and mark the day as core's limits would judge it.
+     *
+     * @param {object} event The drag over.
+     * @returns {void}
+     */
+    const onDragOver = (event: DragEvent): void => {
+        const cell = moving.current ? dropCell(event.target) : null;
+        if (!moving.current || !cell) {
+            return;
+        }
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        if (over.current !== cell) {
+            over.current?.removeAttribute('data-cal-over');
+            over.current = cell;
+        }
+        cell.setAttribute('data-cal-over', dropRefusal(moving.current.edit, cell.dataset.calDrop || '') ? 'invalid' : 'valid');
+    };
+
+    /**
+     * A drop on a day: refused with core's message outside core's limits, nothing on the day it starts on, else core's
+     * move service and the span asked again.
+     *
+     * @param {object} event The drop.
+     * @returns {void}
+     */
+    const onDrop = (event: DragEvent): void => {
+        const move = moving.current;
+        const cell = dropCell(event.target);
+        endDrag();
+        if (!move || !cell) {
+            return;
+        }
+        event.preventDefault();
+        const day = cell.dataset.calDrop || '';
+        const refusal = dropRefusal(move.edit, day);
+        if (refusal) {
+            refuse(refusal === 'min' ? move.edit.minerror : move.edit.maxerror).catch(report);
+            return;
+        }
+        if (day === move.from) {
+            return;
+        }
+        const pending = new Pending('theme_dimensions/calendar:move');
+        moveStart(move.item.id, instantOf(day, MOVE_MINUTE, props.timezone))
+            .then(() => refresh('updated'))
+            .catch(report)
+            .finally(() => pending.resolve());
+    };
+
+    /**
+     * Whether core lets the viewer drag an item: its draggable, read from the answer.
+     *
+     * @param {object} one The item.
+     * @returns {boolean}
+     */
+    const movable = (one: Item): boolean => editOf(edits, one)?.drag === true;
+
     if (!strings) {
         return null;
     }
@@ -437,6 +677,7 @@ const Calendar = (props: Props) => {
         courses: new Map(shown.answer.courses.map((course) => [course.id, course])),
         categories: new Map(shown.answer.categories.map((category) => [category.id, category])),
         home: props.urls.home,
+        movable: movable,
     };
     const counts: Record<string, number> = Object.fromEntries(KEYS.map((key) => [key, 0]));
     shown.answer.events.forEach((item) => {
@@ -444,25 +685,32 @@ const Calendar = (props: Props) => {
     });
     const cities = [...new Set([...props.options.city, ...shown.answer.courses.map((course) => course.city)])]
         .filter((city) => city !== '').sort((a, b) => a.localeCompare(b, language));
-    const caption = say(`${shown.month}-01`, {month: 'long', year: 'numeric'}, language);
+    const week = shown.span.view === 'week';
+    const labels = spanLabels(shown.span, days, strings, language);
     const dots = phone ? new Map(shown.answer.days.map((entry) => [entry.date, dayDots(entry.counts)])) : null;
     const poppedentry = popped ? placed.find((entry) => itemKey(entry.item) === popped.key) || null : null;
-    const drawn = openday !== null && weeks.flat().includes(openday) ? openday : null;
+    const poppededit = editedOf(edits, poppedentry);
+    const drawn = dayIn(openday, days);
+    const own = week ? days : days.filter((iso) => iso.startsWith(month));
     /**
-     * Move a month from the selected day, the focus left where it is.
+     * Move a month or a week from the selected day, the focus left where it is.
      *
-     * @param {number} offset Whole months.
+     * @param {number} offset Whole months or weeks.
      * @returns {void}
      */
-    const step = (offset: number): void => toDay(shiftMonth(parse(selected) ? selected : `${shown.month}-01`, offset), false);
+    const step = (offset: number): void => toDay(stepSpan(shown.span, parse(selected) ? selected : days[0], offset), false);
 
     return (
         <div
             ref={root}
-            className={`dim-cal__app${phone ? ' dim-cal__app--phone' : ''}`}
+            className={`dim-cal__app${phone ? ' dim-cal__app--phone' : ''}${dragging ? ' dim-cal__app--moving' : ''}`}
             data-region="dim-cal-app"
             onClick={onPress}
             onKeyDown={onItemKey}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            onDragEnd={endDrag}
         >
             <div className="dim-cal__toolbar">
                 <h1 className="dim-cal__title">{strings.calendar_title}</h1>
@@ -473,7 +721,7 @@ const Calendar = (props: Props) => {
                     type="button"
                     className="btn btn-secondary dim-cal__step"
                     data-action="dim-cal-prev"
-                    aria-label={strings.calendar_prevmonth}
+                    aria-label={labels.previous}
                     onClick={() => step(-1)}
                 >
                     <i className="fa fa-chevron-left" aria-hidden="true"></i>
@@ -482,21 +730,22 @@ const Calendar = (props: Props) => {
                     type="button"
                     className="btn btn-secondary dim-cal__step"
                     data-action="dim-cal-next"
-                    aria-label={strings.calendar_nextmonth}
+                    aria-label={labels.next}
                     onClick={() => step(1)}
                 >
                     <i className="fa fa-chevron-right" aria-hidden="true"></i>
                 </button>
-                <p className="dim-cal__caption" id={CAPTION} aria-live="polite" data-region="dim-cal-caption">{caption}</p>
+                <p className="dim-cal__caption" id={CAPTION} aria-live="polite" data-region="dim-cal-caption">{labels.caption}</p>
                 <span className="dim-cal__spacer"></span>
-                <div className="dim-cal__views" role="group" aria-label={strings.calendar_view}>
-                    <span className="dim-cal__view dim-cal__view--active" aria-current="true">{strings.calendar_viewmonth}</span>
-                </div>
-                <a className="dim-cal__classic" href={monthHref(props.urls.calendar, shown.month)}>{strings.calendar_classic}</a>
+                <ViewSwitch strings={strings} view={shown.span.view} onView={toView} />
+                {newEventButton(props.edits, strings.calendar_newevent, strings.calendar_newevent,
+                    () => form(null, toolbarStart(own, props.today, props.now, zone, props.timezone)))}
+                <a className="dim-cal__classic" href={monthHref(props.urls.calendar, month)}>{strings.calendar_classic}</a>
             </div>
             <div className="dim-cal__toolbar">
                 <KeyChips
                     strings={strings}
+                    keys={KEYS}
                     off={state.off}
                     counts={counts}
                     onToggle={(key: Key) => change({off: state.off.includes(key)
@@ -521,21 +770,39 @@ const Calendar = (props: Props) => {
                 className={`dim-cal__body${drawn !== null && !phone ? ' dim-cal__body--drawer' : ''}`}
                 data-region="dim-cal-body"
             >
-                <MonthGrid
-                    look={look}
-                    month={shown.month}
-                    weeks={weeks}
-                    placed={placed}
-                    today={props.today}
-                    selected={weeks.flat().includes(selected) ? selected : openingDay(shown.month, props.today)}
-                    focusing={focusing}
-                    captionid={CAPTION}
-                    dots={dots}
-                    onSelect={selectDay}
-                    onMonth={(iso) => toDay(iso, true)}
-                    onOpen={openDay}
-                    onWidth={(width) => setPhone(width < PHONE)}
-                />
+                {week ? (
+                    <WeekGrid
+                        look={look}
+                        days={days}
+                        placed={placed}
+                        today={props.today}
+                        now={props.now}
+                        selected={selectedIn(selected, shown.span, days, props.today)}
+                        focusing={focusing}
+                        captionid={CAPTION}
+                        phone={phone}
+                        onSelect={selectDay}
+                        onWeek={(iso) => toDay(iso, true)}
+                        onOpen={openDay}
+                        onWidth={(width) => setPhone(width < PHONE)}
+                    />
+                ) : (
+                    <MonthGrid
+                        look={look}
+                        month={month}
+                        weeks={weeks}
+                        placed={placed}
+                        today={props.today}
+                        selected={weeks.flat().includes(selected) ? selected : openingDay(month, props.today)}
+                        focusing={focusing}
+                        captionid={CAPTION}
+                        dots={dots}
+                        onSelect={selectDay}
+                        onMonth={(iso) => toDay(iso, true)}
+                        onOpen={openDay}
+                        onWidth={(width) => setPhone(width < PHONE)}
+                    />
+                )}
                 {drawn !== null ? (
                     <DayDrawer
                         look={look}
@@ -544,6 +811,9 @@ const Calendar = (props: Props) => {
                         variant={phone ? 'sheet' : 'drawer'}
                         calendar={props.urls.calendar}
                         focusing={dayfocus}
+                        action={newEventButton(props.edits, strings.calendar_newevent,
+                            fill(strings.calendar_neweventon, say(drawn, LONG_DAY, language)),
+                            () => form(null, dayStart(drawn, props.now, zone, props.timezone)))}
                         onClose={closeDay}
                     />
                 ) : null}
@@ -557,6 +827,18 @@ const Calendar = (props: Props) => {
                     opener={popped.opener}
                     sheet={phone}
                     modalities={props.options.modality}
+                    describe={description}
+                    plain=""
+                    actions={poppededit ? (
+                        <EditActions
+                            key={itemKey(poppededit.item)}
+                            item={poppededit.item}
+                            edit={poppededit.edit}
+                            strings={strings}
+                            onEdit={() => form(poppededit.item.id, null, poppededit.item.courseid)}
+                            onFailure={report}
+                        />
+                    ) : null}
                     onClose={closePopover}
                 />
             ) : null}

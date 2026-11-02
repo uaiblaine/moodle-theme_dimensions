@@ -1559,6 +1559,29 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   stay the fallbacks. The day's layout is `overlap.ts` (pure); the description is core's
   `core_calendar_get_calendar_event_by_id` through `description.ts` (cached per event, a refusal reads as ''), the
   calendar's one trusted HTML sink. The popover's two box reads are the tree's only layout reads, on an opening.
+- **CV: the public calendar** (PROPOSAL section 19). `page::handle()`'s first step splits: a visitor goes to the login
+  page before any lookup unless `local\calendar\visitor::enabled()` (setting `calendarpublic`, on only for a stored
+  `'1'`, read beside `category\publicaccess`, never inside it); on, `page::visitor()` serves the same page without
+  `require_login()`, mounting `calendar/PublicCalendar.tsx`. The visitor's answer is `publicrange::answer()` over
+  `source\public_events` (one `{event}` statement over `category\publicaccess::public_ids()`) and
+  `source\public_courses` (`landing\publicaccess::are_public()`); its service `get_public_calendar_range` is
+  `get_public_category_rows`' twin in step order. The visitor's graph may name nothing of a session:
+  `calendar/account.ts` holds the account's two services, `description.ts` core's, and `EventPopover` is handed
+  `describe` (the account's sink feeder) or `plain` (the visitor's text); `categorypublic_source_test` walks it.
+- **C4: the week view** (PROPOSAL sections 21-22). `view=week` and `week=` (`page::PARAM_VIEW`, `PARAM_WEEK`; a day of
+  the week, snapped to the viewer's first weekday by `page::week_start()`) are navigation and never state: not saved,
+  not in `state::query()`, written with the open day. The client's week is `weeks.ts` (pure arithmetic and the address),
+  `WeekGrid.tsx` and `ViewSwitch.tsx`; one range call per span. Every address read that `optional_param()` would throw
+  on for a list goes through `page::scalar_param()` (page) or `state::scalar_param()` (state), which drop a list; the
+  public calendar answers a visitor, so a list must never be an error page.
+- **C5: editing is core's** (PROPOSAL sections 23-24). `local\calendar\editing` passes core's answers through: "New event"
+  is `calendar_user_can_add_event(get_site())`, the iCal link core's footer offer, and the answer's `editing` lists core's
+  canedit events with candelete, draggable and the limits, read through `draglimits` (a `calendar_event_exporter` subclass
+  calling core's protected limit methods; `editing_test`'s parity case compares every entry with `calendar_get_view()`'s
+  export). The blocks ask the range with editing off. The client reaches core's form, `crud` and `repository` through
+  `calendar/editing.ts`, which adds them to the bridge's `Modules` interface by declaration merging, so the bridge (in the
+  visitor's walk) names none of them. Core triggers its calendar events with jQuery on the body: listen with jQuery.
+  The popover's actions are keyed per event, because jQuery caches the markers core's `registerRemove()` reads.
 - Tests: `tests/local/calendar/{state,page,calendar_component_source}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,

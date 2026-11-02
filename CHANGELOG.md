@@ -37,6 +37,42 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   styles and the `dim-card--peeking` class. The "More information" disclosure and the course dialogue are
   unchanged, and the cover film keeps its own 180 ms intent delay. Jest and the source tests no longer pin the
   peek; the `js_mini_no_peek` gate keeps its name and now guards the observer.
+- **Create, edit, delete and move events from the theme's calendar** (2026100563), stage C5 of
+  `docs/calendar/PROPOSAL.md`. Everything stays core's: "New event" opens core's event form (in the toolbar, and in
+  the drawer for its day), shown where core's month view shows it (`calendar_user_can_add_event()`); the popover's
+  Edit and Delete appear for the events core's exporter marks editable and deletable, Delete through core's own
+  confirmation; an event core marks draggable moves to another day by drag on the month grid and the week's all-day
+  strip, through `core_calendar_update_event_start_day`, inside core's own limits. The page refreshes its window
+  after each change. An iCal link to core's export appears where core's calendar footer offers it. The public
+  calendar has none of it. The week's history step now falls back to the week the server would show.
+  PHPUnit (every flag checked against core's own month export), Jest, Behat, 40 mutation gates.
+- **The calendar's week view** (2026100562), stage C4 of `docs/calendar/PROPOSAL.md` (decision D4). The view switch
+  offers Month and Week; `view=week` and `week=YYYY-MM-DD` travel in the address as navigation, never as saved state,
+  and any real day names the week holding it on the viewer's first weekday. The week is seven day columns with an
+  all-day strip (multi-day bars, event courses), an hour body laid out like the drawer's (overlapping events side by
+  side, windowed to the week's items, no inner scroll) and a line at now; on a phone it is a seven-day agenda. The
+  public calendar has it too. A list in the address (`?month[]=`, `?view[]=`, `?model[][]=` and the rest) is now
+  dropped like any value outside its vocabulary instead of answering an error page, on the page and in the saved
+  state. Four mutation gates that no longer matched their code are re-pointed. PHPUnit, Jest, two Behat scenarios,
+  42 mutation gates.
+- **A public calendar of public categories** (2026100561), stage CV of `docs/calendar/PROPOSAL.md`. With the new
+  setting `theme_dimensions/calendarpublic` (off by default) a visitor who is not logged in opens the theme's calendar
+  page in a visitor mode: the category events of categories local_unlistedcourses serves anonymously (every ancestor
+  visible, none unlisted) and the public event courses, whose "Inscrever-se" leads to the public landing page.
+  Descriptions travel as plain text; no creator, participant or image is answered. A new service,
+  `theme_dimensions_get_public_calendar_range`, answers the month through `service-nologin.php` in the order of the
+  showcase's visitor service: it refuses a session (the guest included), a cache key and a second call, and speaks
+  the language it is sent. The page is `noindex` unless the site is open to search engines. PHPUnit, Jest, Behat as
+  a visitor, 57 mutation gates.
+- **Core's calendar blocks drawn with the theme's calendar** (2026100560), stage C3b of `docs/calendar/PROPOSAL.md`.
+  `theme_dimensions\output\core_calendar_renderer` replaces the content of `block_calendar_month` (a mini month with
+  dots per key; a day opens the page's drawer, the arrows move the month in place through the range service) and
+  `block_calendar_upcoming` (the next events by core's own lookahead and count preferences, event courses included,
+  ending in "Full calendar"), drawn by the server from the range classes, so the blocks show only what the page would
+  show the reader and work without JavaScript. Core's output stays on a course page, for a visitor or the guest, on a
+  non-Gregorian calendar and with the new setting `theme_dimensions/calendarblocks` (on by default) switched off.
+  The README says what a renderer cannot reach (the app, the iCal export, block_timeline). PHPUnit, Jest, two Behat
+  scenarios, 28 mutation gates.
 - **Core's calendar month and day views lead to the theme's calendar page** (2026100559), stage C3r of
   `docs/calendar/PROPOSAL.md` (decision D1). `calendar/view.php?view=month|day` answers a 303 to the page with the same
   month, day (the drawer opens on it) and category, decided in the `after_config` callback before core's view does

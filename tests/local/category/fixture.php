@@ -65,6 +65,8 @@ trait fixture {
         \theme_dimensions\output\category_hero::reset();
         // So is the visitor's web service's count of calls, which a new request starts without.
         \theme_dimensions\external\get_public_category_rows::reset();
+        // And the public calendar's, its twin.
+        \theme_dimensions\external\get_public_calendar_range::reset();
         // And the cards' labels, which a test may change under the same language by writing a pack.
         \theme_dimensions\output\category_card::reset_strings();
     }

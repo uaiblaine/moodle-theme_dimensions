@@ -39,6 +39,7 @@ const line = /* @__PURE__ */ __name((entry, iso, look) => /* @__PURE__ */ jsxDEV
     href: itemHref(entry.item, look.courses, look.home),
     style: colourStyle(entry.item, look),
     tabIndex: -1,
+    draggable: look.movable?.(entry.item) ? true : void 0,
     "data-cal-item": "",
     "data-cal-pop": "",
     "data-source": entry.item.source,
@@ -48,17 +49,17 @@ const line = /* @__PURE__ */ __name((entry, iso, look) => /* @__PURE__ */ jsxDEV
     children: [
       /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__dot", "aria-hidden": "true" }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-        lineNumber: 112,
+        lineNumber: 113,
         columnNumber: 9
       }),
       /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__time", children: look.zone.time(entry.item.timestart) }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-        lineNumber: 113,
+        lineNumber: 114,
         columnNumber: 9
       }),
       /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__name", children: entry.item.name }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-        lineNumber: 114,
+        lineNumber: 115,
         columnNumber: 9
       })
     ]
@@ -87,10 +88,10 @@ const DayCell = /* @__PURE__ */ __name(({ iso, column, month, today, selected, c
   }
   const card = plan.density === "card" ? plan.shown[0].item : null;
   const place = card ? placeOf(card, look) : "";
-  return /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__day", role: "gridcell", "data-day": iso, children: [
+  return /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__day", role: "gridcell", "data-day": iso, "data-cal-drop": look.movable ? iso : void 0, children: [
     /* @__PURE__ */ jsxDEV("div", { className: ground.join(" "), style: { gridColumn: column + 1, gridRow: "1 / -1" }, "aria-hidden": "true" }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-      lineNumber: 142,
+      lineNumber: 143,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV(
@@ -111,7 +112,7 @@ const DayCell = /* @__PURE__ */ __name(({ iso, column, month, today, selected, c
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-        lineNumber: 143,
+        lineNumber: 144,
         columnNumber: 13
       }
     ),
@@ -119,17 +120,17 @@ const DayCell = /* @__PURE__ */ __name(({ iso, column, month, today, selected, c
     dots ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__daydots", style: { gridColumn: column + 1, gridRow: 2 }, "aria-hidden": "true", children: [
       dots.keys.map((key) => /* @__PURE__ */ jsxDEV("span", { className: `dim-cal__daydot dim-cal-key--${key}` }, key, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-        lineNumber: 157,
+        lineNumber: 158,
         columnNumber: 45
       })),
       dots.more ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__daydotmore", children: "+" }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-        lineNumber: 158,
+        lineNumber: 159,
         columnNumber: 34
       }) : null
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-      lineNumber: 156,
+      lineNumber: 157,
       columnNumber: 17
     }) : null,
     dots || plan.density === "none" ? null : /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__content", style: { gridColumn: column + 1, gridRow: contentRow }, children: [
@@ -140,6 +141,7 @@ const DayCell = /* @__PURE__ */ __name(({ iso, column, month, today, selected, c
           href: itemHref(card, look.courses, look.home),
           style: colourStyle(card, look),
           tabIndex: -1,
+          draggable: look.movable?.(card) ? true : void 0,
           "data-cal-item": "",
           "data-cal-pop": "",
           "data-source": card.source,
@@ -149,17 +151,17 @@ const DayCell = /* @__PURE__ */ __name(({ iso, column, month, today, selected, c
           children: [
             /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__cardmeta", children: whenOf(card, look) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-              lineNumber: 176,
+              lineNumber: 178,
               columnNumber: 29
             }),
             /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__cardtitle", children: card.name }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-              lineNumber: 177,
+              lineNumber: 179,
               columnNumber: 29
             }),
             place !== "" ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__cardmeta", children: place }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-              lineNumber: 178,
+              lineNumber: 180,
               columnNumber: 45
             }) : null
           ]
@@ -168,7 +170,7 @@ const DayCell = /* @__PURE__ */ __name(({ iso, column, month, today, selected, c
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-          lineNumber: 164,
+          lineNumber: 165,
           columnNumber: 25
         }
       ) : plan.shown.map((entry) => line(entry, iso, look)),
@@ -190,11 +192,11 @@ const DayCell = /* @__PURE__ */ __name(({ iso, column, month, today, selected, c
             fill(look.strings.calendar_morelabel, plan.more),
             /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__moredots", "aria-hidden": "true", children: plan.dots.map((key, index) => /* @__PURE__ */ jsxDEV("span", { className: `dim-cal-key--${key}` }, index, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-              lineNumber: 197,
+              lineNumber: 199,
               columnNumber: 64
             })) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-              lineNumber: 196,
+              lineNumber: 198,
               columnNumber: 29
             })
           ]
@@ -203,18 +205,18 @@ const DayCell = /* @__PURE__ */ __name(({ iso, column, month, today, selected, c
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-          lineNumber: 182,
+          lineNumber: 184,
           columnNumber: 25
         }
       ) : null
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-      lineNumber: 162,
+      lineNumber: 163,
       columnNumber: 17
     })
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/DayCell.tsx",
-    lineNumber: 141,
+    lineNumber: 142,
     columnNumber: 9
   });
 }, "DayCell");

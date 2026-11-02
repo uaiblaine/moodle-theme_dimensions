@@ -194,6 +194,45 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
+     * Core's answers reach the page (stage C5): "New event" in the props and core's export in the footer, each only
+     * where core offers it, beside its control: the export with the switch off, both for an account core's calendar
+     * offers neither.
+     *
+     * @return void
+     */
+    public function test_new_event_and_the_export_follow_core(): void {
+        global $CFG, $PAGE;
+        set_config('enablecalendarexport', 1);
+        [$renderable] = $this->build(new state());
+        $renderer = $PAGE->get_renderer('core');
+        $export = 'href="' . s((new \core\url('/calendar/export.php'))->out(false)) . '" data-region="dim-cal-export"';
+
+        $this->assertSame(
+            ['create' => true, 'context' => (int) \core\context\course::instance(SITEID)->id, 'course' => (int) SITEID],
+            $renderable->props()['edits']
+        );
+        $this->assertSame(1, substr_count($renderer->render($renderable), $export), 'Control: core offers the export.');
+
+        set_config('enablecalendarexport', 0);
+        $html = $renderer->render($renderable);
+        $this->assertStringNotContainsString('dim-cal-export', $html, 'The switch off.');
+        $this->assertStringNotContainsString('dim-cal-footer', $html);
+        $this->assertTrue($renderable->props()['edits']['create'], '"New event" is not the export\'s switch.');
+
+        set_config('enablecalendarexport', 1);
+        assign_capability(
+            'moodle/calendar:manageownentries',
+            CAP_PROHIBIT,
+            $CFG->defaultuserroleid,
+            \core\context\system::instance()->id,
+            true
+        );
+        accesslib_clear_all_caches_for_unit_testing();
+        $this->assertFalse($renderable->props()['edits']['create'], 'An account core offers no "New event".');
+        $this->assertStringNotContainsString('dim-cal-export', $renderer->render($renderable), 'Nor the export.');
+    }
+
+    /**
      * Every string the client reads exists in both languages, and is the list the client names.
      *
      * @return void
@@ -247,5 +286,108 @@ final class calendar_page_test extends \advanced_testcase {
         $this->assertContains($this->ids['child'], $ids, 'The control: the visible tree is named.');
         $this->assertNotContains((int) $hidden->id, $ids);
         $this->assertNotContains((int) $unlisted->id, $ids);
+    }
+    /**
+     * The week view's server layer, whole without JavaScript: the week's caption, the adjacent weeks' links, the switch's
+     * two links (the week current), the form keeping the view and the week, and the week's own agenda; the month's render
+     * is the control. The props carry the view, the week and the server's clock.
+     *
+     * @return void
+     */
+    public function test_the_template_draws_the_week_without_javascript(): void {
+        global $PAGE;
+        $this->as_viewer($this->ids['student']);
+        $month = self::month_start()->format('Y-m');
+        $week = page::week_start(self::month_start()->modify('+8 days')->format('Y-m-d'), 0);
+        [$from, $to] = page::week($week);
+        $window = window::from_iso($from, $to);
+        $state = new state();
+        $answer = range::answer($window, scope::for_viewer(), $state->on(), $state->filters());
+        $before = time();
+        $renderable = new calendar_page(
+            $month,
+            self::month_start()->format('Y-m-d'),
+            0,
+            \core_date::get_user_timezone(),
+            $window,
+            $answer,
+            $state,
+            tree::for_scope(scope::for_viewer()),
+            '',
+            false,
+            page::VIEW_WEEK,
+            $week
+        );
+        $props = $renderable->props();
+        $this->assertSame([page::VIEW_WEEK, $week], [$props['view'], $props['week']]);
+        $this->assertGreaterThanOrEqual($before, $props['now']);
+        $this->assertLessThanOrEqual(time(), $props['now']);
+
+        $html = $PAGE->get_renderer('core')->render($renderable);
+        $timezone = \core_date::get_user_timezone_object();
+        $at = static fn(string $day): int => (new \DateTimeImmutable($day, $timezone))->getTimestamp();
+        $caption = get_string('calendar_span', 'theme_dimensions', (object) [
+            'from' => userdate($at($from), get_string('strftimedateshort', 'langconfig')),
+            'to' => userdate($at($to), get_string('strftimedate', 'langconfig')),
+        ]);
+        $this->assertStringContainsString('<p class="dim-cal__caption">' . s($caption) . '</p>', $html);
+        $previous = (new \DateTimeImmutable($week))->modify('-7 days')->format('Y-m-d');
+        $this->assertStringContainsString('view=week&amp;week=' . $previous, $html, 'Previous leads to the week before.');
+        $this->assertStringContainsString('aria-label="' . get_string('calendar_prevweek', 'theme_dimensions') . '"', $html);
+        $this->assertMatchesRegularExpression('~data-region="dim-cal-view-week" aria-current="page">~', $html);
+        $this->assertMatchesRegularExpression('~href="[^"]*month=' . $month . '[^"]*" data-region="dim-cal-view-month">~', $html);
+        $this->assertStringContainsString('<input type="hidden" name="view" value="week">', $html);
+        $this->assertStringContainsString('<input type="hidden" name="week" value="' . $week . '">', $html);
+        $this->assertStringNotContainsString('<input type="hidden" name="month"', $html);
+        $this->assertSame(1, substr_count($html, '>Mentoring B</a>'), 'The week\'s timed event, listed once.');
+        $this->assertSame(1, substr_count($html, '>Enrolment week</a>'), 'The ten-day event, once, under the week\'s first day.');
+        $this->assertStringContainsString(get_string('calendar_noscriptweek', 'theme_dimensions'), $html);
+
+        [$monthpage] = $this->build($state);
+        $control = $PAGE->get_renderer('core')->render($monthpage);
+        $this->assertMatchesRegularExpression('~data-region="dim-cal-view-month" aria-current="page">~', $control);
+        $this->assertMatchesRegularExpression(
+            '~href="[^"]*view=week&amp;week=[0-9-]+[^"]*" data-region="dim-cal-view-week">~',
+            $control
+        );
+        $this->assertStringContainsString('aria-label="' . get_string('calendar_prevmonth', 'theme_dimensions') . '"', $control);
+        $this->assertStringContainsString('<input type="hidden" name="month" value="' . $month . '">', $control);
+        $this->assertSame([page::VIEW_MONTH, ''], [$monthpage->props()['view'], $monthpage->props()['week']]);
+    }
+    /**
+     * The week's agenda lists every day of the week, the days outside the month named beside it included; the month's
+     * agenda, its control, lists the month's own days alone.
+     *
+     * @return void
+     */
+    public function test_the_week_agenda_lists_the_weeks_days_outside_the_month(): void {
+        global $PAGE;
+        $eve = self::month_start()->modify('-1 day');
+        self::getDataGenerator()->create_event([
+            'name' => 'Month end review',
+            'eventtype' => 'site',
+            'timestart' => $eve->setTime(10, 0)->getTimestamp(),
+        ]);
+        $this->as_viewer($this->ids['student']);
+        $month = self::month_start()->format('Y-m');
+        $week = page::week_start($eve->format('Y-m-d'), 0);
+        [$from, $to] = page::week($week);
+        $window = window::from_iso($from, $to);
+        $state = new state();
+        $answer = range::answer($window, scope::for_viewer(), $state->on(), $state->filters());
+        $this->assertContains('Month end review', array_column($answer['events'], 'name'), 'Precondition: the week holds it.');
+        $today = self::month_start()->format('Y-m-d');
+        $timezone = \core_date::get_user_timezone();
+        $view = page::VIEW_WEEK;
+        $renderable = new calendar_page($month, $today, 0, $timezone, $window, $answer, $state, [], '', false, $view, $week);
+        $html = $PAGE->get_renderer('core')->render($renderable);
+        $this->assertSame(1, substr_count($html, '>Month end review</a>'));
+
+        $monthly = new calendar_page($month, $today, 0, $timezone, $window, $answer, $state, []);
+        $this->assertStringNotContainsString(
+            '>Month end review</a>',
+            $PAGE->get_renderer('core')->render($monthly),
+            'The control: the month\'s agenda lists the month\'s own days.'
+        );
     }
 }
