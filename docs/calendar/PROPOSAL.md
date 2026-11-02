@@ -1922,3 +1922,47 @@ source plus its key.
   item under its own key, leading to the plan's page), read through core's competency API so the plan's own
   visibility rules decide. It would be the viewer's own plans only, never another user's, and never on the public
   calendar.
+
+## 26. What waits for the owner after C0-C5 (2026-11-02)
+
+The owner asked for C3b to C6 to run unattended, with every choice that needs the owner's word left for the end. C3b
+(#94), CV (#97), C4 (#99) and C5 (#100) are merged; C6 is not built (section 25). None of the items below blocks
+what is merged: each is the current behaviour plus the alternative.
+
+**Product choices**
+1. **The upcoming block's two footers** (C3b). It ends with the theme's "Full calendar" and, under it, core's own
+   "Go to calendar…" (core's footer stays core's). Hiding core's needs a block-level change.
+2. **Names in two languages on the public calendar** (CV). With filters off, a name using multilang spans shows both
+   languages joined ("FairFeira"). The multilang filter alone could be applied.
+3. **No cap on category events per window** (CV), on the visitor's page as on the logged-in one; a cap would bound an
+   anonymous request's cost at the price of a "more" signal.
+4. **Public event courses outside public categories** (CV) are shown, because the landing gate is per course; only
+   their category's name is withheld.
+5. **A visitor's way to the public calendar** (CV). None is drawn: a visitor reaches it by its address. Candidates:
+   the public category page's hero, or the visitor's navbar.
+6. **The 2,000-character cut** of public descriptions (CV).
+7. **The extra `og:*` tags** on the public calendar page (CV).
+8. **The "Classic calendar" link** (C5). Kept; with create and edit on the page it may go.
+9. **The iCal link** (C5): shown under core's footer rule (export on, and the account may add events) and leading to
+   `export.php`, where core's footer offers `managesubscriptions.php` under the same rule. Alternatives: every
+   account, or core's target.
+10. **A drop on the week's hour body** (C5). Not a target, because core's service moves the day and keeps the time.
+11. **A "Move to…" keyboard control** (C5). Edit's form is the keyboard alternative today.
+12. **C6** (section 25): wait for a trails format, or build a learning-plan due-date source now.
+
+**Reviews and housekeeping**
+13. **The one MDL Shield review** of the series (owner's decision 2026-11-01): `!mdlshield review full` is the
+    owner's command. Each stage had a `security-diff-read`; their findings are in sections 14-24.
+14. **A look by eye.** No stage was seen in a browser by a person: the evidence is PHPUnit, Jest, Behat and layout
+    measured in static pages. Light and dark, phone and desktop, and a screen reader are all open.
+15. **Branches on origin** `calendar-c3`, `calendar-c3b`, `calendar-c3r`, `calendar-cv`, `calendar-c4`,
+    `calendar-c5`: merged, deleted locally, left on origin for the owner to delete.
+
+**Environment, outside this repository**
+16. **Behat on the stacks** fails for the theme's suite: `tool_mulib`'s `behat_tool_mulib_files` (mounted on m503 and
+    m503b) redefines the upload step the theme's `behat_theme_dimensions_behat_repository_upload` defines, so every
+    scenario fails before its first step. `mdl ci --behat` is unaffected (it does not install tool_mulib). The runs on
+    m503b this night removed that context from the generated `behat.yml` and put it back afterwards.
+17. **The CI host ci@192.168.1.222** cannot receive a run from a worktree nested in a checkout (`rsync` does not
+    create the parent of `<repo>/.claude/worktrees/<name>`); the Mac mini can. Nested worktrees are also unsafe in a
+    mounted checkout (section 24's runs): worktrees belong beside the repository, not inside it.
