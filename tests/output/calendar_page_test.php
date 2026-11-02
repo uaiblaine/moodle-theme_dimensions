@@ -194,6 +194,45 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
+     * Core's answers reach the page (stage C5): "New event" in the props and core's export in the footer, each only
+     * where core offers it, beside its control: the export with the switch off, both for an account core's calendar
+     * offers neither.
+     *
+     * @return void
+     */
+    public function test_new_event_and_the_export_follow_core(): void {
+        global $CFG, $PAGE;
+        set_config('enablecalendarexport', 1);
+        [$renderable] = $this->build(new state());
+        $renderer = $PAGE->get_renderer('core');
+        $export = 'href="' . s((new \core\url('/calendar/export.php'))->out(false)) . '" data-region="dim-cal-export"';
+
+        $this->assertSame(
+            ['create' => true, 'context' => (int) \core\context\course::instance(SITEID)->id, 'course' => (int) SITEID],
+            $renderable->props()['edits']
+        );
+        $this->assertSame(1, substr_count($renderer->render($renderable), $export), 'Control: core offers the export.');
+
+        set_config('enablecalendarexport', 0);
+        $html = $renderer->render($renderable);
+        $this->assertStringNotContainsString('dim-cal-export', $html, 'The switch off.');
+        $this->assertStringNotContainsString('dim-cal-footer', $html);
+        $this->assertTrue($renderable->props()['edits']['create'], '"New event" is not the export\'s switch.');
+
+        set_config('enablecalendarexport', 1);
+        assign_capability(
+            'moodle/calendar:manageownentries',
+            CAP_PROHIBIT,
+            $CFG->defaultuserroleid,
+            \core\context\system::instance()->id,
+            true
+        );
+        accesslib_clear_all_caches_for_unit_testing();
+        $this->assertFalse($renderable->props()['edits']['create'], 'An account core offers no "New event".');
+        $this->assertStringNotContainsString('dim-cal-export', $renderer->render($renderable), 'Nor the export.');
+    }
+
+    /**
      * Every string the client reads exists in both languages, and is the list the client names.
      *
      * @return void

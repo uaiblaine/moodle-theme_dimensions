@@ -53,6 +53,10 @@ use theme_dimensions\local\calendar\window;
  *    ({@see scope::for_viewer()}, which refuses a course or category the viewer may not narrow to), then
  *    {@see range::answer()}.
  *
+ * The answer also carries core's own editing answers for the events it lists (`editing`,
+ * {@see \theme_dimensions\local\calendar\editing::entries()}): what core's month view would draw Edit, Delete and drag for.
+ * They decide what the page offers, never what is allowed: core's form and services check again.
+ *
  * Core has no capability for viewing a calendar, and none is invented: what each viewer sees is what
  * core's month view shows them, plus the event courses the showcase would list to them. A read raises no
  * event. The session is read-only: nothing here writes $SESSION (scope builds core's sets without the
@@ -244,6 +248,17 @@ class get_calendar_range extends external_api {
                 'date' => new external_value(PARAM_ALPHANUMEXT, 'The day, YYYY-MM-DD.'),
                 'counts' => new external_single_structure($counts),
             ])),
+            'editing' => new external_multiple_structure(new external_single_structure([
+                'id' => new external_value(PARAM_INT, 'A core event the viewer may edit (core\'s calendar_edit_event_allowed()).'),
+                'edit' => new external_value(PARAM_BOOL, 'Whether core\'s event form edits it: not an activity\'s event.'),
+                'delete' => new external_value(PARAM_BOOL, 'Core\'s candelete.'),
+                'drag' => new external_value(PARAM_BOOL, 'Core\'s draggable: whether its start day may be moved.'),
+                'count' => new external_value(PARAM_INT, 'The events of its series, 1 for a single event.'),
+                'minday' => new external_value(PARAM_ALPHANUMEXT, 'The earliest day it may move to, YYYY-MM-DD, empty for none.'),
+                'maxday' => new external_value(PARAM_ALPHANUMEXT, 'The latest day it may move to, YYYY-MM-DD, empty for none.'),
+                'minerror' => new external_value(PARAM_RAW, 'Core\'s message for a day before minday, plain.'),
+                'maxerror' => new external_value(PARAM_RAW, 'Core\'s message for a day after maxday, plain.'),
+            ]), 'Core\'s editing answers, one per event the viewer may edit; empty for everything else.'),
         ]);
     }
 }

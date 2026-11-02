@@ -28,7 +28,9 @@ import {act, fireEvent, render, waitFor} from '@testing-library/react';
 import {fetchOne} from '@moodle/lms/core/ajax';
 import Calendar, {QUIET} from '../../src/calendar/Calendar';
 import {forget} from '../../src/calendar/description';
-import type {Answer, Props} from '../../src/calendar/model';
+import {forget as forgetEditing} from '../../src/calendar/editing';
+import type {Answer, Edit, Props} from '../../src/calendar/model';
+import {MOVE_MINUTE, instantOf} from '../../src/calendar/moves';
 import {STRINGS, answer, at, item, props} from './fixture';
 
 jest.mock('@moodle/lms/core/ajax', () => ({fetchOne: jest.fn()}));
@@ -847,5 +849,315 @@ describe('the phone', () => {
         fireEvent.click(day('2026-11-17'));
         expect((await waitFor(() => region())).classList.contains('dim-cal__drawer--drawer')).toBe(true);
         expect(document.querySelector('[data-region="dim-cal-body"]')?.classList.contains('dim-cal__body--drawer')).toBe(true);
+    });
+});
+
+describe('editing, core\'s (C5)', () => {
+    /** The handlers core's events were given on the body, by event name. */
+    let handlers: Map<string, Array<() => void>>;
+    /** Core's event form modal. */
+    let modal: Record<string, jest.Mock>;
+    /** Core's crud, repository and notification. */
+    let crud: {registerRemove: jest.Mock};
+    let repository: {updateEventStartDay: jest.Mock};
+    let notification: {exception: jest.Mock, addNotification: jest.Mock};
+    /** What core's jQuery was handed. */
+    let wrapped: unknown[];
+
+    /** The edits core's answer allows a creator: the form's context and the site's course. */
+    const EDITS = {create: true, context: 2, course: 1};
+
+    beforeEach(() => {
+        handlers = new Map();
+        wrapped = [];
+        modal = {
+            setContextId: jest.fn(),
+            setCourseId: jest.fn(),
+            setEventId: jest.fn(),
+            setStartTime: jest.fn(),
+            show: jest.fn(),
+        };
+        crud = {registerRemove: jest.fn()};
+        repository = {updateEventStartDay: jest.fn(() => Promise.resolve({event: {}}))};
+        notification = {exception: jest.fn(() => Promise.resolve()), addNotification: jest.fn()};
+        mockAmdModule('jquery', (target: unknown) => {
+            wrapped.push(target);
+            return {
+                on: (name: string, handler: () => void) => {
+                    handlers.set(name, [...(handlers.get(name) || []), handler]);
+                },
+            };
+        });
+        mockAmdModule('core_calendar/events', {
+            created: 'calendar-events:created',
+            updated: 'calendar-events:updated',
+            deleted: 'calendar-events:deleted',
+        });
+        mockAmdModule('core_calendar/modal_event_form', {create: jest.fn(() => Promise.resolve(modal))});
+        mockAmdModule('core_calendar/crud', crud);
+        mockAmdModule('core_calendar/repository', repository);
+        mockAmdModule('core/notification', notification);
+        mockString('errorinvaliddate', 'calendar', 'Invalid date');
+        forgetEditing();
+    });
+
+    /**
+     * Say what core says when it changed an event: its jQuery event on the body.
+     *
+     * @param {string} name The event's name.
+     * @returns {Promise} Settles once the page has answered.
+     */
+    const trigger = async(name: string): Promise<void> => {
+        await act(async() => {
+            (handlers.get(name) || []).forEach((handler) => handler());
+        });
+    };
+
+    /**
+     * An entry of core's answer.
+     *
+     * @param {object} fields What differs from an editable, deletable, draggable event with no limits.
+     * @returns {object}
+     */
+    const entry = (fields: Partial<Edit> & {id: number}): Edit => ({
+        edit: true,
+        delete: true,
+        drag: true,
+        count: 1,
+        minday: '',
+        maxday: '',
+        minerror: '',
+        maxerror: '',
+        ...fields,
+    });
+
+    /**
+     * Props whose answer lists these items and core's entries.
+     *
+     * @param {Array} events The items.
+     * @param {Array} editing Core's entries.
+     * @param {object} more Props that differ.
+     * @returns {object}
+     */
+    const editable = (events: ReturnType<typeof item>[], editing: Edit[], more: Partial<Props> = {}): Props => {
+        const given = props(events, {edits: EDITS, ...more});
+        return {...given, answer: {...given.answer, editing: editing}};
+    };
+
+    /**
+     * A drag's data, as the browser hands it.
+     *
+     * @returns {object}
+     */
+    const transfer = (): Record<string, unknown> => ({setData: jest.fn(), effectAllowed: '', dropEffect: ''});
+
+    it('draws "New event" only when the server says core would', async() => {
+        await mount(props([]));
+        expect(document.querySelector('[data-action="dim-cal-new"]')).toBeNull();
+        document.body.replaceChildren();
+        await mount(props([], {edits: {...EDITS, create: false}}));
+        expect(document.querySelector('[data-action="dim-cal-new"]')).toBeNull();
+        document.body.replaceChildren();
+        await mount(props([], {edits: EDITS}));
+        const button = document.querySelector<HTMLButtonElement>('[data-action="dim-cal-new"]') as HTMLButtonElement;
+        expect(button.tagName).toBe('BUTTON');
+        expect(button.textContent).toBe('New event');
+        expect(button.tabIndex).toBe(0);
+    });
+
+    it('opens core\'s form with core\'s context and course, and no start while today is shown', async() => {
+        await mount(props([], {edits: EDITS}));
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-new"]') as HTMLElement);
+        });
+        expect(modal.setContextId).toHaveBeenCalledWith(2);
+        expect(modal.setCourseId).toHaveBeenCalledWith(1);
+        expect(modal.setStartTime).not.toHaveBeenCalled();
+        expect(modal.setEventId).not.toHaveBeenCalled();
+        expect(modal.show).toHaveBeenCalledTimes(1);
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-new"]') as HTMLElement);
+        });
+        expect(modal.show).toHaveBeenCalledTimes(2);
+        expect(handlers.get('calendar-events:created')).toHaveLength(1);
+    });
+
+    it('starts a new event on the month\'s first day at the time of day when today is elsewhere', async() => {
+        await mount(props([], {edits: EDITS, month: '2026-12'}));
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-new"]') as HTMLElement);
+        });
+        expect(modal.setStartTime).toHaveBeenCalledWith(at('2026-12-01', 10));
+    });
+
+    it('offers "New event" in the drawer for its day, the day prefilled', async() => {
+        await mount(props([], {edits: EDITS, day: '2026-11-10'}));
+        const button = region().querySelector<HTMLElement>('[data-action="dim-cal-new"]') as HTMLElement;
+        expect(button.getAttribute('aria-label')).toBe('New event on Tuesday, November 10, 2026');
+        await act(async() => {
+            fireEvent.click(button);
+        });
+        expect(modal.setStartTime).toHaveBeenCalledWith(at('2026-11-10', 10));
+        document.body.replaceChildren();
+        await mount(props([], {day: '2026-11-10'}));
+        expect(region().querySelector('[data-action="dim-cal-new"]')).toBeNull();
+    });
+
+    it('asks for the window shown again when core says an event was saved, writing nothing', async() => {
+        const push = jest.spyOn(window.history, 'pushState');
+        const replace = jest.spyOn(window.history, 'replaceState');
+        await mount(props([], {edits: EDITS}));
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-new"]') as HTMLElement);
+        });
+        await trigger('calendar-events:created');
+        expect(ranges()).toEqual([expect.objectContaining({from: '2026-11-01', to: '2026-12-05'})]);
+        await trigger('calendar-events:updated');
+        expect(ranges()).toHaveLength(2);
+        expect(push).not.toHaveBeenCalled();
+        expect(replace).not.toHaveBeenCalled();
+        push.mockRestore();
+        replace.mockRestore();
+    });
+
+    it('draws Edit and Delete in the popover only for what core allows, with core\'s markers', async() => {
+        describeWith(() => Promise.resolve({event: {description: ''}}));
+        await mount(editable([
+            item({id: 1, name: 'Mine', timestart: at('2026-11-17', 9)}),
+            item({id: 2, name: 'Not mine', timestart: at('2026-11-18', 9)}),
+            item({id: 3, name: 'Due', timestart: at('2026-11-19', 9), modulename: 'assign'}),
+        ], [entry({id: 1, count: 3}), entry({id: 3, edit: false, delete: false})]));
+        await act(async() => {
+            fireEvent.click(gridItem(2));
+        });
+        expect(popover()?.querySelector('[data-region="dim-cal-edit"]')).toBeNull();
+        await act(async() => {
+            fireEvent.click(gridItem(3));
+        });
+        expect(popover()?.querySelector('[data-region="dim-cal-edit"]')).toBeNull();
+        await act(async() => {
+            fireEvent.click(gridItem(1));
+        });
+        const actions = popover()?.querySelector<HTMLElement>('[data-region="dim-cal-edit"]') as HTMLElement;
+        expect(actions.dataset.type).toBe('event');
+        expect(actions.dataset.eventId).toBe('1');
+        expect(actions.dataset.eventTitle).toBe('Mine');
+        expect(actions.dataset.eventCount).toBe('3');
+        expect(Array.from(actions.querySelectorAll('button')).map((button) => [button.textContent, button.dataset.action]))
+            .toEqual([['Edit', 'dim-cal-edit'], ['Delete', 'delete']]);
+        await waitFor(() => expect(crud.registerRemove).toHaveBeenCalledTimes(1));
+        expect(wrapped).toContain(actions);
+    });
+
+    it('edits through core\'s form, and closes the popover once core deleted the event', async() => {
+        describeWith(() => Promise.resolve({event: {description: ''}}));
+        await mount(editable([item({id: 1, name: 'Mine', timestart: at('2026-11-17', 9)})], [entry({id: 1})]));
+        await act(async() => {
+            fireEvent.click(gridItem(1));
+        });
+        await act(async() => {
+            fireEvent.click(popover()?.querySelector('[data-action="dim-cal-edit"]') as HTMLElement);
+        });
+        expect(modal.setEventId).toHaveBeenCalledWith(1);
+        expect(modal.setContextId).toHaveBeenCalledWith(2);
+        expect(modal.setCourseId).not.toHaveBeenCalled();
+        expect(modal.show).toHaveBeenCalledTimes(1);
+        const dialogue = document.createElement('div');
+        dialogue.setAttribute('role', 'dialog');
+        // A press in core's dialogue, over the popover, leaves the popover open.
+        fireEvent.mouseDown(document.body.appendChild(dialogue));
+        expect(popover()).not.toBeNull();
+        await trigger('calendar-events:deleted');
+        expect(popover()).toBeNull();
+        expect(ranges()).toHaveLength(1);
+        expect(document.activeElement).toBe(day('2026-11-17'));
+    });
+
+    it('closes on Tab past Delete, its last control', async() => {
+        describeWith(() => Promise.resolve({event: {description: ''}}));
+        await mount(editable([item({id: 1, name: 'Mine', timestart: at('2026-11-17', 9)})], [entry({id: 1})]));
+        await act(async() => {
+            fireEvent.click(gridItem(1));
+        });
+        const remove = popover()?.querySelector<HTMLElement>('[data-action="delete"]') as HTMLElement;
+        remove.focus();
+        fireEvent.keyDown(remove, {key: 'Tab'});
+        expect(popover()).toBeNull();
+    });
+
+    it('lets only what core marks draggable be dragged, and marks the days only then', async() => {
+        await mount(editable([
+            item({id: 1, timestart: at('2026-11-17', 9)}),
+            item({id: 2, timestart: at('2026-11-18', 9)}),
+            item({id: 3, timestart: at('2026-11-19', 9)}),
+        ], [entry({id: 1}), entry({id: 3, drag: false})]));
+        expect(gridItem(1).getAttribute('draggable')).toBe('true');
+        expect(gridItem(2).hasAttribute('draggable')).toBe(false);
+        expect(gridItem(3).hasAttribute('draggable')).toBe(false);
+        expect(document.querySelectorAll('[data-cal-drop]').length).toBe(35);
+    });
+
+    it('moves a start day through core\'s service and asks for the window again', async() => {
+        await mount(editable([item({id: 1, timestart: at('2026-11-17', 9)})], [entry({id: 1})]));
+        const data = transfer();
+        fireEvent.dragStart(gridItem(1), {dataTransfer: data});
+        expect(document.querySelector('.dim-cal__app--moving')).not.toBeNull();
+        fireEvent.dragOver(day('2026-11-20'), {dataTransfer: data});
+        expect(day('2026-11-20').closest('[data-cal-drop]')?.getAttribute('data-cal-over')).toBe('valid');
+        await act(async() => {
+            fireEvent.drop(day('2026-11-20'), {dataTransfer: data});
+        });
+        expect(repository.updateEventStartDay).toHaveBeenCalledWith(1, instantOf('2026-11-20', MOVE_MINUTE, 'UTC'));
+        await waitFor(() => expect(ranges()).toHaveLength(1));
+        expect(document.querySelector('.dim-cal__app--moving')).toBeNull();
+        expect(document.querySelector('[data-cal-over]')).toBeNull();
+    });
+
+    it('refuses a day outside core\'s limits with core\'s message, asking nothing', async() => {
+        await mount(editable([item({id: 1, timestart: at('2026-11-17', 9)})],
+            [entry({id: 1, minday: '2026-11-15', minerror: 'Not before the course starts'})]));
+        const data = transfer();
+        fireEvent.dragStart(gridItem(1), {dataTransfer: data});
+        fireEvent.dragOver(day('2026-11-12'), {dataTransfer: data});
+        expect(day('2026-11-12').closest('[data-cal-drop]')?.getAttribute('data-cal-over')).toBe('invalid');
+        await act(async() => {
+            fireEvent.drop(day('2026-11-12'), {dataTransfer: data});
+        });
+        await waitFor(() => expect(notification.exception).toHaveBeenCalledWith({
+            name: 'Invalid date',
+            message: 'Not before the course starts',
+        }));
+        expect(repository.updateEventStartDay).not.toHaveBeenCalled();
+        expect(ranges()).toHaveLength(0);
+    });
+
+    it('asks nothing for a drop on the day it starts on, nor for a drag core does not allow', async() => {
+        await mount(editable([
+            item({id: 1, timestart: at('2026-11-17', 9)}),
+            item({id: 2, timestart: at('2026-11-18', 9)}),
+        ], [entry({id: 1}), entry({id: 2, drag: false})]));
+        const data = transfer();
+        fireEvent.dragStart(gridItem(1), {dataTransfer: data});
+        await act(async() => {
+            fireEvent.drop(day('2026-11-17'), {dataTransfer: data});
+        });
+        fireEvent.dragStart(gridItem(2), {dataTransfer: data});
+        expect(document.querySelector('.dim-cal__app--moving')).toBeNull();
+        await act(async() => {
+            fireEvent.drop(day('2026-11-21'), {dataTransfer: data});
+        });
+        expect(repository.updateEventStartDay).not.toHaveBeenCalled();
+    });
+
+    it('shows core\'s exception when core refuses the move', async() => {
+        repository.updateEventStartDay.mockImplementation(() => Promise.reject(new Error('The start day cannot be modified')));
+        await mount(editable([item({id: 1, timestart: at('2026-11-17', 9)})], [entry({id: 1})]));
+        const data = transfer();
+        fireEvent.dragStart(gridItem(1), {dataTransfer: data});
+        await act(async() => {
+            fireEvent.drop(day('2026-11-20'), {dataTransfer: data});
+        });
+        await waitFor(() => expect(notification.exception).toHaveBeenCalledTimes(1));
+        expect(ranges()).toHaveLength(0);
     });
 });

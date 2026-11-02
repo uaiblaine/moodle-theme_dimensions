@@ -198,21 +198,26 @@ export const inSpan = (href: string, span: Span): string => {
 };
 
 /**
- * The span an address names, as the server reads it: the week for exactly `view=week`, its day snapped to the week's
- * first day, a week that is not a day being the month's 1st's; the month for anything else.
+ * The span an address names, as the server reads it (local\calendar\page::week_from_request()): the week for exactly
+ * `view=week`, its day snapped to the week's first day; a week that is not a day, or whose year is outside the month's
+ * bounds (1900 to 2999), being the week of the month's opening day (today when the month holds it, else its 1st,
+ * page::opening_day()); the month for anything else.
  *
  * @param {string} href The address.
  * @param {number} firstday The weekday a week begins on.
  * @param {string} month The month the address names, or the page's.
+ * @param {string} today Today, YYYY-MM-DD.
  * @returns {object} The span.
  */
-export const readSpan = (href: string, firstday: number, month: string): Span => {
+export const readSpan = (href: string, firstday: number, month: string, today: string): Span => {
     const params = new URL(href, window.location.href).searchParams;
     if (params.get(VIEW_PARAM) !== 'week') {
         return {view: 'month', month: month};
     }
-    const week = params.get(WEEK_PARAM);
-    return {view: 'week', week: weekStart(parse(week) ? String(week) : `${month}-01`, firstday)};
+    const week = String(params.get(WEEK_PARAM) || '');
+    const year = Number(week.slice(0, 4));
+    const valid = parse(week) !== null && year >= 1900 && year <= 2999;
+    return {view: 'week', week: weekStart(valid ? week : openingOf({view: 'month', month: month}, today), firstday)};
 };
 
 /**

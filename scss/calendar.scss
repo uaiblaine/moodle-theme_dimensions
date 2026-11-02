@@ -1143,6 +1143,37 @@ body.dim-calendar {
         gap: .5rem;
     }
 
+    // Stage C5: core's Edit and Delete sit in the popover's row of actions; their wrapper only carries core's markers.
+    .dim-cal__popedit {
+        display: contents;
+    }
+
+    // While a drag is on, the items let the pointer through to the day under them, whose cell names the drop's day
+    // (no layout is read), and that day is outlined as core's limits judge it.
+    .dim-cal__app--moving [data-cal-item] {
+        pointer-events: none;
+    }
+
+    .dim-cal__day[data-cal-over="valid"] > .dim-cal__ground {
+        box-shadow: inset 0 0 0 2px var(--dim-ds-focus-ring, var(--bs-primary));
+    }
+
+    .dim-cal__day[data-cal-over="invalid"] > .dim-cal__ground {
+        box-shadow: inset 0 0 0 2px var(--dim-cal-overdue-edge);
+    }
+
+    .dim-cal__bar[draggable="true"],
+    .dim-cal__line[draggable="true"],
+    .dim-cal__card[draggable="true"] {
+        cursor: grab;
+    }
+
+    // The footer under both layers: core's iCal export, where core's calendar offers it.
+    .dim-cal__footer {
+        margin-top: .75rem;
+        font-size: .875rem;
+    }
+
     // The phone's month: a dot row per day under its number, from the answer's counts by key.
     .dim-cal__grid--phone .dim-cal__weeks {
         grid-auto-rows: minmax(3.25rem, 1fr);

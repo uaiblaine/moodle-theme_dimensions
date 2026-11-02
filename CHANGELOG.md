@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Create, edit, delete and move events from the theme's calendar** (2026100563), stage C5 of
+  `docs/calendar/PROPOSAL.md`. Everything stays core's: "New event" opens core's event form (in the toolbar, and in
+  the drawer for its day), shown where core's month view shows it (`calendar_user_can_add_event()`); the popover's
+  Edit and Delete appear for the events core's exporter marks editable and deletable, Delete through core's own
+  confirmation; an event core marks draggable moves to another day by drag on the month grid and the week's all-day
+  strip, through `core_calendar_update_event_start_day`, inside core's own limits. The page refreshes its window
+  after each change. An iCal link to core's export appears where core's calendar footer offers it. The public
+  calendar has none of it. The week's history step now falls back to the week the server would show.
+  PHPUnit (every flag checked against core's own month export), Jest, Behat, 40 mutation gates.
 - **The calendar's week view** (2026100562), stage C4 of `docs/calendar/PROPOSAL.md` (decision D4). The view switch
   offers Month and Week; `view=week` and `week=YYYY-MM-DD` travel in the address as navigation, never as saved state,
   and any real day names the week holding it on the viewer's first weekday. The week is seven day columns with an

@@ -317,3 +317,22 @@ describe('the address', () => {
         expect(readPublicAddress(`${PAGE}?keys%5B%5D=site&keys%5B%5D=user`)).toEqual({month: null, on: []});
     });
 });
+
+describe('the visitor edits nothing (C5)', () => {
+    it('draws no "New event", no Edit or Delete and no drag, whatever an answer would list', async() => {
+        const events = [item({id: 4, name: 'Fair', key: 'category', timestart: at('2026-11-17', 9)})];
+        const editing = [{id: 4, edit: true, delete: true, drag: true, count: 1, minday: '', maxday: '', minerror: '', maxerror: ''}];
+        fetched.mockImplementation(() => Promise.resolve(publicAnswer()));
+        const page = await mount(props(publicAnswer(events, {editing: editing}), {day: '2026-11-17'}));
+        const element = page.querySelector<HTMLElement>('[data-region="dim-cal-grid"] [data-cal-pop][data-id="4"]') as HTMLElement;
+        expect(element).not.toBeNull();
+        expect(element.hasAttribute('draggable')).toBe(false);
+        expect(page.querySelector('[data-cal-drop]')).toBeNull();
+        expect(page.querySelector('[data-action="dim-cal-new"]')).toBeNull();
+        await act(async() => {
+            fireEvent.click(element);
+        });
+        expect(page.querySelector('[data-region="dim-cal-popover"]')).not.toBeNull();
+        expect(page.querySelector('[data-region="dim-cal-edit"]')).toBeNull();
+    });
+});

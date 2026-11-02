@@ -287,7 +287,7 @@ const PublicCalendar = (props: PublicProps) => {
          */
         const onPop = (): void => {
             const read = readPublicAddress(window.location.href);
-            const span = readSpan(window.location.href, firstday, read.month || props.month);
+            const span = readSpan(window.location.href, firstday, read.month || props.month, props.today);
             const day = openableDay(new URL(window.location.href).searchParams.get(DAY_PARAM), spanDays(span, firstday));
             setOn(read.on);
             request(span, read.on, 'none', day || openingOf(span, props.today), false);

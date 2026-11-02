@@ -227,7 +227,7 @@ final class blocks {
             'today' => $today,
             'firstday' => $firstday,
             'state' => $state,
-            'answer' => range::answer(window::from_iso($from, $to), $scope, $state->on(), $state->filters()),
+            'answer' => range::answer(window::from_iso($from, $to), $scope, $state->on(), $state->filters(), false),
         ];
     }
 
@@ -258,7 +258,7 @@ final class blocks {
             $end = $day->modify('+' . ($length - 1) . ' days');
             $length = min(2 * $length, window::MAX_DAYS);
             $end = $end->format('Y-m-d') > $last ? $last : $end->format('Y-m-d');
-            $answer = range::answer(window::from_iso($day->format('Y-m-d'), $end), $scope, $on, $filters);
+            $answer = range::answer(window::from_iso($day->format('Y-m-d'), $end), $scope, $on, $filters, false);
             foreach ($answer['courses'] as $course) {
                 $courses[$course['id']] = $course;
             }

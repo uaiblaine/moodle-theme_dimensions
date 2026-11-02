@@ -131,6 +131,8 @@ final class categorypublic_source_test extends \basic_testcase {
         self::ESM . 'calendar/CategoryPicker',
         self::ESM . 'calendar/MoreFilters',
         self::ESM . 'calendar/block',
+        self::ESM . 'calendar/editing',
+        self::ESM . 'calendar/EditActions',
         'calendarblock',
     ];
 
@@ -142,14 +144,26 @@ final class categorypublic_source_test extends \basic_testcase {
         'calendar/CategoryPicker',
         'calendar/MoreFilters',
         'calendar/block',
+        'calendar/editing',
+        'calendar/EditActions',
         'calendarblock',
     ];
 
-    /** @var string[] The services of a session the public calendar's graph may not name: the account's, and core's. */
+    /**
+     * @var string[] The services of a session the public calendar's graph may not name: the account's, and core's, its
+     *     calendar's editing modules and services included (stage C5).
+     */
     private const CALENDAR_FORBIDDEN_STRINGS = [
         'theme_dimensions_get_calendar_range',
         'theme_dimensions_remember_calendar_state',
         'core_calendar_get_calendar_event_by_id',
+        'core_calendar/modal_event_form',
+        'core_calendar/crud',
+        'core_calendar/repository',
+        'core_calendar/events',
+        'core_calendar_update_event_start_day',
+        'core_calendar_delete_calendar_events',
+        'core_calendar_submit_create_update_form',
     ];
 
     /** @var array|null Files by their path under the theme root, read instead of the tree when a test sets them. */
@@ -1304,7 +1318,9 @@ final class categorypublic_source_test extends \basic_testcase {
      *
      * Changes that must make it fail: the popover importing the description module again (gate cv_js_popover_no_core);
      * a shared module naming the account's services (gate cv_js_model_no_account); the visitor's shell importing the
-     * logged-in one or its picker. The week view's modules (stage C4) are shared and walked like the month's.
+     * logged-in one or its picker. The week view's modules (stage C4) are shared and walked like the month's. Core's
+     * editing (stage C5) is the logged-in shell's alone: a shared module importing calendar/editing or the popover's
+     * EditActions, or the bridge naming core's calendar modules, fails here (gate c5_js_bridge_names_nothing).
      */
     public function test_the_public_calendar_reaches_nothing_of_a_session(): void {
         $graph = $this->graph(self::CALENDAR);
@@ -1313,7 +1329,8 @@ final class categorypublic_source_test extends \basic_testcase {
             $this->assertContains(self::ESM . 'calendar/' . $shared, $graph, 'The control: the walk reaches ' . $shared . '.');
         }
         $logged = $this->graph(self::ESM . 'calendar/Calendar');
-        foreach ([self::ESM . 'calendar/description', self::ESM . 'calendar/account'] as $module) {
+        $loggedonly = ['description', 'account', 'editing', 'EditActions'];
+        foreach (array_map(static fn(string $name): string => self::ESM . 'calendar/' . $name, $loggedonly) as $module) {
             $this->assertContains($module, $logged, 'The control: the logged-in shell reaches ' . $module . '.');
         }
 

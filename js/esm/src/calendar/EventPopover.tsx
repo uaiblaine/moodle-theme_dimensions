@@ -42,7 +42,7 @@
  */
 
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
-import type {CSSProperties, KeyboardEvent} from 'react';
+import type {CSSProperties, KeyboardEvent, ReactNode} from 'react';
 import Pending from '@moodle/lms/core/pending';
 import {say} from '../daterange/calendar';
 import {keyLabel} from './KeyChips';
@@ -82,6 +82,7 @@ type EventPopoverProps = {
     modalities: Option[],
     describe: ((id: number) => Promise<string>) | null,
     plain: string,
+    actions?: ReactNode,
     onClose: (refocus: boolean) => void,
 };
 
@@ -178,7 +179,8 @@ export const factsOf = (item: Item, look: Look, modalities: Option[]): Facts => 
  * @param {object} props See EventPopoverProps.
  * @returns {object} The dialogue.
  */
-const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, describe, plain, onClose}: EventPopoverProps) => {
+const EventPopover = (props: EventPopoverProps) => {
+    const {look, entry, overlaps, opener, sheet, modalities, describe, plain, actions, onClose} = props;
     const {item} = entry;
     const dialog = useRef<HTMLDivElement | null>(null);
     const heading = useRef<HTMLHeadingElement | null>(null);
@@ -230,7 +232,9 @@ const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, describ
         }
     }, [sheet, at, item.source, item.id]);
 
-    // A press outside the popover and its opener closes it.
+    // A press outside the popover and its opener closes it. A press inside another dialogue does not: one of its
+    // actions opened it over the popover (core's event form, core's delete confirmation), and the popover stays under
+    // it so that the focus comes back to the button that opened it.
     useEffect(() => {
         /**
          * Close on a press elsewhere.
@@ -240,7 +244,8 @@ const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, describ
          */
         const outside = (event: Event): void => {
             const target = event.target as Node | null;
-            if (target && !dialog.current?.contains(target) && !opener.contains(target)) {
+            const over = target instanceof Element && target.closest('[role="dialog"]') !== null;
+            if (target && !over && !dialog.current?.contains(target) && !opener.contains(target)) {
                 onClose(true);
             }
         };
@@ -355,6 +360,7 @@ const EventPopover = ({look, entry, overlaps, opener, sheet, modalities, describ
                         {look.strings.calendar_coursepage}
                     </a>
                 ) : null}
+                {actions}
             </div>
         </div>
     );

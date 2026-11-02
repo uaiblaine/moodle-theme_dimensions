@@ -60,7 +60,8 @@ final class publicrange {
      *
      * @param window $window The days.
      * @param string[] $on The keys that are on; only the visitor's two ({@see visitor::KEYS}) ask anything.
-     * @return array ['from', 'to', 'truncated', 'events', 'courses', 'categories', 'days', 'descriptions'].
+     * @return array ['from', 'to', 'truncated', 'events', 'courses', 'categories', 'days', 'editing', 'descriptions'];
+     *     `editing` is always empty: a visitor edits nothing, and the shape stays the range's.
      */
     public static function answer(window $window, array $on): array {
         $items = [];
@@ -117,6 +118,7 @@ final class publicrange {
             'courses' => $courses,
             'categories' => self::categories(array_keys($categoryids)),
             'days' => range::days($window, $items),
+            'editing' => [],
             'descriptions' => $texts,
         ];
     }

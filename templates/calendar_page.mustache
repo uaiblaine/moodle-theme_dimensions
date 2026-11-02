@@ -41,6 +41,10 @@
     chips a visitor has and nothing that needs a session or a login: no
     category, no "More" filters and no link to core's calendar.
 
+    exporturl (stage C5) is core's calendar/export.php where core's calendar
+    offers it to this account; the footer carries it outside both layers, so
+    it reads the same with and without JavaScript. A visitor has none.
+
     Example context (json):
     {
         "visitor": false,
@@ -121,7 +125,8 @@
         ],
         "agendaempty": false,
         "component": "@moodle/lms/theme_dimensions/calendar/Calendar",
-        "props": "{}"
+        "props": "{}",
+        "exporturl": "https://example.com/calendar/export.php"
     }
 }}
 <div class="dim-cal" data-region="dim-cal">
@@ -274,4 +279,9 @@
         </section>
     </div>
     <div class="dim-cal__mount" data-region="dim-cal-mount" data-react-component="{{component}}" data-react-props="{{props}}"></div>
+    {{#exporturl}}
+    <p class="dim-cal__footer" data-region="dim-cal-footer">
+        <a href="{{exporturl}}" data-region="dim-cal-export">{{#str}} calendar_export, theme_dimensions {{/str}}</a>
+    </p>
+    {{/exporturl}}
 </div>

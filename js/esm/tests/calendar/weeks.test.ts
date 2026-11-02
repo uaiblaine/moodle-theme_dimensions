@@ -140,10 +140,27 @@ describe('the span and its address', () => {
 
     it('reads it back as the server does: exactly view=week, the week snapped to its first day', () => {
         const base = 'http://localhost/calendar.php';
-        expect(readSpan(`${base}?view=week&week=2026-11-18`, 0, '2026-11')).toEqual({view: 'week', week: '2026-11-15'});
-        expect(readSpan(`${base}?view=week&week=2026-11-31`, 1, '2026-11')).toEqual({view: 'week', week: '2026-10-26'});
-        expect(readSpan(`${base}?view=Week&week=2026-11-18`, 0, '2026-11')).toEqual({view: 'month', month: '2026-11'});
-        expect(readSpan(`${base}?week=2026-11-18`, 0, '2026-12')).toEqual({view: 'month', month: '2026-12'});
+        const today = '2027-01-20';
+        expect(readSpan(`${base}?view=week&week=2026-11-18`, 0, '2026-11', today)).toEqual({view: 'week', week: '2026-11-15'});
+        expect(readSpan(`${base}?view=week&week=2026-11-31`, 1, '2026-11', today)).toEqual({view: 'week', week: '2026-10-26'});
+        expect(readSpan(`${base}?view=Week&week=2026-11-18`, 0, '2026-11', today)).toEqual({view: 'month', month: '2026-11'});
+        expect(readSpan(`${base}?week=2026-11-18`, 0, '2026-12', today)).toEqual({view: 'month', month: '2026-12'});
+    });
+
+    it('falls back as the server does: the week of the month\'s opening day, and only inside its years', () => {
+        const read = (week: string, today: string) =>
+            readSpan(`http://localhost/calendar.php?view=week${week}`, 0, '2026-11', today);
+        const inmonth = '2026-11-18';
+        // The month holds today: its opening day is today (page::opening_day()), not its 1st.
+        expect(read('&week=nonsense', inmonth)).toEqual({view: 'week', week: '2026-11-15'});
+        expect(read('', inmonth)).toEqual({view: 'week', week: '2026-11-15'});
+        // Control: a month that does not hold today opens on its 1st.
+        expect(read('&week=nonsense', '2027-01-20')).toEqual({view: 'week', week: '2026-11-01'});
+        // A real day of a year outside 1900 to 2999 is refused like a malformed one; the bounds themselves are kept.
+        expect(read('&week=1899-12-31', inmonth)).toEqual({view: 'week', week: '2026-11-15'});
+        expect(read('&week=3000-01-01', inmonth)).toEqual({view: 'week', week: '2026-11-15'});
+        expect(read('&week=1900-01-03', inmonth)).toEqual({view: 'week', week: '1899-12-31'});
+        expect(read('&week=2999-12-30', inmonth)).toEqual({view: 'week', week: '2999-12-29'});
     });
 
     it('captions the week with its first and last day, the year once', () => {
