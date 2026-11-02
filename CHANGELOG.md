@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category showcase card has no hover peek** (2026100564), stage L1 of `docs/vitrine-ratings/PROPOSAL.md`. The
+  copy of the card's details panel that opened beside a card after 180 ms of hover is gone, with its timer, its
+  styles and the `dim-card--peeking` class. The "More information" disclosure and the course dialogue are
+  unchanged, and the cover film keeps its own 180 ms intent delay. Jest and the source tests no longer pin the
+  peek; the `js_mini_no_peek` gate keeps its name and now guards the observer.
 - **Create, edit, delete and move events from the theme's calendar** (2026100563), stage C5 of
   `docs/calendar/PROPOSAL.md`. Everything stays core's: "New event" opens core's event form (in the toolbar, and in
   the drawer for its day), shown where core's month view shows it (`calendar_user_can_add_event()`); the popover's

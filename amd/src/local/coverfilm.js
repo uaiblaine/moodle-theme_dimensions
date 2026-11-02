@@ -62,9 +62,8 @@ const SELECTORS = {
 };
 
 /**
- * @type {Number} Milliseconds a pointer must rest on a card before its film starts. Equal to
- * the account's shell's PEEK_DELAY (js/esm/src/listing/account.ts) on purpose: both read the same
- * intent off the same gesture, so keep the two in step (covervideo_source_test holds both).
+ * @type {Number} Milliseconds a pointer must rest on a card before its film starts: a pointer
+ * crossing a grid on its way elsewhere starts nothing.
  */
 const INTENT_DELAY = 180;
 

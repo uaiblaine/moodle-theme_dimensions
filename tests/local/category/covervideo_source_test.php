@@ -158,9 +158,7 @@ final class covervideo_source_test extends \basic_testcase {
      * hover alone would start on every press, the play control's included. The pointer half of
      * the query tells the two apart; the play control is the path a finger has.
      *
-     * The delay equals the account's shell's PEEK_DELAY (180 ms, js/esm/src/listing/account.ts): a pointer
-     * crossing a grid on its way elsewhere should start nothing, and both features read the same intent off the
-     * same gesture.
+     * The delay is 180 ms: a pointer crossing a grid on its way elsewhere should start nothing.
      *
      * Changes that must make it fail: calling start(band) directly instead of through the timer,
      * which starts one film per card a passing pointer crosses.
@@ -172,12 +170,7 @@ final class covervideo_source_test extends \basic_testcase {
             $source,
             'Both halves: a coarse pointer answers "hover" to a tap, and a fine one that cannot hover has no preview.'
         );
-        $this->assertStringContainsString('const INTENT_DELAY = 180;', $source, 'The hover peek\'s own number.');
-        $this->assertStringContainsString(
-            'const PEEK_DELAY = 180;',
-            (string) file_get_contents(dirname(__DIR__, 3) . '/js/esm/src/listing/account.ts'),
-            'And the peek\'s, which it stays in step with.'
-        );
+        $this->assertStringContainsString('const INTENT_DELAY = 180;', $source, 'The film\'s own intent delay.');
         $this->assertMatchesRegularExpression(
             '~^const hoverable = \(\) => window\.matchMedia\(HOVER_QUERY\)\.matches;$~m',
             $source

@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for an account's shell: the remembered state, the view preference, the progress and the peek.
+ * Tests for an account's shell: the remembered state, the view preference, and the progress.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -290,25 +290,20 @@ describe('theme_dimensions/listing/account', () => {
         expect(watched).toEqual(['51']);
     });
 
-    it('opens one panel at a time, never peeks over a disclosure the reader opened, and closes both on Escape', () => {
+    it('opens one panel at a time and closes it on Escape', () => {
         page();
         start();
         const [first, second] = Array.from(document.querySelectorAll<HTMLElement>('[data-region="dim-card"]'));
-        first.dispatchEvent(new Event('mouseenter'));
-        jest.advanceTimersByTime(180);
-        expect(first.classList.contains('dim-card--peeking')).toBe(true);
-        expect(first.querySelector('.dim-card__peek')?.getAttribute('aria-hidden')).toBe('true');
+        const opened = first.querySelector('details') as HTMLDetailsElement;
+        opened.open = true;
+        opened.dispatchEvent(new Event('toggle'));
 
-        // A disclosure's toggle does not bubble: the listing hears it in the capture phase, and closes the peek.
+        // A disclosure's toggle does not bubble: the listing hears it in the capture phase, and closes the others.
         const disclosure = second.querySelector('details') as HTMLDetailsElement;
         disclosure.open = true;
         disclosure.dispatchEvent(new Event('toggle'));
-        expect(first.classList.contains('dim-card--peeking')).toBe(false);
+        expect(opened.open).toBe(false);
         expect(disclosure.open).toBe(true);
-
-        second.dispatchEvent(new Event('mouseenter'));
-        jest.advanceTimersByTime(180);
-        expect(second.classList.contains('dim-card--peeking')).toBe(false);
 
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
         expect(disclosure.open).toBe(false);

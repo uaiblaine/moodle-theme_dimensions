@@ -17,7 +17,7 @@
  * The logged-in shell of the showcase listing: what only an account has, over the shared store.
  *
  * The listing's and a panel's rows, the progress of the enrolled courses on screen (once per course), the state
- * remembered per category and the view preference, the hover peek, the automatic opening's note and the dim-js mark;
+ * remembered per category and the view preference, the automatic opening's note and the dim-js mark;
  * a failure is core's exception dialogue; it arms the card's star (./star). Armed by amd/src/listingaccount.js for a
  * real account only, never the guest (course_renderer.php); the visitor's page never loads it
  * (categorypublic_source_test).
@@ -42,7 +42,6 @@ import type {Rows, Shell} from './store';
 const HOOKS = {
     details: '[data-region="dim-card-details"]',
     panel: '[data-region="dim-card-panel"]',
-    peek: '.dim-card__peek',
     progress: '[data-region="dim-card-progress"]',
     areapanel: '[data-region="dim-panel"]',
     countnotetext: '[data-region="dim-vitrine-countnotetext"]',
@@ -81,15 +80,6 @@ const BATCH_INTERVAL = 100;
 /** How far outside the viewport a card counts as worth asking about. */
 const OBSERVER_MARGIN = '200px';
 
-/** Milliseconds of hover before the peek panel is promoted. */
-const PEEK_DELAY = 180;
-
-/** The peek panel's own width plus its gap, for deciding which side it opens on. */
-const PEEK_WIDTH = 340;
-
-/** Below this viewport width the peek never opens: the panel renders inline there. */
-const PEEK_MIN_WIDTH = 576;
-
 /** How many courses a panel lists: the server's population::PANEL_SIZE. */
 const PANEL_SIZE = 8;
 
@@ -125,9 +115,6 @@ let remembertimer: number | undefined;
 
 /** The last state sent to be remembered, as its arguments' JSON: an unchanged one is not sent again. */
 let rememberedsent = '';
-
-/** The pending peek timer. */
-let peektimer: number | undefined;
 
 /** The one observer over the cards worth asking progress for. */
 let observer: IntersectionObserver | null = null;
@@ -444,29 +431,10 @@ const watchCard = (card: HTMLElement): void => {
 };
 
 /**
- * Whether the hover peek may open at all right now.
+ * Leave at most one panel of the grid open: the one being opened, and nothing beside it. Closing a disclosure
+ * fires its own toggle with open false, which the listener ignores.
  *
- * @returns {boolean}
- */
-const peekable = (): boolean => window.matchMedia('(pointer: fine)').matches
-    && window.innerWidth >= PEEK_MIN_WIDTH
-    && current().view === 'cards';
-
-/**
- * Close every open peek.
- *
- * @returns {void}
- */
-const closePeeks = (): void => {
-    window.clearTimeout(peektimer);
-    root.querySelectorAll('.dim-card--peeking').forEach((card) => card.classList.remove('dim-card--peeking'));
-};
-
-/**
- * Leave at most one panel of the grid open: the one being opened, and nothing beside it, whichever of the two ways
- * it was opened. Closing a disclosure fires its own toggle with open false, which the listener ignores.
- *
- * @param {HTMLDetailsElement|null} keep The disclosure being opened, or null when a peek is opening.
+ * @param {HTMLDetailsElement|null} keep The disclosure being opened, or null to close them all.
  * @returns {void}
  */
 const closeOthers = (keep: HTMLDetailsElement | null): void => {
@@ -475,41 +443,6 @@ const closeOthers = (keep: HTMLDetailsElement | null): void => {
             details.open = false;
         }
     });
-    closePeeks();
-};
-
-/**
- * Promote the card's own details panel into a peek beside it: decoration for a pointer, aria-hidden, while the
- * native disclosure stays the authoritative path.
- *
- * @param {HTMLElement} card The card being hovered.
- * @returns {void}
- */
-const openPeek = (card: HTMLElement): void => {
-    const panel = card.querySelector(HOOKS.panel);
-    const details = card.querySelector<HTMLDetailsElement>(HOOKS.details);
-    if (!panel || (details && details.open)) {
-        /* The panel this would preview is already on screen, opened by the reader: closing their disclosure to
-           show a second copy would take away what they opened, on a card the pointer never left. */
-        return;
-    }
-    // One panel at a time: a peek that opens closes every disclosure and every other peek.
-    closeOthers(null);
-    let peek = card.querySelector(HOOKS.peek);
-    if (!peek) {
-        peek = document.createElement('div');
-        peek.className = 'dim-card__peek';
-        peek.setAttribute('aria-hidden', 'true');
-        const clone = panel.cloneNode(true);
-        while (clone.firstChild) {
-            peek.append(clone.firstChild);
-        }
-        card.append(peek);
-    }
-    const grid = root.querySelector(SELECTORS.grid);
-    const edge = grid ? grid.getBoundingClientRect().right : window.innerWidth;
-    peek.classList.toggle('dim-card__peek--flip', card.getBoundingClientRect().right + PEEK_WIDTH > edge);
-    card.classList.add('dim-card--peeking');
 };
 
 /**
@@ -521,17 +454,6 @@ const openPeek = (card: HTMLElement): void => {
 const attachCards = (cards: HTMLElement[]): void => {
     cards.forEach((card) => {
         watchCard(card);
-        card.addEventListener('mouseenter', () => {
-            window.clearTimeout(peektimer);
-            if (!peekable()) {
-                return;
-            }
-            peektimer = window.setTimeout(() => openPeek(card), PEEK_DELAY);
-        });
-        card.addEventListener('mouseleave', () => {
-            window.clearTimeout(peektimer);
-            card.classList.remove('dim-card--peeking');
-        });
     });
 };
 
@@ -680,7 +602,7 @@ const listen = (): void => {
     }, true);
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-            // Whatever is open: the disclosure the reader pressed as well as the pointer's peek.
+            // Whatever is open: the disclosure the reader pressed.
             closeOthers(null);
         }
     });
@@ -757,7 +679,7 @@ export const start = (): void => {
     window.setInterval(drainPending, BATCH_INTERVAL);
 
     /* A course card inside the panel between the posters is a smaller presentation with its disclosure out of reach:
-       it is never peeked, and its progress is asked in one batch with the panel's rows. */
+       its progress is asked in one batch with the panel's rows. */
     attachCards(Array.from(root.querySelectorAll<HTMLElement>(SELECTORS.card)).filter((card) => !card.closest(HOOKS.areapanel)));
     listen();
 
