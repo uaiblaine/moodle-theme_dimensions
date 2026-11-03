@@ -39,10 +39,11 @@ use theme_dimensions\local\landing\publicaccess;
  *
  * 1. The activity's restriction for this reader: one that hides it entirely (no text to show,
  *    {@see \cm_info::$availableinfo} empty while {@see \cm_info::$available} is false) takes the step away, one
- *    whose text is shown keeps it (drawn as any step for now; the locked state is T2's). Availability, not core's course-page visibility:
- *    the reader of a landing page is mostly not enrolled in the trail course, and core hides every activity of a
- *    course from a reader who lacks the module's view capability there. Where core does give this reader the
- *    activity ({@see \cm_info::$uservisible}, staff under any restriction), the step stays.
+ *    whose text is shown keeps it (drawn as any step for now; the locked state is T2's). Availability, not
+ *    core's course-page visibility: the reader of a landing page is mostly not enrolled in the trail course, and
+ *    core hides every activity of a course from a reader who lacks the module's view capability there. Where
+ *    core does give this reader the activity ({@see \cm_info::$uservisible}, staff under any restriction), the
+ *    step stays.
  * 2. An account sees in full exactly the courses the showcase would list to it, by the showcase's own gate
  *    ({@see population::admitted()} over the root scope: core's course and category visibility, then
  *    local_unlistedcourses' terms), as the calendar's open events do. An unlisted course is therefore drawn
