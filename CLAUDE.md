@@ -240,6 +240,7 @@ classes/local/landing/guestaccess.php  The guest entry: who is offered it (enabl
 classes/output/landing_guestentry.php  The entry's interstitial: the landing page's head tags and one POST form.
 classes/local/guesthome.php    The guest account's home page: an in-memory defaulthomepage, from after_config.
 classes/local/landing/request.php The whole landing page decision, once, for both entries: a redirect or a page.
+classes/local/blockless.php    A page of the theme's own without blocks (the landing page, the calendar page).
 classes/route/controller/landing.php  The route /theme_dimensions/landing/{course}: request → response.
 landing.php                       The script entry: 303 to the route while the router is configured, else serves.
 classes/local/landing/shortcode.php  Six spoken letters for the public address; pure, blocklist inside.
@@ -1075,6 +1076,11 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   refusal before the course lookup, then the front page, the ghost, the model, the standard page's guards.
   Both entries call it; neither decides anything itself. Extend the page there, never in `landing.php` or
   the controller, or the two addresses drift apart.
+- **No block region and no course index, decided in `request::handle()`.** `local\blockless::apply()` (shared with
+  the calendar page) loads no block and locks block editing, which is what empties the add-block control: either
+  switch alone leaves a drawer. The index is core's own switch, `$PAGE->set_show_course_index(false)`, the first thing
+  `core_course_drawer()` reads; never hide either drawer with CSS. `request_drawers_test` holds both entries against a
+  control page left to core.
 - **The route's shape is three decisions, each pinned by a mutation gate**: `method: ['GET', 'POST']`
   (the enrolment widgets and the no-JS transports post to `$FULLME`, which under the router is the
   route), no `requirelogin` (visitors of a public course under forcelogin), and a plain
@@ -1607,12 +1613,33 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   The client's event types are `EventTypes.tsx` (popover.ts's disclosure, real checkboxes); "Clear filters" is the
   toolbar's (`model.ts` `filtered()`/`cleared()`); a double-click creates through `createAt` only while `props.edits`
   offers "New event", on hour rows carrying `data-hour` (no layout read); the day drawer is sticky under the navbar.
-- Tests: `tests/local/calendar/{state,page,calendar_component_source}_test.php`, `tests/output/calendar_page_test.php`,
+- **R1c: the owner's second look** (PROPOSAL section 30). The drawer's and the week's hour column is the WHOLE day in a
+  scroll box of its own (`HourScroll.tsx`; C3's windowed column is reversed): it opens on `overlap.ts` `boxTopOf()` of
+  the busy band (`hourWindow()`) or of `EMPTY_WINDOW`, from the tree's second layout read (the box's, once per opening
+  key and on scroll for the fades, `edgesOf()`); `calendar_component_source_test` counts it beside the popover's. In the
+  week the box is a `role="rowgroup"` of the grid. "More filters" draws an empty `model[]`/`modality[]` (the server's
+  "every option") as every box on (`model.ts` `shownOn()`, `keptAfter()`, `narrows()`); its inputs carry `data-on`,
+  which Behat reads (Mink's `:checked` reads the attribute). The popover's course button is named after the course's
+  model (`EventPopover.tsx` `coursePageLabel()`; the visitor's props carry `models`). The event types' colours are
+  settings (`local\calendar\keycolours`, the hex-only picker `keycolour_setting`): the pre SCSS callback writes
+  `$dim-cal-colours` only for a hex other than its key's default, and `scss/calendar.scss` derives a chosen key's triple
+  in `dim-cal-light()`/`dim-cal-dark()`, each handed today's value, which it returns for a key nobody chose.
+- **R1d: the Day view is a phone's** (PROPOSAL section 31). `view=day&day=` (`page::VIEW_DAY`, the day through
+  `page::view_day_from_request()`, dropped to the month's opening day) is navigation; the server answers it with the
+  day's MONTH grid, since it cannot know the width, and the no-JavaScript layer is that month. On the client a span may
+  be `{view: 'day', day}` (`weeks.ts`); the switch offers it only on a phone (`viewsOf()`), and a day span on a desktop is
+  never drawn (`gridOf()` draws its month, `drawerOf()` the day's drawer) and never asked for: each shell's one request
+  path converts it to its month with the day opened (`deskOf()`, `opened.current` set before the address is written), and
+  `onWidth` (the one handler every observer reports to) sets `phoned.current` before `phone` and asks again when the
+  frame turns wide. `DayView.tsx` has its own observer on the frame (the third of the tree), reading the frame's entry
+  alone, and draws `DayDrawer.tsx`'s exported `DayBody`, the drawer's body, never a copy; a touch held on an hour row
+  (`HOLD_MS`, `HOLD_SLOP`, dropped on a move, a lift or `pointercancel`) creates as the double-click does. No swipe.
+- Tests: `tests/local/calendar/{state,page,calendar_component_source,keycolours}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,
   Behat `theme_dimensions_calendar.feature`; gates in the "C2 calendar page" and "C3 calendar drawer and popover" blocks
-  of `mutations/gates.conf`, and R1's in its own. `tests/local/calendar/ical_test.php` holds the feed against core's own
-  read of the same request.
+  of `mutations/gates.conf`, and R1's, R1b's, R1c's and R1d's in their own. `tests/local/calendar/ical_test.php` holds the
+  feed against core's own read of the same request.
 
 ## The enrolment matrix: the shared state area (stage 5b, 2026-10-06)
 

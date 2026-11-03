@@ -101,10 +101,12 @@ class calendar_page implements renderable, templatable {
         'calendar_delete',
         'calendar_descriptionloading',
         'calendar_edit',
+        'calendar_eventpage',
         'calendar_eventtypes',
         'calendar_eventtypes_all',
         'calendar_eventtypes_some',
         'calendar_filtercount',
+        'calendar_hoursbox',
         'calendar_join_free',
         'calendar_join_key',
         'calendar_join_open',
@@ -119,11 +121,13 @@ class calendar_page implements renderable, templatable {
         'calendar_keys',
         'calendar_modality',
         'calendar_model',
+        'calendar_modelpage',
         'calendar_moreaction',
         'calendar_morefilters',
         'calendar_morelabel',
         'calendar_newevent',
         'calendar_neweventon',
+        'calendar_nextday',
         'calendar_nextmonth',
         'calendar_nextweek',
         'calendar_open',
@@ -133,6 +137,7 @@ class calendar_page implements renderable, templatable {
         'calendar_participants_many',
         'calendar_participants_one',
         'calendar_place',
+        'calendar_prevday',
         'calendar_prevmonth',
         'calendar_prevweek',
         'calendar_recursive',
@@ -144,6 +149,7 @@ class calendar_page implements renderable, templatable {
         'calendar_truncated',
         'calendar_until',
         'calendar_view',
+        'calendar_viewday',
         'calendar_viewmonth',
         'calendar_viewweek',
         'calendar_weekempty',
@@ -181,7 +187,12 @@ class calendar_page implements renderable, templatable {
     /** @var bool Whether the page is drawn for a visitor who is not logged in: the public calendar. */
     private bool $visitor;
 
-    /** @var string The view, page::VIEW_MONTH or page::VIEW_WEEK. */
+    /**
+     * @var string The view, page::VIEW_MONTH, page::VIEW_WEEK or page::VIEW_DAY.
+     *
+     * The day view is the client's alone (a phone's, PROPOSAL.md section 31): its window is the day's month grid and the
+     * no-JavaScript layer draws that month, so only the props carry it.
+     */
     private string $view;
 
     /** @var string The week's first day, YYYY-MM-DD, in the week view; '' in the month view. */
@@ -200,7 +211,7 @@ class calendar_page implements renderable, templatable {
      * @param array $tree The categories the picker offers ({@see \theme_dimensions\local\calendar\tree}).
      * @param string $day The day the drawer opens on, kept by {@see page::day_from_request()}; '' for none.
      * @param bool $visitor Whether the page is the public calendar, drawn for a visitor.
-     * @param string $view The view, {@see page::VIEW_MONTH} or {@see page::VIEW_WEEK}.
+     * @param string $view The view, {@see page::VIEW_MONTH}, {@see page::VIEW_WEEK} or {@see page::VIEW_DAY}.
      * @param string $week The week's first day in the week view ({@see page::week_from_request()}); '' in the month's.
      */
     public function __construct(
@@ -229,6 +240,9 @@ class calendar_page implements renderable, templatable {
         $this->visitor = $visitor;
         $this->week = $view === page::VIEW_WEEK ? $week : '';
         $this->view = $this->week !== '' ? page::VIEW_WEEK : page::VIEW_MONTH;
+        if ($view === page::VIEW_DAY && $day !== '') {
+            $this->view = page::VIEW_DAY;
+        }
     }
 
     /**
@@ -337,6 +351,7 @@ class calendar_page implements renderable, templatable {
                 'answer' => $this->answer,
                 'keys' => visitor::on($this->state->on()),
                 'modalities' => self::options(landingfields::SHORTNAME_MODALITY),
+                'models' => self::options(landingfields::SHORTNAME_MODEL),
                 'urls' => [
                     'page' => page::url()->out(false),
                     'home' => (new \core\url('/'))->out(false),

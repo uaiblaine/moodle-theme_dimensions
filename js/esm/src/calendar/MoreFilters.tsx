@@ -17,15 +17,21 @@
  * The "More filters" panel (decision D5): the course model, the modality, the city, "only what I have to do" and
  * the colouring (decision D6).
  *
- * A disclosure: the button says how many filters are on, and the panel applies every change at once (the page asks
- * the range again and remembers the state after a quiet). "Clear filters" is the toolbar's, beside this button
- * (Calendar.tsx, R1): it puts back the keys and the category scope as well as these.
+ * A disclosure: the button says how many filters narrow the calendar, and the panel applies every change at once (the
+ * page asks the range again and remembers the state after a quiet). The model's and the modality's boxes all start
+ * checked, meaning every option, as the event types' dropdown starts with every key on (PROPOSAL.md section 30.3):
+ * the server reads an empty list as every option, so an empty list draws every box on, unchecking one writes the
+ * others, and checking them all again writes the empty list (model.ts shownOn(), keptAfter()). The last box on of a
+ * group is disabled: "none" has no spelling in the server's contract. Each input carries data-on, the state the
+ * component drew, which a test reads where the live checked property is out of its reach. "Clear filters" is the
+ * toolbar's, beside this button (Calendar.tsx, R1): it puts back the keys and the category scope as well as these.
  *
  * @module     theme_dimensions/calendar/MoreFilters
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+import {keptAfter, narrows, shownOn} from './model';
 import type {Colour, Option, State} from './model';
 import {usePopover} from './popover';
 import {fill} from './strings';
@@ -40,24 +46,16 @@ type MoreFiltersProps = {
 };
 
 /**
- * How many of the panel's filters are on.
+ * How many of the panel's filters narrow the calendar: a group whose list misses one of its options (one each, however
+ * many boxes are off), the city and "only what I have to do".
  *
  * @param {object} state The state.
+ * @param {object} options The options offered.
  * @returns {number}
  */
-export const filterCount = (state: State): number => state.model.length + state.modality.length
+export const filterCount = (state: State, options: {model: Option[], modality: Option[]}): number =>
+    (narrows(state.model, options.model) ? 1 : 0) + (narrows(state.modality, options.modality) ? 1 : 0)
     + (state.city !== '' ? 1 : 0) + (state.actiononly ? 1 : 0);
-
-/**
- * A list with a value added or taken out.
- *
- * @param {Array} list The list.
- * @param {number} value The value.
- * @param {boolean} present Whether it is in.
- * @returns {Array} The new list.
- */
-const toggled = (list: number[], value: number, present: boolean): number[] =>
-    (present ? [...list.filter((other) => other !== value), value] : list.filter((other) => other !== value));
 
 /**
  * The panel.
@@ -67,7 +65,7 @@ const toggled = (list: number[], value: number, present: boolean): number[] =>
  */
 const MoreFilters = ({strings, state, options, onChange}: MoreFiltersProps) => {
     const popover = usePopover();
-    const count = filterCount(state);
+    const count = filterCount(state, options);
     const panelid = 'dim-cal-morepanel';
     const cities = options.city.includes(state.city) || state.city === '' ? options.city : [...options.city, state.city];
 
@@ -77,26 +75,39 @@ const MoreFilters = ({strings, state, options, onChange}: MoreFiltersProps) => {
      * @param {string} name model or modality.
      * @param {string} legend The group's name.
      * @param {Array} choices The options.
-     * @param {Array} kept The values on.
+     * @param {Array} kept The values kept, empty for every one.
      * @returns {object|null} The group, or nothing when the field has no option.
      */
-    const group = (name: 'model' | 'modality', legend: string, choices: Option[], kept: number[]) => (choices.length ? (
-        <fieldset>
-            <legend>{legend}</legend>
-            {choices.map((option) => (
-                <label key={option.value} className="dim-cal__check">
-                    <input
-                        type="checkbox"
-                        name={name}
-                        value={option.value}
-                        checked={kept.includes(option.value)}
-                        onChange={(event) => onChange({[name]: toggled(kept, option.value, event.target.checked)})}
-                    />
-                    {option.label}
-                </label>
-            ))}
-        </fieldset>
-    ) : null);
+    const group = (name: 'model' | 'modality', legend: string, choices: Option[], kept: number[]) => {
+        if (!choices.length) {
+            return null;
+        }
+        const on = choices.filter((option) => shownOn(kept, option.value)).length;
+        return (
+            <fieldset>
+                <legend>{legend}</legend>
+                {choices.map((option) => {
+                    const checked = shownOn(kept, option.value);
+                    return (
+                        <label key={option.value} className="dim-cal__check">
+                            <input
+                                type="checkbox"
+                                name={name}
+                                value={option.value}
+                                checked={checked}
+                                disabled={checked && on === 1}
+                                data-on={checked ? '1' : '0'}
+                                onChange={(event) => onChange({
+                                    [name]: keptAfter(kept, choices, option.value, event.target.checked),
+                                })}
+                            />
+                            {option.label}
+                        </label>
+                    );
+                })}
+            </fieldset>
+        );
+    };
 
     return (
         <div className="dim-cal__picker" data-region="dim-cal-more">

@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **A trail's landing page, stage T1** (2026100573), `docs/trail/PLAN.md` sections 5 and 6. A course of the Trail model
+- **A trail's landing page, stage T1** (2026100575), `docs/trail/PLAN.md` sections 5 and 6. A course of the Trail model
   says its courses in the hero's glass (how many, their period, one segment each) and draws them in order after the
   summary: numbered cards with the referenced course's cover, category, hours and dates (the activity's expected
   completion date, else the course's own). Who sees which step is `local\trail\display`, as the owner ruled on
@@ -14,6 +14,43 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   ghost card that names nothing; a step its restriction hides is nobody's. The card adds the number of courses and
   the period. Constant in the number of steps. Progress and "Continuar" are T2; "Ver no calendário" comes with the
   calendar's Trilhas view (T3).
+- **Calendar R1d: no desktop flash on a phone's first paint** (2026100574), `docs/calendar/PROPOSAL.md` section 31.6.
+  The first render guesses the phone layout from a media query (`max-width: 591px`, the phone width plus the page's
+  gutters) instead of waiting for the first measure, so a phone no longer first draws the desktop month and drawer, and
+  a `view=day` address opens the Day view at once; the measure of the calendar's frame still decides and replaces the
+  guess. The public calendar too. Needs a purge for the ESM build.
+- **Calendar R1d: the Day view on a phone** (2026100574), `docs/calendar/PROPOSAL.md` section 31. On a phone (the
+  calendar's frame narrower than 576px) the view switch offers Month / Week / Day: the Day view is one day at the full
+  width, its name and date in the toolbar's caption, whose arrows and "Today" move it a day at a time; under it the
+  drawer's own body (the all-day items, then the whole day's hour column in its scroll box, opened on the earliest item
+  or centred on the working hours), an item opening its popover as a bottom sheet, and, while "New event" is offered, the
+  "+" button, a double-tap or a touch held on an hour opening core's form at that hour. The address is
+  `view=day&day=YYYY-MM-DD` (navigation, never saved); a malformed or out-of-years day shows the month's opening day.
+  A desktop never shows a day view: such an address opens the month with that day's drawer, and a phone turned wide
+  does the same. The server answers `view=day` with the day's month grid (so the phone's first paint asks for nothing);
+  the Day view's arrows ask for one day. The public calendar gets the same. New strings `calendar_nextday`,
+  `calendar_prevday`, `calendar_viewday`. No swipe between days. PHPUnit, Jest, two Behat scenarios and new mutation
+  gates (R1d block). Needs a purge for the stylesheet and the ESM build.
+- **Calendar R1c: the owner's second look** (2026100574), `docs/calendar/PROPOSAL.md` section 30. Fixed a freeze of the week view
+  (an endless grid/agenda flip): the week read the width of its own drawer-narrowed box for the phone decision; it now reads
+  the frame's alone, and the grids report their height only when it changes (section 30.7). The day drawer's and
+  the week's hour column is the whole day (00:00-24:00) in a scroll box of its own, opening on the day's items (or on
+  the working hours of an empty day), with no native scrollbar and a fade at an end while it can still scroll there
+  (block_compass's calendar strip); this reverses C3's windowed column. "More filters" starts with every model and
+  modality checked, as the event types do: unchecking narrows, checking everything again saves "all", and the badge
+  counts only what narrows. An event course's popover offers a button named after the course's model ("Event page",
+  "Course page", or any other model's own option). The event types' colours are settings on the Calendar tab (one
+  hexadecimal picker per type, defaulting to today's colours), from which the stylesheet derives a fill and a text
+  colour readable in both colour modes; the calendar page, its blocks and the public calendar follow. New strings
+  `calendar_eventpage`, `calendar_hoursbox`, `calendar_modelpage`, `calendarcolours(_desc)` and
+  `calendarcolour<type>(_desc)` for the nine types (and `calendarcolourpicker`). The colour setting is drawn as a hex
+  field behind a clickable swatch that opens the browser's own colour input (a Mustache template, `amd/src/keycolour.js`),
+  not core's gradient picker; the validation is unchanged. PHPUnit, Jest, Behat and new mutation gates (R1c block). Needs an
+  upgrade for the settings' defaults and a purge for the stylesheet.
+  The day drawer beside the grid is never taller than the grid (nor than the viewport): the grids' observer writes the
+  grid's height to the calendar, which renders it on the frame as a style prop it owns (`--dim-cal-gridheight`, so a re-render never drops it) and the drawer's cap takes the smaller of the two (section 30.7). The hour box re-places its opening's position when that
+  height arrives after the first placing (an empty day opened by the address ends centred), until the reader's first
+  wheel, touch or key on the box.
 - **The landing page in the brand's colour, its sections in a panel, and a way in for managers** (2026100572).
   The hero, the section titles and the checks are drawn in the theme's primary colour (Boost Union's brandcolor, or the
   flavour's): a colour on whose lightest stop white text reads under 4.5:1 is shaded in 4% steps until it does,
@@ -28,6 +65,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   `landing_managenote_course`, `landing_managenote_event`. PHPUnit, a Behat smoke and mutation gates
   (`landing_ink_dark`, `landing_panel_ink`, `landing_panel_wrap`, `landing_manage_*`; `landing_ground_floor` and
   `landing_ground_brand` rewritten).
+- **The course landing page carries no block region and no course index** (2026100571). Both entries of the page,
+  the public page a visitor is served and the page a logged-in reader gets, draw no block, no block drawer or toggle,
+  no "Add a block" button in edit mode and no course index drawer, decided on the server in `request::handle()`: the
+  calendar's mechanism (no block loaded, block editing locked), now one helper both pages call
+  (`local\blockless::apply()`), and core's own switch for the index (`$PAGE->set_show_course_index(false)`, the first
+  thing `core_course_drawer()` reads). The guest entry's interstitial needed nothing: the embedded layout draws fake
+  blocks alone and no drawer. PHPUnit (`request_drawers_test`, each case against a control page left to core), a
+  Behat smoke (the course page as the control) and mutation gates (`landing_blocks_wired`,
+  `landing_courseindex_shown`, `cal_r1b_blocks_wired`; `cal_r1b_blocks_shown` and `cal_r1b_blocks_unlocked` moved to
+  the shared helper).
 - **The Trail page model, stage T0** (2026100569), `docs/trail/PLAN.md`. The page model select gains a third line,
   *Trail* (`landingfields::MODEL_TRAIL`), appended by the branch's first upgrade step on a site provisioned with two
   lines (`landingfields::add_trail_option()`). A trail's steps are its Subcourse activities, read by one reader for

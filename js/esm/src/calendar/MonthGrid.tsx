@@ -68,10 +68,32 @@ type MonthGridProps = {
     onGround?: (iso: string, hour: number | null, clicks: number) => void,
     onCreate?: (iso: string, hour: number | null) => void,
     onWidth: (width: number) => void,
+    onHeight?: (height: number) => void,
 };
 
 /** The frame's width under which the month is a phone's, in px: the dots and the sheet. */
 export const PHONE = 576;
+
+/**
+ * The page's horizontal gutters at a phone's width, in px: the viewport minus the calendar's frame, 8px a side.
+ * Measured on m503b at 575, 600 and 767px, where the frame is the viewport less 16px; at 768px and up the page
+ * gains the course index and the margin of a desktop and the frame is 157px narrower than the viewport at 800px.
+ */
+export const PHONE_GUTTERS = 16;
+
+/**
+ * A first guess of the phone decision, for the render before the grid's ResizeObserver has measured the frame: a media
+ * query for the viewport at which the frame would be narrower than PHONE (the frame is the viewport less the gutters).
+ * It is a guess and never the decision: it seeds `phone` and `phoned`, the observer's first entry replaces it, and
+ * nothing reads it afterwards. A media query forces no layout. An environment without matchMedia guesses a desktop.
+ *
+ * @returns {boolean} Whether the viewport looks like a phone's.
+ */
+export const guessPhone = (): boolean => (
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia(`(max-width: ${PHONE + PHONE_GUTTERS - 1}px)`).matches
+        : false
+);
 
 /** The weekday names' format. */
 const WEEKDAY: Intl.DateTimeFormatOptions = {weekday: 'short'};
@@ -123,6 +145,9 @@ const MonthGrid = (props: MonthGridProps) => {
     count.current = weeks.length;
     const width = useRef<(width: number) => void>(props.onWidth);
     width.current = props.onWidth;
+    const gridheight = useRef<((height: number) => void) | undefined>(props.onHeight);
+    gridheight.current = props.onHeight;
+    const lastheight = useRef<number>(0);
 
     const days = useMemo(() => weeks.flat(), [weeks]);
     const counts = useMemo(() => dayCounts(days, placed), [days, placed]);
@@ -144,9 +169,17 @@ const MonthGrid = (props: MonthGridProps) => {
                 if (entry.target === frame && box.width > 0) {
                     width.current(box.width);
                 }
+                const reported = Math.round(box.height);
+                if (entry.target === grid.current && frame && reported > 0 && reported !== lastheight.current) {
+                    lastheight.current = reported;
+                    gridheight.current?.(reported);
+                }
             });
         });
         observer.observe(element);
+        if (grid.current) {
+            observer.observe(grid.current);
+        }
         if (frame) {
             observer.observe(frame);
         }

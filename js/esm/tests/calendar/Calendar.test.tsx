@@ -531,15 +531,41 @@ describe('the keys and the filters', () => {
             .toEqual(['0', '3', '4']);
     });
 
-    it('"More filters" counts what is on and asks the range with it', async() => {
+    it('"More filters" starts with every box on, and unchecking one asks the range for the others (R1c)', async() => {
         await mount(props());
         const button = document.querySelector<HTMLElement>('[data-region="dim-cal-more"] button') as HTMLElement;
+        const box = (name: string, value: number) => document.querySelector<HTMLInputElement>(
+            `[data-region="dim-cal-more"] input[name="${name}"][value="${value}"]`
+        ) as HTMLInputElement;
         fireEvent.click(button);
+        expect([box('model', 1).checked, box('model', 2).checked, box('modality', 1).checked]).toEqual([true, true, true]);
+        expect(box('model', 1).dataset.on).toBe('1');
+        expect(button.textContent).not.toContain('filters on');
+        expect(box('modality', 1).disabled).toBe(true);
         await act(async() => {
-            fireEvent.click(document.querySelector('[data-region="dim-cal-more"] input[name="model"][value="2"]') as HTMLElement);
+            fireEvent.click(box('model', 2));
         });
-        expect(ranges()[0]).toEqual(expect.objectContaining({model: [2]}));
+        expect(ranges()[0]).toEqual(expect.objectContaining({model: [1]}));
+        expect([box('model', 1).checked, box('model', 2).checked]).toEqual([true, false]);
+        expect(box('model', 2).dataset.on).toBe('0');
+        expect(box('model', 1).disabled).toBe(true);
         expect(button.textContent).toContain('1 filters on');
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).not.toBeNull();
+        await act(async() => {
+            fireEvent.click(box('model', 2));
+        });
+        expect(ranges()[1]).toEqual(expect.objectContaining({model: []}));
+        expect(button.textContent).not.toContain('filters on');
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).toBeNull();
+    });
+
+    it('"More filters" reads a saved list as its boxes, and a list of every option narrows nothing', async() => {
+        await mount(props([], {state: {
+            off: [], categoryid: 0, recursive: true, model: [1, 2], modality: [], city: '', actiononly: false, colour: 'key',
+        }}));
+        const button = document.querySelector<HTMLElement>('[data-region="dim-cal-more"] button') as HTMLElement;
+        expect(button.textContent).not.toContain('filters on');
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).toBeNull();
     });
 
     it('colours by category with the branding pair, whole', async() => {
@@ -680,6 +706,53 @@ describe('the day drawer', () => {
         const office = hours.querySelector<HTMLElement>('[data-id="3"]') as HTMLElement;
         expect(office.style.getPropertyValue('--dim-cal-share-left')).toBe('0.5');
         expect(office.style.getPropertyValue('--dim-cal-share-width')).toBe('0.5');
+    });
+
+    it('opens the whole day in its scroll box on the busy band, with a fade on each end it can scroll to (R1c)', async() => {
+        const tops: number[] = [];
+        const box = (element: Element) => (element as HTMLElement).dataset?.region === 'dim-cal-hourscroll';
+        const saved = ['scrollHeight', 'clientHeight', 'scrollTop']
+            .map((name) => [name, Object.getOwnPropertyDescriptor(HTMLElement.prototype, name)]);
+        Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {configurable: true,
+            get() {
+                return box(this) ? 960 : 0;
+            }});
+        Object.defineProperty(HTMLElement.prototype, 'clientHeight', {configurable: true,
+            get() {
+                return box(this) ? 400 : 0;
+            }});
+        Object.defineProperty(HTMLElement.prototype, 'scrollTop', {configurable: true,
+            get() {
+                return tops.length ? tops[tops.length - 1] : 0;
+            },
+            set(value: number) {
+                tops.push(value);
+            }});
+        try {
+            await mount(props([item({id: 2, name: 'Mentoring', timestart: at('2026-11-17', 10), timeduration: 3600})]));
+            fireEvent.click(day('2026-11-17'));
+            const drawer = await waitFor(() => region());
+            const scroll = drawer.querySelector('[data-region="dim-cal-hourscroll"]') as HTMLElement;
+            expect(scroll.querySelectorAll('.dim-cal__hour')).toHaveLength(24);
+            expect(tops).toEqual([9 * 40]);
+            expect(scroll.tabIndex).toBe(-1);
+            expect(drawer.querySelectorAll('.dim-cal__hourfade--up, .dim-cal__hourfade--down')).toHaveLength(2);
+            expect(drawer.querySelector('.dim-cal__hourfade')?.getAttribute('aria-hidden')).toBe('true');
+            await act(async() => {
+                tops.push(0);
+                fireEvent.scroll(scroll);
+            });
+            expect(drawer.querySelector('.dim-cal__hourfade--up')).toBeNull();
+            expect(drawer.querySelector('.dim-cal__hourfade--down')).not.toBeNull();
+        } finally {
+            saved.forEach(([name, descriptor]) => {
+                if (descriptor) {
+                    Object.defineProperty(HTMLElement.prototype, name as string, descriptor as PropertyDescriptor);
+                } else {
+                    delete (HTMLElement.prototype as unknown as Record<string, unknown>)[name as string];
+                }
+            });
+        }
     });
 
     it('says so when the day is empty', async() => {
@@ -832,8 +905,10 @@ describe('the event popover', () => {
         expect(primary.textContent).toBe('Enrol');
         expect(primary.href).toBe('https://example.com/landing/4');
         expect(dialog.querySelector<HTMLAnchorElement>('[data-action="dim-cal-open"]')?.href).toBe('https://example.com/landing/4');
-        expect(dialog.querySelector<HTMLAnchorElement>('[data-action="dim-cal-course"]')?.href)
-            .toBe('https://example.com/course/view.php?id=4');
+        const course = dialog.querySelector<HTMLAnchorElement>('[data-action="dim-cal-course"]') as HTMLAnchorElement;
+        expect(course.href).toBe('https://example.com/course/view.php?id=4');
+        expect(course.textContent).toBe('Event page');
+        expect(course.className).toContain('btn-outline-secondary');
     });
 
     it('names the items an event overlaps, in words', async() => {
@@ -1027,6 +1102,31 @@ describe('the phone', () => {
         });
     };
 
+    it('hands the month grid\'s height to the frame, for the drawer beside it', async() => {
+        await mount(props([]));
+        const frame = document.querySelector('[data-region="dim-cal-body"]') as HTMLElement;
+        const grid = document.querySelector('[role="grid"].dim-cal__grid') as Element;
+        expect(watched).toContain(grid);
+        await act(async() => {
+            observers[0]([{target: grid, contentRect: {width: 900, height: 701.6}}]);
+        });
+        expect(frame.style.getPropertyValue('--dim-cal-gridheight')).toBe('702px');
+        await act(async() => {
+            observers[0]([{target: frame, contentRect: {width: 900, height: 999}}]);
+        });
+        expect(frame.style.getPropertyValue('--dim-cal-gridheight')).toBe('702px');
+        // The regression: the report re-renders the calendar, and a custom property written by hand did not survive it.
+        // React owns it now, so opening the drawer (the frame's class changes) leaves the same frame carrying it.
+        await act(async() => {
+            fireEvent.click(day('2026-11-17'));
+        });
+        const after = document.querySelector('[data-region="dim-cal-body"]') as HTMLElement;
+        expect(after).toBe(frame);
+        expect(after.className).toContain('dim-cal__body--drawer');
+        expect(after.style.getPropertyValue('--dim-cal-gridheight')).toBe('702px');
+        expect(after.getAttribute('style')).toContain('--dim-cal-gridheight: 702px');
+    });
+
     it('draws the month as dots from the answer\'s counts, at most four and then "+"', async() => {
         const given = props([item({id: 1, name: 'Mentoring', timestart: at('2026-11-17', 14)})]);
         given.answer.days = [
@@ -1061,6 +1161,344 @@ describe('the phone', () => {
         fireEvent.click(day('2026-11-17'));
         expect((await waitFor(() => region())).classList.contains('dim-cal__drawer--drawer')).toBe(true);
         expect(document.querySelector('[data-region="dim-cal-body"]')?.classList.contains('dim-cal__body--drawer')).toBe(true);
+    });
+});
+
+describe('the Day view, a phone\'s (R1d)', () => {
+    /** The callbacks the page's ResizeObservers registered, the latest last. */
+    let observers: Array<(entries: unknown[]) => void> = [];
+    /** Core's event form modal. */
+    let modal: Record<string, jest.Mock>;
+    /** The box's height the hour column is scrolled in. */
+    let viewport = 600;
+    let top = 0;
+    const saved = ['scrollHeight', 'clientHeight', 'scrollTop']
+        .map((name) => [name, Object.getOwnPropertyDescriptor(HTMLElement.prototype, name)]);
+
+    /** What the address carries of the default state after the span. */
+    const STATE = '&recursive=1&colour=key';
+
+    /** Core's answers for creating: "New event" offered. */
+    const EDITS = {create: true, context: 2, course: 1};
+
+    beforeEach(() => {
+        observers = [];
+        viewport = 600;
+        top = 0;
+        (window as unknown as {ResizeObserver: unknown}).ResizeObserver = class {
+            /**
+             * Keep the callback.
+             *
+             * @param {Function} callback The observer's callback.
+             */
+            constructor(callback: (entries: unknown[]) => void) {
+                observers.push(callback);
+            }
+
+            /**
+             * Nothing to note.
+             *
+             * @returns {void}
+             */
+            observe(): void {
+                return;
+            }
+
+            /**
+             * Nothing to release.
+             *
+             * @returns {void}
+             */
+            disconnect(): void {
+                return;
+            }
+        };
+        // Jsdom has no PointerEvent: a mouse event carrying the pointer's type stands in for it.
+        (window as unknown as {PointerEvent: unknown}).PointerEvent = class extends MouseEvent {
+            pointerType: string;
+
+            /**
+             * A mouse event with a pointer type.
+             *
+             * @param {string} type The event's type.
+             * @param {object} init Its fields.
+             */
+            constructor(type: string, init: MouseEventInit & {pointerType?: string} = {}) {
+                super(type, init);
+                this.pointerType = init.pointerType || '';
+            }
+        };
+        Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {configurable: true, get: () => 960});
+        Object.defineProperty(HTMLElement.prototype, 'clientHeight', {configurable: true, get: () => viewport});
+        Object.defineProperty(HTMLElement.prototype, 'scrollTop', {configurable: true,
+            get: () => top,
+            set(value: number) {
+                top = Math.max(0, Math.min(value, 960 - viewport));
+            }});
+        modal = {
+            setContextId: jest.fn(),
+            setCourseId: jest.fn(),
+            setEventId: jest.fn(),
+            setStartTime: jest.fn(),
+            show: jest.fn(),
+        };
+        mockAmdModule('jquery', () => ({on: () => undefined}));
+        mockAmdModule('core_calendar/events', {created: 'c', updated: 'u', deleted: 'd'});
+        mockAmdModule('core_calendar/modal_event_form', {create: jest.fn(() => Promise.resolve(modal))});
+        mockAmdModule('core/notification', {exception: jest.fn(() => Promise.resolve())});
+        forgetEditing();
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete (window as unknown as {ResizeObserver?: unknown}).ResizeObserver;
+        delete (window as unknown as {PointerEvent?: unknown}).PointerEvent;
+        saved.forEach(([name, descriptor]) => {
+            if (descriptor) {
+                Object.defineProperty(HTMLElement.prototype, name as string, descriptor as PropertyDescriptor);
+            } else {
+                delete (HTMLElement.prototype as unknown as Record<string, unknown>)[name as string];
+            }
+        });
+    });
+
+    /**
+     * Report a width for the frame, through the latest observer (the grid's, or the Day view's).
+     *
+     * @param {number} width The frame's width, in px.
+     * @returns {Promise}
+     */
+    const measure = async(width: number): Promise<void> => {
+        const frame = document.querySelector('[data-region="dim-cal-body"]') as Element;
+        await act(async() => {
+            observers[observers.length - 1]([{target: frame, contentRect: {width: width, height: 600}}]);
+        });
+    };
+
+    /**
+     * The Day view's region, or null.
+     *
+     * @returns {HTMLElement|null}
+     */
+    const dayview = (): HTMLElement | null => document.querySelector<HTMLElement>('[data-region="dim-cal-dayview"]');
+
+    /**
+     * The range requests made, as [from, to].
+     *
+     * @returns {Array}
+     */
+    const ranges = (): string[][] => fetched.mock.calls
+        .filter(([request]) => request.methodname === 'theme_dimensions_get_calendar_range')
+        .map(([request]) => [request.args.from, request.args.to]);
+
+    /**
+     * The view switch's choices.
+     *
+     * @returns {Array} Their names.
+     */
+    const choices = (): string[] => Array.from(document.querySelectorAll('[data-region="dim-cal-views"] button'))
+        .map((button) => button.textContent || '');
+
+    /**
+     * Wait for a hold to run out.
+     *
+     * @returns {Promise}
+     */
+    const held = async(): Promise<void> => {
+        await act(async() => {
+            await new Promise((resolve) => setTimeout(resolve, 550));
+        });
+    };
+
+    it('offers Day in the switch on a phone only', async() => {
+        await mount(props());
+        await measure(900);
+        expect(choices()).toEqual(['Month', 'Week']);
+        await measure(400);
+        expect(choices()).toEqual(['Month', 'Week', 'Day']);
+        expect(document.querySelector('[data-action="dim-cal-view-day"]')?.getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('shows one day at the frame\'s width, asking for it alone, and the arrows and "Today" move it and the address', async() => {
+        const events = [
+            item({id: 1, name: 'Mentoring', timestart: at('2026-11-17', 14), timeduration: 3600}),
+            item({id: 2, name: 'Seminar', timestart: at('2026-11-17', 0), timeduration: 3 * 86400}),
+            item({id: 3, name: 'Review', timestart: at('2026-11-18', 9), timeduration: 3600}),
+        ];
+        fetched.mockImplementation(({methodname, args}: {methodname: string, args: {from: string, to: string}}) =>
+            Promise.resolve(methodname === 'theme_dimensions_get_calendar_range' ? answer(events, args.from, args.to) : {}));
+        const push = jest.spyOn(window.history, 'pushState');
+        await mount(props(events));
+        await measure(400);
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-view-day"]') as HTMLElement);
+        });
+        expect(ranges()).toEqual([['2026-11-17', '2026-11-17']]);
+        expect(window.location.search).toBe('?view=day&day=2026-11-17' + STATE);
+        const view = await waitFor(() => dayview() as HTMLElement);
+        expect(document.querySelector('[role="grid"]')).toBeNull();
+        expect(document.querySelector('[data-region="dim-cal-day"]')).toBeNull();
+        expect(view.getAttribute('aria-labelledby')).toBe('dim-cal-caption');
+        expect(document.querySelector('[data-region="dim-cal-caption"]')?.textContent).toBe('Tuesday, November 17, 2026');
+        expect(view.querySelector('[data-region="dim-cal-allday"]')?.textContent).toContain('Seminar');
+        expect(view.querySelector('[data-region="dim-cal-hours"] .dim-cal__dayitem--timed')?.textContent).toContain('Mentoring');
+        expect(view.querySelectorAll('.dim-cal__hour')).toHaveLength(24);
+        expect(view.textContent).not.toContain('Review');
+        expect(document.querySelector('[data-action="dim-cal-view-day"]')?.getAttribute('aria-pressed')).toBe('true');
+        const next = document.querySelector('[data-action="dim-cal-next"]') as HTMLElement;
+        expect(next.getAttribute('aria-label')).toBe('Next day');
+        expect(document.querySelector('[data-action="dim-cal-prev"]')?.getAttribute('aria-label')).toBe('Previous day');
+
+        push.mockClear();
+        await act(async() => {
+            fireEvent.click(next);
+        });
+        expect(ranges()[ranges().length - 1]).toEqual(['2026-11-18', '2026-11-18']);
+        expect(window.location.search).toBe('?view=day&day=2026-11-18' + STATE);
+        expect(push).toHaveBeenCalledTimes(1);
+        expect((dayview() as HTMLElement).dataset.day).toBe('2026-11-18');
+        expect((dayview() as HTMLElement).textContent).toContain('Review');
+        expect((dayview() as HTMLElement).textContent).not.toContain('Mentoring');
+        for (let press = 0; press < 2; press++) {
+            await act(async() => {
+                fireEvent.click(document.querySelector('[data-action="dim-cal-prev"]') as HTMLElement);
+            });
+        }
+        expect(window.location.search).toBe('?view=day&day=2026-11-16' + STATE);
+        await act(async() => {
+            fireEvent.click(document.querySelector('.dim-cal__today') as HTMLElement);
+        });
+        expect(window.location.search).toBe('?view=day&day=2026-11-17' + STATE);
+        expect((dayview() as HTMLElement).dataset.day).toBe('2026-11-17');
+        push.mockRestore();
+    });
+
+    it('opens an item of the day as the phone\'s bottom sheet', async() => {
+        describeWith(() => Promise.resolve({event: {description: ''}}));
+        await mount(props([item({id: 4, name: 'Mentoring', timestart: at('2026-11-18', 14)})], {view: 'day', day: '2026-11-18'}));
+        await measure(400);
+        await act(async() => {
+            fireEvent.click((dayview() as HTMLElement).querySelector('[data-cal-pop]') as HTMLElement);
+        });
+        expect(popover()?.classList.contains('dim-cal__pop--sheet')).toBe(true);
+    });
+
+    it('draws a view=day address on a phone from the first answer, an empty day centred on the working hours', async() => {
+        await mount(props([], {view: 'day', day: '2026-11-20', edits: EDITS}));
+        await measure(400);
+        const view = dayview() as HTMLElement;
+        expect(view.dataset.day).toBe('2026-11-20');
+        expect(ranges()).toEqual([]);
+        expect(view.textContent).toContain('Nothing on this day.');
+        const box = view.querySelector('[data-region="dim-cal-hourscroll"]') as HTMLElement;
+        // 08:00-18:00 centred in a 600px box over 40px rows: (13 x 40) - 300.
+        expect(box.scrollTop).toBe(220);
+        expect(document.querySelector('[data-region="dim-cal-day"]')).toBeNull();
+        expect(window.location.search).toBe('');
+    });
+
+    it('creates at an hour by a double-tap or a held touch, and never by a moved touch or a mouse held down', async() => {
+        await mount(props([], {view: 'day', day: '2026-11-20', edits: EDITS}));
+        await measure(400);
+        const row = (hour: number): HTMLElement => (dayview() as HTMLElement)
+            .querySelector(`.dim-cal__hour[data-hour="${hour}"]`) as HTMLElement;
+        await act(async() => {
+            fireEvent.doubleClick(row(9));
+        });
+        expect(modal.setStartTime).toHaveBeenLastCalledWith(at('2026-11-20', 9));
+        expect(modal.show).toHaveBeenCalledTimes(1);
+
+        fireEvent.pointerDown(row(14), {pointerType: 'touch', clientX: 10, clientY: 10});
+        await held();
+        expect(modal.setStartTime).toHaveBeenLastCalledWith(at('2026-11-20', 14));
+        expect(modal.show).toHaveBeenCalledTimes(2);
+
+        fireEvent.pointerDown(row(15), {pointerType: 'touch', clientX: 10, clientY: 10});
+        fireEvent.pointerMove(row(15), {pointerType: 'touch', clientX: 10, clientY: 40});
+        await held();
+        fireEvent.pointerDown(row(16), {pointerType: 'touch', clientX: 10, clientY: 10});
+        fireEvent.pointerCancel(row(16), {pointerType: 'touch'});
+        await held();
+        fireEvent.pointerDown(row(17), {pointerType: 'mouse', clientX: 10, clientY: 10});
+        await held();
+        expect(modal.show).toHaveBeenCalledTimes(2);
+
+        fireEvent.pointerDown(row(18), {pointerType: 'touch', clientX: 10, clientY: 10});
+        fireEvent.pointerMove(row(18), {pointerType: 'touch', clientX: 14, clientY: 16});
+        await held();
+        expect(modal.setStartTime).toHaveBeenLastCalledWith(at('2026-11-20', 18));
+        expect(modal.show).toHaveBeenCalledTimes(3);
+    });
+
+    it('draws the "+" of "New event" only while it is offered, opening the form on the day', async() => {
+        await mount(props([], {view: 'day', day: '2026-11-20', edits: EDITS}));
+        await measure(400);
+        const plus = (dayview() as HTMLElement).querySelector('[data-action="dim-cal-new"]') as HTMLElement;
+        expect(plus.getAttribute('aria-label')).toBe('New event on Friday, November 20, 2026');
+        await act(async() => {
+            fireEvent.click(plus);
+        });
+        expect(modal.setStartTime).toHaveBeenLastCalledWith(at('2026-11-20', 10));
+        document.body.replaceChildren();
+        await mount(props([], {view: 'day', day: '2026-11-20'}));
+        await measure(400);
+        expect((dayview() as HTMLElement).querySelector('[data-action="dim-cal-new"]')).toBeNull();
+        expect((dayview() as HTMLElement).querySelector('.dim-cal__hour')).toBeNull();
+    });
+
+    it('shows a view=day address on a desktop as the month with that day\'s drawer, never a day view', async() => {
+        const replace = jest.spyOn(window.history, 'replaceState');
+        window.history.pushState({}, '', '/r.php/theme_dimensions/calendar?view=day&day=2026-11-18');
+        replace.mockClear();
+        await mount(props([item({id: 5, name: 'Review', timestart: at('2026-11-18', 9)})], {view: 'day', day: '2026-11-18'}));
+        // The first frame, before any measure, is already the month with the drawer.
+        expect(document.querySelector('[role="grid"].dim-cal__grid')).not.toBeNull();
+        expect(region().dataset.day).toBe('2026-11-18');
+        await measure(900);
+        expect(dayview()).toBeNull();
+        expect(region().classList.contains('dim-cal__drawer--drawer')).toBe(true);
+        expect(region().dataset.day).toBe('2026-11-18');
+        expect(ranges()).toEqual([['2026-11-01', '2026-12-05']]);
+        expect(window.location.search).toBe('?month=2026-11&day=2026-11-18' + STATE);
+        expect(replace).toHaveBeenCalled();
+        expect(choices()).toEqual(['Month', 'Week']);
+        expect(document.querySelector('[data-action="dim-cal-view-month"]')?.getAttribute('aria-pressed')).toBe('true');
+        replace.mockRestore();
+    });
+
+    it('leaves the Day view for its month, the drawer on the day, when the phone turns wide', async() => {
+        await mount(props([], {view: 'day', day: '2026-11-18'}));
+        await measure(400);
+        expect(dayview()).not.toBeNull();
+        await measure(900);
+        expect(dayview()).toBeNull();
+        expect(region().dataset.day).toBe('2026-11-18');
+        expect(region().classList.contains('dim-cal__drawer--drawer')).toBe(true);
+        expect(ranges()).toEqual([['2026-11-01', '2026-12-05']]);
+        expect(window.location.search).toBe('?month=2026-11&day=2026-11-18' + STATE);
+    });
+
+    it('reads the frame\'s entry alone for the phone decision, never another box\'s', async() => {
+        await mount(props([], {view: 'day', day: '2026-11-18'}));
+        await measure(400);
+        const view = dayview() as HTMLElement;
+        await act(async() => {
+            observers[observers.length - 1]([{target: view, contentRect: {width: 900, height: 600}}]);
+        });
+        expect(dayview()).not.toBeNull();
+        expect(ranges()).toEqual([]);
+    });
+
+    it('goes back to the month from the Day view with the day selected and no sheet', async() => {
+        await mount(props([], {view: 'day', day: '2026-11-18'}));
+        await measure(400);
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-view-month"]') as HTMLElement);
+        });
+        expect(dayview()).toBeNull();
+        expect(document.querySelector('[data-region="dim-cal-day"]')).toBeNull();
+        expect(window.location.search).toBe('?month=2026-11' + STATE);
+        expect(day('2026-11-18').tabIndex).toBe(0);
     });
 });
 
@@ -1218,11 +1656,13 @@ describe('editing, core\'s (C5)', () => {
         expect(region().querySelector('[data-action="dim-cal-new"]')).toBeNull();
     });
 
-    it('draws the working hours on an empty day while creation is offered, under the "nothing" line', async() => {
+    it('draws the whole day on an empty day while creation is offered, under the "nothing" line', async() => {
         await mount(props([], {edits: EDITS, day: '2026-11-10'}));
         expect(region().textContent).toContain('Nothing on this day.');
         const rows = Array.from(region().querySelectorAll<HTMLElement>('.dim-cal__hour')).map((row) => row.dataset.hour);
-        expect(rows).toEqual(['8', '9', '10', '11', '12', '13', '14', '15', '16', '17']);
+        expect(rows).toEqual(Array.from({length: 24}, (unused, hour) => String(hour)));
+        const box = region().querySelector('[data-region="dim-cal-hourscroll"]') as HTMLElement;
+        expect([box.tabIndex, box.getAttribute('role'), box.getAttribute('aria-label')]).toEqual([0, 'group', 'Hours of the day']);
         await act(async() => {
             fireEvent.doubleClick(region().querySelector('.dim-cal__hour[data-hour="9"]') as HTMLElement);
         });
@@ -1457,5 +1897,147 @@ describe('editing, core\'s (C5)', () => {
         });
         await waitFor(() => expect(notification.exception).toHaveBeenCalledTimes(1));
         expect(ranges()).toHaveLength(0);
+    });
+});
+
+describe('the first paint, guessed by a media query (R1d)', () => {
+    /** The callbacks the page's ResizeObservers registered, the latest last. */
+    let observers: Array<(entries: unknown[]) => void> = [];
+    /** The queries asked of matchMedia. */
+    let asked: string[] = [];
+
+    /**
+     * Stand in for matchMedia, answering every query with one verdict.
+     *
+     * @param {boolean} matches The verdict.
+     * @returns {void}
+     */
+    const media = (matches: boolean): void => {
+        asked = [];
+        (window as unknown as {matchMedia: unknown}).matchMedia = (query: string) => {
+            asked.push(query);
+            return {matches: matches, media: query, addEventListener: () => undefined, removeEventListener: () => undefined};
+        };
+    };
+
+    beforeEach(() => {
+        observers = [];
+        (window as unknown as {ResizeObserver: unknown}).ResizeObserver = class {
+            /**
+             * Keep the callback.
+             *
+             * @param {Function} callback The observer's callback.
+             */
+            constructor(callback: (entries: unknown[]) => void) {
+                observers.push(callback);
+            }
+
+            /**
+             * Nothing to note.
+             *
+             * @returns {void}
+             */
+            observe(): void {
+                return;
+            }
+
+            /**
+             * Nothing to release.
+             *
+             * @returns {void}
+             */
+            disconnect(): void {
+                return;
+            }
+        };
+    });
+
+    afterEach(() => {
+        delete (window as unknown as {ResizeObserver?: unknown}).ResizeObserver;
+        delete (window as unknown as {matchMedia?: unknown}).matchMedia;
+    });
+
+    /**
+     * Render the page without waiting for a grid, which a phone's Day view does not draw.
+     *
+     * @param {object} given The props.
+     * @returns {Promise}
+     */
+    const draw = async(given: Props): Promise<void> => {
+        const page = document.createElement('div');
+        page.dataset.region = 'dim-cal';
+        const node = document.createElement('div');
+        page.append(node);
+        document.body.append(page);
+        await act(async() => {
+            render(<Calendar {...given} />, {container: node});
+        });
+        await waitFor(() => expect(page.querySelector('[data-region="dim-cal-body"]')).not.toBeNull());
+    };
+
+    /**
+     * Report a width for the frame, through the latest observer.
+     *
+     * @param {number} width The frame's width, in px.
+     * @returns {Promise}
+     */
+    const measure = async(width: number): Promise<void> => {
+        const frame = document.querySelector('[data-region="dim-cal-body"]') as Element;
+        await act(async() => {
+            observers[observers.length - 1]([{target: frame, contentRect: {width: width, height: 600}}]);
+        });
+    };
+
+    /**
+     * The view switch's choices.
+     *
+     * @returns {Array} Their names.
+     */
+    const choices = (): string[] => Array.from(document.querySelectorAll('[data-region="dim-cal-views"] button'))
+        .map((button) => button.textContent || '');
+
+    /**
+     * The range requests made.
+     *
+     * @returns {Array} Their [from, to].
+     */
+    const asks = (): string[][] => ranges().map((args) => [String(args.from), String(args.to)]);
+
+    it('draws the phone layout and offers Day before any observer entry when the query matches', async() => {
+        media(true);
+        await draw(props([]));
+        expect(asked).toEqual(['(max-width: 591px)']);
+        expect(choices()).toEqual(['Month', 'Week', 'Day']);
+        expect(document.querySelector('.dim-cal__grid--phone')).not.toBeNull();
+    });
+
+    it('draws a view=day address as the Day view at once, with no request before the first measure', async() => {
+        media(true);
+        await draw(props([], {view: 'day', day: '2026-11-18'}));
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).not.toBeNull();
+        expect(document.querySelector('[data-region="dim-cal-day"]')).toBeNull();
+        expect(asks()).toEqual([]);
+        await measure(400);
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).not.toBeNull();
+        expect(asks()).toEqual([]);
+    });
+
+    it('lets a desktop-width first entry replace the guess', async() => {
+        media(true);
+        await draw(props([], {view: 'day', day: '2026-11-18'}));
+        await measure(900);
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).toBeNull();
+        expect(choices()).toEqual(['Month', 'Week']);
+        expect((document.querySelector('[data-region="dim-cal-day"]') as HTMLElement).dataset.day).toBe('2026-11-18');
+    });
+
+    it('keeps today\'s behaviour when the query does not match', async() => {
+        media(false);
+        await draw(props([], {view: 'day', day: '2026-11-18'}));
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).toBeNull();
+        expect((document.querySelector('[data-region="dim-cal-day"]') as HTMLElement).dataset.day).toBe('2026-11-18');
+        expect(choices()).toEqual(['Month', 'Week']);
+        await measure(400);
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).not.toBeNull();
     });
 });

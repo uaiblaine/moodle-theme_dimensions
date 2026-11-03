@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\local\landing;
 
+use theme_dimensions\local\blockless;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\output\landing_guestentry;
 use theme_dimensions\output\landing_page;
@@ -184,6 +185,13 @@ final class request {
         $PAGE->add_body_class('theme_dimensions-landing');
         $PAGE->set_title(format_string($course->fullname, true, ['context' => $context]));
         $PAGE->set_heading('');
+
+        /* The page is the course's door, read before anybody is inside: no block region (blockless says how) and no
+           course index, which core_course_drawer() would otherwise draw for a reader who may enter the course. The
+           index has core's own switch, the first thing that function reads. The guest entry's interstitial needs
+           neither: the embedded layout draws fake blocks alone and no drawer. */
+        blockless::apply($PAGE);
+        $PAGE->set_show_course_index(false);
 
         $ispublic = publicaccess::is_public((int) $course->id);
 

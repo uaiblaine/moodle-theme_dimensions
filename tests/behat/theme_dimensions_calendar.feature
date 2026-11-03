@@ -74,6 +74,36 @@ Feature: The theme's calendar page shows a month with spanning bars, event types
     And I should see "Platform maintenance" in the "[data-region='dim-cal-grid']" "css_element"
     And "[data-action='dim-cal-clear']" "css_element" should not exist
 
+  # The boxes' state is read through data-on, which the component draws: Mink turns CSS into XPath, so :checked would
+  # read the attribute, never a React checkbox's live state.
+  @javascript
+  Scenario: "More filters" starts with every model checked, and unchecking one narrows the month until "Clear filters"
+    Given the following "courses" exist:
+      | fullname     | shortname | category | customfield_dimensions_model |
+      | Model course | MODELC    | AREAA    | 1                            |
+    And the following "course enrolments" exist:
+      | user     | course | role    |
+      | student1 | MODELC | student |
+    And the following "events" exist:
+      | name        | eventtype | course | timestart               | timeduration |
+      | Model class | course    | MODELC | ##11 March 2027 10:00## | 3600         |
+    And I log in as "student1"
+    And I visit "/theme/dimensions/calendar.php?month=2027-03"
+    And "[data-action='dim-cal-clear']" "css_element" should not exist
+    When I click on "[data-region='dim-cal-more'] button" "css_element"
+    Then "[data-region='dim-cal-more'] input[name='model'][value='1'][data-on='1']" "css_element" should exist
+    And "[data-region='dim-cal-more'] input[name='model'][value='2'][data-on='1']" "css_element" should exist
+    And I click on "[data-region='dim-cal-more'] input[name='model'][value='2']" "css_element"
+    And "[data-region='dim-cal-more'] input[name='model'][value='2'][data-on='0']" "css_element" should exist
+    And I should see "1 filters on" in the "[data-region='dim-cal-more'] button" "css_element"
+    And I should see "Model class" in the "[data-region='dim-cal-grid']" "css_element"
+    And I should not see "Mentoring session" in the "[data-region='dim-cal-grid']" "css_element"
+    And I should see "Platform maintenance" in the "[data-region='dim-cal-grid']" "css_element"
+    And I click on "[data-action='dim-cal-clear']" "css_element"
+    And I should see "Mentoring session" in the "[data-region='dim-cal-grid']" "css_element"
+    And "[data-region='dim-cal-more'] input[name='model'][value='2'][data-on='1']" "css_element" should exist
+    And "[data-action='dim-cal-clear']" "css_element" should not exist
+
   @javascript
   Scenario: The category tree narrows the month to a category
     Given I log in as "student1"
@@ -180,6 +210,32 @@ Feature: The theme's calendar page shows a month with spanning bars, event types
     And I click on "[data-region='dim-cal-weekagenda'] [data-role='day'][data-day='2027-03-09']" "css_element"
     And ".dim-cal__drawer--sheet[data-region='dim-cal-day']" "css_element" should exist
     And I should see "Other area meeting" in the "[data-region='dim-cal-day']" "css_element"
+
+  # The Day view is a phone's (docs/calendar/PROPOSAL.md section 31): its layout and its creation paths are Jest's.
+  @javascript
+  Scenario: On a phone the Day view shows one day and its arrows move it a day at a time
+    Given I log in as "student1"
+    And I change viewport size to "mobile"
+    When I visit "/theme/dimensions/calendar.php?view=day&day=2027-03-09"
+    Then "[data-region='dim-cal-dayview'][data-day='2027-03-09']" "css_element" should exist
+    And "[data-region='dim-cal-grid']" "css_element" should not exist
+    And "[data-region='dim-cal-app'] [data-action='dim-cal-view-day'][aria-pressed='true']" "css_element" should exist
+    And I should see "Mentoring session" in the "[data-region='dim-cal-dayview']" "css_element"
+    And I should see "Spring seminar" in the "[data-region='dim-cal-dayview'] [data-region='dim-cal-allday']" "css_element"
+    And I click on "[data-region='dim-cal-app'] [data-action='dim-cal-next']" "css_element"
+    And "[data-region='dim-cal-dayview'][data-day='2027-03-10']" "css_element" should exist
+    And the url should match "view=day&day=2027-03-10"
+    And I should not see "Mentoring session" in the "[data-region='dim-cal-dayview']" "css_element"
+
+  @javascript
+  Scenario: On a desktop a Day view's address shows the month with that day's drawer
+    Given I log in as "student1"
+    When I visit "/theme/dimensions/calendar.php?view=day&day=2027-03-09"
+    Then ".dim-cal__drawer--drawer[data-region='dim-cal-day'][data-day='2027-03-09']" "css_element" should exist
+    And "[data-region='dim-cal-dayview']" "css_element" should not exist
+    And "[data-region='dim-cal-app'] [data-action='dim-cal-view-day']" "css_element" should not exist
+    And the url should match "month=2027-03"
+    And I should see "Mentoring session" in the "[data-region='dim-cal-day']" "css_element"
 
   Scenario: Without JavaScript the month is an agenda, with no link to core's calendar view
     Given I log in as "student1"

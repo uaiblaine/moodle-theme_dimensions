@@ -14,6 +14,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import { WEEK, format, shift, weeks } from "../daterange/calendar";
+const GRID_HEIGHT = "--dim-cal-gridheight";
+const frameStyle = /* @__PURE__ */ __name((height) => ({ [GRID_HEIGHT]: height > 0 ? `${height}px` : void 0 }), "frameStyle");
 const monthParts = /* @__PURE__ */ __name((month) => ({ y: Number(month.slice(0, 4)), m: Number(month.slice(5, 7)) }), "monthParts");
 const monthAfter = /* @__PURE__ */ __name((month, offset) => {
   const parts = monthParts(month);
@@ -81,6 +83,8 @@ const zone = /* @__PURE__ */ __name((timezone, language) => {
   };
 }, "zone");
 export {
+  GRID_HEIGHT,
+  frameStyle,
   gridWeeks,
   isWeekend,
   monthAfter,

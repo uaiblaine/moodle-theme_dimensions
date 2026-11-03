@@ -27,6 +27,7 @@ namespace theme_dimensions\local;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
+use theme_dimensions\local\calendar\keycolours;
 use theme_dimensions\local\category\branding;
 
 /**
@@ -160,11 +161,28 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
+     * The stylesheet's head: the chosen colours' default and the functions the token blocks call (R1c), everything
+     * before the light token block.
+     *
+     * @return string
+     */
+    private function head(): string {
+        $scss = $this->scss();
+        $start = strpos($scss, '$dim-cal-colours:');
+        $end = strpos($scss, self::TOKENS . ' {');
+        $this->assertNotFalse($start, 'The chosen colours\' default is declared.');
+        $this->assertNotFalse($end);
+        $this->assertLessThan($end, $start, 'The head comes before the token blocks.');
+        return substr($scss, $start, $end - $start);
+    }
+
+    /**
      * The two token blocks compiled, as name => #rrggbb per mode.
      *
+     * @param string $colours The chosen colours, as the pre SCSS callback writes them (keycolours::scss()), or ''.
      * @return array ['light' => [...], 'dark' => [...]].
      */
-    private function compiled(): array {
+    private function compiled(string $colours = ''): array {
         global $CFG;
         $post = file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
         preg_match_all('/^\$dim-ds-[a-z]+(?:-\d+)?: #[0-9a-f]{3,6};$/m', $post, $primitives);
@@ -177,6 +195,7 @@ final class calendar_scss_test extends \advanced_testcase {
             . "\n\$prefix: bs-;\n\$white: \$mds-color-gray-white;\n\$gray-800: \$mds-color-gray-800;\n"
             . "\$gray-900: \$mds-color-gray-900;\n@import \"moodle/colour-mode\";\n"
             . implode("\n", $primitives[0])
+            . $colours . "\n" . $this->head()
             . "\n.light {" . $this->block(self::TOKENS) . "\n}\n.dark {" . $this->block(self::DARK_TOKENS) . "\n}"
         );
         $css = $compiler->to_css();
@@ -358,9 +377,67 @@ final class calendar_scss_test extends \advanced_testcase {
             $scss
         );
         $this->assertMatchesRegularExpression(
-            '~\.dim-cal__drawer--drawer \{\s*position: sticky;\s*top: calc\(#\{\$navbar-height\} \+ 1rem\);~',
+            '~\.dim-cal__drawer--drawer \{[^;]*;\s*position: sticky;\s*top: calc\(#\{\$navbar-height\} \+ 1rem\);~',
             $scss
         );
+    }
+
+    /**
+     * R1c (PROPOSAL section 30.7): beside the grid the drawer is never taller than the grid or than the viewport under the
+     * navbar. The cap is the smaller of the two, in a custom property (stylelint allows min() only there), read by the
+     * drawer's max-height; the grids' observer writes --dim-cal-gridheight on the frame. The hour box shrinks and scrolls
+     * because the chain down to it (drawer overflow, box min-height) lets it.
+     *
+     * @return void
+     */
+    public function test_the_drawer_is_never_taller_than_the_grid_or_the_viewport(): void {
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__drawer--drawer \{\s*--dim-cal-drawercap: min\(calc\(100vh - #\{\$navbar-height\} - 2rem\), '
+                . 'var\(--dim-cal-gridheight, 100vh\)\);\s*position: sticky;[^;]*;\s*max-height: var\(--dim-cal-drawercap\);~',
+            $scss,
+            'The viewport cap and the grid\'s height, the smaller of the two.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__hourbox \{[^}]*min-height: 0;~',
+            $scss,
+            'The flex chain lets the box shrink below its content.'
+        );
+        $this->assertMatchesRegularExpression('~\.dim-cal__hourscroll \{\s*flex: 1 1 auto;\s*min-height: 0;~', $scss);
+        $this->assertStringContainsString(
+            "GRID_HEIGHT = '--dim-cal-gridheight'",
+            file_get_contents(__DIR__ . '/../../js/esm/src/calendar/days.ts'),
+            'The property the stylesheet reads is the one the grids write.'
+        );
+    }
+
+    /**
+     * R1c (PROPOSAL section 30.1): the hour column scrolls in a box of its own, drawn as block_compass's calendar strip:
+     * no native scrollbar in either engine, its overscroll kept from the page, the fades taking no pointer; the drawer's
+     * box takes what the head leaves, and the week's is capped under the viewport.
+     *
+     * @return void
+     */
+    public function test_the_hour_column_scrolls_in_a_box_of_its_own(): void {
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__hourscroll \{[^}]*overflow-y: auto;[^}]*overscroll-behavior: contain;[^}]*scrollbar-width: none;~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression('~\.dim-cal__hourscroll::-webkit-scrollbar \{\s*display: none;~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-cal__hourfade \{[^}]*position: absolute;[^}]*pointer-events: none;~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-cal__hourbox \{\s*position: relative;~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-cal__hourbox--day \{\s*flex: 1 1 auto;~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__hourbox--week \.dim-cal__hourscroll \{[^}]*max-height: calc\(100vh - #\{\$navbar-height\} - 14rem\);~',
+            $scss
+        );
+        // R1d (PROPOSAL section 31): the phone's Day view is not sticky and its box is capped under the viewport as well.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__drawer--dayview \.dim-cal__hourscroll \{[^}]*max-height: calc\(100vh - #\{\$navbar-height\} - 12rem\);~',
+            $scss
+        );
+        $this->assertStringNotContainsString('.dim-cal__drawer--dayview {', $scss, 'Only the drawer beside a grid sticks.');
     }
 
     /**
@@ -402,6 +479,86 @@ final class calendar_scss_test extends \advanced_testcase {
             '~\.dim-cal__weekstripgrid\s*\{[^}]*grid-column:\s*2\s*/\s*-1;~',
             $this->scss()
         );
+    }
+
+    /**
+     * Without a chosen colour every key keeps its hand-picked triple: the light edge is the setting's default, so an
+     * untouched site, and one that chose a key's default, compiles what it compiled before the settings existed.
+     *
+     * @return void
+     */
+    public function test_an_untouched_site_keeps_every_hand_picked_edge(): void {
+        $this->resetAfterTest();
+        $modes = $this->compiled();
+        foreach (keycolours::DEFAULTS as $key => $default) {
+            $this->assertSame($default, $modes['light']["--dim-cal-{$key}-edge"], "{$key}: the default is the edge.");
+        }
+        $this->assertSame($modes, $this->compiled("\n\$dim-cal-colours: () !default;\n"), 'An empty map changes nothing.');
+    }
+
+    /**
+     * Colours at the extremes and in between: each chosen key derives a triple that keeps the floors in both modes
+     * (ink on tint 4.5:1, edge on both surfaces 3:1), a colour that already marks the surface is the light edge as it
+     * is, and the keys nobody chose are untouched.
+     *
+     * @return array[]
+     */
+    public static function chosen_colours(): array {
+        return [
+            'white' => ['#ffffff'],
+            'black' => ['#000000'],
+            'a light yellow' => ['#ffe600'],
+            'a dark navy' => ['#1a1a40'],
+            'a mid purple' => ['#7b1fa2'],
+            'a light cyan' => ['#7fe3ff'],
+        ];
+    }
+
+    /**
+     * A chosen colour reaches the tokens and the floors hold whatever it is.
+     *
+     * @param string $colour The colour chosen for two keys.
+     * @return void
+     */
+    #[DataProvider('chosen_colours')]
+    public function test_a_chosen_colour_derives_a_readable_triple_in_both_modes(string $colour): void {
+        $this->resetAfterTest();
+        $untouched = $this->compiled();
+        $modes = $this->compiled("\n\$dim-cal-colours: (course: {$colour}, overdue: {$colour}) !default;\n");
+        foreach (['light', 'dark'] as $mode) {
+            foreach (['course', 'overdue'] as $key) {
+                $tint = $modes[$mode]["--dim-cal-{$key}-tint"];
+                $ink = $modes[$mode]["--dim-cal-{$key}-ink"];
+                $edge = $modes[$mode]["--dim-cal-{$key}-edge"];
+                $this->assertGreaterThanOrEqual(4.5, branding::contrast($tint, $ink), "{$mode} {$key} {$colour}: ink on tint.");
+                foreach (['--dim-cal-surface', '--dim-cal-surface-quiet'] as $surface) {
+                    $this->assertGreaterThanOrEqual(
+                        3.0,
+                        branding::contrast($modes[$mode][$surface], $edge),
+                        "{$mode} {$key} {$colour}: edge on {$surface}."
+                    );
+                }
+                $this->assertNotSame(
+                    $untouched[$mode]["--dim-cal-{$key}-tint"],
+                    $tint,
+                    "{$mode} {$key}: the chosen colour reached the fill."
+                );
+            }
+            foreach (array_diff(array_keys(keycolours::DEFAULTS), ['course', 'overdue']) as $key) {
+                foreach (['tint', 'edge', 'ink'] as $part) {
+                    $this->assertSame(
+                        $untouched[$mode]["--dim-cal-{$key}-{$part}"],
+                        $modes[$mode]["--dim-cal-{$key}-{$part}"],
+                        "{$mode} {$key}-{$part} was not chosen."
+                    );
+                }
+            }
+        }
+        if (branding::contrast('#f8f9fa', $colour) >= 3.0) {
+            $this->assertSame($colour, $modes['light']['--dim-cal-course-edge'], 'A colour that marks the surface is the edge.');
+        } else {
+            $this->assertNotSame($colour, $modes['light']['--dim-cal-course-edge'], 'A colour too light is shaded.');
+        }
     }
 
     /**

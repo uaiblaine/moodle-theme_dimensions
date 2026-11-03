@@ -22,7 +22,9 @@
 
 import {zone} from '../../src/calendar/days';
 import {place} from '../../src/calendar/layout';
-import {columns, dayPlan, hourWindow, intersects, isAllDay, overlapsOf} from '../../src/calendar/overlap';
+import {
+    EMPTY_WINDOW, columns, dayPlan, edgesOf, hourWindow, intersects, isAllDay, overlapsOf, boxTopOf,
+} from '../../src/calendar/overlap';
 import {at, item} from './fixture';
 
 const UTC = zone('UTC', 'en');
@@ -171,5 +173,31 @@ describe('the hour window', () => {
 
     it('is the whole day for no item', () => {
         expect(hourWindow([], UTC)).toEqual({from: 0, to: 24});
+    });
+});
+
+describe('the hour column\'s first scroll position (R1c)', () => {
+    it('puts a busy band\'s first hour at the top, so the earliest item is a row under it', () => {
+        expect(boxTopOf({from: 9, to: 13}, true, 40, 400)).toBe(360);
+        expect(boxTopOf({from: 0, to: 4}, true, 40, 400)).toBe(0);
+    });
+
+    it('centres the working hours of an empty day, never with their start above the top', () => {
+        expect(boxTopOf(EMPTY_WINDOW, false, 40, 600)).toBe(13 * 40 - 300);
+        expect(boxTopOf(EMPTY_WINDOW, false, 40, 200)).toBe(8 * 40);
+    });
+
+    it('stays at the top while nothing is measured', () => {
+        expect(boxTopOf({from: 9, to: 13}, true, 0, 0)).toBe(0);
+        expect(boxTopOf(EMPTY_WINDOW, false, Number.NaN, 0)).toBe(0);
+    });
+});
+
+describe('the hour column\'s fades (R1c)', () => {
+    it('marks an end only while the box can still scroll to it', () => {
+        expect(edgesOf(0, 960, 400)).toEqual({up: false, down: true});
+        expect(edgesOf(200, 960, 400)).toEqual({up: true, down: true});
+        expect(edgesOf(560, 960, 400)).toEqual({up: true, down: false});
+        expect(edgesOf(0, 400, 400)).toEqual({up: false, down: false});
     });
 });

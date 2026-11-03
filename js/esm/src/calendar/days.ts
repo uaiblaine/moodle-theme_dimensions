@@ -29,6 +29,23 @@
 
 import {WEEK, format, shift, weeks} from '../daterange/calendar';
 import type {Month} from '../daterange/calendar';
+import type {CSSProperties} from 'react';
+
+/**
+ * The custom property on the frame: the grid's own height in px. The drawer beside the grid is never taller
+ * (scss/calendar.scss `--dim-cal-drawercap`); it is reported from the observer's entry, never read from the layout.
+ */
+export const GRID_HEIGHT = '--dim-cal-gridheight';
+
+/**
+ * The frame's style: the grid's height as a custom property React owns, so no re-render drops it.
+ *
+ * @param {number} height The grid's height reported by its observer, 0 until the first entry.
+ * @returns {object} The style prop.
+ */
+export const frameStyle = (height: number): CSSProperties => (
+    {[GRID_HEIGHT]: height > 0 ? `${height}px` : undefined} as CSSProperties
+);
 
 /**
  * A month string as the {y, m} the date core takes.

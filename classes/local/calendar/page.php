@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\local\calendar;
 
+use theme_dimensions\local\blockless;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\output\calendar_page;
 use theme_dimensions\output\opengraph;
@@ -68,9 +69,9 @@ final class page {
     public const PARAM_DAY = 'day';
 
     /**
-     * @var string The address parameter of the view: {@see VIEW_WEEK}, or absent for the month.
+     * @var string The address parameter of the view: {@see VIEW_WEEK}, {@see VIEW_DAY}, or absent for the month.
      *
-     * Navigation like the open day, never state: an address naming only the view and the week is still bare.
+     * Navigation like the open day, never state: an address naming only the view and the week (or the day) is still bare.
      */
     public const PARAM_VIEW = 'view';
 
@@ -82,6 +83,14 @@ final class page {
 
     /** @var string The week view. */
     public const VIEW_WEEK = 'week';
+
+    /**
+     * @var string The day view, a phone's (docs/calendar/PROPOSAL.md section 31): its day is {@see PARAM_DAY}.
+     *
+     * The server cannot know the width, so it answers the day's month grid ({@see span()}): the phone's client draws the
+     * day from it and a desktop's shows the month with the day's drawer open, never a desktop day view.
+     */
+    public const VIEW_DAY = 'day';
 
     /** @var \core\url|null Where to send the client, or null. */
     public readonly ?\core\url $redirect;
@@ -229,11 +238,15 @@ final class page {
     }
 
     /**
-     * The view the request names: the week for exactly {@see VIEW_WEEK}, the month for anything else, never refused.
+     * The view the request names: the week for exactly {@see VIEW_WEEK}, the day for exactly {@see VIEW_DAY}, the month
+     * for anything else, never refused.
      *
-     * @return string {@see VIEW_MONTH} or {@see VIEW_WEEK}.
+     * @return string {@see VIEW_MONTH}, {@see VIEW_WEEK} or {@see VIEW_DAY}.
      */
     public static function view_from_request(): string {
+        if (self::scalar_param(self::PARAM_VIEW) === self::VIEW_DAY) {
+            return self::VIEW_DAY;
+        }
         return self::scalar_param(self::PARAM_VIEW) === self::VIEW_WEEK ? self::VIEW_WEEK : self::VIEW_MONTH;
     }
 
@@ -293,16 +306,39 @@ final class page {
     }
 
     /**
+     * The day the day view shows: a real day of the years a month may name, else the month's opening day.
+     *
+     * Dropped, never refused, as {@see week_from_request()} drops a week: a malformed, impossible or out-of-years
+     * value (a list included, {@see scalar_param()}) shows the day the month opens on.
+     *
+     * @param string $month The month the request names, YYYY-MM ({@see month_from_request()}).
+     * @return string YYYY-MM-DD.
+     */
+    public static function view_day_from_request(string $month): string {
+        $day = self::scalar_param(self::PARAM_DAY);
+        if (!self::is_day($day) || (int) $day < 1900 || (int) $day > 2999) {
+            return self::opening_day($month);
+        }
+        return $day;
+    }
+
+    /**
      * What the request shows: the view, the month, the week, the open day and the window the range is asked for.
      *
      * In the week view the month is the open day's, else the week's first day's: the month a switch back to the month
-     * view opens.
+     * view opens. The day view (a phone's) shows its day as the open day over the day's month grid: the server cannot
+     * know the width, and a desktop shows that month with the day's drawer open (PROPOSAL.md section 31.2).
      *
      * @param int $firstday The weekday a week begins on, 0 for Sunday.
      * @return array [view, month, week ('' in the month view), open day ('' for none), from, to].
      */
     public static function span(int $firstday): array {
         $month = self::month_from_request();
+        if (self::view_from_request() === self::VIEW_DAY) {
+            $day = self::view_day_from_request($month);
+            [$from, $to] = self::grid(substr($day, 0, 7), $firstday);
+            return [self::VIEW_DAY, substr($day, 0, 7), '', $day, $from, $to];
+        }
         if (self::view_from_request() !== self::VIEW_WEEK) {
             $day = self::day_from_request($month, $firstday);
             [$from, $to] = self::grid($month, $firstday);
@@ -317,13 +353,16 @@ final class page {
     /**
      * The page's own address parameters for what it shows, the state's or the visitor's keys' aside.
      *
-     * @param string $view {@see VIEW_MONTH} or {@see VIEW_WEEK}.
+     * @param string $view {@see VIEW_MONTH}, {@see VIEW_WEEK} or {@see VIEW_DAY}.
      * @param string $month The month, YYYY-MM.
      * @param string $week The week's first day, YYYY-MM-DD, in the week view.
-     * @param string $day The open day, or ''.
+     * @param string $day The open day, or ''; in the day view its day.
      * @return array name => value.
      */
     public static function span_params(string $view, string $month, string $week, string $day): array {
+        if ($view === self::VIEW_DAY) {
+            return [self::PARAM_VIEW => self::VIEW_DAY, self::PARAM_DAY => $day];
+        }
         $params = $view === self::VIEW_WEEK
             ? [self::PARAM_VIEW => self::VIEW_WEEK, self::PARAM_WEEK => $week]
             : [state::PARAM_MONTH => $month];
@@ -331,8 +370,8 @@ final class page {
     }
 
     /**
-     * The state parameters of the current request a redirect to the route must carry, the month, the open day, the
-     * view and the week.
+     * The state parameters of the current request a redirect to the route must carry, the month, the open day (the day
+     * view's day), the view and the week.
      *
      * The day and the week are forwarded when each is a real day, without judging the day against the window or
      * snapping the week to its first day: both need the viewer's first weekday, and the page behind the route judges
@@ -352,6 +391,9 @@ final class page {
         }
         if (self::view_from_request() === self::VIEW_WEEK) {
             $params[self::PARAM_VIEW] = self::VIEW_WEEK;
+        }
+        if (self::view_from_request() === self::VIEW_DAY) {
+            $params[self::PARAM_VIEW] = self::VIEW_DAY;
         }
         $week = self::scalar_param(self::PARAM_WEEK);
         if (self::is_day($week)) {
@@ -391,25 +433,6 @@ final class page {
     }
 
     /**
-     * Leave the page without any block: no block content, no block drawer, no "Add a block" button.
-     *
-     * Two switches of core, both needed. {@see \block_manager::show_only_fake_blocks()} loads no block instance and
-     * creates none that the theme requires, so no region has content; it does not touch the add-block control, which
-     * core's renderer draws in edit mode from the page's regions alone. {@see \moodle_page::force_lock_all_blocks()}
-     * makes user_can_edit_blocks() false for everyone, which empties that control. The layout (drawers.php) draws the
-     * block drawer and its toggle only when a region holds block markup or the add-block control is not empty, so with
-     * both the drawer is not drawn, in edit mode as out of it.
-     *
-     * @return void
-     */
-    private static function without_blocks(): void {
-        global $PAGE;
-
-        $PAGE->blocks->show_only_fake_blocks(true);
-        $PAGE->force_lock_all_blocks();
-    }
-
-    /**
      * The public calendar for a visitor who is not logged in: the same page in its visitor mode.
      *
      * No require_login(): forcelogin is a set of explicit reads in core, none of which is made here (the public
@@ -443,7 +466,7 @@ final class page {
         $PAGE->set_title(get_string('calendar_title', 'theme_dimensions'));
         $PAGE->set_heading('');
         $PAGE->add_body_class(self::BODY_CLASS);
-        self::without_blocks();
+        blockless::apply($PAGE);
         $PAGE->requires->strings_for_js(calendar_page::STRINGS, 'theme_dimensions');
         opengraph::set(opengraph::for_calendar(self::url()));
 
@@ -505,7 +528,7 @@ final class page {
         $PAGE->set_title(get_string('calendar_title', 'theme_dimensions'));
         $PAGE->set_heading('');
         $PAGE->add_body_class(self::BODY_CLASS);
-        self::without_blocks();
+        blockless::apply($PAGE);
         $PAGE->requires->strings_for_js(calendar_page::STRINGS, 'theme_dimensions');
 
         return new self(null, new calendar_page(

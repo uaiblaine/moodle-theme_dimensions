@@ -22,12 +22,13 @@
 
 import {gridWeeks, monthAfter} from '../../src/calendar/days';
 import {
-    DEFAULT_STATE, address, cleared, emptyAnswer, filtered, itemHref, normalise, opens, primaryOf, query, rangeArgs, readAddress,
-    safeHref,
-    withDay,
+    DEFAULT_STATE, address, cleared, emptyAnswer, filtered, itemHref, keptAfter, narrows, normalise, opens, primaryOf, query,
+    rangeArgs, readAddress, safeHref, shownOn, withDay,
 } from '../../src/calendar/model';
 import type {Course, State} from '../../src/calendar/model';
 import {fill} from '../../src/calendar/strings';
+import {coursePageLabel} from '../../src/calendar/EventPopover';
+import {STRINGS} from './fixture';
 import {item} from './fixture';
 
 const PAGE = 'http://localhost/r.php/theme_dimensions/calendar';
@@ -226,5 +227,50 @@ describe('fill', () => {
     it('fills core\'s placeholders', () => {
         expect(fill('{$a} items', 3)).toBe('3 items');
         expect(fill('{$a->name}, {$a->span}', {name: 'A', span: 'B'})).toBe('A, B');
+    });
+});
+
+describe('"More filters": every option on means every option (R1c)', () => {
+    const CHOICES = [{value: 1, label: 'Course'}, {value: 2, label: 'Event'}, {value: 3, label: 'Trail'}];
+
+    it('draws an empty list as every box on, and a list as its members', () => {
+        expect(CHOICES.map((option) => shownOn([], option.value))).toEqual([true, true, true]);
+        expect(CHOICES.map((option) => shownOn([2], option.value))).toEqual([false, true, false]);
+    });
+
+    it('writes the others when one is unchecked, and the empty list again when every one is back', () => {
+        expect(keptAfter([], CHOICES, 2, false)).toEqual([1, 3]);
+        expect(keptAfter([1, 3], CHOICES, 1, false)).toEqual([3]);
+        expect(keptAfter([3], CHOICES, 1, true)).toEqual([1, 3]);
+        expect(keptAfter([1, 3], CHOICES, 2, true)).toEqual([]);
+    });
+
+    it('never writes "none": unchecking the last box on keeps the list', () => {
+        expect(keptAfter([3], CHOICES, 3, false)).toEqual([3]);
+    });
+
+    it('narrows only with a list that misses an option offered', () => {
+        expect(narrows([], CHOICES)).toBe(false);
+        expect(narrows([1, 2, 3], CHOICES)).toBe(false);
+        expect(narrows([1, 3], CHOICES)).toBe(true);
+        expect(filtered({...DEFAULT_STATE, model: [1, 2, 3]}, {model: CHOICES, modality: []})).toBe(false);
+        expect(filtered({...DEFAULT_STATE, model: [1]}, {model: CHOICES, modality: []})).toBe(true);
+        expect(filtered({...DEFAULT_STATE, model: [1, 2, 3]})).toBe(true);
+    });
+});
+
+describe('the course button follows the course\'s model (R1c)', () => {
+    // The known models' option labels differ from their strings here, so the string, not the label, is what is read.
+    const MODELS = [{value: 1, label: 'Programme'}, {value: 2, label: 'Happening'}, {value: 3, label: 'Trail'}];
+    const course = (model: number): Course => ({id: 4, fullname: 'A', shortname: 'A', categoryid: 0, url: '', image: '',
+        model: model, modality: 0, city: '', venue: '', landingurl: '', enrolled: false, participants: null, join: ''});
+
+    it('names each known model with its own string, any other with its option label', () => {
+        const strings = STRINGS as Parameters<typeof coursePageLabel>[2];
+        expect(coursePageLabel(course(0), MODELS, strings)).toBe('Course page');
+        expect(coursePageLabel(course(1), MODELS, strings)).toBe('Course page');
+        expect(coursePageLabel(course(2), MODELS, strings)).toBe('Event page');
+        expect(coursePageLabel(course(3), MODELS, strings)).toBe('Trail page');
+        expect(coursePageLabel(course(9), MODELS, strings)).toBe('Course page');
     });
 });

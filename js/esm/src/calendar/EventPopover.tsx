@@ -58,6 +58,7 @@ import {itemHref, opens, primaryOf, safeHref} from './model';
 import type {Course, Item, Option, Primary} from './model';
 import {isAllDay} from './overlap';
 import {fill} from './strings';
+import type {Strings} from './strings';
 
 /** The id of the heading, which labels the dialogue. */
 export const TITLE = 'dim-cal-pop-title';
@@ -88,6 +89,7 @@ type EventPopoverProps = {
     opener: HTMLElement,
     sheet: boolean,
     modalities: Option[],
+    models: Option[],
     describe: ((id: number) => Promise<string>) | null,
     plain: string,
     actions?: ReactNode,
@@ -231,14 +233,42 @@ export const factsOf = (item: Item, look: Look, modalities: Option[]): Facts => 
     };
 };
 
+/** The stored value of the page model "course" (landingfields::MODEL_COURSE). */
+export const MODEL_COURSE = 1;
+
+/** The stored value of the page model "event" (landingfields::MODEL_EVENT). */
+export const MODEL_EVENT = 2;
+
+/**
+ * The text of the course's button, after the course's page model (PROPOSAL.md section 30.2): a string of its own for
+ * each model the theme knows (an unset model is a plain course), and for any other the generic one over the model's
+ * own option label as the field is configured, so a model added to the field is named without code. A value with no
+ * option left reads as a course.
+ *
+ * @param {object} course The item's course.
+ * @param {Array} models The model field's options.
+ * @param {object} strings The page's strings.
+ * @returns {string}
+ */
+export const coursePageLabel = (course: Course, models: Option[], strings: Strings): string => {
+    if (course.model === MODEL_EVENT) {
+        return strings.calendar_eventpage;
+    }
+    const option = course.model !== MODEL_COURSE ? models.find((one) => one.value === course.model) : undefined;
+    return option ? fill(strings.calendar_modelpage, option.label) : strings.calendar_coursepage;
+};
+
+/** What the actions are handed: the item, its course, the page's look, the model options and the editing actions. */
+type PopActionsProps = {item: Item, course: Course | null, look: Look, models: Option[], actions?: ReactNode};
+
 /**
  * The popover's actions: the primary, "Open" beside another primary when the item has a page of its own, the course's
  * page, and the editing actions it is handed. Nothing here falls back to the site's home.
  *
- * @param {object} props The item, its course, the page's look and the editing actions.
+ * @param {object} props See PopActionsProps.
  * @returns {object} The row.
  */
-const PopActions = ({item, course, look, actions}: {item: Item, course: Course | null, look: Look, actions?: ReactNode}) => {
+const PopActions = ({item, course, look, models, actions}: PopActionsProps) => {
     const primary = primaryOf(item, look.courses, look.home);
     const open = opens(item, look.courses) ? itemHref(item, look.courses, look.home) : '';
     const coursepage = course && course.url !== course.landingurl ? safeHref(course.url, '') : '';
@@ -253,8 +283,8 @@ const PopActions = ({item, course, look, actions}: {item: Item, course: Course |
                 <a className="btn btn-secondary" href={open} data-action="dim-cal-open">{look.strings.calendar_open}</a>
             ) : null}
             {coursepage !== '' ? (
-                <a className="btn btn-link" href={coursepage} data-action="dim-cal-course">
-                    {look.strings.calendar_coursepage}
+                <a className="btn btn-outline-secondary dim-cal__coursebtn" href={coursepage} data-action="dim-cal-course">
+                    {course ? coursePageLabel(course, models, look.strings) : look.strings.calendar_coursepage}
                 </a>
             ) : null}
             {actions}
@@ -269,7 +299,7 @@ const PopActions = ({item, course, look, actions}: {item: Item, course: Course |
  * @returns {object} The dialogue.
  */
 const EventPopover = (props: EventPopoverProps) => {
-    const {look, entry, overlaps, opener, sheet, modalities, describe, plain, actions, onClose} = props;
+    const {look, entry, overlaps, opener, sheet, modalities, models, describe, plain, actions, onClose} = props;
     const {item} = entry;
     const dialog = useRef<HTMLDivElement | null>(null);
     const heading = useRef<HTMLHeadingElement | null>(null);
@@ -445,7 +475,7 @@ const EventPopover = (props: EventPopoverProps) => {
                     dangerouslySetInnerHTML={{__html: text}}
                 ></div>
             ) : null}
-            <PopActions item={item} course={course} look={look} actions={actions} />
+            <PopActions item={item} course={course} look={look} models={models} actions={actions} />
         </div>
     );
 };
