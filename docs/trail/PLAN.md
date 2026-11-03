@@ -90,7 +90,8 @@ course (or links to it, as the activity is set). With no next step (all done, or
 "Acessar curso". The hero reads "2 de 5 cursos concluídos" and "Até <the trail's last end>"; its segments fill (done
 green, the next one white, late in the danger tint). Each card carries its state tag, its number turned into a check or
 a lock, and its line: "Concluído em <date>" (core's completion time), the due date with "faltam N dias" for the current
-step, core's reason before the dates for a locked one.
+step, core's reason before the dates for a locked one. A current step whose course has not begun says "Começa em <date>"
+in place of "Em andamento" and counts no day yet (the owner, 2026-11-03).
 
 **The period** (the owner's rule of 2026-11-03, folded into T2): first start to last end over the full cards; a step
 that opens and never closes leaves it open ("A partir de <first start>"), since no earlier step's end may close it. A

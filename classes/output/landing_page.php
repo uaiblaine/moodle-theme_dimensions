@@ -369,6 +369,9 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             $card['when'] = get_string('landing_trail_donedate', self::COMPONENT, userdate($state['completed'], $format));
         } else if ($name === progress::LOCKED && $state['reason'] !== null) {
             $card['when'] = $card['when'] === null ? $state['reason'] : $this->join($state['reason'], $card['when']);
+        } else if ($name === progress::CURRENT && $step->start > time()) {
+            // The next course has not begun: it is the one to go on with, not one in progress, and no day is counted yet.
+            $card['statelabel'] = get_string('landing_trail_startson', self::COMPONENT, userdate($step->start, $format));
         } else if ($name === progress::CURRENT && $step->end > 0) {
             $days = (int) ceil(($step->end - time()) / DAYSECS);
             $left = $days === 1 ? get_string('landing_trail_dayleft', self::COMPONENT)

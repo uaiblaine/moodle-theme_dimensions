@@ -475,4 +475,31 @@ final class landing_page_trail_test extends \advanced_testcase {
         }
         $this->assertSame($reads['small'], $reads['big'], 'Six more courses add no statement.');
     }
+
+    /**
+     * The next course of a learner that has not begun says when it starts, and counts no day yet; once begun, it is in
+     * progress with its days left.
+     */
+    public function test_a_next_course_not_begun_says_when_it_starts(): void {
+        $start = time() + 10 * DAYSECS;
+        $ref = $this->course(['fullname' => 'Depois', 'startdate' => $start, 'enddate' => $start + 4 * WEEKSECS]);
+        $trail = $this->trail([$ref]);
+        $learner = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($learner->id, $trail->id, 'student');
+        $this->become($learner);
+
+        $step = $this->export($trail, new resolution(resolution::STATE_ENROLLED), false)->trail['steps'][0];
+        $format = get_string('strftimedatemonthabbr', 'langconfig');
+        $this->assertSame('current', $step['state'], 'It is still the one to go on with.');
+        $this->assertSame(get_string('landing_trail_startson', 'theme_dimensions', userdate($start, $format)), $step['statelabel']);
+        $this->assertStringNotContainsString(get_string('landing_trail_daysleft', 'theme_dimensions', 38), $step['when']);
+
+        // The control: the same course begun yesterday is in progress, with its days left.
+        $begun = $this->course(['fullname' => 'Agora', 'startdate' => time() - DAYSECS, 'enddate' => time() + 4 * WEEKSECS]);
+        $other = $this->trail([$begun]);
+        self::getDataGenerator()->enrol_user($learner->id, $other->id, 'student');
+        $now = $this->export($other, new resolution(resolution::STATE_ENROLLED), false)->trail['steps'][0];
+        $this->assertSame(get_string('landing_trail_state_current', 'theme_dimensions'), $now['statelabel']);
+        $this->assertStringEndsWith(get_string('landing_trail_daysleft', 'theme_dimensions', 28), $now['when']);
+    }
 }
