@@ -1,6 +1,6 @@
-import{viewsOf as o}from"./weeks";import{jsx as t}from"react/jsx-runtime";/**
- * The toolbar's view switch, Month and Week (docs/calendar/PROPOSAL.md section 21), and Day on a phone (section 31), on
- * both shells.
+import{viewsOf as l}from"./weeks";import{jsx as o,jsxs as c}from"react/jsx-runtime";/**
+ * The toolbar's view switch, Month and Week (docs/calendar/PROPOSAL.md section 21), Day on a phone (section 31), on
+ * both shells, and Trilhas on the account's where the page offers it (docs/trail/PLAN.md section 7).
  *
  * A group of toggle buttons, the view shown pressed. Pressing another one is the shell's: it keeps the selected day and
  * shows the week holding it, its month, or the day itself. The choices are weeks.ts viewsOf(): the day only while the
@@ -9,4 +9,4 @@ import{viewsOf as o}from"./weeks";import{jsx as t}from"react/jsx-runtime";/**
  * @module     theme_dimensions/calendar/ViewSwitch
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */const d=(e,a)=>a==="day"?e.calendar_viewday:a==="week"?e.calendar_viewweek:e.calendar_viewmonth,n=({strings:e,view:a,phone:r,onView:w})=>t("div",{className:"dim-cal__views",role:"group","aria-label":e.calendar_view,"data-region":"dim-cal-views",children:o(r).map(i=>t("button",{type:"button",className:"dim-cal__view","aria-pressed":a===i,"data-action":`dim-cal-view-${i}`,onClick:()=>w(i),children:d(e,i)},i))});var l=n;export{l as default};
+ */const s=(i,e)=>e==="day"?i.calendar_viewday:e==="trail"?i.calendar_viewtrail:e==="week"?i.calendar_viewweek:i.calendar_viewmonth,n=({strings:i,one:e,view:t,onView:a})=>o("button",{type:"button",className:"dim-cal__view","aria-pressed":t===e,"data-action":`dim-cal-view-${e}`,onClick:()=>a(e),children:s(i,e)}),d=({strings:i,view:e,phone:t,trails:a=!1,onView:r})=>c("div",{className:"dim-cal__views",role:"group","aria-label":i.calendar_view,"data-region":"dim-cal-views",children:[l(t).map(w=>o(n,{strings:i,one:w,view:e,onView:r},w)),a?o(n,{strings:i,one:"trail",view:e,onView:r}):null]});var v=d;export{v as default};

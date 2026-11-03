@@ -48,6 +48,13 @@
     chips a visitor has and nothing that needs a session or a login: no
     category and no "More" filters.
 
+    With trailview set (the Trilhas view, docs/trail/PLAN.md section 7) the
+    toolbar's links move by the month and keep the view, its trail and "Só
+    as minhas"; the form is not drawn (the view's filters are the client's)
+    and the month's trails are listed, each with its steps and their dates.
+    trailsoffered adds the view's link to the switch: an account's, while
+    trails are available.
+
     exporturl (stage C5) is core's calendar/export.php where core's calendar
     offers it to this account; the footer carries it outside both layers, so
     it reads the same with and without JavaScript. A visitor has none.
@@ -56,6 +63,22 @@
     {
         "visitor": false,
         "weekview": false,
+        "monthview": true,
+        "trailview": false,
+        "trailsoffered": true,
+        "trailurl": "https://example.com/r.php/theme_dimensions/calendar?view=trail&month=2026-11",
+        "trails": [
+            {
+                "name": "Leadership trail",
+                "url": "https://example.com/r.php/theme_dimensions/landing/12",
+                "progress": "1 of 3 done",
+                "steps": [
+                    {"name": "Foundations", "url": "https://example.com/course/view.php?id=13", "when": "2 Nov to 30 Nov", "state": "Completed"}
+                ]
+            }
+        ],
+        "trailsempty": false,
+        "trailstruncated": false,
         "week": "",
         "month": "2026-11",
         "caption": "November 2026",
@@ -158,10 +181,14 @@
             {{/weekview}}
             <p class="dim-cal__caption">{{caption}}</p>
             <div class="dim-cal__views" role="group" aria-label="{{#str}} calendar_view, theme_dimensions {{/str}}">
-                <a class="dim-cal__view{{^weekview}} dim-cal__view--active{{/weekview}}" href="{{monthurl}}" data-region="dim-cal-view-month"{{^weekview}} aria-current="page"{{/weekview}}>{{#str}} calendar_viewmonth, theme_dimensions {{/str}}</a>
+                <a class="dim-cal__view{{#monthview}} dim-cal__view--active{{/monthview}}" href="{{monthurl}}" data-region="dim-cal-view-month"{{#monthview}} aria-current="page"{{/monthview}}>{{#str}} calendar_viewmonth, theme_dimensions {{/str}}</a>
                 <a class="dim-cal__view{{#weekview}} dim-cal__view--active{{/weekview}}" href="{{weekurl}}" data-region="dim-cal-view-week"{{#weekview}} aria-current="page"{{/weekview}}>{{#str}} calendar_viewweek, theme_dimensions {{/str}}</a>
+                {{#trailsoffered}}
+                <a class="dim-cal__view{{#trailview}} dim-cal__view--active{{/trailview}}" href="{{trailurl}}" data-region="dim-cal-view-trail"{{#trailview}} aria-current="page"{{/trailview}}>{{#str}} calendar_viewtrail, theme_dimensions {{/str}}</a>
+                {{/trailsoffered}}
             </div>
         </div>
+        {{^trailview}}
         <form class="dim-cal__form" method="get" action="{{action}}">
             {{#weekview}}
             <input type="hidden" name="view" value="week">
@@ -252,6 +279,27 @@
                 <button type="submit" class="btn btn-primary">{{#str}} calendar_apply, theme_dimensions {{/str}}</button>
             </div>
         </form>
+        {{/trailview}}
+        {{#trailview}}
+        <section class="dim-cal__agenda" data-region="dim-cal-traillist" aria-labelledby="dim-cal-agenda-title">
+            <h2 class="dim-cal__agendatitle" id="dim-cal-agenda-title">{{caption}}</h2>
+            {{#trailstruncated}}<p class="dim-cal__notice">{{#str}} calendar_trailstruncated, theme_dimensions {{/str}}</p>{{/trailstruncated}}
+            {{#trailsempty}}<p class="dim-cal__empty">{{#str}} calendar_trailsempty, theme_dimensions {{/str}}</p>{{/trailsempty}}
+            {{#trails}}
+            <h3 class="dim-cal__agendaday"><a href="{{url}}">{{name}}</a>{{#progress}} <span class="dim-cal__agendakey">{{progress}}</span>{{/progress}}</h3>
+            <ol class="dim-cal__agendalist">
+                {{#steps}}
+                <li class="dim-cal__agendaitem">
+                    <span class="dim-cal__agendawhen">{{when}}</span>
+                    <a href="{{url}}">{{name}}</a>
+                    {{#state}}<span class="dim-cal__agendakey">{{state}}</span>{{/state}}
+                </li>
+                {{/steps}}
+            </ol>
+            {{/trails}}
+        </section>
+        {{/trailview}}
+        {{^trailview}}
         <section class="dim-cal__agenda" data-region="dim-cal-agenda" aria-labelledby="dim-cal-agenda-title">
             <h2 class="dim-cal__agendatitle" id="dim-cal-agenda-title">{{caption}}</h2>
             <p class="dim-cal__notice">
@@ -279,6 +327,7 @@
             </ul>
             {{/agenda}}
         </section>
+        {{/trailview}}
     </div>
     <div class="dim-cal__placeholder dim-cal__placeholder--{{#weekview}}week{{/weekview}}{{^weekview}}month{{/weekview}}" data-region="dim-cal-placeholder" aria-hidden="true">
         <div class="dim-cal__ghosttools"></div>

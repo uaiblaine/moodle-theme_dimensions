@@ -351,12 +351,13 @@ final class range {
      *
      * Named when core lets the viewer see the category ({@see \core_course_category::get()} without
      * $alwaysreturnhidden answers null otherwise, from its record cache) and local_unlistedcourses does not
-     * withhold it. The pair is branding::colours(), one statement for all of them, taken whole.
+     * withhold it. The pair is branding::colours(), one statement for all of them, taken whole. Shared with the
+     * Trilhas view's answer ({@see trails::answer()}), which names its trails' and steps' categories by the same rule.
      *
      * @param int[] $categoryids The categories.
      * @return array category id => ['id', 'name', 'bg', 'ink'].
      */
-    private static function categories(array $categoryids): array {
+    public static function categories(array $categoryids): array {
         $visible = [];
         foreach ($categoryids as $categoryid) {
             $category = $categoryid > 0 ? \core_course_category::get($categoryid, IGNORE_MISSING) : null;

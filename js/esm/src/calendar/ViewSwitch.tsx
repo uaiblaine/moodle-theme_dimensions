@@ -14,8 +14,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The toolbar's view switch, Month and Week (docs/calendar/PROPOSAL.md section 21), and Day on a phone (section 31), on
- * both shells.
+ * The toolbar's view switch, Month and Week (docs/calendar/PROPOSAL.md section 21), Day on a phone (section 31), on
+ * both shells, and Trilhas on the account's where the page offers it (docs/trail/PLAN.md section 7).
  *
  * A group of toggle buttons, the view shown pressed. Pressing another one is the shell's: it keeps the selected day and
  * shows the week holding it, its month, or the day itself. The choices are weeks.ts viewsOf(): the day only while the
@@ -35,6 +35,7 @@ type ViewSwitchProps = {
     strings: Strings,
     view: View,
     phone: boolean,
+    trails?: boolean,
     onView: (view: View) => void,
 };
 
@@ -49,8 +50,30 @@ const nameOf = (strings: Strings, view: View): string => {
     if (view === 'day') {
         return strings.calendar_viewday;
     }
+    if (view === 'trail') {
+        return strings.calendar_viewtrail;
+    }
     return view === 'week' ? strings.calendar_viewweek : strings.calendar_viewmonth;
 };
+
+/** What one of the switch's buttons is handed. */
+type ViewButtonProps = {strings: Strings, one: View, view: View, onView: (view: View) => void};
+
+/**
+ * One view's button, pressed while its view is shown.
+ *
+ * @param {object} props See ViewButtonProps.
+ * @returns {object} The button.
+ */
+const ViewButton = ({strings, one, view, onView}: ViewButtonProps) => (
+    <button
+        type="button"
+        className="dim-cal__view"
+        aria-pressed={view === one}
+        data-action={`dim-cal-view-${one}`}
+        onClick={() => onView(one)}
+    >{nameOf(strings, one)}</button>
+);
 
 /**
  * The switch.
@@ -58,18 +81,12 @@ const nameOf = (strings: Strings, view: View): string => {
  * @param {object} props See ViewSwitchProps.
  * @returns {object} The group.
  */
-const ViewSwitch = ({strings, view, phone, onView}: ViewSwitchProps) => (
+const ViewSwitch = ({strings, view, phone, trails = false, onView}: ViewSwitchProps) => (
     <div className="dim-cal__views" role="group" aria-label={strings.calendar_view} data-region="dim-cal-views">
         {viewsOf(phone).map((one) => (
-            <button
-                key={one}
-                type="button"
-                className="dim-cal__view"
-                aria-pressed={view === one}
-                data-action={`dim-cal-view-${one}`}
-                onClick={() => onView(one)}
-            >{nameOf(strings, one)}</button>
+            <ViewButton key={one} strings={strings} one={one} view={view} onView={onView} />
         ))}
+        {trails ? <ViewButton strings={strings} one="trail" view={view} onView={onView} /> : null}
     </div>
 );
 

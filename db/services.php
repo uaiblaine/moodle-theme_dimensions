@@ -103,6 +103,16 @@ $functions = [
         'loginrequired' => true,
         'capabilities' => '',
     ],
+    'theme_dimensions_get_calendar_trails' => [
+        'classname' => 'theme_dimensions\external\get_calendar_trails',
+        'description' => 'The trails of one month for the calendar\'s Trilhas view: each trail the viewer may discover, '
+            . 'its steps and, for a learner, their states.',
+        'type' => 'read',
+        'ajax' => true,
+        'readonlysession' => true,
+        'loginrequired' => true,
+        'capabilities' => '',
+    ],
     'theme_dimensions_remember_calendar_state' => [
         'classname' => 'theme_dimensions\external\remember_calendar_state',
         'description' => 'Remember the keys, the category and the filters the reader left the calendar page in.',

@@ -502,4 +502,44 @@ final class landing_page_trail_test extends \advanced_testcase {
         $this->assertSame(get_string('landing_trail_state_current', 'theme_dimensions'), $now['statelabel']);
         $this->assertStringEndsWith(get_string('landing_trail_daysleft', 'theme_dimensions', 28), $now['when']);
     }
+
+    /**
+     * An account's card leads to the calendar's Trilhas view with this trail kept, on the month the trail is in: its
+     * first month before it starts, today's while it runs, its last once it has ended. A visitor's card does not.
+     */
+    public function test_an_account_is_led_to_the_trail_in_the_calendar(): void {
+        global $CFG;
+        $CFG->routerconfigured = false;
+        $month = static fn(int $time): string => userdate($time, '%Y-%m');
+        $soon = make_timestamp((int) date('Y') + 1, 3, 2, 12);
+        $later = $this->course(['fullname' => 'Depois', 'startdate' => $soon, 'enddate' => $soon + 2 * WEEKSECS]);
+        $running = $this->course(['fullname' => 'Agora', 'startdate' => time() - WEEKSECS, 'enddate' => time() + WEEKSECS]);
+        $ended = $this->course(['fullname' => 'Antes', 'startdate' => time() - 20 * WEEKSECS, 'enddate' => time() - 10 * WEEKSECS]);
+        $cases = [
+            'not begun' => [$this->trail([$later]), $month($soon)],
+            'running' => [$this->trail([$running]), $month(time())],
+            'ended' => [$this->trail([$ended]), $month(time() - 10 * WEEKSECS)],
+        ];
+        $this->become(self::getDataGenerator()->create_user());
+
+        foreach ($cases as $name => [$trail, $expected]) {
+            $context = $this->export($trail, new resolution(resolution::STATE_CLOSED), false);
+            $this->assertNotNull($context->trailcalendarurl, $name);
+            $url = new \core\url($context->trailcalendarurl);
+            $this->assertSame(
+                ['trail', $expected, (string) $trail->id],
+                [$url->param('view'), $url->param('month'), $url->param('trail')],
+                $name
+            );
+        }
+
+        // The control: a visitor of the same trail, made public, sees its courses and no way to the calendar.
+        [$trail] = $cases['running'];
+        $this->set_course_state((int) $running->id, discoverability::STATE_PUBLIC);
+        $this->set_course_state((int) $trail->id, discoverability::STATE_PUBLIC);
+        $this->become(null);
+        $context = $this->export($trail, new resolution(resolution::STATE_VISITOR), true);
+        $this->assertNotNull($context->trail, 'Precondition: the visitor sees the trail.');
+        $this->assertNull($context->trailcalendarurl);
+    }
 }

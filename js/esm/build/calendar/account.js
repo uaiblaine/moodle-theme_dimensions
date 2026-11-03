@@ -7,4 +7,4 @@
  * @module     theme_dimensions/calendar/account
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */const e="theme_dimensions_get_calendar_range",_="theme_dimensions_remember_calendar_state";export{e as RANGE_METHOD,_ as REMEMBER_METHOD};
+ */const e="theme_dimensions_get_calendar_range",_="theme_dimensions_remember_calendar_state",t="theme_dimensions_get_calendar_trails";export{e as RANGE_METHOD,_ as REMEMBER_METHOD,t as TRAILS_METHOD};

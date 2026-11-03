@@ -28,6 +28,7 @@
  */
 
 import {parse} from '../daterange/calendar';
+import type {TrailProps} from './trails';
 
 /** The eight keys, in the order the chips are drawn (keys::ALL). */
 export const KEYS = ['site', 'category', 'course', 'group', 'user', 'activity', 'other', 'open'] as const;
@@ -150,6 +151,7 @@ export type Props = {
     options: {model: Option[], modality: Option[], city: string[]},
     urls: {page: string, home: string},
     edits?: Edits,
+    trails?: TrailProps,
 };
 
 /** The address parameter of the open day (local\calendar\page::PARAM_DAY): navigation, never state. */

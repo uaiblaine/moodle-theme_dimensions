@@ -68,6 +68,9 @@ final class calendar_scss_test extends \advanced_testcase {
     /** @var string[] The keys that carry a colour triple: the eight keys and the overdue warning. */
     private const KEYS = ['site', 'category', 'course', 'group', 'user', 'activity', 'other', 'open', 'overdue'];
 
+    /** @var string[] The Trilhas view's own colour triples: the schedule's and each step state's, never a key's setting. */
+    private const TRAIL_KEYS = ['trail', 'trailcurrent', 'traildone', 'traillate', 'traillocked', 'trailupcoming'];
+
     /**
      * The stylesheet, comments out.
      *
@@ -229,7 +232,7 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * Every key's pairs read, in both colour modes: ink on tint at 4.5:1, edge on both surfaces at 3:1.
+     * Every key's pairs read, and the Trilhas view's own, in both colour modes: ink on tint at 4.5:1, edge on both surfaces at 3:1.
      *
      * @return void
      */
@@ -238,7 +241,7 @@ final class calendar_scss_test extends \advanced_testcase {
         $modes = $this->compiled();
         $measured = 0;
         foreach ($modes as $mode => $tokens) {
-            foreach (self::KEYS as $key) {
+            foreach (array_merge(self::KEYS, self::TRAIL_KEYS) as $key) {
                 foreach (['tint', 'edge', 'ink'] as $part) {
                     $this->assertMatchesRegularExpression(
                         '/^#[0-9a-f]{6}$/',
@@ -260,7 +263,7 @@ final class calendar_scss_test extends \advanced_testcase {
                 $measured++;
             }
         }
-        $this->assertSame(2 * count(self::KEYS), $measured);
+        $this->assertSame(2 * (count(self::KEYS) + count(self::TRAIL_KEYS)), $measured);
     }
 
     /**
@@ -272,7 +275,7 @@ final class calendar_scss_test extends \advanced_testcase {
         $this->resetAfterTest();
         $modes = $this->compiled();
         $this->assertSame(array_keys($modes['light']), array_keys($modes['dark']));
-        $this->assertCount(count(self::KEYS) * 3 + 4, $modes['light']);
+        $this->assertCount((count(self::KEYS) + count(self::TRAIL_KEYS)) * 3 + 4, $modes['light']);
     }
 
     /**
