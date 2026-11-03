@@ -34,8 +34,11 @@ use theme_dimensions\local\landing\publicfiles;
 use theme_dimensions\local\landing\redirector;
 use theme_dimensions\local\hook\course\after_form_validation;
 use theme_dimensions\local\landing\resolution;
+use theme_dimensions\local\category\cards;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\local\styleurl;
+use theme_dimensions\local\trail\display;
+use theme_dimensions\local\trail\trail;
 
 /**
  * Builds the template context of the enrolment landing page.
@@ -97,8 +100,16 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     public function export_for_template(\core\output\renderer_base $output): \stdClass {
         $context = \core\context\course::instance($this->course->id);
 
+        $trail = $this->trail_part($context);
         $chips = $this->chips();
         $facts = $this->facts();
+        if ($trail !== null) {
+            array_unshift($chips, get_string('landing_trail_kind', self::COMPONENT), $trail['countlabel']);
+            $facts[] = $this->fact(get_string('landing_trail_factcourses', self::COMPONENT), (string) $trail['count']);
+            if ($trail['periodshort'] !== null) {
+                $facts[] = $this->fact(get_string('landing_trail_factperiod', self::COMPONENT), $trail['periodshort']);
+            }
+        }
         $sections = $this->sections();
         $methods = $this->method_contexts();
 
@@ -148,8 +159,10 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'haslivechip' => $haslivechip,
             'herodate' => $this->hero_date(),
             'heroticket' => $this->hero_ticket(),
-            'herocomp' => $this->hero_comp(),
-            'heroplace' => $this->hero_place(),
+            // A trail's hero says its courses; the course scenarios' blocks would stack under it.
+            'herocomp' => $trail === null ? $this->hero_comp() : null,
+            'heroplace' => $trail === null ? $this->hero_place() : null,
+            'trail' => $trail,
             'facts' => $facts,
             'hasfacts' => !empty($facts),
             'sections' => $sections,
@@ -195,6 +208,125 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
 
         $this->add_bar($exported);
         return $exported;
+    }
+
+    /**
+     * The trail's part of the page: its steps as this reader sees them, and what the hero and the card say of them.
+     *
+     * Only for a course whose model is the trail while trails are available ({@see trail::available()}): a course
+     * saved as a trail without mod_subcourse reads as a course, and so does a trail none of whose steps this reader
+     * sees. Who sees which step, and whether in full or as a ghost, is {@see display::steps()}; a ghost carries its
+     * place and nothing read from its course. The positions count the cards drawn, so a step this reader does not
+     * see leaves no gap, and the period reads the full cards only.
+     *
+     * @param \core\context\course $context The trail course's context.
+     * @return array|null The part, or null for a page that is not a trail's.
+     */
+    private function trail_part(\core\context\course $context): ?array {
+        if ($this->values->model !== landingfields::MODEL_TRAIL) {
+            return null;
+        }
+        $trail = trail::of($this->course);
+        $drawn = $trail === null ? [] : display::steps($trail);
+        if (!$drawn) {
+            return null;
+        }
+
+        $rows = [];
+        foreach ($drawn as $entry) {
+            if ($entry['row'] !== null) {
+                $rows[(int) $entry['row']->id] = $entry['row'];
+            }
+        }
+        // A visitor's covers go through the theme's route: core's own answers them with the login page.
+        $images = $rows ? cards::images($rows, display::visitor()) : [];
+        $hours = $rows ? landingfields::values_many(array_keys($rows), false, [landingfields::SHORTNAME_WORKLOAD]) : [];
+        $categories = $rows ? \core_course_category::get_many(
+            array_values(array_unique(array_map(static fn(\stdClass $row): int => (int) $row->category, $rows)))
+        ) : [];
+
+        $steps = [];
+        $first = 0;
+        $last = 0;
+        foreach ($drawn as $index => $entry) {
+            $position = $index + 1;
+            if ($entry['kind'] === display::GHOST) {
+                $steps[] = ['n' => $position, 'isghost' => true];
+                continue;
+            }
+            $step = $entry['step'];
+            $refid = (int) $entry['row']->id;
+            $category = $categories[(int) $entry['row']->category] ?? null;
+            $workload = isset($hours[$refid]) ? $hours[$refid]->workload : null;
+            $image = $images[$refid] ?? null;
+            $imageurl = $image === null ? '' : styleurl::safe($image->out(false));
+            $steps[] = [
+                'n' => $position,
+                'isghost' => false,
+                'name' => $this->plain($step->name, $context),
+                'url' => links::page($refid)->out(false),
+                'imageurl' => $imageurl === '' ? null : $imageurl,
+                'category' => $category === null ? null : format_string($category->name, true, [
+                    'context' => \core\context\coursecat::instance($category->id),
+                    'escape' => false,
+                ]),
+                'hours' => $workload === null ? null
+                    : get_string('landing_hours', self::COMPONENT, $this->hours_number($workload)),
+                'when' => $this->step_when($step),
+            ];
+            if ($step->start > 0) {
+                $first = $first > 0 ? min($first, $step->start) : $step->start;
+            }
+            $last = max($last, $step->end);
+        }
+
+        $count = count($steps);
+        $countlabel = $count === 1 ? get_string('landing_trail_onecourse', self::COMPONENT)
+            : get_string('landing_trail_coursecount', self::COMPONENT, $count);
+        return [
+            'steps' => $steps,
+            'count' => $count,
+            'countlabel' => $countlabel,
+            'sequence' => $count === 1 ? $countlabel : get_string('landing_trail_sequence', self::COMPONENT, $count),
+            'segmentslabel' => $countlabel,
+            'period' => $this->period($first, $last, get_string('strftimedate', 'langconfig')),
+            'periodshort' => $this->period($first, $last, $this->format_date()),
+        ];
+    }
+
+    /**
+     * When a step runs, as its card says it: the expected completion date, else the referenced course's own dates.
+     *
+     * @param \theme_dimensions\local\trail\step $step The step.
+     * @return string|null The line, or null when the step has no date at all.
+     */
+    private function step_when(\theme_dimensions\local\trail\step $step): ?string {
+        $format = get_string('strftimedatemonthabbr', 'langconfig');
+        if ($step->expected) {
+            return get_string('landing_trail_due', self::COMPONENT, userdate($step->end, $format));
+        }
+        return $this->period($step->start, $step->end, $format);
+    }
+
+    /**
+     * A span of two dates in one format: both, the start alone, or nothing.
+     *
+     * @param int $from The first date, 0 for none.
+     * @param int $to The last date, 0 for none.
+     * @param string $format The strftime format.
+     * @return string|null The line, or null without a start.
+     */
+    private function period(int $from, int $to, string $format): ?string {
+        if ($from <= 0) {
+            return null;
+        }
+        if ($to <= 0) {
+            return get_string('landing_trail_periodfrom', self::COMPONENT, userdate($from, $format));
+        }
+        return get_string('landing_trail_period', self::COMPONENT, (object) [
+            'from' => userdate($from, $format),
+            'to' => userdate($to, $format),
+        ]);
     }
 
     /**

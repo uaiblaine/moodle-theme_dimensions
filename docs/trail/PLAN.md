@@ -18,7 +18,7 @@ reader as the landing page, so a trail is defined once.
 | Q1 | The step's dates | "Expect completed on" (the timeline reminder every activity has); when unset, the referenced course's start and end dates | Section 2: a step runs from the course's start to its due date or its end. Restrict-access dates are not read |
 | Q2 | Access to the step courses | Many methods (enrol_apply, enrol_coursecompleted, enrol_self...), none fixed | No meta-link assumption, no editors' note. The trail card shows today's resolver for the trail course; each step course keeps its own enrolment |
 | Q3 | Total workload | Always the trail's own field | Section 4 |
-| Q4 | Visibility of the steps | Discoverability rules: a visitor sees only what is public, a listed but not public course as a ghost card, an unlisted course never; an account follows the normal access rule; an unlisted course is never shown, not even as a ghost | Section 6 |
+| Q4 | Visibility of the steps | Discoverability rules: a visitor sees only what is public, a listed but not public course as a ghost card, an unlisted course never; an account follows the normal access rule. Corrected the same day: an unlisted course shows to an account enrolled in it or with a way to enrol, and to nobody else, never as a ghost; a ghost is for a listed course on a public trail | Section 6 |
 | Q5 | Postgraduate credit | Drop | Not built |
 | Q6 | Struck price, cart, "Para empresas" | Drop | Not built |
 | Q7 | Related contents | Not in the first stage | Later stage |
@@ -98,9 +98,10 @@ existing guard. Same template and stylesheet, three additions:
   for the enrolled learner. Then the textarea sections as today.
 - **Card**: today's facts, plus "Cursos" and "Período" (first start to last end); today's enrolment area through
   `resolver::resolve()` on the trail course, every method it already knows (self, apply, fee, coursecompleted,
-  guest, fallback). Enrolled: "Você já está inscrito nesta trilha" + "Continuar: <step>". Then, for an account
+  guest, fallback). Enrolled: "Você já está inscrito nesta trilha" + "Continuar: <step>" (T2). Then, for an account
   only (the calendar asks for a login), **"Ver no calendário"**:
   `/r.php/theme_dimensions/calendar?view=trail&trail=<courseid>` (the page reads both through its state vocabulary).
+  The button comes with T3: before the Trilhas view exists it would open a month that says nothing of the trail.
 
 Statements the trail adds to today's page:
 
@@ -117,33 +118,37 @@ Statements the trail adds to today's page:
 Constant in N, pinned by a read-count test (`perf_get_reads()`) for a trail of 2 and of 8 steps, for a visitor, an
 account and an enrolled account.
 
-## 6. Who sees which step (Q4)
+## 6. Who sees which step (Q4, corrected by the owner on 2026-11-02)
 
 The trail page itself is public exactly when today's rule says so (`publicaccess::is_public($trailid)`). Each step
-is then one of three, decided on the referenced course:
+is then drawn in full, as a ghost, or not at all, decided on the referenced course (`local\trail\display`):
 
-| Referenced course | Visitor | Account |
+| Referenced course | Visitor (on a public trail) | Account |
 |---|---|---|
-| **unlisted** (local_unlistedcourses state, or under an unlisted category) | not drawn | not drawn, whoever the viewer is |
 | public | full card | full card |
-| listed, not public, visible to the account | **ghost card** | full card |
-| hidden (not visible), or not visible to this account | not drawn | not drawn |
+| listed (visible, in a visible category, not unlisted), not public | **ghost card** | full card when the showcase would list it to this account, else not drawn |
+| **unlisted** (its own state, or an unlisted category on its path) | not drawn | full card for an account enrolled in it or with a way to enrol (local_unlistedcourses' own terms), else not drawn |
+| hidden, or in a category the reader cannot see | not drawn | not drawn, unless core lets this account see it |
 
-- A **ghost card** carries the position only: no name, description, dates, hours, cover or link, and the line "Este
-  curso não é aberto ao público" with a login link. Nothing read from a course reaches a viewer who may not see it,
-  and the activity's name stays back too, since it usually names the course.
-- "Unlisted never shows" is read strictly: the step is dropped even for a learner whom local_unlistedcourses lets
-  discover the course (enrolled in it, say). The step stays on the trail course's own page, which is core's.
-- Positions, the "5 cursos" chip and progress count the cards drawn, ghosts included, so a dropped step leaves no gap
-  and no count betrays it.
-- The activity's own per-user visibility comes first: a step whose activity core hides from this reader
-  entirely (`cm_info::$uservisible` false with no availability text, a restriction set to hide) is not drawn,
-  as core would not list it on the course page; a restriction that shows its text is the locked state.
+- An account's answer is the showcase's own gate, `population::admitted()` over the root scope, as the calendar's
+  open events use it: core's course and category visibility, then local_unlistedcourses' terms. An account is never
+  shown a ghost: a card that says "there is something here you may not see" is the false expectation the owner
+  ruled out.
+- A **ghost card** is a visitor's, on a public trail, for a listed course only. It carries the position: no name,
+  description, dates, hours, cover or link, and the line "Este curso não é aberto ao público" with a login link.
+  The activity's name stays back too, since it usually names the course.
+- Positions, the "N cursos" chip, the period and progress count the cards drawn, ghosts included for the count; a
+  dropped step leaves no gap and no count betrays it. The period reads the full cards only.
+- The activity's restriction comes first: a step whose restriction hides it from this reader entirely (not
+  available, and no text to show) is not drawn; a restriction that shows its text is the locked state. Read
+  from core's availability (`cm_info::$available`, `$availableinfo`), not its course-page visibility, which
+  also needs the module's view capability in the trail course and so hides every step from a reader who is not
+  enrolled there.
 - `trail::many()` is a structure reader and applies none of this itself; its docblock names the contract.
-- Covers: the theme's public file route (area `hero`) for a visitor, which already fails closed; core's
+- Covers: the showcase's batch (`cards::images()`), through the theme's `cover` route for a visitor and core's
   `overviewfiles` URL for an account.
-- The step card's link: the referenced course's landing page when it has a model, the course itself for someone
-  enrolled in it.
+- The step card's link: the referenced course's page address (`links::page()`), which is its landing page when it
+  has a model and core's enrolment page otherwise.
 
 ## 7. The calendar's Trilhas view (C6)
 
@@ -185,9 +190,9 @@ dependency; the marketplace readiness test holds the README.
 | Stage | Content | Tier and gate |
 |---|---|---|
 | T0 | MODEL_TRAIL, upgrade step, lang en + pt_br, hiding without mod_subcourse, `trail` reader + PHPUnit (order, windows from the expected date and from the course dates, refcourse, deleted and hidden cms, absent plugin) | 3: `mdl ci <worktree> --matrix` |
-| T1 | landing page: hero block, stepper, ghost and dropped steps, card facts, "Ver no calendário"; SCSS in `landing.scss`; Behat smoke (visitor of a public trail, account); read-count test | 3: `--matrix --behat` |
+| T1 | landing page: hero block, stepper, ghost and dropped steps, card facts; SCSS in `landing.scss`; Behat smoke (visitor of a public trail, account); read-count test | 3: `--matrix --behat` |
 | T2 | progress states, "Continuar", the learner's hero block | 3 |
-| T3 | calendar Trilhas view, desktop and phone, filters, popover; read-count test | 3: `--matrix --behat` |
+| T3 | calendar Trilhas view, desktop and phone, filters, popover, and the landing page's "Ver no calendário"; read-count test | 3: `--matrix --behat` |
 | T4 | related contents (Q7, later) | 2 or 3 |
 
 T3 touches the calendar's files, which the calendar session is changing on its own branch: it starts after that

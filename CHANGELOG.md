@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A trail's landing page, stage T1** (2026100575), `docs/trail/PLAN.md` sections 5 and 6. A course of the Trail model
+  says its courses in the hero's glass (how many, their period, one segment each) and draws them in order after the
+  summary: numbered cards with the referenced course's cover, category, hours and dates (the activity's expected
+  completion date, else the course's own). Who sees which step is `local\trail\display`, as the owner ruled on
+  2026-11-02: an account sees what the showcase would list to it (an unlisted course only where it is enrolled or
+  may enrol), never a ghost; a visitor of a public trail sees the public courses in full and a listed course as a
+  ghost card that names nothing; a step its restriction hides is nobody's. The card adds the number of courses and
+  the period. Constant in the number of steps. Progress and "Continuar" are T2; "Ver no calendário" comes with the
+  calendar's Trilhas view (T3).
 - **Calendar R1d: no desktop flash on a phone's first paint** (2026100574), `docs/calendar/PROPOSAL.md` section 31.6.
   The first render guesses the phone layout from a media query (`max-width: 591px`, the phone width plus the page's
   gutters) instead of waiting for the first measure, so a phone no longer first draws the desktop month and drawer, and

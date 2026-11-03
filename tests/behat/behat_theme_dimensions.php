@@ -155,6 +155,28 @@ class behat_theme_dimensions extends behat_base {
     }
 
     /**
+     * Add a step to a trail: a Subcourse activity of the trail course referring to a course, named after it.
+     *
+     * mod_subcourse's generator takes the referenced course by id, which a feature's table cannot name.
+     *
+     * @Given /^the course "(?P<shortname>(?:[^"]|\\")*)" is a step of the trail "(?P<trail>(?:[^"]|\\")*)"$/
+     * @param string $shortname The referenced course's shortname.
+     * @param string $trail The trail course's shortname.
+     * @return void
+     */
+    public function the_course_is_a_step_of_the_trail(string $shortname, string $trail): void {
+        global $DB;
+
+        $ref = $DB->get_record('course', ['shortname' => $shortname], 'id, fullname', MUST_EXIST);
+        $trailid = (int) $DB->get_field('course', 'id', ['shortname' => $trail], MUST_EXIST);
+        \testing_util::get_data_generator()->create_module('subcourse', [
+            'course' => $trailid,
+            'refcourse' => (int) $ref->id,
+            'name' => $ref->fullname,
+        ]);
+    }
+
+    /**
      * Assert that the page shows the public address of a course's landing page, as text.
      *
      * The expected address is built by the code the course form uses, so on a site whose

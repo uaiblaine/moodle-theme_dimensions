@@ -34,6 +34,12 @@
     hero's icons are decoration. A hybrid event offering two or more methods
     draws each one as a track, headed by the instance's own name.
 
+    A trail's page (the trail model) puts its courses in the hero's glass, one segment per course,
+    and draws them in order after the summary, each a numbered card with its cover, category, hours
+    and dates; a ghost card, a visitor's for a course the catalogue lists but does not serve to the
+    public, carries its number and nothing of the course (landing_page::trail_part()). The covers
+    are images, never a style attribute.
+
     The hero image's url is printed into a style attribute, a CSS context the
     double stash does not protect, because a browser decodes the attribute
     before the CSS parser reads it; landing_page::hero_image_url() therefore
@@ -110,6 +116,27 @@
             "venue": "Central Campus · Main Hall",
             "live": "Live, from wherever you are",
             "livesub": "Streamed on the platform"
+        },
+        "trail": {
+            "steps": [
+                {
+                    "n": 1,
+                    "isghost": false,
+                    "name": "Fundamentals of Management",
+                    "url": "https://example.com/theme/dimensions/landing.php?id=51",
+                    "imageurl": "https://example.com/pluginfile.php/88/course/overviewfiles/cover.jpg",
+                    "category": "Management",
+                    "hours": "16 hours",
+                    "when": "From 02 Nov 2026 to 08 Nov 2026"
+                },
+                {"n": 2, "isghost": true}
+            ],
+            "count": 2,
+            "countlabel": "2 courses",
+            "sequence": "2 courses in sequence",
+            "segmentslabel": "2 courses",
+            "period": "From 02 November 2026 to 08 November 2026",
+            "periodshort": "02/11/26 – 08/11/26"
         },
         "herocomp": {
             "total": "60 hours",
@@ -229,6 +256,19 @@
                     {{/haslivechip}}
                 </ul>
             {{/haschips}}
+            {{#trail}}
+                <div class="dimensions-landing__em dimensions-landing__trailem">
+                    <span class="dimensions-landing__em-main">{{sequence}}</span>
+                    {{#period}}
+                        <span class="dimensions-landing__em-sub">{{.}}</span>
+                    {{/period}}
+                    <span class="dimensions-landing__trailsegs" role="img" aria-label="{{segmentslabel}}">
+                        {{#steps}}
+                            <span class="dimensions-landing__trailseg"></span>
+                        {{/steps}}
+                    </span>
+                </div>
+            {{/trail}}
             {{#herodate}}
                 <div class="dimensions-landing__em dimensions-landing__em--big">
                     <span class="dimensions-landing__em-main">{{datebig}}</span>
@@ -326,6 +366,49 @@
                     {{{summaryhtml}}}
                 </section>
             {{/summaryhtml}}
+            {{#trail}}
+                <section class="dimensions-landing__trail" data-region="dimensions-landing-trail" aria-labelledby="dimensions-landing-trail-title">
+                    <h2 class="dimensions-landing__sectiontitle" id="dimensions-landing-trail-title">{{#str}} landing_trail_steps, theme_dimensions {{/str}}</h2>
+                    <ol class="dimensions-landing__steps">
+                        {{#steps}}
+                            <li class="dimensions-landing__step{{#isghost}} dimensions-landing__step--ghost{{/isghost}}">
+                                <span class="dimensions-landing__stepnum" aria-hidden="true">{{n}}</span>
+                                {{^isghost}}
+                                    <article class="dimensions-landing__stepcard">
+                                        <div class="dimensions-landing__stepcover" aria-hidden="true">
+                                            {{#imageurl}}<img src="{{.}}" alt="" loading="lazy">{{/imageurl}}
+                                        </div>
+                                        <div class="dimensions-landing__stepbody">
+                                            {{#category}}
+                                                <span class="dimensions-landing__stepcat">{{.}}</span>
+                                            {{/category}}
+                                            <h3 class="dimensions-landing__stepname"><span class="visually-hidden">{{#str}} landing_trail_stepnumber, theme_dimensions, {{n}} {{/str}}: </span><a href="{{url}}">{{name}}</a></h3>
+                                            <div class="dimensions-landing__stepmeta">
+                                                {{#hours}}
+                                                    <span class="dimensions-landing__stephours">{{.}}</span>
+                                                {{/hours}}
+                                                {{#when}}
+                                                    <span class="dimensions-landing__stepwhen">{{#pix}} i/calendar, core {{/pix}}{{.}}</span>
+                                                {{/when}}
+                                            </div>
+                                        </div>
+                                    </article>
+                                {{/isghost}}
+                                {{#isghost}}
+                                    <div class="dimensions-landing__stepcard dimensions-landing__stepcard--ghost">
+                                        <div class="dimensions-landing__stepcover" aria-hidden="true">{{#pix}} t/locked, core {{/pix}}</div>
+                                        <div class="dimensions-landing__stepbody">
+                                            <span class="dimensions-landing__stepbone" aria-hidden="true"></span>
+                                            <p class="dimensions-landing__stepghost"><span class="visually-hidden">{{#str}} landing_trail_stepnumber, theme_dimensions, {{n}} {{/str}}: </span>{{#str}} landing_trail_ghost, theme_dimensions {{/str}}</p>
+                                            <a class="dimensions-landing__steplogin" href="{{loginurl}}">{{#str}} login {{/str}}</a>
+                                        </div>
+                                    </div>
+                                {{/isghost}}
+                            </li>
+                        {{/steps}}
+                    </ol>
+                </section>
+            {{/trail}}
             {{#hassections}}
                 <div class="dimensions-landing__panel" data-region="dimensions-landing-panel">
                     {{#sections}}
