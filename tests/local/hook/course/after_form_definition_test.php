@@ -482,6 +482,39 @@ final class after_form_definition_test extends \advanced_testcase {
     }
 
     /**
+     * Without mod_subcourse enabled the model select offers no trail, unless the course already is one; with it, it does.
+     *
+     * Decision Q9. The course's own choice stays so the form shows what the course holds.
+     */
+    public function test_the_trail_choice_needs_the_subcourse_module(): void {
+        $this->resetAfterTest();
+        if (\core_component::get_component_directory('mod_subcourse') === null) {
+            $this->markTestSkipped('mod_subcourse is not installed.');
+        }
+        $plain = $this->create_course_with_model(landingfields::MODEL_COURSE);
+        $saved = $this->create_course_with_model(landingfields::MODEL_TRAIL);
+        $offered = static function (\MoodleQuickForm $mform): array {
+            $options = $mform->getElement(self::MODEL)->_options;
+            return array_map(static fn(array $option): int => (int) $option['attr']['value'], $options);
+        };
+
+        $this->assertContains(landingfields::MODEL_TRAIL, $offered($this->course_form($plain)), 'Precondition: offered.');
+
+        \core\plugininfo\mod::enable_plugin('subcourse', 0);
+
+        $options = $offered($this->course_form($plain));
+        $this->assertNotContains(landingfields::MODEL_TRAIL, $options);
+        $this->assertContains(landingfields::MODEL_EVENT, $options, 'The other lines stay.');
+        $created = $offered($this->course_form((object) ['id' => 0]));
+        $this->assertNotContains(landingfields::MODEL_TRAIL, $created, 'Nor to a new course.');
+        $this->assertContains(
+            landingfields::MODEL_TRAIL,
+            $offered($this->course_form($saved)),
+            'A course saved as a trail keeps its choice.'
+        );
+    }
+
+    /**
      * While focus mode's master switch is off its box, its description and its category's header leave the form.
      *
      * Decision D4. The control is the same form with the switch on, which offers all three.
