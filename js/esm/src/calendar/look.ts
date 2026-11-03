@@ -102,11 +102,15 @@ export const coverStyle = (course: Course, look: Look): CSSProperties => {
 /**
  * Where an item happens: its location, else its course's city and venue, else its course's name.
  *
+ * The popover asks without the last fallback: it draws the course on a row of its own, and a place that is the
+ * course's name says it twice.
+ *
  * @param {object} item The item.
  * @param {object} look The page's look.
+ * @param {boolean} fallback Whether a course with no city or venue answers its name.
  * @returns {string} The place, or the empty string.
  */
-export const placeOf = (item: Item, look: Look): string => {
+export const placeOf = (item: Item, look: Look, fallback: boolean = true): string => {
     if (item.location !== '') {
         return item.location;
     }
@@ -114,7 +118,8 @@ export const placeOf = (item: Item, look: Look): string => {
     if (!course) {
         return '';
     }
-    return [course.city, course.venue].filter((part) => part !== '').join(' · ') || course.fullname;
+    const place = [course.city, course.venue].filter((part) => part !== '').join(' · ');
+    return place !== '' || !fallback ? place : course.fullname;
 };
 
 /**

@@ -66,3 +66,15 @@ Feature: A visitor sees the public categories' events on the theme's calendar on
     When I visit "/theme/dimensions/calendar.php?month=2027-03"
     Then "Username" "field" should exist
     And I should not see "Public open day"
+
+  Scenario: A visitor's public category page leads to the public calendar while the site opens it
+    Given the following config values are set as admin:
+      | calendarpublic | 1 | theme_dimensions |
+    When I am on the "PUBAREA" "theme_dimensions > Public category page" page
+    And I click on "[data-region='dim-hero-calendar']" "css_element"
+    Then "Username" "field" should not exist
+    And "[data-region='dim-cal']" "css_element" should exist
+    And the following config values are set as admin:
+      | calendarpublic | 0 | theme_dimensions |
+    And I am on the "PUBAREA" "theme_dimensions > Public category page" page
+    And "[data-region='dim-hero-calendar']" "css_element" should not exist

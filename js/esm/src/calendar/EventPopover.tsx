@@ -226,7 +226,8 @@ export const factsOf = (item: Item, look: Look, modalities: Option[]): Facts => 
     const course = look.courses.get(item.courseid) || null;
     const eventcourse = course !== null && item.source === 'course';
     return {
-        place: placeOf(item, look),
+        // The course has a row of its own below, so the place never falls back to its name.
+        place: placeOf(item, look, false),
         modality: eventcourse ? modalities.find((option) => option.value === course.modality)?.label || '' : '',
         course: course,
         participants: eventcourse ? course.participants : null,

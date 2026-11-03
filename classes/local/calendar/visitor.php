@@ -112,4 +112,44 @@ final class visitor {
     public static function state(array $on): state {
         return new state(array_diff(keys::ALL, self::on($on)));
     }
+
+    /**
+     * A name or a location of the visitor's answer in the PLAIN spelling, in the answer's language alone.
+     *
+     * The visitor's answer formats with the filters off, a statement per context saved; with them off, a name written
+     * with multilang spans shows every language joined. So core's multilang filter runs alone, before format_string(),
+     * while it is on for the site ({@see multilang_on()}): the logged-in page, which formats with every filter on,
+     * then reads the same, and with the filter off both read the raw text (PROPOSAL.md section 32.1).
+     *
+     * @param string $text The stored text.
+     * @param \core\context $context Its context.
+     * @return string The text, plain.
+     */
+    public static function name(string $text, \core\context $context): string {
+        if (self::multilang_on()) {
+            $text = (string) (new \filter_multilang\text_filter($context, []))->filter($text);
+        }
+        return format_string($text, true, ['context' => $context, 'escape' => false, 'filter' => false]);
+    }
+
+    /**
+     * Whether core's multilang filter is on for the site: its system state is TEXTFILTER_ON. "Off, but available" is
+     * off, since a site switches it on per context then, which the visitor's answer does not read.
+     *
+     * One statement, kept in a request cache.
+     *
+     * @return bool
+     */
+    public static function multilang_on(): bool {
+        $cache = \cache::make_from_params(\cache_store::MODE_REQUEST, 'theme_dimensions', 'visitormultilang');
+        $on = $cache->get('on');
+        if ($on === false) {
+            global $CFG;
+            require_once($CFG->libdir . '/filterlib.php');
+            $states = filter_get_global_states();
+            $on = isset($states['multilang']) && (int) $states['multilang']->active === TEXTFILTER_ON ? 1 : 0;
+            $cache->set('on', $on);
+        }
+        return (int) $on === 1;
+    }
 }

@@ -49,6 +49,7 @@ require_once(__DIR__ . '/fixture.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(public_events::class)]
+#[CoversClass(visitor::class)]
 #[CoversClass(publicaccess::class)]
 final class public_events_test extends \advanced_testcase {
     use fixture;
@@ -221,7 +222,8 @@ final class public_events_test extends \advanced_testcase {
     }
 
     /**
-     * An item: the plain spelling, filters off, the public page as its address, no creator, the description as text.
+     * An item: the plain spelling in one language (multilang alone), the public page as its address, no creator, the
+     * description as text.
      *
      * @return void
      */
@@ -244,7 +246,7 @@ final class public_events_test extends \advanced_testcase {
         $this->assertCount(1, $items);
         $item = $items[0];
         $this->assertSame(range::ITEM_KEYS, array_keys($item), 'The allowlist: no creator, no description, no html.');
-        $this->assertSame('Ciência & FairFeira', $item['name'], 'Plain, tags stripped, the filter off.');
+        $this->assertSame('Ciência & Fair', $item['name'], 'Plain, tags stripped, the language of the answer alone.');
         $this->assertSame('Sala 2', $item['location']);
         $this->assertSame(links::category_page($this->ids['public'])->out(false), $item['url'], 'The public category page.');
         $this->assertSame([keys::CATEGORY, $this->ids['public'], 0, 0], [$item['key'], $item['categoryid'], $item['courseid'],
@@ -258,6 +260,89 @@ final class public_events_test extends \advanced_testcase {
 
         // The filter is really on: a format_string() with filters reads one language.
         $this->assertSame('Fair', format_string($multilang, true, ['context' => \core\context\system::instance()]));
+    }
+
+    /**
+     * The names follow the site's multilang filter, as the logged-in page's do: on, one language; off, or merely
+     * available, the raw text. No other filter runs, even one that is on and filters strings (emailprotect).
+     *
+     * @return void
+     */
+    public function test_names_run_the_multilang_filter_alone(): void {
+        $this->seed();
+        $multilang = '<span lang="en" class="multilang">Fair</span><span lang="pt_br" class="multilang">Feira</span>';
+        $this->event($this->ids['public'], ['name' => $multilang, 'location' => 'Sala de contato@example.com']);
+        filter_set_global_state('emailprotect', TEXTFILTER_ON);
+        filter_set_applies_to_strings('emailprotect', true);
+        $states = [
+            'on' => [TEXTFILTER_ON, 'Fair'],
+            'available' => [TEXTFILTER_OFF, 'FairFeira'],
+            'disabled' => [TEXTFILTER_DISABLED, 'FairFeira'],
+        ];
+        foreach ($states as $label => [$state, $expected]) {
+            $this->setAdminUser();
+            filter_set_global_state('multilang', $state);
+            filter_set_applies_to_strings('multilang', true);
+            \filter_manager::reset_caches();
+            $this->setUser(null);
+            \cache::make_from_params(\cache_store::MODE_REQUEST, 'theme_dimensions', 'visitormultilang')->purge();
+            $items = (new public_events())->items(self::month_window(), publicaccess::public_ids());
+            $this->assertSame($expected, $items[0]['name'], $label);
+            $this->assertSame('Sala de contato@example.com', $items[0]['location'], "{$label}: no other filter runs.");
+        }
+        \cache::make_from_params(\cache_store::MODE_REQUEST, 'theme_dimensions', 'visitormultilang')->purge();
+        filter_set_global_state('multilang', TEXTFILTER_ON);
+        $this->assertNotSame(
+            'Sala de contato@example.com',
+            format_string('Sala de contato@example.com', true, ['context' => \core\context\system::instance(), 'escape' => false]),
+            'Control: the emailprotect filter really rewrites a string.'
+        );
+    }
+
+    /**
+     * At most CAP events a window, earliest first; one more says the answer was cut, and exactly CAP does not.
+     *
+     * @return void
+     */
+    public function test_the_cap(): void {
+        global $DB;
+        $this->seed();
+        $template = $DB->get_record('event', ['id' => $this->event($this->ids['public'], ['timestart' => self::at(1)])]);
+        unset($template->id);
+        $rows = [];
+        for ($i = 1; $i < public_events::CAP; $i++) {
+            $rows[] = (object) (['timestart' => self::at(2) + $i] + (array) $template);
+        }
+        $DB->insert_records('event', $rows);
+        $this->setUser(null);
+
+        $source = new public_events();
+        $this->assertCount(public_events::CAP, $source->items(self::month_window(), publicaccess::public_ids()));
+        $this->assertFalse($source->truncated(), 'Control: exactly the cap is whole.');
+        $this->assertFalse(publicrange::answer(self::month_window(), [keys::CATEGORY])['truncated'], 'Control.');
+
+        $late = $this->event($this->ids['public'], ['timestart' => self::at(20)]);
+        $this->setUser(null);
+        $items = $source->items(self::month_window(), publicaccess::public_ids());
+        $this->assertCount(public_events::CAP, $items);
+        $this->assertTrue($source->truncated());
+        $this->assertNotContains($late, array_column($items, 'id'), 'The latest is the one left out.');
+        $this->assertSame((int) $template->timestart, $items[0]['timestart'], 'Earliest first.');
+        $this->assertTrue(publicrange::answer(self::month_window(), [keys::CATEGORY])['truncated'], "The answer's cut.");
+    }
+
+    /**
+     * The statement itself reads at most one row past the cap: the slice alone would answer the same items, so only the
+     * source can show that an anonymous request never reads a window's every event.
+     *
+     * @return void
+     */
+    public function test_the_statement_reads_one_row_past_the_cap(): void {
+        $source = file_get_contents(dirname(__DIR__, 3) . '/classes/local/calendar/source/public_events.php');
+        $this->assertMatchesRegularExpression(
+            '~\$rows = \$DB->get_records_sql\(.*?\],\s*0,\s*self::CAP \+ 1\s*\);~s',
+            (string) $source
+        );
     }
 
     /**

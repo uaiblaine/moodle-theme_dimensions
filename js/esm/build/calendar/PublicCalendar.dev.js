@@ -558,7 +558,7 @@ const PublicCalendar = /* @__PURE__ */ __name((props) => {
             columnNumber: 13
           }
         ),
-        shown.answer.truncated ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__status", children: strings.calendar_truncated }, void 0, false, {
+        shown.answer.truncated ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__status", children: strings.calendar_truncatedpublic }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/PublicCalendar.tsx",
           lineNumber: 730,
           columnNumber: 39

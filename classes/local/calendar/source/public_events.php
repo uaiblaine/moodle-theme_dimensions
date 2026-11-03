@@ -26,6 +26,7 @@ namespace theme_dimensions\local\calendar\source;
 
 use theme_dimensions\local\calendar\keys;
 use theme_dimensions\local\calendar\range;
+use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\calendar\window;
 use theme_dimensions\local\category\publicaccess;
 use theme_dimensions\local\landing\links;
@@ -43,11 +44,12 @@ use theme_dimensions\local\landing\links;
  * categories, and starting inside the window or spanning into it (core's own vault rule with the duration). It rides
  * core's `groupid-courseid-categoryid-visible-userid` index of {event}. The creator (`userid`) is never selected.
  *
- * Every text is the plain spelling: the name and the location through format_string() in the category's context with
- * the filters off (a filter would cost statements per context and may print what a visitor must not read), and the
- * description as text ({@see text()}, decision V2: core's `calendar` file area asks for a login under forcelogin, so no
- * image of it is ever addressed), cut at {@see MAX_DESCRIPTION} characters. An item leads to the
- * category's public page ({@see links::category_page()}), the one category page a visitor can open.
+ * Every text is the plain spelling: the name and the location through {@see visitor::name()} in the category's context,
+ * core's multilang filter alone and the others off (a filter would cost statements per context and may print what a
+ * visitor must not read), and the description as text ({@see text()}, decision V2: core's `calendar` file area asks for
+ * a login under forcelogin, so no image of it is ever addressed), cut at {@see MAX_DESCRIPTION} characters. An item
+ * leads to the category's public page ({@see links::category_page()}), the one category page a visitor can open. At
+ * most {@see CAP} events are answered, earliest first.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -60,8 +62,26 @@ final class public_events {
     /** @var int The longest description answered, in characters: a popover's worth, and a bound on an anonymous payload. */
     public const MAX_DESCRIPTION = 2000;
 
+    /**
+     * @var int The most category events one window answers a visitor, earliest first: a bound on what an anonymous
+     *     request costs, at the price of {@see truncated()} (PROPOSAL.md section 32.1). The logged-in range keeps none.
+     */
+    public const CAP = 200;
+
     /** @var array The descriptions of the last call: event id => text, for the events that have one. */
     private array $descriptions = [];
+
+    /** @var bool Whether the last call left events out past {@see CAP}. */
+    private bool $truncated = false;
+
+    /**
+     * Whether the last call left events out past {@see CAP}.
+     *
+     * @return bool
+     */
+    public function truncated(): bool {
+        return $this->truncated;
+    }
 
     /**
      * The descriptions of the events the last call answered.
@@ -83,6 +103,7 @@ final class public_events {
         global $DB;
 
         $this->descriptions = [];
+        $this->truncated = false;
         if (!$categoryids) {
             return [];
         }
@@ -100,8 +121,15 @@ final class public_events {
                 'windowend' => $window->tend,
                 'windowstart' => $window->tstart,
                 'spanstart' => $window->tstart,
-            ]
+            ],
+            0,
+            self::CAP + 1
         );
+        // One row past the cap says more were left out, without counting them.
+        if (count($rows) > self::CAP) {
+            $this->truncated = true;
+            $rows = array_slice($rows, 0, self::CAP, true);
+        }
 
         $items = [];
         foreach ($rows as $row) {
@@ -111,7 +139,6 @@ final class public_events {
                 // The category went between the predicate's read and this one.
                 continue;
             }
-            $options = ['context' => $context, 'escape' => false, 'filter' => false];
             $id = (int) $row->id;
             $text = self::text((string) $row->description, (int) $row->format, $context);
             if ($text !== '') {
@@ -123,7 +150,7 @@ final class public_events {
                 'id' => $id,
                 'source' => self::SOURCE,
                 'key' => keys::CATEGORY,
-                'name' => format_string((string) $row->name, true, $options),
+                'name' => visitor::name((string) $row->name, $context),
                 'timestart' => (int) $row->timestart,
                 'timeduration' => max(0, (int) $row->timeduration),
                 'courseid' => 0,
@@ -133,7 +160,7 @@ final class public_events {
                 'instance' => 0,
                 'component' => '',
                 'eventtype' => keys::CATEGORY,
-                'location' => format_string((string) $row->location, true, $options),
+                'location' => visitor::name((string) $row->location, $context),
                 'url' => links::category_page($categoryid)->out(false),
                 'actionevent' => false,
                 'action' => null,

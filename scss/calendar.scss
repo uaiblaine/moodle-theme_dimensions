@@ -161,6 +161,16 @@ body.dim-calendar,
     --dim-cal-surface-hover: #{mix($dim-ds-blue-500, $dark-surface-page, 30%)};
 }
 
+// Core's dark mode underlines every link of #region-main but core's own controls (theme/boost/scss/moodle/dark.scss,
+// WCAG 1.4.1, for a link inside prose), at (1,6,1). The calendar's cards, bars, lines and times are links its surface
+// already tells apart, so they keep the light mode's none; the description's prose and the iCal link stay underlined.
+// The selector's own weight is what wins, (1,7,4): calendar_scss_test compares the two.
+:root[data-bs-theme="dark"] body.dim-calendar {
+    #region-main .dim-cal a[href]:not(.dim-cal__popdesc a):not(.dim-cal__footer a) {
+        text-decoration: none;
+    }
+}
+
 body.dim-calendar {
     // The page takes the whole column (owner, 2026-11-02): Boost caps .main-inner of the standard layout at
     // $course-content-maxwidth (Boost Union's coursecontentmaxwidth) from md up, which left the grid and the day drawer

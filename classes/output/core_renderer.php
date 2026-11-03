@@ -24,6 +24,8 @@
 
 namespace theme_dimensions\output;
 
+use theme_dimensions\local\calendar\blocks;
+use theme_dimensions\local\calendar\coreview;
 use theme_dimensions\local\compactnav;
 use theme_dimensions\local\coursenotice\builder as coursenotice_builder;
 use theme_dimensions\local\darklogo;
@@ -651,6 +653,30 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         $additionalclasses = array_merge($additionalclasses, readingbar::body_classes($this->page));
 
         return parent::body_attributes($additionalclasses);
+    }
+
+    /**
+     * Prints a block, without core's "Go to calendar..." under the upcoming block whose content the theme answers.
+     *
+     * The decision is {@see blocks::drops_footer()}, over the predicate the calendar renderer answers the block's content
+     * by ({@see core_calendar_renderer::render_from_template()}), so the footer goes exactly when the theme's agenda,
+     * which ends with its own "Full calendar", stands in the block. The block_contents is cloned first, as Boost Union's
+     * method clones it, so the caller's object is untouched.
+     *
+     * @param \core_block\output\block_contents $bc The block's contents.
+     * @param string $region The region the block is in.
+     * @return string
+     */
+    public function block(\core_block\output\block_contents $bc, $region) {
+        $block = (string) ($bc->attributes['data-block'] ?? '');
+        // Asked of the upcoming block alone, so no other block pays the predicate's reads.
+        $applies = $block === blocks::BLOCK_UPCOMING
+            && blocks::applies(blocks::enabled(), (int) $this->page->course->id, coreview::account(), coreview::gregorian());
+        if (blocks::drops_footer($block, $applies)) {
+            $bc = clone($bc);
+            $bc->footer = '';
+        }
+        return parent::block($bc, $region);
     }
 
     /**

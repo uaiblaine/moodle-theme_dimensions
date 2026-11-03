@@ -727,7 +727,7 @@ const PublicCalendar = (props: PublicProps) => {
                     />
                 ) : null}
             </div>
-            {shown.answer.truncated ? <p className="dim-cal__status">{strings.calendar_truncated}</p> : null}
+            {shown.answer.truncated ? <p className="dim-cal__status">{strings.calendar_truncatedpublic}</p> : null}
             {popped && poppedentry ? (
                 <EventPopover
                     look={look}

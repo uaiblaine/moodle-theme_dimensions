@@ -946,4 +946,40 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('onPointerCancel={onCreate ? drop : undefined}', $drawer);
         $this->assertStringContainsString('list={variant === \'sheet\'}', $drawer);
     }
+
+    /**
+     * The popover names the course once: its place never falls back to the course's name, which the course row below
+     * already draws; the grid's labels keep the fallback (PROPOSAL.md section 32.2).
+     *
+     * @return void
+     */
+    public function test_the_popover_names_the_course_once(): void {
+        $this->assertStringContainsString('place: placeOf(item, look, false),', $this->sources()['EventPopover.tsx']);
+        $look = $this->sources()['look.ts'];
+        $this->assertStringContainsString(
+            'export const placeOf = (item: Item, look: Look, fallback: boolean = true): string => {',
+            $look
+        );
+        $this->assertStringContainsString("return place !== '' || !fallback ? place : course.fullname;", $look);
+        foreach (['Bar.tsx' => 'placeOf(item, look)', 'DayDrawer.tsx' => 'placeOf(entry.item, look)'] as $file => $call) {
+            $this->assertStringContainsString($call, $this->sources()[$file], $file . ' keeps the fallback.');
+        }
+    }
+
+    /**
+     * A visitor is told the answer was cut in a sentence of its own: the logged-in page's names open events alone, and
+     * a visitor's cut may be of the category events (PROPOSAL.md section 32.1).
+     *
+     * @return void
+     */
+    public function test_the_public_cut_is_told_as_the_visitors(): void {
+        $this->assertStringContainsString(
+            '{shown.answer.truncated ? <p className="dim-cal__status">{strings.calendar_truncatedpublic}</p> : null}',
+            $this->sources()['PublicCalendar.tsx']
+        );
+        $this->assertStringContainsString(
+            '{shown.answer.truncated ? <p className="dim-cal__status">{strings.calendar_truncated}</p> : null}',
+            $this->sources()['Calendar.tsx']
+        );
+    }
 }

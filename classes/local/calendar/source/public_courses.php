@@ -27,6 +27,7 @@ namespace theme_dimensions\local\calendar\source;
 use local_unlistedcourses\discoverability;
 use theme_dimensions\local\calendar\keys;
 use theme_dimensions\local\calendar\range;
+use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\calendar\window;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\publicaccess;
@@ -44,7 +45,7 @@ use theme_dimensions\local\landingfields;
  * at most {@see event_courses::OPEN_CAP} are answered. {@see truncated()} says when more may have been left out.
  *
  * Each item leads to the landing page ({@see links::page()}), whose enrolment is the way in ("Inscrever-se"); the
- * name is format_string() in the course's context with the filters off.
+ * name is {@see visitor::name()} in the course's context: core's multilang filter alone.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -133,11 +134,7 @@ final class public_courses {
             'id' => $courseid,
             'source' => self::SOURCE,
             'key' => keys::OPEN,
-            'name' => format_string((string) $row->fullname, true, [
-                'context' => \core\context\course::instance($courseid),
-                'escape' => false,
-                'filter' => false,
-            ]),
+            'name' => visitor::name((string) $row->fullname, \core\context\course::instance($courseid)),
             'timestart' => $start,
             'timeduration' => max(0, $end - $start),
             'courseid' => $courseid,

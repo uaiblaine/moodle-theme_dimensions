@@ -566,6 +566,47 @@ final class category_hero_test extends \advanced_testcase {
     }
 
     /**
+     * A visitor's hero offers the public calendar while the calendar page would serve that visitor: the switch on and
+     * the Gregorian calendar; a logged-in reader's hero never does (PROPOSAL.md section 32.1 of docs/calendar).
+     *
+     * @return void
+     */
+    public function test_a_visitor_is_offered_the_public_calendar(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/calendar/tests/calendartype_test_example.php');
+        $this->resetAfterTest();
+        [$categoryid, $viewer] = $this->public_category();
+        set_config(\theme_dimensions\local\calendar\visitor::SETTING, '1', 'theme_dimensions');
+        $category = core_course_category::get($categoryid, MUST_EXIST, true);
+
+        $this->become(null);
+        $criteria = new criteria($categoryid, ['anonymous' => true]);
+        $result = population::resolve($criteria);
+        $visitor = fn(): \stdClass => $this->export(new category_hero($category, $result, $criteria, false, '', false));
+
+        $context = $visitor();
+        $this->assertTrue($context->hascalendar);
+        $this->assertSame(\theme_dimensions\local\calendar\page::url()->out(false), $context->calendar['url']);
+        $this->assertSame(get_string('calendar_visitorlink', 'theme_dimensions'), $context->calendar['label']);
+
+        set_config(\theme_dimensions\local\calendar\visitor::SETTING, '0', 'theme_dimensions');
+        $this->assertFalse($visitor()->hascalendar, 'The public calendar off.');
+        set_config(\theme_dimensions\local\calendar\visitor::SETTING, '1', 'theme_dimensions');
+        $this->assertTrue($visitor()->hascalendar, 'Control: on again.');
+
+        $CFG->calendartype = 'test_example';
+        $this->assertFalse($visitor()->hascalendar, 'A calendar type the page refuses.');
+        $CFG->calendartype = 'gregorian';
+        $this->assertTrue($visitor()->hascalendar, 'Control: the Gregorian again.');
+
+        $this->become($viewer);
+        $criteria = new criteria($categoryid);
+        $context = $this->export(new category_hero($category, population::resolve($criteria), $criteria));
+        $this->assertFalse($context->hascalendar, 'A logged-in reader has the drawer.');
+        $this->assertNull($context->calendar);
+    }
+
+    /**
      * The trail above the title names the category's ancestors, and a visitor is shown only the public ones.
      *
      * Built from the category's path rather than from core's breadcrumb ({@see category_hero::trail()}).

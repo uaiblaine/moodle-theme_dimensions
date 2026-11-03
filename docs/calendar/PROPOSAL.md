@@ -2651,3 +2651,116 @@ each of `Calendar.test.tsx` and `PublicCalendar.test.tsx`: the phone layout and 
 `view=day` address drawn as the Day view with no request; a desktop-width first entry flips back; a non-matching query
 keeps the old behaviour), the source test, and gates `cal_r1d_js_guess_seed`, `_public`, `_phoned` and `_gutters`.
 Not seen on a stack by eye: the ESM build needs `mdl purge`.
+
+## 32. R2: the owner's answers to section 26 (2026-11-03)
+
+The owner answered section 26 on 2026-11-03 and asked for a pass of the calendar as a student. Branch `calendar-r2`, from
+main 2cb4a33. This section is the plan, written before the code.
+
+**The answers.** Taken as recommended:
+- 1 (core's footer goes);
+- 2 (the multilang filter alone on the visitor's names);
+- 3 (a cap on the visitor's category events);
+- 5 (a way in from the public category page);
+- 6, 7, 9, 10 and 11 (kept as they are);
+- 16 (the Behat suite on the stacks), already done (32.1 item 5).
+
+The rest:
+- **4 (event courses on the public calendar)** is the rule courses already follow: a public course in a listed category
+  is shown to a visitor; a public course in an unlisted one asks for a login. No change: `public_courses` asks
+  `landing\publicaccess::are_public()`, which is `discoverability::are_public()`, and that refuses a course with an
+  unlisted category anywhere on its path (`classes/discoverability.php` of local_unlistedcourses: an anonymous visitor
+  holds none of the three ways `category_access` admits a viewer). It is pinned beside its control in
+  `public_courses_test::test_only_a_public_event_course_is_answered()` ("A course in an unlisted category" /
+  "Control: the category listed again").
+- **8 (the Classic calendar link)** went in R1.
+- **12 (C6)** is Trail T3, the trail session's.
+- **13 (MDL Shield)** waits for the end of everything.
+- **15 (the merged branches)**: deleted on origin on 2026-11-03.
+- **No release tag.**
+
+**The student's pass (2026-11-03, m503b, `caldemo_student` through "Log in as", then a visitor).** What works: the month,
+the drawer, the popover (with core's student action, "Add submission"), the week, the phone's dots and sheet, and the
+visitor's calendar. Two findings, both in this round:
+- **dark mode underlines the calendar.** Core's `theme/boost/scss/moodle/dark.scss` underlines every link of
+  `#region-main` but core's own control classes (WCAG 1.4.1, for links inside prose), at a specificity of (1,6,1). The
+  calendar's cards, bars, lines and their times are links that the stylesheet draws with `text-decoration: none` at a
+  lower specificity, so on a dark page each one is underlined;
+- **the popover says the course twice.** For an item with no location, `placeOf()` falls back to the course's name,
+  and the popover then draws "Where: <course>" above "Course: <course>".
+
+One thing is not the theme's: during "Log in as", core's "You are logged in as..." text widens the navbar past a phone's
+width. Not changed.
+
+### 32.1 Server
+
+1. **Core's "Go to calendar..." under the theme's upcoming block** (item 1). `block_calendar_upcoming::get_content()`
+   writes it into `$this->content->footer`, outside the template the theme already replaces. The theme's
+   `output\core_renderer` gains `block()`: for a `block_contents` whose `data-block` is `calendar_upcoming`, while the
+   page is one the theme answers (`blocks::applies()`, the predicate `core_calendar_renderer` uses), the footer is
+   emptied before `parent::block()`. Any other block, and any page core answers, are untouched. The decision is
+   `blocks::drops_footer(string $block, bool $applies)`, pure, so its test needs no rendered block.
+2. **The visitor's names in one language** (item 2). `local\calendar\visitor::name(string $text, context $context)` runs
+   core's multilang filter alone (`\filter_multilang\text_filter`) while that filter is on for the site
+   (`filter_get_globally_enabled()`), then `format_string()` with the filters off, as today. The logged-in page
+   formats with every filter on, so it already shows one language when multilang is on; the visitor now matches it,
+   and with multilang off both show the raw text. Used for every name and location the visitor's answer formats:
+   - `public_events` (names and locations);
+   - `public_courses` (the course's name);
+   - `publicrange::courses()` and `publicrange::categories()`.
+
+   Descriptions keep the filters off: they are text through `html_to_text()`, whose multilang spans are already gone.
+3. **A cap on the visitor's category events** (item 3). `public_events::CAP = 200` per window, read with a limit of
+   `CAP + 1`, earliest first (the statement's order). Beyond it the source says `truncated()`, and `publicrange::answer()`
+   reports `truncated` when either visitor source does. The public page's status line becomes a string of its own,
+   `calendar_truncatedpublic` ("There are more events than the calendar shows."), because the logged-in line names open
+   events alone. The logged-in page keeps no cap.
+4. **A visitor's way to the public calendar** (item 5). On a public category page served to a visitor, the hero's actions
+   gain "Calendar" (`calendar_visitorlink`), leading to the calendar page. It is drawn when the public calendar is on
+   (`visitor::enabled()`) and the site's calendar type is the Gregorian, the two refusals the page itself makes. A
+   logged-in viewer keeps the drawer's row and gets no button.
+5. **Behat on the stacks** (item 16) was already done: `tests/behat/blacklist.json` (e57d977) drops tool_mulib's
+   `behat_tool_mulib_files` from the theme's suite. That context extends core's `behat_repository_upload`, so beside the
+   theme's override (over Boost Union's) core's upload steps were defined twice. Nothing to change.
+
+### 32.2 Client and stylesheet
+
+6. **No underline on the calendar's own links in dark mode.** `calendar.scss` gains one rule at a specificity above core's:
+   `:root[data-bs-theme="dark"] body.dim-calendar #region-main .dim-cal a[href]`, with
+   `:not(.dim-cal__popdesc a):not([data-region="dim-cal-footer"] a)`, sets `text-decoration: none`. The description's
+   prose links and the iCal link stay underlined, as core wants. `calendar_scss_test` pins the selector and its
+   specificity against core's rule.
+7. **The course once in the popover.** `placeOf(item, look, fallback = true)`: the popover asks with `fallback` false
+   while it draws the course row, so an item with no location and no city or venue has no "Where". The grid's labels
+   keep the fallback.
+
+### 32.3 Tests and gates
+
+- PHPUnit:
+  - `blocks_test::test_only_the_answered_upcoming_block_drops_its_footer` (the pure decision);
+  - `core_calendar_renderer_test::test_the_upcoming_footer_goes_where_the_theme_answers_the_block`. This one renders
+    through the theme's core renderer: under PHPUnit `get_renderer('core')` answers the CLI's, so the test asks for
+    `RENDERER_TARGET_GENERAL`. It covers the footer gone, the caller's contents untouched, another block, a course
+    page, the setting off and the guest;
+  - `public_events_test`:
+    - `test_names_run_the_multilang_filter_alone`: multilang on, available and disabled. `emailprotect` is on beside
+      it, the one core filter that rewrites a `format_string()`, as the control that no other filter runs (emoticon
+      leaves format_string() alone);
+    - `test_the_cap`: exactly CAP is whole; CAP + 1 is cut, the latest left out; `publicrange::answer()` reports the
+      cut;
+    - `test_an_item_says_what_a_visitor_may_read` now expects one language;
+  - `category_hero_test::test_a_visitor_is_offered_the_public_calendar` (the switch, the calendar type, a logged-in
+    reader);
+  - `calendar_scss_test::test_the_calendars_links_outrank_cores_dark_underline`. It reads core's rule from
+    `theme/boost/scss/moodle/dark.scss`, computes both specificities with a helper that reads core's as (1,6,1), and
+    requires the theme's, (1,7,4), to be higher;
+  - `calendar_component_source_test`: `test_the_popover_names_the_course_once` and
+    `test_the_public_cut_is_told_as_the_visitors`.
+- Jest: `model.test.ts` "the place" (the grid's fallback, the popover's none, a location, a city and a venue);
+  `PublicCalendar.test.tsx` (a cut answer in the visitor's sentence).
+- Behat: `theme_dimensions_calendar_public.feature`, a visitor following the hero's "Calendar" from a public category
+  page, and no button with the switch off.
+- Gates: the "R2" block of `mutations/gates.conf`, 15 gates. `cv_events_filter_off` moved to `visitor.php` with the
+  formatting, and claims the multilang test. Every line of the spec, 1,571 of them, was dry-matched against the tree:
+  none is dead.
+- Tier 3 (visitor-facing reads and a nologin answer): `mdl ci <worktree> --matrix --behat`.

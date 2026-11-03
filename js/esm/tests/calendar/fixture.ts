@@ -155,6 +155,7 @@ export const STRINGS: Record<string, string> = {
     'calendar_title': 'Calendar',
     'calendar_today': 'Today',
     'calendar_truncated': 'There are more open events than the calendar shows.',
+    'calendar_truncatedpublic': 'There are more events than the calendar shows.',
     'calendar_until': 'Until {$a}',
     'calendar_view': 'View',
     'calendar_viewday': 'Day',

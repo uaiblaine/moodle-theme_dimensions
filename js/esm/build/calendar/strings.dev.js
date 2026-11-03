@@ -90,6 +90,7 @@ const KEYS = [
   "calendar_title",
   "calendar_today",
   "calendar_truncated",
+  "calendar_truncatedpublic",
   "calendar_until",
   "calendar_view",
   "calendar_viewday",

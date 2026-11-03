@@ -9,6 +9,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   and deleted `upgrade-503`, which CI checked out as the parent theme: the 5.3 job now pins `MOODLE_503_STABLE`, and the
   README and CLAUDE.md name that branch. The release differs from the last `upgrade-503` head (143e7497) only in when
   the smart menus kept outside the "More" menu collapse into it (last, instead of never); no file of this theme changes.
+- **Calendar R2: the owner's answers to section 26** (2026100579), `docs/calendar/PROPOSAL.md` section 32. The
+  visitor's names and locations run core's multilang filter alone while it is on for the site, so a name in two
+  languages reads in one, as on the logged-in page. A visitor's window answers at most 200 category events, earliest
+  first, and says "There are more events than the calendar shows." past them. Core's "Go to calendar..." no longer
+  sits under the theme's upcoming block, which already ends with its "Full calendar". A visitor's public category page
+  offers "Calendar" in its hero while the public calendar is on. In dark mode the calendar's cards, bars and times are
+  no longer underlined by core's link rule (the description's prose links still are), and the popover names a course
+  once: an item with no location says no "Where". The public event courses already followed the course rule (a public
+  course in an unlisted category asks for a login): pinned, unchanged.
 - **A trail's next course that has not begun says when it starts** (2026100577), `docs/trail/PLAN.md` section 3. A
   learner's current step whose course starts later reads "Starts on <date>" in place of "In progress", and its line
   counts no days left until it begins; "Continue" still leads to it. The owner's call of 2026-11-03.
