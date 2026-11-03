@@ -828,4 +828,46 @@ final class landingfields_test extends \advanced_testcase {
             $this->assertSame($name, $many[$courseid]->names[landingfields::SHORTNAME_WORKLOAD], "Course {$courseid}.");
         }
     }
+
+    /**
+     * The upgrade step appends the trail line to a model select that holds the two lines it was created with, and only there.
+     *
+     * A fresh install provisions all three lines; a site provisioned before the trail holds two. A third line an
+     * administrator added keeps its position and its words, and a site without the field gets nothing.
+     */
+    public function test_the_trail_line_is_appended_to_a_two_line_model_only(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        self::clear_landing_fields();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+        $trail = get_string('landingfield_model_trail', landingfields::COMPONENT);
+        $configure = function (string $options): void {
+            $field = landingfields::get_field(landingfields::SHORTNAME_MODEL);
+            $config = (array) $field->get('configdata');
+            $config['options'] = $options;
+            api::save_field_configuration($field, (object) ['configdata' => $config]);
+            landingfields::reset_field_cache();
+        };
+
+        $this->assertSame($trail, landingfields::option_label(landingfields::SHORTNAME_MODEL, landingfields::MODEL_TRAIL));
+        $this->assertFalse(landingfields::add_trail_option(), 'A fresh install already has the line.');
+
+        $configure("Course\nEvent");
+        $this->assertNull(
+            landingfields::option_label(landingfields::SHORTNAME_MODEL, landingfields::MODEL_TRAIL),
+            'Precondition: a site provisioned before the trail.'
+        );
+        $this->assertTrue(landingfields::add_trail_option());
+        $this->assertSame(['Course', 'Event', $trail], landingfields::option_lines(landingfields::SHORTNAME_MODEL));
+        $this->assertFalse(landingfields::add_trail_option(), 'Run again, the step appends nothing.');
+
+        $configure("Course\nEvent\nWorkshop");
+        $this->assertFalse(landingfields::add_trail_option());
+        $this->assertSame(['Course', 'Event', 'Workshop'], landingfields::option_lines(landingfields::SHORTNAME_MODEL));
+
+        api::delete_field_configuration(landingfields::get_field(landingfields::SHORTNAME_MODEL));
+        landingfields::reset_field_cache();
+        $this->assertFalse(landingfields::add_trail_option());
+    }
 }

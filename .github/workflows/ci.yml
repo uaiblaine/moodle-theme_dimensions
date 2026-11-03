@@ -52,6 +52,11 @@ jobs:
   # themselves where the block is absent, and a site without it excludes the
   # feature with --tags '~@block_compass'.
   #
+  # mod_subcourse is optional and NOT in version.php: it makes the Trail page model, whose
+  # steps are a course's Subcourse activities, and without it the Trail line is not offered
+  # (docs/trail/PLAN.md, decision Q9). It is here so the trail reader's tests run against the
+  # real module; they skip themselves where it is absent.
+  #
   # tool_courserating is optional and NOT in version.php: the category
   # showcase prints its ratings on the course cards and in the course dialogue
   # where it is installed and rates some course, and reads nothing of it where
@@ -77,3 +82,4 @@ jobs:
         uaiblaine/moodle-local_page,main
         uaiblaine/moodle-block_compass,MOODLE_503_STABLE
         marinaglancy/moodle-tool_courserating,MOODLE_405_STABLE
+        uaiblaine/moodle-mod_subcourse,MOODLE_503_STABLE

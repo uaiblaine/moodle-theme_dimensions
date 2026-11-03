@@ -35,6 +35,7 @@ use theme_dimensions\local\calendar\state;
 use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\calendar\window;
 use theme_dimensions\local\landingfields;
+use theme_dimensions\local\trail\trail;
 
 /**
  * The calendar page as theme_dimensions/calendar_page draws it.
@@ -304,7 +305,9 @@ class calendar_page implements renderable, templatable {
     private static function options(string $shortname): array {
         $options = [];
         foreach (landingfields::option_lines($shortname) ?? [] as $index => $line) {
-            $options[] = ['value' => $index + 1, 'label' => format_string($line, true, ['escape' => false])];
+            if (!trail::hides_option($shortname, $index + 1)) {
+                $options[] = ['value' => $index + 1, 'label' => format_string($line, true, ['escape' => false])];
+            }
         }
         return $options;
     }

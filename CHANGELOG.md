@@ -5,12 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **Calendar R1d: no desktop flash on a phone's first paint** (no version yet), `docs/calendar/PROPOSAL.md` section 31.6.
+- **Calendar R1d: no desktop flash on a phone's first paint** (2026100574), `docs/calendar/PROPOSAL.md` section 31.6.
   The first render guesses the phone layout from a media query (`max-width: 591px`, the phone width plus the page's
   gutters) instead of waiting for the first measure, so a phone no longer first draws the desktop month and drawer, and
   a `view=day` address opens the Day view at once; the measure of the calendar's frame still decides and replaces the
   guess. The public calendar too. Needs a purge for the ESM build.
-- **Calendar R1d: the Day view on a phone** (no version yet), `docs/calendar/PROPOSAL.md` section 31. On a phone (the
+- **Calendar R1d: the Day view on a phone** (2026100574), `docs/calendar/PROPOSAL.md` section 31. On a phone (the
   calendar's frame narrower than 576px) the view switch offers Month / Week / Day: the Day view is one day at the full
   width, its name and date in the toolbar's caption, whose arrows and "Today" move it a day at a time; under it the
   drawer's own body (the all-day items, then the whole day's hour column in its scroll box, opened on the earliest item
@@ -22,7 +22,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   the Day view's arrows ask for one day. The public calendar gets the same. New strings `calendar_nextday`,
   `calendar_prevday`, `calendar_viewday`. No swipe between days. PHPUnit, Jest, two Behat scenarios and new mutation
   gates (R1d block). Needs a purge for the stylesheet and the ESM build.
-- **Calendar R1c: the owner's second look** (no version yet), `docs/calendar/PROPOSAL.md` section 30. Fixed a freeze of the week view
+- **Calendar R1c: the owner's second look** (2026100574), `docs/calendar/PROPOSAL.md` section 30. Fixed a freeze of the week view
   (an endless grid/agenda flip): the week read the width of its own drawer-narrowed box for the phone decision; it now reads
   the frame's alone, and the grids report their height only when it changes (section 30.7). The day drawer's and
   the week's hour column is the whole day (00:00-24:00) in a scroll box of its own, opening on the day's items (or on
@@ -42,6 +42,38 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   grid's height to the calendar, which renders it on the frame as a style prop it owns (`--dim-cal-gridheight`, so a re-render never drops it) and the drawer's cap takes the smaller of the two (section 30.7). The hour box re-places its opening's position when that
   height arrives after the first placing (an empty day opened by the address ends centred), until the reader's first
   wheel, touch or key on the box.
+- **The landing page in the brand's colour, its sections in a panel, and a way in for managers** (2026100572).
+  The hero, the section titles and the checks are drawn in the theme's primary colour (Boost Union's brandcolor, or the
+  flavour's): a colour on whose lightest stop white text reads under 4.5:1 is shaded in 4% steps until it does,
+  instead of falling back to the design system's navy (Boost's default blue moves one step). The summary and a new
+  panel take the hero's inline padding, so every text starts where the course title does (2.5rem from md up, 1.75rem
+  on a phone); the sections after the summary (target audience, programme, certification) share that panel, in a soft
+  border of the brand colour, with bullet lists drawn as a checklist (a check in the brand's ink; lifted to read on
+  the dark card in the dark mode). A reader who manages the course without an enrolment (core's
+  `moodle/course:view` or `moodle/course:update`, and let in by `can_access_course()`) gets "Access the course" (or
+  "Access the event") under the enrolment, with a note that only managers see it. Links and buttons keep Boost
+  Union's `linkcolor` and `buttonbrandcolor`. New strings `landing_manage_course`, `landing_manage_event`,
+  `landing_managenote_course`, `landing_managenote_event`. PHPUnit, a Behat smoke and mutation gates
+  (`landing_ink_dark`, `landing_panel_ink`, `landing_panel_wrap`, `landing_manage_*`; `landing_ground_floor` and
+  `landing_ground_brand` rewritten).
+- **The course landing page carries no block region and no course index** (2026100571). Both entries of the page,
+  the public page a visitor is served and the page a logged-in reader gets, draw no block, no block drawer or toggle,
+  no "Add a block" button in edit mode and no course index drawer, decided on the server in `request::handle()`: the
+  calendar's mechanism (no block loaded, block editing locked), now one helper both pages call
+  (`local\blockless::apply()`), and core's own switch for the index (`$PAGE->set_show_course_index(false)`, the first
+  thing `core_course_drawer()` reads). The guest entry's interstitial needed nothing: the embedded layout draws fake
+  blocks alone and no drawer. PHPUnit (`request_drawers_test`, each case against a control page left to core), a
+  Behat smoke (the course page as the control) and mutation gates (`landing_blocks_wired`,
+  `landing_courseindex_shown`, `cal_r1b_blocks_wired`; `cal_r1b_blocks_shown` and `cal_r1b_blocks_unlocked` moved to
+  the shared helper).
+- **The Trail page model, stage T0** (2026100569), `docs/trail/PLAN.md`. The page model select gains a third line,
+  *Trail* (`landingfields::MODEL_TRAIL`), appended by the branch's first upgrade step on a site provisioned with two
+  lines (`landingfields::add_trail_option()`). A trail's steps are its Subcourse activities, read by one reader for
+  the landing page and the calendar (`local\trail\trail`, `local\trail\step`): course order, the window from the
+  referenced course's start date to the activity's expected completion date or the course's end date, one statement
+  for the references of any number of trails. mod_subcourse is optional: without it the Trail line is left out of the
+  course form, the default for new courses and the calendar's model filter. The showcase's cards tag a trail as one.
+  Nothing draws a trail yet (T1).
 - **Calendar R1b: the category events you create, and the first paint** (2026100568),
   `docs/calendar/PROPOSAL.md` section 29. The site view's categories include every category where the viewer may
   create category events (core's form asks `moodle/category:manage` with doanything; core's view asks it without, so

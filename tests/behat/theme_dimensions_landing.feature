@@ -23,6 +23,38 @@ Feature: Course enrolment landing page
     And I should see "About the course."
     And I should see "Enrolments are unavailable at the moment"
 
+  Scenario: An administrator without an enrolment is offered a way into the course
+    Given the following "courses" exist:
+      | fullname       | shortname | customfield_dimensions_model |
+      | Managed Course | MC1       | 1                            |
+    When I am on the "MC1" "theme_dimensions > Enrolment landing page" page logged in as "admin"
+    Then I should see "Shown only to those who manage this course."
+    And I click on "Access the course" "link" in the "[data-region='dimensions-landing-manage']" "css_element"
+    And the url should match "/course/view\.php"
+
+  Scenario: A learner sees no way in meant for managers
+    Given the following "courses" exist:
+      | fullname       | shortname | customfield_dimensions_model |
+      | Managed Course | MC1       | 1                            |
+    When I am on the "MC1" "theme_dimensions > Enrolment landing page" page logged in as "student1"
+    Then I should see "Managed Course"
+    And "[data-region='dimensions-landing-manage']" "css_element" should not exist
+
+  Scenario: The landing page carries no block drawer and no course index, even in edit mode
+    Given the following "courses" exist:
+      | fullname      | shortname | customfield_dimensions_model |
+      | Drawer Course | DC1       | 1                            |
+    # The control: the course's own page offers both drawers and the add-block button in edit mode.
+    And I am on the "DC1" "Course" page logged in as "admin"
+    And I turn editing mode on
+    And "#theme_boost-drawers-courseindex" "css_element" should exist
+    And "[data-region='add-block-button']" "css_element" should exist
+    When I am on the "DC1" "theme_dimensions > Enrolment landing page" page
+    Then I should see "Drawer Course"
+    And "#theme_boost-drawers-courseindex" "css_element" should not exist
+    And "#theme_boost-drawers-blocks" "css_element" should not exist
+    And "[data-region='add-block-button']" "css_element" should not exist
+
   Scenario: A user enrolled from a later date is told when the access starts and is offered no enrolment
     Given the following "users" exist:
       | username | firstname | lastname | email                |

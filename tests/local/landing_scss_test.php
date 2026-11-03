@@ -33,10 +33,11 @@ use theme_dimensions\local\category\branding;
  * Compiles scss/landing.scss against Bootstrap with a given $primary and reads the ground it declares.
  *
  * The decision is the compiler's, so it is tested on compiled CSS: a brand colour that keeps white
- * text at 4.5:1 on its lightest stop becomes the gradient of branding::stops(), any other keeps the
- * institutional navy, and both roots that paint the ground, the landing page and the guest entry,
- * carry the same three stops. Boost Union compiles the same sheet once per flavour with the flavour's
- * brand colour as $primary, which is the $primary set here.
+ * text at 4.5:1 on its lightest stop becomes the gradient of branding::stops(), any other is shaded
+ * until it does and stays in its own hue, and both roots that paint the ground, the landing page and
+ * the guest entry, carry the same three stops. The panel's ink is that colour, lifted on a dark card.
+ * Boost Union compiles the same sheet once per flavour with the flavour's brand colour as $primary,
+ * which is the $primary set here.
  *
  * @package    theme_dimensions
  * @category   test
@@ -48,12 +49,8 @@ final class landing_scss_test extends \advanced_testcase {
     /** @var array The two roots that paint the ground. */
     private const ROOTS = ['.theme_dimensions-landing', '.theme_dimensions-guestentry'];
 
-    /** @var array The stops of the institutional navy, as the fallback declares them. */
-    private const NAVY = [
-        'from' => 'var(--dim-ds-blue-800)',
-        'mid' => 'var(--dim-ds-blue-600)',
-        'to' => 'var(--dim-ds-blue-500)',
-    ];
+    /** @var string The raised surface core's colour mode paints a card with ($dark-surface-raised, $gray-800). */
+    private const DARK_CARD = '#343a40';
 
     /**
      * Compile the landing sheet with a brand colour.
@@ -135,12 +132,12 @@ final class landing_scss_test extends \advanced_testcase {
     /**
      * Brand colours on whose lightest stop white text reads under 4.5:1.
      *
-     * Boost's default blue is the case that matters: a site with no brand colour keeps the navy.
+     * Boost's default blue is the case that matters: a site with no brand colour gets it, one step darker.
      * Its lightest stop reads about 4.0:1, so a lowered threshold reddens it.
      *
      * @return array Named cases of one colour.
      */
-    public static function navy_provider(): array {
+    public static function light_provider(): array {
         return [
             'Boost default blue' => ['#0f6cbf'],
             'amber' => ['#f0b400'],
@@ -148,19 +145,93 @@ final class landing_scss_test extends \advanced_testcase {
     }
 
     /**
-     * A brand colour too light for white text leaves the institutional navy.
+     * The first 4% step of shade of a colour whose lightest stop carries white text at the floor, as the sheet finds it.
      *
-     * The control is the same colour's own stops: they are what a missing guard would have declared.
+     * @param string $primary The brand colour.
+     * @return array The step and the shaded colour's channels.
+     */
+    private static function expected_base(string $primary): array {
+        $channels = array_map('hexdec', str_split(ltrim($primary, '#'), 2));
+        for ($step = 0; $step <= 25; $step++) {
+            $shaded = array_map(fn(int $c): int => (int) round($c * (1 - $step * 0.04)), $channels);
+            $lightest = branding::stops(vsprintf('#%02x%02x%02x', $shaded))['to'];
+            if (branding::contrast($lightest, '#ffffff') >= branding::FLOOR) {
+                return [$step, $shaded];
+            }
+        }
+        return [25, $shaded];
+    }
+
+    /**
+     * A brand colour too light for white text is shaded until white reads on its lightest stop, and keeps its hue.
+     *
+     * The control is the colour's own stops, which fail the floor: they are what a missing guard would have declared.
      *
      * @param string $primary The brand colour.
      */
-    #[DataProvider('navy_provider')]
-    public function test_a_light_brand_colour_keeps_the_navy(string $primary): void {
+    #[DataProvider('light_provider')]
+    public function test_a_light_brand_colour_is_shaded_until_white_reads(string $primary): void {
         $this->assertLessThan(branding::FLOOR, branding::contrast(branding::stops($primary)['to'], '#ffffff'));
+        [$step, $base] = self::expected_base($primary);
+        $this->assertGreaterThan(0, $step);
         $css = $this->compile($primary);
         foreach (self::ROOTS as $root) {
-            $this->assertSame(self::NAVY, $this->stops($css, $root), $root);
+            $stops = $this->stops($css, $root);
+            $this->assertGreaterThanOrEqual(branding::FLOOR, branding::contrast($stops['to'], '#ffffff'), $root);
+            $mid = array_map('hexdec', str_split(ltrim((string) branding::hex($stops['mid']), '#'), 2));
+            foreach ($base as $i => $channel) {
+                $this->assertEqualsWithDelta($channel, $mid[$i], 1, "{$root}: the mid stop is the brand colour, shaded.");
+            }
         }
+    }
+
+    /**
+     * The panel's ink (section titles, checks) is the base on the white card and reads at the floor on the dark one.
+     *
+     * @param string $primary The brand colour.
+     */
+    #[DataProvider('light_provider')]
+    #[DataProvider('branded_provider')]
+    public function test_the_panel_ink_reads_on_the_card_in_both_modes(string $primary): void {
+        $css = $this->compile($primary);
+        $light = $this->rule($css, '.theme_dimensions-landing');
+        $this->assertSame(1, preg_match('~--dim-landing-ink:\s*([^;]+);~', $light, $matches));
+        $this->assertSame($this->stops($css, '.theme_dimensions-landing')['mid'], trim($matches[1]));
+        $this->assertGreaterThanOrEqual(branding::FLOOR, branding::contrast(trim($matches[1]), '#ffffff'));
+
+        $dark = $this->rule($css, ':root[data-bs-theme="dark"] .theme_dimensions-landing');
+        $this->assertSame(1, preg_match('~--dim-landing-ink:\s*([^;]+);~', $dark, $matches));
+        $this->assertGreaterThanOrEqual(branding::FLOOR, branding::contrast(trim($matches[1]), self::DARK_CARD));
+    }
+
+    /**
+     * The summary and the panel take the hero's inset, and the panel's titles and checks read the ink.
+     */
+    public function test_the_text_lines_up_with_the_title_and_the_panel_reads_the_ink(): void {
+        $css = $this->compile('#0f6cbf');
+        $this->assertStringContainsString(
+            'padding: 2.5rem var(--dim-landing-inset) 3.25rem',
+            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__hero')
+        );
+        $this->assertStringContainsString(
+            'padding-inline: var(--dim-landing-inset)',
+            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__section--summary')
+        );
+        $panel = $this->rule($css, '.theme_dimensions-landing .dimensions-landing__panel');
+        $this->assertStringContainsString('var(--dim-landing-inset)', $panel);
+        $this->assertStringContainsString('border: 1px solid var(--dim-landing-soft)', $panel);
+        $this->assertStringContainsString(
+            'color: var(--dim-landing-ink)',
+            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__sectiontitle')
+        );
+        $this->assertStringContainsString(
+            'background: var(--dim-landing-ink)',
+            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__panel ul > li::before')
+        );
+        $this->assertStringContainsString(
+            'list-style: none',
+            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__panel ul')
+        );
     }
 
     /**

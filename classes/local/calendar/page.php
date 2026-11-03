@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\local\calendar;
 
+use theme_dimensions\local\blockless;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\output\calendar_page;
 use theme_dimensions\output\opengraph;
@@ -432,25 +433,6 @@ final class page {
     }
 
     /**
-     * Leave the page without any block: no block content, no block drawer, no "Add a block" button.
-     *
-     * Two switches of core, both needed. {@see \block_manager::show_only_fake_blocks()} loads no block instance and
-     * creates none that the theme requires, so no region has content; it does not touch the add-block control, which
-     * core's renderer draws in edit mode from the page's regions alone. {@see \moodle_page::force_lock_all_blocks()}
-     * makes user_can_edit_blocks() false for everyone, which empties that control. The layout (drawers.php) draws the
-     * block drawer and its toggle only when a region holds block markup or the add-block control is not empty, so with
-     * both the drawer is not drawn, in edit mode as out of it.
-     *
-     * @return void
-     */
-    private static function without_blocks(): void {
-        global $PAGE;
-
-        $PAGE->blocks->show_only_fake_blocks(true);
-        $PAGE->force_lock_all_blocks();
-    }
-
-    /**
      * The public calendar for a visitor who is not logged in: the same page in its visitor mode.
      *
      * No require_login(): forcelogin is a set of explicit reads in core, none of which is made here (the public
@@ -484,7 +466,7 @@ final class page {
         $PAGE->set_title(get_string('calendar_title', 'theme_dimensions'));
         $PAGE->set_heading('');
         $PAGE->add_body_class(self::BODY_CLASS);
-        self::without_blocks();
+        blockless::apply($PAGE);
         $PAGE->requires->strings_for_js(calendar_page::STRINGS, 'theme_dimensions');
         opengraph::set(opengraph::for_calendar(self::url()));
 
@@ -546,7 +528,7 @@ final class page {
         $PAGE->set_title(get_string('calendar_title', 'theme_dimensions'));
         $PAGE->set_heading('');
         $PAGE->add_body_class(self::BODY_CLASS);
-        self::without_blocks();
+        blockless::apply($PAGE);
         $PAGE->requires->strings_for_js(calendar_page::STRINGS, 'theme_dimensions');
 
         return new self(null, new calendar_page(
