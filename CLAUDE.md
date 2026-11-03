@@ -19,12 +19,12 @@ content whose one personal datum is the `usermodified` authorship stamp) and sev
 the privacy provider is a request, userlist and user preference provider: the stamp is exported
 and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
-on Boost Union's `upgrade-503` branch until Boost Union tags its 5.3 release. Hard-depends on
+on Boost Union's `MOODLE_503_STABLE` branch (v5.3-r1 onwards). Hard-depends on
 `theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);
 `customfield_picture`, `auth_loginsteps`, `local_page` and `tool_courserating` are optional and asked for at run time,
 never declared (the first through `landingfields::picture_type_available()`, the other three by class name). CI is the moodle-an-hochschulen reusable workflow, one job in
 `.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
-branch in `plugin-dependencies` at the same time (`upgrade-503` today, its stable branch once tagged).
+branch in `plugin-dependencies` at the same time (`MOODLE_503_STABLE`).
 The theme is mounted on the shared stack **m503** at `theme/dimensions`; the 5.2 history below
 (measurements on m502, the 5.02 CI legs) is the record of the release it was imported on.
 
@@ -77,7 +77,7 @@ mdl purge m503                                                     # after PHP o
 In a Claude Code cloud session none of `mdl`, the stacks, `~/dev/CLAUDE.md` or the owner's memory
 exist. The cloud environment's setup script (`moodle-dev/cloud/setup.sh`) installs
 `moodle-plugin-ci` and the `mpci` runner instead, and `mpci` reads this repo's `ci.yml`: it installs
-`MOODLE_503_STABLE` with the `plugin-dependencies` (Boost Union's `upgrade-503`, `local_unlistedcourses`,
+`MOODLE_503_STABLE` with the `plugin-dependencies` (Boost Union's `MOODLE_503_STABLE`, `local_unlistedcourses`,
 and the optional `customfield_picture` and `local_page`, all public) by itself.
 
 ```sh
@@ -350,7 +350,7 @@ them and reads today's upstream the way the page does (the template finder for t
 reflection on the class the copy would otherwise inherit from).
 
 - **`upstream_test` reddens the moment core or Boost Union changes a copied file, on purpose**, CI included (CI
-  takes Boost Union's `upgrade-503` and core's `MOODLE_503_STABLE` live). The copy is brought back to parity in
+  takes Boost Union's and core's `MOODLE_503_STABLE` live). The copy is brought back to parity in
   the change that takes the new upstream in, as the readingbar test already demands of Boost Union's flush
   condition.
 - **The fix is `scripts/upstream-merge.sh [--check] [stack]`** (host; the stack, m503 by default, must mount this

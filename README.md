@@ -357,7 +357,7 @@ Requirements
 
 | Plugin | Version | Why |
 |---|---|---|
-| [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100500 or later, its Moodle 5.3 version (the `upgrade-503` branch until Boost Union tags its 5.3 release) | The parent theme. |
+| [theme_boost_union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union) | 2026100500 or later, its Moodle 5.3 version (`MOODLE_503_STABLE`, v5.3-r1 or later) | The parent theme. |
 | [local_unlistedcourses](https://github.com/uaiblaine/moodle-local_unlistedcourses) | 2026100505 or later | Decides which courses and categories are listed, unlisted or public; the category showcase, the public pages and the listings ask it. |
 
 ### Optional plugins
@@ -502,8 +502,6 @@ plugins directory requires; it is left out of the release package.
 Roadmap
 -------
 
-- **Boost Union's 5.3 release**: the theme follows Boost Union's `upgrade-503` branch until Boost Union
-  tags its 5.3 version, then pins that release.
 - **The competency framework's user experience** across the dimensions family of plugins
   (local_dimensions, block_dimensions, block_compass), with this theme as its home. Done: the
   family tokens, and core's competency pages and dialogues in the theme's design (above). Next: the
