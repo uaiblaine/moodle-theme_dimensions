@@ -19,7 +19,9 @@
  * The grid is role="grid" labelled by the caption, in three rows: the day headers (seven columnheaders, each holding
  * the day's button), the all-day strip (a rowheader, then seven gridcells holding the bars that start on each day, laid
  * out by layout.ts weekLayout() so a bar spans its columns) and the hour body (a rowheader, then a gridcell per day
- * with its timed items in the drawer's columns, over the week's hour window: no scroll box of its own). The layout is
+ * with its timed items in the drawer's columns). The hour body is the whole day, 00:00 to 24:00, in the drawer's scroll
+ * box (HourScroll.tsx, a rowgroup of the grid; R1c, PROPOSAL.md section 30.1), opening on the week's busy band
+ * (weeks.ts weekPlan()'s window) or, with nothing timed and "New event" offered, on the working hours. The layout is
  * weeks.ts weekPlan(), pure.
  *
  * - One Tab stop, the selected day's header (roving tabindex). On a header the arrows move a day (past the week's ends
@@ -52,7 +54,8 @@ import type {Placed} from './layout';
 import {colourStyle, keyClass, whenOf} from './look';
 import type {Look} from './look';
 import {itemHref} from './model';
-import {itemKey} from './overlap';
+import HourScroll from './HourScroll';
+import {EMPTY_WINDOW, FULL_DAY, itemKey} from './overlap';
 import type {Laid} from './overlap';
 import {hourBox, moveInWeek, nowLine, stepWeekFrom, weekPlan, weekStops} from './weeks';
 import type {Cursor} from './weeks';
@@ -77,6 +80,7 @@ type WeekGridProps = {
     onGround?: (iso: string, hour: number | null, clicks: number) => void,
     onCreate?: (iso: string, hour: number | null) => void,
     onWidth: (width: number) => void,
+    onHeight?: (height: number) => void,
 };
 
 /** The weekday's name in a header. */
@@ -134,12 +138,18 @@ const WeekGrid = (props: WeekGridProps) => {
     const cursor = useRef<Cursor | null>(null);
     const width = useRef<(width: number) => void>(props.onWidth);
     width.current = props.onWidth;
+    const gridheight = useRef<((height: number) => void) | undefined>(props.onHeight);
+    gridheight.current = props.onHeight;
+    const lastheight = useRef<number>(0);
 
     const plan = useMemo(() => weekPlan(days, placed, look.zone), [days, placed, look.zone]);
     const stops = useMemo(() => weekStops(plan, look.zone), [plan, look.zone]);
     const counts = useMemo(() => dayCounts(days, placed), [days, placed]);
     const labels = useMemo(() => hourLabels(look.language), [look.language]);
-    const line = nowLine(days, (Number(now) || 0) + elapsed, look.zone, plan.window);
+    // The hour body is drawn while the week has a timed item or creation is offered, always over the whole day.
+    const body = plan.window || onCreate ? FULL_DAY : null;
+    const opening = plan.window ? `${days[0]}:${plan.window.from}-${plan.window.to}` : `${days[0]}:empty`;
+    const line = nowLine(days, (Number(now) || 0) + elapsed, look.zone, body);
 
     useEffect(() => {
         const frame = root.current?.parentElement || null;
@@ -148,12 +158,23 @@ const WeekGrid = (props: WeekGridProps) => {
         }
         const observer = new ResizeObserver((entries) => {
             entries.forEach((entry) => {
-                if (entry.contentRect.width > 0) {
+                // The phone decision reads the frame's width only: the week's own box is narrowed by the open drawer,
+                // which the phone decision itself removes, so reading it flipped the layout on every pass.
+                if (entry.target === frame && entry.contentRect.width > 0) {
                     width.current(entry.contentRect.width);
+                }
+                // The grid's one height, reported only when it changes: the cap it drives never feeds back into it.
+                const reported = Math.round(entry.contentRect.height);
+                if (entry.target === root.current && reported > 0 && reported !== lastheight.current) {
+                    lastheight.current = reported;
+                    gridheight.current?.(reported);
                 }
             });
         });
         observer.observe(frame);
+        if (root.current) {
+            observer.observe(root.current);
+        }
         return () => observer.disconnect();
     }, []);
 
@@ -335,7 +356,7 @@ const WeekGrid = (props: WeekGridProps) => {
      */
     const timed = (laid: Laid, iso: string) => {
         const item = laid.entry.item;
-        const box = plan.window ? hourBox(laid, look.zone, plan.window) : {top: 0, height: 0, left: 0, width: 1};
+        const box = hourBox(laid, look.zone, FULL_DAY);
         const style = {
             ...colourStyle(item, look),
             '--dim-cal-top': `${box.top * 100}%`,
@@ -495,45 +516,55 @@ const WeekGrid = (props: WeekGridProps) => {
                         ))}
                     </div>
                 </div>
-                {plan.window ? (
-                    <div
-                        className="dim-cal__weekrow dim-cal__weekhours"
-                        role="row"
-                        data-region="dim-cal-weekhours"
-                        style={{'--dim-cal-hourcount': String(plan.window.to - plan.window.from)} as CSSProperties}
+                {body ? (
+                    <HourScroll
+                        band={plan.window || EMPTY_WINDOW}
+                        busy={plan.window !== null}
+                        opening={opening}
+                        label={look.strings.calendar_hoursbox}
+                        focusable={true}
+                        role="rowgroup"
+                        variant="week"
                     >
-                        <div className="dim-cal__weekgutter dim-cal__weekgutter--hours" role="rowheader">
-                            <span className="visually-hidden">{look.strings.calendar_timed}</span>
-                            {labels.slice(plan.window.from, plan.window.to).map((label, hour) => (
-                                <span key={hour} className="dim-cal__hour" aria-hidden="true">{label}</span>
+                        <div
+                            className="dim-cal__weekrow dim-cal__weekhours"
+                            role="row"
+                            data-region="dim-cal-weekhours"
+                            style={{'--dim-cal-hourcount': String(body.to - body.from)} as CSSProperties}
+                        >
+                            <div className="dim-cal__weekgutter dim-cal__weekgutter--hours" role="rowheader">
+                                <span className="visually-hidden">{look.strings.calendar_timed}</span>
+                                {labels.slice(body.from, body.to).map((label, hour) => (
+                                    <span key={hour} className="dim-cal__hour" aria-hidden="true">{label}</span>
+                                ))}
+                            </div>
+                            {days.map((iso, column) => (
+                                <div
+                                    key={iso}
+                                    className={`dim-cal__weekcol${isWeekend(iso) ? ' dim-cal__weekcol--weekend' : ''}`
+                                        + `${iso === selected ? ' dim-cal__weekcol--selected' : ''}`}
+                                    role="gridcell"
+                                    data-region="dim-cal-weekcol"
+                                    data-day={iso}
+                                    {...pressing(iso)}
+                                    onDoubleClick={onCreate ? (event) => onDoubleClick(event, iso) : undefined}
+                                >
+                                    {onCreate ? hours(body.from, body.to).map((hour) => (
+                                        <span key={hour} className="dim-cal__slot" data-hour={hour} aria-hidden="true"></span>
+                                    )) : null}
+                                    {line !== null && line.column === column ? (
+                                        <span
+                                            className="dim-cal__now"
+                                            style={{'--dim-cal-top': `${line.share * 100}%`} as CSSProperties}
+                                            aria-hidden="true"
+                                            data-region="dim-cal-now"
+                                        ></span>
+                                    ) : null}
+                                    {plan.columns[column].map((laid) => timed(laid, iso))}
+                                </div>
                             ))}
                         </div>
-                        {days.map((iso, column) => (
-                            <div
-                                key={iso}
-                                className={`dim-cal__weekcol${isWeekend(iso) ? ' dim-cal__weekcol--weekend' : ''}`
-                                    + `${iso === selected ? ' dim-cal__weekcol--selected' : ''}`}
-                                role="gridcell"
-                                data-region="dim-cal-weekcol"
-                                data-day={iso}
-                                {...pressing(iso)}
-                                onDoubleClick={onCreate ? (event) => onDoubleClick(event, iso) : undefined}
-                            >
-                                {onCreate && plan.window ? hours(plan.window.from, plan.window.to).map((hour) => (
-                                    <span key={hour} className="dim-cal__slot" data-hour={hour} aria-hidden="true"></span>
-                                )) : null}
-                                {line !== null && line.column === column ? (
-                                    <span
-                                        className="dim-cal__now"
-                                        style={{'--dim-cal-top': `${line.share * 100}%`} as CSSProperties}
-                                        aria-hidden="true"
-                                        data-region="dim-cal-now"
-                                    ></span>
-                                ) : null}
-                                {plan.columns[column].map((laid) => timed(laid, iso))}
-                            </div>
-                        ))}
-                    </div>
+                    </HourScroll>
                 ) : null}
             </div>
             {!plan.window && !plan.strip.bars.length ? (

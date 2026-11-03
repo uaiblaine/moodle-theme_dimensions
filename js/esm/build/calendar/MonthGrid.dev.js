@@ -35,6 +35,8 @@ import { ROW_DEFAULT, barSlots, dayCounts, weekLayout } from "./layout";
 import { isWeekend } from "./days";
 import WeekRow from "./WeekRow";
 const PHONE = 576;
+const PHONE_GUTTERS = 16;
+const guessPhone = /* @__PURE__ */ __name(() => typeof window !== "undefined" && typeof window.matchMedia === "function" ? window.matchMedia(`(max-width: ${PHONE + PHONE_GUTTERS - 1}px)`).matches : false, "guessPhone");
 const WEEKDAY = { weekday: "short" };
 const stepFrom = /* @__PURE__ */ __name((key, iso, week) => {
   switch (key) {
@@ -68,6 +70,9 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
   count.current = weeks.length;
   const width = useRef(props.onWidth);
   width.current = props.onWidth;
+  const gridheight = useRef(props.onHeight);
+  gridheight.current = props.onHeight;
+  const lastheight = useRef(0);
   const days = useMemo(() => weeks.flat(), [weeks]);
   const counts = useMemo(() => dayCounts(days, placed), [days, placed]);
   const slots = barSlots(height);
@@ -87,9 +92,17 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
         if (entry.target === frame && box.width > 0) {
           width.current(box.width);
         }
+        const reported = Math.round(box.height);
+        if (entry.target === grid.current && frame && reported > 0 && reported !== lastheight.current) {
+          lastheight.current = reported;
+          gridheight.current?.(reported);
+        }
       });
     });
     observer.observe(element);
+    if (grid.current) {
+      observer.observe(grid.current);
+    }
     if (frame) {
       observer.observe(frame);
     }
@@ -168,12 +181,12 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-            lineNumber: 235,
+            lineNumber: 268,
             columnNumber: 21
           }
         )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 233,
+          lineNumber: 266,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("div", { ref: rows, className: "dim-cal__weeks", role: "rowgroup", children: weeks.map((week, index) => /* @__PURE__ */ jsxDEV(
@@ -196,12 +209,12 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-            lineNumber: 244,
+            lineNumber: 277,
             columnNumber: 21
           }
         )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 242,
+          lineNumber: 275,
           columnNumber: 13
         })
       ]
@@ -210,7 +223,7 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-      lineNumber: 220,
+      lineNumber: 253,
       columnNumber: 9
     }
   );
@@ -218,7 +231,9 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
 var MonthGrid_default = MonthGrid;
 export {
   PHONE,
+  PHONE_GUTTERS,
   MonthGrid_default as default,
+  guessPhone,
   stepFrom
 };
 //# sourceMappingURL=MonthGrid.dev.js.map

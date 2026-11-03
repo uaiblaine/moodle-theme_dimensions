@@ -1,0 +1,50 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/admin_setting_keycolour
+
+    The control of an event type's colour setting: a swatch and a hexadecimal field.
+
+    The server draws all of it; amd/src/keycolour.js only keeps the swatch and the native colour input in step with
+    the field. The native input has no name, so only the text field is submitted, and without JavaScript the field
+    works alone.
+
+    Context variables required for this template:
+    * id - the text field's id
+    * name - the text field's name
+    * value - what is stored, as typed
+    * hex - the stored value as #rrggbb, or an empty string when it is not a hex colour
+    * label - the accessible name of the native colour input
+    * readonly - bool
+
+    Example context (json):
+    {
+        "id": "id_s_theme_dimensions_calendarcolourcourse",
+        "name": "s_theme_dimensions_calendarcolourcourse",
+        "value": "#2a31c9",
+        "hex": "#2a31c9",
+        "label": "Pick a colour",
+        "readonly": false
+    }
+}}
+<div class="dim-keycolour" data-dim-keycolour>
+    <label class="dim-keycolour__swatch">
+        <span class="dim-keycolour__preview{{^hex}} dim-keycolour__preview--empty{{/hex}}"{{#hex}} style="background-color: {{hex}};"{{/hex}}></span>
+        <input type="color" class="dim-keycolour__native" value="{{#hex}}{{hex}}{{/hex}}{{^hex}}#000000{{/hex}}" aria-label="{{label}}" tabindex="-1"{{#readonly}} disabled{{/readonly}}>
+    </label>
+    <input type="text" name="{{name}}" id="{{id}}" value="{{value}}" size="12" class="form-control text-ltr dim-keycolour__field" autocomplete="off" spellcheck="false"{{#readonly}} disabled{{/readonly}}>
+</div>

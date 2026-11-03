@@ -25,6 +25,9 @@
  *   deadline, duration 0) sits in the column at its time, alone in its own cluster.
  * - Two items OVERLAP when both have a duration and each starts before the other ends: touching ends do not, a
  *   point item never does, and an all-day or multi-day item never counts.
+ * - The hour column draws the whole day in a scroll box (R1c, PROPOSAL.md section 30.1, reversing C3's windowed column):
+ *   the busy band (hourWindow()) or the working hours (EMPTY_WINDOW) is where the box starts ({@see boxTopOf()}),
+ *   and a fade marks each end it can still scroll to ({@see edgesOf()}).
  *
  * @module     theme_dimensions/calendar/overlap
  * @copyright  2026 Anderson Blaine
@@ -169,16 +172,25 @@ export const dayPlan = (iso: string, placed: Placed[], zone: Zone): DayPlan => {
     return {allday: allday, hours: columns(hours)};
 };
 
-/** The least hours the drawer's hour column spans. */
+/** The least hours of a busy band. */
 export const MIN_WINDOW = 4;
 
 /** The hours of the column: [from, to) in whole hours of the day. */
 export type HourWindow = {from: number, to: number};
 
+/** The hours an hour column draws, the drawer's and the week's: the whole day (PROPOSAL.md section 30.1). */
+export const FULL_DAY: HourWindow = {from: 0, to: 24};
+
 /**
- * The hours the drawer's hour column spans: from an hour before the earliest start to an hour after the latest end,
- * at least MIN_WINDOW hours, inside 0 to 24. A point item counts with its start; an item running past midnight ends
- * the day. Pure.
+ * The band shown first on a day (or a week) with nothing timed on it: the working day, 08:00 to 18:00, where a
+ * double-click is most useful.
+ */
+export const EMPTY_WINDOW: HourWindow = {from: 8, to: 18};
+
+/**
+ * A day's busy band, shown first when the hour column opens (its scroll position, boxTopOf()): from an hour before
+ * the earliest start to an hour after the latest end, at least MIN_WINDOW hours, inside 0 to 24. A point item counts
+ * with its start; an item running past midnight ends the day. Pure.
  *
  * @param {Array} laid The day's laid hour items.
  * @param {object} zone The viewer's timezone reader.
@@ -217,3 +229,43 @@ export const overlapsOf = (entry: Placed, placed: Placed[], zone: Zone): Placed[
     const laid = dayPlan(entry.first, placed, zone).hours.find((other) => itemKey(other.entry.item) === key);
     return laid ? laid.overlaps : [];
 };
+
+/**
+ * Where an hour column's scroll box starts (PROPOSAL.md section 30.1). A busy band's first hour goes to the box's top,
+ * so the earliest item, an hour below it, is never cut; the empty day's band is centred in the box, never with its
+ * first hour above the box's top when the box is shorter than the band. The browser clamps what is past the end. Pure:
+ * the row's height and the box's are read once by the caller, when the day opens.
+ *
+ * @param {object} band The band to show.
+ * @param {boolean} busy Whether it is the band of the day's items (else the working hours of an empty day).
+ * @param {number} row One hour's height, in px.
+ * @param {number} viewport The box's visible height, in px.
+ * @returns {number} The scrollTop, in px.
+ */
+export const boxTopOf = (band: HourWindow, busy: boolean, row: number, viewport: number): number => {
+    if (!(row > 0)) {
+        return 0;
+    }
+    const first = band.from * row;
+    if (busy) {
+        return first;
+    }
+    const centred = ((band.from + band.to) / 2) * row - viewport / 2;
+    return Math.max(0, Math.min(centred, first));
+};
+
+/** Which ends of a scroll box can still be scrolled to: a fade is drawn over each. */
+export type Edges = {up: boolean, down: boolean};
+
+/**
+ * Which ways a scroll box can still scroll, with a pixel of slack for a fractional scroll position. Pure.
+ *
+ * @param {number} top Its scrollTop.
+ * @param {number} total Its scrollHeight.
+ * @param {number} viewport Its clientHeight.
+ * @returns {object} {up, down}.
+ */
+export const edgesOf = (top: number, total: number, viewport: number): Edges => ({
+    up: top > 1,
+    down: top + viewport < total - 1,
+});

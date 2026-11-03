@@ -1,0 +1,86 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// ============================================================================
+// The colour setting of an event type: a swatch before a hexadecimal field
+// ============================================================================
+// templates/admin_setting_keycolour.mustache on the theme's settings page. Concatenated into the theme's main SCSS,
+// so every rule is on the control's own .dim-keycolour classes. The tokens read Bootstrap's set, which follows the
+// colour mode, with a literal as the last fallback.
+
+.dim-keycolour {
+    --dim-kc-surface: var(--bs-body-bg, #fff);
+    --dim-kc-surface-alt: var(--bs-tertiary-bg, #f8f9fa);
+    --dim-kc-line: var(--bs-border-color, #dee2e6);
+    --dim-kc-ring: var(--dim-ds-focus-ring, var(--bs-primary, #4456ff));
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .dim-keycolour__field {
+        flex: 0 1 12rem;
+        min-width: 0;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-keycolour__swatch {
+        position: relative;
+        flex: 0 0 auto;
+        width: 2.25rem;
+        height: 2.25rem;
+        margin-bottom: 0;
+        overflow: hidden;
+        border: 1px solid var(--dim-kc-line);
+        border-radius: 0.4rem;
+        cursor: pointer;
+    }
+
+    .dim-keycolour__swatch:focus-within {
+        outline: 2px solid var(--dim-kc-ring);
+        outline-offset: 2px;
+    }
+
+    .dim-keycolour__preview {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    // The native input is the whole swatch, invisible: the label wraps both, so a click anywhere opens the browser's picker.
+    .dim-keycolour__native {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    // A field holding no valid hex shows the chequerboard rather than a colour it does not have.
+    .dim-keycolour__preview.dim-keycolour__preview--empty {
+        background-color: var(--dim-kc-surface);
+        background-image:
+            linear-gradient(45deg, var(--dim-kc-surface-alt) 25%, transparent 25%),
+            linear-gradient(-45deg, var(--dim-kc-surface-alt) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, var(--dim-kc-surface-alt) 75%),
+            linear-gradient(-45deg, transparent 75%, var(--dim-kc-surface-alt) 75%);
+        background-position: 0 0, 0 0.5rem, 0.5rem -0.5rem, -0.5rem 0;
+        background-size: 1rem 1rem;
+    }
+}

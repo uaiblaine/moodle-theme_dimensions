@@ -152,7 +152,16 @@ const primaryOf = /* @__PURE__ */ __name((item, courses, home) => {
   }
   return { kind: "open", url: itemHref(item, courses, home) };
 }, "primaryOf");
-const filtered = /* @__PURE__ */ __name((state) => state.off.length > 0 || state.model.length > 0 || state.modality.length > 0 || state.city !== "" || state.actiononly || state.categoryid !== 0 || !state.recursive, "filtered");
+const filtered = /* @__PURE__ */ __name((state, options) => state.off.length > 0 || (options ? narrows(state.model, options.model) : state.model.length > 0) || (options ? narrows(state.modality, options.modality) : state.modality.length > 0) || state.city !== "" || state.actiononly || state.categoryid !== 0 || !state.recursive, "filtered");
+const shownOn = /* @__PURE__ */ __name((kept, value) => kept.length === 0 || kept.includes(value), "shownOn");
+const narrows = /* @__PURE__ */ __name((kept, choices) => kept.length > 0 && choices.some((option) => !kept.includes(option.value)), "narrows");
+const keptAfter = /* @__PURE__ */ __name((kept, choices, value, on) => {
+  const next = choices.map((option) => option.value).filter((other) => other === value ? on : shownOn(kept, other));
+  if (!next.length) {
+    return kept;
+  }
+  return next.length === choices.length ? [] : next;
+}, "keptAfter");
 const cleared = /* @__PURE__ */ __name(() => ({
   off: [],
   model: [],
@@ -174,7 +183,9 @@ export {
   hex,
   isMonth,
   itemHref,
+  keptAfter,
   keysOn,
+  narrows,
   normalise,
   opens,
   primaryOf,
@@ -183,6 +194,7 @@ export {
   readAddress,
   safeHref,
   sameState,
+  shownOn,
   withDay
 };
 //# sourceMappingURL=model.dev.js.map

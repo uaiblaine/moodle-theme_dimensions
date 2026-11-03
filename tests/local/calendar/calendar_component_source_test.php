@@ -181,9 +181,10 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * No layout is read on the mount path: the one read of the tree is the popover's, when it opens, and each grid is
-     * measured by one ResizeObserver: the month's watches the rows (the density) and the frame the drawer shares (the
-     * phone), the week's the frame alone.
+     * No layout is read on the mount path: the reads of the tree are the popover's, when it opens, and the hour box's
+     * (R1c), when a day or a week opens it and while it scrolls; each grid is measured by one ResizeObserver: the
+     * month's watches the rows (the density) and the frame the drawer shares (the phone), the week's the frame alone,
+     * and the phone's Day view (R1d), drawn with no grid beside it, has one of its own on the same frame.
      *
      * @return void
      */
@@ -192,7 +193,7 @@ final class calendar_component_source_test extends \basic_testcase {
         $reads = '~getBoundingClientRect|getClientRects|offset(?:Height|Width|Top|Left)|client(?:Height|Width)'
             . '|scroll(?:Height|Width|Top|Left)|getComputedStyle~';
         foreach ($this->sources() as $path => $source) {
-            if ($path !== 'EventPopover.tsx') {
+            if ($path !== 'EventPopover.tsx' && $path !== 'HourScroll.tsx') {
                 $this->assertDoesNotMatchRegularExpression($reads, $source, "{$path} reads the layout.");
             }
             $observers += substr_count($source, 'new ResizeObserver(');
@@ -205,7 +206,16 @@ final class calendar_component_source_test extends \basic_testcase {
             $popover,
             'Both reads are in the effect of an opening, never of the page\'s mount.'
         );
-        $this->assertSame(2, $observers, 'One per grid, never per cell.');
+        $box = $this->sources()['HourScroll.tsx'];
+        $this->assertSame(9, preg_match_all($reads, $box), 'The opening\'s write and five reads, and the scroll\'s three.');
+        $this->assertMatchesRegularExpression(
+            '~useLayoutEffect\(\(\) => \{\s*const element = box\.current;.*?scrollHeight.*?\}, \[opening, height\]\);~s',
+            $box,
+            'The box is measured when a day or a week opens it or the grid hands a new height, not on every render.'
+        );
+        $this->assertSame(3, $observers, 'One per grid and one for the Day view, never per cell.');
+        $this->assertSame(1, substr_count($this->sources()['DayView.tsx'], 'new ResizeObserver('));
+        $this->assertStringContainsString('const frame = root.current?.parentElement || null;', $this->sources()['DayView.tsx']);
         $this->assertSame(1, substr_count($this->sources()['WeekGrid.tsx'], 'new ResizeObserver('));
         $this->assertStringContainsString('const frame = root.current?.parentElement || null;', $this->sources()['WeekGrid.tsx']);
         $grid = $this->sources()['MonthGrid.tsx'];
@@ -213,11 +223,11 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('observer.observe(element);', $grid);
         $this->assertStringContainsString('const frame = grid.current?.parentElement || null;', $grid);
         $this->assertStringContainsString('observer.observe(frame);', $grid);
-        $this->assertStringContainsString(
-            'onWidth={(width) => setPhone(width < PHONE)}',
-            $this->sources()['Calendar.tsx'],
-            'The phone is the frame\'s width, never the viewport\'s.'
-        );
+        foreach (['Calendar.tsx', 'PublicCalendar.tsx'] as $shell) {
+            $source = $this->sources()[$shell];
+            $this->assertStringContainsString('const narrow = width < PHONE;', $source, 'The phone is the frame\'s width.');
+            $this->assertSame(3, substr_count($source, 'onWidth={onWidth}'), $shell . ': the grids and the Day view report it.');
+        }
     }
 
     /**
@@ -361,12 +371,13 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The popover takes the focus when it is shown, once per opened item, and the drawer's hour column spans the
-     * day's busy hours with no scroll box of its own.
+     * The popover takes the focus when it is shown, once per opened item, and the day's busy band (where the drawer's
+     * hour box opens, R1c) runs from an hour before its first item to an hour after its last; the page itself is never
+     * scrolled to show an hour.
      *
      * @return void
      */
-    public function test_the_popover_focus_waits_for_it_to_be_shown_and_the_hours_are_windowed(): void {
+    public function test_the_popover_focus_waits_for_it_to_be_shown_and_the_busy_band_is_padded(): void {
         $popover = $this->sources()['EventPopover.tsx'];
         $this->assertStringContainsString('if ((sheet || at !== null) && focused.current !== key) {', $popover);
         $this->assertStringContainsString('focused.current = key;', $popover);
@@ -511,7 +522,7 @@ final class calendar_component_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString('const at = pressed.current || {iso: iso, hour: hour};', $sources['Calendar.tsx']);
         $this->assertStringContainsString("if (event.pointerType !== 'mouse') {", $sources['DayCell.tsx']);
-        $this->assertStringContainsString('<ClearFilters shown={filtered(state)}', $sources['Calendar.tsx']);
+        $this->assertStringContainsString('<ClearFilters shown={filtered(state, props.options)}', $sources['Calendar.tsx']);
         $this->assertStringNotContainsString('dim-cal__clear', $sources['MoreFilters.tsx'], 'Clear filters left the panel.');
         $this->assertStringContainsString(
             '<ClearFilters shown={on.length !== VISITOR_KEYS.length}',
@@ -673,7 +684,7 @@ final class calendar_component_source_test extends \basic_testcase {
 
         $grid = $this->sources()['WeekGrid.tsx'];
         $this->assertStringContainsString(
-            'const line = nowLine(days, (Number(now) || 0) + elapsed, look.zone, plan.window);',
+            'const line = nowLine(days, (Number(now) || 0) + elapsed, look.zone, body);',
             $grid
         );
         $this->assertStringContainsString('tabIndex={roving && iso !== selected ? -1 : 0}', $grid);
@@ -700,7 +711,10 @@ final class calendar_component_source_test extends \basic_testcase {
                 $source
             );
             $this->assertStringContainsString('<WeekGrid', $source);
-            $this->assertStringContainsString('<ViewSwitch strings={strings} view={shown.span.view} onView={toView} />', $source);
+            $this->assertStringContainsString(
+                '<ViewSwitch strings={strings} view={shown.span.view} phone={phone} onView={toView} />',
+                $source
+            );
         }
         $this->assertStringContainsString('rangeArgs(days[0], days[days.length - 1], next)', $this->sources()['Calendar.tsx']);
         $this->assertStringContainsString(
@@ -714,5 +728,222 @@ final class calendar_component_source_test extends \basic_testcase {
             "weekStart(valid ? week : openingOf({view: 'month', month: month}, today), firstday)",
             $weeks
         );
+    }
+
+    /**
+     * R1c (PROPOSAL section 30.7): the drawer beside the grid is capped by the grid's height, which each grid's one
+     * observer only reports (onHeight, from an entry's contentRect: no layout read, no second observer) and which the
+     * calendar renders on the frame as a style prop it owns, so a re-render never drops it; the frame's own entry carries
+     * the width alone, since its height includes the drawer. Jest holds the behaviour.
+     *
+     * @return void
+     */
+    public function test_the_grids_hand_their_height_to_the_drawer(): void {
+        $month = $this->sources()['MonthGrid.tsx'];
+        $this->assertStringContainsString(
+            'if (entry.target === grid.current && frame && reported > 0 && reported !== lastheight.current) {',
+            $month
+        );
+        $week = $this->sources()['WeekGrid.tsx'];
+        // One element's height, reported only on a change; the phone decision reads the frame's width alone (30.7).
+        $this->assertStringContainsString(
+            'if (entry.target === root.current && reported > 0 && reported !== lastheight.current) {',
+            $week
+        );
+        $this->assertStringContainsString('if (entry.target === frame && entry.contentRect.width > 0) {', $week);
+        foreach (['MonthGrid.tsx', 'WeekGrid.tsx'] as $file) {
+            $this->assertStringNotContainsString('setProperty', $this->sources()[$file], $file . ' never writes the frame.');
+        }
+        foreach (['Calendar.tsx', 'PublicCalendar.tsx'] as $file) {
+            $this->assertStringContainsString('style={frameStyle(gridheight)}', $this->sources()[$file], $file);
+        }
+        $this->assertStringContainsString(
+            '{[GRID_HEIGHT]: height > 0 ? ' . chr(96) . '${height}px' . chr(96) . ' : undefined} as CSSProperties',
+            $this->sources()['days.ts']
+        );
+    }
+
+    /**
+     * R1c (PROPOSAL section 30.1): the drawer's and the week's hour column is the whole day in a scroll box of its own,
+     * which opens on the busy band's first hour (the earliest item a row under it, never cut) or centres the working
+     * hours of an empty day without cutting their start; a fade marks an end only while the box can scroll to it; the
+     * box is a Tab stop while it holds no focusable item. Jest holds the behaviour (overlap.test.ts, Calendar.test.tsx,
+     * WeekGrid.test.tsx).
+     *
+     * @return void
+     */
+    public function test_the_hour_column_is_the_whole_day_in_a_scroll_box(): void {
+        $overlap = $this->sources()['overlap.ts'];
+        $this->assertStringContainsString('export const FULL_DAY: HourWindow = {from: 0, to: 24};', $overlap);
+        $this->assertMatchesRegularExpression('~if \(busy\) \{\s*return first;\s*\}~', $overlap);
+        $this->assertStringContainsString('return Math.max(0, Math.min(centred, first));', $overlap);
+        $this->assertStringContainsString('up: top > 1,', $overlap);
+        $this->assertStringContainsString('down: top + viewport < total - 1,', $overlap);
+
+        $box = $this->sources()['HourScroll.tsx'];
+        $this->assertStringContainsString(
+            'element.scrollTop = boxTopOf(band, busy, element.scrollHeight / hours, element.clientHeight);',
+            $box
+        );
+        $this->assertStringContainsString('}, [opening, height]);', $box);
+        $this->assertMatchesRegularExpression(
+            '~placed\.current !== opening\) \{\s*placed\.current = opening;\s*touched\.current = false;'
+                . '\s*\} else if \(touched\.current\) \{\s*return;~',
+            $box,
+            'A new opening starts the re-placing again; the reader\'s first wheel, touch or key ends it.'
+        );
+        foreach (['onWheel={take}', 'onTouchStart={take}', 'onKeyDown={take}'] as $handler) {
+            $this->assertStringContainsString($handler, $box);
+        }
+        foreach (['MonthGrid.tsx', 'WeekGrid.tsx'] as $file) {
+            $this->assertStringContainsString('gridheight.current?.(reported);', $this->sources()[$file], $file);
+        }
+        foreach (['DayDrawer.tsx' => 'height={gridheight}'] as $file => $needle) {
+            $this->assertStringContainsString($needle, $this->sources()[$file]);
+        }
+        $this->assertStringContainsString('tabIndex={focusable ? 0 : undefined}', $box);
+        $this->assertStringContainsString(
+            '{edges.up ? <span className="dim-cal__hourfade dim-cal__hourfade--up" aria-hidden="true"></span> : null}',
+            $box
+        );
+        $this->assertStringNotContainsString('scrollIntoView', $box, 'The page never scrolls to show an hour.');
+
+        $drawer = $this->sources()['DayDrawer.tsx'];
+        $this->assertStringContainsString('const span = FULL_DAY;', $drawer);
+        $this->assertStringContainsString('focusable={!busy}', $drawer);
+        $week = $this->sources()['WeekGrid.tsx'];
+        $this->assertStringContainsString('const body = plan.window || onCreate ? FULL_DAY : null;', $week);
+        $this->assertStringContainsString('const box = hourBox(laid, look.zone, FULL_DAY);', $week);
+        $this->assertStringContainsString('role="rowgroup"', $week);
+    }
+
+    /**
+     * R1c (PROPOSAL section 30.3): "More filters" draws an empty list as every box on, writes the others when one is
+     * unchecked and the empty list again when every one is back, never writes "none", and counts a group only when it
+     * narrows; "Clear filters" asks the same. Jest holds the behaviour (model.test.ts, Calendar.test.tsx).
+     *
+     * @return void
+     */
+    public function test_more_filters_start_with_every_option_on(): void {
+        $model = $this->sources()['model.ts'];
+        $this->assertStringContainsString(
+            'export const shownOn = (kept: number[], value: number): boolean => kept.length === 0 || kept.includes(value);',
+            $model
+        );
+        $this->assertStringContainsString('return next.length === choices.length ? [] : next;', $model);
+        $this->assertMatchesRegularExpression('~if \(!next\.length\) \{\s*return kept;\s*\}~', $model);
+        $this->assertStringContainsString('&& choices.some((option) => !kept.includes(option.value));', $model);
+        $this->assertStringContainsString('|| (options ? narrows(state.model, options.model) : state.model.length > 0)', $model);
+
+        $more = $this->sources()['MoreFilters.tsx'];
+        $this->assertStringContainsString('(narrows(state.model, options.model) ? 1 : 0)', $more);
+        $this->assertStringContainsString('const checked = shownOn(kept, option.value);', $more);
+        $this->assertStringContainsString('disabled={checked && on === 1}', $more);
+        $this->assertStringContainsString("data-on={checked ? '1' : '0'}", $more);
+        $this->assertStringContainsString('[name]: keptAfter(kept, choices, option.value, event.target.checked),', $more);
+        $this->assertStringContainsString('filtered(state, props.options)', $this->sources()['Calendar.tsx']);
+    }
+
+    /**
+     * R1c (PROPOSAL section 30.2): the course's button is a button whose text follows the course's model: a string per
+     * known model, the generic one over any other model's own option label, "Course page" otherwise.
+     *
+     * @return void
+     */
+    public function test_the_course_button_follows_the_model(): void {
+        $popover = $this->sources()['EventPopover.tsx'];
+        $this->assertMatchesRegularExpression(
+            '~if \(course\.model === MODEL_EVENT\) \{\s*return strings\.calendar_eventpage;\s*\}~',
+            $popover
+        );
+        $this->assertStringContainsString(
+            'return option ? fill(strings.calendar_modelpage, option.label) : strings.calendar_coursepage;',
+            $popover
+        );
+        $this->assertStringContainsString('className="btn btn-outline-secondary dim-cal__coursebtn"', $popover);
+        $this->assertStringContainsString('models={props.options.model}', $this->sources()['Calendar.tsx']);
+        $this->assertStringContainsString('models={props.models || []}', $this->sources()['PublicCalendar.tsx']);
+        $this->assertSame(\theme_dimensions\local\landingfields::MODEL_EVENT, 2, 'MODEL_EVENT in the client is the server\'s.');
+        $this->assertStringContainsString('export const MODEL_EVENT = 2;', $popover);
+        $this->assertStringContainsString('export const MODEL_COURSE = 1;', $popover);
+        $this->assertSame(\theme_dimensions\local\landingfields::MODEL_COURSE, 1);
+    }
+
+    /**
+     * R1d (PROPOSAL section 31): the Day view is a phone's. The switch offers it only on a phone; a day span asks for its
+     * one day; a day span on a desktop is asked for, in each shell's one request path, as its month with the day opened,
+     * and the observer's entry at or above the phone's width asks again; the Day view reads the frame's width alone and
+     * draws the drawer's own body; a held touch on an hour creates, a mouse never holds, and a move or a cancel drops
+     * it. Jest holds the behaviour (weeks.test.ts, Calendar.test.tsx, PublicCalendar.test.tsx).
+     *
+     * @return void
+     */
+    public function test_the_day_view_is_a_phones(): void {
+        $weeks = $this->sources()['weeks.ts'];
+        $needles = [
+            "export const viewsOf = (phone: boolean): View[] => (phone ? ['month', 'week', 'day'] : ['month', 'week']);",
+            "export const gridOf = (span: Span, phone: boolean): Grid => (span.view === 'day' && !phone ? 'month' : span.view);",
+            "if (span.view === 'day' && !phone) {\n        return {span: spanOf('month', span.day, firstday), open: span.day};",
+            "(span.view === 'day' ? null : dayIn(day, days));",
+            'return phone ? null : span.day;',
+            "if (params.get(VIEW_PARAM) === 'day') {",
+            "return parse(day) !== null && year >= 1900 && year <= 2999 ? day : openingOf({view: 'month', month: month}, today);",
+            "url.searchParams.append(DAY_PARAM, span.day);\n        rest.filter(([name]) => name !== DAY_PARAM)",
+            "if (span.view === 'day') {\n        return [span.day];",
+            'return shift(span.day, offset);',
+        ];
+        foreach ($needles as $needle) {
+            $this->assertStringContainsString($needle, $weeks);
+        }
+        $this->assertStringContainsString('{viewsOf(phone).map((one) => (', $this->sources()['ViewSwitch.tsx']);
+
+        foreach (['Calendar.tsx', 'PublicCalendar.tsx'] as $shell) {
+            $source = $this->sources()[$shell];
+            $this->assertStringContainsString('const desk = deskOf(want, phoned.current, firstday);', $source, $shell);
+            $this->assertMatchesRegularExpression(
+                '~if \(desk\.open !== null\) \{\s*opened\.current = desk\.open;\s*setOpenday\(desk\.open\);~',
+                $source,
+                $shell . ': the day is opened before the address is written.'
+            );
+            $this->assertMatchesRegularExpression(
+                '~const narrow = width < PHONE;\s*phoned\.current = narrow;\s*setPhone\(narrow\);~',
+                $source,
+                $shell . ': the request path reads the measure before the render that follows it.'
+            );
+            $this->assertStringContainsString("if (!narrow && span.view === 'day') {", $source, $shell);
+            $this->assertStringContainsString('const grid = gridOf(shown.span, phone);', $source, $shell);
+            $this->assertStringContainsString('const drawn = drawerOf(shown.span, openday, days, phone);', $source, $shell);
+            $this->assertStringContainsString("if (grid === 'day') {", $source, $shell);
+            // The first render's guess (PROPOSAL section 31.6): the observer's measure replaces it and nothing re-reads it.
+            $this->assertStringContainsString('useState<boolean>(guessPhone);', $source, $shell);
+            $this->assertStringContainsString('const phoned = useRef<boolean>(phone);', $source, $shell);
+            $this->assertStringNotContainsString('guessPhone(', $source, $shell . ': the guess is the initialiser alone.');
+        }
+
+        $grid = $this->sources()['MonthGrid.tsx'];
+        $tick = "\x60";
+        $this->assertStringContainsString(
+            'window.matchMedia(' . $tick . '(max-width: ${PHONE + PHONE_GUTTERS - 1}px)' . $tick . ').matches',
+            $grid
+        );
+        $this->assertStringContainsString("typeof window.matchMedia === 'function'", $grid);
+
+        $view = $this->sources()['DayView.tsx'];
+        $this->assertStringContainsString('if (entry.target === frame && entry.contentRect.width > 0) {', $view);
+        $this->assertStringContainsString(
+            '<DayBody look={look} iso={iso} placed={placed} list={false} onCreate={onCreate} />',
+            $view
+        );
+        $this->assertStringContainsString('aria-labelledby={captionid}', $view);
+
+        $drawer = $this->sources()['DayDrawer.tsx'];
+        $this->assertStringContainsString('export const DayBody = (', $drawer);
+        $this->assertStringContainsString("if (!onCreate || !row || event.pointerType === 'mouse') {", $drawer);
+        $this->assertStringContainsString(
+            'Math.abs(x - hold.x) > HOLD_SLOP || Math.abs(y - hold.y) > HOLD_SLOP',
+            $drawer
+        );
+        $this->assertStringContainsString('onPointerCancel={onCreate ? drop : undefined}', $drawer);
+        $this->assertStringContainsString('list={variant === \'sheet\'}', $drawer);
     }
 }

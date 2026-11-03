@@ -4,13 +4,17 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * The week view, pure: the span a page shows, the week's days, its layout, its "now" line and its keyboard's moves
  * (docs/calendar/PROPOSAL.md section 21).
  *
- * - A SPAN is what a page shows: a month (its grid of whole weeks, calendar/days.ts) or a week (seven days from the
- *   viewer's first weekday). The view and the week travel in the address as navigation, never in the saved state:
- *   `view=week&week=<first day>` (local\calendar\page::PARAM_VIEW and PARAM_WEEK), the month view writing neither.
+ * - A SPAN is what a page shows: a month (its grid of whole weeks, calendar/days.ts), a week (seven days from the
+ *   viewer's first weekday) or, on a phone only, a day (PROPOSAL.md section 31). The view, the week and the day view's
+ *   day travel in the address as navigation, never in the saved state: `view=week&week=<first day>` and
+ *   `view=day&day=<day>` (local\calendar\page::PARAM_VIEW, PARAM_WEEK and PARAM_DAY), the month view writing none.
+ * - A DAY SPAN IS A PHONE'S: on a frame at or above MonthGrid PHONE it is drawn, and asked for, as its month with the
+ *   day's drawer open ({@see deskOf()}, {@see gridOf()}); the switch offers the day only on a phone ({@see viewsOf()}).
  * - The week's LAYOUT is the month's and the drawer's, reused: the all-day strip is layout.ts weekLayout() over the
  *   items that are bars or fill whole days (overlap.ts isAllDay()), every slot shown; each day's hour items are
  *   overlap.ts dayPlan()'s, in the drawer's columns; and the hour window is overlap.ts hourWindow() over the whole
- *   week's hour items at once, so every timed item shows without an inner scroll.
+ *   week's hour items at once: the band the hour body's scroll box opens on (R1c, PROPOSAL.md section 30.1), which
+ *   draws the whole day.
  * - Days are calendar days counted in UTC (daterange/calendar.ts): a daylight-saving change moves no day, and an
  *   item's row is its wall-clock time in the viewer's timezone (days.ts zone().minutes()).
  *
@@ -22,12 +26,14 @@ import { WEEK, parse, say, shift, shiftMonth, utc } from "../daterange/calendar"
 import { gridWeeks } from "./days";
 import { weekLayout } from "./layout";
 import { dayPlan, hourWindow, isAllDay, itemKey } from "./overlap";
+import { DAY_PARAM } from "./model";
 import { fill } from "./strings";
 const VIEW_PARAM = "view";
 const WEEK_PARAM = "week";
 const MONTH = { month: "long", year: "numeric" };
 const FROM_DAY = { day: "numeric", month: "long" };
 const TO_DAY = { day: "numeric", month: "long", year: "numeric" };
+const LONG_DAY = { weekday: "long", day: "numeric", month: "long", year: "numeric" };
 const weekStart = /* @__PURE__ */ __name((iso, firstday) => {
   const parts = parse(iso);
   if (!parts) {
@@ -36,12 +42,30 @@ const weekStart = /* @__PURE__ */ __name((iso, firstday) => {
   return shift(iso, -((utc(parts).getUTCDay() - firstday + WEEK) % WEEK));
 }, "weekStart");
 const weekDays = /* @__PURE__ */ __name((start) => Array.from({ length: WEEK }, (unused, index) => shift(start, index)), "weekDays");
-const spanOf = /* @__PURE__ */ __name((view, iso, firstday) => view === "week" ? { view: "week", week: weekStart(iso, firstday) } : { view: "month", month: iso.slice(0, 7) }, "spanOf");
-const spanDays = /* @__PURE__ */ __name((span, firstday) => span.view === "week" ? weekDays(span.week) : gridWeeks(span.month, firstday).flat(), "spanDays");
-const spanKey = /* @__PURE__ */ __name((span) => span.view === "week" ? `week:${span.week}` : `month:${span.month}`, "spanKey");
+const spanOf = /* @__PURE__ */ __name((view, iso, firstday) => {
+  if (view === "day") {
+    return { view: "day", day: iso };
+  }
+  return view === "week" ? { view: "week", week: weekStart(iso, firstday) } : { view: "month", month: iso.slice(0, 7) };
+}, "spanOf");
+const spanDays = /* @__PURE__ */ __name((span, firstday) => {
+  if (span.view === "day") {
+    return [span.day];
+  }
+  return span.view === "week" ? weekDays(span.week) : gridWeeks(span.month, firstday).flat();
+}, "spanDays");
+const spanKey = /* @__PURE__ */ __name((span) => {
+  if (span.view === "day") {
+    return `day:${span.day}`;
+  }
+  return span.view === "week" ? `week:${span.week}` : `month:${span.month}`;
+}, "spanKey");
 const monthOfSpan = /* @__PURE__ */ __name((span, selected) => {
   if (span.view === "month") {
     return span.month;
+  }
+  if (span.view === "day") {
+    return span.day.slice(0, 7);
   }
   return weekDays(span.week).includes(selected) ? selected.slice(0, 7) : span.week.slice(0, 7);
 }, "monthOfSpan");
@@ -49,13 +73,27 @@ const openingOf = /* @__PURE__ */ __name((span, today) => {
   if (span.view === "month") {
     return today.startsWith(span.month) ? today : `${span.month}-01`;
   }
+  if (span.view === "day") {
+    return span.day;
+  }
   return weekDays(span.week).includes(today) ? today : span.week;
 }, "openingOf");
-const stepSpan = /* @__PURE__ */ __name((span, iso, offset) => span.view === "week" ? shift(iso, offset * WEEK) : shiftMonth(iso, offset), "stepSpan");
+const stepSpan = /* @__PURE__ */ __name((span, iso, offset) => {
+  if (span.view === "day") {
+    return shift(span.day, offset);
+  }
+  return span.view === "week" ? shift(iso, offset * WEEK) : shiftMonth(iso, offset);
+}, "stepSpan");
 const inSpan = /* @__PURE__ */ __name((href, span) => {
   const url = new URL(href, window.location.href);
   const rest = [...url.searchParams.entries()].filter(([name]) => name !== "month" && name !== VIEW_PARAM && name !== WEEK_PARAM);
   url.search = "";
+  if (span.view === "day") {
+    url.searchParams.append(VIEW_PARAM, "day");
+    url.searchParams.append(DAY_PARAM, span.day);
+    rest.filter(([name]) => name !== DAY_PARAM).forEach(([name, value]) => url.searchParams.append(name, value));
+    return url.toString();
+  }
   if (span.view === "week") {
     url.searchParams.append(VIEW_PARAM, "week");
     url.searchParams.append(WEEK_PARAM, span.week);
@@ -65,8 +103,15 @@ const inSpan = /* @__PURE__ */ __name((href, span) => {
   rest.forEach(([name, value]) => url.searchParams.append(name, value));
   return url.toString();
 }, "inSpan");
+const viewDay = /* @__PURE__ */ __name((day, month, today) => {
+  const year = Number(day.slice(0, 4));
+  return parse(day) !== null && year >= 1900 && year <= 2999 ? day : openingOf({ view: "month", month }, today);
+}, "viewDay");
 const readSpan = /* @__PURE__ */ __name((href, firstday, month, today) => {
   const params = new URL(href, window.location.href).searchParams;
+  if (params.get(VIEW_PARAM) === "day") {
+    return { view: "day", day: viewDay(String(params.get(DAY_PARAM) || ""), month, today) };
+  }
   if (params.get(VIEW_PARAM) !== "week") {
     return { view: "month", month };
   }
@@ -77,6 +122,13 @@ const readSpan = /* @__PURE__ */ __name((href, firstday, month, today) => {
 }, "readSpan");
 const weekCaption = /* @__PURE__ */ __name((days, strings, language) => fill(strings.calendar_span, { from: say(days[0], FROM_DAY, language), to: say(days[days.length - 1], TO_DAY, language) }), "weekCaption");
 const spanLabels = /* @__PURE__ */ __name((span, days, strings, language) => {
+  if (span.view === "day") {
+    return {
+      caption: say(span.day, LONG_DAY, language),
+      previous: strings.calendar_prevday,
+      next: strings.calendar_nextday
+    };
+  }
   if (span.view === "week") {
     return {
       caption: weekCaption(days, strings, language),
@@ -91,6 +143,21 @@ const spanLabels = /* @__PURE__ */ __name((span, days, strings, language) => {
   };
 }, "spanLabels");
 const dayIn = /* @__PURE__ */ __name((iso, days) => iso !== null && days.includes(iso) ? iso : null, "dayIn");
+const viewsOf = /* @__PURE__ */ __name((phone) => phone ? ["month", "week", "day"] : ["month", "week"], "viewsOf");
+const gridOf = /* @__PURE__ */ __name((span, phone) => span.view === "day" && !phone ? "month" : span.view, "gridOf");
+const deskOf = /* @__PURE__ */ __name((span, phone, firstday) => {
+  if (span.view === "day" && !phone) {
+    return { span: spanOf("month", span.day, firstday), open: span.day };
+  }
+  return { span, open: null };
+}, "deskOf");
+const openOf = /* @__PURE__ */ __name((span, day, days) => span.view === "day" ? null : dayIn(day, days), "openOf");
+const drawerOf = /* @__PURE__ */ __name((span, open, days, phone) => {
+  if (span.view === "day") {
+    return phone ? null : span.day;
+  }
+  return dayIn(open, days);
+}, "drawerOf");
 const selectedIn = /* @__PURE__ */ __name((selected, span, days, today) => days.includes(selected) ? selected : openingOf(span, today), "selectedIn");
 const weekPlan = /* @__PURE__ */ __name((days, placed, zone) => {
   const strip = placed.filter((entry) => entry.bar || isAllDay(entry.item, zone)).map((entry) => entry.bar ? entry : { ...entry, bar: true });
@@ -187,11 +254,15 @@ export {
   VIEW_PARAM,
   WEEK_PARAM,
   dayIn,
+  deskOf,
+  drawerOf,
+  gridOf,
   hourBox,
   inSpan,
   monthOfSpan,
   moveInWeek,
   nowLine,
+  openOf,
   openingOf,
   readSpan,
   selectedIn,
@@ -201,6 +272,8 @@ export {
   spanOf,
   stepSpan,
   stepWeekFrom,
+  viewDay,
+  viewsOf,
   weekCaption,
   weekDays,
   weekPlan,

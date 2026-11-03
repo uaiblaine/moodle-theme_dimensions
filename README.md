@@ -413,7 +413,7 @@ Settings
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Course landing page | The page model, modality and study format a new course starts with; existing courses never change. |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
-| Calendar | `theme_dimensions/calendarcoreview` (on by default: Moodle's calendar and its iCal feed lead to the theme's calendar), `theme_dimensions/calendarblocks` (on by default: the calendar blocks drawn with the theme's calendar) and `theme_dimensions/calendarpublic` (off by default: the public calendar for visitors). |
+| Calendar | `theme_dimensions/calendarcoreview` (on by default: Moodle's calendar and its iCal feed lead to the theme's calendar), `theme_dimensions/calendarblocks` (on by default: the calendar blocks drawn with the theme's calendar), `theme_dimensions/calendarpublic` (off by default: the public calendar for visitors), and one colour per event type under *Event type colours* (`theme_dimensions/calendarcoloursite`, `calendarcolourcategory`, `calendarcolourcourse`, `calendarcolourgroup`, `calendarcolouruser`, `calendarcolouractivity`, `calendarcolourother`, `calendarcolouropen` and `calendarcolouroverdue`; each defaults to the theme's own colour, accepts a hexadecimal colour only, and a fill and a text colour readable in the light and the dark mode are derived from it). |
 
 
 Brazil-specific today

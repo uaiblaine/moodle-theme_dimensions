@@ -211,14 +211,22 @@ describe('the week\'s layout', () => {
         expect(document.querySelectorAll('[data-region="dim-cal-weekhours"] [data-cal-pop]')).toHaveLength(4);
     });
 
-    it('windows the hours over the week: no item outside, no scroll of its own', async() => {
+    it('draws the whole day in a scroll box of its own, a labelled rowgroup of the grid (R1c)', async() => {
         await mount(<Calendar {...week(BUSY)} />);
         const hours = document.querySelector('[data-region="dim-cal-weekhours"]') as HTMLElement;
-        expect(hours.style.getPropertyValue('--dim-cal-hourcount')).toBe('9');
+        expect(hours.style.getPropertyValue('--dim-cal-hourcount')).toBe('24');
         const hour = new Intl.DateTimeFormat('en', {hour: '2-digit', minute: '2-digit', timeZone: 'UTC'});
         const labels = Array.from(hours.querySelectorAll('.dim-cal__hour')).map((label) => label.textContent);
-        expect(labels).toHaveLength(9);
-        expect([labels[0], labels[8]]).toEqual([hour.format(at('1970-01-01', 8) * 1000), hour.format(at('1970-01-01', 16) * 1000)]);
+        expect(labels).toHaveLength(24);
+        expect([labels[0], labels[23]]).toEqual([hour.format(0), hour.format(at('1970-01-01', 23) * 1000)]);
+        const box = hours.closest('[data-region="dim-cal-hourscroll"]') as HTMLElement;
+        expect(box.getAttribute('role')).toBe('rowgroup');
+        expect(box.getAttribute('aria-label')).toBe('Hours of the day');
+        expect(box.tabIndex).toBe(0);
+        expect(box.closest('[role="grid"]')).not.toBeNull();
+        const breakfast = hours.querySelector<HTMLElement>('[data-cal-pop][data-id="5"]') as HTMLElement;
+        expect(breakfast.style.getPropertyValue('--dim-cal-top')).toBe(`${(9 / 24) * 100}%`);
+        expect(breakfast.style.getPropertyValue('--dim-cal-height')).toBe(`${(1 / 24) * 100}%`);
     });
 
     it('says the week is empty and draws no hour body when nothing is on', async() => {
@@ -234,7 +242,7 @@ describe('the "now" line', () => {
         const line = document.querySelector('[data-region="dim-cal-now"]') as HTMLElement;
         expect(line.closest('[data-region="dim-cal-weekcol"]')?.getAttribute('data-day')).toBe('2026-11-17');
         expect(line.getAttribute('aria-hidden')).toBe('true');
-        expect(line.style.getPropertyValue('--dim-cal-top')).toBe(`${(4 / 9) * 100}%`);
+        expect(line.style.getPropertyValue('--dim-cal-top')).toBe(`${(12 / 24) * 100}%`);
     });
 
     it('is not drawn on a week that does not hold today', async() => {
@@ -251,7 +259,7 @@ describe('the "now" line', () => {
             jest.advanceTimersByTime(60 * TICK);
         });
         const line = document.querySelector('[data-region="dim-cal-now"]') as HTMLElement;
-        expect(line.style.getPropertyValue('--dim-cal-top')).toBe(`${(5 / 9) * 100}%`);
+        expect(line.style.getPropertyValue('--dim-cal-top')).toBe(`${(13 / 24) * 100}%`);
     });
 });
 
@@ -492,9 +500,12 @@ describe('the phone\'s week', () => {
     it('is a seven-day agenda below the breakpoint, a day header opening its sheet', async() => {
         await mount(<Calendar {...week(BUSY)} />);
         expect(observers).toHaveLength(1);
-        expect(watched).toEqual([document.querySelector('[data-region="dim-cal-body"]')]);
+        expect(watched).toEqual([
+            document.querySelector('[data-region="dim-cal-body"]'),
+            document.querySelector('[data-region="dim-cal-week"]'),
+        ]);
         await act(async() => {
-            observers[0]([{contentRect: {width: 400, height: 600}}]);
+            observers[0]([{target: watched[0], contentRect: {width: 400, height: 600}}]);
         });
         const agenda = document.querySelector('[data-region="dim-cal-weekagenda"]') as HTMLElement;
         expect(document.querySelector('[data-region="dim-cal-weekgrid"]')).toBeNull();
@@ -512,13 +523,70 @@ describe('the phone\'s week', () => {
             .toBe('2026-11-17');
     });
 
+    it('hands the week\'s height to the frame, for the drawer beside it', async() => {
+        await mount(<Calendar {...week(BUSY)} />);
+        const frame = document.querySelector('[data-region="dim-cal-body"]') as HTMLElement;
+        const view = document.querySelector('[data-region="dim-cal-week"]') as Element;
+        await act(async() => {
+            observers[0]([{target: view, contentRect: {width: 900, height: 612.4}}]);
+        });
+        expect(frame.style.getPropertyValue('--dim-cal-gridheight')).toBe('612px');
+        // The frame's own entry carries the width alone: it never writes its (drawer-inclusive) height.
+        await act(async() => {
+            observers[0]([{target: frame, contentRect: {width: 900, height: 999}}]);
+        });
+        expect(frame.style.getPropertyValue('--dim-cal-gridheight')).toBe('612px');
+        // A re-render the report triggers (the drawer opening) leaves the same frame carrying it.
+        await act(async() => {
+            fireEvent.click(day('2026-11-17'));
+        });
+        const after = document.querySelector('[data-region="dim-cal-body"]') as HTMLElement;
+        expect(after).toBe(frame);
+        expect(after.style.getPropertyValue('--dim-cal-gridheight')).toBe('612px');
+    });
+
     it('stays a time grid above the breakpoint', async() => {
         await mount(<Calendar {...week(BUSY)} />);
         await act(async() => {
-            observers[0]([{contentRect: {width: 900, height: 600}}]);
+            observers[0]([{target: watched[0], contentRect: {width: 900, height: 600}}]);
         });
         expect(document.querySelector('[data-region="dim-cal-weekgrid"]')).not.toBeNull();
         expect(document.querySelector('[data-region="dim-cal-weekagenda"]')).toBeNull();
+    });
+
+    it('settles: the week\'s own narrowed width never decides the phone layout, an equal height reports nothing', async() => {
+        await mount(<Calendar {...week(BUSY)} />);
+        const frame = document.querySelector('[data-region="dim-cal-body"]') as HTMLElement;
+        const view = document.querySelector('[data-region="dim-cal-week"]') as Element;
+        await act(async() => {
+            observers[0]([{target: frame, contentRect: {width: 900, height: 700}}]);
+        });
+        await act(async() => {
+            fireEvent.click(day('2026-11-17'));
+        });
+        const changes: string[] = [];
+        const watcher = new MutationObserver(() => changes.push(frame.style.getPropertyValue('--dim-cal-gridheight')));
+        watcher.observe(frame, {attributes: true, attributeFilter: ['style']});
+        // The loop's entries: the drawer narrows the week's box under the breakpoint while the frame stays wide.
+        for (let pass = 0; pass < 6; pass++) {
+            await act(async() => {
+                observers[0]([{target: view, contentRect: {width: 490, height: 835}}]);
+            });
+            expect(document.querySelector('[data-region="dim-cal-weekagenda"]')).toBeNull();
+            await act(async() => {
+                observers[0]([{target: frame, contentRect: {width: 900, height: 700}}]);
+            });
+        }
+        await act(async() => {
+            watcher.takeRecords();
+        });
+        watcher.disconnect();
+        expect(document.querySelector('[data-region="dim-cal-weekgrid"]')).not.toBeNull();
+        expect(document.querySelector('[data-region="dim-cal-weekagenda"]')).toBeNull();
+        expect(document.querySelector('.dim-cal__body--drawer')).not.toBeNull();
+        // Six equal reports wrote the property once (835), not six times.
+        expect(frame.style.getPropertyValue('--dim-cal-gridheight')).toBe('835px');
+        expect(changes.length).toBeLessThanOrEqual(1);
     });
 });
 
