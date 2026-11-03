@@ -645,6 +645,7 @@ $string['landing_trail_period'] = 'De {$a->from} a {$a->to}';
 $string['landing_trail_periodfrom'] = 'A partir de {$a}';
 $string['landing_trail_progress'] = '{$a->done} de {$a->count} cursos concluídos';
 $string['landing_trail_sequence'] = '{$a} cursos em sequência';
+$string['landing_trail_startson'] = 'Começa em {$a}';
 $string['landing_trail_state_current'] = 'Em andamento';
 $string['landing_trail_state_done'] = 'Concluído';
 $string['landing_trail_state_late'] = 'Atrasado';

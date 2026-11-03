@@ -5,6 +5,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A trail's next course that has not begun says when it starts** (2026100577), `docs/trail/PLAN.md` section 3. A
+  learner's current step whose course starts later reads "Starts on <date>" in place of "In progress", and its line
+  counts no days left until it begins; "Continue" still leads to it. The owner's call of 2026-11-03.
 - **A trail's progress, stage T2** (2026100576), `docs/trail/PLAN.md` section 3. A learner enrolled in the trail course
   reads each course's state on its card: done (by the activity's completion wherever it tracks one, else by the
   learner's own completion of the referenced course), locked (core's availability, its reason leading the card's line),
