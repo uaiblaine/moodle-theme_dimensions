@@ -984,6 +984,15 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   colour, raw SCSS - is served anonymously, its images (logo, background) 303 to login
   through `theme_boost_union_flavours_require_login_for_file()`. Cohort-scoped flavours
   never apply to a visitor.
+- **The page is drawn in the brand colour, never in the design system's navy** (`scss/landing.scss`, owner
+  2026-11-02). `$primary` is Boost Union's brandcolor or the flavour's; `dim-landing-base()` shades it in 4% steps
+  only until white reads at 4.5:1 on the hero's lightest stop, and that base is the gradient's mid, the panel's ink
+  (titles, checks) and, tinted, its border; the dark mode lifts the ink until it reads on `$gray-800`.
+  `landing_scss_test` measures every one of those on compiled CSS. Links and buttons are Boost Union's (`linkcolor`,
+  `buttonbrandcolor`): the page sets no colour on them.
+- **A manager's way in is decided on the server, `landing_page::manage()`**: not enrolled, `is_viewing()` or
+  `moodle/course:update`, and `can_access_course()`, so an editor core keeps out gets no button that lands on the
+  enrolment page. Each condition has its gate (`landing_manage_*`).
 - **The images of a public page go through the theme's own file route, whoever is looking.**
   `file_pluginfile()` dispatches on the COMPONENT IN THE URL, and its generic third-party
   branch makes no login check, while core's `course/overviewfiles` and `course/summary`

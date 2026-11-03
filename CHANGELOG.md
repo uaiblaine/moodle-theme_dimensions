@@ -5,6 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The landing page in the brand's colour, its sections in a panel, and a way in for managers** (2026100572).
+  The hero, the section titles and the checks are drawn in the theme's primary colour (Boost Union's brandcolor, or the
+  flavour's): a colour on whose lightest stop white text reads under 4.5:1 is shaded in 4% steps until it does,
+  instead of falling back to the design system's navy (Boost's default blue moves one step). The summary and a new
+  panel take the hero's inline padding, so every text starts where the course title does (2.5rem from md up, 1.75rem
+  on a phone); the sections after the summary (target audience, programme, certification) share that panel, in a soft
+  border of the brand colour, with bullet lists drawn as a checklist (a check in the brand's ink; lifted to read on
+  the dark card in the dark mode). A reader who manages the course without an enrolment (core's
+  `moodle/course:view` or `moodle/course:update`, and let in by `can_access_course()`) gets "Access the course" (or
+  "Access the event") under the enrolment, with a note that only managers see it. Links and buttons keep Boost
+  Union's `linkcolor` and `buttonbrandcolor`. New strings `landing_manage_course`, `landing_manage_event`,
+  `landing_managenote_course`, `landing_managenote_event`. PHPUnit, a Behat smoke and mutation gates
+  (`landing_ink_dark`, `landing_panel_ink`, `landing_panel_wrap`, `landing_manage_*`; `landing_ground_floor` and
+  `landing_ground_brand` rewritten).
 - **Calendar R1b: the category events you create, and the first paint** (2026100568),
   `docs/calendar/PROPOSAL.md` section 29. The site view's categories include every category where the viewer may
   create category events (core's form asks `moodle/category:manage` with doanything; core's view asks it without, so
