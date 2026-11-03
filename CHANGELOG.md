@@ -19,6 +19,24 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   `landing_managenote_course`, `landing_managenote_event`. PHPUnit, a Behat smoke and mutation gates
   (`landing_ink_dark`, `landing_panel_ink`, `landing_panel_wrap`, `landing_manage_*`; `landing_ground_floor` and
   `landing_ground_brand` rewritten).
+- **The course landing page carries no block region and no course index** (2026100571). Both entries of the page,
+  the public page a visitor is served and the page a logged-in reader gets, draw no block, no block drawer or toggle,
+  no "Add a block" button in edit mode and no course index drawer, decided on the server in `request::handle()`: the
+  calendar's mechanism (no block loaded, block editing locked), now one helper both pages call
+  (`local\blockless::apply()`), and core's own switch for the index (`$PAGE->set_show_course_index(false)`, the first
+  thing `core_course_drawer()` reads). The guest entry's interstitial needed nothing: the embedded layout draws fake
+  blocks alone and no drawer. PHPUnit (`request_drawers_test`, each case against a control page left to core), a
+  Behat smoke (the course page as the control) and mutation gates (`landing_blocks_wired`,
+  `landing_courseindex_shown`, `cal_r1b_blocks_wired`; `cal_r1b_blocks_shown` and `cal_r1b_blocks_unlocked` moved to
+  the shared helper).
+- **The Trail page model, stage T0** (2026100569), `docs/trail/PLAN.md`. The page model select gains a third line,
+  *Trail* (`landingfields::MODEL_TRAIL`), appended by the branch's first upgrade step on a site provisioned with two
+  lines (`landingfields::add_trail_option()`). A trail's steps are its Subcourse activities, read by one reader for
+  the landing page and the calendar (`local\trail\trail`, `local\trail\step`): course order, the window from the
+  referenced course's start date to the activity's expected completion date or the course's end date, one statement
+  for the references of any number of trails. mod_subcourse is optional: without it the Trail line is left out of the
+  course form, the default for new courses and the calendar's model filter. The showcase's cards tag a trail as one.
+  Nothing draws a trail yet (T1).
 - **Calendar R1b: the category events you create, and the first paint** (2026100568),
   `docs/calendar/PROPOSAL.md` section 29. The site view's categories include every category where the viewer may
   create category events (core's form asks `moodle/category:manage` with doanything; core's view asks it without, so

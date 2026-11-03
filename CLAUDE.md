@@ -240,6 +240,7 @@ classes/local/landing/guestaccess.php  The guest entry: who is offered it (enabl
 classes/output/landing_guestentry.php  The entry's interstitial: the landing page's head tags and one POST form.
 classes/local/guesthome.php    The guest account's home page: an in-memory defaulthomepage, from after_config.
 classes/local/landing/request.php The whole landing page decision, once, for both entries: a redirect or a page.
+classes/local/blockless.php    A page of the theme's own without blocks (the landing page, the calendar page).
 classes/route/controller/landing.php  The route /theme_dimensions/landing/{course}: request → response.
 landing.php                       The script entry: 303 to the route while the router is configured, else serves.
 classes/local/landing/shortcode.php  Six spoken letters for the public address; pure, blocklist inside.
@@ -1075,6 +1076,11 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   refusal before the course lookup, then the front page, the ghost, the model, the standard page's guards.
   Both entries call it; neither decides anything itself. Extend the page there, never in `landing.php` or
   the controller, or the two addresses drift apart.
+- **No block region and no course index, decided in `request::handle()`.** `local\blockless::apply()` (shared with
+  the calendar page) loads no block and locks block editing, which is what empties the add-block control: either
+  switch alone leaves a drawer. The index is core's own switch, `$PAGE->set_show_course_index(false)`, the first thing
+  `core_course_drawer()` reads; never hide either drawer with CSS. `request_drawers_test` holds both entries against a
+  control page left to core.
 - **The route's shape is three decisions, each pinned by a mutation gate**: `method: ['GET', 'POST']`
   (the enrolment widgets and the no-JS transports post to `$FULLME`, which under the router is the
   route), no `requirelogin` (visitors of a public course under forcelogin), and a plain

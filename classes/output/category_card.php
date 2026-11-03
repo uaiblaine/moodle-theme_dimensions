@@ -333,8 +333,12 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $openslabel = $this->opens_label($state, $mayenter, $heldonly);
         $cta = ($held && !$mayenter) ? null : $this->cta($state, $url, $mayenter, $hasroute);
         $favourite = !$this->anonymous && !empty($this->row->favourite);
-        $kindkey = $this->values->model === landingfields::MODEL_COURSE ? 'landingfield_model_course'
-            : ($isevent ? 'landingfield_model_event' : null);
+        $kindkey = match ($this->values->model) {
+            landingfields::MODEL_COURSE => 'landingfield_model_course',
+            landingfields::MODEL_EVENT => 'landingfield_model_event',
+            landingfields::MODEL_TRAIL => 'landingfield_model_trail',
+            default => null,
+        };
         $badges = $this->badges();
         $start = (int) $this->course->startdate;
         // A visitor's card states a start day only where it prints one: an event's date tile.

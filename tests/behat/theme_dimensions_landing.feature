@@ -40,6 +40,21 @@ Feature: Course enrolment landing page
     Then I should see "Managed Course"
     And "[data-region='dimensions-landing-manage']" "css_element" should not exist
 
+  Scenario: The landing page carries no block drawer and no course index, even in edit mode
+    Given the following "courses" exist:
+      | fullname      | shortname | customfield_dimensions_model |
+      | Drawer Course | DC1       | 1                            |
+    # The control: the course's own page offers both drawers and the add-block button in edit mode.
+    And I am on the "DC1" "Course" page logged in as "admin"
+    And I turn editing mode on
+    And "#theme_boost-drawers-courseindex" "css_element" should exist
+    And "[data-region='add-block-button']" "css_element" should exist
+    When I am on the "DC1" "theme_dimensions > Enrolment landing page" page
+    Then I should see "Drawer Course"
+    And "#theme_boost-drawers-courseindex" "css_element" should not exist
+    And "#theme_boost-drawers-blocks" "css_element" should not exist
+    And "[data-region='add-block-button']" "css_element" should not exist
+
   Scenario: A user enrolled from a later date is told when the access starts and is offered no enrolment
     Given the following "users" exist:
       | username | firstname | lastname | email                |
