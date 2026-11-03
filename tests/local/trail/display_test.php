@@ -87,7 +87,9 @@ final class display_test extends \advanced_testcase {
         $make('unlistedclosed');
         $this->set_course_state($this->refs['unlistedclosed'], discoverability::STATE_UNLISTED);
         $make('hidden', ['visible' => 0]);
-        $make('inhiddencategory', ['category' => $hidden->id]);
+        // Visible itself: core would otherwise create it hidden, like its category, and the course's own flag
+        // would decide what the category's must.
+        $make('inhiddencategory', ['category' => $hidden->id, 'visible' => 1]);
         $make('inunlistedcategory', ['category' => $unlistedcategory->id]);
         $make('restricted');
         $this->set_course_state($this->refs['restricted'], discoverability::STATE_PUBLIC);
