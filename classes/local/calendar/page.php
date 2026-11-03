@@ -26,6 +26,7 @@ namespace theme_dimensions\local\calendar;
 
 use theme_dimensions\local\blockless;
 use theme_dimensions\local\landing\links;
+use theme_dimensions\local\trail\trail;
 use theme_dimensions\output\calendar_page;
 use theme_dimensions\output\opengraph;
 
@@ -45,9 +46,12 @@ use theme_dimensions\output\opengraph;
  * 5. The view, the month or the week, and the state are read, every value outside its vocabulary dropped ({@see state},
  *    {@see span()}); a category the range refuses (gone, hidden, unlisted) is dropped like any other value, so a stale
  *    saved category or a shared link to a withheld one shows the whole calendar and says nothing about the id. The
- *    open day ({@see PARAM_DAY}) is kept only inside the shown window ({@see day_from_request()}).
+ *    open day ({@see PARAM_DAY}) is kept only inside the shown window ({@see day_from_request()}). The Trilhas view
+ *    ({@see VIEW_TRAIL}) is read only for an account while trails are available, its trail and "Só as minhas" as
+ *    navigation ({@see trail_from_request()}, {@see mine_from_request()}).
  * 6. The window (the month grid's, or the week's seven days), the range's answer ({@see range::answer()}) and the
  *    category tree are computed once and handed to the renderable, which embeds them: the first paint costs no request.
+ *    In the Trilhas view the range asks no source and the month's trails are the answer ({@see trails::answer()}).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -91,6 +95,18 @@ final class page {
      * day from it and a desktop's shows the month with the day's drawer open, never a desktop day view.
      */
     public const VIEW_DAY = 'day';
+
+    /**
+     * @var string The Trilhas view (docs/trail/PLAN.md section 7): the trails of the month, an account's only and only
+     *   while trails are available ({@see trail::available()}); for anyone else the address reads as the month.
+     */
+    public const VIEW_TRAIL = 'trail';
+
+    /** @var string The address parameter of the one trail the Trilhas view keeps, its course id; navigation, never state. */
+    public const PARAM_TRAIL = 'trail';
+
+    /** @var string The address parameter of the Trilhas view's "Só as minhas", exactly '1' when on; navigation. */
+    public const PARAM_MINE = 'mine';
 
     /** @var \core\url|null Where to send the client, or null. */
     public readonly ?\core\url $redirect;
@@ -238,16 +254,53 @@ final class page {
     }
 
     /**
-     * The view the request names: the week for exactly {@see VIEW_WEEK}, the day for exactly {@see VIEW_DAY}, the month
-     * for anything else, never refused.
+     * The view the request names: the week for exactly {@see VIEW_WEEK}, the day for exactly {@see VIEW_DAY}, the
+     * Trilhas view for exactly {@see VIEW_TRAIL} where {@see trails_offered()}, the month for anything else, never
+     * refused.
      *
-     * @return string {@see VIEW_MONTH}, {@see VIEW_WEEK} or {@see VIEW_DAY}.
+     * @return string {@see VIEW_MONTH}, {@see VIEW_WEEK}, {@see VIEW_DAY} or {@see VIEW_TRAIL}.
      */
     public static function view_from_request(): string {
+        if (self::scalar_param(self::PARAM_VIEW) === self::VIEW_TRAIL) {
+            return self::trails_offered() ? self::VIEW_TRAIL : self::VIEW_MONTH;
+        }
         if (self::scalar_param(self::PARAM_VIEW) === self::VIEW_DAY) {
             return self::VIEW_DAY;
         }
         return self::scalar_param(self::PARAM_VIEW) === self::VIEW_WEEK ? self::VIEW_WEEK : self::VIEW_MONTH;
+    }
+
+    /**
+     * Whether the page offers the Trilhas view: to a real account, while trails are available.
+     *
+     * A visitor's public calendar has no such view (the calendar asks an account to log in for it, PLAN.md section 5),
+     * and without mod_subcourse there are no trails (section 8).
+     *
+     * @return bool
+     */
+    public static function trails_offered(): bool {
+        return isloggedin() && !isguestuser() && trail::available();
+    }
+
+    /**
+     * The one trail the request keeps, a course id; anything that is not a positive integer is 0, every trail.
+     *
+     * Not judged here: a trail the viewer may not discover is simply not in the answer ({@see trails::answer()}).
+     *
+     * @return int
+     */
+    public static function trail_from_request(): int {
+        $trail = self::scalar_param(self::PARAM_TRAIL);
+        return ctype_digit($trail) && strlen($trail) <= 10 ? (int) $trail : 0;
+    }
+
+    /**
+     * Whether the request keeps only the viewer's own trails: exactly '1'.
+     *
+     * @return bool
+     */
+    public static function mine_from_request(): bool {
+        return self::scalar_param(self::PARAM_MINE) === '1';
     }
 
     /**
@@ -334,6 +387,11 @@ final class page {
      */
     public static function span(int $firstday): array {
         $month = self::month_from_request();
+        if (self::view_from_request() === self::VIEW_TRAIL) {
+            // The month's grid: the answer the page embeds for a switch back to the month, every key off.
+            [$from, $to] = self::grid($month, $firstday);
+            return [self::VIEW_TRAIL, $month, '', '', $from, $to];
+        }
         if (self::view_from_request() === self::VIEW_DAY) {
             $day = self::view_day_from_request($month);
             [$from, $to] = self::grid(substr($day, 0, 7), $firstday);
@@ -353,13 +411,16 @@ final class page {
     /**
      * The page's own address parameters for what it shows, the state's or the visitor's keys' aside.
      *
-     * @param string $view {@see VIEW_MONTH}, {@see VIEW_WEEK} or {@see VIEW_DAY}.
+     * @param string $view {@see VIEW_MONTH}, {@see VIEW_WEEK}, {@see VIEW_DAY} or {@see VIEW_TRAIL}.
      * @param string $month The month, YYYY-MM.
      * @param string $week The week's first day, YYYY-MM-DD, in the week view.
      * @param string $day The open day, or ''; in the day view its day.
-     * @return array name => value.
+     * @return array name => value; in the Trilhas view its trail and "Só as minhas" too, when set.
      */
     public static function span_params(string $view, string $month, string $week, string $day): array {
+        if ($view === self::VIEW_TRAIL) {
+            return self::trail_params($month, self::trail_from_request(), self::mine_from_request());
+        }
         if ($view === self::VIEW_DAY) {
             return [self::PARAM_VIEW => self::VIEW_DAY, self::PARAM_DAY => $day];
         }
@@ -367,6 +428,27 @@ final class page {
             ? [self::PARAM_VIEW => self::VIEW_WEEK, self::PARAM_WEEK => $week]
             : [state::PARAM_MONTH => $month];
         return $day !== '' ? $params + [self::PARAM_DAY => $day] : $params;
+    }
+
+    /**
+     * The address parameters of the Trilhas view: the view, the month, and the trail and "Só as minhas" when set.
+     *
+     * The one spelling of a Trilhas address, the landing page's "Ver no calendário" included.
+     *
+     * @param string $month The month, YYYY-MM.
+     * @param int $trail The one trail, 0 for every trail.
+     * @param bool $mine Whether only the viewer's own trails are kept.
+     * @return array name => value.
+     */
+    public static function trail_params(string $month, int $trail = 0, bool $mine = false): array {
+        $params = [self::PARAM_VIEW => self::VIEW_TRAIL, state::PARAM_MONTH => $month];
+        if ($trail > 0) {
+            $params[self::PARAM_TRAIL] = $trail;
+        }
+        if ($mine) {
+            $params[self::PARAM_MINE] = 1;
+        }
+        return $params;
     }
 
     /**
@@ -394,6 +476,16 @@ final class page {
         }
         if (self::view_from_request() === self::VIEW_DAY) {
             $params[self::PARAM_VIEW] = self::VIEW_DAY;
+        }
+        // Forwarded as written: the page behind the route decides whether the reader is offered the view.
+        if (self::scalar_param(self::PARAM_VIEW) === self::VIEW_TRAIL) {
+            $params[self::PARAM_VIEW] = self::VIEW_TRAIL;
+            if (self::trail_from_request() > 0) {
+                $params[self::PARAM_TRAIL] = self::trail_from_request();
+            }
+            if (self::mine_from_request()) {
+                $params[self::PARAM_MINE] = 1;
+            }
         }
         $week = self::scalar_param(self::PARAM_WEEK);
         if (self::is_day($week)) {
@@ -517,8 +609,21 @@ final class page {
         $firstday = (int) calendar_get_starting_weekday();
         [$view, $month, $week, $day, $from, $to] = self::span($firstday);
         $window = window::from_iso($from, $to);
-        // Every key off asks no source: the answer is the window's days, each at zero (the service reads [] as all).
-        $answer = range::answer($window, $scope, $state->on(), $state->filters());
+        $trailsanswer = null;
+        if ($view === self::VIEW_TRAIL) {
+            // The Trilhas view draws no event: the month's answer is its days at zero, for a switch back to the month.
+            $answer = range::answer($window, $scope, [], $state->filters());
+            $trailsanswer = trails::answer(
+                trails::month_window($month),
+                $scope,
+                self::trail_from_request(),
+                self::mine_from_request(),
+                time()
+            );
+        } else {
+            // Every key off asks no source: the answer is the window's days, each at zero (the service reads [] as all).
+            $answer = range::answer($window, $scope, $state->on(), $state->filters());
+        }
 
         $context = \core\context\system::instance();
         $PAGE->set_context($context);
@@ -543,7 +648,10 @@ final class page {
             $day,
             false,
             $view,
-            $week
+            $week,
+            $trailsanswer,
+            self::trail_from_request(),
+            self::mine_from_request()
         ));
     }
 }

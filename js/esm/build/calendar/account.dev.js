@@ -10,8 +10,10 @@
  */
 const RANGE_METHOD = "theme_dimensions_get_calendar_range";
 const REMEMBER_METHOD = "theme_dimensions_remember_calendar_state";
+const TRAILS_METHOD = "theme_dimensions_get_calendar_trails";
 export {
   RANGE_METHOD,
-  REMEMBER_METHOD
+  REMEMBER_METHOD,
+  TRAILS_METHOD
 };
 //# sourceMappingURL=account.dev.js.map

@@ -118,6 +118,27 @@ body.dim-calendar,
     --dim-cal-overdue-tint: #{dim-cal-light(overdue, tint, $dim-ds-red-100)};
     --dim-cal-overdue-edge: #{dim-cal-light(overdue, edge, $dim-ds-red-500)};
     --dim-cal-overdue-ink: #{dim-cal-light(overdue, ink, $dim-ds-red-800)};
+    // The Trilhas view's own colours (docs/trail/PLAN.md section 7): fixed, never an administrator's key colour, each
+    // pair the hand-picked default of a key measured above (the schedule's the activity's, a state's the key it reads
+    // as: current the course's, done the group's, late the overdue's, locked the site's, upcoming the other's).
+    --dim-cal-trail-tint: #{$dim-ds-blue-100};
+    --dim-cal-trail-edge: #{$dim-ds-blue-400};
+    --dim-cal-trail-ink: #{$dim-ds-blue-800};
+    --dim-cal-trailcurrent-tint: #{$dim-ds-blue-050};
+    --dim-cal-trailcurrent-edge: #{$dim-ds-blue-500};
+    --dim-cal-trailcurrent-ink: #{$dim-ds-blue-700};
+    --dim-cal-traildone-tint: #{$dim-ds-green-050};
+    --dim-cal-traildone-edge: #{$dim-ds-green-700};
+    --dim-cal-traildone-ink: #{$dim-ds-green-800};
+    --dim-cal-traillate-tint: #{$dim-ds-red-100};
+    --dim-cal-traillate-edge: #{$dim-ds-red-500};
+    --dim-cal-traillate-ink: #{$dim-ds-red-800};
+    --dim-cal-traillocked-tint: #{$dim-ds-white};
+    --dim-cal-traillocked-edge: #{$dim-ds-gray-600};
+    --dim-cal-traillocked-ink: #{$dim-ds-gray-800};
+    --dim-cal-trailupcoming-tint: #{$dim-ds-white};
+    --dim-cal-trailupcoming-edge: #{$dim-ds-gray-600};
+    --dim-cal-trailupcoming-ink: #{$dim-ds-gray-800};
     --dim-cal-surface: #{$dim-ds-white};
     --dim-cal-surface-quiet: #{$dim-ds-gray-050};
     --dim-cal-weekend-hatch: #{$dim-ds-gray-200};
@@ -155,6 +176,24 @@ body.dim-calendar,
     --dim-cal-overdue-tint: #{dim-cal-dark(overdue, tint, mix($dim-ds-red-500, $dark-surface-raised, 30%))};
     --dim-cal-overdue-edge: #{dim-cal-dark(overdue, edge, dark-readable($dim-ds-red-500, $dark-surface-raised, 3))};
     --dim-cal-overdue-ink: #{dim-cal-dark(overdue, ink, dim-cal-on-mix($dim-ds-red-100, $dim-ds-red-500, 30%))};
+    --dim-cal-trail-tint: #{mix($dim-ds-blue-400, $dark-surface-raised, 30%)};
+    --dim-cal-trail-edge: #{dark-readable($dim-ds-blue-400, $dark-surface-raised, 3)};
+    --dim-cal-trail-ink: #{dim-cal-on-mix($dim-ds-blue-100, $dim-ds-blue-400, 30%)};
+    --dim-cal-trailcurrent-tint: #{mix($dim-ds-blue-500, $dark-surface-raised, 30%)};
+    --dim-cal-trailcurrent-edge: #{dark-readable($dim-ds-blue-500, $dark-surface-raised, 3)};
+    --dim-cal-trailcurrent-ink: #{dim-cal-on-mix($dim-ds-blue-050, $dim-ds-blue-500, 30%)};
+    --dim-cal-traildone-tint: #{mix($dim-ds-green-700, $dark-surface-raised, 35%)};
+    --dim-cal-traildone-edge: #{dark-readable($dim-ds-green-700, $dark-surface-raised, 3)};
+    --dim-cal-traildone-ink: #{dim-cal-on-mix($dim-ds-green-050, $dim-ds-green-700, 35%)};
+    --dim-cal-traillate-tint: #{mix($dim-ds-red-500, $dark-surface-raised, 30%)};
+    --dim-cal-traillate-edge: #{dark-readable($dim-ds-red-500, $dark-surface-raised, 3)};
+    --dim-cal-traillate-ink: #{dim-cal-on-mix($dim-ds-red-100, $dim-ds-red-500, 30%)};
+    --dim-cal-traillocked-tint: #{$dark-surface-raised};
+    --dim-cal-traillocked-edge: #{dark-readable($dim-ds-gray-600, $dark-surface-raised, 3)};
+    --dim-cal-traillocked-ink: #{dark-readable($dim-ds-gray-100, $dark-surface-raised)};
+    --dim-cal-trailupcoming-tint: #{$dark-surface-raised};
+    --dim-cal-trailupcoming-edge: #{dark-readable($dim-ds-gray-600, $dark-surface-raised, 3)};
+    --dim-cal-trailupcoming-ink: #{dark-readable($dim-ds-gray-100, $dark-surface-raised)};
     --dim-cal-surface: #{$dark-surface-raised};
     --dim-cal-surface-quiet: #{$dark-surface-page};
     --dim-cal-weekend-hatch: #{$dark-surface-raised};
@@ -1604,6 +1643,277 @@ body.dim-calendar {
         height: .375rem;
         border-radius: 50%;
         background: var(--dim-cal-edge);
+    }
+
+    // The Trilhas view (docs/trail/PLAN.md section 7). The month's days are grid columns between the label and the
+    // "next month" column (--dim-cal-trail-days, set by the client), so a bar is placed by its grid columns alone.
+    .dim-cal__toolbar[hidden] {
+        display: none;
+    }
+
+    .dim-cal__trailpick,
+    .dim-cal__trailmine {
+        display: flex;
+        gap: .375rem;
+        align-items: center;
+        margin: 0;
+    }
+
+    .dim-cal__trails {
+        --dim-cal-tint: var(--dim-cal-trail-tint);
+        --dim-cal-edge: var(--dim-cal-trail-edge);
+        --dim-cal-ink: var(--dim-cal-trail-ink);
+        flex: 1 1 auto;
+        min-width: 0;
+        border: 1px solid var(--dim-cal-surface-quiet);
+        border-radius: var(--dim-ds-radius-md, 10px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__trailgrid {
+        overflow-x: auto;
+    }
+
+    .dim-cal__trailrow {
+        display: grid;
+        grid-template-columns: 14rem repeat(var(--dim-cal-trail-days, 31), minmax(1.5rem, 1fr)) 3.5rem;
+        align-items: center;
+        min-height: 2.25rem;
+        border-top: 1px solid var(--dim-cal-surface-quiet);
+    }
+
+    .dim-cal__trailrow--head {
+        border-top: 0;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .75rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__trailrow--trail {
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    .dim-cal__traillabel {
+        display: flex;
+        grid-column: 1;
+        grid-row: 1;
+        gap: .5rem;
+        align-items: baseline;
+        min-width: 0;
+        padding: .25rem .75rem;
+        overflow: hidden;
+    }
+
+    .dim-cal__trailtitle {
+        flex-direction: column;
+        gap: 0;
+        margin: 0;
+        font-size: .875rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__trailprogress {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-weight: 400;
+    }
+
+    .dim-cal__trailnum {
+        flex: 0 0 auto;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .75rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__trailname {
+        overflow: hidden;
+        font-size: .8125rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dim-cal__trailday {
+        text-align: center;
+    }
+
+    .dim-cal__trailday--weekend {
+        background: var(--dim-cal-surface-quiet);
+    }
+
+    .dim-cal__trailday--today {
+        color: var(--dim-cal-trailcurrent-ink);
+        font-weight: 700;
+    }
+
+    .dim-cal__trailday--next {
+        padding-inline: .25rem;
+        white-space: nowrap;
+    }
+
+    .dim-cal__trailnow {
+        align-self: stretch;
+        justify-self: center;
+        width: 2px;
+        background: var(--dim-cal-trailcurrent-edge);
+    }
+
+    .dim-cal__trailbar {
+        z-index: 1;
+        min-width: 0;
+        height: 1.5rem;
+        margin: 0 2px;
+        padding: 0 .5rem;
+        overflow: hidden;
+        border: 1px solid var(--dim-cal-edge);
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        background: var(--dim-cal-tint);
+        color: var(--dim-cal-ink);
+        font-size: .75rem;
+        font-weight: 500;
+        text-align: start;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dim-cal__trailbar--before {
+        margin-inline-start: 0;
+        border-inline-start-width: 3px;
+        border-start-start-radius: 0;
+        border-end-start-radius: 0;
+    }
+
+    .dim-cal__trailbar--after {
+        margin-inline-end: 0;
+        border-start-end-radius: 0;
+        border-end-end-radius: 0;
+    }
+
+    // An open window has no end to draw: the bar fades out at the month's edge.
+    .dim-cal__trailbar--open {
+        margin-inline-end: 0;
+        border-inline-end-style: dashed;
+        border-start-end-radius: 0;
+        border-end-end-radius: 0;
+        mask-image: linear-gradient(to right, var(--dim-cal-edge) 85%, transparent);
+    }
+
+    // An expected completion date is a milestone: the bar's end carries a diamond.
+    .dim-cal__trailbar--milestone {
+        position: relative;
+        padding-inline-end: 1.25rem;
+    }
+
+    .dim-cal__trailbar--milestone::after {
+        position: absolute;
+        inset-inline-end: .375rem;
+        top: 50%;
+        width: .5rem;
+        height: .5rem;
+        background: var(--dim-cal-edge);
+        content: "";
+        transform: translateY(-50%) rotate(45deg);
+    }
+
+    .dim-cal__trailbar--next {
+        border-width: 2px;
+        font-weight: 700;
+    }
+
+    @each $state in current, done, late, locked, upcoming {
+        .dim-cal__trailbar--#{$state},
+        .dim-cal__trailstep--#{$state},
+        .dim-cal__trailstate--#{$state} {
+            --dim-cal-tint: var(--dim-cal-trail#{$state}-tint);
+            --dim-cal-edge: var(--dim-cal-trail#{$state}-edge);
+            --dim-cal-ink: var(--dim-cal-trail#{$state}-ink);
+        }
+    }
+
+    .dim-cal__trailbar--locked,
+    .dim-cal__trailbar--upcoming {
+        border-style: dashed;
+    }
+
+    .dim-cal__trailagenda .dim-cal__trail {
+        padding: .75rem;
+    }
+
+    .dim-cal__trailagenda .dim-cal__trail + .dim-cal__trail {
+        border-top: 1px solid var(--dim-cal-surface-quiet);
+    }
+
+    .dim-cal__trailsteps {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+        margin: .5rem 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dim-cal__trailstep {
+        display: grid;
+        grid-template-columns: 1.5rem minmax(0, 1fr);
+        gap: 0 .5rem;
+        padding: .5rem;
+        border: 1px solid var(--dim-cal-edge);
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        background: var(--dim-cal-tint);
+        color: var(--dim-cal-ink);
+    }
+
+    .dim-cal__trailstep .dim-cal__trailnum {
+        grid-row: span 3;
+        color: inherit;
+    }
+
+    .dim-cal__trailstepname {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font-weight: 600;
+        text-align: start;
+        text-decoration: underline;
+    }
+
+    .dim-cal__trailwhen {
+        font-size: .8125rem;
+    }
+
+    .dim-cal__trailstate {
+        justify-self: start;
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .dim-cal__trailpop .dim-cal__trailstate {
+        padding: .125rem .5rem;
+        border: 1px solid var(--dim-cal-edge);
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        background: var(--dim-cal-tint);
+        color: var(--dim-cal-ink);
+    }
+
+    .dim-cal__trailsource {
+        display: block;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+    }
+
+    // The phone's "Today" line, between the steps behind and the steps ahead.
+    .dim-cal__trailtoday {
+        display: flex;
+        gap: .5rem;
+        align-items: center;
+        color: var(--dim-cal-trailcurrent-ink);
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    .dim-cal__trailtoday::after {
+        flex: 1 1 auto;
+        height: 2px;
+        background: var(--dim-cal-trailcurrent-edge);
+        content: "";
     }
 
     @media (prefers-reduced-motion: no-preference) {

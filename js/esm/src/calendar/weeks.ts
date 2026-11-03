@@ -54,10 +54,11 @@ export const VIEW_PARAM = 'view';
 export const WEEK_PARAM = 'week';
 
 /** The three views: the day only on a phone. */
-export type View = 'month' | 'week' | 'day';
+export type View = 'month' | 'week' | 'day' | 'trail';
 
 /** What a page shows: a month, YYYY-MM, a week by its first day, YYYY-MM-DD, or a day, YYYY-MM-DD. */
-export type Span = {view: 'month', month: string} | {view: 'week', week: string} | {view: 'day', day: string};
+export type Span = {view: 'month', month: string} | {view: 'week', week: string} | {view: 'day', day: string}
+    | {view: 'trail', month: string};
 
 /** What the frame draws: the month grid, the week, or the phone's day. */
 export type Grid = View;
@@ -127,6 +128,9 @@ export const spanOf = (view: View, iso: string, firstday: number): Span => {
     if (view === 'day') {
         return {view: 'day', day: iso};
     }
+    if (view === 'trail') {
+        return {view: 'trail', month: iso.slice(0, 7)};
+    }
     return view === 'week' ? {view: 'week', week: weekStart(iso, firstday)} : {view: 'month', month: iso.slice(0, 7)};
 };
 
@@ -155,6 +159,9 @@ export const spanKey = (span: Span): string => {
     if (span.view === 'day') {
         return `day:${span.day}`;
     }
+    if (span.view === 'trail') {
+        return `trail:${span.month}`;
+    }
     return span.view === 'week' ? `week:${span.week}` : `month:${span.month}`;
 };
 
@@ -166,7 +173,7 @@ export const spanKey = (span: Span): string => {
  * @returns {string} YYYY-MM.
  */
 export const monthOfSpan = (span: Span, selected: string): string => {
-    if (span.view === 'month') {
+    if (span.view === 'month' || span.view === 'trail') {
         return span.month;
     }
     if (span.view === 'day') {
@@ -183,7 +190,7 @@ export const monthOfSpan = (span: Span, selected: string): string => {
  * @returns {string}
  */
 export const openingOf = (span: Span, today: string): string => {
-    if (span.view === 'month') {
+    if (span.view === 'month' || span.view === 'trail') {
         return today.startsWith(span.month) ? today : `${span.month}-01`;
     }
     if (span.view === 'day') {
@@ -230,6 +237,9 @@ export const inSpan = (href: string, span: Span): string => {
     if (span.view === 'week') {
         url.searchParams.append(VIEW_PARAM, 'week');
         url.searchParams.append(WEEK_PARAM, span.week);
+    } else if (span.view === 'trail') {
+        url.searchParams.append(VIEW_PARAM, 'trail');
+        url.searchParams.append('month', span.month);
     } else {
         url.searchParams.append('month', span.month);
     }
@@ -256,18 +266,23 @@ export const viewDay = (day: string, month: string, today: string): string => {
  * view_day_from_request()): the day for exactly `view=day`, its `day=` when that is a day of the month's years, else
  * the month's opening day; the week for exactly `view=week`, its day snapped to the week's first day; a week that is
  * not a day, or whose year is outside the month's bounds (1900 to 2999), being the week of the month's opening day
- * (today when the month holds it, else its 1st, page::opening_day()); the month for anything else.
+ * (today when the month holds it, else its 1st, page::opening_day()); the Trilhas view's month for exactly
+ * `view=trail` on a page that offers it (page::view_from_request()); the month for anything else.
  *
  * @param {string} href The address.
  * @param {number} firstday The weekday a week begins on.
  * @param {string} month The month the address names, or the page's.
  * @param {string} today Today, YYYY-MM-DD.
+ * @param {boolean} trails Whether the page offers the Trilhas view: `view=trail` reads as the month otherwise.
  * @returns {object} The span.
  */
-export const readSpan = (href: string, firstday: number, month: string, today: string): Span => {
+export const readSpan = (href: string, firstday: number, month: string, today: string, trails: boolean = false): Span => {
     const params = new URL(href, window.location.href).searchParams;
     if (params.get(VIEW_PARAM) === 'day') {
         return {view: 'day', day: viewDay(String(params.get(DAY_PARAM) || ''), month, today)};
+    }
+    if (params.get(VIEW_PARAM) === 'trail' && trails) {
+        return {view: 'trail', month: month};
     }
     if (params.get(VIEW_PARAM) !== 'week') {
         return {view: 'month', month: month};
@@ -331,7 +346,8 @@ export const spanLabels = (span: Span, days: string[], strings: Strings, languag
 export const dayIn = (iso: string | null, days: string[]): string | null => (iso !== null && days.includes(iso) ? iso : null);
 
 /**
- * The views the switch offers: the day only on a phone (PROPOSAL.md section 31.1).
+ * The views the switch offers: the day only on a phone (PROPOSAL.md section 31.1). Trilhas, where the page offers it,
+ * follows them (ViewSwitch.tsx).
  *
  * @param {boolean} phone Whether the frame is a phone's.
  * @returns {Array} The views, in the switch's order.
@@ -390,7 +406,8 @@ export const drawerOf = (span: Span, open: string | null, days: string[], phone:
     if (span.view === 'day') {
         return phone ? null : span.day;
     }
-    return dayIn(open, days);
+    // The Trilhas view opens no day.
+    return span.view === 'trail' ? null : dayIn(open, days);
 };
 
 /**

@@ -68,7 +68,7 @@ import {fetchOne} from '@moodle/lms/core/ajax';
 import Pending from '@moodle/lms/core/pending';
 import {load} from '../amd';
 import {parse, say} from '../daterange/calendar';
-import {RANGE_METHOD, REMEMBER_METHOD} from './account';
+import {RANGE_METHOD, REMEMBER_METHOD, TRAILS_METHOD} from './account';
 import CategoryPicker from './CategoryPicker';
 import DayDrawer from './DayDrawer';
 import DayView from './DayView';
@@ -104,6 +104,9 @@ import MoreFilters from './MoreFilters';
 import {MOVE_MINUTE, createStart, dayStart, dropRefusal, editOf, editsOf, instantOf, toolbarStart} from './moves';
 import {fill, load as loadStrings} from './strings';
 import type {Strings} from './strings';
+import TrailView, {TrailFilters} from './TrailView';
+import {emptyTrails, filterOf, readTrail, trailArgs, trailFiltered, withTrail} from './trails';
+import type {TrailAnswer, TrailFilter} from './trails';
 import ViewSwitch from './ViewSwitch';
 import WeekGrid from './WeekGrid';
 import {
@@ -133,8 +136,8 @@ const LONG_DAY: Intl.DateTimeFormatOptions = {weekday: 'long', day: 'numeric', m
 /** The id of the month's caption, which labels the grid. */
 const CAPTION = 'dim-cal-caption';
 
-/** What the page shows: a month or a week and its answer, always together. */
-type Shown = {span: Span, answer: Answer};
+/** What the page shows: a month, a week, a day or the Trilhas view's month, and its answer, always together. */
+type Shown = {span: Span, answer: Answer, trails: TrailAnswer | null};
 
 /** How a request writes the address. */
 type Write = 'push' | 'replace' | 'none';
@@ -205,7 +208,16 @@ export const openableDay = (day: string | null, days: string[]): string | null =
  * @param {object} props The server's props.
  * @returns {object} The span.
  */
-export const propsSpan = (props: {month: string, view?: string, week?: string, day?: string}): Span => {
+export const propsSpan = (props: {
+    month: string,
+    view?: string,
+    week?: string,
+    day?: string,
+    trails?: {answer: TrailAnswer | null},
+}): Span => {
+    if (props.view === 'trail' && props.trails?.answer) {
+        return {view: 'trail', month: props.month};
+    }
     if (props.view === 'day' && parse(props.day)) {
         return {view: 'day', day: String(props.day)};
     }
@@ -214,6 +226,22 @@ export const propsSpan = (props: {month: string, view?: string, week?: string, d
     }
     return {view: 'month', month: props.month};
 };
+
+/**
+ * What the page first shows: the props' span, the range's answer and, in the Trilhas view, the month's trails.
+ *
+ * @param {object} props The server's props.
+ * @returns {object}
+ */
+const shownOf = (props: Props): Shown => ({span: propsSpan(props), answer: props.answer, trails: props.trails?.answer ?? null});
+
+/**
+ * The categories the shown answer names: the month's trails' in the Trilhas view, the range's otherwise.
+ *
+ * @param {object} shown What the page shows.
+ * @returns {Array}
+ */
+const categoriesOf = (shown: Shown) => (shown.trails ? shown.trails.categories : shown.answer.categories);
 
 /**
  * The day cell a drag is over, or null: the element marked data-cal-drop that holds the target.
@@ -275,7 +303,9 @@ const Calendar = (props: Props) => {
     const language = document.documentElement.lang || undefined;
     const firstday = Number(props.firstday) || 0;
     const [strings, setStrings] = useState<Strings | null>(null);
-    const [shown, setShown] = useState<Shown>(() => ({span: propsSpan(props), answer: props.answer}));
+    const [shown, setShown] = useState<Shown>(() => shownOf(props));
+    const offered = Boolean(props.trails?.offered);
+    const [filter, setFilter] = useState<TrailFilter>(() => filterOf(props.trails));
     const [state, setState] = useState<State>(() => normalise(props.state));
     const [openday, setOpenday] = useState<string | null>(
         () => openOf(propsSpan(props), props.day, spanDays(propsSpan(props), firstday))
@@ -307,6 +337,8 @@ const Calendar = (props: Props) => {
     // The phone decision as the last measure gave it (until the first, the media query's guess), read by the request path
     // before the render that follows it.
     const phoned = useRef<boolean>(phone);
+    // The Trilhas view's filters as the last change gave them, read by the request path before the render that follows.
+    const filtering = useRef<TrailFilter>(filter);
 
     const zone = useMemo(() => zoneOf(props.timezone, language), [props.timezone, language]);
     const month = monthOfSpan(shown.span, selected);
@@ -334,7 +366,9 @@ const Calendar = (props: Props) => {
          */
         const onPop = (): void => {
             const read = readAddress(window.location.href);
-            const span = readSpan(window.location.href, firstday, read.month || props.month, props.today);
+            const span = readSpan(window.location.href, firstday, read.month || props.month, props.today, offered);
+            filtering.current = readTrail(window.location.href);
+            setFilter(filtering.current);
             const day = openOf(span, new URL(window.location.href).searchParams.get(DAY_PARAM), spanDays(span, firstday));
             request(span, read.state || normalise(props.state), 'none', day || openingOf(span, props.today), false);
             setOpenday(day);
@@ -406,21 +440,35 @@ const Calendar = (props: Props) => {
                 setOpenday(null);
             }
         }
-        if (write !== 'none') {
+        if (write !== 'none' && span.view === 'trail') {
+            // The Trilhas view opens no day; its trail and "Só as minhas" are navigation, like the view.
+            writeAddress(withTrail(inSpan(address(props.urls.page, span.month, next), span), filtering.current), write === 'push');
+        } else if (write !== 'none') {
             writeAddress(inSpan(address(props.urls.page, monthOfSpan(span, select), next, kept), span), write === 'push');
         }
         const pending = new Pending('theme_dimensions/calendar:range');
         try {
-            const answer = keysOn(next).length
-                ? await fetchOne<Answer>({methodname: RANGE_METHOD, args: rangeArgs(days[0], days[days.length - 1], next)})
-                : emptyAnswer(days);
+            let answer: Answer;
+            let trails: TrailAnswer | null = null;
+            if (span.view === 'trail') {
+                // The Trilhas view draws no event: its answer is the month's trails (docs/trail/PLAN.md section 7).
+                trails = await fetchOne<TrailAnswer>({
+                    methodname: TRAILS_METHOD,
+                    args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive),
+                });
+                answer = emptyAnswer(days);
+            } else {
+                answer = keysOn(next).length
+                    ? await fetchOne<Answer>({methodname: RANGE_METHOD, args: rangeArgs(days[0], days[days.length - 1], next)})
+                    : emptyAnswer(days);
+            }
             if (seq !== ticket.current) {
                 pending.resolve();
                 return;
             }
             painting.current?.resolve();
             painting.current = pending;
-            setShown({span: span, answer: answer});
+            setShown({span: span, answer: answer, trails: trails});
             setSelected(select);
             if (focus) {
                 setFocusing((tick) => tick + 1);
@@ -480,6 +528,39 @@ const Calendar = (props: Props) => {
         setState(next);
         request(shown.span, next, 'replace', selected, false);
         remember(next);
+    };
+
+    /**
+     * Take a change of the Trilhas view's filters: show it and write it; they are navigation, never remembered.
+     *
+     * @param {object} fields The filters that change.
+     * @returns {void}
+     */
+    const changeTrail = (fields: Partial<TrailFilter>): void => {
+        const next = {...filtering.current, ...fields};
+        if (next.trail === filtering.current.trail && next.mine === filtering.current.mine) {
+            return;
+        }
+        filtering.current = next;
+        setFilter(next);
+        request(shown.span, state, 'replace', selected, false);
+    };
+
+    /**
+     * Put the Trilhas view's filters back: every trail, not only mine, and no category; the focus on the trail choice.
+     *
+     * @returns {void}
+     */
+    const clearTrails = (): void => {
+        root.current?.querySelector<HTMLElement>('[data-action="dim-cal-trail"]')?.focus();
+        filtering.current = {trail: 0, mine: false};
+        setFilter(filtering.current);
+        const next = normalise({...state, categoryid: 0, recursive: true});
+        if (sameState(next, state)) {
+            request(shown.span, state, 'replace', selected, false);
+            return;
+        }
+        change({categoryid: 0, recursive: true});
     };
 
     /**
@@ -765,7 +846,7 @@ const Calendar = (props: Props) => {
         language: language,
         colour: state.colour,
         courses: new Map(shown.answer.courses.map((course) => [course.id, course])),
-        categories: new Map(shown.answer.categories.map((category) => [category.id, category])),
+        categories: new Map(categoriesOf(shown).map((category) => [category.id, category])),
         home: props.urls.home,
         movable: movable,
     };
@@ -782,6 +863,7 @@ const Calendar = (props: Props) => {
     const poppededit = editedOf(edits, poppedentry);
     const grid = gridOf(shown.span, phone);
     const drawn = drawerOf(shown.span, openday, days, phone);
+    const trailview = shown.span.view === 'trail';
     const own = week ? days : days.filter((iso) => iso.startsWith(month));
     /**
      * Move a month or a week from the selected day, the focus left where it is.
@@ -831,6 +913,20 @@ const Calendar = (props: Props) => {
      * @returns {object} The grid.
      */
     const drawGrid = (): ReactNode => {
+        if (grid === 'trail') {
+            return (
+                <TrailView
+                    look={look}
+                    month={month}
+                    answer={shown.trails ?? emptyTrails(month)}
+                    today={props.today}
+                    now={props.now}
+                    phone={phone}
+                    captionid={CAPTION}
+                    onWidth={onWidth}
+                />
+            );
+        }
         if (grid === 'day') {
             return (
                 <DayView
@@ -927,11 +1023,27 @@ const Calendar = (props: Props) => {
                 </button>
                 <p className="dim-cal__caption" id={CAPTION} aria-live="polite" data-region="dim-cal-caption">{labels.caption}</p>
                 <span className="dim-cal__spacer"></span>
-                <ViewSwitch strings={strings} view={shown.span.view} phone={phone} onView={toView} />
-                {newEventButton(props.edits, strings.calendar_newevent, strings.calendar_newevent,
+                <ViewSwitch strings={strings} view={shown.span.view} phone={phone} onView={toView} trails={offered} />
+                {trailview ? null : newEventButton(props.edits, strings.calendar_newevent, strings.calendar_newevent,
                     () => form(null, toolbarStart(own, props.today, props.now, zone, props.timezone)))}
             </div>
-            <div className="dim-cal__toolbar">
+            {trailview ? (
+                <TrailFilters strings={strings} filter={filter} answer={shown.trails} onChange={changeTrail}>
+                    <CategoryPicker
+                        strings={strings}
+                        tree={props.tree}
+                        categoryid={state.categoryid}
+                        recursive={state.recursive}
+                        onChange={change}
+                    />
+                    <ClearFilters
+                        shown={trailFiltered(filter, state.categoryid)}
+                        label={strings.calendar_clearfilters}
+                        onClear={clearTrails}
+                    />
+                </TrailFilters>
+            ) : null}
+            <div className="dim-cal__toolbar" hidden={trailview}>
                 <EventTypes
                     strings={strings}
                     keys={KEYS}

@@ -54,7 +54,7 @@ import { fetchOne } from "@moodle/lms/core/ajax";
 import Pending from "@moodle/lms/core/pending";
 import { load } from "../amd";
 import { parse, say } from "../daterange/calendar";
-import { RANGE_METHOD, REMEMBER_METHOD } from "./account";
+import { RANGE_METHOD, REMEMBER_METHOD, TRAILS_METHOD } from "./account";
 import CategoryPicker from "./CategoryPicker";
 import DayDrawer from "./DayDrawer";
 import DayView from "./DayView";
@@ -85,6 +85,8 @@ import { itemKey, overlapsOf } from "./overlap";
 import MoreFilters from "./MoreFilters";
 import { MOVE_MINUTE, createStart, dayStart, dropRefusal, editOf, editsOf, instantOf, toolbarStart } from "./moves";
 import { fill, load as loadStrings } from "./strings";
+import TrailView, { TrailFilters } from "./TrailView";
+import { emptyTrails, filterOf, readTrail, trailArgs, trailFiltered, withTrail } from "./trails";
 import ViewSwitch from "./ViewSwitch";
 import WeekGrid from "./WeekGrid";
 import {
@@ -112,6 +114,9 @@ const report = /* @__PURE__ */ __name((failure) => load("core/notification").the
 const openingDay = /* @__PURE__ */ __name((month, today) => today.startsWith(month) ? today : `${month}-01`, "openingDay");
 const openableDay = /* @__PURE__ */ __name((day, days) => day && days.includes(day) ? day : null, "openableDay");
 const propsSpan = /* @__PURE__ */ __name((props) => {
+  if (props.view === "trail" && props.trails?.answer) {
+    return { view: "trail", month: props.month };
+  }
   if (props.view === "day" && parse(props.day)) {
     return { view: "day", day: String(props.day) };
   }
@@ -120,6 +125,8 @@ const propsSpan = /* @__PURE__ */ __name((props) => {
   }
   return { view: "month", month: props.month };
 }, "propsSpan");
+const shownOf = /* @__PURE__ */ __name((props) => ({ span: propsSpan(props), answer: props.answer, trails: props.trails?.answer ?? null }), "shownOf");
+const categoriesOf = /* @__PURE__ */ __name((shown) => shown.trails ? shown.trails.categories : shown.answer.categories, "categoriesOf");
 const dropCell = /* @__PURE__ */ __name((target) => target instanceof Element ? target.closest("[data-cal-drop]") : null, "dropCell");
 const newEventButton = /* @__PURE__ */ __name((edits, label, name, onOpen, icon = false) => edits?.create ? /* @__PURE__ */ jsxDEV(
   "button",
@@ -132,7 +139,7 @@ const newEventButton = /* @__PURE__ */ __name((edits, label, name, onOpen, icon 
     onClick: onOpen,
     children: icon ? /* @__PURE__ */ jsxDEV("i", { className: "fa fa-plus", "aria-hidden": "true" }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-      lineNumber: 252,
+      lineNumber: 280,
       columnNumber: 17
     }) : label
   },
@@ -140,7 +147,7 @@ const newEventButton = /* @__PURE__ */ __name((edits, label, name, onOpen, icon 
   false,
   {
     fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-    lineNumber: 244,
+    lineNumber: 272,
     columnNumber: 5
   }
 ) : null, "newEventButton");
@@ -152,7 +159,9 @@ const Calendar = /* @__PURE__ */ __name((props) => {
   const language = document.documentElement.lang || void 0;
   const firstday = Number(props.firstday) || 0;
   const [strings, setStrings] = useState(null);
-  const [shown, setShown] = useState(() => ({ span: propsSpan(props), answer: props.answer }));
+  const [shown, setShown] = useState(() => shownOf(props));
+  const offered = Boolean(props.trails?.offered);
+  const [filter, setFilter] = useState(() => filterOf(props.trails));
   const [state, setState] = useState(() => normalise(props.state));
   const [openday, setOpenday] = useState(
     () => openOf(propsSpan(props), props.day, spanDays(propsSpan(props), firstday))
@@ -181,6 +190,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
   const over = useRef(null);
   const changes = useRef(() => void 0);
   const phoned = useRef(phone);
+  const filtering = useRef(filter);
   const zone = useMemo(() => zoneOf(props.timezone, language), [props.timezone, language]);
   const month = monthOfSpan(shown.span, selected);
   const weeks = useMemo(() => gridWeeks(month, firstday), [month, firstday]);
@@ -199,7 +209,9 @@ const Calendar = /* @__PURE__ */ __name((props) => {
     });
     const onPop = /* @__PURE__ */ __name(() => {
       const read = readAddress(window.location.href);
-      const span = readSpan(window.location.href, firstday, read.month || props.month, props.today);
+      const span = readSpan(window.location.href, firstday, read.month || props.month, props.today, offered);
+      filtering.current = readTrail(window.location.href);
+      setFilter(filtering.current);
       const day = openOf(span, new URL(window.location.href).searchParams.get(DAY_PARAM), spanDays(span, firstday));
       request(span, read.state || normalise(props.state), "none", day || openingOf(span, props.today), false);
       setOpenday(day);
@@ -252,19 +264,31 @@ const Calendar = /* @__PURE__ */ __name((props) => {
         setOpenday(null);
       }
     }
-    if (write !== "none") {
+    if (write !== "none" && span.view === "trail") {
+      writeAddress(withTrail(inSpan(address(props.urls.page, span.month, next), span), filtering.current), write === "push");
+    } else if (write !== "none") {
       writeAddress(inSpan(address(props.urls.page, monthOfSpan(span, select), next, kept), span), write === "push");
     }
     const pending = new Pending("theme_dimensions/calendar:range");
     try {
-      const answer = keysOn(next).length ? await fetchOne({ methodname: RANGE_METHOD, args: rangeArgs(days2[0], days2[days2.length - 1], next) }) : emptyAnswer(days2);
+      let answer;
+      let trails = null;
+      if (span.view === "trail") {
+        trails = await fetchOne({
+          methodname: TRAILS_METHOD,
+          args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive)
+        });
+        answer = emptyAnswer(days2);
+      } else {
+        answer = keysOn(next).length ? await fetchOne({ methodname: RANGE_METHOD, args: rangeArgs(days2[0], days2[days2.length - 1], next) }) : emptyAnswer(days2);
+      }
       if (seq !== ticket.current) {
         pending.resolve();
         return;
       }
       painting.current?.resolve();
       painting.current = pending;
-      setShown({ span, answer });
+      setShown({ span, answer, trails });
       setSelected(select);
       if (focus) {
         setFocusing((tick) => tick + 1);
@@ -308,6 +332,26 @@ const Calendar = /* @__PURE__ */ __name((props) => {
     request(shown.span, next, "replace", selected, false);
     remember(next);
   }, "change");
+  const changeTrail = /* @__PURE__ */ __name((fields) => {
+    const next = { ...filtering.current, ...fields };
+    if (next.trail === filtering.current.trail && next.mine === filtering.current.mine) {
+      return;
+    }
+    filtering.current = next;
+    setFilter(next);
+    request(shown.span, state, "replace", selected, false);
+  }, "changeTrail");
+  const clearTrails = /* @__PURE__ */ __name(() => {
+    root.current?.querySelector('[data-action="dim-cal-trail"]')?.focus();
+    filtering.current = { trail: 0, mine: false };
+    setFilter(filtering.current);
+    const next = normalise({ ...state, categoryid: 0, recursive: true });
+    if (sameState(next, state)) {
+      request(shown.span, state, "replace", selected, false);
+      return;
+    }
+    change({ categoryid: 0, recursive: true });
+  }, "clearTrails");
   const toDay = /* @__PURE__ */ __name((iso, focus) => {
     request(spanOf(shown.span.view, iso, firstday), state, "push", iso, focus);
   }, "toDay");
@@ -454,7 +498,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
     language,
     colour: state.colour,
     courses: new Map(shown.answer.courses.map((course) => [course.id, course])),
-    categories: new Map(shown.answer.categories.map((category) => [category.id, category])),
+    categories: new Map(categoriesOf(shown).map((category) => [category.id, category])),
     home: props.urls.home,
     movable
   };
@@ -470,6 +514,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
   const poppededit = editedOf(edits, poppedentry);
   const grid = gridOf(shown.span, phone);
   const drawn = drawerOf(shown.span, openday, days, phone);
+  const trailview = shown.span.view === "trail";
   const own = week ? days : days.filter((iso) => iso.startsWith(month));
   const step = /* @__PURE__ */ __name((offset) => toDay(stepSpan(shown.span, parse(selected) ? selected : days[0], offset), false), "step");
   const createAt = creator(props.edits, (iso, hour) => form(null, createStart(iso, hour, props.now, zone, props.timezone)));
@@ -490,6 +535,28 @@ const Calendar = /* @__PURE__ */ __name((props) => {
     change(cleared());
   }, "clear");
   const drawGrid = /* @__PURE__ */ __name(() => {
+    if (grid === "trail") {
+      return /* @__PURE__ */ jsxDEV(
+        TrailView,
+        {
+          look,
+          month,
+          answer: shown.trails ?? emptyTrails(month),
+          today: props.today,
+          now: props.now,
+          phone,
+          captionid: CAPTION,
+          onWidth
+        },
+        void 0,
+        false,
+        {
+          fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
+          lineNumber: 918,
+          columnNumber: 17
+        }
+      );
+    }
     if (grid === "day") {
       return /* @__PURE__ */ jsxDEV(
         DayView,
@@ -512,7 +579,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
         false,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 836,
+          lineNumber: 932,
           columnNumber: 17
         }
       );
@@ -542,7 +609,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
         false,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 851,
+          lineNumber: 947,
           columnNumber: 17
         }
       );
@@ -571,7 +638,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-        lineNumber: 872,
+        lineNumber: 968,
         columnNumber: 13
       }
     );
@@ -592,12 +659,12 @@ const Calendar = /* @__PURE__ */ __name((props) => {
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar", children: [
           /* @__PURE__ */ jsxDEV("h1", { className: "dim-cal__title", children: strings.calendar_title }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 906,
+            lineNumber: 1002,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-secondary dim-cal__today", onClick: () => toDay(props.today, false), children: strings.calendar_today }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 907,
+            lineNumber: 1003,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(
@@ -610,7 +677,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
               onClick: () => step(-1),
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-left", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                lineNumber: 917,
+                lineNumber: 1013,
                 columnNumber: 21
               })
             },
@@ -618,7 +685,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 910,
+              lineNumber: 1006,
               columnNumber: 17
             }
           ),
@@ -632,7 +699,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
               onClick: () => step(1),
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-right", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                lineNumber: 926,
+                lineNumber: 1022,
                 columnNumber: 21
               })
             },
@@ -640,26 +707,26 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 919,
+              lineNumber: 1015,
               columnNumber: 17
             }
           ),
           /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__caption", id: CAPTION, "aria-live": "polite", "data-region": "dim-cal-caption", children: labels.caption }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 928,
+            lineNumber: 1024,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__spacer" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 929,
+            lineNumber: 1025,
             columnNumber: 17
           }),
-          /* @__PURE__ */ jsxDEV(ViewSwitch, { strings, view: shown.span.view, phone, onView: toView }, void 0, false, {
+          /* @__PURE__ */ jsxDEV(ViewSwitch, { strings, view: shown.span.view, phone, onView: toView, trails: offered }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 930,
+            lineNumber: 1026,
             columnNumber: 17
           }),
-          newEventButton(
+          trailview ? null : newEventButton(
             props.edits,
             strings.calendar_newevent,
             strings.calendar_newevent,
@@ -667,10 +734,48 @@ const Calendar = /* @__PURE__ */ __name((props) => {
           )
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 905,
+          lineNumber: 1001,
           columnNumber: 13
         }),
-        /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar", children: [
+        trailview ? /* @__PURE__ */ jsxDEV(TrailFilters, { strings, filter, answer: shown.trails, onChange: changeTrail, children: [
+          /* @__PURE__ */ jsxDEV(
+            CategoryPicker,
+            {
+              strings,
+              tree: props.tree,
+              categoryid: state.categoryid,
+              recursive: state.recursive,
+              onChange: change
+            },
+            void 0,
+            false,
+            {
+              fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
+              lineNumber: 1032,
+              columnNumber: 21
+            }
+          ),
+          /* @__PURE__ */ jsxDEV(
+            ClearFilters,
+            {
+              shown: trailFiltered(filter, state.categoryid),
+              label: strings.calendar_clearfilters,
+              onClear: clearTrails
+            },
+            void 0,
+            false,
+            {
+              fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
+              lineNumber: 1039,
+              columnNumber: 21
+            }
+          )
+        ] }, void 0, true, {
+          fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
+          lineNumber: 1031,
+          columnNumber: 17
+        }) : null,
+        /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar", hidden: trailview, children: [
           /* @__PURE__ */ jsxDEV(
             EventTypes,
             {
@@ -684,13 +789,13 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 935,
+              lineNumber: 1047,
               columnNumber: 17
             }
           ),
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__spacer" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 942,
+            lineNumber: 1054,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV(
@@ -706,7 +811,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 943,
+              lineNumber: 1055,
               columnNumber: 17
             }
           ),
@@ -722,18 +827,18 @@ const Calendar = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-              lineNumber: 950,
+              lineNumber: 1062,
               columnNumber: 17
             }
           ),
           /* @__PURE__ */ jsxDEV(ClearFilters, { shown: filtered(state, props.options), label: strings.calendar_clearfilters, onClear: clear }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 956,
+            lineNumber: 1068,
             columnNumber: 17
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 934,
+          lineNumber: 1046,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV(
@@ -767,7 +872,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                  lineNumber: 965,
+                  lineNumber: 1077,
                   columnNumber: 21
                 }
               ) : null
@@ -777,13 +882,13 @@ const Calendar = /* @__PURE__ */ __name((props) => {
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 958,
+            lineNumber: 1070,
             columnNumber: 13
           }
         ),
         shown.answer.truncated ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__status", children: strings.calendar_truncated }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-          lineNumber: 980,
+          lineNumber: 1092,
           columnNumber: 39
         }) : null,
         popped && poppedentry ? /* @__PURE__ */ jsxDEV(
@@ -811,7 +916,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-                lineNumber: 993,
+                lineNumber: 1105,
                 columnNumber: 25
               }
             ) : null,
@@ -821,7 +926,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-            lineNumber: 982,
+            lineNumber: 1094,
             columnNumber: 17
           }
         ) : null
@@ -831,7 +936,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/Calendar.tsx",
-      lineNumber: 894,
+      lineNumber: 990,
       columnNumber: 9
     }
   );
