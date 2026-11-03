@@ -26,6 +26,7 @@ namespace theme_dimensions\local;
 
 use core_customfield\data_controller;
 use core_customfield\field_controller;
+use theme_dimensions\local\trail\trail;
 
 /**
  * What a new course answers in the page model, the modality and the study format, and the one write of it.
@@ -91,7 +92,9 @@ final class landingdefaults {
         $choices = [self::NONE => get_string('landingdefault_none', landingfields::COMPONENT)];
         $lines = self::options($shortname) ?? self::provisioned_options($shortname);
         foreach ($lines as $index => $line) {
-            $choices[$index + 1] = $line;
+            if (!trail::hides_option($shortname, $index + 1)) {
+                $choices[$index + 1] = $line;
+            }
         }
         return $choices;
     }
@@ -109,7 +112,7 @@ final class landingdefaults {
             return self::NONE;
         }
         $lines = self::options($shortname);
-        if ($lines === null || $value > count($lines)) {
+        if ($lines === null || $value > count($lines) || trail::hides_option($shortname, $value)) {
             return self::NONE;
         }
         return $value;

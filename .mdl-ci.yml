@@ -7,6 +7,8 @@
 #   enrol_autoenrol       the autoenrol adapter and the classifier's autoenrol rules
 #   enrol_coursecompleted the resolver's conditional prerequisite
 #   auth_loginsteps       the second factor on the plugin's shell (private: GitHub cannot install it)
+#   mod_subcourse         the Trail model's steps; GitHub's ci.yml installs it too, and this entry stands in
+#                         until moodle-dev's extra_deps_for() lists it beside the theme's other optional plugins
 extra-plugins:
   - repo: moodle-enrol_apply
     path: enrol/apply
@@ -19,4 +21,7 @@ extra-plugins:
     branches: [MOODLE_503_STABLE]
   - repo: moodle-auth_loginsteps
     path: auth/loginsteps
+    branches: [MOODLE_503_STABLE]
+  - repo: moodle-mod_subcourse
+    path: mod/subcourse
     branches: [MOODLE_503_STABLE]
