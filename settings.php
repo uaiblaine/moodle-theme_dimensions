@@ -26,6 +26,8 @@
 use theme_boost_union\admin_settingspage_tabs_with_tertiary;
 use theme_dimensions\local\calendar\blocks;
 use theme_dimensions\local\calendar\coreview;
+use theme_dimensions\local\calendar\keycolour_setting;
+use theme_dimensions\local\calendar\keycolours;
 use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\filterfields_setting;
@@ -717,6 +719,21 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $description = get_string('calendarpublic_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
         $tab->add($setting);
+
+        // Setting: The event types' colours (docs/calendar/PROPOSAL.md section 30.4), one hexadecimal picker per key,
+        // each defaulting to its key's own edge, so an untouched site keeps the stylesheet's colours: keycolours hands
+        // the pre SCSS callback only a hex that differs from its default.
+        $name = 'theme_dimensions/' . keycolours::HEADING;
+        $title = get_string('calendarcolours', 'theme_dimensions', null, true);
+        $description = get_string('calendarcolours_desc', 'theme_dimensions', null, true);
+        $tab->add(new admin_setting_heading($name, $title, $description));
+        foreach (keycolours::DEFAULTS as $key => $default) {
+            $name = 'theme_dimensions/' . keycolours::setting($key);
+            [$title, $description] = keycolours::labels($key);
+            $setting = new keycolour_setting($name, $title, $description, $default);
+            $setting->set_updatedcallback('theme_reset_all_caches');
+            $tab->add($setting);
+        }
 
         // Add tab to settings page.
         $page->add($tab);

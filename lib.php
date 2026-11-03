@@ -73,6 +73,9 @@ function theme_dimensions_get_main_scss_content($theme) {
     // tokens from the primitives post.scss writes and core's dark-readable().
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/calendar.scss');
 
+    // The event types' colour setting (local\calendar\keycolour_setting): a swatch before a hex field, on its own classes.
+    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/keycolour.scss');
+
     // And the category appearance form, scoped under the body class that page adds. It is a
     // second file rather than a section of the one above because the two share no scope: the
     // showcase's tokens are declared under its own body class and never reach the editor.
@@ -156,6 +159,10 @@ function theme_dimensions_get_pre_scss($theme) {
     if ($contextcolour !== null) {
         $scss .= "\n\$dimensions-ctxbar-color: {$contextcolour} !default;\n";
     }
+
+    // The event types' colours an administrator chose (local\calendar\keycolours, hex only, and only those that differ
+    // from their key's default): scss/calendar.scss derives each chosen key's fill, edge and ink from it.
+    $scss .= \theme_dimensions\local\calendar\keycolours::scss();
 
     return $scss;
 }

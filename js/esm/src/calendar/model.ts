@@ -440,13 +440,59 @@ export const primaryOf = (item: Item, courses: Map<number, Course>, home: string
 
 /**
  * Whether any filter is applied: a key off, a "More filters" value, or a category scope other than the whole calendar
- * with its subcategories. The colouring is how the page draws, not a filter.
+ * with its subcategories. The colouring is how the page draws, not a filter. Handed the options "More filters" offers,
+ * a list counts only when it narrows them ({@see narrows()}), as the panel's badge counts it.
  *
  * @param {object} state The state.
+ * @param {object} options The model's and the modality's options, when the page has them.
  * @returns {boolean}
  */
-export const filtered = (state: State): boolean => state.off.length > 0 || state.model.length > 0
-    || state.modality.length > 0 || state.city !== '' || state.actiononly || state.categoryid !== 0 || !state.recursive;
+export const filtered = (state: State, options?: {model: Option[], modality: Option[]}): boolean => state.off.length > 0
+    || (options ? narrows(state.model, options.model) : state.model.length > 0)
+    || (options ? narrows(state.modality, options.modality) : state.modality.length > 0)
+    || state.city !== '' || state.actiononly || state.categoryid !== 0 || !state.recursive;
+
+/**
+ * Whether an option is drawn checked in "More filters": the server reads an empty list as every option (state.php), so
+ * an empty list draws every box on, as the event types' dropdown draws every key on (PROPOSAL.md section 30.3).
+ *
+ * @param {Array} kept The values kept, empty for every one.
+ * @param {number} value The option's value.
+ * @returns {boolean}
+ */
+export const shownOn = (kept: number[], value: number): boolean => kept.length === 0 || kept.includes(value);
+
+/**
+ * Whether a kept list narrows anything: it misses one of the options offered. A list naming every option (a saved
+ * state from before an option went, or from the no-JavaScript form) narrows nothing.
+ *
+ * @param {Array} kept The values kept, empty for every one.
+ * @param {Array} choices The options offered.
+ * @returns {boolean}
+ */
+export const narrows = (kept: number[], choices: Option[]): boolean => kept.length > 0
+    && choices.some((option) => !kept.includes(option.value));
+
+/**
+ * The list kept once a box is checked or unchecked: the options drawn checked after the press, in the options' order,
+ * and the empty list again when that is every option, so a saved "all" stays empty and an option added later starts
+ * on. Unchecking the last box on changes nothing: an empty list would read as every option, and "none" has no spelling
+ * in the server's contract (the panel disables that box).
+ *
+ * @param {Array} kept The values kept, empty for every one.
+ * @param {Array} choices The options offered.
+ * @param {number} value The option pressed.
+ * @param {boolean} on Whether it is now checked.
+ * @returns {Array} The values kept.
+ */
+export const keptAfter = (kept: number[], choices: Option[], value: number, on: boolean): number[] => {
+    const next = choices.map((option) => option.value)
+        .filter((other) => (other === value ? on : shownOn(kept, other)));
+    if (!next.length) {
+        return kept;
+    }
+    return next.length === choices.length ? [] : next;
+};
 
 /**
  * The fields "Clear filters" puts back, in one change: every key on, no "More filters" value, the whole calendar.

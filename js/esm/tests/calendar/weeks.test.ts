@@ -27,16 +27,23 @@ import {place} from '../../src/calendar/layout';
 import type {Item} from '../../src/calendar/model';
 import type {Strings} from '../../src/calendar/strings';
 import {
+    deskOf,
+    drawerOf,
+    gridOf,
     hourBox,
     inSpan,
     monthOfSpan,
     moveInWeek,
     nowLine,
+    openOf,
     openingOf,
     readSpan,
     spanDays,
+    spanKey,
+    spanLabels,
     spanOf,
     stepSpan,
+    viewsOf,
     stepWeekFrom,
     weekCaption,
     weekDays,
@@ -302,5 +309,81 @@ describe('the keyboard\'s moves', () => {
         expect(stepWeekFrom('PageDown', '2026-11-18', WEEK)).toBe('2026-11-25');
         expect(stepWeekFrom('PageUp', '2026-11-18', WEEK)).toBe('2026-11-11');
         expect(stepWeekFrom('ArrowDown', '2026-11-18', WEEK)).toBeNull();
+    });
+});
+
+describe('the day view, a phone\'s (R1d)', () => {
+    const DAYSPAN = {view: 'day' as const, day: '2026-11-18'};
+
+    it('is the day itself: its one day asked for, its month, its key and its opening', () => {
+        expect(spanOf('day', '2026-11-18', 0)).toEqual(DAYSPAN);
+        expect(spanDays(DAYSPAN, 0)).toEqual(['2026-11-18']);
+        expect(monthOfSpan(DAYSPAN, '2026-12-01')).toBe('2026-11');
+        expect(spanKey(DAYSPAN)).toBe('day:2026-11-18');
+        expect(spanKey(DAYSPAN)).not.toBe(spanKey({view: 'month', month: '2026-11'}));
+        expect(openingOf(DAYSPAN, '2026-11-17')).toBe('2026-11-18');
+    });
+
+    it('moves a day at a time, across a month and a year', () => {
+        expect(stepSpan(DAYSPAN, '2026-11-18', 1)).toBe('2026-11-19');
+        expect(stepSpan(DAYSPAN, '2026-11-18', -1)).toBe('2026-11-17');
+        expect(stepSpan({view: 'day', day: '2026-11-30'}, '2026-11-30', 1)).toBe('2026-12-01');
+        expect(stepSpan({view: 'day', day: '2027-01-01'}, '2027-01-01', -1)).toBe('2026-12-31');
+    });
+
+    it('writes view=day and its day first, the open day\'s day= replaced, the rest as written', () => {
+        const href = 'http://localhost/r.php/theme_dimensions/calendar?month=2026-11&day=2026-11-03&city=Natal';
+        expect(inSpan(href, DAYSPAN))
+            .toBe('http://localhost/r.php/theme_dimensions/calendar?view=day&day=2026-11-18&city=Natal');
+        expect(inSpan('http://localhost/c?view=week&week=2026-11-15', DAYSPAN)).toBe('http://localhost/c?view=day&day=2026-11-18');
+    });
+
+    it('reads it back as the server does: exactly view=day, a day of the month\'s years, else the opening day', () => {
+        expect(readSpan('http://localhost/c?view=day&day=2026-11-18', 0, '2026-11', '2026-11-17')).toEqual(DAYSPAN);
+        expect(readSpan('http://localhost/c?view=Day&day=2026-11-18', 0, '2026-11', '2026-11-17'))
+            .toEqual({view: 'month', month: '2026-11'});
+        ['2026-11-31', 'nope', '1899-12-31', '3000-01-01', ''].forEach((day) => {
+            expect(readSpan(`http://localhost/c?view=day&day=${day}`, 0, '2027-02', '2026-11-17'))
+                .toEqual({view: 'day', day: '2027-02-01'});
+        });
+        expect(readSpan('http://localhost/c?view=day', 0, '2026-11', '2026-11-17')).toEqual({view: 'day', day: '2026-11-17'});
+        expect(readSpan('http://localhost/c?view=day&day=1900-01-01', 0, '2026-11', '2026-11-17'))
+            .toEqual({view: 'day', day: '1900-01-01'});
+    });
+
+    it('captions the day with its name and date, and its arrows move a day', () => {
+        expect(spanLabels(DAYSPAN, ['2026-11-18'], STRINGS as unknown as Strings, 'en')).toEqual({
+            caption: 'Wednesday, November 18, 2026',
+            previous: 'Previous day',
+            next: 'Next day',
+        });
+    });
+
+    it('is offered by the switch on a phone only', () => {
+        expect(viewsOf(true)).toEqual(['month', 'week', 'day']);
+        expect(viewsOf(false)).toEqual(['month', 'week']);
+    });
+
+    it('is drawn only on a phone: a desktop draws its month, with the day\'s drawer', () => {
+        expect(gridOf(DAYSPAN, true)).toBe('day');
+        expect(gridOf(DAYSPAN, false)).toBe('month');
+        expect(gridOf({view: 'week', week: '2026-11-15'}, false)).toBe('week');
+        expect(drawerOf(DAYSPAN, null, ['2026-11-18'], false)).toBe('2026-11-18');
+        expect(drawerOf(DAYSPAN, '2026-11-18', ['2026-11-18'], true)).toBeNull();
+        expect(drawerOf({view: 'month', month: '2026-11'}, '2026-11-18', ['2026-11-18'], false)).toBe('2026-11-18');
+        expect(drawerOf({view: 'month', month: '2026-11'}, '2026-12-18', ['2026-11-18'], false)).toBeNull();
+    });
+
+    it('is asked for as its month, the day opened, when the frame is not a phone\'s', () => {
+        expect(deskOf(DAYSPAN, false, 0)).toEqual({span: {view: 'month', month: '2026-11'}, open: '2026-11-18'});
+        expect(deskOf(DAYSPAN, true, 0)).toEqual({span: DAYSPAN, open: null});
+        const week = {view: 'week' as const, week: '2026-11-15'};
+        expect(deskOf(week, false, 0)).toEqual({span: week, open: null});
+    });
+
+    it('opens no day from its address: its day= is the view\'s own', () => {
+        expect(openOf(DAYSPAN, '2026-11-18', ['2026-11-18'])).toBeNull();
+        expect(openOf({view: 'month', month: '2026-11'}, '2026-11-18', ['2026-11-18'])).toBe('2026-11-18');
+        expect(openOf({view: 'month', month: '2026-11'}, '2026-12-18', ['2026-11-18'])).toBeNull();
     });
 });

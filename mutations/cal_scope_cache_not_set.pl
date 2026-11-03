@@ -1,2 +1,2 @@
 # Set core's MODE_SESSION calendar_categories cache: the read-only range writes $SESSION.
-s/(\$categories = array_keys\(\$found\);)/$1 \$cache->set('site', \$categories);/;
+s/(        return array_keys\(\$found\);)/        \\cache::make('core', 'calendar_categories')->set('site', array_keys(\$found));\n$1/;

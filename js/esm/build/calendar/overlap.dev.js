@@ -12,6 +12,9 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *   deadline, duration 0) sits in the column at its time, alone in its own cluster.
  * - Two items OVERLAP when both have a duration and each starts before the other ends: touching ends do not, a
  *   point item never does, and an all-day or multi-day item never counts.
+ * - The hour column draws the whole day in a scroll box (R1c, PROPOSAL.md section 30.1, reversing C3's windowed column):
+ *   the busy band (hourWindow()) or the working hours (EMPTY_WINDOW) is where the box starts ({@see boxTopOf()}),
+ *   and a fade marks each end it can still scroll to ({@see edgesOf()}).
  *
  * @module     theme_dimensions/calendar/overlap
  * @copyright  2026 Anderson Blaine
@@ -87,6 +90,8 @@ const dayPlan = /* @__PURE__ */ __name((iso, placed, zone) => {
   return { allday, hours: columns(hours) };
 }, "dayPlan");
 const MIN_WINDOW = 4;
+const FULL_DAY = { from: 0, to: 24 };
+const EMPTY_WINDOW = { from: 8, to: 18 };
 const hourWindow = /* @__PURE__ */ __name((laid, zone) => {
   if (!laid.length) {
     return { from: 0, to: 24 };
@@ -111,10 +116,29 @@ const overlapsOf = /* @__PURE__ */ __name((entry, placed, zone) => {
   const laid = dayPlan(entry.first, placed, zone).hours.find((other) => itemKey(other.entry.item) === key);
   return laid ? laid.overlaps : [];
 }, "overlapsOf");
+const boxTopOf = /* @__PURE__ */ __name((band, busy, row, viewport) => {
+  if (!(row > 0)) {
+    return 0;
+  }
+  const first = band.from * row;
+  if (busy) {
+    return first;
+  }
+  const centred = (band.from + band.to) / 2 * row - viewport / 2;
+  return Math.max(0, Math.min(centred, first));
+}, "boxTopOf");
+const edgesOf = /* @__PURE__ */ __name((top, total, viewport) => ({
+  up: top > 1,
+  down: top + viewport < total - 1
+}), "edgesOf");
 export {
+  EMPTY_WINDOW,
+  FULL_DAY,
   MIN_WINDOW,
+  boxTopOf,
   columns,
   dayPlan,
+  edgesOf,
   hourWindow,
   intersects,
   isAllDay,

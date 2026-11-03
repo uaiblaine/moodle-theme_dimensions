@@ -2259,3 +2259,395 @@ switches are read: fake-blocks-only on, editing locked, the control page the oth
 - After a purge, `styles.php` first serves the previous revision's sheet under the new revision's address while it
   compiles, and the browser caches it: judge a stylesheet change from a fresh fetch (`cache: 'reload'`), never from the
   first page after a purge.
+
+## 30. R1c: the owner's second look, 2026-11-02
+
+Branch `calendar-r1c`, from main 266984e (2026100568). The owner looked at the calendar on m503b again and asked for five
+changes. This section is the plan, written before the code; its results close it (30.6).
+
+### 30.1 The hour column is the whole day, in a scroll box of its own (items 1 and 2)
+
+**Reversal of C3.** Section 14 chose "windowed instead of an inner scroll": the drawer's hour column ran from an hour
+before the first item to an hour after the last (`overlap.ts` `hourWindow()`, at least four hours), so a day with one
+event showed four hours, and an empty day the working hours (`EMPTY_WINDOW`). The owner now asks for the inner scroll:
+
+- **The drawer's column is always 00:00-24:00**, 24 rows of 2.5rem, inside a scroll box that is the drawer's body: the
+  drawer stays sticky under the navbar with its height capped to the viewport (R1), and becomes a flex column whose head
+  and all-day strip keep their height while the hour box takes the rest and scrolls (`overflow-y: auto`,
+  `overscroll-behavior: contain`, so the page does not scroll on past its end). The page never scrolls to show an hour.
+- **The initial scroll position** is chosen by one pure function (`overlap.ts` `boxTopOf()`) over the band to show:
+  a day with timed items shows its busy band (`hourWindow()`, kept for this: an hour before the earliest item), its top
+  at the box's top, so the earliest item sits one row under it and is never cut; an empty day shows `EMPTY_WINDOW`
+  (08:00-18:00) centred in the box, its start never above the box's top when the box is shorter than the band. The
+  function is handed the row height and the box's height, read once in a layout effect when the day (or its band)
+  changes: the box's one layout read, never on the page's mount path, as the popover's are.
+- **The look is block_compass's calendar strip** (`.compass-cal-days`, `.compass-cal-fade*`): no native scrollbar
+  (`scrollbar-width: none` and the `::-webkit-scrollbar` rule), and a fade at the top or the bottom only while the box can
+  still scroll that way (`overlap.ts` `edgesOf()`, pure, read on scroll), the fades taking no pointer and hidden from the
+  screen reader.
+- **Keyboard.** The box is focusable (`tabIndex=0`) with a label ("Hours of the day") when it holds no focusable item
+  (an empty day with creation offered), so the arrows and Page keys scroll it; a link inside it is a Tab stop, and the
+  browser scrolls the focused link's box. The double-click on an hour row keeps creating at that hour (the rows keep
+  `data-hour`; 24 of them now).
+- **The week's hour body** windowed the same way (`weeks.ts` `weekPlan()` window = `hourWindow()` over the week): it
+  becomes 00:00-24:00 in the same scroll box (a `role="rowgroup"` around the hour row, inside the grid, so the grid's
+  rows keep their owner), with a max height under the viewport, the same fades and the same first position (the week's
+  busy band, else the working hours). The "now" line is placed over the whole day. The hour body is drawn when the week
+  has a timed item or "New event" is offered; a week with nothing at all keeps its "nothing this week" line.
+- **The phone** keeps its sheet and its agenda (lists, no hour column), unchanged.
+
+### 30.2 The course button follows the course's model (item 3)
+
+The popover's third action ("Course page", a `btn-link`) becomes a button drawn as the other actions are
+(`btn btn-outline-secondary`, the theme's tokens), whose text follows the course's model (`courses[].model`, the stored
+1-based value of the `dimensions_model` select the range already sends): `landingfields::MODEL_COURSE` (and an unset
+model) "Course page", `MODEL_EVENT` "Event page", any other value the generic "{option label} page" over the model's own
+option label (`calendar_page` hands the model options on both shells now: the visitor's props gain `models`), so a model
+added to the field (the trail model another session is preparing) is named without code; a value with no option falls
+back to "Course page". The label is chosen in one pure function (`model.ts` `coursePageLabel()`). New strings
+`calendar_eventpage` and `calendar_modelpage` (en "{$a} page", pt_br "Página · {$a}", which avoids a gendered article).
+
+### 30.3 "More filters": every option starts checked (item 4)
+
+The server's contract stays: `model[]`/`modality[]` empty = every option, a list = only those. The panel maps it like
+the event types' dropdown (`MoreFilters.tsx`, pure helpers `shownOn()`, `keptAfter()`, `narrows()`):
+- an empty list draws every box checked; a list draws its members checked;
+- unchecking a box writes the remaining checked options; checking the last unchecked one again writes the empty list,
+  so a saved "all" stays empty and an option added later starts checked;
+- the last checked box of a group cannot be unchecked (it is disabled while it is the only one): an empty list would
+  read as "all", so "none" has no spelling in the contract;
+- the badge counts the groups that narrow (a list that misses an option of the panel), the city and "only what I
+  have to do", one each; `model.ts` `filtered()` asks the same, so "Clear filters" and the badge agree, and "Clear
+  filters" puts every box back on.
+- Known consequence, the contract's: a list keeps only courses holding one of its values, so unchecking "Event" also
+  leaves out a course whose model is unset (it held none of the checked values). Recorded for the owner; changing it
+  would need an "except" spelling on the server.
+- The public calendar draws no "More filters" (its props carry no field options): nothing to change there. The
+  no-JavaScript layer's GET form keeps its unchecked boxes (a form posts only the checked ones, and all checked would
+  save the whole list instead of the empty one).
+- Behat: a scenario with a course of the course model: the Model boxes start on (read through the inputs' `data-on`,
+  which the component draws; Mink's `:checked` reads the attribute, not React's live state), unchecking "Event" drops
+  the event of the course with no model and badges "1", "Clear filters" brings it back.
+
+### 30.4 The event-type colours are theme settings (item 5)
+
+- **Settings** on the "Calendar" tab, under a heading: one colour picker per key (`theme_dimensions/calendarcolour<key>`
+  for site, category, course, group, user, activity, other, open and overdue), each defaulting to today's light edge of
+  its key, with `theme_reset_all_caches` as its updated callback (the neighbours' pattern; core runs it only after an
+  administrator saves the setting, never from the install's defaults). The picker is a subclass
+  (`local\calendar\keycolour_setting`) whose `validate()` accepts a hexadecimal colour alone (`branding::hex()`, the
+  hash optional on input, stored lower-case `#rrggbb`): core's picker also accepts colour names, `rgb()` and `hsl()`,
+  which this theme would then have to compile.
+- **How the setting is drawn** (the owner, 2026-11-02: core's gradient picker is too big). `keycolour_setting::output_html()`
+  renders `templates/admin_setting_keycolour.mustache` inside core's `format_admin_setting()` (default and description as
+  for core's picker): a plain hex field with core's id, name and value, and before it a swatch `<label>` around a native
+  `<input type="color">` that has no `name`, so only the validated field is submitted. The swatch is the stored colour, or
+  a chequerboard when the value is empty or not a hex (`branding::hex()` decides, so nothing else reaches the inline
+  style). The server draws all of it: without JavaScript the field works alone. `amd/src/keycolour.js` (copied from
+  local_dimensions' `central/colour_swatch.js`, not imported) only syncs, from listeners delegated once from the document
+  (the setting asks for it once per page): typing redraws the swatch and the native input, picking writes the hex into
+  the field and dispatches `input` and `change`. Styles are `scss/keycolour.scss`, on `.dim-keycolour` classes with
+  Bootstrap tokens and literal fallbacks. `validate()`, the names, the defaults and the cache purge are unchanged.
+- **Into Sass** through the PRE callback (the rule "Settings-driven SCSS goes in the PRE callback", as
+  `readingbar::context_colour()` does): `local\calendar\keycolours::scss()` writes `$dim-cal-colours: (key: #rrggbb, ...)
+  !default;` with only the keys whose stored value is a hex colour (`branding::hex()` again: a value forced in
+  `config.php` that no validation saw is read as unset) AND differs from its default. So an untouched site, and a site
+  that chose a key's default, compiles today's hand-picked triples byte for byte.
+- **Derivation** (`scss/calendar.scss`, functions before the token blocks): a key with a chosen colour C gets
+  - light: tint = C at 12% over white; edge = C shaded in 5% steps until it reaches 3:1 on the quiet surface (gray-050,
+    the darker of the two light surfaces, so the white card is covered too); ink = C shaded until it reaches 4.6:1 on the
+    tint;
+  - dark: tint = C at 30% over core's raised dark surface; edge = core's `dark-readable(C, raised, 3)` (raised is the
+    lighter dark surface, so the page surface is covered); ink = `dark-readable()` of C's 80% tint, at 4.6:1 on the tint.
+  Each derivation ends at black or white after 20 steps, which reaches every floor for any C (measured in the tests
+  with white, black, a light yellow and a dark navy). The functions are `dim-cal-light()` and `dim-cal-dark()`, handed
+  the key, the part and today's value, which they return when no colour was chosen.
+- **Tests** (`tests/local/calendar/keycolours_test.php`, `calendar_scss_test`): the nine settings exist on the tab with
+  their defaults; the defaults equal the light edges the stylesheet names (read from `post.scss`'s primitives); an
+  invalid value is refused by the setting and dropped by `keycolours`; a chosen colour reaches the pre SCSS and the
+  compiled tokens (through `core_scss`, the token blocks alone, as the existing contrast test compiles them); the floors
+  hold for the extreme colours in both modes.
+- Needs an upgrade (`admin/cli/upgrade.php`) for the new settings to get their defaults, and a purge for the compiled CSS;
+  until the upgrade, a setting not stored reads as unset, which is today's look.
+
+### 30.5 Gates
+
+A new "R1c" block of `mutations/gates.conf`, one gate per new guard, each naming the PHPUnit test that reddens (the
+JS guards through `calendar_component_source_test`, with their Jest test checked by hand): the setting's hex-only
+validation, `keycolours`' hex sanitising and default skip, the Sass fallback to today's value, the checked-means-all
+mapping (empty draws all, all again writes empty, the last box kept), the badge's narrowing count, the scroll position
+(the band's top for a busy day, the never-cut clamp for an empty one), the fades' edges, and the model label.
+
+### 30.6 R1c results (2026-11-02)
+
+Built from 30.1-30.5 on `calendar-r1c`; nothing committed and no `version.php` bump (the main session's).
+
+**Where the build left the plan:**
+- **The hour box is the tree's second layout read.** `HourScroll.tsx` reads the box's `scrollHeight` and `clientHeight`
+  in a layout effect keyed by the opening (`${day}:${band}:${busy}`, the week's first day for the week) and again on
+  scroll, for the fades; the row's height is `scrollHeight / 24`, so no stylesheet number is copied into the client. On
+  a week opened by the address the read happens on the page's first paint: there is no way to place a scroll position
+  without one. `test_no_layout_read_and_one_observer` counts it (nine matches) beside the popover's.
+- The drawer's box is a Tab stop (`tabIndex=0`, `role="group"`, "Hours of the day") only on a day with no timed item; on
+  a busy day its links are the stops and the browser scrolls the focused one's box. The week's box is always one
+  (`role="rowgroup"`): the week's items are out of the Tab order (roving header).
+- The hour column is drawn as before: while the day has a timed item or "New event" is offered; a day with neither
+  keeps its "Nothing on this day" line alone. The week's body likewise; "Nothing this week" is unchanged.
+- The busy band keeps `hourWindow()` (an hour before the first item), so the earliest item opens one row under the box's
+  top; the empty day's band is `EMPTY_WINDOW`, 08:00-18:00 (the owner said 08-17; the existing constant was kept).
+- `scrollTopOf()` was named `boxTopOf()`: the source test's layout-read pattern reads `scrollTop` inside any name.
+- The course button reads its strings by the constants `MODEL_COURSE`/`MODEL_EVENT` exported from `EventPopover.tsx`,
+  pinned equal to `landingfields::MODEL_*` by `calendar_component_source_test`.
+- Measured in a full theme compile on m503b (in memory, nothing written): untouched, every key's tokens are the
+  hand-picked ones; with `course: #ffe600, overdue: #1a1a40` the light course triple is `#fffce0`/`#998a00`/`#807300`
+  and the dark one `#716e2d`/`#ffe600`/`#fffacc`; both compiles 2,025,272 bytes, about 27 s each.
+
+**Tests.** PHPUnit on m503b, file by file: `keycolours_test` 14 tests / 155 assertions (new), `calendar_scss_test` 20 / 900
+(three new tests, six data sets for the chosen colours), `calendar_component_source_test` 24 / 797 (three new tests, two
+re-pointed), `page_visitor_test` 10 / 94, `calendar_page_test` 10 / 140, `page_test` 52 / 132, `esm_source_test` 4 / 406,
+`categorypublic_source_test` 21 / 5,051, `listing_source_test` 5 / 286, `marketplace_readiness_test` 9 (1 skipped) /
+13,405: all OK. Jest (offline recipe): the whole theme 31 suites, 442 tests, all passed. Behat: one new scenario in
+`theme_dimensions_calendar.feature` ("More filters" starts with every model checked), NOT run here.
+
+**Gates.** The R1c block of `mutations/gates.conf` holds 25 gates (10 PHP and SCSS, 15 JS). Every line of the spec was
+dry-matched with `perl -0777 -p` against the tree: 1,458 checked, one dead, `cal_scope_cache_not_set` (R1b removed the
+cache write it breaks; not this round's). `cal_r1_js_clear_drawn` and `c4_js_now_elapsed` were brought back to the lines
+they break. Each of the 15 JS gates was run by hand against Jest on a copy of the tree: all 15 redden at least one test
+(`cal_r1c_js_week_full_day` and `cal_r1c_js_event_label` only after a test was added for them). The PHP and SCSS gates are
+not swept here (`mdl mutate --fast` is the main session's).
+
+**Needs** `admin/cli/upgrade.php` for the nine settings to get their defaults (until then a key reads as unset, today's
+look) and a purge for the stylesheet and the ESM build. **Not verified:** the page by eye on a stack; Behat.
+
+### 30.7 The drawer is never taller than the grid beside it (the owner's third remark, 2026-11-02)
+
+On a desktop the drawer showed a box as tall as the viewport allows (730px at 1440x900 on m503b, top at y=260), past the
+grid and the viewport; the box was capped only by the drawer's `max-height: calc(100vh - navbar - 2rem)`. The cap is now
+the smaller of that and the grid's own height: CSS cannot tie a sticky drawer to the grid's height (a stretched item
+leaves a sticky element no room to move, and the frame's own height includes the drawer), so each grid's one
+ResizeObserver, which already observes the frame, also observes the grid (the month's `.dim-cal__grid`, the week's
+`.dim-cal__weekview`) and reports the entry's `contentRect` height (`onHeight`; the custom property is `days.ts`
+`GRID_HEIGHT`, rendered on the frame by the calendar, see the correction below): no layout read and no second observer, so `test_no_layout_read_and_one_observer` is unchanged. Both grids read the frame's entry
+as the width and only the grid's own entry as the height (the week first read any entry as the width: see the loop below). `scss/calendar.scss` puts the min in `--dim-cal-drawercap` (stylelint allows a
+`min()` only in a custom property) and the drawer's `max-height` reads it; the chain down to the box already shrank
+(`.dim-cal__hourbox`, `.dim-cal__hourscroll` with `min-height: 0`, the box's 12rem floor only below the cap). Unset until
+the first entry the cap is the viewport's alone. The scroll position is set per opening (`HourScroll.tsx`) and set again when the grid's height arrives
+(the limit this section first recorded: a day opened by the address placed the box while it was still uncapped and
+overflow-free, so an empty day's 08:00-18:00 centring clamped to 0 and nothing re-placed it once the box shrank). The
+grid's one observer already knows the height it writes, so it also hands it to the page (`onHeight`, a prop of both
+grids; `Calendar` and `PublicCalendar` keep it as state and pass it as `gridheight` to `DayDrawer`, as the `height` of
+`HourScroll`): no second observer and no new layout read, since the box's one effect now has `[opening, height]` as its
+key. While the reader has not taken the box the effect re-applies the opening's position at each new height, so the
+fades are recomputed with it; the first wheel, touch or key on the box (`onWheel`, `onTouchStart`, `onKeyDown`, never
+`scroll`, which the placing itself fires) ends the re-placing for that opening, and a new opening starts it again. A
+busy day (earliest item near the top, never cut) and an empty day (08:00-18:00 centred) keep their rules; a later
+change of the grid's height (a 5- against a 6-week month) re-places an untouched box and keeps a touched one. The week's own hour box (`calc(100vh -
+navbar - 14rem)`) is inside the week grid, so it does not overflow it: the grid grows with it and the drawer beside the week
+follows the week's height. Tests: `calendar_scss_test::test_the_drawer_is_never_taller_than_the_grid_or_the_viewport`,
+`calendar_component_source_test::test_the_grids_hand_their_height_to_the_drawer`, Jest in `Calendar.test.tsx`,
+`WeekGrid.test.tsx` and `HourScroll.test.tsx` (an empty day opened before the height arrives ends centred; a reader's
+wheel, touch or key stops the re-placing; a new opening re-places again); gates `cal_r1c_scss_drawercap`,
+`cal_r1c_js_gridheight`, `cal_r1c_js_replace_on_height`, `cal_r1c_js_reader_stops_replacing` and
+`cal_r1c_js_new_opening_replaces`. Correction (measured in the browser on m503b, 1440x1200, February 2027, day 2027-02-10 opened from the address): the
+frame carried no `--dim-cal-gridheight` at all (its `style` attribute was null, no element had the property) while the
+grid was 624px, so the cap fell back to the viewport, the drawer ran 460px below the grid and the hour box was 960px tall
+at `scrollTop 0`; before `onHeight` existed the same page showed `622px` on the frame. The grids wrote the property by hand
+(`frame.style.setProperty`) on a frame element captured once at mount, while the same entry now also sets state in the
+calendar; a property written outside React's tree is not the state the calendar renders, and the read of the code did not
+show which re-render dropped it, so the cause is not proved, only the shape: two writers for one fact. The fix leaves one
+owner: the grids only report the height (`onHeight`, the one observer unchanged) and `Calendar.tsx` and
+`PublicCalendar.tsx` render the frame with `style={frameStyle(gridheight)}` (`days.ts`: the custom property when the height is above 0, else
+none) from their `gridheight` state, the same number the drawer and `HourScroll` already take. Jest checks the frame carries it after the
+entry and after a re-render the entry's report triggers (the drawer opening); gate `cal_r1c_js_gridheight` now mutates
+that style prop. A purge is needed for the stylesheet and the ESM build. The correction is not yet verified by eye on a
+stack.
+
+The week freeze (the owner, 2026-11-02, m503b, `view=week`): a MutationObserver on `[data-region="dim-cal"]` counted 13,320
+mutations in 3 s (900 `childList` each on `.dim-cal__weekgrid` and `.dim-cal__weekagenda`), the page alternating between
+the time grid and the phone agenda, `--dim-cal-gridheight` between 835px and 1024px. The month was stable. Cause (read
+from the code, then pinned by a Jest regression that fails without the fix): `WeekGrid`'s one observer watches the frame
+and the week's box and passed EVERY entry's width to `onWidth` (`setPhone(width < PHONE)`), while `MonthGrid` passes only
+the frame's. With a day open the drawer narrows the week's box (frame minus 24.5rem and the gap) under `PHONE` (576) on a
+frame of up to ~1000px; that set `phone`, which removes the drawer class (`!phone`) and so widens the week's box over
+`PHONE`, which cleared `phone`, which brought the drawer back, and so on: each pass swapped the grid for the agenda (the
+two heights above) and re-reported the height. The phone decision must not read anything the phone decision changes. The
+fix: the week reads the width from the frame's entry alone (the frame's width is the same with or without the drawer), and
+both grids hand `onHeight` a rounded value only when it differs from the last they reported (a ref `lastheight`, so
+alternating values are one report each, never a report per entry). One observer per grid, no layout read, no remount (the
+agenda and the grid are children of the same `.dim-cal__weekview`). Jest (`WeekGrid.test.tsx`, "settles"): the narrowed
+week's entry never switches to the agenda and the frame's style does not change on equal heights; the source test pins the
+two guards; gates `cal_r1c_js_phone_frame_width` and `cal_r1c_js_height_on_change`. Not yet seen on screen: needs a purge
+and the owner's look.
+
+## 31. R1d: the Day view on a phone (2026-11-02)
+
+Branch `calendar-r1c` (R1c's uncommitted work kept), no `version.php` bump. The owner, 2026-11-02: "no desktop view of the
+day is needed, but it is important to have this mode on the phone." This section is the plan, written before the code;
+its results close it (31.6).
+
+### 31.1 What the reader gets
+
+- **The switch** offers Month / Week / Day (pt_br "Mês / Semana / Dia") on a phone, the frame narrower than
+  `MonthGrid.PHONE` (576px), and stays Month / Week on a desktop. The phone decision is unchanged: each grid's one
+  ResizeObserver, the frame's entry alone (30.7); the Day view has its own observer on the same frame, the frame's entry
+  alone, since no grid is drawn while it is shown. The frame's width does not depend on what the frame holds, so no
+  view switch the decision causes can feed back into it.
+- **The Day view** is one day at the frame's full width: the toolbar's caption names the day (its long date, the
+  weekday included: "Tuesday, March 9, 2027"), its previous and next arrows move a day ("Previous day", "Next day") and
+  "Today" goes to today; under it the drawer's own body, drawn by the same code: the all-day strip (bars covering the
+  day, whole-day items, event courses), "Nothing on this day." when empty, then the whole-day hour column in the R1c
+  scroll box (`HourScroll.tsx`), opened on the busy band (the earliest item a row under the box's top) or with
+  08:00-18:00 centred on an empty day, the items laid out by `overlap.ts` in the drawer's columns with "Overlaps" in
+  words. An item opens the popover through the page's delegated listener, as a bottom sheet (the phone's popover).
+  While "New event" is offered: the "+" button in the view's head (the drawer's), a double-tap on an hour row (the
+  drawer's `data-hour` double-click; mobile browsers fire `dblclick` under Moodle's `width=device-width` viewport) and
+  a touch-and-hold on an hour row open core's form at that hour. The hold is a touch or pen press held 500 ms without
+  moving more than 10px; a move, a lift, a cancel (the browser taking the gesture to scroll the box fires
+  `pointercancel`) or a scroll of the box drops it, so the hold never fights the box's vertical scroll.
+- **No swipe.** The arrows are the way between days. A horizontal swipe recogniser on the box would need `touch-action:
+  pan-y` and its own thresholds against the vertical scroll it shares the box with; the owner made it optional and it
+  is not built.
+- **The shared body.** `DayDrawer.tsx` exports `DayBody`: what the drawer drew under its head (the plan, the strip, the
+  empty line, the hour column or the sheet's list, the creation paths). `DayDrawer` is its head and close button around
+  `DayBody`; the new `DayView.tsx` is a region labelled by the toolbar's caption, its head carrying the "+", around the
+  same `DayBody` with the hour column. No second copy of the day's rendering.
+
+### 31.2 The address and the desktop's answer to it
+
+- **`view=day&day=YYYY-MM-DD`**, navigation like `view=week&week=` and never state: not in `state::STATE_PARAMS`, not
+  saved, not in `state::query()`. The day is the day view's own, so `month=` is not written. A day that is not a real day
+  (`page::is_day()`, the `/D` anchor), or whose year is outside 1900-2999 (the month's bounds), is dropped and the day
+  view shows the month's opening day (today when the month asked for holds it, else its 1st): never an error page, a
+  list included (`page::scalar_param()`).
+- **Decision: a desktop shows the month with that day's drawer open**, never a desktop day view. The month, not the
+  week: core's own day view and the R1 redirect of `/calendar/view.php?view=day` already land there (section 27.1),
+  so a shared phone link and core's day link open the same thing. On the client the decision is taken once, in each
+  shell's one request path (`weeks.ts` `deskOf()`): a day span asked while the frame is not a phone's is asked as its
+  month, with the day opened (`opened.current` and the open day set before the address is written), so the address
+  becomes `month=YYYY-MM&day=YYYY-MM-DD` by `replaceState` (the first measure) and the month's answer is fetched.
+  The same path catches Back or Forward onto a day view's entry on a desktop, and a phone turned wide in the day view
+  (the observer's entry at or above `PHONE` with a day span shown asks again, replacing the entry).
+- **The server answers `view=day` with the day's month grid** (`page::span()` returns the day view, the day's month,
+  the day as the open day and the month grid's window), embedded as for the month. Neither entry knows the width: on
+  a phone the Day view draws its day from that answer with no request, and on a desktop the first frame (drawn before
+  the observer's first entry, with `phone` still false) is already the month with the day's drawer. The desktop's
+  conversion then asks the range once for that same month (one request, the same window; skipping it would need the
+  shown answer to be trusted across an in-flight change of state, which the ticket does not cover).
+- **The client's requests in the Day view ask for one day** (`weeks.ts` `spanDays()` of a day span is the day alone;
+  `rangeArgs(day, day)`): the arrows and "Today" each fetch the new day, through the shells' one request path (the
+  ticket, the Pending token, the address pushed).
+- **The open day and the Day view.** The day view's day is the span's (`{view: 'day', day}`), not the open day: the
+  first paint of a `view=day` address has no open day on a phone (`weeks.ts` `openOf()`), and Back and Forward read the
+  same rule. A switch keeps the open day its new span holds, as C4 wrote it (the month's sheet opened before a switch
+  to the day and back stays open); a step of the day closes it, as a step of the week does.
+- **The no-JavaScript layer** of a `view=day` request is the month's (the server cannot know the width): the day's
+  month, its agenda and the switch's two links, the props carrying `view: 'day'` and the day for the client.
+- **The script's forward** (`page::forwarded_params()`) carries `view=day` and a real `day` as written.
+- **The public calendar** uses the same switch and the same span code, so the visitor's phone gets the same Day view,
+  over `publicrange::answer()`, with its keys in the address.
+
+### 31.3 Server
+
+- `page::VIEW_DAY`; `view_from_request()` reads `day` beside `week`; `view_day_from_request($month)` (the day view's
+  day: a real day in the month's years, else the month's opening day); `span()` returns
+  `[VIEW_DAY, its month, '', the day, the month grid's from, to]`; `span_params()` writes `view=day&day=`;
+  `forwarded_params()` carries `view=day`. `calendar_page` keeps `view = 'day'` in the props while the no-JavaScript
+  layer draws the month. Strings `calendar_nextday`, `calendar_prevday`, `calendar_viewday` (en and pt_br, sorted, in
+  `calendar_page::STRINGS` and `strings.ts`).
+
+### 31.4 Client
+
+- `weeks.ts`: `View` and `Span` gain the day (`{view: 'day', day}`); `spanOf()`, `spanDays()`, `spanKey()`,
+  `monthOfSpan()`, `openingOf()`, `stepSpan()` (a day at a time), `inSpan()` (`view=day&day=`, the open day's own `day=`
+  replaced), `readSpan()` (the server's rule) and `spanLabels()` (the long date, "Previous day", "Next day") learn it;
+  new pure helpers `viewsOf(phone)` (the switch's choices), `gridOf(span, phone)` (what the frame draws: the day only
+  on a phone, the month for a day span on a desktop), `deskOf(span, phone, firstday)` (31.2) and `openOf()` (31.2).
+- `ViewSwitch.tsx` draws `viewsOf(phone)`; `DayView.tsx` is new; `DayDrawer.tsx` exports `DayBody` with the hold; the
+  two shells draw `gridOf()`'s choice and route the observer's width through one `onWidth` that sets `phone` and, for a
+  day span on a wide frame, asks again.
+- `scss/calendar.scss`: the day view's region (`.dim-cal__drawer--dayview`) is the drawer's look at the frame's width,
+  not sticky, its hour box capped under the viewport as the week's is.
+
+### 31.5 Tests and gates
+
+- **PHPUnit:** `page_test` (the view's vocabulary with the day, a list dropped, the day view's day kept, malformed,
+  newline-suffixed, out of years and absent falling back to the opening day, the span's window the month grid, the
+  address, the forward, not state), `page_visitor_test` (the visitor's day view: the month grid's answer, the props'
+  view), the route's `calendar_test` (a `view=day` request is served with the month grid embedded and the address
+  keeping `view=day&day=`), `calendar_page_test` if the props or the layer need it, `calendar_component_source_test`
+  (the switch, the one request path's conversion, the Day view's observer reading the frame alone, the observer count).
+- **Jest:** `weeks.test.ts` (the day span's arithmetic, address and labels; `viewsOf`, `gridOf`, `deskOf`, `openOf`);
+  `Calendar.test.tsx` and `PublicCalendar.test.tsx` (the switch shows Day only on a phone; the Day view renders the day,
+  its strip and hour column; the arrows move the day and the address and ask for one day; an empty day centres the
+  working hours; creation at an hour by double-tap and by hold, and the hold dropped by a move; a desktop `view=day`
+  shows the month with the drawer and rewrites the address; a phone turned wide leaves the day view).
+- **Behat:** one phone scenario (`I change viewport size to "mobile"`, as the existing phone scenarios do) opening
+  `view=day&day=2027-03-09` and stepping to the next day, and one desktop scenario landing on the month with the drawer.
+  Written, not run here.
+- **Gates:** a new "R1d" block of `mutations/gates.conf`, one gate per new guard, each naming the test that reddens,
+  every pattern dry-matched with `perl -0777 -p`.
+
+### 31.6 R1d results (2026-11-02)
+
+Built from 31.1-31.5 on `calendar-r1c`, beside R1c's uncommitted work; nothing committed and no `version.php` bump.
+
+**Where the build left the plan:**
+- **The toolbar's caption is the Day view's header.** It names the day (weekday and date, `aria-live`) and the region is
+  labelled by it (`aria-labelledby` the caption); the view's own head holds only the "+" (while "New event" is offered),
+  so the date is not said twice on a narrow screen. The toolbar's text "New event" stays too, creating on the shown day
+  (`moves.ts` `toolbarStart()` over the span's one day).
+- **The desktop's conversion lives in the request path, not in an effect**, so it never runs before the frame is
+  measured: `phone` starts false, and an effect keyed on it would have turned a phone's `view=day` into its month before
+  the first entry. The shells keep the measure in a ref (`phoned`) set by `onWidth` before `setPhone()`, because the
+  request that follows a measure runs before the render does.
+- **The first frame of a `view=day` address is the month with the day's drawer on every device** (the server's answer
+  covers it), and the observer's first entry, delivered before the paint, swaps it for the Day view on a phone; on a
+  desktop that entry asks for the month (one request for the window already embedded) and replaces the address with
+  `month=&day=`.
+- **The open day and the Day view are kept apart.** A `view=day` address opens no day (`openOf()`); a step of the day
+  closes an open day as a step of the week does; a switch keeps the open day its new span holds (C4's rule), so a
+  phone's month sheet opened before Day and back reopens.
+- **Both shells' bodies went over eslint's complexity cap** (22 against 20, which the CI leg's `eslint:react` applies
+  and `mdl grunt` does not) with three grid branches; the choice of grid is now a nested `drawGrid()`.
+- **The hold** is `DayBody`'s, so the drawer's hour column has it too (a touch laptop); it ignores a mouse
+  (`pointerType`), and the Day view's hour column is `user-select: none` so a held label is not selected instead.
+- **No `swizzle.json`**: `DayView.tsx` exports its component as `default`, as `WeekGrid.tsx` does, and the build wrote none.
+- `calendar_page` keeps the props' `view` as `day` only with a day (`page::span()` always hands one); the
+  no-JavaScript layer's `weekview` is false, so it is the month's.
+
+**Tests.** PHPUnit on m503b (PHP 8.4, PostgreSQL 18), file by file: `page_test` 64 tests / 168 assertions (12 new: 9 data
+sets of the day view's day, the span and address, not state and forwarded, the first paint; the vocabulary test now
+reads `day`), `page_visitor_test` 11 / 101 (1 new), the route's `calendar_test` 12 / 55 (1 new),
+`calendar_component_source_test` 26 / 907 (1 new, three re-pointed: the observer count, the phone line, the switch),
+`calendar_scss_test` 21 / 907 (the Day view's box cap added to an existing test), `calendar_page_test` 10 / 143,
+`esm_source_test` 4 / 413, `categorypublic_source_test` 21 / 5,107, `listing_source_test` 5 / 288,
+`marketplace_readiness_test` 9 (1 skipped by design) / 13,475: all OK. Jest (offline recipe, the whole `js/esm/tests`):
+32 suites, 470 tests, all passed (new: 9 in `weeks.test.ts`, 10 in `Calendar.test.tsx`, 2 in `PublicCalendar.test.tsx`).
+Behat: two scenarios in `theme_dimensions_calendar.feature` (a phone's Day view stepping to the next day; a desktop's
+`view=day` landing on the month with the drawer), NOT run here.
+
+**Gates.** The "R1d" block of `mutations/gates.conf` holds 28 gates (7 PHP, 1 SCSS, 20 JS). Every line of the spec was
+dry-matched with `perl -0777 -p` against the tree: 1,496 checked, none dead. Each of the 20 JS gates was run by hand
+against the calendar's Jest on a scratch copy of the tree: every one reddens at least one test (`cal_r1d_js_dayview_frame`
+only after a test feeding the observer a foreign entry was added). The PHP and SCSS gates are dry-matched, not swept
+(`mdl mutate --fast` is the main session's).
+
+**Not verified:** Behat; the page by eye on a phone (no stack purge here: the stylesheet and the ESM build need
+`mdl purge`); the hold on a real touch device (iOS's own long-press handling could cancel the pointer before 500 ms;
+Jest drives it with a stand-in `PointerEvent`, which jsdom lacks); MariaDB and PHP 8.3.
+
+**First paint on a phone (2026-11-03).** Measured on m503b (Browser pane, 375x812): `phone` started false and only the
+observer's first entry (1.3-1.7 s after mount in that pane) set it, so a phone first drew the desktop month and drawer,
+and a `view=day` address showed the month with its drawer before the Day view. Now the first render seeds `phone` and
+`phoned.current` from `MonthGrid.tsx` `guessPhone()`: `window.matchMedia('(max-width: 591px)')`, 591 being `PHONE` (576)
+plus `PHONE_GUTTERS` (16) minus 1. The gutters were measured on m503b: the frame (`.dim-cal__body`) is the viewport less
+16px (8px a side) at 575, 600 and 767px, and a desktop's margins (157px at 800px) begin at 768px, so one query covers
+every width a frame under 576px can have. A media query forces no layout and `test_no_layout_read_and_one_observer`
+needs no change (it does not list `matchMedia`). It is a guess the observer corrects: the first entry replaces it through
+`onWidth`, nothing re-reads it, so the week-loop rule holds (the decision still reads the frame's width alone). A guess of
+phone on `view=day` draws the Day view at once and `deskOf()` sees `phoned.current` true, so no month request goes out
+before the first measure; a guess of desktop (or no `matchMedia`) is the behaviour above. Both shells. Jest (4 tests in
+each of `Calendar.test.tsx` and `PublicCalendar.test.tsx`: the phone layout and the switch's Day before any entry; a
+`view=day` address drawn as the Day view with no request; a desktop-width first entry flips back; a non-matching query
+keeps the old behaviour), the source test, and gates `cal_r1d_js_guess_seed`, `_public`, `_phoned` and `_gutters`.
+Not seen on a stack by eye: the ESM build needs `mdl purge`.

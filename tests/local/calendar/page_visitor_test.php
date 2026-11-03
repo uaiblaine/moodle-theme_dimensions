@@ -165,6 +165,7 @@ final class page_visitor_test extends \advanced_testcase {
         }
         $props = json_decode($context['props'], true);
         $expected = ['month', 'view', 'week', 'day', 'today', 'now', 'firstday', 'timezone', 'answer', 'keys', 'modalities'];
+        $expected[] = 'models';
         $expected[] = 'urls';
         $this->assertSame($expected, array_keys($props));
         $this->assertSame(['page', 'home'], array_keys($props['urls']), 'No address of core\'s calendar.');
@@ -336,6 +337,32 @@ final class page_visitor_test extends \advanced_testcase {
         $context = $this->context($this->handle([page::PARAM_VIEW => 'week', page::PARAM_WEEK => $later]));
         $props = json_decode($context['props'], true);
         $this->assertSame([], $props['answer']['events'], 'The control: another week holds no event.');
+    }
+
+    /**
+     * A visitor gets the day view too (R1d, a phone's), under the same rules: the visitor's answer for the day's month
+     * grid, the view and the day in its address with the visitor's keys.
+     *
+     * @return void
+     */
+    public function test_a_visitor_gets_the_day_view(): void {
+        $this->seed('1');
+        $day = self::month_start()->modify('+9 days')->format('Y-m-d');
+        $context = $this->context($this->handle([page::PARAM_VIEW => 'day', page::PARAM_DAY => $day, 'keys' => ['category']]));
+        [$from, $to] = page::grid(substr($day, 0, 7), (int) calendar_get_starting_weekday());
+        $this->assertFalse($context['weekview'], 'The server\'s layer is the month\'s.');
+        $props = json_decode($context['props'], true);
+        $this->assertSame([page::VIEW_DAY, $day, ['category']], [$props['view'], $props['day'], $props['keys']]);
+        $this->assertSame([$from, $to], [$props['answer']['from'], $props['answer']['to']]);
+        $this->assertSame(['Feira publica'], array_column($props['answer']['events'], 'name'));
+        $url = $GLOBALS['PAGE']->url;
+        $this->assertSame([page::VIEW_DAY, $day, null], [$url->param('view'), $url->param('day'), $url->param('month')]);
+        self::forget_calendar();
+        $this->assertSame(
+            json_decode(json_encode(publicrange::answer(window::from_iso($from, $to), ['category'])), true),
+            $props['answer'],
+            'The visitor\'s answer for the day\'s month grid.'
+        );
     }
 
     /**

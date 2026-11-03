@@ -27,35 +27,97 @@
 // Core's calendar blocks drawn with the theme's calendar (local\calendar\blocks) are on any page, so their rules are
 // scoped under their own root, .dim-calblock, which declares the same tokens.
 
+// R1c (docs/calendar/PROPOSAL.md section 30.4): a key's colour an administrator chose (theme_dimensions/calendarcolour<key>),
+// handed by the pre SCSS callback as $dim-cal-colours (local\calendar\keycolours::scss()) only when it is a hex that
+// differs from the key's default. A key without one keeps its hand-picked triple, the default each function below is
+// handed; a key with one derives its triple from it, and every derivation reaches its floor whatever the colour (it ends
+// at black or white after twenty 5% steps): the ink at 4.6:1 on the tint (core's $dark-min-contrast, so a checker that
+// rounds differently does not report it), the edge at 3:1 on the darker of the light surfaces (gray-050) and on the
+// lighter of the dark ones (core's raised surface), so on both of each mode. calendar_scss_test compiles these with the
+// token blocks and measures them for chosen colours at the extremes.
+$dim-cal-colours: () !default;
+$dim-cal-min-contrast: 4.6;
+
+// A colour shaded towards black in 5% steps until it reaches the contrast on a ground: core's dark-readable(), the
+// other way.
+@function dim-cal-shaded($colour, $ground, $min) {
+    $readable: $colour;
+    @for $step from 1 through 20 {
+        @if contrast-ratio($ground, $readable) < $min {
+            $readable: shade-color($colour, percentage($step * .05));
+        }
+    }
+    @return $readable;
+}
+
+// Today's dark ink of a key: a light primitive lifted until it reads on the key's edge mixed into the raised surface.
+@function dim-cal-on-mix($ink, $edge, $weight) {
+    @return dark-readable($ink, mix($edge, $dark-surface-raised, $weight));
+}
+
+// A key's light token: the fill is the colour at 12% over white, the edge the colour shaded until it marks the quiet
+// surface, the ink the colour shaded until it reads on the fill.
+@function dim-cal-light($key, $part, $default) {
+    $chosen: map-get($dim-cal-colours, $key);
+    @if $chosen == null {
+        @return $default;
+    }
+    $tint: tint-color($chosen, 88%);
+    @if $part == tint {
+        @return $tint;
+    }
+    @if $part == edge {
+        @return dim-cal-shaded($chosen, $dim-ds-gray-050, 3);
+    }
+    @return dim-cal-shaded($chosen, $tint, $dim-cal-min-contrast);
+}
+
+// A key's dark token: the fill is the colour at 30% over core's raised dark surface, the edge the colour lifted by
+// dark-readable() until it marks that surface, the ink the colour's 80% tint lifted until it reads on the fill.
+@function dim-cal-dark($key, $part, $default) {
+    $chosen: map-get($dim-cal-colours, $key);
+    @if $chosen == null {
+        @return $default;
+    }
+    $tint: mix($chosen, $dark-surface-raised, 30%);
+    @if $part == tint {
+        @return $tint;
+    }
+    @if $part == edge {
+        @return dark-readable($chosen, $dark-surface-raised, 3);
+    }
+    @return dark-readable(tint-color($chosen, 80%), $tint, $dim-cal-min-contrast);
+}
+
 body.dim-calendar,
 .dim-calblock {
-    --dim-cal-site-tint: #{$dim-ds-gray-100};
-    --dim-cal-site-edge: #{$dim-ds-gray-600};
-    --dim-cal-site-ink: #{$dim-ds-gray-800};
-    --dim-cal-category-tint: #{$dim-ds-cyan-100};
-    --dim-cal-category-edge: #{$dim-ds-cyan-800};
-    --dim-cal-category-ink: #{$dim-ds-cyan-800};
-    --dim-cal-course-tint: #{$dim-ds-blue-050};
-    --dim-cal-course-edge: #{$dim-ds-blue-500};
-    --dim-cal-course-ink: #{$dim-ds-blue-700};
-    --dim-cal-group-tint: #{$dim-ds-green-050};
-    --dim-cal-group-edge: #{$dim-ds-green-700};
-    --dim-cal-group-ink: #{$dim-ds-green-800};
-    --dim-cal-user-tint: #{$dim-ds-yellow-100};
-    --dim-cal-user-edge: #{$dim-ds-yellow-800};
-    --dim-cal-user-ink: #{$dim-ds-yellow-800};
-    --dim-cal-activity-tint: #{$dim-ds-blue-100};
-    --dim-cal-activity-edge: #{$dim-ds-blue-400};
-    --dim-cal-activity-ink: #{$dim-ds-blue-800};
-    --dim-cal-other-tint: #{$dim-ds-white};
-    --dim-cal-other-edge: #{$dim-ds-gray-600};
-    --dim-cal-other-ink: #{$dim-ds-gray-800};
-    --dim-cal-open-tint: #{$dim-ds-white};
-    --dim-cal-open-edge: #{$dim-ds-blue-500};
-    --dim-cal-open-ink: #{$dim-ds-blue-700};
-    --dim-cal-overdue-tint: #{$dim-ds-red-100};
-    --dim-cal-overdue-edge: #{$dim-ds-red-500};
-    --dim-cal-overdue-ink: #{$dim-ds-red-800};
+    --dim-cal-site-tint: #{dim-cal-light(site, tint, $dim-ds-gray-100)};
+    --dim-cal-site-edge: #{dim-cal-light(site, edge, $dim-ds-gray-600)};
+    --dim-cal-site-ink: #{dim-cal-light(site, ink, $dim-ds-gray-800)};
+    --dim-cal-category-tint: #{dim-cal-light(category, tint, $dim-ds-cyan-100)};
+    --dim-cal-category-edge: #{dim-cal-light(category, edge, $dim-ds-cyan-800)};
+    --dim-cal-category-ink: #{dim-cal-light(category, ink, $dim-ds-cyan-800)};
+    --dim-cal-course-tint: #{dim-cal-light(course, tint, $dim-ds-blue-050)};
+    --dim-cal-course-edge: #{dim-cal-light(course, edge, $dim-ds-blue-500)};
+    --dim-cal-course-ink: #{dim-cal-light(course, ink, $dim-ds-blue-700)};
+    --dim-cal-group-tint: #{dim-cal-light(group, tint, $dim-ds-green-050)};
+    --dim-cal-group-edge: #{dim-cal-light(group, edge, $dim-ds-green-700)};
+    --dim-cal-group-ink: #{dim-cal-light(group, ink, $dim-ds-green-800)};
+    --dim-cal-user-tint: #{dim-cal-light(user, tint, $dim-ds-yellow-100)};
+    --dim-cal-user-edge: #{dim-cal-light(user, edge, $dim-ds-yellow-800)};
+    --dim-cal-user-ink: #{dim-cal-light(user, ink, $dim-ds-yellow-800)};
+    --dim-cal-activity-tint: #{dim-cal-light(activity, tint, $dim-ds-blue-100)};
+    --dim-cal-activity-edge: #{dim-cal-light(activity, edge, $dim-ds-blue-400)};
+    --dim-cal-activity-ink: #{dim-cal-light(activity, ink, $dim-ds-blue-800)};
+    --dim-cal-other-tint: #{dim-cal-light(other, tint, $dim-ds-white)};
+    --dim-cal-other-edge: #{dim-cal-light(other, edge, $dim-ds-gray-600)};
+    --dim-cal-other-ink: #{dim-cal-light(other, ink, $dim-ds-gray-800)};
+    --dim-cal-open-tint: #{dim-cal-light(open, tint, $dim-ds-white)};
+    --dim-cal-open-edge: #{dim-cal-light(open, edge, $dim-ds-blue-500)};
+    --dim-cal-open-ink: #{dim-cal-light(open, ink, $dim-ds-blue-700)};
+    --dim-cal-overdue-tint: #{dim-cal-light(overdue, tint, $dim-ds-red-100)};
+    --dim-cal-overdue-edge: #{dim-cal-light(overdue, edge, $dim-ds-red-500)};
+    --dim-cal-overdue-ink: #{dim-cal-light(overdue, ink, $dim-ds-red-800)};
     --dim-cal-surface: #{$dim-ds-white};
     --dim-cal-surface-quiet: #{$dim-ds-gray-050};
     --dim-cal-weekend-hatch: #{$dim-ds-gray-200};
@@ -66,33 +128,33 @@ body.dim-calendar,
 // until it reads on that fill, its edge lifted until it reads as a mark on the raised surface.
 :root[data-bs-theme="dark"] body.dim-calendar,
 :root[data-bs-theme="dark"] .dim-calblock {
-    --dim-cal-site-tint: #{mix($dim-ds-gray-600, $dark-surface-raised, 30%)};
-    --dim-cal-site-edge: #{dark-readable($dim-ds-gray-600, $dark-surface-raised, 3)};
-    --dim-cal-site-ink: #{dark-readable($dim-ds-gray-100, mix($dim-ds-gray-600, $dark-surface-raised, 30%))};
-    --dim-cal-category-tint: #{mix($dim-ds-cyan-800, $dark-surface-raised, 45%)};
-    --dim-cal-category-edge: #{dark-readable($dim-ds-cyan-800, $dark-surface-raised, 3)};
-    --dim-cal-category-ink: #{dark-readable($dim-ds-cyan-100, mix($dim-ds-cyan-800, $dark-surface-raised, 45%))};
-    --dim-cal-course-tint: #{mix($dim-ds-blue-500, $dark-surface-raised, 30%)};
-    --dim-cal-course-edge: #{dark-readable($dim-ds-blue-500, $dark-surface-raised, 3)};
-    --dim-cal-course-ink: #{dark-readable($dim-ds-blue-050, mix($dim-ds-blue-500, $dark-surface-raised, 30%))};
-    --dim-cal-group-tint: #{mix($dim-ds-green-700, $dark-surface-raised, 35%)};
-    --dim-cal-group-edge: #{dark-readable($dim-ds-green-700, $dark-surface-raised, 3)};
-    --dim-cal-group-ink: #{dark-readable($dim-ds-green-050, mix($dim-ds-green-700, $dark-surface-raised, 35%))};
-    --dim-cal-user-tint: #{mix($dim-ds-yellow-800, $dark-surface-raised, 45%)};
-    --dim-cal-user-edge: #{dark-readable($dim-ds-yellow-800, $dark-surface-raised, 3)};
-    --dim-cal-user-ink: #{dark-readable($dim-ds-yellow-100, mix($dim-ds-yellow-800, $dark-surface-raised, 45%))};
-    --dim-cal-activity-tint: #{mix($dim-ds-blue-400, $dark-surface-raised, 30%)};
-    --dim-cal-activity-edge: #{dark-readable($dim-ds-blue-400, $dark-surface-raised, 3)};
-    --dim-cal-activity-ink: #{dark-readable($dim-ds-blue-100, mix($dim-ds-blue-400, $dark-surface-raised, 30%))};
-    --dim-cal-other-tint: #{$dark-surface-raised};
-    --dim-cal-other-edge: #{dark-readable($dim-ds-gray-600, $dark-surface-raised, 3)};
-    --dim-cal-other-ink: #{dark-readable($dim-ds-gray-100, $dark-surface-raised)};
-    --dim-cal-open-tint: #{$dark-surface-raised};
-    --dim-cal-open-edge: #{dark-readable($dim-ds-blue-500, $dark-surface-raised, 3)};
-    --dim-cal-open-ink: #{dark-readable($dim-ds-blue-050, $dark-surface-raised)};
-    --dim-cal-overdue-tint: #{mix($dim-ds-red-500, $dark-surface-raised, 30%)};
-    --dim-cal-overdue-edge: #{dark-readable($dim-ds-red-500, $dark-surface-raised, 3)};
-    --dim-cal-overdue-ink: #{dark-readable($dim-ds-red-100, mix($dim-ds-red-500, $dark-surface-raised, 30%))};
+    --dim-cal-site-tint: #{dim-cal-dark(site, tint, mix($dim-ds-gray-600, $dark-surface-raised, 30%))};
+    --dim-cal-site-edge: #{dim-cal-dark(site, edge, dark-readable($dim-ds-gray-600, $dark-surface-raised, 3))};
+    --dim-cal-site-ink: #{dim-cal-dark(site, ink, dim-cal-on-mix($dim-ds-gray-100, $dim-ds-gray-600, 30%))};
+    --dim-cal-category-tint: #{dim-cal-dark(category, tint, mix($dim-ds-cyan-800, $dark-surface-raised, 45%))};
+    --dim-cal-category-edge: #{dim-cal-dark(category, edge, dark-readable($dim-ds-cyan-800, $dark-surface-raised, 3))};
+    --dim-cal-category-ink: #{dim-cal-dark(category, ink, dim-cal-on-mix($dim-ds-cyan-100, $dim-ds-cyan-800, 45%))};
+    --dim-cal-course-tint: #{dim-cal-dark(course, tint, mix($dim-ds-blue-500, $dark-surface-raised, 30%))};
+    --dim-cal-course-edge: #{dim-cal-dark(course, edge, dark-readable($dim-ds-blue-500, $dark-surface-raised, 3))};
+    --dim-cal-course-ink: #{dim-cal-dark(course, ink, dim-cal-on-mix($dim-ds-blue-050, $dim-ds-blue-500, 30%))};
+    --dim-cal-group-tint: #{dim-cal-dark(group, tint, mix($dim-ds-green-700, $dark-surface-raised, 35%))};
+    --dim-cal-group-edge: #{dim-cal-dark(group, edge, dark-readable($dim-ds-green-700, $dark-surface-raised, 3))};
+    --dim-cal-group-ink: #{dim-cal-dark(group, ink, dim-cal-on-mix($dim-ds-green-050, $dim-ds-green-700, 35%))};
+    --dim-cal-user-tint: #{dim-cal-dark(user, tint, mix($dim-ds-yellow-800, $dark-surface-raised, 45%))};
+    --dim-cal-user-edge: #{dim-cal-dark(user, edge, dark-readable($dim-ds-yellow-800, $dark-surface-raised, 3))};
+    --dim-cal-user-ink: #{dim-cal-dark(user, ink, dim-cal-on-mix($dim-ds-yellow-100, $dim-ds-yellow-800, 45%))};
+    --dim-cal-activity-tint: #{dim-cal-dark(activity, tint, mix($dim-ds-blue-400, $dark-surface-raised, 30%))};
+    --dim-cal-activity-edge: #{dim-cal-dark(activity, edge, dark-readable($dim-ds-blue-400, $dark-surface-raised, 3))};
+    --dim-cal-activity-ink: #{dim-cal-dark(activity, ink, dim-cal-on-mix($dim-ds-blue-100, $dim-ds-blue-400, 30%))};
+    --dim-cal-other-tint: #{dim-cal-dark(other, tint, $dark-surface-raised)};
+    --dim-cal-other-edge: #{dim-cal-dark(other, edge, dark-readable($dim-ds-gray-600, $dark-surface-raised, 3))};
+    --dim-cal-other-ink: #{dim-cal-dark(other, ink, dark-readable($dim-ds-gray-100, $dark-surface-raised))};
+    --dim-cal-open-tint: #{dim-cal-dark(open, tint, $dark-surface-raised)};
+    --dim-cal-open-edge: #{dim-cal-dark(open, edge, dark-readable($dim-ds-blue-500, $dark-surface-raised, 3))};
+    --dim-cal-open-ink: #{dim-cal-dark(open, ink, dark-readable($dim-ds-blue-050, $dark-surface-raised))};
+    --dim-cal-overdue-tint: #{dim-cal-dark(overdue, tint, mix($dim-ds-red-500, $dark-surface-raised, 30%))};
+    --dim-cal-overdue-edge: #{dim-cal-dark(overdue, edge, dark-readable($dim-ds-red-500, $dark-surface-raised, 3))};
+    --dim-cal-overdue-ink: #{dim-cal-dark(overdue, ink, dim-cal-on-mix($dim-ds-red-100, $dim-ds-red-500, 30%))};
     --dim-cal-surface: #{$dark-surface-raised};
     --dim-cal-surface-quiet: #{$dark-surface-page};
     --dim-cal-weekend-hatch: #{$dark-surface-raised};
@@ -852,11 +914,17 @@ body.dim-calendar {
 
     // A six-week month is taller than a laptop's viewport, and the drawer starts at the frame's top: opened on a day of
     // the lower weeks it sat above the viewport (PROPOSAL.md section 27.2). So it holds still under the navbar while the
-    // grid scrolls, and scrolls its own content when that is taller than the viewport; its hour column never does.
+    // grid scrolls. Its body is the hour column's scroll box (R1c, below), which takes what the head and the all-day
+    // strip leave; the drawer itself scrolls only when the strip alone is taller than the cap.
+    // R1c (PROPOSAL.md section 30.7): the cap is the smaller of the viewport's and the grid's own height, which the
+    // grids' one ResizeObserver writes on the frame as --dim-cal-gridheight (days.ts GRID_HEIGHT; unset until its first
+    // entry, then the viewport's alone). A min() is allowed inside a custom property read through var(), not in a length.
     .dim-cal__drawer--drawer {
+        --dim-cal-drawercap: min(calc(100vh - #{$navbar-height} - 2rem), var(--dim-cal-gridheight, 100vh));
+
         position: sticky;
         top: calc(#{$navbar-height} + 1rem);
-        max-height: calc(100vh - #{$navbar-height} - 2rem);
+        max-height: var(--dim-cal-drawercap);
         overflow-y: auto;
     }
 
@@ -957,13 +1025,88 @@ body.dim-calendar {
         font-weight: 600;
     }
 
-    // The hour column: one row of a fixed height per hour of the day's busy window (--dim-cal-hourcount, DayDrawer.tsx),
-    // never a scroll box; the items are placed in shares of the window and of the width (position(), four local
+    // The hour column: one row of a fixed height per hour of the whole day (--dim-cal-hourcount, DayDrawer.tsx), inside
+    // the scroll box below; the items are placed in shares of the day and of the width (position(), four local
     // properties).
     .dim-cal__hours {
         position: relative;
         display: grid;
         grid-template-rows: repeat(var(--dim-cal-hourcount, 24), 2.5rem);
+    }
+
+    // R1c (PROPOSAL.md section 30.1, reversing C3's windowed column): the drawer's and the week's hour column is the
+    // whole day in a scroll box of its own (HourScroll.tsx), drawn as block_compass's calendar strip is: no native
+    // scrollbar, its overscroll kept from the page, and a fade over an end only while the box can still scroll to it.
+    // The fades are the box's siblings in a positioned wrapper, so they hold still while the hours scroll, and take no
+    // pointer: a double-click under one still reaches its hour row.
+    .dim-cal__hourbox {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .dim-cal__hourbox--day {
+        flex: 1 1 auto;
+        min-height: 12rem;
+    }
+
+    .dim-cal__hourscroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+    }
+
+    .dim-cal__hourscroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    // Inside a box that clips, the focus ring is drawn inside the box's edge.
+    .dim-cal__hourscroll:focus-visible {
+        outline-offset: -3px;
+    }
+
+    // The phone's Day view (R1d, PROPOSAL.md section 31, DayView.tsx): the drawer's look at the frame's whole width, not
+    // sticky; its hour box is capped under the viewport as the week's is, so the toolbar and the strip stay in view.
+    .dim-cal__dayviewhead {
+        justify-content: flex-end;
+    }
+
+    .dim-cal__drawer--dayview .dim-cal__hourscroll {
+        min-height: 15rem;
+        max-height: calc(100vh - #{$navbar-height} - 12rem);
+    }
+
+    // A touch held on an hour row creates (DayDrawer.tsx HOLD_MS): the hour labels under it are not selected instead.
+    .dim-cal__drawer--dayview .dim-cal__hours {
+        user-select: none;
+    }
+
+    // The week's box: the header row and the all-day strip stay above it, the hours scroll under them.
+    .dim-cal__hourbox--week .dim-cal__hourscroll {
+        min-height: 15rem;
+        max-height: calc(100vh - #{$navbar-height} - 14rem);
+    }
+
+    .dim-cal__hourfade {
+        position: absolute;
+        right: 0;
+        left: 0;
+        z-index: 3;
+        height: 2rem;
+        pointer-events: none;
+    }
+
+    .dim-cal__hourfade--up {
+        top: 0;
+        background: linear-gradient(to bottom, var(--dim-cal-surface) 20%, transparent);
+    }
+
+    .dim-cal__hourfade--down {
+        bottom: 0;
+        background: linear-gradient(to top, var(--dim-cal-surface) 20%, transparent);
     }
 
     .dim-cal__hour {
@@ -1031,8 +1174,8 @@ body.dim-calendar {
     }
 
     // The week (C4, WeekGrid.tsx): a gutter for the row headers and the hour labels, then seven day columns, in three
-    // rows. The hour body is one 2.5rem row per hour of the week's window (--dim-cal-hourcount), never a scroll box;
-    // its items are placed in shares of the window and of the day's width, as the drawer's are.
+    // rows. The hour body is one 2.5rem row per hour of the whole day (--dim-cal-hourcount), in the scroll box above
+    // (R1c); its items are placed in shares of the day and of the day's width, as the drawer's are.
     .dim-cal__weekgrid {
         overflow: hidden;
         border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));

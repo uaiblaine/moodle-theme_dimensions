@@ -360,3 +360,230 @@ describe('the visitor edits nothing (C5)', () => {
         expect(page.querySelector('[data-region="dim-cal-edit"]')).toBeNull();
     });
 });
+
+describe('the Day view, a phone\'s (R1d)', () => {
+    /** The callbacks the page's ResizeObservers registered, the latest last. */
+    let observers: Array<(entries: unknown[]) => void> = [];
+
+    beforeEach(() => {
+        observers = [];
+        (window as unknown as {ResizeObserver: unknown}).ResizeObserver = class {
+            /**
+             * Keep the callback.
+             *
+             * @param {Function} callback The observer's callback.
+             */
+            constructor(callback: (entries: unknown[]) => void) {
+                observers.push(callback);
+            }
+
+            /**
+             * Nothing to note.
+             *
+             * @returns {void}
+             */
+            observe(): void {
+                return;
+            }
+
+            /**
+             * Nothing to release.
+             *
+             * @returns {void}
+             */
+            disconnect(): void {
+                return;
+            }
+        };
+    });
+
+    afterEach(() => {
+        delete (window as unknown as {ResizeObserver?: unknown}).ResizeObserver;
+    });
+
+    /**
+     * Report a width for the frame, through the latest observer.
+     *
+     * @param {number} width The frame's width, in px.
+     * @returns {Promise}
+     */
+    const measure = async(width: number): Promise<void> => {
+        const frame = document.querySelector('[data-region="dim-cal-body"]') as Element;
+        await act(async() => {
+            observers[observers.length - 1]([{target: frame, contentRect: {width: width, height: 600}}]);
+        });
+    };
+
+    it('offers Day on a phone, asks the visitor\'s service for that day alone and draws it', async() => {
+        await mount(props(publicAnswer([fair()])));
+        await measure(900);
+        expect(document.querySelector('[data-action="dim-cal-view-day"]')).toBeNull();
+        await measure(400);
+        fetched.mockImplementation(({args}: {args: {from: string, to: string}}) =>
+            Promise.resolve({...answer([fair()], args.from, args.to), descriptions: []}));
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-view-day"]') as HTMLElement);
+        });
+        expect(calls().map(([request]) => [request.args.from, request.args.to])).toEqual([['2026-11-17', '2026-11-17']]);
+        expect(window.location.search).toBe('?view=day&day=2026-11-17');
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-prev"]') as HTMLElement);
+        });
+        const view = document.querySelector('[data-region="dim-cal-dayview"]') as HTMLElement;
+        expect(view.dataset.day).toBe('2026-11-16');
+        expect(window.location.search).toBe('?view=day&day=2026-11-16');
+        expect(view.querySelector('[data-action="dim-cal-new"]')).toBeNull();
+    });
+
+    it('shows a view=day address on a desktop as the month with that day\'s drawer', async() => {
+        await mount(props(publicAnswer([fair()]), {view: 'day', day: '2026-11-10'}));
+        await measure(900);
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).toBeNull();
+        const drawer = document.querySelector('[data-region="dim-cal-day"]') as HTMLElement;
+        expect([drawer.dataset.day, drawer.classList.contains('dim-cal__drawer--drawer')]).toEqual(['2026-11-10', true]);
+        expect(calls().map(([request]) => [request.args.from, request.args.to])).toEqual([['2026-11-01', '2026-12-05']]);
+        expect(window.location.search).toBe('?month=2026-11&day=2026-11-10');
+    });
+});
+
+describe('the first paint, guessed by a media query (R1d)', () => {
+    /** The callbacks the page's ResizeObservers registered, the latest last. */
+    let observers: Array<(entries: unknown[]) => void> = [];
+    /** The queries asked of matchMedia. */
+    let asked: string[] = [];
+
+    /**
+     * Stand in for matchMedia, answering every query with one verdict.
+     *
+     * @param {boolean} matches The verdict.
+     * @returns {void}
+     */
+    const media = (matches: boolean): void => {
+        asked = [];
+        (window as unknown as {matchMedia: unknown}).matchMedia = (query: string) => {
+            asked.push(query);
+            return {matches: matches, media: query, addEventListener: () => undefined, removeEventListener: () => undefined};
+        };
+    };
+
+    beforeEach(() => {
+        observers = [];
+        (window as unknown as {ResizeObserver: unknown}).ResizeObserver = class {
+            /**
+             * Keep the callback.
+             *
+             * @param {Function} callback The observer's callback.
+             */
+            constructor(callback: (entries: unknown[]) => void) {
+                observers.push(callback);
+            }
+
+            /**
+             * Nothing to note.
+             *
+             * @returns {void}
+             */
+            observe(): void {
+                return;
+            }
+
+            /**
+             * Nothing to release.
+             *
+             * @returns {void}
+             */
+            disconnect(): void {
+                return;
+            }
+        };
+    });
+
+    afterEach(() => {
+        delete (window as unknown as {ResizeObserver?: unknown}).ResizeObserver;
+        delete (window as unknown as {matchMedia?: unknown}).matchMedia;
+    });
+
+    /**
+     * Render the page without waiting for a grid, which a phone's Day view does not draw.
+     *
+     * @param {object} given The props.
+     * @returns {Promise}
+     */
+    const draw = async(given: PublicProps): Promise<void> => {
+        const page = document.createElement('div');
+        page.dataset.region = 'dim-cal';
+        const node = document.createElement('div');
+        page.append(node);
+        document.body.append(page);
+        await act(async() => {
+            render(<PublicCalendar {...given} />, {container: node});
+        });
+        await waitFor(() => expect(page.querySelector('[data-region="dim-cal-body"]')).not.toBeNull());
+    };
+
+    /**
+     * Report a width for the frame, through the latest observer.
+     *
+     * @param {number} width The frame's width, in px.
+     * @returns {Promise}
+     */
+    const measure = async(width: number): Promise<void> => {
+        const frame = document.querySelector('[data-region="dim-cal-body"]') as Element;
+        await act(async() => {
+            observers[observers.length - 1]([{target: frame, contentRect: {width: width, height: 600}}]);
+        });
+    };
+
+    /**
+     * The view switch's choices.
+     *
+     * @returns {Array} Their names.
+     */
+    const choices = (): string[] => Array.from(document.querySelectorAll('[data-region="dim-cal-views"] button'))
+        .map((button) => button.textContent || '');
+
+    /**
+     * The range requests made.
+     *
+     * @returns {Array} Their [from, to].
+     */
+    const asks = (): string[][] => calls().map(([request]) => [request.args.from, request.args.to]);
+
+    it('draws the phone layout and offers Day before any observer entry when the query matches', async() => {
+        media(true);
+        await draw(props(publicAnswer([fair()])));
+        expect(asked).toEqual(['(max-width: 591px)']);
+        expect(choices()).toEqual(['Month', 'Week', 'Day']);
+        expect(document.querySelector('.dim-cal__grid--phone')).not.toBeNull();
+    });
+
+    it('draws a view=day address as the Day view at once, with no request before the first measure', async() => {
+        media(true);
+        await draw(props(publicAnswer([fair()]), {view: 'day', day: '2026-11-10'}));
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).not.toBeNull();
+        expect(document.querySelector('[data-region="dim-cal-day"]')).toBeNull();
+        expect(asks()).toEqual([]);
+        await measure(400);
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).not.toBeNull();
+        expect(asks()).toEqual([]);
+    });
+
+    it('lets a desktop-width first entry replace the guess', async() => {
+        media(true);
+        await draw(props(publicAnswer([fair()]), {view: 'day', day: '2026-11-10'}));
+        await measure(900);
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).toBeNull();
+        expect(choices()).toEqual(['Month', 'Week']);
+        expect((document.querySelector('[data-region="dim-cal-day"]') as HTMLElement).dataset.day).toBe('2026-11-10');
+    });
+
+    it('keeps today\'s behaviour when the query does not match', async() => {
+        media(false);
+        await draw(props(publicAnswer([fair()]), {view: 'day', day: '2026-11-10'}));
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).toBeNull();
+        expect((document.querySelector('[data-region="dim-cal-day"]') as HTMLElement).dataset.day).toBe('2026-11-10');
+        expect(choices()).toEqual(['Month', 'Week']);
+        await measure(400);
+        expect(document.querySelector('[data-region="dim-cal-dayview"]')).not.toBeNull();
+    });
+});

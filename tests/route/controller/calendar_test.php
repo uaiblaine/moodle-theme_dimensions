@@ -340,4 +340,36 @@ final class calendar_test extends \core\tests\router\route_testcase {
         $this->assertSame('', $this->props((string) $response->getBody())['day'], 'A day outside the week is dropped.');
         $this->assertNull($PAGE->url->param('day'));
     }
+
+    /**
+     * The route serves the day view (R1d, a phone's): the day's month grid embedded, so a desktop shows that month with
+     * the day's drawer and a phone draws the day with no request; the page's address keeps the view and the day, which
+     * is what a reload asks for again; a list for the view is the month, never an error page.
+     *
+     * @return void
+     */
+    public function test_the_day_view_is_served_with_its_months_answer_and_kept_in_the_address(): void {
+        global $CFG, $PAGE;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        $this->resetAfterTest();
+        $this->setUser(self::getDataGenerator()->create_user());
+        [$from, $to] = page::grid('2026-11', (int) calendar_get_starting_weekday());
+
+        $response = $this->request([page::PARAM_VIEW => 'day', 'day' => '2026-11-18']);
+
+        $body = (string) $response->getBody();
+        $this->assertSame(200, $response->getStatusCode(), substr($body, 0, 2000));
+        $props = $this->props($body);
+        $this->assertSame(['day', '2026-11', '2026-11-18'], [$props['view'], $props['month'], $props['day']]);
+        $this->assertSame([$from, $to], [$props['answer']['from'], $props['answer']['to']]);
+        $this->assertSame(
+            ['day', '2026-11-18', null],
+            [$PAGE->url->param('view'), $PAGE->url->param('day'), $PAGE->url->param('month')]
+        );
+
+        $response = $this->request([page::PARAM_VIEW => ['day'], 'day' => '2026-11-18', 'month' => '2026-11']);
+        $this->assertSame(200, $response->getStatusCode());
+        $props = $this->props((string) $response->getBody());
+        $this->assertSame(['month', '2026-11-18'], [$props['view'], $props['day']], 'A list for the view: the month view.');
+    }
 }
