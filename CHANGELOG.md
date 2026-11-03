@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The course landing page carries no block region and no course index** (2026100571). Both entries of the page,
+  the public page a visitor is served and the page a logged-in reader gets, draw no block, no block drawer or toggle,
+  no "Add a block" button in edit mode and no course index drawer, decided on the server in `request::handle()`: the
+  calendar's mechanism (no block loaded, block editing locked), now one helper both pages call
+  (`local\blockless::apply()`), and core's own switch for the index (`$PAGE->set_show_course_index(false)`, the first
+  thing `core_course_drawer()` reads). The guest entry's interstitial needed nothing: the embedded layout draws fake
+  blocks alone and no drawer. PHPUnit (`request_drawers_test`, each case against a control page left to core), a
+  Behat smoke (the course page as the control) and mutation gates (`landing_blocks_wired`,
+  `landing_courseindex_shown`, `cal_r1b_blocks_wired`; `cal_r1b_blocks_shown` and `cal_r1b_blocks_unlocked` moved to
+  the shared helper).
 - **Calendar R1b: the category events you create, and the first paint** (2026100568),
   `docs/calendar/PROPOSAL.md` section 29. The site view's categories include every category where the viewer may
   create category events (core's form asks `moodle/category:manage` with doanything; core's view asks it without, so
