@@ -184,7 +184,8 @@ final class calendar_component_source_test extends \basic_testcase {
      * No layout is read on the mount path: the reads of the tree are the popover's, when it opens, and the hour box's
      * (R1c), when a day or a week opens it and while it scrolls; each grid is measured by one ResizeObserver: the
      * month's watches the rows (the density) and the frame the drawer shares (the phone), the week's the frame alone,
-     * and the phone's Day view (R1d), drawn with no grid beside it, has one of its own on the same frame.
+     * and the phone's Day view (R1d), drawn with no grid beside it, has one of its own on the same frame, as the Trilhas
+     * view (docs/trail/PLAN.md section 7) does; the step's popover reads as the event popover does, on an opening.
      *
      * @return void
      */
@@ -193,7 +194,7 @@ final class calendar_component_source_test extends \basic_testcase {
         $reads = '~getBoundingClientRect|getClientRects|offset(?:Height|Width|Top|Left)|client(?:Height|Width)'
             . '|scroll(?:Height|Width|Top|Left)|getComputedStyle~';
         foreach ($this->sources() as $path => $source) {
-            if ($path !== 'EventPopover.tsx' && $path !== 'HourScroll.tsx') {
+            if (!in_array($path, ['EventPopover.tsx', 'HourScroll.tsx', 'TrailPopover.tsx'], true)) {
                 $this->assertDoesNotMatchRegularExpression($reads, $source, "{$path} reads the layout.");
             }
             $observers += substr_count($source, 'new ResizeObserver(');
@@ -206,6 +207,14 @@ final class calendar_component_source_test extends \basic_testcase {
             $popover,
             'Both reads are in the effect of an opening, never of the page\'s mount.'
         );
+        $steppop = $this->sources()['TrailPopover.tsx'];
+        $this->assertSame(3, preg_match_all($reads, $steppop), 'The step popover: the opener\'s box, its own and the navbar\'s.');
+        $this->assertMatchesRegularExpression(
+            '~useLayoutEffect\(\(\) => \{\s*if \(sheet \|\| !dialog\.current\) \{.*?getBoundingClientRect\(\);.*?'
+                . 'getBoundingClientRect\(\);.*?\}, \[step\.cmid, opener, sheet\]\);~s',
+            $steppop,
+            'The step popover\'s reads are in the effect of an opening.'
+        );
         $box = $this->sources()['HourScroll.tsx'];
         $this->assertSame(9, preg_match_all($reads, $box), 'The opening\'s write and five reads, and the scroll\'s three.');
         $this->assertMatchesRegularExpression(
@@ -213,7 +222,14 @@ final class calendar_component_source_test extends \basic_testcase {
             $box,
             'The box is measured when a day or a week opens it or the grid hands a new height, not on every render.'
         );
-        $this->assertSame(3, $observers, 'One per grid and one for the Day view, never per cell.');
+        $this->assertSame(4, $observers, 'One per grid, one for the Day view and one for the Trilhas view, never per cell.');
+        $this->assertSame(1, substr_count($this->sources()['TrailView.tsx'], 'new ResizeObserver('));
+        $this->assertStringContainsString('const frame = root.current?.parentElement || null;', $this->sources()['TrailView.tsx']);
+        $this->assertStringContainsString(
+            'if (entry.target === frame && entry.contentRect.width > 0) {',
+            $this->sources()['TrailView.tsx'],
+            'The Trilhas view reads the frame\'s width alone.'
+        );
         $this->assertSame(1, substr_count($this->sources()['DayView.tsx'], 'new ResizeObserver('));
         $this->assertStringContainsString('const frame = root.current?.parentElement || null;', $this->sources()['DayView.tsx']);
         $this->assertSame(1, substr_count($this->sources()['WeekGrid.tsx'], 'new ResizeObserver('));
@@ -226,7 +242,11 @@ final class calendar_component_source_test extends \basic_testcase {
         foreach (['Calendar.tsx', 'PublicCalendar.tsx'] as $shell) {
             $source = $this->sources()[$shell];
             $this->assertStringContainsString('const narrow = width < PHONE;', $source, 'The phone is the frame\'s width.');
-            $this->assertSame(3, substr_count($source, 'onWidth={onWidth}'), $shell . ': the grids and the Day view report it.');
+            $this->assertSame(
+                $shell === 'Calendar.tsx' ? 4 : 3,
+                substr_count($source, 'onWidth={onWidth}'),
+                $shell . ': the grids, the Day view and, on the account\'s, the Trilhas view report it.'
+            );
         }
     }
 
@@ -711,8 +731,10 @@ final class calendar_component_source_test extends \basic_testcase {
                 $source
             );
             $this->assertStringContainsString('<WeekGrid', $source);
+            // The account's switch also offers Trilhas where the page does (docs/trail/PLAN.md section 7).
             $this->assertStringContainsString(
-                '<ViewSwitch strings={strings} view={shown.span.view} phone={phone} onView={toView} />',
+                '<ViewSwitch strings={strings} view={shown.span.view} phone={phone} onView={toView}'
+                    . ($shell === 'Calendar.tsx' ? ' trails={offered} />' : ' />'),
                 $source
             );
         }

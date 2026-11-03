@@ -46,6 +46,9 @@ const spanOf = /* @__PURE__ */ __name((view, iso, firstday) => {
   if (view === "day") {
     return { view: "day", day: iso };
   }
+  if (view === "trail") {
+    return { view: "trail", month: iso.slice(0, 7) };
+  }
   return view === "week" ? { view: "week", week: weekStart(iso, firstday) } : { view: "month", month: iso.slice(0, 7) };
 }, "spanOf");
 const spanDays = /* @__PURE__ */ __name((span, firstday) => {
@@ -58,10 +61,13 @@ const spanKey = /* @__PURE__ */ __name((span) => {
   if (span.view === "day") {
     return `day:${span.day}`;
   }
+  if (span.view === "trail") {
+    return `trail:${span.month}`;
+  }
   return span.view === "week" ? `week:${span.week}` : `month:${span.month}`;
 }, "spanKey");
 const monthOfSpan = /* @__PURE__ */ __name((span, selected) => {
-  if (span.view === "month") {
+  if (span.view === "month" || span.view === "trail") {
     return span.month;
   }
   if (span.view === "day") {
@@ -70,7 +76,7 @@ const monthOfSpan = /* @__PURE__ */ __name((span, selected) => {
   return weekDays(span.week).includes(selected) ? selected.slice(0, 7) : span.week.slice(0, 7);
 }, "monthOfSpan");
 const openingOf = /* @__PURE__ */ __name((span, today) => {
-  if (span.view === "month") {
+  if (span.view === "month" || span.view === "trail") {
     return today.startsWith(span.month) ? today : `${span.month}-01`;
   }
   if (span.view === "day") {
@@ -97,6 +103,9 @@ const inSpan = /* @__PURE__ */ __name((href, span) => {
   if (span.view === "week") {
     url.searchParams.append(VIEW_PARAM, "week");
     url.searchParams.append(WEEK_PARAM, span.week);
+  } else if (span.view === "trail") {
+    url.searchParams.append(VIEW_PARAM, "trail");
+    url.searchParams.append("month", span.month);
   } else {
     url.searchParams.append("month", span.month);
   }
@@ -107,10 +116,13 @@ const viewDay = /* @__PURE__ */ __name((day, month, today) => {
   const year = Number(day.slice(0, 4));
   return parse(day) !== null && year >= 1900 && year <= 2999 ? day : openingOf({ view: "month", month }, today);
 }, "viewDay");
-const readSpan = /* @__PURE__ */ __name((href, firstday, month, today) => {
+const readSpan = /* @__PURE__ */ __name((href, firstday, month, today, trails = false) => {
   const params = new URL(href, window.location.href).searchParams;
   if (params.get(VIEW_PARAM) === "day") {
     return { view: "day", day: viewDay(String(params.get(DAY_PARAM) || ""), month, today) };
+  }
+  if (params.get(VIEW_PARAM) === "trail" && trails) {
+    return { view: "trail", month };
   }
   if (params.get(VIEW_PARAM) !== "week") {
     return { view: "month", month };
@@ -156,7 +168,7 @@ const drawerOf = /* @__PURE__ */ __name((span, open, days, phone) => {
   if (span.view === "day") {
     return phone ? null : span.day;
   }
-  return dayIn(open, days);
+  return span.view === "trail" ? null : dayIn(open, days);
 }, "drawerOf");
 const selectedIn = /* @__PURE__ */ __name((selected, span, days, today) => days.includes(selected) ? selected : openingOf(span, today), "selectedIn");
 const weekPlan = /* @__PURE__ */ __name((days, placed, zone) => {

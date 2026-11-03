@@ -34,6 +34,7 @@ use theme_dimensions\local\landing\publicfiles;
 use theme_dimensions\local\landing\redirector;
 use theme_dimensions\local\hook\course\after_form_validation;
 use theme_dimensions\local\landing\resolution;
+use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\category\cards;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\local\styleurl;
@@ -166,6 +167,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'trail' => $trail,
             // A learner's way on along the trail: its next step's activity, which forwards to that course.
             'trailcontinue' => $trail['continue'] ?? null,
+            'trailcalendarurl' => $trail['calendarurl'] ?? null,
             'facts' => $facts,
             'hasfacts' => !empty($facts),
             'sections' => $sections,
@@ -211,6 +213,27 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
 
         $this->add_bar($exported);
         return $exported;
+    }
+
+    /**
+     * Where "Ver no calendário" leads: the calendar's Trilhas view with this trail kept, on the month the trail is in.
+     *
+     * Today's month while the trail runs; before it starts, its first month; once it has ended, its last. An account's
+     * only ({@see page::trails_offered()}): the calendar asks a visitor to log in, and the view is an account's.
+     *
+     * @param int $first The period's first start, 0 for none.
+     * @param int $last The period's last end, 0 for an open period.
+     * @return \core\url
+     */
+    private function calendar_url(int $first, int $last): \core\url {
+        $at = time();
+        if ($first > $at) {
+            $at = $first;
+        } else if ($last > 0 && $last < $at) {
+            $at = $last;
+        }
+        $month = (new \DateTimeImmutable('@' . $at))->setTimezone(\core_date::get_user_timezone_object())->format('Y-m');
+        return page::url(page::trail_params($month, (int) $this->course->id));
     }
 
     /**
@@ -339,6 +362,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'period' => $period,
             'periodshort' => $this->period($first, $last, $this->format_date()),
             'continue' => $continue,
+            'calendarurl' => page::trails_offered() ? $this->calendar_url($first, $last)->out(false) : null,
         ];
     }
 

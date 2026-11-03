@@ -41,6 +41,8 @@
     are images, never a style attribute. For a learner enrolled in the trail each card carries its
     state (done, current, late, locked, upcoming: a class and data-state from that fixed vocabulary),
     the hero counts the courses done, and the card's button continues at the next step's activity.
+    An account's card also leads to the calendar's Trilhas view with this trail kept
+    (trailcalendarurl, landing_page::calendar_url()).
 
     The hero image's url is printed into a style attribute, a CSS context the
     double stash does not protect, because a browser decodes the attribute
@@ -157,6 +159,7 @@
             "continue": {"url": "https://example.com/mod/subcourse/view.php?id=7", "label": "Continue: Public Budgeting"}
         },
         "trailcontinue": {"url": "https://example.com/mod/subcourse/view.php?id=7", "label": "Continue: Public Budgeting"},
+        "trailcalendarurl": "https://example.com/r.php/theme_dimensions/calendar?view=trail&month=2026-11&trail=5",
         "herocomp": {
             "total": "60 hours",
             "onlinelabel": "36h online",
@@ -621,6 +624,11 @@
                             <p class="dimensions-landing__note">{{note}}</p>
                         </div>
                     {{/manage}}
+                    {{#trailcalendarurl}}
+                        <a class="btn btn-outline-primary dimensions-landing__btn dimensions-landing__trailcalendar" href="{{trailcalendarurl}}" data-region="dimensions-landing-trailcalendar">
+                            <i class="fa fa-calendar" aria-hidden="true"></i> {{#str}} landing_trail_calendar, theme_dimensions {{/str}}
+                        </a>
+                    {{/trailcalendarurl}}
                 </div>
             </div>
         </aside>

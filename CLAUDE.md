@@ -1644,6 +1644,13 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   - A visitor's category hero links the public calendar (`category_hero::calendar_link()`).
   - In dark mode, core underlines every `#region-main` link at (1,6,1); one rule of `calendar.scss`, at (1,7,4), takes
     the underline off the calendar's own links.
+- **T3: the Trilhas view** (docs/trail/PLAN.md section 7). `view=trail` (`page::VIEW_TRAIL`) is an account's while
+  trails are available (`page::trails_offered()`), its `trail=` and `mine=1` navigation like the view; its answer is
+  `local\calendar\trails::answer()` through `theme_dimensions_get_calendar_trails`, embedded on a first paint, and the
+  range is asked with every key off. The client is `calendar/TrailView.tsx` (the grid of bars, the phone's agenda, the
+  filters' row) and `TrailPopover.tsx` over the pure `trails.ts`; `Calendar.tsx`'s one request path asks the trails
+  service for a trail span. The view's colours are its own `--dim-cal-trail*` tokens, never a key colour setting.
+  `display::many()` and `progress::many()` are the batched readers the view needs; `steps()` and `of()` call them.
 - Tests: `tests/local/calendar/{state,page,calendar_component_source,keycolours}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,

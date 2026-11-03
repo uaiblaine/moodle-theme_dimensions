@@ -51,3 +51,15 @@ Feature: A trail's landing page draws its courses in order
     And I click on "Continue: Open Fundamentals" "link" in the "#dimensions-landing-card" "css_element"
     And I should see "Open Fundamentals"
     And I should not see "Courses of the trail"
+
+  @javascript
+  Scenario: A member opens the trail in the calendar's Trilhas view
+    When I am on the "TRAIL" "theme_dimensions > Enrolment landing page" page logged in as "student1"
+    And I click on "View in the calendar" "link" in the "#dimensions-landing-card" "css_element"
+    Then "[data-action='dim-cal-view-trail'][aria-pressed='true']" "css_element" should exist
+    And I should see "Trail of Management" in the "[data-region='dim-cal-trails']" "css_element"
+    And I should see "Open Fundamentals" in the "[data-region='dim-cal-trails']" "css_element"
+    And "[data-region='dim-cal-trailfilters']" "css_element" should be visible
+    And "[data-action='dim-cal-types']" "css_element" should not be visible
+    And I click on "[data-region='dim-cal-trailstep'][data-cmid]" "css_element"
+    And I should see "Course 1 of 2 · Trail of Management" in the "[data-region='dim-cal-trailpopover']" "css_element"

@@ -18,6 +18,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   no longer underlined by core's link rule (the description's prose links still are), and the popover names a course
   once: an item with no location says no "Where". The public event courses already followed the course rule (a public
   course in an unlisted category asks for a login): pinned, unchanged.
+- **The calendar's Trilhas view, stage T3** (2026100578), `docs/trail/PLAN.md` section 7. A fourth view, "Trails"
+  ("Trilhas"), beside Month, Week and Day, for an account while mod_subcourse is enabled: each trail the showcase would
+  list to the account whose period meets the month, its steps under it (section 6's account rule) as bars from start to
+  end, a milestone on an expected completion date, a bar that runs on continued in a "next month" column, today marked
+  down the rows; a learner's bars carry their states and the trail counts what is done. "Trail" keeps one trail, "Only
+  mine" the account's own, the category picker narrows the trail course; the event types and their colours stay out of
+  the view. A step opens a popover (its category, "Course 3 of 5 · trail", its dates and where they come from, its state,
+  core's availability text when locked, "Open course" and "View trail"); on a phone the view is an agenda with a "Today"
+  line. One new service, `theme_dimensions_get_calendar_trails`, whose statements do not grow with the trails. The
+  landing page's card gains "View in the calendar" for an account, on the month the trail is in.
 - **A trail's next course that has not begun says when it starts** (2026100577), `docs/trail/PLAN.md` section 3. A
   learner's current step whose course starts later reads "Starts on <date>" in place of "In progress", and its line
   counts no days left until it begins; "Continue" still leads to it. The owner's call of 2026-11-03.

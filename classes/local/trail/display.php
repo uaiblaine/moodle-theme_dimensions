@@ -78,24 +78,42 @@ final class display {
      *   reads; null for a ghost.
      */
     public static function steps(trail $trail): array {
-        $modinfo = get_fast_modinfo($trail->courseid);
         // Each activity's availability and visibility read its context: the course's contexts in one statement.
         context_helper::preload_course($trail->courseid);
+        return self::many([$trail->courseid => $trail])[$trail->courseid];
+    }
+
+    /**
+     * The steps this reader sees of several trails, with the same statements as one: the calendar's Trilhas view.
+     *
+     * The decision is {@see steps()}'s, step by step; the referenced courses of every trail are read and judged in one
+     * batch. trails_test measures that the steps' availability adds no statement per trail.
+     *
+     * @param trail[] $trails The trails, keyed by trail course id.
+     * @return array[] Map of trail course id => the list {@see steps()} answers, for every trail given.
+     */
+    public static function many(array $trails): array {
         $shown = [];
-        foreach ($trail->steps as $step) {
-            $cm = $modinfo->get_cm($step->cmid);
-            if ($cm->uservisible || $cm->available || !empty($cm->availableinfo)) {
-                $shown[] = $step;
+        $refids = [];
+        foreach ($trails as $courseid => $trail) {
+            $modinfo = get_fast_modinfo($trail->courseid);
+            $shown[$courseid] = [];
+            foreach ($trail->steps as $step) {
+                $cm = $modinfo->get_cm($step->cmid);
+                if ($cm->uservisible || $cm->available || !empty($cm->availableinfo)) {
+                    $shown[$courseid][] = $step;
+                    $refids[] = $step->refcourseid;
+                }
             }
         }
-        if (!$shown) {
-            return [];
+        $answer = array_fill_keys(array_keys($trails), []);
+        if (!$refids) {
+            return $answer;
         }
 
-        $rows = self::rows(array_map(static fn(step $step): int => $step->refcourseid, $shown));
-        $visitor = self::visitor();
+        $rows = self::rows($refids);
         $ghosts = [];
-        if ($visitor) {
+        if (self::visitor()) {
             $full = array_flip(publicaccess::are_public(array_keys($rows)));
             $ghosts = self::catalogued(array_diff_key($rows, $full));
         } else {
@@ -103,16 +121,17 @@ final class display {
             $full = array_flip(array_map('intval', array_keys($admitted)));
         }
 
-        $steps = [];
-        foreach ($shown as $step) {
-            $refid = $step->refcourseid;
-            if (isset($full[$refid])) {
-                $steps[] = ['step' => $step, 'kind' => self::FULL, 'row' => $rows[$refid]];
-            } else if (isset($ghosts[$refid])) {
-                $steps[] = ['step' => $step, 'kind' => self::GHOST, 'row' => null];
+        foreach ($shown as $courseid => $steps) {
+            foreach ($steps as $step) {
+                $refid = $step->refcourseid;
+                if (isset($full[$refid])) {
+                    $answer[$courseid][] = ['step' => $step, 'kind' => self::FULL, 'row' => $rows[$refid]];
+                } else if (isset($ghosts[$refid])) {
+                    $answer[$courseid][] = ['step' => $step, 'kind' => self::GHOST, 'row' => null];
+                }
             }
         }
-        return $steps;
+        return $answer;
     }
 
     /**

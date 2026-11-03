@@ -1,7 +1,7 @@
 # The Trail model, its landing page and the calendar's Trilhas view: plan (2026-11-02)
 
-Status: **approved; T0 (#108) and T1 (#109) merged, T2 (progress) built.** T3 (the calendar's Trilhas view) and T4
-(related contents) are to come. The mockups are on the calendar design canvas:
+Status: **approved; T0 (#108), T1 (#109), T2 (#111) and T2b (#113) merged, T3 (the calendar's Trilhas view) built.**
+T4 (related contents) is to come. The mockups are on the calendar design canvas:
 
 - page "Trilha (landing)": desktop (an account, not enrolled, paid enrolment), phone (an enrolled learner on
   17 November), and a visitor's view;
@@ -119,7 +119,7 @@ existing guard. Same template and stylesheet, three additions:
   guest, fallback). Enrolled: "Você já está inscrito nesta trilha" + "Continuar: <step>" (T2). Then, for an account
   only (the calendar asks for a login), **"Ver no calendário"**:
   `/r.php/theme_dimensions/calendar?view=trail&trail=<courseid>` (the page reads both through its state vocabulary).
-  The button comes with T3: before the Trilhas view exists it would open a month that says nothing of the trail.
+  The button came with T3, on the month the trail is in (section 7).
 
 Statements the trail adds to today's page:
 
@@ -168,26 +168,43 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
 - The step card's link: the referenced course's page address (`links::page()`), which is its landing page when it
   has a model and core's enrolment page otherwise.
 
-## 7. The calendar's Trilhas view (C6)
+## 7. The calendar's Trilhas view (C6, built in T3)
 
-- **The switch**: the view control gains "Trilhas" (`calendar_viewtrail`), `view=trail` in the page's vocabulary,
-  kept with the other preferences.
-- **Rows**: the trails the viewer may discover by the parent course's rule (the showcase gate for an account, never
-  an unlisted one), whose window meets the month shown, and under each its steps by section 6's account rule.
-  Previous and next move by month, as in Mês.
-- **Bars**: from each step's start to its end, a milestone at an expected date. For an enrolled viewer the bar
-  carries the state of section 3 (done, current, upcoming, locked, late); for anyone else the trail key's colour,
-  schedule only. What passes the month's end continues in a "dez →" column.
-- **Filters**: "Trilha" (one trail, preset by the landing page's button; "Todas as trilhas" otherwise), "Só as
-  minhas" (enrolled trails), and the category tree, applied to the trail course. "Tipos de evento" is hidden in this
-  mode. "Limpar filtros" as in the other modes.
-- **Popover** of a step: category, name, "Curso 3 de 5 · <trail>", the dates and where they come from (expected date,
-  or the course's dates), the state, core's availability text when locked, "Ver trilha" and "Abrir curso".
-- **Phone**: the trail as an agenda, a "Hoje" line between the past and the next steps.
+- **The switch**: the view control gains "Trilhas" (`calendar_viewtrail`), `view=trail` in the page's vocabulary
+  (`page::VIEW_TRAIL`), offered to a real account while trails are available (`page::trails_offered()`); for the guest,
+  a visitor or a site without mod_subcourse the address reads as the month. Like the week and the day it is
+  navigation, never remembered; so are its trail (`trail=<courseid>`) and "Só as minhas" (`mine=1`).
+- **Rows**: `local\calendar\trails::answer()`. The trail courses (one statement, capped at `trails::CAP`, inside the
+  category narrowing) the showcase gate admits (`population::admitted()` over the root scope: an unlisted trail only
+  to an account enrolled in it or with a way to enrol), their steps by section 6's account rule
+  (`display::many()`, in full or not at all), and the trails whose period meets the month: the landing page's period,
+  first start to last end over the steps drawn, left open by a step that starts and never ends. A trail with no date
+  is no row. Previous and next move by month. The choice "Trilha" lists every admitted trail with a step drawn,
+  whatever its period.
+- **Bars**: from each step's start to its end in the viewer's timezone (`calendar/trails.ts` `barOf()`), placed by
+  grid columns with no layout read; a milestone at an expected date inside the month; a step that began earlier is
+  marked at the left edge, one that runs past the month continues in the "dez →" column, an open one fades out. For a
+  learner of the trail (`classifier::enrolments()` active) the bar carries the state of section 3 (`progress::many()`)
+  and the next step is drawn heavier; for anyone else the trail colour, schedule only. The colours are the view's own
+  tokens (`--dim-cal-trail*`), copies of the measured default pairs, never an administrator's key colour.
+- **Filters**: "Trilha" (one trail, preset by the landing page's button; "Todas as trilhas" otherwise), "Só as minhas"
+  (enrolled trails), and the category tree, applied to the trail course. "Tipos de evento", "Mais filtros" and "New
+  event" are not drawn in this mode. "Limpar filtros" puts the three back.
+- **Popover** of a step (`TrailPopover.tsx`): category, name, "Curso 3 de 5 · <trail>", the dates and where they come
+  from (expected date, or the course's dates), the referenced course's name when the activity's differs, the state
+  ("Começa em" for a current step not begun), core's availability text when locked, "Abrir curso" and "Ver trilha".
+- **Phone**: the trail as an agenda, a "Hoje" line before the first step not done whose end has not passed
+  (`todayIndex()`). The phone decision is the frame's width, from the view's one ResizeObserver, as the grids'.
+- **No JavaScript**: the server's layer lists the month's trails and their steps with their dates and states; its
+  toolbar's links keep the view and the trail.
 - Core's `expectcompletionon` events of these activities stay in Mês, Semana and Dia as today: Trilhas is its own
   mode, so nothing is drawn twice.
-- **Cost**: `trail::many()` reads each trail's modinfo (cached), one `{subcourse}` statement for all of them, the
-  visibility batch and two progress statements. Pinned by a read-count test at 2 and 6 trails.
+- **Cost**: the candidates, the gate, `trail::many()`'s one `{subcourse}` statement, `display::many()`'s one statement
+  for the steps' courses with their gate, the enrolments and at most one
+  `{course_completions}` statement; each trail's modinfo and completion data are core's caches. Pinned by
+  `trails_test::test_six_trails_cost_what_two_do` (2 and 6 trails, a learner and an account enrolled in none).
+- **The landing page's "Ver no calendário"** (`landing_page::calendar_url()`), an account's only: the Trilhas view with
+  the trail kept, on today's month while the trail runs, its first month before it starts, its last once it has ended.
 
 ## 8. The dependency on mod_subcourse (Q9)
 

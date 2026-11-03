@@ -40,7 +40,8 @@ namespace theme_dimensions\local\trail;
  *
  * Statements: core's completion data for the whole trail course in one read (the 'core/completion' cache, which the
  * course page fills too; filling it asks each activity's own completion rules, mod_subcourse's a row per activity),
- * and one on {course_completions} only when a drawn step's activity tracks no completion.
+ * and one on {course_completions} only when a drawn step's activity tracks no completion, whatever the number of trails
+ * asked together ({@see many()}).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -74,17 +75,61 @@ final class progress {
      *   done].
      */
     public static function of(\stdClass $course, array $steps, int $now): array {
-        $modinfo = get_fast_modinfo($course);
-        $completion = new \completion_info($course);
+        return self::many([(int) $course->id => [$course, $steps]], $now)[(int) $course->id];
+    }
 
+    /**
+     * The progress of several trails, with one statement on {course_completions} for all of them: the calendar's view.
+     *
+     * Each trail's answer is {@see of()}'s; the referenced courses whose activity tracks no completion are read for
+     * every trail at once.
+     *
+     * @param array $trails Map of trail course id => [the trail course, its steps drawn in full], as of() takes them.
+     * @param int $now The moment "passed" is measured from.
+     * @return array[] Map of trail course id => the answer of {@see of()}.
+     */
+    public static function many(array $trails, int $now): array {
+        $readers = [];
         $untracked = [];
-        foreach ($steps as $step) {
-            if ($completion->is_enabled($modinfo->get_cm($step->cmid)) == COMPLETION_TRACKING_NONE) {
-                $untracked[] = $step->refcourseid;
+        foreach ($trails as $courseid => [$course, $steps]) {
+            $modinfo = get_fast_modinfo($course);
+            $completion = new \completion_info($course);
+            $readers[$courseid] = [$modinfo, $completion];
+            foreach ($steps as $step) {
+                if ($completion->is_enabled($modinfo->get_cm($step->cmid)) == COMPLETION_TRACKING_NONE) {
+                    $untracked[] = $step->refcourseid;
+                }
             }
         }
         $coursedone = self::courses_completed($untracked);
 
+        $answers = [];
+        foreach ($trails as $courseid => [$course, $steps]) {
+            [$modinfo, $completion] = $readers[$courseid];
+            $answers[$courseid] = self::states($course, $steps, $now, $modinfo, $completion, $coursedone);
+        }
+        return $answers;
+    }
+
+    /**
+     * One trail's states, from its readers and the completed referenced courses.
+     *
+     * @param \stdClass $course The trail course.
+     * @param step[] $steps The steps drawn in full, in the trail's order.
+     * @param int $now The moment "passed" is measured from.
+     * @param \core_course\modinfo $modinfo The trail course's modinfo for the reader.
+     * @param \completion_info $completion The trail course's completion.
+     * @param int[] $coursedone Map of referenced course id => time the reader completed it.
+     * @return array The answer of {@see of()}.
+     */
+    private static function states(
+        \stdClass $course,
+        array $steps,
+        int $now,
+        \core_course\modinfo $modinfo,
+        \completion_info $completion,
+        array $coursedone
+    ): array {
         $states = [];
         $next = null;
         $done = 0;

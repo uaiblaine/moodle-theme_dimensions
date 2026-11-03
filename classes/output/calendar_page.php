@@ -35,6 +35,7 @@ use theme_dimensions\local\calendar\state;
 use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\calendar\window;
 use theme_dimensions\local\landingfields;
+use theme_dimensions\local\trail\progress;
 use theme_dimensions\local\trail\trail;
 
 /**
@@ -146,16 +147,36 @@ class calendar_page implements renderable, templatable {
         'calendar_timed',
         'calendar_title',
         'calendar_today',
+        'calendar_trail',
+        'calendar_trailall',
+        'calendar_trailcourse',
+        'calendar_trailcoursedates',
+        'calendar_trailexpected',
+        'calendar_trailfrom',
+        'calendar_trailmine',
+        'calendar_trailnext',
+        'calendar_trailpage',
+        'calendar_trailposition',
+        'calendar_trailprogress',
+        'calendar_trailsempty',
+        'calendar_trailstruncated',
         'calendar_truncated',
         'calendar_truncatedpublic',
         'calendar_until',
         'calendar_view',
         'calendar_viewday',
         'calendar_viewmonth',
+        'calendar_viewtrail',
         'calendar_viewweek',
         'calendar_weekempty',
         'calendar_when',
         'calendar_withsub',
+        'landing_trail_startson',
+        'landing_trail_state_current',
+        'landing_trail_state_done',
+        'landing_trail_state_late',
+        'landing_trail_state_locked',
+        'landing_trail_state_upcoming',
     ];
 
     /** @var string The month, YYYY-MM. */
@@ -199,6 +220,15 @@ class calendar_page implements renderable, templatable {
     /** @var string The week's first day, YYYY-MM-DD, in the week view; '' in the month view. */
     private string $week;
 
+    /** @var array|null The Trilhas view's answer ({@see \theme_dimensions\local\calendar\trails::answer()}), or null. */
+    private ?array $trails;
+
+    /** @var int The one trail the Trilhas view keeps, 0 for every trail. */
+    private int $trailid;
+
+    /** @var bool Whether the Trilhas view keeps only the viewer's own trails. */
+    private bool $mine;
+
     /**
      * Hold what the page draws; {@see page::handle()} computes every part.
      *
@@ -214,6 +244,9 @@ class calendar_page implements renderable, templatable {
      * @param bool $visitor Whether the page is the public calendar, drawn for a visitor.
      * @param string $view The view, {@see page::VIEW_MONTH}, {@see page::VIEW_WEEK} or {@see page::VIEW_DAY}.
      * @param string $week The week's first day in the week view ({@see page::week_from_request()}); '' in the month's.
+     * @param array|null $trails The Trilhas view's answer in that view, else null.
+     * @param int $trailid The one trail the Trilhas view keeps, 0 for every trail.
+     * @param bool $mine Whether the Trilhas view keeps only the viewer's own trails.
      */
     public function __construct(
         string $month,
@@ -227,7 +260,10 @@ class calendar_page implements renderable, templatable {
         string $day = '',
         bool $visitor = false,
         string $view = page::VIEW_MONTH,
-        string $week = ''
+        string $week = '',
+        ?array $trails = null,
+        int $trailid = 0,
+        bool $mine = false
     ) {
         $this->month = $month;
         $this->today = $today;
@@ -244,6 +280,12 @@ class calendar_page implements renderable, templatable {
         if ($view === page::VIEW_DAY && $day !== '') {
             $this->view = page::VIEW_DAY;
         }
+        $this->trails = !$visitor && $view === page::VIEW_TRAIL ? $trails : null;
+        if ($this->trails !== null) {
+            $this->view = page::VIEW_TRAIL;
+        }
+        $this->trailid = $trailid;
+        $this->mine = $mine;
     }
 
     /**
@@ -380,6 +422,14 @@ class calendar_page implements renderable, templatable {
                 'page' => page::url()->out(false),
                 'home' => (new \core\url('/'))->out(false),
             ],
+            // The Trilhas view (docs/trail/PLAN.md section 7): offered while trails are available, its answer in that
+            // view only; the trail and "Só as minhas" are navigation, like the view.
+            'trails' => [
+                'offered' => page::trails_offered(),
+                'answer' => $this->trails,
+                'trail' => $this->trailid,
+                'mine' => $this->mine,
+            ],
             // Core's own answers ({@see editing}): whether core's calendar shows this viewer "New event", and the
             // context and the course core's site calendar hands its event form.
             'edits' => [
@@ -463,12 +513,29 @@ class calendar_page implements renderable, templatable {
         $todayweek = page::week_start($this->today, $this->firstday);
         $weekof = page::week_start(page::opening_day($this->month), $this->firstday);
         $weekparams = static fn(string $week): array => [page::PARAM_VIEW => page::VIEW_WEEK, page::PARAM_WEEK => $week];
+        $trailview = $this->view === page::VIEW_TRAIL;
+        $trailparams = fn(string $month): array => page::trail_params($month, $this->trailid, $this->mine);
         $parts = [
             'weekview' => $this->week !== '',
             'week' => $this->week,
+            'monthview' => $this->week === '' && !$trailview,
+            'trailview' => $trailview,
+            'trailsoffered' => !$this->visitor && page::trails_offered(),
             'monthurl' => page::url([state::PARAM_MONTH => $this->month] + $query)->out(false),
             'weekurl' => page::url($weekparams($this->week !== '' ? $this->week : $weekof) + $query)->out(false),
+            'trailurl' => page::url(page::trail_params($this->month) + $query)->out(false),
         ];
+        if ($trailview) {
+            return $parts + [
+                'caption' => userdate(
+                    \DateTimeImmutable::createFromFormat('!Y-m-d', $this->month . '-01', $timezone)->getTimestamp(),
+                    get_string('strftimemonthyear', 'langconfig')
+                ),
+                'todayurl' => page::url($trailparams(substr($this->today, 0, 7)) + $query)->out(false),
+                'prevurl' => page::url($trailparams(self::month_at($this->month, -1)) + $query)->out(false),
+                'nexturl' => page::url($trailparams(self::month_at($this->month, 1)) + $query)->out(false),
+            ];
+        }
         if ($this->week === '') {
             return $parts + [
                 'caption' => userdate(
@@ -494,6 +561,75 @@ class calendar_page implements renderable, templatable {
             'prevurl' => page::url($weekparams($shifted(-7)) + $query)->out(false),
             'nexturl' => page::url($weekparams($shifted(7)) + $query)->out(false),
         ];
+    }
+
+    /**
+     * The Trilhas view's trails as a list, for the server's layer: each trail with its steps and their dates.
+     *
+     * @return array[] ['name', 'url', 'progress' (or null), 'steps' => [['name', 'url', 'when', 'state' (or null)]]].
+     */
+    private function trail_list(): array {
+        $format = get_string('strftimedateshort', 'langconfig');
+        $list = [];
+        foreach ($this->trails['trails'] ?? [] as $trail) {
+            $steps = [];
+            foreach ($trail['steps'] as $step) {
+                $steps[] = [
+                    'name' => $step['name'],
+                    'url' => $step['url'],
+                    'when' => self::step_when($step['start'], $step['end'], $format),
+                    'state' => self::state_label($step['state']),
+                ];
+            }
+            $list[] = [
+                'name' => $trail['name'],
+                'url' => $trail['url'],
+                'progress' => $trail['enrolled'] ? get_string('calendar_trailprogress', 'theme_dimensions', (object) [
+                    'done' => $trail['done'],
+                    'count' => count($trail['steps']),
+                ]) : null,
+                'steps' => $steps,
+            ];
+        }
+        return $list;
+    }
+
+    /**
+     * A step's state as its tag reads, or null for a reader who is not a learner of the trail.
+     *
+     * @param string $state One of the progress states, or ''.
+     * @return string|null
+     */
+    private static function state_label(string $state): ?string {
+        return match ($state) {
+            progress::DONE => get_string('landing_trail_state_done', 'theme_dimensions'),
+            progress::CURRENT => get_string('landing_trail_state_current', 'theme_dimensions'),
+            progress::LATE => get_string('landing_trail_state_late', 'theme_dimensions'),
+            progress::LOCKED => get_string('landing_trail_state_locked', 'theme_dimensions'),
+            progress::UPCOMING => get_string('landing_trail_state_upcoming', 'theme_dimensions'),
+            default => null,
+        };
+    }
+
+    /**
+     * A step's dates in one line: its span, "From" an open start, "Until" an end alone, or nothing.
+     *
+     * @param int $start When the step opens, 0 for unset.
+     * @param int $end When it closes, 0 for an open window.
+     * @param string $format The strftime format of a day.
+     * @return string
+     */
+    public static function step_when(int $start, int $end, string $format): string {
+        if ($start > 0 && $end > 0) {
+            return get_string('calendar_span', 'theme_dimensions', (object) [
+                'from' => userdate($start, $format),
+                'to' => userdate($end, $format),
+            ]);
+        }
+        if ($start > 0) {
+            return get_string('calendar_trailfrom', 'theme_dimensions', userdate($start, $format));
+        }
+        return $end > 0 ? get_string('calendar_until', 'theme_dimensions', userdate($end, $format)) : '';
     }
 
     /**
@@ -542,6 +678,7 @@ class calendar_page implements renderable, templatable {
         $filtercount = count($this->state->models) + count($this->state->modalities)
             + ($this->state->city !== '' ? 1 : 0) + ($this->state->actiononly ? 1 : 0);
         $agenda = $this->agenda();
+        $traillist = $this->trail_list();
 
         return $this->toolbar($query) + [
             'month' => $this->month,
@@ -565,6 +702,9 @@ class calendar_page implements renderable, templatable {
             'truncated' => !empty($this->answer['truncated']),
             'agenda' => $agenda,
             'agendaempty' => empty($agenda),
+            'trails' => $traillist,
+            'trailsempty' => empty($traillist),
+            'trailstruncated' => !empty($this->trails['truncated']),
             'component' => self::COMPONENT,
             'props' => json_encode($props, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             'exporturl' => editing::export_url(),
