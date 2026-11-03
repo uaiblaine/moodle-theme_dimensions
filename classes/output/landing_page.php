@@ -153,6 +153,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'facts' => $facts,
             'hasfacts' => !empty($facts),
             'sections' => $sections,
+            'hassections' => !empty($sections),
             'isheld' => $isheld,
             'isheldonly' => $isheld && $state !== resolution::STATE_ENROLLED,
             'heldon' => $isheld ? userdate((int) $this->course->enddate, $this->format_date()) : null,
@@ -183,6 +184,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'methods' => $methods,
             'hasmethods' => !empty($methods),
             'offers' => $state === resolution::STATE_VISITOR ? $this->visitor_offers() : [],
+            'manage' => $this->manage($state),
         ];
         $exported->hasoffers = !empty($exported->offers);
         /* A visitor no login would take anywhere, on a course without guest access, has nothing to press:
@@ -193,6 +195,41 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
 
         $this->add_bar($exported);
         return $exported;
+    }
+
+    /**
+     * The way into the course for somebody who manages it without an enrolment, or null.
+     *
+     * An administrator, a manager or an editor who holds no enrolment reads the card as anybody does and had no way
+     * in from it. Offered to a reader who views the course without an enrolment (is_viewing(), core's
+     * moodle/course:view) or may edit it (moodle/course:update), and only where core lets them in
+     * (can_access_course()), so an editor locked out of the course gets no button that lands on the enrolment page.
+     * An enrolled reader already has the card's own way in. A visitor and the guest account hold neither capability.
+     *
+     * @param string|null $state The state the card is drawn in (null for a held event).
+     * @return array|null The address, the label and the note under it, or null.
+     */
+    private function manage(?string $state): ?array {
+        if ($state === resolution::STATE_ENROLLED) {
+            return null;
+        }
+        $context = \core\context\course::instance($this->course->id);
+        if (!is_viewing($context) && !has_capability('moodle/course:update', $context)) {
+            return null;
+        }
+        if (!can_access_course($this->course)) {
+            return null;
+        }
+        $event = $this->is_event();
+        return [
+            'url' => (new \moodle_url('/course/view.php', ['id' => $this->course->id]))->out(false),
+            'label' => $event
+                ? get_string('landing_manage_event', self::COMPONENT)
+                : get_string('landing_manage_course', self::COMPONENT),
+            'note' => $event
+                ? get_string('landing_managenote_event', self::COMPONENT)
+                : get_string('landing_managenote_course', self::COMPONENT),
+        ];
     }
 
     /**

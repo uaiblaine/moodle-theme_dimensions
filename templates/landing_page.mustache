@@ -21,8 +21,9 @@
     beside the title, the grid of up to four institutional badges (below the
     text on narrow viewports); a reading column opening with the presentation
     video's media card when there is one, then the summary and the textarea
-    sections; and the sticky enrolment card holding the fact rows and the
-    enrolment area for the resolved state.
+    sections, the latter in one panel; and the sticky enrolment card holding the
+    fact rows, the enrolment area for the resolved state and, for somebody who
+    manages the course without an enrolment, a way into it (landing_page::manage()).
 
     The hero's emphasis block follows the scenario: the big date of an online
     event, the place of an in-person offering, the double ticket of a hybrid
@@ -88,8 +89,14 @@
         ],
         "hasfacts": true,
         "sections": [
-            {"title": "Target audience", "html": "<p>State public safety officers.</p>"}
+            {"title": "Target audience", "html": "<ul><li>State public safety officers.</li></ul>"}
         ],
+        "hassections": true,
+        "manage": {
+            "url": "https://example.com/course/view.php?id=42",
+            "label": "Access the course",
+            "note": "Shown only to those who manage this course."
+        },
         "herodate": {
             "datebig": "12 Mar 2027",
             "sub": "7:00–9:00 pm · Live stream",
@@ -315,16 +322,20 @@
                 </div>
             {{/video}}
             {{#summaryhtml}}
-                <section class="dimensions-landing__section">
+                <section class="dimensions-landing__section dimensions-landing__section--summary">
                     {{{summaryhtml}}}
                 </section>
             {{/summaryhtml}}
-            {{#sections}}
-                <section class="dimensions-landing__section">
-                    <h2 class="dimensions-landing__sectiontitle">{{title}}</h2>
-                    {{{html}}}
-                </section>
-            {{/sections}}
+            {{#hassections}}
+                <div class="dimensions-landing__panel" data-region="dimensions-landing-panel">
+                    {{#sections}}
+                        <section class="dimensions-landing__section">
+                            <h2 class="dimensions-landing__sectiontitle">{{title}}</h2>
+                            {{{html}}}
+                        </section>
+                    {{/sections}}
+                </div>
+            {{/hassections}}
         </div>
         <aside class="dimensions-landing__aside">
             <div class="dimensions-landing__card" id="dimensions-landing-card">
@@ -489,6 +500,12 @@
                             {{/isfallback}}
                         </div>
                     {{/methods}}
+                    {{#manage}}
+                        <div class="dimensions-landing__manage" data-region="dimensions-landing-manage">
+                            <a class="btn btn-outline-primary dimensions-landing__btn" href="{{url}}">{{label}}</a>
+                            <p class="dimensions-landing__note">{{note}}</p>
+                        </div>
+                    {{/manage}}
                 </div>
             </div>
         </aside>

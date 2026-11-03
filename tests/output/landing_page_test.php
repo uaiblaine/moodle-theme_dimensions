@@ -1528,4 +1528,131 @@ final class landing_page_test extends \advanced_testcase {
             $this->assertStringNotContainsString('dimensions-landing__trackname', $html, "Control: {$case}.");
         }
     }
+
+    /**
+     * Somebody who manages the course without an enrolment gets a way into it under the enrolment, worded per model.
+     */
+    public function test_a_manager_without_an_enrolment_gets_a_way_into_the_course(): void {
+        $this->resetAfterTest();
+        $this->prepare_fields();
+        $component = 'theme_dimensions';
+        $course = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_ONLINE);
+        $event = $this->create_offering(landingfields::MODEL_EVENT, landingfields::MODALITY_ONLINE);
+        $this->setAdminUser();
+
+        [$context, $renderer] = $this->export_page($course, new resolution(resolution::STATE_OPEN));
+        $this->assertSame(
+            (new \moodle_url('/course/view.php', ['id' => $course->id]))->out(false),
+            $context->manage['url']
+        );
+        $this->assertSame(get_string('landing_manage_course', $component), $context->manage['label']);
+        $this->assertSame(get_string('landing_managenote_course', $component), $context->manage['note']);
+        $html = $renderer->render_from_template('theme_dimensions/landing_page', $context);
+        $this->assertStringContainsString('data-region="dimensions-landing-manage"', $html);
+        $this->assertStringContainsString(get_string('landing_manage_course', $component), $html);
+
+        [$context] = $this->export_page($event, new resolution(resolution::STATE_CLOSED));
+        $this->assertSame(get_string('landing_manage_event', $component), $context->manage['label']);
+        $this->assertSame(get_string('landing_managenote_event', $component), $context->manage['note']);
+    }
+
+    /**
+     * An enrolled editor keeps the card's own way in and gets no second one; the same editor on an open card does.
+     */
+    public function test_an_enrolled_editor_gets_only_the_cards_own_way_in(): void {
+        $this->resetAfterTest();
+        $this->prepare_fields();
+        $course = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_ONLINE);
+        $teacher = self::getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+
+        [$context, $renderer] = $this->export_page($course, new resolution(resolution::STATE_ENROLLED));
+        $this->assertNull($context->manage);
+        $html = $renderer->render_from_template('theme_dimensions/landing_page', $context);
+        $this->assertStringNotContainsString('dimensions-landing-manage', $html);
+
+        [$control] = $this->export_page($course, new resolution(resolution::STATE_OPEN));
+        $this->assertNotNull($control->manage, 'The control: the editor may enter and edit the course.');
+    }
+
+    /**
+     * A reader who may enter the course but manages nothing in it gets no way in from the card.
+     */
+    public function test_a_reader_who_manages_nothing_gets_no_way_in(): void {
+        $this->resetAfterTest();
+        $this->prepare_fields();
+        $course = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_ONLINE);
+        $student = self::getDataGenerator()->create_and_enrol($course, 'student');
+        $this->setUser($student);
+        $this->assertTrue(can_access_course($course), 'The precondition: core lets the reader in.');
+
+        [$context] = $this->export_page($course, new resolution(resolution::STATE_OPEN));
+        $this->assertNull($context->manage);
+    }
+
+    /**
+     * An editor core keeps out of the course gets no button that would land on the enrolment page.
+     *
+     * The editing teacher role on the category gives moodle/course:update and no way in; granting
+     * moodle/course:view on the category is the control, which core does let in.
+     */
+    public function test_an_editor_core_keeps_out_gets_no_way_in(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->prepare_fields();
+        $course = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_ONLINE);
+        $editor = self::getDataGenerator()->create_user();
+        $categorycontext = \core\context\coursecat::instance((int) $course->category);
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher'], MUST_EXIST);
+        role_assign($roleid, $editor->id, $categorycontext->id);
+        $this->setUser($editor);
+        $this->assertTrue(has_capability('moodle/course:update', \core\context\course::instance($course->id)));
+        $this->assertFalse(can_access_course($course));
+
+        [$context] = $this->export_page($course, new resolution(resolution::STATE_OPEN));
+        $this->assertNull($context->manage);
+
+        assign_capability('moodle/course:view', CAP_ALLOW, $roleid, $categorycontext->id, true);
+        accesslib_clear_all_caches_for_unit_testing();
+        [$control] = $this->export_page($course, new resolution(resolution::STATE_OPEN));
+        $this->assertNotNull($control->manage, 'The control: viewing without an enrolment lets the editor in.');
+    }
+
+    /**
+     * The sections after the summary share one panel, and the summary stands outside it.
+     */
+    public function test_the_sections_share_one_panel_after_the_summary(): void {
+        $this->resetAfterTest();
+        $this->prepare_fields();
+        $course = $this->create_offering(
+            landingfields::MODEL_COURSE,
+            landingfields::MODALITY_ONLINE,
+            ['summary' => '<p>Resumo do curso.</p>', 'summaryformat' => FORMAT_HTML],
+            [
+                'customfield_' . landingfields::SHORTNAME_AUDIENCE . '_editor' => [
+                    'text' => '<ul><li>Gestores</li></ul>',
+                    'format' => FORMAT_HTML,
+                ],
+                'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
+                    'text' => '<ul><li>Módulo 1</li></ul>',
+                    'format' => FORMAT_HTML,
+                ],
+            ]
+        );
+        [$context, $renderer] = $this->export_page($course, new resolution(resolution::STATE_CLOSED));
+        $this->assertTrue($context->hassections);
+        $html = $renderer->render_from_template('theme_dimensions/landing_page', $context);
+        $this->assertSame(1, substr_count($html, 'data-region="dimensions-landing-panel"'));
+        $panel = substr($html, strpos($html, 'data-region="dimensions-landing-panel"'));
+        $this->assertStringContainsString('Gestores', $panel);
+        $this->assertStringContainsString('Módulo 1', $panel);
+        $this->assertStringNotContainsString('Resumo do curso', $panel, 'The summary comes before the panel.');
+        $this->assertStringContainsString('dimensions-landing__section--summary', $html);
+
+        $bare = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_ONLINE);
+        [$control] = $this->export_page($bare, new resolution(resolution::STATE_CLOSED));
+        $this->assertFalse($control->hassections);
+        $html = $renderer->render_from_template('theme_dimensions/landing_page', $control);
+        $this->assertStringNotContainsString('dimensions-landing-panel', $html, 'No empty panel.');
+    }
 }

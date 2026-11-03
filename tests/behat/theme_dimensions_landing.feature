@@ -23,6 +23,23 @@ Feature: Course enrolment landing page
     And I should see "About the course."
     And I should see "Enrolments are unavailable at the moment"
 
+  Scenario: An administrator without an enrolment is offered a way into the course
+    Given the following "courses" exist:
+      | fullname       | shortname | customfield_dimensions_model |
+      | Managed Course | MC1       | 1                            |
+    When I am on the "MC1" "theme_dimensions > Enrolment landing page" page logged in as "admin"
+    Then I should see "Shown only to those who manage this course."
+    And I click on "Access the course" "link" in the "[data-region='dimensions-landing-manage']" "css_element"
+    And the url should match "/course/view\.php"
+
+  Scenario: A learner sees no way in meant for managers
+    Given the following "courses" exist:
+      | fullname       | shortname | customfield_dimensions_model |
+      | Managed Course | MC1       | 1                            |
+    When I am on the "MC1" "theme_dimensions > Enrolment landing page" page logged in as "student1"
+    Then I should see "Managed Course"
+    And "[data-region='dimensions-landing-manage']" "css_element" should not exist
+
   Scenario: The landing page carries no block drawer and no course index, even in edit mode
     Given the following "courses" exist:
       | fullname      | shortname | customfield_dimensions_model |

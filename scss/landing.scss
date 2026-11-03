@@ -22,34 +22,59 @@
 // The ground of the hero and of the guest entry's card: the brand colour as a gradient, with the
 // stops of {@see \theme_dimensions\local\category\branding::stops()} (a head 18% darker, the colour,
 // a tail 12% lighter). Boost Union compiles this sheet once per flavour with that flavour's
-// look_brandcolor as $primary, so every flavour gets its own ground, the anonymous visitor's
-// included. Both grounds carry white text, so a brand colour on whose lightest stop white reads
-// under branding::FLOOR (4.5:1) keeps the institutional navy; Boost's default blue is one of them.
-$dim-landing-from: shade-color($primary, 18%);
-$dim-landing-to: tint-color($primary, 12%);
-$dim-landing-branded: contrast-ratio($dim-landing-to, $white) >= 4.5;
+// look_brandcolor as $primary (Boost Union's brandcolor otherwise), so every flavour gets its own ground,
+// the anonymous visitor's included. Both grounds carry white text, so a brand colour on whose lightest stop
+// white reads under branding::FLOOR (4.5:1) is shaded in 4% steps until it does: Boost's default blue
+// moves one step, a light amber several, and the page stays in the brand's hue (never the design system's navy).
+$dim-landing-floor: 4.5;
 
-// The three stops, declared on each root that paints them.
+@function dim-landing-base($colour) {
+    $base: $colour;
+    @for $step from 1 through 25 {
+        @if contrast-ratio(tint-color($base, 12%), $white) < $dim-landing-floor {
+            $base: shade-color($colour, $step * 4%);
+        }
+    }
+    @return $base;
+}
+
+// The same colour as ink on a dark card: lifted towards white in 5% steps until it reads at the floor on the
+// raised surface core's colour mode paints a card with ($dark-surface-raised, $gray-800).
+@function dim-landing-dark-ink($colour) {
+    $ink: $colour;
+    @for $step from 1 through 20 {
+        @if contrast-ratio($ink, $gray-800) < $dim-landing-floor {
+            $ink: tint-color($colour, $step * 5%);
+        }
+    }
+    @return $ink;
+}
+
+$dim-landing-base: dim-landing-base($primary);
+$dim-landing-from: shade-color($dim-landing-base, 18%);
+$dim-landing-to: tint-color($dim-landing-base, 12%);
+
+// The three stops, the ink of the section titles and checks (the base, which reads at the floor on white as
+// white reads on it) and the panel's soft border, declared on each root that paints them.
 @mixin dim-landing-ground {
-    @if $dim-landing-branded {
-        --dim-landing-from: #{$dim-landing-from};
-        --dim-landing-mid: #{$primary};
-        --dim-landing-to: #{$dim-landing-to};
-    }
-    @else {
-        --dim-landing-from: var(--dim-ds-blue-800);
-        --dim-landing-mid: var(--dim-ds-blue-600);
-        --dim-landing-to: var(--dim-ds-blue-500);
-    }
+    --dim-landing-from: #{$dim-landing-from};
+    --dim-landing-mid: #{$dim-landing-base};
+    --dim-landing-to: #{$dim-landing-to};
+    --dim-landing-ink: #{$dim-landing-base};
+    --dim-landing-soft: #{tint-color($dim-landing-base, 78%)};
+    --dim-landing-on-ink: #{$white};
 }
 
 .theme_dimensions-landing {
     @include dim-landing-ground;
+    // The hero's inline padding, which the summary and the panel take too: every text of the page starts where the
+    // title does.
+    --dim-landing-inset: 1.75rem;
 
     .dimensions-landing__hero {
         position: relative;
         overflow: hidden;
-        padding: 2.5rem 1.75rem 3.25rem;
+        padding: 2.5rem var(--dim-landing-inset) 3.25rem;
         border-radius: var(--dim-ds-radius-xl);
         clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px));
         background: linear-gradient(135deg, var(--dim-landing-from), var(--dim-landing-mid) 55%, var(--dim-landing-to));
@@ -428,6 +453,68 @@ $dim-landing-branded: contrast-ratio($dim-landing-to, $white) >= 4.5;
         font-size: 1.25rem;
         font-weight: 700;
         letter-spacing: -0.01em;
+        color: var(--dim-landing-ink);
+    }
+
+    .dimensions-landing__section--summary {
+        padding-inline: var(--dim-landing-inset);
+    }
+
+    // The sections after the summary (audience, programme, certification) share one panel in the brand's soft
+    // border, padded by the inset.
+    .dimensions-landing__panel {
+        margin-bottom: 1.75rem;
+        padding: 1.75rem var(--dim-landing-inset);
+        border: 1px solid var(--dim-landing-soft);
+        border-radius: var(--dim-ds-radius-lg);
+        background: var(--dim-ds-surface-card);
+
+        .dimensions-landing__section:last-child {
+            margin-bottom: 0;
+        }
+
+        // The editor's bullet lists read as a checklist: a check in the brand's ink before each item, drawn with
+        // borders (no image). Numbered lists keep their numbers.
+        ul {
+            padding-inline-start: 0;
+            list-style: none;
+        }
+
+        ul > li {
+            position: relative;
+            margin-bottom: 0.5rem;
+            padding-inline-start: 2rem;
+        }
+
+        ul > li::before {
+            content: "";
+            position: absolute;
+            top: 0.2em;
+            inset-inline-start: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 50%;
+            background: var(--dim-landing-ink);
+        }
+
+        ul > li::after {
+            content: "";
+            position: absolute;
+            top: calc(0.2em + 0.25rem);
+            inset-inline-start: 0.45rem;
+            width: 0.35rem;
+            height: 0.6rem;
+            border: solid var(--dim-landing-on-ink);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+    }
+
+    // The way in for somebody who manages the course without an enrolment: under the enrolment, set apart from it.
+    .dimensions-landing__manage {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px dashed var(--dim-ds-border-default);
     }
 
     .dimensions-landing__aside {
@@ -623,8 +710,10 @@ $dim-landing-branded: contrast-ratio($dim-landing-to, $white) >= 4.5;
     }
 
     @include media-breakpoint-up(md) {
+        --dim-landing-inset: 2.5rem;
+
         .dimensions-landing__hero {
-            padding: 3.25rem 2.5rem 4rem;
+            padding: 3.25rem var(--dim-landing-inset) 4rem;
         }
 
         .dimensions-landing__title {
@@ -781,6 +870,14 @@ $dim-landing-branded: contrast-ratio($dim-landing-to, $white) >= 4.5;
             animation: none;
         }
     }
+}
+
+// The dark half of the panel: the ink lifted until it reads on the raised card, the check dark on it, the border
+// a mix of the brand and that card.
+:root[data-bs-theme="dark"] .theme_dimensions-landing {
+    --dim-landing-ink: #{dim-landing-dark-ink($dim-landing-base)};
+    --dim-landing-on-ink: #{$gray-900};
+    --dim-landing-soft: #{mix($dim-landing-base, $gray-800, 50%)};
 }
 
 @keyframes dimensions-guestentry-slide {
