@@ -27,6 +27,7 @@ namespace theme_dimensions\local;
 use core\hook\manager;
 use core_course\customfield\course_handler;
 use core_customfield\api;
+use theme_dimensions\local\trail\trail;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -325,14 +326,15 @@ final class landingdefaults_test extends \advanced_testcase {
      */
     public function test_the_choices_read_the_field_as_configured(): void {
         $none = get_string('landingdefault_none', landingfields::COMPONENT);
-        $this->assertSame(
-            [
-                0 => $none,
-                1 => get_string('landingfield_model_course', landingfields::COMPONENT),
-                2 => get_string('landingfield_model_event', landingfields::COMPONENT),
-            ],
-            landingdefaults::choices(landingfields::SHORTNAME_MODEL)
-        );
+        $expected = [
+            0 => $none,
+            1 => get_string('landingfield_model_course', landingfields::COMPONENT),
+            2 => get_string('landingfield_model_event', landingfields::COMPONENT),
+        ];
+        if (trail::available()) {
+            $expected[3] = get_string('landingfield_model_trail', landingfields::COMPONENT);
+        }
+        $this->assertSame($expected, landingdefaults::choices(landingfields::SHORTNAME_MODEL));
 
         $field = landingfields::get_field(landingfields::SHORTNAME_MODEL);
         $config = (array) $field->get('configdata');
@@ -344,6 +346,41 @@ final class landingdefaults_test extends \advanced_testcase {
             [0 => $none, 1 => 'Open course', 2 => 'Live event & workshop'],
             landingdefaults::choices(landingfields::SHORTNAME_MODEL),
             'A renamed option line is offered as the field now spells it, in the plain spelling.'
+        );
+    }
+
+    /**
+     * Without mod_subcourse enabled the trail is neither offered nor written into a new course; with it, both.
+     *
+     * The stored setting is left alone: it comes back into force with the module.
+     */
+    public function test_the_trail_default_needs_the_subcourse_module(): void {
+        if (\core_component::get_component_directory('mod_subcourse') === null) {
+            $this->markTestSkipped('mod_subcourse is not installed.');
+        }
+        self::set_default(landingfields::SHORTNAME_MODEL, landingfields::MODEL_TRAIL);
+
+        $this->assertArrayHasKey(landingfields::MODEL_TRAIL, landingdefaults::choices(landingfields::SHORTNAME_MODEL));
+        $this->assertSame(landingfields::MODEL_TRAIL, landingdefaults::value(landingfields::SHORTNAME_MODEL));
+        $made = self::getDataGenerator()->create_course();
+        $this->assertSame(
+            landingfields::MODEL_TRAIL,
+            landingfields::model((int) $made->id),
+            'Precondition: the default is written.'
+        );
+
+        \core\plugininfo\mod::enable_plugin(trail::MODNAME, 0);
+
+        $choices = landingdefaults::choices(landingfields::SHORTNAME_MODEL);
+        $this->assertArrayNotHasKey(landingfields::MODEL_TRAIL, $choices);
+        $this->assertArrayHasKey(landingfields::MODEL_EVENT, $choices, 'The other lines stay offered.');
+        $this->assertSame(landingdefaults::NONE, landingdefaults::value(landingfields::SHORTNAME_MODEL));
+        $course = self::getDataGenerator()->create_course();
+        $this->assertSame(0, landingfields::model((int) $course->id), 'A new course is not made a trail.');
+        $this->assertSame(
+            (string) landingfields::MODEL_TRAIL,
+            get_config(landingfields::COMPONENT, landingdefaults::SETTING_MODEL),
+            'The setting itself is kept.'
         );
     }
 
