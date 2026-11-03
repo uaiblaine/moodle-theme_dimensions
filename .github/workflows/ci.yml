@@ -28,7 +28,7 @@ jobs:
   # This theme is a child of Boost Union, so Boost Union must be checked out
   # alongside it or the theme cannot be installed. The branch pinned here
   # follows $plugin->supported: Boost Union ships one stable branch per Moodle
-  # release; until it ships MOODLE_503_STABLE, its 5.3 port lives on upgrade-503.
+  # release, MOODLE_503_STABLE for 5.3 (v5.3-r1 onwards).
   #
   # local_unlistedcourses is a declared dependency in version.php: the course
   # renderer calls its access predicates.
@@ -76,7 +76,7 @@ jobs:
       moodle-core-branch: MOODLE_503_STABLE
       behat-suite: "dimensions"
       plugin-dependencies: |
-        moodle-an-hochschulen/moodle-theme_boost_union,upgrade-503
+        moodle-an-hochschulen/moodle-theme_boost_union,MOODLE_503_STABLE
         uaiblaine/moodle-local_unlistedcourses,MOODLE_503_STABLE
         uaiblaine/moodle-customfield_picture,master
         uaiblaine/moodle-local_page,main
