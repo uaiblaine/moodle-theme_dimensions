@@ -1,7 +1,7 @@
 # The Trail model, its landing page and the calendar's Trilhas view: plan (2026-11-02)
 
-Status: **second proposal, owner's answers of 2 November folded in; mockups for approval.** Nothing is built. The
-mockups are on the calendar design canvas:
+Status: **approved; T0 (#108) and T1 (#109) merged, T2 (progress) built.** T3 (the calendar's Trilhas view) and T4
+(related contents) are to come. The mockups are on the calendar design canvas:
 
 - page "Trilha (landing)": desktop (an account, not enrolled, paid enrolment), phone (an enrolled learner on
   17 November), and a visitor's view;
@@ -64,20 +64,37 @@ is an ordered list of `step`s; nothing is stored by the theme, nothing is cached
   at a deleted course is not drawn.
 - **The category pill** (Q8) is the referenced course's category name, `core_course_category::get_many()` (cached).
 
-## 3. Progress, per viewer
+## 3. Progress, per viewer (built in T2, `local\trail\progress`)
 
-Only for an account enrolled in the trail course. Two statements, whatever N:
+Only for an account enrolled in the trail course (the page's resolution is `enrolled`), over the steps drawn in full:
+an account is never shown a ghost. At most two statements, whatever N:
 
-- `{course_modules_completion}` for the viewer and the steps' cmids;
-- `{course_completions}.timecompleted` for the viewer and the referenced course ids.
+- core's completion data for the whole trail course, one read through `completion_info::get_data(..., true)` (the
+  `core/completion` cache), so core's own rules (viewed, grade, the module's custom rules) decide. Filling that cache
+  is core's cost, shared with the course page, and asks each activity's own rules: mod_subcourse's reads its row, one
+  statement per step, on a cold cache only; the read-count test measures the page on a warm one;
+- `{course_completions}` for the viewer and the referenced courses whose activity tracks no completion, only when there
+  is one; a row without `timecompleted` (a course begun) is not a completion.
 
-A step is **done** when its activity is complete, or, when the activity tracks no completion, when the referenced
-course is complete. Then, in order: **late** (not done, `end` passed), **locked** (not done, `cm_info::available`
-false for the viewer; the reason is core's own availability text, "Disponível depois de concluir ..."), **current**
-(the first step that is neither), **upcoming** (the rest). Progress is done over the steps drawn (section 6).
+A step is **done** when its activity is complete for the reader, or, when the activity tracks no completion, when the
+reader completed the referenced course. Core's answer for the activity wins wherever it has one: an activity that
+tracks completion and is not complete is not done, whatever the referenced course says. Then, for a step not done:
+**locked** while `cm_info::available` is false for the reader (the line leads with core's own availability text, its
+names in the author's spelling); otherwise it is open. The first open step is the reader's **next**: "Continuar" leads
+to it, and it is **late** when its end has passed, else **current**. Any later open step is **late** when its end has
+passed, else **upcoming**. A step with no end is never late.
 
-"Continuar" leads to the current step's activity, `/mod/subcourse/view.php?id=<cmid>`, which forwards to the
-referenced course and logs the view its completion may depend on.
+"Continuar: <step>" (the card's button) and "Continuar" (the phone's bar) lead to the next step's activity,
+`/mod/subcourse/view.php?id=<cmid>`, which logs the view its completion may depend on and forwards to the referenced
+course (or links to it, as the activity is set). With no next step (all done, or the rest locked) the card keeps
+"Acessar curso". The hero reads "2 de 5 cursos concluídos" and "Até <the trail's last end>"; its segments fill (done
+green, the next one white, late in the danger tint). Each card carries its state tag, its number turned into a check or
+a lock, and its line: "Concluído em <date>" (core's completion time), the due date with "faltam N dias" for the current
+step, core's reason before the dates for a locked one.
+
+**The period** (the owner's rule of 2026-11-03, folded into T2): first start to last end over the full cards; a step
+that opens and never closes leaves it open ("A partir de <first start>"), since no earlier step's end may close it. A
+learner's hero then says nothing of a due date.
 
 ## 4. Workload
 

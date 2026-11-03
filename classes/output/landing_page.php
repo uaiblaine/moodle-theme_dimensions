@@ -38,6 +38,7 @@ use theme_dimensions\local\category\cards;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\local\styleurl;
 use theme_dimensions\local\trail\display;
+use theme_dimensions\local\trail\progress;
 use theme_dimensions\local\trail\trail;
 
 /**
@@ -163,6 +164,8 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'herocomp' => $trail === null ? $this->hero_comp() : null,
             'heroplace' => $trail === null ? $this->hero_place() : null,
             'trail' => $trail,
+            // A learner's way on along the trail: its next step's activity, which forwards to that course.
+            'trailcontinue' => $trail['continue'] ?? null,
             'facts' => $facts,
             'hasfacts' => !empty($facts),
             'sections' => $sections,
@@ -245,9 +248,24 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             array_values(array_unique(array_map(static fn(\stdClass $row): int => (int) $row->category, $rows)))
         ) : [];
 
+        // How far the reader has gone, for a learner of the trail course only, over the full cards: an account is
+        // never shown a ghost, and a ghost's activity must never become the button's label if one ever were.
+        $progress = null;
+        if ($this->resolution->state === resolution::STATE_ENROLLED) {
+            $full = [];
+            foreach ($drawn as $entry) {
+                if ($entry['kind'] === display::FULL) {
+                    $full[] = $entry['step'];
+                }
+            }
+            $progress = progress::of($this->course, $full, time());
+        }
+
         $steps = [];
         $first = 0;
         $last = 0;
+        $open = false;
+        $continue = null;
         foreach ($drawn as $index => $entry) {
             $position = $index + 1;
             if ($entry['kind'] === display::GHOST) {
@@ -260,10 +278,11 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             $workload = isset($hours[$refid]) ? $hours[$refid]->workload : null;
             $image = $images[$refid] ?? null;
             $imageurl = $image === null ? '' : styleurl::safe($image->out(false));
-            $steps[] = [
+            $name = $this->plain($step->name, $context);
+            $card = [
                 'n' => $position,
                 'isghost' => false,
-                'name' => $this->plain($step->name, $context),
+                'name' => $name,
                 'url' => links::page($refid)->out(false),
                 'imageurl' => $imageurl === '' ? null : $imageurl,
                 'category' => $category === null ? null : format_string($category->name, true, [
@@ -274,24 +293,100 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
                     : get_string('landing_hours', self::COMPONENT, $this->hours_number($workload)),
                 'when' => $this->step_when($step),
             ];
+            if ($progress !== null) {
+                $card = $this->step_progress($card, $step, $progress['states'][$step->cmid]);
+                if ($progress['next'] === $step->cmid) {
+                    $continue = [
+                        'url' => (new \core\url('/mod/subcourse/view.php', ['id' => $step->cmid]))->out(false),
+                        'label' => get_string('landing_trail_continue', self::COMPONENT, $name),
+                    ];
+                }
+            }
+            $steps[] = $card;
             if ($step->start > 0) {
                 $first = $first > 0 ? min($first, $step->start) : $step->start;
+                // A step that opens and never closes leaves the trail open: no later end can close it.
+                $open = $open || $step->end <= 0;
             }
             $last = max($last, $step->end);
+        }
+        if ($open) {
+            $last = 0;
         }
 
         $count = count($steps);
         $countlabel = $count === 1 ? get_string('landing_trail_onecourse', self::COMPONENT)
             : get_string('landing_trail_coursecount', self::COMPONENT, $count);
+        $period = $this->period($first, $last, get_string('strftimedate', 'langconfig'));
+        $sequence = $count === 1 ? $countlabel : get_string('landing_trail_sequence', self::COMPONENT, $count);
+        if ($progress !== null) {
+            $sequence = get_string('landing_trail_progress', self::COMPONENT, (object) [
+                'done' => $progress['done'],
+                'count' => $count,
+            ]);
+            // The learner's hero says when the trail is due, not when it began.
+            if ($last > 0) {
+                $due = userdate($last, get_string('strftimedate', 'langconfig'));
+                $period = get_string('landing_trail_until', self::COMPONENT, $due);
+            }
+        }
         return [
             'steps' => $steps,
             'count' => $count,
             'countlabel' => $countlabel,
-            'sequence' => $count === 1 ? $countlabel : get_string('landing_trail_sequence', self::COMPONENT, $count),
-            'segmentslabel' => $countlabel,
-            'period' => $this->period($first, $last, get_string('strftimedate', 'langconfig')),
+            'sequence' => $sequence,
+            'segmentslabel' => $progress === null ? $countlabel : $sequence,
+            'period' => $period,
             'periodshort' => $this->period($first, $last, $this->format_date()),
+            'continue' => $continue,
         ];
+    }
+
+    /**
+     * A step card as a learner of the trail reads it: its state, its tag and the date line that goes with it.
+     *
+     * @param array $card The card as anybody reads it.
+     * @param \theme_dimensions\local\trail\step $step The step.
+     * @param array $state The step's entry of {@see progress::of()}.
+     * @return array The card with the state's keys.
+     */
+    private function step_progress(array $card, \theme_dimensions\local\trail\step $step, array $state): array {
+        $name = $state['state'];
+        $card['state'] = $name;
+        $card['statelabel'] = match ($name) {
+            progress::DONE => get_string('landing_trail_state_done', self::COMPONENT),
+            progress::CURRENT => get_string('landing_trail_state_current', self::COMPONENT),
+            progress::LATE => get_string('landing_trail_state_late', self::COMPONENT),
+            progress::LOCKED => get_string('landing_trail_state_locked', self::COMPONENT),
+            progress::UPCOMING => get_string('landing_trail_state_upcoming', self::COMPONENT),
+        };
+        $card['isdone'] = $name === progress::DONE;
+        $card['islocked'] = $name === progress::LOCKED;
+        $card['isnext'] = $name === progress::CURRENT || $name === progress::LATE;
+
+        $format = get_string('strftimedatemonthabbr', 'langconfig');
+        if ($name === progress::DONE) {
+            $card['when'] = get_string('landing_trail_donedate', self::COMPONENT, userdate($state['completed'], $format));
+        } else if ($name === progress::LOCKED && $state['reason'] !== null) {
+            $card['when'] = $card['when'] === null ? $state['reason'] : $this->join($state['reason'], $card['when']);
+        } else if ($name === progress::CURRENT && $step->end > 0) {
+            $days = (int) ceil(($step->end - time()) / DAYSECS);
+            $left = $days === 1 ? get_string('landing_trail_dayleft', self::COMPONENT)
+                : get_string('landing_trail_daysleft', self::COMPONENT, $days);
+            $card['when'] = $this->join($card['when'], $left);
+        }
+        return $card;
+    }
+
+    /**
+     * Two parts of a step's date line, in the order read.
+     *
+     * @param string $first The first part.
+     * @param string $second The second part.
+     * @return string The line.
+     */
+    private function join(string $first, string $second): string {
+        return get_string('landing_trail_whenjoin', self::COMPONENT, (object) ['a' => $first, 'b' => $second]);
     }
 
     /**
@@ -440,7 +535,12 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
         /* Guest access standing as the card's primary action (a visitor no login would take anywhere, or an
            open card with nothing else to press) is a plain link as well, and declares no deadline. */
         $guest = $primary !== null && $primary['isguest'] ? $primary : null;
-        if ($exported->isenrolled) {
+        if ($exported->isenrolled && $exported->trailcontinue !== null) {
+            $exported->bar = [
+                'url' => $exported->trailcontinue['url'],
+                'label' => get_string('landing_trail_continueshort', self::COMPONENT),
+            ];
+        } else if ($exported->isenrolled) {
             $exported->bar = [
                 'url' => $exported->courseurl,
                 'label' => get_string('landing_accesscourse', self::COMPONENT),

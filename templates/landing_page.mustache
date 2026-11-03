@@ -38,7 +38,9 @@
     and draws them in order after the summary, each a numbered card with its cover, category, hours
     and dates; a ghost card, a visitor's for a course the catalogue lists but does not serve to the
     public, carries its number and nothing of the course (landing_page::trail_part()). The covers
-    are images, never a style attribute.
+    are images, never a style attribute. For a learner enrolled in the trail each card carries its
+    state (done, current, late, locked, upcoming: a class and data-state from that fixed vocabulary),
+    the hero counts the courses done, and the card's button continues at the next step's activity.
 
     The hero image's url is printed into a style attribute, a CSS context the
     double stash does not protect, because a browser decodes the attribute
@@ -129,15 +131,32 @@
                     "hours": "16 hours",
                     "when": "From 02 Nov 2026 to 08 Nov 2026"
                 },
-                {"n": 2, "isghost": true}
+                {
+                    "n": 2,
+                    "isghost": false,
+                    "name": "Public Budgeting",
+                    "url": "https://example.com/theme/dimensions/landing.php?id=52",
+                    "imageurl": null,
+                    "category": "Finance",
+                    "hours": "20 hours",
+                    "when": "Expected completion by 19 Nov · 2 days left",
+                    "state": "current",
+                    "statelabel": "In progress",
+                    "isdone": false,
+                    "islocked": false,
+                    "isnext": true
+                },
+                {"n": 3, "isghost": true}
             ],
-            "count": 2,
-            "countlabel": "2 courses",
-            "sequence": "2 courses in sequence",
-            "segmentslabel": "2 courses",
+            "count": 3,
+            "countlabel": "3 courses",
+            "sequence": "3 courses in sequence",
+            "segmentslabel": "3 courses",
             "period": "From 02 November 2026 to 08 November 2026",
-            "periodshort": "02/11/26 – 08/11/26"
+            "periodshort": "02/11/26 – 08/11/26",
+            "continue": {"url": "https://example.com/mod/subcourse/view.php?id=7", "label": "Continue: Public Budgeting"}
         },
+        "trailcontinue": {"url": "https://example.com/mod/subcourse/view.php?id=7", "label": "Continue: Public Budgeting"},
         "herocomp": {
             "total": "60 hours",
             "onlinelabel": "36h online",
@@ -264,7 +283,7 @@
                     {{/period}}
                     <span class="dimensions-landing__trailsegs" role="img" aria-label="{{segmentslabel}}">
                         {{#steps}}
-                            <span class="dimensions-landing__trailseg"></span>
+                            <span class="dimensions-landing__trailseg{{#state}} dimensions-landing__trailseg--{{.}}{{/state}}"></span>
                         {{/steps}}
                     </span>
                 </div>
@@ -371,8 +390,8 @@
                     <h2 class="dimensions-landing__sectiontitle" id="dimensions-landing-trail-title">{{#str}} landing_trail_steps, theme_dimensions {{/str}}</h2>
                     <ol class="dimensions-landing__steps">
                         {{#steps}}
-                            <li class="dimensions-landing__step{{#isghost}} dimensions-landing__step--ghost{{/isghost}}">
-                                <span class="dimensions-landing__stepnum" aria-hidden="true">{{n}}</span>
+                            <li class="dimensions-landing__step{{#isghost}} dimensions-landing__step--ghost{{/isghost}}{{#state}} dimensions-landing__step--{{.}}{{/state}}"{{#state}} data-state="{{.}}"{{/state}}>
+                                <span class="dimensions-landing__stepnum" aria-hidden="true">{{#isdone}}{{#pix}} i/checked, core {{/pix}}{{/isdone}}{{#islocked}}{{#pix}} t/locked, core {{/pix}}{{/islocked}}{{^isdone}}{{^islocked}}{{n}}{{/islocked}}{{/isdone}}</span>
                                 {{^isghost}}
                                     <article class="dimensions-landing__stepcard">
                                         <div class="dimensions-landing__stepcover" aria-hidden="true">
@@ -387,6 +406,9 @@
                                                 {{#hours}}
                                                     <span class="dimensions-landing__stephours">{{.}}</span>
                                                 {{/hours}}
+                                                {{#statelabel}}
+                                                    <span class="dimensions-landing__stepstate">{{.}}</span>
+                                                {{/statelabel}}
                                                 {{#when}}
                                                     <span class="dimensions-landing__stepwhen">{{#pix}} i/calendar, core {{/pix}}{{.}}</span>
                                                 {{/when}}
@@ -439,10 +461,20 @@
                         <p class="dimensions-landing__note">{{#str}} landing_heldnote, theme_dimensions {{/str}}</p>
                     {{/isheldonly}}
                     {{#isenrolled}}
-                        <h2 class="dimensions-landing__cardtitle">{{#str}} landing_alreadyenrolled, theme_dimensions {{/str}}</h2>
-                        <a class="btn btn-primary dimensions-landing__btn" href="{{courseurl}}">
-                            {{#str}} landing_accesscourse, theme_dimensions {{/str}}
-                        </a>
+                        {{#trail}}
+                            <h2 class="dimensions-landing__cardtitle">{{#str}} landing_trail_enrolled, theme_dimensions {{/str}}</h2>
+                        {{/trail}}
+                        {{^trail}}
+                            <h2 class="dimensions-landing__cardtitle">{{#str}} landing_alreadyenrolled, theme_dimensions {{/str}}</h2>
+                        {{/trail}}
+                        {{#trailcontinue}}
+                            <a class="btn btn-primary dimensions-landing__btn" href="{{url}}" data-region="dimensions-landing-continue">{{label}}</a>
+                        {{/trailcontinue}}
+                        {{^trailcontinue}}
+                            <a class="btn btn-primary dimensions-landing__btn" href="{{courseurl}}">
+                                {{#str}} landing_accesscourse, theme_dimensions {{/str}}
+                            </a>
+                        {{/trailcontinue}}
                     {{/isenrolled}}
                     {{#ispending}}
                         <h2 class="dimensions-landing__cardtitle">{{#str}} landing_pendingheading, theme_dimensions {{/str}}</h2>

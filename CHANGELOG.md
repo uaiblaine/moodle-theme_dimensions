@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A trail's progress, stage T2** (2026100576), `docs/trail/PLAN.md` section 3. A learner enrolled in the trail course
+  reads each course's state on its card: done (by the activity's completion wherever it tracks one, else by the
+  learner's own completion of the referenced course), locked (core's availability, its reason leading the card's line),
+  late (its end passed), current (the first open step) or up next. The hero counts the courses done ("2 of 5 courses
+  completed") and says when the trail is due, its segments filled by state; the card says "You are enrolled in this
+  trail" and continues at the next step's activity ("Continue: <course>", "Continue" on the phone's bar). At most two
+  statements, constant in the number of steps. The trail's period no longer ends before a step that opens and never
+  closes: such a step leaves it open ("From <first start>"), the owner's rule of 2026-11-03.
 - **A trail's landing page, stage T1** (2026100575), `docs/trail/PLAN.md` sections 5 and 6. A course of the Trail model
   says its courses in the hero's glass (how many, their period, one segment each) and draws them in order after the
   summary: numbered cards with the referenced course's cover, category, hours and dates (the activity's expected

@@ -897,6 +897,84 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         font-weight: 600;
     }
 
+    /* A learner's states (T2): the tag beside the hours, the number turned into a check or a lock, the next step's
+       card ringed in the ink. The tints are Bootstrap's subtle pairs, which carry their own dark mode. */
+    .dimensions-landing__stepstate {
+        padding: 0.0625rem 0.5625rem;
+        border-radius: var(--dim-ds-radius-pill);
+        background: var(--dim-ds-surface-subtle);
+        color: var(--dim-ds-text-body);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .dimensions-landing__step--done {
+        .dimensions-landing__stepnum {
+            border-color: var(--dim-ds-text-success);
+            background: var(--dim-ds-text-success);
+            color: var(--dim-ds-surface-card);
+        }
+
+        .dimensions-landing__stepstate {
+            background: var(--bs-success-bg-subtle, #d1e7dd);
+            color: var(--bs-success-text-emphasis, #0a3622);
+        }
+    }
+
+    .dimensions-landing__step--current,
+    .dimensions-landing__step--late {
+        .dimensions-landing__stepcard {
+            border: 2px solid var(--dim-landing-ink);
+            box-shadow: var(--dim-ds-shadow-md);
+        }
+
+        .dimensions-landing__stepnum {
+            background: var(--dim-landing-ink);
+            color: var(--dim-landing-on-ink);
+            box-shadow: 0 0 0 4px var(--dim-landing-soft);
+        }
+    }
+
+    .dimensions-landing__step--current .dimensions-landing__stepstate {
+        background: var(--dim-landing-ink);
+        color: var(--dim-landing-on-ink);
+    }
+
+    .dimensions-landing__step--late .dimensions-landing__stepstate {
+        background: var(--bs-danger-bg-subtle, #f8d7da);
+        color: var(--bs-danger-text-emphasis, #58151c);
+    }
+
+    .dimensions-landing__step--locked {
+        .dimensions-landing__stepnum {
+            border-color: var(--dim-ds-border-strong);
+            background: var(--dim-ds-surface-strong);
+            color: var(--dim-ds-text-muted);
+        }
+
+        .dimensions-landing__stepstate {
+            background: var(--dim-ds-surface-strong);
+        }
+    }
+
+    .dimensions-landing__stepnum .icon {
+        margin: 0;
+        font-size: 0.875rem;
+    }
+
+    // The hero's segments for a learner: done in the progress green, the next step in white, late in the danger tint.
+    .dimensions-landing__trailseg--done {
+        background: var(--dim-ds-green-400);
+    }
+
+    .dimensions-landing__trailseg--current {
+        background: rgba(255, 255, 255, 0.92);
+    }
+
+    .dimensions-landing__trailseg--late {
+        background: var(--bs-danger-bg-subtle, #f8d7da);
+    }
+
     // The mobile enrolment bar (hidden on wide viewports, fixed at the bottom
     // on narrow ones). Its action mirrors the card: a plain navigation, or an
     // anchor down to the card's own controls.

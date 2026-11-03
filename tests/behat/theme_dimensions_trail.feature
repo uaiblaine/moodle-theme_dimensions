@@ -1,7 +1,7 @@
 @theme @theme_dimensions @theme_dimensions_trail @mod_subcourse
 Feature: A trail's landing page draws its courses in order
   In order to see what a trail of courses holds before joining it
-  As a visitor or a member of the site
+  As a visitor, a member of the site or a learner of the trail
   I need the trail's page to list its courses, and a visitor to be told of a course they cannot open without being told what it is
 
   # Thin smoke tests of the trail part of the landing page. Who sees which step, in full or as a ghost, is
@@ -38,3 +38,16 @@ Feature: A trail's landing page draws its courses in order
     Then I should see "Open Fundamentals" in the "[data-region='dimensions-landing-trail']" "css_element"
     And I should see "Listed Budget" in the "[data-region='dimensions-landing-trail']" "css_element"
     And I should not see "This course is not open to the public."
+
+  Scenario: A learner of the trail sees how far they have gone and continues at the next course
+    Given the following "course enrolments" exist:
+      | user     | course | role    |
+      | student1 | TRAIL  | student |
+    When I am on the "TRAIL" "theme_dimensions > Enrolment landing page" page logged in as "student1"
+    Then I should see "0 of 2 courses completed"
+    And I should see "You are enrolled in this trail"
+    And "[data-region='dimensions-landing-trail'] [data-state='current']" "css_element" should exist
+    And "[data-region='dimensions-landing-trail'] [data-state='upcoming']" "css_element" should exist
+    And I click on "Continue: Open Fundamentals" "link" in the "#dimensions-landing-card" "css_element"
+    And I should see "Open Fundamentals"
+    And I should not see "Courses of the trail"
