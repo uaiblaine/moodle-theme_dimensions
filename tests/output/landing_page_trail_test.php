@@ -274,4 +274,205 @@ final class landing_page_trail_test extends \advanced_testcase {
         }
         $this->assertSame($reads['small'], $reads['big'], 'Six more courses add no statement.');
     }
+
+    /**
+     * Mark a course complete for a user, as core's course completion records it.
+     *
+     * @param \stdClass $course The course.
+     * @param \stdClass $user The user.
+     * @param int $time When.
+     * @return void
+     */
+    private function completed(\stdClass $course, \stdClass $user, int $time): void {
+        global $CFG;
+        require_once($CFG->libdir . '/completionlib.php');
+        (new \completion_completion(['course' => $course->id, 'userid' => $user->id]))->mark_complete($time);
+    }
+
+    /**
+     * A learner of the trail reads each card's state, the hero counts what is done, and the card's button and the
+     * phone's bar continue at the next step's activity.
+     */
+    public function test_a_learner_reads_the_states_and_continues_at_the_next_step(): void {
+        $start = time() - WEEKSECS;
+        $first = $this->course(['fullname' => 'Primeiro', 'startdate' => $start, 'enddate' => $start + 4 * WEEKSECS]);
+        $second = $this->course(['fullname' => 'Segundo', 'startdate' => $start, 'enddate' => $start + 4 * WEEKSECS]);
+        $third = $this->course(['fullname' => 'Terceiro', 'startdate' => $start, 'enddate' => $start + 4 * WEEKSECS]);
+        $trail = $this->trail([$first, $second], ['Primeiro passo', 'Liderança & Pessoas']);
+        $secondcmid = \theme_dimensions\local\trail\trail::of(get_course($trail->id))->steps[1]->cmid;
+        // The third step opens once the second is complete, and core says so.
+        self::getDataGenerator()->create_module('subcourse', [
+            'course' => $trail->id,
+            'refcourse' => $third->id,
+            'name' => 'Projeto final',
+            'availability' => json_encode([
+                'op' => '&',
+                'c' => [['type' => 'completion', 'cm' => $secondcmid, 'e' => COMPLETION_COMPLETE]],
+                'showc' => [true],
+            ]),
+        ]);
+        $learner = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($learner->id, $trail->id, 'student');
+        $this->completed($first, $learner, make_timestamp(2026, 11, 8, 12));
+        $this->become($learner);
+
+        $context = $this->export($trail, new resolution(resolution::STATE_ENROLLED), false);
+
+        $part = $context->trail;
+        $progress = get_string('landing_trail_progress', 'theme_dimensions', (object) ['done' => 1, 'count' => 3]);
+        $this->assertSame($progress, $part['sequence']);
+        $this->assertSame($part['sequence'], $part['segmentslabel'], 'The segments say what the hero says.');
+        [$done, $next, $locked] = $part['steps'];
+        $this->assertSame('done', $done['state']);
+        $this->assertTrue($done['isdone']);
+        $doneon = userdate(make_timestamp(2026, 11, 8, 12), get_string('strftimedatemonthabbr', 'langconfig'));
+        $this->assertSame(get_string('landing_trail_donedate', 'theme_dimensions', $doneon), $done['when']);
+        $this->assertSame('current', $next['state']);
+        $this->assertTrue($next['isnext']);
+        $this->assertStringEndsWith(get_string('landing_trail_daysleft', 'theme_dimensions', 21), $next['when']);
+        $this->assertSame('locked', $locked['state']);
+        $this->assertTrue($locked['islocked']);
+        $this->assertStringContainsString('Liderança & Pessoas', $locked['when'], 'Core\'s reason leads the locked step\'s line.');
+
+        $this->assertSame([
+            'url' => (new \core\url('/mod/subcourse/view.php', ['id' => $secondcmid]))->out(false),
+            'label' => get_string('landing_trail_continue', 'theme_dimensions', 'Liderança & Pessoas'),
+        ], $context->trailcontinue);
+        $this->assertSame($context->trailcontinue['url'], $context->bar['url']);
+        $this->assertSame(get_string('landing_trail_continueshort', 'theme_dimensions'), $context->bar['label']);
+
+        global $PAGE;
+        $html = $PAGE->get_renderer('core')->render_from_template('theme_dimensions/landing_page', $context);
+        $this->assertStringContainsString('data-state="done"', $html);
+        $this->assertStringContainsString('data-state="current"', $html);
+        $this->assertStringContainsString('data-state="locked"', $html);
+        $this->assertStringContainsString('dimensions-landing__trailseg--done', $html);
+        $this->assertStringContainsString('Liderança &amp; Pessoas', $html);
+        $this->assertStringContainsString(get_string('landing_trail_enrolled', 'theme_dimensions'), $html);
+        $this->assertStringNotContainsString(get_string('landing_alreadyenrolled', 'theme_dimensions'), $html);
+    }
+
+    /**
+     * The same reader not enrolled in the trail course reads the trail as anybody does: no state, no count of what
+     * is done, no way on.
+     */
+    public function test_progress_is_only_for_a_learner_of_the_trail(): void {
+        $start = time() - WEEKSECS;
+        $first = $this->course(['fullname' => 'Primeiro', 'startdate' => $start, 'enddate' => $start + 4 * WEEKSECS]);
+        $trail = $this->trail([$first]);
+        $reader = self::getDataGenerator()->create_user();
+        $this->completed($first, $reader, time());
+        $this->become($reader);
+
+        $context = $this->export($trail, new resolution(resolution::STATE_CLOSED), false);
+        $this->assertArrayNotHasKey('state', $context->trail['steps'][0]);
+        $this->assertSame(get_string('landing_trail_onecourse', 'theme_dimensions'), $context->trail['sequence']);
+        $this->assertNull($context->trailcontinue);
+
+        // The control: the reader enrolled, whose completion of the course makes the step done.
+        self::getDataGenerator()->enrol_user($reader->id, $trail->id, 'student');
+        $enrolled = $this->export($trail, new resolution(resolution::STATE_ENROLLED), false);
+        $this->assertSame('done', $enrolled->trail['steps'][0]['state']);
+    }
+
+    /**
+     * A step that opens and never closes leaves the trail's period open: no earlier step's end may close it.
+     */
+    public function test_a_step_without_an_end_leaves_the_period_open(): void {
+        $start = make_timestamp(2026, 11, 2, 12);
+        $first = $this->course(['fullname' => 'Fechado', 'startdate' => $start, 'enddate' => $start + 6 * DAYSECS]);
+        $last = $this->course(['fullname' => 'Aberto', 'startdate' => $start + 30 * DAYSECS, 'enddate' => 0]);
+        $trail = $this->trail([$first, $last]);
+        $this->become(self::getDataGenerator()->create_user());
+
+        $part = $this->export($trail, new resolution(resolution::STATE_CLOSED), false)->trail;
+        $this->assertSame(
+            get_string('landing_trail_periodfrom', 'theme_dimensions', userdate($start, get_string('strftimedate', 'langconfig'))),
+            $part['period']
+        );
+        $fromshort = userdate($start, get_string('strftimedatefullshort', 'langconfig'));
+        $this->assertSame(get_string('landing_trail_periodfrom', 'theme_dimensions', $fromshort), $part['periodshort']);
+
+        // The control: the same last step with an end closes the period there.
+        $closed = $this->course([
+            'fullname' => 'Com fim',
+            'startdate' => $start + 30 * DAYSECS,
+            'enddate' => $start + 40 * DAYSECS,
+        ]);
+        $other = $this->trail([$first, $closed]);
+        $expected = get_string('landing_trail_period', 'theme_dimensions', (object) [
+            'from' => userdate($start, get_string('strftimedate', 'langconfig')),
+            'to' => userdate($start + 40 * DAYSECS, get_string('strftimedate', 'langconfig')),
+        ]);
+        $this->assertSame($expected, $this->export($other, new resolution(resolution::STATE_CLOSED), false)->trail['period']);
+    }
+
+    /**
+     * A learner's hero says when the trail is due.
+     */
+    public function test_a_learners_hero_says_when_the_trail_is_due(): void {
+        $start = make_timestamp(2026, 11, 2, 12);
+        $ref = $this->course(['fullname' => 'Curso', 'startdate' => $start, 'enddate' => $start + 46 * DAYSECS]);
+        $trail = $this->trail([$ref]);
+        $learner = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($learner->id, $trail->id, 'student');
+        $this->become($learner);
+
+        $part = $this->export($trail, new resolution(resolution::STATE_ENROLLED), false)->trail;
+        $due = userdate($start + 46 * DAYSECS, get_string('strftimedate', 'langconfig'));
+        $this->assertSame(get_string('landing_trail_until', 'theme_dimensions', $due), $part['period']);
+    }
+
+    /**
+     * A learner's open trail says when it began, and its current step with no end counts no days.
+     */
+    public function test_a_learners_open_trail_has_no_due_date(): void {
+        $start = time() - WEEKSECS;
+        $ref = $this->course(['fullname' => 'Sem fim', 'startdate' => $start, 'enddate' => 0]);
+        $trail = $this->trail([$ref]);
+        $learner = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($learner->id, $trail->id, 'student');
+        $this->become($learner);
+
+        $part = $this->export($trail, new resolution(resolution::STATE_ENROLLED), false)->trail;
+        $began = userdate($start, get_string('strftimedate', 'langconfig'));
+        $this->assertSame(get_string('landing_trail_periodfrom', 'theme_dimensions', $began), $part['period']);
+        $this->assertSame('current', $part['steps'][0]['state'], 'Precondition.');
+        $from = userdate($start, get_string('strftimedatemonthabbr', 'langconfig'));
+        $this->assertSame(get_string('landing_trail_periodfrom', 'theme_dimensions', $from), $part['steps'][0]['when']);
+    }
+
+    /**
+     * A learner's trail of eight courses costs the statements one of two does, progress included.
+     */
+    public function test_a_learners_page_costs_the_same_whatever_the_number_of_courses(): void {
+        global $DB;
+        $learner = self::getDataGenerator()->create_user();
+        $refs = [];
+        for ($i = 0; $i < 11; $i++) {
+            $refs[] = $this->course(['fullname' => "Curso {$i}"], [landingfields::SHORTNAME_WORKLOAD => 10 + $i]);
+        }
+        $small = $this->trail(array_slice($refs, 0, 2));
+        $big = $this->trail(array_slice($refs, 2, 8));
+        $warm = $this->trail(array_slice($refs, 10, 1));
+        foreach ([$small, $big, $warm] as $trail) {
+            self::getDataGenerator()->enrol_user($learner->id, $trail->id, 'student');
+        }
+        $this->become($learner);
+        $this->export($warm, new resolution(resolution::STATE_ENROLLED), false);
+
+        $reads = [];
+        foreach (['small' => $small, 'big' => $big] as $name => $trail) {
+            // Core's caches warm on the trail's own first page: its modinfo, its contexts and its completion data,
+            // whose fill asks each activity's own rules (mod_subcourse reads its row per activity), core's cost,
+            // shared with the course page. The second page is what the page itself costs.
+            $this->export($trail, new resolution(resolution::STATE_ENROLLED), false);
+            self::forget();
+            $before = $DB->perf_get_reads();
+            $context = $this->export($trail, new resolution(resolution::STATE_ENROLLED), false);
+            $reads[$name] = $DB->perf_get_reads() - $before;
+            $this->assertArrayHasKey('state', $context->trail['steps'][0], "Precondition: {$name} reads progress.");
+        }
+        $this->assertSame($reads['small'], $reads['big'], 'Six more courses add no statement.');
+    }
 }
