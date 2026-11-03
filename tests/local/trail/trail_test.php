@@ -83,8 +83,9 @@ final class trail_test extends \advanced_testcase {
     /**
      * Steps are the shown Subcourse activities in course order, each with its course's window or its expected date.
      *
-     * The page sits between two steps; the hidden, stealth, deleting and orphaned activities are Subcourse activities
-     * that are no step, each a neighbour of a step that stays.
+     * The page sits between two steps and carries a step's instance id, as activities of different modules do on a
+     * real site; the hidden, stealth, deleting and orphaned activities are Subcourse activities that are no step, each
+     * a neighbour of a step that stays.
      */
     public function test_steps_follow_the_course_and_skip_what_is_no_step(): void {
         global $DB;
@@ -106,7 +107,11 @@ final class trail_test extends \advanced_testcase {
             'completion' => COMPLETION_TRACKING_MANUAL,
             'completionexpected' => $expected,
         ]);
-        self::getDataGenerator()->create_module('page', ['course' => $trail->id, 'section' => 1]);
+        $page = self::getDataGenerator()->create_module('page', ['course' => $trail->id, 'section' => 1]);
+        // Instance ids of different tables collide on a real site; PHPUnit starts each table's sequence apart, so the
+        // page is given the id of a step's Subcourse instance by hand.
+        $DB->execute('UPDATE {page} SET id = :to WHERE id = :from', ['to' => $earlier->id, 'from' => $page->id]);
+        $DB->set_field('course_modules', 'instance', $earlier->id, ['id' => $page->cmid]);
         $hidden = $this->activity($trail, (int) $first->id, 1, ['name' => 'Escondida']);
         set_coursemodule_visible((int) $hidden->cmid, 0);
         $stealth = $this->activity($trail, (int) $first->id, 2, ['name' => 'Furtiva']);
@@ -119,7 +124,7 @@ final class trail_test extends \advanced_testcase {
         rebuild_course_cache((int) $trail->id, true);
 
         $cms = get_fast_modinfo($trail->id)->get_cms();
-        foreach ([$hidden, $stealth, $deleting, $orphan] as $activity) {
+        foreach ([$page, $hidden, $stealth, $deleting, $orphan] as $activity) {
             $this->assertArrayHasKey((int) $activity->cmid, $cms, 'Precondition: an activity of the course all the same.');
         }
 

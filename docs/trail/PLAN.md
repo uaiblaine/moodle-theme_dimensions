@@ -136,6 +136,10 @@ is then one of three, decided on the referenced course:
   discover the course (enrolled in it, say). The step stays on the trail course's own page, which is core's.
 - Positions, the "5 cursos" chip and progress count the cards drawn, ghosts included, so a dropped step leaves no gap
   and no count betrays it.
+- The activity's own per-user visibility comes first: a step whose activity core hides from this reader
+  entirely (`cm_info::$uservisible` false with no availability text, a restriction set to hide) is not drawn,
+  as core would not list it on the course page; a restriction that shows its text is the locked state.
+- `trail::many()` is a structure reader and applies none of this itself; its docblock names the contract.
 - Covers: the theme's public file route (area `hero`) for a visitor, which already fails closed; core's
   `overviewfiles` URL for an account.
 - The step card's link: the referenced course's landing page when it has a model, the course itself for someone
