@@ -238,7 +238,8 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
                 $rows[(int) $entry['row']->id] = $entry['row'];
             }
         }
-        $images = $rows ? cards::images($rows, !isloggedin() || isguestuser()) : [];
+        // A visitor's covers go through the theme's route: core's own answers them with the login page.
+        $images = $rows ? cards::images($rows, display::visitor()) : [];
         $hours = $rows ? landingfields::values_many(array_keys($rows), false, [landingfields::SHORTNAME_WORKLOAD]) : [];
         $categories = $rows ? \core_course_category::get_many(
             array_values(array_unique(array_map(static fn(\stdClass $row): int => (int) $row->category, $rows)))

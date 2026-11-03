@@ -114,6 +114,28 @@ final class landing_page_trail_test extends \advanced_testcase {
     }
 
     /**
+     * Give a course a course image, a real JPEG in its overview files.
+     *
+     * @param \stdClass $course The course.
+     * @return void
+     */
+    private function cover(\stdClass $course): void {
+        $image = imagecreatetruecolor(320, 180);
+        ob_start();
+        imagejpeg($image);
+        $jpeg = (string) ob_get_clean();
+        imagedestroy($image);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \core\context\course::instance($course->id)->id,
+            'component' => 'course',
+            'filearea' => 'overviewfiles',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'capa.jpg',
+        ], $jpeg);
+    }
+
+    /**
      * The page's context for the current reader.
      *
      * @param \stdClass $course The course.
@@ -141,6 +163,7 @@ final class landing_page_trail_test extends \advanced_testcase {
             [landingfields::SHORTNAME_WORKLOAD => 16]
         );
         $listed = $this->course(['fullname' => 'Curso Listado Secreto', 'startdate' => $start, 'enddate' => $start + 30 * DAYSECS]);
+        $this->cover($public);
         $trail = $this->trail([$public, $listed], ['Fundamentos & Gestão', 'Etapa Listada Secreta']);
         $this->set_course_state((int) $public->id, discoverability::STATE_PUBLIC);
         $this->set_course_state((int) $trail->id, discoverability::STATE_PUBLIC);
@@ -154,6 +177,11 @@ final class landing_page_trail_test extends \advanced_testcase {
         $full = $part['steps'][0];
         $this->assertSame('Fundamentos & Gestão', $full['name'], 'The activity\'s name, in the plain spelling.');
         $this->assertSame('Gestão & Governo', $full['category']);
+        $this->assertStringContainsString(
+            "/theme_dimensions/cover/{$public->id}/",
+            $full['imageurl'],
+            'A visitor\'s cover goes through the theme\'s route, which needs no session.'
+        );
         $this->assertSame(get_string('landing_hours', 'theme_dimensions', 16), $full['hours']);
         $format = get_string('strftimedatemonthabbr', 'langconfig');
         $this->assertSame(get_string('landing_trail_period', 'theme_dimensions', (object) [
@@ -182,6 +210,20 @@ final class landing_page_trail_test extends \advanced_testcase {
         $this->assertStringNotContainsString('Secreta', $html, 'Neither the activity\'s name nor its course\'s reaches a ghost.');
         $this->assertStringNotContainsString('Secreto', $html);
         $this->assertStringContainsString(get_string('landing_trail_ghost', 'theme_dimensions'), $html);
+    }
+
+    /**
+     * An account's covers are core's own, the URL Boost Union's cards and the Dashboard read for the same course.
+     */
+    public function test_an_account_gets_cores_cover(): void {
+        $ref = $this->course(['fullname' => 'Curso com capa']);
+        $this->cover($ref);
+        $trail = $this->trail([$ref]);
+        $this->become(self::getDataGenerator()->create_user());
+
+        $step = $this->export($trail, new resolution(resolution::STATE_CLOSED), false)->trail['steps'][0];
+        $this->assertStringContainsString('/course/overviewfiles/', $step['imageurl']);
+        $this->assertStringNotContainsString('/theme_dimensions/cover/', $step['imageurl']);
     }
 
     /**

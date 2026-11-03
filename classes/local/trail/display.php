@@ -39,7 +39,7 @@ use theme_dimensions\local\landing\publicaccess;
  *
  * 1. The activity's restriction for this reader: one that hides it entirely (no text to show,
  *    {@see \cm_info::$availableinfo} empty while {@see \cm_info::$available} is false) takes the step away, one
- *    whose text is shown keeps it (the page draws it locked). Availability, not core's course-page visibility:
+ *    whose text is shown keeps it (drawn as any step for now; the locked state is T2's). Availability, not core's course-page visibility:
  *    the reader of a landing page is mostly not enrolled in the trail course, and core hides every activity of a
  *    course from a reader who lacks the module's view capability there. Where core does give this reader the
  *    activity ({@see \cm_info::$uservisible}, staff under any restriction), the step stays.
@@ -92,7 +92,7 @@ final class display {
         }
 
         $rows = self::rows(array_map(static fn(step $step): int => $step->refcourseid, $shown));
-        $visitor = !isloggedin() || isguestuser();
+        $visitor = self::visitor();
         $ghosts = [];
         if ($visitor) {
             $full = array_flip(publicaccess::are_public(array_keys($rows)));
@@ -112,6 +112,18 @@ final class display {
             }
         }
         return $steps;
+    }
+
+    /**
+     * Whether the current reader is a visitor: nobody logged in, or the guest account.
+     *
+     * The one answer for the trail's page: it decides the steps here, and the cover route the page asks for
+     * ({@see \theme_dimensions\output\landing_page}), which must be the theme's own for a visitor.
+     *
+     * @return bool
+     */
+    public static function visitor(): bool {
+        return !isloggedin() || isguestuser();
     }
 
     /**
