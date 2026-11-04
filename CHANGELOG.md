@@ -5,6 +5,23 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Calendar R3: the mockup's look, and the Trilhas view's days scroller** (2026100581), `docs/calendar/PROPOSAL.md` section 33.
+  The Trilhas view on a desktop is the Design canvas's CalTrilhas: a 12px card, a 340px trail column with a fold per
+  trail and its "Enrolled · 2 of 5 done" line, numbered steps in their state's colours, days of a fixed 48px with the
+  weekday's letter, today as the filled pill and a line down the rows, weekends hatched, the trail's own span, a diamond
+  on an expected date, a chip in the "Dec →" column for a step that runs on, and a legend. Only the days scroll, in one
+  scroller drawn as block_compass's calendar strip: no scrollbar, round arrows that page by the days in view, a fade on
+  a side with more days, and under the grid a map whose thumb is the days in view (a press jumps, the thumb drags);
+  it opens with today in view. The trail choice is a button with the trail's icon, "Only mine" a toggle button, and the
+  row ends with "1 trail · 5 courses". The step popover has a band in its category's colours, the state as a pill, the
+  trail's icon on "Course 3 of 5 · trail", and "View trail" before "Open course". On a phone each trail is a card with
+  one progress segment per step, steps with their date, a colour bar and the state's pill, and "Today" with its date.
+  Everywhere in the calendar the buttons are the mockup's (36px, 8px round, white on the default border, the primary
+  navy), the event types menu has 40px rows and 18px boxes, the side drawer is sectioned under a 20px title, the
+  popover is 360px with an 18px title and the description in a quiet box, the panels' fields are 36px, and on a phone
+  the arrows are 44px, the view switch spans the row and the filters are pills. New strings: `calendar_trailcountmany`,
+  `calendar_trailcountone`, `calendar_trailearlier`, `calendar_trailenrolled`, `calendar_trailheading`,
+  `calendar_traillater`, `calendar_trailnotenrolled`, `calendar_trailtoggle`.
 - **Calendar R2: the owner's answers to section 26** (2026100580), `docs/calendar/PROPOSAL.md` section 32. The
   visitor's names and locations run core's multilang filter alone while it is on for the site, so a name in two
   languages reads in one, as on the logged-in page. A visitor's window answers at most 200 category events, earliest

@@ -168,11 +168,27 @@ describe('the Trilhas view', () => {
         expect(trailRequests()).toEqual([]);
         const bars = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailbar'));
         expect(bars.map((bar) => bar.textContent)).toEqual(['Fundamentos', 'Prática']);
-        expect(bars.map((bar) => bar.style.gridColumn)).toEqual(['3 / 12', '12 / 33']);
+        expect(bars.map((bar) => bar.style.gridColumn)).toEqual(['3 / 12', '12 / 32']);
         expect(bars[0].classList.contains('dim-cal__trailbar--milestone')).toBe(true);
         expect(bars[1].classList.contains('dim-cal__trailbar--after')).toBe(true);
         expect(page.querySelector('.dim-cal__trailday--next')?.textContent).toBe('Dec →');
-        expect(page.querySelector('.dim-cal__trailday--today')?.textContent).toBe('17');
+        expect(page.querySelector('.dim-cal__trailday--today .dim-cal__traildaynum')?.textContent).toBe('17');
+        // The expected date is a diamond on its day; the bar that runs on is continued by a chip in the last column.
+        const diamonds = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailrow--step .dim-cal__traildiamond'));
+        expect(diamonds.map((diamond) => diamond.style.gridColumn)).toEqual(['11']);
+        const chips = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailchip"]'));
+        expect(chips.map((chip) => [chip.textContent, chip.dataset.cmid, chip.tabIndex, chip.getAttribute('aria-hidden')]))
+            .toEqual([['→ Dec 10', '72', -1, 'true']]);
+        // The trail's own span runs to the month's end, its period going on into December.
+        const span = page.querySelector<HTMLElement>('.dim-cal__trailspan') as HTMLElement;
+        expect([span.style.gridColumn, span.classList.contains('dim-cal__trailspan--after')]).toEqual(['3 / 32', true]);
+        expect(page.querySelector('.dim-cal__trailspill--trail')?.textContent).toBe('Until Dec 10');
+        expect(page.querySelector('[data-region="dim-cal-trailmeta"]')?.textContent).toBe('Not enrolled · 2 courses');
+        expect(page.querySelector('[data-region="dim-cal-trailcount"]')?.textContent).toBe('1 trail · 2 courses');
+        // The weekends and today are columns of the ground, never a layout read.
+        const weekends = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailweekend'));
+        expect(weekends.map((day) => day.style.getPropertyValue('--dim-cal-trail-at')).slice(0, 3)).toEqual(['0', '6', '7']);
+        expect(page.querySelector<HTMLElement>('.dim-cal__trailnow')?.style.getPropertyValue('--dim-cal-trail-at')).toBe('16');
     });
 
     it('carries a learner\'s states and progress', async() => {
@@ -184,7 +200,36 @@ describe('the Trilhas view', () => {
         const bars = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailbar'));
         expect(bars.map((bar) => bar.dataset.state)).toEqual(['done', 'current']);
         expect(bars[1].classList.contains('dim-cal__trailbar--next')).toBe(true);
-        expect(page.querySelector('.dim-cal__trailprogress')?.textContent).toBe('1 of 2 done');
+        expect(page.querySelector('[data-region="dim-cal-trailmeta"]')?.textContent).toBe('Enrolled · 1 of 2 done');
+        expect(Array.from(page.querySelectorAll('.dim-cal__trailnum')).map((number) => number.className)).toEqual([
+            'dim-cal__trailnum dim-cal__trailnum--done',
+            'dim-cal__trailnum dim-cal__trailnum--current',
+        ]);
+        // A learner's legend names the states.
+        expect(page.querySelector('[data-region="dim-cal-traillegend"]')?.textContent).toContain('Completed');
+    });
+
+    it('folds a trail\'s steps away and back, as the view\'s own state', async() => {
+        const page = await mount(offered(trails([trail()])));
+        const fold = page.querySelector<HTMLElement>('[data-action="dim-cal-trailfold"]') as HTMLElement;
+        const steps = page.querySelector<HTMLElement>('#dim-cal-trailsteps-7') as HTMLElement;
+        expect([fold.getAttribute('aria-expanded'), fold.getAttribute('aria-controls'), fold.getAttribute('aria-label')])
+            .toEqual(['true', 'dim-cal-trailsteps-7', 'Courses of Trilha de Gestão']);
+        expect(steps.hidden).toBe(false);
+        const before = window.location.href;
+        const calls = fetched.mock.calls.length;
+
+        await act(async() => {
+            fireEvent.click(fold);
+        });
+        expect(fold.getAttribute('aria-expanded')).toBe('false');
+        expect(steps.hidden).toBe(true);
+        await act(async() => {
+            fireEvent.click(fold);
+        });
+        expect(fold.getAttribute('aria-expanded')).toBe('true');
+        expect(steps.hidden).toBe(false);
+        expect([window.location.href, fetched.mock.calls.length]).toEqual([before, calls]);
     });
 
     it('says when no trail runs this month', async() => {
@@ -219,10 +264,13 @@ describe('the filters', () => {
         expect(trailRequests()[0].trail).toBe(8);
         expect(new URL(window.location.href).searchParams.get('trail')).toBe('8');
 
+        const mine = page.querySelector('[data-action="dim-cal-trailmine"]') as HTMLElement;
+        expect([mine.tagName, mine.getAttribute('aria-pressed')]).toEqual(['BUTTON', 'false']);
         await act(async() => {
-            fireEvent.click(page.querySelector('[data-action="dim-cal-trailmine"]') as HTMLElement);
+            fireEvent.click(mine);
         });
         await waitFor(() => expect(trailRequests()).toHaveLength(2));
+        expect(page.querySelector('[data-action="dim-cal-trailmine"]')?.getAttribute('aria-pressed')).toBe('true');
         expect(trailRequests()[1]).toEqual({month: '2026-11', trail: 8, mine: true, categoryid: 0, recursive: true});
         expect(new URL(window.location.href).searchParams.get('mine')).toBe('1');
 
@@ -253,8 +301,8 @@ describe('the step\'s popover', () => {
         expect(pop.querySelector('.dim-cal__trailcategory')?.textContent).toBe('Gestão');
         const links = Array.from(pop.querySelectorAll<HTMLAnchorElement>('a')).map((link) => [link.textContent, link.href]);
         expect(links).toEqual([
-            ['Open course', 'https://example.com/course/view.php?id=73'],
             ['View trail', 'https://example.com/r.php/theme_dimensions/landing/7'],
+            ['Open course', 'https://example.com/course/view.php?id=73'],
         ]);
         expect(pop.querySelector('[data-region="dim-cal-trailstate"]')).toBeNull();
 
@@ -275,5 +323,111 @@ describe('the step\'s popover', () => {
         expect(pop.querySelector('[data-region="dim-cal-trailstate"]')?.textContent).toBe('Locked');
         expect(pop.querySelector('[data-region="dim-cal-trailreason"]')?.textContent)
             .toBe('Not available unless: Fundamentos is complete');
+    });
+});
+
+describe('the days\' scroller', () => {
+    /** The scroll positions jsdom does not keep, per element. */
+    const lefts = new WeakMap<Element, number>();
+
+    beforeEach(() => {
+        // A 1000px scroller over November's 30 days at 16px a rem: 340 + 30 * 48 + 76 = 1856px of content.
+        Object.defineProperty(HTMLElement.prototype, 'scrollLeft', {
+            configurable: true,
+            get() {
+                return lefts.get(this) || 0;
+            },
+            set(value: number) {
+                lefts.set(this, value);
+            },
+        });
+        Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
+            configurable: true,
+            get() {
+                return this.dataset.region === 'dim-cal-trailscroll' ? 1856 : 0;
+            },
+        });
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+            configurable: true,
+            get() {
+                return this.dataset.region === 'dim-cal-trailscroll' ? 1000 : 0;
+            },
+        });
+        HTMLElement.prototype.scrollTo = jest.fn(function(this: HTMLElement, options?: ScrollToOptions | number) {
+            this.scrollLeft = typeof options === 'object' ? Number(options.left) : 0;
+        }) as unknown as typeof HTMLElement.prototype.scrollTo;
+    });
+
+    afterEach(() => {
+        ['scrollLeft', 'scrollWidth', 'clientWidth', 'scrollTo'].forEach((name) => {
+            delete (HTMLElement.prototype as unknown as Record<string, unknown>)[name];
+        });
+    });
+
+    it('opens on today, paints the map from the scroll, pages by the arrows and jumps from the map', async() => {
+        const page = await mount(offered(trails([trail()])));
+        const scroller = page.querySelector<HTMLElement>('[data-region="dim-cal-trailscroll"]') as HTMLElement;
+        const thumb = page.querySelector<HTMLElement>('[data-region="dim-cal-trailthumb"]') as HTMLElement;
+        const map = page.querySelector<HTMLElement>('[data-region="dim-cal-trailmap"]') as HTMLElement;
+        // Today, the 17th, is past the 12 days in view at the 1st: the least scroll that shows it with a day to spare.
+        expect(scroller.scrollLeft).toBe(280);
+        expect([thumb.style.left, thumb.style.width]).toEqual(['19.444%', '40.556%']);
+        expect(map.getAttribute('aria-hidden')).toBe('true');
+        expect(page.querySelector<HTMLElement>('.dim-cal__trailmaptoday')?.style.left).toBe('55%');
+        const back = page.querySelector<HTMLElement>('[data-action="dim-cal-trail-back"]') as HTMLElement;
+        const ahead = page.querySelector<HTMLElement>('[data-action="dim-cal-trail-ahead"]') as HTMLElement;
+        expect([back.getAttribute('aria-label'), back.getAttribute('aria-disabled')]).toEqual(['Earlier days', null]);
+        expect([ahead.getAttribute('aria-label'), ahead.getAttribute('aria-disabled')]).toEqual(['Later days', null]);
+        expect(page.querySelector('.dim-cal__trailfade--back')).not.toBeNull();
+
+        // A page is the days in view less one, landing on a day's start.
+        await act(async() => {
+            fireEvent.click(ahead);
+            fireEvent.scroll(scroller);
+        });
+        expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 816, behavior: 'smooth'});
+        expect(thumb.style.left).toBe('56.667%');
+
+        // The last page stops at the end, where the arrow is off and its fade gone.
+        await act(async() => {
+            fireEvent.click(ahead);
+            fireEvent.scroll(scroller);
+        });
+        expect(scroller.scrollLeft).toBe(856);
+        expect(page.querySelector('[data-action="dim-cal-trail-ahead"]')?.getAttribute('aria-disabled')).toBe('true');
+        expect(page.querySelector('.dim-cal__trailfade--ahead')).toBeNull();
+        (HTMLElement.prototype.scrollTo as jest.Mock).mockClear();
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-trail-ahead"]') as HTMLElement);
+        });
+        expect(HTMLElement.prototype.scrollTo).not.toHaveBeenCalled();
+
+        // A press on the map's line puts the thumb's middle under the pointer, kept on the line.
+        await act(async() => {
+            fireEvent.click(back);
+            fireEvent.scroll(scroller);
+        });
+        expect(scroller.scrollLeft).toBe(336);
+        jest.spyOn(map, 'getBoundingClientRect').mockReturnValue({
+            left: 0, top: 0, right: 1000, bottom: 24, width: 1000, height: 24, x: 0, y: 0, toJSON: () => ({}),
+        });
+        await act(async() => {
+            fireEvent.pointerDown(map, {clientX: 100, pointerType: 'mouse', button: 0, pointerId: 1});
+            fireEvent.pointerUp(map, {pointerId: 1});
+        });
+        expect(scroller.scrollLeft).toBe(0);
+    });
+
+    it('opens at the 1st when today is in view there', async() => {
+        const early = trail();
+        const page = await mount(props([], {
+            view: 'trail',
+            today: '2026-11-05',
+            trails: {offered: true, answer: trails([early]), trail: 0, mine: false},
+        }));
+        const scroller = page.querySelector<HTMLElement>('[data-region="dim-cal-trailscroll"]') as HTMLElement;
+        expect(scroller.scrollLeft).toBe(0);
+        expect(page.querySelector('[data-action="dim-cal-trail-back"]')?.getAttribute('aria-disabled')).toBe('true');
+        expect(page.querySelector('.dim-cal__trailfade--back')).toBeNull();
     });
 });

@@ -637,4 +637,52 @@ final class calendar_scss_test extends \advanced_testcase {
         $ours = self::specificity(self::DARK . ' ' . $inner);
         $this->assertGreaterThan(0, $ours <=> $cores, 'The calendar\'s rule must outweigh core\'s: ' . implode(',', $ours));
     }
+
+    /**
+     * R3 (docs/calendar/PROPOSAL.md section 33): the Trilhas view's days scroll in a scroller drawn as block_compass's
+     * strip (no native scrollbar in either engine, its overscroll kept from the page, snapped by the day, snap off while
+     * the map drags), the trail column and the last column of every row held still over the days, the fades taking no
+     * pointer; and the calendar's buttons are the mockup's, re-pointed through Bootstrap's own properties, the disabled
+     * trio included.
+     *
+     * @return void
+     */
+    public function test_the_trail_scroller_and_the_buttons_follow_the_mockup(): void {
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailscroll \{[^}]*overflow-x: auto;[^}]*overscroll-behavior-x: contain;[^}]*'
+                . 'scroll-snap-type: x proximity;[^}]*scrollbar-width: none;~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailscroll::-webkit-scrollbar \{\s*display: none;~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailscroll--free \{\s*scroll-snap-type: none;~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__traillabel,\s*\.dim-cal__trailspill \{\s*position: sticky;\s*z-index: 3;~',
+            $scss,
+            'The two still columns stand over every bar (1) and diamond (2).'
+        );
+        $this->assertMatchesRegularExpression('~\.dim-cal__traillabel \{\s*inset-inline-start: 0;~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailspill \{\s*inset-inline-end: 0;~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailfade \{[^}]*position: absolute;[^}]*pointer-events: none;~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailgrid \{[^}]*width: max-content;~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailrow \{[^}]*grid-template-columns:\s*var\(--dim-cal-trail-label\)\s*'
+                . 'repeat\(var\(--dim-cal-trail-days, 31\), var\(--dim-cal-trail-day\)\)\s*var\(--dim-cal-trail-spill\);~',
+            $scss,
+            'The days have the fixed width the client\'s arithmetic reads.'
+        );
+        foreach (['.dim-cal .btn-secondary', '.dim-cal .btn-primary'] as $variant) {
+            $start = strpos($scss, $variant);
+            $this->assertNotFalse($start, "No rule for {$variant}.");
+            $body = substr($scss, $start, strpos($scss, '}', $start) - $start);
+            foreach (['bg', 'color', 'border-color', 'disabled-bg', 'disabled-color', 'disabled-border-color'] as $part) {
+                $this->assertStringContainsString("--bs-btn-{$part}:", $body, "{$variant} re-points --bs-btn-{$part}.");
+            }
+        }
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal \.btn \{[^}]*min-height: 2\.25rem;[^}]*border-radius: var\(--dim-ds-radius-md, 8px\);[^}]*'
+                . 'font-size: \.875rem;[^}]*font-weight: 500;~',
+            $scss
+        );
+    }
 }

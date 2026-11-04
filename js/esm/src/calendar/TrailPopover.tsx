@@ -23,6 +23,11 @@
  * shown; Escape, the close button, a press outside, or Tab past its last control close it and give the focus back to
  * the bar. Its two layout reads are the opener's box and its own, on an opening.
  *
+ * R3 (docs/calendar/PROPOSAL.md section 33) draws it as the mockup does: a band in the step's category colours (look.ts
+ * categoryCover(), else the state's), the category and the name, the state as a pill, a row with the trail's icon for
+ * "Course 3 of 5 · trail", a row with the calendar's for the dates and their source, core's reason in a quiet box, and
+ * the actions at the end, "View trail" before "Open course".
+ *
  * @module     theme_dimensions/calendar/TrailPopover
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -32,6 +37,7 @@ import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {CSSProperties, KeyboardEvent} from 'react';
 import {say} from '../daterange/calendar';
 import {anchor} from './EventPopover';
+import {categoryCover} from './look';
 import type {Look} from './look';
 import {safeHref} from './model';
 import {fill} from './strings';
@@ -54,6 +60,32 @@ type TrailPopoverProps = {
     now: number,
     onClose: (refocus: boolean) => void,
 };
+
+/**
+ * The trail's icon (the owner kept the mockup's, 2026-11-03): two stops joined by a winding path, drawn in the text's
+ * colour. Decorative: whatever carries it names the trail in words.
+ *
+ * @param {object} props The icon's size, 16 by default.
+ * @returns {object} The icon.
+ */
+export const TrailIcon = ({size = 16}: {size?: number}) => (
+    <svg
+        className="dim-cal__trailicon"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        aria-hidden="true"
+        focusable="false"
+    >
+        <circle cx="5" cy="18" r="2"></circle>
+        <circle cx="19" cy="6" r="2"></circle>
+        <path d="M7 18h6a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h6"></path>
+    </svg>
+);
 
 /**
  * A state's tag, or '' for a reader who is not a learner of the trail.
@@ -204,6 +236,7 @@ const TrailPopover = ({look, trail, step, opener, sheet, now, onClose}: TrailPop
             style.overflowY = 'auto';
         }
     }
+    const tone = step.state ? ` dim-cal__trailstate--${step.state}` : '';
 
     return (
         <div
@@ -217,8 +250,16 @@ const TrailPopover = ({look, trail, step, opener, sheet, now, onClose}: TrailPop
             style={style}
             onKeyDown={onKeyDown}
         >
-            <div className="dim-cal__pophead">
-                {category ? <span className="dim-cal__kind dim-cal__trailcategory">{category.name}</span> : <span></span>}
+            <div
+                className={`dim-cal__popcover dim-cal__trailcover${tone}`}
+                style={categoryCover(step.categoryid, look)}
+                aria-hidden="true"
+            ></div>
+            <div className="dim-cal__pophead dim-cal__trailpophead">
+                <div className="dim-cal__trailpopnames">
+                    {category ? <span className="dim-cal__trailcategory">{category.name}</span> : null}
+                    <h2 ref={heading} className="dim-cal__poptitle" id={TITLE} tabIndex={-1}>{step.name}</h2>
+                </div>
                 <button
                     type="button"
                     className="btn btn-icon dim-cal__close"
@@ -229,36 +270,44 @@ const TrailPopover = ({look, trail, step, opener, sheet, now, onClose}: TrailPop
                     <i className="fa fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>
-            <h2 ref={heading} className="dim-cal__poptitle" id={TITLE} tabIndex={-1}>{step.name}</h2>
-            <p className="dim-cal__popnote" data-region="dim-cal-trailposition">
-                {fill(look.strings.calendar_trailposition, {
-                    position: step.position,
-                    count: trail.steps.length,
-                    trail: trail.name,
-                })}
+            {state !== '' ? (
+                <p className={`dim-cal__trailstate${tone}`} data-region="dim-cal-trailstate">{state}</p>
+            ) : null}
+            <p className="dim-cal__poprow" data-region="dim-cal-trailposition">
+                <TrailIcon />
+                <span>
+                    {fill(look.strings.calendar_trailposition, {
+                        position: step.position,
+                        count: trail.steps.length,
+                        trail: trail.name,
+                    })}
+                </span>
             </p>
-            <dl className="dim-cal__popfacts">
-                <dt>{look.strings.calendar_when}</dt>
-                <dd>
+            <p className="dim-cal__poprow" data-region="dim-cal-trailwhen">
+                <i className="fa fa-calendar dim-cal__popicon" aria-hidden="true"></i>
+                <span>
+                    <span className="visually-hidden">{`${look.strings.calendar_when}: `}</span>
                     {stepWhen(step, look)}
                     <small className="dim-cal__trailsource">
                         {step.expected ? look.strings.calendar_trailexpected : look.strings.calendar_trailcoursedates}
                     </small>
-                </dd>
-                {step.coursename !== step.name ? <dt>{look.strings.calendar_course}</dt> : null}
-                {step.coursename !== step.name ? <dd>{step.coursename}</dd> : null}
-            </dl>
-            {state !== '' ? (
-                <p className={`dim-cal__trailstate dim-cal__trailstate--${step.state}`} data-region="dim-cal-trailstate">
-                    {state}
+                </span>
+            </p>
+            {step.coursename !== step.name ? (
+                <p className="dim-cal__poprow" data-region="dim-cal-trailcoursename">
+                    <i className="fa fa-graduation-cap dim-cal__popicon" aria-hidden="true"></i>
+                    <span>
+                        <span className="visually-hidden">{`${look.strings.calendar_course}: `}</span>
+                        {step.coursename}
+                    </span>
                 </p>
             ) : null}
             {step.state === 'locked' && step.reason !== '' ? (
-                <p className="dim-cal__popnote" data-region="dim-cal-trailreason">{step.reason}</p>
+                <p className="dim-cal__popquiet" data-region="dim-cal-trailreason">{step.reason}</p>
             ) : null}
-            <div className="dim-cal__popactions">
-                <a className="btn btn-primary" href={safeHref(step.url, look.home)}>{look.strings.calendar_trailcourse}</a>
+            <div className="dim-cal__popactions dim-cal__trailpopactions">
                 <a className="btn btn-secondary" href={safeHref(trail.url, look.home)}>{look.strings.calendar_trailpage}</a>
+                <a className="btn btn-primary" href={safeHref(step.url, look.home)}>{look.strings.calendar_trailcourse}</a>
             </div>
         </div>
     );

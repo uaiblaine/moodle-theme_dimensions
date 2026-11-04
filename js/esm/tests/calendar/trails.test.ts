@@ -21,8 +21,10 @@
  */
 
 import {zone} from '../../src/calendar/days';
-import {barOf, monthDays, readTrail, todayIndex, withTrail} from '../../src/calendar/trails';
-import type {TrailStep} from '../../src/calendar/trails';
+import {
+    TRACK, barOf, beyondOf, monthDays, openingLeft, pageLeft, readTrail, scrubLeft, todayIndex, trackOf, trailBarOf, withTrail,
+} from '../../src/calendar/trails';
+import type {Trail, TrailStep} from '../../src/calendar/trails';
 import {at} from './fixture';
 
 const utc = zone('UTC', 'en');
@@ -136,5 +138,63 @@ describe('the address', () => {
         expect(readTrail('https://example.com/?trail=-3&mine=yes')).toEqual({trail: 0, mine: false});
         expect(readTrail('https://example.com/?trail=12345678901')).toEqual({trail: 0, mine: false});
         expect(readTrail('https://example.com/')).toEqual({trail: 0, mine: false});
+    });
+});
+
+describe('trailBarOf and beyondOf', () => {
+    it('spans a trail\'s period and is never a milestone', () => {
+        const trail = {first: at('2027-03-02', 12), last: at('2027-04-10', 12)} as Trail;
+        expect(trailBarOf(trail, march, utc)).toEqual({from: 1, to: 30, before: false, after: true, open: false, milestone: false});
+    });
+
+    it('says what of a step lies past the month', () => {
+        expect(beyondOf(step({}), march, utc)).toBe('none');
+        expect(beyondOf(step({end: at('2027-04-02', 12)}), march, utc)).toBe('continues');
+        expect(beyondOf(step({start: at('2027-04-02', 12), end: at('2027-04-20', 12)}), march, utc)).toBe('after');
+        expect(beyondOf(step({end: 0}), march, utc)).toBe('none');
+    });
+});
+
+describe('the scroller\'s arithmetic', () => {
+    // 31 days at 48px with the two still columns (TRACK at 16px a rem), seen through 1000px.
+    const total = (31 + (TRACK.label + TRACK.spill) / TRACK.day) * 48;
+
+    it('reads a day\'s width, the days in view and the thumb from three numbers', () => {
+        const track = trackOf(240, total, 1000, 31);
+        expect(Math.round(track.pitch)).toBe(48);
+        expect(Math.round(track.view)).toBe(584);
+        expect(Math.round(track.max)).toBe(Math.round(total - 1000));
+        expect(track.start).toBeCloseTo(240 / (31 * 48));
+        expect(track.span).toBeCloseTo(584 / (31 * 48));
+        expect([track.back, track.ahead]).toEqual([true, true]);
+        expect(trackOf(0, total, 1000, 31).back).toBe(false);
+        expect(trackOf(total - 1000, total, 1000, 31).ahead).toBe(false);
+    });
+
+    it('has nothing to scroll when the month fits', () => {
+        expect(trackOf(0, 2000, 2000, 31)).toEqual({pitch: 2000 / (31 + 26 / 3), view: 2000, max: 0, start: 0, span: 1,
+            back: false, ahead: false});
+    });
+
+    it('opens on today with a day to spare, at the 1st when today is in view there or not in the month', () => {
+        const track = trackOf(0, total, 1000, 31);
+        expect(openingLeft(16, track)).toBe(280);
+        expect(openingLeft(4, track)).toBe(0);
+        expect(openingLeft(-1, track)).toBe(0);
+        expect(openingLeft(30, track)).toBe(Math.round(track.max));
+    });
+
+    it('pages by the days in view less one, on a day\'s start, never past an end', () => {
+        const track = trackOf(280, total, 1000, 31);
+        expect(pageLeft(280, 1, track)).toBe(816);
+        expect(pageLeft(280, -1, track)).toBe(0);
+        expect(pageLeft(816, 1, track)).toBe(track.max);
+    });
+
+    it('scrubs from the map, the thumb kept on the line', () => {
+        const track = trackOf(0, total, 1000, 31);
+        expect(scrubLeft(0, 0, track, 31)).toBe(0);
+        expect(scrubLeft(1, 0, track, 31)).toBeCloseTo(track.max);
+        expect(scrubLeft(0.5, track.span / 2, track, 31)).toBeCloseTo((0.5 - track.span / 2) * 31 * 48);
     });
 });
