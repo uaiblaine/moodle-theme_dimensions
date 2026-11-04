@@ -396,3 +396,22 @@ Feature: Course enrolment landing page
     And I should see "Log in to enrol"
     And "//meta[@property='og:description'][@content='Evento aberto']" "xpath_element" should exist
     And "//link[@rel='canonical']" "xpath_element" should exist
+
+  @javascript
+  Scenario: A summary longer than three paragraphs opens cut behind a toggle that expands and collapses it
+    Given the following "courses" exist:
+      | fullname     | shortname | summary                                                                                                  | customfield_dimensions_model |
+      | Long Summary | LS1       | <p>First part.</p><p>Second part.</p><p>Third part.</p><p>Fourth part.</p><p>Fifth part.</p>             | 1                            |
+      | Short Summary | SS1      | <p>Only part.</p><p>Second part.</p>                                                                     | 1                            |
+    When I am on the "LS1" "theme_dimensions > Enrolment landing page" page logged in as "student1"
+    Then "See more" "button" should be visible
+    And "[data-region='dimensions-landing-summary'].dimensions-landing__summary--cut" "css_element" should exist
+    And I click on "See more" "button"
+    And "See less" "button" should be visible
+    And "[data-region='dimensions-landing-summarytoggle'][aria-expanded='true']" "css_element" should exist
+    And "[data-region='dimensions-landing-summary'].dimensions-landing__summary--cut" "css_element" should not exist
+    And I click on "See less" "button"
+    And "[data-region='dimensions-landing-summary'].dimensions-landing__summary--cut" "css_element" should exist
+    And I am on the "SS1" "theme_dimensions > Enrolment landing page" page
+    And "See more" "button" should not be visible
+    And "[data-region='dimensions-landing-summary'].dimensions-landing__summary--cut" "css_element" should not exist

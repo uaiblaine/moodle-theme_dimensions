@@ -25,6 +25,10 @@
     fact rows, the enrolment area for the resolved state and, for somebody who
     manages the course without an enrolment, a way into it (landing_page::manage()).
 
+    The summary is cut after its third paragraph by theme_dimensions/landingsummary, which unhides
+    the "See more" toggle only when there is more; without JavaScript it is whole and the toggle
+    stays hidden.
+
     The hero's emphasis block follows the scenario: the big date of an online
     event, the place of an in-person offering, the double ticket of a hybrid
     event (the date, then the two ways to take part) and the composition bar of
@@ -417,9 +421,23 @@
                 </div>
             {{/video}}
             {{#summaryhtml}}
-                <section class="dimensions-landing__section dimensions-landing__section--summary">
-                    {{{summaryhtml}}}
+                <section class="dimensions-landing__section dimensions-landing__section--summary" data-region="dimensions-landing-summary">
+                    <div class="dimensions-landing__summarytext" id="dimensions-landing-summarytext" data-region="dimensions-landing-summarytext">
+                        {{{summaryhtml}}}
+                    </div>
+                    <button type="button" class="dimensions-landing__summarytoggle" data-region="dimensions-landing-summarytoggle"
+                            aria-expanded="false" aria-controls="dimensions-landing-summarytext"
+                            data-label-more="{{#str}} landing_summary_more, theme_dimensions {{/str}}"
+                            data-label-less="{{#str}} landing_summary_less, theme_dimensions {{/str}}" hidden>
+                        <span data-region="dimensions-landing-summarylabel">{{#str}} landing_summary_more, theme_dimensions {{/str}}</span>
+                        <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                    </button>
                 </section>
+                {{#js}}
+                    require(['theme_dimensions/landingsummary'], function(summary) {
+                        summary.init();
+                    });
+                {{/js}}
             {{/summaryhtml}}
             {{#trail}}
                 <section class="dimensions-landing__trail" data-region="dimensions-landing-trail" aria-labelledby="dimensions-landing-trail-title">
