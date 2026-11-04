@@ -460,6 +460,40 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         padding-inline: var(--dim-landing-inset);
     }
 
+    // The cut after the third paragraph: theme_dimensions/landingsummary measures it into the custom property and
+    // sets the class. The fade is drawn under the cut, over the start of the fourth paragraph, so the third reads
+    // whole; {@see SLACK_REM} in the module is this 3rem.
+    .dimensions-landing__summary--cut .dimensions-landing__summarytext {
+        max-height: calc(var(--dim-landing-summary-cut) + 3rem);
+        overflow: hidden;
+        -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 3rem), transparent);
+        mask-image: linear-gradient(to bottom, #000 calc(100% - 3rem), transparent);
+    }
+
+    // The toggle is a quiet link-coloured control, as local_dimensions' collapsible description draws it; the
+    // global focus ring of post.scss reaches it.
+    .dimensions-landing__summarytoggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.5rem;
+        padding: 0.25rem 0;
+        border: 0;
+        background: none;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--bs-link-color);
+        cursor: pointer;
+
+        &:hover {
+            text-decoration: underline;
+        }
+
+        .fa {
+            font-size: 0.7rem;
+        }
+    }
+
     // The sections after the summary (audience, programme, certification) share one panel in the brand's soft
     // border, padded by the inset.
     .dimensions-landing__panel {
@@ -600,6 +634,11 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         width: 100%;
     }
 
+    // The calendar link follows the card's own button, never touching it.
+    .dimensions-landing__trailcalendar {
+        margin-top: 0.5rem;
+    }
+
     .dimensions-landing__method {
         margin: 0.75rem 0 0;
     }
@@ -732,21 +771,24 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         list-style: none;
     }
 
-    .dimensions-landing__steps::before {
-        content: "";
-        position: absolute;
-        top: 2.75rem;
-        bottom: 2.75rem;
-        inset-inline-start: 15px;
-        width: 2px;
-        background: var(--dim-landing-soft);
-    }
-
     .dimensions-landing__step {
         position: relative;
         display: flex;
         align-items: flex-start;
         gap: 1rem;
+    }
+
+    // The connector is one segment per course, from its circle's centre to the next one's: a step's height plus the
+    // list's 1rem gap. The last course draws none, so the line ends in its circle whatever the card's height. The
+    // circle (2.5rem down, 32px tall, painted after this) covers the segment's ends.
+    .dimensions-landing__step:not(:last-child)::before {
+        content: "";
+        position: absolute;
+        top: calc(2.5rem + 16px);
+        height: calc(100% + 1rem);
+        inset-inline-start: 15px;
+        width: 2px;
+        background: var(--dim-landing-soft);
     }
 
     .dimensions-landing__stepnum {
