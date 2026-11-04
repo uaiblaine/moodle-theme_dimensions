@@ -2317,10 +2317,11 @@ body.dim-calendar {
         font-weight: 700;
     }
 
+    // 4px a side: "→ 12 dez." in 11px fits the 76px column with its border, where 6px left it a pixel short.
     .dim-cal__trailchip {
         max-width: 100%;
         height: 1.5rem;
-        padding: 0 .375rem;
+        padding: 0 .25rem;
         overflow: hidden;
         border: 1px solid var(--dim-cal-edge);
         border-radius: var(--dim-ds-radius-sm, 6px);
@@ -2411,11 +2412,10 @@ body.dim-calendar {
         background: var(--dim-cal-surface-hover);
     }
 
+    // At an end the arrow has nowhere to go: it is hidden, so it never covers the first or the last day's header, and a
+    // hidden button leaves the tab order with it.
     .dim-cal__trailedge[aria-disabled="true"] {
-        background: var(--dim-cal-surface);
-        box-shadow: none;
-        color: var(--dim-ds-text-subtle, var(--bs-secondary-color));
-        cursor: default;
+        visibility: hidden;
     }
 
     // The map: a 2px line of the whole month under the days, in a 24px hit area; the thumb is the days in view (its
