@@ -235,6 +235,50 @@ final class landing_scss_test extends \advanced_testcase {
     }
 
     /**
+     * The summary is clipped at the measured cut only while cut, and the calendar link keeps off the button above it.
+     */
+    public function test_the_summary_cut_and_the_calendar_gap(): void {
+        $css = $this->compile('#0f6cbf');
+        $cut = $this->rule(
+            $css,
+            '.theme_dimensions-landing .dimensions-landing__summary--cut .dimensions-landing__summarytext'
+        );
+        $this->assertStringContainsString('max-height: calc(var(--dim-landing-summary-cut) + 3rem)', $cut);
+        $this->assertStringContainsString('overflow: hidden', $cut);
+        $this->assertStringContainsString('mask-image: linear-gradient(', $cut);
+        // The text is clipped through the class alone: a bare summary is never cut.
+        $this->assertDoesNotMatchRegularExpression(
+            '~\.theme_dimensions-landing \.dimensions-landing__summarytext\s*\{[^}]*max-height~',
+            $css
+        );
+        $this->assertStringContainsString(
+            'margin-top: 0.5rem',
+            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__trailcalendar')
+        );
+        $toggle = $this->rule($css, '.theme_dimensions-landing .dimensions-landing__summarytoggle');
+        $this->assertStringContainsString('color: var(--bs-link-color)', $toggle);
+    }
+
+    /**
+     * The trail's connector runs from each circle to the next and ends in the last one, whatever the last card's height.
+     */
+    public function test_the_trail_connector_ends_in_the_last_circle(): void {
+        $css = $this->compile('#0f6cbf');
+        $segment = $this->rule($css, '.theme_dimensions-landing .dimensions-landing__step:not(:last-child)::before');
+        // From the circle's centre (2.5rem down, 32px tall) to the next one's: the step plus the list's gap.
+        $this->assertStringContainsString('top: calc(2.5rem + 16px)', $segment);
+        $this->assertStringContainsString('height: calc(100% + 1rem)', $segment);
+        $this->assertStringContainsString(
+            'margin-top: 2.5rem',
+            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__stepnum')
+        );
+        $this->assertStringContainsString('gap: 1rem', $this->rule($css, '.theme_dimensions-landing .dimensions-landing__steps'));
+        // No line drawn over the whole list, which ran past the last circle on a card taller than its offset.
+        $this->assertStringNotContainsString('.dimensions-landing__steps::before', $css);
+        $this->assertDoesNotMatchRegularExpression('~\.dimensions-landing__step::before~', $css);
+    }
+
+    /**
      * The hero, the guest entry's card and its button read the ground, not the navy tokens.
      */
     public function test_the_painted_rules_read_the_ground(): void {
