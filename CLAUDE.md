@@ -1651,6 +1651,16 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   filters' row) and `TrailPopover.tsx` over the pure `trails.ts`; `Calendar.tsx`'s one request path asks the trails
   service for a trail span. The view's colours are its own `--dim-cal-trail*` tokens, never a key colour setting.
   `display::many()` and `progress::many()` are the batched readers the view needs; `steps()` and `of()` call them.
+- **R3: visual parity with the mockup** (PROPOSAL section 33). The desktop Trilhas grid scrolls sideways in
+  `TrailScroll.tsx`, compass's strip in the theme's classes:
+  - one native scroller with the scrollbar hidden, snapped per day;
+  - every row a grid of the 340px trail column, 48px days and the 76px last column, the two outer cells `sticky`;
+  - the map (line, thumb, today tick, aria-hidden), the edge arrows and the fades.
+
+  Its layout reads are the scroller's own: once per opening key, then on scroll, an arrow and the map; the thumb moves
+  through its style. `trails.ts` (`TRACK`, `openingLeft()`, `pageLeft()`, `scrubLeft()`) holds the scroll arithmetic in
+  the stylesheet's rem, and a PHP test compares the two. The toolbar buttons follow the mockup by re-pointing
+  `--bs-btn-*` under `.dim-cal`, the disabled trio included.
 - Tests: `tests/local/calendar/{state,page,calendar_component_source,keycolours}_test.php`, `tests/output/calendar_page_test.php`,
   `tests/route/controller/calendar_test.php`, `tests/external/remember_calendar_state_test.php`,
   `tests/local/calendar_scss_test.php` (the key tokens compiled and measured in both modes), Jest `js/esm/tests/calendar`,

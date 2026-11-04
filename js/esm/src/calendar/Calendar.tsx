@@ -923,6 +923,7 @@ const Calendar = (props: Props) => {
                     now={props.now}
                     phone={phone}
                     captionid={CAPTION}
+                    chosen={filter.trail}
                     onWidth={onWidth}
                 />
             );

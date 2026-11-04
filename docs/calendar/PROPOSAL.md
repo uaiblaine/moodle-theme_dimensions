@@ -2764,3 +2764,171 @@ width. Not changed.
   formatting, and claims the multilang test. Every line of the spec, 1,571 of them, was dry-matched against the tree:
   none is dead.
 - Tier 3 (visitor-facing reads and a nologin answer): `mdl ci <worktree> --matrix --behat`.
+
+## 33. R3: visual parity with the mockup and the trail scroller (2026-11-03)
+
+Branch `calendar-r3`, from main 38d499f (2026100580). The owner's words: navigation works, but the calendar lacks the
+mockup's care (spacing, buttons, outlines), the Trilhas view most of all; the Trilhas grid must scroll sideways with
+block_compass's calendar strip's scrollbar instead of running past the margin on a desktop; then every page is to be
+compared with its mockup and brought to it. The trail icon stays. Every owner decision of R1-R2 (sections 27-32) stands
+where the C0 mockup differs: the event types are a dropdown, no classic-calendar link, the key colours are settings, the
+page is full width, the drawer is sticky.
+
+### 33.1 Plan
+
+1. **The Trilhas desktop grid** (`TrailView.tsx`, `TrailPopover.tsx`, `trails.ts`, the trail block of
+   `scss/calendar.scss`) to the Design canvas's CalTrilhas, values read from its inline styles: the card, the 340px trail
+   column, 52px trail rows with a fold and a meta line, 40px step rows with a numbered circle, the days' header (weekday
+   letter over the number, today as the filled pill, weekends hatched), 24px bars in the state's colours, the
+   expected-date diamond, the trail's span line, the last column's chip, the legend, the toolbar row and the popover.
+2. **The scroller** (`TrailScroll.tsx`, new): only the days scroll; the trail column and the last column are `sticky`
+   inside one native scroller; the look and behaviour are block_compass's strip (`.compass-cal-days`, `-map`, `-edge`,
+   `-fade`; `CalendarStrip.tsx`'s `paint()`, `scrubTo()`, `mapDown()`), in the theme's own classes and tokens.
+3. **The Trilhas phone agenda** to CalTrilhasPhone.
+4. **Every other page** against Ajustes (the R1 month, newest), Main, Popovers, Filters, Phone and Density: the gaps by
+   value, fixed in SCSS, TSX only where markup must change.
+5. Measured on m503b (main, the live checkout) with `getComputedStyle`/`getBoundingClientRect`; the fixes previewed by
+   injecting the branch's compiled sheet into the live page.
+
+### 33.2 The scroller
+
+- **One scroller, sticky columns.** The grid (`.dim-cal__trailgrid`) is `width: max-content` inside
+  `.dim-cal__trailscroll` (`overflow-x: auto`, `overscroll-behavior-x: contain`, `scroll-snap-type: x proximity`,
+  `scrollbar-width: none` and the WebKit rule); every row is a grid of `--dim-cal-trail-label` (21.25rem),
+  `--dim-cal-trail-days` x `--dim-cal-trail-day` (3rem) and `--dim-cal-trail-spill` (4.75rem); its first and last cells
+  are `position: sticky` at `z-index: 3` over the bars (1) and diamonds (2). Each row keeps its trail's label and bar
+  together, so a row is still one row for a screen reader, and the scroll padding (the still columns and a day) scrolls
+  a bar the keyboard focuses out from under them.
+- **Arithmetic from the scroller alone** (`trails.ts`): `TRACK` holds the three widths in rem, which the stylesheet
+  declares with the same numbers (`calendar_component_source_test` compares them), so `trackOf(scrollLeft, scrollWidth,
+  clientWidth, days)` gives a day's pixels, the days in view, the furthest scroll, the thumb (start and span as fractions
+  of the month) and the two ways; `openingLeft()` brings today into view with a day to spare (a month whose today is
+  already in view opens at its 1st); `pageLeft()` pages by the days in view less one, landing on a day; `scrubLeft()` is
+  the map's. All pure, all in Jest.
+- **The layout reads are the scroller's own**: once per opening (the key is the month and its trails), in a layout
+  effect, to set today in view and paint the thumb, as `HourScroll.tsx` places its hours; on a scroll (the thumb by its
+  style, without a render; the arrows and fades only when one changes); on an arrow; on the map (its box). `TrailView.tsx`
+  reads nothing and keeps its one ResizeObserver on the frame for the phone decision; `TrailScroll.tsx` observes
+  nothing. The source test counts the scroller's ten reads and pins the opening key.
+- **The map is aria-hidden and out of the tab order**; the arrows are named buttons ("Earlier days", "Later days",
+  `aria-disabled` at an end, as compass's), the bars are the Tab stops. A press on the line puts the thumb's middle
+  under the pointer; a press on the thumb grabs it; snap is off while it drags (`.dim-cal__trailscroll--free`).
+- RTL is not handled by the arithmetic (compass's `isRtl()` flip): the theme's calendar has no RTL language today.
+
+### 33.3 The gaps found and what changed
+
+Values are the mockup's, then what main drew on m503b at 1600x1040 (or the mobile preset), then the branch.
+
+**Trilhas, desktop** (all fixed in the trail block and `TrailView.tsx`):
+
+| Element | Mockup | Main |
+|---|---|---|
+| Card | white, 1px #dee2e6, radius 12 | 1px #f8f9fa (quiet surface), radius 8 |
+| Trail column | 340px, right border #dee2e6 | 14rem (224px), no border |
+| Day | 48px fixed, the timeline scrolls | `minmax(1.5rem, 1fr)`, the grid's own overflow |
+| Trail row | 52px, chevron 28px, name 14/600 link, meta 12px muted | 36px min, quiet ground, name and "0 of 3" only |
+| Step row | 40px, 20px circle 11/700 in the state's colours, name 13px | 36px, the number as muted 12px text |
+| Day header | weekday 10/500 over number 12/600; today filled #070093 pill radius 6; weekend #f2f3f6 | number 12px muted; today bold ink; weekend quiet |
+| Weekends down the rows | hatched | none |
+| Today | one 2px line #070093 | a 2px element per row in blue-500 |
+| Current bar | solid #070093, white text | blue-050 tint, blue-500 edge |
+| Up next bar | white, #070093 outline and text | white, gray-600 dashed |
+| Locked bar | hatched, #ced4da edge | white, gray-600 dashed |
+| Expected date | 12px diamond, 2px white rim, on the day's centre | an 8px `::after` inside the bar's end |
+| Past the month | bar ends dashed at the month; a chip "→ 10 Dec" in the still 76px column | bar ran into a 56px column |
+| Trail span | 8px pill under the trail row, diamond at its end, "until 18 Dec" | none |
+| Legend | states, schedule, expected date, today | none |
+| Toolbar | trail as a 36px button with the trail icon (chosen: tint, primary border); "Só as minhas" toggle with a person icon; category; "Limpar filtros"; count "1 trilha · 5 cursos" at the right | native select, a checkbox, the category picker at the right, no count |
+| Popover | 64px band; category 12/600 muted; name 18/600; state pill 2px 10px 12/600; rows with the trail and calendar icons 14px; note in a #f8f9fa 8px box; "Ver trilha" then primary, right-aligned | no band; category as a key chip; name 17px; state a 6px-radius tag; a dl; "Open course" first |
+
+**Trilhas, phone** (CalTrilhasPhone, fixed): a card per trail (radius 12, padding 14/14/6), name 16/600 with "2 of 5
+done" at the right, one 6px segment per step (done, current and late in their edge, the rest the default border), rows
+of a 52px date column (13/600), a 4px colour bar, "N. name" 14/600, the dates 12px muted and the state pill (11/600),
+the "Today" line with today's date. Main drew each step as a tinted bordered box, an underlined name, a 0.75rem tag.
+
+**Month, toolbar and filters** (fixed in the shared rules):
+
+| Element | Mockup | Main |
+|---|---|---|
+| Toolbar buttons (Today, arrows, Event types, Category, More filters) | 36px, radius 8, white, 1px #dee2e6, #1f1f1f, 14/500 | Bootstrap secondary: #ced4da ground and border, black, 16/400, radius 6, 38px |
+| New event | #070093, radius 8, 14/500, 36px | #0f6cbf (Boost's primary on m503b), radius 6, 16/400, 38px |
+| View switch | 14px | 16px |
+| Clear filters | ghost: no border, the link's ink, tint on hover | btn-link |
+| Event types menu | 320px, padding 8, gap 2, the large shadow; rows 40px, 0 10px, radius 8, hover #f2f3f5; boxes 18px in #070093; swatch 12px; count 12px muted | 256px, padding 16, gap 8, the medium shadow; rows 21px with no inset; 13px boxes; 10px swatch; 14px count in the body's ink |
+| Category tree | rows 14px | 16px |
+| Search field, city select | 36px, radius 8, #dee2e6, 14px | 38px, radius 6, #8f959e, 16px |
+
+The buttons are re-pointed through Bootstrap's own `--bs-btn-*` properties under `.dim-cal` (the disabled trio
+included, R1's lesson), so a bare Bootstrap class never fights core; the icon-only buttons (`.dim-cal__step`,
+`.dim-cal__close`, the drawer's "+") keep their squares at the same weight later in the sheet.
+
+**Drawer and popover** (fixed):
+
+| Element | Mockup | Main |
+|---|---|---|
+| Drawer | sections: head 16/16/12 over a #e9ecef line, all-day strip 12/16 over another, the hours inset; the medium shadow | one 16px-padded box, no lines, no shadow |
+| Drawer title | 20px | 17px |
+| Drawer "+" and close | 36px squares, the "+" white bordered | 32px, the "+" filled primary |
+| Popover | 360px | 352px |
+| Popover title | 18/600, the body's ink | 17px, the heading's navy |
+| Key chip | padding 2px 10px | 0 8px |
+| Description | 13px in a #f8f9fa 8px box, 8px 10px | 14px, no box |
+
+**Phone month** (fixed): arrows 44px (were 36), the view switch the row's width in 40px segments (34px, inline),
+filter buttons as pills (radius 8), the weekday band 22px of centred 11px letters (30px, 12px, left).
+
+Matched already, unchanged: the month's weekday band (30px, 12/600, #505050, 0.02em), the week rows (148px), the day
+numbers (26px, 13/600), bars (20px, 12/500, padding 8), lines (20px, 12px), cards (12px, 6px 8px, radius 8), the
+drawer's 392px (R1's 24.5rem against the mockup's 400px, the owner's).
+
+### 33.4 Left different on purpose
+
+- **The schedule's colour** (a trail with no enrolment) stays the measured blue pair (`--dim-cal-trail-*`, blue-100,
+  blue-400, blue-800), not the mockup's violet (#e7e1f7, #6b4fbb, #3a2470): the design system has no violet, and the
+  rule is never to invent a colour.
+- **The numbered circles** read their state's measured pair (tint, edge, ink) in both modes, so done and late are tinted
+  where the mockup fills them; the current step is solid in light mode because its pair is. In dark mode the current
+  step keeps the course key's tinted pair and the upcoming one takes the open key's (every pair measured by
+  `calendar_scss_test`).
+- **"New event" is not drawn in Trilhas** (`docs/trail/PLAN.md` section 7), though the mockup shows it; no hours column
+  in the step rows (the answer carries none); the trail's meta line does not count late steps; the popover keeps both
+  actions for a reader not enrolled rather than the mockup's single "Ver trilha para se inscrever".
+- **The event popover keeps its facts list** (`dl`) rather than the mockup's icon rows: a markup change of the event
+  popover was not part of this round's scope; its box, title, chip and description follow the mockup.
+- **The phone's day stays a card under the grid**, not the mockup's bottom sheet with a handle; the phone's title stays
+  "Calendar" with the month under it, not the month as the title.
+- **Density** (Density.dc.html) was compared through the month's cells above; no density rule changed.
+
+### 33.5 Tests and gates
+
+- Jest: `TrailView.test.tsx` (the bars, the diamond, the chip out of the tab order and the tree, the span, the meta, the
+  count, the weekends and today as ground columns; the learner's circles and legend; the fold, which writes no address
+  and asks nothing; "Only mine" as a pressed button; the scroller: today into view, the thumb from the scroll, the
+  arrows' pages and their ends, the map's jump; a month whose today is in view opens at its 1st), `trails.test.ts`
+  (`trailBarOf()`, `beyondOf()`, `trackOf()`, `openingLeft()`, `pageLeft()`, `scrubLeft()`). Changed because the design
+  changed: a continued bar now ends at the month (`12 / 32`, was `12 / 33`), today's header holds the weekday letter (the
+  number is read from `.dim-cal__traildaynum`), the progress is in the meta line, the popover's actions are in the
+  mockup's order.
+- PHPUnit: `calendar_component_source_test::test_no_layout_read_and_one_observer` admits `TrailScroll.tsx` with its ten
+  reads and its opening key; `test_the_trail_scroller_and_its_columns` (new: `TRACK` against the stylesheet, the named
+  bars, the quiet chip, the map hidden, the named arrows); `calendar_scss_test::test_the_trail_scroller_and_the_buttons_follow_the_mockup`
+  (new). The existing pins hold unchanged (the state pill, the title, the drawer).
+- Gates: the "R3" block of `mutations/gates.conf`, 11 gates. Every line of the spec, 1,603 of them, was dry-matched
+  against the tree: none is dead.
+- Tier: 2 (PHP source tests, TSX, SCSS, lang; no SQL): `mdl ci <worktree> --branch MOODLE_503_STABLE` and Behat for the
+  calendar's features (`--behat`), since the toolbar's buttons and the drawer changed.
+
+### 33.6 Results and what is not verified
+
+- Measured on m503b (main): every value in 33.3's "Main" columns. Previewed by injecting the branch's compiled
+  `calendar.scss` into the live page: the toolbar buttons (36px, radius 8, 14/500, white; New event #070093), the view
+  switch (14px), the event types menu (320px, padding 8, gap 2, the large shadow, 40px rows, 18px boxes in #070093), the
+  drawer (no padding, the medium shadow, the 16px head over its line, 20px title, 36px buttons), the popover (360px,
+  16px padding, gap 10, 18px title in the body's ink, the chip's 2px 10px, the description's quiet box), the phone's
+  arrows (44px), view switch (40px segments), pills and weekday band (22px, 11px). The Trilhas desktop grid and the
+  phone agenda were previewed by injecting the branch's markup, rendered by a throwaway Jest run, with the sheet: the
+  grid measured 1856px of content in a 1439px scroller (a day 48px), the sticky columns held while scrolled, and the
+  card, rows, circles, bars, chips, today pill and map read as the mockup.
+- Not verified until a stack runs the branch: the scroller's behaviour in a browser (the opening scroll, the arrows'
+  smooth scroll, the map's drag and snap release, the thumb following a trackpad), focus scrolling past the sticky
+  columns, dark mode on the new rules, and the Behat features.

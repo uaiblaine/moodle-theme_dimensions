@@ -185,7 +185,9 @@ final class calendar_component_source_test extends \basic_testcase {
      * (R1c), when a day or a week opens it and while it scrolls; each grid is measured by one ResizeObserver: the
      * month's watches the rows (the density) and the frame the drawer shares (the phone), the week's the frame alone,
      * and the phone's Day view (R1d), drawn with no grid beside it, has one of its own on the same frame, as the Trilhas
-     * view (docs/trail/PLAN.md section 7) does; the step's popover reads as the event popover does, on an opening.
+     * view (docs/trail/PLAN.md section 7) does; the step's popover reads as the event popover does, on an opening; and
+     * the Trilhas view's days scroller (R3, TrailScroll.tsx) reads itself once per opening (today into view) and on a
+     * scroll, an arrow or the map, never on another render.
      *
      * @return void
      */
@@ -194,7 +196,7 @@ final class calendar_component_source_test extends \basic_testcase {
         $reads = '~getBoundingClientRect|getClientRects|offset(?:Height|Width|Top|Left)|client(?:Height|Width)'
             . '|scroll(?:Height|Width|Top|Left)|getComputedStyle~';
         foreach ($this->sources() as $path => $source) {
-            if (!in_array($path, ['EventPopover.tsx', 'HourScroll.tsx', 'TrailPopover.tsx'], true)) {
+            if (!in_array($path, ['EventPopover.tsx', 'HourScroll.tsx', 'TrailPopover.tsx', 'TrailScroll.tsx'], true)) {
                 $this->assertDoesNotMatchRegularExpression($reads, $source, "{$path} reads the layout.");
             }
             $observers += substr_count($source, 'new ResizeObserver(');
@@ -222,6 +224,19 @@ final class calendar_component_source_test extends \basic_testcase {
             $box,
             'The box is measured when a day or a week opens it or the grid hands a new height, not on every render.'
         );
+        $scroll = $this->sources()['TrailScroll.tsx'];
+        $this->assertSame(
+            10,
+            preg_match_all($reads, $scroll),
+            'The days scroller: its measure (three), the opening\'s write and two reads, an arrow\'s read and its fallback '
+                . 'write, the map\'s box and its write.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~useLayoutEffect\(\(\) => \{\s*const element = box\.current;.*?scrollWidth.*?\}, \[opening\]\);~s',
+            $scroll,
+            'The scroller is placed once per opening, not on every render.'
+        );
+        $this->assertSame(0, substr_count($scroll, 'new ResizeObserver('), 'The scroller observes nothing.');
         $this->assertSame(4, $observers, 'One per grid, one for the Day view and one for the Trilhas view, never per cell.');
         $this->assertSame(1, substr_count($this->sources()['TrailView.tsx'], 'new ResizeObserver('));
         $this->assertStringContainsString('const frame = root.current?.parentElement || null;', $this->sources()['TrailView.tsx']);
@@ -1003,5 +1018,37 @@ final class calendar_component_source_test extends \basic_testcase {
             '{shown.answer.truncated ? <p className="dim-cal__status">{strings.calendar_truncated}</p> : null}',
             $this->sources()['Calendar.tsx']
         );
+    }
+
+    /**
+     * R3 (docs/calendar/PROPOSAL.md section 33): the Trilhas view's days scroll in a scroller of block_compass's shape.
+     * Its arithmetic reads the three column widths the stylesheet declares (trails.ts TRACK), so the two must agree;
+     * every bar and agenda row is a button named by its step, and the last column's chip that repeats a bar is out of
+     * the tab order and the tree; the map is aria-hidden and the arrows are named; a folded trail is the view's own
+     * state.
+     *
+     * @return void
+     */
+    public function test_the_trail_scroller_and_its_columns(): void {
+        $trails = $this->sources()['trails.ts'];
+        $scss = (string) file_get_contents(dirname(__DIR__, 3) . '/scss/calendar.scss');
+        $pattern = '~export const TRACK = \{label: ([\d.]+), day: ([\d.]+), spill: ([\d.]+)\};~';
+        $this->assertSame(1, preg_match($pattern, $trails, $track));
+        $this->assertStringContainsString("--dim-cal-trail-label: {$track[1]}rem;", $scss);
+        $this->assertStringContainsString("--dim-cal-trail-day: {$track[2]}rem;", $scss);
+        $this->assertStringContainsString("--dim-cal-trail-spill: {$track[3]}rem;", $scss);
+
+        $view = $this->sources()['TrailView.tsx'];
+        $this->assertStringContainsString('aria-label={quiet ? undefined : stepLabel(step, look, now)}', $view);
+        $this->assertStringContainsString("aria-hidden={quiet ? 'true' : undefined}", $view);
+        $this->assertStringContainsString('tabIndex={quiet ? -1 : undefined}', $view);
+        $this->assertStringContainsString('<TrailScroll', $view);
+        $this->assertStringNotContainsString('remember', $view, 'A folded trail is never saved.');
+        $this->assertStringNotContainsString('history', $view);
+
+        $scroll = $this->sources()['TrailScroll.tsx'];
+        $this->assertMatchesRegularExpression('~data-region="dim-cal-trailmap"\s*aria-hidden="true"~', $scroll);
+        $this->assertStringContainsString('aria-label={strings.calendar_trailearlier}', $scroll);
+        $this->assertStringContainsString('aria-label={strings.calendar_traillater}', $scroll);
     }
 }

@@ -84,6 +84,21 @@ export const colourStyle = (item: Item, look: Look): CSSProperties => {
 };
 
 /**
+ * A category's branding pair as a cover's two local properties ({@see coverStyle()}), for the Trilhas view's step
+ * popover too (its step's category); none for a category the answer does not name or that has no pair.
+ *
+ * @param {number} categoryid The category.
+ * @param {object} look The page's look.
+ * @returns {object} The local properties.
+ */
+export const categoryCover = (categoryid: number, look: Look): CSSProperties => {
+    const category = look.categories.get(categoryid);
+    const bg = category ? hex(category.bg) : null;
+    const ink = category ? hex(category.ink) : null;
+    return bg && ink ? {'--dim-cal-cover-bg': bg, '--dim-cal-cover-ink': ink} as CSSProperties : {};
+};
+
+/**
  * The ground of an event course's cover without an image: its category's branding pair, each colour checked again
  * (hex()), as two local properties; none when the course's category is not in the answer or has no pair, so the band
  * keeps its key's colours (scss/calendar.scss .dim-cal__popcover).
@@ -92,12 +107,7 @@ export const colourStyle = (item: Item, look: Look): CSSProperties => {
  * @param {object} look The page's look.
  * @returns {object} The local properties.
  */
-export const coverStyle = (course: Course, look: Look): CSSProperties => {
-    const category = look.categories.get(course.categoryid);
-    const bg = category ? hex(category.bg) : null;
-    const ink = category ? hex(category.ink) : null;
-    return bg && ink ? {'--dim-cal-cover-bg': bg, '--dim-cal-cover-ink': ink} as CSSProperties : {};
-};
+export const coverStyle = (course: Course, look: Look): CSSProperties => categoryCover(course.categoryid, look);
 
 /**
  * Where an item happens: its location, else its course's city and venue, else its course's name.
