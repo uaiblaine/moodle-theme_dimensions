@@ -64,6 +64,8 @@ final class category_badges_test extends \advanced_testcase {
         $manager = manager::phpunit_get_instance(['theme_dimensions' => $CFG->dirroot . '/theme/dimensions/db/hooks.php']);
         \core\di::set(manager::class, $manager);
         \core_cache\cache::make('theme_dimensions', 'categorybranding')->purge();
+        \local_unlistedcourses\category_discoverability::reset_caches();
+        \local_unlistedcourses\category_access::reset_caches();
     }
 
     /**
@@ -175,6 +177,32 @@ final class category_badges_test extends \advanced_testcase {
         $this->assertArrayNotHasKey($child, $this->ask([$child]), 'under a hidden parent: no crest for a learner');
         $this->setAdminUser();
         $this->assertArrayHasKey($child, $this->ask([$child]), 'the control: an administrator still sees it');
+    }
+
+    /**
+     * An unlisted category gets no crest for a reader the plugin withholds it from, though core shows it; an
+     * administrator still gets it. The control is a listed category asked in the same call.
+     *
+     * @return void
+     */
+    public function test_an_unlisted_category_gets_no_crest_for_an_outsider(): void {
+        $unlisted = $this->category_with_crests(['categorybadge1']);
+        $listed = $this->category_with_crests(['categorybadge1']);
+        $this->setAdminUser();
+        \local_unlistedcourses\category_discoverability::set_state(
+            $unlisted,
+            \local_unlistedcourses\category_discoverability::STATE_UNLISTED
+        );
+        \local_unlistedcourses\category_discoverability::reset_caches();
+        \local_unlistedcourses\category_access::reset_caches();
+
+        $this->setUser(self::getDataGenerator()->create_user());
+        $badges = $this->ask([$unlisted, $listed]);
+        $this->assertArrayNotHasKey($unlisted, $badges, 'unlisted: no crest for an outsider');
+        $this->assertArrayHasKey($listed, $badges, 'the control');
+
+        $this->setAdminUser();
+        $this->assertArrayHasKey($unlisted, $this->ask([$unlisted]), 'an administrator discovers it');
     }
 
     /**

@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\local\hook\block_compass;
 
+use local_unlistedcourses\category_access;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\landing\publicfiles;
 
@@ -31,16 +32,15 @@ use theme_dimensions\local\landing\publicfiles;
  * Gives the categories block_compass's open-courses line names their first crest (block_compass ADR-019).
  *
  * Registered in db/hooks.php for \block_compass\hook\category_badges; without the block nothing calls this.
- * Only categories the current user may see are answered, by core's rule (first_crests() says how). A full
+ * Only categories the current user may list are answered (first_crests() says how). A full
  * branding build costs seven statements a category, which the line must not pay: this listener keeps its
  * own small entry per category in the branding cache and reads its misses in one statement.
  *
- * Core's visibility is the rule applied here, not local_unlistedcourses' category discoverability: the block
- * names only categories whose path holds no unlisted category (its catalogue drops them before it asks), and
- * reading the unlisted set here would cost every response a read. The crest's address re-checks both on its own
- * ({@see branding::resolve()}), so an address that reached a page nevertheless serves nothing to a reader who
- * may not see the category; an entry written by a read that raced an update can at worst name a file the route
- * then refuses.
+ * Both rules of {@see branding::viewer_may_see()} apply, core's visibility and then local_unlistedcourses'
+ * category discoverability, so a caller that passes unfiltered ids learns no crest of a category the reader may
+ * not list. The plugin's question costs nothing on a site with no unlisted category. The crest's address
+ * re-checks both on its own ({@see branding::resolve()}); an entry written by a read that raced an update can at
+ * worst name a file the route then refuses.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -83,11 +83,11 @@ class category_badges {
      * Each category's entry - its visible flag, its context record and its first crest - lives in the
      * categorybranding cache under its own key, so branding::forget_all() drops it whenever it drops the
      * branding (an editor save, a category updated, moved or deleted). The misses are read in one statement.
-     * Who may see a category is core's own rule, core_course_category::can_view_category(), asked with the
-     * cached flag and the preloaded context, so a warm answer reads nothing.
+     * Core's rule, core_course_category::can_view_category(), is asked with the cached flag and the preloaded
+     * context; the categories it admits then pass category_access::filter_categories().
      *
      * @param int[] $categoryids Category ids.
-     * @return array Category id => ['url' => string, 'alt' => string], for the visible categories that have one.
+     * @return array Category id => ['url' => string, 'alt' => string], for the listable categories that have one.
      */
     public static function first_crests(array $categoryids): array {
         $ids = [];
@@ -122,16 +122,20 @@ class category_badges {
             $entries += $fresh;
         }
 
-        $crests = [];
+        $visible = [];
         foreach ($entries as $categoryid => $entry) {
             if ($entry['crest'] === null) {
                 continue;
             }
             \core\context_helper::preload_from_record((object) $entry['ctx']);
-            if (!\core_course_category::can_view_category((object) ['id' => $categoryid, 'visible' => $entry['visible']])) {
-                continue;
+            if (\core_course_category::can_view_category((object) ['id' => $categoryid, 'visible' => $entry['visible']])) {
+                $visible[$categoryid] = $categoryid;
             }
-            [$area, $badge] = $entry['crest'];
+        }
+
+        $crests = [];
+        foreach (category_access::filter_categories($visible) as $categoryid) {
+            [$area, $badge] = $entries[$categoryid]['crest'];
             $crests[$categoryid] = [
                 'url' => branding::badge_url($categoryid, $area, $badge)->out(false),
                 'alt' => publicfiles::badge_alt((string) $badge['filename']),

@@ -231,6 +231,71 @@ final class redirector_test extends \advanced_testcase {
     }
 
     /**
+     * A missing course id answers as an unlisted course does, to whoever an unlisted course would ghost.
+     *
+     * The ghost page and core's "invalid course" error must not tell an existing unlisted course from a missing
+     * id. The controls: a listed course is not ghosted, the unlisted one is, and a guest, a visitor and a site
+     * without the predicate still get core's answer for the missing id.
+     *
+     * @return void
+     */
+    public function test_a_missing_course_address_is_ghosted_like_an_unlisted_one(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $listed = $generator->create_course();
+        $unlisted = $generator->create_course();
+        $this->setAdminUser();
+        \local_unlistedcourses\discoverability::set_state(
+            (int) $unlisted->id,
+            \local_unlistedcourses\discoverability::STATE_UNLISTED
+        );
+        $missing = (int) $DB->get_field_sql('SELECT MAX(id) FROM {course}') + 100;
+
+        $this->setUser($generator->create_user());
+        \local_unlistedcourses\access::reset_caches();
+        $this->assertTrue(redirector::is_address_ghosted((int) $unlisted->id), 'Control: the unlisted course is ghosted.');
+        $this->assertFalse(redirector::is_address_ghosted((int) $listed->id), 'Control: a listed course is not.');
+        $this->assertTrue(redirector::is_address_ghosted($missing), 'A missing id must answer as the unlisted course.');
+        $this->assertFalse(
+            redirector::is_address_ghosted($missing, 'theme_dimensions\\local\\landing\\no_such_predicate'),
+            'Without the predicate nobody is ghosted, a missing id included.'
+        );
+
+        $this->setGuestUser();
+        $this->assertFalse(redirector::is_address_ghosted($missing), 'A guest gets core\'s answer.');
+        $this->setUser(null);
+        $this->assertFalse(redirector::is_address_ghosted($missing), 'So does a visitor.');
+    }
+
+    /**
+     * An unknown shortname answers as a missing id does; a known one answers as its course.
+     *
+     * @return void
+     */
+    public function test_an_unknown_shortname_is_ghosted_like_an_unlisted_course(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $listed = $generator->create_course(['shortname' => 'LISTED1']);
+        $unlisted = $generator->create_course(['shortname' => 'UNLISTED1']);
+        $this->setAdminUser();
+        \local_unlistedcourses\discoverability::set_state(
+            (int) $unlisted->id,
+            \local_unlistedcourses\discoverability::STATE_UNLISTED
+        );
+
+        $this->setUser($generator->create_user());
+        \local_unlistedcourses\access::reset_caches();
+        $this->assertTrue(redirector::is_shortname_ghosted('UNLISTED1'), 'Control: the unlisted course is ghosted.');
+        $this->assertFalse(redirector::is_shortname_ghosted('LISTED1'), 'Control: a listed course is not.');
+        $this->assertTrue(redirector::is_shortname_ghosted('NOSUCHCOURSE'), 'An unknown shortname is ghosted.');
+
+        $this->setUser(null);
+        $this->assertFalse(redirector::is_shortname_ghosted('NOSUCHCOURSE'), 'A visitor gets core\'s answer.');
+    }
+
+    /**
      * Add a user to a cohort defined at a category's own context.
      *
      * @param int $categoryid The category the cohort is defined at.
