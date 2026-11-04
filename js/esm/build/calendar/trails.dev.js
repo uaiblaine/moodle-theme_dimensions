@@ -8,7 +8,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *   the remembered state (local\calendar\page::trail_from_request(), mine_from_request()).
  * - A step's days are read in the viewer's timezone (days.ts zone()), as every item of the calendar.
  * - The view holds contiguous whole months ({@see Loaded}), at most {@see LOADED_CAP}: the first paint's answer is the
- *   month and the next (local\calendar\trails::MONTHS), each further month is one call, appended or prepended, and the
+ *   month and the next (local\calendar\trails::OPENING), each further load is one call of one month, or by months of up to
+ *   {@see BATCH_MONTHS} (local\calendar\trails::MONTHS, {@see batchOf()}), appended or prepended, and the
  *   answers are merged by trail id ({@see mergedOf()}), a trail kept while its period meets what is held.
  * - A bar runs from its step's start to its end, clipped at the edges of what is held: a step that began earlier is
  *   marked `before`, one that ends later `after`. A step with a start and no end is `open`: it is drawn as its first
@@ -143,10 +144,12 @@ const emptyTrails = /* @__PURE__ */ __name((month) => {
 }, "emptyTrails");
 const filterOf = /* @__PURE__ */ __name((props) => ({ trail: props?.trail || 0, mine: props?.mine === true }), "filterOf");
 const trailFiltered = /* @__PURE__ */ __name((filter, categoryid) => filter.trail > 0 || filter.mine || categoryid !== 0, "trailFiltered");
-const ANSWER_MONTHS = 2;
+const OPENING_MONTHS = 2;
+const BATCH_MONTHS = 3;
 const LOADED_CAP = 6;
 const MONTH_CAP = 12;
 const capOf = /* @__PURE__ */ __name((zoom) => zoom === "month" ? MONTH_CAP : LOADED_CAP, "capOf");
+const batchOf = /* @__PURE__ */ __name((zoom, held) => zoom === "month" ? Math.max(1, Math.min(BATCH_MONTHS, capOf(zoom) - held)) : 1, "batchOf");
 const LOAD_AHEAD = 7;
 const SKELETON_DAYS = 3;
 const STEP_INSET = 2;
@@ -193,21 +196,21 @@ const mergedOf = /* @__PURE__ */ __name((loaded, zone) => {
   };
 }, "mergedOf");
 const extendLoaded = /* @__PURE__ */ __name((loaded, answer, cap = capOf("day")) => {
-  const month = answer.from.slice(0, 7);
+  const added = monthsOf(answer.from, answer.to);
   const months = [...loaded.months];
   const answers = [...loaded.answers];
   let shift = 0;
-  if (month === monthAfter(months[months.length - 1], 1)) {
-    months.push(month);
-    answers.push(answer);
+  if (added[0] === monthAfter(months[months.length - 1], 1)) {
+    months.push(...added);
+    answers.push(...added.map(() => answer));
     while (months.length > cap) {
       shift -= monthDays(String(months.shift())).length;
       answers.shift();
     }
-  } else if (month === monthAfter(months[0], -1)) {
-    months.unshift(month);
-    answers.unshift(answer);
-    shift = monthDays(month).length;
+  } else if (added[added.length - 1] === monthAfter(months[0], -1)) {
+    months.unshift(...added);
+    answers.unshift(...added.map(() => answer));
+    shift = added.reduce((days, month) => days + monthDays(month).length, 0);
     while (months.length > cap) {
       months.pop();
       answers.pop();
@@ -473,13 +476,14 @@ const linksOf = /* @__PURE__ */ __name((steps, days, zone, shown, zoom = "day") 
   return pieces;
 }, "linksOf");
 export {
-  ANSWER_MONTHS,
+  BATCH_MONTHS,
   CHIP_GAP,
   LOADED_CAP,
   LOAD_AHEAD,
   MINE_PARAM,
   MONTH_CAP,
   NAMED_BAR,
+  OPENING_MONTHS,
   OPEN_DAYS,
   SKELETON_DAYS,
   STEP_INSET,
@@ -489,6 +493,7 @@ export {
   ZOOMS,
   ZOOM_PARAM,
   barOf,
+  batchOf,
   capOf,
   chipLeft,
   datesOf,

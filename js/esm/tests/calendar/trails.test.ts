@@ -23,7 +23,7 @@
 
 import {zone} from '../../src/calendar/days';
 import {
-    CHIP_GAP, LOADED_CAP, MONTH_CAP, NAMED_BAR, OPEN_DAYS, WEEK_LABEL_LEAST, STEP_INSET, TRACK, barOf, datesOf, dayLeft, dayWidth, shiftedTarget, chipLeft, extendLoaded, keptLeft, linksOf,
+    BATCH_MONTHS, CHIP_GAP, LOADED_CAP, OPENING_MONTHS, batchOf, MONTH_CAP, NAMED_BAR, OPEN_DAYS, WEEK_LABEL_LEAST, STEP_INSET, TRACK, barOf, datesOf, dayLeft, dayWidth, shiftedTarget, chipLeft, extendLoaded, keptLeft, linksOf,
     loadedOf, mergedOf, monthDays, monthStep, monthsOf, namedBar, nearEnd, openingLeft, pageLeft, rangeLabel, reachOf, readTrail,
     readZoom, scrubLeft, shownDays, targetLeft, todayIndex, todayLeft, trackOf, trailArgs, trailBarOf, weekCells, weekLabel, weekLabelled, capOf,
     windowDays, withTrail, zoomOf, zoomedLeft,
@@ -311,6 +311,46 @@ describe('the months held', () => {
         const december = extendLoaded(held, answerOf('2026-12-01', '2026-12-31', []));
         expect(december?.loaded.months).toEqual(['2026-12', '2027-01', '2027-02', '2027-03', '2027-04', '2027-05']);
         expect(december?.shift).toBe(31);
+    });
+
+    it('take an answer of three months in a row, appended or prepended, across a year end', () => {
+        const held = loadedOf(answerOf('2026-11-01', '2026-12-31', []));
+        const three = answerOf('2027-01-01', '2027-03-31', []);
+        const appended = extendLoaded(held, three, capOf('month'));
+        expect(appended?.loaded.months).toEqual(['2026-11', '2026-12', '2027-01', '2027-02', '2027-03']);
+        expect(appended?.loaded.answers.slice(2)).toEqual([three, three, three]);
+        expect(appended?.shift).toBe(0);
+        const before = answerOf('2026-08-01', '2026-10-31', []);
+        const prepended = extendLoaded(held, before, capOf('month'));
+        expect(prepended?.loaded.months).toEqual(['2026-08', '2026-09', '2026-10', '2026-11', '2026-12']);
+        // August, September and October: 31 + 30 + 31 days.
+        expect(prepended?.shift).toBe(92);
+        const yearend = extendLoaded(loadedOf(answerOf('2027-02-01', '2027-03-31', [])), answerOf('2026-11-01', '2027-01-31', []));
+        expect(yearend?.loaded.months).toEqual(['2026-11', '2026-12', '2027-01', '2027-02', '2027-03']);
+        expect(yearend?.shift).toBe(30 + 31 + 31);
+        // A batch that overlaps what is held, or leaves a gap, is refused.
+        expect(extendLoaded(held, answerOf('2026-12-01', '2027-02-28', []))).toBeNull();
+        expect(extendLoaded(held, answerOf('2027-02-01', '2027-04-30', []))).toBeNull();
+        expect(extendLoaded(held, answerOf('2026-07-01', '2026-09-30', []))).toBeNull();
+    });
+
+    it('drop the far side past the cap for a batch too, each end telling the days that moved', () => {
+        // Ten months held (the cap of the week zoom plus four): a batch of three appended drops the first three.
+        const held = loadedOf(answerOf('2026-01-01', '2026-10-31', []));
+        const appended = extendLoaded(held, answerOf('2026-11-01', '2027-01-31', []), 12);
+        expect(appended?.loaded.months).toHaveLength(12);
+        expect(appended?.loaded.months[0]).toBe('2026-02');
+        expect(appended?.shift).toBe(-31);
+        const full = loadedOf(answerOf('2026-03-01', '2027-02-28', []));
+        const limited = extendLoaded(full, answerOf('2027-03-01', '2027-05-31', []), 12);
+        expect(limited?.loaded.months[0]).toBe('2026-06');
+        // March, April and May go: 31 + 30 + 31 days.
+        expect(limited?.shift).toBe(-92);
+        const back = extendLoaded(full, answerOf('2025-12-01', '2026-02-28', []), 12);
+        expect(back?.loaded.months).toHaveLength(12);
+        expect(back?.loaded.months[0]).toBe('2025-12');
+        expect(back?.loaded.months[11]).toBe('2026-11');
+        expect(back?.shift).toBe(31 + 31 + 28);
     });
 
     it('keep the view still by moving the position by the days the first day moved', () => {
@@ -609,6 +649,13 @@ describe('capOf and weekLabelled (T3c follow-up)', () => {
     it('holds twelve months by months and six by days and weeks', () => {
         expect([capOf('day'), capOf('week'), capOf('month')]).toEqual([LOADED_CAP, LOADED_CAP, MONTH_CAP]);
         expect([LOADED_CAP, MONTH_CAP]).toEqual([6, 12]);
+    });
+
+    it('asks three months at a time by months, as many as the cap leaves room for, and one month otherwise', () => {
+        expect([OPENING_MONTHS, BATCH_MONTHS]).toEqual([2, 3]);
+        expect([2, 5, 8, 9].map((held) => batchOf('month', held))).toEqual([3, 3, 3, 3]);
+        expect([10, 11, 12, 14].map((held) => batchOf('month', held))).toEqual([2, 1, 1, 1]);
+        expect(['day', 'week'].map((zoom) => [2, 5].map((held) => batchOf(zoom as 'day' | 'week', held)))).toEqual([[1, 1], [1, 1]]);
     });
 
     it('drops the far side to the month zoom\'s cap only past twelve, telling the shift', () => {

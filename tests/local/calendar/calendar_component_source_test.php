@@ -1091,8 +1091,9 @@ final class calendar_component_source_test extends \basic_testcase {
      *
      * - The months held are contiguous and capped, the far side dropped with the first day's move told; the answers
      *   merge by trail id and keep a trail while its period meets what is held (a period with no last end is open).
-     * - The first paint's answer and the page's own request are the month and the next, as many months as the service's
-     *   own cap (trails::MONTHS); a month beside them is one request.
+     * - The first paint's answer and the page's own request are the month and the next (trails::OPENING); a load beside
+     *   what is held is one request of one month, or by months a batch of three (trails::MONTHS) the cap leaves room for,
+     *   appended or prepended with every prepended day told to the scroller.
      * - A month prepended moves the position by arithmetic over the last measure; the start of what is held asks for the
      *   month before only while scrolling back to it; a target is reached at once under reduced motion, animated
      *   otherwise; a course's popover opens once the scroll has ended.
@@ -1110,8 +1111,20 @@ final class calendar_component_source_test extends \basic_testcase {
             $trails
         );
         $this->assertStringContainsString('cap: number = capOf(\'day\')', $trails);
-        $this->assertSame(1, preg_match('~export const ANSWER_MONTHS = (\d+);~', $trails, $months));
-        $this->assertSame(trails::MONTHS, (int) $months[1], 'The client asks for the months the service answers.');
+        $this->assertSame(1, preg_match('~export const OPENING_MONTHS = (\d+);~', $trails, $opening));
+        $this->assertSame(trails::OPENING, (int) $opening[1], 'The first paint asks for the months the page opens on.');
+        $this->assertSame(1, preg_match('~export const BATCH_MONTHS = (\d+);~', $trails, $batch));
+        $this->assertSame(trails::MONTHS, (int) $batch[1], 'A batch is the most months the service answers.');
+        $this->assertStringContainsString(
+            "(zoom === 'month' ? Math.max(1, Math.min(BATCH_MONTHS, capOf(zoom) - held)) : 1);",
+            $trails,
+            'By months a batch, never more than the cap leaves room for; one month otherwise.'
+        );
+        $this->assertStringContainsString(
+            'shift = added.reduce((days, month) => days + monthDays(month).length, 0);',
+            $trails,
+            'Every month prepended moves the first day.'
+        );
         $this->assertStringContainsString('shift -= monthDays(String(months.shift())).length;', $trails);
         $this->assertMatchesRegularExpression(
             '~\} else \{\s*return null;\s*\}\s*return \{loaded: \{months: months, answers: answers\}, shift: shift\};~',
@@ -1215,7 +1228,7 @@ final class calendar_component_source_test extends \basic_testcase {
 
         $calendar = $this->sources()['Calendar.tsx'];
         $this->assertStringContainsString(
-            'args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, ANSWER_MONTHS),',
+            'args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, OPENING_MONTHS),',
             $calendar
         );
         $this->assertStringContainsString(
@@ -1426,6 +1439,9 @@ final class calendar_component_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString("const full = near === 'end' && months.length >= capOf(zoom) && first === 0;", $view);
         $this->assertStringContainsString('extendLoaded(was.loaded, got, capOf(zooming.current))', $view);
+        $this->assertStringContainsString('const count = batchOf(zooming.current, win.loaded.months.length);', $view);
+        $this->assertStringContainsString('fetch(ahead ? target : monthAfter(target, 1 - count), count)', $view);
+        $this->assertStringContainsString('fetch(target, OPENING_MONTHS)', $view);
         $this->assertStringContainsString('{weekLabelled(cell, zoom) ? (', $view);
         $trailsts = $this->sources()['trails.ts'];
         $this->assertStringContainsString("zoom === 'week' && cell.length * dayWidth(zoom) >= WEEK_LABEL_LEAST;", $trailsts);

@@ -74,7 +74,8 @@ import TrailPopover, {TrailIcon, stateLabel, stateLine, stepOpenEnd, stepWhen} f
 import TrailScroll from './TrailScroll';
 import type {Near, ScrollControl, Shift} from './TrailScroll';
 import {
-    ANSWER_MONTHS,
+    OPENING_MONTHS,
+    batchOf,
     capOf,
     SKELETON_DAYS,
     ZOOMS,
@@ -487,10 +488,11 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     };
 
     /**
-     * Ask for one month beside what is held and add it when it comes, unless a new set of months came first; one
-     * request at a time.
+     * Ask for the months beside what is held (the batch of {@see batchOf()}: one, or by months up to three, the target
+     * the one beside what is held and the rest beyond it) and add them when they come, unless a new set of months came
+     * first; one request at a time.
      *
-     * @param {string} target The month, YYYY-MM.
+     * @param {string} target The month beside what is held, YYYY-MM.
      * @returns {void}
      */
     const extend = (target: string): void => {
@@ -502,9 +504,10 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         const set = generation.current;
         const askedwith = win.scope;
         const ahead = target > win.loaded.months[win.loaded.months.length - 1];
+        const count = batchOf(zooming.current, win.loaded.months.length);
         setWin((was) => ({...was, loading: ahead}));
         const pending = new Pending('theme_dimensions/calendar:trailmonth');
-        fetch(target, 1)
+        fetch(ahead ? target : monthAfter(target, 1 - count), count)
             .then((got) => {
                 setWin((was) => {
                     if (was.generation !== set || scoped.current !== askedwith) {
@@ -546,7 +549,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         const set = generation.current;
         const askedwith = win.scope;
         const pending = new Pending('theme_dimensions/calendar:trailmonth');
-        fetch(target, ANSWER_MONTHS)
+        fetch(target, OPENING_MONTHS)
             .then((got) => {
                 setWin((was) => (was.generation === set && scoped.current === askedwith
                     ? freshWin(got, target, was.generation + 1, askedwith)

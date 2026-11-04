@@ -1651,12 +1651,13 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   filters' row) and `TrailPopover.tsx` over the pure `trails.ts`; `Calendar.tsx`'s one request path asks the trails
   service for a trail span. The view's colours are its own `--dim-cal-trail*` tokens, never a key colour setting.
   `display::many()` and `progress::many()` are the batched readers the view needs; `steps()` and `of()` call them.
-  - **T3b: continuous months.** The service takes `months` (1, or `trails::MONTHS` = 2), the shape refused before
-    login, over `window::whole_months()` (past `window::MAX_DAYS`, its own count check); the first paint and the page's
-    own request are the month and the next. The view holds contiguous months (`trails.ts` `Loaded`, `extendLoaded()`,
+  - **T3b: continuous months.** The service takes `months` (1 to `trails::MONTHS` = 3), the shape refused before
+    login, over `window::whole_months()` (past `window::MAX_DAYS`, its own count check; `window::MAX_MONTHS` = 3); the first
+    paint and the page's own request are the month and the next (`trails::OPENING` = 2, `OPENING_MONTHS` on the client). The view holds contiguous months (`trails.ts` `Loaded`, `extendLoaded()`,
     at most `capOf(zoom)`: `LOADED_CAP` = 6 by days and weeks, `MONTH_CAP` = 12 by months since the T3c follow-up, the far side dropped), merged by trail id (`mergedOf()`, a trail kept while
-    `meets()`); it asks one month when the scroll nears the end (`nearEnd()`) or moves back to the start, and a far
-    target (today, a course) asks a new set of two. A prepended month moves the position by `keptLeft()` over
+    `meets()`); it asks one month when the scroll nears the end (`nearEnd()`) or moves back to the start (by months a batch of up to
+    `BATCH_MONTHS` = 3, `trails::MONTHS`'s twin, `batchOf()`: `min(3, cap - held)`, one at the cap), and a far
+    target (today, a course) asks a new set of two. A prepended month (or batch: every day of it) moves the position by `keptLeft()` over
     TrailScroll's last measure (the `shift` key), never a read. The toolbar asks the view (`TrailView` `nav`): a month
     from the first day in view (`monthStep()`), today; its title is `rangeLabel()` of the days in view; a settled
     scroll (`scrollend`, or a quiet) replaces the address's month through `Calendar.tsx`'s `settleTrail()`. A course's

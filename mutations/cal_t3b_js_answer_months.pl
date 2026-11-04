@@ -1,2 +1,2 @@
-# Ask the service for more months than it answers.
-s/export const ANSWER_MONTHS = 2;/export const ANSWER_MONTHS = 3;/;
+# Open on more months than the page's first paint embeds.
+s/export const OPENING_MONTHS = 2;/export const OPENING_MONTHS = 3;/;

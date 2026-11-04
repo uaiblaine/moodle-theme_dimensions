@@ -11,6 +11,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   months instead of six, so a wide screen is filled; by days and weeks the cap stays six, and a switch down keeps the
   months held until the next load drops the far side. Five mutation gates.
 
+  By months the view now asks the trails service for up to three months in one request (never more than the cap
+  leaves room for), appended or prepended, so a wide screen reaches twelve months in four requests instead of eight
+  one after another; by days and weeks a load is still one month, and the first paint stays the month and the next.
+  The service accepts `months` 1 to 3 (`trails::MONTHS`; `trails::OPENING` is the first paint's two) at the same read
+  cost. Eleven mutation gates.
+
   A course with a start and no end is no longer drawn to the edge of the months held: it is its first 30 days
   (the start day and 29 more), then a quiet "→ no end date" chip after a small gap, at every zoom, so its end reads as
   open; the chip waits for the next month when the 30 days reach the edge. The bar's accessible name and the step's

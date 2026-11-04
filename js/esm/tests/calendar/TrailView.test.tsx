@@ -1180,9 +1180,10 @@ describe('the days\' scroller', () => {
         });
         expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 17, behavior: 'auto'});
         // By months the 61 days fit: nothing scrolls, so the browser keeps the first day at the start, and the next months
-        // are asked for until the days fill the scroller (six months, 1064px).
+        // are asked for, three at a time, until the days fill the scroller (five months are 944px: eight, 1312px).
         expect(scroller.scrollLeft).toBe(0);
-        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6));
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(8));
+        expect(trailRequests().map((args) => args.months)).toEqual([3, 3]);
         expect(page.querySelector('[data-action="dim-cal-trail-ahead"]')).not.toBeNull();
         await act(async() => {
             fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="day"]') as HTMLElement);
@@ -1228,20 +1229,21 @@ describe('the days\' scroller', () => {
         expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 204, behavior: 'auto'});
     });
 
-    it('keeps asking for the next month while the days held fit a wide scroller, up to the month zoom\'s cap', async() => {
+    it('keeps asking for the next three months while the days held fit a wide scroller, up to the month zoom\'s cap', async() => {
         viewport = 2400;
         const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'month'}));
-        // By months 61 days are 244px: each month that comes is measured again, and the next is asked for, past six months
-        // (1064px) up to the twelve the month zoom holds, which still fit 2400px (1800px).
+        // By months 61 days are 244px: each batch that comes is measured again, and the next is asked for, past six months
+        // (1064px) up to the twelve the month zoom holds, which still fit 2400px (1800px): 2, 5, 8, 11 and 12 months held,
+        // the last batch only the one month the cap leaves room for.
         await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
-        expect(trailRequests().map((args) => args.month)).toEqual([
-            '2027-01', '2027-02', '2027-03', '2027-04', '2027-05', '2027-06', '2027-07', '2027-08', '2027-09', '2027-10',
+        expect(trailRequests().map((args) => [args.month, args.months])).toEqual([
+            ['2027-01', 3], ['2027-04', 3], ['2027-07', 3], ['2027-10', 1],
         ]);
         // At the cap nothing more is asked, or the first month, in view, would go.
         await act(async() => {
             fireEvent.scroll(scrollerOf(page));
         });
-        expect(trailRequests()).toHaveLength(10);
+        expect(trailRequests()).toHaveLength(4);
         expect(page.querySelector('[data-action="dim-cal-trailmonth"]')?.getAttribute('data-month')).toBe('2026-11');
     });
 
@@ -1254,6 +1256,36 @@ describe('the days\' scroller', () => {
         });
         expect(trailRequests()).toHaveLength(4);
         expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6);
+        // A month a request by weeks, whatever the scroller's width.
+        expect(trailRequests().map((args) => args.months)).toEqual([1, 1, 1, 1]);
+    });
+
+    it('prepends a batch of three months by months, the view kept still by the days of all three', async() => {
+        viewport = 500;
+        const page = await mount(offered(trails([trail()], '2027-01-31', '2026-12-01'), {today: '2027-03-05', zoom: 'month'}));
+        expect(trailRequests()).toEqual([]);
+        (HTMLElement.prototype.scrollTo as jest.Mock).mockClear();
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-prev"]') as HTMLElement);
+        });
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(5));
+        // September to November before December: the three months start at the month the batch ends before, one request.
+        expect(trailRequests().map((args) => [args.month, args.months])).toEqual([['2026-09', 3]]);
+        expect(Array.from(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).map((button) => button.textContent))
+            .toEqual(['September', 'October', 'November', 'December', 'January']);
+        // 30 + 31 + 30 days at 4px moved December's 1st by 364px: the position followed it before the arrow animated.
+        expect((HTMLElement.prototype.scrollTo as jest.Mock).mock.calls[0][0]).toEqual({left: 364, behavior: 'auto'});
+    });
+
+    it('asks in batches from the next load on once the zoom is switched to months', async() => {
+        viewport = 2400;
+        const page = await mount(offered(trails([trail()], '2026-12-31')));
+        expect(trailRequests()).toEqual([]);
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="month"]') as HTMLElement);
+        });
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
+        expect(trailRequests().map((args) => args.months)).toEqual([3, 3, 3, 1]);
     });
 
     it('keeps the start day in view when the zoom goes from months to days with twelve held', async() => {

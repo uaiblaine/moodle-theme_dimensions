@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - The trails of a month, or of the month and the next, for the calendar's Trilhas view
+ * Theme Dimensions - The trails of a month, or of up to three months, for the calendar's Trilhas view
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -35,7 +35,7 @@ use theme_dimensions\local\calendar\trails;
 use theme_dimensions\local\calendar\window;
 
 /**
- * The calendar's trails over one month, or the month and the next ({@see trails::MONTHS}), in one answer.
+ * The calendar's trails over one month, or up to {@see trails::MONTHS} months in a row, in one answer.
  *
  * The order of the checks is {@see get_calendar_range}'s:
  *
@@ -76,7 +76,7 @@ class get_calendar_trails extends external_api {
             ),
             'months' => new external_value(
                 PARAM_INT,
-                'How many months from the month: 1, or 2 for the month and the next.',
+                'How many months from the month: 1 to 3.',
                 VALUE_DEFAULT,
                 1
             ),
@@ -84,7 +84,7 @@ class get_calendar_trails extends external_api {
     }
 
     /**
-     * The trails of a month, or of the month and the next.
+     * The trails of a month, or of up to three months in a row.
      *
      * @param string $month The month.
      * @param int $trail One trail to keep, 0 for every trail.

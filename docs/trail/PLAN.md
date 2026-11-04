@@ -189,11 +189,14 @@ its courses' dates, the connectors' cases, and the four ways to end a course wit
   first start to last end over the steps drawn, left open by a step that starts and never ends. A trail with no date
   is no row. The choice "Trilha" lists every admitted trail with a step drawn, whatever its period.
 - **Continuous months (T3b)**: the view always holds the month in view and the next. The first paint embeds the trails of
-  both (`trails::month_window($month, trails::MONTHS)`); the service takes `months`, 1 or 2 (anything else is the
-  request's shape, refused before login, and `window::whole_months()` refuses it too), so the first paint and a month
-  asked for share one service, and the read count does not grow with the window. On a desktop a scroll near the end of
-  what is held asks for the next month (one call) and appends its days; the previous arrow, or a scroll back to the
-  start, prepends the month before and moves the position by its width (`trails.ts` `keptLeft()`, arithmetic over the
+  both (`trails::month_window($month, trails::OPENING)`, two months); the service takes `months`, 1 to 3 (`trails::MONTHS`;
+  anything else is the request's shape, refused before login, and `window::whole_months()` refuses it too), so the first
+  paint and a month asked for share one service, and the read count does not grow with the window. On a desktop a scroll
+  near the end of what is held asks for the next month (one call) and appends its days; by months, where a month is 4px
+  a day, every load asks for a batch of up to three months in one request (`trails.ts` `batchOf()`, `BATCH_MONTHS`: never more
+  than the cap leaves room for, so a wide screen reaches twelve months in four requests, not eight one after another), by
+  days and weeks one month as before; the previous arrow, or a scroll back to the
+  start, prepends the month before (the batch before, by months) and moves the position by its width (every month of the batch) (`trails.ts` `keptLeft()`, arithmetic over the
   last measure). The months stay contiguous, at most six by days and weeks and twelve by months (`trails.ts` `capOf(zoom)`, T3c follow-up), the far side dropped with the same compensation; the answers
   merge by trail id (a trail's steps are the same in every answer), the list kept to the trails whose period meets what
   is held and sorted as the server sorts. A band above the day numbers has one segment per month held, its name

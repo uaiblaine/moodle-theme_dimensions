@@ -105,7 +105,8 @@ final class window_test extends \basic_testcase {
     }
 
     /**
-     * A window of whole months: the first's 1st to the last's last day, past MAX_DAYS for two months, in the timezone.
+     * A window of whole months: the first's 1st to the last's last day, past MAX_DAYS for two months or three (a year end
+     * inside the 92 days), in the timezone.
      *
      * @return void
      */
@@ -124,6 +125,17 @@ final class window_test extends \basic_testcase {
             window::whole_months('2026-11', 1, $zone)->days
         );
         $this->assertCount(29, window::whole_months('2028-02', 1, $zone)->days);
+
+        // Three months, the most: November to January, across a year end.
+        $this->assertSame(3, window::MAX_MONTHS);
+        $three = window::whole_months('2026-11', window::MAX_MONTHS, $zone);
+        $this->assertCount(92, $three->days);
+        $this->assertSame(['2026-11-01', '2027-01-31'], [$three->from, $three->to]);
+        $this->assertSame((new \DateTimeImmutable('2026-11-01 00:00', $zone))->getTimestamp(), $three->tstart);
+        $this->assertSame((new \DateTimeImmutable('2027-02-01 00:00', $zone))->getTimestamp() - 1, $three->tend);
+        // A leap February inside three months, and from_iso() still refuses what is past its own MAX_DAYS.
+        $this->assertCount(31 + 29 + 31, window::whole_months('2028-01', 3, $zone)->days);
+        $this->assertSame(42, window::MAX_DAYS);
     }
 
     /**
@@ -135,7 +147,8 @@ final class window_test extends \basic_testcase {
         return [
             'no months' => ['2026-12', 0],
             'a negative count' => ['2026-12', -1],
-            'three months' => ['2026-12', window::MAX_MONTHS + 1],
+            'four months' => ['2026-12', window::MAX_MONTHS + 1],
+            'twelve months' => ['2026-12', 12],
             'month 13' => ['2026-13', 1],
             'no padding' => ['2026-1', 1],
             'a day' => ['2026-12-01', 1],

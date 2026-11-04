@@ -21,7 +21,8 @@
  *   the remembered state (local\calendar\page::trail_from_request(), mine_from_request()).
  * - A step's days are read in the viewer's timezone (days.ts zone()), as every item of the calendar.
  * - The view holds contiguous whole months ({@see Loaded}), at most {@see LOADED_CAP}: the first paint's answer is the
- *   month and the next (local\calendar\trails::MONTHS), each further month is one call, appended or prepended, and the
+ *   month and the next (local\calendar\trails::OPENING), each further load is one call of one month, or by months of up to
+ *   {@see BATCH_MONTHS} (local\calendar\trails::MONTHS, {@see batchOf()}), appended or prepended, and the
  *   answers are merged by trail id ({@see mergedOf()}), a trail kept while its period meets what is held.
  * - A bar runs from its step's start to its end, clipped at the edges of what is held: a step that began earlier is
  *   marked `before`, one that ends later `after`. A step with a start and no end is `open`: it is drawn as its first
@@ -311,7 +312,7 @@ export const todayIndex = (steps: TrailStep[], now: number): number => {
  * @param {object} filter The view's filters.
  * @param {number} categoryid The category narrowing, 0 for none.
  * @param {boolean} recursive Whether the category's whole subtree counts.
- * @param {number} months 1 for the month alone, {@see ANSWER_MONTHS} for the month and the next.
+ * @param {number} months 1 to {@see BATCH_MONTHS}: the month alone, or that many from it.
  * @returns {object}
  */
 export const trailArgs = (month: string, filter: TrailFilter, categoryid: number, recursive: boolean,
@@ -408,8 +409,11 @@ export const trailFiltered = (filter: TrailFilter, categoryid: number): boolean 
     filter.trail > 0 || filter.mine || categoryid !== 0;
 
 
-/** The most months one answer of the service covers (local\calendar\trails::MONTHS): the month and the next. */
-export const ANSWER_MONTHS = 2;
+/** The months of the first paint and of a far target's new set (local\calendar\trails::OPENING): the month and the next. */
+export const OPENING_MONTHS = 2;
+
+/** The most months one request of the service covers, the batch by months (local\calendar\trails::MONTHS). */
+export const BATCH_MONTHS = 3;
 
 /** The most months the view holds by days and by weeks; one more drops the month on the far side. */
 export const LOADED_CAP = 6;
@@ -425,6 +429,18 @@ export const MONTH_CAP = 12;
  * @returns {number}
  */
 export const capOf = (zoom: Zoom): number => (zoom === 'month' ? MONTH_CAP : LOADED_CAP);
+
+/**
+ * How many months one load asks for beside what is held: by months, where a month is a few rem wide, a batch of
+ * BATCH_MONTHS so a wide screen is filled in few requests, never more than the cap leaves room for; one month at any other
+ * zoom, and at the cap (the scroll's month drops the far side).
+ *
+ * @param {string} zoom The timeline's zoom.
+ * @param {number} held The months held.
+ * @returns {number} 1 to BATCH_MONTHS.
+ */
+export const batchOf = (zoom: Zoom, held: number): number =>
+    (zoom === 'month' ? Math.max(1, Math.min(BATCH_MONTHS, capOf(zoom) - held)) : 1);
 
 /** How near the end of what is held, in days, a scroll asks for the next month. */
 export const LOAD_AHEAD = 7;
@@ -535,33 +551,34 @@ export const mergedOf = (loaded: Loaded, zone: Zone): TrailAnswer => {
 };
 
 /**
- * The months held with one more beside them: appended after the last, or prepended before the first, and the month on
- * the far side dropped past the cap. The shift is how many days the first day held moved back (a prepended month's
- * days) or forward (less a dropped month's), which the scroller adds to its position so the view stays still. A month
- * that is held already, or that is not beside what is held, is refused: the months stay contiguous.
+ * The months held with an answer's months beside them (one month, or up to {@see BATCH_MONTHS}): appended after the
+ * last, or prepended before the first, and the months on the far side dropped past the cap. The shift is how many days
+ * the first day held moved back (the prepended months' days) or forward (less the dropped months'), which the scroller
+ * adds to its position so the view stays still. An answer that is held already, or that is not beside what is held, is
+ * refused: the months stay contiguous.
  *
  * @param {object} loaded The months held.
- * @param {object} answer The answer of one month.
+ * @param {object} answer The answer of one or more months in a row.
  * @param {number} cap The most months held ({@see capOf()}).
  * @returns {object|null} The months held and the shift, in days; null when refused.
  */
 export const extendLoaded = (loaded: Loaded, answer: TrailAnswer, cap: number = capOf('day')):
     {loaded: Loaded, shift: number} | null => {
-    const month = answer.from.slice(0, 7);
+    const added = monthsOf(answer.from, answer.to);
     const months = [...loaded.months];
     const answers = [...loaded.answers];
     let shift = 0;
-    if (month === monthAfter(months[months.length - 1], 1)) {
-        months.push(month);
-        answers.push(answer);
+    if (added[0] === monthAfter(months[months.length - 1], 1)) {
+        months.push(...added);
+        answers.push(...added.map(() => answer));
         while (months.length > cap) {
             shift -= monthDays(String(months.shift())).length;
             answers.shift();
         }
-    } else if (month === monthAfter(months[0], -1)) {
-        months.unshift(month);
-        answers.unshift(answer);
-        shift = monthDays(month).length;
+    } else if (added[added.length - 1] === monthAfter(months[0], -1)) {
+        months.unshift(...added);
+        answers.unshift(...added.map(() => answer));
+        shift = added.reduce((days, month) => days + monthDays(month).length, 0);
         while (months.length > cap) {
             months.pop();
             answers.pop();
