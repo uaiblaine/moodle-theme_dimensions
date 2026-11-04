@@ -2167,4 +2167,32 @@ final class category_scss_test extends \basic_testcase {
             }
         }
     }
+
+    /**
+     * The course dialogue's close button wears the white filter under the name core's Bootstrap declares.
+     *
+     * The cross is a dark SVG on a dark disc, so it is visible only through Bootstrap's white filter. Bootstrap 5.3.4
+     * moved that filter to --bs-btn-close-filter, set by its btn-close-white() mixin, and stopped declaring the
+     * --bs-btn-close-white-filter this rule read before; the other test of this class exempts every --bs-* name, so
+     * this one reads core's Bootstrap for the two names, and reddens when Bootstrap renames them again.
+     *
+     * @return void
+     */
+    public function test_the_dialogue_close_button_wears_bootstraps_white_filter(): void {
+        global $CFG;
+
+        $close = (string) file_get_contents($CFG->root . '/lib/bundles/bootstrap/scss/_close.scss');
+        $this->assertStringContainsString('filter: var(--#{$prefix}btn-close-filter);', $close);
+        $this->assertStringContainsString('@mixin btn-close-white() {', $close);
+        $this->assertStringNotContainsString('--#{$prefix}btn-close-white-filter:', $close);
+
+        $scss = $this->stylesheet('category.scss');
+        $found = preg_match('~\n(\s*)\.dim-cmodal \.dim-cmodal__close \{\n(.*?)\n\1\}~s', $scss, $rule);
+        $this->assertSame(1, $found, 'The dialogue\'s close disc is missing.');
+        $found = preg_match('~\.btn-close \{([^}]*)\}~', $rule[2], $button);
+        $this->assertSame(1, $found, 'The disc styles no close button.');
+        $this->assertStringContainsString('@include btn-close-white();', $button[1]);
+        $this->assertStringContainsString('filter: var(--bs-btn-close-filter);', $button[1]);
+        $this->assertStringNotContainsString('btn-close-white-filter', $scss);
+    }
 }

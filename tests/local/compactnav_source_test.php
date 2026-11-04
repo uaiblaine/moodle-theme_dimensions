@@ -129,7 +129,11 @@ final class compactnav_source_test extends \basic_testcase {
 
         $decide = $this->body('decide');
         $this->assertStringContainsString('bar.frame = 0;', $decide);
-        $lastread = max(strpos($decide, 'hidden()'), strpos($decide, 'bar.range.matches'));
+        $lastread = max(
+            strpos($decide, 'hidden()'),
+            strpos($decide, 'bar.range.matches'),
+            strpos($decide, 'bar.container.clientWidth')
+        );
         $firstwrite = min(strpos($decide, 'setCompact('), strpos($decide, 'classList.add('));
         $this->assertGreaterThan($lastread, $firstwrite);
         $this->assertMatchesRegularExpression(
@@ -145,7 +149,7 @@ final class compactnav_source_test extends \basic_testcase {
      * @return void
      */
     public function test_compact_means_more_than_maxhidden_items_inside_the_range(): void {
-        $this->assertStringContainsString('setCompact(inrange && count > bar.maxhidden);', $this->body('decide'));
+        $this->assertStringContainsString('const overflows = inrange && count > bar.maxhidden;', $this->body('decide'));
         $this->assertStringContainsString('bar.maxhidden = config.maxhidden;', $this->body('init'));
 
         $hidden = $this->body('hidden');
@@ -164,6 +168,34 @@ final class compactnav_source_test extends \basic_testcase {
             $this->body('readProps'),
             'The same candidates as compactnav::candidates().'
         );
+    }
+
+    /**
+     * A split the navigation makes while compact cannot end the mode at a width the bar was compact at.
+     *
+     * The two modes lay the bar out differently, so a split made in the compact layout says nothing of the full bar;
+     * acting on it flipped the mode on every frame (the calendar page at 1089px, measured in the browser). Only more
+     * room than the widest overflow seen, or leaving the range, ends the mode. The Behat scenario "Resizing through
+     * narrow, wide and medium" is the behaviour; this pins the three lines it rests on.
+     *
+     * @return void
+     */
+    public function test_a_split_made_while_compact_does_not_end_the_mode(): void {
+        $decide = $this->body('decide');
+        $this->assertStringContainsString('const width = bar.container.clientWidth;', $decide);
+        $this->assertStringContainsString('const held = inrange && bar.compact && width <= bar.heldwidth;', $decide);
+        $this->assertStringContainsString('setCompact(overflows || held);', $decide);
+        $this->assertMatchesRegularExpression(
+            '~if \(overflows\) \{\s*bar\.heldwidth = Math\.max\(bar\.heldwidth, width\);\s*\}~',
+            $decide,
+            'The hold reaches the widest width an overflow was seen at.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~if \(!on\) \{\s*bar\.heldwidth = 0;\s*release\(\);\s*\}~',
+            $this->body('setCompact'),
+            'Leaving the mode forgets the hold.'
+        );
+        $this->assertStringContainsString('bar.container = container;', $this->body('init'));
     }
 
     /**
@@ -189,7 +221,7 @@ final class compactnav_source_test extends \basic_testcase {
         $set = $this->body('setCompact');
         $this->assertStringContainsString('document.body.classList.toggle(CLASSES.COMPACT, on);', $set);
         $this->assertStringContainsString('bar.toggler.classList.toggle(CLASSES.TOGGLERHIDDEN, !on);', $set);
-        $this->assertMatchesRegularExpression('~if \(!on\) \{\s*release\(\);\s*\}~', $set);
+        $this->assertMatchesRegularExpression('~if \(!on\) \{\s*bar\.heldwidth = 0;\s*release\(\);\s*\}~', $set);
         $this->assertStringContainsString("TOGGLERHIDDEN: 'd-md-none',", $this->source());
         $this->assertStringContainsString("COMPACT: 'dimensions-nav-compact',", $this->source());
 
