@@ -502,8 +502,9 @@ describe('the zoom and the courses\' dates (T3c)', () => {
         expect(page.querySelectorAll('.dim-cal__trailweekend')).toHaveLength(0);
         const weeks = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'));
         // From the viewer's first weekday, Sunday here: November 2026 opens on one.
-        expect(weeks.map((week) => week.textContent)).toEqual(['Nov1–7', 'Nov8–14', 'Nov15–21', 'Nov22–28', 'Nov29–30']);
+        expect(weeks.map((week) => week.textContent)).toEqual(['Nov1–7', 'Nov8–14', 'Nov15–21', 'Nov22–28', '']);
         expect(weeks.map((week) => week.style.gridColumn)).toEqual(['2 / 9', '9 / 16', '16 / 23', '23 / 30', '30 / 32']);
+        // The week of two days at the end is narrower than its label: no text, its place and line kept.
         // The week holding today, the 17th, is tinted; no day's pill.
         expect(weeks.map((week) => week.classList.contains('dim-cal__trailweek--today'))).toEqual([false, false, true, false, false]);
         expect(page.querySelector('.dim-cal__trailday--today')).toBeNull();
@@ -1179,9 +1180,10 @@ describe('the days\' scroller', () => {
         });
         expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 17, behavior: 'auto'});
         // By months the 61 days fit: nothing scrolls, so the browser keeps the first day at the start, and the next months
-        // are asked for until the days fill the scroller (six months, 1064px).
+        // are asked for, three at a time, until the days fill the scroller (five months are 944px: eight, 1312px).
         expect(scroller.scrollLeft).toBe(0);
-        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6));
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(8));
+        expect(trailRequests().map((args) => args.months)).toEqual([3, 3]);
         expect(page.querySelector('[data-action="dim-cal-trail-ahead"]')).not.toBeNull();
         await act(async() => {
             fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="day"]') as HTMLElement);
@@ -1227,13 +1229,17 @@ describe('the days\' scroller', () => {
         expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 204, behavior: 'auto'});
     });
 
-    it('keeps asking for the next month while the days held fit a wide scroller, up to the cap', async() => {
-        viewport = 1600;
+    it('keeps asking for the next three months while the days held fit a wide scroller, up to the month zoom\'s cap', async() => {
+        viewport = 2400;
         const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'month'}));
-        // By months 61 days are 244px: each month that comes is measured again, and the next is asked for.
-        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6));
-        expect(trailRequests().map((args) => args.month)).toEqual(['2027-01', '2027-02', '2027-03', '2027-04']);
-        // Six months fit as well: at the cap nothing more is asked, or the first month, in view, would go.
+        // By months 61 days are 244px: each batch that comes is measured again, and the next is asked for, past six months
+        // (1064px) up to the twelve the month zoom holds, which still fit 2400px (1800px): 2, 5, 8, 11 and 12 months held,
+        // the last batch only the one month the cap leaves room for.
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
+        expect(trailRequests().map((args) => [args.month, args.months])).toEqual([
+            ['2027-01', 3], ['2027-04', 3], ['2027-07', 3], ['2027-10', 1],
+        ]);
+        // At the cap nothing more is asked, or the first month, in view, would go.
         await act(async() => {
             fireEvent.scroll(scrollerOf(page));
         });
@@ -1241,9 +1247,278 @@ describe('the days\' scroller', () => {
         expect(page.querySelector('[data-action="dim-cal-trailmonth"]')?.getAttribute('data-month')).toBe('2026-11');
     });
 
+    it('holds six months by weeks, however wide the scroller', async() => {
+        viewport = 6000;
+        const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'week'}));
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6));
+        await act(async() => {
+            fireEvent.scroll(scrollerOf(page));
+        });
+        expect(trailRequests()).toHaveLength(4);
+        expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6);
+        // A month a request by weeks, whatever the scroller's width.
+        expect(trailRequests().map((args) => args.months)).toEqual([1, 1, 1, 1]);
+    });
+
+    it('prepends a batch of three months by months, the view kept still by the days of all three', async() => {
+        viewport = 500;
+        const page = await mount(offered(trails([trail()], '2027-01-31', '2026-12-01'), {today: '2027-03-05', zoom: 'month'}));
+        expect(trailRequests()).toEqual([]);
+        (HTMLElement.prototype.scrollTo as jest.Mock).mockClear();
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-prev"]') as HTMLElement);
+        });
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(5));
+        // September to November before December: the three months start at the month the batch ends before, one request.
+        expect(trailRequests().map((args) => [args.month, args.months])).toEqual([['2026-09', 3]]);
+        expect(Array.from(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).map((button) => button.textContent))
+            .toEqual(['September', 'October', 'November', 'December', 'January']);
+        // 30 + 31 + 30 days at 4px moved December's 1st by 364px: the position followed it before the arrow animated.
+        expect((HTMLElement.prototype.scrollTo as jest.Mock).mock.calls[0][0]).toEqual({left: 364, behavior: 'auto'});
+    });
+
+    it('asks in batches from the next load on once the zoom is switched to months', async() => {
+        viewport = 2400;
+        const page = await mount(offered(trails([trail()], '2026-12-31')));
+        expect(trailRequests()).toEqual([]);
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="month"]') as HTMLElement);
+        });
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
+        expect(trailRequests().map((args) => args.months)).toEqual([3, 3, 3, 1]);
+    });
+
+    it('keeps the start day in view when the zoom goes from months to days with twelve held', async() => {
+        viewport = 2400;
+        const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'month'}));
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
+        const scroller = scrollerOf(page);
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="day"]') as HTMLElement);
+        });
+        // The first day held was at the start: it stays there, and the months held wait for the next load to drop.
+        expect(scroller.scrollLeft).toBe(0);
+        expect(page.querySelector('[data-action="dim-cal-trailmonth"]')?.getAttribute('data-month')).toBe('2026-11');
+    });
+
+    /**
+     * Ten trails of ten courses each, the steps twelve days apart from the 2nd of November 2026 and ten days long: a hundred
+     * subcourse steps over four months, every trail meeting the first of them.
+     *
+     * @returns {Array} The trails.
+     */
+    const tenOfTen = (): Trail[] => Array.from({length: 10}, (_, i) => trail({
+        id: 100 + i,
+        name: `Trilha ${i}`,
+        first: at('2026-11-02', 12),
+        last: at('2027-03-02', 12),
+        steps: Array.from({length: 10}, (__, j) => {
+            const start = new Date(Date.UTC(2026, 10, 2 + j * 12)).toISOString().slice(0, 10);
+            const end = new Date(Date.UTC(2026, 10, 12 + j * 12)).toISOString().slice(0, 10);
+            return {
+                cmid: 1000 + i * 10 + j, position: j + 1, name: `Curso ${i}.${j}`, courseid: 5000 + i * 10 + j,
+                coursename: `Curso ${i}.${j}`, categoryid: 3, start: at(start, 12), end: at(end, 12), expected: false,
+                state: j % 4 === 0 ? 'complete' : '', reason: '', completed: j % 4 === 0 ? at(end, 12) : 0,
+                url: `https://example.com/course/view.php?id=${5000 + i * 10 + j}`, next: j === 1,
+            };
+        }),
+    }));
+
+    /**
+     * Answer the trails service with the ten trails, a task later, counting the calls on their way.
+     *
+     * @returns {object} The counts: now in flight, and the most there were at once.
+     */
+    const countFlight = (): {now: number, peak: number} => {
+        const flight = {now: 0, peak: 0};
+        fetched.mockImplementation(({methodname, args}: {methodname: string, args: Args}) => {
+            if (methodname !== TRAILS) {
+                return Promise.resolve({});
+            }
+            flight.now++;
+            flight.peak = Math.max(flight.peak, flight.now);
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    flight.now--;
+                    const to = lastOf(args.month, args.months || 1);
+                    resolve(trails(tenOfTen(), to, `${args.month}-01`));
+                }, 0);
+            });
+        });
+        return flight;
+    };
+
+    it('asks the same batches of ten trails of ten courses as of one, never two at once, up to the month zoom\'s cap', async() => {
+        viewport = 2400;
+        const flight = countFlight();
+        const page = await mount(offered(trails(tenOfTen(), '2026-12-31'), {zoom: 'month'}));
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
+        expect(page.querySelectorAll('[data-region="dim-cal-trailrow"]').length).toBeGreaterThanOrEqual(100);
+        expect(trailRequests().map((args) => [args.month, args.months])).toEqual([
+            ['2027-01', 3], ['2027-04', 3], ['2027-07', 3], ['2027-10', 1],
+        ]);
+        expect([flight.peak, flight.now]).toEqual([1, 0]);
+        // At the cap nothing more is asked, whatever the scroll.
+        await act(async() => {
+            fireEvent.scroll(scrollerOf(page));
+            await new Promise((resolve) => setTimeout(resolve, 20));
+        });
+        expect(trailRequests()).toHaveLength(4);
+        expect([flight.peak, flight.now]).toEqual([1, 0]);
+    });
+
+    it('asks nothing of ten trails of ten courses on a first paint by days until the reader scrolls, then one request', async() => {
+        const flight = countFlight();
+        const page = await mount(offered(trails(tenOfTen())));
+        await act(async() => {
+            await new Promise((resolve) => setTimeout(resolve, 20));
+        });
+        expect([trailRequests(), flight.peak]).toEqual([[], 0]);
+        await scrollTo(scrollerOf(page), 780);
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(2));
+        expect(trailRequests().map((args) => [args.month, args.months])).toEqual([['2026-12', 1]]);
+        expect([flight.peak, flight.now]).toEqual([1, 0]);
+    });
+
+    it('drops the stale answer of ten trails when a filter changed under it, and waits on the new request alone', async() => {
+        hold();
+        const page = await mount(offered(trails(tenOfTen())));
+        await scrollTo(scrollerOf(page), 780);
+        expect(held).toHaveLength(1);
+        await act(async() => {
+            fireEvent.change(page.querySelector('[data-action="dim-cal-trail"]') as HTMLElement, {target: {value: '8'}});
+        });
+        // The call of the old filters cannot be called back: it is on its way beside the new one, whose filter it is not.
+        expect(held.map((call) => call.args.trail)).toEqual([0, 8]);
+        await act(async() => {
+            held[0].resolve(trails(tenOfTen(), '2026-12-31', '2026-12-01'));
+        });
+        expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(1);
+        // The new request is still the only one the view waits on: scrolling asks nothing more.
+        await scrollTo(scrollerOf(page), 790);
+        expect(held).toHaveLength(2);
+        await act(async() => {
+            held[1].resolve(trails([], '2026-12-31'));
+        });
+        // The new filter's answer is what is drawn: none of the stale answer's hundred rows is.
+        expect(page.querySelectorAll('[data-region="dim-cal-trailrow"]')).toHaveLength(0);
+        expect(held).toHaveLength(2);
+    });
+
+    it('draws no label in a first week of one day or two, and its line stays', async() => {
+        const labels = async(firstday: number): Promise<string[]> => {
+            const page = await mount({...offered(trails([trail()]), {zoom: 'week'}), firstday: firstday});
+            return Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'))
+                .slice(0, 3).map((week) => week.textContent as string);
+        };
+        // November 2026 opens on a Sunday: from Monday its first week is the 1st alone, from Tuesday the 1st and 2nd.
+        expect(await labels(1)).toEqual(['', 'Nov2–8', 'Nov9–15']);
+        document.body.innerHTML = '';
+        expect(await labels(2)).toEqual(['', 'Nov3–9', 'Nov10–16']);
+        document.body.innerHTML = '';
+        // From Sunday the first week is whole.
+        expect(await labels(0)).toEqual(['Nov1–7', 'Nov8–14', 'Nov15–21']);
+    });
+
     it('names the end\'s month in a week that crosses one', async() => {
         const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'week'}));
         const weeks = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'));
         expect(weeks.map((week) => week.textContent).slice(3, 6)).toEqual(['Nov22–28', 'Nov29–5 Dec', 'Dec6–12']);
+    });
+});
+
+describe('an open course (a start and no end)', () => {
+    /**
+     * A trail whose one course starts on a day and never ends, so the trail's own period is open.
+     *
+     * @param {string} from The course's first day.
+     * @param {object} fields What differs in the course.
+     * @param {number} last The trail's last end, 0 while open.
+     * @returns {object}
+     */
+    const opened = (from: string, fields: Partial<Trail['steps'][number]> = {}, last = 0): Trail => {
+        const source = trail();
+        return trail({
+            first: at(from, 12),
+            last: last,
+            steps: [{...source.steps[1], cmid: 80, position: 1, name: 'Aberto', start: at(from, 12), end: 0, ...fields}],
+        });
+    };
+
+    it('draws its first 30 days and an aria-hidden "no end date" chip after them, and no spill chip', async() => {
+        const page = await mount(offered(trails([opened('2026-11-01')], '2026-12-31')));
+        const bar = page.querySelector<HTMLElement>('.dim-cal__trailbar') as HTMLElement;
+        expect(bar.style.gridColumn).toBe('2 / 32');
+        expect(bar.classList.contains('dim-cal__trailbar--after')).toBe(false);
+        // The bar's name says it in full, where the chip is short.
+        expect(String(bar.getAttribute('aria-label'))).toContain('Aberto');
+        expect(String(bar.getAttribute('aria-label'))).toContain('No end date set');
+        const chips = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailnoend'));
+        expect(chips.map((chip) => [chip.textContent, chip.getAttribute('aria-hidden'), chip.style.getPropertyValue('--dim-cal-chip-start')]))
+            .toEqual([['→ no end date', 'true', '90.375rem']]);
+        expect(page.querySelector('.dim-cal__trailspill')).toBeNull();
+        expect(page.querySelector('[data-region="dim-cal-trailchip"]')).toBeNull();
+        // The trail's line ends with the course's 30 days: no chip and nothing after it.
+        const span = page.querySelector<HTMLElement>('.dim-cal__trailspan') as HTMLElement;
+        expect(span.style.gridColumn).toBe('2 / 32');
+        expect(page.querySelectorAll('.dim-cal__trailrow--trail .dim-cal__trailnoend')).toHaveLength(0);
+        expect(page.querySelector('.dim-cal__traildiamond--trail')).toBeNull();
+    });
+
+    it('places the chip a fixed gap after the bar at every zoom, by the zoom\'s day', async() => {
+        const placed = async(zoom: string) => {
+            const page = await mount(offered(trails([opened('2026-11-01')], '2026-12-31'), {zoom: zoom}));
+            const chips = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailnoend'));
+            document.body.replaceChildren();
+            return chips.map((chip) => chip.style.getPropertyValue('--dim-cal-chip-start'));
+        };
+        expect(await placed('')).toEqual(['90.375rem']);
+        expect(await placed('week')).toEqual(['30.375rem']);
+        expect(await placed('month')).toEqual(['7.875rem']);
+    });
+
+    it('draws no chip when the 30 days run past the months held, and the bar is cut there', async() => {
+        const page = await mount(offered(trails([opened('2026-11-10')])));
+        const bar = page.querySelector<HTMLElement>('.dim-cal__trailbar') as HTMLElement;
+        expect(bar.style.gridColumn).toBe('11 / 32');
+        expect(bar.classList.contains('dim-cal__trailbar--after')).toBe(true);
+        expect(page.querySelectorAll('.dim-cal__trailnoend')).toHaveLength(0);
+    });
+
+    it('draws no chip for a course with an end, or with an expected completion date', async() => {
+        const page = await mount(offered(trails([trail()], '2026-12-31')));
+        expect(page.querySelectorAll('.dim-cal__trailnoend')).toHaveLength(0);
+        document.body.replaceChildren();
+        const expected = await mount(offered(trails(
+            [opened('2026-11-01', {end: at('2026-11-25', 12), expected: true}, at('2026-11-25', 12))],
+            '2026-12-31'
+        )));
+        expect(expected.querySelectorAll('.dim-cal__trailnoend')).toHaveLength(0);
+        expect((expected.querySelector('.dim-cal__trailbar') as HTMLElement).style.gridColumn).toBe('2 / 27');
+        expect(String(expected.querySelector('.dim-cal__trailbar')?.getAttribute('aria-label'))).not.toContain('No end date set');
+    });
+
+    it('says in full in the step\'s popover that it has no end date, and not for a step with an end', async() => {
+        const page = await mount(offered(trails([opened('2026-11-01')], '2026-12-31')));
+        await act(async() => {
+            fireEvent.click(page.querySelector('.dim-cal__trailbar') as HTMLElement);
+        });
+        const when = (await waitFor(() => {
+            const row = document.querySelector('[data-region="dim-cal-trailwhen"]');
+            expect(row).not.toBeNull();
+            return row as HTMLElement;
+        })).textContent;
+        expect(String(when)).toContain('From November 1, 2026 · No end date set');
+        document.body.replaceChildren();
+        const closed = await mount(offered(trails([trail()], '2026-12-31')));
+        await act(async() => {
+            fireEvent.click(closed.querySelector('.dim-cal__trailbar') as HTMLElement);
+        });
+        const other = await waitFor(() => {
+            const row = document.querySelector('[data-region="dim-cal-trailwhen"]');
+            expect(row).not.toBeNull();
+            return row as HTMLElement;
+        });
+        expect(String(other.textContent)).not.toContain('No end date set');
     });
 });

@@ -1,0 +1,17 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-04T12:00:00Z"},
+  "title": "Calendário de trilhas: revisão",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 900, "title": "Trilhas: linha do tempo contínua", "is_interactive": true},
+    "Conectores.dc.html": {"x": 0, "y": 1020, "w": 1440, "h": 560, "title": "Conectores: os casos de alinhamento"},
+    "FimAberto.dc.html": {"x": 0, "y": 1700, "w": 1440, "h": 760, "title": "Fim aberto: variantes"}
+  },
+  "order": ["Main.dc.html", "Conectores.dc.html", "FimAberto.dc.html"],
+  "notes": {
+    "title": {"x": 0, "y": -260, "text": "Calendário de trilhas: revisão de UX", "kind": "title1", "maxW": 1440}
+  },
+  "designSystems": []
+}

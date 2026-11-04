@@ -569,6 +569,14 @@ body.dim-calendar {
         z-index: 20;
     }
 
+    // In the Trilhas filters the category picker is not its row's last control, and on a phone it opens a row of its
+    // own: its panel opens from the button's start, so it never runs past the screen's edge.
+    .dim-cal__trailtools .dim-cal__popover {
+        right: auto;
+        inset-inline-start: 0;
+        max-width: calc(100vw - 2rem);
+    }
+
     .dim-cal__pickerbtn {
         display: inline-flex;
         gap: .375rem;
@@ -2473,13 +2481,25 @@ body.dim-calendar {
         border-end-end-radius: 0;
     }
 
-    // An open window has no end to draw: the bar fades out at the edge of what is held.
-    .dim-cal__trailbar--open {
-        margin-inline-end: 0;
-        border-inline-end-style: dashed;
-        border-start-end-radius: 0;
-        border-end-end-radius: 0;
-        mask-image: linear-gradient(to right, var(--dim-cal-edge) 85%, transparent);
+    // An open course (a start and no end) is drawn as its first days, then a quiet chip says it has no end. A fixed
+    // gap after the bar's last day (--dim-cal-chip-start, set by the client from the bars' day arithmetic) at every zoom,
+    // centred on the bar's middle; decorative, the bar's own name says the same in full.
+    .dim-cal__trailnoend {
+        position: absolute;
+        inset-inline-start: calc(var(--dim-cal-trail-label) + var(--dim-cal-chip-start, 0rem));
+        top: 50%;
+        z-index: 1;
+        margin-top: -.625rem;
+        padding: 0 .375rem;
+        border: 1px solid var(--dim-cal-trailupcoming-edge);
+        border-radius: var(--dim-ds-radius-sm, 6px);
+        background: var(--dim-cal-surface);
+        color: var(--dim-cal-trailupcoming-ink);
+        font-size: .6875rem;
+        font-weight: 600;
+        line-height: 1.125rem;
+        white-space: nowrap;
+        pointer-events: none;
     }
 
     .dim-cal__trailbar--next {

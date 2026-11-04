@@ -5,6 +5,28 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Trail model, T3c follow-up: a partial first week and the month zoom's cap** (2026100590). By weeks, a first week of
+  one or two days (a month that starts just before the viewer's first weekday) is narrower than its label, which spilled
+  into the next week: a cell under 2.5rem now draws no text and keeps its line. By months the timeline holds twelve
+  months instead of six, so a wide screen is filled; by days and weeks the cap stays six, and a switch down keeps the
+  months held until the next load drops the far side. Five mutation gates.
+
+  By months the view now asks the trails service for up to three months in one request (never more than the cap
+  leaves room for), appended or prepended, so a wide screen reaches twelve months in four requests instead of eight
+  one after another; by days and weeks a load is still one month, and the first paint stays the month and the next.
+  The service accepts `months` 1 to 3 (`trails::MONTHS`; `trails::OPENING` is the first paint's two) at the same read
+  cost. Eleven mutation gates.
+
+  A course with a start and no end is no longer drawn to the edge of the months held: it is its first 30 days
+  (the start day and 29 more), then a quiet "→ no end date" chip after a small gap, at every zoom, so its end reads as
+  open; the chip waits for the next month when the 30 days reach the edge. The bar's accessible name and the step's
+  popover say "No end date set" in full. An expected completion date still counts as the end; the connectors leave
+  the end of the 30 days; the trail's thin line ends there. The phone's agenda is unchanged. Two new strings.
+
+  Ten trails of ten courses cost the statements two do, at one, two and three months: the steps' modinfo is now
+  read from the trail courses' records, because past the ten modinfos core keeps in memory get_fast_modinfo() by id
+  read each further trail's course again (13 statements against 11 for ten trails). The view keeps one request in
+  flight; only a filter change during a load leaves the earlier one to finish, its answer dropped.
 - **Trail model, stage T3c: a zoom and the courses' dates in the calendar's Trilhas view** (2026100589),
   `docs/trail/PLAN.md` section 7. The desktop timeline has a zoom, "Days", "Weeks" and "Months", in the filters' row:
   by weeks the header shows the weeks from the viewer's first weekday, a short month over each week's days, today's

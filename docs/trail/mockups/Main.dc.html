@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Trilhas: linha do tempo contínua</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f8f9fa}
+a{color:#070093}a:hover{color:#030050}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 100%; max-width: 1440px; margin: 0 auto; padding: 28px 32px 32px; font-family: Outfit, system-ui, sans-serif; color: #1f1f1f; background: #f8f9fa; display: flex; flex-direction: column; gap: 14px;">
+
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+    <h1 style="margin: 0 8px 0 0; font-size: 28px; font-weight: 700; color: #070093;">Calendário</h1>
+    <button type="button" onClick="{{goToday}}" style="height: 34px; padding: 0 14px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; cursor: pointer;">Hoje</button>
+    <button type="button" aria-label="{{prevLabel}}" onClick="{{goPrev}}" style="width: 34px; height: 34px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1f1f1f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+    <button type="button" aria-label="{{nextLabel}}" onClick="{{goNext}}" style="width: 34px; height: 34px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1f1f1f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+    <span aria-live="polite" style="font-size: 20px; font-weight: 500;">{{rangeLabel}}</span>
+    <div style="flex: 1 1 auto;"></div>
+    <div role="group" aria-label="Visualização" style="display: flex; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; background: #fff;">
+      <a href="#mes" style="padding: 7px 16px; font-size: 14px; color: #1f1f1f; text-decoration: none;">Mês</a>
+      <a href="#semana" style="padding: 7px 16px; font-size: 14px; color: #1f1f1f; text-decoration: none; border-left: 1px solid #dee2e6;">Semana</a>
+      <a href="#trilhas" aria-current="page" style="padding: 7px 16px; font-size: 14px; font-weight: 600; color: #070093; background: #eef0ff; text-decoration: none; border-left: 1px solid #dee2e6;">Trilhas</a>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+    <label style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; font-size: 14px;">
+      <span>Trilha</span>
+      <select style="border: 0; background: transparent; font: inherit; font-size: 14px; color: #1f1f1f;"><option>Todas as trilhas</option><option>TRAILDEMO Trilha de Gestão</option></select>
+    </label>
+    <label style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; font-size: 14px;"><input type="checkbox"> Só as minhas</label>
+    <button type="button" style="height: 34px; padding: 0 12px; border: 1px solid #dee2e6; border-radius: 8px; background: #fff; font: inherit; font-size: 14px;">Todas as minhas categorias ▾</button>
+    <div style="flex: 1 1 auto;"></div>
+    <span style="font-size: 13px; color: #5c636a;">1 trilha · 4 cursos</span>
+    <div role="group" aria-label="Escala da linha do tempo" style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 13px; color: #5c636a;">Escala</span>
+      <div style="display: flex; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; background: #fff;">
+        <sc-for list="{{zooms}}" as="z" hint-placeholder-count="3">
+          <button type="button" aria-pressed="{{z.on}}" onClick="{{z.pick}}" style="height: 32px; padding: 0 14px; border: 0; border-left: {{z.edge}}; background: {{z.bg}}; color: {{z.ink}}; font: inherit; font-size: 13px; font-weight: {{z.weight}}; cursor: pointer;">{{z.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: relative; background: #fff; border: 1px solid #e3e6ea; border-radius: 12px;">
+    <div ref="{{boxRef}}" onScroll="{{onScroll}}" style="overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin; border-radius: 12px;">
+      <div style="position: relative; width: {{totalW}}px;">
+
+        <div style="display: flex; border-bottom: 1px solid #e3e6ea;">
+          <div style="position: sticky; left: 0; z-index: 5; flex: none; width: 300px; height: 68px; box-sizing: border-box; padding: 0 16px; display: flex; align-items: flex-end; padding-bottom: 12px; background: #fff; border-right: 1px solid #e3e6ea; font-size: 12px; font-weight: 600; color: #5c636a;">Trilhas e cursos</div>
+          <div style="flex: none; width: {{tlW}}px;">
+            <div style="display: flex; height: 28px;">
+              <sc-for list="{{months}}" as="m" hint-placeholder-count="3">
+                <div style="flex: none; width: {{m.w}}px; height: 28px; box-sizing: border-box; border-left: 1px solid #dee2e6; position: relative; overflow: hidden;">
+                  <button type="button" onClick="{{m.go}}" style="position: sticky; left: 312px; margin-top: 4px; height: 20px; padding: 0 8px; border: 0; border-radius: 6px; background: {{m.bg}}; color: {{m.ink}}; font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer;">{{m.name}}</button>
+                </div>
+              </sc-for>
+              <div style="flex: none; width: 160px; height: 28px; box-sizing: border-box; border-left: 1px solid #dee2e6; padding: 4px 8px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5c636a;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5c636a" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.2-8.6"></path></svg>
+                Fevereiro…
+              </div>
+            </div>
+            <div style="display: flex; height: 40px;">
+              <sc-if value="{{byDay}}" hint-placeholder-val="{{ true }}">
+                <sc-for list="{{days}}" as="d" hint-placeholder-count="40">
+                  <div style="flex: none; width: {{dayW}}px; height: 40px; box-sizing: border-box; padding-top: 3px; display: flex; flex-direction: column; align-items: center; gap: 1px; border-left: {{d.edge}}; background: {{d.bg}};">
+                    <span style="font-size: 10px; font-weight: 500; color: {{d.soft}};">{{d.letter}}</span>
+                    <span style="display: flex; align-items: center; justify-content: center; width: 22px; height: 20px; border-radius: 6px; font-size: 12px; font-weight: 600; background: {{d.pill}}; color: {{d.ink}};">{{d.num}}</span>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{byWeek}}" hint-placeholder-val="{{ false }}">
+                <sc-for list="{{weeks}}" as="k" hint-placeholder-count="13">
+                  <div style="flex: none; width: {{k.w}}px; height: 40px; box-sizing: border-box; padding: 6px 0 0 6px; border-left: 1px solid {{k.line}}; background: {{k.bg}}; display: flex; flex-direction: column; gap: 1px;">
+                    <span style="font-size: 10px; font-weight: 500; color: #5c636a;">{{k.kicker}}</span>
+                    <span style="font-size: 12px; font-weight: 600; color: {{k.ink}};">{{k.label}}</span>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{byMonth}}" hint-placeholder-val="{{ false }}">
+                <sc-for list="{{weeks}}" as="k" hint-placeholder-count="13">
+                  <div style="flex: none; width: {{k.w}}px; height: 40px; box-sizing: border-box; border-left: 1px solid {{k.line}}; background: {{k.bg}};"></div>
+                </sc-for>
+              </sc-if>
+              <div style="flex: none; width: 160px; height: 40px; box-sizing: border-box; border-left: 1px solid #dee2e6; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="display: block; width: 100px; height: 8px; border-radius: 4px; background: #eceef1;"></span>
+                <span style="display: block; width: 64px; height: 8px; border-radius: 4px; background: #eceef1;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: relative; height: {{bodyH}}px;">
+          <div aria-hidden="true" style="position: absolute; left: 300px; top: 0; width: {{tlW}}px; height: {{bodyH}}px; z-index: 0;">
+            <sc-for list="{{weekends}}" as="w" hint-placeholder-count="20">
+              <span style="position: absolute; top: 0; bottom: 0; left: {{w.left}}px; width: {{dayW}}px; background: #f6f7f9;"></span>
+            </sc-for>
+            <sc-for list="{{gridLines}}" as="e" hint-placeholder-count="13">
+              <span style="position: absolute; top: 0; bottom: 0; left: {{e.left}}px; width: 1px; background: {{e.colour}};"></span>
+            </sc-for>
+            <span style="position: absolute; top: 0; bottom: 0; left: {{todayX}}px; width: 2px; background: #070093;"></span>
+            <span style="position: absolute; top: 2px; left: {{todayTag}}px; padding: 0 5px; border-radius: 4px; background: #070093; color: #fff; font-size: 10px; font-weight: 600; line-height: 16px;">Hoje</span>
+          </div>
+
+          <div style="position: absolute; left: 0; top: 0; display: flex; height: {{trailH}}px; width: {{totalW}}px; border-bottom: 1px solid #e9ecef;">
+            <div style="position: sticky; left: 0; z-index: 5; flex: none; width: 300px; height: {{trailH}}px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; gap: 10px; background: #fff; border-right: 1px solid #e3e6ea;">
+              <button type="button" aria-expanded="{{open}}" aria-label="Recolher os cursos de TRAILDEMO Trilha de Gestão" onClick="{{toggle}}" style="flex: none; width: 30px; height: 30px; border: 1px solid #ced4da; border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1f1f1f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{chevronTurn}}deg); transition: transform 160ms ease;"><path d="M6 9l6 6 6-6"></path></svg>
+              </button>
+              <span style="display: flex; flex-direction: column; min-width: 0;">
+                <a href="#trilha" style="font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">TRAILDEMO Trilha de Gestão</a>
+                <small style="font-size: 12px; color: #5c636a;">Com inscrição · 0 de 4 concluídos</small>
+              </span>
+            </div>
+            <div style="position: relative; flex: none; width: {{tlW}}px; height: {{trailH}}px;">
+              <span style="position: absolute; top: {{spanTop}}px; left: {{spanLeft}}px; width: {{spanW}}px; height: 6px; border-radius: 3px; background: #d6d8f7;"></span>
+            </div>
+          </div>
+
+          <sc-if value="{{open}}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+              <div style="position: absolute; left: 0; top: {{s.rowY}}px; display: flex; height: {{rowH}}px; width: {{totalW}}px; border-bottom: 1px solid #e9ecef;">
+                <div style="position: sticky; left: 0; z-index: 5; flex: none; width: 300px; height: {{rowH}}px; box-sizing: border-box; padding: 0 8px; display: flex; align-items: center; background: #fff; border-right: 1px solid #e3e6ea;">
+                  <button type="button" onClick="{{s.pick}}" onMouseEnter="{{s.enter}}" onMouseLeave="{{s.leave}}" aria-label="{{s.name}}, {{s.short}}: mostrar na linha do tempo" style="width: 100%; height: 46px; padding: 0 8px 0 30px; border: 0; border-radius: 8px; background: {{s.rowBg}}; display: flex; align-items: center; gap: 10px; font: inherit; color: #1f1f1f; text-align: left; cursor: pointer;">
+                    <span style="flex: none; width: 20px; height: 20px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid {{s.edge}}; background: {{s.circleBg}}; color: {{s.circleInk}}; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">{{s.position}}</span>
+                    <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+                      <span style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{s.name}}</span>
+                      <span style="font-size: 11px; color: #5c636a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums;">{{s.short}}</span>
+                    </span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{s.locate}}" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>
+                  </button>
+                </div>
+                <div style="position: relative; flex: none; width: {{tlW}}px; height: {{rowH}}px;">
+                  <button type="button" onClick="{{s.pick}}" onMouseEnter="{{s.enter}}" onMouseLeave="{{s.leave}}" aria-label="{{s.name}}, {{s.when}}, {{s.label}}" style="position: absolute; z-index: 2; top: {{barTop}}px; left: {{s.left}}px; width: {{s.width}}px; height: 24px; box-sizing: border-box; padding: 0 {{barPad}}px; border: {{s.border}}; border-radius: 6px; background: {{s.bg}}; color: {{s.ink}}; font: inherit; font-size: 12px; font-weight: {{s.weight}}; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; outline: {{s.ring}}; outline-offset: 2px;">{{s.barText}}</button>
+                  <sc-for list="{{s.frags}}" as="f" hint-placeholder-count="0">
+                    <span aria-hidden="true" style="position: absolute; z-index: 2; top: {{chipTop}}px; left: {{f.left}}px; height: 20px; box-sizing: border-box; padding: 0 6px; border: 1px solid #070093; border-radius: 6px; background: #fff; color: #070093; font-size: 11px; font-weight: 600; line-height: 18px; white-space: nowrap;">→ sem término</span>
+                  </sc-for>
+                  <span style="position: absolute; left: {{skelX}}px; top: {{skelTop}}px; width: 120px; height: 8px; border-radius: 4px; background: #eceef1;"></span>
+                </div>
+              </div>
+            </sc-for>
+
+            <div aria-hidden="true" style="position: absolute; left: 300px; top: 0; width: {{tlW}}px; height: {{bodyH}}px; z-index: 3; pointer-events: none;">
+              <sc-for list="{{segs}}" as="g" hint-placeholder-count="6">
+                <span style="position: absolute; left: {{g.left}}px; top: {{g.top}}px; width: {{g.w}}px; height: {{g.h}}px; border-radius: 1px; background: {{g.colour}};"></span>
+              </sc-for>
+              <sc-for list="{{dots}}" as="o" hint-placeholder-count="2">
+                <span style="position: absolute; left: {{o.left}}px; top: {{o.top}}px; width: 6px; height: 6px; border-radius: 50%; background: {{o.colour}};"></span>
+              </sc-for>
+              <sc-for list="{{downs}}" as="a" hint-placeholder-count="2">
+                <svg width="8" height="6" viewBox="0 0 8 6" style="position: absolute; left: {{a.left}}px; top: {{a.top}}px;"><path d="M0 0H8L4 6Z" fill="{{a.colour}}"></path></svg>
+              </sc-for>
+              <sc-for list="{{rights}}" as="a" hint-placeholder-count="1">
+                <svg width="6" height="8" viewBox="0 0 6 8" style="position: absolute; left: {{a.left}}px; top: {{a.top}}px;"><path d="M0 0L6 4L0 8Z" fill="{{a.colour}}"></path></svg>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{pop.shown}}" hint-placeholder-val="{{ false }}">
+      <div role="dialog" aria-label="{{pop.name}}" style="position: absolute; z-index: 6; left: {{pop.left}}px; top: {{pop.top}}px; width: 340px; box-sizing: border-box; background: #fff; border: 1px solid #e3e6ea; border-radius: 12px; box-shadow: 0 12px 32px rgba(3, 0, 80, 0.16); overflow: hidden;">
+        <div style="height: 40px; background: #0a4a85;"></div>
+        <div style="padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; font-weight: 600; color: #5c636a;">Category 1</span>
+            <div style="flex: 1 1 auto;"></div>
+            <button type="button" aria-label="Fechar" onClick="{{closePop}}" style="width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1f1f1f" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+          </div>
+          <strong style="font-size: 17px; font-weight: 600; color: #070093;">{{pop.name}}</strong>
+          <span style="align-self: flex-start; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: {{pop.pillBg}}; color: {{pop.pillInk}}; border: 1px solid {{pop.pillEdge}};">{{pop.label}}</span>
+          <span style="font-size: 13px; color: #343a40;">Curso {{pop.position}} de 4 · TRAILDEMO Trilha de Gestão</span>
+          <span style="font-size: 13px; color: #343a40;">{{pop.when}}<br><small style="color: #5c636a;">Datas do curso</small></span>
+          <sc-if value="{{pop.hasReason}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 13px; color: #343a40;">{{pop.reason}}</span>
+          </sc-if>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+            <a href="#trilha" style="padding: 7px 14px; border: 1px solid #ced4da; border-radius: 8px; font-size: 14px; color: #1f1f1f; text-decoration: none;">Ver trilha</a>
+            <a href="#curso" style="padding: 7px 14px; border-radius: 8px; font-size: 14px; color: #fff; background: #070093; text-decoration: none;">Abrir curso</a>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 12px; color: #343a40;">
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 18px; height: 10px; border-radius: 3px; background: #f0fbe0; border: 1px solid #2f6b00;"></span>Concluído</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 18px; height: 10px; border-radius: 3px; background: #070093;"></span>Em andamento</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 18px; height: 10px; border-radius: 3px; background: #fff; border: 1px solid #070093;"></span>A seguir</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 18px; height: 10px; border-radius: 3px; background: #fff; border: 1px dashed #6a737b;"></span>Bloqueado</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 18px; height: 10px; border-radius: 3px; background: #f4d6d2; border: 1px solid #ca3120;"></span>Atrasado</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><path d="M1 3H9V9H18" fill="none" stroke="#505050" stroke-width="1.6"></path><path d="M16 6L21 9L16 12Z" fill="#505050"></path></svg>Sequência da trilha</span>
+    <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 2px; height: 12px; background: #070093;"></span>Hoje</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"zoom":{"editor":"enum","options":["day","week","month"],"default":"day","section":"Escala"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {sl: 0, vw: 1076, focused: 0, hovered: 0, folded: false, zoom: null};
+    this.box = null;
+  }
+
+  still() {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  zoom() {
+    return this.state.zoom ?? this.props.zoom ?? 'day';
+  }
+
+  dayWidth(zoom) {
+    return {day: 30, week: 10, month: 4}[zoom] ?? 30;
+  }
+
+  scrollTo(x) {
+    if (!this.box) {
+      return;
+    }
+    this.box.scrollTo({left: Math.max(0, x), behavior: this.still() ? 'auto' : 'smooth'});
+  }
+
+  setZoom(zoom) {
+    // Keep the day at the start of the view where it was: the same date, at the new width.
+    const before = this.dayWidth(this.zoom());
+    const after = this.dayWidth(zoom);
+    const day = this.state.sl / before;
+    this.setState({zoom, focused: 0}, () => {
+      if (this.box) {
+        this.box.scrollLeft = day * after;
+      }
+    });
+  }
+
+  renderVals() {
+    const zoom = this.zoom();
+    const DAY = this.dayWidth(zoom);
+    const DAYS = 92;
+    const TODAY = 3;
+    const MONTHS = [
+      {name: 'Novembro de 2026', lower: 'novembro', short: 'nov.', year: 2026, start: 0, len: 30},
+      {name: 'Dezembro de 2026', lower: 'dezembro', short: 'dez.', year: 2026, start: 30, len: 31},
+      {name: 'Janeiro de 2027', lower: 'janeiro', short: 'jan.', year: 2027, start: 61, len: 31},
+    ];
+    const STEPS = [
+      {id: 1, name: 'TRAILDEMO Fundamentos', start: 1, end: 19, state: 'current', label: 'Em andamento',
+        when: '2 a 20 de novembro de 2026', short: '2–20 nov. 2026', reason: ''},
+      {id: 2, name: 'TRAILDEMO Prática orientada', start: 15, end: 41, state: 'upcoming', label: 'A seguir',
+        when: '16 de novembro a 12 de dezembro de 2026', short: '16 nov. – 12 dez. 2026', reason: ''},
+      // No end date: the bar is the course's first 30 days, then two fragments say it goes on.
+      {id: 3, name: 'TRAILDEMO Projeto final', start: 44, end: 44 + 29, open: true, state: 'upcoming', label: 'A seguir',
+        when: 'A partir de 15 de dezembro de 2026', short: 'A partir de 15 dez. 2026', reason: ''},
+      {id: 4, name: 'TRAILDEMO Avaliação final', start: 70, end: 85, state: 'locked', label: 'Bloqueado',
+        when: '10 a 25 de janeiro de 2027', short: '10–25 jan. 2027',
+        reason: 'Libera ao concluir TRAILDEMO Projeto final.'},
+    ];
+    const TONES = {
+      current: {bg: '#070093', border: '2px solid #070093', ink: '#ffffff', weight: 700, edge: '#070093',
+        circleBg: '#070093', circleInk: '#ffffff', pillBg: '#070093', pillInk: '#ffffff', pillEdge: '#070093'},
+      upcoming: {bg: '#ffffff', border: '1px solid #070093', ink: '#070093', weight: 500, edge: '#070093',
+        circleBg: '#ffffff', circleInk: '#070093', pillBg: '#ffffff', pillInk: '#070093', pillEdge: '#070093'},
+      locked: {bg: '#ffffff', border: '1px dashed #6a737b', ink: '#343a40', weight: 500, edge: '#6a737b',
+        circleBg: '#ffffff', circleInk: '#343a40', pillBg: '#ffffff', pillInk: '#343a40', pillEdge: '#6a737b'},
+    };
+    const LEFT = 300;
+    const SKEL = 160;
+    const tlW = DAYS * DAY + SKEL;
+    const totalW = LEFT + tlW;
+    const TRAIL_H = 52;
+    const ROW_H = 56;
+    const BAR_H = 24;
+    const BAR_TOP = (ROW_H - BAR_H) / 2;
+    const HEAD_H = 69;
+    const open = !this.state.folded;
+    const rowY = (index) => TRAIL_H + index * ROW_H;
+    const bodyH = open ? TRAIL_H + STEPS.length * ROW_H : TRAIL_H;
+
+    const monthOf = (day) => MONTHS.reduce((found, m, i) => (day >= m.start ? i : found), 0);
+    const first = Math.min(DAYS - 1, Math.floor(this.state.sl / DAY));
+    const last = Math.min(DAYS - 1, Math.floor((this.state.sl + this.state.vw - 1) / DAY));
+    const a = MONTHS[monthOf(first)];
+    const b = MONTHS[monthOf(last)];
+    let rangeLabel = `${a.lower} de ${a.year}`;
+    if (a !== b) {
+      rangeLabel = a.year === b.year ? `${a.lower} – ${b.lower} de ${b.year}` : `${a.lower} de ${a.year} – ${b.lower} de ${b.year}`;
+    }
+
+    const letters = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+    const days = [];
+    const weekends = [];
+    const weeks = [];
+    for (let i = 0; i < DAYS; i++) {
+      const date = new Date(Date.UTC(2026, 10, 1 + i));
+      const wd = date.getUTCDay();
+      const weekend = wd === 0 || wd === 6;
+      const today = i === TODAY;
+      const opens = MONTHS.some((m) => m.start === i);
+      days.push({
+        letter: letters[wd],
+        num: date.getUTCDate(),
+        bg: weekend ? '#f6f7f9' : '#ffffff',
+        pill: today ? '#070093' : 'transparent',
+        ink: today ? '#ffffff' : '#1f1f1f',
+        soft: today ? '#070093' : '#5c636a',
+        edge: opens ? '1px solid #dee2e6' : '0',
+      });
+      if (weekend && zoom === 'day') {
+        weekends.push({left: i * DAY});
+      }
+      // A week starts on a Monday, and the first one at the first day held.
+      if (i === 0 || wd === 1) {
+        const span = Math.min(DAYS - i, i === 0 ? ((8 - wd) % 7 || 7) : 7);
+        const holdsToday = TODAY >= i && TODAY < i + span;
+        weeks.push({
+          w: span * DAY,
+          kicker: MONTHS[monthOf(i)].short,
+          label: `${date.getUTCDate()}–${new Date(Date.UTC(2026, 10, i + span)).getUTCDate()}`,
+          line: opens ? '#dee2e6' : '#eef0f2',
+          bg: holdsToday && zoom === 'week' ? '#eef0ff' : '#ffffff',
+          ink: holdsToday ? '#070093' : '#1f1f1f',
+        });
+      }
+    }
+    const inView = monthOf(first);
+    const months = MONTHS.map((m, i) => ({
+      name: zoom === 'month' ? m.name.split(' ')[0] : m.name,
+      w: m.len * DAY,
+      bg: i === inView ? '#eef0ff' : 'transparent',
+      ink: i === inView ? '#070093' : '#343a40',
+      go: () => this.scrollTo(m.start * DAY),
+    }));
+    const gridLines = [];
+    MONTHS.slice(1).forEach((m) => gridLines.push({left: m.start * DAY, colour: '#dee2e6'}));
+    if (zoom !== 'day') {
+      for (let i = 1; i < DAYS; i++) {
+        const wd = new Date(Date.UTC(2026, 10, 1 + i)).getUTCDay();
+        if (wd === 1 && !MONTHS.some((m) => m.start === i)) {
+          gridLines.push({left: i * DAY, colour: '#f0f1f3'});
+        }
+      }
+    }
+
+    const steps = STEPS.map((step, index) => {
+      const tone = TONES[step.state];
+      const lit = this.state.hovered === step.id || this.state.focused === step.id;
+      const width = (step.end - step.start + 1) * DAY;
+      return {
+        ...tone,
+        id: step.id,
+        position: index + 1,
+        name: step.name,
+        short: step.short,
+        when: step.when,
+        label: step.label,
+        barText: width >= 56 ? step.name : '',
+        frags: step.open ? [{left: (step.end + 1) * DAY + 6}] : [],
+        rowY: rowY(index),
+        left: step.start * DAY,
+        width,
+        rowBg: lit ? '#eef0ff' : 'transparent',
+        ring: lit ? '2px solid #4456ff' : '0 solid transparent',
+        locate: lit ? '#070093' : '#adb5bd',
+        pick: () => {
+          this.scrollTo(step.start * DAY - 2 * Math.max(DAY, 48));
+          this.setState({focused: step.id});
+        },
+        enter: () => this.setState({hovered: step.id}),
+        leave: () => this.setState({hovered: 0}),
+      };
+    });
+
+    const LINE = '#505050';
+    const segs = [];
+    const dots = [];
+    const downs = [];
+    const rights = [];
+    for (let i = 0; i + 1 < STEPS.length; i++) {
+      const from = STEPS[i];
+      const to = STEPS[i + 1];
+      const ma = rowY(i) + BAR_TOP + BAR_H / 2 - 1;
+      const mb = rowY(i + 1) + BAR_TOP + BAR_H / 2 - 1;
+      const base = rowY(i) + BAR_TOP + BAR_H;
+      const head = rowY(i + 1) + BAR_TOP;
+      if (to.start > from.end) {
+        // No overlap: an elbow from the end of one bar into the start of the next, however narrow the gap.
+        const x0 = (from.end + 1) * DAY;
+        const xb = to.start * DAY;
+        const elbow = x0 + Math.max(3, Math.min(10, (xb - x0) / 2));
+        segs.push({left: x0, top: ma, w: elbow - x0 + 2, h: 2, colour: LINE});
+        segs.push({left: elbow, top: ma, w: 2, h: mb - ma + 2, colour: LINE});
+        segs.push({left: elbow, top: mb, w: Math.max(0, xb - 6 - elbow), h: 2, colour: LINE});
+        rights.push({left: Math.max(elbow, xb - 6), top: mb - 3, colour: LINE});
+      } else {
+        // Overlap: a drop from the earlier bar at the day the next one starts.
+        const xd = to.start * DAY + Math.min(10, Math.max(2, DAY / 2));
+        dots.push({left: xd - 2, top: base - 3, colour: LINE});
+        segs.push({left: xd, top: base, w: 2, h: head - 6 - base, colour: LINE});
+        downs.push({left: xd - 3, top: head - 6, colour: LINE});
+      }
+    }
+
+    const focused = STEPS.findIndex((step) => step.id === this.state.focused);
+    let pop = {shown: false};
+    if (open && focused >= 0) {
+      const step = STEPS[focused];
+      const tone = TONES[step.state];
+      pop = {
+        shown: true,
+        name: step.name,
+        label: step.label,
+        when: step.when,
+        position: focused + 1,
+        reason: step.reason,
+        hasReason: step.reason !== '',
+        pillBg: tone.pillBg,
+        pillInk: tone.pillInk,
+        pillEdge: tone.pillEdge,
+        left: Math.max(LEFT + 8, Math.min(LEFT + step.start * DAY - this.state.sl, LEFT + this.state.vw - 348)),
+        top: HEAD_H + rowY(focused) + BAR_TOP + BAR_H + 8,
+      };
+    }
+
+    const ZOOMS = [{id: 'day', label: 'Dias'}, {id: 'week', label: 'Semanas'}, {id: 'month', label: 'Meses'}];
+    return {
+      zooms: ZOOMS.map((z, i) => ({
+        label: z.label,
+        on: z.id === zoom,
+        bg: z.id === zoom ? '#eef0ff' : '#ffffff',
+        ink: z.id === zoom ? '#070093' : '#1f1f1f',
+        weight: z.id === zoom ? 600 : 400,
+        edge: i === 0 ? '0' : '1px solid #dee2e6',
+        pick: () => this.setZoom(z.id),
+      })),
+      byDay: zoom === 'day',
+      byWeek: zoom === 'week',
+      byMonth: zoom === 'month',
+      prevLabel: 'Mês anterior',
+      nextLabel: 'Próximo mês',
+      boxRef: (element) => {
+        this.box = element;
+      },
+      onScroll: (event) => {
+        const box = event.currentTarget;
+        this.setState({sl: box.scrollLeft, vw: Math.max(DAY, box.clientWidth - LEFT)});
+      },
+      goToday: () => this.scrollTo((TODAY - 2) * DAY),
+      goPrev: () => {
+        const m = monthOf(first);
+        const target = first > MONTHS[m].start ? MONTHS[m].start : MONTHS[Math.max(0, m - 1)].start;
+        this.scrollTo(target * DAY);
+      },
+      goNext: () => {
+        const m = monthOf(first);
+        this.scrollTo(m + 1 < MONTHS.length ? MONTHS[m + 1].start * DAY : DAYS * DAY);
+      },
+      toggle: () => this.setState({folded: !this.state.folded, focused: 0}),
+      closePop: () => this.setState({focused: 0}),
+      chevronTurn: open ? 0 : -90,
+      open,
+      rangeLabel,
+      dayW: DAY,
+      trailH: TRAIL_H,
+      rowH: ROW_H,
+      barTop: BAR_TOP,
+      chipTop: BAR_TOP + 2,
+      barPad: DAY >= 10 ? 8 : 4,
+      skelTop: BAR_TOP + 8,
+      spanTop: (TRAIL_H - 6) / 2,
+      totalW,
+      tlW,
+      bodyH,
+      skelX: DAYS * DAY + 20,
+      todayX: TODAY * DAY + Math.floor(DAY / 2) - 1,
+      todayTag: TODAY * DAY + Math.floor(DAY / 2) + 4,
+      spanLeft: STEPS[0].start * DAY,
+      spanW: (STEPS[STEPS.length - 1].end - STEPS[0].start + 1) * DAY,
+      months,
+      gridLines,
+      days,
+      weeks,
+      weekends,
+      steps,
+      segs,
+      dots,
+      downs,
+      rights,
+      pop,
+    };
+  }
+}
+</script>
+</body>
+</html>

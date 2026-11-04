@@ -106,7 +106,7 @@ import {fill, load as loadStrings} from './strings';
 import type {Strings} from './strings';
 import TrailView, {TrailFilters} from './TrailView';
 import type {TrailNav} from './TrailView';
-import {ANSWER_MONTHS, filterOf, rangeLabel, readTrail, readZoom, trailArgs, trailFiltered, withTrail, zoomOf} from './trails';
+import {OPENING_MONTHS, filterOf, rangeLabel, readTrail, readZoom, trailArgs, trailFiltered, withTrail, zoomOf} from './trails';
 import type {FoldIcons, TrailAnswer, TrailFilter, Zoom} from './trails';
 import ViewSwitch from './ViewSwitch';
 import WeekGrid from './WeekGrid';
@@ -494,7 +494,7 @@ const Calendar = (props: Props) => {
                 // The Trilhas view draws no event: its answer is the trails of the month and the next, as a first paint's.
                 trails = await fetchOne<TrailAnswer>({
                     methodname: TRAILS_METHOD,
-                    args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, ANSWER_MONTHS),
+                    args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, OPENING_MONTHS),
                 });
                 answer = emptyAnswer(days);
             } else {
@@ -622,11 +622,11 @@ const Calendar = (props: Props) => {
     };
 
     /**
-     * The trails of a month beside the Trilhas view's timeline, or of a month and the next for a new set, with the
+     * The trails of a month beside the Trilhas view's timeline, or of several months in a row (a batch, or a new set), with the
      * filters and the scope shown; a failure is reported and refused, and the view drops it.
      *
      * @param {string} month The month, YYYY-MM.
-     * @param {number} months 1, or ANSWER_MONTHS.
+     * @param {number} months 1 to BATCH_MONTHS.
      * @returns {Promise} The answer.
      */
     const fetchTrails = (month: string, months: number): Promise<TrailAnswer> => fetchOne<TrailAnswer>({

@@ -23,12 +23,12 @@
 
 import {zone} from '../../src/calendar/days';
 import {
-    LOADED_CAP, NAMED_BAR, STEP_INSET, TRACK, barOf, datesOf, dayLeft, dayWidth, shiftedTarget, extendLoaded, keptLeft, linksOf,
+    BATCH_MONTHS, CHIP_GAP, LOADED_CAP, OPENING_MONTHS, batchOf, MONTH_CAP, NAMED_BAR, OPEN_DAYS, WEEK_LABEL_LEAST, STEP_INSET, TRACK, barOf, datesOf, dayLeft, dayWidth, shiftedTarget, chipLeft, extendLoaded, keptLeft, linksOf,
     loadedOf, mergedOf, monthDays, monthStep, monthsOf, namedBar, nearEnd, openingLeft, pageLeft, rangeLabel, reachOf, readTrail,
-    readZoom, scrubLeft, shownDays, targetLeft, todayIndex, todayLeft, trackOf, trailArgs, trailBarOf, weekCells, weekLabel,
+    readZoom, scrubLeft, shownDays, targetLeft, todayIndex, todayLeft, trackOf, trailArgs, trailBarOf, weekCells, weekLabel, weekLabelled, capOf,
     windowDays, withTrail, zoomOf, zoomedLeft,
 } from '../../src/calendar/trails';
-import type {LinkPiece, Trail, TrailAnswer, TrailStep} from '../../src/calendar/trails';
+import type {LinkPiece, Trail, TrailAnswer, TrailBar, TrailStep} from '../../src/calendar/trails';
 import {at} from './fixture';
 
 const utc = zone('UTC', 'en');
@@ -76,8 +76,33 @@ describe('barOf', () => {
         expect(bar).toEqual({from: 0, to: 30, before: true, after: true, open: false, milestone: false});
     });
 
-    it('leaves a step with no end open to the month\'s edge', () => {
-        expect(barOf(step({end: 0}), march, utc)).toEqual({from: 1, to: 30, before: false, after: true, open: true, milestone: false});
+    it('draws a step with a start and no end as its first 30 days, the start day and 29 more', () => {
+        expect(OPEN_DAYS).toBe(30);
+        // From the 1st: the 30th, inside the month, with no edge to cut it.
+        expect(barOf(step({start: at('2027-03-01', 12), end: 0}), march, utc))
+            .toEqual({from: 0, to: 29, before: false, after: false, open: true, milestone: false});
+        // From the 2nd: the 31st, the last day held, which is not past it.
+        expect(barOf(step({end: 0}), march, utc)).toEqual({from: 1, to: 30, before: false, after: false, open: true, milestone: false});
+    });
+
+    it('cuts an open step\'s 30 days at the end of the months held, as any bar is', () => {
+        expect(barOf(step({start: at('2027-03-10', 12), end: 0}), march, utc))
+            .toEqual({from: 9, to: 30, before: false, after: true, open: true, milestone: false});
+        const held = [...march, ...monthDays('2027-04')];
+        expect(barOf(step({start: at('2027-03-10', 12), end: 0}), held, utc))
+            .toEqual({from: 9, to: 38, before: false, after: false, open: true, milestone: false});
+        // One that began before the days held is cut at their start, and one whose 30 days ended before them is not drawn.
+        expect(barOf(step({start: at('2027-02-20', 12), end: 0}), march, utc))
+            .toEqual({from: 0, to: 20, before: true, after: false, open: true, milestone: false});
+        expect(barOf(step({start: at('2027-01-20', 12), end: 0}), march, utc)).toBeNull();
+    });
+
+    it('does not take a step with an expected completion date for open', () => {
+        const expected = barOf(step({end: at('2027-03-25', 12), expected: true}), march, utc);
+        expect(expected).toEqual({from: 1, to: 24, before: false, after: false, open: false, milestone: true});
+        expect(chipLeft(expected as TrailBar, march.length, 'day')).toBeNull();
+        // The same step with the date closed: its own end, never its start's 30 days.
+        expect(barOf(step({end: at('2027-03-05', 12)}), march, utc)?.open).toBe(false);
     });
 
     it('draws an expected date inside the month as a milestone, and not one past it', () => {
@@ -154,10 +179,50 @@ describe('the address', () => {
     });
 });
 
+describe('chipLeft', () => {
+    const bar = (to: number, open = true): TrailBar => ({from: 0, to: to, before: false, after: false, open: open, milestone: false});
+
+    it('places the chip a gap after the open bar\'s last day, by the zoom\'s day arithmetic', () => {
+        expect(CHIP_GAP).toBe(0.375);
+        // The bar's last day is the 11th (index 10): its end is 33rem by days, 11rem by weeks, 2.75rem by months.
+        expect(chipLeft(bar(10), 61, 'day')).toBe(33.375);
+        expect(chipLeft(bar(10), 61, 'week')).toBe(11.375);
+        expect(chipLeft(bar(10), 61, 'month')).toBe(3.125);
+    });
+
+    it('draws none for a bar that is not open, or whose 30 days reach the last day held or run past it', () => {
+        expect(chipLeft(bar(10, false), 61, 'day')).toBeNull();
+        expect(chipLeft(bar(59), 61, 'day')).toBe(180.375);
+        expect(chipLeft(bar(60), 61, 'day')).toBeNull();
+        const held = barOf(step({start: at('2027-03-10', 12), end: 0}), march, utc) as TrailBar;
+        expect([held.after, chipLeft(held, march.length, 'day')]).toEqual([true, null]);
+        const loaded = [...march, ...monthDays('2027-04')];
+        const next = barOf(step({start: at('2027-03-10', 12), end: 0}), loaded, utc) as TrailBar;
+        expect(chipLeft(next, loaded.length, 'day')).toBe((38 + 1) * 3 + 0.375);
+    });
+});
+
 describe('trailBarOf', () => {
     it('spans a trail\'s period and is never a milestone', () => {
         const trail = {first: at('2027-03-02', 12), last: at('2027-04-10', 12)} as Trail;
         expect(trailBarOf(trail, march, utc)).toEqual({from: 1, to: 30, before: false, after: true, open: false, milestone: false});
+    });
+
+    it('ends the line of a trail left open where its open step\'s 30 days end', () => {
+        const open = trailOf(1, 'Alfa', '2027-03-02', '');
+        expect(trailBarOf(open, march, utc)).toEqual({from: 1, to: 30, before: false, after: false, open: true, milestone: false});
+        const early = trailOf(1, 'Alfa', '2027-03-01', '');
+        expect(trailBarOf(early, march, utc)?.to).toBe(29);
+        // Across the months held the line is cut at their edge, as a bar is.
+        const late = trailOf(1, 'Alfa', '2027-03-10', '');
+        expect(trailBarOf(late, march, utc)).toEqual({from: 9, to: 30, before: false, after: true, open: true, milestone: false});
+        // A later end of another step is the line's end; the trail's own last end says nothing while it is open.
+        const closed = step({cmid: 11, start: at('2027-03-01', 12), end: at('2027-03-31', 12)});
+        expect(trailBarOf({...early, steps: [early.steps[0], closed]}, march, utc)?.to).toBe(30);
+        // An open step starting after the other ends carries the line 29 days past its own start.
+        const held = [...march, ...monthDays('2027-04')];
+        const second = step({cmid: 12, start: at('2027-03-20', 12), end: 0});
+        expect(trailBarOf({...early, steps: [closed, second]}, held, utc)?.to).toBe(48);
     });
 });
 
@@ -246,6 +311,46 @@ describe('the months held', () => {
         const december = extendLoaded(held, answerOf('2026-12-01', '2026-12-31', []));
         expect(december?.loaded.months).toEqual(['2026-12', '2027-01', '2027-02', '2027-03', '2027-04', '2027-05']);
         expect(december?.shift).toBe(31);
+    });
+
+    it('take an answer of three months in a row, appended or prepended, across a year end', () => {
+        const held = loadedOf(answerOf('2026-11-01', '2026-12-31', []));
+        const three = answerOf('2027-01-01', '2027-03-31', []);
+        const appended = extendLoaded(held, three, capOf('month'));
+        expect(appended?.loaded.months).toEqual(['2026-11', '2026-12', '2027-01', '2027-02', '2027-03']);
+        expect(appended?.loaded.answers.slice(2)).toEqual([three, three, three]);
+        expect(appended?.shift).toBe(0);
+        const before = answerOf('2026-08-01', '2026-10-31', []);
+        const prepended = extendLoaded(held, before, capOf('month'));
+        expect(prepended?.loaded.months).toEqual(['2026-08', '2026-09', '2026-10', '2026-11', '2026-12']);
+        // August, September and October: 31 + 30 + 31 days.
+        expect(prepended?.shift).toBe(92);
+        const yearend = extendLoaded(loadedOf(answerOf('2027-02-01', '2027-03-31', [])), answerOf('2026-11-01', '2027-01-31', []));
+        expect(yearend?.loaded.months).toEqual(['2026-11', '2026-12', '2027-01', '2027-02', '2027-03']);
+        expect(yearend?.shift).toBe(30 + 31 + 31);
+        // A batch that overlaps what is held, or leaves a gap, is refused.
+        expect(extendLoaded(held, answerOf('2026-12-01', '2027-02-28', []))).toBeNull();
+        expect(extendLoaded(held, answerOf('2027-02-01', '2027-04-30', []))).toBeNull();
+        expect(extendLoaded(held, answerOf('2026-07-01', '2026-09-30', []))).toBeNull();
+    });
+
+    it('drop the far side past the cap for a batch too, each end telling the days that moved', () => {
+        // Ten months held (the cap of the week zoom plus four): a batch of three appended drops the first three.
+        const held = loadedOf(answerOf('2026-01-01', '2026-10-31', []));
+        const appended = extendLoaded(held, answerOf('2026-11-01', '2027-01-31', []), 12);
+        expect(appended?.loaded.months).toHaveLength(12);
+        expect(appended?.loaded.months[0]).toBe('2026-02');
+        expect(appended?.shift).toBe(-31);
+        const full = loadedOf(answerOf('2026-03-01', '2027-02-28', []));
+        const limited = extendLoaded(full, answerOf('2027-03-01', '2027-05-31', []), 12);
+        expect(limited?.loaded.months[0]).toBe('2026-06');
+        // March, April and May go: 31 + 30 + 31 days.
+        expect(limited?.shift).toBe(-92);
+        const back = extendLoaded(full, answerOf('2025-12-01', '2026-02-28', []), 12);
+        expect(back?.loaded.months).toHaveLength(12);
+        expect(back?.loaded.months[0]).toBe('2025-12');
+        expect(back?.loaded.months[11]).toBe('2026-11');
+        expect(back?.shift).toBe(31 + 31 + 28);
     });
 
     it('keep the view still by moving the position by the days the first day moved', () => {
@@ -400,9 +505,9 @@ describe('linksOf', () => {
         end: to === '' ? 0 : at(to, 12),
     });
 
-    it('reads a step\'s days unclipped, an open one running on and one with no date being none', () => {
+    it('reads a step\'s days unclipped, an open one running its 30 days and one with no date being none', () => {
         expect(reachOf(leg(1, '2026-10-30', '2026-11-03'), '2026-11-01', utc)).toEqual({from: -2, to: 2});
-        expect(reachOf(leg(1, '2026-11-03', ''), '2026-11-01', utc)).toEqual({from: 2, to: Infinity});
+        expect(reachOf(leg(1, '2026-11-03', ''), '2026-11-01', utc)).toEqual({from: 2, to: 31});
         expect(reachOf(leg(1, '', '2026-11-03'), '2026-11-01', utc)).toEqual({from: 2, to: 2});
         expect(reachOf(leg(1, '', ''), '2026-11-01', utc)).toBeNull();
     });
@@ -425,6 +530,23 @@ describe('linksOf', () => {
         // An open course is still running whenever the next starts after its start.
         expect(linksOf([leg(1, '2026-11-02', ''), leg(2, '2026-11-20', '2026-11-24')], november, utc, true)
             .map((piece) => piece.kind)).toEqual(['dot', 'vertical', 'down']);
+    });
+
+    it('leaves an open course by the end of its 30 days, with the elbow, drop and detour rules of a closed one', () => {
+        const held = [...november, ...monthDays('2026-12')];
+        // Opened on the 2nd, it runs to December 1st (day 30): the elbow leaves the end of that day, 93rem in.
+        expect(linksOf([leg(1, '2026-11-02', ''), leg(2, '2026-12-20', '2026-12-24')], held, utc, true)[0])
+            .toEqual({kind: 'horizontal', left: 93, top: 1.6875, width: 0.625, height: 0.125});
+        // The next starting on the 25th, after the 2nd and before the 30 days end: the drop.
+        expect(linksOf([leg(1, '2026-11-02', ''), leg(2, '2026-11-25', '2026-11-28')], held, utc, true)
+            .map((piece) => piece.kind)).toEqual(['dot', 'vertical', 'down']);
+        // The next starting on December 2nd, the day after the 30 days: the elbow, though the course never ends (the line
+        // into the next bar is the arrowhead's length, no more, and draws nothing of its own).
+        expect(linksOf([leg(1, '2026-11-02', ''), leg(2, '2026-12-02', '2026-12-04')], held, utc, true)
+            .map((piece) => piece.kind)).toEqual(['horizontal', 'vertical', 'right']);
+        // The next starting before it: the detour on the left.
+        expect(linksOf([leg(1, '2026-11-12', ''), leg(2, '2026-11-04', '2026-11-08')], held, utc, true)
+            .map((piece) => piece.kind)).toEqual(['horizontal', 'vertical', 'horizontal', 'right']);
     });
 
     it('detours on the left into a course that starts before the previous one', () => {
@@ -520,6 +642,45 @@ describe('the zoom (T3c)', () => {
         expect([namedBar(bar(4, 6), 'week'), namedBar(bar(4, 7), 'week')]).toEqual([false, true]);
         // By months, thirteen days are not, fourteen are.
         expect([namedBar(bar(0, 12), 'month'), namedBar(bar(0, 13), 'month')]).toEqual([false, true]);
+    });
+});
+
+describe('capOf and weekLabelled (T3c follow-up)', () => {
+    it('holds twelve months by months and six by days and weeks', () => {
+        expect([capOf('day'), capOf('week'), capOf('month')]).toEqual([LOADED_CAP, LOADED_CAP, MONTH_CAP]);
+        expect([LOADED_CAP, MONTH_CAP]).toEqual([6, 12]);
+    });
+
+    it('asks three months at a time by months, as many as the cap leaves room for, and one month otherwise', () => {
+        expect([OPENING_MONTHS, BATCH_MONTHS]).toEqual([2, 3]);
+        expect([2, 5, 8, 9].map((held) => batchOf('month', held))).toEqual([3, 3, 3, 3]);
+        expect([10, 11, 12, 14].map((held) => batchOf('month', held))).toEqual([2, 1, 1, 1]);
+        expect(['day', 'week'].map((zoom) => [2, 5].map((held) => batchOf(zoom as 'day' | 'week', held)))).toEqual([[1, 1], [1, 1]]);
+    });
+
+    it('drops the far side to the month zoom\'s cap only past twelve, telling the shift', () => {
+        let held = loadedOf(answerOf('2027-01-01', '2027-02-28', []));
+        ['2027-03', '2027-04', '2027-05', '2027-06', '2027-07', '2027-08', '2027-09', '2027-10', '2027-11', '2027-12'].forEach(
+            (month) => {
+                held = (extendLoaded(held, answerOf(`${month}-01`, `${month}-28`, []), capOf('month')) as {loaded: typeof held}).loaded;
+            });
+        expect(held.months).toHaveLength(12);
+        const next = extendLoaded(held, answerOf('2028-01-01', '2028-01-31', []), capOf('month'));
+        expect(next?.loaded.months[0]).toBe('2027-02');
+        expect(next?.shift).toBe(-31);
+        // Back at a weeks cap the same twelve drop to six, the first seven months going with their days told.
+        const back = extendLoaded(held, answerOf('2028-01-01', '2028-01-31', []), capOf('week'));
+        expect(back?.loaded.months).toHaveLength(6);
+        expect(back?.loaded.months[0]).toBe('2027-08');
+        expect(back?.shift).toBe(-(31 + 28 + 31 + 30 + 31 + 30 + 31));
+    });
+
+    it('draws a week\'s label only where the cell is wide enough, by weeks', () => {
+        const cell = (length: number) => ({at: 0, length: length, first: '2026-11-01', last: '2026-11-01'});
+        expect(WEEK_LABEL_LEAST).toBe(2.5);
+        expect([1, 2, 3, 7].map((length) => weekLabelled(cell(length), 'week'))).toEqual([false, false, true, true]);
+        // Off the weeks the row has no labels.
+        expect([weekLabelled(cell(7), 'month'), weekLabelled(cell(7), 'day')]).toEqual([false, false]);
     });
 });
 

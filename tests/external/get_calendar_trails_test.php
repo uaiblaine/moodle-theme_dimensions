@@ -194,7 +194,7 @@ final class get_calendar_trails_test extends \advanced_testcase {
         $this->assertFalse($one['error']);
         $this->assertSame(['2027-02-01', '2027-02-28', []], [$one['data']['from'], $one['data']['to'], $one['data']['trails']]);
 
-        $two = self::call(['month' => '2027-02', 'months' => trails::MONTHS]);
+        $two = self::call(['month' => '2027-02', 'months' => trails::OPENING]);
         $this->assertFalse($two['error'], json_encode($two['exception'] ?? null));
         $this->assertSame(['2027-02-01', '2027-03-31'], [$two['data']['from'], $two['data']['to']]);
         $this->assertSame([(int) $trail->id], array_column($two['data']['trails'], 'id'), 'March\'s trail, from February.');
@@ -205,13 +205,38 @@ final class get_calendar_trails_test extends \advanced_testcase {
     }
 
     /**
+     * Three months, the most one answer covers (trails::MONTHS), are the window of all three, across a year end too:
+     * the count reaches the window whole, and a trail of the third month is in the answer.
+     *
+     * @return void
+     */
+    public function test_three_months_are_the_window_of_all_three(): void {
+        $trail = $this->seed();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $this->assertSame(3, trails::MONTHS);
+        $three = self::call(['month' => '2027-01', 'months' => 3]);
+        $this->assertFalse($three['error'], json_encode($three['exception'] ?? null));
+        $this->assertSame(['2027-01-01', '2027-03-31'], [$three['data']['from'], $three['data']['to']]);
+        $this->assertSame([(int) $trail->id], array_column($three['data']['trails'], 'id'), 'March\'s trail, from January.');
+        // The 92 days of November to January, across the year end.
+        $yearend = self::call(['month' => '2026-11', 'months' => 3]);
+        $this->assertFalse($yearend['error'], json_encode($yearend['exception'] ?? null));
+        $this->assertSame(['2026-11-01', '2027-01-31'], [$yearend['data']['from'], $yearend['data']['to']]);
+        self::forget();
+        $expected = trails::answer(trails::month_window('2027-01', 3), scope::for_viewer(), 0, false, time());
+        $this->assertSame(array_column($expected['trails'], 'id'), array_column($three['data']['trails'], 'id'));
+        $this->assertSame([$expected['from'], $expected['to']], [$three['data']['from'], $three['data']['to']]);
+    }
+
+    /**
      * A count of months outside 1 to trails::MONTHS is the request's shape: refused before login, as a month that is
      * none is. Core's call path turns a logged-out caller away before execute() runs, so the logged-out half calls
      * execute() itself: the refusal comes before require_login() would send anybody to the login page.
      *
      * @return void
      */
-    public function test_a_count_of_months_outside_one_to_two_is_refused_before_login(): void {
+    public function test_a_count_of_months_outside_one_to_three_is_refused_before_login(): void {
         $this->seed();
         $this->setUser(null);
         foreach ([0, -1, trails::MONTHS + 1, 12] as $months) {

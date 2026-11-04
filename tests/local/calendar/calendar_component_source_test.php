@@ -1091,8 +1091,9 @@ final class calendar_component_source_test extends \basic_testcase {
      *
      * - The months held are contiguous and capped, the far side dropped with the first day's move told; the answers
      *   merge by trail id and keep a trail while its period meets what is held (a period with no last end is open).
-     * - The first paint's answer and the page's own request are the month and the next, as many months as the service's
-     *   own cap (trails::MONTHS); a month beside them is one request.
+     * - The first paint's answer and the page's own request are the month and the next (trails::OPENING); a load beside
+     *   what is held is one request of one month, or by months a batch of three (trails::MONTHS) the cap leaves room for,
+     *   appended or prepended with every prepended day told to the scroller.
      * - A month prepended moves the position by arithmetic over the last measure; the start of what is held asks for the
      *   month before only while scrolling back to it; a target is reached at once under reduced motion, animated
      *   otherwise; a course's popover opens once the scroll has ended.
@@ -1104,8 +1105,26 @@ final class calendar_component_source_test extends \basic_testcase {
     public function test_the_trilhas_months_rows_and_connectors(): void {
         $trails = $this->sources()['trails.ts'];
         $this->assertStringContainsString('export const LOADED_CAP = 6;', $trails);
-        $this->assertSame(1, preg_match('~export const ANSWER_MONTHS = (\d+);~', $trails, $months));
-        $this->assertSame(trails::MONTHS, (int) $months[1], 'The client asks for the months the service answers.');
+        $this->assertStringContainsString('export const MONTH_CAP = 12;', $trails);
+        $this->assertStringContainsString(
+            "export const capOf = (zoom: Zoom): number => (zoom === 'month' ? MONTH_CAP : LOADED_CAP);",
+            $trails
+        );
+        $this->assertStringContainsString('cap: number = capOf(\'day\')', $trails);
+        $this->assertSame(1, preg_match('~export const OPENING_MONTHS = (\d+);~', $trails, $opening));
+        $this->assertSame(trails::OPENING, (int) $opening[1], 'The first paint asks for the months the page opens on.');
+        $this->assertSame(1, preg_match('~export const BATCH_MONTHS = (\d+);~', $trails, $batch));
+        $this->assertSame(trails::MONTHS, (int) $batch[1], 'A batch is the most months the service answers.');
+        $this->assertStringContainsString(
+            "(zoom === 'month' ? Math.max(1, Math.min(BATCH_MONTHS, capOf(zoom) - held)) : 1);",
+            $trails,
+            'By months a batch, never more than the cap leaves room for; one month otherwise.'
+        );
+        $this->assertStringContainsString(
+            'shift = added.reduce((days, month) => days + monthDays(month).length, 0);',
+            $trails,
+            'Every month prepended moves the first day.'
+        );
         $this->assertStringContainsString('shift -= monthDays(String(months.shift())).length;', $trails);
         $this->assertMatchesRegularExpression(
             '~\} else \{\s*return null;\s*\}\s*return \{loaded: \{months: months, answers: answers\}, shift: shift\};~',
@@ -1209,7 +1228,7 @@ final class calendar_component_source_test extends \basic_testcase {
 
         $calendar = $this->sources()['Calendar.tsx'];
         $this->assertStringContainsString(
-            'args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, ANSWER_MONTHS),',
+            'args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, OPENING_MONTHS),',
             $calendar
         );
         $this->assertStringContainsString(
@@ -1302,6 +1321,45 @@ final class calendar_component_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString('across(bmid, turn, Math.max(turn, end - LINK.head)),', $trails);
         $this->assertStringContainsString('const last = to < from ? from : to;', $trails, 'Dates out of order: the start day.');
+        $this->assertStringContainsString('export const OPEN_DAYS = 30;', $trails);
+        $this->assertStringContainsString(
+            'until !== null && until > start ? until : daysAfter(start, OPEN_DAYS - 1);',
+            $trails,
+            'A start with no end is its first 30 days: the start day and 29 more.'
+        );
+        $this->assertStringContainsString(
+            'const open = start !== null && end === null;',
+            $trails,
+            'An expected completion date is an end: such a course is not open.'
+        );
+        $this->assertStringContainsString('milestone: !open && expected && end !== null && end <= last,', $trails);
+        $this->assertStringContainsString(
+            'to: step.end <= 0 ? from + OPEN_DAYS - 1 : Math.max(from, daysBetween(first, zone.day(step.end)))',
+            $trails,
+            'The connectors leave the end of an open course\'s 30 days, as its bar ends there.'
+        );
+        $this->assertStringContainsString(
+            'trail.first > 0 && trail.last <= 0 ? openTrailEnd(trail, zone) : null',
+            $trails,
+            'The line of an open trail ends where its open step\'s 30 days end.'
+        );
+        $this->assertStringContainsString('if (day !== null && (latest === null || day > latest)) {', $trails);
+        $this->assertStringContainsString('export const CHIP_GAP = 0.375;', $trails);
+        $this->assertStringContainsString(
+            'bar.open && bar.to + 1 < count ? Math.round(((bar.to + 1) * dayWidth(zoom) + CHIP_GAP) * 10000) / 10000 : null;',
+            $trails,
+            'The chip follows an open bar, a gap after its last day, only while that day is not the last held.'
+        );
+        $this->assertStringContainsString(
+            'step.start > 0 && step.end <= 0 ? look.strings.calendar_trailopenfull',
+            $this->sources()['TrailPopover.tsx'],
+            'The full phrase is an open step\'s alone.'
+        );
+        $this->assertStringContainsString(
+            '[stepWhen(step, look), stepOpenEnd(step, look)].filter((part) => part !== \'\').join(\' · \')',
+            $this->sources()['TrailPopover.tsx'],
+            'The popover\'s dates line says it in full.'
+        );
         $this->assertDoesNotMatchRegularExpression(
             '~getBoundingClientRect|offset(?:Height|Width)|client(?:Height|Width)|scroll(?:Width|Left)|getComputedStyle~',
             $trails,
@@ -1362,7 +1420,31 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('{onZoom && !phone ? (', $view);
         $this->assertStringContainsString('aria-pressed={one === zoom}', $view);
         $this->assertStringContainsString('data-region="dim-cal-trailnowtag"', $view);
-        $this->assertStringContainsString("const full = near === 'end' && months.length >= LOADED_CAP && first === 0;", $view);
+        $this->assertStringContainsString(
+            "+ (bar.after ? ' dim-cal__trailbar--after' : '')",
+            $view,
+            'An open bar is cut as any is.'
+        );
+        $this->assertStringContainsString('{span && !span.after && !span.open ? (', $view, 'An open trail has no end diamond.');
+        $this->assertMatchesRegularExpression(
+            '~className="dim-cal__trailnoend"\s*style=\{\{\'--dim-cal-chip-start\': .*?\} as CSSProperties\}\s*'
+                . 'aria-hidden="true"\s*>\{look\.strings\.calendar_trailopenchip\}~',
+            $view,
+            'The chip is decorative, in the bar\'s row.'
+        );
+        $this->assertStringContainsString(
+            '[step.name, stepWhen(step, look), stepOpenEnd(step, look), stateLine(step, look, now)]',
+            $view,
+            'The bar\'s accessible name says it in full.'
+        );
+        $this->assertStringContainsString("const full = near === 'end' && months.length >= capOf(zoom) && first === 0;", $view);
+        $this->assertStringContainsString('extendLoaded(was.loaded, got, capOf(zooming.current))', $view);
+        $this->assertStringContainsString('const count = batchOf(zooming.current, win.loaded.months.length);', $view);
+        $this->assertStringContainsString('fetch(ahead ? target : monthAfter(target, 1 - count), count)', $view);
+        $this->assertStringContainsString('fetch(target, OPENING_MONTHS)', $view);
+        $this->assertStringContainsString('{weekLabelled(cell, zoom) ? (', $view);
+        $trailsts = $this->sources()['trails.ts'];
+        $this->assertStringContainsString("zoom === 'week' && cell.length * dayWidth(zoom) >= WEEK_LABEL_LEAST;", $trailsts);
         $this->assertStringContainsString("if (target !== '' && target !== failed.current && !full) {", $view);
         $this->assertStringNotContainsString('history', $view, 'The page\'s history module writes the address.');
 

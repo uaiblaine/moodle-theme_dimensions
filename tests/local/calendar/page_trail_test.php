@@ -254,7 +254,7 @@ final class page_trail_test extends \advanced_testcase {
 
         self::forget_calendar();
         $expected = trails::answer(
-            trails::month_window('2027-03', trails::MONTHS),
+            trails::month_window('2027-03', trails::OPENING),
             scope::for_viewer(),
             (int) $trail->id,
             false,

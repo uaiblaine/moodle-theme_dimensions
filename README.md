@@ -458,7 +458,11 @@ Each look the setting offers has a cohort in the system context, named *Look: <f
 idnumber `theme_dimensions_look_<flavour id>` and stamped with the component `theme_dimensions`: its
 members are exactly the people who chose that look, so an administrator can restrict a Boost Union smart
 menu or menu item by look with Boost Union's own cohort rule. Do not use these cohorts in a flavour's
-cohort rule (a person in one already chose that look). The membership follows the stored preference:
+cohort rule (a person in one already chose that look). The membership is self-chosen: anyone offered
+a look joins its cohort by picking it, so never use a look cohort to grant anything - no cohort sync
+enrolment (`enrol_cohort`), no cohort role assignment (`tool_cohortroles`), no dynamic cohort rule,
+no availability condition. Core's pickers list these cohorts beside every other one, and the component
+stamp does not keep them out. The membership follows the stored preference:
 it changes with every choice, and the scheduled task *Keep the look cohorts in step with the chosen
 looks* (daily) makes a missing cohort again and undoes memberships changed elsewhere. Core's cohort
 pages refuse to edit, delete or assign a stamped cohort; core's cohort web services do not, so if a

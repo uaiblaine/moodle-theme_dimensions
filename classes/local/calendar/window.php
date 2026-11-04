@@ -48,8 +48,8 @@ final class window {
     /** @var int The most days one window may hold: six weeks, one month grid. */
     public const MAX_DAYS = 42;
 
-    /** @var int The most whole months one window of {@see whole_months()} holds: the Trilhas view's month and the next. */
-    public const MAX_MONTHS = 2;
+    /** @var int The most whole months one window of {@see whole_months()} holds: the Trilhas view's batch of three. */
+    public const MAX_MONTHS = 3;
 
     /** @var string The first day, YYYY-MM-DD. */
     public readonly string $from;
@@ -122,8 +122,8 @@ final class window {
      * A window of whole months: the 1st of a month to the last day of the month `$count - 1` after it, refusing a month
      * that is none and a count outside 1 to {@see MAX_MONTHS}.
      *
-     * The Trilhas view's window ({@see trails::month_window()}), which may pass {@see MAX_DAYS}: two months are up to
-     * 62 days, and the trails' answer reads the window's bounds only, never one row per day.
+     * The Trilhas view's window ({@see trails::month_window()}), which may pass {@see MAX_DAYS}: three months are up to
+     * 92 days, and the trails' answer reads the window's bounds only, never one row per day.
      *
      * @param string $month The first month, YYYY-MM.
      * @param int $count How many months, 1 to MAX_MONTHS.

@@ -129,7 +129,8 @@ final class category_badges_test extends \advanced_testcase {
 
         $badges = $this->ask([$crested, $second, $plain]);
 
-        $this->assertSame([$crested, $second], array_keys($badges), 'the category with no crest gets nothing');
+        // The answer is a map by category, in no promised order.
+        $this->assertEqualsCanonicalizing([$crested, $second], array_keys($badges), 'the category with no crest gets nothing');
         $this->assertCount(1, $badges[$crested]);
         $this->assertStringContainsString('/theme_dimensions/categorybadge1/', $badges[$crested][0]['url']);
         $this->assertSame('Escola de Governo categorybadge1', $badges[$crested][0]['alt']);

@@ -648,7 +648,7 @@ final class page {
             // own answer is the trails of the month and the next, the two months its timeline opens on.
             $answer = range::answer($window, $scope, [], $state->filters());
             $trailsanswer = trails::answer(
-                trails::month_window($month, trails::MONTHS),
+                trails::month_window($month, trails::OPENING),
                 $scope,
                 self::trail_from_request(),
                 self::mine_from_request(),

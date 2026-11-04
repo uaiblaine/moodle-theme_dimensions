@@ -1651,12 +1651,13 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   filters' row) and `TrailPopover.tsx` over the pure `trails.ts`; `Calendar.tsx`'s one request path asks the trails
   service for a trail span. The view's colours are its own `--dim-cal-trail*` tokens, never a key colour setting.
   `display::many()` and `progress::many()` are the batched readers the view needs; `steps()` and `of()` call them.
-  - **T3b: continuous months.** The service takes `months` (1, or `trails::MONTHS` = 2), the shape refused before
-    login, over `window::whole_months()` (past `window::MAX_DAYS`, its own count check); the first paint and the page's
-    own request are the month and the next. The view holds contiguous months (`trails.ts` `Loaded`, `extendLoaded()`,
-    at most `LOADED_CAP` = 6, the far side dropped), merged by trail id (`mergedOf()`, a trail kept while
-    `meets()`); it asks one month when the scroll nears the end (`nearEnd()`) or moves back to the start, and a far
-    target (today, a course) asks a new set of two. A prepended month moves the position by `keptLeft()` over
+  - **T3b: continuous months.** The service takes `months` (1 to `trails::MONTHS` = 3), the shape refused before
+    login, over `window::whole_months()` (past `window::MAX_DAYS`, its own count check; `window::MAX_MONTHS` = 3); the first
+    paint and the page's own request are the month and the next (`trails::OPENING` = 2, `OPENING_MONTHS` on the client). The view holds contiguous months (`trails.ts` `Loaded`, `extendLoaded()`,
+    at most `capOf(zoom)`: `LOADED_CAP` = 6 by days and weeks, `MONTH_CAP` = 12 by months since the T3c follow-up, the far side dropped), merged by trail id (`mergedOf()`, a trail kept while
+    `meets()`); it asks one month when the scroll nears the end (`nearEnd()`) or moves back to the start (by months a batch of up to
+    `BATCH_MONTHS` = 3, `trails::MONTHS`'s twin, `batchOf()`: `min(3, cap - held)`, one at the cap), and a far
+    target (today, a course) asks a new set of two. A prepended month (or batch: every day of it) moves the position by `keptLeft()` over
     TrailScroll's last measure (the `shift` key), never a read. The toolbar asks the view (`TrailView` `nav`): a month
     from the first day in view (`monthStep()`), today; its title is `rangeLabel()` of the days in view; a settled
     scroll (`scrollend`, or a quiet) replaces the address's month through `Calendar.tsx`'s `settleTrail()`. A course's
@@ -1679,11 +1680,18 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
     through `dayWidth()`. A switch keeps the first day in view by `zoomedLeft()` over TrailScroll's last measure, then
     measures once (the `[zoom]` effect: no new read site, the count stays 7); `paint()` records the zoom of each measure
     (`zoomed`), so an opening at the new zoom in the same commit is not rescaled. More days held are measured again (the
-    `[days]` effect), so the view asks for the next month while the days fit the scroller, never past `LOADED_CAP` with
-    the first day in view (`full`). By weeks the header is `weekCells()` from the page's `firstday` (`weekLabel()`: a
+    `[days]` effect), so the view asks for the next month while the days fit the scroller, never past `capOf(zoom)` with
+    the first day in view (`full`); a switch to a smaller cap keeps the months held until the next month loads, which drops
+    the far side down to it with the shift told. By weeks the header is `weekCells()` from the page's `firstday` (`weekLabel()`: a
     week across a month names the end's month); off the days no weekend is drawn; a "Today" tag tops today's line at
     every zoom; a bar under one day by days, under `NAMED_BAR` (3.5rem) off them, draws no name. The trail column's second line is `datesOf()` (Intl's range, its own words compacted,
-    never the separator), worded by the view; rows are 56px. Gates: the "T3c" block.
+    never the separator), worded by the view; rows are 56px. A week cell narrower than `WEEK_LABEL_LEAST` (2.5rem: a
+    one or two day first week by weeks) draws no label and keeps its line (`weekLabelled()`). A course with a start and no
+    end (`bar.open`) is its first `OPEN_DAYS` = 30 days (`reachOf()` and `spanOf()` read the same), then an aria-hidden
+    chip (`calendar_trailopenchip`, `chipLeft()`: `CHIP_GAP` .375rem after the last day at every zoom, none when those
+    days reach the last day held or run past it); the bar's name and the popover's dates line say `calendar_trailopenfull`
+    in full (`stepOpenEnd()`); the trail's line (`trailBarOf()`, the latest of its steps' ends and open steps' 30 days)
+    has no chip; an expected date is an end, so not open. Gates: the "T3c" block.
 - **R3: visual parity with the mockup** (PROPOSAL section 33). The desktop Trilhas grid scrolls sideways in
   `TrailScroll.tsx`, compass's strip in the theme's classes:
   - one native scroller with the scrollbar hidden, snapped per day;

@@ -69,8 +69,11 @@ final class trails {
     /** @var int The most trail courses one answer reads; past it, the answer says it was truncated. */
     public const CAP = 100;
 
-    /** @var int The most months one answer covers: the view's first paint is the month and the next. */
+    /** @var int The most months one answer covers: the batch the view asks by months ({@see window::MAX_MONTHS}). */
     public const MONTHS = window::MAX_MONTHS;
+
+    /** @var int The months of the view's first paint: the month and the next. */
+    public const OPENING = 2;
 
     /**
      * The answer for a window of whole months.
@@ -120,7 +123,7 @@ final class trails {
         }
 
         $structures = trail::many($courses);
-        $drawn = display::many($structures);
+        $drawn = display::many($structures, $courses);
         $enrolments = classifier::enrolments($scope->viewerid);
         $learning = [];
         foreach ($drawn as $courseid => $entries) {

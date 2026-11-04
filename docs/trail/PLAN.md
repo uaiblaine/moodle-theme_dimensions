@@ -171,6 +171,10 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
 
 ## 7. The calendar's Trilhas view (C6, built in T3)
 
+The owner's review of T3b, T3c and its follow-up has its own canvas (https://claude.ai/artifact/GPt7eYFoCtgM5jQk49a86Z,
+private to the owner), whose source is kept in [`mockups/`](mockups/README.md): the continuous timeline with its zoom and
+its courses' dates, the connectors' cases, and the four ways to end a course with no end date (the chip was chosen).
+
 - **The switch**: the view control gains "Trilhas" (`calendar_viewtrail`), `view=trail` in the page's vocabulary
   (`page::VIEW_TRAIL`), offered to a real account while trails are available (`page::trails_offered()`); for the guest,
   a visitor or a site without mod_subcourse the address reads as the month. Like the week and the day it is
@@ -185,12 +189,15 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
   first start to last end over the steps drawn, left open by a step that starts and never ends. A trail with no date
   is no row. The choice "Trilha" lists every admitted trail with a step drawn, whatever its period.
 - **Continuous months (T3b)**: the view always holds the month in view and the next. The first paint embeds the trails of
-  both (`trails::month_window($month, trails::MONTHS)`); the service takes `months`, 1 or 2 (anything else is the
-  request's shape, refused before login, and `window::whole_months()` refuses it too), so the first paint and a month
-  asked for share one service, and the read count does not grow with the window. On a desktop a scroll near the end of
-  what is held asks for the next month (one call) and appends its days; the previous arrow, or a scroll back to the
-  start, prepends the month before and moves the position by its width (`trails.ts` `keptLeft()`, arithmetic over the
-  last measure). The months stay contiguous, at most six, the far side dropped with the same compensation; the answers
+  both (`trails::month_window($month, trails::OPENING)`, two months); the service takes `months`, 1 to 3 (`trails::MONTHS`;
+  anything else is the request's shape, refused before login, and `window::whole_months()` refuses it too), so the first
+  paint and a month asked for share one service, and the read count does not grow with the window. On a desktop a scroll
+  near the end of what is held asks for the next month (one call) and appends its days; by months, where a month is 4px
+  a day, every load asks for a batch of up to three months in one request (`trails.ts` `batchOf()`, `BATCH_MONTHS`: never more
+  than the cap leaves room for, so a wide screen reaches twelve months in four requests, not eight one after another), by
+  days and weeks one month as before; the previous arrow, or a scroll back to the
+  start, prepends the month before (the batch before, by months) and moves the position by its width (every month of the batch) (`trails.ts` `keptLeft()`, arithmetic over the
+  last measure). The months stay contiguous, at most six by days and weeks and twelve by months (`trails.ts` `capOf(zoom)`, T3c follow-up), the far side dropped with the same compensation; the answers
   merge by trail id (a trail's steps are the same in every answer), the list kept to the trails whose period meets what
   is held and sorted as the server sorts. A band above the day numbers has one segment per month held, its name
   sticky at the start of the days while the segment is in view and a button that scrolls (smoothly unless the reader
@@ -204,7 +211,12 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
 - **Bars**: from each step's start to its end in the viewer's timezone (`calendar/trails.ts` `barOf()`), placed by
   grid columns with no layout read; a milestone at an expected date inside the days held; a step that began earlier is
   marked at the left edge, one that runs past what is held is cut there (it goes on once the month is held), an open
-  one fades out. Rows are 56px with 24px bars (52px until T3c, which made room for the dates line), the trail column
+  one (a start and no end, no expected date) is drawn as its first 30 days (`OPEN_DAYS`, the start day and 29 more),
+  then a quiet decorative chip, "→ sem término" (`calendar_trailopenchip`), .375rem after the bar's last day at every
+  zoom (`chipLeft()`, in rem by the bars' day arithmetic, none where the 30 days reach the last day held or run past
+  it: it appears once the next month is held); its connectors leave the end of the 30 days, and the trail's line ends
+  there too, with no chip. The bar's accessible name and the popover's dates line say it in full, "Sem término
+  definido" (`calendar_trailopenfull`), a step with an end or an expected date not. Rows are 56px with 24px bars (52px until T3c, which made room for the dates line), the trail column
   sticky; a bar too narrow for its name (`trails.ts` `namedBar()`: under one day by days, so a one-day bar keeps it
   there, and under 3.5rem by weeks and months) draws none and keeps its accessible name. For a
   learner of the trail (`classifier::enrolments()` active) the bar carries the state of section 3 (`progress::many()`)
@@ -235,12 +247,12 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
   at once, then measured where that left it, as after an arrow; nothing is asked, the months held stay. A measure
   records its zoom, so a new set of months opened at a new zoom in the same commit (Back or Forward across a zoom) is
   not rescaled. When the days held grow the scroller is measured again where it is: where they fit it (by months on a
-  wide screen) the next month is asked for, up to the six held, and none past them while every day held is in view. By days the
+  wide screen) the next month is asked for, up to the zoom's cap (six, twelve by months), and none past it while every day held is in view; a switch to a smaller cap keeps the months until the next load drops the far side to it. By days the
   header is as T3b drew it (weekday letters, day numbers, today's pill, the weekends hatched); by weeks its second row
   is the weeks from the viewer's first weekday (core's calendar setting, `calendar_get_starting_weekday()`, as the
   month grid; `weekCells()`, the first and the last cut at the edges of what is held), each a short month over its
-  days ("nov." over "2–8"; a week across a month names the end's month too, "out." over "26–1 nov.", `weekLabel()`),
-  the week holding today tinted; by months the band alone names the months (the month's name
+  days ("nov." over "2–8"; a week across a month names the end's month too, "out." over "26–1 nov.", `weekLabel()`; a cell under 2.5rem, a one or two day partial week, draws no label and keeps its line,
+  `weekLabelled()`), the week holding today tinted; by months the band alone names the months (the month's name
   without its year, the mockup's) and the second row draws only the weeks' lines. Off the days no weekend is shaded
   and a quiet line marks each week's start. At every zoom a small "Hoje" tag (`calendar_today`) tops today's line,
   in the current step's pair. The toolbar's arrows and "Hoje" still move a month; the arrows, the band and every write

@@ -96,7 +96,8 @@ final class readonly_session_test extends \advanced_testcase {
             'theme_dimensions_get_course_dialogue' => ['courseid' => $courseid],
             'theme_dimensions_get_drawer_summary' => [],
             'theme_dimensions_get_calendar_range' => ['from' => '2026-11-01', 'to' => '2026-11-30'],
-            'theme_dimensions_get_calendar_trails' => ['month' => '2026-11'],
+            // Three months, the most one answer covers: the read-only session holds for the longest window too.
+            'theme_dimensions_get_calendar_trails' => ['month' => '2026-11', 'months' => 3],
         ];
     }
 
@@ -237,8 +238,8 @@ final class readonly_session_test extends \advanced_testcase {
                 // The window was built and walked: core's sets were computed on the way to the thirty days.
                 $this->assertCount(30, $result['data']['days'], $name);
             } else if ($name === 'theme_dimensions_get_calendar_trails') {
-                // Past the refusals to the answer: the month was read and its days named.
-                $this->assertSame(['2026-11-01', '2026-11-30'], [$result['data']['from'], $result['data']['to']], $name);
+                // Past the refusals to the answer: the three months were read and their days named.
+                $this->assertSame(['2026-11-01', '2027-01-31'], [$result['data']['from'], $result['data']['to']], $name);
             } else if ($name === 'theme_dimensions_get_course_dialogue') {
                 // Admitted and built: the labels come only past the refusals.
                 $this->assertNotSame('', $result['data']['learnlabel'], $name);

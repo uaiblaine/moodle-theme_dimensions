@@ -86,7 +86,7 @@ import MoreFilters from "./MoreFilters";
 import { MOVE_MINUTE, createStart, dayStart, dropRefusal, editOf, editsOf, instantOf, toolbarStart } from "./moves";
 import { fill, load as loadStrings } from "./strings";
 import TrailView, { TrailFilters } from "./TrailView";
-import { ANSWER_MONTHS, filterOf, rangeLabel, readTrail, readZoom, trailArgs, trailFiltered, withTrail, zoomOf } from "./trails";
+import { OPENING_MONTHS, filterOf, rangeLabel, readTrail, readZoom, trailArgs, trailFiltered, withTrail, zoomOf } from "./trails";
 import ViewSwitch from "./ViewSwitch";
 import WeekGrid from "./WeekGrid";
 import {
@@ -289,7 +289,7 @@ const Calendar = /* @__PURE__ */ __name((props) => {
       if (span.view === "trail") {
         trails = await fetchOne({
           methodname: TRAILS_METHOD,
-          args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, ANSWER_MONTHS)
+          args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, OPENING_MONTHS)
         });
         answer = emptyAnswer(days2);
       } else {

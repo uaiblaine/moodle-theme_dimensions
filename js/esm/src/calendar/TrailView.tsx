@@ -18,9 +18,10 @@
  *
  * - On a desktop, a timeline of contiguous months (trails.ts Loaded): the month in view and the next on a first paint,
  *   another month asked for when the scroll nears the end of what is held or the arrows go back past its start, at most
- *   trails.ts LOADED_CAP held. Each step a bar from its start to its end (trails.ts barOf()), a diamond on an expected
+ *   trails.ts capOf() held. Each step a bar from its start to its end (trails.ts barOf()), a diamond on an expected
  *   completion date, one that began earlier marked at the left edge, one that runs on past what is held cut there, an
- *   open one fading out; the trail's own row carries its span (trails.ts trailBarOf()). Above the days a band names each
+ *   open one (a start and no end) its first 30 days and a decorative "no end" chip after it; the trail's own row carries its span
+ *   (trails.ts trailBarOf()). Above the days a band names each
  *   month held, its name a button that scrolls to its 1st; a month on its way is a quiet skeleton at the end. Weekends
  *   are hatched, a month's first day is a line, and today is a line down the rows. Consecutive steps are joined by
  *   connectors in the trail's order (trails.ts linksOf()), drawn by the same day arithmetic, aria-hidden. The days have
@@ -69,15 +70,17 @@ import type {Look} from './look';
 import {safeHref} from './model';
 import {fill} from './strings';
 import type {Strings} from './strings';
-import TrailPopover, {TrailIcon, stateLabel, stateLine, stepWhen} from './TrailPopover';
+import TrailPopover, {TrailIcon, stateLabel, stateLine, stepOpenEnd, stepWhen} from './TrailPopover';
 import TrailScroll from './TrailScroll';
 import type {Near, ScrollControl, Shift} from './TrailScroll';
 import {
-    ANSWER_MONTHS,
-    LOADED_CAP,
+    OPENING_MONTHS,
+    batchOf,
+    capOf,
     SKELETON_DAYS,
     ZOOMS,
     barOf,
+    chipLeft,
     datesOf,
     emptyTrails,
     extendLoaded,
@@ -91,6 +94,7 @@ import {
     trailBarOf,
     weekCells,
     weekLabel,
+    weekLabelled,
     windowDays,
 } from './trails';
 import type {FoldIcons, Loaded, StepState, Trail, TrailAnswer, TrailFilter, TrailStep, Zoom} from './trails';
@@ -188,7 +192,8 @@ const dated = (step: TrailStep): boolean => step.start > 0 || step.end > 0;
  * @returns {string}
  */
 const stepLabel = (step: TrailStep, look: Look, now: number): string =>
-    [step.name, stepWhen(step, look), stateLine(step, look, now)].filter((part) => part !== '').join(', ');
+    [step.name, stepWhen(step, look), stepOpenEnd(step, look), stateLine(step, look, now)]
+        .filter((part) => part !== '').join(', ');
 
 /**
  * A course's dates for its row in the trail column: the range, "From" a start alone, "Until" an end alone, "No dates".
@@ -407,6 +412,9 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     // The filters and the scope the months held were asked with: a load asked with others is dropped when it comes.
     const scoped = useRef<string>(scope);
     scoped.current = scope;
+    // The zoom a month's answer is added at: a load on its way when the zoom switches meets the new cap.
+    const zooming = useRef<Zoom>(zoom);
+    zooming.current = zoom;
 
     // A new answer from the page (a first paint, a filter, Back or Forward) is a new set of months.
     if (seen !== answer) {
@@ -480,10 +488,11 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     };
 
     /**
-     * Ask for one month beside what is held and add it when it comes, unless a new set of months came first; one
-     * request at a time.
+     * Ask for the months beside what is held (the batch of {@see batchOf()}: one, or by months up to three, the target
+     * the one beside what is held and the rest beyond it) and add them when they come, unless a new set of months came
+     * first; one request at a time.
      *
-     * @param {string} target The month, YYYY-MM.
+     * @param {string} target The month beside what is held, YYYY-MM.
      * @returns {void}
      */
     const extend = (target: string): void => {
@@ -495,15 +504,16 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         const set = generation.current;
         const askedwith = win.scope;
         const ahead = target > win.loaded.months[win.loaded.months.length - 1];
+        const count = batchOf(zooming.current, win.loaded.months.length);
         setWin((was) => ({...was, loading: ahead}));
         const pending = new Pending('theme_dimensions/calendar:trailmonth');
-        fetch(target, 1)
+        fetch(ahead ? target : monthAfter(target, 1 - count), count)
             .then((got) => {
                 setWin((was) => {
                     if (was.generation !== set || scoped.current !== askedwith) {
                         return was;
                     }
-                    const grown = extendLoaded(was.loaded, got);
+                    const grown = extendLoaded(was.loaded, got, capOf(zooming.current));
                     if (!grown) {
                         return {...was, loading: false};
                     }
@@ -539,7 +549,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         const set = generation.current;
         const askedwith = win.scope;
         const pending = new Pending('theme_dimensions/calendar:trailmonth');
-        fetch(target, ANSWER_MONTHS)
+        fetch(target, OPENING_MONTHS)
             .then((got) => {
                 setWin((was) => (was.generation === set && scoped.current === askedwith
                     ? freshWin(got, target, was.generation + 1, askedwith)
@@ -775,7 +785,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         }
         // At the cap with the first day held in view (every day held fits the scroller), the next month would only drop
         // days in view: the months held stay.
-        const full = near === 'end' && months.length >= LOADED_CAP && first === 0;
+        const full = near === 'end' && months.length >= capOf(zoom) && first === 0;
         if (target !== '' && target !== failed.current && !full) {
             extend(target);
         }
@@ -887,15 +897,14 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
      */
     const stepRow = (trail: Trail, step: TrailStep) => {
         const bar = barOf(step, days, look.zone);
+        const chip = bar ? chipLeft(bar, days.length, zoom) : null;
         const tone = step.state ? `--${step.state}` : '';
         let drawn = null;
         let diamond = null;
         if (bar) {
-            const continued = bar.after && !bar.open;
             const classes = 'dim-cal__trailbar' + (tone ? ` dim-cal__trailbar${tone}` : '')
                 + (bar.before ? ' dim-cal__trailbar--before' : '')
-                + (continued ? ' dim-cal__trailbar--after' : '')
-                + (bar.open ? ' dim-cal__trailbar--open' : '')
+                + (bar.after ? ' dim-cal__trailbar--after' : '')
                 + (bar.milestone ? ' dim-cal__trailbar--milestone' : '')
                 + (step.next ? ' dim-cal__trailbar--next' : '');
             // A bar too narrow for its name draws none; its accessible name is the step's all the same.
@@ -945,6 +954,13 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                 </span>
                 {drawn}
                 {diamond}
+                {chip !== null ? (
+                    <span
+                        className="dim-cal__trailnoend"
+                        style={{'--dim-cal-chip-start': `${chip}rem`} as CSSProperties}
+                        aria-hidden="true"
+                    >{look.strings.calendar_trailopenchip}</span>
+                ) : null}
             </div>
         );
     };
@@ -1001,7 +1017,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                             aria-hidden="true"
                         ></span>
                     ) : null}
-                    {span && !span.after ? (
+                    {span && !span.after && !span.open ? (
                         <span
                             className="dim-cal__traildiamond dim-cal__traildiamond--trail"
                             style={{gridColumn: String(span.to + 2), gridRow: '1'}}
@@ -1122,7 +1138,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                                 data-region="dim-cal-trailweek"
                                 data-week={cell.first}
                             >
-                                {zoom === 'week' ? (
+                                {weekLabelled(cell, zoom) ? (
                                     <>
                                         <span className="dim-cal__trailweekmonth">{weekLabel(cell, look.language).kicker}</span>
                                         <span className="dim-cal__trailweekdays">{weekLabel(cell, look.language).days}</span>
