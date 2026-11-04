@@ -106,8 +106,8 @@ import {fill, load as loadStrings} from './strings';
 import type {Strings} from './strings';
 import TrailView, {TrailFilters} from './TrailView';
 import type {TrailNav} from './TrailView';
-import {ANSWER_MONTHS, filterOf, rangeLabel, readTrail, trailArgs, trailFiltered, withTrail} from './trails';
-import type {FoldIcons, TrailAnswer, TrailFilter} from './trails';
+import {ANSWER_MONTHS, filterOf, rangeLabel, readTrail, readZoom, trailArgs, trailFiltered, withTrail, zoomOf} from './trails';
+import type {FoldIcons, TrailAnswer, TrailFilter, Zoom} from './trails';
 import ViewSwitch from './ViewSwitch';
 import WeekGrid from './WeekGrid';
 import {
@@ -331,6 +331,7 @@ const Calendar = (props: Props) => {
     const [shown, setShown] = useState<Shown>(() => shownOf(props));
     const offered = Boolean(props.trails?.offered);
     const [filter, setFilter] = useState<TrailFilter>(() => filterOf(props.trails));
+    const [zoom, setZoom] = useState<Zoom>(() => zoomOf(props.trails?.zoom));
     const [state, setState] = useState<State>(() => normalise(props.state));
     const [openday, setOpenday] = useState<string | null>(
         () => openOf(propsSpan(props), props.day, spanDays(propsSpan(props), firstday))
@@ -366,6 +367,8 @@ const Calendar = (props: Props) => {
     const phoned = useRef<boolean>(phone);
     // The Trilhas view's filters as the last change gave them, read by the request path before the render that follows.
     const filtering = useRef<TrailFilter>(filter);
+    // The Trilhas timeline's zoom as the last change gave it, written with the filters: navigation, like the month.
+    const zooming = useRef<Zoom>(zoom);
     // What the toolbar asks of the Trilhas view's timeline: a month back or ahead, and today.
     const trailnav = useRef<TrailNav | null>(null);
     // The days in view of the Trilhas view's timeline, for the toolbar's title, and the trails it draws, for the count.
@@ -401,6 +404,8 @@ const Calendar = (props: Props) => {
             const span = readSpan(window.location.href, firstday, read.month || props.month, props.today, offered);
             filtering.current = readTrail(window.location.href);
             setFilter(filtering.current);
+            zooming.current = readZoom(window.location.href);
+            setZoom(zooming.current);
             const day = openOf(span, new URL(window.location.href).searchParams.get(DAY_PARAM), spanDays(span, firstday));
             request(span, read.state || normalise(props.state), 'none', day || openingOf(span, props.today), false);
             setOpenday(day);
@@ -474,7 +479,10 @@ const Calendar = (props: Props) => {
         }
         if (write !== 'none' && span.view === 'trail') {
             // The Trilhas view opens no day; its trail and "Só as minhas" are navigation, like the view.
-            writeAddress(withTrail(inSpan(address(props.urls.page, span.month, next), span), filtering.current), write === 'push');
+            writeAddress(
+                withTrail(inSpan(address(props.urls.page, span.month, next), span), filtering.current, zooming.current),
+                write === 'push'
+            );
         } else if (write !== 'none') {
             writeAddress(inSpan(address(props.urls.page, monthOfSpan(span, select), next, kept), span), write === 'push');
         }
@@ -598,6 +606,22 @@ const Calendar = (props: Props) => {
     };
 
     /**
+     * Take a new zoom of the Trilhas view's timeline: shown at once, the address replaced (navigation, like the month:
+     * never an entry, never remembered); nothing is asked, the months held stay.
+     *
+     * @param {string} next The zoom.
+     * @returns {void}
+     */
+    const changeZoom = (next: Zoom): void => {
+        if (next === zooming.current) {
+            return;
+        }
+        zooming.current = next;
+        setZoom(next);
+        writeAddress(withTrail(window.location.href, filtering.current, next), false);
+    };
+
+    /**
      * The trails of a month beside the Trilhas view's timeline, or of a month and the next for a new set, with the
      * filters and the scope shown; a failure is reported and refused, and the view drops it.
      *
@@ -629,7 +653,7 @@ const Calendar = (props: Props) => {
         }
         const next: Span = {view: 'trail', month: month};
         showing.current = next;
-        writeAddress(withTrail(inSpan(address(props.urls.page, month, state), next), filtering.current), false);
+        writeAddress(withTrail(inSpan(address(props.urls.page, month, state), next), filtering.current, zooming.current), false);
         setShown((was) => ({...was, span: next}));
         setSelected(openingDay(month, props.today));
     };
@@ -1013,6 +1037,8 @@ const Calendar = (props: Props) => {
                     phone={phone}
                     captionid={CAPTION}
                     chosen={filter.trail}
+                    zoom={zoom}
+                    firstday={firstday}
                     icons={iconsOf(props)}
                     fetch={fetchTrails}
                     nav={trailnav}
@@ -1125,7 +1151,15 @@ const Calendar = (props: Props) => {
                     () => form(null, toolbarStart(own, props.today, props.now, zone, props.timezone)))}
             </div>
             {trailview ? (
-                <TrailFilters strings={strings} filter={filter} answer={trailsdrawn} onChange={changeTrail}>
+                <TrailFilters
+                    strings={strings}
+                    filter={filter}
+                    answer={trailsdrawn}
+                    onChange={changeTrail}
+                    zoom={zoom}
+                    onZoom={changeZoom}
+                    phone={phone}
+                >
                     <CategoryPicker
                         strings={strings}
                         tree={props.tree}

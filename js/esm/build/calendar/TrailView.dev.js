@@ -17,7 +17,15 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  *   the legend follows the grid.
  * - A course's row in the trail column is a button: it scrolls the timeline to the course's bar (asking for its month
  *   first when it is not held), then opens the bar's popover once the scroll has ended; a course with no date opens it
- *   on the row. A mouse over a row lights its bar and over a bar its row (a touch never does).
+ *   on the row. Under its name a quieter line gives its dates (trails.ts datesOf()), which its accessible name carries
+ *   too. A mouse over a row lights its bar and over a bar its row (a touch never does).
+ * - The desktop timeline has a zoom (trails.ts Zoom, the page's: `zoom`), days, weeks or months, which sets a day's width
+ *   (the stylesheet's --dim-cal-trail-day under the section's --week or --month modifier, trails.ts dayWidth() for the
+ *   arithmetic). By days the header is the weekdays and the days, today a pill, the weekends hatched; by weeks it is the
+ *   weeks from the viewer's first weekday (trails.ts weekCells()), each a short month over its days, the week holding
+ *   today tinted; by months the band alone names the months and the header draws the weeks' lines. Off the days no
+ *   weekend is shaded; at every zoom a small "Today" tag tops today's line. A bar too narrow for its name
+ *   (trails.ts namedBar()) draws none, and is still named by its step for a screen reader.
  * - On a phone, an agenda: each trail in a card, a learner's progress as one segment per step, the steps in order with
  *   their dates, a "Today" line between the steps behind and the steps ahead (trails.ts todayIndex()).
  * - For a learner of the trail each step carries its state (done, current, late, locked, upcoming) as a class and
@@ -49,8 +57,11 @@ import TrailPopover, { TrailIcon, stateLabel, stateLine, stepWhen } from "./Trai
 import TrailScroll from "./TrailScroll";
 import {
   ANSWER_MONTHS,
+  LOADED_CAP,
   SKELETON_DAYS,
+  ZOOMS,
   barOf,
+  datesOf,
   emptyTrails,
   extendLoaded,
   linksOf,
@@ -58,13 +69,17 @@ import {
   mergedOf,
   monthDays,
   monthStep,
+  namedBar,
   todayIndex,
   trailBarOf,
+  weekCells,
+  weekLabel,
   windowDays
 } from "./trails";
 const TRIES = 3;
 const NO_ICONS = { expanded: "", collapsed: "", collapsedrtl: "" };
 const MONTH_YEAR = { month: "long", year: "numeric" };
+const MONTH_ONLY = { month: "long" };
 const WEEKDAY = { weekday: "narrow" };
 const SHORT_DAY = { day: "numeric", month: "short" };
 const LEGEND = ["done", "current", "upcoming", "locked", "late"];
@@ -77,6 +92,22 @@ const freshWin = /* @__PURE__ */ __name((answer, month, generation, scope) => ({
 }), "freshWin");
 const dated = /* @__PURE__ */ __name((step) => step.start > 0 || step.end > 0, "dated");
 const stepLabel = /* @__PURE__ */ __name((step, look, now) => [step.name, stepWhen(step, look), stateLine(step, look, now)].filter((part) => part !== "").join(", "), "stepLabel");
+const datesLine = /* @__PURE__ */ __name((step, look) => {
+  const dates = datesOf(step.start, step.end, look.zone, look.language);
+  if (dates.kind === "from") {
+    return fill(look.strings.calendar_trailfrom, dates.text);
+  }
+  if (dates.kind === "until") {
+    return fill(look.strings.calendar_until, dates.text);
+  }
+  return dates.kind === "none" ? look.strings.calendar_trailnodates : dates.text;
+}, "datesLine");
+const zoomLabel = /* @__PURE__ */ __name((strings, zoom) => {
+  if (zoom === "week") {
+    return strings.calendar_trailzoomweek;
+  }
+  return zoom === "month" ? strings.calendar_trailzoommonth : strings.calendar_trailzoomday;
+}, "zoomLabel");
 const progressOf = /* @__PURE__ */ __name((trail, look) => trail.enrolled ? fill(look.strings.calendar_trailprogress, { done: trail.done, count: trail.steps.length }) : "", "progressOf");
 const coursesOf = /* @__PURE__ */ __name((strings, count) => count === 1 ? strings.landing_trail_onecourse : fill(strings.landing_trail_coursecount, count), "coursesOf");
 const metaOf = /* @__PURE__ */ __name((trail, look) => fill(look.strings.landing_trail_whenjoin, trail.enrolled ? { a: look.strings.calendar_trailenrolled, b: progressOf(trail, look) } : { a: look.strings.calendar_trailnotenrolled, b: coursesOf(look.strings, trail.steps.length) }), "metaOf");
@@ -92,16 +123,16 @@ const shortOf = /* @__PURE__ */ __name((iso, language) => {
     return say(iso, SHORT_DAY, language);
   }
 }, "shortOf");
-const TrailFilters = /* @__PURE__ */ __name(({ strings, filter, answer, onChange, children }) => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar dim-cal__trailtools", "data-region": "dim-cal-trailfilters", children: [
+const TrailFilters = /* @__PURE__ */ __name(({ strings, filter, answer, onChange, zoom = "day", onZoom, phone = false, children }) => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__toolbar dim-cal__trailtools", "data-region": "dim-cal-trailfilters", children: [
   /* @__PURE__ */ jsxDEV("label", { className: `dim-cal__trailpick${filter.trail > 0 ? " dim-cal__trailpick--chosen" : ""}`, children: [
     /* @__PURE__ */ jsxDEV(TrailIcon, {}, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 266,
+      lineNumber: 325,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: strings.calendar_trail }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 267,
+      lineNumber: 326,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV(
@@ -114,12 +145,12 @@ const TrailFilters = /* @__PURE__ */ __name(({ strings, filter, answer, onChange
         children: [
           /* @__PURE__ */ jsxDEV("option", { value: "0", children: strings.calendar_trailall }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 274,
+            lineNumber: 333,
             columnNumber: 17
           }),
           (answer ? answer.options : []).map((option) => /* @__PURE__ */ jsxDEV("option", { value: String(option.id), children: option.name }, option.id, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 276,
+            lineNumber: 335,
             columnNumber: 21
           }))
         ]
@@ -128,18 +159,18 @@ const TrailFilters = /* @__PURE__ */ __name(({ strings, filter, answer, onChange
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 268,
+        lineNumber: 327,
         columnNumber: 13
       }
     ),
     /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-down dim-cal__trailcaret", "aria-hidden": "true" }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 279,
+      lineNumber: 338,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-    lineNumber: 265,
+    lineNumber: 324,
     columnNumber: 9
   }),
   /* @__PURE__ */ jsxDEV(
@@ -153,7 +184,7 @@ const TrailFilters = /* @__PURE__ */ __name(({ strings, filter, answer, onChange
       children: [
         /* @__PURE__ */ jsxDEV("i", { className: "fa fa-user", "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 288,
+          lineNumber: 347,
           columnNumber: 13
         }),
         strings.calendar_trailmine
@@ -163,24 +194,59 @@ const TrailFilters = /* @__PURE__ */ __name(({ strings, filter, answer, onChange
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 281,
+      lineNumber: 340,
       columnNumber: 9
     }
   ),
   children,
   /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__spacer" }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-    lineNumber: 292,
+    lineNumber: 351,
     columnNumber: 9
   }),
+  onZoom && !phone ? /* @__PURE__ */ jsxDEV(
+    "span",
+    {
+      className: "dim-cal__trailzoom",
+      role: "group",
+      "aria-label": strings.calendar_trailzoom,
+      "data-region": "dim-cal-trailzoom",
+      children: ZOOMS.map((one) => /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          type: "button",
+          className: "dim-cal__trailzoombtn",
+          "data-action": "dim-cal-trailzoom",
+          "data-zoom": one,
+          "aria-pressed": one === zoom,
+          onClick: () => onZoom(one),
+          children: zoomLabel(strings, one)
+        },
+        one,
+        false,
+        {
+          fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+          lineNumber: 360,
+          columnNumber: 21
+        }
+      ))
+    },
+    void 0,
+    false,
+    {
+      fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+      lineNumber: 353,
+      columnNumber: 13
+    }
+  ) : null,
   answer && answer.trails.length > 0 ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailcount", "data-region": "dim-cal-trailcount", children: countOf(strings, answer) }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-    lineNumber: 294,
+    lineNumber: 375,
     columnNumber: 13
   }) : null
 ] }, void 0, true, {
   fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-  lineNumber: 264,
+  lineNumber: 323,
   columnNumber: 5
 }), "TrailFilters");
 const TrailView = /* @__PURE__ */ __name(({
@@ -192,6 +258,8 @@ const TrailView = /* @__PURE__ */ __name(({
   phone,
   captionid,
   chosen = 0,
+  zoom = "day",
+  firstday = 0,
   icons = NO_ICONS,
   fetch,
   scope = "",
@@ -470,7 +538,8 @@ const TrailView = /* @__PURE__ */ __name(({
     } else if (near === "start") {
       target = monthAfter(months[0], -1);
     }
-    if (target !== "" && target !== failed.current) {
+    const full = near === "end" && months.length >= LOADED_CAP && first === 0;
+    if (target !== "" && target !== failed.current && !full) {
       extend(target);
     }
   }, "viewing");
@@ -498,6 +567,8 @@ const TrailView = /* @__PURE__ */ __name(({
   const poppedstep = poppedtrail?.steps.find((step) => step.cmid === popped?.cmid);
   const learner = merged.trails.some((trail) => trail.enrolled);
   const starts = win.loaded.months.map((one) => ({ month: one, at: days.indexOf(`${one}-01`), length: monthDays(one).length }));
+  const bydays = zoom === "day";
+  const cells = bydays ? [] : weekCells(days, firstday);
   const shortDay = /* @__PURE__ */ __name((timestamp) => shortOf(look.zone.day(timestamp), look.language), "shortDay");
   const stepDay = /* @__PURE__ */ __name((step) => {
     const at = step.end > 0 ? step.end : step.start;
@@ -524,7 +595,7 @@ const TrailView = /* @__PURE__ */ __name(({
     false,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 778,
+      lineNumber: 865,
       columnNumber: 9
     }
   ), "opener");
@@ -536,7 +607,13 @@ const TrailView = /* @__PURE__ */ __name(({
     if (bar) {
       const continued = bar.after && !bar.open;
       const classes = "dim-cal__trailbar" + (tone ? ` dim-cal__trailbar${tone}` : "") + (bar.before ? " dim-cal__trailbar--before" : "") + (continued ? " dim-cal__trailbar--after" : "") + (bar.open ? " dim-cal__trailbar--open" : "") + (bar.milestone ? " dim-cal__trailbar--milestone" : "") + (step.next ? " dim-cal__trailbar--next" : "");
-      drawn = opener(trail, step, classes, { gridColumn: `${bar.from + 2} / ${bar.to + 3}`, gridRow: "1" }, step.name);
+      drawn = opener(
+        trail,
+        step,
+        classes,
+        { gridColumn: `${bar.from + 2} / ${bar.to + 3}`, gridRow: "1" },
+        namedBar(bar, zoom) ? step.name : null
+      );
       if (bar.milestone) {
         diamond = /* @__PURE__ */ jsxDEV(
           "span",
@@ -549,12 +626,13 @@ const TrailView = /* @__PURE__ */ __name(({
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 817,
+            lineNumber: 906,
             columnNumber: 21
           }
         );
       }
     }
+    const dates = datesLine(step, look);
     return /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__trailrow dim-cal__trailrow--step", "data-cmid": step.cmid, children: [
       /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__traillabel dim-cal__trailsteplabel", children: /* @__PURE__ */ jsxDEV(
         "button",
@@ -564,7 +642,7 @@ const TrailView = /* @__PURE__ */ __name(({
           "data-region": "dim-cal-trailrow",
           "data-cmid": step.cmid,
           "data-pair": step.cmid,
-          "aria-label": dated(step) ? fill(look.strings.calendar_trailshow, step.name) : void 0,
+          "aria-label": dated(step) ? fill(look.strings.calendar_trailshow, `${step.name}, ${dates}`) : void 0,
           "aria-haspopup": "dialog",
           "aria-expanded": popped?.cmid === step.cmid,
           onClick: (event) => find(trail, step, event.currentTarget),
@@ -573,42 +651,59 @@ const TrailView = /* @__PURE__ */ __name(({
           children: [
             /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailnum" + (tone ? ` dim-cal__trailnum${tone}` : ""), "aria-hidden": "true", children: step.position }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 841,
+              lineNumber: 931,
               columnNumber: 25
             }),
-            /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailname", children: step.name }, void 0, false, {
+            /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailnames", children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailname", children: step.name }, void 0, false, {
+                fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+                lineNumber: 935,
+                columnNumber: 29
+              }),
+              /* @__PURE__ */ jsxDEV(
+                "small",
+                {
+                  className: `dim-cal__traildates${dated(step) ? "" : " dim-cal__traildates--none"}`,
+                  "data-region": "dim-cal-traildates",
+                  children: dates
+                },
+                void 0,
+                false,
+                {
+                  fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+                  lineNumber: 936,
+                  columnNumber: 29
+                }
+              )
+            ] }, void 0, true, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 844,
+              lineNumber: 934,
               columnNumber: 25
             }),
             dated(step) ? /* @__PURE__ */ jsxDEV("i", { className: "fa fa-crosshairs dim-cal__traillocate", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 846,
+              lineNumber: 942,
               columnNumber: 29
-            }) : /* @__PURE__ */ jsxDEV("small", { className: "dim-cal__trailnodates", children: look.strings.calendar_trailnodates }, void 0, false, {
-              fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 848,
-              columnNumber: 29
-            })
+            }) : null
           ]
         },
         void 0,
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 828,
+          lineNumber: 918,
           columnNumber: 21
         }
       ) }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 827,
+        lineNumber: 917,
         columnNumber: 17
       }),
       drawn,
       diamond
     ] }, step.cmid, true, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 826,
+      lineNumber: 916,
       columnNumber: 13
     });
   }, "stepRow");
@@ -616,7 +711,7 @@ const TrailView = /* @__PURE__ */ __name(({
     const open = !folded.includes(trail.id);
     const span = trailBarOf(trail, days, look.zone);
     const steps = `dim-cal-trailsteps-${trail.id}`;
-    const links = linksOf(trail.steps, days, look.zone, open);
+    const links = linksOf(trail.steps, days, look.zone, open, zoom);
     return /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__trail", role: "group", "aria-label": trail.name, "data-trail": trail.id, children: [
       /* @__PURE__ */ jsxDEV(
         "div",
@@ -645,24 +740,24 @@ const TrailView = /* @__PURE__ */ __name(({
                       false,
                       {
                         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                        lineNumber: 886,
+                        lineNumber: 980,
                         columnNumber: 29
                       }
                     ),
                     /* @__PURE__ */ jsxDEV("span", { className: "collapsed-icon icon-no-margin", children: [
                       /* @__PURE__ */ jsxDEV("span", { className: "dir-rtl-hide", dangerouslySetInnerHTML: { __html: icons.collapsed } }, void 0, false, {
                         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                        lineNumber: 891,
+                        lineNumber: 985,
                         columnNumber: 33
                       }),
                       /* @__PURE__ */ jsxDEV("span", { className: "dir-ltr-hide", dangerouslySetInnerHTML: { __html: icons.collapsedrtl } }, void 0, false, {
                         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                        lineNumber: 892,
+                        lineNumber: 986,
                         columnNumber: 33
                       })
                     ] }, void 0, true, {
                       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                      lineNumber: 890,
+                      lineNumber: 984,
                       columnNumber: 29
                     })
                   ]
@@ -671,29 +766,29 @@ const TrailView = /* @__PURE__ */ __name(({
                 true,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                  lineNumber: 877,
+                  lineNumber: 971,
                   columnNumber: 25
                 }
               ),
               /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailnames", children: [
                 /* @__PURE__ */ jsxDEV("a", { className: "dim-cal__trailname dim-cal__trailname--trail", href: safeHref(trail.url, look.home), children: trail.name }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                  lineNumber: 896,
+                  lineNumber: 990,
                   columnNumber: 29
                 }),
                 /* @__PURE__ */ jsxDEV("small", { className: "dim-cal__trailmeta", "data-region": "dim-cal-trailmeta", children: metaOf(trail, look) }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                  lineNumber: 899,
+                  lineNumber: 993,
                   columnNumber: 29
                 })
               ] }, void 0, true, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 895,
+                lineNumber: 989,
                 columnNumber: 25
               })
             ] }, void 0, true, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 876,
+              lineNumber: 970,
               columnNumber: 21
             }),
             span ? /* @__PURE__ */ jsxDEV(
@@ -707,7 +802,7 @@ const TrailView = /* @__PURE__ */ __name(({
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 903,
+                lineNumber: 997,
                 columnNumber: 25
               }
             ) : null,
@@ -722,7 +817,7 @@ const TrailView = /* @__PURE__ */ __name(({
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 911,
+                lineNumber: 1005,
                 columnNumber: 25
               }
             ) : null
@@ -732,7 +827,7 @@ const TrailView = /* @__PURE__ */ __name(({
         true,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 872,
+          lineNumber: 966,
           columnNumber: 17
         }
       ),
@@ -753,22 +848,22 @@ const TrailView = /* @__PURE__ */ __name(({
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 923,
+            lineNumber: 1017,
             columnNumber: 33
           }
         )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 921,
+          lineNumber: 1015,
           columnNumber: 25
         }) : null
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 918,
+        lineNumber: 1012,
         columnNumber: 17
       })
     ] }, trail.id, true, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 871,
+      lineNumber: 965,
       columnNumber: 13
     });
   }, "trailRows");
@@ -782,7 +877,7 @@ const TrailView = /* @__PURE__ */ __name(({
       children: [
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__traillabel", "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 954,
+          lineNumber: 1048,
           columnNumber: 13
         }),
         starts.map((entry) => /* @__PURE__ */ jsxDEV(
@@ -799,13 +894,13 @@ const TrailView = /* @__PURE__ */ __name(({
                 "data-month": entry.month,
                 "aria-current": entry.month === inview ? "true" : void 0,
                 onClick: () => aim({ kind: "month", month: entry.month, tries: 0 }),
-                children: say(`${entry.month}-01`, MONTH_YEAR, look.language)
+                children: say(`${entry.month}-01`, zoom === "month" ? MONTH_ONLY : MONTH_YEAR, look.language)
               },
               void 0,
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 961,
+                lineNumber: 1055,
                 columnNumber: 21
               }
             )
@@ -814,7 +909,7 @@ const TrailView = /* @__PURE__ */ __name(({
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 956,
+            lineNumber: 1050,
             columnNumber: 17
           }
         )),
@@ -827,7 +922,7 @@ const TrailView = /* @__PURE__ */ __name(({
             "aria-hidden": "true",
             children: /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailskeleton" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 980,
+              lineNumber: 1074,
               columnNumber: 21
             })
           },
@@ -835,7 +930,7 @@ const TrailView = /* @__PURE__ */ __name(({
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 974,
+            lineNumber: 1068,
             columnNumber: 17
           }
         ) : null
@@ -845,7 +940,7 @@ const TrailView = /* @__PURE__ */ __name(({
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 948,
+      lineNumber: 1042,
       columnNumber: 9
     }
   ), "band");
@@ -858,6 +953,7 @@ const TrailView = /* @__PURE__ */ __name(({
         openat,
         opening: String(win.generation),
         shift: win.shift,
+        zoom,
         control,
         onView: viewing,
         onSettle: settled,
@@ -867,10 +963,10 @@ const TrailView = /* @__PURE__ */ __name(({
           /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__trailrow dim-cal__trailrow--head", "aria-hidden": "true", children: [
             /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__traillabel dim-cal__trailheading", children: look.strings.calendar_trailheading }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 1007,
+              lineNumber: 1102,
               columnNumber: 25
             }),
-            days.map((iso, index) => /* @__PURE__ */ jsxDEV(
+            bydays ? days.map((iso, index) => /* @__PURE__ */ jsxDEV(
               "span",
               {
                 className: `dim-cal__trailday${isWeekend(iso) ? " dim-cal__trailday--weekend" : ""}${index === todayat ? " dim-cal__trailday--today" : ""}${iso.endsWith("-01") && index > 0 ? " dim-cal__trailday--first" : ""}`,
@@ -878,12 +974,12 @@ const TrailView = /* @__PURE__ */ __name(({
                 children: [
                   /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailweekday", children: say(iso, WEEKDAY, look.language) }, void 0, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                    lineNumber: 1016,
+                    lineNumber: 1111,
                     columnNumber: 33
                   }),
                   /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__traildaynum", children: Number(iso.slice(8, 10)) }, void 0, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                    lineNumber: 1017,
+                    lineNumber: 1112,
                     columnNumber: 33
                   })
                 ]
@@ -892,17 +988,48 @@ const TrailView = /* @__PURE__ */ __name(({
               true,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 1009,
+                lineNumber: 1104,
+                columnNumber: 29
+              }
+            )) : cells.map((cell) => /* @__PURE__ */ jsxDEV(
+              "span",
+              {
+                className: "dim-cal__trailweek" + (zoom === "week" && today >= cell.first && today <= cell.last ? " dim-cal__trailweek--today" : "") + (cell.first.endsWith("-01") && cell.at > 0 ? " dim-cal__trailweek--first" : ""),
+                style: { gridColumn: `${cell.at + 2} / ${cell.at + cell.length + 2}`, gridRow: "1" },
+                "data-region": "dim-cal-trailweek",
+                "data-week": cell.first,
+                children: zoom === "week" ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
+                  /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailweekmonth", children: weekLabel(cell, look.language).kicker }, void 0, false, {
+                    fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+                    lineNumber: 1127,
+                    columnNumber: 41
+                  }),
+                  /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailweekdays", children: weekLabel(cell, look.language).days }, void 0, false, {
+                    fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+                    lineNumber: 1128,
+                    columnNumber: 41
+                  })
+                ] }, void 0, true, {
+                  fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+                  lineNumber: 1126,
+                  columnNumber: 37
+                }) : null
+              },
+              cell.first,
+              false,
+              {
+                fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+                lineNumber: 1115,
                 columnNumber: 29
               }
             ))
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 1006,
+            lineNumber: 1101,
             columnNumber: 21
           }),
           /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__trailground", "aria-hidden": "true", children: [
-            days.map((iso, index) => isWeekend(iso) ? /* @__PURE__ */ jsxDEV(
+            bydays ? days.map((iso, index) => isWeekend(iso) ? /* @__PURE__ */ jsxDEV(
               "span",
               {
                 className: "dim-cal__trailweekend",
@@ -912,10 +1039,24 @@ const TrailView = /* @__PURE__ */ __name(({
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 1023,
+                lineNumber: 1136,
                 columnNumber: 29
               }
-            ) : null),
+            ) : null) : null,
+            cells.filter((cell) => cell.at > 0 && !cell.first.endsWith("-01")).map((cell) => /* @__PURE__ */ jsxDEV(
+              "span",
+              {
+                className: "dim-cal__trailweekline",
+                style: { "--dim-cal-trail-at": String(cell.at) }
+              },
+              cell.first,
+              false,
+              {
+                fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+                lineNumber: 1143,
+                columnNumber: 29
+              }
+            )),
             starts.filter((entry) => entry.at > 0).map((entry) => /* @__PURE__ */ jsxDEV(
               "span",
               {
@@ -926,7 +1067,7 @@ const TrailView = /* @__PURE__ */ __name(({
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 1030,
+                lineNumber: 1150,
                 columnNumber: 29
               }
             )),
@@ -940,19 +1081,35 @@ const TrailView = /* @__PURE__ */ __name(({
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 1037,
+                lineNumber: 1157,
+                columnNumber: 29
+              }
+            ) : null,
+            todayat >= 0 ? /* @__PURE__ */ jsxDEV(
+              "span",
+              {
+                className: "dim-cal__trailnowtag",
+                "data-region": "dim-cal-trailnowtag",
+                style: { "--dim-cal-trail-at": String(todayat) },
+                children: look.strings.calendar_today
+              },
+              void 0,
+              false,
+              {
+                fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
+                lineNumber: 1163,
                 columnNumber: 29
               }
             ) : null
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 1021,
+            lineNumber: 1134,
             columnNumber: 21
           }),
           merged.trails.map((trail) => trailRows(trail))
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 1004,
+          lineNumber: 1099,
           columnNumber: 17
         })
       },
@@ -960,7 +1117,7 @@ const TrailView = /* @__PURE__ */ __name(({
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 993,
+        lineNumber: 1087,
         columnNumber: 13
       }
     ),
@@ -968,80 +1125,80 @@ const TrailView = /* @__PURE__ */ __name(({
       learner ? LEGEND.map((state) => /* @__PURE__ */ jsxDEV("li", { children: [
         /* @__PURE__ */ jsxDEV("span", { className: `dim-cal__trailswatch dim-cal__trailswatch--${state}`, "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 1049,
+          lineNumber: 1176,
           columnNumber: 25
         }),
         stateLabel(look.strings, state)
       ] }, state, true, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 1048,
+        lineNumber: 1175,
         columnNumber: 21
       })) : null,
       /* @__PURE__ */ jsxDEV("li", { children: [
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailswatch", "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 1054,
+          lineNumber: 1181,
           columnNumber: 21
         }),
         look.strings.calendar_trailnotenrolled
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 1053,
+        lineNumber: 1180,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("li", { children: [
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__traildiamond dim-cal__traildiamond--legend", "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 1058,
+          lineNumber: 1185,
           columnNumber: 21
         }),
         look.strings.calendar_trailexpected
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 1057,
+        lineNumber: 1184,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("li", { children: [
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__traillegendnow", "aria-hidden": "true" }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 1062,
+          lineNumber: 1189,
           columnNumber: 21
         }),
         look.strings.calendar_today
       ] }, void 0, true, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 1061,
+        lineNumber: 1188,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 1046,
+      lineNumber: 1173,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-    lineNumber: 992,
+    lineNumber: 1086,
     columnNumber: 9
   }), "desk");
   const todayLine = /* @__PURE__ */ __name(() => /* @__PURE__ */ jsxDEV("li", { className: "dim-cal__trailtoday", "data-region": "dim-cal-trailtoday", children: [
     /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailtodayword", children: look.strings.calendar_today }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 1076,
+      lineNumber: 1203,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailtodayline", "aria-hidden": "true" }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 1077,
+      lineNumber: 1204,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailtodaydate", children: shortOf(today, look.language) }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 1078,
+      lineNumber: 1205,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-    lineNumber: 1075,
+    lineNumber: 1202,
     columnNumber: 9
   }), "todayLine");
   const agenda = /* @__PURE__ */ __name(() => /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__trailagenda", "data-region": "dim-cal-trailagenda", children: merged.trails.map((trail) => {
@@ -1056,21 +1213,21 @@ const TrailView = /* @__PURE__ */ __name(({
           /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__trailsheethead", children: [
             /* @__PURE__ */ jsxDEV("h3", { className: "dim-cal__trailtitle", children: /* @__PURE__ */ jsxDEV("a", { href: safeHref(trail.url, look.home), children: trail.name }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 1100,
+              lineNumber: 1227,
               columnNumber: 33
             }) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 1099,
+              lineNumber: 1226,
               columnNumber: 29
             }),
             /* @__PURE__ */ jsxDEV("small", { className: "dim-cal__trailprogress", children: trail.enrolled ? progressOf(trail, look) : coursesOf(look.strings, trail.steps.length) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 1102,
+              lineNumber: 1229,
               columnNumber: 29
             })
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 1098,
+            lineNumber: 1225,
             columnNumber: 25
           }),
           trail.enrolled ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailsegments", "aria-hidden": "true", children: trail.steps.map((step) => /* @__PURE__ */ jsxDEV(
@@ -1082,12 +1239,12 @@ const TrailView = /* @__PURE__ */ __name(({
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 1109,
+              lineNumber: 1236,
               columnNumber: 37
             }
           )) }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 1107,
+            lineNumber: 1234,
             columnNumber: 29
           }) : null,
           /* @__PURE__ */ jsxDEV("ol", { className: "dim-cal__trailsteps", children: [
@@ -1096,53 +1253,53 @@ const TrailView = /* @__PURE__ */ __name(({
               /* @__PURE__ */ jsxDEV("li", { className: `dim-cal__trailstep${step.state ? ` dim-cal__trailstep--${step.state}` : ""}`, children: opener(trail, step, "dim-cal__trailstepname", void 0, /* @__PURE__ */ jsxDEV(Fragment, { children: [
                 /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailstepdate", children: stepDay(step) }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                  lineNumber: 1124,
+                  lineNumber: 1251,
                   columnNumber: 49
                 }),
                 /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailstepbar", "aria-hidden": "true" }, void 0, false, {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                  lineNumber: 1125,
+                  lineNumber: 1252,
                   columnNumber: 49
                 }),
                 /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailsteptext", children: [
                   /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailstepline", children: `${step.position}. ${step.name}` }, void 0, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                    lineNumber: 1127,
+                    lineNumber: 1254,
                     columnNumber: 53
                   }),
                   /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailwhen", children: stepWhen(step, look) }, void 0, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                    lineNumber: 1130,
+                    lineNumber: 1257,
                     columnNumber: 53
                   }),
                   step.state ? /* @__PURE__ */ jsxDEV("span", { className: `dim-cal__trailstate dim-cal__trailstate--${step.state}`, children: stateLine(step, look, now) }, void 0, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                    lineNumber: 1132,
+                    lineNumber: 1259,
                     columnNumber: 57
                   }) : null
                 ] }, void 0, true, {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                  lineNumber: 1126,
+                  lineNumber: 1253,
                   columnNumber: 49
                 })
               ] }, void 0, true, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 1123,
+                lineNumber: 1250,
                 columnNumber: 45
               })) }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-                lineNumber: 1121,
+                lineNumber: 1248,
                 columnNumber: 37
               })
             ] }, step.cmid, true, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-              lineNumber: 1119,
+              lineNumber: 1246,
               columnNumber: 33
             })),
             at === trail.steps.length ? todayLine() : null
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 1117,
+            lineNumber: 1244,
             columnNumber: 25
           })
         ]
@@ -1151,32 +1308,32 @@ const TrailView = /* @__PURE__ */ __name(({
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-        lineNumber: 1092,
+        lineNumber: 1219,
         columnNumber: 21
       }
     );
   }) }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-    lineNumber: 1088,
+    lineNumber: 1215,
     columnNumber: 9
   }), "agenda");
   return /* @__PURE__ */ jsxDEV(
     "section",
     {
       ref: root,
-      className: `dim-cal__trails${phone ? " dim-cal__trails--phone" : ""}`,
+      className: "dim-cal__trails" + (phone ? " dim-cal__trails--phone" : "") + (!phone && zoom !== "day" ? ` dim-cal__trails--${zoom}` : ""),
       role: "region",
       "aria-labelledby": captionid,
       "data-region": "dim-cal-trails",
       children: [
         merged.truncated ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__status", children: look.strings.calendar_trailstruncated }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 1158,
+          lineNumber: 1286,
           columnNumber: 33
         }) : null,
         merged.trails.length === 0 ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__empty", "data-region": "dim-cal-trailsempty", children: look.strings.calendar_trailsempty }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-          lineNumber: 1160,
+          lineNumber: 1288,
           columnNumber: 17
         }) : null,
         timeline ? desk() : null,
@@ -1196,7 +1353,7 @@ const TrailView = /* @__PURE__ */ __name(({
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-            lineNumber: 1165,
+            lineNumber: 1293,
             columnNumber: 17
           }
         ) : null
@@ -1206,7 +1363,7 @@ const TrailView = /* @__PURE__ */ __name(({
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailView.tsx",
-      lineNumber: 1151,
+      lineNumber: 1278,
       columnNumber: 9
     }
   );

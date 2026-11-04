@@ -1670,11 +1670,25 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
     `win` so a stranded target is pursued again; a load asked with other filters (`win.scope`) is dropped; a failed
     month is not re-asked by the scroll; no month is written while the page's request is on its way (`answered`).
     Gates: the "T3b" block and its review sub-block.
+  - **T3c: the zoom and the courses' dates.** `zoom=week|month` (`page::PARAM_ZOOM`, `zoom_from_request()`, absent for
+    days) is navigation like `trail=`: in `trail_params()`, the page's address, the forward and the server's arrows,
+    never in `state::STATE_PARAMS`; on the client `Calendar.tsx` holds it (`zooming`), every Trilhas write passes it to
+    `withTrail()` and its own change replaces the address, asking nothing. A day is `TRACK.day`/`week`/`month` rem (3, 1,
+    .25: the stylesheet's `--dim-cal-trail-day` on `.dim-cal__trails` and its `--week`/`--month` modifiers, compared by
+    `calendar_component_source_test`); every measure, connector (`linksOf(..., zoom)`) and scroll position reads it
+    through `dayWidth()`. A switch keeps the first day in view by `zoomedLeft()` over TrailScroll's last measure, then
+    measures once (the `[zoom]` effect: no new read site, the count stays 7); `paint()` records the zoom of each measure
+    (`zoomed`), so an opening at the new zoom in the same commit is not rescaled. More days held are measured again (the
+    `[days]` effect), so the view asks for the next month while the days fit the scroller, never past `LOADED_CAP` with
+    the first day in view (`full`). By weeks the header is `weekCells()` from the page's `firstday` (`weekLabel()`: a
+    week across a month names the end's month); off the days no weekend is drawn; a "Today" tag tops today's line at
+    every zoom; a bar under one day by days, under `NAMED_BAR` (3.5rem) off them, draws no name. The trail column's second line is `datesOf()` (Intl's range, its own words compacted,
+    never the separator), worded by the view; rows are 56px. Gates: the "T3c" block.
 - **R3: visual parity with the mockup** (PROPOSAL section 33). The desktop Trilhas grid scrolls sideways in
   `TrailScroll.tsx`, compass's strip in the theme's classes:
   - one native scroller with the scrollbar hidden, snapped per day;
-  - every row a grid of the 340px trail column and 48px days, the trail cell `sticky` (T3b replaced R3's 76px last column
-    with a band of the months held);
+  - every row a grid of the 340px trail column and 48px days (16px by weeks and 4px by months since T3c), the trail
+    cell `sticky` (T3b replaced R3's 76px last column with a band of the months held);
   - the map (line, thumb, today tick, aria-hidden), the edge arrows and the fades.
 
   Its layout reads are the scroller's own: once per opening key, then on scroll, an arrow and the map; the thumb moves

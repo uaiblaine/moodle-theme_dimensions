@@ -170,6 +170,10 @@ class calendar_page implements renderable, templatable {
         'calendar_trailshow',
         'calendar_trailstruncated',
         'calendar_trailtoggle',
+        'calendar_trailzoom',
+        'calendar_trailzoomday',
+        'calendar_trailzoommonth',
+        'calendar_trailzoomweek',
         'calendar_truncated',
         'calendar_truncatedpublic',
         'calendar_until',
@@ -242,6 +246,9 @@ class calendar_page implements renderable, templatable {
     /** @var bool Whether the Trilhas view keeps only the viewer's own trails. */
     private bool $mine;
 
+    /** @var string The Trilhas timeline's zoom, {@see page::ZOOM_WEEK} or {@see page::ZOOM_MONTH}; '' for days. */
+    private string $zoom;
+
     /**
      * Hold what the page draws; {@see page::handle()} computes every part.
      *
@@ -260,6 +267,7 @@ class calendar_page implements renderable, templatable {
      * @param array|null $trails The Trilhas view's answer in that view, else null.
      * @param int $trailid The one trail the Trilhas view keeps, 0 for every trail.
      * @param bool $mine Whether the Trilhas view keeps only the viewer's own trails.
+     * @param string $zoom The Trilhas timeline's zoom ({@see page::zoom_from_request()}); '' for days.
      */
     public function __construct(
         string $month,
@@ -276,7 +284,8 @@ class calendar_page implements renderable, templatable {
         string $week = '',
         ?array $trails = null,
         int $trailid = 0,
-        bool $mine = false
+        bool $mine = false,
+        string $zoom = ''
     ) {
         $this->month = $month;
         $this->today = $today;
@@ -299,6 +308,7 @@ class calendar_page implements renderable, templatable {
         }
         $this->trailid = $trailid;
         $this->mine = $mine;
+        $this->zoom = in_array($zoom, [page::ZOOM_WEEK, page::ZOOM_MONTH], true) ? $zoom : '';
     }
 
     /**
@@ -436,12 +446,13 @@ class calendar_page implements renderable, templatable {
                 'home' => (new \core\url('/'))->out(false),
             ],
             // The Trilhas view offered while trails are available, its answer in that
-            // view only; the trail and "Só as minhas" are navigation, like the view.
+            // view only; the trail, "Só as minhas" and the zoom are navigation, like the view.
             'trails' => [
                 'offered' => page::trails_offered(),
                 'answer' => $this->trails,
                 'trail' => $this->trailid,
                 'mine' => $this->mine,
+                'zoom' => $this->zoom,
                 'icons' => self::fold_icons(),
             ],
             // Core's own answers ({@see editing}): whether core's calendar shows this viewer "New event", and the
@@ -545,7 +556,7 @@ class calendar_page implements renderable, templatable {
         $weekof = page::week_start(page::opening_day($this->month), $this->firstday);
         $weekparams = static fn(string $week): array => [page::PARAM_VIEW => page::VIEW_WEEK, page::PARAM_WEEK => $week];
         $trailview = $this->view === page::VIEW_TRAIL;
-        $trailparams = fn(string $month): array => page::trail_params($month, $this->trailid, $this->mine);
+        $trailparams = fn(string $month): array => page::trail_params($month, $this->trailid, $this->mine, $this->zoom);
         $parts = [
             'weekview' => $this->week !== '',
             'week' => $this->week,

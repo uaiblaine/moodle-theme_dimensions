@@ -157,11 +157,12 @@ const mount = async(given: Props): Promise<HTMLElement> => {
  * @param {object} more Further trails props.
  * @returns {object}
  */
-const offered = (shown: TrailAnswer | null, more: {trail?: number, mine?: boolean, today?: string} = {}): Props => props([], {
-    view: shown ? 'trail' : 'month',
-    today: more.today || '2026-11-17',
-    trails: {offered: true, answer: shown, trail: more.trail || 0, mine: more.mine || false, icons: ICONS},
-});
+const offered = (shown: TrailAnswer | null, more: {trail?: number, mine?: boolean, today?: string, zoom?: string} = {}): Props =>
+    props([], {
+        view: shown ? 'trail' : 'month',
+        today: more.today || '2026-11-17',
+        trails: {offered: true, answer: shown, trail: more.trail || 0, mine: more.mine || false, zoom: more.zoom || '', icons: ICONS},
+    });
 
 /** Core's chevrons as the server renders them. */
 const ICONS = {
@@ -269,18 +270,18 @@ describe('the Trilhas view', () => {
         const links = page.querySelector<HTMLElement>('[data-region="dim-cal-traillinks"]') as HTMLElement;
         expect(links.getAttribute('aria-hidden')).toBe('true');
         expect(links.closest('#dim-cal-trailsteps-7')).not.toBeNull();
-        // Prática starts the day after Fundamentos ends: an elbow into its start.
+        // Prática starts the day after Fundamentos ends: an elbow at its least into its start, the arrowhead straight
+        // off the elbow (no room is left for a line into the bar).
         expect(Array.from(links.children).map((piece) => piece.className)).toEqual([
             'dim-cal__traillink dim-cal__traillink--horizontal',
             'dim-cal__traillink dim-cal__traillink--vertical',
-            'dim-cal__traillink dim-cal__traillink--horizontal',
             'dim-cal__traillink dim-cal__traillink--right',
         ]);
         // Placed from the start of the days (the stylesheet's inset-inline-start), never from the left: a right-to-left
         // page mirrors them.
         const first = links.children[0] as HTMLElement;
         expect([first.style.getPropertyValue('--dim-cal-link-start'), first.style.left, first.style.top])
-            .toEqual(['29.25rem', '', '1.5625rem']);
+            .toEqual(['30rem', '', '1.6875rem']);
         await act(async() => {
             fireEvent.click(page.querySelector('[data-action="dim-cal-trailfold"]') as HTMLElement);
         });
@@ -296,7 +297,7 @@ describe('the Trilhas view', () => {
         const rows = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailrow"]'));
         expect(rows[0].textContent).toContain('No dates');
         expect(rows[0].getAttribute('aria-label')).toBeNull();
-        expect(rows[1].getAttribute('aria-label')).toBe('Prática: show on the timeline');
+        expect(rows[1].getAttribute('aria-label')).toBe('Prática, Nov 11 – Dec 10, 2026: show on the timeline');
     });
 
     it('carries a learner\'s states and progress', async() => {
@@ -424,6 +425,175 @@ describe('the Trilhas view', () => {
     });
 });
 
+describe('the zoom and the courses\' dates (T3c)', () => {
+    /**
+     * The zoom's buttons, as their names and whether each is pressed.
+     *
+     * @param {object} page The page.
+     * @returns {Array}
+     */
+    const zooms = (page: HTMLElement): string[] => Array.from(page.querySelectorAll<HTMLElement>('[data-action="dim-cal-trailzoom"]'))
+        .map((button) => `${button.textContent}:${button.getAttribute('aria-pressed')}`);
+
+    /**
+     * Press one of the zoom's buttons.
+     *
+     * @param {object} page The page.
+     * @param {string} zoom The zoom.
+     * @returns {Promise}
+     */
+    const press = async(page: HTMLElement, zoom: string): Promise<void> => {
+        await act(async() => {
+            fireEvent.click(page.querySelector(`[data-action="dim-cal-trailzoom"][data-zoom="${zoom}"]`) as HTMLElement);
+        });
+    };
+
+    it('offers the three zooms as real buttons, writes the one pressed to the address, and asks nothing', async() => {
+        const page = await mount(offered(trails([trail()])));
+        const group = page.querySelector<HTMLElement>('[data-region="dim-cal-trailzoom"]') as HTMLElement;
+        expect([group.getAttribute('role'), group.getAttribute('aria-label')]).toEqual(['group', 'Timeline scale']);
+        expect(group.closest('[data-region="dim-cal-trailfilters"]')).not.toBeNull();
+        expect(Array.from(group.querySelectorAll('button')).every((button) => button.type === 'button')).toBe(true);
+        expect(zooms(page)).toEqual(['Days:true', 'Weeks:false', 'Months:false']);
+        const section = page.querySelector<HTMLElement>('[data-region="dim-cal-trails"]') as HTMLElement;
+        expect(section.className).toBe('dim-cal__trails');
+        const entries = window.history.length;
+
+        await press(page, 'week');
+        expect(zooms(page)).toEqual(['Days:false', 'Weeks:true', 'Months:false']);
+        expect(section.classList.contains('dim-cal__trails--week')).toBe(true);
+        expect(new URL(window.location.href).searchParams.get('zoom')).toBe('week');
+        await press(page, 'month');
+        expect(section.classList.contains('dim-cal__trails--month')).toBe(true);
+        expect(new URL(window.location.href).searchParams.get('zoom')).toBe('month');
+        await press(page, 'day');
+        expect(section.className).toBe('dim-cal__trails');
+        expect(new URL(window.location.href).searchParams.has('zoom')).toBe(false);
+        // Navigation: replaced, never an entry, and the months held are not asked again.
+        expect([window.history.length, trailRequests()]).toEqual([entries, []]);
+    });
+
+    it('opens on the zoom the page names, and keeps it through a filter\'s request', async() => {
+        const page = await mount(offered(trails([trail()]), {zoom: 'week'}));
+        expect(zooms(page)).toEqual(['Days:false', 'Weeks:true', 'Months:false']);
+        await act(async() => {
+            fireEvent.change(page.querySelector('[data-action="dim-cal-trail"]') as HTMLSelectElement, {target: {value: '7'}});
+        });
+        await waitFor(() => expect(trailRequests()).toHaveLength(1));
+        const url = new URL(window.location.href);
+        expect([url.searchParams.get('trail'), url.searchParams.get('zoom')]).toEqual(['7', 'week']);
+        expect(trailRequests()[0]).not.toHaveProperty('zoom');
+    });
+
+    it('reads a zoom the page does not know as days', async() => {
+        const page = await mount(offered(trails([trail()]), {zoom: 'year'}));
+        expect(zooms(page)).toEqual(['Days:true', 'Weeks:false', 'Months:false']);
+    });
+
+    it('draws the days by days, the weeks by weeks and the weeks\' lines by months, weekends shaded by days only', async() => {
+        const page = await mount(offered(trails([trail()])));
+        expect(page.querySelectorAll('.dim-cal__trailday')).toHaveLength(30);
+        expect(page.querySelector('.dim-cal__trailday--today')).not.toBeNull();
+        expect(page.querySelectorAll('.dim-cal__trailweekend').length).toBeGreaterThan(0);
+        expect(page.querySelector('[data-region="dim-cal-trailweek"]')).toBeNull();
+
+        await press(page, 'week');
+        expect(page.querySelectorAll('.dim-cal__trailday')).toHaveLength(0);
+        expect(page.querySelectorAll('.dim-cal__trailweekend')).toHaveLength(0);
+        const weeks = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'));
+        // From the viewer's first weekday, Sunday here: November 2026 opens on one.
+        expect(weeks.map((week) => week.textContent)).toEqual(['Nov1–7', 'Nov8–14', 'Nov15–21', 'Nov22–28', 'Nov29–30']);
+        expect(weeks.map((week) => week.style.gridColumn)).toEqual(['2 / 9', '9 / 16', '16 / 23', '23 / 30', '30 / 32']);
+        // The week holding today, the 17th, is tinted; no day's pill.
+        expect(weeks.map((week) => week.classList.contains('dim-cal__trailweek--today'))).toEqual([false, false, true, false, false]);
+        expect(page.querySelector('.dim-cal__trailday--today')).toBeNull();
+        expect(Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailweekline'))
+            .map((line) => line.style.getPropertyValue('--dim-cal-trail-at'))).toEqual(['7', '14', '21', '28']);
+        expect(Array.from(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).map((button) => button.textContent))
+            .toEqual(['November 2026']);
+
+        await press(page, 'month');
+        expect(page.querySelectorAll('.dim-cal__trailweekend')).toHaveLength(0);
+        const lines = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'));
+        expect([lines.length, lines.map((line) => line.textContent).join('')]).toEqual([5, '']);
+        expect(lines.some((line) => line.classList.contains('dim-cal__trailweek--today'))).toBe(false);
+        // The band alone names the months.
+        expect(Array.from(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).map((button) => button.textContent))
+            .toEqual(['November']);
+    });
+
+    it('starts the weeks on the viewer\'s first weekday', async() => {
+        const page = await mount({...offered(trails([trail()])), firstday: 1});
+        await press(page, 'week');
+        expect(Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'))
+            .map((week) => week.dataset.week).slice(0, 3)).toEqual(['2026-11-01', '2026-11-02', '2026-11-09']);
+    });
+
+    it('tops today\'s line with a Today tag at every zoom', async() => {
+        const page = await mount(offered(trails([trail()])));
+        for (const zoom of ['day', 'week', 'month']) {
+            await press(page, zoom);
+            const tag = page.querySelector<HTMLElement>('[data-region="dim-cal-trailnowtag"]') as HTMLElement;
+            expect([tag.textContent, tag.style.getPropertyValue('--dim-cal-trail-at')]).toEqual(['Today', '16']);
+            expect(tag.closest('[aria-hidden="true"]')).not.toBeNull();
+        }
+    });
+
+    it('draws no name on a bar too narrow for it, its accessible name unchanged', async() => {
+        const page = await mount(offered(trails([trail()])));
+        const named = (): Array<string | null> => Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailbar'))
+            .map((bar) => bar.textContent);
+        const labels = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailbar')).map((bar) => bar.getAttribute('aria-label'));
+        expect(named()).toEqual(['Fundamentos', 'Prática']);
+        await press(page, 'week');
+        expect(named()).toEqual(['Fundamentos', 'Prática']);
+        // Fundamentos's nine days by months are 2.25rem: no name; Prática's twenty, 5rem, keep it.
+        await press(page, 'month');
+        expect(named()).toEqual(['', 'Prática']);
+        expect(Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailbar')).map((bar) => bar.getAttribute('aria-label')))
+            .toEqual(labels);
+        expect(String(labels[0])).toContain('Fundamentos');
+    });
+
+    it('says each course\'s dates under its name, and names its row with them', async() => {
+        const dated = trail();
+        dated.steps = [
+            ...dated.steps,
+            {...dated.steps[1], cmid: 74, position: 3, name: 'Início', start: at('2026-12-01', 12), end: 0},
+            {...dated.steps[1], cmid: 75, position: 4, name: 'Prazo', start: 0, end: at('2026-11-20', 12)},
+            {...dated.steps[1], cmid: 76, position: 5, name: 'Sem data', start: 0, end: 0},
+        ];
+        const page = await mount(offered(trails([dated])));
+        const lines = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-traildates"]'));
+        expect(lines.map((line) => String(line.textContent).replace(/\s/g, ' '))).toEqual([
+            'Nov 2–10, 2026',
+            'Nov 11 – Dec 10, 2026',
+            'From Dec 1, 2026',
+            'Until Nov 20, 2026',
+            'No dates',
+        ]);
+        expect(lines.every((line) => line.closest('[data-region="dim-cal-trailrow"]') !== null)).toBe(true);
+        expect(lines[4].classList.contains('dim-cal__traildates--none')).toBe(true);
+        const rows = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailrow"]'));
+        expect(rows.map((row) => String(row.getAttribute('aria-label')).replace(/\s/g, ' '))).toEqual([
+            'Fundamentos, Nov 2–10, 2026: show on the timeline',
+            'Prática, Nov 11 – Dec 10, 2026: show on the timeline',
+            'Início, From Dec 1, 2026: show on the timeline',
+            'Prazo, Until Nov 20, 2026: show on the timeline',
+            'null',
+        ]);
+        // The course with no dates is named by what it draws: its name and "No dates".
+        expect(rows[4].textContent).toContain('Sem dataNo dates');
+    });
+
+    it('says the dates in the viewer\'s language', async() => {
+        document.documentElement.lang = 'pt-BR';
+        const page = await mount(offered(trails([trail()])));
+        expect(Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-traildates"]'))
+            .map((line) => String(line.textContent).replace(/\s/g, ' '))).toEqual(['2–10 nov. 2026', '11 nov. – 10 dez. 2026']);
+    });
+});
+
 describe('the filters', () => {
     it('keep one trail, then only mine, then clear', async() => {
         const page = await mount(offered(trails([trail()])));
@@ -521,6 +691,8 @@ describe('the step\'s popover', () => {
 describe('the days\' scroller', () => {
     /** The scroll positions jsdom does not keep, per element. */
     const lefts = new WeakMap<Element, number>();
+    /** The scroller's own width. */
+    let viewport = 1000;
 
     beforeEach(() => {
         // A 1000px scroller at 16px a rem: the 340px trail column and 48px a column of the grid it holds.
@@ -540,21 +712,30 @@ describe('the days\' scroller', () => {
                     return 0;
                 }
                 const grid = this.querySelector('[data-region="dim-cal-trailgrid"]') as HTMLElement;
-                return 340 + Number(grid.style.getPropertyValue('--dim-cal-trail-days')) * 48;
+                const section = this.closest('[data-region="dim-cal-trails"]');
+                // A day is 48px by days, 16px by weeks and 4px by months (trails.ts TRACK at 16px a rem).
+                let pitch = section?.classList.contains('dim-cal__trails--week') ? 16 : 48;
+                if (section?.classList.contains('dim-cal__trails--month')) {
+                    pitch = 4;
+                }
+                return Math.max(viewport, 340 + Number(grid.style.getPropertyValue('--dim-cal-trail-days')) * pitch);
             },
         });
         Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
             configurable: true,
             get() {
-                return this.dataset.region === 'dim-cal-trailscroll' ? 1000 : 0;
+                return this.dataset.region === 'dim-cal-trailscroll' ? viewport : 0;
             },
         });
         HTMLElement.prototype.scrollTo = jest.fn(function(this: HTMLElement, options?: ScrollToOptions | number) {
-            this.scrollLeft = typeof options === 'object' ? Number(options.left) : 0;
+            // A browser keeps the position between the ends.
+            const left = typeof options === 'object' ? Number(options.left) : 0;
+            this.scrollLeft = Math.max(0, Math.min(left, this.scrollWidth - this.clientWidth));
         }) as unknown as typeof HTMLElement.prototype.scrollTo;
     });
 
     afterEach(() => {
+        viewport = 1000;
         ['scrollLeft', 'scrollWidth', 'clientWidth', 'scrollTo'].forEach((name) => {
             delete (HTMLElement.prototype as unknown as Record<string, unknown>)[name];
         });
@@ -609,7 +790,8 @@ describe('the days\' scroller', () => {
             fireEvent.scroll(scroller);
         });
         expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 768, behavior: 'smooth'});
-        expect(thumb.style.left).toBe('53.333%');
+        // The thumb over the days held and the skeleton of December, on its way: 33 columns.
+        expect(thumb.style.left).toBe('48.485%');
         expect(trailRequests()).toEqual([{month: '2026-12', trail: 0, mine: false, categoryid: 0, recursive: true, months: 1}]);
         // While December is on its way, a quiet skeleton closes the band, and nothing else is asked.
         expect(page.querySelector('[data-region="dim-cal-trailloading"]')).not.toBeNull();
@@ -799,6 +981,7 @@ describe('the days\' scroller', () => {
                 openat={-1}
                 opening="0"
                 shift={{key: 0, days: 0}}
+                zoom="day"
                 control={control}
                 onView={() => undefined}
                 onSettle={() => undefined}
@@ -975,5 +1158,92 @@ describe('the days\' scroller', () => {
         expect(scrollerOf(page).scrollLeft).toBe(0);
         expect(page.querySelector('[data-action="dim-cal-trail-back"]')?.getAttribute('aria-disabled')).toBe('true');
         expect(page.querySelector('.dim-cal__trailfade--back')).toBeNull();
+    });
+
+    it('keeps the day at the start of the view across a zoom, by arithmetic', async() => {
+        const page = await mount(offered(trails([trail()], '2026-12-31')));
+        const scroller = scrollerOf(page);
+        // Today, the 17th, in view: the 5th at the start, 204px in at 48px a day.
+        expect(scroller.scrollLeft).toBe(204);
+        const thumb = page.querySelector<HTMLElement>('[data-region="dim-cal-trailthumb"]') as HTMLElement;
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="week"]') as HTMLElement);
+        });
+        // The same 4.25 days in at 16px a day, at once: no animation.
+        expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 68, behavior: 'auto'});
+        expect(scroller.scrollLeft).toBe(68);
+        // The thumb is painted where that left the days: 61 days of 16px seen through 660px.
+        expect(thumb.style.width).toBe(`${(660 / (61 * 16) * 100).toFixed(3)}%`);
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="month"]') as HTMLElement);
+        });
+        expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 17, behavior: 'auto'});
+        // By months the 61 days fit: nothing scrolls, so the browser keeps the first day at the start, and the next months
+        // are asked for until the days fill the scroller (six months, 1064px).
+        expect(scroller.scrollLeft).toBe(0);
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6));
+        expect(page.querySelector('[data-action="dim-cal-trail-ahead"]')).not.toBeNull();
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="day"]') as HTMLElement);
+        });
+        // The first day held was at the start: it stays there.
+        expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 0, behavior: 'auto'});
+        expect(new URL(window.location.href).searchParams.has('zoom')).toBe(false);
+    });
+
+    it('opens a new set of months at the new zoom without rescaling it, when both come in one commit', async() => {
+        // Back or Forward across a zoom: a new opening and a new zoom in the same render.
+        const control = createRef<ScrollControl | null>() as {current: ScrollControl | null};
+        const scroller = (zoom: 'day' | 'week', opening: string) => (
+            <section
+                data-region="dim-cal-trails"
+                className={zoom === 'week' ? 'dim-cal__trails dim-cal__trails--week' : 'dim-cal__trails'}
+            >
+                <TrailScroll
+                    days={61}
+                    todayat={16}
+                    openat={16}
+                    opening={opening}
+                    shift={{key: 0, days: 0}}
+                    zoom={zoom}
+                    control={control}
+                    onView={() => undefined}
+                    onSettle={() => undefined}
+                    strings={STRINGS as unknown as Strings}
+                >
+                    <div data-region="dim-cal-trailgrid" style={{'--dim-cal-trail-days': '61'} as CSSProperties}></div>
+                </TrailScroll>
+            </section>
+        );
+        const {rerender} = render(scroller('week', '0'));
+        const box = document.querySelector<HTMLElement>('[data-region="dim-cal-trailscroll"]') as HTMLElement;
+        // By weeks the 17th shows from the 1st.
+        expect(box.scrollLeft).toBe(0);
+        await act(async() => {
+            rerender(scroller('day', '1'));
+        });
+        // By days the opening shows the 17th with a day to spare: 204px, not that position rescaled by three.
+        expect(box.scrollLeft).toBe(204);
+        expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 204, behavior: 'auto'});
+    });
+
+    it('keeps asking for the next month while the days held fit a wide scroller, up to the cap', async() => {
+        viewport = 1600;
+        const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'month'}));
+        // By months 61 days are 244px: each month that comes is measured again, and the next is asked for.
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6));
+        expect(trailRequests().map((args) => args.month)).toEqual(['2027-01', '2027-02', '2027-03', '2027-04']);
+        // Six months fit as well: at the cap nothing more is asked, or the first month, in view, would go.
+        await act(async() => {
+            fireEvent.scroll(scrollerOf(page));
+        });
+        expect(trailRequests()).toHaveLength(4);
+        expect(page.querySelector('[data-action="dim-cal-trailmonth"]')?.getAttribute('data-month')).toBe('2026-11');
+    });
+
+    it('names the end\'s month in a week that crosses one', async() => {
+        const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'week'}));
+        const weeks = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'));
+        expect(weeks.map((week) => week.textContent).slice(3, 6)).toEqual(['Nov22–28', 'Nov29–5 Dec', 'Dec6–12']);
     });
 });

@@ -19,6 +19,10 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *   course, a page of days and the map's thumb are pure arithmetic over three numbers the scroll handlers read.
  * - Consecutive steps are joined in the trail's order ({@see linksOf()}), never by what their enrolment needs: the
  *   path is chosen from the dates alone, and a step with no date breaks the chain.
+ * - The desktop timeline has a zoom ({@see Zoom}): a day's width is TRACK's for it ({@see dayWidth()}), and every
+ *   position (the bars' columns, the connectors, today, the scroll arithmetic) follows it from there. The zoom is
+ *   navigation, like the trail (`zoom=week|month`, absent for days: local\calendar\page::zoom_from_request()), and a
+ *   switch keeps the day at the start of the view ({@see zoomedLeft()}).
  *
  * @module     theme_dimensions/calendar/trails
  * @copyright  2026 Anderson Blaine
@@ -28,6 +32,8 @@ import { monthLength, say } from "../daterange/calendar";
 import { monthAfter } from "./days";
 const TRAIL_PARAM = "trail";
 const MINE_PARAM = "mine";
+const ZOOM_PARAM = "zoom";
+const ZOOMS = ["day", "week", "month"];
 const monthDays = /* @__PURE__ */ __name((month) => {
   const length = monthLength(Number(month.slice(0, 4)), Number(month.slice(5, 7)));
   return Array.from({ length }, (unused, index) => `${month}-${String(index + 1).padStart(2, "0")}`);
@@ -79,18 +85,24 @@ const trailArgs = /* @__PURE__ */ __name((month, filter, categoryid, recursive, 
   recursive,
   months
 }), "trailArgs");
-const withTrail = /* @__PURE__ */ __name((href, filter) => {
+const withTrail = /* @__PURE__ */ __name((href, filter, zoom = "day") => {
   const url = new URL(href, window.location.href);
   url.searchParams.delete(TRAIL_PARAM);
   url.searchParams.delete(MINE_PARAM);
+  url.searchParams.delete(ZOOM_PARAM);
   if (filter && filter.trail > 0) {
     url.searchParams.set(TRAIL_PARAM, String(filter.trail));
   }
   if (filter && filter.mine) {
     url.searchParams.set(MINE_PARAM, "1");
   }
+  if (filter && zoom !== "day") {
+    url.searchParams.set(ZOOM_PARAM, zoom);
+  }
   return url.toString();
 }, "withTrail");
+const zoomOf = /* @__PURE__ */ __name((value) => value === "week" || value === "month" ? value : "day", "zoomOf");
+const readZoom = /* @__PURE__ */ __name((href) => zoomOf(new URL(href, window.location.href).searchParams.get(ZOOM_PARAM)), "readZoom");
 const readTrail = /* @__PURE__ */ __name((href) => {
   const params = new URL(href, window.location.href).searchParams;
   const trail = String(params.get(TRAIL_PARAM) || "");
@@ -194,14 +206,81 @@ const rangeLabel = /* @__PURE__ */ __name((first, last, language) => {
     return `${say(from, MONTH_YEAR, language)} \u2013 ${say(to, MONTH_YEAR, language)}`;
   }
 }, "rangeLabel");
-const TRACK = { label: 21.25, day: 3, row: 3.25, bar: 1.5 };
-const trackOf = /* @__PURE__ */ __name((left, total, width, days) => {
-  const pitch = days > 0 ? total / (days + TRACK.label / TRACK.day) : 0;
+const WEEK_MONTH = { month: "short" };
+const weekdayOf = /* @__PURE__ */ __name((iso) => new Date(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)))).getUTCDay(), "weekdayOf");
+const weekCells = /* @__PURE__ */ __name((days, firstday) => {
+  const cells = [];
+  days.forEach((iso, index) => {
+    if (index === 0 || weekdayOf(iso) === firstday) {
+      cells.push({ at: index, length: 1, first: iso, last: iso });
+    } else {
+      const cell = cells[cells.length - 1];
+      cell.length++;
+      cell.last = iso;
+    }
+  });
+  return cells;
+}, "weekCells");
+const weekLabel = /* @__PURE__ */ __name((cell, language) => {
+  const first = Number(cell.first.slice(8, 10));
+  const last = Number(cell.last.slice(8, 10));
+  const kicker = say(cell.first, WEEK_MONTH, language);
+  if (cell.length <= 1) {
+    return { kicker, days: String(first) };
+  }
+  const crosses = cell.first.slice(0, 7) !== cell.last.slice(0, 7);
+  return { kicker, days: crosses ? `${first}\u2013${last} ${say(cell.last, WEEK_MONTH, language)}` : `${first}\u2013${last}` };
+}, "weekLabel");
+const SHORT_DATE = { day: "numeric", month: "short", year: "numeric" };
+const separates = /* @__PURE__ */ __name((parts, index) => parts[index - 1]?.source === "startRange" && parts[index + 1]?.source === "endRange", "separates");
+const compactParts = /* @__PURE__ */ __name((parts) => parts.map((part, index) => {
+  if (part.type !== "literal") {
+    return part.value;
+  }
+  if (separates(parts, index)) {
+    const tight = parts[index - 1].type === "day" && parts[index + 1].type === "day" && part.value.includes("\u2013");
+    return tight ? "\u2013" : part.value;
+  }
+  return /\p{L}/u.test(part.value) ? " " : part.value;
+}).join("").replace(/\s+/g, " ").trim(), "compactParts");
+const shortDate = /* @__PURE__ */ __name((iso, language) => {
+  try {
+    return compactParts(new Intl.DateTimeFormat(language, { ...SHORT_DATE, timeZone: "UTC" }).formatToParts(/* @__PURE__ */ new Date(`${iso}T00:00:00Z`)));
+  } catch (error) {
+    return say(iso, SHORT_DATE, language);
+  }
+}, "shortDate");
+const datesOf = /* @__PURE__ */ __name((start, end, zone, language) => {
+  const from = start > 0 ? zone.day(start) : "";
+  const to = end > 0 ? zone.day(end) : "";
+  if (from !== "" && to !== "") {
+    const last = to < from ? from : to;
+    try {
+      return { kind: "range", text: compactParts(new Intl.DateTimeFormat(language, { ...SHORT_DATE, timeZone: "UTC" }).formatRangeToParts(/* @__PURE__ */ new Date(`${from}T00:00:00Z`), /* @__PURE__ */ new Date(`${last}T00:00:00Z`))) };
+    } catch (error) {
+      return { kind: "range", text: from === last ? shortDate(from, language) : `${shortDate(from, language)} \u2013 ${shortDate(last, language)}` };
+    }
+  }
+  if (from !== "") {
+    return { kind: "from", text: shortDate(from, language) };
+  }
+  return to !== "" ? { kind: "until", text: shortDate(to, language) } : { kind: "none", text: "" };
+}, "datesOf");
+const TRACK = { label: 21.25, day: 3, week: 1, month: 0.25, row: 3.5, bar: 1.5 };
+const NAMED_BAR = 3.5;
+const dayWidth = /* @__PURE__ */ __name((zoom) => TRACK[zoom], "dayWidth");
+const namedBar = /* @__PURE__ */ __name((bar, zoom) => {
+  const least = zoom === "day" ? TRACK.day : NAMED_BAR;
+  return (bar.to - bar.from + 1) * dayWidth(zoom) >= least;
+}, "namedBar");
+const zoomedLeft = /* @__PURE__ */ __name((left, from, to) => Math.max(0, Math.round(left * dayWidth(to) / dayWidth(from))), "zoomedLeft");
+const trackOf = /* @__PURE__ */ __name((left, total, width, days, day = TRACK.day) => {
+  const pitch = days > 0 ? total / (days + TRACK.label / day) : 0;
   const max = Math.max(0, total - width);
   if (pitch <= 0 || max < 1) {
     return { pitch, view: Math.max(0, width), max: 0, left: 0, start: 0, span: 1, back: false, ahead: false };
   }
-  const view = Math.max(0, width - pitch * TRACK.label / TRACK.day);
+  const view = Math.max(0, width - pitch * TRACK.label / day);
   const span = Math.min(1, view / (days * pitch));
   const at = Math.max(0, Math.min(left, max));
   return {
@@ -253,7 +332,7 @@ const scrubLeft = /* @__PURE__ */ __name((at, grab, track, days) => {
   const start = Math.max(0, Math.min(1 - track.span, at - grab));
   return Math.max(0, Math.min(track.max, start * days * track.pitch));
 }, "scrubLeft");
-const LINK = { line: 0.125, stub: 0.625, room: 0.75, detour: 0.5625, head: 0.375, half: 0.25, dot: 0.375 };
+const LINK = { line: 0.125, stub: 0.625, tight: 0.1875, least: 0.125, detour: 0.5625, head: 0.375, half: 0.25, dot: 0.375 };
 const daysBetween = /* @__PURE__ */ __name((from, to) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 864e5), "daysBetween");
 const reachOf = /* @__PURE__ */ __name((step, first, zone) => {
   if (step.start <= 0 && step.end <= 0) {
@@ -274,8 +353,7 @@ const clipped = /* @__PURE__ */ __name((piece, width) => {
   const right = Math.min(width, piece.left + piece.width);
   return right > left ? { ...piece, left, width: right - left } : null;
 }, "clipped");
-const pathOf = /* @__PURE__ */ __name((a, b, row) => {
-  const day = TRACK.day;
+const pathOf = /* @__PURE__ */ __name((a, b, row, day) => {
   const amid = row * TRACK.row + TRACK.row / 2;
   const bmid = amid + TRACK.row;
   const across = /* @__PURE__ */ __name((y, x1, x2) => ({
@@ -302,16 +380,16 @@ const pathOf = /* @__PURE__ */ __name((a, b, row) => {
   if (b.from > a.to) {
     const start2 = (a.to + 1) * day;
     const end2 = b.from * day;
-    const elbow = Math.min(start2 + LINK.stub, end2 - LINK.room);
+    const elbow = start2 + Math.max(LINK.tight, Math.min(LINK.stub, (end2 - start2) / 2));
     return [
       across(amid, start2, elbow),
       down(elbow, amid - LINK.line / 2, bmid + LINK.line / 2),
-      across(bmid, elbow, end2 - LINK.head),
-      right(end2, bmid)
+      across(bmid, elbow, Math.max(elbow, end2 - LINK.head)),
+      right(Math.max(end2, elbow + LINK.head), bmid)
     ];
   }
   if (b.from >= a.from) {
-    const x = b.from * day + LINK.stub;
+    const x = b.from * day + Math.min(LINK.stub, Math.max(LINK.least, day / 2));
     const base = amid + TRACK.bar / 2;
     const head = bmid - TRACK.bar / 2;
     return [
@@ -322,20 +400,21 @@ const pathOf = /* @__PURE__ */ __name((a, b, row) => {
   }
   const start = a.from * day;
   const end = b.from * day;
-  const turn = end - LINK.detour;
+  const turn = end - Math.max(LINK.tight, Math.min(LINK.detour, (start - end) / 2, end - LINK.line / 2));
   return [
     across(amid, turn, start),
     down(turn, amid - LINK.line / 2, bmid + LINK.line / 2),
-    across(bmid, turn, end - LINK.head),
-    right(end, bmid)
+    across(bmid, turn, Math.max(turn, end - LINK.head)),
+    right(Math.max(end, turn + LINK.head), bmid)
   ];
 }, "pathOf");
 const tidy = /* @__PURE__ */ __name((value) => Math.round(value * 1e4) / 1e4, "tidy");
-const linksOf = /* @__PURE__ */ __name((steps, days, zone, shown) => {
+const linksOf = /* @__PURE__ */ __name((steps, days, zone, shown, zoom = "day") => {
   if (!shown || days.length === 0) {
     return [];
   }
-  const width = days.length * TRACK.day;
+  const day = dayWidth(zoom);
+  const width = days.length * day;
   const reaches = steps.map((step) => reachOf(step, days[0], zone));
   const pieces = [];
   reaches.forEach((reach, index) => {
@@ -343,7 +422,7 @@ const linksOf = /* @__PURE__ */ __name((steps, days, zone, shown) => {
     if (reach === null || next === null) {
       return;
     }
-    pathOf(reach, next, index).forEach((piece) => {
+    pathOf(reach, next, index, day).forEach((piece) => {
       const kept = clipped(piece, width);
       if (kept) {
         pieces.push({
@@ -363,12 +442,17 @@ export {
   LOADED_CAP,
   LOAD_AHEAD,
   MINE_PARAM,
+  NAMED_BAR,
   SKELETON_DAYS,
   STEP_INSET,
   TRACK,
   TRAIL_PARAM,
+  ZOOMS,
+  ZOOM_PARAM,
   barOf,
+  datesOf,
   dayLeft,
+  dayWidth,
   emptyTrails,
   extendLoaded,
   filterOf,
@@ -380,12 +464,14 @@ export {
   monthDays,
   monthStep,
   monthsOf,
+  namedBar,
   nearEnd,
   openingLeft,
   pageLeft,
   rangeLabel,
   reachOf,
   readTrail,
+  readZoom,
   scrubLeft,
   shiftedTarget,
   shownDays,
@@ -396,7 +482,11 @@ export {
   trailArgs,
   trailBarOf,
   trailFiltered,
+  weekCells,
+  weekLabel,
   windowDays,
-  withTrail
+  withTrail,
+  zoomOf,
+  zoomedLeft
 };
 //# sourceMappingURL=trails.dev.js.map

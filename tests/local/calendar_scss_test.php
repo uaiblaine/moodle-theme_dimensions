@@ -736,4 +736,50 @@ final class calendar_scss_test extends \advanced_testcase {
             $scss
         );
     }
+
+    /**
+     * T3c: the zoom draws its days at the width its modifier declares; by months a bar keeps no room beside it or inside,
+     * so a day of .25rem still shows; the "Today" tag is the current step's pair, which reads in both modes; the weeks'
+     * lines and today's tag are placed in multiples of the day's width, as every line of the ground; the pressed zoom is
+     * the chosen trail's tint; a course's row holds its name and its dates within the row the connectors read.
+     *
+     * @return void
+     */
+    public function test_the_trail_zoom_follows_the_mockup(): void {
+        $this->resetAfterTest();
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trails--month \.dim-cal__trailbar \{\s*margin-inline: 0;\s*padding-inline: 0;\s*\}~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trails--week \.dim-cal__trailbar \{\s*padding-inline: \.25rem;\s*\}~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailnowtag \{[^}]*inset-inline-start: calc\(var\(--dim-cal-trail-label\) \+ '
+                . '\(var\(--dim-cal-trail-at, 0\) \+ \.5\) \* var\(--dim-cal-trail-day\)\);[^}]*'
+                . 'background: var\(--dim-cal-trailcurrent-tint\);\s*color: var\(--dim-cal-trailcurrent-ink\);~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailweekline \{\s*inset-inline-start: calc\(var\(--dim-cal-trail-label\) \+ '
+                . 'var\(--dim-cal-trail-at, 0\) \* var\(--dim-cal-trail-day\)\);~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailzoombtn\[aria-pressed="true"\] \{\s*background: var\(--dim-ds-interactive-primary-tint, '
+                . 'var\(--bs-primary-bg-subtle\)\);~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailfind \{[^}]*height: 2\.875rem;~', $scss);
+        $this->assertStringNotContainsString('trailnodates', $scss, 'A course with no dates says so on its dates line.');
+        foreach ($this->compiled() as $mode => $tokens) {
+            $this->assertGreaterThanOrEqual(
+                4.5,
+                branding::contrast($tokens['--dim-cal-trailcurrent-tint'], $tokens['--dim-cal-trailcurrent-ink']),
+                "{$mode}: the Today tag reads."
+            );
+        }
+    }
 }

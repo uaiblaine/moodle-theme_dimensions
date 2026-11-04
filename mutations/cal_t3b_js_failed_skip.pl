@@ -1,2 +1,2 @@
 # Ask again for a failed month on every scroll.
-s/if \(target !== '' && target !== failed\.current\) \{/if (target !== '') {/;
+s/if \(target !== '' && target !== failed\.current && !full\) \{/if (target !== '' && !full) {/;

@@ -5,6 +5,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Trail model, stage T3c: a zoom and the courses' dates in the calendar's Trilhas view** (2026100589),
+  `docs/trail/PLAN.md` section 7. The desktop timeline has a zoom, "Days", "Weeks" and "Months", in the filters' row:
+  by weeks the header shows the weeks from the viewer's first weekday, a short month over each week's days, today's
+  week tinted; by months the band alone names the months. Switching keeps the day at the start of the view; the zoom
+  is written to the address (`zoom=week|month`) like the trail, never remembered, and kept by the arrows and the month
+  band, which still move a month. A "Today" tag tops today's line at every zoom; a bar too narrow for its name draws
+  none (a one-day bar keeps it by days); the connectors, the detour included, narrow with the days and never run
+  backwards. Where the months held fit a wide screen (by months), the next ones are loaded up to six. Each course in the trail column says its dates
+  under its name ("2–20 Nov 2026", "From 1 Dec 2026", "Until 20 Nov 2026", "No dates"), and its row's accessible name
+  carries them. Rows are 56px. New strings: `calendar_trailzoom`, `calendar_trailzoomday`, `calendar_trailzoommonth`,
+  `calendar_trailzoomweek`.
 - **The landing page's summary opens cut after its third paragraph** (2026100588). A long course summary pushed the
   trail and the programme far down the page; it now ends at its third paragraph in a fade, with a "See more" toggle
   that opens it whole and "See less" that closes it. The page always opens cut and remembers nothing. A paragraph ends

@@ -23,11 +23,15 @@
  *   trails.ts TRACK, and every position is trails.ts arithmetic over the scroller's three numbers.
  * - The layout reads are the scroller's: once per opening (the `opening` key: a new set of months) to bring today into
  *   view (trails.ts openingLeft()) and paint the thumb, never on another render; on a scroll, to paint the thumb and
- *   the arrows and tell the view which days are in view; on an arrow or a target the view asks for, where it is; on the
- *   map, the pointer's place along it. The thumb follows the scroll by its style, without a render; the arrows and fades
- *   re-render only when one of them changes. Every position is written through one place ({@see place}).
+ *   the arrows and tell the view which days are in view; on an arrow or a target the view asks for, where it is; on a
+ *   new zoom, where its arithmetic left it; when the days held change, where it is; on the map, the pointer's place
+ *   along it. The thumb follows the scroll by its style, without a render; the arrows and fades re-render only when one
+ *   of them changes. Every position is written through one place ({@see place}).
  * - A month added before the first day held moves the content right by its days: the `shift` key moves the position
  *   by the same width (trails.ts keptLeft(), over the last measure: no further read), so the view stays still.
+ * - A day's width is the zoom's (trails.ts dayWidth()), in every measure. A new zoom keeps the day at the start of the
+ *   view: the position is the last measure's at the new width (trails.ts zoomedLeft(), arithmetic), then the scroller
+ *   is measured once more where that left it, as after an arrow, to paint the thumb and the arrows and tell the view.
  * - A scroll settles on `scrollend`, or a quiet after its last event where the browser has no such event: the view is
  *   told the first day in view (its month is the address's), and a target asked for is reached.
  * - The map is aria-hidden and out of the tab order: the bars and the courses' rows are its Tab stops (the browser
@@ -42,8 +46,20 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import type {MutableRefObject, PointerEvent, ReactNode} from 'react';
 import type {Strings} from './strings';
-import {keptLeft, nearEnd, openingLeft, pageLeft, scrubLeft, shiftedTarget, shownDays, targetLeft, trackOf} from './trails';
-import type {ScrollTarget, Track} from './trails';
+import {
+    dayWidth,
+    keptLeft,
+    nearEnd,
+    openingLeft,
+    pageLeft,
+    scrubLeft,
+    shiftedTarget,
+    shownDays,
+    targetLeft,
+    trackOf,
+    zoomedLeft,
+} from './trails';
+import type {ScrollTarget, Track, Zoom} from './trails';
 
 /** How long after a scroll's last event it is taken as settled where the browser sends no `scrollend`, in ms. */
 export const SETTLE_MS = 150;
@@ -70,6 +86,7 @@ type TrailScrollProps = {
     openat: number,
     opening: string,
     shift: Shift,
+    zoom: Zoom,
     control: MutableRefObject<ScrollControl | null>,
     onView: (first: number, last: number, near: Near) => void,
     onSettle: (first: number) => void,
@@ -122,13 +139,16 @@ const place = (element: HTMLDivElement, left: number, smooth: boolean): void => 
  * @param {object} props See TrailScrollProps.
  * @returns {object} The card's scroller with its arrows and fades, and the map under it.
  */
-const TrailScroll = ({days, todayat, openat, opening, shift, control, onView, onSettle, strings, children}: TrailScrollProps) => {
+const TrailScroll = ({days, todayat, openat, opening, shift, zoom, control, onView, onSettle, strings, children}:
+    TrailScrollProps) => {
     const box = useRef<HTMLDivElement | null>(null);
     const thumb = useRef<HTMLSpanElement | null>(null);
     const drag = useRef<{grab: number, span: number} | null>(null);
     const last = useRef<Track | null>(null);
     const quiet = useRef<ReturnType<typeof setTimeout> | null>(null);
     const arriving = useRef<Arrival | null>(null);
+    // The zoom the last measure was taken at: paint() sets it beside the measure.
+    const zoomed = useRef<Zoom>(zoom);
     const reports = useRef({onView: onView, onSettle: onSettle, days: days});
     reports.current = {onView: onView, onSettle: onSettle, days: days};
     const [ways, setWays] = useState<Ways>({back: false, ahead: false, scrolls: false});
@@ -140,7 +160,8 @@ const TrailScroll = ({days, todayat, openat, opening, shift, control, onView, on
      * @param {object} element The scroller.
      * @returns {object} See trails.ts Track.
      */
-    const measure = (element: HTMLDivElement): Track => trackOf(element.scrollLeft, element.scrollWidth, element.clientWidth, days);
+    const measure = (element: HTMLDivElement): Track =>
+        trackOf(element.scrollLeft, element.scrollWidth, element.clientWidth, days, dayWidth(zoom));
 
     /**
      * Paint what follows the scroll: the thumb by its style, the arrows and the fades when one of them changes; then tell
@@ -153,6 +174,7 @@ const TrailScroll = ({days, todayat, openat, opening, shift, control, onView, on
      */
     const paint = (track: Track, moved: number): void => {
         last.current = track;
+        zoomed.current = zoom;
         if (thumb.current) {
             thumb.current.style.left = percent(track.start);
             thumb.current.style.width = percent(track.span);
@@ -239,7 +261,7 @@ const TrailScroll = ({days, todayat, openat, opening, shift, control, onView, on
         if (!element) {
             return;
         }
-        place(element, openingLeft(openat, trackOf(0, element.scrollWidth, element.clientWidth, days)), false);
+        place(element, openingLeft(openat, trackOf(0, element.scrollWidth, element.clientWidth, days, dayWidth(zoom))), false);
         paint(measure(element), 0);
         tell();
         // A new set of months: a target asked for over the old one is not reached.
@@ -263,6 +285,33 @@ const TrailScroll = ({days, todayat, openat, opening, shift, control, onView, on
             wait();
         }
     }, [shift.key]);
+
+    // A new zoom: the day at the start of the view stays there, its position the last measure's at the new width. A target
+    // on its way was aimed at the old widths: it is superseded, as by any other action of the reader's. An opening in the
+    // same commit (Back or Forward across a zoom brings a new set of months with it) measured at the new zoom already, and
+    // its position is not rescaled.
+    useLayoutEffect(() => {
+        const element = box.current;
+        const was = last.current;
+        const from = zoomed.current;
+        if (!element || !was || from === zoom) {
+            return;
+        }
+        arrive(false);
+        place(element, zoomedLeft(was.left, from, zoom), false);
+        paint(measure(element), 0);
+    }, [zoom]);
+
+    // More days held (a month added, or the skeleton of one on its way): an append moves nothing, so no scroll repaints.
+    // The scroller is measured again where it is, so the thumb follows and the view hears whether the days in view still
+    // near the end: where the days fit the scroller (by months on a wide screen) it asks for the next month, up to the cap.
+    useLayoutEffect(() => {
+        const element = box.current;
+        if (!element || !last.current) {
+            return;
+        }
+        paint(measure(element), 0);
+    }, [days]);
 
     // The browser's own end of a scroll, where it has one; the quiet after the last scroll event stands in otherwise.
     useEffect(() => {

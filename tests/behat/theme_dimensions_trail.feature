@@ -64,6 +64,13 @@ Feature: A trail's landing page draws its courses in order
     # The months held are named in a band above the days; R3's "next month" column is gone.
     And "[data-region='dim-cal-trailmonths'] [data-action='dim-cal-trailmonth']" "css_element" should exist
     And ".dim-cal__trailday--next" "css_element" should not exist
+    # T3c: a course's dates are the quieter line under its name (a start alone here: the generator sets no end).
+    And I should see "From" in the "[data-region='dim-cal-trailrow'] [data-region='dim-cal-traildates']" "css_element"
+    # By weeks the second header row is the weeks; the zoom is written to the address.
+    And I click on "Weeks" "button" in the "[data-region='dim-cal-trailzoom']" "css_element"
+    And "[data-action='dim-cal-trailzoom'][data-zoom='week'][aria-pressed='true']" "css_element" should exist
+    And "[data-region='dim-cal-trailweek']" "css_element" should exist
+    And ".dim-cal__trailday" "css_element" should not exist
     # A course's row in the trail column scrolls to its bar and opens its popover once the scroll has ended.
     And I click on "[data-region='dim-cal-trailrow'][data-cmid]" "css_element"
     And I should see "Course 1 of 2 · Trail of Management" in the "[data-region='dim-cal-trailpopover']" "css_element"

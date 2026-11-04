@@ -322,6 +322,46 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
+     * T3c: the Trilhas timeline's zoom reaches the client as one of its two words or as days, its control's four strings
+     * among the client's, and a zoom the page does not know is days.
+     *
+     * @return void
+     */
+    public function test_the_trilhas_zoom_reaches_the_client(): void {
+        [$renderable, $window, $answer] = $this->build(new state());
+        $this->assertSame('', $renderable->props()['trails']['zoom'], 'Days unless named.');
+        $month = self::month_start()->format('Y-m');
+        $make = fn(string $zoom): calendar_page => new calendar_page(
+            $month,
+            self::month_start()->format('Y-m-d'),
+            0,
+            \core_date::get_user_timezone(),
+            $window,
+            $answer,
+            new state(),
+            [],
+            '',
+            false,
+            page::VIEW_TRAIL,
+            '',
+            null,
+            0,
+            false,
+            $zoom
+        );
+        $this->assertSame('week', $make(page::ZOOM_WEEK)->props()['trails']['zoom']);
+        $this->assertSame('month', $make(page::ZOOM_MONTH)->props()['trails']['zoom']);
+        $this->assertSame('', $make('year')->props()['trails']['zoom'], 'A zoom the page does not know is days.');
+        foreach (['calendar_trailzoom', 'calendar_trailzoomday', 'calendar_trailzoommonth', 'calendar_trailzoomweek'] as $key) {
+            $this->assertContains($key, calendar_page::STRINGS, $key);
+        }
+        $this->assertContains('calendar_today', calendar_page::STRINGS, 'The today tag reads the toolbar\'s word.');
+        $this->assertContains('calendar_trailfrom', calendar_page::STRINGS, 'A start alone.');
+        $this->assertContains('calendar_until', calendar_page::STRINGS, 'An end alone.');
+        $this->assertContains('calendar_trailnodates', calendar_page::STRINGS, 'No dates.');
+    }
+
+    /**
      * A key's name is one literal string per key.
      *
      * @return void
