@@ -32,3 +32,21 @@ Feature: The navbar goes compact on a tablet when its navigation does not fit
     And "body.dimensions-nav-compact" "css_element" should not exist
     And ".primary-navigation" "css_element" should be visible
     And "Side panel" "button" should not be visible
+
+  # The two layouts of the bar differ, and where the compact one gives the navigation more room, the navigation
+  # re-splits to fit there; reading that split as "the full bar fits" flipped the mode on every frame after a resize
+  # (amd/src/compactnav.js, the hold). The step below makes that difference certain at any width.
+  Scenario: Resizing through narrow, wide and medium keeps the menu button and the mode in step
+    Given I change window size to "small"
+    And I log in as "student1"
+    And the compact navbar gives its navigation more room than the full navbar
+    When I change window size to "mobile"
+    Then "body.dimensions-nav-compact" "css_element" should not exist
+    And the navbar keeps its mode for a second, and its menu button agrees
+    And I change window size to "medium"
+    And "body.dimensions-nav-compact" "css_element" should not exist
+    And the navbar keeps its mode for a second, and its menu button agrees
+    And I change window size to "small"
+    And "body.dimensions-nav-compact" "css_element" should exist
+    And "Side panel" "button" should be visible
+    And the navbar keeps its mode for a second, and its menu button agrees

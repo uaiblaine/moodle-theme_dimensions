@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'theme_dimensions';
-$plugin->version = 2026100584;
+$plugin->version = 2026100586;
 $plugin->release = 'v5.3-r1-dev';
 $plugin->requires = 2026100500;
 $plugin->supported = [503, 503];

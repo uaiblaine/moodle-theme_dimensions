@@ -5,7 +5,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
-- **Trail model, stage T3b: continuous months in the calendar's Trilhas view** (2026100584), `docs/trail/PLAN.md`
+- **Trail model, stage T3b: continuous months in the calendar's Trilhas view** (2026100586), `docs/trail/PLAN.md`
   section 7. The timeline holds the month in view and the next from its first paint (`theme_dimensions_get_calendar_trails`
   takes an optional `months`, 1 or 2), asks for the next month as the scroll nears its end and for the previous one on
   the way back to its start or from the "previous" arrow, keeping the view still, up to six months held. A band above
@@ -17,6 +17,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   starts earlier), broken by a course with no dates, which says "No dates". Rows are 52px. New strings:
   `calendar_trailmonths`, `calendar_trailnodates`, `calendar_trailshow`; `calendar_trailnext` is gone and
   `calendar_trailsempty` reads "No trail runs in these months."
+- **The compact navbar keeps its mode after a resize** (2026100585). Between md and xl the navbar could flip between
+  compact and full on every frame once the window was resized (the calendar page at 1089px after 700 and 1300): the
+  compact layout gives the primary navigation more room than the full bar where the colour mode menu moves into the
+  drawer, so the navigation fitted while compact, the module showed the full bar, which overflowed again. The module
+  no longer leaves the compact mode on a split made while compact: the bar stays compact up to the widest width an
+  overflow was seen at, and leaves it on a wider window or outside the range. A Behat scenario resizes through narrow,
+  wide and medium and asserts the mode holds and the menu button agrees with it; two mutation gates hold the guard.
+- **The course dialogue's close button is white on its dark disc again** (2026100585). Core 5.3's Bootstrap (5.3.4)
+  reads the close button's filter from `--bs-btn-close-filter`, set by its `btn-close-white()` mixin, and no longer
+  declares the `--bs-btn-close-white-filter` the showcase's dialogue read, so its cross was drawn dark on the dark disc
+  over the cover. A test reads core's Bootstrap for both names.
 - **Audit of 2026-11-04** (2026100583). A logged-in user whom the theme would keep off an unlisted course now gets
   the same "not available" page for a course id or shortname that does not exist (`/enrol/index.php`,
   `/course/info.php`), so the answer no longer tells an unlisted course from no course. The crests answered to
