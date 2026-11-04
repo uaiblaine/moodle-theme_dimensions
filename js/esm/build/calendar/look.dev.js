@@ -33,7 +33,7 @@ const coverStyle = /* @__PURE__ */ __name((course, look) => {
   const ink = category ? hex(category.ink) : null;
   return bg && ink ? { "--dim-cal-cover-bg": bg, "--dim-cal-cover-ink": ink } : {};
 }, "coverStyle");
-const placeOf = /* @__PURE__ */ __name((item, look) => {
+const placeOf = /* @__PURE__ */ __name((item, look, fallback = true) => {
   if (item.location !== "") {
     return item.location;
   }
@@ -41,7 +41,8 @@ const placeOf = /* @__PURE__ */ __name((item, look) => {
   if (!course) {
     return "";
   }
-  return [course.city, course.venue].filter((part) => part !== "").join(" \xB7 ") || course.fullname;
+  const place = [course.city, course.venue].filter((part) => part !== "").join(" \xB7 ");
+  return place !== "" || !fallback ? place : course.fullname;
 }, "placeOf");
 const whenOf = /* @__PURE__ */ __name((item, look) => {
   const start = look.zone.time(item.timestart);

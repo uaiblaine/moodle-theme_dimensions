@@ -182,6 +182,12 @@ describe('the first paint', () => {
         expect(gridItem(5)).not.toBeNull();
     });
 
+    it('tells a cut answer in the visitor\'s own sentence', async() => {
+        const page = await mount(props(publicAnswer([fair()], {truncated: true})));
+        expect(page.textContent).toContain(STRINGS.calendar_truncatedpublic);
+        expect(page.textContent).not.toContain(STRINGS.calendar_truncated);
+    });
+
     it('draws the two event types and nothing that needs a session or a login', async() => {
         const page = await mount(props());
         const boxes = Array.from(page.querySelectorAll<HTMLInputElement>('[data-region="dim-cal-types"] input[data-key]'));

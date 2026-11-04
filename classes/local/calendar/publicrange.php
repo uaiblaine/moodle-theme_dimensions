@@ -74,11 +74,12 @@ final class publicrange {
             $events = new public_events();
             $items = array_merge($items, $events->items($window, $publicids));
             $descriptions = $events->descriptions();
+            $truncated = $events->truncated();
         }
         if (in_array(keys::OPEN, $on, true)) {
             $courses = new public_courses();
             $items = array_merge($items, $courses->items($window));
-            $truncated = $courses->truncated();
+            $truncated = $truncated || $courses->truncated();
             if (!$publicids) {
                 $publicids = publicaccess::public_ids();
             }
@@ -152,14 +153,14 @@ final class publicrange {
         $courses = [];
         foreach ($rows as $row) {
             $courseid = (int) $row->id;
-            $options = ['context' => \core\context\course::instance($courseid), 'escape' => false, 'filter' => false];
+            $context = \core\context\course::instance($courseid);
             $facts = $values[$courseid];
             $landing = links::page($courseid)->out(false);
             $categoryid = (int) $row->category;
             $courses[] = [
                 'id' => $courseid,
-                'fullname' => format_string((string) $row->fullname, true, $options),
-                'shortname' => format_string((string) $row->shortname, true, $options),
+                'fullname' => visitor::name((string) $row->fullname, $context),
+                'shortname' => visitor::name((string) $row->shortname, $context),
                 'categoryid' => isset($public[$categoryid]) ? $categoryid : 0,
                 'url' => $landing,
                 'image' => '',
@@ -199,11 +200,7 @@ final class publicrange {
             }
             $categories[] = [
                 'id' => (int) $categoryid,
-                'name' => format_string($category->name, true, [
-                    'context' => $category->get_context(),
-                    'escape' => false,
-                    'filter' => false,
-                ]),
+                'name' => visitor::name((string) $category->name, $category->get_context()),
                 'bg' => $colours[$categoryid]['bgcolour'],
                 'ink' => $colours[$categoryid]['inkcolour'],
             ];

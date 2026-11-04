@@ -586,4 +586,55 @@ final class calendar_scss_test extends \advanced_testcase {
         $lib = (string) file_get_contents(dirname(__DIR__, 2) . '/lib.php');
         $this->assertStringContainsString("/theme/dimensions/scss/calendar.scss'", $lib);
     }
+
+    /**
+     * A selector's specificity as [ids, classes, elements]: an attribute and a pseudo-class count as a class, a :not()
+     * counts as its argument, and the universal selector and the combinators count nothing.
+     *
+     * @param string $selector One complex selector, no list.
+     * @return int[]
+     */
+    private static function specificity(string $selector): array {
+        $total = [0, 0, 0];
+        while (preg_match('~:not\(([^()]*)\)~', $selector, $not)) {
+            $inner = self::specificity($not[1]);
+            foreach ($inner as $i => $count) {
+                $total[$i] += $count;
+            }
+            $selector = str_replace($not[0], ' ', $selector);
+        }
+        $selector = (string) preg_replace('~\[[^\]]*\]~', ' .attr ', $selector);
+        $total[0] += preg_match_all('~#[\w-]+~', $selector);
+        $total[1] += preg_match_all('~\.[\w-]+|:(?!:)[\w-]+~', $selector);
+        $total[2] += preg_match_all('/(?:^|[\s>+~])([a-z][\w-]*)/i', $selector);
+        return $total;
+    }
+
+    /**
+     * The calendar's own links keep no underline in dark mode: the rule's selector outweighs core's dark-mode underline
+     * of #region-main's links, read from core's stylesheet (PROPOSAL.md section 32.2), and spares the prose.
+     *
+     * @return void
+     */
+    public function test_the_calendars_links_outrank_cores_dark_underline(): void {
+        global $CFG;
+        $core = file_get_contents($CFG->dirroot . '/theme/boost/scss/moodle/dark.scss');
+        $link = 'a:not(.btn):not(.nav-link):not(.dropdown-item):not(.list-group-item):not(.page-link)';
+        $this->assertStringContainsString(
+            $link . " {\n            text-decoration: underline;",
+            (string) $core,
+            "Precondition: core's rule, as read on 5.3."
+        );
+        $this->assertMatchesRegularExpression('~#region-main,\s*#page-footer,~', (string) $core);
+        $cores = self::specificity('[data-bs-theme="dark"] #region-main ' . $link);
+        $this->assertSame([1, 6, 1], $cores, 'The helper reads core\'s weight as a browser does.');
+
+        $inner = '#region-main .dim-cal a[href]:not(.dim-cal__popdesc a):not(.dim-cal__footer a)';
+        $this->assertMatchesRegularExpression(
+            '~^' . preg_quote(self::DARK, '~') . ' \{\s*' . preg_quote($inner, '~') . ' \{\s*text-decoration: none;\s*\}~m',
+            $this->scss()
+        );
+        $ours = self::specificity(self::DARK . ' ' . $inner);
+        $this->assertGreaterThan(0, $ours <=> $cores, 'The calendar\'s rule must outweigh core\'s: ' . implode(',', $ours));
+    }
 }

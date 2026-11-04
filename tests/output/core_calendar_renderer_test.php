@@ -48,6 +48,7 @@ require_once(__DIR__ . '/../local/calendar/fixture.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(core_calendar_renderer::class)]
+#[CoversClass(core_renderer::class)]
 #[CoversClass(calendar_block_month::class)]
 #[CoversClass(calendar_block_upcoming::class)]
 final class core_calendar_renderer_test extends \advanced_testcase {
@@ -321,5 +322,64 @@ final class core_calendar_renderer_test extends \advanced_testcase {
         $courseurl = (new \core\url('/course/view.php', ['id' => $course->id]))->out(false);
         $this->assertStringContainsString('href="' . s($courseurl) . '"', $html);
         $this->assertStringNotContainsString(get_string('calendarblock_upcomingempty', 'theme_dimensions'), $html);
+    }
+
+    /**
+     * The page's core renderer for a web page: under PHPUnit the default target is the CLI's, core's own renderer.
+     *
+     * @param \moodle_page $page The page.
+     * @return \core\output\core_renderer
+     */
+    private static function web_renderer(\moodle_page $page): \core\output\core_renderer {
+        return $page->get_renderer('core', null, RENDERER_TARGET_GENERAL);
+    }
+
+    /**
+     * A block's contents as the upcoming block hands them to the page: core's "Go to calendar..." in the footer.
+     *
+     * @param string $block The block's `data-block` name.
+     * @return \core_block\output\block_contents
+     */
+    private static function contents(string $block): \core_block\output\block_contents {
+        $bc = new \core_block\output\block_contents(['class' => 'block block_' . $block, 'data-block' => $block]);
+        $bc->blockinstanceid = 1;
+        $bc->title = 'Upcoming events';
+        $bc->content = '<p>content</p>';
+        $bc->footer = '<div class="gotocal">Go to calendar...</div>';
+        return $bc;
+    }
+
+    /**
+     * Core's "Go to calendar..." goes under the upcoming block the theme answers, and stays where core answers the block
+     * (each refusal of blocks::applies() through its page) and under any other block; the caller's contents untouched.
+     *
+     * @return void
+     */
+    public function test_the_upcoming_footer_goes_where_the_theme_answers_the_block(): void {
+        $this->resetAfterTest();
+        $course = self::getDataGenerator()->create_course();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $this->assertInstanceOf(core_renderer::class, self::web_renderer(self::page()));
+        $bc = self::contents(blocks::BLOCK_UPCOMING);
+        $html = self::web_renderer(self::page())->block($bc, 'side-pre');
+        $this->assertStringContainsString('<p>content</p>', $html);
+        $this->assertStringNotContainsString('gotocal', $html, "The theme's agenda ends with its own link.");
+        $this->assertSame('<div class="gotocal">Go to calendar...</div>', $bc->footer, "The caller's object is untouched.");
+
+        $html = self::web_renderer(self::page())->block(self::contents('calendar_month'), 'side-pre');
+        $this->assertStringContainsString('gotocal', $html, 'Another block keeps its footer.');
+
+        $html = self::web_renderer(self::page($course))->block(self::contents(blocks::BLOCK_UPCOMING), 'side-pre');
+        $this->assertStringContainsString('gotocal', $html, "A course's block is core's, with core's footer.");
+
+        set_config(blocks::SETTING, '0', blocks::COMPONENT);
+        $html = self::web_renderer(self::page())->block(self::contents(blocks::BLOCK_UPCOMING), 'side-pre');
+        $this->assertStringContainsString('gotocal', $html, 'The setting off: core answers the block.');
+        set_config(blocks::SETTING, '1', blocks::COMPONENT);
+
+        $this->setGuestUser();
+        $html = self::web_renderer(self::page())->block(self::contents(blocks::BLOCK_UPCOMING), 'side-pre');
+        $this->assertStringContainsString('gotocal', $html, 'The guest: core answers the block.');
     }
 }

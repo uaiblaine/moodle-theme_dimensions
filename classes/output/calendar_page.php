@@ -161,6 +161,7 @@ class calendar_page implements renderable, templatable {
         'calendar_trailsempty',
         'calendar_trailstruncated',
         'calendar_truncated',
+        'calendar_truncatedpublic',
         'calendar_until',
         'calendar_view',
         'calendar_viewday',

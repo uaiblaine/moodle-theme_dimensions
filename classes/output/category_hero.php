@@ -29,6 +29,9 @@ use core\output\renderable;
 use core\output\renderer_base;
 use core\output\templatable;
 use core_course_category;
+use theme_dimensions\local\calendar\coreview;
+use theme_dimensions\local\calendar\page as calendarpage;
+use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\page_result;
@@ -306,6 +309,7 @@ class category_hero implements renderable, templatable {
         $badges = branding::badges_for_output($categoryid, $branding['badges']);
         $stats = $this->stats($context);
         $fold = ($layout === branding::LAYOUT_COMPACT) ? null : $this->fold_form();
+        $calendar = $this->calendar_link();
         $trail = $this->trail();
         $style = self::style($branding, $layout);
 
@@ -334,8 +338,30 @@ class category_hero implements renderable, templatable {
             'hasstats' => !empty($stats),
             'fold' => $fold,
             'hasfold' => $fold !== null,
+            'calendar' => $calendar,
+            'hascalendar' => $calendar !== null,
             'tabs' => $tabs ?: null,
             'hastabs' => !empty($tabs),
+        ];
+    }
+
+    /**
+     * The visitor's way to the public calendar (PROPOSAL.md section 32.1 of docs/calendar), or null.
+     *
+     * Drawn for a visitor alone, on a page the anonymous shell serves, while the calendar page would serve that visitor:
+     * the public calendar is on ({@see visitor::enabled()}) and the calendar type is the Gregorian
+     * ({@see coreview::gregorian()}), the two refusals page::handle() makes before it draws a visitor anything. A
+     * logged-in reader has the drawer's calendar row and gets none.
+     *
+     * @return array|null ['url', 'label'].
+     */
+    private function calendar_link(): ?array {
+        if (!$this->result->anonymous || !visitor::enabled() || !coreview::gregorian()) {
+            return null;
+        }
+        return [
+            'url' => calendarpage::url()->out(false),
+            'label' => get_string('calendar_visitorlink', self::COMPONENT),
         ];
     }
 

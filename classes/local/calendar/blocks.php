@@ -66,6 +66,9 @@ final class blocks {
     /** @var string The upcoming block. */
     public const UPCOMING = 'upcoming';
 
+    /** @var string The upcoming block's `data-block` attribute, its name without the `block_` prefix. */
+    public const BLOCK_UPCOMING = 'calendar_upcoming';
+
     /**
      * @var int The days of the agenda's first piece; each next piece doubles, up to window::MAX_DAYS. A range answer
      * costs per item (core's module callbacks), so a busy week answers the count without reading the whole lookahead.
@@ -133,6 +136,22 @@ final class blocks {
             return false;
         }
         return $gregorian;
+    }
+
+    /**
+     * Whether a block's footer goes: core's "Go to calendar..." under the upcoming block whose content the theme
+     * answers, which already ends with the theme's own "Full calendar" (PROPOSAL.md section 32.1).
+     *
+     * block_calendar_upcoming writes that link into its content's footer, outside the template the theme replaces, so
+     * {@see \theme_dimensions\output\core_renderer::block()} empties it. Every other block, and the upcoming block on a
+     * page core answers, keep theirs.
+     *
+     * @param string $block The block's `data-block` attribute.
+     * @param bool $applies Whether the theme answers the page's calendar blocks ({@see applies()}).
+     * @return bool
+     */
+    public static function drops_footer(string $block, bool $applies): bool {
+        return $applies && $block === self::BLOCK_UPCOMING;
     }
 
     /**

@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Calendar R2: the owner's answers to section 26** (2026100580), `docs/calendar/PROPOSAL.md` section 32. The
+  visitor's names and locations run core's multilang filter alone while it is on for the site, so a name in two
+  languages reads in one, as on the logged-in page. A visitor's window answers at most 200 category events, earliest
+  first, and says "There are more events than the calendar shows." past them. Core's "Go to calendar..." no longer
+  sits under the theme's upcoming block, which already ends with its "Full calendar". A visitor's public category page
+  offers "Calendar" in its hero while the public calendar is on. In dark mode the calendar's cards, bars and times are
+  no longer underlined by core's link rule (the description's prose links still are), and the popover names a course
+  once: an item with no location says no "Where". The public event courses already followed the course rule (a public
+  course in an unlisted category asks for a login): pinned, unchanged.
 - **Trilhas view: two layout fixes** (2026100579). The state pill in a step's popover keeps its own width instead of
   stretching across the popover, and on a phone the trail's heading stacks its name over its progress instead of
   running the two together ("Trail0 of 3 completed").

@@ -168,6 +168,7 @@ export const STRINGS: Record<string, string> = {
     'calendar_trailsempty': 'No trail runs this month.',
     'calendar_trailstruncated': 'There are more trails than the calendar shows.',
     'calendar_truncated': 'There are more open events than the calendar shows.',
+    'calendar_truncatedpublic': 'There are more events than the calendar shows.',
     'calendar_until': 'Until {$a}',
     'calendar_view': 'View',
     'calendar_viewday': 'Day',

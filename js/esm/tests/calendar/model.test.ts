@@ -27,7 +27,9 @@ import {
 } from '../../src/calendar/model';
 import type {Course, State} from '../../src/calendar/model';
 import {fill} from '../../src/calendar/strings';
-import {coursePageLabel} from '../../src/calendar/EventPopover';
+import {coursePageLabel, factsOf} from '../../src/calendar/EventPopover';
+import {placeOf} from '../../src/calendar/look';
+import type {Look} from '../../src/calendar/look';
 import {STRINGS} from './fixture';
 import {item} from './fixture';
 
@@ -272,5 +274,27 @@ describe('the course button follows the course\'s model (R1c)', () => {
         expect(coursePageLabel(course(2), MODELS, strings)).toBe('Event page');
         expect(coursePageLabel(course(3), MODELS, strings)).toBe('Trail page');
         expect(coursePageLabel(course(9), MODELS, strings)).toBe('Course page');
+    });
+});
+
+describe('the place', () => {
+    const course: Course = {
+        id: 9, fullname: 'Gestão Pública', shortname: 'GP', categoryid: 3, url: '', image: '', model: 1, modality: 0,
+        city: '', venue: '', landingurl: '', enrolled: true, participants: null, join: '',
+    };
+    const lookOf = (one: Course): Look => ({courses: new Map([[one.id, one]])} as unknown as Look);
+
+    it('falls back to the course name on the grid, never in the popover', () => {
+        const event = item({id: 1, courseid: 9, location: ''});
+        expect(placeOf(event, lookOf(course))).toBe('Gestão Pública');
+        expect(placeOf(event, lookOf(course), false)).toBe('');
+        expect(factsOf(event, lookOf(course), []).place).toBe('');
+        expect(factsOf(event, lookOf(course), []).course).toBe(course);
+    });
+
+    it('keeps a location, a city and a venue either way', () => {
+        expect(factsOf(item({id: 1, courseid: 9, location: 'Sala 2'}), lookOf(course), []).place).toBe('Sala 2');
+        const placed = {...course, city: 'Recife', venue: 'Auditório'};
+        expect(factsOf(item({id: 1, courseid: 9, location: ''}), lookOf(placed), []).place).toBe('Recife · Auditório');
     });
 });

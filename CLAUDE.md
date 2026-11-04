@@ -1634,6 +1634,16 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   frame turns wide. `DayView.tsx` has its own observer on the frame (the third of the tree), reading the frame's entry
   alone, and draws `DayDrawer.tsx`'s exported `DayBody`, the drawer's body, never a copy; a touch held on an hour row
   (`HOLD_MS`, `HOLD_SLOP`, dropped on a move, a lift or `pointercancel`) creates as the double-click does. No swipe.
+- **R2: the owner's answers to section 26** (PROPOSAL section 32).
+  - The visitor's names go through `visitor::name()`: core's multilang filter alone, while its SYSTEM state is
+    TEXTFILTER_ON, then format_string() with the filters off.
+  - The visitor's category events stop at `public_events::CAP` a window, with `truncated` and the visitor's own
+    sentence.
+  - The theme's `core_renderer::block()` empties core's footer under the upcoming block whenever `blocks::applies()`.
+    A test of it asks for `RENDERER_TARGET_GENERAL`: under PHPUnit `get_renderer('core')` answers core's CLI renderer.
+  - A visitor's category hero links the public calendar (`category_hero::calendar_link()`).
+  - In dark mode, core underlines every `#region-main` link at (1,6,1); one rule of `calendar.scss`, at (1,7,4), takes
+    the underline off the calendar's own links.
 - **T3: the Trilhas view** (docs/trail/PLAN.md section 7). `view=trail` (`page::VIEW_TRAIL`) is an account's while
   trails are available (`page::trails_offered()`), its `trail=` and `mine=1` navigation like the view; its answer is
   `local\calendar\trails::answer()` through `theme_dimensions_get_calendar_trails`, embedded on a first paint, and the

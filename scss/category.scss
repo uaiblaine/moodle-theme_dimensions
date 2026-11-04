@@ -320,6 +320,7 @@ body.dim-category {
     // The design's quiet button, on the navy: the same translucent pair over the solid colour
     // and over a photograph, because both sit on the overlay rather than on the image itself.
     .dim-hero__pencil,
+    .dim-hero__calendar,
     .dim-hero__foldbutton {
         padding: 6px 12px;
         border: 1px solid rgba(255, 255, 255, .3);
@@ -332,6 +333,8 @@ body.dim-category {
 
     .dim-hero__pencil:hover,
     .dim-hero__pencil:focus-visible,
+    .dim-hero__calendar:hover,
+    .dim-hero__calendar:focus-visible,
     .dim-hero__foldbutton:hover,
     .dim-hero__foldbutton:focus-visible {
         background: rgba(255, 255, 255, .22);

@@ -67,6 +67,18 @@ final class blocks_test extends \advanced_testcase {
     }
 
     /**
+     * The footer goes for the upcoming block alone, and only while the theme answers the page's blocks.
+     *
+     * @return void
+     */
+    public function test_only_the_answered_upcoming_block_drops_its_footer(): void {
+        $this->assertTrue(blocks::drops_footer(blocks::BLOCK_UPCOMING, true));
+        $this->assertFalse(blocks::drops_footer(blocks::BLOCK_UPCOMING, false), 'Core answers the block.');
+        $this->assertFalse(blocks::drops_footer('calendar_month', true), "The month block's footer is core's.");
+        $this->assertFalse(blocks::drops_footer('html', true));
+    }
+
+    /**
      * What the blocks really pass to the renderer, read from core: the month view's template and the upcoming one's.
      *
      * @return void
