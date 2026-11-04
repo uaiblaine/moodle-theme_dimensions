@@ -1715,6 +1715,7 @@ body.dim-calendar {
     }
 
     .dim-cal__trailtitle {
+        display: flex;
         flex-direction: column;
         gap: 0;
         margin: 0;
@@ -1891,6 +1892,7 @@ body.dim-calendar {
     }
 
     .dim-cal__trailstate {
+        align-self: flex-start;
         justify-self: start;
         font-size: .75rem;
         font-weight: 600;

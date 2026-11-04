@@ -565,6 +565,19 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
+     * A Trilhas view's state pill keeps its own width in the popover's flex column, where justify-self does nothing,
+     * and a trail's title stacks its name over its progress wherever it is drawn: the phone's agenda heading carries
+     * the title class alone, without the desktop label's flex.
+     *
+     * @return void
+     */
+    public function test_the_trail_state_and_title_keep_their_shape(): void {
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailstate \{\s*align-self: flex-start;~', $scss);
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailtitle \{\s*display: flex;\s*flex-direction: column;~', $scss);
+    }
+
+    /**
      * The file is compiled into the theme's main SCSS.
      *
      * @return void
