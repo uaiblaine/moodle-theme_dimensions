@@ -123,7 +123,7 @@ final class trails {
         }
 
         $structures = trail::many($courses);
-        $drawn = display::many($structures);
+        $drawn = display::many($structures, $courses);
         $enrolments = classifier::enrolments($scope->viewerid);
         $learning = [];
         foreach ($drawn as $courseid => $entries) {

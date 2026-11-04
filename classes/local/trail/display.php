@@ -89,14 +89,19 @@ final class display {
      * The decision is {@see steps()}'s, step by step; the referenced courses of every trail are read and judged in one
      * batch. trails_test measures that the steps' availability adds no statement per trail.
      *
+     * Core keeps the modinfo of ten courses at a time ({@see \core_course\modinfo::MAX_CACHE_SIZE}): asked by id past it,
+     * get_fast_modinfo() reads the course record again, one statement a trail. The caller's course records, which carry
+     * the cacherev modinfo needs, keep that from happening.
+     *
      * @param trail[] $trails The trails, keyed by trail course id.
+     * @param \stdClass[] $courses The trail courses' records (scope::COURSE_FIELDS), keyed by id, where the caller has them.
      * @return array[] Map of trail course id => the list {@see steps()} answers, for every trail given.
      */
-    public static function many(array $trails): array {
+    public static function many(array $trails, array $courses = []): array {
         $shown = [];
         $refids = [];
         foreach ($trails as $courseid => $trail) {
-            $modinfo = get_fast_modinfo($trail->courseid);
+            $modinfo = get_fast_modinfo($courses[$courseid] ?? $trail->courseid);
             $shown[$courseid] = [];
             foreach ($trail->steps as $step) {
                 $cm = $modinfo->get_cm($step->cmid);

@@ -22,6 +22,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   open; the chip waits for the next month when the 30 days reach the edge. The bar's accessible name and the step's
   popover say "No end date set" in full. An expected completion date still counts as the end; the connectors leave
   the end of the 30 days; the trail's thin line ends there. The phone's agenda is unchanged. Two new strings.
+
+  Ten trails of ten courses cost the statements two do, at one, two and three months: the steps' modinfo is now
+  read from the trail courses' records, because past the ten modinfos core keeps in memory get_fast_modinfo() by id
+  read each further trail's course again (13 statements against 11 for ten trails). The view keeps one request in
+  flight; only a filter change during a load leaves the earlier one to finish, its answer dropped.
 - **Trail model, stage T3c: a zoom and the courses' dates in the calendar's Trilhas view** (2026100589),
   `docs/trail/PLAN.md` section 7. The desktop timeline has a zoom, "Days", "Weeks" and "Months", in the filters' row:
   by weeks the header shows the weeks from the viewer's first weekday, a short month over each week's days, today's
