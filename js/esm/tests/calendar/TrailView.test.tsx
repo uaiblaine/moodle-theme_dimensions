@@ -502,8 +502,9 @@ describe('the zoom and the courses\' dates (T3c)', () => {
         expect(page.querySelectorAll('.dim-cal__trailweekend')).toHaveLength(0);
         const weeks = Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'));
         // From the viewer's first weekday, Sunday here: November 2026 opens on one.
-        expect(weeks.map((week) => week.textContent)).toEqual(['Nov1–7', 'Nov8–14', 'Nov15–21', 'Nov22–28', 'Nov29–30']);
+        expect(weeks.map((week) => week.textContent)).toEqual(['Nov1–7', 'Nov8–14', 'Nov15–21', 'Nov22–28', '']);
         expect(weeks.map((week) => week.style.gridColumn)).toEqual(['2 / 9', '9 / 16', '16 / 23', '23 / 30', '30 / 32']);
+        // The week of two days at the end is narrower than its label: no text, its place and line kept.
         // The week holding today, the 17th, is tinted; no day's pill.
         expect(weeks.map((week) => week.classList.contains('dim-cal__trailweek--today'))).toEqual([false, false, true, false, false]);
         expect(page.querySelector('.dim-cal__trailday--today')).toBeNull();
@@ -1227,18 +1228,60 @@ describe('the days\' scroller', () => {
         expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 204, behavior: 'auto'});
     });
 
-    it('keeps asking for the next month while the days held fit a wide scroller, up to the cap', async() => {
-        viewport = 1600;
+    it('keeps asking for the next month while the days held fit a wide scroller, up to the month zoom\'s cap', async() => {
+        viewport = 2400;
         const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'month'}));
-        // By months 61 days are 244px: each month that comes is measured again, and the next is asked for.
+        // By months 61 days are 244px: each month that comes is measured again, and the next is asked for, past six months
+        // (1064px) up to the twelve the month zoom holds, which still fit 2400px (1800px).
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
+        expect(trailRequests().map((args) => args.month)).toEqual([
+            '2027-01', '2027-02', '2027-03', '2027-04', '2027-05', '2027-06', '2027-07', '2027-08', '2027-09', '2027-10',
+        ]);
+        // At the cap nothing more is asked, or the first month, in view, would go.
+        await act(async() => {
+            fireEvent.scroll(scrollerOf(page));
+        });
+        expect(trailRequests()).toHaveLength(10);
+        expect(page.querySelector('[data-action="dim-cal-trailmonth"]')?.getAttribute('data-month')).toBe('2026-11');
+    });
+
+    it('holds six months by weeks, however wide the scroller', async() => {
+        viewport = 6000;
+        const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'week'}));
         await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6));
-        expect(trailRequests().map((args) => args.month)).toEqual(['2027-01', '2027-02', '2027-03', '2027-04']);
-        // Six months fit as well: at the cap nothing more is asked, or the first month, in view, would go.
         await act(async() => {
             fireEvent.scroll(scrollerOf(page));
         });
         expect(trailRequests()).toHaveLength(4);
+        expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(6);
+    });
+
+    it('keeps the start day in view when the zoom goes from months to days with twelve held', async() => {
+        viewport = 2400;
+        const page = await mount(offered(trails([trail()], '2026-12-31'), {zoom: 'month'}));
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
+        const scroller = scrollerOf(page);
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-trailzoom"][data-zoom="day"]') as HTMLElement);
+        });
+        // The first day held was at the start: it stays there, and the months held wait for the next load to drop.
+        expect(scroller.scrollLeft).toBe(0);
         expect(page.querySelector('[data-action="dim-cal-trailmonth"]')?.getAttribute('data-month')).toBe('2026-11');
+    });
+
+    it('draws no label in a first week of one day or two, and its line stays', async() => {
+        const labels = async(firstday: number): Promise<string[]> => {
+            const page = await mount({...offered(trails([trail()]), {zoom: 'week'}), firstday: firstday});
+            return Array.from(page.querySelectorAll<HTMLElement>('[data-region="dim-cal-trailweek"]'))
+                .slice(0, 3).map((week) => week.textContent as string);
+        };
+        // November 2026 opens on a Sunday: from Monday its first week is the 1st alone, from Tuesday the 1st and 2nd.
+        expect(await labels(1)).toEqual(['', 'Nov2–8', 'Nov9–15']);
+        document.body.innerHTML = '';
+        expect(await labels(2)).toEqual(['', 'Nov3–9', 'Nov10–16']);
+        document.body.innerHTML = '';
+        // From Sunday the first week is whole.
+        expect(await labels(0)).toEqual(['Nov1–7', 'Nov8–14', 'Nov15–21']);
     });
 
     it('names the end\'s month in a week that crosses one', async() => {

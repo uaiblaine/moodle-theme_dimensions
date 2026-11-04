@@ -333,8 +333,20 @@ export const trailFiltered = (filter: TrailFilter, categoryid: number): boolean 
 /** The most months one answer of the service covers (local\calendar\trails::MONTHS): the month and the next. */
 export const ANSWER_MONTHS = 2;
 
-/** The most months the view holds; one more drops the month on the far side. */
+/** The most months the view holds by days and by weeks; one more drops the month on the far side. */
 export const LOADED_CAP = 6;
+
+/** The most months the view holds by months, where a month is a few rem wide and six fill about two thirds of a wide screen. */
+export const MONTH_CAP = 12;
+
+/**
+ * The most months the view holds at a zoom. A zoom switched to a smaller cap with more months held keeps them until the
+ * next month loads, which drops the far side down to the cap with the shift told ({@see extendLoaded()}).
+ *
+ * @param {string} zoom The timeline's zoom.
+ * @returns {number}
+ */
+export const capOf = (zoom: Zoom): number => (zoom === 'month' ? MONTH_CAP : LOADED_CAP);
 
 /** How near the end of what is held, in days, a scroll asks for the next month. */
 export const LOAD_AHEAD = 7;
@@ -452,10 +464,10 @@ export const mergedOf = (loaded: Loaded, zone: Zone): TrailAnswer => {
  *
  * @param {object} loaded The months held.
  * @param {object} answer The answer of one month.
- * @param {number} cap The most months held.
+ * @param {number} cap The most months held ({@see capOf()}).
  * @returns {object|null} The months held and the shift, in days; null when refused.
  */
-export const extendLoaded = (loaded: Loaded, answer: TrailAnswer, cap: number = LOADED_CAP):
+export const extendLoaded = (loaded: Loaded, answer: TrailAnswer, cap: number = capOf('day')):
     {loaded: Loaded, shift: number} | null => {
     const month = answer.from.slice(0, 7);
     const months = [...loaded.months];
@@ -589,6 +601,21 @@ export const weekLabel = (cell: WeekCell, language: string | undefined): {kicker
     const crosses = cell.first.slice(0, 7) !== cell.last.slice(0, 7);
     return {kicker: kicker, days: crosses ? `${first}–${last} ${say(cell.last, WEEK_MONTH, language)}` : `${first}–${last}`};
 };
+
+/** The narrowest week cell that draws its label, in rem: "nov." over "26–1 nov." needs about this much. */
+export const WEEK_LABEL_LEAST = 2.5;
+
+/**
+ * Whether a week cell is wide enough at a zoom for its label. A week cut by the start of what is held may be a day or two
+ * (one and two days are narrower than {@see WEEK_LABEL_LEAST} by weeks): it draws no text and keeps its line, and the
+ * next week's label names the days after it. Off the weeks there is no label at all.
+ *
+ * @param {object} cell The week.
+ * @param {string} zoom The zoom.
+ * @returns {boolean}
+ */
+export const weekLabelled = (cell: WeekCell, zoom: Zoom): boolean =>
+    zoom === 'week' && cell.length * dayWidth(zoom) >= WEEK_LABEL_LEAST;
 
 /** A course's dates as the trail column says them: a range, a start alone, an end alone, or none. */
 export type Dates = {kind: 'range' | 'from' | 'until' | 'none', text: string};

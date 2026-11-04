@@ -116,6 +116,8 @@ const filterOf = /* @__PURE__ */ __name((props) => ({ trail: props?.trail || 0, 
 const trailFiltered = /* @__PURE__ */ __name((filter, categoryid) => filter.trail > 0 || filter.mine || categoryid !== 0, "trailFiltered");
 const ANSWER_MONTHS = 2;
 const LOADED_CAP = 6;
+const MONTH_CAP = 12;
+const capOf = /* @__PURE__ */ __name((zoom) => zoom === "month" ? MONTH_CAP : LOADED_CAP, "capOf");
 const LOAD_AHEAD = 7;
 const SKELETON_DAYS = 3;
 const STEP_INSET = 2;
@@ -161,7 +163,7 @@ const mergedOf = /* @__PURE__ */ __name((loaded, zone) => {
     categories: Array.from(categories.values())
   };
 }, "mergedOf");
-const extendLoaded = /* @__PURE__ */ __name((loaded, answer, cap = LOADED_CAP) => {
+const extendLoaded = /* @__PURE__ */ __name((loaded, answer, cap = capOf("day")) => {
   const month = answer.from.slice(0, 7);
   const months = [...loaded.months];
   const answers = [...loaded.answers];
@@ -231,6 +233,8 @@ const weekLabel = /* @__PURE__ */ __name((cell, language) => {
   const crosses = cell.first.slice(0, 7) !== cell.last.slice(0, 7);
   return { kicker, days: crosses ? `${first}\u2013${last} ${say(cell.last, WEEK_MONTH, language)}` : `${first}\u2013${last}` };
 }, "weekLabel");
+const WEEK_LABEL_LEAST = 2.5;
+const weekLabelled = /* @__PURE__ */ __name((cell, zoom) => zoom === "week" && cell.length * dayWidth(zoom) >= WEEK_LABEL_LEAST, "weekLabelled");
 const SHORT_DATE = { day: "numeric", month: "short", year: "numeric" };
 const separates = /* @__PURE__ */ __name((parts, index) => parts[index - 1]?.source === "startRange" && parts[index + 1]?.source === "endRange", "separates");
 const compactParts = /* @__PURE__ */ __name((parts) => parts.map((part, index) => {
@@ -442,14 +446,17 @@ export {
   LOADED_CAP,
   LOAD_AHEAD,
   MINE_PARAM,
+  MONTH_CAP,
   NAMED_BAR,
   SKELETON_DAYS,
   STEP_INSET,
   TRACK,
   TRAIL_PARAM,
+  WEEK_LABEL_LEAST,
   ZOOMS,
   ZOOM_PARAM,
   barOf,
+  capOf,
   datesOf,
   dayLeft,
   dayWidth,
@@ -484,6 +491,7 @@ export {
   trailFiltered,
   weekCells,
   weekLabel,
+  weekLabelled,
   windowDays,
   withTrail,
   zoomOf,

@@ -190,7 +190,7 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
   asked for share one service, and the read count does not grow with the window. On a desktop a scroll near the end of
   what is held asks for the next month (one call) and appends its days; the previous arrow, or a scroll back to the
   start, prepends the month before and moves the position by its width (`trails.ts` `keptLeft()`, arithmetic over the
-  last measure). The months stay contiguous, at most six, the far side dropped with the same compensation; the answers
+  last measure). The months stay contiguous, at most six by days and weeks and twelve by months (`trails.ts` `capOf(zoom)`, T3c follow-up), the far side dropped with the same compensation; the answers
   merge by trail id (a trail's steps are the same in every answer), the list kept to the trails whose period meets what
   is held and sorted as the server sorts. A band above the day numbers has one segment per month held, its name
   sticky at the start of the days while the segment is in view and a button that scrolls (smoothly unless the reader
@@ -235,12 +235,12 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
   at once, then measured where that left it, as after an arrow; nothing is asked, the months held stay. A measure
   records its zoom, so a new set of months opened at a new zoom in the same commit (Back or Forward across a zoom) is
   not rescaled. When the days held grow the scroller is measured again where it is: where they fit it (by months on a
-  wide screen) the next month is asked for, up to the six held, and none past them while every day held is in view. By days the
+  wide screen) the next month is asked for, up to the zoom's cap (six, twelve by months), and none past it while every day held is in view; a switch to a smaller cap keeps the months until the next load drops the far side to it. By days the
   header is as T3b drew it (weekday letters, day numbers, today's pill, the weekends hatched); by weeks its second row
   is the weeks from the viewer's first weekday (core's calendar setting, `calendar_get_starting_weekday()`, as the
   month grid; `weekCells()`, the first and the last cut at the edges of what is held), each a short month over its
-  days ("nov." over "2–8"; a week across a month names the end's month too, "out." over "26–1 nov.", `weekLabel()`),
-  the week holding today tinted; by months the band alone names the months (the month's name
+  days ("nov." over "2–8"; a week across a month names the end's month too, "out." over "26–1 nov.", `weekLabel()`; a cell under 2.5rem, a one or two day partial week, draws no label and keeps its line,
+  `weekLabelled()`), the week holding today tinted; by months the band alone names the months (the month's name
   without its year, the mockup's) and the second row draws only the weeks' lines. Off the days no weekend is shaded
   and a quiet line marks each week's start. At every zoom a small "Hoje" tag (`calendar_today`) tops today's line,
   in the current step's pair. The toolbar's arrows and "Hoje" still move a month; the arrows, the band and every write

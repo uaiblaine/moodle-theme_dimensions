@@ -1654,7 +1654,7 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   - **T3b: continuous months.** The service takes `months` (1, or `trails::MONTHS` = 2), the shape refused before
     login, over `window::whole_months()` (past `window::MAX_DAYS`, its own count check); the first paint and the page's
     own request are the month and the next. The view holds contiguous months (`trails.ts` `Loaded`, `extendLoaded()`,
-    at most `LOADED_CAP` = 6, the far side dropped), merged by trail id (`mergedOf()`, a trail kept while
+    at most `capOf(zoom)`: `LOADED_CAP` = 6 by days and weeks, `MONTH_CAP` = 12 by months since the T3c follow-up, the far side dropped), merged by trail id (`mergedOf()`, a trail kept while
     `meets()`); it asks one month when the scroll nears the end (`nearEnd()`) or moves back to the start, and a far
     target (today, a course) asks a new set of two. A prepended month moves the position by `keptLeft()` over
     TrailScroll's last measure (the `shift` key), never a read. The toolbar asks the view (`TrailView` `nav`): a month
@@ -1679,11 +1679,13 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
     through `dayWidth()`. A switch keeps the first day in view by `zoomedLeft()` over TrailScroll's last measure, then
     measures once (the `[zoom]` effect: no new read site, the count stays 7); `paint()` records the zoom of each measure
     (`zoomed`), so an opening at the new zoom in the same commit is not rescaled. More days held are measured again (the
-    `[days]` effect), so the view asks for the next month while the days fit the scroller, never past `LOADED_CAP` with
-    the first day in view (`full`). By weeks the header is `weekCells()` from the page's `firstday` (`weekLabel()`: a
+    `[days]` effect), so the view asks for the next month while the days fit the scroller, never past `capOf(zoom)` with
+    the first day in view (`full`); a switch to a smaller cap keeps the months held until the next month loads, which drops
+    the far side down to it with the shift told. By weeks the header is `weekCells()` from the page's `firstday` (`weekLabel()`: a
     week across a month names the end's month); off the days no weekend is drawn; a "Today" tag tops today's line at
     every zoom; a bar under one day by days, under `NAMED_BAR` (3.5rem) off them, draws no name. The trail column's second line is `datesOf()` (Intl's range, its own words compacted,
-    never the separator), worded by the view; rows are 56px. Gates: the "T3c" block.
+    never the separator), worded by the view; rows are 56px. A week cell narrower than `WEEK_LABEL_LEAST` (2.5rem: a
+    one or two day first week by weeks) draws no label and keeps its line (`weekLabelled()`). Gates: the "T3c" block.
 - **R3: visual parity with the mockup** (PROPOSAL section 33). The desktop Trilhas grid scrolls sideways in
   `TrailScroll.tsx`, compass's strip in the theme's classes:
   - one native scroller with the scrollbar hidden, snapped per day;

@@ -23,9 +23,9 @@
 
 import {zone} from '../../src/calendar/days';
 import {
-    LOADED_CAP, NAMED_BAR, STEP_INSET, TRACK, barOf, datesOf, dayLeft, dayWidth, shiftedTarget, extendLoaded, keptLeft, linksOf,
+    LOADED_CAP, MONTH_CAP, NAMED_BAR, WEEK_LABEL_LEAST, STEP_INSET, TRACK, barOf, datesOf, dayLeft, dayWidth, shiftedTarget, extendLoaded, keptLeft, linksOf,
     loadedOf, mergedOf, monthDays, monthStep, monthsOf, namedBar, nearEnd, openingLeft, pageLeft, rangeLabel, reachOf, readTrail,
-    readZoom, scrubLeft, shownDays, targetLeft, todayIndex, todayLeft, trackOf, trailArgs, trailBarOf, weekCells, weekLabel,
+    readZoom, scrubLeft, shownDays, targetLeft, todayIndex, todayLeft, trackOf, trailArgs, trailBarOf, weekCells, weekLabel, weekLabelled, capOf,
     windowDays, withTrail, zoomOf, zoomedLeft,
 } from '../../src/calendar/trails';
 import type {LinkPiece, Trail, TrailAnswer, TrailStep} from '../../src/calendar/trails';
@@ -520,6 +520,38 @@ describe('the zoom (T3c)', () => {
         expect([namedBar(bar(4, 6), 'week'), namedBar(bar(4, 7), 'week')]).toEqual([false, true]);
         // By months, thirteen days are not, fourteen are.
         expect([namedBar(bar(0, 12), 'month'), namedBar(bar(0, 13), 'month')]).toEqual([false, true]);
+    });
+});
+
+describe('capOf and weekLabelled (T3c follow-up)', () => {
+    it('holds twelve months by months and six by days and weeks', () => {
+        expect([capOf('day'), capOf('week'), capOf('month')]).toEqual([LOADED_CAP, LOADED_CAP, MONTH_CAP]);
+        expect([LOADED_CAP, MONTH_CAP]).toEqual([6, 12]);
+    });
+
+    it('drops the far side to the month zoom\'s cap only past twelve, telling the shift', () => {
+        let held = loadedOf(answerOf('2027-01-01', '2027-02-28', []));
+        ['2027-03', '2027-04', '2027-05', '2027-06', '2027-07', '2027-08', '2027-09', '2027-10', '2027-11', '2027-12'].forEach(
+            (month) => {
+                held = (extendLoaded(held, answerOf(`${month}-01`, `${month}-28`, []), capOf('month')) as {loaded: typeof held}).loaded;
+            });
+        expect(held.months).toHaveLength(12);
+        const next = extendLoaded(held, answerOf('2028-01-01', '2028-01-31', []), capOf('month'));
+        expect(next?.loaded.months[0]).toBe('2027-02');
+        expect(next?.shift).toBe(-31);
+        // Back at a weeks cap the same twelve drop to six, the first seven months going with their days told.
+        const back = extendLoaded(held, answerOf('2028-01-01', '2028-01-31', []), capOf('week'));
+        expect(back?.loaded.months).toHaveLength(6);
+        expect(back?.loaded.months[0]).toBe('2027-08');
+        expect(back?.shift).toBe(-(31 + 28 + 31 + 30 + 31 + 30 + 31));
+    });
+
+    it('draws a week\'s label only where the cell is wide enough, by weeks', () => {
+        const cell = (length: number) => ({at: 0, length: length, first: '2026-11-01', last: '2026-11-01'});
+        expect(WEEK_LABEL_LEAST).toBe(2.5);
+        expect([1, 2, 3, 7].map((length) => weekLabelled(cell(length), 'week'))).toEqual([false, false, true, true]);
+        // Off the weeks the row has no labels.
+        expect([weekLabelled(cell(7), 'month'), weekLabelled(cell(7), 'day')]).toEqual([false, false]);
     });
 });
 

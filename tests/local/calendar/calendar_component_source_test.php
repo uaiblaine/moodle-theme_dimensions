@@ -1104,6 +1104,12 @@ final class calendar_component_source_test extends \basic_testcase {
     public function test_the_trilhas_months_rows_and_connectors(): void {
         $trails = $this->sources()['trails.ts'];
         $this->assertStringContainsString('export const LOADED_CAP = 6;', $trails);
+        $this->assertStringContainsString('export const MONTH_CAP = 12;', $trails);
+        $this->assertStringContainsString(
+            "export const capOf = (zoom: Zoom): number => (zoom === 'month' ? MONTH_CAP : LOADED_CAP);",
+            $trails
+        );
+        $this->assertStringContainsString('cap: number = capOf(\'day\')', $trails);
         $this->assertSame(1, preg_match('~export const ANSWER_MONTHS = (\d+);~', $trails, $months));
         $this->assertSame(trails::MONTHS, (int) $months[1], 'The client asks for the months the service answers.');
         $this->assertStringContainsString('shift -= monthDays(String(months.shift())).length;', $trails);
@@ -1362,7 +1368,11 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('{onZoom && !phone ? (', $view);
         $this->assertStringContainsString('aria-pressed={one === zoom}', $view);
         $this->assertStringContainsString('data-region="dim-cal-trailnowtag"', $view);
-        $this->assertStringContainsString("const full = near === 'end' && months.length >= LOADED_CAP && first === 0;", $view);
+        $this->assertStringContainsString("const full = near === 'end' && months.length >= capOf(zoom) && first === 0;", $view);
+        $this->assertStringContainsString('extendLoaded(was.loaded, got, capOf(zooming.current))', $view);
+        $this->assertStringContainsString('{weekLabelled(cell, zoom) ? (', $view);
+        $trailsts = $this->sources()['trails.ts'];
+        $this->assertStringContainsString("zoom === 'week' && cell.length * dayWidth(zoom) >= WEEK_LABEL_LEAST;", $trailsts);
         $this->assertStringContainsString("if (target !== '' && target !== failed.current && !full) {", $view);
         $this->assertStringNotContainsString('history', $view, 'The page\'s history module writes the address.');
 

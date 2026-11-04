@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Trail model, T3c follow-up: a partial first week and the month zoom's cap** (2026100590). By weeks, a first week of
+  one or two days (a month that starts just before the viewer's first weekday) is narrower than its label, which spilled
+  into the next week: a cell under 2.5rem now draws no text and keeps its line. By months the timeline holds twelve
+  months instead of six, so a wide screen is filled; by days and weeks the cap stays six, and a switch down keeps the
+  months held until the next load drops the far side. Five mutation gates.
+
 - **Trail model, stage T3c: a zoom and the courses' dates in the calendar's Trilhas view** (2026100589),
   `docs/trail/PLAN.md` section 7. The desktop timeline has a zoom, "Days", "Weeks" and "Months", in the filters' row:
   by weeks the header shows the weeks from the viewer's first weekday, a short month over each week's days, today's

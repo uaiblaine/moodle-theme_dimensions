@@ -18,7 +18,7 @@
  *
  * - On a desktop, a timeline of contiguous months (trails.ts Loaded): the month in view and the next on a first paint,
  *   another month asked for when the scroll nears the end of what is held or the arrows go back past its start, at most
- *   trails.ts LOADED_CAP held. Each step a bar from its start to its end (trails.ts barOf()), a diamond on an expected
+ *   trails.ts capOf() held. Each step a bar from its start to its end (trails.ts barOf()), a diamond on an expected
  *   completion date, one that began earlier marked at the left edge, one that runs on past what is held cut there, an
  *   open one fading out; the trail's own row carries its span (trails.ts trailBarOf()). Above the days a band names each
  *   month held, its name a button that scrolls to its 1st; a month on its way is a quiet skeleton at the end. Weekends
@@ -74,7 +74,7 @@ import TrailScroll from './TrailScroll';
 import type {Near, ScrollControl, Shift} from './TrailScroll';
 import {
     ANSWER_MONTHS,
-    LOADED_CAP,
+    capOf,
     SKELETON_DAYS,
     ZOOMS,
     barOf,
@@ -91,6 +91,7 @@ import {
     trailBarOf,
     weekCells,
     weekLabel,
+    weekLabelled,
     windowDays,
 } from './trails';
 import type {FoldIcons, Loaded, StepState, Trail, TrailAnswer, TrailFilter, TrailStep, Zoom} from './trails';
@@ -407,6 +408,9 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     // The filters and the scope the months held were asked with: a load asked with others is dropped when it comes.
     const scoped = useRef<string>(scope);
     scoped.current = scope;
+    // The zoom a month's answer is added at: a load on its way when the zoom switches meets the new cap.
+    const zooming = useRef<Zoom>(zoom);
+    zooming.current = zoom;
 
     // A new answer from the page (a first paint, a filter, Back or Forward) is a new set of months.
     if (seen !== answer) {
@@ -503,7 +507,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                     if (was.generation !== set || scoped.current !== askedwith) {
                         return was;
                     }
-                    const grown = extendLoaded(was.loaded, got);
+                    const grown = extendLoaded(was.loaded, got, capOf(zooming.current));
                     if (!grown) {
                         return {...was, loading: false};
                     }
@@ -775,7 +779,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         }
         // At the cap with the first day held in view (every day held fits the scroller), the next month would only drop
         // days in view: the months held stay.
-        const full = near === 'end' && months.length >= LOADED_CAP && first === 0;
+        const full = near === 'end' && months.length >= capOf(zoom) && first === 0;
         if (target !== '' && target !== failed.current && !full) {
             extend(target);
         }
@@ -1122,7 +1126,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                                 data-region="dim-cal-trailweek"
                                 data-week={cell.first}
                             >
-                                {zoom === 'week' ? (
+                                {weekLabelled(cell, zoom) ? (
                                     <>
                                         <span className="dim-cal__trailweekmonth">{weekLabel(cell, look.language).kicker}</span>
                                         <span className="dim-cal__trailweekdays">{weekLabel(cell, look.language).days}</span>
