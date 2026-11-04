@@ -5,6 +5,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Trilhas view: two layout fixes** (2026100579). The state pill in a step's popover keeps its own width instead of
+  stretching across the popover, and on a phone the trail's heading stacks its name over its progress instead of
+  running the two together ("Trail0 of 3 completed").
 - **Boost Union 5.3 is released** (no version bump). Boost Union published v5.3-r1 on its new `MOODLE_503_STABLE` branch
   and deleted `upgrade-503`, which CI checked out as the parent theme: the 5.3 job now pins `MOODLE_503_STABLE`, and the
   README and CLAUDE.md name that branch. The release differs from the last `upgrade-503` head (143e7497) only in when
