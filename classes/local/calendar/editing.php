@@ -31,8 +31,7 @@ use core_calendar\local\event\entities\event_interface;
 /**
  * Core's decisions about editing the calendar, passed through to the page and never made here.
  *
- * Each answer is the one core's month view on calendar/view.php gives the same viewer (docs/calendar/PROPOSAL.md
- * section 23.1), read from core's own functions:
+ * Each answer is the one core's month view on calendar/view.php gives the same viewer, read from core's own functions:
  *
  * - "New event" is core's add_event_button, drawn while month_exporter::get_default_add_context() answers, that is
  *   calendar_user_can_add_event() for the calendar's course, the site's on that page ({@see create()});

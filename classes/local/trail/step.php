@@ -31,7 +31,7 @@ namespace theme_dimensions\local\trail;
  * looking. Whether a reader may see the referenced course, and how far a learner has gone, are decided
  * by the page that draws the step.
  *
- * mod_subcourse stores no dates, so the window is core's (docs/trail/PLAN.md, decision Q1): it opens
+ * mod_subcourse stores no dates, so the window is core's: it opens
  * with the referenced course's start date and closes on the activity's "Expect completed on" date when
  * one is set and the trail course tracks completion (core drops that date's calendar event otherwise,
  * {@see \core_completion\api::update_completion_date_event()}), else on the referenced course's end date.

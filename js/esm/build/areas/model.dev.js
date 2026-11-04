@@ -3,8 +3,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 /**
  * The panel between the poster rows, as numbers and words: what Areas.tsx decides without the page.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md. Every function here is pure - an address, a context, a
- * place in a grid - and is named after the function of the AMD panel it replaced (removed in R4c).
+ * Every function here is pure: an address, a context, a place in a grid.
  *
  * @module     theme_dimensions/areas/model
  * @copyright  2026 Anderson Blaine

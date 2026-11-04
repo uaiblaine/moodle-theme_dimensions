@@ -29,8 +29,8 @@ namespace theme_dimensions\local\calendar;
  *
  * Pure: the request, the setting, the account and the calendar type arrive as arguments, and the one lookup (a
  * course's category) through a closure, so every branch is PHPUnit's, and the callback
- * ({@see \theme_dimensions\local\hook\after_config}) only reads them. Every view of core's calendar is sent
- * (docs/calendar/PROPOSAL.md section 27.1); each refusal left is a reason core's page must keep answering:
+ * ({@see \theme_dimensions\local\hook\after_config}) only reads them. Every view of core's calendar is sent; each
+ * refusal left is a reason core's page must keep answering:
  *
  * 1. The setting is off, or the site's theme is not this one (the page is drawn by this theme's CSS and client).
  * 2. Nobody real is logged in: the page sends a visitor to login and the guest to core's calendar, so sending either

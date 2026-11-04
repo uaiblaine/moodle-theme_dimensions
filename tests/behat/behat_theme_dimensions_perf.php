@@ -29,7 +29,7 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\landing\links;
 
 /**
- * Theme Dimensions - the showcase's browser probe (R0 of docs/vitrine-react/PLAN.md, section 5.4)
+ * Theme Dimensions - the showcase's browser probe
  *
  * Steps of theme_dimensions_perf.feature only. The measuring is theme_dimensions_perf_probe's;
  * this context opts in or skips, builds the fixture, resolves the page and writes the report.

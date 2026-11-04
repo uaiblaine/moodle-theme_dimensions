@@ -16,7 +16,7 @@
 /**
  * An event's description, read lazily from core and once per page life.
  *
- * The range answers no description (PROPOSAL.md section 5.5): the popover asks core's
+ * The range answers no description: the popover asks core's
  * core_calendar_get_calendar_event_by_id when it opens on one of core's events, which runs core's own visibility
  * check (the event vault, then calendar_view_event_allowed()) and answers the event exporter's description, already
  * through format_text() (core's exporter formats a property that has a format beside it), or null. A refusal, a

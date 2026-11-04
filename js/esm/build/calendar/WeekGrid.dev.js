@@ -2,13 +2,13 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The week: a time grid on a desktop, a seven-day agenda on a phone (docs/calendar/PROPOSAL.md sections 21.2, 21.3).
+ * The week: a time grid on a desktop, a seven-day agenda on a phone.
  *
  * The grid is role="grid" labelled by the caption, in three rows: the day headers (seven columnheaders, each holding
  * the day's button), the all-day strip (a rowheader, then seven gridcells holding the bars that start on each day, laid
  * out by layout.ts weekLayout() so a bar spans its columns) and the hour body (a rowheader, then a gridcell per day
  * with its timed items in the drawer's columns). The hour body is the whole day, 00:00 to 24:00, in the drawer's scroll
- * box (HourScroll.tsx, a rowgroup of the grid; R1c, PROPOSAL.md section 30.1), opening on the week's busy band
+ * box (HourScroll.tsx, a rowgroup of the grid), opening on the week's busy band
  * (weeks.ts weekPlan()'s window) or, with nothing timed and "New event" offered, on the working hours. The layout is
  * weeks.ts weekPlan(), pure.
  *

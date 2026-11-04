@@ -29,20 +29,19 @@ use theme_dimensions\local\landingfields;
 /**
  * A trail: a course whose page model is {@see landingfields::MODEL_TRAIL}, and its steps, in the order the course shows them.
  *
- * The one reader of a trail's structure, for the landing page and the calendar's Trilhas view alike
- * (docs/trail/PLAN.md, section 2). Deciding that a course IS a trail is the caller's, from its model; this
- * class reads the steps of whatever course it is given. The theme stores nothing of its own: the steps are
- * the course's Subcourse activities, read from core's modinfo, and the courses they refer to come from one
- * statement for any number of trails.
+ * The one reader of a trail's structure, for the landing page and the calendar's Trilhas view alike. Deciding that a
+ * course IS a trail is the caller's, from its model; this class reads the steps of whatever course it is given. The
+ * theme stores nothing of its own: the steps are the course's Subcourse activities, read from core's modinfo, and the
+ * courses they refer to come from one statement for any number of trails.
  *
  * What comes back is structure, not an answer to any reader: it is the same for everybody, and it names
  * referenced courses whatever their visibility. A page that draws it first establishes that the reader may
- * see the trail course, then decides each step by docs/trail/PLAN.md, section 6 - the referenced course's
+ * see the trail course, then decides each step ({@see display}) - the referenced course's
  * own discoverability for this reader (never {@see step::$refvisible} alone), and core's per-user
  * visibility of the activity, so that a step whose restriction hides it entirely stays hidden - and
  * formats the stored name on output.
  *
- * mod_subcourse is an optional dependency (decision Q9): without it installed and enabled there are no
+ * mod_subcourse is an optional dependency: without it installed and enabled there are no
  * trails ({@see available()}), and the trail line of the model select is not offered
  * ({@see hides_option()}).
  *

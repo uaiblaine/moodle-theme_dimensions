@@ -27,7 +27,7 @@ namespace theme_dimensions\local\calendar;
 use theme_dimensions\local\category\branding;
 
 /**
- * One colour setting per key of the calendar (docs/calendar/PROPOSAL.md section 30.4), and the Sass they hand the pre
+ * One colour setting per key of the calendar, and the Sass they hand the pre
  * SCSS callback ({@see theme_dimensions_get_pre_scss()}).
  *
  * Each setting defaults to its key's light edge in scss/calendar.scss (the design system's primitive, from post.scss;

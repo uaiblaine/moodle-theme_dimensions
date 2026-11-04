@@ -199,7 +199,7 @@ final class request {
            marks the body; without it a visitor sees the still alone. */
         $PAGE->requires->js_call_amd('theme_dimensions/covervideo', 'init');
 
-        /* No course dialogue for a visitor (decision V1 of docs/vitrine-ratings/PROPOSAL.md): its content is
+        /* No course dialogue for a visitor its content is
            fetched from a service a session alone may call, and a visitor's "More information" is the link to
            the course's public landing page, which already says everything about it. */
 

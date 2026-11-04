@@ -33,9 +33,9 @@ use theme_dimensions\local\landingfields;
  * media manager, so an address no enabled media player handles would save
  * fine and then render as nothing. Refusing it here, with the field named,
  * is the only moment the editor is looking. The check is the same the page
- * will make, {@see embeddable()}, so the two cannot drift apart. And two of
- * round 6: a self-paced course is always online (decision D10), and a hybrid
- * offering's in-person hours fit inside its total (decision D8).
+ * will make, {@see embeddable()}, so the two cannot drift apart. And two
+ * more rules: a self-paced course is always online, and a hybrid
+ * offering's in-person hours fit inside its total.
  *
  * Only what the editor can see is refused. A field the form hides
  * ({@see after_form_definition::hide_inapplicable_fields()}) keeps its value and is
@@ -68,7 +68,7 @@ class after_form_validation {
     }
 
     /**
-     * The round-6 refusals: a self-paced course that is not online, in-person hours past the total.
+     * The refusals of the format and hybrid fields: a self-paced course that is not online, in-person hours past the total.
      *
      * The format is visible unless the model is an event, so a self-paced format is refused
      * beside an in-person or hybrid modality on any other model, the error on the modality,

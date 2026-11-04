@@ -28,14 +28,14 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the AMD half of stage R2 (docs/vitrine-react/PLAN.md) by reading the source.
+ * Pins the AMD half of the filter line component by reading the source.
  *
  * The component's behaviour is Jest's (js/esm/tests/filterline). What Jest cannot see is how the listing
  * hands the line over and keeps out of it: the mount is the server's line itself, named for core's
  * react_autoinit and put back where it stands; the component draws the line's own controls and adopts
  * three frames of server markup (the Filters panel, the Organise menu, the managers' menu); and no
  * painter of the shared listing writes into what the component draws - it tells the component through
- * events on the line, spelled alike on both sides. Since R4a both shells hand their line over, the component
+ * events on the line, spelled alike on both sides. Both shells hand their line over, the component
  * named once in the shared listing (the visitor's import walk, which reaches it, is categorypublic_source_test's).
  * And the Jest suites run over a copy of the template's markup, which is held equal to the template here.
  *
@@ -268,7 +268,7 @@ final class filterline_component_source_test extends \advanced_testcase {
             "export const LINE_DRAWN = 'data-line-drawn';",
             $this->read('js/esm/src/listing/events.ts')
         );
-        // Since R4b1 one spelling: the component imports the names and the mark the listing's painters read.
+        // One spelling: the component imports the names and the mark the listing's painters read.
         $component = $this->read('js/esm/src/filterline/FilterLine.tsx');
         $this->assertStringContainsString("import {LINE, LINE_DRAWN} from '../listing/events';", $component);
         $this->assertStringContainsString('export const EVENTS = LINE;', $component);

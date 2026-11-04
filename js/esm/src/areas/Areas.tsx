@@ -16,11 +16,10 @@
 /**
  * The posters of the areas and the panel between their rows, on both shells of the showcase.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md drew it for the logged-in shell; stage R4a hands it the visitor's
- * too, whose differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
+ * Drawn on both shells; the visitor's differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
  * false}` on the visitor's page, nothing on the logged-in one. A rule changes in the module of this tree
  * that carries it (`panel.ts` for the panel, `posters.ts` for the posters' result layer, `rail.ts`,
- * `model.ts`), each named after the AMD function it stood for.
+ * `model.ts`).
  *
  * WHO OWNS WHAT. The mount node is an empty, hidden child js/esm/src/listing/mounts.ts's mountAreas() appends
  * to the areas section, so the mount draws no box and the first paint stays the server's, to the pixel.

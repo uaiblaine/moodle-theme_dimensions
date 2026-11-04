@@ -15,7 +15,7 @@
 
 /**
  * The showcase listing's store: the state of the page on screen, every action a reader takes, and the one
- * pipeline from an action to the address and the request (docs/vitrine-react/R4b.md, section 2).
+ * pipeline from an action to the address and the request.
  *
  * The page is complete without it; the store moves the page the server drew. A shell is injected
  * ({@see Shell}): its service, its failure, its mark and its rules. Nothing here names a shell, a service or

@@ -17,20 +17,19 @@
 /**
  * Theme Dimensions - External functions of the category showcase, the mobile drawer and focus mode.
  *
- * The first four answer the logged-in showcase's client module over core/ajax:
- * loginrequired, ajax, no capability of their own - every refusal is decided inside the
- * function, and every miss raises the one exception; the fourth writes the reader's own remembered
- * state of a category and nothing else. The fifth answers a visitor over
- * lib/ajax/service-nologin.php and so is not loginrequired: it serves only a public
- * category's listing, refuses every logged-in session, and is closed until the site opens it
- * (publicaccess::client_enabled()). The sixth answers the mobile drawer of a logged-in account
- * when it is first shown, about the session's own user only. The calendar range answers the
- * theme's calendar page for a logged-in account (its class docblock gives its order of checks); its
- * public twin answers a visitor over service-nologin.php, the showcase visitor's way, for the public
- * categories' events and the public event courses alone, closed until the site opens it
- * (local\calendar\visitor::enabled()). The
- * focus mode one records a switch made in place, in the session alone, and so keeps a writable
- * session. None is part of a service such as the mobile one.
+ * The account services (the category rows, the card details, the course dialogue, the wishlist toggle, the remembered
+ * category state, the drawer summary, the calendar range, the calendar trails, the remembered calendar state, focus
+ * mode and the flavour choice) are loginrequired and ajax, with no capability of their own: every refusal is decided
+ * inside the function. Those that only read declare readonlysession; the writers keep a writable session, and the
+ * remembered states write the reader's own preference and nothing else. The drawer summary answers about the
+ * session's own user only. The calendar range gives its order of checks in its class docblock. Focus mode records a
+ * switch made in place, in the session alone.
+ *
+ * The visitor services (get_public_category_rows and get_public_calendar_range) answer over
+ * lib/ajax/service-nologin.php and so are not loginrequired: they serve only the public categories' listing and the
+ * public events and event courses, refuse every logged-in session, and stay closed until the site opens them
+ * (publicaccess::client_enabled() and local\calendar\visitor::enabled()).
+ *
  * Registered on upgrade, so any change here ships with a version bump.
  *
  * @package    theme_dimensions

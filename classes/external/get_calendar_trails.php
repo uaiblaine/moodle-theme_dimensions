@@ -35,7 +35,7 @@ use theme_dimensions\local\calendar\trails;
 use theme_dimensions\local\calendar\window;
 
 /**
- * The calendar's trails over one month (docs/trail/PLAN.md section 7), in one answer.
+ * The calendar's trails over one month, in one answer.
  *
  * The order of the checks is {@see get_calendar_range}'s:
  *

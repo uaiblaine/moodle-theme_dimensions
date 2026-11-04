@@ -24,7 +24,7 @@ use theme_dimensions\local\flavourchoice;
  * Boost Union cannot compile two flavours in one process ({@see builder}), and core runs every task of a cron run
  * in the cron process, so each sheet is built by a child running cli/build_flavour_css.php --flavourid. The
  * children run one at a time: every compile takes the theme's single CSS lock, so parallel children would only
- * queue on it. docs/flavourcss/PLAN.md (section 4.3) is the design.
+ * queue on it.
  *
  * A sheet is missing when the localcache file for the current revisions is absent: the file's name carries both
  * revisions, so its absence sees every path that changes a flavour's CSS (a cache reset moves the global revision,

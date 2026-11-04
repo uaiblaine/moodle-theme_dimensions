@@ -16,13 +16,12 @@
 /**
  * The filter line's folding steps, as a rule over numbers.
  *
- * The fleet contract's section 2 (moodle-dev/docs/filter-line/CONTRACT.md), as the AMD line's fit() read it
- * before R4a: the line takes the first step at which its controls fit
+ * The line takes the first step at which its controls fit
  * on its OWN width - full; Filters without its word; the search as an icon; two lines, the scope on the
  * second and the view toggle in the Organise menu - and the last one whatever it measures.
  *
- * The AMD module tries each step on the page and reads whether a control is drawn past an edge, on every
- * width change. This port measures, once per content, how wide the line must be for each step
+ * Trying each step on the page and reading whether a control is drawn past an edge would force a layout on every
+ * width change. This module measures, once per content, how wide the line must be for each step
  * ({@see ./measure}), and then takes a step from a width alone: a width change (a ResizeObserver entry)
  * forces no layout. The widths a step needs are the line's breakpoints for that content and language.
  *
@@ -59,8 +58,8 @@ export const MORPH_STEPS: Step[] = ['s3', 's4'];
 export const TWO_LINES: Step = 's4';
 
 /**
- * Pixels a control may run past an edge and still fit: a control is past the edge only beyond one pixel (the
- * AMD line's overflows() rule), which keeps a rounding of a sub-pixel width from folding the line.
+ * Pixels a control may run past an edge and still fit: a control is past the edge only beyond one pixel, which
+ * keeps a rounding of a sub-pixel width from folding the line.
  */
 export const TOLERANCE = 1;
 

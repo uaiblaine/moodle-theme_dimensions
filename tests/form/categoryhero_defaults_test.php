@@ -31,7 +31,7 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
 
 /**
- * Tests of the editor's three rows of round B: own colours, the card text and the default organisation.
+ * Tests of the editor's three rows: own colours, the card text and the default organisation.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

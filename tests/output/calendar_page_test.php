@@ -142,7 +142,7 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
-     * The model filter offers the trail line only while mod_subcourse is enabled (decision Q9).
+     * The model filter offers the trail line only while mod_subcourse is enabled.
      *
      * @return void
      */
@@ -187,7 +187,7 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
-     * The first paint's placeholder (PROPOSAL section 29): one per page, empty of text and hidden from assistive
+     * The first paint's placeholder: one per page, empty of text and hidden from assistive
      * technology, before the mount node and after the server's layer, in the month's shape and in the week's.
      *
      * @return void
@@ -245,7 +245,7 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
-     * Core's answers reach the page (stage C5): "New event" in the props and core's export in the footer, each only
+     * Core's answers reach the page: "New event" in the props and core's export in the footer, each only
      * where core offers it, beside its control: the export with the switch off, both for an account core's calendar
      * offers neither.
      *

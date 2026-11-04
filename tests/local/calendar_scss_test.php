@@ -164,7 +164,7 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * The stylesheet's head: the chosen colours' default and the functions the token blocks call (R1c), everything
+     * The stylesheet's head: the chosen colours' default and the functions the token blocks call, everything
      * before the light token block.
      *
      * @return string
@@ -350,9 +350,8 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * The space between the navbar and the calendar's title is halved (PROPOSAL section 29.3): .main-inner pays 12px
-     * above and 10px inside instead of Boost's 40px and 24px, under the body class and with no !important. Measured at
-     * 1440x900 on m503b: 83px of gap before, 41px after.
+     * The space between the navbar and the calendar's title is halved: .main-inner pays 12px
+     * above and 10px inside instead of Boost's 40px and 24px, under the body class and with no !important.
      *
      * @return void
      */
@@ -386,7 +385,7 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * R1c (PROPOSAL section 30.7): beside the grid the drawer is never taller than the grid or than the viewport under the
+     * Beside the grid the drawer is never taller than the grid or than the viewport under the
      * navbar. The cap is the smaller of the two, in a custom property (stylelint allows min() only there), read by the
      * drawer's max-height; the grids' observer writes --dim-cal-gridheight on the frame. The hour box shrinks and scrolls
      * because the chain down to it (drawer overflow, box min-height) lets it.
@@ -415,7 +414,7 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * R1c (PROPOSAL section 30.1): the hour column scrolls in a box of its own, drawn as block_compass's calendar strip:
+     * The hour column scrolls in a box of its own, drawn as block_compass's calendar strip:
      * no native scrollbar in either engine, its overscroll kept from the page, the fades taking no pointer; the drawer's
      * box takes what the head leaves, and the week's is capped under the viewport.
      *
@@ -435,7 +434,7 @@ final class calendar_scss_test extends \advanced_testcase {
             '~\.dim-cal__hourbox--week \.dim-cal__hourscroll \{[^}]*max-height: calc\(100vh - #\{\$navbar-height\} - 14rem\);~',
             $scss
         );
-        // R1d (PROPOSAL section 31): the phone's Day view is not sticky and its box is capped under the viewport as well.
+        // The phone's Day view is not sticky and its box is capped under the viewport as well.
         $this->assertMatchesRegularExpression(
             '~\.dim-cal__drawer--dayview \.dim-cal__hourscroll \{[^}]*max-height: calc\(100vh - #\{\$navbar-height\} - 12rem\);~',
             $scss
@@ -444,7 +443,7 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * The first paint (PROPOSAL section 29): under core's jsenabled the server's layer is held out and the placeholder
+     * The first paint: under core's jsenabled the server's layer is held out and the placeholder
      * stands in, a fail-safe animation brings the server back and retires the placeholder after a delay, the mounted
      * mark lifts the lot, and without jsenabled the placeholder is never shown.
      *
@@ -612,7 +611,7 @@ final class calendar_scss_test extends \advanced_testcase {
 
     /**
      * The calendar's own links keep no underline in dark mode: the rule's selector outweighs core's dark-mode underline
-     * of #region-main's links, read from core's stylesheet (PROPOSAL.md section 32.2), and spares the prose.
+     * of #region-main's links, read from core's stylesheet, and spares the prose.
      *
      * @return void
      */
@@ -639,7 +638,7 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * R3 (docs/calendar/PROPOSAL.md section 33): the Trilhas view's days scroll in a scroller drawn as block_compass's
+     * The Trilhas view's days scroll in a scroller drawn as block_compass's
      * strip (no native scrollbar in either engine, its overscroll kept from the page, snapped by the day, snap off while
      * the map drags), the trail column and the last column of every row held still over the days, the fades taking no
      * pointer; and the calendar's buttons are the mockup's, re-pointed through Bootstrap's own properties, the disabled

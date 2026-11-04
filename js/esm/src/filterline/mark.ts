@@ -41,7 +41,7 @@ export type Piece = {text: string, marked: boolean};
 export const fold = (text: string): string => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /**
- * The fleet's normalise rule for matching: accents off, lower case, trimmed.
+ * The normalise rule for matching: accents off, lower case, trimmed.
  *
  * @param {string} text Any text.
  * @returns {string}

@@ -242,7 +242,7 @@ final class get_course_dialogue_test extends \advanced_testcase {
     }
 
     /**
-     * Somebody not logged in is refused by the login itself: the service is a session's alone (decision V1).
+     * Somebody not logged in is refused by the login itself: the service is a session's alone.
      */
     public function test_a_visitor_is_refused(): void {
         $this->prepare();

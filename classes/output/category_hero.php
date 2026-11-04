@@ -301,11 +301,9 @@ class category_hero implements renderable, templatable {
            none shows none, however its ancestors are branded. The colour pair is the one thing a
            category inherits (branding::colours()), and it arrives already resolved in the payload.
            A compact band - the compact layout or a hero the reader folded - keeps them, on the
-           title's line at about 36x40 (26x29 on a phone), where the tagline and the counts go: the
-           owner decided in round I that a crest's silhouette at that size is enough to say whose
-           area this is, which replaces the earlier rule that 80x88 is the smallest a crest reads
-           at and that a compact band therefore drops them. The size is the stylesheet's alone; the
-           context draws the same crests, with the same alternative text, in both bands. */
+           title's line at about 36x40 (26x29 on a phone): at that size the silhouette is enough to
+           say whose area this is. The size is the stylesheet's alone; the context draws the same
+           crests, with the same alternative text, in both bands. */
         $badges = branding::badges_for_output($categoryid, $branding['badges']);
         $stats = $this->stats($context);
         $fold = ($layout === branding::LAYOUT_COMPACT) ? null : $this->fold_form();
@@ -346,7 +344,7 @@ class category_hero implements renderable, templatable {
     }
 
     /**
-     * The visitor's way to the public calendar (PROPOSAL.md section 32.1 of docs/calendar), or null.
+     * The visitor's way to the public calendar or null.
      *
      * Drawn for a visitor alone, on a page the anonymous shell serves, while the calendar page would serve that visitor:
      * the public calendar is on ({@see visitor::enabled()}) and the calendar type is the Gregorian

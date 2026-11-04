@@ -34,7 +34,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * minified `X.js` with no map and a development `X.dev.js` with its `X.dev.js.map`, served while
  * JavaScript is not cached. The development map carries the source it was made from, so its
  * currency is asserted here byte for byte, on every CI that runs PHPUnit. The minified file has no
- * map: the gate for its bytes is `mdl ci`'s esm_tree_check (`moodle-dev/bin/mdl-ci`), which rebuilds
+ * map: the gate for its bytes is the CI's ESM tree check, which rebuilds
  * the installed copy and compares the whole js/esm with the committed one. What this test can say of
  * it is that it exists and loads the same modules as the development build beside it.
  *
@@ -144,7 +144,7 @@ final class esm_source_test extends \basic_testcase {
     /**
      * The production build loads what the development build beside it loads.
      *
-     * Its bytes are mdl ci's to judge; a production file left from an older source would load another
+     * Its bytes are the CI's ESM tree check's to judge; a production file left from an older source would load another
      * set of modules, which is also what the visitor's import walk reads. The one difference core's
      * build makes on purpose is JSX's runtime: a development build of a component imports
      * `react/jsx-dev-runtime` where the production one imports `react/jsx-runtime`, so the development

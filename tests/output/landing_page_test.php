@@ -1164,7 +1164,7 @@ final class landing_page_test extends \advanced_testcase {
     }
 
     /**
-     * Render an exported page with four badges in its hero, as the badge grid of round 3 draws them.
+     * Render an exported page with four badges in its hero, as the badge grid draws them.
      *
      * The course needs no picture: the grid is the template's, and what is proved here is that every
      * new hero block renders beside four badges, in the same hero text column.
@@ -1202,7 +1202,7 @@ final class landing_page_test extends \advanced_testcase {
     }
 
     /**
-     * A hybrid event's hero is the double ticket (D1): the date, then the two ways to take part.
+     * A hybrid event's hero is the double ticket: the date, then the two ways to take part.
      *
      * The ticket replaces the online event's date block, which would call the whole event a broadcast;
      * the online event is the control, and so is a hybrid course, which has a composition instead. The
@@ -1276,7 +1276,7 @@ final class landing_page_test extends \advanced_testcase {
     }
 
     /**
-     * A hybrid course's hero is the composition (D2): the workload as one bar, online and in person.
+     * A hybrid course's hero is the composition: the workload as one bar, online and in person.
      *
      * The bar's widths are printed into a style attribute, a CSS context, so they are integers made by
      * the page and the attribute can only read "width: N%". The composition renders beside four badges.
@@ -1387,7 +1387,7 @@ final class landing_page_test extends \advanced_testcase {
 
     /**
      * The card says the format (with "at your own pace" under a self-paced one), a tutored course's start
-     * and its live classes (D8).
+     * and its live classes.
      *
      * The self-paced course carries a start date too, so the start row is held to the tutored course by
      * the format and not by a missing date.
@@ -1488,7 +1488,7 @@ final class landing_page_test extends \advanced_testcase {
     }
 
     /**
-     * A hybrid event offering two methods asks how to take part, and names each track after its instance (D3).
+     * A hybrid event offering two methods asks how to take part, and names each track after its instance.
      *
      * The controls hold each half of the rule apart: one method on the same event, two methods on an
      * online course, on an online event and on a hybrid course all keep the plain heading and no names.

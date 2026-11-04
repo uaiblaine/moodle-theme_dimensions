@@ -3,7 +3,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
  * The event popover: one item's facts and actions, anchored to the bar or line that opened it, a bottom sheet on a
- * phone (docs/calendar/PROPOSAL.md sections 13.2 and 13.3).
+ * phone.
  *
  * One at a time. role="dialog" labelled by the item's name, not modal: the focus moves to its heading on open;
  * Escape, the close button or a press outside close it and give the focus back to the item; Tab past its last
@@ -17,10 +17,10 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  *   hands core's own formatted description, the one feeder of the trusted sink below. The latest popover wins: a
  *   ticket is taken per opening and checked when the answer comes, so an answer for an item no longer shown, or
  *   for a popover already closed, is dropped; a Pending token (theme_dimensions/calendar:description) spans it.
- *   The visitor's page hands no `describe` and a `plain` text instead (decision V2), drawn as text.
+ *   The visitor's page hands no `describe` and a `plain` text instead, drawn as text.
  * - The actions: the primary is model.ts primaryOf()'s; "Open" stays beside it when the primary is something else
  *   and the item has a page of its own; the course's page comes third. An item with no page of its own (a personal
- *   event, a site event) has neither: the popover never leads to the site's home (PROPOSAL.md section 27.2).
+ *   event, a site event) has neither: the popover never leads to the site's home.
  * - An event course (source `course`) opens with its cover: the course's image, an <img> with an empty alt (never a
  *   url in a style), else its category's branding pair (look.ts coverStyle()), else its key's colours, and a date tile
  *   (the month's abbreviation and the day), hidden from the screen reader, which reads the date in the facts.

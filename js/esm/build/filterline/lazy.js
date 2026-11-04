@@ -1,6 +1,6 @@
 /**
  * The filter line's preview, imported on first use: the first pointer or focus on the toolbar, or the first
- * suggestion walked to (P0 of docs/vitrine-react/PLAN.md).
+ * suggestion walked to.
  *
  * One function in a module of its own, because the browser runs the dynamic import and Jest cannot: core's
  * ts-jest compiles the tree as CommonJS under node16, which keeps import() native, and Jest's runtime

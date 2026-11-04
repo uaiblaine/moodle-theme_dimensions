@@ -20,11 +20,11 @@
  * a reading page, finds the context layer only where the server drew it, and hides the bar only where an
  * administrator asked for it. What it decides is WHEN, from the scroll:
  *
- * - The band (C3): on an activity page it is the share of the page scrolled; on the course page it is the
+ * - The band: on an activity page it is the share of the page scrolled; on the course page it is the
  *   reader's completion of the course, handed in by the server and never changed here.
- * - The context layer (C2): it comes in once the page header has gone under the navbar and the reader has
+ * - The context layer: it comes in once the page header has gone under the navbar and the reader has
  *   gone on down a little; the global bar comes back on the way up.
- * - Auto-hide (C1): past the header, a longer way down takes the bar off the screen (its band stays) and
+ * - Auto-hide: past the header, a longer way down takes the bar off the screen (its band stays) and
  *   the first way up brings it back, showing the global bar.
  *
  * The scroll listener is passive and only books one animation frame, where the whole decision runs:

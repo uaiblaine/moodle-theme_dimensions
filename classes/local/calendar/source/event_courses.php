@@ -43,8 +43,8 @@ use theme_dimensions\local\landingfields;
  * An event course has no {event} row: its dates are the course's own, `startdate` to `enddate` (an end of 0
  * is the start day alone), so nothing is duplicated and nothing is written. The model is the custom field
  * `dimensions_model` holding {@see landingfields::MODEL_EVENT}; the field's own default stays empty for good
- * (the "landing page defaults" section of the theme's CLAUDE.md), so only a course with a stored row is an
- * event course and the statements join the row. Two halves:
+ * ({@see \theme_dimensions\local\landingdefaults}: a course without a row then reads as no model), so only a
+ * course with a stored row is an event course and the statements join the row. Two halves:
  *
  * - key "course": the event courses the viewer is actively enrolled in, among their calendar courses after
  *   the narrowing ({@see scope::course_ids()}), always. Driven by those ids.
@@ -162,7 +162,7 @@ final class event_courses implements source {
      * calendar_get_default_courses(), whose enrol_get_users_courses() drops a hidden course for a viewer without
      * viewhiddencourses. The showcase's gate is not asked again here: it would admit every one of them, because
      * an active enrolment lifts both core's and local_unlistedcourses' category clamps and the plugin's course
-     * term rescues a related course. The mutation sweep of 2026-11-01 proved the second gate held nothing.
+     * term rescues a related course.
      *
      * @param window $window The days.
      * @param scope $scope The viewer's calendar sets.

@@ -22,8 +22,7 @@ namespace theme_dimensions\local\flavourcss;
  * Boost Union compiles a flavour's sheet only when a browser requests it (flavours/styles.php), so after
  * every theme cache reset the first visitor of each flavour waits for a whole theme compile. This class
  * does that compile in a CLI process and fills the three stores styles.php reads, under the names it
- * reads them by: the MUC entry, the localcache file and the tempdir fallback. docs/flavourcss/PLAN.md
- * (section 4.2) is the design.
+ * reads them by: the MUC entry, the localcache file and the tempdir fallback.
  *
  * Two guards keep it from writing a wrong sheet, which would be worse than a slow one:
  * - the static guard: Boost Union keeps the first flavour record a process reads in a static and never

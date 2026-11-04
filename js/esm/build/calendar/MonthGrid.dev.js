@@ -2,7 +2,7 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The month grid and its keyboard (docs/calendar/PROPOSAL.md section 11.3).
+ * The month grid and its keyboard.
  *
  * role="grid" labelled by the month's caption, a columnheader row of weekdays, then a row per week whose seven
  * gridcells each hold one day button. One day button is in the Tab order, the selected day's (roving tabindex):

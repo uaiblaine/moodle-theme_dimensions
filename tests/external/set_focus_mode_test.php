@@ -113,7 +113,7 @@ final class set_focus_mode_test extends \advanced_testcase {
      * Entering records the choice for the activity's course, and leaving replaces it.
      *
      * The control of the leaving half is a course that switched focus mode on, whose next page the
-     * exit must open ordinary for the rest of the session (decision D1).
+     * exit must open ordinary for the rest of the session.
      *
      * @return void
      */
@@ -141,7 +141,7 @@ final class set_focus_mode_test extends \advanced_testcase {
     /**
      * With the master switch off the service refuses and writes nothing.
      *
-     * Decision D4: while it is off nothing of the feature runs.
+     * While it is off nothing of the feature runs.
      *
      * @return void
      */
@@ -176,7 +176,7 @@ final class set_focus_mode_test extends \advanced_testcase {
     /**
      * A single activity course that switched focus mode on refuses the exit in place; entering is accepted.
      *
-     * Decision D2: such a page has no ordinary skin to go back to, and its exit is a link out of the course.
+     * Such a page has no ordinary skin to go back to, and its exit is a link out of the course.
      *
      * @return void
      */

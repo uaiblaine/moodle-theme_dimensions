@@ -44,7 +44,7 @@ use theme_dimensions\local\landing\links;
  * carrying the view parameter, so a choice made without JavaScript still
  * reaches the server and is remembered.
  *
- * ONE line, in the filter line's slot order (moodle-dev/docs/filter-line/CONTRACT.md):
+ * ONE line, in the filter line's slot order:
  * the scope (the state chip's values {@see criteria::SCOPE}, counted, for a
  * logged-in reader with the state sort on), the search, the favourites star,
  * the Filters disclosure, the Organise menu, the view toggle and the managers'
@@ -382,7 +382,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      * The search's chip, labelled with the term in force, is the one the stylesheet keeps out of
      * the picture until the client folds the search into an icon and the field is not open over
      * the line: a term left in force must still say so where the field no longer shows it
-     * (moodle-dev/docs/filter-line/CONTRACT.md, section 3). It is built here, like every other
+     * (see the stylesheet). It is built here, like every other
      * chip, so the browser composes none; without the client the field always shows, and so
      * the chip never does.
      *

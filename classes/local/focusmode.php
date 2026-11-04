@@ -62,7 +62,7 @@ final class focusmode {
      * @var string Session key holding the courses left in place, as an array keyed by course id.
      *
      * The mirror of {@see SESSION_KEY} for a course that switched focus mode on: leaving it lasts
-     * the rest of the session, in that course alone (decision D1 of docs/focusmode/README.md).
+     * the rest of the session, in that course alone.
      */
     public const SESSION_KEY_OUT = 'theme_dimensions_focusout';
 
@@ -205,7 +205,7 @@ final class focusmode {
     /**
      * Whether the site-wide master switch is on.
      *
-     * The switch ships off (decision D5): an administrator turns the feature on
+     * The switch ships off: an administrator turns the feature on
      * deliberately, so a value which was never written reads as off, exactly as the
      * settings page shows it. A site that stored a value keeps it - Moodle writes a
      * default only where nothing is stored. Only an explicit Yes switches it on.
@@ -325,7 +325,7 @@ final class focusmode {
     /**
      * Whether the only way out of focus mode on this activity is to leave the course.
      *
-     * A single activity course that switched focus mode on (decision D2): its course page is
+     * A single activity course that switched focus mode on: its course page is
      * the activity itself, so there is no ordinary page to switch to and the exit is a link
      * to {@see close_url()}. Every other page leaves in place.
      *
@@ -455,7 +455,7 @@ final class focusmode {
      * Boost Union's layout file has built the whole context and renders it untouched: nothing
      * here rewrites a key of it. It is read, after its builder ran and before its template
      * does, for the three things focus mode adds: the bar (its colours are the navbar's, so a
-     * flavour recolours it), the completion line at the foot of the content (decision D3), and
+     * flavour recolours it), the completion line at the foot of the content, and
      * the module's arguments. The renderer prints the bar at the top of the body and the line
      * under the content ({@see \theme_dimensions\output\core_renderer::standard_top_of_body_html()},
      * {@see \theme_dimensions\output\core_renderer::activity_navigation()}).

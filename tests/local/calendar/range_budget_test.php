@@ -34,11 +34,10 @@ require_once(__DIR__ . '/fixture.php');
 /**
  * What one month grid costs in statements: flat in the events where the theme reads, bounded where core does.
  *
- * Statements are perf_get_reads(), which counts statements (a recordset is 3 on PostgreSQL), of the whole
- * service function after one warm call, every per-request memo reset as a new request starts
- * ({@see fixture::reads()}, plus the event container's and modinfo's statics). The shape is the C0 probe's
- * (docs/calendar/probe/calbaseline_test.php): per course six one-hour events, a 3-day and a 10-day event, a
- * group event and two assignments with due dates; two site, three user and one category event.
+ * Statements are perf_get_reads(), which counts statements (a recordset is 3 on PostgreSQL), of the whole service
+ * function after one warm call, every per-request memo reset as a new request starts ({@see fixture::reads()}, plus
+ * the event container's and modinfo's statics). The shape is: per course six one-hour events, a 3-day and a 10-day
+ * event, a group event and two assignments with due dates; two site, three user and one category event.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -50,7 +49,7 @@ final class range_budget_test extends \advanced_testcase {
     use fixture;
 
     /**
-     * The C0 probe's month for a student enrolled in $n courses over a parent category and two subcategories.
+     * The probe's month for a student enrolled in $n courses over a parent category and two subcategories.
      *
      * @param int $n The courses.
      * @param bool $withactivities Whether the courses carry the two assignments and the group event.
@@ -160,13 +159,12 @@ final class range_budget_test extends \advanced_testcase {
     }
 
     /**
-     * The C0 probe's shape at 5 and 25 courses stays within its measured budget, and its answer within its weight.
+     * The probe's shape at 5 and 25 courses stays within its budget, and its answer within its weight.
      *
-     * Measured on PHP 8.4 and PostgreSQL 18 (2026-10-31): 112 statements for 61 events at 5 courses, 531 for 283
+     * The shape costs 112 statements for 61 events at 5 courses, 531 for 283
      * at 25, with 108,957 bytes of JSON (4,930 gzipped) at 25. The same shape without activities costs 21 and 15
      * statements: what grows is the module callbacks' (about ten statements per assignment due date), core's
-     * own. The bounds keep a tenth of headroom; the weight bound is twice the C0 floor (55,189 bytes at 25,
-     * docs/calendar/PROPOSAL.md section 9.2).
+     * own. The bounds keep a tenth of headroom; the weight bound is twice the floor of 55,189 bytes at 25.
      *
      * @return void
      */

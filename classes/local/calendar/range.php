@@ -42,13 +42,13 @@ use theme_dimensions\local\landingfields;
  * category, an event course's landing page); an item that links to its course's page carries '' and the course
  * carries the page once (`courses[].url`), the site's home standing for it when there is no course. It holds
  * no HTML, no description and no image data: the course image is an ADDRESS ({@see cards::images()}, core's
- * course_image answer read in bulk), never the generated pattern, which was 19 KB per event in the C0 baseline.
+ * course_image answer read in bulk), never the generated pattern, which is far heavier than an address.
  *
  * The statements are flat in the number of events: everything read per course (the rows, their context,
  * the theme's custom fields, the course images, the participants of the event courses) and per category
  * (the branding pair) is one statement each for the whole answer, driven by the courses and categories the
  * items name. What remains per event is core's own: the event factory and the module callbacks
- * (docs/calendar/PROPOSAL.md section 9.2; range_budget_test measures it).
+ * (range_budget_test measures it).
  *
  * A category is named only where core and local_unlistedcourses let the viewer discover it: a course in a
  * category the viewer may not see keeps categoryid 0 in the dictionary, and a category event (which core
@@ -309,7 +309,7 @@ final class range {
      * The active enrolments of each event course, in one grouped statement.
      *
      * Active as core's enrolment check reads it: an enabled instance, an active row, inside its dates, of an
-     * account that is neither deleted nor suspended. A number only (decision D3): who they are is not part of the answer.
+     * account that is neither deleted nor suspended. A number only: who they are is not part of the answer.
      *
      * @param int[] $courseids The event courses.
      * @return int[] course id => count, for every id given.

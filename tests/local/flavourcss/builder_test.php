@@ -31,9 +31,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 /**
  * The builder stores a flavour's sheet where Boost Union's styles.php reads it, and never a wrong one.
  *
- * No test compiles a real theme: Boost Union keeps the first flavour record a process reads in a static
- * (docs/flavourcss/PLAN.md, section 3.3), and PHPUnit runs every test in one process, so the compiler and the
- * reader of that static are replaced. The real compile is checked end to end from the CLI (stage S2).
+ * No test compiles a real theme: Boost Union keeps the first flavour record a process reads in a static,
+ * and PHPUnit runs every test in one process, so the compiler and the
+ * reader of that static are replaced. The real compile is checked end to end from the CLI.
  *
  * @package    theme_dimensions
  * @category   test

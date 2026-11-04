@@ -17,7 +17,7 @@
 {{!
     @template theme_dimensions/calendar_page
 
-    The theme's calendar page (docs/calendar/PROPOSAL.md, stage C2). Two layers:
+    The theme's calendar page. Two layers:
 
     - the server's (data-region="dim-cal-server"), whole without JavaScript: the
       toolbar's links, one GET form for the key chips, the category and the
@@ -39,23 +39,23 @@
     still name the keys (none on); the hidden recursive=0 before the checkbox
     is what a cleared checkbox submits.
 
-    With weekview set (stage C4) the toolbar's links move by the week, the
+    With weekview set the toolbar's links move by the week, the
     caption is the week's span and the agenda lists the week's seven days;
     the view switch is two links, the current one aria-current="page". The
     form keeps the view and the week, so applying it stays on the week.
 
-    With visitor set (the public calendar, stage CV) the page draws the two
+    With visitor set (the public calendar) the page draws the two
     chips a visitor has and nothing that needs a session or a login: no
     category and no "More" filters.
 
-    With trailview set (the Trilhas view, docs/trail/PLAN.md section 7) the
+    With trailview set (the Trilhas view) the
     toolbar's links move by the month and keep the view, its trail and "Só
     as minhas"; the form is not drawn (the view's filters are the client's)
     and the month's trails are listed, each with its steps and their dates.
     trailsoffered adds the view's link to the switch: an account's, while
     trails are available.
 
-    exporturl (stage C5) is core's calendar/export.php where core's calendar
+    exporturl is core's calendar/export.php where core's calendar
     offers it to this account; the footer carries it outside both layers, so
     it reads the same with and without JavaScript. A visitor has none.
 
@@ -110,7 +110,6 @@
                 "selected": true
             }
         ],
-        "hascategories": true,
         "nocategory": false,
         "recursive": true,
         "models": [

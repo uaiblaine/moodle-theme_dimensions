@@ -452,7 +452,7 @@ final class resolver_test extends \advanced_testcase {
     /**
      * Enrolled from a later date: the state is scheduled, and an open self instance beside it is listed as a method.
      *
-     * Decision D2 of the enrolment matrix, core's default kept: the viewer is told when the course opens to them,
+     * The viewer is told when the course opens to them,
      * and offered every method that would really take them now - the route the card's line points at. A course with
      * no other method is the control: scheduled, and nothing listed.
      */
@@ -490,7 +490,7 @@ final class resolver_test extends \advanced_testcase {
     /**
      * A suspended or ended relationship rides beside the methods, never instead of them.
      *
-     * The suspended viewer is offered the open self instance on the same course (core's default, decision D2b), and
+     * The suspended viewer is offered the open self instance on the same course (core's default), and
      * told about the suspension; the ended one, on a course with no other method, is closed and told when the
      * enrolment ended. A viewer with no row is the control: the same open state, no relationship.
      */

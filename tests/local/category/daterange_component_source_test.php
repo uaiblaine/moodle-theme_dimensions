@@ -28,14 +28,14 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the AMD half of stage R1 (docs/vitrine-react/PLAN.md) by reading the source.
+ * Pins the AMD half of the date range component by reading the source.
  *
  * The component's behaviour is Jest's (js/esm/tests/daterange); what Jest cannot see is how the AMD
  * listing mounts it and talks to it, and what the component must never compute. Core's react_autoinit
  * mounts a node added to the document and reads no attribute change, so the listing APPENDS a node
  * carrying the component and its props; it listens to the component before the node goes in; and the
  * native date fields go behind the calendar only once the component says it is drawn, which it never
- * says without the site's today. Since R4a both shells mount it, named once in the shared listing (the
+ * says without the site's today. Both shells mount it, named once in the shared listing (the
  * visitor's import walk, which reaches it, is categorypublic_source_test's).
  *
  * @package    theme_dimensions
@@ -121,7 +121,7 @@ final class daterange_component_source_test extends \basic_testcase {
     /**
      * The component is the calendar of every shell, appended wherever the toolbar has the period's region.
      *
-     * No shell has mounted the AMD calendar since R4a, and it is gone since R4c: an address's period is read by
+     * No shell mounts the AMD calendar and it is gone: an address's period is read by
      * js/esm/src/daterange/calendar.ts's period(), on both shells.
      *
      * Changes that must make it fail: the AMD calendar mounted again beside the component; the specifier
@@ -226,7 +226,7 @@ final class daterange_component_source_test extends \basic_testcase {
             ['pick' => 'dim-daterange:pick', 'set' => 'dim-daterange:set', 'mounted' => 'dim-daterange:mounted'],
             array_column($names, 2, 1)
         );
-        // Since R4b1 one spelling: the component and the listing's mounts both import it.
+        // One spelling: the component and the listing's mounts both import it.
         $component = $this->read('js/esm/src/daterange/DateRange.tsx');
         $this->assertStringContainsString("import {CALENDAR} from '../listing/events';", $component);
         $this->assertStringContainsString('export const EVENTS = CALENDAR;', $component);

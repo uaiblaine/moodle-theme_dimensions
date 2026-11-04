@@ -6,7 +6,7 @@ import{fetchOne as R}from"@moodle/lms/core/ajax";import $ from"@moodle/lms/core/
  * an arrow asks the range service for the next month's grid with the state the block drew, builds the partial's
  * context the way the server builds it ({@see context()}), and paints theme_dimensions/calendar_block_month_body in
  * place; the latest press wins, and a failure follows the link the arrow already is. The keyboard is the page's grid
- * contract in small (docs/calendar/PROPOSAL.md section 17.3): arrows by day and week, Home and End, PageUp and PageDown
+ * contract in small: arrows by day and week, Home and End, PageUp and PageDown
  * by month, Enter follows the day's link.
  *
  * @module     theme_dimensions/calendar/block

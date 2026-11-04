@@ -14,8 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * One day's items, pure: the all-day strip, the hour column in columns, and who overlaps whom
- * (docs/calendar/PROPOSAL.md section 13.2).
+ * One day's items, pure: the all-day strip, the hour column in columns, and who overlaps whom.
  *
  * - The ALL-DAY strip holds every item touching the day that is a bar of the month grid (it spans more than one day,
  *   or it is an event course) or that fills whole days ({@see isAllDay()}).
@@ -25,7 +24,7 @@
  *   deadline, duration 0) sits in the column at its time, alone in its own cluster.
  * - Two items OVERLAP when both have a duration and each starts before the other ends: touching ends do not, a
  *   point item never does, and an all-day or multi-day item never counts.
- * - The hour column draws the whole day in a scroll box (R1c, PROPOSAL.md section 30.1, reversing C3's windowed column):
+ * - The hour column draws the whole day in a scroll box:
  *   the busy band (hourWindow()) or the working hours (EMPTY_WINDOW) is where the box starts ({@see boxTopOf()}),
  *   and a fade marks each end it can still scroll to ({@see edgesOf()}).
  *
@@ -178,7 +177,7 @@ export const MIN_WINDOW = 4;
 /** The hours of the column: [from, to) in whole hours of the day. */
 export type HourWindow = {from: number, to: number};
 
-/** The hours an hour column draws, the drawer's and the week's: the whole day (PROPOSAL.md section 30.1). */
+/** The hours an hour column draws, the drawer's and the week's: the whole day. */
 export const FULL_DAY: HourWindow = {from: 0, to: 24};
 
 /**
@@ -231,7 +230,7 @@ export const overlapsOf = (entry: Placed, placed: Placed[], zone: Zone): Placed[
 };
 
 /**
- * Where an hour column's scroll box starts (PROPOSAL.md section 30.1). A busy band's first hour goes to the box's top,
+ * Where an hour column's scroll box starts. A busy band's first hour goes to the box's top,
  * so the earliest item, an hour below it, is never cut; the empty day's band is centred in the box, never with its
  * first hour above the box's top when the box is shorter than the band. The browser clamps what is past the end. Pure:
  * the row's height and the box's are read once by the caller, when the day opens.

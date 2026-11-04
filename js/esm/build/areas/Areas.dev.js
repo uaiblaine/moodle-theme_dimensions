@@ -4,11 +4,10 @@ import { jsxDEV } from "react/jsx-dev-runtime";
 /**
  * The posters of the areas and the panel between their rows, on both shells of the showcase.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md drew it for the logged-in shell; stage R4a hands it the visitor's
- * too, whose differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
+ * Drawn on both shells; the visitor's differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
  * false}` on the visitor's page, nothing on the logged-in one. A rule changes in the module of this tree
  * that carries it (`panel.ts` for the panel, `posters.ts` for the posters' result layer, `rail.ts`,
- * `model.ts`), each named after the AMD function it stood for.
+ * `model.ts`).
  *
  * WHO OWNS WHAT. The mount node is an empty, hidden child js/esm/src/listing/mounts.ts's mountAreas() appends
  * to the areas section, so the mount draws no box and the first paint stays the server's, to the pixel.
@@ -140,11 +139,11 @@ const Areas = /* @__PURE__ */ __name((props) => {
   }
   const entries = summary.entries.map((entry) => /* @__PURE__ */ jsxDEV("li", { "data-categoryid": entry.id, hidden: entry.id === opened, children: entry.url ? /* @__PURE__ */ jsxDEV("a", { href: entry.url, children: entry.name }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/areas/Areas.tsx",
-    lineNumber: 202,
+    lineNumber: 201,
     columnNumber: 26
   }) : entry.name }, entry.id, false, {
     fileName: "public/theme/dimensions/js/esm/src/areas/Areas.tsx",
-    lineNumber: 201,
+    lineNumber: 200,
     columnNumber: 9
   }));
   return /* @__PURE__ */ jsxDEV(Fragment, { children: [
@@ -152,7 +151,7 @@ const Areas = /* @__PURE__ */ __name((props) => {
     createPortal(entries, drawn.list)
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/areas/Areas.tsx",
-    lineNumber: 206,
+    lineNumber: 205,
     columnNumber: 9
   });
 }, "Areas");

@@ -1,9 +1,8 @@
 import{WEEK as l,parse as h,say as c,shift as u,shiftMonth as k,utc as b}from"../daterange/calendar";import{gridWeeks as S}from"./days";import{weekLayout as P}from"./layout";import{dayPlan as A,hourWindow as L,isAllDay as O,itemKey as x}from"./overlap";import{DAY_PARAM as w}from"./model";import{fill as W}from"./strings";/**
- * The week view, pure: the span a page shows, the week's days, its layout, its "now" line and its keyboard's moves
- * (docs/calendar/PROPOSAL.md section 21).
+ * The week view, pure: the span a page shows, the week's days, its layout, its "now" line and its keyboard's moves.
  *
  * - A SPAN is what a page shows: a month (its grid of whole weeks, calendar/days.ts), a week (seven days from the
- *   viewer's first weekday) or, on a phone only, a day (PROPOSAL.md section 31). The view, the week and the day view's
+ *   viewer's first weekday) or, on a phone only, a day. The view, the week and the day view's
  *   day travel in the address as navigation, never in the saved state: `view=week&week=<first day>` and
  *   `view=day&day=<day>` (local\calendar\page::PARAM_VIEW, PARAM_WEEK and PARAM_DAY), the month view writing none.
  * - A DAY SPAN IS A PHONE'S: on a frame at or above MonthGrid PHONE it is drawn, and asked for, as its month with the
@@ -11,7 +10,7 @@ import{WEEK as l,parse as h,say as c,shift as u,shiftMonth as k,utc as b}from"..
  * - The week's LAYOUT is the month's and the drawer's, reused: the all-day strip is layout.ts weekLayout() over the
  *   items that are bars or fill whole days (overlap.ts isAllDay()), every slot shown; each day's hour items are
  *   overlap.ts dayPlan()'s, in the drawer's columns; and the hour window is overlap.ts hourWindow() over the whole
- *   week's hour items at once: the band the hour body's scroll box opens on (R1c, PROPOSAL.md section 30.1), which
+ *   week's hour items at once: the band the hour body's scroll box opens on, which
  *   draws the whole day.
  * - Days are calendar days counted in UTC (daterange/calendar.ts): a daylight-saving change moves no day, and an
  *   item's row is its wall-clock time in the viewer's timezone (days.ts zone().minutes()).

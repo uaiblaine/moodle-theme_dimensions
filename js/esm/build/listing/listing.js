@@ -1,8 +1,7 @@
 import{PARAM as t,buildUrl as o,catOf as a,dropCriterion as i,filterArgs as n,isGrouped as p,isRoot as s,narrows as l,pageSizeOf as d,periodOf as f,readUrl as m,rootOnly as u,sortOf as g,syncFold as C,withPanel as O}from"./address";import{writeUrl as w}from"./history";import{focusTarget as A,mountAreas as F,mountCalendar as T,mountLine as G,tellAnswer as P}from"./mounts";import{armTreebox as b,closestOf as h,markTree as v,paintChips as y,paintControls as D,paintCount as M,paintDates as R,paintDirect as k,paintEraser as z,paintFavToggle as B,paintFavourites as E,paintFilterBadge as L,paintGrid as S,paintGroups as V,paintPager as j,paintView as q,renderCards as H,restoreMore as I}from"./paint";/**
  * The showcase's shared listing, under the names the store and its two shells call it by.
  *
- * Its names were the AMD clients' (R4b1 of docs/vitrine-react/R4b.md); since those left (R4c) it exports what a
- * shell calls and nothing else (listing_source_test).
+ * It exports what a shell calls and nothing else (listing_source_test).
  *
  * @module     theme_dimensions/listing/listing
  * @copyright  2026 Anderson Blaine

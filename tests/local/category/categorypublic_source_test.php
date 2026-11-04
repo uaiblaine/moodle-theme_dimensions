@@ -31,7 +31,7 @@ use theme_dimensions\output\category_panel;
 /**
  * Pins what the visitor's live listing may reach and say, by reading its sources and their builds.
  *
- * Since stage R4b2 the page arms amd/src/listingvisitor.js, which hands it to the visitor's shell
+ * The page arms amd/src/listingvisitor.js, which hands it to the visitor's shell
  * (js/esm/src/listing/visitor.ts) over the shared store (store.ts): the walk starts at the entry, and the
  * shell's own assertions read those two sources ({@see SHELL}).
  *
@@ -42,7 +42,7 @@ use theme_dimensions\output\category_panel;
  * server's words. moodle-plugin-ci has no JavaScript test runner, so they are assertions about
  * spelling, each scoped to the function it is about.
  *
- * Since stage R4a its calendar, its filter line and its posters with their panel are the React
+ * Its calendar, its filter line and its posters with their panel are the React
  * components the logged-in shell draws (js/esm/src/daterange, filterline and areas), mounted through
  * the shared listing. What is pinned here is the visitor's half of them: the components reached by
  * the walk and naming nothing of the logged-in shell; the request a panel asks, which keeps a slice
@@ -86,7 +86,7 @@ final class categorypublic_source_test extends \basic_testcase {
     /** @var string[] The React components both shells mount, as nodes of the walk. */
     private const COMPONENTS = ['esm:daterange/DateRange', 'esm:filterline/FilterLine', 'esm:areas/Areas'];
 
-    /** @var string The shared listing's barrel, which the AMD clients load through core/esm! (R4b1). */
+    /** @var string The shared listing's barrel, which the AMD clients load through core/esm!. */
     private const LISTING = self::ESM . 'listing/listing';
 
     /** @var string[] The logged-in modules nothing a visitor's page loads may name, in code or in a comment. */
@@ -98,7 +98,7 @@ final class categorypublic_source_test extends \basic_testcase {
 
     /**
      * @var string[] Theme modules a visitor's page may never load: the session's star, the logged-in clients and the
-     *   course dialogue, whose content comes from a service a session alone may call (decision V1).
+     *   course dialogue, whose content comes from a service a session alone may call.
      */
     private const FORBIDDEN_MODULES = [
         self::ESM . 'listing/star',
@@ -122,7 +122,7 @@ final class categorypublic_source_test extends \basic_testcase {
         'core_course_set_favourite_courses',
     ];
 
-    /** @var string The public calendar's entry: the component its page mounts for a visitor (stage CV). */
+    /** @var string The public calendar's entry: the component its page mounts for a visitor. */
     private const CALENDAR = self::ESM . 'calendar/PublicCalendar';
 
     /** @var string The one service the public calendar may call. */
@@ -156,7 +156,7 @@ final class categorypublic_source_test extends \basic_testcase {
 
     /**
      * @var string[] The services of a session the public calendar's graph may not name: the account's, and core's, its
-     *     calendar's editing modules and services included (stage C5).
+     *     calendar's editing modules and services included.
      */
     private const CALENDAR_FORBIDDEN_STRINGS = [
         'theme_dimensions_get_calendar_range',
@@ -466,7 +466,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * The walk follows imports all the way down, which every assertion below depends on.
      *
      * A walk that read the entry file alone would pass a session module pulled in through a shared
-     * one. The shared listing (js/esm/src/listing since R4b1, reached from AMD through `core/esm!`) reaches
+     * one. The shared listing (js/esm/src/listing, reached from AMD through `core/esm!`) reaches
      * the period's reader and the title marker, and names the three components it mounts, whose relative
      * imports the walk follows down to the bridge; the visitor's graph holds all of it.
      *
@@ -520,7 +520,7 @@ final class categorypublic_source_test extends \basic_testcase {
     /**
      * The visitor's page reaches each component the logged-in shell draws, through the one place each is named.
      *
-     * Stage R4a of docs/vitrine-react/PLAN.md moved the visitor onto the components on purpose: they are
+     * The visitor is on the shared components on purpose: they are
      * visitor-safe by rule ({@see test_nothing_the_walk_reaches_names_the_logged_in_shell()}). Each
      * specifier is named once, in the shared listing, so both shells mount the same component and no
      * client names one the walk would have to be taught. The preview the line imports on first use and
@@ -570,7 +570,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * Nothing a visitor's page loads names the logged-in shell's modules, not even in a comment.
      *
      * The walk starts from the visitor's module and from the bridge and reads every module's source and
-     * both builds as they are, comments included. A name in a comment is no import, but the rule of R4a
+     * both builds as they are, comments included. A name in a comment is no import, but the rule
      * is that the visitor's graph says nothing of what the logged-in shell is made of: a component that
      * names the logged-in module answering it is one edit from importing it. The logged-in services are
      * the next test's. The controls: the account's entry names the star, and a comment alone is found.
@@ -1314,7 +1314,7 @@ final class categorypublic_source_test extends \basic_testcase {
     }
 
     /**
-     * The public calendar's whole import graph reaches nothing of a session (stage CV).
+     * The public calendar's whole import graph reaches nothing of a session.
      *
      * The page mounts calendar/PublicCalendar for a visitor, over the calendar's shared modules (the grid, the drawer,
      * the popover, the chips). Walked as the listing's entry is: every module it loads, in its source and both builds,
@@ -1323,8 +1323,8 @@ final class categorypublic_source_test extends \basic_testcase {
      *
      * Changes that must make it fail: the popover importing the description module again (gate cv_js_popover_no_core);
      * a shared module naming the account's services (gate cv_js_model_no_account); the visitor's shell importing the
-     * logged-in one or its picker. The week view's modules (stage C4) are shared and walked like the month's. Core's
-     * editing (stage C5) is the logged-in shell's alone: a shared module importing calendar/editing or the popover's
+     * logged-in one or its picker. The week view's modules are shared and walked like the month's. Core's
+     * editing is the logged-in shell's alone: a shared module importing calendar/editing or the popover's
      * EditActions, or the bridge naming core's calendar modules, fails here (gate c5_js_bridge_names_nothing).
      */
     public function test_the_public_calendar_reaches_nothing_of_a_session(): void {

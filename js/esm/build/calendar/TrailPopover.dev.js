@@ -2,7 +2,7 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * A step's popover in the Trilhas view (docs/trail/PLAN.md section 7): its category, its name, "Course 3 of 5 · trail",
+ * A step's popover in the Trilhas view: its category, its name, "Course 3 of 5 · trail",
  * its dates and where they come from, its state and core's availability text for a learner, "View trail" and "Open
  * course".
  *
@@ -11,7 +11,7 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * shown; Escape, the close button, a press outside, or Tab past its last control close it and give the focus back to
  * the bar. Its two layout reads are the opener's box and its own, on an opening.
  *
- * R3 (docs/calendar/PROPOSAL.md section 33) draws it as the mockup does: a band in the step's category colours (look.ts
+ * It draws a band in the step's category colours (look.ts
  * categoryCover(), else the state's), the category and the name, the state as a pill, a row with the trail's icon for
  * "Course 3 of 5 · trail", a row with the calendar's for the dates and their source, core's reason in a quiet box, and
  * the actions at the end, "View trail" before "Open course".

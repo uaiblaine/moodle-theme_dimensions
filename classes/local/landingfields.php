@@ -87,7 +87,7 @@ class landingfields {
     public const SHORTNAME_MEETINGS = 'dimensions_meetings';
 
     /**
-     * @var string[] The fields of round 6, in the order they sit right after the workload.
+     * @var string[] The format, live class and in-person fields, in the order they sit right after the workload.
      *
      * A site that had the other fields before them gets them appended at the end of the category
      * by {@see self::ensure_fields()}; the upgrade then moves them here with
@@ -199,7 +199,7 @@ class landingfields {
     /** @var int Stored value of the modality select for "in-person". */
     public const MODALITY_INPERSON = 2;
 
-    /** @var int Stored value of the modality select for "hybrid", the line appended in round 6. */
+    /** @var int Stored value of the modality select for "hybrid", the line appended after the other two. */
     public const MODALITY_HYBRID = 3;
 
     /** @var int Stored value of the format select for "self-paced". */
@@ -521,6 +521,7 @@ class landingfields {
      *
      * @param string $shortname One of the SHORTNAME_* constants.
      * @return field_controller|null The field controller.
+     * @throws \coding_exception When the shortname is not one of the theme's fields.
      */
     public static function get_field(string $shortname): ?field_controller {
         if (!isset(self::FIELD_TYPES[$shortname])) {
@@ -719,8 +720,8 @@ class landingfields {
      * the page decides whether a player embeds it.
      *
      * @param int $courseid The course id.
-     * The fields of round 6 arrive already read without contradiction (decision D10,
-     * {@see coherent()}): a page never has to ask whether a format, a live class or an
+     * The format, live class and in-person fields arrive already read without contradiction
+     * ({@see coherent()}): a page never has to ask whether a format, a live class or an
      * in-person figure may be shown beside the model and the modality it was saved with.
      *
      * @return \stdClass Typed values: model/modality/format (int, 0 = unset), workload/
@@ -1032,7 +1033,7 @@ class landingfields {
     }
 
     /**
-     * Read the round-6 values without contradiction (decision D10), whatever was stored.
+     * Read the format, live class and in-person values without contradiction, whatever was stored.
      *
      * The course form refuses a self-paced course that is not online and hides what does not
      * apply ({@see hook\course\after_form_validation}, {@see hook\course\after_form_definition}),
@@ -1347,10 +1348,10 @@ class landingfields {
     }
 
     /**
-     * Move the fields of round 6 to their place right after the workload.
+     * Move the format, live class and in-person fields to their place right after the workload.
      *
      * {@see ensure_fields()} appends a field it creates to the end of the category, which on a
-     * site provisioned before round 6 puts the format and the live classes after the share
+     * site provisioned before these fields existed puts the format and the live classes after the share
      * picture. Each field is moved ahead of the target audience field, the one that follows them
      * in {@see self::definitions()}, when both sit in the same category;
      * moved one after the other in their own order, they land in that order. A field an

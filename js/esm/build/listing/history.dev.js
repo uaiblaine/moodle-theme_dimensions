@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 /**
- * The one writer of the showcase's history entries in js/esm/src (docs/vitrine-react/R4b.md, 2.3).
+ * The one writer of the showcase's history entries in js/esm/src.
  *
  * On two disjoint sets of parameters: the listing's criteria ({@see writeUrl}) and the panel's open area and
  * order, replaced and never pushed ({@see replaceKeeping}). listing_source_test fails a write anywhere else.

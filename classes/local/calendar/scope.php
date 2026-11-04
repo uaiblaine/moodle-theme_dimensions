@@ -43,7 +43,7 @@ use local_unlistedcourses\category_access;
  *   session.
  * - A category narrows the courses to its WHOLE subtree when $recursive is on (the default), through
  *   get_all_children_ids(). Core keeps the category and its direct children only (get_children(), the
- *   "lib.php:1146" gap of docs/calendar/PROPOSAL.md section 2.5), while its category events already use the
+ *   gap in core's site view), while its category events already use the
  *   whole subtree; $recursive off is core's reading, kept for the parity test.
  * - The site view's category cache (calendar_categories, MODE_SESSION) is neither read nor set: a set would write
  *   $SESSION under the read-only session the range service declares, and a read would return core's narrower
@@ -52,7 +52,7 @@ use local_unlistedcourses\category_access;
  *   sense of core's form ({@see \calendar_get_allowed_types()}: moodle/category:manage WITH doanything). Core's
  *   site view asks that capability without doanything, so a site administrator with no role in any category
  *   sees no category event, including those they created through core's form. An event the viewer may create
- *   is an event the viewer sees (PROPOSAL section 29). A viewer who manages a category by role is in both sets,
+ *   is an event the viewer sees. A viewer who manages a category by role is in both sets,
  *   and one with no right in either.
  *
  * The narrowing refuses with the one {@see refusal}: a course that is not one of the viewer's calendar

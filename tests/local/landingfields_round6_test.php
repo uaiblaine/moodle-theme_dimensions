@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the round-6 landing page fields: the hybrid modality, the format and the live classes
+ * Tests for the format and hybrid landing page fields: the hybrid modality, the format and the live classes
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * The round-6 fields are provisioned in place, upgraded in place, and read without contradiction.
+ * The format and hybrid fields are provisioned in place, upgraded in place, and read without contradiction.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -164,7 +164,7 @@ final class landingfields_round6_test extends \advanced_testcase {
     /**
      * An upgraded site ends where a fresh one starts: the third modality appended once, the fields in place.
      *
-     * The site before round 6 is rebuilt from a fresh one: the modality cut back to its two
+     * The site before the format and hybrid fields is rebuilt from a fresh one: the modality cut back to its two
      * lines, the five fields deleted and provisioned again, which appends them after the share
      * picture - where ensure_fields() puts them on a real upgrade. A course already saved as
      * in-person keeps its meaning across the step.
@@ -228,7 +228,7 @@ final class landingfields_round6_test extends \advanced_testcase {
     }
 
     /**
-     * values() reads the round-6 fields of a tutored hybrid course, and reads them through coherent().
+     * values() reads the format and hybrid fields of a tutored hybrid course, and reads them through coherent().
      */
     public function test_values_reads_the_round6_fields(): void {
         $this->resetAfterTest();
@@ -272,9 +272,9 @@ final class landingfields_round6_test extends \advanced_testcase {
     }
 
     /**
-     * Stored combinations and what the page may read of them (decision D10).
+     * Stored combinations and what the page may read of them.
      *
-     * @return array Name => [stored values, expected values], each over the round-6 keys.
+     * @return array Name => [stored values, expected values], each over the format and hybrid keys.
      */
     public static function coherence_cases(): array {
         $c = landingfields::MODEL_COURSE;

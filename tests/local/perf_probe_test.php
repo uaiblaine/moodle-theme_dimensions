@@ -35,7 +35,7 @@ require_once(__DIR__ . '/../behat/theme_dimensions_perf_probe.php');
  *
  * The browser half cannot run here (it needs a Selenium Chrome); the two pure parts can: the
  * reading of the opt-in, whose failure in one direction would make every CI run spend minutes on
- * the probe and in the other would skip it where the owner asked for it, and the median the
+ * the probe and in the other would skip it where it was asked for, and the median the
  * reports keep.
  *
  * @package    theme_dimensions

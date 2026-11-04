@@ -14,11 +14,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The week view, pure: the span a page shows, the week's days, its layout, its "now" line and its keyboard's moves
- * (docs/calendar/PROPOSAL.md section 21).
+ * The week view, pure: the span a page shows, the week's days, its layout, its "now" line and its keyboard's moves.
  *
  * - A SPAN is what a page shows: a month (its grid of whole weeks, calendar/days.ts), a week (seven days from the
- *   viewer's first weekday) or, on a phone only, a day (PROPOSAL.md section 31). The view, the week and the day view's
+ *   viewer's first weekday) or, on a phone only, a day. The view, the week and the day view's
  *   day travel in the address as navigation, never in the saved state: `view=week&week=<first day>` and
  *   `view=day&day=<day>` (local\calendar\page::PARAM_VIEW, PARAM_WEEK and PARAM_DAY), the month view writing none.
  * - A DAY SPAN IS A PHONE'S: on a frame at or above MonthGrid PHONE it is drawn, and asked for, as its month with the
@@ -26,7 +25,7 @@
  * - The week's LAYOUT is the month's and the drawer's, reused: the all-day strip is layout.ts weekLayout() over the
  *   items that are bars or fill whole days (overlap.ts isAllDay()), every slot shown; each day's hour items are
  *   overlap.ts dayPlan()'s, in the drawer's columns; and the hour window is overlap.ts hourWindow() over the whole
- *   week's hour items at once: the band the hour body's scroll box opens on (R1c, PROPOSAL.md section 30.1), which
+ *   week's hour items at once: the band the hour body's scroll box opens on, which
  *   draws the whole day.
  * - Days are calendar days counted in UTC (daterange/calendar.ts): a daylight-saving change moves no day, and an
  *   item's row is its wall-clock time in the viewer's timezone (days.ts zone().minutes()).
@@ -346,7 +345,7 @@ export const spanLabels = (span: Span, days: string[], strings: Strings, languag
 export const dayIn = (iso: string | null, days: string[]): string | null => (iso !== null && days.includes(iso) ? iso : null);
 
 /**
- * The views the switch offers: the day only on a phone (PROPOSAL.md section 31.1). Trilhas, where the page offers it,
+ * The views the switch offers: the day only on a phone. Trilhas, where the page offers it,
  * follows them (ViewSwitch.tsx).
  *
  * @param {boolean} phone Whether the frame is a phone's.
@@ -365,7 +364,7 @@ export const viewsOf = (phone: boolean): View[] => (phone ? ['month', 'week', 'd
 export const gridOf = (span: Span, phone: boolean): Grid => (span.view === 'day' && !phone ? 'month' : span.view);
 
 /**
- * The span a request asks for: a day span on a desktop is its month, with the day to open (PROPOSAL.md section 31.2);
+ * The span a request asks for: a day span on a desktop is its month, with the day to open;
  * any other span is asked as it is, with nothing to open.
  *
  * @param {object} span The span wanted.
@@ -510,7 +509,7 @@ export const weekStops = (plan: WeekPlan, zone: Zone): Stop[][] => plan.columns.
 ]);
 
 /**
- * The day a key moves to from a day header, or null when the key moves nothing (section 21.3). A day outside the
+ * The day a key moves to from a day header, or null when the key moves nothing. A day outside the
  * week is the caller's to fetch.
  *
  * @param {string} key The key.
@@ -538,7 +537,7 @@ export const stepWeekFrom = (key: string, iso: string, days: string[]): string |
 };
 
 /**
- * Where a key moves the keyboard inside the week, or null when it moves nothing (section 21.3).
+ * Where a key moves the keyboard inside the week, or null when it moves nothing.
  *
  * From a day header (index -1), ArrowDown and F2 enter the day's first item. From an item, ArrowDown and ArrowUp walk
  * the day's items (ArrowUp from the first goes back to the header), Home and End go to its first and last, Escape to

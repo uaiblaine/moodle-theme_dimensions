@@ -31,7 +31,7 @@ use theme_dimensions\local\landingfields;
 /**
  * Tests for the course notice's decisions: every Boost Union hint, the promotion section and the page gate.
  *
- * Each hint is tested the way the fleet asks of a guard: the case that shows it, then the same case
+ * Each hint is tested the way a guard is tested: the case that shows it, then the same case
  * with one condition broken (the setting off, the capability missing, the condition false), so that
  * an absence is never proved by a notice that was not built at all. Minting is asserted by the rows
  * in core's shortlink table, never by the notice alone.

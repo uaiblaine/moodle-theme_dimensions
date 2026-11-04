@@ -907,6 +907,7 @@ final class population {
      * @param criteria $criteria The request.
      * @return scope
      * @throws unavailable_exception When the root is missing, hidden, withheld or (for a visitor) not public.
+     * @throws \coding_exception When the anonymous population is resolved in a logged-in session.
      */
     public static function scope(criteria $criteria): scope {
         global $DB, $USER;

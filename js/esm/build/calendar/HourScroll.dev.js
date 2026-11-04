@@ -2,12 +2,12 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The scroll box of an hour column, the drawer's and the week's (docs/calendar/PROPOSAL.md section 30.1).
+ * The scroll box of an hour column, the drawer's and the week's.
  *
  * The column inside it is the whole day (overlap.ts FULL_DAY); the box starts where overlap.ts boxTopOf() puts it,
  * once per opening (the `opening` key: a day, or a week, and its band), from the box's one layout read, never on the
  * page's mount path, and again when the grid hands a new `height` (the drawer is capped to the grid's height only once
- * the grid's observer has reported, which shrinks the box after the first placing; PROPOSAL.md section 30.7) until the
+ * the grid's observer has reported, which shrinks the box after the first placing) until the
  * reader's first wheel, touch or key on the box; a new opening starts over. The look is block_compass's calendar
  * strip: no native scrollbar, its overscroll kept from the page, and a fade at the top or the bottom only while the
  * box can still scroll that way (overlap.ts edgesOf(), read on scroll), the fades taking no pointer and hidden from

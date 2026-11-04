@@ -733,7 +733,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * whole subtree whatever the tree offers.
      *
      * Every entry is a link, a visitor's merely listed child included. The
-     * population's `linkable` says whether the child's OWN page is public (D20),
+     * population's `linkable` says whether the child's OWN page is public,
      * which is the question of the posters and the accordion, whose links open
      * that page; an entry of this tree never leaves this page, and narrowing it
      * to a listed child only regroups rows the page already lists, because a
@@ -938,7 +938,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * So the attribute can only ever match ^(--dim-(row|col)-[123]: \d+; )+--dim-area-bg: #[0-9a-f]{6};$.
      * The rows are the grid's explicit lines at three, two and one column (the poster's row, plus
      * one to sit under it, plus one because grid lines count from 1); the columns are where the
-     * arrow points; the band paints the panel's rail, head and glow (round I), and the panel module
+     * arrow points; the band paints the panel's rail, head and glow, and the panel module
      * copies it from the poster it opens under (see templates/category_areas.mustache).
      *
      * @param int $index The open poster's place among the visible posters of its grid, from 0.

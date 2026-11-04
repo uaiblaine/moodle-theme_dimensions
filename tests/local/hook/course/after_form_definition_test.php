@@ -292,7 +292,7 @@ final class after_form_definition_test extends \advanced_testcase {
         );
     }
     /**
-     * Add the round-6 controls, each with its description, to a hook's form.
+     * Add the format and hybrid controls, each with its description, to a hook's form.
      *
      * @param \MoodleQuickForm $mform The form built by make_hook().
      * @return void
@@ -322,7 +322,7 @@ final class after_form_definition_test extends \advanced_testcase {
     }
 
     /**
-     * Each round-6 field and its description are hidden while the rest of the form says it does not apply.
+     * Each format and hybrid field and its description are hidden while the rest of the form says it does not apply.
      */
     public function test_round6_fields_are_hidden_where_they_do_not_apply(): void {
         $this->resetAfterTest();
@@ -374,7 +374,7 @@ final class after_form_definition_test extends \advanced_testcase {
     }
 
     /**
-     * A form without the round-6 fields (an editor who may not edit them) gains no rule at all.
+     * A form without the format and hybrid fields (an editor who may not edit them) gains no rule at all.
      */
     public function test_no_rule_is_set_without_the_fields(): void {
         $this->resetAfterTest();
@@ -484,7 +484,7 @@ final class after_form_definition_test extends \advanced_testcase {
     /**
      * Without mod_subcourse enabled the model select offers no trail, unless the course already is one; with it, it does.
      *
-     * Decision Q9. The course's own choice stays so the form shows what the course holds.
+     * The course's own choice stays so the form shows what the course holds.
      */
     public function test_the_trail_choice_needs_the_subcourse_module(): void {
         $this->resetAfterTest();
@@ -517,7 +517,7 @@ final class after_form_definition_test extends \advanced_testcase {
     /**
      * While focus mode's master switch is off its box, its description and its category's header leave the form.
      *
-     * Decision D4. The control is the same form with the switch on, which offers all three.
+     * The control is the same form with the switch on, which offers all three.
      */
     public function test_the_focus_mode_box_leaves_the_form_while_the_switch_is_off(): void {
         $this->resetAfterTest();

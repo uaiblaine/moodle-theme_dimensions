@@ -46,7 +46,7 @@ use theme_dimensions\local\landing\links;
  *
  * Every text is the plain spelling: the name and the location through {@see visitor::name()} in the category's context,
  * core's multilang filter alone and the others off (a filter would cost statements per context and may print what a
- * visitor must not read), and the description as text ({@see text()}, decision V2: core's `calendar` file area asks for
+ * visitor must not read), and the description as text ({@see text()}: core's `calendar` file area asks for
  * a login under forcelogin, so no image of it is ever addressed), cut at {@see MAX_DESCRIPTION} characters. An item
  * leads to the category's public page ({@see links::category_page()}), the one category page a visitor can open. At
  * most {@see CAP} events are answered, earliest first.
@@ -64,7 +64,7 @@ final class public_events {
 
     /**
      * @var int The most category events one window answers a visitor, earliest first: a bound on what an anonymous
-     *     request costs, at the price of {@see truncated()} (PROPOSAL.md section 32.1). The logged-in range keeps none.
+     *     request costs, at the price of {@see truncated()}. The logged-in range keeps none.
      */
     public const CAP = 200;
 

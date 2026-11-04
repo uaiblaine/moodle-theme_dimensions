@@ -32,14 +32,14 @@ use theme_dimensions\local\category\population;
 use theme_dimensions\local\landing\publicaccess;
 
 /**
- * The decision of docs/trail/PLAN.md, section 6 (owner's decision Q4), for the current reader.
+ * What the current reader may be shown of a trail's steps.
  *
  * {@see trail::many()} reads the same structure for everybody; this decides, step by step, what this
  * reader may be shown. In order:
  *
  * 1. The activity's restriction for this reader: one that hides it entirely (no text to show,
  *    {@see \cm_info::$availableinfo} empty while {@see \cm_info::$available} is false) takes the step away, one
- *    whose text is shown keeps it (drawn as any step for now; the locked state is T2's). Availability, not
+ *    whose text is shown keeps it (drawn as any step for now; the locked state is not drawn yet). Availability, not
  *    core's course-page visibility: the reader of a landing page is mostly not enrolled in the trail course, and
  *    core hides every activity of a course from a reader who lacks the module's view capability there. Where
  *    core does give this reader the activity ({@see \cm_info::$uservisible}, staff under any restriction), the

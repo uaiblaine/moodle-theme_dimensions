@@ -343,7 +343,7 @@ final class category_listing_test extends \advanced_testcase {
     /**
      * A relationship card prints a route line and its "Enrol now" only where local_unlistedcourses' batch reports a route.
      *
-     * Decision D2 of the enrolment matrix, core's default kept: a viewer whose enrolment starts later, was suspended or
+     * A viewer whose enrolment starts later, was suspended or
      * ended may be told that a method would take them now. Each card with a route has a twin without one - the same
      * relationship on a course offering no method - and the route's destination is the card's own enrolment surface,
      * the landing page where the course has a model. Staff, who may walk in, get "Access" and no route on the same course.
@@ -1943,7 +1943,7 @@ final class category_listing_test extends \advanced_testcase {
      * A visitor's flat tree links a merely listed child, as a filter of this page, like a public one.
      *
      * The population marks the listed child not `linkable` because it has no public page of its
-     * own (D20), and the posters keep that gate: theirs is the child's page. The tree's entry never
+     * own, and the posters keep that gate: theirs is the child's page. The tree's entry never
      * leaves this page, so it is a link carrying `cat`, and following it narrows the listing to the
      * public course the page already lists while the tree stays the one at rest. The public child is
      * the control of the link and of the sibling kept, and a listed child holding no public course

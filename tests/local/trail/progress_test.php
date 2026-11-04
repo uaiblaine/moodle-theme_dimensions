@@ -32,7 +32,7 @@ global $CFG;
 require_once($CFG->libdir . '/completionlib.php');
 
 /**
- * The states of docs/trail/PLAN.md section 3, for a learner of the trail course.
+ * The states of a trail's steps, for a learner of the trail course.
  *
  * Each test builds the trail it needs: steps whose activity tracks completion or does not, a referenced course the
  * learner completed or not, a restriction on an earlier step, and windows that passed or not.

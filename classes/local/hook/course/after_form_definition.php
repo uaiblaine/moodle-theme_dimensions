@@ -36,11 +36,10 @@ use theme_dimensions\local\trail\trail;
 /**
  * Adjusts the parts of the course settings form made of the fields this theme provisions.
  *
- * Four edits, not expressible through the custom field configuration itself: a course which
- * already has a landing page gains its public address and a link to the page, an event whose
- * enrolment methods set no deadline is told so (round 6, decision D9), the landing page fields that
- * only apply to some models, modalities and formats are hidden while they do not (decisions D8 and
- * D10), and the focus mode box leaves the form while focus mode's master switch is off.
+ * Four edits, not expressible through the custom field configuration itself: a course which already has a landing page
+ * gains its public address and a link to the page, an event whose enrolment methods set no deadline is told so, the
+ * landing page fields that only apply to some models, modalities and formats are hidden while they do not, and the
+ * focus mode box leaves the form while focus mode's master switch is off.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -67,7 +66,7 @@ class after_form_definition {
     }
 
     /**
-     * Leave the trail line out of the page model select while trails are not available (decision Q9).
+     * Leave the trail line out of the page model select while trails are not available.
      *
      * Only the choice goes; the line stays in the field's configuration ({@see trail::hides_option()}). A
      * course already saved as a trail keeps the choice, so the form still shows what the course holds and a
@@ -104,7 +103,7 @@ class after_form_definition {
     /**
      * Take the focus mode box, its description and its category's header out of the form while the master switch is off.
      *
-     * Off, nothing of the feature is loaded (decision D4), and a box nobody's answer reaches would
+     * Off, nothing of the feature is loaded, and a box nobody's answer reaches would
      * be a question with no effect. Removing the elements stores nothing: core's
      * data_controller::instance_form_save() returns early for an element absent from the
      * submission (customfield/classes/data_controller.php), so every course keeps its answer for the
@@ -139,7 +138,7 @@ class after_form_definition {
     }
 
     /**
-     * Warn an event whose enrolment methods set no deadline (decision D9).
+     * Warn an event whose enrolment methods set no deadline.
      *
      * Nothing in core closes an enrolment at the course's dates, so such an event keeps taking
      * enrolments while it is being held, and its landing page has no deadline to print. Like the link
@@ -187,7 +186,7 @@ class after_form_definition {
     }
 
     /**
-     * Hide the round-6 fields while the rest of the form says they do not apply.
+     * Hide the format and hybrid fields while the rest of the form says they do not apply.
      *
      * - The format and the live classes belong to courses: hidden on an event.
      * - Live classes belong to tutored courses: hidden while the format is self-paced.
@@ -196,7 +195,7 @@ class after_form_definition {
      *
      * The in-person workload belongs to hybrid offerings too and is NOT hidden: it is a
      * customfield_number, a float element, and a hideIf on it stops the course form from saving
-     * under JavaScript (measured with Behat: the save waits forever on core_course/formatchooser).
+     * under JavaScript (the save never completes on core_course/formatchooser).
      * Its description says it applies to hybrid offerings, the validation compares it with the
      * total only there, and the page reads it only there.
      *

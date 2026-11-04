@@ -24,7 +24,7 @@
  * today arrives from the server.
  *
  * {@see period()} is criteria's reading of a period, the one both shells read an address through (the listing's
- * store and its shells, docs/vitrine-react/R4b.md).
+ * store and its shells).
  *
  * @module     theme_dimensions/daterange/calendar
  * @copyright  2026 Anderson Blaine

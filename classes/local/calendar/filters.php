@@ -25,7 +25,7 @@
 namespace theme_dimensions\local\calendar;
 
 /**
- * The course model, the modality, the city and "only things to do" (decision D5).
+ * The course model, the modality, the city and "only things to do".
  *
  * The first three are facts of a COURSE (the theme's custom fields), so they apply to course-bound items
  * alone: an item of a course other than the site, whether core's (a course, group, activity or component
@@ -76,8 +76,7 @@ final class filters {
      *
      * Both sides already arrive in the same plain spelling: the input through the service's PARAM_TEXT, the
      * stored value through values_many()'s format_string() (tags stripped, `&` kept), so trimming is all that
-     * is left to do. range_test::test_the_city_filter_cleans_both_sides_alike pins a stored `&` and a stored tag;
-     * the mutation sweep of 2026-11-01 showed a second clean_param() here held nothing.
+     * is left to do. range_test::test_the_city_filter_cleans_both_sides_alike pins a stored `&` and a stored tag.
      *
      * @param string $city A city, typed or stored.
      * @return string

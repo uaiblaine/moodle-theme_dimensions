@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Audit of 2026-11-04** (2026100582). A logged-in user whom the theme would keep off an unlisted course now gets
+  the same "not available" page for a course id or shortname that does not exist (`/enrol/index.php`,
+  `/course/info.php`), so the answer no longer tells an unlisted course from no course. The crests answered to
+  block_compass's category hook now pass local_unlistedcourses' category discoverability as well as core's
+  visibility. Comments no longer point at development notes that do not ship, nor carry decision ids, dates or
+  measurements; eleven stylesheets gain the GPL header; Mustache example contexts match their templates. The
+  plugins-directory readiness test is back in step with the fleet template, and a new test holds the language
+  strings the settings build from a key.
 - **Calendar R3: the mockup's look, and the Trilhas view's days scroller** (2026100581), `docs/calendar/PROPOSAL.md` section 33.
   The Trilhas view on a desktop is the Design canvas's CalTrilhas: a 12px card, a 340px trail column with a fold per
   trail and its "Enrolled · 2 of 5 done" line, numbered steps in their state's colours, days of a fixed 48px with the

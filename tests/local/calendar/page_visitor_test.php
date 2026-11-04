@@ -340,7 +340,7 @@ final class page_visitor_test extends \advanced_testcase {
     }
 
     /**
-     * A visitor gets the day view too (R1d, a phone's), under the same rules: the visitor's answer for the day's month
+     * A visitor gets the day view too (a phone's), under the same rules: the visitor's answer for the day's month
      * grid, the view and the day in its address with the visitor's keys.
      *
      * @return void

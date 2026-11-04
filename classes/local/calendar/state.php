@@ -51,7 +51,7 @@ final class state {
     /** @var string The user preference holding the state, as JSON. Not declared in lib.php: the web service writes it. */
     public const PREFERENCE = 'theme_dimensions_calendar';
 
-    /** @var string Colour an item by its key (decision D6, the default). */
+    /** @var string Colour an item by its key (the default). */
     public const COLOUR_KEY = 'key';
 
     /** @var string Colour an item by its category's branding pair. */

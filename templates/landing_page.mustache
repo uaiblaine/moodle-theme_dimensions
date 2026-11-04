@@ -212,7 +212,6 @@
                 "seats": "120 seats",
                 "hasuntil": true,
                 "until": "Enrolment until 05/11/26",
-                "untilshort": "Enrolment until 05/11",
                 "urgent": null
             }
         ],
@@ -232,7 +231,6 @@
                     "seats": "40 seats",
                     "hasuntil": true,
                     "until": "Enrolment until 26/10/26",
-                    "untilshort": "Enrolment until 26/10",
                     "urgent": "Closes in 2 days"
                 },
                 "requirespassword": false,
@@ -252,9 +250,44 @@
                 "guestnote": false,
                 "trackname": "Online, live",
                 "guesturl": "https://example.com/course/view.php?id=42"
+            },
+            {
+                "instanceid": 5,
+                "isself": false,
+                "isapply": true,
+                "isfee": false,
+                "isguest": false,
+                "isfallback": false,
+                "primary": false,
+                "applyurl": "https://example.com/enrol/apply/apply.php?id=42",
+                "dataform": "enrol_example\\form\\apply_form",
+                "datatitle": "Apply for a seat"
+            },
+            {
+                "instanceid": 6,
+                "isself": false,
+                "isapply": false,
+                "isfee": true,
+                "isguest": false,
+                "isfallback": false,
+                "primary": false,
+                "pageurl": "https://example.com/theme/dimensions/landing.php?id=42",
+                "costdisplay": "R$ 120.00",
+                "datacost": "120.00",
+                "successurl": "https://example.com/course/view.php?id=42",
+                "description": "Enrolment fee: Pre-hospital Care & Rescue"
+            },
+            {
+                "instanceid": 7,
+                "isself": false,
+                "isapply": false,
+                "isfee": false,
+                "isguest": false,
+                "isfallback": true,
+                "primary": false,
+                "widgethtml": "<a class=\"btn btn-secondary\" href=\"https://example.com/enrol/index.php?id=42\">Pay and enrol</a>"
             }
-        ],
-        "hasmethods": true
+        ]
     }
 }}
 <div class="dimensions-landing{{#bar}} dimensions-landing--hasbar{{/bar}}" data-region="dimensions-landing" data-courseid="{{courseid}}">

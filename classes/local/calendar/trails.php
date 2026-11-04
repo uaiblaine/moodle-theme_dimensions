@@ -36,7 +36,7 @@ use theme_dimensions\local\trail\progress;
 use theme_dimensions\local\trail\trail;
 
 /**
- * The answer of the Trilhas view (docs/trail/PLAN.md section 7): the trails whose period meets a month, and under each
+ * The answer of the Trilhas view: the trails whose period meets a month, and under each
  * the steps this account sees, with their state for a learner of the trail.
  *
  * In order:

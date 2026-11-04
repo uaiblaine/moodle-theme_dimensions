@@ -1,7 +1,7 @@
 import{KEYS as P}from"./model";/**
  * The month grid's layout, pure: the spanning bars' slots, the density of each day, the day counts.
  *
- * docs/calendar/PROPOSAL.md sections 4 and 5.2, ported from the C0 canvas:
+ * The rules:
  *
  * - An item that touches more than one day, and every event course, is a BAR; any other item sits in its day's
  *   content. A bar is clipped to each week row it crosses; the segments of a row are sorted by start, then longer

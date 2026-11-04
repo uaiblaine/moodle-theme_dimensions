@@ -119,7 +119,7 @@ final class visitor {
      * The visitor's answer formats with the filters off, a statement per context saved; with them off, a name written
      * with multilang spans shows every language joined. So core's multilang filter runs alone, before format_string(),
      * while it is on for the site ({@see multilang_on()}): the logged-in page, which formats with every filter on,
-     * then reads the same, and with the filter off both read the raw text (PROPOSAL.md section 32.1).
+     * then reads the same, and with the filter off both read the raw text.
      *
      * @param string $text The stored text.
      * @param \core\context $context Its context.

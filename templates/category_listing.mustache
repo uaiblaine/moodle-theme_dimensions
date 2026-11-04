@@ -128,8 +128,6 @@
                     "hasmark": true,
                     "markfolder": true,
                     "count": 6,
-                    "linkable": true,
-                    "istext": false,
                     "variant": "band",
                     "expandable": true,
                     "isopen": false,
@@ -145,8 +143,6 @@
             "morelabel": "",
             "moreopen": false,
             "postersmore": [],
-            "panelinmain": false,
-            "panelinmore": false,
             "panelstyle": "",
             "panel": null,
             "hashint": true,
@@ -155,9 +151,7 @@
             "clearurl": "https://example.com/course/index.php?categoryid=7",
             "emptylabel": "There is no category to show here yet."
         },
-        "hasareas": true,
         "direct": {"heading": "Courses in Brigade Department", "show": true},
-        "isdirectory": false,
         "toolbar": {
             "action": "https://example.com/course/index.php",
             "hidden": [{"name": "categoryid", "value": 7}],
@@ -191,11 +185,8 @@
                     {"id": "dim-chip-7-all", "value": "", "label": "All", "count": 14, "hascount": true, "checked": true}
                 ]
             },
-            "hasscope": true,
             "more": {"legend": "More statuses", "name": "chip", "hasoptions": false, "options": []},
-            "hasmorestatuses": true,
             "facets": [],
-            "hasfacets": false,
             "datefromid": "dim-datefrom-7",
             "datetoid": "dim-dateto-7",
             "datefromname": "from",
@@ -224,15 +215,16 @@
             ],
             "submitlabel": "Filter",
             "hasfilters": false,
-            "chips": [],
-            "haschips": false,
+            "chips": [
+                {"param": "cf_12", "label": "Online", "url": "https://example.com/course/index.php?categoryid=7&chip=pending", "removelabel": "Remove filter", "isperiod": false},
+                {"param": "period", "label": "17 September 2026 to 24 September 2026", "url": "https://example.com/course/index.php?categoryid=7&cf_12=1", "removelabel": "Remove filter", "isperiod": true}
+            ],
             "clearall": false,
             "clearurl": "https://example.com/course/index.php?categoryid=7",
             "clearlabel": "Clear all",
             "manageactions": "",
             "hasmanageactions": false
         },
-        "islist": false,
         "viewclass": "dim-vitrine--cards",
         "cards": [
             {
@@ -257,14 +249,13 @@
                 "hiddenbadge": {"label": "Hidden from students", "classes": "dim-badge dim-badge--hidden"},
                 "ismuted": false,
                 "cta": {"label": "Enrol", "url": "https://example.com/enrol/index.php?id=42", "primary": true},
-                "hascta": true,
                 "showstar": true,
                 "favourite": false,
                 "starlabel": "Add to favourites: Pre-hospital Care & Rescue",
                 "starlabeladd": "Add to favourites: Pre-hospital Care & Rescue",
                 "starlabelremove": "Remove from favourites: Pre-hospital Care & Rescue",
                 "detailslabel": "More information",
-                "modal": {"kicker": "Brigade", "haskicker": true, "primary": {"label": "Continue course", "url": "https://example.com/course/view.php?id=42", "disabled": false, "note": "", "icon": "fa-play"}, "hasprimary": true, "secondary": {"label": "Course page", "url": "https://example.com/course/view.php?id=42"}, "hassecondary": true}
+                "modal": {"kicker": "Brigade", "haskicker": true, "primary": {"label": "Continue course", "url": "https://example.com/course/view.php?id=42", "disabled": false, "note": "", "icon": "fa-play"}, "secondary": {"label": "Course page", "url": "https://example.com/course/view.php?id=42"} }
             }
         ],
         "hascards": true,

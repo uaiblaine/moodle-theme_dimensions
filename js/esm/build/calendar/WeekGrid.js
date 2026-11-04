@@ -1,11 +1,11 @@
 import{useEffect as K,useLayoutEffect as pe,useMemo as N,useRef as h,useState as ge}from"react";import{say as $}from"../daterange/calendar";import _e from"./Bar";import{dayLabel as we,hoverMark as F,isGround as Y}from"./DayCell";import{isWeekend as S}from"./days";import{dayCounts as fe}from"./layout";import{colourStyle as B,keyClass as U,whenOf as q}from"./look";import{itemHref as Z}from"./model";import ke from"./HourScroll";import{EMPTY_WINDOW as he,FULL_DAY as J,itemKey as L}from"./overlap";import{hourBox as ye,moveInWeek as Q,nowLine as ve,stepWeekFrom as be,weekPlan as Ne,weekStops as $e}from"./weeks";import{Fragment as Te,jsx as r,jsxs as c}from"react/jsx-runtime";/**
- * The week: a time grid on a desktop, a seven-day agenda on a phone (docs/calendar/PROPOSAL.md sections 21.2, 21.3).
+ * The week: a time grid on a desktop, a seven-day agenda on a phone.
  *
  * The grid is role="grid" labelled by the caption, in three rows: the day headers (seven columnheaders, each holding
  * the day's button), the all-day strip (a rowheader, then seven gridcells holding the bars that start on each day, laid
  * out by layout.ts weekLayout() so a bar spans its columns) and the hour body (a rowheader, then a gridcell per day
  * with its timed items in the drawer's columns). The hour body is the whole day, 00:00 to 24:00, in the drawer's scroll
- * box (HourScroll.tsx, a rowgroup of the grid; R1c, PROPOSAL.md section 30.1), opening on the week's busy band
+ * box (HourScroll.tsx, a rowgroup of the grid), opening on the week's busy band
  * (weeks.ts weekPlan()'s window) or, with nothing timed and "New event" offered, on the working hours. The layout is
  * weeks.ts weekPlan(), pure.
  *

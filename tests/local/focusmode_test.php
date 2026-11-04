@@ -45,7 +45,7 @@ final class focusmode_test extends \advanced_testcase {
     /**
      * Start every test with empty request caches and the master switch on.
      *
-     * The switch ships off (decision D5), so a test about any later clause turns it on first;
+     * The switch ships off, so a test about any later clause turns it on first;
      * the tests about the switch itself set it back.
      *
      * @return void
@@ -189,7 +189,7 @@ final class focusmode_test extends \advanced_testcase {
      * A site which never wrote the master switch gets the documented default, which is off.
      *
      * The companion of the test above, and the one which pins the reading: the switch ships
-     * off (decision D5), so a fresh install must agree with its own settings page, and only an
+     * off, so a fresh install must agree with its own settings page, and only an
      * explicit Yes turns the feature on. The control is that Yes.
      *
      * @return void
@@ -532,7 +532,7 @@ final class focusmode_test extends \advanced_testcase {
     /**
      * A course which switched focus mode on opens focused, and can be left in place for the session.
      *
-     * Decision D1: leaving lasts the rest of the session in that course. The page stays available,
+     * Leaving lasts the rest of the session in that course. The page stays available,
      * which is what puts the way back in on it, and entering again wins over the exit.
      *
      * @return void
@@ -716,7 +716,7 @@ final class focusmode_test extends \advanced_testcase {
     /**
      * Only a single activity course that switched focus mode on leaves the course to leave focus mode.
      *
-     * Decision D2: a single activity course that did not switch it on toggles in place like any
+     * A single activity course that did not switch it on toggles in place like any
      * other, and so does every other format that did.
      *
      * @return void
@@ -833,7 +833,7 @@ final class focusmode_test extends \advanced_testcase {
     /**
      * The focus mode stylesheet is compiled into the theme only while the master switch is on.
      *
-     * Decision D4: off, nothing of the feature is loaded. Read from the main SCSS callback itself,
+     * Off, nothing of the feature is loaded. Read from the main SCSS callback itself,
      * which the theme's stylesheet is compiled from; the token is one only focusmode.scss declares.
      * The control is the switch on.
      *

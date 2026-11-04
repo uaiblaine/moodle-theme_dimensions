@@ -1,5 +1,5 @@
 import{useEffect as U,useLayoutEffect as q,useMemo as v,useRef as c,useState as A}from"react";import{WEEK as P,say as z,shift as h,shiftMonth as K}from"../daterange/calendar";import{ROW_DEFAULT as I,barSlots as B,dayCounts as Y,weekLayout as J}from"./layout";import{isWeekend as Q}from"./days";import V from"./WeekRow";import{jsx as f,jsxs as ne}from"react/jsx-runtime";/**
- * The month grid and its keyboard (docs/calendar/PROPOSAL.md section 11.3).
+ * The month grid and its keyboard.
  *
  * role="grid" labelled by the month's caption, a columnheader row of weekdays, then a row per week whose seven
  * gridcells each hold one day button. One day button is in the Tab order, the selected day's (roving tabindex):

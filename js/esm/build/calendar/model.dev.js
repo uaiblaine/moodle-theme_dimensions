@@ -6,7 +6,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * The answer is the range service's (classes/local/calendar/range.php, get_calendar_range's returns); the state is
  * classes/local/calendar/state.php's canonical array, and {@see query()} spells it as state::query() does, so an
  * address the client writes is one the server reads back as the same state. An item opens the event popover and a
- * day the day drawer (or the phone's sheet); {@see itemHref()}, the address an item opened in C2, stays every item's
+ * day the day drawer (or the phone's sheet); {@see itemHref()}, the address an item opens on the calendar page, stays every item's
  * href (a middle click, a copied link). The popover's primary action is chosen in one place, {@see primaryOf()}.
  *
  * @module     theme_dimensions/calendar/model

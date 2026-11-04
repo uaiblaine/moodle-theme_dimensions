@@ -1302,7 +1302,7 @@ final class course_renderer_test extends \advanced_testcase {
      *
      * Its posters open panels like any other page's and its search line is live, so a real account
      * gets the account's client there (listingaccount, which replaced the panel's and the listing's
-     * modules in R4b3). The guest gets none, anywhere: the showcase's web services refuse it, and it
+     * modules). The guest gets none, anywhere: the showcase's web services refuse it, and it
      * opens a panel through the address instead. The client is asserted through the page's own
      * requirements (`$PAGE->requires->get_end_code()` names every AMD call of the page), and a real
      * category page rendered beside it is the control: the same viewer, the same client.

@@ -197,8 +197,8 @@ final class classifier {
     /**
      * @var string[] The relationships whose card may also print a route: the viewer holds a row that is not active.
      *
-     * Decision D2 of the enrolment matrix: a method that would really take the viewer now is shown beside the row,
-     * which is core's default. The routes themselves come from local_unlistedcourses' batch ({@see cards::next_actions()}).
+     * A method that would really take the viewer now is shown beside the row (the relationship still decides the
+     * state), which is core's default. The routes themselves come from local_unlistedcourses' batch ({@see cards::next_actions()}).
      */
     public const ROUTE_STATES = [
         self::STATE_SCHEDULED,

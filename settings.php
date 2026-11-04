@@ -720,7 +720,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
         $tab->add($setting);
 
-        // Setting: The event types' colours (docs/calendar/PROPOSAL.md section 30.4), one hexadecimal picker per key,
+        // Setting: The event types' colours, one hexadecimal picker per key,
         // each defaulting to its key's own edge, so an untouched site keeps the stylesheet's colours: keycolours hands
         // the pre SCSS callback only a hex that differs from its default.
         $name = 'theme_dimensions/' . keycolours::HEADING;

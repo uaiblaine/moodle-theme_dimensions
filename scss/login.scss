@@ -1,3 +1,18 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 // Theme Dimensions - The login page.
 //
 // Every rule is scoped to the body class the renderer adds while the theme's login page is on,
@@ -7,7 +22,7 @@
 
 body.theme_dimensions-login {
     /* ---- The two halves ------------------------------------------------- */
-    /* 45 / 55 rather than core's 50 / 50, the split of the design (the design's mockup). Core's
+    /* 45 / 55 rather than core's 50 / 50, the split of the design. Core's
        aside is sticky, a viewport tall, and hidden below lg; all of that is kept. */
     @include media-breakpoint-up(lg) {
         .login-layout-left {
@@ -36,7 +51,7 @@ body.theme_dimensions-login {
        `body.pagelayout-login.loginbackgroundimageN #page .login-layout-left` in its extra SCSS,
        which is compiled after this file. Two ids outrank both, whatever the source order; the
        attribution of a picture that is not shown goes with it. A photograph under a navy layer is
-       an open decision of the original design record (not part of this repository), not something that happens by accident. */
+       never drawn: the gradient replaces the picture, so the two cannot stack by accident. */
     &.pagelayout-login #page #page-content .login-layout-left {
         background-image: linear-gradient(150deg, var(--dim-ds-blue-800), var(--dim-ds-blue-600) 60%, var(--dim-ds-blue-500));
         background-size: auto;

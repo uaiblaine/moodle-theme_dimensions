@@ -31,7 +31,7 @@ namespace theme_dimensions\local\calendar;
  * ({@see \theme_dimensions\output\core_calendar_renderer}): block_calendar_month the template {@see TEMPLATE_MONTH} with
  * `iscalendarblock` set (core's own month page renders the same template without it), block_calendar_upcoming
  * {@see TEMPLATE_UPCOMING}. The decision is pure, every input an argument, as {@see coreview::target()} is; each
- * refusal is a reason core's output must stay (docs/calendar/PROPOSAL.md section 17.1):
+ * refusal is a reason core's output must stay:
  *
  * 1. the call is not one of the two blocks ({@see kind()});
  * 2. the setting {@see SETTING} is off ({@see enabled()});
@@ -140,7 +140,7 @@ final class blocks {
 
     /**
      * Whether a block's footer goes: core's "Go to calendar..." under the upcoming block whose content the theme
-     * answers, which already ends with the theme's own "Full calendar" (PROPOSAL.md section 32.1).
+     * answers, which already ends with the theme's own "Full calendar".
      *
      * block_calendar_upcoming writes that link into its content's footer, outside the template the theme replaces, so
      * {@see \theme_dimensions\output\core_renderer::block()} empties it. Every other block, and the upcoming block on a

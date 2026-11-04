@@ -358,8 +358,8 @@ final class cards {
      * The routes and the opening dates local_unlistedcourses' batch reports for the page's cards that print one, in one call.
      *
      * A card that tells the viewer about a row of theirs - one that starts later, an application, a suspension,
-     * an end - may also say that a method would take them now (decision D2 of the enrolment matrix, core's
-     * default kept). A card with nothing on offer, and a suspended or ended one, may instead say when a method
+     * an end - may also say that a method would take them now (the relationship still decides the state,
+     * core's default kept). A card with nothing on offer, and a suspended or ended one, may instead say when a method
      * will open to them. Both answers are the plugin's own batch, {@see access::get_next_actions()}, asked once
      * for the cards {@see asks()} names: a page holding none of them costs nothing here, and the batch's
      * statements are bounded by the page, never by the population. The batch may err towards open where a

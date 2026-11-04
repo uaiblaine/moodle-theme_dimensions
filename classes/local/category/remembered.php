@@ -33,7 +33,7 @@ namespace theme_dimensions\local\category;
  * `v` the view (cards or list), `t` the state chip ({@see classifier::filters()}), `fav` the
  * favourites toggle (true, or absent for off) and `f` the custom field filters (field id => option
  * value, over the site's filter fields, {@see facets::fields()}). The search term, the period and the
- * tree's category are not remembered: the owner named the organisation, the view and the filters
+ * tree's category are not remembered: what is remembered is the organisation, the view and the filters
  * (the custom fields, the state and the favourites), and a period such as "this week" is a different
  * period the next time. An entry written while the favourites were a value of the state chip
  * (`t` = favourites) is read as the toggle with no state ({@see entry()}).

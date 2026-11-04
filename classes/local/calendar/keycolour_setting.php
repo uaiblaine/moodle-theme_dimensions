@@ -27,8 +27,7 @@ namespace theme_dimensions\local\calendar;
 use theme_dimensions\local\category\branding;
 
 /**
- * The colour setting of an event type: a hexadecimal field with a swatch, refusing everything but a hexadecimal colour
- * (docs/calendar/PROPOSAL.md section 30.4).
+ * The colour setting of an event type: a hexadecimal field with a swatch, refusing everything but a hexadecimal colour.
  *
  * Core's picker also accepts colour names, rgb(), rgba(), hsl(), hsla(), transparent, currentColor and inherit, and
  * stores them as typed; the stylesheet derives a fill and an ink from the colour in Sass, so only a hex is accepted,
