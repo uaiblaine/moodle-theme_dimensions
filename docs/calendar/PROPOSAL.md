@@ -2932,3 +2932,22 @@ drawer's 392px (R1's 24.5rem against the mockup's 400px, the owner's).
 - Not verified until a stack runs the branch: the scroller's behaviour in a browser (the opening scroll, the arrows'
   smooth scroll, the map's drag and snap release, the thumb following a trackpad), focus scrolling past the sticky
   columns, dark mode on the new rules, and the Behat features.
+
+### 33.x R3b: the first live look (2026-11-04, m503b at 2026100581)
+
+R3 on the stack follows the C6 mockup on the desktop, in dark mode and on the phone. The checks:
+- The scroller opens at the 1st when today (the 4th) is in view. The ahead arrow pages to the end (415px of 1856px in
+  a 1441px box), and the thumb moves from 0% to 28.8% of the line. The arrows swap `aria-disabled`.
+- The popover has its 64px cover band and is 360px wide.
+- The month's toolbar buttons are white, with the drawer in sections.
+
+Two defects were fixed:
+- The disabled back arrow was drawn over day 1's header: an arrow at its end is now `visibility: hidden`.
+- "→ 12 dez." measured 66px in a 65px chip and ended in an ellipsis: the chip now has 4px a side, 62 of 62px.
+
+Both were measured by injecting the rule into the live page.
+
+Left as it is: the phone's trail filters wrap onto three lines where the mockup scrolls them in one row. A scroll
+container there would clip the category picker's dropdown, the trap this theme's CLAUDE.md records for the Filters
+popover.
+

@@ -657,6 +657,16 @@ final class calendar_scss_test extends \advanced_testcase {
         $this->assertMatchesRegularExpression('~\.dim-cal__trailscroll::-webkit-scrollbar \{\s*display: none;~', $scss);
         $this->assertMatchesRegularExpression('~\.dim-cal__trailscroll--free \{\s*scroll-snap-type: none;~', $scss);
         $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailedge\[aria-disabled="true"\] \{\s*visibility: hidden;\s*\}~',
+            $scss,
+            'R3b: an arrow at its end is hidden, never drawn over the first or the last day.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailchip \{[^}]*padding: 0 \.25rem;~',
+            $scss,
+            'R3b: the chip fits the last column at 11px.'
+        );
+        $this->assertMatchesRegularExpression(
             '~\.dim-cal__traillabel,\s*\.dim-cal__trailspill \{\s*position: sticky;\s*z-index: 3;~',
             $scss,
             'The two still columns stand over every bar (1) and diamond (2).'
