@@ -11,6 +11,8 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   months instead of six, so a wide screen is filled; by days and weeks the cap stays six, and a switch down keeps the
   months held until the next load drops the far side. Five mutation gates.
 
+  The Trilhas filters' category panel opens from its button's start, so on a phone, where the picker opens a row
+  of its own, it no longer runs past the screen's left edge.
 - **Trail model, stage T3c: a zoom and the courses' dates in the calendar's Trilhas view** (2026100589),
   `docs/trail/PLAN.md` section 7. The desktop timeline has a zoom, "Days", "Weeks" and "Months", in the filters' row:
   by weeks the header shows the weeks from the viewer's first weekday, a short month over each week's days, today's

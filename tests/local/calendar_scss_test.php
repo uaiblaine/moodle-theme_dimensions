@@ -709,6 +709,12 @@ final class calendar_scss_test extends \advanced_testcase {
             'T3b: a month prepended moves the position itself; the browser\'s anchoring would move it twice.'
         );
         $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailtools \.dim-cal__popover \{\s*right: auto;\s*inset-inline-start: 0;\s*'
+                . 'max-width: calc\(100vw - 2rem\);~',
+            $scss,
+            'T3c: the Trilhas filters\' category panel opens from its button\'s start, never past the screen\'s edge.'
+        );
+        $this->assertMatchesRegularExpression(
             '~\.dim-cal__trailrow \{[^}]*height: var\(--dim-cal-trail-row\);~',
             $scss,
             'T3b: every row is the row the connectors\' arithmetic reads.'

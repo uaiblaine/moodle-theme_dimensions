@@ -569,6 +569,14 @@ body.dim-calendar {
         z-index: 20;
     }
 
+    // In the Trilhas filters the category picker is not its row's last control, and on a phone it opens a row of its
+    // own: its panel opens from the button's start, so it never runs past the screen's edge.
+    .dim-cal__trailtools .dim-cal__popover {
+        right: auto;
+        inset-inline-start: 0;
+        max-width: calc(100vw - 2rem);
+    }
+
     .dim-cal__pickerbtn {
         display: inline-flex;
         gap: .375rem;
