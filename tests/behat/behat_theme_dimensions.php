@@ -515,6 +515,77 @@ class behat_theme_dimensions extends behat_base {
     }
 
     /**
+     * Give the primary navigation more room in the compact layout than in the full bar, on the page in the browser.
+     *
+     * The two layouts differ on a real page (the hamburger takes room, the colour mode menu leaves for the drawer), and
+     * where the compact one gives core's navigation more room, the navigation re-splits there to fit: a module that
+     * read that split as "the full bar fits" flipped the mode on every frame. Only a width a few pixels wide shows it
+     * on a real page, so this rule shrinks the navigation's items to one pixel while the bar is compact (they are hidden
+     * then, so nothing a reader sees changes) and makes the compact layout's split fit at any width.
+     *
+     * @Given /^the compact navbar gives its navigation more room than the full navbar$/
+     * @return void
+     */
+    public function the_compact_navbar_gives_its_navigation_more_room(): void {
+        $this->require_javascript();
+        $this->execute_script(
+            "const style = document.createElement('style');" .
+            "style.textContent = 'body.dimensions-nav-compact .primary-navigation .nav-item " .
+            "{max-width: 1px; overflow: hidden;}';" .
+            "document.head.appendChild(style);"
+        );
+    }
+
+    /**
+     * Check that the navbar's compact mode does not change during a second, and agrees with the menu button after it.
+     *
+     * The flips are counted from the body's class while the browser waits, so a mode that flips back and forth is seen
+     * whichever of its two states a single look would have caught. Inside the tablet range the menu button is shown
+     * exactly while the bar is compact; below it core's button is always shown.
+     *
+     * @Then /^the navbar keeps its mode for a second, and its menu button agrees$/
+     * @return void
+     * @throws \Behat\Mink\Exception\ExpectationException When the mode flipped or the button disagrees with it.
+     */
+    public function the_navbar_keeps_its_mode_and_its_menu_button_agrees(): void {
+        $this->require_javascript();
+        $this->execute_script(
+            "window.dimBehatNavFlips = 0;" .
+            "window.dimBehatNavCompact = document.body.classList.contains('dimensions-nav-compact');" .
+            "new MutationObserver(() => {" .
+            "const now = document.body.classList.contains('dimensions-nav-compact');" .
+            "if (now !== window.dimBehatNavCompact) { window.dimBehatNavFlips++; window.dimBehatNavCompact = now; }" .
+            "}).observe(document.body, {attributes: true, attributeFilter: ['class']});"
+        );
+        $this->getSession()->wait(1000);
+        $state = $this->evaluate_script(
+            "return (function() {" .
+            "const toggler = document.querySelector('.navbar-toggler[data-target=\"theme_boost-drawers-primary\"]');" .
+            "return {" .
+            "flips: window.dimBehatNavFlips," .
+            "compact: document.body.classList.contains('dimensions-nav-compact')," .
+            "shown: !!toggler && window.getComputedStyle(toggler).display !== 'none'," .
+            "phone: !window.matchMedia('(min-width: 768px)').matches" .
+            "};" .
+            "})();"
+        );
+        if ((int) $state['flips'] !== 0) {
+            throw new \Behat\Mink\Exception\ExpectationException(
+                "The navbar changed its mode {$state['flips']} times in a second.",
+                $this->getSession()
+            );
+        }
+        $expected = !empty($state['phone']) || !empty($state['compact']);
+        if (!empty($state['shown']) !== $expected) {
+            throw new \Behat\Mink\Exception\ExpectationException(
+                'The menu button is ' . (!empty($state['shown']) ? 'shown' : 'hidden') . ' while the navbar is ' .
+                (!empty($state['compact']) ? 'compact' : 'not compact') . '.',
+                $this->getSession()
+            );
+        }
+    }
+
+    /**
      * Offer these Boost Union flavours, by title, as the looks a person may choose.
      *
      * The setting stores ids, which a feature cannot know, so this step looks them up.

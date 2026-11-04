@@ -39,9 +39,10 @@ body.dimensions-navcompact-armed {
             animation: dimensions-navcompact-failopen 100ms 2s forwards;
         }
 
-        /* Compact: the primary navigation is hidden in place. Its box stays, so core's navigation measures
-           the same room with the hamburger shown, and an overflow that sent the bar compact never reads as a
-           fit because the bar went compact: no flip back and forth. */
+        /* Compact: the primary navigation is hidden in place. Its box stays, so core's navigation goes on
+           measuring (hidden with display: none it would read every item as fitting). The room it measures is
+           not the full bar's, since the hamburger takes some and the colour mode menu may give some back, so
+           the module never leaves the mode on a split made while compact (amd/src/compactnav.js, the hold). */
         &.dimensions-nav-compact {
             .primary-navigation {
                 visibility: hidden;

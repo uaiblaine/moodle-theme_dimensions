@@ -5841,7 +5841,11 @@ body.dim-category {
             padding: 0;
             border-radius: 50%;
             opacity: 1;
-            filter: var(--bs-btn-close-white-filter);
+            // Bootstrap 5.3.4 (core 5.3) reads the filter from --bs-btn-close-filter, which its mixin sets to the
+            // white one; the --bs-btn-close-white-filter of earlier releases is no longer declared, and reading it
+            // left the dark cross on the dark disc.
+            @include btn-close-white();
+            filter: var(--bs-btn-close-filter);
 
             &:focus,
             &:focus-visible {

@@ -294,9 +294,17 @@ verified is at the end of this section).
   pending tracker; the frame reads the count and the range, then writes. No timer.
 - **No flip-flop.** Compact hides the primary navigation with `visibility: hidden`, never `display: none`: its box
   stays, so core goes on measuring the same room with the hamburger shown. With `display: none` core reads a 0-high
-  container, sends nothing to "More", and the module would read that as a fit and leave the mode, every frame. Since
-  the hamburger only takes room, an overflow that sent the bar compact can only grow while it is compact, and leaving
-  it needs a fit with the hamburger present, which stays a fit once the hamburger goes.
+  container, sends nothing to "More", and the module would read that as a fit and leave the mode, every frame.
+- **The hold (2026100585).** Hiding in place is not enough, because the two modes lay the bar out differently: the
+  hamburger takes about 40px, and where the drawer carries the appearance switch the colour mode menu and its divider
+  leave the navbar (`post.scss`), giving about 60px back. On the calendar page at 1089px (an admin, three candidates)
+  the compact layout let the navigation fit two items in "More", the full bar wrapped and sent three, and the module
+  flipped between them about 45 times a second, so a reader saw the menu button and the navigation come and go after a
+  resize, and two looks a moment apart caught a compact body with a hidden button. A split the navigation makes while
+  compact therefore says nothing of the full bar, and the module does not act on it: once compact, the bar stays so at
+  any width up to the widest an overflow was seen at (`heldwidth`), and only a wider container or leaving the range
+  ends the mode. Widening through the few pixels where only the compact layout fits tries the full bar once and comes
+  back (one try at 1096px, measured from 1000 to 1160 in 8px steps); every other width is decided once.
 - **The hamburger is shown by the module, not by the stylesheet.** Core's toggler is `d-md-none`, which compiles to
   `display: none !important` (measured in the compiled sheet of m503); no selector outranks an `!important` utility
   without `!important` of its own, which the fleet forbids. So the module takes `d-md-none` off the toggler while
@@ -388,11 +396,13 @@ mints a new random id per call, so the layer's switch is a second form with its 
 candidates, the threshold, the splice), `tests/output/compactnav_render_test.php` (the real header: armed with four
 custom menu items, nothing with a short navigation, with the setting off, in the app and in focus mode, each beside its
 control), `tests/local/compactnav_source_test.php` (the module by spelling: the armed guard, the observers and no timer,
-the frame, the count, the range, the toggler, the press outside, the build), `tests/local/compactnav_scss_test.php` and
+the frame, the count, the range, the toggler, the hold, the press outside, the build), `tests/local/compactnav_scss_test.php` and
 `tests/local/sheets_scss_test.php` (scopes, ranges, no `!important`, reduced motion, the sheets' parts and 44px
 targets), the D5 cases in `readingbar_test` and `readingbar_render_test`; the Behat feature
 `tests/behat/theme_dimensions_navcompact.feature` (`@theme_dimensions_navcompact`, with the theme's step `the site
-navigation has "N" custom menu items`); twenty-one mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`,
+navigation has "N" custom menu items`, and for the hold `the compact navbar gives its navigation more room than the
+full navbar` and `the navbar keeps its mode for a second, and its menu button agrees`, which counts the mode's flips
+while the browser waits); twenty-three mutation gates (`compactnav_*`, `js_compactnav_*`, `scss_compactnav_*`,
 `scss_sheets_*`, `readingbar_edit_*`), dry-matched; `readingbar_layer_appended` repointed at the renderer's new line.
 
 **The tablet drawer's geometry (fixed 2026-10-20).** From lg up core restyles every `.drawer.drawer-left` on

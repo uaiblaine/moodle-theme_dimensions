@@ -28,6 +28,12 @@
  * - Compact while more than maxhidden items are in "More" and the window is between md and xl (RANGE, the
  *   stylesheet's media-breakpoint-between(md, xl)). The body gets dimensions-nav-compact, and core's toggler loses
  *   d-md-none, whose display: none is !important and so cannot be outranked by the stylesheet.
+ * - Once compact, the bar stays compact at any width up to the widest it was decided at (heldwidth), whatever the
+ *   navigation splits meanwhile. The two modes lay the bar out differently (the hamburger takes room; the colour
+ *   mode menu leaves for the drawer, scss/post.scss), and the navigation re-splits in the compact layout: where that
+ *   layout gives it more room, the new split fits, and acting on it showed the full bar, where the navigation
+ *   overflowed again, and so on every frame. A split made while compact says nothing of the full bar; only more
+ *   room than the bar was compact at, or leaving the range, can end the mode.
  *
  * A ResizeObserver on the navbar's container books a decision whenever the room changes; a MutationObserver on the
  * mount point books one whenever the navigation commits a new split (it re-measures from its own observers, and a
@@ -81,6 +87,7 @@ const CLASSES = {
 /** The page's one navbar: its elements, what the navigation was mounted with, and the decision in force. */
 const bar = {
     mount: null,
+    container: null,
     toggler: null,
     drawer: null,
     range: null,
@@ -88,6 +95,7 @@ const bar = {
     measuredclass: MEASURED_DEFAULT,
     maxhidden: 2,
     compact: false,
+    heldwidth: 0,
     frame: 0,
 };
 
@@ -174,12 +182,16 @@ const setCompact = (on) => {
         bar.toggler.classList.toggle(CLASSES.TOGGLERHIDDEN, !on);
     }
     if (!on) {
+        bar.heldwidth = 0;
         release();
     }
 };
 
 /**
  * Decide the mode: the animation frame's work, every read before the first write.
+ *
+ * The hold: while compact, the bar stays so up to the widest container width an overflow was seen at, because a split
+ * the navigation makes in the compact layout cannot say whether the full bar would fit (the module's docblock).
  */
 const decide = () => {
     bar.frame = 0;
@@ -188,7 +200,13 @@ const decide = () => {
         return;
     }
     const inrange = bar.range.matches;
-    setCompact(inrange && count > bar.maxhidden);
+    const width = bar.container.clientWidth;
+    const overflows = inrange && count > bar.maxhidden;
+    const held = inrange && bar.compact && width <= bar.heldwidth;
+    setCompact(overflows || held);
+    if (overflows) {
+        bar.heldwidth = Math.max(bar.heldwidth, width);
+    }
     document.body.classList.add(CLASSES.MEASURED);
 };
 
@@ -268,6 +286,7 @@ export const init = (config) => {
     }
 
     bar.mount = mount;
+    bar.container = container;
     bar.toggler = nav.querySelector(SELECTORS.TOGGLER);
     bar.drawer = document.querySelector(SELECTORS.DRAWER);
     bar.range = window.matchMedia(RANGE);
