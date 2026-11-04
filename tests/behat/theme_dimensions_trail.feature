@@ -61,5 +61,9 @@ Feature: A trail's landing page draws its courses in order
     And I should see "Open Fundamentals" in the "[data-region='dim-cal-trails']" "css_element"
     And "[data-region='dim-cal-trailfilters']" "css_element" should be visible
     And "[data-action='dim-cal-types']" "css_element" should not be visible
-    And I click on "[data-region='dim-cal-trailstep'][data-cmid]" "css_element"
+    # The months held are named in a band above the days; R3's "next month" column is gone.
+    And "[data-region='dim-cal-trailmonths'] [data-action='dim-cal-trailmonth']" "css_element" should exist
+    And ".dim-cal__trailday--next" "css_element" should not exist
+    # A course's row in the trail column scrolls to its bar and opens its popover once the scroll has ended.
+    And I click on "[data-region='dim-cal-trailrow'][data-cmid]" "css_element"
     And I should see "Course 1 of 2 · Trail of Management" in the "[data-region='dim-cal-trailpopover']" "css_element"

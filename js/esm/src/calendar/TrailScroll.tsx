@@ -17,40 +17,71 @@
  * The Trilhas view's horizontal scroller, drawn as block_compass's calendar
  * strip is: one native scroller with its scrollbar hidden, its overscroll kept from the page, snapped by the day; round
  * arrows over the ends of the days' header, a fade over a side it can still scroll to, and under the grid the map, a 2px
- * line of the whole month whose thumb is the days in view and whose tick is today.
+ * line of the days held whose thumb is the days in view and whose tick is today.
  *
- * - The grid inside it holds its trail column and its "next month" column still (position: sticky), so only the days
- *   move; their widths are trails.ts TRACK, and every position is trails.ts arithmetic over the scroller's three numbers.
- * - The layout reads are the scroller's: once per opening (the `opening` key: the month and its trails) to bring today
- *   into view (trails.ts openingLeft()) and paint the thumb, never on another render; on a scroll, to paint the thumb
- *   and the arrows; on an arrow, a page of days; on the map, the pointer's place along it. The thumb follows the scroll
- *   by its style, without a render; the arrows and fades re-render only when one of them changes.
- * - The map is aria-hidden and out of the tab order: the bars inside the scroller are its Tab stops (the browser scrolls
- *   a focused bar into view, past the still columns by the scroller's scroll padding), and the arrows are the named
- *   single-pointer way (WCAG 2.5.7). A press on the line jumps there, the thumb drags; snap is off while it does.
+ * - The grid inside it holds its trail column still (position: sticky), so only the days move; their widths are
+ *   trails.ts TRACK, and every position is trails.ts arithmetic over the scroller's three numbers.
+ * - The layout reads are the scroller's: once per opening (the `opening` key: a new set of months) to bring today into
+ *   view (trails.ts openingLeft()) and paint the thumb, never on another render; on a scroll, to paint the thumb and
+ *   the arrows and tell the view which days are in view; on an arrow or a target the view asks for, where it is; on the
+ *   map, the pointer's place along it. The thumb follows the scroll by its style, without a render; the arrows and fades
+ *   re-render only when one of them changes. Every position is written through one place ({@see place}).
+ * - A month added before the first day held moves the content right by its days: the `shift` key moves the position
+ *   by the same width (trails.ts keptLeft(), over the last measure: no further read), so the view stays still.
+ * - A scroll settles on `scrollend`, or a quiet after its last event where the browser has no such event: the view is
+ *   told the first day in view (its month is the address's), and a target asked for is reached.
+ * - The map is aria-hidden and out of the tab order: the bars and the courses' rows are its Tab stops (the browser
+ *   scrolls a focused bar into view, past the still column by the scroller's scroll padding), and the arrows are the
+ *   named single-pointer way (WCAG 2.5.7). A press on the line jumps there, the thumb drags; snap is off while it does.
  *
  * @module     theme_dimensions/calendar/TrailScroll
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {useLayoutEffect, useRef, useState} from 'react';
-import type {PointerEvent, ReactNode} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import type {MutableRefObject, PointerEvent, ReactNode} from 'react';
 import type {Strings} from './strings';
-import {openingLeft, pageLeft, scrubLeft, trackOf} from './trails';
-import type {Track} from './trails';
+import {keptLeft, nearEnd, openingLeft, pageLeft, scrubLeft, shiftedTarget, shownDays, targetLeft, trackOf} from './trails';
+import type {ScrollTarget, Track} from './trails';
+
+/** How long after a scroll's last event it is taken as settled where the browser sends no `scrollend`, in ms. */
+export const SETTLE_MS = 150;
+
+/** How long a target asked for may take to be reached before it is taken as reached, in ms. */
+export const ARRIVE_MS = 700;
+
+/** Which side of what is held the days in view have reached: the start (scrolling back to it), the end, or neither. */
+export type Near = 'start' | 'end' | '';
+
+/** A move of the first day held: its key changes once per move, by `days` days back (negative: forward). */
+export type Shift = {key: number, days: number};
+
+/**
+ * What the view may ask of the scroller: to go to a target, smoothly unless the reader asked for less motion. The
+ * promise says whether the target was reached (true) or superseded by another one, or the scroller went (false).
+ */
+export type ScrollControl = {go: (target: ScrollTarget) => Promise<boolean>};
 
 /** What the scroller is handed. */
 type TrailScrollProps = {
     days: number,
     todayat: number,
+    openat: number,
     opening: string,
+    shift: Shift,
+    control: MutableRefObject<ScrollControl | null>,
+    onView: (first: number, last: number, near: Near) => void,
+    onSettle: (first: number) => void,
     strings: Strings,
     children: ReactNode,
 };
 
 /** Which ways the scroller can still go, and whether it scrolls at all. */
 type Ways = {back: boolean, ahead: boolean, scrolls: boolean};
+
+/** A target on its way: where it is, what settles it, and the fallback that settles it anyway. */
+type Arrival = {target: ScrollTarget, resolve: (reached: boolean) => void, timer: ReturnType<typeof setTimeout> | null};
 
 /**
  * A fraction as a percentage for a style.
@@ -65,8 +96,25 @@ const percent = (fraction: number): string => `${(fraction * 100).toFixed(3)}%`;
  *
  * @returns {boolean}
  */
-const still = (): boolean => typeof window.matchMedia === 'function'
+export const still = (): boolean => typeof window.matchMedia === 'function'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * Put the scroller at a position: animated when asked and the reader did not ask for less motion, at once otherwise.
+ * The one place every position is written.
+ *
+ * @param {object} element The scroller.
+ * @param {number} left The position.
+ * @param {boolean} smooth Whether to animate.
+ * @returns {void}
+ */
+const place = (element: HTMLDivElement, left: number, smooth: boolean): void => {
+    if (typeof element.scrollTo === 'function') {
+        element.scrollTo({left: left, behavior: smooth && !still() ? 'smooth' : 'auto'});
+    } else {
+        element.scrollLeft = left;
+    }
+};
 
 /**
  * The scroller.
@@ -74,10 +122,15 @@ const still = (): boolean => typeof window.matchMedia === 'function'
  * @param {object} props See TrailScrollProps.
  * @returns {object} The card's scroller with its arrows and fades, and the map under it.
  */
-const TrailScroll = ({days, todayat, opening, strings, children}: TrailScrollProps) => {
+const TrailScroll = ({days, todayat, openat, opening, shift, control, onView, onSettle, strings, children}: TrailScrollProps) => {
     const box = useRef<HTMLDivElement | null>(null);
     const thumb = useRef<HTMLSpanElement | null>(null);
     const drag = useRef<{grab: number, span: number} | null>(null);
+    const last = useRef<Track | null>(null);
+    const quiet = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const arriving = useRef<Arrival | null>(null);
+    const reports = useRef({onView: onView, onSettle: onSettle, days: days});
+    reports.current = {onView: onView, onSettle: onSettle, days: days};
     const [ways, setWays] = useState<Ways>({back: false, ahead: false, scrolls: false});
     const [dragging, setDragging] = useState<boolean>(false);
 
@@ -90,29 +143,185 @@ const TrailScroll = ({days, todayat, opening, strings, children}: TrailScrollPro
     const measure = (element: HTMLDivElement): Track => trackOf(element.scrollLeft, element.scrollWidth, element.clientWidth, days);
 
     /**
-     * Paint what follows the scroll: the thumb by its style, the arrows and the fades when one of them changes.
+     * Paint what follows the scroll: the thumb by its style, the arrows and the fades when one of them changes; then tell
+     * the view which days are in view and whether they reached an end of what is held (the start only while moving
+     * back to it).
      *
      * @param {object} track The scroller's geometry.
+     * @param {number} moved How far it moved since the last measure, negative back.
      * @returns {void}
      */
-    const paint = (track: Track): void => {
+    const paint = (track: Track, moved: number): void => {
+        last.current = track;
         if (thumb.current) {
             thumb.current.style.left = percent(track.start);
             thumb.current.style.width = percent(track.span);
         }
         const next = {back: track.back, ahead: track.ahead, scrolls: track.max > 0};
         setWays((now) => (now.back === next.back && now.ahead === next.ahead && now.scrolls === next.scrolls ? now : next));
+        const shown = shownDays(track, reports.current.days);
+        let near: Near = '';
+        if (nearEnd(track, reports.current.days)) {
+            near = 'end';
+        } else if (moved < 0 && !track.back) {
+            near = 'start';
+        }
+        reports.current.onView(shown.first, shown.last, near);
     };
 
-    // Once per opening: today into view, then the thumb and the arrows where that left them.
+    /**
+     * The target on its way is settled: reached, or superseded by another (or the scroller gone); its fallback goes.
+     *
+     * @param {boolean} reached Whether it was reached.
+     * @returns {void}
+     */
+    const arrive = (reached: boolean): void => {
+        const arrival = arriving.current;
+        arriving.current = null;
+        if (arrival) {
+            if (arrival.timer !== null) {
+                clearTimeout(arrival.timer);
+            }
+            arrival.resolve(reached);
+        }
+    };
+
+    /**
+     * (Re)start the fallback of the target on its way: it settles this arrival only, and a scroll still under way puts
+     * it off again ({@see scrolled}), so a long animation is not cut short.
+     *
+     * @returns {void}
+     */
+    const wait = (): void => {
+        const arrival = arriving.current;
+        if (!arrival) {
+            return;
+        }
+        if (arrival.timer !== null) {
+            clearTimeout(arrival.timer);
+        }
+        arrival.timer = setTimeout(() => {
+            if (arriving.current === arrival) {
+                arrive(true);
+            }
+        }, ARRIVE_MS);
+    };
+
+    /**
+     * Tell the view the first day in view, where the scroll came to rest.
+     *
+     * @returns {void}
+     */
+    const tell = (): void => {
+        if (last.current) {
+            reports.current.onSettle(shownDays(last.current, reports.current.days).first);
+        }
+    };
+
+    /**
+     * The scroll settled: the view is told the first day in view, and a target asked for is reached.
+     *
+     * @returns {void}
+     */
+    const settle = (): void => {
+        if (quiet.current !== null) {
+            clearTimeout(quiet.current);
+            quiet.current = null;
+        }
+        tell();
+        arrive(true);
+    };
+
+    // Once per opening: today into view when the month opened on holds it, else that month's 1st, then the thumb, the
+    // arrows and the days in view where that left them.
     useLayoutEffect(() => {
         const element = box.current;
         if (!element) {
             return;
         }
-        element.scrollLeft = openingLeft(todayat, trackOf(0, element.scrollWidth, element.clientWidth, days));
-        paint(measure(element));
+        place(element, openingLeft(openat, trackOf(0, element.scrollWidth, element.clientWidth, days)), false);
+        paint(measure(element), 0);
+        tell();
+        // A new set of months: a target asked for over the old one is not reached.
+        arrive(false);
     }, [opening]);
+
+    // A month added before the first day held, or one dropped from the start: the position moves by its days. A target
+    // on its way moved with the days: it is aimed at again from there, so the animation the move cut goes on to it.
+    useLayoutEffect(() => {
+        const element = box.current;
+        const was = last.current;
+        if (!element || !was || shift.days === 0) {
+            return;
+        }
+        place(element, keptLeft(was.left, shift.days, was.pitch), false);
+        last.current = {...was, left: keptLeft(was.left, shift.days, was.pitch)};
+        const arrival = arriving.current;
+        if (arrival) {
+            arrival.target = shiftedTarget(arrival.target, shift.days);
+            place(element, targetLeft(arrival.target, measure(element)), true);
+            wait();
+        }
+    }, [shift.key]);
+
+    // The browser's own end of a scroll, where it has one; the quiet after the last scroll event stands in otherwise.
+    useEffect(() => {
+        const element = box.current;
+        if (!element) {
+            return undefined;
+        }
+        element.addEventListener('scrollend', settle);
+        return () => {
+            element.removeEventListener('scrollend', settle);
+            if (quiet.current !== null) {
+                clearTimeout(quiet.current);
+            }
+            arrive(false);
+        };
+    }, []);
+
+    /**
+     * A scroll: paint, and settle after a quiet.
+     *
+     * @param {object} element The scroller.
+     * @returns {void}
+     */
+    const scrolled = (element: HTMLDivElement): void => {
+        const track = measure(element);
+        paint(track, last.current ? track.left - last.current.left : 0);
+        if (quiet.current !== null) {
+            clearTimeout(quiet.current);
+        }
+        quiet.current = setTimeout(settle, SETTLE_MS);
+        wait();
+    };
+
+    /**
+     * Go to a target the view asks for: animated unless the reader asked for less motion; settled once the scroll ends,
+     * at once when it is there already or moves at once. A target still on its way is superseded: its promise says so.
+     *
+     * @param {object} target The target.
+     * @returns {Promise} True once the target is reached; false when another target or the scroller's end came first.
+     */
+    const go = (target: ScrollTarget): Promise<boolean> => {
+        const element = box.current;
+        arrive(false);
+        if (!element) {
+            return Promise.resolve(false);
+        }
+        const track = measure(element);
+        const left = targetLeft(target, track);
+        if (Math.abs(left - track.left) < 1 || still()) {
+            place(element, left, false);
+            return Promise.resolve(true);
+        }
+        return new Promise((resolve) => {
+            arriving.current = {target: target, resolve: resolve, timer: null};
+            wait();
+            place(element, left, true);
+        });
+    };
+    control.current = {go: go};
 
     /**
      * An arrow: a page of days back or ahead, smoothly unless the reader asked for less motion.
@@ -129,12 +338,7 @@ const TrailScroll = ({days, todayat, opening, strings, children}: TrailScrollPro
         if ((direction < 0 && !track.back) || (direction > 0 && !track.ahead)) {
             return;
         }
-        const left = pageLeft(element.scrollLeft, direction, track);
-        if (typeof element.scrollTo === 'function') {
-            element.scrollTo({left: left, behavior: still() ? 'auto' : 'smooth'});
-        } else {
-            element.scrollLeft = left;
-        }
+        place(element, pageLeft(track.left, direction, track), true);
     };
 
     /**
@@ -160,7 +364,7 @@ const TrailScroll = ({days, todayat, opening, strings, children}: TrailScrollPro
         if (!element || !grip) {
             return;
         }
-        element.scrollLeft = scrubLeft(at, grip.grab, measure(element), days);
+        place(element, scrubLeft(at, grip.grab, measure(element), days), false);
     };
 
     /**
@@ -210,7 +414,7 @@ const TrailScroll = ({days, todayat, opening, strings, children}: TrailScrollPro
                     ref={box}
                     className={`dim-cal__trailscroll${dragging ? ' dim-cal__trailscroll--free' : ''}`}
                     data-region="dim-cal-trailscroll"
-                    onScroll={(event) => paint(measure(event.currentTarget))}
+                    onScroll={(event) => scrolled(event.currentTarget)}
                 >
                     {children}
                 </div>

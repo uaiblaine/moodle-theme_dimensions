@@ -138,19 +138,33 @@ final class trails_test extends \advanced_testcase {
     }
 
     /**
-     * The answer for a month, as the current user, in a new request's state.
+     * The answer for a month, or a month and the next, as the current user, in a new request's state.
      *
      * @param string $month The month, YYYY-MM.
      * @param int $trailid One trail, 0 for every trail.
      * @param bool $mine Only the viewer's own.
      * @param int $categoryid The category narrowing.
      * @param int|null $now The moment, now by default.
+     * @param int $months How many months from the month.
      * @return array
      */
-    private function answer(string $month, int $trailid = 0, bool $mine = false, int $categoryid = 0, ?int $now = null): array {
+    private function answer(
+        string $month,
+        int $trailid = 0,
+        bool $mine = false,
+        int $categoryid = 0,
+        ?int $now = null,
+        int $months = 1
+    ): array {
         self::forget();
         get_fast_modinfo(0, 0, true);
-        return trails::answer(trails::month_window($month), scope::for_viewer($categoryid), $trailid, $mine, $now ?? time());
+        return trails::answer(
+            trails::month_window($month, $months),
+            scope::for_viewer($categoryid),
+            $trailid,
+            $mine,
+            $now ?? time()
+        );
     }
 
     /**
@@ -199,6 +213,30 @@ final class trails_test extends \advanced_testcase {
         $this->assertSame([(int) $june->id], self::ids($this->answer('2027-06')));
         $this->assertSame([], self::ids($this->answer('2027-05')), 'A month between the two shows neither.');
         $this->assertCount(2, $this->answer('2027-05')['options']);
+    }
+
+    /**
+     * The month and the next (the Trilhas view's first paint, trails::MONTHS) draw the trails of both, a trail meeting
+     * both once, over the two months' days.
+     */
+    public function test_two_months_draw_the_trails_of_both(): void {
+        $march = $this->trail('Março', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))]);
+        $both = $this->trail('Ambos', [$this->ref('Beta', self::at(3, 15), self::at(4, 10))]);
+        $april = $this->trail('Abril', [$this->ref('Gama', self::at(4, 12), self::at(4, 25))]);
+        $this->trail('Maio', [$this->ref('Delta', self::at(5, 2), self::at(5, 20))]);
+        $this->become(self::getDataGenerator()->create_user());
+
+        $this->assertSame([(int) $march->id, (int) $both->id], self::ids($this->answer('2027-03')), 'Control: March alone.');
+        $answer = $this->answer('2027-03', 0, false, 0, null, trails::MONTHS);
+        $this->assertSame(2, trails::MONTHS);
+        $this->assertSame(['2027-03-01', '2027-04-30'], [$answer['from'], $answer['to']]);
+        $this->assertSame([(int) $march->id, (int) $both->id, (int) $april->id], self::ids($answer));
+        $this->assertCount(4, $answer['options'], 'Every trail is offered, whatever its period.');
+        $this->assertSame(
+            trails::answer(trails::month_window('2027-03', 2), scope::for_viewer(), 0, false, self::at(3, 15)),
+            trails::answer(window::whole_months('2027-03', 2), scope::for_viewer(), 0, false, self::at(3, 15)),
+            'The window of the month and the next.'
+        );
     }
 
     /**
@@ -389,7 +427,8 @@ final class trails_test extends \advanced_testcase {
 
     /**
      * Six trails cost the statements two do, for a learner of every one of them (progress included) and for an account
-     * enrolled in none: the answer reads the trails and their steps in batches. Core's caches (each trail's modinfo, its
+     * enrolled in none, over one month and over the month and the next (the window is no statement's): the answer reads
+     * the trails and their steps in batches. Core's caches (each trail's modinfo, its
      * contexts and its completion data) are warm on a second answer, which is what is measured.
      */
     public function test_six_trails_cost_what_two_do(): void {
@@ -413,22 +452,25 @@ final class trails_test extends \advanced_testcase {
         foreach (['learner' => $learner, 'reader' => $reader] as $who => $user) {
             $this->become($user);
             $reads = [];
-            foreach ($categories as $name => $categoryid) {
-                $scope = scope::for_viewer($categoryid);
-                $window = trails::month_window('2027-03');
-                trails::answer($window, $scope, 0, false, self::at(3, 15));
-                self::forget();
-                $before = $DB->perf_get_reads();
-                $answer = trails::answer($window, $scope, 0, false, self::at(3, 15));
-                $reads[$name] = $DB->perf_get_reads() - $before;
-                $this->assertCount($name === 'small' ? 2 : 6, $answer['trails'], "Precondition: {$who} {$name}.");
-                $this->assertSame(
-                    $who === 'learner',
-                    $answer['trails'][0]['enrolled'],
-                    "Precondition: {$who} reads progress or not."
-                );
+            foreach ([1, trails::MONTHS] as $months) {
+                foreach ($categories as $name => $categoryid) {
+                    $scope = scope::for_viewer($categoryid);
+                    $window = trails::month_window('2027-03', $months);
+                    trails::answer($window, $scope, 0, false, self::at(3, 15));
+                    self::forget();
+                    $before = $DB->perf_get_reads();
+                    $answer = trails::answer($window, $scope, 0, false, self::at(3, 15));
+                    $reads[$months][$name] = $DB->perf_get_reads() - $before;
+                    $this->assertCount($name === 'small' ? 2 : 6, $answer['trails'], "Precondition: {$who} {$name} {$months}.");
+                    $this->assertSame(
+                        $who === 'learner',
+                        $answer['trails'][0]['enrolled'],
+                        "Precondition: {$who} reads progress or not."
+                    );
+                }
+                $this->assertSame($reads[$months]['small'], $reads[$months]['big'], "{$who}: four more trails add no statement.");
             }
-            $this->assertSame($reads['small'], $reads['big'], "{$who}: four more trails add no statement.");
+            $this->assertSame($reads[1], $reads[trails::MONTHS], "{$who}: the month and the next cost what one month does.");
         }
     }
 }

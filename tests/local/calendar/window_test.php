@@ -103,4 +103,56 @@ final class window_test extends \basic_testcase {
         $this->expectException(refusal::class);
         window::from_iso($from, $to, new \DateTimeZone('UTC'));
     }
+
+    /**
+     * A window of whole months: the first's 1st to the last's last day, past MAX_DAYS for two months, in the timezone.
+     *
+     * @return void
+     */
+    public function test_whole_months(): void {
+        $zone = new \DateTimeZone('America/Sao_Paulo');
+        $window = window::whole_months('2026-12', 2, $zone);
+
+        $this->assertCount(62, $window->days);
+        $this->assertGreaterThan(window::MAX_DAYS, count($window->days));
+        $this->assertSame(['2026-12-01', '2027-01-31'], [$window->from, $window->to]);
+        $this->assertSame((new \DateTimeImmutable('2026-12-01 00:00', $zone))->getTimestamp(), $window->tstart);
+        $this->assertSame((new \DateTimeImmutable('2027-02-01 00:00', $zone))->getTimestamp() - 1, $window->tend);
+        // One month is the month's own days, as from_iso() reads them; a leap February has its 29th.
+        $this->assertSame(
+            window::from_iso('2026-11-01', '2026-11-30', $zone)->days,
+            window::whole_months('2026-11', 1, $zone)->days
+        );
+        $this->assertCount(29, window::whole_months('2028-02', 1, $zone)->days);
+    }
+
+    /**
+     * Whole-month windows the factory refuses: no month, or a count outside 1 to MAX_MONTHS.
+     *
+     * @return array
+     */
+    public static function refused_months(): array {
+        return [
+            'no months' => ['2026-12', 0],
+            'a negative count' => ['2026-12', -1],
+            'three months' => ['2026-12', window::MAX_MONTHS + 1],
+            'month 13' => ['2026-13', 1],
+            'no padding' => ['2026-1', 1],
+            'a day' => ['2026-12-01', 1],
+            'a trailing newline' => ["2026-12\n", 1],
+        ];
+    }
+
+    /**
+     * Every malformed month or count is the one refusal.
+     *
+     * @param string $month The month.
+     * @param int $count The count.
+     * @return void
+     */
+    #[DataProvider('refused_months')]
+    public function test_whole_months_refused(string $month, int $count): void {
+        $this->expectException(refusal::class);
+        window::whole_months($month, $count, new \DateTimeZone('UTC'));
+    }
 }

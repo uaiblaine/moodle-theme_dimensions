@@ -186,7 +186,8 @@ final class calendar_component_source_test extends \basic_testcase {
      * the rows (the density) and the frame the drawer shares (the phone), the week's the frame alone, and the phone's Day
      * view, drawn with no grid beside it, has one of its own on the same frame, as the Trilhas view does; the step's
      * popover reads as the event popover does, on an opening; and the Trilhas view's days scroller (TrailScroll.tsx) reads
-     * itself once per opening (today into view) and on a scroll, an arrow or the map, never on another render.
+     * itself once per opening (today into view) and on a scroll, an arrow, a target the view asks for or the map, never on
+     * another render, and writes every position through one place.
      *
      * @return void
      */
@@ -225,10 +226,17 @@ final class calendar_component_source_test extends \basic_testcase {
         );
         $scroll = $this->sources()['TrailScroll.tsx'];
         $this->assertSame(
-            10,
+            7,
             preg_match_all($reads, $scroll),
-            'The days scroller: its measure (three), the opening\'s write and two reads, an arrow\'s read and its fallback '
-                . 'write, the map\'s box and its write.'
+            'The days scroller: its measure (three), the opening\'s two reads, the one fallback write every position goes '
+                . 'through (place()), and the map\'s box.'
+        );
+        $this->assertSame(1, substr_count($scroll, 'element.scrollLeft = left;'), 'One place writes a position.');
+        $this->assertSame(
+            1,
+            substr_count($scroll, 'place(element, keptLeft(was.left, shift.days, was.pitch), false);'),
+            'A month added before the days moves the position by arithmetic over the last measure; only a target on its '
+                . 'way is measured again, to aim at it from there.'
         );
         $this->assertMatchesRegularExpression(
             '~useLayoutEffect\(\(\) => \{\s*const element = box\.current;.*?scrollWidth.*?\}, \[opening\]\);~s',
@@ -499,7 +507,18 @@ final class calendar_component_source_test extends \basic_testcase {
                 $sinks[$name] = substr_count($source, 'dangerouslySetInnerHTML');
             }
         }
-        $this->assertSame(['EventPopover.tsx' => 1], $sinks, 'One sink, in the popover.');
+        $this->assertSame(['EventPopover.tsx' => 1, 'TrailView.tsx' => 3], $sinks, 'The popover\'s, and core\'s three chevrons.');
+        // The Trilhas view's three are core's pix icons the server renders (calendar_page::fold_icons()), handed down as
+        // the props' trails.icons and nothing else.
+        $view = $this->sources()['TrailView.tsx'];
+        foreach (['expanded', 'collapsed', 'collapsedrtl'] as $icon) {
+            $this->assertSame(1, substr_count($view, "dangerouslySetInnerHTML={{__html: icons.{$icon}}}"), $icon);
+        }
+        $this->assertStringContainsString('icons={iconsOf(props)}', $this->sources()['Calendar.tsx']);
+        $this->assertStringContainsString(
+            'const iconsOf = (props: Props): FoldIcons | undefined => props.trails?.icons;',
+            $this->sources()['Calendar.tsx']
+        );
         $popover = $this->sources()['EventPopover.tsx'];
         $this->assertStringContainsString('dangerouslySetInnerHTML={{__html: text}}', $popover);
         $this->assertStringContainsString('const [text, setText] = useState<string | null>(null);', $popover);
@@ -1021,26 +1040,28 @@ final class calendar_component_source_test extends \basic_testcase {
 
     /**
      * The Trilhas view's days scroll in a scroller of block_compass's shape.
-     * Its arithmetic reads the three column widths the stylesheet declares (trails.ts TRACK), so the two must agree;
-     * every bar and agenda row is a button named by its step, and the last column's chip that repeats a bar is out of
-     * the tab order and the tree; the map is aria-hidden and the arrows are named; a folded trail is the view's own
-     * state.
+     * Its arithmetic reads the measures the stylesheet declares (trails.ts TRACK: the trail column, a day, a row and a
+     * bar), so the two must agree; every bar and agenda row is a button named by its step, and no control repeats one
+     * out of the tab order (the last column's chip went with the column in T3b); the map is aria-hidden and the arrows are
+     * named; a folded trail is the view's own state.
      *
      * @return void
      */
     public function test_the_trail_scroller_and_its_columns(): void {
         $trails = $this->sources()['trails.ts'];
         $scss = (string) file_get_contents(dirname(__DIR__, 3) . '/scss/calendar.scss');
-        $pattern = '~export const TRACK = \{label: ([\d.]+), day: ([\d.]+), spill: ([\d.]+)\};~';
+        $pattern = '~export const TRACK = \{label: ([\d.]+), day: ([\d.]+), row: ([\d.]+), bar: ([\d.]+)\};~';
         $this->assertSame(1, preg_match($pattern, $trails, $track));
         $this->assertStringContainsString("--dim-cal-trail-label: {$track[1]}rem;", $scss);
         $this->assertStringContainsString("--dim-cal-trail-day: {$track[2]}rem;", $scss);
-        $this->assertStringContainsString("--dim-cal-trail-spill: {$track[3]}rem;", $scss);
+        $this->assertStringContainsString("--dim-cal-trail-row: {$track[3]}rem;", $scss);
+        $this->assertStringContainsString("--dim-cal-trail-bar: {$track[4]}rem;", $scss);
+        $this->assertStringNotContainsString('--dim-cal-trail-spill', $scss, 'The last column is gone.');
 
         $view = $this->sources()['TrailView.tsx'];
-        $this->assertStringContainsString('aria-label={quiet ? undefined : stepLabel(step, look, now)}', $view);
-        $this->assertStringContainsString("aria-hidden={quiet ? 'true' : undefined}", $view);
-        $this->assertStringContainsString('tabIndex={quiet ? -1 : undefined}', $view);
+        $this->assertStringContainsString('aria-label={stepLabel(step, look, now)}', $view);
+        $this->assertStringNotContainsString('tabIndex={', $view, 'No control of the view leaves the tab order.');
+        $this->assertStringNotContainsString('dim-cal-trailchip', $view);
         $this->assertStringContainsString('<TrailScroll', $view);
         $this->assertStringNotContainsString('remember', $view, 'A folded trail is never saved.');
         $this->assertStringNotContainsString('history', $view);
@@ -1049,5 +1070,144 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~data-region="dim-cal-trailmap"\s*aria-hidden="true"~', $scroll);
         $this->assertStringContainsString('aria-label={strings.calendar_trailearlier}', $scroll);
         $this->assertStringContainsString('aria-label={strings.calendar_traillater}', $scroll);
+    }
+
+    /**
+     * T3b: the Trilhas view's continuous months, its courses' rows and its connectors, read where PHPUnit can see them;
+     * Jest is the behaviour gate (js/esm/tests/calendar: trails.test.ts, TrailView.test.tsx).
+     *
+     * - The months held are contiguous and capped, the far side dropped with the first day's move told; the answers
+     *   merge by trail id and keep a trail while its period meets what is held (a period with no last end is open).
+     * - The first paint's answer and the page's own request are the month and the next, as many months as the service's
+     *   own cap (trails::MONTHS); a month beside them is one request.
+     * - A month prepended moves the position by arithmetic over the last measure; the start of what is held asks for the
+     *   month before only while scrolling back to it; a target is reached at once under reduced motion, animated
+     *   otherwise; a course's popover opens once the scroll has ended.
+     * - A settled scroll replaces the address (navigation, never an entry); the rows light their bars for a mouse only.
+     * - The connectors are cut at the edges of what is held, broken by a course with no date, none for a folded trail.
+     *
+     * @return void
+     */
+    public function test_the_trilhas_months_rows_and_connectors(): void {
+        $trails = $this->sources()['trails.ts'];
+        $this->assertStringContainsString('export const LOADED_CAP = 6;', $trails);
+        $this->assertSame(1, preg_match('~export const ANSWER_MONTHS = (\d+);~', $trails, $months));
+        $this->assertSame(trails::MONTHS, (int) $months[1], 'The client asks for the months the service answers.');
+        $this->assertStringContainsString('shift -= monthDays(String(months.shift())).length;', $trails);
+        $this->assertMatchesRegularExpression(
+            '~\} else \{\s*return null;\s*\}\s*return \{loaded: \{months: months, answers: answers\}, shift: shift\};~',
+            $trails,
+            'A month that is not beside what is held is refused.'
+        );
+        $this->assertStringContainsString(
+            'answer.trails.forEach((trail) => trails.set(trail.id, trails.get(trail.id) ?? trail));',
+            $trails
+        );
+        $this->assertStringContainsString('.filter((trail) => meets(trail, from, to, zone))', $trails);
+        $this->assertStringContainsString(
+            '(trail.first <= 0 || zone.day(trail.first) <= to) && (trail.last <= 0 || zone.day(trail.last) >= from);',
+            $trails
+        );
+        $this->assertStringContainsString('if (!shown || days.length === 0) {', $trails);
+        $this->assertMatchesRegularExpression(
+            '~if \(start !== null && end !== null && end < start\) \{\s*end = start;\s*\}~',
+            $trails,
+            'Dates out of order are righted before the edges are read.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~const at = days\.indexOf\(String\(end\)\);\s*if \(at < 0\) \{\s*return null;~',
+            $trails,
+            'An end alone past the days held is no milestone at index -1.'
+        );
+        $this->assertStringContainsString('if (reach === null || next === null) {', $trails);
+        $this->assertStringContainsString(
+            'return piece.left >= 0 && piece.left + piece.width <= width ? piece : null;',
+            $trails
+        );
+
+        $scroll = $this->sources()['TrailScroll.tsx'];
+        $this->assertStringContainsString("behavior: smooth && !still() ? 'smooth' : 'auto'", $scroll);
+        $this->assertStringContainsString('if (Math.abs(left - track.left) < 1 || still()) {', $scroll);
+        $this->assertStringContainsString('} else if (moved < 0 && !track.back) {', $scroll);
+        $this->assertMatchesRegularExpression(
+            '~place\(element, keptLeft\(was\.left, shift\.days, was\.pitch\), false\);.*?\}, \[shift\.key\]\);~s',
+            $scroll,
+            'The position follows a prepended month once per shift.'
+        );
+        $this->assertStringContainsString("element.addEventListener('scrollend', settle);", $scroll);
+        $this->assertMatchesRegularExpression(
+            '~const go = \(target: ScrollTarget\): Promise<boolean> => \{\s*const element = box\.current;\s*arrive\(false\);~',
+            $scroll,
+            'A target still on its way is superseded, not reached.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~const arrival = arriving\.current;\s*if \(arrival\) \{\s*'
+                . 'arrival\.target = shiftedTarget\(arrival\.target, shift\.days\);~',
+            $scroll
+        );
+        $this->assertMatchesRegularExpression('~quiet\.current = setTimeout\(settle, SETTLE_MS\);\s*wait\(\);~', $scroll);
+        $this->assertStringContainsString('place(element, openingLeft(openat, ', $scroll);
+
+        $view = $this->sources()['TrailView.tsx'];
+        $this->assertMatchesRegularExpression(
+            "~scroller\.go\(\{kind: 'step', index: bar\.from\}\)\s*\.then\(\(reached\) => \{\s*"
+                . "if \(ticket === asked\.current\) \{\s*arrived\(want\.trail, want\.cmid, reached\);~",
+            $view,
+            'A course\'s popover opens once the scroll to its bar has ended, for the action that asked for it.'
+        );
+        $this->assertMatchesRegularExpression('~const aim = \(next: Want\): void => \{\s*asked\.current\+\+;~', $view);
+        $this->assertMatchesRegularExpression(
+            '~const find = \(trail: Trail, step: TrailStep, row: HTMLElement\): void => \{\s*asked\.current\+\+;~',
+            $view
+        );
+        $this->assertSame(
+            2,
+            preg_match_all('~pending\.resolve\(\);\s*setWin\(\(was\) => \(\{\.\.\.was, loading: false\}\)\);~', $view),
+            'Every load, whatever came of it, pursues what is wanted again.'
+        );
+        $this->assertMatchesRegularExpression("~ranged\.current = '';\s*onRange\?\.\(null\);~", $view);
+        $this->assertStringContainsString("if (target !== '' && target !== failed.current) {", $view);
+        $this->assertStringContainsString('const openat = today.startsWith(win.loaded.months[0]) ? todayat : -1;', $view);
+        $this->assertStringContainsString('if (was.generation !== set || scoped.current !== askedwith) {', $view);
+        // A template literal's quote, spelled by its code: the coding style reads a literal one as a shell command.
+        $tick = chr(96);
+        $this->assertStringContainsString(
+            $tick . '[data-trail="${trailid}"] [data-region="dim-cal-trailstep"][data-cmid="${cmid}"]' . $tick,
+            $view,
+            'A course\'s popover opens on a bar of its own trail.'
+        );
+        $this->assertStringContainsString(
+            "root.current?.querySelectorAll<HTMLElement>('[data-lit]').forEach((element) => element.removeAttribute('data-lit'));",
+            $view
+        );
+        $this->assertStringContainsString("'--dim-cal-link-start': {$tick}" . '${piece.left}rem' . "{$tick},", $view);
+        $this->assertStringNotContainsString("left: {$tick}" . '${piece.left}rem', $view, 'A piece is placed from the start.');
+        $this->assertMatchesRegularExpression(
+            "~if \(event\.pointerType !== 'mouse'\) \{\s*return;\s*\}\s*root\.current\?\.querySelectorAll~",
+            $view,
+            'A row and its bar light each other for a mouse only.'
+        );
+        $this->assertStringContainsString('const links = linksOf(trail.steps, days, look.zone, open);', $view);
+        // Behat waits for a month asked for and for a course's popover to open once its scroll has ended.
+        $this->assertSame(2, substr_count($view, "new Pending('theme_dimensions/calendar:trailmonth')"));
+        $this->assertSame(1, substr_count($view, "finding.current = new Pending('theme_dimensions/calendar:trailfind');"));
+        $this->assertStringContainsString('data-region="dim-cal-trailrow"', $view);
+        $this->assertStringNotContainsString('history', $view, 'The page\'s history module writes the address.');
+
+        $calendar = $this->sources()['Calendar.tsx'];
+        $this->assertStringContainsString(
+            'args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, ANSWER_MONTHS),',
+            $calendar
+        );
+        $this->assertStringContainsString(
+            'writeAddress(withTrail(inSpan(address(props.urls.page, month, state), next), filtering.current), false);',
+            $calendar,
+            'A settled scroll replaces the address.'
+        );
+        $this->assertStringContainsString(
+            "if (span.view !== 'trail' || span.month === month || answered.current !== ticket.current) {",
+            $calendar,
+            'Nor while the page\'s own request is on its way.'
+        );
     }
 }

@@ -275,7 +275,37 @@ final class calendar_scss_test extends \advanced_testcase {
         $this->resetAfterTest();
         $modes = $this->compiled();
         $this->assertSame(array_keys($modes['light']), array_keys($modes['dark']));
-        $this->assertCount((count(self::KEYS) + count(self::TRAIL_KEYS)) * 3 + 4, $modes['light']);
+        // The triples, the Trilhas connectors' grey and the four surfaces.
+        $this->assertCount((count(self::KEYS) + count(self::TRAIL_KEYS)) * 3 + 1 + 4, $modes['light']);
+    }
+
+    /**
+     * The Trilhas view's connectors are the view's own neutral grey in both modes, a mark on both surfaces at 3:1, never a
+     * state's colour: not the locked step's grey either, which a locked bar is drawn in.
+     *
+     * @return void
+     */
+    public function test_the_trail_connectors_read_in_both_modes(): void {
+        $this->resetAfterTest();
+        foreach ($this->compiled() as $mode => $tokens) {
+            $link = $tokens['--dim-cal-trail-link'] ?? '';
+            $this->assertMatchesRegularExpression('/^#[0-9a-f]{6}$/', $link, "{$mode}: the connectors' grey compiles.");
+            foreach (['--dim-cal-surface', '--dim-cal-surface-quiet'] as $surface) {
+                $this->assertGreaterThanOrEqual(3.0, branding::contrast($tokens[$surface], $link), "{$mode}: on {$surface}.");
+            }
+            foreach (['trailcurrent', 'traildone', 'traillate', 'traillocked', 'trailupcoming'] as $state) {
+                $this->assertNotSame($tokens["--dim-cal-{$state}-edge"], $link, "{$mode}: never {$state}'s colour.");
+                $this->assertNotSame($tokens["--dim-cal-{$state}-ink"], $link, "{$mode}: nor {$state}'s ink.");
+            }
+        }
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__traillink \{\s*position: absolute;\s*inset-inline-start: var\(--dim-cal-link-start, 0\);\s*'
+                . 'background: var\(--dim-cal-trail-link\);~',
+            $scss,
+            'A piece is placed from the start of the days, so a right-to-left page mirrors it.'
+        );
+        $this->assertMatchesRegularExpression('~&\.dir-rtl \.dim-cal__traillink--right \{\s*transform: scaleX\(-1\);~', $scss);
     }
 
     /**
@@ -640,9 +670,9 @@ final class calendar_scss_test extends \advanced_testcase {
     /**
      * The Trilhas view's days scroll in a scroller drawn as block_compass's
      * strip (no native scrollbar in either engine, its overscroll kept from the page, snapped by the day, snap off while
-     * the map drags), the trail column and the last column of every row held still over the days, the fades taking no
-     * pointer; and the calendar's buttons are the mockup's, re-pointed through Bootstrap's own properties, the disabled
-     * trio included.
+     * the map drags), the trail column of every row held still over the days and the connectors, the fades taking no
+     * pointer; the months held are named in a band whose names stay in view (T3b replaced R3's last column); and the
+     * calendar's buttons are the mockup's, re-pointed through Bootstrap's own properties, the disabled trio included.
      *
      * @return void
      */
@@ -661,22 +691,34 @@ final class calendar_scss_test extends \advanced_testcase {
             'R3b: an arrow at its end is hidden, never drawn over the first or the last day.'
         );
         $this->assertMatchesRegularExpression(
-            '~\.dim-cal__trailchip \{[^}]*padding: 0 \.25rem;~',
+            '~\.dim-cal__traillabel \{\s*position: sticky;\s*inset-inline-start: 0;\s*z-index: 3;~',
             $scss,
-            'R3b: the chip fits the last column at 11px.'
+            'The still trail column stands over every bar (1), diamond (2) and connector (2).'
+        );
+        $this->assertMatchesRegularExpression('~\.dim-cal__traillinks \{[^}]*z-index: 2;[^}]*pointer-events: none;~', $scss);
+        $this->assertDoesNotMatchRegularExpression('~trailspill|trailchip|trailday--next~', $scss, 'T3b: the last column is gone.');
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailmonthname \{\s*position: sticky;\s*'
+                . 'inset-inline-start: calc\(var\(--dim-cal-trail-label\) \+ \.5rem\);~',
+            $scss,
+            'T3b: a month\'s name stays at the start of the days while its segment is in view.'
         );
         $this->assertMatchesRegularExpression(
-            '~\.dim-cal__traillabel,\s*\.dim-cal__trailspill \{\s*position: sticky;\s*z-index: 3;~',
+            '~\.dim-cal__trailscroll \{\s*overflow-anchor: none;~',
             $scss,
-            'The two still columns stand over every bar (1) and diamond (2).'
+            'T3b: a month prepended moves the position itself; the browser\'s anchoring would move it twice.'
         );
-        $this->assertMatchesRegularExpression('~\.dim-cal__traillabel \{\s*inset-inline-start: 0;~', $scss);
-        $this->assertMatchesRegularExpression('~\.dim-cal__trailspill \{\s*inset-inline-end: 0;~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailrow \{[^}]*height: var\(--dim-cal-trail-row\);~',
+            $scss,
+            'T3b: every row is the row the connectors\' arithmetic reads.'
+        );
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailbar \{[^}]*height: var\(--dim-cal-trail-bar\);~', $scss);
         $this->assertMatchesRegularExpression('~\.dim-cal__trailfade \{[^}]*position: absolute;[^}]*pointer-events: none;~', $scss);
         $this->assertMatchesRegularExpression('~\.dim-cal__trailgrid \{[^}]*width: max-content;~', $scss);
         $this->assertMatchesRegularExpression(
             '~\.dim-cal__trailrow \{[^}]*grid-template-columns:\s*var\(--dim-cal-trail-label\)\s*'
-                . 'repeat\(var\(--dim-cal-trail-days, 31\), var\(--dim-cal-trail-day\)\)\s*var\(--dim-cal-trail-spill\);~',
+                . 'repeat\(var\(--dim-cal-trail-days, 31\), var\(--dim-cal-trail-day\)\);~',
             $scss,
             'The days have the fixed width the client\'s arithmetic reads.'
         );

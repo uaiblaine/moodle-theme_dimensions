@@ -105,8 +105,9 @@ import {MOVE_MINUTE, createStart, dayStart, dropRefusal, editOf, editsOf, instan
 import {fill, load as loadStrings} from './strings';
 import type {Strings} from './strings';
 import TrailView, {TrailFilters} from './TrailView';
-import {emptyTrails, filterOf, readTrail, trailArgs, trailFiltered, withTrail} from './trails';
-import type {TrailAnswer, TrailFilter} from './trails';
+import type {TrailNav} from './TrailView';
+import {ANSWER_MONTHS, filterOf, rangeLabel, readTrail, trailArgs, trailFiltered, withTrail} from './trails';
+import type {FoldIcons, TrailAnswer, TrailFilter} from './trails';
 import ViewSwitch from './ViewSwitch';
 import WeekGrid from './WeekGrid';
 import {
@@ -294,6 +295,30 @@ const editedOf = (edits: Map<number, Edit>, entry: Placed | null): {item: Item, 
 };
 
 /**
+ * The toolbar's title: the span's caption, or in the Trilhas view's timeline the months in view (trails.ts
+ * rangeLabel()), once the timeline has told them.
+ *
+ * @param {string} caption The span's caption.
+ * @param {string} view The view shown.
+ * @param {boolean} phone Whether the frame is a phone's (its agenda has no timeline).
+ * @param {object|null} range The first and the last day in view, or null.
+ * @param {string|undefined} language The language tag.
+ * @returns {string}
+ */
+const captionOf = (caption: string, view: View, phone: boolean, range: {first: string, last: string} | null,
+    language: string | undefined): string => (view === 'trail' && !phone && range
+    ? rangeLabel(range.first, range.last, language)
+    : caption);
+
+/**
+ * Core's chevrons for the Trilhas view's fold, as the server rendered them.
+ *
+ * @param {object} props The server's props.
+ * @returns {object|undefined}
+ */
+const iconsOf = (props: Props): FoldIcons | undefined => props.trails?.icons;
+
+/**
  * The page.
  *
  * @param {object} props The server's props; see Props.
@@ -320,6 +345,8 @@ const Calendar = (props: Props) => {
 
     const root = useRef<HTMLDivElement | null>(null);
     const ticket = useRef<number>(0);
+    // The last request that came back, shown or failed: another number in `ticket` is a request on its way.
+    const answered = useRef<number>(0);
     const painting = useRef<Pending | null>(null);
     const mounting = useRef<Pending | null>(null);
     const remembered = useRef<State>(normalise(props.state));
@@ -339,6 +366,11 @@ const Calendar = (props: Props) => {
     const phoned = useRef<boolean>(phone);
     // The Trilhas view's filters as the last change gave them, read by the request path before the render that follows.
     const filtering = useRef<TrailFilter>(filter);
+    // What the toolbar asks of the Trilhas view's timeline: a month back or ahead, and today.
+    const trailnav = useRef<TrailNav | null>(null);
+    // The days in view of the Trilhas view's timeline, for the toolbar's title, and the trails it draws, for the count.
+    const [trailrange, setTrailRange] = useState<{first: string, last: string} | null>(null);
+    const [trailsdrawn, setTrailsDrawn] = useState<TrailAnswer | null>(() => props.trails?.answer ?? null);
 
     const zone = useMemo(() => zoneOf(props.timezone, language), [props.timezone, language]);
     const month = monthOfSpan(shown.span, selected);
@@ -451,10 +483,10 @@ const Calendar = (props: Props) => {
             let answer: Answer;
             let trails: TrailAnswer | null = null;
             if (span.view === 'trail') {
-                // The Trilhas view draws no event: its answer is the month's trails.
+                // The Trilhas view draws no event: its answer is the trails of the month and the next, as a first paint's.
                 trails = await fetchOne<TrailAnswer>({
                     methodname: TRAILS_METHOD,
-                    args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive),
+                    args: trailArgs(span.month, filtering.current, next.categoryid, next.recursive, ANSWER_MONTHS),
                 });
                 answer = emptyAnswer(days);
             } else {
@@ -466,6 +498,7 @@ const Calendar = (props: Props) => {
                 pending.resolve();
                 return;
             }
+            answered.current = seq;
             painting.current?.resolve();
             painting.current = pending;
             setShown({span: span, answer: answer, trails: trails});
@@ -476,6 +509,7 @@ const Calendar = (props: Props) => {
         } catch (failure) {
             pending.resolve();
             if (seq === ticket.current) {
+                answered.current = seq;
                 report(failure);
             }
         }
@@ -561,6 +595,43 @@ const Calendar = (props: Props) => {
             return;
         }
         change({categoryid: 0, recursive: true});
+    };
+
+    /**
+     * The trails of a month beside the Trilhas view's timeline, or of a month and the next for a new set, with the
+     * filters and the scope shown; a failure is reported and refused, and the view drops it.
+     *
+     * @param {string} month The month, YYYY-MM.
+     * @param {number} months 1, or ANSWER_MONTHS.
+     * @returns {Promise} The answer.
+     */
+    const fetchTrails = (month: string, months: number): Promise<TrailAnswer> => fetchOne<TrailAnswer>({
+        methodname: TRAILS_METHOD,
+        args: trailArgs(month, filtering.current, state.categoryid, state.recursive, months),
+    }).catch((failure) => {
+        report(failure);
+        throw failure;
+    });
+
+    /**
+     * The Trilhas view's scroll settled on a month: the address names it (replaced, as navigation), and so does the span
+     * a filter or a view switch starts from.
+     *
+     * @param {string} month The month of the first day in view, YYYY-MM.
+     * @returns {void}
+     */
+    const settleTrail = (month: string): void => {
+        const span = showing.current;
+        // A request on its way (a filter, Back or Forward) writes the address it is for: a scroll settling meanwhile
+        // is over months about to be replaced.
+        if (span.view !== 'trail' || span.month === month || answered.current !== ticket.current) {
+            return;
+        }
+        const next: Span = {view: 'trail', month: month};
+        showing.current = next;
+        writeAddress(withTrail(inSpan(address(props.urls.page, month, state), next), filtering.current), false);
+        setShown((was) => ({...was, span: next}));
+        setSelected(openingDay(month, props.today));
     };
 
     /**
@@ -871,7 +942,25 @@ const Calendar = (props: Props) => {
      * @param {number} offset Whole months or weeks.
      * @returns {void}
      */
-    const step = (offset: number): void => toDay(stepSpan(shown.span, parse(selected) ? selected : days[0], offset), false);
+    const step = (offset: number): void => {
+        // The Trilhas view's timeline moves itself, asking for a month when needed; with no timeline the page asks.
+        if (trailview && trailnav.current?.step(offset)) {
+            return;
+        }
+        toDay(stepSpan(shown.span, parse(selected) ? selected : days[0], offset), false);
+    };
+    /**
+     * Today: the Trilhas view's timeline scrolls to it, asking for its month when needed; any other view goes there.
+     *
+     * @returns {void}
+     */
+    const toToday = (): void => {
+        if (trailview && trailnav.current?.today()) {
+            return;
+        }
+        toDay(props.today, false);
+    };
+    const caption = captionOf(labels.caption, shown.span.view, phone, trailrange, language);
     // Core's form for a new event on a day, at its hour when one is named (the drawer's hour rows).
     const createAt = creator(props.edits, (iso, hour) => form(null, createStart(iso, hour, props.now, zone, props.timezone)));
     /**
@@ -918,12 +1007,19 @@ const Calendar = (props: Props) => {
                 <TrailView
                     look={look}
                     month={month}
-                    answer={shown.trails ?? emptyTrails(month)}
+                    answer={shown.trails}
                     today={props.today}
                     now={props.now}
                     phone={phone}
                     captionid={CAPTION}
                     chosen={filter.trail}
+                    icons={iconsOf(props)}
+                    fetch={fetchTrails}
+                    nav={trailnav}
+                    scope={`${filter.trail}:${filter.mine}:${state.categoryid}:${state.recursive}`}
+                    onRange={setTrailRange}
+                    onMonth={settleTrail}
+                    onDrawn={setTrailsDrawn}
                     onWidth={onWidth}
                 />
             );
@@ -1001,7 +1097,7 @@ const Calendar = (props: Props) => {
         >
             <div className="dim-cal__toolbar">
                 <h1 className="dim-cal__title">{strings.calendar_title}</h1>
-                <button type="button" className="btn btn-secondary dim-cal__today" onClick={() => toDay(props.today, false)}>
+                <button type="button" className="btn btn-secondary dim-cal__today" onClick={toToday}>
                     {strings.calendar_today}
                 </button>
                 <button
@@ -1022,14 +1118,14 @@ const Calendar = (props: Props) => {
                 >
                     <i className="fa fa-chevron-right" aria-hidden="true"></i>
                 </button>
-                <p className="dim-cal__caption" id={CAPTION} aria-live="polite" data-region="dim-cal-caption">{labels.caption}</p>
+                <p className="dim-cal__caption" id={CAPTION} aria-live="polite" data-region="dim-cal-caption">{caption}</p>
                 <span className="dim-cal__spacer"></span>
                 <ViewSwitch strings={strings} view={shown.span.view} phone={phone} onView={toView} trails={offered} />
                 {trailview ? null : newEventButton(props.edits, strings.calendar_newevent, strings.calendar_newevent,
                     () => form(null, toolbarStart(own, props.today, props.now, zone, props.timezone)))}
             </div>
             {trailview ? (
-                <TrailFilters strings={strings} filter={filter} answer={shown.trails} onChange={changeTrail}>
+                <TrailFilters strings={strings} filter={filter} answer={trailsdrawn} onChange={changeTrail}>
                     <CategoryPicker
                         strings={strings}
                         tree={props.tree}

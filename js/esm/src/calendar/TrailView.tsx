@@ -14,66 +14,117 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The Trilhas view: the month's trails, one row per trail and its steps under it.
+ * The Trilhas view: the trails of the months it holds, one row per trail and its steps under it.
  *
- * - On a desktop, a grid of the month's days: each step a bar from its start to its end (trails.ts barOf()), a
- *   diamond on an expected completion date, a bar that passes the month's end continued by a chip in the last column
- *   ("Dec →"), one that began earlier marked at the left edge, an open one fading out; the trail's own row carries
- *   its span (trails.ts trailBarOf()). Weekends are hatched and today is a line down the rows. The days have a
- *   fixed width and only they scroll, in TrailScroll.tsx, the trail column and the last column held still; a
- *   trail's chevron folds its steps away (the view's own state, never saved); the legend follows the grid.
+ * - On a desktop, a timeline of contiguous months (trails.ts Loaded): the month in view and the next on a first paint,
+ *   another month asked for when the scroll nears the end of what is held or the arrows go back past its start, at most
+ *   trails.ts LOADED_CAP held. Each step a bar from its start to its end (trails.ts barOf()), a diamond on an expected
+ *   completion date, one that began earlier marked at the left edge, one that runs on past what is held cut there, an
+ *   open one fading out; the trail's own row carries its span (trails.ts trailBarOf()). Above the days a band names each
+ *   month held, its name a button that scrolls to its 1st; a month on its way is a quiet skeleton at the end. Weekends
+ *   are hatched, a month's first day is a line, and today is a line down the rows. Consecutive steps are joined by
+ *   connectors in the trail's order (trails.ts linksOf()), drawn by the same day arithmetic, aria-hidden. The days have
+ *   a fixed width and only they scroll, in TrailScroll.tsx, the trail column held still; a trail's chevron (core's
+ *   course-section toggle, its icons rendered by the server) folds its steps away, the view's own state, never saved;
+ *   the legend follows the grid.
+ * - A course's row in the trail column is a button: it scrolls the timeline to the course's bar (asking for its month
+ *   first when it is not held), then opens the bar's popover once the scroll has ended; a course with no date opens it
+ *   on the row. A mouse over a row lights its bar and over a bar its row (a touch never does).
  * - On a phone, an agenda: each trail in a card, a learner's progress as one segment per step, the steps in order with
  *   their dates, a "Today" line between the steps behind and the steps ahead (trails.ts todayIndex()).
  * - For a learner of the trail each step carries its state (done, current, late, locked, upcoming) as a class and
  *   data-state from that fixed vocabulary, and the trail's row counts the steps done; for anyone else the bars are the
  *   trail colour, the schedule alone. The event types' colours never reach this view.
  * - A step opens its popover (TrailPopover.tsx) on a press, Enter or Space: the bars and the agenda's rows are buttons
- *   named by the step; the last column's chip repeats its bar for the pointer and is out of the tab order and the tree.
+ *   named by the step. The popover is drawn beside the scroller, never inside it, so its overflow cannot cut it.
+ * - The toolbar's arrows and "Today" ask the view (`nav`): a month back or ahead of the first day in view, animated,
+ *   asking for it when needed; the toolbar's title is the months in view (`onRange`), and the address's month is the
+ *   month of the first day in view once a scroll settles (`onMonth`): the page's history writes it, never this view.
  *
  * Its ONE ResizeObserver watches the frame it is drawn in and reports the frame's width alone, the grids' rule
  * (MonthGrid.tsx PHONE): the frame's width does not depend on what it holds, so the phone decision cannot feed back
- * into the measure. Nothing is measured here, and no layout is read to place a bar: the bars, the weekends and today
- * are grid columns or multiples of the day's width the stylesheet declares; the scroller's reads are TrailScroll's.
+ * into the measure. Nothing is measured here, and no layout is read to place a bar or a connector: the bars, the
+ * weekends and today are grid columns or multiples of the day's width the stylesheet declares; the scroller's reads are
+ * TrailScroll's.
  *
  * @module     theme_dimensions/calendar/TrailView
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import {Fragment, useCallback, useEffect, useRef, useState} from 'react';
-import type {CSSProperties, ReactNode} from 'react';
-import {say, shiftMonth} from '../daterange/calendar';
-import {isWeekend} from './days';
+import {Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import type {CSSProperties, MutableRefObject, PointerEvent, ReactNode} from 'react';
+import Pending from '@moodle/lms/core/pending';
+import {say} from '../daterange/calendar';
+import {isWeekend, monthAfter} from './days';
 import type {Look} from './look';
 import {safeHref} from './model';
 import {fill} from './strings';
 import type {Strings} from './strings';
 import TrailPopover, {TrailIcon, stateLabel, stateLine, stepWhen} from './TrailPopover';
 import TrailScroll from './TrailScroll';
-import {barOf, beyondOf, monthDays, todayIndex, trailBarOf} from './trails';
-import type {StepState, Trail, TrailAnswer, TrailFilter, TrailStep} from './trails';
+import type {Near, ScrollControl, Shift} from './TrailScroll';
+import {
+    ANSWER_MONTHS,
+    SKELETON_DAYS,
+    barOf,
+    emptyTrails,
+    extendLoaded,
+    linksOf,
+    loadedOf,
+    mergedOf,
+    monthDays,
+    monthStep,
+    todayIndex,
+    trailBarOf,
+    windowDays,
+} from './trails';
+import type {FoldIcons, Loaded, StepState, Trail, TrailAnswer, TrailFilter, TrailStep} from './trails';
+
+/** What the toolbar asks of the view: a month back or ahead, and today; false when the view draws no timeline. */
+export type TrailNav = {step: (direction: number) => boolean, today: () => boolean};
 
 /** What the view is handed. */
 type TrailViewProps = {
     look: Look,
     month: string,
-    answer: TrailAnswer,
+    answer: TrailAnswer | null,
     today: string,
     now: number,
     phone: boolean,
     captionid: string,
     chosen?: number,
+    icons?: FoldIcons,
+    fetch?: (month: string, months: number) => Promise<TrailAnswer>,
+    scope?: string,
+    nav?: MutableRefObject<TrailNav | null>,
+    onRange?: (range: {first: string, last: string} | null) => void,
+    onMonth?: (month: string) => void,
+    onDrawn?: (answer: TrailAnswer) => void,
     onWidth: (width: number) => void,
 };
 
 /** The open popover: the trail, the step and the element that opened it. */
 type Popped = {trail: number, cmid: number, opener: HTMLElement};
 
-/** The short month of the "next month" column. */
-const NEXT_MONTH: Intl.DateTimeFormatOptions = {month: 'short'};
+/**
+ * The months held, the set they belong to (a new answer is a new set), the filters and scope they were asked with, the
+ * last shift of the first day, and a month on its way.
+ */
+type Win = {loaded: Loaded, generation: number, scope: string, shift: Shift, loading: boolean};
 
-/** The long month of its accessible name. */
-const LONG_MONTH: Intl.DateTimeFormatOptions = {month: 'long', year: 'numeric'};
+/** What the view is on its way to, once the months it needs are held. */
+type Want = {kind: 'month', month: string, tries: number} | {kind: 'today', tries: number}
+    | {kind: 'step', trail: number, cmid: number, tries: number};
+
+/** The most months asked for on the way to one target before it is given up. */
+const TRIES = 3;
+
+/** No icons: a page whose props carry none draws an empty toggle box. */
+const NO_ICONS: FoldIcons = {expanded: '', collapsed: '', collapsedrtl: ''};
+
+/** A month and its year, in the band. */
+const MONTH_YEAR: Intl.DateTimeFormatOptions = {month: 'long', year: 'numeric'};
 
 /** A day's letter in the header. */
 const WEEKDAY: Intl.DateTimeFormatOptions = {weekday: 'narrow'};
@@ -83,6 +134,31 @@ const SHORT_DAY: Intl.DateTimeFormatOptions = {day: 'numeric', month: 'short'};
 
 /** The states a learner's legend names, in the order the legend lists them. */
 const LEGEND: StepState[] = ['done', 'current', 'upcoming', 'locked', 'late'];
+
+/**
+ * A new set of months from one answer, or an empty month.
+ *
+ * @param {object|null} answer The answer.
+ * @param {string} month The month an absent answer stands for.
+ * @param {number} generation The set's number.
+ * @param {string} scope The filters and scope it was asked with.
+ * @returns {object} See Win.
+ */
+const freshWin = (answer: TrailAnswer | null, month: string, generation: number, scope: string): Win => ({
+    loaded: loadedOf(answer ?? emptyTrails(month)),
+    generation: generation,
+    scope: scope,
+    shift: {key: 0, days: 0},
+    loading: false,
+});
+
+/**
+ * Whether a step has a date at all: one with none has no bar anywhere, and breaks its trail's chain of connectors.
+ *
+ * @param {object} step The step.
+ * @returns {boolean}
+ */
+const dated = (step: TrailStep): boolean => step.start > 0 || step.end > 0;
 
 /**
  * A step's accessible name: its name, its dates and its state.
@@ -142,7 +218,7 @@ export const countOf = (strings: Strings, answer: TrailAnswer): string => fill(s
 
 /**
  * A date's parts as one compact line: a literal holding a word ("4 de dez." in Portuguese) gives way to a space, so the
- * last column's 76px hold it ("4 dez."); the order and the month's spelling stay the language's.
+ * agenda's date column holds it ("4 dez."); the order and the month's spelling stay the language's.
  *
  * @param {Array} parts The formatter's parts.
  * @returns {string}
@@ -164,23 +240,6 @@ const shortOf = (iso: string, language: string | undefined): string => {
             .formatToParts(new Date(`${iso}T00:00:00Z`)));
     } catch (error) {
         return say(iso, SHORT_DAY, language);
-    }
-};
-
-/**
- * Two days as one short compact range ("Dec 1 – 18", "1–18 dez."), the language's own spelling where Intl has one.
- *
- * @param {string} from The first day, YYYY-MM-DD.
- * @param {string} to The last day, YYYY-MM-DD.
- * @param {string|undefined} language The language tag.
- * @returns {string}
- */
-const shortRange = (from: string, to: string, language: string | undefined): string => {
-    try {
-        return compact(new Intl.DateTimeFormat(language, {...SHORT_DAY, timeZone: 'UTC'})
-            .formatRangeToParts(new Date(`${from}T00:00:00Z`), new Date(`${to}T00:00:00Z`)));
-    } catch (error) {
-        return `${shortOf(from, language)} – ${shortOf(to, language)}`;
     }
 };
 
@@ -243,12 +302,42 @@ export const TrailFilters = ({strings, filter, answer, onChange, children}: Trai
  * @param {object} props See TrailViewProps.
  * @returns {object} The region.
  */
-const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 0, onWidth}: TrailViewProps) => {
+const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 0, icons = NO_ICONS, fetch, scope = '', nav,
+    onRange, onMonth, onDrawn, onWidth}: TrailViewProps) => {
     const root = useRef<HTMLElement | null>(null);
     const width = useRef<(width: number) => void>(onWidth);
     width.current = onWidth;
+    const [seen, setSeen] = useState<TrailAnswer | null>(answer);
+    const [win, setWin] = useState<Win>(() => freshWin(answer, month, 0, scope));
     const [popped, setPopped] = useState<Popped | null>(null);
     const [folded, setFolded] = useState<number[]>([]);
+    const [inview, setInview] = useState<string>('');
+    const control = useRef<ScrollControl | null>(null);
+    const viewed = useRef<{first: number, last: number}>({first: 0, last: 0});
+    const ranged = useRef<string>('');
+    const busy = useRef<boolean>(false);
+    const generation = useRef<number>(win.generation);
+    const wanted = useRef<Want | null>(null);
+    const finding = useRef<Pending | null>(null);
+    // The reader's last action's number: a course's popover opens only for the action that asked for it.
+    const asked = useRef<number>(0);
+    // A month whose request failed is not asked for again by the scroll, only by the reader's next action.
+    const failed = useRef<string>('');
+    // The filters and the scope the months held were asked with: a load asked with others is dropped when it comes.
+    const scoped = useRef<string>(scope);
+    scoped.current = scope;
+
+    // A new answer from the page (a first paint, a filter, Back or Forward) is a new set of months.
+    if (seen !== answer) {
+        setSeen(answer);
+        setWin((was) => freshWin(answer, month, was.generation + 1, scope));
+    }
+    generation.current = win.generation;
+
+    const merged = useMemo(() => mergedOf(win.loaded, look.zone), [win.loaded, look.zone]);
+    const days = useMemo(() => windowDays(win.loaded.months), [win.loaded]);
+    const columns = days.length + (win.loading ? SKELETON_DAYS : 0);
+    const timeline = !phone && merged.trails.length > 0;
 
     useEffect(() => {
         const frame = root.current?.parentElement || null;
@@ -267,8 +356,28 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         return () => observer.disconnect();
     }, []);
 
-    // A new month or a new answer closes the popover: its step may be gone.
+    // A new answer closes the popover: its step may be gone.
     useEffect(() => setPopped(null), [answer]);
+
+    // With no timeline drawn the toolbar's title is the page's own again.
+    useEffect(() => {
+        if (!timeline) {
+            ranged.current = '';
+            onRange?.(null);
+        }
+    }, [timeline]);
+
+    // A row and its bar lit together: a month dropped or a trail folded may take one of them away under the pointer, so
+    // the pair is put out rather than left half lit.
+    useLayoutEffect(() => {
+        root.current?.querySelectorAll<HTMLElement>('[data-lit]').forEach((element) => element.removeAttribute('data-lit'));
+    }, [win.loaded, folded]);
+
+    // The page's count and choice follow what is drawn, in the frame it is drawn in.
+    useLayoutEffect(() => onDrawn?.(merged), [merged]);
+
+    // A search for a course that is given up, or done, lets its Pending token go.
+    useEffect(() => () => finding.current?.resolve(), []);
 
     const close = useCallback((refocus: boolean): void => {
         setPopped((was) => {
@@ -280,22 +389,361 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     }, []);
 
     /**
+     * Let a search for a course go: its target is reached or given up.
+     *
+     * @returns {void}
+     */
+    const found = (): void => {
+        finding.current?.resolve();
+        finding.current = null;
+    };
+
+    /**
+     * Ask for one month beside what is held and add it when it comes, unless a new set of months came first; one
+     * request at a time.
+     *
+     * @param {string} target The month, YYYY-MM.
+     * @returns {void}
+     */
+    const extend = (target: string): void => {
+        // A filter changed and the page's answer for it is on its way: no month is added to the months asked before.
+        if (!fetch || busy.current || scoped.current !== win.scope) {
+            return;
+        }
+        busy.current = true;
+        const set = generation.current;
+        const askedwith = win.scope;
+        const ahead = target > win.loaded.months[win.loaded.months.length - 1];
+        setWin((was) => ({...was, loading: ahead}));
+        const pending = new Pending('theme_dimensions/calendar:trailmonth');
+        fetch(target, 1)
+            .then((got) => {
+                setWin((was) => {
+                    if (was.generation !== set || scoped.current !== askedwith) {
+                        return was;
+                    }
+                    const grown = extendLoaded(was.loaded, got);
+                    if (!grown) {
+                        return {...was, loading: false};
+                    }
+                    const shift = grown.shift === 0 ? was.shift : {key: was.shift.key + 1, days: grown.shift};
+                    return {...was, loaded: grown.loaded, shift: shift, loading: false};
+                });
+                return got;
+            })
+            .catch(() => {
+                // The scroll asks for this month no more; a target that needs it tries again, a few times at most.
+                failed.current = target;
+            })
+            .finally(() => {
+                busy.current = false;
+                pending.resolve();
+                // Always a new state, so what is wanted is pursued again: a load dropped, refused or turned away while
+                // this one was on its way leaves no target stranded.
+                setWin((was) => ({...was, loading: false}));
+            });
+    };
+
+    /**
+     * Ask for a month that is not beside what is held, with the next: a new set of months in place of the held ones.
+     *
+     * @param {string} target The month, YYYY-MM.
+     * @returns {void}
+     */
+    const jump = (target: string): void => {
+        if (!fetch || busy.current || scoped.current !== win.scope) {
+            return;
+        }
+        busy.current = true;
+        const set = generation.current;
+        const askedwith = win.scope;
+        const pending = new Pending('theme_dimensions/calendar:trailmonth');
+        fetch(target, ANSWER_MONTHS)
+            .then((got) => {
+                setWin((was) => (was.generation === set && scoped.current === askedwith
+                    ? freshWin(got, target, was.generation + 1, askedwith)
+                    : was));
+                return got;
+            })
+            .catch(() => {
+                // The scroll asks for this month no more; a target that needs it tries again, a few times at most.
+                failed.current = target;
+            })
+            .finally(() => {
+                busy.current = false;
+                pending.resolve();
+                setWin((was) => ({...was, loading: false}));
+            });
+    };
+
+    /**
+     * Bring a month into what is held: nothing when it is, the month beside what is held, or a new set of months.
+     *
+     * @param {string} target The month, YYYY-MM.
+     * @returns {void}
+     */
+    const reach = (target: string): void => {
+        const months = win.loaded.months;
+        if (months.includes(target)) {
+            return;
+        }
+        if (target === monthAfter(months[months.length - 1], 1) || target === monthAfter(months[0], -1)) {
+            extend(target);
+        } else {
+            jump(target);
+        }
+    };
+
+    /**
+     * Open a step's popover on its bar, the scroll ended.
+     *
+     * @param {number} trailid The trail.
+     * @param {number} cmid The step.
+     * @returns {void}
+     */
+    const openOn = (trailid: number, cmid: number): void => {
+        const bar = root.current?.querySelector<HTMLElement>(
+            `[data-trail="${trailid}"] [data-region="dim-cal-trailstep"][data-cmid="${cmid}"]`
+        );
+        if (bar) {
+            setPopped({trail: trailid, cmid: cmid, opener: bar});
+        }
+        found();
+    };
+
+    /**
+     * The scroll to a course's bar ended for the action that asked for it: open the popover when the bar was reached,
+     * else let the search go.
+     *
+     * @param {number} trailid The trail.
+     * @param {number} cmid The step.
+     * @param {boolean} reached Whether the bar was reached.
+     * @returns {void}
+     */
+    const arrived = (trailid: number, cmid: number, reached: boolean): void => {
+        if (reached) {
+            openOn(trailid, cmid);
+        } else {
+            found();
+        }
+    };
+
+    /**
+     * Go on to what is wanted: scroll to it when its month is held, else ask for the month (the next render goes on);
+     * given up after {@see TRIES} months asked for.
+     *
+     * @returns {void}
+     */
+    const pursue = (): void => {
+        const want = wanted.current;
+        const scroller = control.current;
+        if (!want || !scroller) {
+            return;
+        }
+        if (want.tries > TRIES) {
+            wanted.current = null;
+            found();
+            return;
+        }
+        if (want.kind === 'month') {
+            const at = days.indexOf(`${want.month}-01`);
+            if (at < 0) {
+                want.tries++;
+                reach(want.month);
+                return;
+            }
+            wanted.current = null;
+            scroller.go({kind: 'day', index: at});
+            return;
+        }
+        if (want.kind === 'today') {
+            const at = days.indexOf(today);
+            if (at < 0) {
+                want.tries++;
+                reach(today.slice(0, 7));
+                return;
+            }
+            wanted.current = null;
+            scroller.go({kind: 'today', index: at, month: days.indexOf(`${today.slice(0, 7)}-01`)});
+            return;
+        }
+        const step = merged.trails.find((trail) => trail.id === want.trail)?.steps.find((one) => one.cmid === want.cmid);
+        if (!step) {
+            wanted.current = null;
+            found();
+            return;
+        }
+        const bar = barOf(step, days, look.zone);
+        if (bar) {
+            wanted.current = null;
+            const ticket = asked.current;
+            scroller.go({kind: 'step', index: bar.from})
+                .then((reached) => {
+                    // A newer action owns the search; a target not reached for this one gives it up.
+                    if (ticket === asked.current) {
+                        arrived(want.trail, want.cmid, reached);
+                    }
+                    return reached;
+                })
+                .catch(found);
+            return;
+        }
+        want.tries++;
+        reach(look.zone.day(step.start > 0 ? step.start : step.end).slice(0, 7));
+    };
+
+    // Once a month asked for is held, go on to what was wanted.
+    useEffect(() => pursue(), [win]);
+
+    /**
+     * Go on to a new target: a search for a course on its way is given up first, so its Pending token is let go.
+     *
+     * @param {object} next The target.
+     * @returns {void}
+     */
+    const aim = (next: Want): void => {
+        asked.current++;
+        failed.current = '';
+        found();
+        wanted.current = next;
+        pursue();
+    };
+
+    /**
+     * A course's row: scroll the timeline to its bar, then open the bar's popover; a course with no date opens it on
+     * the row.
+     *
+     * @param {object} trail The trail.
+     * @param {object} step The step.
+     * @param {object} row The row's button.
+     * @returns {void}
+     */
+    const find = (trail: Trail, step: TrailStep, row: HTMLElement): void => {
+        asked.current++;
+        failed.current = '';
+        found();
+        if (!dated(step)) {
+            wanted.current = null;
+            setPopped({trail: trail.id, cmid: step.cmid, opener: row});
+            return;
+        }
+        finding.current = new Pending('theme_dimensions/calendar:trailfind');
+        wanted.current = {kind: 'step', trail: trail.id, cmid: step.cmid, tries: 0};
+        pursue();
+    };
+
+    if (nav) {
+        nav.current = {
+            /**
+             * A month back or ahead of the first day in view.
+             *
+             * @param {number} direction -1 back, 1 ahead.
+             * @returns {boolean} Whether the timeline took it.
+             */
+            step: (direction: number): boolean => {
+                if (!timeline || days.length === 0) {
+                    return false;
+                }
+                const first = days[viewed.current.first] ?? days[0];
+                aim({kind: 'month', month: monthStep(first, direction), tries: 0});
+                return true;
+            },
+            /**
+             * Today, from its month's 1st.
+             *
+             * @returns {boolean} Whether the timeline took it.
+             */
+            today: (): boolean => {
+                if (!timeline) {
+                    return false;
+                }
+                aim({kind: 'today', tries: 0});
+                return true;
+            },
+        };
+    }
+
+    /**
+     * The scroller's report of the days in view: the toolbar's title, the band's month in view, and a month asked for
+     * at an end of what is held.
+     *
+     * @param {number} first The first day in view.
+     * @param {number} last The last day in view.
+     * @param {string} near The end reached, if any.
+     * @returns {void}
+     */
+    const viewing = (first: number, last: number, near: Near): void => {
+        if (days.length === 0) {
+            return;
+        }
+        const from = days[Math.min(first, days.length - 1)];
+        const to = days[Math.min(last, days.length - 1)];
+        viewed.current = {first: Math.min(first, days.length - 1), last: Math.min(last, days.length - 1)};
+        const range = `${from.slice(0, 7)}:${to.slice(0, 7)}`;
+        if (range !== ranged.current) {
+            ranged.current = range;
+            onRange?.({first: from, last: to});
+        }
+        setInview((was) => (was === from.slice(0, 7) ? was : from.slice(0, 7)));
+        const months = win.loaded.months;
+        let target = '';
+        if (near === 'end') {
+            target = monthAfter(months[months.length - 1], 1);
+        } else if (near === 'start') {
+            target = monthAfter(months[0], -1);
+        }
+        if (target !== '' && target !== failed.current) {
+            extend(target);
+        }
+    };
+
+    /**
+     * The scroll settled: the address's month is the first day in view's.
+     *
+     * @param {number} first The first day in view.
+     * @returns {void}
+     */
+    const settled = (first: number): void => {
+        const day = days[Math.min(first, days.length - 1)];
+        if (day) {
+            onMonth?.(day.slice(0, 7));
+        }
+    };
+
+    /**
+     * Light a step's bar and row together, for a mouse only: a touch has no hover, and a tap must not leave one lit.
+     *
+     * @param {number} cmid The step.
+     * @param {boolean} on Whether the pointer came in or went out.
+     * @returns {Function} The handler.
+     */
+    const lit = (cmid: number, on: boolean) => (event: PointerEvent<HTMLElement>): void => {
+        if (event.pointerType !== 'mouse') {
+            return;
+        }
+        root.current?.querySelectorAll<HTMLElement>(`[data-pair="${cmid}"]`).forEach((element) => {
+            element.toggleAttribute('data-lit', on);
+        });
+    };
+
+    /**
      * Fold a trail's steps away, or unfold them: the view's own state, never saved.
      *
      * @param {number} id The trail.
      * @returns {void}
      */
     const fold = (id: number): void => {
-        setFolded((now) => (now.includes(id) ? now.filter((one) => one !== id) : [...now, id]));
+        setFolded((was) => (was.includes(id) ? was.filter((one) => one !== id) : [...was, id]));
     };
 
-    const days = monthDays(month);
-    const next = shiftMonth(days[0], 1);
     const todayat = days.indexOf(today);
-    const columns = {'--dim-cal-trail-days': String(days.length)} as CSSProperties;
-    const poppedtrail = popped ? answer.trails.find((trail) => trail.id === popped.trail) : undefined;
+    // The opening aims at today only when the month opened on (the one the page or the reader asked for) holds it.
+    const openat = today.startsWith(win.loaded.months[0]) ? todayat : -1;
+    const grid = {'--dim-cal-trail-days': String(columns)} as CSSProperties;
+    const poppedtrail = popped ? merged.trails.find((trail) => trail.id === popped.trail) : undefined;
     const poppedstep = poppedtrail?.steps.find((step) => step.cmid === popped?.cmid);
-    const learner = answer.trails.some((trail) => trail.enrolled);
+    const learner = merged.trails.some((trail) => trail.enrolled);
+    const starts = win.loaded.months.map((one) => ({month: one, at: days.indexOf(`${one}-01`), length: monthDays(one).length}));
 
     /**
      * A short day of an instant, in the viewer's timezone.
@@ -317,36 +765,34 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     };
 
     /**
-     * The button that opens a step's popover. The quiet one (the last column's chip) repeats a bar for the pointer: it
-     * is out of the tab order and of the accessibility tree, the bar being the step's named control.
+     * The button that opens a step's popover: a bar of the timeline or a row of the phone's agenda, named by the step.
      *
      * @param {object} trail The trail.
      * @param {object} step The step.
      * @param {string} className Its classes.
      * @param {object} style Its grid placement.
      * @param {object} content What it draws.
-     * @param {boolean} quiet Whether it repeats another control.
      * @returns {object}
      */
-    const opener = (trail: Trail, step: TrailStep, className: string, style: CSSProperties | undefined, content: ReactNode,
-        quiet: boolean = false) => (
+    const opener = (trail: Trail, step: TrailStep, className: string, style: CSSProperties | undefined, content: ReactNode) => (
         <button
             type="button"
             className={className}
             style={style}
-            aria-label={quiet ? undefined : stepLabel(step, look, now)}
-            aria-expanded={quiet ? undefined : popped?.cmid === step.cmid}
-            aria-hidden={quiet ? 'true' : undefined}
-            tabIndex={quiet ? -1 : undefined}
-            data-region={quiet ? 'dim-cal-trailchip' : 'dim-cal-trailstep'}
+            aria-label={stepLabel(step, look, now)}
+            aria-expanded={popped?.cmid === step.cmid}
+            data-region="dim-cal-trailstep"
             data-cmid={step.cmid}
+            data-pair={step.cmid}
             data-state={step.state || undefined}
             onClick={(event) => setPopped({trail: trail.id, cmid: step.cmid, opener: event.currentTarget})}
+            onPointerEnter={lit(step.cmid, true)}
+            onPointerLeave={lit(step.cmid, false)}
         >{content}</button>
     );
 
     /**
-     * One step's row of the desktop grid: its number and name, its bar, its diamond and what lies past the month.
+     * One step's row of the desktop grid: its button (number and name) in the trail column, its bar and its diamond.
      *
      * @param {object} trail The trail.
      * @param {object} step The step.
@@ -354,7 +800,6 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
      */
     const stepRow = (trail: Trail, step: TrailStep) => {
         const bar = barOf(step, days, look.zone);
-        const beyond = beyondOf(step, days, look.zone);
         const tone = step.state ? `--${step.state}` : '';
         let drawn = null;
         let diamond = null;
@@ -377,34 +822,42 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                 );
             }
         }
-        let chip = '';
-        if (beyond === 'continues') {
-            chip = `→ ${shortDay(step.end)}`;
-        } else if (beyond === 'after') {
-            chip = shortRange(look.zone.day(step.start), look.zone.day(step.end), look.language);
-        }
         return (
             <div className="dim-cal__trailrow dim-cal__trailrow--step" key={step.cmid} data-cmid={step.cmid}>
                 <span className="dim-cal__traillabel dim-cal__trailsteplabel">
-                    <span className={'dim-cal__trailnum' + (tone ? ` dim-cal__trailnum${tone}` : '')} aria-hidden="true">
-                        {step.position}
-                    </span>
-                    <span className="dim-cal__trailname">{step.name}</span>
+                    <button
+                        type="button"
+                        className="dim-cal__trailfind"
+                        data-region="dim-cal-trailrow"
+                        data-cmid={step.cmid}
+                        data-pair={step.cmid}
+                        aria-label={dated(step) ? fill(look.strings.calendar_trailshow, step.name) : undefined}
+                        aria-haspopup="dialog"
+                        aria-expanded={popped?.cmid === step.cmid}
+                        onClick={(event) => find(trail, step, event.currentTarget)}
+                        onPointerEnter={lit(step.cmid, true)}
+                        onPointerLeave={lit(step.cmid, false)}
+                    >
+                        <span className={'dim-cal__trailnum' + (tone ? ` dim-cal__trailnum${tone}` : '')} aria-hidden="true">
+                            {step.position}
+                        </span>
+                        <span className="dim-cal__trailname">{step.name}</span>
+                        {dated(step) ? (
+                            <i className="fa fa-crosshairs dim-cal__traillocate" aria-hidden="true"></i>
+                        ) : (
+                            <small className="dim-cal__trailnodates">{look.strings.calendar_trailnodates}</small>
+                        )}
+                    </button>
                 </span>
                 {drawn}
                 {diamond}
-                <span className="dim-cal__trailspill">
-                    {chip !== ''
-                        ? opener(trail, step, 'dim-cal__trailchip' + (tone ? ` dim-cal__trailchip${tone}` : ''), undefined,
-                            chip, true)
-                        : null}
-                </span>
             </div>
         );
     };
 
     /**
-     * One trail of the desktop grid: its row (the fold, the name, the line under it, its span) and its steps.
+     * One trail of the desktop grid: its row (the fold, the name, the line under it, its span), its steps and the
+     * connectors between them.
      *
      * @param {object} trail The trail.
      * @returns {object}
@@ -413,6 +866,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         const open = !folded.includes(trail.id);
         const span = trailBarOf(trail, days, look.zone);
         const steps = `dim-cal-trailsteps-${trail.id}`;
+        const links = linksOf(trail.steps, days, look.zone, open);
         return (
             <div className="dim-cal__trail" key={trail.id} role="group" aria-label={trail.name} data-trail={trail.id}>
                 <div
@@ -422,14 +876,21 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                     <span className="dim-cal__traillabel dim-cal__trailcaption">
                         <button
                             type="button"
-                            className="dim-cal__trailfold"
+                            className={`btn btn-icon icons-collapse-expand dim-cal__trailfold${open ? '' : ' collapsed'}`}
                             data-action="dim-cal-trailfold"
                             aria-expanded={open}
                             aria-controls={steps}
                             aria-label={fill(look.strings.calendar_trailtoggle, trail.name)}
                             onClick={() => fold(trail.id)}
                         >
-                            <i className="fa fa-chevron-right" aria-hidden="true"></i>
+                            <span
+                                className="expanded-icon icon-no-margin"
+                                dangerouslySetInnerHTML={{__html: icons.expanded}}
+                            ></span>
+                            <span className="collapsed-icon icon-no-margin">
+                                <span className="dir-rtl-hide" dangerouslySetInnerHTML={{__html: icons.collapsed}}></span>
+                                <span className="dir-ltr-hide" dangerouslySetInnerHTML={{__html: icons.collapsedrtl}}></span>
+                            </span>
                         </button>
                         <span className="dim-cal__trailnames">
                             <a className="dim-cal__trailname dim-cal__trailname--trail" href={safeHref(trail.url, look.home)}>
@@ -453,16 +914,74 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                             aria-hidden="true"
                         ></span>
                     ) : null}
-                    <span className="dim-cal__trailspill dim-cal__trailspill--trail">
-                        {span && span.after && !span.open ? fill(look.strings.calendar_until, shortDay(trail.last)) : ''}
-                    </span>
                 </div>
                 <div className="dim-cal__trailsteprows" id={steps} hidden={!open}>
                     {trail.steps.map((step) => stepRow(trail, step))}
+                    {links.length > 0 ? (
+                        <span className="dim-cal__traillinks" data-region="dim-cal-traillinks" aria-hidden="true">
+                            {links.map((piece, index) => (
+                                <span
+                                    key={`${index}-${piece.kind}`}
+                                    className={`dim-cal__traillink dim-cal__traillink--${piece.kind}`}
+                                    style={{
+                                        '--dim-cal-link-start': `${piece.left}rem`,
+                                        top: `${piece.top}rem`,
+                                        width: `${piece.width}rem`,
+                                        height: `${piece.height}rem`,
+                                    } as CSSProperties}
+                                ></span>
+                            ))}
+                        </span>
+                    ) : null}
                 </div>
             </div>
         );
     };
+
+    /**
+     * The band above the days: one segment per month held, its name a button that scrolls to its 1st and stays at the
+     * start of the days while the segment is in view; a month on its way is a skeleton at the end.
+     *
+     * @returns {object}
+     */
+    const band = () => (
+        <div
+            className="dim-cal__trailrow dim-cal__trailrow--band"
+            role="group"
+            aria-label={look.strings.calendar_trailmonths}
+            data-region="dim-cal-trailmonths"
+        >
+            <span className="dim-cal__traillabel" aria-hidden="true"></span>
+            {starts.map((entry) => (
+                <span
+                    key={entry.month}
+                    className={`dim-cal__trailmonth${entry.month === inview ? ' dim-cal__trailmonth--inview' : ''}`}
+                    style={{gridColumn: `${entry.at + 2} / ${entry.at + entry.length + 2}`, gridRow: '1'}}
+                >
+                    <button
+                        type="button"
+                        className="dim-cal__trailmonthname"
+                        data-action="dim-cal-trailmonth"
+                        data-month={entry.month}
+                        aria-current={entry.month === inview ? 'true' : undefined}
+                        onClick={() => aim({kind: 'month', month: entry.month, tries: 0})}
+                    >
+                        {say(`${entry.month}-01`, MONTH_YEAR, look.language)}
+                    </button>
+                </span>
+            ))}
+            {win.loading ? (
+                <span
+                    className="dim-cal__trailmonth dim-cal__trailmonth--loading"
+                    style={{gridColumn: `${days.length + 2} / ${columns + 2}`, gridRow: '1'}}
+                    data-region="dim-cal-trailloading"
+                    aria-hidden="true"
+                >
+                    <span className="dim-cal__trailskeleton"></span>
+                </span>
+            ) : null}
+        </div>
+    );
 
     /**
      * The desktop grid, in its scroller, and its legend.
@@ -472,31 +991,32 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     const desk = () => (
         <>
             <TrailScroll
-                days={days.length}
+                days={columns}
                 todayat={todayat}
-                opening={`${month}:${answer.trails.map((trail) => trail.id).join(',')}`}
+                openat={openat}
+                opening={String(win.generation)}
+                shift={win.shift}
+                control={control}
+                onView={viewing}
+                onSettle={settled}
                 strings={look.strings}
             >
-                <div className="dim-cal__trailgrid" data-region="dim-cal-trailgrid" style={columns}>
+                <div className="dim-cal__trailgrid" data-region="dim-cal-trailgrid" style={grid}>
+                    {band()}
                     <div className="dim-cal__trailrow dim-cal__trailrow--head" aria-hidden="true">
                         <span className="dim-cal__traillabel dim-cal__trailheading">{look.strings.calendar_trailheading}</span>
                         {days.map((iso, index) => (
                             <span
                                 key={iso}
                                 className={`dim-cal__trailday${isWeekend(iso) ? ' dim-cal__trailday--weekend' : ''}`
-                                    + `${index === todayat ? ' dim-cal__trailday--today' : ''}`}
+                                    + `${index === todayat ? ' dim-cal__trailday--today' : ''}`
+                                    + `${iso.endsWith('-01') && index > 0 ? ' dim-cal__trailday--first' : ''}`}
                                 data-day={iso}
                             >
                                 <span className="dim-cal__trailweekday">{say(iso, WEEKDAY, look.language)}</span>
                                 <span className="dim-cal__traildaynum">{Number(iso.slice(8, 10))}</span>
                             </span>
                         ))}
-                        <span
-                            className="dim-cal__trailspill dim-cal__trailday dim-cal__trailday--next"
-                            title={fill(look.strings.calendar_trailnext, say(next, LONG_MONTH, look.language))}
-                        >
-                            {`${say(next, NEXT_MONTH, look.language)} →`}
-                        </span>
                     </div>
                     <div className="dim-cal__trailground" aria-hidden="true">
                         {days.map((iso, index) => (isWeekend(iso) ? (
@@ -506,6 +1026,13 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                                 style={{'--dim-cal-trail-at': String(index)} as CSSProperties}
                             ></span>
                         ) : null))}
+                        {starts.filter((entry) => entry.at > 0).map((entry) => (
+                            <span
+                                key={entry.month}
+                                className="dim-cal__trailmonthedge"
+                                style={{'--dim-cal-trail-at': String(entry.at)} as CSSProperties}
+                            ></span>
+                        ))}
                         {todayat >= 0 ? (
                             <span
                                 className="dim-cal__trailnow"
@@ -513,7 +1040,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                             ></span>
                         ) : null}
                     </div>
-                    {answer.trails.map((trail) => trailRows(trail))}
+                    {merged.trails.map((trail) => trailRows(trail))}
                 </div>
             </TrailScroll>
             <ul className="dim-cal__traillegend" data-region="dim-cal-traillegend">
@@ -559,7 +1086,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
      */
     const agenda = () => (
         <div className="dim-cal__trailagenda" data-region="dim-cal-trailagenda">
-            {answer.trails.map((trail) => {
+            {merged.trails.map((trail) => {
                 const at = todayIndex(trail.steps, now);
                 return (
                     <section
@@ -628,12 +1155,12 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
             aria-labelledby={captionid}
             data-region="dim-cal-trails"
         >
-            {answer.truncated ? <p className="dim-cal__status">{look.strings.calendar_trailstruncated}</p> : null}
-            {answer.trails.length === 0 ? (
+            {merged.truncated ? <p className="dim-cal__status">{look.strings.calendar_trailstruncated}</p> : null}
+            {merged.trails.length === 0 ? (
                 <p className="dim-cal__empty" data-region="dim-cal-trailsempty">{look.strings.calendar_trailsempty}</p>
             ) : null}
-            {answer.trails.length > 0 && !phone ? desk() : null}
-            {answer.trails.length > 0 && phone ? agenda() : null}
+            {timeline ? desk() : null}
+            {merged.trails.length > 0 && phone ? agenda() : null}
             {popped && poppedtrail && poppedstep ? (
                 <TrailPopover
                     look={look}

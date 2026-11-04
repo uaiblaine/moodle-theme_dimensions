@@ -51,7 +51,8 @@ use theme_dimensions\output\opengraph;
  *    navigation ({@see trail_from_request()}, {@see mine_from_request()}).
  * 6. The window (the month grid's, or the week's seven days), the range's answer ({@see range::answer()}) and the
  *    category tree are computed once and handed to the renderable, which embeds them: the first paint costs no request.
- *    In the Trilhas view the range asks no source and the month's trails are the answer ({@see trails::answer()}).
+ *    In the Trilhas view the range asks no source and the trails of the month and the next are the answer
+ *    ({@see trails::answer()}).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -611,10 +612,11 @@ final class page {
         $window = window::from_iso($from, $to);
         $trailsanswer = null;
         if ($view === self::VIEW_TRAIL) {
-            // The Trilhas view draws no event: the month's answer is its days at zero, for a switch back to the month.
+            // The Trilhas view draws no event: the month's answer is its days at zero, for a switch back to the month. Its
+            // own answer is the trails of the month and the next, the two months its timeline opens on.
             $answer = range::answer($window, $scope, [], $state->filters());
             $trailsanswer = trails::answer(
-                trails::month_window($month),
+                trails::month_window($month, trails::MONTHS),
                 $scope,
                 self::trail_from_request(),
                 self::mine_from_request(),
