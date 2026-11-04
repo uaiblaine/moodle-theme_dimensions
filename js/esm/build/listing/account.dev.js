@@ -325,7 +325,7 @@ const SHELL = {
   discard,
   painted,
   answered,
-  // A calendar that could not mount is core's exception dialogue, as the AMD client it replaced had it.
+  // A calendar that could not mount is core's exception dialogue.
   unmounted: exception,
   areas: {
     props: {},

@@ -30,5 +30,5 @@ export const RANGE_METHOD = 'theme_dimensions_get_calendar_range';
 /** The service that stores the account's state. */
 export const REMEMBER_METHOD = 'theme_dimensions_remember_calendar_state';
 
-/** The Trilhas view's service: the trails of one month (docs/trail/PLAN.md section 7). */
+/** The Trilhas view's service: the trails of one month. */
 export const TRAILS_METHOD = 'theme_dimensions_get_calendar_trails';

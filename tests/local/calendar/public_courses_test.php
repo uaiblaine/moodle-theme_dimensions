@@ -39,7 +39,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/fixture.php');
 
 /**
- * The visitor's event courses (decision V1) and {@see publicrange::answer()}.
+ * The visitor's event courses and {@see publicrange::answer()}.
  *
  * Every course that may not be shown has its control: the same course answered once the one reason is gone.
  *

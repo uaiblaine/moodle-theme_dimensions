@@ -797,7 +797,7 @@ final class classifier_test extends \advanced_testcase {
      * A waiting-list application rescues as pending and reads waitlisted, read from a real enrol_apply row.
      *
      * Runs only where enrol_apply is installed. A lapsed waiting-list row is the control: no longer awaited, so it
-     * rescues nothing, and it reads expired with its own end date (the plugin's rule, owner answer d).
+     * rescues nothing, and it reads expired with its own end date (the plugin's rule).
      */
     public function test_a_waiting_list_application_is_pending_in_the_map(): void {
         $this->resetAfterTest();

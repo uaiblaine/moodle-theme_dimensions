@@ -173,22 +173,15 @@ class after_config {
         }
 
         $courseid = optional_param('id', 0, PARAM_INT);
-        if (!$courseid && $script === '/course/info.php') {
-            /* course/info.php also accepts ?name=<shortname>, which makes the page
-               enumerable by guessing shortnames rather than ids. Resolve it here or
-               that route would walk straight past the ghost. */
-            $shortname = optional_param('name', '', PARAM_TEXT);
-            if ($shortname !== '') {
-                $courseid = (int) $GLOBALS['DB']->get_field('course', 'id', ['shortname' => $shortname]);
-            }
-        }
-        if (!$courseid) {
+        // Course/info.php also accepts ?name=<shortname>, which would otherwise walk past the ghost.
+        $shortname = !$courseid && $script === '/course/info.php' ? optional_param('name', '', PARAM_TEXT) : '';
+        if (!$courseid && $shortname === '') {
             return;
         }
 
         // Decide inside the try and redirect outside it, as in the category branch above.
         try {
-            $ghosted = redirector::is_ghosted($courseid);
+            $ghosted = $courseid ? redirector::is_address_ghosted($courseid) : redirector::is_shortname_ghosted($shortname);
         } catch (\Throwable $exception) {
             // A visibility convenience must never take a page down.
             return;

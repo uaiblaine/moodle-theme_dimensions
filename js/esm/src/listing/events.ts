@@ -16,7 +16,7 @@
 /**
  * The names the showcase's listing and its React components share: their events and the hooks they read.
  *
- * Spelled here and nowhere else in js/esm/src (docs/vitrine-react/R4b.md, 2.6). They stay DOM events: each
+ * Spelled here and nowhere else in js/esm/src. They stay DOM events: each
  * component is a root of its own, mounted when react_autoinit sees its node, and a listener put on before the
  * node makes that order safe. Imported by the visitor's page: nothing here may name a session module.
  *

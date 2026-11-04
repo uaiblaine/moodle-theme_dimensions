@@ -342,7 +342,7 @@ final class calendar_test extends \core\tests\router\route_testcase {
     }
 
     /**
-     * The route serves the day view (R1d, a phone's): the day's month grid embedded, so a desktop shows that month with
+     * The route serves the day view (a phone's): the day's month grid embedded, so a desktop shows that month with
      * the day's drawer and a phone draws the day with no request; the page's address keeps the view and the day, which
      * is what a reload asks for again; a list for the view is the month, never an error page.
      *

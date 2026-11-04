@@ -34,7 +34,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/fixture.php');
 
 /**
- * The Trilhas view in the page's vocabulary (docs/trail/PLAN.md section 7): an account's only, its trail and "Só as
+ * The Trilhas view in the page's vocabulary: an account's only, its trail and "Só as
  * minhas" as navigation, its first paint the month's trails.
  *
  * Every test needs mod_subcourse and skips without it.

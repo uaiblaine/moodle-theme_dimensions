@@ -77,12 +77,12 @@ use theme_dimensions\local\landingfields;
  * outside the table read the same way: dim-badge plus dim-badge--held,
  * --public and --hidden.
  *
- * The route line (decision D2 of the enrolment matrix, core's default kept):
+ * The route line (core's default is kept):
  * a card telling the viewer about a row of theirs that is not active - it
  * starts later, it is an application, it is suspended, it ended - also says
  * when a method would take them now, and its call to action then goes there.
  * The routes are local_unlistedcourses' batch's, read once for the page
- * ({@see \theme_dimensions\local\category\cards::routes()}); the card
+ * ({@see \theme_dimensions\local\category\cards::next_actions()}); the card
  * never decides one itself. A pending or waitlisted card keeps "view status"
  * as its button, whose page offers the route as well.
  *
@@ -119,8 +119,7 @@ use theme_dimensions\local\landingfields;
  * nothing to send a visitor to, so it gets no call to action at all.
  *
  * "More information" is a link to the card's own page ({@see url()}), and with
- * JavaScript it opens a dialogue (round I, lot C2; stage L2 of
- * docs/vitrine-ratings/PROPOSAL.md). What the page decided stays on the card:
+ * JavaScript it opens a dialogue. What the page decided stays on the card:
  * the kicker and the two buttons under `modal` ({@see modal()}), which the
  * template writes onto the link, and the cover, the pill and the title the
  * card already prints. What only the dialogue shows - the excerpt, the facts,

@@ -102,7 +102,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $this->resetAfterTest();
         focusmode::reset_caches();
         set_config('enablecompletion', 1);
-        // The switch ships off (decision D5); the tests about it set it back.
+        // The switch ships off; the tests about it set it back.
         set_config('focusmode', login::SELECT_YES, focusmode::COMPONENT);
     }
 
@@ -354,7 +354,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
     /**
      * Leaving a switched-on course in place makes its next page open ordinary, for the session.
      *
-     * Decision D1. The control is the same page before the choice, focused.
+     * The control is the same page before the choice, focused.
      *
      * @return void
      */
@@ -375,7 +375,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
     /**
      * The site-wide master switch off loads nothing of the feature, whatever the course says.
      *
-     * Decision D4: no bar, no body class, no way in and no module.
+     * No bar, no body class, no way in and no module.
      *
      * @return void
      */
@@ -835,7 +835,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
     /**
      * The completion conditions are one line in the foot of the content, and core's box keeps them too.
      *
-     * Decision D3: the foot draws them as one discreet line, through core's own partial, in a
+     * The foot draws them as one discreet line, through core's own partial, in a
      * container only the focused skin shows, while core's activity information box keeps its own
      * statement of them for the ordinary skin (the stylesheet hides that half under the body class).
      * The control is an activity with no completion at all, where the whole line has to disappear
@@ -911,7 +911,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
      *
      * In place, the exit is the leave form the module intercepts (data-action dimensions-focus-leave),
      * on a topics course that switched focus mode on as on a manual session. A single activity course
-     * that switched it on has no ordinary page to go back to (decision D2): its exit is the plain link
+     * that switched it on has no ordinary page to go back to: its exit is the plain link
      * to the site home page. A single activity course that did not switch it on is the control.
      *
      * @return void

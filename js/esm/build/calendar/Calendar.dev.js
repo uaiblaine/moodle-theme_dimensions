@@ -3,7 +3,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
  * The calendar page's client: the toolbar, the event types' dropdown, the category picker, "More filters" and "Clear
- * filters", the month grid or the week (WeekGrid.tsx, stage C4), the day drawer (the agenda sheet on a phone) and the
+ * filters", the month grid or the week (WeekGrid.tsx), the day drawer (the agenda sheet on a phone) and the
  * event popover.
  *
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws, never moved (a node that leaves the
@@ -29,15 +29,15 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  *   elements marked data-cal-pop; a modified press and a middle click follow the item's href.
  * - The phone layout is the frame's width, measured by the shown grid's one ResizeObserver (MonthGrid.tsx PHONE), or
  *   the Day view's, which watches the same frame.
- * - The Day view is a phone's (DayView.tsx, PROPOSAL.md section 31): the switch offers it only on a phone, a request
+ * - The Day view is a phone's (DayView.tsx): the switch offers it only on a phone, a request
  *   asks for its one day, and a day span on a desktop is asked for and drawn as its month with the day's drawer open
  *   (weeks.ts deskOf(), gridOf()), in the one request path, so a first measure, Back and Forward and a phone turned
  *   wide all land there.
  * - "Clear filters" is drawn while any filter is applied (model.ts filtered()) and puts the keys, "More filters" and
  *   the category scope back in one change (cleared()); the focus goes to the event types' button, which stays.
- * - Editing is core's (stage C5, PROPOSAL.md section 23): "New event" in the toolbar and in the drawer only when the
+ * - Editing is core's: "New event" in the toolbar and in the drawer only when the
  *   server says core would show it (props.edits), and so only then a double-click on a day's ground or an hour row
- *   (R1, section 27.2: {@see creator()}), the popover's Edit and Delete (EditActions.tsx) and the drag only for what
+ *   ({@see creator()}), the popover's Edit and Delete (EditActions.tsx) and the drag only for what
  *   core's answer lists (answer.editing). Core's form, confirmation and move service do the work (editing.ts);
  *   when core says something changed, or a move is done, the span shown is asked again with the state shown, through
  *   the same ticket and Pending token as navigation, writing nothing.

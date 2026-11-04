@@ -3,8 +3,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 /**
  * The panel's rail: its arrows, its phone counter and the drag of a mouse.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md, the rail of the AMD panel it replaced (removed in R4c). The rail
- * itself is the panel template's markup; this module reads its scroll and writes its arrows' state and its
+ * The rail itself is the panel template's markup; this module reads its scroll and writes its arrows' state and its
  * counter. {@see railState} is the one place layout is read, and Areas.tsx calls it
  * only where the layout is already clean: from a ResizeObserver entry (after layout, before paint) and
  * from the rail's own scroll and the reader's own press.

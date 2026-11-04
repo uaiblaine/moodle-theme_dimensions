@@ -152,6 +152,7 @@ final class upstream {
      *
      * @return array The entries, sorted by snapshot path.
      * @throws \moodle_exception When an overridden template has no upstream left.
+     * @throws \coding_exception When an upstream file no longer declares a copied function.
      */
     public static function entries(): array {
         $entries = array_merge(
@@ -311,7 +312,7 @@ final class upstream {
      * A whole upstream file with the development markers the leftover gate refuses spelled apart.
      *
      * A whole file carries core's own comments, and core's calendar/export_execute.php holds a bare marker comment
-     * that the leftover checker of the CI workflow (the same patterns in `mdl ci`) refuses in any shipped file. The
+     * that the leftover checker of the CI workflow refuses in any shipped file. The
      * snapshot spells each marker with a hyphen; the comparison of every other byte is unchanged.
      *
      * @param string $text The upstream file.

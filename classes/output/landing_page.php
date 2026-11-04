@@ -136,7 +136,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
         $iswaitlisted = $state === resolution::STATE_PENDING && $relationship === access::RELATIONSHIP_WAITLISTED;
         $prerequisite = $state === resolution::STATE_CLOSED ? $this->prerequisite() : null;
 
-        /* The tracks of a hybrid event (D3): two or more ways to enrol in one event are its two ways to take
+        /* The tracks of a hybrid event: two or more ways to enrol in one event are its two ways to take
            part, each headed by its instance's own name. Read off the methods as they will be drawn, after a
            held event or an empty fallback has emptied them. */
         $istracks = $state === resolution::STATE_OPEN && $this->is_event() && $this->is_hybrid() && count($methods) >= 2;
@@ -487,7 +487,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * What a visitor is told of the methods open to anybody, above the login button (D7).
+     * What a visitor is told of the methods open to anybody, above the login button.
      *
      * Each entry is {@see offer::export()}'s lines, named after its instance when there are
      * several, so two deadlines on one card are never read as one.
@@ -509,7 +509,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * Name each method of a hybrid event as one of its tracks (D3).
+     * Name each method of a hybrid event as one of its tracks.
      *
      * The track's label is the instance's custom name, or the plugin's own name when it has none: no
      * naming convention is read, so nothing here guesses which track is the on-site one, and no icon is
@@ -545,7 +545,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
      */
     private function add_bar(\stdClass $exported): void {
         $exported->bar = null;
-        /* The bar keeps the deadline of the action it stands for in sight (D6): the primary method's
+        /* The bar keeps the deadline of the action it stands for in sight: the primary method's
            on an open card, and on a visitor's the first listed offer's. */
         $note = null;
         $primary = null;
@@ -633,11 +633,11 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * The hybrid event's double ticket (D1): the date, which holds for every participant, then the two
+     * The hybrid event's double ticket: the date, which holds for every participant, then the two
      * ways to take part - on site, in the city, or live from anywhere.
      *
      * The city is one of the two ways and never the headline: a big city tells the remote audience the
-     * event is not for them, which is the variant the owner rejected.
+     * event is not for them.
      *
      * @return array|null Keys datebig, sub, countdown, site, venue, live and livesub (plain spelling), or
      *   null off the hybrid event or without a start date.
@@ -688,15 +688,13 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * The hybrid course's composition (D2): the total workload as one bar split into online and in-person
+     * The hybrid course's composition: the total workload as one bar split into online and in-person
      * hours, with the in-person meetings and their city.
      *
-     * The bar's two widths are printed into a style attribute, which is a CSS-context sink (the theme
-     * CLAUDE.md, "Four CSS-context sinks"): Mustache's double stash escapes for HTML, and a browser hands
-     * the CSS parser the decoded attribute. So onlinepct is an INTEGER made here, by round() and an
+     * The bar's two widths are printed into a style attribute, a CSS-context sink that Mustache's escaping does
+     * not protect ({@see \theme_dimensions\local\styleurl}): onlinepct is an INTEGER made here, by round() and an
      * (int) cast, clamped to 0..100, and inpersonpct is 100 minus it; the attribute can only ever read
-     * `width: N%`. hours_split() already keeps the share inside that range, and the clamp stays as the
-     * sink's own guard, independent of what the split decides.
+     * `width: N%`. hours_split() already keeps the share inside that range; the clamp is the sink's own guard.
      *
      * @return array|null Keys total, onlinelabel, inpersonlabel, meetings and arialabel (plain spelling),
      *   onlinepct and inpersonpct (int 0..100), or null when the hours are not both known.
@@ -853,7 +851,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
      * hero's place block, with the emphasis the scenario gives it. The live
      * classes are a chip of their own, with a dot, drawn by the template after
      * these from haslivechip. The format arrives already dropped where it would
-     * contradict the model or the modality (decision D10, landingfields::coherent()).
+     * contradict the model or the modality (landingfields::coherent()).
      *
      * @return string[] The chip texts, plain spelling.
      */
@@ -876,8 +874,8 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     /**
      * The enrolment card's fact rows, labelled with the stored field names.
      *
-     * The round-6 rows (D8) read values landingfields::coherent() has already
-     * cleared of contradictions (D10): the format only on a course, the live
+     * The hybrid and format rows read values landingfields::coherent() has already
+     * cleared of contradictions: the format only on a course, the live
      * classes only on a tutored one, the meetings only on a hybrid offering.
      *
      * @return array Rows of ['label' => string, 'value' => string, 'note' => string|null], plain spelling.
@@ -897,12 +895,12 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
         }
         $format = landingfields::option_label(landingfields::SHORTNAME_FORMAT, $this->values->format);
         if ($format !== null && isset($names[landingfields::SHORTNAME_FORMAT])) {
-            // A self-paced course gives immediate access and a pace of the learner's own (D8).
+            // A self-paced course gives immediate access and a pace of the learner's own.
             $selfpaced = $this->values->format === landingfields::FORMAT_SELFPACED;
             $note = $selfpaced ? get_string('landing_selfpacednote', self::COMPONENT) : null;
             $facts[] = $this->fact($names[landingfields::SHORTNAME_FORMAT], $format, $note);
         }
-        // A tutored course starts with its class, on the course's own start date (D8).
+        // A tutored course starts with its class, on the course's own start date.
         if ($this->values->format === landingfields::FORMAT_TUTORED && (int) $this->course->startdate > 0) {
             $facts[] = $this->fact(
                 get_string('landing_factstart', self::COMPONENT),
@@ -1059,7 +1057,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
                     $entry['widgethtml'] = $this->fallbackhtml[$instance->id];
                     break;
             }
-            // What the instance declares about its seats and its deadline, above its own button (D5).
+            // What the instance declares about its seats and its deadline, above its own button.
             $entry['offer'] = offer::export($instance, time());
             /* The first real enrolment action gets the primary button; a fallback widget
                never does, because it carries its own button. Guest access is secondary

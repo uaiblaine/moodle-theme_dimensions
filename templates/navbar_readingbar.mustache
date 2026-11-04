@@ -17,7 +17,7 @@
 {{!
     @template theme_dimensions/navbar_readingbar
 
-    The context bar (C2): the layer the navbar swaps to once the reader has scrolled past the page header,
+    The context bar: the layer the navbar swaps to once the reader has scrolled past the page header,
     at the same 60px. The theme's core renderer appends it to navbar_plugin_output(), which Boost Union's
     navbar prints inside #usernavigation; scss/readingbar.scss positions it over the whole nav (nothing
     between the two is positioned) and hides it until amd/src/readingbar.js puts dimensions-ctx-on on the
@@ -35,7 +35,7 @@
     time as an icon pill: amd/src/focusmode.js intercepts the submit of any form whose button carries its action, so
     the layer's switches in place exactly as the navbar's does, and without JavaScript both post to focus.php.
 
-    A reader core lets edit the page gets core's edit mode switch at the end of the layer (D5): the layer
+    A reader core lets edit the page gets core's edit mode switch at the end of the layer: the layer
     covers the navbar's own switch while it is shown. It is core's edit_switch() output rendered a second
     time, with an id of its own, so its form, its React mount and core/edit_switch work as the first one
     does; the navbar's switch comes first in the document, so a lookup by the "Edit mode" label finds that one.
@@ -44,7 +44,6 @@
     comment closes at the first pair of closing braces it meets):
 
     * kind - activity or course
-    * isactivity - Whether the page is an activity's
     * title - The activity's name, or the course's on the course page, plain
     * hassub - Whether the sub line has anything to say
     * coursename - The course's name on an activity page, plain; empty on the course page
@@ -65,7 +64,6 @@
     Example context (json):
     {
         "kind": "activity",
-        "isactivity": true,
         "title": "Reading 2: Competency maps",
         "hassub": true,
         "coursename": "Competency management",

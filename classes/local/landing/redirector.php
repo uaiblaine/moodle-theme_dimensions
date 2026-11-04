@@ -99,6 +99,64 @@ final class redirector {
     }
 
     /**
+     * Whether a course address (/enrol/index.php, /course/info.php) must be sent to the "not available" page.
+     *
+     * {@see is_ghosted()}, plus a course that does not exist: whoever would be ghosted off an unlisted course
+     * is ghosted off a missing id as well, so the ghost page cannot be told apart from core's "invalid course"
+     * error and an id cannot be probed for an unlisted course behind it. A missing id is ghosted only where
+     * {@see is_ghosted()} could ghost at all (logged in, not the guest, the predicate present), so a visitor
+     * and a site without the plugin still get core's answer.
+     *
+     * @param int $courseid The course id from the request.
+     * @param string|null $predicate The predicate class; tests pass a nonexistent one to pin the fail-open answer.
+     * @return bool True when the request must be ghosted.
+     */
+    public static function is_address_ghosted(int $courseid, ?string $predicate = null): bool {
+        global $DB;
+
+        if ($courseid <= 0 || $courseid == SITEID) {
+            return false;
+        }
+        if (!self::may_ghost($predicate ?? \local_unlistedcourses\access::class)) {
+            return false;
+        }
+        if (!$DB->record_exists('course', ['id' => $courseid])) {
+            return true;
+        }
+        return self::is_ghosted($courseid, $predicate);
+    }
+
+    /**
+     * Whether /course/info.php?name=<shortname> must be sent to the "not available" page.
+     *
+     * The shortname twin of {@see is_address_ghosted()}: an unknown shortname answers as a missing id does,
+     * or shortnames could be probed where ids cannot.
+     *
+     * @param string $shortname The shortname from the request.
+     * @param string|null $predicate The predicate class; tests pass a nonexistent one to pin the fail-open answer.
+     * @return bool True when the request must be ghosted.
+     */
+    public static function is_shortname_ghosted(string $shortname, ?string $predicate = null): bool {
+        global $DB;
+
+        $courseid = (int) $DB->get_field('course', 'id', ['shortname' => $shortname]);
+        if ($courseid) {
+            return self::is_address_ghosted($courseid, $predicate);
+        }
+        return self::may_ghost($predicate ?? \local_unlistedcourses\access::class);
+    }
+
+    /**
+     * Whether anybody in this session can be ghosted: logged in, not the guest, and the predicate present.
+     *
+     * @param string $predicate The predicate class.
+     * @return bool
+     */
+    private static function may_ghost(string $predicate): bool {
+        return isloggedin() && !isguestuser() && class_exists($predicate);
+    }
+
+    /**
      * Whether this request must be sent to the generic "not available" page over its CATEGORY.
      *
      * The exact shape of {@see is_ghosted()}, one level up: true when the category is unlisted

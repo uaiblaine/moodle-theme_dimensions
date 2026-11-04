@@ -72,7 +72,7 @@ final class calendar_component_source_test extends \basic_testcase {
     /**
      * AMD is reached through the bridge alone: no module of the calendar imports core's loader or calls RequireJS, and
      * every AMD module asked for is a name of the bridge's type: the page's notification, the blocks' templates, and
-     * core's calendar editing (stage C5), which the editing door adds to the type itself.
+     * core's calendar editing, which the editing door adds to the type itself.
      *
      * @return void
      */
@@ -96,7 +96,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * Editing is core's (stage C5): core's calendar modules are named in the editing door alone, which adds them to the
+     * Editing is core's: core's calendar modules are named in the editing door alone, which adds them to the
      * bridge's type; the page refreshes through its own request, writing nothing; "New event", Edit, Delete and the drag
      * follow core's answers; a drop outside core's limits asks nothing; the visitor's shell has none of it.
      *
@@ -181,13 +181,12 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * No layout is read on the mount path: the reads of the tree are the popover's, when it opens, and the hour box's
-     * (R1c), when a day or a week opens it and while it scrolls; each grid is measured by one ResizeObserver: the
-     * month's watches the rows (the density) and the frame the drawer shares (the phone), the week's the frame alone,
-     * and the phone's Day view (R1d), drawn with no grid beside it, has one of its own on the same frame, as the Trilhas
-     * view (docs/trail/PLAN.md section 7) does; the step's popover reads as the event popover does, on an opening; and
-     * the Trilhas view's days scroller (R3, TrailScroll.tsx) reads itself once per opening (today into view) and on a
-     * scroll, an arrow or the map, never on another render.
+     * No layout is read on the mount path: the reads of the tree are the popover's, when it opens, and the hour box's,
+     * when a day or a week opens it and while it scrolls; each grid is measured by one ResizeObserver: the month's watches
+     * the rows (the density) and the frame the drawer shares (the phone), the week's the frame alone, and the phone's Day
+     * view, drawn with no grid beside it, has one of its own on the same frame, as the Trilhas view does; the step's
+     * popover reads as the event popover does, on an opening; and the Trilhas view's days scroller (TrailScroll.tsx) reads
+     * itself once per opening (today into view) and on a scroll, an arrow or the map, never on another render.
      *
      * @return void
      */
@@ -303,7 +302,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * C2's two seams are C3's fallbacks, one function each: an item's href (and the popover's "Open"), and the
+     * The two seams are fallbacks, one function each: an item's href (and the popover's "Open"), and the
      * drawer's link to core's day view. Nothing redirects: a day opens the drawer, an item the popover.
      *
      * @return void
@@ -407,7 +406,7 @@ final class calendar_component_source_test extends \basic_testcase {
 
     /**
      * The popover takes the focus when it is shown, once per opened item, and the day's busy band (where the drawer's
-     * hour box opens, R1c) runs from an hour before its first item to an hour after its last; the page itself is never
+     * hour box opens) runs from an hour before its first item to an hour after its last; the page itself is never
      * scrolled to show an hour.
      *
      * @return void
@@ -442,7 +441,7 @@ final class calendar_component_source_test extends \basic_testcase {
             $model
         );
         $this->assertStringContainsString("return {kind: 'open', url: itemHref(item, courses, home)};", $model);
-        // An item with no page of its own has no primary: never the site's home (R1).
+        // An item with no page of its own has no primary: never the site's home.
         $this->assertMatchesRegularExpression("~if \\(!opens\\(item, courses\\)\\) \\{\\s*return \\{kind: 'none'\\};~", $model);
         $this->assertStringContainsString(
             "safeHref(item.url, '') !== '' || safeHref(courses.get(item.courseid)?.url ?? '', '') !== ''",
@@ -525,7 +524,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The owner's review of 2026-11-02 (R1, PROPOSAL.md section 27.2), read where PHPUnit can see it; Jest is the
+     * The calendar's review points, read where PHPUnit can see it; Jest is the
      * behaviour gate (js/esm/tests/calendar). A weekend is the date's own weekday; a double-click creates only while
      * core would show "New event"; "Clear filters" is drawn only while a filter is applied.
      *
@@ -570,7 +569,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * Both shells mark the page's root mounted in the frame they hide the server's layer in (PROPOSAL section 29): the
+     * Both shells mark the page's root mounted in the frame they hide the server's layer in: the
      * class retires the placeholder and cancels the stylesheet's fail-safe. Jest holds the behaviour.
      *
      * @return void
@@ -612,7 +611,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * No page links a view of core's calendar any more (R1): core's calendar/view.php leads to the page, so a link to it
+     * No page links a view of core's calendar any more: core's calendar/view.php leads to the page, so a link to it
      * would only come back; the drawer and the toolbar draw none, and neither shell is handed core's address.
      *
      * @return void
@@ -688,7 +687,7 @@ final class calendar_component_source_test extends \basic_testcase {
         );
     }
     /**
-     * The week view (stage C4): what each gate of the "C4 week view" block breaks, read where PHPUnit can see it. The
+     * The week view: what each gate of the "C4 week view" block breaks, read where PHPUnit can see it. The
      * behaviour is Jest's (js/esm/tests/calendar/weeks.test.ts and WeekGrid.test.tsx).
      *
      * - The week's days start on the viewer's first weekday, and the address names the view and the week as the server
@@ -746,7 +745,7 @@ final class calendar_component_source_test extends \basic_testcase {
                 $source
             );
             $this->assertStringContainsString('<WeekGrid', $source);
-            // The account's switch also offers Trilhas where the page does (docs/trail/PLAN.md section 7).
+            // The account's switch also offers Trilhas where the page does.
             $this->assertStringContainsString(
                 '<ViewSwitch strings={strings} view={shown.span.view} phone={phone} onView={toView}'
                     . ($shell === 'Calendar.tsx' ? ' trails={offered} />' : ' />'),
@@ -768,7 +767,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * R1c (PROPOSAL section 30.7): the drawer beside the grid is capped by the grid's height, which each grid's one
+     * The drawer beside the grid is capped by the grid's height, which each grid's one
      * observer only reports (onHeight, from an entry's contentRect: no layout read, no second observer) and which the
      * calendar renders on the frame as a style prop it owns, so a re-render never drops it; the frame's own entry carries
      * the width alone, since its height includes the drawer. Jest holds the behaviour.
@@ -801,7 +800,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * R1c (PROPOSAL section 30.1): the drawer's and the week's hour column is the whole day in a scroll box of its own,
+     * The drawer's and the week's hour column is the whole day in a scroll box of its own,
      * which opens on the busy band's first hour (the earliest item a row under it, never cut) or centres the working
      * hours of an empty day without cutting their start; a fade marks an end only while the box can scroll to it; the
      * box is a Tab stop while it holds no focusable item. Jest holds the behaviour (overlap.test.ts, Calendar.test.tsx,
@@ -855,7 +854,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * R1c (PROPOSAL section 30.3): "More filters" draws an empty list as every box on, writes the others when one is
+     * "More filters" draws an empty list as every box on, writes the others when one is
      * unchecked and the empty list again when every one is back, never writes "none", and counts a group only when it
      * narrows; "Clear filters" asks the same. Jest holds the behaviour (model.test.ts, Calendar.test.tsx).
      *
@@ -882,7 +881,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * R1c (PROPOSAL section 30.2): the course's button is a button whose text follows the course's model: a string per
+     * The course's button is a button whose text follows the course's model: a string per
      * known model, the generic one over any other model's own option label, "Course page" otherwise.
      *
      * @return void
@@ -907,7 +906,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * R1d (PROPOSAL section 31): the Day view is a phone's. The switch offers it only on a phone; a day span asks for its
+     * The Day view is a phone's. The switch offers it only on a phone; a day span asks for its
      * one day; a day span on a desktop is asked for, in each shell's one request path, as its month with the day opened,
      * and the observer's entry at or above the phone's width asks again; the Day view reads the frame's width alone and
      * draws the drawer's own body; a held touch on an hour creates, a mouse never holds, and a move or a cancel drops
@@ -951,7 +950,7 @@ final class calendar_component_source_test extends \basic_testcase {
             $this->assertStringContainsString('const grid = gridOf(shown.span, phone);', $source, $shell);
             $this->assertStringContainsString('const drawn = drawerOf(shown.span, openday, days, phone);', $source, $shell);
             $this->assertStringContainsString("if (grid === 'day') {", $source, $shell);
-            // The first render's guess (PROPOSAL section 31.6): the observer's measure replaces it and nothing re-reads it.
+            // The first render's guess: the observer's measure replaces it and nothing re-reads it.
             $this->assertStringContainsString('useState<boolean>(guessPhone);', $source, $shell);
             $this->assertStringContainsString('const phoned = useRef<boolean>(phone);', $source, $shell);
             $this->assertStringNotContainsString('guessPhone(', $source, $shell . ': the guess is the initialiser alone.');
@@ -986,7 +985,7 @@ final class calendar_component_source_test extends \basic_testcase {
 
     /**
      * The popover names the course once: its place never falls back to the course's name, which the course row below
-     * already draws; the grid's labels keep the fallback (PROPOSAL.md section 32.2).
+     * already draws; the grid's labels keep the fallback.
      *
      * @return void
      */
@@ -1005,7 +1004,7 @@ final class calendar_component_source_test extends \basic_testcase {
 
     /**
      * A visitor is told the answer was cut in a sentence of its own: the logged-in page's names open events alone, and
-     * a visitor's cut may be of the category events (PROPOSAL.md section 32.1).
+     * a visitor's cut may be of the category events.
      *
      * @return void
      */
@@ -1021,7 +1020,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * R3 (docs/calendar/PROPOSAL.md section 33): the Trilhas view's days scroll in a scroller of block_compass's shape.
+     * The Trilhas view's days scroll in a scroller of block_compass's shape.
      * Its arithmetic reads the three column widths the stylesheet declares (trails.ts TRACK), so the two must agree;
      * every bar and agenda row is a button named by its step, and the last column's chip that repeats a bar is out of
      * the tab order and the tree; the map is aria-hidden and the arrows are named; a folded trail is the view's own

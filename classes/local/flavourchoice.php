@@ -35,9 +35,9 @@ namespace theme_dimensions\local;
  * choice. That is the whole mechanism: {@see self::prime()}, from the before_http_headers hook, which core
  * dispatches in core_renderer::header() before it includes the layout.
  *
- * The choice wins over the administrator's category and cohort flavours (the owner's decision F1 of
- * docs/flavourchoice/PLAN.md). "Site default", the value 0, writes nothing: Boost Union then resolves
- * its own rules exactly as it does without this theme, so nothing of its resolver is copied here.
+ * The choice wins over the administrator's category and cohort flavours. "Site default", the value 0, writes nothing:
+ * Boost Union then resolves its own rules exactly as it does without this theme, so nothing of its resolver is copied
+ * here.
  *
  * Boost Union memoises its answer in a function static for the rest of the request. Nothing outside the
  * function can reset it, which is why the prime has to come first, and why a test that goes through the

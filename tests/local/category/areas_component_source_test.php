@@ -28,7 +28,7 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the AMD half of stage R3 (docs/vitrine-react/PLAN.md) by reading the source.
+ * Pins the AMD half of the posters' component by reading the source.
  *
  * The component's behaviour is Jest's (js/esm/tests/areas), in both shells' modes. What Jest cannot see is how
  * the shells hand the posters and their panel over and keep out of them: the shared listing's mountAreas()
@@ -145,7 +145,7 @@ final class areas_component_source_test extends \basic_testcase {
      * The events are spelled once, in the shared listing's events.ts, and the AMD clients spell them alike.
      *
      * A name spelled differently on one side errors nowhere: the component never hears an answer, or the page's
-     * client never answers a question and every panel opens into its error. Since R4b1 the component and the
+     * client never answers a question and every panel opens into its error. The component and the
      * listing's mounts import the names from one file; the two AMD clients, until they move to the store, still
      * spell their document events themselves, held equal here.
      *
@@ -174,7 +174,7 @@ final class areas_component_source_test extends \basic_testcase {
         $panel = $this->read('js/esm/src/areas/panel.ts');
         $this->assertStringContainsString("import {AREAS, LISTING} from '../listing/events';", $panel);
         $this->assertStringContainsString('export const EVENTS = {...AREAS, ...LISTING};', $panel);
-        // The store, both shells' since R4b3, sends the listing's own names.
+        // The store, both shells', sends the listing's own names.
         $store = $this->read('js/esm/src/listing/store.ts');
         $this->assertStringContainsString("import {LISTING, SELECTORS} from './events';", $store);
         $this->assertSame(2, preg_match_all('~new CustomEvent\(LISTING\.(?:pending|criteria),~', $store));

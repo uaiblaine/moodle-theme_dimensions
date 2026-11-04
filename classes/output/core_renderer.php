@@ -427,7 +427,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     /**
      * Core's activity navigation, with focus mode's foot of the content after it where the page can switch.
      *
-     * The foot is the completion line (decision D3: the automatic conditions as one discreet line,
+     * The foot is the completion line (the automatic conditions as one discreet line,
      * core's own partial, while the activity information box keeps them for the ordinary skin) and
      * the previous and next row core suppresses on a format with a course index
      * ({@see self::focus_activity_navigation()}). Both sit in a container the stylesheet shows only
@@ -716,7 +716,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * that runs the band, the swap and auto-hide is armed here too, on every reading page, with or
      * without the layer: on the course page it is what paints the reader's completion on the band. A reader core
      * lets edit the page ({@see readingbar::edit_applies()}) gets core's edit mode switch in the layer, rendered
-     * again by core's own edit_switch(): the navbar's switch is hidden under the layer while it is shown (D5). The
+     * again by core's own edit_switch(): the navbar's switch is hidden under the layer while it is shown. The
      * layer carries the way into focus mode too, the navbar's own form drawn a second time, on the pages it applies to.
      *
      * Last, the user menu entries that stand in for the navbar's controls on a phone ({@see phonenav}), decided from the
@@ -754,7 +754,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             if (readingbar::context_applies($this->page)) {
                 $layer = readingbar::context($this->page);
                 if ($layer['canedit']) {
-                    // Core's own switch, rendered again: a second id, its own form and its own module (D5).
+                    // Core's own switch, rendered again: a second id, its own form and its own module.
                     $layer['editswitch'] = (string) $this->edit_switch();
                 }
                 // The way into focus mode, the navbar's own form again: focusmode.js intercepts any submit of it.

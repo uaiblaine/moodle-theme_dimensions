@@ -1,4 +1,19 @@
-/* The navbar that follows the reading (phase 3 of the navbar): the band's track, the context layer and
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/* The navbar that follows the reading: the band's track, the context layer and
    auto-hide. Every decision is classes/local/readingbar.php's and amd/src/readingbar.js runs the scroll;
    this file only draws. The band's fill is post.scss's ::after, scaled by --dimensions-band-progress.
 
@@ -63,7 +78,7 @@ $dimensions-ctxbar-min-contrast: 4.6;
 $dimensions-ctxbar-ground: dimensions-ctxbar-ground($dimensions-ctxbar-color, $primary);
 $dimensions-ctxbar-ink: dimensions-ctxbar-ink($dimensions-ctxbar-ground);
 
-/* ---- C3: the track behind the band's fill ---------------------------------- */
+/* ---- The track behind the band's fill ---------------------------------- */
 /* The band's own colour at a fraction of it, so a flavour's --dimensions-navbar-band moves both. Opacity on
    a pseudo-element of its own, because the palette has no tint of the band and stylelint refuses
    color-mix(). Drawn only on reading pages, and on the main navbar only: Boost Union's menu bar is a
@@ -145,7 +160,7 @@ body.dimensions-readingbar {
     }
 }
 
-/* ---- C2: the context layer ----------------------------------------------- */
+/* ---- The context layer ----------------------------------------------- */
 /* templates/navbar_readingbar.mustache, printed inside #usernavigation and laid over the whole nav: the
    nav is fixed, so it is the containing block, and nothing between the two is positioned (core's and
    Boost Union's compiled sheets set no position on #usernavigation, .navbar-nav or .container-fluid).
@@ -201,7 +216,7 @@ body.dimensions-readingbar {
     white-space: nowrap;
 }
 
-/* The course index control (B1): the focus entry's pill with no room for a label, at the 44px of a
+/* The course index control: the focus entry's pill with no room for a label, at the 44px of a
    touch target. Core's global .icon margin is a spacer for a label this control has not, and
    Bootstrap's .btn writes outline 0 on focus-visible over the theme's global ring, so both are
    restated here. */
@@ -294,7 +309,7 @@ body.dimensions-readingbar {
     }
 }
 
-/* The edit mode switch (D5): core's own form, rendered again for a reader core lets edit the page, at the end of
+/* The edit mode switch: core's own form, rendered again for a reader core lets edit the page, at the end of
    the layer where the navbar's switch sat. Core's stylesheet draws it; this only keeps it whole in the row. */
 .navbar.fixed-top .dimensions-ctxbar-edit {
     display: flex;
@@ -318,7 +333,7 @@ body.dimensions-readingbar {
     }
 }
 
-/* ---- C1: auto-hide ------------------------------------------------------- */
+/* ---- Auto-hide ------------------------------------------------------- */
 /* Armed by a body class the server writes only where an administrator ticked the page kind, and never on
    the Behat site. Standing down under focus mode's skin, which a page that opened ordinary can switch to
    in place: the navbar it moves is not displayed there and the focus bar must not leave. Standing down

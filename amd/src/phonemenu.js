@@ -122,7 +122,7 @@ const onAction = (event) => {
  *
  * Only once this click has finished: core_message/message_drawer closes the drawer on any activation on the document
  * outside the drawer and its toggle, and this click, still on its way up from the entry, is one. Opened at once, the
- * drawer was closed again by the same click before it was ever painted.
+ * drawer would be closed again by the same click before it paints.
  *
  * @param {Event} event The click on the messages entry.
  */

@@ -30,8 +30,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins the invariants of the listing store and of the shared listing it paints with by reading their source.
  *
- * Both shells run js/esm/src/listing/store.ts over the painters and the address helpers of js/esm/src/listing
- * (docs/vitrine-react/R4b.md); the shells' own rules are listing_account_source_test's and
+ * Both shells run js/esm/src/listing/store.ts over the painters and the address helpers of js/esm/src/listing;
+ * the shells' own rules are listing_account_source_test's and
  * categorypublic_source_test's, and the behaviour Jest's (js/esm/tests/listing). The test keeps the name it was
  * written under, for the AMD client the store replaced.
  *
@@ -209,7 +209,7 @@ final class amd_source_test extends \basic_testcase {
      */
     public function test_the_search_is_debounced_at_three_hundred_milliseconds(): void {
         $this->assertMatchesRegularExpression('~^const SEARCH_DEBOUNCE = 300;$~m', $this->source());
-        // Delegated on the form: the line's component (stage R2) replaces the server's field with its own.
+        // Delegated on the form: the line's component replaces the server's field with its own.
         $this->assertMatchesRegularExpression(
             "~form\\.addEventListener\\('input', \\(event\\) => \\{\\s*"
                 . 'const search = Listing\\.closestOf\\(event, SELECTORS\\.search\\);\\s*'

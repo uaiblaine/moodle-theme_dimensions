@@ -25,7 +25,7 @@
 namespace theme_dimensions\local\trail;
 
 /**
- * The state of each drawn step for the current reader, docs/trail/PLAN.md section 3.
+ * The state of each drawn step for the current reader.
  *
  * Asked only for a reader enrolled in the trail course, over the steps {@see display::steps()} drew in full: an
  * account is never shown a ghost, so those are every step the reader sees. A step is done when its activity is

@@ -1,10 +1,8 @@
 import{useEffect as W,useLayoutEffect as Y,useRef as _,useState as M}from"react";import fe from"@moodle/lms/core/pending";import{getStrings as pe}from"@moodle/lms/core/stringUtils";import{load as _e}from"../amd";import{WEEK as T,firstOf as j,monthAt as ye,parse as ve,say as N,shift as D,shiftMonth as G,weekdays as he,weeks as be}from"./calendar";import{FROM as Q,TO as y}from"./model";import*as m from"./model";import{CALENDAR as Ne}from"../listing/events";import{jsx as r,jsxs as l}from"react/jsx-runtime";/**
  * The one calendar of the showcase, on both shells: a start box and an end box over one popover.
  *
- * Stage R1 of docs/vitrine-react/PLAN.md drew it for the logged-in shell, stage R4a for the visitor's too.
- * It keeps the AMD calendar's control (removed in R4c): the same markup (the template category_daterange's, hook for
- * hook, which scss/category.scss and the Behat steps read), the same rules (./model, function for
- * function) and no timezone arithmetic (./calendar).
+ * The markup is the template category_daterange's, hook for hook (scss/category.scss and the Behat steps read
+ * those hooks); the rules are ./model's and there is no timezone arithmetic (./calendar).
  *
  * It is mounted by the listing's mountCalendar(), on both shells, as a node APPENDED
  * to the toolbar's empty dim-daterange region: core's react_autoinit observes added nodes and never

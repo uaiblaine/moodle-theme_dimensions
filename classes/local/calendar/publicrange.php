@@ -45,10 +45,11 @@ use theme_dimensions\local\landingfields;
  *   'open', so the popover's primary action is the landing page's "Inscrever-se";
  * - a category is named only when it is one of the public ones, with its branding pair; a public course in another
  *   category keeps categoryid 0 in the dictionary;
- * - `descriptions` carries the category events' text (decision V2), which the logged-in answer leaves to core's own
+ * - `descriptions` carries the category events' text, which the logged-in answer leaves to core's own
  *   service.
  *
- * Nothing is cached across requests (the theme's D39, OD-5): every answer reads the plugin's current states.
+ * Nothing is cached across requests, because local_unlistedcourses forbids caching its answers: every answer reads the
+ * plugin's current states.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

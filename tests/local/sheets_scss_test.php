@@ -28,7 +28,7 @@ namespace theme_dimensions\local;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Guards scss/sheets.scss, the notifications popover and the user menu as bottom sheets on phones (D2, D3): every rule
+ * Guards scss/sheets.scss, the notifications popover and the user menu as bottom sheets on phones: every rule
  * is scoped to the navbar and its region and sits under a max-width sm media query, nothing is !important, the motion
  * follows prefers-reduced-motion, and the sheet's own parts (the edge, the handle, the scrim, the 44px rows) are there.
  *

@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The event popover's Edit and Delete, for an event core lets the viewer edit (stage C5, PROPOSAL.md section 23).
+ * The event popover's Edit and Delete, for an event core lets the viewer edit.
  *
  * Edit opens core's event form for the event; Delete is core's own: its wrapper carries the markers core's crud reads
  * (data-type="event", data-event-id, data-event-title, data-event-count, as core's summary modal carries them) and

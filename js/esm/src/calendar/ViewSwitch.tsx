@@ -14,8 +14,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The toolbar's view switch, Month and Week (docs/calendar/PROPOSAL.md section 21), Day on a phone (section 31), on
- * both shells, and Trilhas on the account's where the page offers it (docs/trail/PLAN.md section 7).
+ * The toolbar's view switch, Month and Week, Day on a phone, on
+ * both shells, and Trilhas on the account's where the page offers it.
  *
  * A group of toggle buttons, the view shown pressed. Pressing another one is the shell's: it keeps the selected day and
  * shows the week holding it, its month, or the day itself. The choices are weeks.ts viewsOf(): the day only while the

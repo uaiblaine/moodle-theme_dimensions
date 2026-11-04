@@ -34,8 +34,8 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/fixture.php');
 
 /**
- * The statements one block render adds on top of core's, at the C1 baseline's shape (range_budget_test's seed: the C0
- * probe's month for a student in 25 courses).
+ * The statements one block render adds on top of core's, at the shape of range_budget_test's seed (a month for a
+ * student in 25 courses).
  *
  * Core's calendar_get_view() runs first whatever the theme does (the block calls it before the renderer), so what the
  * theme adds is its own range answer and its template, measured as range_budget_test measures a call (perf_get_reads()
@@ -51,14 +51,14 @@ require_once(__DIR__ . '/fixture.php');
 final class blocks_budget_test extends \advanced_testcase {
     use fixture;
 
-    /** @var int The month block's own statements at 25 courses: 533 measured, a tenth over. */
+    /** @var int The month block's own statements at 25 courses: 533 statements, a tenth over. */
     private const MONTH_BUDGET = 586;
 
-    /** @var int The agenda's own statements at 25 courses: 226 measured (a 7-day piece), a tenth over. */
+    /** @var int The agenda's own statements at 25 courses: 226 statements (a 7-day piece), a tenth over. */
     private const UPCOMING_BUDGET = 249;
 
     /**
-     * The C0 probe's month for a student enrolled in $n courses: range_budget_test's seed, kept in step with it.
+     * The probe's month for a student enrolled in $n courses: range_budget_test's seed, kept in step with it.
      *
      * @param int $n The courses.
      * @return \stdClass The student.
@@ -142,11 +142,10 @@ final class blocks_budget_test extends \advanced_testcase {
     }
 
     /**
-     * At 25 courses each block's own half stays within its measured budget; core's half is recorded beside it.
+     * At 25 courses each block's own half stays within its budget; core's half is recorded beside it.
      *
-     * Measured on m503b (PHP 8.4, PostgreSQL 18), 2026-11-01 (docs/calendar/PROPOSAL.md section 18): core's month
-     * block 733 statements and about 880 ms, core's upcoming block 13 and 23 ms; the theme's month 533 and about
-     * 105 ms, its agenda 226 and 45 ms. The bounds keep a tenth of headroom over the theme's statements.
+     * Core's month block costs 733 statements and about 880 ms, core's upcoming block 13 and 23 ms; the theme's
+     * month 533 and about 105 ms, its agenda 226 and 45 ms. The bounds keep a tenth of headroom over the theme's statements.
      *
      * @return void
      */

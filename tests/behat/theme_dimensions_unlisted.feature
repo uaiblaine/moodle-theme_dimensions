@@ -54,6 +54,16 @@ Feature: Unlisted courses and categories are not named to people who cannot reac
     Then I should see "This content is not available"
     And I should not see "Restricted One"
 
+  Scenario: Guessing a course that does not exist answers as an unlisted course does
+    # An answer of its own for a missing id or shortname would tell an unlisted course from no course.
+    Given I log in as "student1"
+    When I visit "/enrol/index.php?id=987654"
+    Then I should see "This content is not available"
+    And I visit "/course/info.php?id=987654"
+    And I should see "This content is not available"
+    And I visit "/course/info.php?name=NOSUCHCOURSE"
+    And I should see "This content is not available"
+
   Scenario: The enrolment page of a course that is not unlisted is untouched
     When I am on the "OPEN1" "theme_dimensions > Standard enrolment page" page logged in as "student1"
     Then I should not see "This content is not available"

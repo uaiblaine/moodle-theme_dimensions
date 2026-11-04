@@ -1,11 +1,10 @@
 import{Fragment as q,useLayoutEffect as g,useState as i}from"react";import{createPortal as T,flushSync as A}from"react-dom";import{PHONE as k,SELECTORS as c,WIDE as x,summaryLabel as D}from"./model";import{EVENTS as f,createPanel as F,drawnOpen as N,optionsOf as O}from"./panel";import{isFiltered as I,setHidden as K}from"./posters";import{jsx as M,jsxs as $}from"react/jsx-runtime";/**
  * The posters of the areas and the panel between their rows, on both shells of the showcase.
  *
- * Stage R3 of docs/vitrine-react/PLAN.md drew it for the logged-in shell; stage R4a hands it the visitor's
- * too, whose differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
+ * Drawn on both shells; the visitor's differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
  * false}` on the visitor's page, nothing on the logged-in one. A rule changes in the module of this tree
  * that carries it (`panel.ts` for the panel, `posters.ts` for the posters' result layer, `rail.ts`,
- * `model.ts`), each named after the AMD function it stood for.
+ * `model.ts`).
  *
  * WHO OWNS WHAT. The mount node is an empty, hidden child js/esm/src/listing/mounts.ts's mountAreas() appends
  * to the areas section, so the mount draws no box and the first paint stays the server's, to the pixel.

@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * Pins the invariants of an account's listing client by reading its source: js/esm/src/listing/account.ts, the shell
  * over the shared store, and amd/src/listingaccount.js, its entry.
  *
- * Stage R4b3 of docs/vitrine-react/R4b.md replaced the account's two AMD clients with this shell: what only an
+ * This shell replaced the account's two AMD clients: what only an
  * account has (the remembered state, the view preference, the progress, the panel's request) is the shell's,
  * and what both shells do (the tickets, the appended page, the tree, the chips, clear) is the store's, read here for
  * the gates that were written over the account's client. Their behaviour is Jest's (js/esm/tests/listing); these are
@@ -156,7 +156,7 @@ final class listing_account_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString('answer.catch(exception);', $this->body('rows'), 'Every failed page is shown.');
         $this->assertStringContainsString('exception(error);', $this->body('drainPending'));
-        // A calendar that could not mount is the dialogue too, as it was before R4b3; the store asks the shell.
+        // A calendar that could not mount is the dialogue too, as it was with the AMD clients; the store asks the shell.
         $this->assertStringContainsString("\n    unmounted: exception,\n", $shell);
         $this->assertStringContainsString(
             'Listing.mountCalendar(root, state, setRange).catch(shell.unmounted);',
@@ -206,7 +206,7 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * The shell holds no card disclosure: "More information" is a link the course dialogue's module intercepts.
      *
-     * The card's details panel, its one-open-at-a-time rule and its Escape left with stage L2; what the shell still
+     * The card's details panel, its one-open-at-a-time rule and its Escape are gone; what the shell still
      * hears on its own is the automatic opening's note.
      */
     public function test_the_shell_holds_no_card_disclosure(): void {
@@ -446,7 +446,7 @@ final class listing_account_source_test extends \basic_testcase {
     }
 
     /**
-     * The state a reader leaves a category in is remembered on every change, and the address then names it (round I).
+     * The state a reader leaves a category in is remembered on every change, and the address then names it.
      *
      * Changes that must make it fail: the guard on the account or the root dropped (gate js_remember_guard); "clear
      * filters" no longer remembering (gate js_clear_remembers); the change told after the write (gate

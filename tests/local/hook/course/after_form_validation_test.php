@@ -98,7 +98,7 @@ final class after_form_validation_test extends \advanced_testcase {
         $this->assertArrayHasKey($element, $this->errors_for([$element => $url]));
     }
     /**
-     * A submission of the round-6 fields, keyed as the course form posts them.
+     * A submission of the format and hybrid fields, keyed as the course form posts them.
      *
      * @param int $model The page model.
      * @param int $modality The modality.

@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The public calendar's client: the visitor's shell of the calendar page (docs/calendar/PROPOSAL.md section 19).
+ * The public calendar's client: the visitor's shell of the calendar page.
  *
  * The same grid, event types' dropdown, drawer and popover as the logged-in page, over the shared modules of
  * calendar/, with what a visitor has: two keys (the public categories' events, and the public event courses), nothing
@@ -27,15 +27,14 @@
  *   the page's language.
  * - The latest request wins: a ticket is taken per request and checked after the await. A Pending token
  *   (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - The month view and the week view (stage C4), as on the logged-in page: what is shown is a span with its answer,
- *   one call of the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx, PROPOSAL.md
- *   section 31), a day span on a desktop asked for and drawn as its month with the day's drawer open, as on the
- *   logged-in page.
+ * - The month view and the week view as on the logged-in page: what is shown is a span with its answer,
+ *   one call of the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
+ *   asked for and drawn as its month with the day's drawer open, as on the logged-in page.
  * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a chip
  *   and the open day replace it; Back and Forward read the address again.
  * - A failure loads the address of what was asked for, which the server draws: a visitor is never shown the server's
  *   words.
- * - The description is the answer's own text (decision V2), drawn as text; nothing is asked of core.
+ * - The description is the answer's own text, drawn as text; nothing is asked of core.
  *
  * What it imports is the point: nothing that reads the session or asks a logged-in service
  * (categorypublic_source_test walks its whole graph).
@@ -221,7 +220,7 @@ export const emptyPublicAnswer = (days: string[]): PublicAnswer => ({...emptyAns
 const openingDay = (month: string, today: string): string => (today.startsWith(month) ? today : `${month}-01`);
 
 /**
- * The span the server's props name: the week or the day (a phone's, PROPOSAL.md section 31) when they say so and name
+ * The span the server's props name: the week or the day (a phone's) when they say so and name
  * one, else the month.
  *
  * @param {object} props The server's props.
@@ -315,7 +314,7 @@ const PublicCalendar = (props: PublicProps) => {
 
     // The server's layer goes in the frame this layer is first painted in, and the mount is settled. The page's
     // root is marked mounted in the same frame: that class retires the placeholder and cancels the stylesheet's
-    // fail-safe, which brings the server's layer back when this module never draws (PROPOSAL section 29).
+    // fail-safe, which brings the server's layer back when this module never draws.
     useLayoutEffect(() => {
         if (!strings) {
             return;
@@ -459,7 +458,7 @@ const PublicCalendar = (props: PublicProps) => {
 
     /**
      * The frame's width, from the shown grid's or the Day view's one observer: the phone decision, and a day span on a
-     * frame that is no longer a phone's asked again, which asks for its month (PROPOSAL.md section 31.2).
+     * frame that is no longer a phone's asked again, which asks for its month.
      *
      * @param {number} width The frame's width, in px.
      * @returns {void}

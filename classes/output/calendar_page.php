@@ -55,7 +55,7 @@ use theme_dimensions\local\trail\trail;
  * the view switch is two links, and the agenda lists the week's days.
  *
  * For an account the props carry core's editing answers ({@see editing}: "New event", the form's context) and the
- * page's footer links core's iCal export where core's calendar offers it (stage C5).
+ * page's footer links core's iCal export where core's calendar offers it.
  *
  * In its visitor mode ({@see page::handle()}'s public calendar) the page draws the visitor's two keys and nothing that
  * needs a session or a login: no category, no "More" filters, no editing and no export, and the mount names the
@@ -223,7 +223,7 @@ class calendar_page implements renderable, templatable {
     /**
      * @var string The view, page::VIEW_MONTH, page::VIEW_WEEK or page::VIEW_DAY.
      *
-     * The day view is the client's alone (a phone's, PROPOSAL.md section 31): its window is the day's month grid and the
+     * The day view is the client's alone (a phone's): its window is the day's month grid and the
      * no-JavaScript layer draws that month, so only the props carry it.
      */
     private string $view;
@@ -433,7 +433,7 @@ class calendar_page implements renderable, templatable {
                 'page' => page::url()->out(false),
                 'home' => (new \core\url('/'))->out(false),
             ],
-            // The Trilhas view (docs/trail/PLAN.md section 7): offered while trails are available, its answer in that
+            // The Trilhas view offered while trails are available, its answer in that
             // view only; the trail and "Só as minhas" are navigation, like the view.
             'trails' => [
                 'offered' => page::trails_offered(),

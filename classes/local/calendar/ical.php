@@ -27,7 +27,7 @@ namespace theme_dimensions\local\calendar;
 use theme_dimensions\local\calendar\source\core_events;
 
 /**
- * A copy of core's calendar/export_execute.php, answered in its place (docs/calendar/PROPOSAL.md section 27.1).
+ * A copy of core's calendar/export_execute.php, answered in its place.
  *
  * Core's script exports the category events of every category for `preset_what=all` and `categories` (it hands core's
  * retrieval `$paramcategory = true`, read as "all categories"), so a category event the theme's calendar withholds
@@ -212,6 +212,7 @@ final class ical {
      * @param string $time The period, one of {@see TIME}.
      * @param int $courseid The course of a course calendar's export, 0 or SITEID for none.
      * @return string|null The iCalendar text, or null for a set or a period core does not accept.
+     * @throws \coding_exception When an event carries a negative duration.
      */
     public static function feed(\stdClass $user, int $userid, string $what, string $time, int $courseid): ?string {
         global $CFG, $DB;

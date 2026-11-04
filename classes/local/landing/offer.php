@@ -25,10 +25,10 @@
 namespace theme_dimensions\local\landing;
 
 /**
- * The seats and the enrolment deadline an enrolment instance declares (round 6, decisions D4-D6).
+ * The seats and the enrolment deadline an enrolment instance declares.
  *
  * Read off the instance record alone, so it costs no statement and answers the same for whoever
- * looks: the page prints the CONFIGURED total, never what is left (D5) - a method whose cap is
+ * looks: the page prints the CONFIGURED total, never what is left - a method whose cap is
  * reached is already hidden by the resolver, and a count of what is left would be a number that
  * changes under the reader. Only the plugins whose own checks read these fields are named here, so
  * a number on the page is one the plugin enforces:
@@ -38,7 +38,7 @@ namespace theme_dimensions\local\landing;
  *   enrol_allowed());
  * - the enrol_apply fork caps places at customint4 and applications at customint3
  *   (classes/local/capacity.php); places are the seats when set, otherwise the page speaks of
- *   applications, never of seats (D4);
+ *   applications, never of seats;
  * - enrolenddate closes enrol_self, enrol_autoenrol, enrol_apply, enrol_fee and enrol_paypal, and
  *   nothing in core closes an enrolment at the course's own dates.
  *
@@ -99,7 +99,7 @@ final class offer {
      * The enabled instances of a course that take new enrolments and set no deadline.
      *
      * Nothing in core closes an enrolment at the course's own dates, so an event whose methods
-     * set no enrolenddate keeps taking enrolments while it is being held (decision D9). An
+     * set no enrolenddate keeps taking enrolments while it is being held. An
      * instance counts when it and its plugin are enabled, its plugin is one that closes at
      * enrolenddate, and it takes new enrolments (the same flags the visitor's list reads).
      *
@@ -129,7 +129,7 @@ final class offer {
      * The lines the page prints for an instance, in the viewer's language and timezone.
      *
      * The time of the deadline is said unless it is the last minute of its day, which is what an
-     * editor means by "until the 26th" (D6's reading of the date picker); a deadline at midnight
+     * editor means by "until the 26th" (the reading of the date picker); a deadline at midnight
      * closes as the day BEGINS and says so, rather than reading as the whole day. The closing note
      * appears from two calendar days before the deadline, counted in the viewer's timezone.
      *

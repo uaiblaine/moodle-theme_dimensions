@@ -1,5 +1,5 @@
 import{useCallback as $e,useEffect as ve,useLayoutEffect as Fe,useMemo as O,useRef as g,useState as d}from"react";import{fetchOne as Ue}from"@moodle/lms/core/ajax";import Ye from"@moodle/lms/core/config";import{redirect as je}from"@moodle/lms/core/location";import ke from"@moodle/lms/core/pending";import{parse as ne}from"../daterange/calendar";import Be from"./DayDrawer";import Je from"./DayView";import{frameStyle as Qe,gridWeeks as Xe,zone as Ze}from"./days";import en from"./EventPopover";import nn,{ClearFilters as tn}from"./EventTypes";import{writeAddress as W}from"./history";import{dayDots as on,place as rn}from"./layout";import{DAY_PARAM as Ae,emptyAnswer as sn,isMonth as an,withDay as ee}from"./model";import ln,{PHONE as cn,guessPhone as dn}from"./MonthGrid";import{itemKey as un,overlapsOf as mn}from"./overlap";import{load as pn}from"./strings";import fn from"./ViewSwitch";import gn from"./WeekGrid";import{deskOf as yn,drawerOf as wn,gridOf as hn,inSpan as bn,monthOfSpan as _e,openOf as Pe,openingOf as Se,readSpan as vn,selectedIn as kn,spanDays as z,spanKey as Ee,spanLabels as _n,spanOf as Ke,stepSpan as Pn}from"./weeks";import{jsx as s,jsxs as q}from"react/jsx-runtime";/**
- * The public calendar's client: the visitor's shell of the calendar page (docs/calendar/PROPOSAL.md section 19).
+ * The public calendar's client: the visitor's shell of the calendar page.
  *
  * The same grid, event types' dropdown, drawer and popover as the logged-in page, over the shared modules of
  * calendar/, with what a visitor has: two keys (the public categories' events, and the public event courses), nothing
@@ -12,15 +12,14 @@ import{useCallback as $e,useEffect as ve,useLayoutEffect as Fe,useMemo as O,useR
  *   the page's language.
  * - The latest request wins: a ticket is taken per request and checked after the await. A Pending token
  *   (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - The month view and the week view (stage C4), as on the logged-in page: what is shown is a span with its answer,
- *   one call of the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx, PROPOSAL.md
- *   section 31), a day span on a desktop asked for and drawn as its month with the day's drawer open, as on the
- *   logged-in page.
+ * - The month view and the week view as on the logged-in page: what is shown is a span with its answer,
+ *   one call of the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
+ *   asked for and drawn as its month with the day's drawer open, as on the logged-in page.
  * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a chip
  *   and the open day replace it; Back and Forward read the address again.
  * - A failure loads the address of what was asked for, which the server draws: a visitor is never shown the server's
  *   words.
- * - The description is the answer's own text (decision V2), drawn as text; nothing is asked of core.
+ * - The description is the answer's own text, drawn as text; nothing is asked of core.
  *
  * What it imports is the point: nothing that reads the session or asks a logged-in service
  * (categorypublic_source_test walks its whole graph).

@@ -274,7 +274,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         font-weight: 600;
     }
 
-    // The live-classes chip (round 6): the same chip, led by a dot in the progress green.
+    // The live-classes chip: the same chip, led by a dot in the progress green.
     .dimensions-landing__chip--live {
         display: inline-flex;
         align-items: center;
@@ -289,7 +289,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         background: var(--dim-ds-green-400);
     }
 
-    // The hybrid event's double ticket (round 6, D1): the date, a dashed perforation, and the two ways to
+    // The hybrid event's double ticket: the date, a dashed perforation, and the two ways to
     // take part, in one glass block. It never asks for more than the text column it sits in, which with
     // the badge grid beside it is 460px of the hero's interior.
     .dimensions-landing__ticket {
@@ -360,7 +360,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         opacity: 0.85;
     }
 
-    // The hybrid course's composition (round 6, D2): the total workload as one bar, online in the
+    // The hybrid course's composition: the total workload as one bar, online in the
     // signature blue and in person in the progress green. Its widths come from the page as integers;
     // the block itself is capped by the text column, like the ticket.
     .dimensions-landing__comp {
@@ -563,7 +563,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         }
     }
 
-    // The second, smaller line of a fact (round 6): "at your own pace", the workload's split.
+    // The second, smaller line of a fact: "at your own pace", the workload's split.
     .dimensions-landing__factnote {
         display: block;
         font-size: 0.8125rem;
@@ -571,7 +571,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         color: var(--dim-ds-text-muted);
     }
 
-    // A hybrid event's tracks (round 6, D3): each method a bordered block, named by its instance.
+    // A hybrid event's tracks: each method a bordered block, named by its instance.
     .dimensions-landing__track {
         padding: 0.75rem;
         border: 1px solid var(--dim-ds-border-default);
@@ -610,7 +610,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         color: var(--dim-ds-text-muted);
     }
 
-    // What a method declares about its seats and its deadline, above its own button (round 6, D5):
+    // What a method declares about its seats and its deadline, above its own button:
     // the configured total and the date, in figures that line up from one method to the next.
     .dimensions-landing__offer {
         display: flex;
@@ -635,7 +635,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         }
     }
 
-    // The last days of a deadline (D6): text only, in the design system's amber pair.
+    // The last days of a deadline: text only, in the design system's amber pair.
     .dimensions-landing__urgent {
         padding: 0 0.5rem;
         border-radius: var(--dim-ds-radius-pill);
@@ -897,7 +897,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         font-weight: 600;
     }
 
-    /* A learner's states (T2): the tag beside the hours, the number turned into a check or a lock, the next step's
+    /* A learner's states: the tag beside the hours, the number turned into a check or a lock, the next step's
        card ringed in the ink. The tints are Bootstrap's subtle pairs, which carry their own dark mode. */
     .dimensions-landing__stepstate {
         padding: 0.0625rem 0.5625rem;

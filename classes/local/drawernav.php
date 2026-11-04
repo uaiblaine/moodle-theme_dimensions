@@ -121,7 +121,7 @@ final class drawernav {
     public const CALENDAR = 'calendar';
 
     /**
-     * The theme's calendar page, where the drawer's calendar row leads (docs/calendar/PROPOSAL.md, decision D1).
+     * The theme's calendar page, where the drawer's calendar row leads.
      *
      * @return \core\url
      */

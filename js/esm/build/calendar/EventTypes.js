@@ -1,6 +1,6 @@
 import{useEffect as v}from"react";import{usePopover as f}from"./popover";import{fill as h}from"./strings";import{jsx as n,jsxs as d}from"react/jsx-runtime";/**
  * The event types' filter: one toolbar button and its dropdown of checkboxes, one per key it is handed, each with its
- * key's swatch and the count of the range on screen (docs/calendar/PROPOSAL.md section 27.2).
+ * key's swatch and the count of the range on screen.
  *
  * The button names the filter and says how much of it is on: "All" while every key is, else a badge "N of M". The
  * dropdown is popover.ts's disclosure (a press outside closes it; Escape closes it from anywhere while it is open,

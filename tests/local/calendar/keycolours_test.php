@@ -29,7 +29,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * The colour settings of the calendar's keys (docs/calendar/PROPOSAL.md section 30.4): one hexadecimal picker per key
+ * The colour settings of the calendar's keys: one hexadecimal picker per key
  * on the Calendar tab, defaulting to the stylesheet's own edge, refusing anything but a hex, and handing the pre SCSS
  * callback only a hex that differs from its default. What Sass derives from a colour is calendar_scss_test's.
  *

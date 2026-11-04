@@ -158,7 +158,7 @@ final class category_scss_test extends \basic_testcase {
            Apply buttons are btn btn-sm btn-primary), and phpcs, the Mustache lint and stylelint
            never read a class name out of a JavaScript file. */
         $files = array_merge($files, glob($root . '/amd/src/category*.js'));
-        // The shared listing's painters, in TypeScript since R4b1: they write pills, chips and the count's marker.
+        // The shared listing's painters, in TypeScript: they write pills, chips and the count's marker.
         $files = array_merge($files, glob($root . '/js/esm/src/listing/*.ts'));
         /* The calendar's component does not match the globs, and it writes every class of its
            month grid and its day cells. A file the scanner cannot see is one the Bootstrap rules do
@@ -992,7 +992,7 @@ final class category_scss_test extends \basic_testcase {
      * Changes that must make it fail: the wrap dropped from the line; the line not positioned (the
      * panel is then placed against the page); the popover's absolute position or its inner scroll
      * dropped; the row at rest kept as a box; a chip shorter than a control; the search's basis moved
-     * off the first step's floor (stage R2: the unmeasured line would wrap where the first step fits).
+     * off the first step's floor (the unmeasured line would wrap where the first step fits).
      */
     public function test_the_filter_line_wraps_and_its_panel_is_a_popover_from_sm(): void {
         $scss = $this->stylesheet('category.scss');
@@ -1511,12 +1511,11 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * The open area wears its own colour: the poster's ring, and the panel's rail, head, glow and arrow (round I).
+     * The open area wears its own colour: the poster's ring, and the panel's rail, head, glow and arrow.
      *
-     * Variant B of the round's mockup, ported without color-mix(): the band is the area's own
-     * custom property, painted whole or as a layer at an opacity, with a one-pixel edge beside the
-     * ring and a white lift over the rail that only the dark page switches on. The default band of
-     * the panel is the open ring, declared where it is read.
+     * Written without color-mix(): the band is the area's own custom property, painted whole or as a layer
+     * at an opacity, with a one-pixel edge beside the ring and a white lift over the rail that only the dark
+     * page switches on. The default band of the panel is the open ring, declared where it is read.
      *
      * Changes that must make it fail: the ring back to the open ring; the rail, the tint or the glow
      * dropped; the lift switched on (or off) in the wrong mode; the arrow's tint moved off the arrow.
@@ -1584,7 +1583,7 @@ final class category_scss_test extends \basic_testcase {
     /**
      * While a panel is open the other posters go grey under the vignette, and the open one says so in words.
      *
-     * The owner's round I: image AND text dim (the earlier rule dimmed only the images), easing in
+     * Image AND text dim, easing in
      * and out on the card's own transition, lifting most of the way under a pointer and all the way
      * under the focus; the list view greys and fades instead. The vignette is the card's last box,
      * transparent to the pointer. The open poster carries "Open", shown by its open class alone.
@@ -1645,7 +1644,7 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * A compact or folded hero keeps its crests on the title's line at 36x40, and 26x29 on a phone (round I).
+     * A compact or folded hero keeps its crests on the title's line at 36x40, and 26x29 on a phone.
      */
     public function test_a_compact_hero_keeps_small_crests_on_the_title_line(): void {
         $scss = $this->stylesheet('category.scss');

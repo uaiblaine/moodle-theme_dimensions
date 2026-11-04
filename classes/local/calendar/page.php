@@ -89,7 +89,7 @@ final class page {
     public const VIEW_WEEK = 'week';
 
     /**
-     * @var string The day view, a phone's (docs/calendar/PROPOSAL.md section 31): its day is {@see PARAM_DAY}.
+     * @var string The day view, a phone's: its day is {@see PARAM_DAY}.
      *
      * The server cannot know the width, so it answers the day's month grid ({@see span()}): the phone's client draws the
      * day from it and a desktop's shows the month with the day's drawer open, never a desktop day view.
@@ -97,7 +97,7 @@ final class page {
     public const VIEW_DAY = 'day';
 
     /**
-     * @var string The Trilhas view (docs/trail/PLAN.md section 7): the trails of the month, an account's only and only
+     * @var string The Trilhas view: the trails of the month, an account's only and only
      *   while trails are available ({@see trail::available()}); for anyone else the address reads as the month.
      */
     public const VIEW_TRAIL = 'trail';
@@ -273,8 +273,8 @@ final class page {
     /**
      * Whether the page offers the Trilhas view: to a real account, while trails are available.
      *
-     * A visitor's public calendar has no such view (the calendar asks an account to log in for it, PLAN.md section 5),
-     * and without mod_subcourse there are no trails (section 8).
+     * A visitor's public calendar has no such view (the calendar asks an account to log in for it),
+     * and without mod_subcourse there are no trails.
      *
      * @return bool
      */
@@ -380,7 +380,7 @@ final class page {
      *
      * In the week view the month is the open day's, else the week's first day's: the month a switch back to the month
      * view opens. The day view (a phone's) shows its day as the open day over the day's month grid: the server cannot
-     * know the width, and a desktop shows that month with the day's drawer open (PROPOSAL.md section 31.2).
+     * know the width, and a desktop shows that month with the day's drawer open.
      *
      * @param int $firstday The weekday a week begins on, 0 for Sunday.
      * @return array [view, month, week ('' in the month view), open day ('' for none), from, to].

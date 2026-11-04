@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// The theme's calendar page (docs/calendar/PROPOSAL.md, stage C2). Every rule is scoped under the body class
+// The theme's calendar page. Every rule is scoped under the body class
 // local\calendar\page adds (body.dim-calendar): the file is concatenated into the theme's main SCSS and reaches
 // every page otherwise; tests/local/calendar_scss_test.php asserts the scope.
 //
@@ -27,7 +27,7 @@
 // Core's calendar blocks drawn with the theme's calendar (local\calendar\blocks) are on any page, so their rules are
 // scoped under their own root, .dim-calblock, which declares the same tokens.
 
-// R1c (docs/calendar/PROPOSAL.md section 30.4): a key's colour an administrator chose (theme_dimensions/calendarcolour<key>),
+// A key's colour an administrator chose (theme_dimensions/calendarcolour<key>),
 // handed by the pre SCSS callback as $dim-cal-colours (local\calendar\keycolours::scss()) only when it is a hex that
 // differs from the key's default. A key without one keeps its hand-picked triple, the default each function below is
 // handed; a key with one derives its triple from it, and every derivation reaches its floor whatever the colour (it ends
@@ -118,10 +118,10 @@ body.dim-calendar,
     --dim-cal-overdue-tint: #{dim-cal-light(overdue, tint, $dim-ds-red-100)};
     --dim-cal-overdue-edge: #{dim-cal-light(overdue, edge, $dim-ds-red-500)};
     --dim-cal-overdue-ink: #{dim-cal-light(overdue, ink, $dim-ds-red-800)};
-    // The Trilhas view's own colours (docs/trail/PLAN.md section 7): fixed, never an administrator's key colour, each
+    // The Trilhas view's own colours: fixed, never an administrator's key colour, each
     // pair the hand-picked default of a key measured above (the schedule's the activity's, a state's the key it reads
-    // as: done the group's, late the overdue's, locked the site's). R3 (PROPOSAL.md section 33, the mockup): the
-    // current step is the primary fill with white ink and an upcoming one the primary's outline on white; in the dark
+    // as: done the group's, late the overdue's, locked the site's). The current
+    // step is the primary fill with white ink and an upcoming one the primary's outline on white; in the dark
     // mode the current step keeps the course key's measured pair and the upcoming one the open key's.
     --dim-cal-trail-tint: #{$dim-ds-blue-100};
     --dim-cal-trail-edge: #{$dim-ds-blue-400};
@@ -213,20 +213,19 @@ body.dim-calendar,
 }
 
 body.dim-calendar {
-    // The page takes the whole column (owner, 2026-11-02): Boost caps .main-inner of the standard layout at
-    // $course-content-maxwidth (Boost Union's coursecontentmaxwidth) from md up, which left the grid and the day drawer
-    // side by side in 830px. The body class outranks Boost's .pagelayout-standard selector by one class.
+    // The page takes the whole column: Boost caps .main-inner of the standard layout at
+    // $course-content-maxwidth (Boost Union's coursecontentmaxwidth) from md up, lifted here so the grid and the day
+    // drawer have room. The body class outranks Boost's .pagelayout-standard selector by one class.
     @media (min-width: 768px) {
         #page.drawers .main-inner {
             max-width: none;
         }
     }
 
-    // Half the gap between the navbar and the calendar's title (owner, 2026-11-02; PROPOSAL section 29.3). Measured at
-    // 1440x900: Boost's .main-inner margin-top 40px and padding-top 24px, the page header's 16px (drawn by a child of
-    // #page-header, which the rule below cannot shrink) and 3px more put the title 83px under the navbar; 12px and
-    // 10px put it 41px under. The body class puts these one class above Boost's #page.drawers .main-inner, with no
-    // !important.
+    // Half the gap between the navbar and the calendar's title: Boost's .main-inner margin-top (40px) and
+    // padding-top (24px) are cut to 12px and 10px; the page header's own 16px is drawn by a child of #page-header,
+    // which the rule below cannot shrink. The body class puts these one class above Boost's #page.drawers
+    // .main-inner, with no !important.
     #page.drawers .main-inner {
         margin-top: 12px;
         padding-top: 10px;
@@ -256,7 +255,7 @@ body.dim-calendar {
         outline-offset: 2px;
     }
 
-    // R3 (PROPOSAL.md section 33): the calendar's buttons are the mockup's: 36px tall, 8px round, 14px at weight 500,
+    // The calendar's buttons are 36px tall, 8px round, 14px at weight 500,
     // white on the default border, the primary one filled with the design system's primary. Bootstrap's .btn reads its
     // colours from --bs-btn-*, so each variant re-points them, the disabled trio included (Bootstrap writes it from the
     // original variant otherwise). Under .dim-cal the rules outrank Boost's bare .btn classes; the icon-only buttons
@@ -306,7 +305,7 @@ body.dim-calendar {
         --bs-btn-disabled-border-color: var(--dim-ds-interactive-primary, var(--bs-primary));
     }
 
-    // A link drawn as a button ("Clear filters") is the mockup's ghost: no border, the link's ink, the tint on hover.
+    // A link drawn as a button ("Clear filters") is a ghost: no border, the link's ink, the tint on hover.
     .dim-cal .btn-link {
         --bs-btn-color: var(--dim-ds-text-link, var(--bs-link-color));
         --bs-btn-hover-color: var(--dim-ds-text-link-hover, var(--bs-link-hover-color));
@@ -580,7 +579,7 @@ body.dim-calendar {
     }
 
     // The event types' dropdown (EventTypes.tsx): opens under its button at the toolbar's start.
-    // R3: the mockup's menu, 320px of 40px rows on an 8px inset, the large shadow, 18px boxes in the primary.
+    // The menu is 320px of 40px rows on an 8px inset, the large shadow, 18px boxes in the primary.
     .dim-cal__typespanel {
         right: auto;
         left: 0;
@@ -662,7 +661,7 @@ body.dim-calendar {
         cursor: pointer;
     }
 
-    // R3: the panels' fields are the mockup's, 36px on the default border, 8px round, 14px.
+    // The panels' fields are 36px on the default border, 8px round, 14px.
     .dim-cal__panel .form-control,
     .dim-cal__panel .form-select,
     .dim-cal__popover .form-control,
@@ -702,7 +701,7 @@ body.dim-calendar {
         font-variant-numeric: tabular-nums;
     }
 
-    // The first paint (PROPOSAL section 29). Core writes jsenabled on the body before the first paint, so under it the
+    // The first paint. Core writes jsenabled on the body before the first paint, so under it the
     // server's no-JavaScript layer is held out of sight and the placeholder, with the grid's footprint, stands in its
     // place; Calendar.tsx marks the root dim-cal--mounted when it draws, which lifts both rules. If that never happens
     // (a module that failed to load), the two animations bring the server's layer back and retire the placeholder after
@@ -1068,7 +1067,7 @@ body.dim-calendar {
         font-size: .8125rem;
     }
 
-    // The frame the grid shares with the day drawer (C3): the drawer narrows the grid beside it; on a phone the
+    // The frame the grid shares with the day drawer: the drawer narrows the grid beside it; on a phone the
     // agenda sheet goes under the grid. Not a scroll container: the grid's rows keep their own height.
     .dim-cal__body {
         display: grid;
@@ -1082,10 +1081,10 @@ body.dim-calendar {
     }
 
     // A six-week month is taller than a laptop's viewport, and the drawer starts at the frame's top: opened on a day of
-    // the lower weeks it sat above the viewport (PROPOSAL.md section 27.2). So it holds still under the navbar while the
-    // grid scrolls. Its body is the hour column's scroll box (R1c, below), which takes what the head and the all-day
+    // the lower weeks it would sit above the viewport. So it holds still under the navbar while the
+    // grid scrolls. Its body is the hour column's scroll box (below), which takes what the head and the all-day
     // strip leave; the drawer itself scrolls only when the strip alone is taller than the cap.
-    // R1c (PROPOSAL.md section 30.7): the cap is the smaller of the viewport's and the grid's own height, which the
+    // The cap is the smaller of the viewport's and the grid's own height, which the
     // grids' one ResizeObserver writes on the frame as --dim-cal-gridheight (days.ts GRID_HEIGHT; unset until its first
     // entry, then the viewport's alone). A min() is allowed inside a custom property read through var(), not in a length.
     .dim-cal__drawer--drawer {
@@ -1125,7 +1124,7 @@ body.dim-calendar {
         line-height: 1.25;
     }
 
-    // R3: the mockup's drawer title is 20px, its popover title 18px in the body's ink.
+    // The drawer title is 20px, the popover title 18px in the body's ink.
     .dim-cal__drawertitle {
         font-size: 1.25rem;
     }
@@ -1151,13 +1150,13 @@ body.dim-calendar {
         padding: 0;
     }
 
-    // The popover's close is the mockup's borderless 32px square.
+    // The popover's close is a borderless 32px square.
     .dim-cal .dim-cal__pop .dim-cal__close {
         width: 2rem;
         height: 2rem;
     }
 
-    // R3: the side drawer is the mockup's card of sections: the head over a line, the all-day strip over another, the
+    // The side drawer is a card of sections: the head over a line, the all-day strip over another, the
     // hours under them, and the medium shadow. The phone's sheet and the Day view keep their padding.
     .dim-cal__drawer--drawer {
         gap: 0;
@@ -1244,9 +1243,9 @@ body.dim-calendar {
         grid-template-rows: repeat(var(--dim-cal-hourcount, 24), 2.5rem);
     }
 
-    // R1c (PROPOSAL.md section 30.1, reversing C3's windowed column): the drawer's and the week's hour column is the
-    // whole day in a scroll box of its own (HourScroll.tsx), drawn as block_compass's calendar strip is: no native
-    // scrollbar, its overscroll kept from the page, and a fade over an end only while the box can still scroll to it.
+    // The drawer's and the week's hour column is the whole day in a scroll box of its own (HourScroll.tsx), drawn
+    // as block_compass's calendar strip is: no native scrollbar, its overscroll kept from the page, and a fade over an
+    // end only while the box can still scroll to it.
     // The fades are the box's siblings in a positioned wrapper, so they hold still while the hours scroll, and take no
     // pointer: a double-click under one still reaches its hour row.
     .dim-cal__hourbox {
@@ -1278,7 +1277,7 @@ body.dim-calendar {
         outline-offset: -3px;
     }
 
-    // The phone's Day view (R1d, PROPOSAL.md section 31, DayView.tsx): the drawer's look at the frame's whole width, not
+    // The phone's Day view (DayView.tsx): the drawer's look at the frame's whole width, not
     // sticky; its hour box is capped under the viewport as the week's is, so the toolbar and the strip stay in view.
     .dim-cal__dayviewhead {
         justify-content: flex-end;
@@ -1383,9 +1382,9 @@ body.dim-calendar {
         text-decoration: none;
     }
 
-    // The week (C4, WeekGrid.tsx): a gutter for the row headers and the hour labels, then seven day columns, in three
-    // rows. The hour body is one 2.5rem row per hour of the whole day (--dim-cal-hourcount), in the scroll box above
-    // (R1c); its items are placed in shares of the day and of the day's width, as the drawer's are.
+    // The week (WeekGrid.tsx): a gutter for the row headers and the hour labels, then seven day columns, in three
+    // rows. The hour body is one 2.5rem row per hour of the whole day (--dim-cal-hourcount), in the scroll box above;
+    // its items are placed in shares of the day and of the day's width, as the drawer's are.
     .dim-cal__weekgrid {
         overflow: hidden;
         border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
@@ -1743,7 +1742,7 @@ body.dim-calendar {
         font-size: .8125rem;
     }
 
-    // R3: the description is the mockup's quiet box, as the step popover's reason is.
+    // The description is a quiet box, as the step popover's reason is.
     .dim-cal__popdesc,
     .dim-cal__popquiet {
         margin: 0;
@@ -1789,7 +1788,7 @@ body.dim-calendar {
         gap: .5rem;
     }
 
-    // Stage C5: core's Edit and Delete sit in the popover's row of actions; their wrapper only carries core's markers.
+    // Core's Edit and Delete sit in the popover's row of actions; their wrapper only carries core's markers.
     .dim-cal__popedit {
         display: contents;
     }
@@ -1820,8 +1819,8 @@ body.dim-calendar {
         font-size: .875rem;
     }
 
-    // R3 (the mockup Phone): on a phone the arrows are 44px touch targets, the view switch takes the row's width in
-    // 40px segments, the filter buttons are pills, and the month's weekday band is the mockup's 22px of centred letters.
+    // On a phone the arrows are 44px touch targets, the view switch takes the row's width in
+    // 40px segments, the filter buttons are pills, and the month's weekday band is 22px of centred letters.
     .dim-cal__app--phone .dim-cal__step {
         width: 2.75rem;
         height: 2.75rem;
@@ -1877,8 +1876,7 @@ body.dim-calendar {
         background: var(--dim-cal-edge);
     }
 
-    // The Trilhas view (docs/trail/PLAN.md section 7; R3, docs/calendar/PROPOSAL.md section 33, the mockup
-    // CalTrilhas). The month's days are grid columns of a fixed width between the trail column and the "next month"
+    // The Trilhas view. The month's days are grid columns of a fixed width between the trail column and the "next month"
     // column (--dim-cal-trail-days, set by the client), so a bar is placed by its grid columns alone. The grid is as wide
     // as its columns and scrolls inside its card (TrailScroll.tsx); the first and last column of every row are sticky, so
     // only the days move. The three widths are trails.ts TRACK, which the client's scroll arithmetic reads:
@@ -2349,7 +2347,7 @@ body.dim-calendar {
         }
     }
 
-    // A locked step is hatched over its fill, as the mockup draws it.
+    // A locked step is hatched over its fill, as a locked step reads.
     .dim-cal__trailbar--locked,
     .dim-cal__trailchip--locked,
     .dim-cal__trailswatch--locked {
@@ -2517,7 +2515,7 @@ body.dim-calendar {
         background: var(--dim-cal-trailcurrent-edge);
     }
 
-    // The phone's agenda (the mockup CalTrilhasPhone): a card per trail, a learner's progress in segments, the steps as
+    // The phone's agenda: a card per trail, a learner's progress in segments, the steps as
     // rows with their date, a colour bar and the state's pill.
     .dim-cal__trailagenda {
         display: flex;
@@ -2736,7 +2734,7 @@ body.dim-calendar {
     }
 }
 
-// The calendar blocks: the mini month and the short agenda (docs/calendar/PROPOSAL.md section 17).
+// The calendar blocks: the mini month and the short agenda.
 .dim-calblock {
     color: var(--dim-ds-text-body, var(--bs-body-color));
 

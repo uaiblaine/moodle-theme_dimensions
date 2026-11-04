@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins how the shared listing of js/esm/src/listing reaches the AMD clients, and who writes the history.
  *
- * Stage R4b1 of docs/vitrine-react/R4b.md moved the AMD listing to TypeScript, under a barrel's names, and each
+ * The AMD listing is TypeScript under a barrel's names, and each
  * page's AMD entry starts its shell through `core/esm!`. The painters' own rules are read by amd_source_test and
  * the component source tests, their behaviour is Jest's (js/esm/tests/listing).
  *
@@ -44,7 +44,7 @@ final class listing_source_test extends \basic_testcase {
     /** @var string The specifier the AMD entries load their shell under. */
     private const SPECIFIER = 'core/esm!@moodle/lms/theme_dimensions/listing/';
 
-    /** @var string[] The AMD entries the pages arm, by the shell each one starts (R4b2, R4b3). */
+    /** @var string[] The AMD entries the pages arm, by the shell each one starts. */
     private const ENTRIES = ['listingaccount' => 'account', 'listingvisitor' => 'visitor'];
 
     /** @var string[] The TypeScript that calls the listing by the barrel's names: the store and its shells. */
@@ -141,7 +141,7 @@ final class listing_source_test extends \basic_testcase {
                 "{$entry} starts its shell through core/esm!."
             );
             preg_match_all("~^import [^\n]* from '([^']+)';$~m", $source, $imports);
-            // Its shell and nothing else: the star is the account's shell's since R5.
+            // Its shell and nothing else: the star is the account's shell's.
             foreach ($imports[1] as $import) {
                 $this->assertContains(
                     $import,
@@ -157,7 +157,7 @@ final class listing_source_test extends \basic_testcase {
      * The barrel exports every name a shell calls on the listing, nothing it does not have, and nothing no shell calls.
      *
      * A name the barrel left out is undefined at run time, in the browser alone; a name no shell calls is one the
-     * barrel kept for a client that is gone (R5 dropped the AMD clients' four).
+     * barrel kept for a client that is gone (the AMD clients' four are gone).
      *
      * Changes that must make it fail: a name dropped from the barrel (gate js_listing_barrel_complete).
      */

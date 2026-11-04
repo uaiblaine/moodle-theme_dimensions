@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The month grid and its keyboard (docs/calendar/PROPOSAL.md section 11.3).
+ * The month grid and its keyboard.
  *
  * role="grid" labelled by the month's caption, a columnheader row of weekdays, then a row per week whose seven
  * gridcells each hold one day button. One day button is in the Tab order, the selected day's (roving tabindex):
@@ -76,8 +76,8 @@ export const PHONE = 576;
 
 /**
  * The page's horizontal gutters at a phone's width, in px: the viewport minus the calendar's frame, 8px a side.
- * Measured on m503b at 575, 600 and 767px, where the frame is the viewport less 16px; at 768px and up the page
- * gains the course index and the margin of a desktop and the frame is 157px narrower than the viewport at 800px.
+ * Below 768px the frame is the viewport less 16px; from 768px the course index and a desktop margin make it
+ * narrower.
  */
 export const PHONE_GUTTERS = 16;
 

@@ -29,16 +29,16 @@ namespace theme_dimensions\local;
  *
  * The features share one page predicate and live here, so the renderer only asks:
  *
- * - The band as progress (C3, {@see applies()}): on an activity page the 3px signature band fills from the left as
+ * - The band as progress ({@see applies()}): on an activity page the 3px signature band fills from the left as
  *   the page is scrolled; on the course page it shows the reader's completion of the course, computed here
  *   ({@see client_config()}). Everywhere else it stays full, as before.
- * - The context bar (C2, {@see context_applies()}): past the page header the navbar's content swaps for a layer at
+ * - The context bar ({@see context_applies()}): past the page header the navbar's content swaps for a layer at
  *   the same 60px carrying the activity's (or the course's) name, the course and its completion, a read-only
  *   status of the activity and, where the course index exists, a control that opens it with core's own toggler
  *   attributes. On by default ({@see SETTING_CONTEXT}).
- * - The role shortcut (D5, {@see edit_applies()}): a reader core lets edit the page gets core's edit mode switch in
+ * - The role shortcut ({@see edit_applies()}): a reader core lets edit the page gets core's edit mode switch in
  *   the layer, since the layer covers the navbar's own.
- * - Auto-hide (C1, {@see autohide_applies()}): the navbar slides up on scroll down and returns on the first scroll
+ * - Auto-hide ({@see autohide_applies()}): the navbar slides up on scroll down and returns on the first scroll
  *   up, its 3px band left at the top. Off by default: an administrator picks the page kinds
  *   ({@see SETTING_AUTOHIDE}).
  *
@@ -382,7 +382,7 @@ final class readingbar {
     }
 
     /**
-     * Whether the reader gets core's edit mode switch in the context layer (D5).
+     * Whether the reader gets core's edit mode switch in the context layer.
      *
      * Core's own predicate, the one core_renderer::edit_switch() asks before it draws the switch in the navbar: the
      * layer covers that switch while it is shown, so a reader who may edit the page finds it again there. A student

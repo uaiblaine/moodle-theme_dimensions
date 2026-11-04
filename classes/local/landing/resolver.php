@@ -46,7 +46,7 @@ use local_unlistedcourses\access;
  * reason or a teaser.
  *
  * The viewer's relationship is decided beside the methods, not instead of
- * them (decision D2 of the enrolment matrix, core's default kept): a viewer
+ * them (core's default is kept): a viewer
  * enrolled from a later date, with an application, suspended or whose
  * enrolment ended is told so, and offered every method that would really take
  * them now. The relationship is local_unlistedcourses' own
@@ -297,7 +297,7 @@ final class resolver {
     }
 
     /**
-     * The instances whose seats and deadline a visitor is told (round 6, decision D7).
+     * The instances whose seats and deadline a visitor is told.
      *
      * A visitor cannot enrol before logging in, and who logs in decides most of the rules (a
      * cohort, an application already sent), so the visitor sees the login button and, above it,

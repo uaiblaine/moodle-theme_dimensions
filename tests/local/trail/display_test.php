@@ -34,7 +34,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/../category/fixture.php');
 
 /**
- * Who sees which step of a public trail, and how: docs/trail/PLAN.md, section 6, as the owner corrected it.
+ * Who sees which step of a public trail, and how.
  *
  * One trail whose steps refer to one course of each kind. A visitor sees the public course in full and the listed one
  * as a ghost, and nothing of the rest; an account sees what the showcase would list to it, an unlisted course it is

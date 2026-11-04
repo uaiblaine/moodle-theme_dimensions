@@ -16,8 +16,9 @@
 /**
  * Core's linear navigation footer on a phone, shown again near the end of the page.
  *
- * Below 768px Boost's sticky footer module (theme_boost/sticky-footer) hides every sticky footer on the way down the
- * page and shows it on the way up. For the linear navigation footer that hides "Next" and the manual completion
+ * Below 768px Boost's sticky footer behaviour (the theme_boost/sticky-footer module, which registers itself with
+ * core/sticky-footer) hides every sticky footer on the way down the page and shows it on the way up. For the
+ * linear navigation footer that hides "Next" and the manual completion
  * button exactly when the reader reaches the end of the activity, which they reach scrolling down. This module leaves
  * core's behaviour as it is along the page and shows the footer again whenever the end is near (END of the screen's
  * height left to scroll), as core shows it: Boost's class on the body and on #page, which also gives the page the
@@ -25,7 +26,8 @@
  *
  * Core listens for the scroll on the document; this listens on the window, where the same event arrives after it, so
  * on the way down near the end core's hide and this show happen in one task, before the browser paints, and the
- * footer does not flicker. It follows the footer's state as core announces it: a footer core disabled stays hidden.
+ * footer does not flicker. It follows the footer's state as core/sticky-footer announces it (the event imported
+ * below): a footer core disabled stays hidden.
  * The Behat site never hides the footer (core's module stands down there), and neither does this.
  *
  * @module     theme_dimensions/linearfooter

@@ -50,7 +50,7 @@ $dim-inner-pad: 8px;
 $dim-main-pad: 15px;
 $dim-column: 1200px;
 // What the navy has to escape to reach the viewport edge, and the track its content keeps
-// inside it: the box the column used to have, minus the padding that box used to pay.
+// inside it: the box the column has, minus the padding that box pays.
 $dim-bleed: $dim-page-pad + $dim-inner-pad;
 // What Boost pays on the left INSTEAD of the 3rem above once a left drawer is open: its rule
 // (drawer.scss:102) sets padding-left: 1rem and outbids the page padding, so with a drawer the
@@ -420,10 +420,9 @@ body.dim-category {
     }
 
     // A compact band - the compact layout, or a hero the reader folded - keeps its crests on the
-    // title's line at 36x40, in the same glass boxes with a tighter plate (round I: the owner took a
-    // crest's silhouette as enough there; the 80x88 above is the size the full band shows the
-    // drawing at, and is no longer a floor). The row does not wrap in this band, so the crests stay
-    // beside the title down to the phone, where they step down to 26x29.
+    // title's line at 36x40, in the same glass boxes with a tighter plate (a crest's silhouette is
+    // enough there; the 80x88 above is the size the full band shows the drawing at, not a floor). The row does not
+    // wrap in this band, so the crests stay beside the title down to the phone, where they step down to 26x29.
     .dim-hero--compact .dim-hero__inner {
         flex-wrap: nowrap;
         align-items: center;
@@ -716,13 +715,13 @@ body.dim-category {
         --dim-tint: var(--dim-ds-interactive-primary-tint, #edeefb);
         --dim-open-ring: var(--dim-primary);
         --dim-poster-edge: transparent;
-        // The open area's colour (round I). The open poster's ring and the panel's rail, head and
-        // glow are the AREA's band - the inherited pair of round B, which the poster carries as
+        // The open area's colour. The open poster's ring and the panel's rail, head and
+        // glow are the AREA's band - the inherited pair, which the poster carries as
         // --dim-card-band and the panel as --dim-area-bg. Beside it: an EDGE of one pixel, dark on
         // the light page and light on the dark one, so a light band (a yellow, a tint) still reads
         // on the light page and a navy one on the dark page; the LIFT, a white layer over the
         // rail on the dark page that composites the band 45% toward white, which is the design's
-        // color-mix() spelled as a layer (the fleet's stylelint refuses color-mix()); and the TINT,
+        // color-mix() spelled as a layer (stylelint refuses color-mix()); and the TINT,
         // the opacity of the band's layer over the panel's head. Each has its dark value at the
         // foot of this file.
         --dim-area-edge: rgba(0, 0, 0, .4);
@@ -951,8 +950,8 @@ body.dim-category {
     // ---- Toolbar: a real form ---------------------------------------------------------------
     // The toolbar states its stack. Its manage menu opens DOWNWARD out of it, over rows that
     // hold an explicit z-index of their own - the card's details panel, 20 - and 30 puts the
-    // whole toolbar over it whatever the document order later becomes. The cost: Bootstrap's 1000 on the menu is now INSIDE this context, so the
-    // menu ranks against the rest of the page at 30. Nothing between 30 and 1000 exists on
+    // whole toolbar over it whatever the document order later becomes. The cost: Bootstrap's 1000 on the menu is
+    // INSIDE this context, so the menu ranks against the rest of the page at 30. Nothing between 30 and 1000 exists on
     // this page; the site's fixed navbar (1030) covers the menu when it flips upward into it,
     // with or without this rule.
     //
@@ -976,7 +975,7 @@ body.dim-category {
     }
 
     // ---- The filter line -----------------------------------------------------------------------
-    // ONE row in the contract's slot order (moodle-dev/docs/filter-line/CONTRACT.md): scope,
+    // ONE row in the contract's slot order: scope,
     // search, star, Filters, Organise, view, the managers' menu. It wraps where it does not fit -
     // which is the whole of its narrow behaviour without JavaScript - and the search is the item
     // that grows and shrinks, so the other controls keep their size. It is the positioned ancestor
@@ -993,7 +992,7 @@ body.dim-category {
     // wraps before its client measures it breaks its row exactly where that step stops fitting: at a
     // width the client keeps at the first step, the server's first paint is already the folded line and
     // nothing moves when the step arrives. A wider basis put a control on a second row the step then
-    // pulled back up, the line's one layout shift (docs/vitrine-react/PLAN.md, section 5.2.1).
+    // pulled back up, the line's one layout shift.
     .dim-toolbar__search {
         position: relative;
         flex: 1 1 13rem;
@@ -2633,7 +2632,7 @@ body.dim-category {
         color: var(--dim-muted);
     }
 
-    // ---- The filter line's preview (stage T4) ---------------------------------------------------------
+    // ---- The filter line's preview ---------------------------------------------------------
     // Pointing at a filter (filterline/preview.ts) marks the listing previewing, every card the filter would keep lit
     // and every other dim. A lit card wears a 2px ring in the accent, drawn inside its edge so a rail that
     // scrolls never clips it, and narrower than the 3px focus ring so the two are never mistaken. A dim card
@@ -2840,11 +2839,9 @@ body.dim-category {
     }
 
     // ==== The areas as posters, and one panel between their rows ================================
-    // The original design record (not part of this repository) is the design, and its mockup the
-    // picture it is matched against, number for number. Two sections on a category page organised
-    // by area - the areas, then the courses sitting directly in the category - and the first alone
-    // at the root. A poster opens the panel of its area in the grid row after its own; ONE panel per
-    // page, a list item of the grid that holds the open poster.
+    // Two sections on a category page organised by area - the areas, then the courses sitting directly in
+    // the category - and the first alone at the root. A poster opens the panel of its area in the grid row after
+    // its own; ONE panel per page, a list item of the grid that holds the open poster.
 
     // ---- The two sections -------------------------------------------------------------------------
     // The design's base size is 15px where Boost Union's body is 16px, and every size the areas do
@@ -3424,11 +3421,9 @@ body.dim-category {
 
     // The spotlight: while a panel is open the OTHER posters go grey, image AND text, under the
     // card's radial vignette, and come most of the way back under a pointer and all the way under
-    // the focus, so the next choice is legible before it is made. This SUPERSEDES the earlier rule
-    // that dimmed only their images and never their text "to keep the pair the editor certified":
-    // the owner decided in round I that a dimmed poster's text may read lower while a panel is
-    // open, because the hover and the focus restore it. Enter and exit are the card's own
-    // transitions (--dim-ds-motion-base), so closing the panel plays them in reverse.
+    // the focus, so the next choice is legible before it is made. The text dims with the image, so
+    // a dimmed poster's text may read lower while a panel is open; the hover and the focus restore it. Enter and
+    // exit are the card's own transitions (--dim-ds-motion-base), so closing the panel plays them in reverse.
     .dim-vitrine--cards .dim-areas--open .dim-poster:not(.dim-poster--open) .dim-poster__card {
         filter: grayscale(.85);
     }
@@ -3649,7 +3644,7 @@ body.dim-category {
         --dim-panel-c: var(--dim-col-3);
         // One poster's width at this breakpoint: the grid less its gaps, shared by its tracks.
         --dim-panel-w: calc((100% - (var(--dim-panel-n) - 1) * 16px) / var(--dim-panel-n));
-        // The open area's band (round I), which paints the rail, the head and the glow below. The
+        // The open area's band, which paints the rail, the head and the glow below. The
         // server writes it on the style attribute beside the five integers, through
         // branding::hex(), and the module copies it from the open poster's own --dim-card-band on
         // every placement; this default is what a panel with neither shows.
@@ -3800,7 +3795,7 @@ body.dim-category {
         transition: none;
     }
 
-    // The box of variant B, "the coloured rail" (round I): a 6px rail in the open area's band on
+    // The box with a coloured rail: a 6px rail in the open area's band on
     // its inline start, its head tinted with the band and a glow of it underneath (above). It is
     // a stacking context for its two layers: the tint at -1, over its own background and under
     // its content, and the lift over the rail.
@@ -4950,8 +4945,8 @@ body.dim-category {
     }
 
     // ---- The filter line, folded by its component (filterline/) ------------------------------------
-    // The client measures the line's OWN width and writes one step on it (dim-line--s1 to s4,
-    // moodle-dev/docs/filter-line/CONTRACT.md section 2): full; Filters without its word; the search
+    // The client measures the line's OWN width and writes one step on it (dim-line--s1 to s4):
+    // full; Filters without its word; the search
     // as an icon (dim-line--folded); two lines, the scope on the second and the view toggle in the
     // Organise menu. Without the client no step is ever written, so nothing below applies and the
     // line wraps as it always did.
@@ -5637,7 +5632,7 @@ body.dim-category {
     // because these selectors repeat rules declared above and a shorthand there would be
     // reopened by the longhand below it: at equal specificity, source order decides.
     @media (max-width: 767.98px) {
-        // The body pays the 16px inset of the design itself: the band now reaches the viewport
+        // The body pays the 16px inset of the design itself: the band reaches the viewport
         // edges, and .main-inner's 8px alone would leave the cards inside the title.
         .dim-vitrine {
             padding: 14px 8px 0;
@@ -5753,9 +5748,9 @@ body.dim-category {
         }
     }
 
-    // ---- The course dialogue (round I, lot C2) -------------------------------------------------
-    // "More information" opens core/modal with JavaScript (categorycoursemodal), laid out as the
-    // design's screen 3, variant B. core/modal appends its root to the BODY, outside .dim-vitrine,
+    // ---- The course dialogue -------------------------------------------------
+    // "More information" opens core/modal with JavaScript (categorycoursemodal), laid out as a
+    // cover over a sheet of sections. core/modal appends its root to the BODY, outside .dim-vitrine,
     // so the root carries the plugin's own class (.dim-cmodal): the token roots above name it, and
     // every rule here is qualified by it - plugin CSS is compiled before the theme's and Bootstrap's
     // bare .modal rules win any tie. What Bootstrap draws from a variable is re-pointed through that
@@ -6435,7 +6430,7 @@ body.dim-category {
     --dim-tint: var(--dim-surface-strong);
     --dim-open-ring: var(--dim-ds-blue-200, #adb2f0);
     --dim-poster-edge: var(--dim-line);
-    // The open area's colour on the dark page (round I): a light edge beside the ring, the rail
+    // The open area's colour on the dark page: a light edge beside the ring, the rail
     // lifted 45% toward white, and a stronger tint, because a navy band at a tenth is nothing on a
     // dark surface.
     --dim-area-edge: rgba(255, 255, 255, .45);

@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 /**
- * The Trilhas view's model (docs/trail/PLAN.md section 7): the answer's shape, its address, and where each step's bar
+ * The Trilhas view's model: the answer's shape, its address, and where each step's bar
  * goes on the month. Pure: no layout is read, the bars are grid columns.
  *
  * - The view's trail and "Só as minhas" are navigation, like the view: in the address (`trail=`, `mine=1`), never in
@@ -11,7 +11,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *   `before`, one that ends in a later month `after` (drawn into the "next month" column), and one with no end `open`
  *   (it fades at the month's edge). A step with an end and no start is a milestone on its end; an expected date drawn as
  *   the bar's end is a milestone too.
- * - R3 (docs/calendar/PROPOSAL.md section 33): on a desktop the days have a fixed width and only the timeline scrolls,
+ * - On a desktop the days have a fixed width and only the timeline scrolls,
  *   the trail column and the "next month" column held still beside it. The scroller's geometry is read from the
  *   scroller alone ({@see trackOf()}: its content width is the three columns' widths, TRACK, in rem, which
  *   scss/calendar.scss declares with the same numbers), so the position of today, a page of days and the map's thumb are

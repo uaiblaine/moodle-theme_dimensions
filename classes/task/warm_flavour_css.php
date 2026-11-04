@@ -31,7 +31,7 @@ use theme_dimensions\local\flavourcss\planner;
  *
  * Every minute, because nothing announces a theme cache reset: theme_reset_all_caches() has no hook or event,
  * and Boost Union's flavour editor, the theme settings, the cache purge and every upgrade call it. While every
- * sheet is built the run is one query and a file check per flavour. docs/flavourcss/PLAN.md (section 4.4).
+ * sheet is built the run is one query and a file check per flavour.
  *
  * A run that takes longer than a minute is harmless: core runs one instance of a scheduled task at a time, and
  * the next run finds what this one built.

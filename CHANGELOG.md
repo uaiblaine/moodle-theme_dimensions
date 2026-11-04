@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Audit of 2026-11-04** (2026100583). A logged-in user whom the theme would keep off an unlisted course now gets
+  the same "not available" page for a course id or shortname that does not exist (`/enrol/index.php`,
+  `/course/info.php`), so the answer no longer tells an unlisted course from no course. The crests answered to
+  block_compass's category hook now pass local_unlistedcourses' category discoverability as well as core's
+  visibility. Comments no longer point at development notes that do not ship, nor carry decision ids, dates or
+  measurements; eleven stylesheets gain the GPL header; Mustache example contexts match their templates. The
+  plugins-directory readiness test is back in step with the fleet template, and a new test holds the language
+  strings the settings build from a key.
 - **Calendar R3b: two fixes from R3's first live look** (2026100582), `docs/calendar/PROPOSAL.md` section 33. A scroller
   arrow at its end is hidden, so it no longer covers the first or the last day's header, and the last column's chip
   ("→ 12 dez.") fits its 76px column instead of ending in an ellipsis.

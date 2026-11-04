@@ -319,7 +319,7 @@ final class page_test extends \advanced_testcase {
     }
 
     /**
-     * The view is the week for exactly `week`, the day for exactly `day` (R1d), the month for anything else, a list
+     * The view is the week for exactly `week`, the day for exactly `day`, the month for anything else, a list
      * included: dropped, never refused.
      *
      * @return void
@@ -613,7 +613,7 @@ final class page_test extends \advanced_testcase {
 
     /**
      * The day view's day is a real day of the month's years, as written; anything else is the opening day of the month
-     * the address names, never an error (R1d, PROPOSAL.md section 31.2).
+     * the address names, never an error.
      *
      * @param mixed $day The address's day.
      * @param string $shown The day shown, '' for the month's opening day.

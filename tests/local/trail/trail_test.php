@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 /**
  * Tests for the trail reader: which activities are steps, in which order, with which window.
  *
- * Every test needs mod_subcourse and skips without it; GitHub's CI and `mdl ci` install it.
+ * Every test needs mod_subcourse and skips without it; the CI installs it.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

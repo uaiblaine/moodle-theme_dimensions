@@ -57,9 +57,9 @@ body.dimensions-focusable:not(.dimensions-focusmode) .dimensions-focus-only {
     display: none;
 }
 
-/* Boost Union's chrome under the focused skin: everything the reduced shell used to leave out,
+/* Boost Union's chrome under the focused skin: everything the reduced shell leaves out,
    named after Boost Union's own drawers template (BU/templates/theme_boost/drawers.mustache, branch
-   upgrade-503) and core's partials. This list is the coupling with Boost Union now: re-read that
+   upgrade-503) and core's partials. This list is the coupling with Boost Union: re-read that
    template on every Boost Union update, because a new element of it shows inside focus mode until
    it is named here. Kept: the two drawers and their togglers, the info banners, the JavaScript
    hint, the course notice, the activity header and Boost Union's footer.
@@ -89,8 +89,8 @@ body.dimensions-focusmode #footnote {
 }
 
 /* The activity information box stays core's, and under the focused skin only its description is
-   left: the automatic conditions are the discreet line at the foot of the content instead
-   (decision D3), so the box's half that states them, its grey ground and the rule under the
+   left: the automatic conditions are the discreet line at the foot of the content instead,
+   so the box's half that states them, its grey ground and the rule under the
    description go. The box is the only place a module's intro is printed since Moodle 4.0, which is
    why it is reduced here and never removed. */
 body.dimensions-focusmode #region-main .activity-details:not(:empty) {
@@ -324,7 +324,7 @@ body.dimensions-focusmode .dimensions-focusbar .dimensions-focusbar-actions .dim
 }
 
 /* Core's global .icon rule reaches in here: it gives every glyph half a rem of right margin, a
-   pre-flexbox spacer for the label that used to follow it. These controls are flex boxes whose
+   pre-flexbox spacer for a label that follows the glyph. These controls are flex boxes whose
    gap is that same half rem, so it is a second copy of a space already drawn - and on an
    icon-only control there is no label for it to separate at all, so it pushes the glyph off the
    centre of a button that has a border, a hover fill and a focus ring to show it.

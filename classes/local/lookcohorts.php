@@ -34,7 +34,7 @@ require_once($CFG->dirroot . '/cohort/lib.php');
  * Boost Union's smart menus have no extension point, but they can be restricted by cohort, and their
  * per-user cache is purged by Boost Union's own observer whenever a person joins or leaves a cohort.
  * So the choice is carried into a cohort and the administrator restricts a menu by it with Boost Union's
- * own form (docs/flavourchoice/PLAN.md, section 4.7).
+ * own form.
  *
  * The preference is the record and membership is derived from it: {@see self::sync_user()} follows each
  * choice, and {@see self::reconcile()} puts membership back in step from the preferences, never the

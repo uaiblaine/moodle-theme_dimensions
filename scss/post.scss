@@ -1,3 +1,18 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 // Theme Dimensions - SCSS.
 //
 // Added on top of Boost Union's compiled SCSS. Token names are the theme's design system's, all
@@ -121,7 +136,7 @@ $dim-ds-red-800: #51140d;
     --dim-ds-shadow-md: 0 4px 12px rgba(7, 0, 147, .10);
     --dim-ds-shadow-lg: 0 12px 32px rgba(7, 0, 147, .14);
     /* The channels of --dim-ds-blue-600, the tint of every elevation above, for a shadow COLOUR at an
-       alpha of its own (the fleet's stylelint refuses color-mix()). */
+       alpha of its own (stylelint refuses color-mix()). */
     --dim-ds-shadow-rgb: 7, 0, 147;
     --dim-ds-motion-fast: 150ms;
     --dim-ds-motion-base: 250ms;
@@ -187,14 +202,14 @@ $dim-ds-red-800: #51140d;
 }
 
 /* ---- Family tokens: the contract with local_dimensions and block_dimensions ---- */
-/* The public half of docs/tokens.md: 54 names under --dimensions-, the 33 both plugins read and the
+/* The family tokens, the public half of the contract: 54 names under --dimensions-, the 33 both plugins read and the
    21 local_dimensions alone reads. A plugin reads each as var(--dimensions-x, <its own chain>), so
    it looks the same without this theme and takes the theme's look under it. Every value is a
    Bootstrap property (so a flavour's brand colour and the page's colour mode move it), a design
    system token of this file, or another family token; the only literals are the dark pills' own
    colours, which the showcase's badges already measured (scss/category.scss, at its foot) and the
-   palette has no token for. tests/local/family_tokens_test.php holds the list, the roots, the
-   values and the document.
+   palette has no token for. tests/local/family_tokens_test.php holds the list, the roots and the
+   values.
 
    Three roots, because a token derived from a --bs-* property is computed where it is declared:
    :root for the page, body for anything a theme puts the colour mode on, and .modal for the
@@ -361,7 +376,7 @@ textarea:focus-visible,
    the box, so the line showed as one more pixel under the band, in the bar's colour or core's grey.
    Without it the band is the bar's last 3px, in the same 61px.
 
-   The band is also the reading progress (C3, scss/readingbar.scss): scaled from the left by
+   The band is also the reading progress (scss/readingbar.scss): scaled from the left by
    --dimensions-band-progress, a fraction amd/src/readingbar.js writes on the nav of an activity page
    (how far it is scrolled) and of the course page (the reader's completion of the course). Unset, it
    is 1 and the band is full, which is every other page. Scaled, never resized: a transform moves no
@@ -520,7 +535,7 @@ $dimensions-menu-highlight: dimensions-menu-readable($dimensions-menu-lifted, $d
 
 /* The user, language and colour mode menus' toggles. Core draws them as square buttons the navbar's full height,
    and Bootstrap's open .btn reads --bs-btn-active-border-color, which Moodle's .btn never sets, so the border of an
-   open menu fell back to currentColor: a white square round the toggle. The open (and hovered) toggle is a rounded
+   open menu falls back to currentColor: a white square round the toggle. The open (and hovered) toggle is a rounded
    pill inset from the bar instead, in the tint the navbar's pills hover with, drawn behind the label so the button
    keeps its size and the menu its anchor; the keyboard's ring goes round the pill. */
 .navbar .usermenu,
@@ -1013,8 +1028,8 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
 /* The header is the navbar's band: the template draws an element carrying the navbar's own colour classes
    behind it ({@see templates/theme_boost/primary-drawer-mobile.mustache}), so Boost Union's colour and tint, a
    flavour's and the dark mode's repaint reach it by the navbar's own rules, and the logo - the navbar's - sits
-   where the navbar holds it: $dimensions-logo-height (above) and the 12px from the edge measured on Boost Union's
-   navbar. The element is a .navbar only to be painted like one: every
+   where the navbar holds it: $dimensions-logo-height (above) and the 12px from the edge that Boost Union's
+   navbar uses. The element is a .navbar only to be painted like one: every
    Bootstrap box property of that class is put back here. The close button takes the navbar's ink while the
    band is a dark one. */
 .drawer-primary .drawerheader {
@@ -1323,7 +1338,7 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
 }
 
 /* auth_loginsteps' Security area, a category of the profile tree that plugin decides and this
-   renderer places first: the whole width of the page, its facts two to a row (the fleet's two
+   renderer places first: the whole width of the page, its facts two to a row (two
    columns: a 45% basis with a rem floor), two-step verification across the whole card. */
 .dimensions-profile-card.auth-loginsteps-security {
     flex-basis: 100%;

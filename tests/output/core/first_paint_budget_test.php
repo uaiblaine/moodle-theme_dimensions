@@ -39,11 +39,11 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/../../local/category/fixture.php');
 
 /**
- * The counts of a first paint that hold without a browser, as hard gates (R0 of docs/vitrine-react/PLAN.md).
+ * The counts of a first paint that hold without a browser, as hard gates.
  *
  * The browser probe (tests/behat/theme_dimensions_perf.feature) measures paint and blocking time,
  * which are a trend until the hosts' noise is known; these are the parts of the same first paint a
- * render in process can count exactly, so they gate every stage from R0 on: the HTML bytes a card
+ * render in process can count exactly, so they gate every change: the HTML bytes a card
  * and the rest of a listing cost, the hero's bytes, the AMD modules the page asks the browser to
  * load at once, and the strings it ships to JavaScript. Each byte ceiling is today's largest
  * measurement plus 3 %: two runs on one site differed by up to 1.3 %, for a reason not yet pinned
@@ -72,19 +72,18 @@ final class first_paint_budget_test extends \advanced_testcase {
     private const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
     /**
-     * @var int HTML bytes one more card adds to a logged-in flat listing: measured 2,383 (2026-11-01, stage L2: the
-     *   card's details panel and its inert dialogue left it), + 3 %.
+     * @var int HTML bytes one more card adds to a logged-in flat listing: measured 2,383, + 3 %.
      */
     private const CARD_BYTES = 2455;
 
     /**
-     * @var int HTML bytes of a logged-in flat listing without its cards: measured 17,326 (2026-11-01, stage L2), + 3 %.
+     * @var int HTML bytes of a logged-in flat listing without its cards: measured 17,326, + 3 %.
      *   21 bytes over the largest earlier measurement (17,305), inside the run-to-run spread above: the intercept is
-     *   what the listing costs beside its cards, which stage L2 did not change.
+     *   what the listing costs beside its cards.
      */
     private const LISTING_BYTES = 17846;
 
-    /** @var int HTML bytes one more card adds to a visitor's listing: measured 2,095 (2026-11-01, stage L2), + 3 %. */
+    /** @var int HTML bytes one more card adds to a visitor's listing: measured 2,095, + 3 %. */
     private const PUBLIC_CARD_BYTES = 2158;
 
     /** @var int HTML bytes of the hero of a category with no branding row, logged in: measured 5,540 and 5,550, + 3 %. */
@@ -92,7 +91,7 @@ final class first_paint_budget_test extends \advanced_testcase {
 
     /**
      * @var string[] The theme's AMD modules the logged-in flat page asks for at load, in order: exactly these. The
-     *   course dialogue is armed beside the account's shell, for a real account only (stage L2).
+     *   course dialogue is armed beside the account's shell, for a real account only.
      */
     private const MODULES = [
         'theme_dimensions/listingaccount',
@@ -102,7 +101,7 @@ final class first_paint_budget_test extends \advanced_testcase {
 
     /**
      * @var string[] The theme's AMD modules the visitor's page asks for at load, the live listing open: exactly these.
-     *   No course dialogue: a visitor's "More information" is the link to the public landing page (decision V1).
+     *   No course dialogue: a visitor's "More information" is the link to the public landing page.
      */
     private const PUBLIC_MODULES = [
         'theme_dimensions/covervideo',

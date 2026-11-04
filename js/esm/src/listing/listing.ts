@@ -16,8 +16,7 @@
 /**
  * The showcase's shared listing, under the names the store and its two shells call it by.
  *
- * Its names were the AMD clients' (R4b1 of docs/vitrine-react/R4b.md); since those left (R4c) it exports what a
- * shell calls and nothing else (listing_source_test).
+ * It exports what a shell calls and nothing else (listing_source_test).
  *
  * @module     theme_dimensions/listing/listing
  * @copyright  2026 Anderson Blaine

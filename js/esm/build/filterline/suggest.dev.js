@@ -3,8 +3,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 /**
  * The filter line's suggestions: which filters a text offers, and in what order.
  *
- * The rules the AMD line had before R4a (it left the tree with R4c). The
- * suggestions are the filters already on the page - every scope cell, the favourites star, every option
+ * The suggestions are the filters already on the page - every scope cell, the favourites star, every option
  * of the Filters panel and its quick dates - whose label or group matches the typed text, accent- and
  * case-insensitively, word starts first and then by count, each with its group and a count the page has
  * shown for it.
@@ -13,7 +12,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * typed since - which the client searches as it is typed, and which zeroes the options of a word that
  * names no course - neither changes nor hides a suggestion. A page opened on an address that already
  * carries a term has no such answer and offers the counts it shows, which include the term: a departure
- * from the contract's "the count it would give without the typed text" (section 3), which only the
+ * from "the count it would give without the typed text", which only the
  * server could answer, with a request per keystroke.
  *
  * @module     theme_dimensions/filterline/suggest

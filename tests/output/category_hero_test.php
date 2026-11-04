@@ -230,7 +230,7 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertStringContainsString('/categorybadge3/' . $child . '/', $context->badges[1]['url']);
         $this->assertNotEmpty($context->badgeslabel, 'The list is labelled, because its items are images.');
 
-        /* Folded: the band drops the tagline and the counts and KEEPS the crests (round I), the same
+        /* Folded: the band drops the tagline and the counts and KEEPS the crests, the same
            files with the same alternative text - the stylesheet alone makes them small. */
         $folded = $this->export($this->hero($child, [], true));
         $this->assertTrue($folded->compact, 'Precondition: this is the folded band.');
@@ -567,7 +567,7 @@ final class category_hero_test extends \advanced_testcase {
 
     /**
      * A visitor's hero offers the public calendar while the calendar page would serve that visitor: the switch on and
-     * the Gregorian calendar; a logged-in reader's hero never does (PROPOSAL.md section 32.1 of docs/calendar).
+     * the Gregorian calendar; a logged-in reader's hero never does.
      *
      * @return void
      */

@@ -429,7 +429,7 @@ enderer_base
     }
 
     /**
-     * An account's drawer gains the calendar row after core's nodes, leading to the theme's calendar page (D1).
+     * An account's drawer gains the calendar row after core's nodes, leading to the theme's calendar page.
      *
      * Its controls: no row where none of core's nodes stands (a navigation the site emptied), none where Boost Union
      * hides the calendar, and a node already carrying the key (core's guest node) is pointed at the page instead of

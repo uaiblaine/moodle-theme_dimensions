@@ -1,5 +1,5 @@
 import{useEffect as w,useRef as c}from"react";import{DayBody as y}from"./DayDrawer";import{jsx as l,jsxs as b}from"react/jsx-runtime";/**
- * The phone's Day view (docs/calendar/PROPOSAL.md section 31): one day at the frame's whole width.
+ * The phone's Day view: one day at the frame's whole width.
  *
  * A region labelled by the toolbar's caption, which names the day (its long date) and whose arrows and "Today" move
  * it; its head holds the "New event" "+" while the page offers it; under it the drawer's own body (DayDrawer.tsx
@@ -7,7 +7,7 @@ import{useEffect as w,useRef as c}from"react";import{DayBody as y}from"./DayDraw
  * (a double-tap or a held touch on an hour row). Items open the popover through the page's delegated listener.
  *
  * Shown only on a phone, so no grid is drawn beside it: its ONE ResizeObserver watches the frame it is drawn in and
- * reports the frame's width alone, the grids' rule (MonthGrid.tsx PHONE, PROPOSAL.md section 30.7), so the page leaves
+ * reports the frame's width alone, the grids' rule (MonthGrid.tsx PHONE), so the page leaves
  * the Day view when the frame becomes a desktop's. The frame's width does not depend on what it holds. Nothing is
  * measured on the mount path: the observer's entries are the measures.
  *

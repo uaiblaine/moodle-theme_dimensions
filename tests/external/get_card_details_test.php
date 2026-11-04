@@ -242,7 +242,7 @@ final class get_card_details_test extends \advanced_testcase {
      * context - from the number, so one extra read per course moves the slope
      * by twenty and fails; a ceiling on the total would have room for it.
      *
-     * Twenty more courses measured 54 statements, about 2.7 each: the course's
+     * Twenty more courses cost 54 statements, about 2.7 each: the course's
      * modinfo and its completion data. The ceiling is three per course (60),
      * which one more read in the loop (74) exceeds.
      */

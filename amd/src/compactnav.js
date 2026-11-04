@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The navbar's compact mode on tablets (B5): the phone's pattern while the primary navigation overflows.
+ * The navbar's compact mode on tablets: the phone's pattern while the primary navigation overflows.
  *
  * Where the server armed it (classes/local/compactnav.php: the setting, not the Moodle app, not focus mode, a
  * navigation that can overflow at all), this module decides WHEN, by reading what core's React primary navigation

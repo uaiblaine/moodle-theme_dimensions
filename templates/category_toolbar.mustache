@@ -18,8 +18,7 @@
     @template theme_dimensions/category_toolbar
 
     The toolbar of the category showcase: a real GET form that works with
-    JavaScript off, drawn as ONE line in the filter line's slot order
-    (moodle-dev/docs/filter-line/CONTRACT.md), then the too-short notice, then a
+    JavaScript off, drawn as ONE line in the filter line's slot order, then the too-short notice, then a
     second row that shows only while something narrows.
 
     The line (dim-line) holds, in order: the scope - the state chip's values
@@ -32,7 +31,7 @@
     where it does not fit and every control still submits.
 
     On the logged-in shell the line is a React component's mount
-    (js/esm/src/filterline/FilterLine.tsx, stage R2), which draws this same
+    (js/esm/src/filterline/FilterLine.tsx), which draws this same
     markup from the markup it replaces and adopts three subtrees of it whole,
     never redrawn: the Filters panel (dim-filters-panel), the Organise menu
     (dim-organise-menu) and the managers' menu (dim-line-manage). A change of
@@ -182,7 +181,6 @@
                 {"id": "dim-chip-7-open", "value": "open", "label": "Open", "count": 0, "hascount": true, "checked": false, "absent": true}
             ]
         },
-        "hasscope": true,
         "more": {
             "legend": "More statuses",
             "name": "chip",
@@ -191,9 +189,7 @@
                 {"id": "dim-chip-7-pending", "value": "pending", "label": "Under review", "count": 1, "hascount": true, "checked": true}
             ]
         },
-        "hasmorestatuses": true,
         "favourites": {"name": "fav", "value": 1, "pressed": false, "count": 2, "label": "Favourites"},
-        "hasfavourites": true,
         "facets": [
             {
                 "legend": "Modality",
@@ -207,7 +203,6 @@
                 ]
             }
         ],
-        "hasfacets": true,
         "datefromid": "dim-datefrom-7",
         "datetoid": "dim-dateto-7",
         "datefromname": "from",
@@ -251,7 +246,6 @@
             {"param": "period", "label": "17 September 2026 to 24 September 2026", "url": "https://example.com/course/index.php?categoryid=7&q=rescue&chip=pending&cf_12=1", "removelabel": "Remove filter", "isperiod": true},
             {"param": "chip", "label": "Under review", "url": "https://example.com/course/index.php?categoryid=7&q=rescue&cf_12=1&from=2026-09-17&to=2026-09-24", "removelabel": "Remove filter", "isperiod": false}
         ],
-        "haschips": true,
         "clearall": true,
         "clearurl": "https://example.com/course/index.php?categoryid=7",
         "clearlabel": "Clear all",

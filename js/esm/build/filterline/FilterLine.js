@@ -2,11 +2,8 @@ import{Fragment as Oe,useLayoutEffect as P,useReducer as Ge,useRef as p,useState
  * The filter line of the showcase, on both shells: its folding, the search that grows over it and its
  * suggestions, its floating layers and its rows that scroll sideways.
  *
- * Stage R2 of docs/vitrine-react/PLAN.md drew it for the logged-in shell, stage R4a for the visitor's too,
- * where no star is drawn and the scope may be absent: it draws what the server drew. It implements the fleet
- * contract (moodle-dev/docs/filter-line/CONTRACT.md), as the AMD line it replaced did until R4c removed it.
- * block_compass's FilterLine implements the same contract on its own;
- * nothing is shared.
+ * Drawn on both shells; on the visitor's no star is drawn and the scope may be absent: it draws what the server
+ * drew. block_compass's FilterLine implements the same contract on its own; nothing is shared.
  *
  * WHO OWNS WHAT. The mount node is the server's line itself (dim-line), which the listing's
  * mountLine() names for core's react_autoinit, so the line keeps its place, its classes and the sibling
@@ -16,7 +13,7 @@ import{Fragment as Oe,useLayoutEffect as P,useReducer as Ge,useRef as p,useState
  * draws the line's own controls: the scope, the search with its eraser and its icon, the star, the two
  * summaries (Filters and its badge, Organise), the view toggle, the close button and the listbox. Three
  * frames it draws hold server markup it adopts whole on the first commit and never diffs inside: the
- * Filters panel (More statuses, the custom fields, the period with the calendar of R1, the quick dates),
+ * Filters panel (More statuses, the custom fields, the period with its calendar, the quick dates),
  * the Organise menu and the managers' menu. The listing's painters keep painting those three, and paint
  * nothing React draws: they tell the line instead, through events on it ({@see EVENTS}), which
  * js/esm/src/listing/events.ts spells:

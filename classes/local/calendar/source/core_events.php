@@ -230,8 +230,8 @@ final class core_events implements source {
      * every course, each later call is a hit on modinfo's static cache. That cache holds
      * {@see \course_modinfo::MAX_CACHE_SIZE} courses, so past that number nothing is primed: the factory's
      * events come in date order across the courses and would evict what was primed before it was read.
-     * Measured on the C0 probe's shape (range_budget_test): 116 to 112 statements at 5 courses, 531 unchanged at
-     * 25. The rest of the per-event cost is the module callbacks' (an assignment's action reads its instance,
+     * Priming saves a few statements at small course counts and none past the limit (range_budget_test). The rest
+     * of the per-event cost is the module callbacks' (an assignment's action reads its instance,
      * the viewer's submission and their completion), which no caller can prime.
      *
      * @param scope $scope The viewer's calendar sets.

@@ -1,4 +1,19 @@
-/* The notifications popover and the user menu as bottom sheets on phones (D2 and D3, phase 4 of the navbar).
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/* The notifications popover and the user menu as bottom sheets on phones.
 
    CSS only: core's markup and core's behaviour are untouched. The notifications popover is message_popup's,
    opened and closed by core's popover region controller (a press outside the region and Escape close it); the
@@ -12,12 +27,10 @@
    every rule sits inside media-breakpoint-down(sm). The motion exists only under prefers-reduced-motion:
    no-preference; with less motion the sheet appears in place.
 
-   Measured before (2026-10-19, m503, an editing teacher on an activity page, the theme's compiled sheet in
-   Chromium at 390x844): nothing overflows sideways. Core's rule below 481px pins the popover from 46px down,
-   fixed, so its first 15px lie over the 61px navbar and its 3px band, across the bottom of the navbar's
-   controls, and its base max-height of 80vh stops it at 721px, leaving 123px of page under it uncovered. */
+   Core's rule below 481px pins the popover fixed, 46px from the top, over the bottom of the navbar's controls;
+   the sheet is fixed to the bottom edge instead, with a height cap that stays clear of the navbar. */
 
-/* ---- D2: the notifications popover --------------------------------------- */
+/* ---- The notifications popover ------------------------------------------ */
 .navbar.fixed-top .popover-region-notifications {
     @include media-breakpoint-down(sm) {
         /* Core's arrow points from the toggle at a dropdown under it; a sheet has none. */
@@ -110,7 +123,7 @@
     }
 }
 
-/* ---- D3: the user menu --------------------------------------------------- */
+/* ---- The user menu ------------------------------------------------------ */
 /* Boost Union's core/user_menu, not copied. The name is at the top already: below md the theme shows the full
    name in Boost Union's "logged in as" block, the menu's first child. Bootstrap disables Popper inside a
    .navbar, so the menu is placed by CSS alone (data-bs-popper="static"), and these rules outrank both that

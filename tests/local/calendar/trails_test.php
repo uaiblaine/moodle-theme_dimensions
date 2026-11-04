@@ -39,7 +39,7 @@ require_once(__DIR__ . '/../category/fixture.php');
 require_once($CFG->libdir . '/completionlib.php');
 
 /**
- * The trails of a month (docs/trail/PLAN.md section 7): which trails, which steps, their states, the filters, the cost.
+ * The trails of a month: which trails, which steps, their states, the filters, the cost.
  *
  * Every test needs mod_subcourse and skips without it. The months are March and June 2027, in the viewer's timezone.
  *

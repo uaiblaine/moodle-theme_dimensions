@@ -664,7 +664,7 @@ final class focusmode_scss_test extends \basic_testcase {
     /**
      * Core's activity information box is reduced to the description in the focused skin, never removed.
      *
-     * Decision D3: the conditions are the discreet line at the foot of the content, so the box's
+     * The conditions are the discreet line at the foot of the content, so the box's
      * half that states them goes, while the box itself is the only place the intro is printed.
      *
      * @return void

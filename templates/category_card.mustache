@@ -32,7 +32,7 @@
     tokens, never a Bootstrap utility, with a decorative icon before its
     sentence) and, for staff, the hidden badge; then the route line, only on a
     card whose viewer holds a row that is not active and could also enrol now
-    (the enrolment matrix's decision D2: the sentence beside the call to action
+    (the sentence beside the call to action
     that goes there); in the same place, the opening line, only on a card whose
     way in is refused until an enrolment window opens, with that date (plain
     text, its icon decorative); then the trailing action cluster - the call to action, the "More information"
@@ -104,6 +104,7 @@
         "hasoverline": true,
         "imageurl": "https://example.com/pluginfile.php/31/course/overviewfiles/capa.jpg",
         "hasimage": true,
+        "eager": false,
         "priority": false,
         "badges": [
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc/crest-alpha.png", "alt": "crest alpha"},
@@ -114,7 +115,7 @@
         "isevent": false,
         "kindlabel": "Course",
         "haskind": true,
-        "datetile": null,
+        "datetile": {"day": "12", "month": "Nov"},
         "meta": "36 hours · In-person · São Paulo",
         "rating": {"avg": "4.7", "count": 23, "label": "Rating 4.7 out of 5, 23 ratings"},
         "hasrating": true,
@@ -132,7 +133,6 @@
         "hiddenbadge": {"label": "Hidden from students", "classes": "dim-badge dim-badge--hidden"},
         "ismuted": false,
         "cta": {"label": "Enrol now", "url": "https://example.com/enrol/index.php?id=42", "primary": false},
-        "hascta": true,
         "showstar": true,
         "favourite": false,
         "starlabel": "Add to favourites: Pre-hospital Care & Rescue",
@@ -143,9 +143,7 @@
             "kicker": "Brigade",
             "haskicker": true,
             "primary": {"label": "Enrol now", "url": "https://example.com/enrol/index.php?id=42", "disabled": false, "note": "", "icon": "fa-arrow-right"},
-            "hasprimary": true,
-            "secondary": {"label": "Course page", "url": "https://example.com/theme/dimensions/landing.php?id=42"},
-            "hassecondary": true
+            "secondary": {"label": "Course page", "url": "https://example.com/theme/dimensions/landing.php?id=42"}
         }
     }
 }}

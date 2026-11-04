@@ -1,12 +1,12 @@
 import{Fragment as na,useCallback as ra,useEffect as E,useRef as I,useState as z}from"react";import{say as b,shiftMonth as sa}from"../daterange/calendar";import{isWeekend as A}from"./days";import{safeHref as H}from"./model";import{fill as u}from"./strings";import da,{TrailIcon as ca,stateLabel as ma,stateLine as Z,stepWhen as j}from"./TrailPopover";import oa from"./TrailScroll";import{barOf as _a,beyondOf as pa,monthDays as ua,todayIndex as ga,trailBarOf as fa}from"./trails";import{Fragment as M,jsx as i,jsxs as r}from"react/jsx-runtime";/**
- * The Trilhas view (docs/trail/PLAN.md section 7): the month's trails, one row per trail and its steps under it.
+ * The Trilhas view: the month's trails, one row per trail and its steps under it.
  *
  * - On a desktop, a grid of the month's days: each step a bar from its start to its end (trails.ts barOf()), a
  *   diamond on an expected completion date, a bar that passes the month's end continued by a chip in the last column
  *   ("Dec →"), one that began earlier marked at the left edge, an open one fading out; the trail's own row carries
- *   its span (trails.ts trailBarOf()). Weekends are hatched and today is a line down the rows. R3 (PROPOSAL.md section
- *   33): the days have a fixed width and only they scroll, in TrailScroll.tsx, the trail column and the last column held
- *   still; a trail's chevron folds its steps away (the view's own state, never saved); the legend follows the grid.
+ *   its span (trails.ts trailBarOf()). Weekends are hatched and today is a line down the rows. The days have a
+ *   fixed width and only they scroll, in TrailScroll.tsx, the trail column and the last column held still; a
+ *   trail's chevron folds its steps away (the view's own state, never saved); the legend follows the grid.
  * - On a phone, an agenda: each trail in a card, a learner's progress as one segment per step, the steps in order with
  *   their dates, a "Today" line between the steps behind and the steps ahead (trails.ts todayIndex()).
  * - For a learner of the trail each step carries its state (done, current, late, locked, upcoming) as a class and
