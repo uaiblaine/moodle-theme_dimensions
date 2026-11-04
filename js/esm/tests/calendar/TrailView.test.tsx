@@ -1301,6 +1301,110 @@ describe('the days\' scroller', () => {
         expect(page.querySelector('[data-action="dim-cal-trailmonth"]')?.getAttribute('data-month')).toBe('2026-11');
     });
 
+    /**
+     * Ten trails of ten courses each, the steps twelve days apart from the 2nd of November 2026 and ten days long: a hundred
+     * subcourse steps over four months, every trail meeting the first of them.
+     *
+     * @returns {Array} The trails.
+     */
+    const tenOfTen = (): Trail[] => Array.from({length: 10}, (_, i) => trail({
+        id: 100 + i,
+        name: `Trilha ${i}`,
+        first: at('2026-11-02', 12),
+        last: at('2027-03-02', 12),
+        steps: Array.from({length: 10}, (__, j) => {
+            const start = new Date(Date.UTC(2026, 10, 2 + j * 12)).toISOString().slice(0, 10);
+            const end = new Date(Date.UTC(2026, 10, 12 + j * 12)).toISOString().slice(0, 10);
+            return {
+                cmid: 1000 + i * 10 + j, position: j + 1, name: `Curso ${i}.${j}`, courseid: 5000 + i * 10 + j,
+                coursename: `Curso ${i}.${j}`, categoryid: 3, start: at(start, 12), end: at(end, 12), expected: false,
+                state: j % 4 === 0 ? 'complete' : '', reason: '', completed: j % 4 === 0 ? at(end, 12) : 0,
+                url: `https://example.com/course/view.php?id=${5000 + i * 10 + j}`, next: j === 1,
+            };
+        }),
+    }));
+
+    /**
+     * Answer the trails service with the ten trails, a task later, counting the calls on their way.
+     *
+     * @returns {object} The counts: now in flight, and the most there were at once.
+     */
+    const countFlight = (): {now: number, peak: number} => {
+        const flight = {now: 0, peak: 0};
+        fetched.mockImplementation(({methodname, args}: {methodname: string, args: Args}) => {
+            if (methodname !== TRAILS) {
+                return Promise.resolve({});
+            }
+            flight.now++;
+            flight.peak = Math.max(flight.peak, flight.now);
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    flight.now--;
+                    const to = lastOf(args.month, args.months || 1);
+                    resolve(trails(tenOfTen(), to, `${args.month}-01`));
+                }, 0);
+            });
+        });
+        return flight;
+    };
+
+    it('asks the same batches of ten trails of ten courses as of one, never two at once, up to the month zoom\'s cap', async() => {
+        viewport = 2400;
+        const flight = countFlight();
+        const page = await mount(offered(trails(tenOfTen(), '2026-12-31'), {zoom: 'month'}));
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(12));
+        expect(page.querySelectorAll('[data-region="dim-cal-trailrow"]').length).toBeGreaterThanOrEqual(100);
+        expect(trailRequests().map((args) => [args.month, args.months])).toEqual([
+            ['2027-01', 3], ['2027-04', 3], ['2027-07', 3], ['2027-10', 1],
+        ]);
+        expect([flight.peak, flight.now]).toEqual([1, 0]);
+        // At the cap nothing more is asked, whatever the scroll.
+        await act(async() => {
+            fireEvent.scroll(scrollerOf(page));
+            await new Promise((resolve) => setTimeout(resolve, 20));
+        });
+        expect(trailRequests()).toHaveLength(4);
+        expect([flight.peak, flight.now]).toEqual([1, 0]);
+    });
+
+    it('asks nothing of ten trails of ten courses on a first paint by days until the reader scrolls, then one request', async() => {
+        const flight = countFlight();
+        const page = await mount(offered(trails(tenOfTen())));
+        await act(async() => {
+            await new Promise((resolve) => setTimeout(resolve, 20));
+        });
+        expect([trailRequests(), flight.peak]).toEqual([[], 0]);
+        await scrollTo(scrollerOf(page), 780);
+        await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(2));
+        expect(trailRequests().map((args) => [args.month, args.months])).toEqual([['2026-12', 1]]);
+        expect([flight.peak, flight.now]).toEqual([1, 0]);
+    });
+
+    it('drops the stale answer of ten trails when a filter changed under it, and waits on the new request alone', async() => {
+        hold();
+        const page = await mount(offered(trails(tenOfTen())));
+        await scrollTo(scrollerOf(page), 780);
+        expect(held).toHaveLength(1);
+        await act(async() => {
+            fireEvent.change(page.querySelector('[data-action="dim-cal-trail"]') as HTMLElement, {target: {value: '8'}});
+        });
+        // The call of the old filters cannot be called back: it is on its way beside the new one, whose filter it is not.
+        expect(held.map((call) => call.args.trail)).toEqual([0, 8]);
+        await act(async() => {
+            held[0].resolve(trails(tenOfTen(), '2026-12-31', '2026-12-01'));
+        });
+        expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(1);
+        // The new request is still the only one the view waits on: scrolling asks nothing more.
+        await scrollTo(scrollerOf(page), 790);
+        expect(held).toHaveLength(2);
+        await act(async() => {
+            held[1].resolve(trails([], '2026-12-31'));
+        });
+        // The new filter's answer is what is drawn: none of the stale answer's hundred rows is.
+        expect(page.querySelectorAll('[data-region="dim-cal-trailrow"]')).toHaveLength(0);
+        expect(held).toHaveLength(2);
+    });
+
     it('draws no label in a first week of one day or two, and its line stays', async() => {
         const labels = async(firstday: number): Promise<string[]> => {
             const page = await mount({...offered(trails([trail()]), {zoom: 'week'}), firstday: firstday});

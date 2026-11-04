@@ -499,4 +499,90 @@ final class trails_test extends \advanced_testcase {
             $this->assertSame($reads[1], $reads[trails::MONTHS], "{$who}: three months cost what one month does.");
         }
     }
+
+    /**
+     * Trails of the given number of steps each, in a category, all the learner's, and some of their steps' courses too.
+     *
+     * Step j of a trail runs five days from the 2nd, 9th, 16th or 23rd of March, April or May (four to a month), so the
+     * steps fall across the three months' window. The learner is enrolled in every second referenced course and has
+     * completed every fourth.
+     *
+     * @param \core_course_category $category The category of the trails and of their steps' courses.
+     * @param int $trails How many trails.
+     * @param int $steps How many steps each.
+     * @param \stdClass $learner The account enrolled in every trail.
+     */
+    private function trails_across_the_window(\core_course_category $category, int $trails, int $steps, \stdClass $learner): void {
+        $generator = self::getDataGenerator();
+        for ($i = 0; $i < $trails; $i++) {
+            $refs = [];
+            for ($j = 0; $j < $steps; $j++) {
+                $month = 3 + intdiv($j, 4);
+                $day = 2 + ($j % 4) * 7;
+                $ref = $this->ref(
+                    "{$category->name} {$i} step {$j}",
+                    self::at($month, $day),
+                    self::at($month, $day + 5),
+                    ['category' => $category->id]
+                );
+                if ($j % 2 === 0) {
+                    $generator->enrol_user($learner->id, $ref->id, 'student');
+                }
+                if ($j % 4 === 0) {
+                    (new \completion_completion(['course' => $ref->id, 'userid' => $learner->id]))
+                        ->mark_complete(self::at($month, $day + 3));
+                }
+                $refs[] = $ref;
+            }
+            $trail = $this->trail("{$category->name} {$i}", $refs, ['category' => $category->id]);
+            $generator->enrol_user($learner->id, $trail->id, 'student');
+        }
+    }
+
+    /**
+     * Ten trails of ten courses (a hundred steps and a hundred referenced courses) cost the statements two trails of two
+     * do, for a learner of every trail who is enrolled in half the courses and has completed a quarter of them, and for an
+     * account enrolled in nothing, over one month, the month and the next and three months. Core's caches are warm on a
+     * second answer, which is what is measured; the generator builds about 116 courses and 104 steps, some twenty seconds.
+     */
+    public function test_ten_trails_of_ten_courses_cost_what_two_of_two_do(): void {
+        global $DB;
+        $learner = self::getDataGenerator()->create_user();
+        $reader = self::getDataGenerator()->create_user();
+        $categories = [];
+        foreach (['few' => [2, 2], 'many' => [10, 10]] as $name => [$trails, $steps]) {
+            $category = self::getDataGenerator()->create_category(['name' => $name]);
+            $categories[$name] = $category;
+            $this->trails_across_the_window($category, $trails, $steps, $learner);
+        }
+
+        foreach (['learner' => $learner, 'reader' => $reader] as $who => $user) {
+            $this->become($user);
+            $reads = [];
+            foreach ([1, trails::OPENING, trails::MONTHS] as $months) {
+                foreach ($categories as $name => $category) {
+                    $scope = scope::for_viewer((int) $category->id);
+                    $window = trails::month_window('2027-03', $months);
+                    trails::answer($window, $scope, 0, false, self::at(3, 15));
+                    self::forget();
+                    $before = $DB->perf_get_reads();
+                    $answer = trails::answer($window, $scope, 0, false, self::at(3, 15));
+                    $reads[$months][$name] = $DB->perf_get_reads() - $before;
+                    $expected = $name === 'few' ? [2, 2] : [10, 10];
+                    $this->assertCount($expected[0], $answer['trails'], "Precondition: {$who} {$name} {$months} trails.");
+                    foreach ($answer['trails'] as $trail) {
+                        $this->assertCount($expected[1], $trail['steps'], "Precondition: {$who} {$name} {$months} steps.");
+                        $this->assertSame($who === 'learner', $trail['enrolled'], "Precondition: {$who} reads progress or not.");
+                    }
+                }
+                $this->assertSame(
+                    $reads[$months]['few'],
+                    $reads[$months]['many'],
+                    "{$who}: eight more trails and ninety-six more steps add no statement."
+                );
+            }
+            $this->assertSame($reads[1], $reads[trails::OPENING], "{$who}: the month and the next cost what one month does.");
+            $this->assertSame($reads[1], $reads[trails::MONTHS], "{$who}: three months cost what one month does.");
+        }
+    }
 }

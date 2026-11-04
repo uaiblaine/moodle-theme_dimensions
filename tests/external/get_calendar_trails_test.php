@@ -194,7 +194,7 @@ final class get_calendar_trails_test extends \advanced_testcase {
         $this->assertFalse($one['error']);
         $this->assertSame(['2027-02-01', '2027-02-28', []], [$one['data']['from'], $one['data']['to'], $one['data']['trails']]);
 
-        $two = self::call(['month' => '2027-02', 'months' => trails::MONTHS]);
+        $two = self::call(['month' => '2027-02', 'months' => trails::OPENING]);
         $this->assertFalse($two['error'], json_encode($two['exception'] ?? null));
         $this->assertSame(['2027-02-01', '2027-03-31'], [$two['data']['from'], $two['data']['to']]);
         $this->assertSame([(int) $trail->id], array_column($two['data']['trails'], 'id'), 'March\'s trail, from February.');
