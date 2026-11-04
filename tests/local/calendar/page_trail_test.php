@@ -166,6 +166,63 @@ final class page_trail_test extends \advanced_testcase {
     }
 
     /**
+     * T3c: the timeline's zoom is navigation like the trail: read as written (week or month exactly), dropped otherwise,
+     * a list included; the address spells it after the trail, the forward carries it, and it is never state.
+     *
+     * @return void
+     */
+    public function test_the_zoom_is_navigation(): void {
+        $this->setUser(self::getDataGenerator()->create_user());
+        $cases = ['week' => 'week', 'month' => 'month', 'day' => '', 'Week' => '', 'year' => '', '' => '', ' week' => ''];
+        foreach ($cases as $raw => $read) {
+            $_GET = [page::PARAM_ZOOM => (string) $raw];
+            $this->assertSame($read, page::zoom_from_request(), "zoom={$raw}");
+        }
+        $_GET = [page::PARAM_ZOOM => ['week']];
+        $this->assertSame('', page::zoom_from_request(), 'A list is dropped.');
+        $_GET = [];
+        $this->assertSame('', page::zoom_from_request(), 'Absent: days.');
+
+        $this->assertSame(
+            [
+                page::PARAM_VIEW => page::VIEW_TRAIL,
+                state::PARAM_MONTH => '2027-03',
+                page::PARAM_TRAIL => 12,
+                page::PARAM_ZOOM => 'week',
+            ],
+            page::trail_params('2027-03', 12, false, 'week')
+        );
+        $this->assertSame(
+            [page::PARAM_VIEW => page::VIEW_TRAIL, state::PARAM_MONTH => '2027-03', page::PARAM_ZOOM => 'month'],
+            page::trail_params('2027-03', 0, false, 'month')
+        );
+        foreach (['', 'day', 'year'] as $unknown) {
+            $this->assertSame(
+                [page::PARAM_VIEW => page::VIEW_TRAIL, state::PARAM_MONTH => '2027-03'],
+                page::trail_params('2027-03', 0, false, $unknown),
+                "Days, or a zoom the page does not know, is never written: {$unknown}."
+            );
+        }
+
+        $_GET = [page::PARAM_VIEW => 'trail', state::PARAM_MONTH => '2027-03', page::PARAM_ZOOM => 'month'];
+        $this->assertSame(
+            page::trail_params('2027-03', 0, false, 'month'),
+            page::span_params(page::VIEW_TRAIL, '2027-03', '', '')
+        );
+        $forwarded = page::forwarded_params();
+        $this->assertSame('month', $forwarded[page::PARAM_ZOOM] ?? null, 'The forward to the route carries it.');
+        $_GET = [page::PARAM_VIEW => 'trail', state::PARAM_MONTH => '2027-03', page::PARAM_ZOOM => 'year'];
+        $this->assertArrayNotHasKey(page::PARAM_ZOOM, page::forwarded_params(), 'A zoom it does not know is not forwarded.');
+        $this->assertArrayNotHasKey(page::PARAM_ZOOM, page::span_params(page::VIEW_TRAIL, '2027-03', '', ''));
+
+        // Never state: the state reads none of it and writes none of it.
+        $_GET = [state::PARAM_MONTH => '2027-03', page::PARAM_ZOOM => 'week'];
+        $this->assertNotContains(page::PARAM_ZOOM, state::STATE_PARAMS);
+        $this->assertNull(state::from_request(), 'A zoom alone names no state.');
+        $this->assertArrayNotHasKey(page::PARAM_ZOOM, (new state())->query());
+    }
+
+    /**
      * The Trilhas view's first paint embeds the trails of the month and the next (the two months its timeline opens on),
      * the answer the service would give for both, and the range's answer with every key off; the page's address keeps
      * the view, the month and the trail; the server's layer lists the trails.
@@ -214,6 +271,24 @@ final class page_trail_test extends \advanced_testcase {
         $this->assertStringContainsString('view=trail', $context['nexturl']);
         $this->assertStringContainsString('month=2027-04', $context['nexturl']);
         $this->assertStringContainsString('trail=' . $trail->id, $context['nexturl']);
+        $this->assertSame('', $props['trails']['zoom'], 'Days, as the address names none.');
+
+        // T3c: the zoom the address names reaches the client, the page's own address and the arrows' links.
+        self::forget_calendar();
+        $_GET = [page::PARAM_VIEW => 'trail', state::PARAM_MONTH => '2027-03', page::PARAM_ZOOM => 'week'];
+        $PAGE = new \moodle_page();
+        $zoomed = page::handle()->page;
+        $this->assertSame('week', $zoomed->props()['trails']['zoom']);
+        $this->assertSame('week', $PAGE->url->param('zoom'));
+        $context = $zoomed->export_for_template($PAGE->get_renderer('core'));
+        foreach (['prevurl', 'nexturl', 'todayurl'] as $link) {
+            $this->assertStringContainsString('zoom=week', $context[$link], $link);
+        }
+        self::forget_calendar();
+        $_GET = [page::PARAM_VIEW => 'trail', state::PARAM_MONTH => '2027-03', page::PARAM_ZOOM => 'year'];
+        $PAGE = new \moodle_page();
+        $this->assertSame('', page::handle()->page->props()['trails']['zoom'], 'A zoom it does not know is days.');
+        $this->assertNull($PAGE->url->param('zoom'));
 
         // The control: the month view embeds no trails, and offers the view's link.
         self::forget_calendar();

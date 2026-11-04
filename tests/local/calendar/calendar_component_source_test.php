@@ -186,7 +186,8 @@ final class calendar_component_source_test extends \basic_testcase {
      * the rows (the density) and the frame the drawer shares (the phone), the week's the frame alone, and the phone's Day
      * view, drawn with no grid beside it, has one of its own on the same frame, as the Trilhas view does; the step's
      * popover reads as the event popover does, on an opening; and the Trilhas view's days scroller (TrailScroll.tsx) reads
-     * itself once per opening (today into view) and on a scroll, an arrow, a target the view asks for or the map, never on
+     * itself once per opening (today into view) and on a scroll, an arrow, a target the view asks for, a new zoom (T3c:
+     * after placing the same day by arithmetic, through the same measure, so the count is unchanged) or the map, never on
      * another render, and writes every position through one place.
      *
      * @return void
@@ -1050,12 +1051,24 @@ final class calendar_component_source_test extends \basic_testcase {
     public function test_the_trail_scroller_and_its_columns(): void {
         $trails = $this->sources()['trails.ts'];
         $scss = (string) file_get_contents(dirname(__DIR__, 3) . '/scss/calendar.scss');
-        $pattern = '~export const TRACK = \{label: ([\d.]+), day: ([\d.]+), row: ([\d.]+), bar: ([\d.]+)\};~';
+        $pattern = '~export const TRACK = \{label: ([\d.]+), day: ([\d.]+), week: ([\d.]+), month: ([\d.]+), '
+            . 'row: ([\d.]+), bar: ([\d.]+)\};~';
         $this->assertSame(1, preg_match($pattern, $trails, $track));
-        $this->assertStringContainsString("--dim-cal-trail-label: {$track[1]}rem;", $scss);
-        $this->assertStringContainsString("--dim-cal-trail-day: {$track[2]}rem;", $scss);
-        $this->assertStringContainsString("--dim-cal-trail-row: {$track[3]}rem;", $scss);
-        $this->assertStringContainsString("--dim-cal-trail-bar: {$track[4]}rem;", $scss);
+        // The stylesheet spells a fraction without its leading zero (.25rem).
+        [, $label, $day, $week, $month, $row, $bar] = preg_replace('~^0\.~', '.', $track);
+        $this->assertStringContainsString("--dim-cal-trail-label: {$label}rem;", $scss);
+        $this->assertStringContainsString("--dim-cal-trail-day: {$day}rem;", $scss);
+        // T3c: the zoom's day widths, each on its modifier of the section, which every column and line reads.
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trails--week \{\s*--dim-cal-trail-day: ' . preg_quote($week, '~') . 'rem;\s*\}~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trails--month \{\s*--dim-cal-trail-day: ' . preg_quote($month, '~') . 'rem;\s*\}~',
+            $scss
+        );
+        $this->assertStringContainsString("--dim-cal-trail-row: {$row}rem;", $scss);
+        $this->assertStringContainsString("--dim-cal-trail-bar: {$bar}rem;", $scss);
         $this->assertStringNotContainsString('--dim-cal-trail-spill', $scss, 'The last column is gone.');
 
         $view = $this->sources()['TrailView.tsx'];
@@ -1166,7 +1179,7 @@ final class calendar_component_source_test extends \basic_testcase {
             'Every load, whatever came of it, pursues what is wanted again.'
         );
         $this->assertMatchesRegularExpression("~ranged\.current = '';\s*onRange\?\.\(null\);~", $view);
-        $this->assertStringContainsString("if (target !== '' && target !== failed.current) {", $view);
+        $this->assertStringContainsString("if (target !== '' && target !== failed.current && !full) {", $view);
         $this->assertStringContainsString('const openat = today.startsWith(win.loaded.months[0]) ? todayat : -1;', $view);
         $this->assertStringContainsString('if (was.generation !== set || scoped.current !== askedwith) {', $view);
         // A template literal's quote, spelled by its code: the coding style reads a literal one as a shell command.
@@ -1187,7 +1200,7 @@ final class calendar_component_source_test extends \basic_testcase {
             $view,
             'A row and its bar light each other for a mouse only.'
         );
-        $this->assertStringContainsString('const links = linksOf(trail.steps, days, look.zone, open);', $view);
+        $this->assertStringContainsString('const links = linksOf(trail.steps, days, look.zone, open, zoom);', $view);
         // Behat waits for a month asked for and for a course's popover to open once its scroll has ended.
         $this->assertSame(2, substr_count($view, "new Pending('theme_dimensions/calendar:trailmonth')"));
         $this->assertSame(1, substr_count($view, "finding.current = new Pending('theme_dimensions/calendar:trailfind');"));
@@ -1200,7 +1213,8 @@ final class calendar_component_source_test extends \basic_testcase {
             $calendar
         );
         $this->assertStringContainsString(
-            'writeAddress(withTrail(inSpan(address(props.urls.page, month, state), next), filtering.current), false);',
+            'writeAddress(withTrail(inSpan(address(props.urls.page, month, state), next), filtering.current, zooming.current), '
+                . 'false);',
             $calendar,
             'A settled scroll replaces the address.'
         );
@@ -1209,5 +1223,163 @@ final class calendar_component_source_test extends \basic_testcase {
             $calendar,
             'Nor while the page\'s own request is on its way.'
         );
+    }
+
+    /**
+     * T3c: the Trilhas timeline's zoom and the courses' dates, read where PHPUnit can see them; Jest is the behaviour gate
+     * (js/esm/tests/calendar: trails.test.ts, TrailView.test.tsx).
+     *
+     * - The zoom is read as the server reads it (week or month exactly), days never written; it travels with the filters
+     *   in every write of a Trilhas address (the page's request, a settled scroll, the zoom's own replaced write) and is
+     *   read back on Back and Forward; the control is a desktop's.
+     * - A day's width is TRACK's of the zoom in every measure, connector and scroll position; a switch keeps the day at
+     *   the start of the view by arithmetic over the last measure, once per new zoom.
+     * - The weeks start on the viewer's first weekday; no weekend is shaded off the day zoom; a bar too narrow draws no
+     *   name and keeps its accessible name; the elbow and the drop narrow with a day, never under their least nor into a
+     *   negative length.
+     * - A course's row says its dates, a range one month name in a month, and its accessible name carries them.
+     *
+     * @return void
+     */
+    public function test_the_trilhas_zoom_and_dates(): void {
+        // A template literal's quote, spelled by its code: the coding style reads a literal one as a shell command.
+        $tick = chr(96);
+        $trails = $this->sources()['trails.ts'];
+        $this->assertStringContainsString(
+            "export const zoomOf = (value: unknown): Zoom => (value === 'week' || value === 'month' ? value : 'day');",
+            $trails
+        );
+        $this->assertMatchesRegularExpression(
+            "~if \(filter && zoom !== 'day'\) \{\s*url\.searchParams\.set\(ZOOM_PARAM, zoom\);~",
+            $trails,
+            'Days, the zoom a bare address reads as, is never written.'
+        );
+        $this->assertStringContainsString('Math.max(0, Math.round(left * dayWidth(to) / dayWidth(from)));', $trails);
+        $this->assertStringContainsString('const pitch = days > 0 ? total / (days + TRACK.label / day) : 0;', $trails);
+        $this->assertStringContainsString('const view = Math.max(0, width - pitch * TRACK.label / day);', $trails);
+        $this->assertMatchesRegularExpression(
+            "~const least = zoom === 'day' \? TRACK\.day : NAMED_BAR;\s*"
+                . "return \(bar\.to - bar\.from \+ 1\) \* dayWidth\(zoom\) >= least;~",
+            $trails,
+            'By days a one-day bar keeps its name; off them the least is NAMED_BAR.'
+        );
+        $this->assertStringContainsString('export const NAMED_BAR = 3.5;', $trails);
+        $this->assertStringContainsString('if (index === 0 || weekdayOf(iso) === firstday) {', $trails);
+        $this->assertStringContainsString(
+            'const elbow = start + Math.max(LINK.tight, Math.min(LINK.stub, (end - start) / 2));',
+            $trails,
+            'Over a narrow gap the elbow comes half way, never under its least.'
+        );
+        $this->assertStringContainsString('across(bmid, elbow, Math.max(elbow, end - LINK.head)),', $trails);
+        $this->assertStringContainsString('right(Math.max(end, elbow + LINK.head), bmid),', $trails);
+        $this->assertStringContainsString(
+            'const x = b.from * day + Math.min(LINK.stub, Math.max(LINK.least, day / 2));',
+            $trails,
+            'The drop\'s offset into its day scales with the day.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~export const linksOf = \(steps: TrailStep\[\], days: string\[\], zone: Zone, shown: boolean, zoom: Zoom = \'day\'\)'
+                . ': LinkPiece\[\] => \{\s*if \(!shown \|\| days\.length === 0\) \{\s*return \[\];\s*\}\s*'
+                . 'const day = dayWidth\(zoom\);\s*const width = days\.length \* day;~',
+            $trails
+        );
+        $this->assertStringContainsString("return tight ? '–' : part.value;", $trails);
+        $this->assertMatchesRegularExpression(
+            "~if \(separates\(parts, index\)\) \{.*?\}\s*return /.p\{L\}/u\.test\(part\.value\) \? ' ' : part\.value;~s",
+            $trails,
+            'Only a date\'s own words are compacted, never the range\'s separator.'
+        );
+        $this->assertStringContainsString(
+            "parts[index - 1]?.source === 'startRange' && parts[index + 1]?.source === 'endRange';",
+            $trails
+        );
+        $this->assertStringContainsString('const crosses = cell.first.slice(0, 7) !== cell.last.slice(0, 7);', $trails);
+        $this->assertMatchesRegularExpression('~days: crosses \? ~', $trails, 'A week across a month names the end\'s month.');
+        $this->assertStringContainsString(
+            'const turn = end - Math.max(LINK.tight, Math.min(LINK.detour, (start - end) / 2, end - LINK.line / 2));',
+            $trails,
+            'The detour narrows with the gap and stays inside the days held.'
+        );
+        $this->assertStringContainsString('across(bmid, turn, Math.max(turn, end - LINK.head)),', $trails);
+        $this->assertStringContainsString('const last = to < from ? from : to;', $trails, 'Dates out of order: the start day.');
+        $this->assertDoesNotMatchRegularExpression(
+            '~getBoundingClientRect|offset(?:Height|Width)|client(?:Height|Width)|scroll(?:Width|Left)|getComputedStyle~',
+            $trails,
+            'Every zoom\'s position is arithmetic.'
+        );
+
+        $scroll = $this->sources()['TrailScroll.tsx'];
+        $this->assertStringContainsString(
+            'trackOf(element.scrollLeft, element.scrollWidth, element.clientWidth, days, dayWidth(zoom));',
+            $scroll,
+            'Every measure reads a day at the zoom\'s width.'
+        );
+        $this->assertStringContainsString(
+            'place(element, openingLeft(openat, trackOf(0, element.scrollWidth, element.clientWidth, days, dayWidth(zoom))), '
+                . 'false);',
+            $scroll
+        );
+        $this->assertMatchesRegularExpression(
+            '~const from = zoomed\.current;\s*if \(!element \|\| !was \|\| from === zoom\) \{\s*return;\s*\}\s*arrive\(false\);\s*'
+                . 'place\(element, zoomedLeft\(was\.left, from, zoom\), false\);\s*paint\(measure\(element\), 0\);\s*'
+                . '\}, \[zoom\]\);~',
+            $scroll,
+            'A new zoom keeps the day at the start by arithmetic over the last measure, once per zoom, at once.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~const paint = \(track: Track, moved: number\): void => \{\s*last\.current = track;\s*zoomed\.current = zoom;~',
+            $scroll,
+            'The zoom of a measure is recorded with it: an opening at the new zoom is not rescaled.'
+        );
+        $this->assertSame(0, substr_count($scroll, "zoomed.current = zoom;\n        if (!element"), 'Nor by the zoom effect.');
+        $this->assertMatchesRegularExpression(
+            '~if \(!element \|\| !last\.current\) \{\s*return;\s*\}\s*paint\(measure\(element\), 0\);\s*\}, \[days\]\);~',
+            $scroll,
+            'More days held are measured again, so the next month is asked for while they fit the scroller.'
+        );
+
+        $view = $this->sources()['TrailView.tsx'];
+        $this->assertStringContainsString('namedBar(bar, zoom) ? step.name : null);', $view);
+        $this->assertStringContainsString('aria-label={stepLabel(step, look, now)}', $view, 'A bar with no name is still named.');
+        $this->assertStringContainsString(
+            "aria-label={dated(step) ? fill(look.strings.calendar_trailshow, {$tick}" . '${step.name}, ${dates}'
+                . "{$tick}) : undefined}",
+            $view
+        );
+        $this->assertStringContainsString('data-region="dim-cal-traildates"', $view);
+        $this->assertStringContainsString("const bydays = zoom === 'day';", $view);
+        $this->assertStringContainsString(
+            '{bydays ? days.map((iso, index) => (isWeekend(iso) ? (',
+            $view,
+            'No weekend is shaded off the days.'
+        );
+        $this->assertStringContainsString('const cells = bydays ? [] : weekCells(days, firstday);', $view);
+        $this->assertStringContainsString(
+            "+ (!phone && zoom !== 'day' ? {$tick} dim-cal__trails--" . '${zoom}' . "{$tick} : '')}",
+            $view,
+            'The zoom is a desktop\'s: the phone\'s agenda keeps no day width.'
+        );
+        $this->assertStringContainsString('{onZoom && !phone ? (', $view);
+        $this->assertStringContainsString('aria-pressed={one === zoom}', $view);
+        $this->assertStringContainsString('data-region="dim-cal-trailnowtag"', $view);
+        $this->assertStringContainsString("const full = near === 'end' && months.length >= LOADED_CAP && first === 0;", $view);
+        $this->assertStringContainsString("if (target !== '' && target !== failed.current && !full) {", $view);
+        $this->assertStringNotContainsString('history', $view, 'The page\'s history module writes the address.');
+
+        $calendar = $this->sources()['Calendar.tsx'];
+        $this->assertMatchesRegularExpression(
+            '~const changeZoom = \(next: Zoom\): void => \{.*?writeAddress\(withTrail\(window\.location\.href, '
+                . 'filtering\.current, next\), false\);~s',
+            $calendar,
+            'A zoom replaces the address: navigation, never an entry.'
+        );
+        $this->assertStringContainsString(
+            'withTrail(inSpan(address(props.urls.page, span.month, next), span), filtering.current, zooming.current),',
+            $calendar,
+            'The page\'s request keeps the zoom.'
+        );
+        $this->assertStringContainsString('zooming.current = readZoom(window.location.href);', $calendar, 'Back and Forward.');
+        $this->assertStringContainsString('const [zoom, setZoom] = useState<Zoom>(() => zoomOf(props.trails?.zoom));', $calendar);
+        $this->assertStringNotContainsString('remember(zoom', $calendar, 'Never remembered.');
     }
 }

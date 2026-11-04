@@ -11,11 +11,15 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  *   trails.ts TRACK, and every position is trails.ts arithmetic over the scroller's three numbers.
  * - The layout reads are the scroller's: once per opening (the `opening` key: a new set of months) to bring today into
  *   view (trails.ts openingLeft()) and paint the thumb, never on another render; on a scroll, to paint the thumb and
- *   the arrows and tell the view which days are in view; on an arrow or a target the view asks for, where it is; on the
- *   map, the pointer's place along it. The thumb follows the scroll by its style, without a render; the arrows and fades
- *   re-render only when one of them changes. Every position is written through one place ({@see place}).
+ *   the arrows and tell the view which days are in view; on an arrow or a target the view asks for, where it is; on a
+ *   new zoom, where its arithmetic left it; when the days held change, where it is; on the map, the pointer's place
+ *   along it. The thumb follows the scroll by its style, without a render; the arrows and fades re-render only when one
+ *   of them changes. Every position is written through one place ({@see place}).
  * - A month added before the first day held moves the content right by its days: the `shift` key moves the position
  *   by the same width (trails.ts keptLeft(), over the last measure: no further read), so the view stays still.
+ * - A day's width is the zoom's (trails.ts dayWidth()), in every measure. A new zoom keeps the day at the start of the
+ *   view: the position is the last measure's at the new width (trails.ts zoomedLeft(), arithmetic), then the scroller
+ *   is measured once more where that left it, as after an arrow, to paint the thumb and the arrows and tell the view.
  * - A scroll settles on `scrollend`, or a quiet after its last event where the browser has no such event: the view is
  *   told the first day in view (its month is the address's), and a target asked for is reached.
  * - The map is aria-hidden and out of the tab order: the bars and the courses' rows are its Tab stops (the browser
@@ -27,7 +31,19 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { keptLeft, nearEnd, openingLeft, pageLeft, scrubLeft, shiftedTarget, shownDays, targetLeft, trackOf } from "./trails";
+import {
+  dayWidth,
+  keptLeft,
+  nearEnd,
+  openingLeft,
+  pageLeft,
+  scrubLeft,
+  shiftedTarget,
+  shownDays,
+  targetLeft,
+  trackOf,
+  zoomedLeft
+} from "./trails";
 const SETTLE_MS = 150;
 const ARRIVE_MS = 700;
 const percent = /* @__PURE__ */ __name((fraction) => `${(fraction * 100).toFixed(3)}%`, "percent");
@@ -39,20 +55,22 @@ const place = /* @__PURE__ */ __name((element, left, smooth) => {
     element.scrollLeft = left;
   }
 }, "place");
-const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, shift, control, onView, onSettle, strings, children }) => {
+const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, shift, zoom, control, onView, onSettle, strings, children }) => {
   const box = useRef(null);
   const thumb = useRef(null);
   const drag = useRef(null);
   const last = useRef(null);
   const quiet = useRef(null);
   const arriving = useRef(null);
+  const zoomed = useRef(zoom);
   const reports = useRef({ onView, onSettle, days });
   reports.current = { onView, onSettle, days };
   const [ways, setWays] = useState({ back: false, ahead: false, scrolls: false });
   const [dragging, setDragging] = useState(false);
-  const measure = /* @__PURE__ */ __name((element) => trackOf(element.scrollLeft, element.scrollWidth, element.clientWidth, days), "measure");
+  const measure = /* @__PURE__ */ __name((element) => trackOf(element.scrollLeft, element.scrollWidth, element.clientWidth, days, dayWidth(zoom)), "measure");
   const paint = /* @__PURE__ */ __name((track, moved) => {
     last.current = track;
+    zoomed.current = zoom;
     if (thumb.current) {
       thumb.current.style.left = percent(track.start);
       thumb.current.style.width = percent(track.span);
@@ -110,7 +128,7 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
     if (!element) {
       return;
     }
-    place(element, openingLeft(openat, trackOf(0, element.scrollWidth, element.clientWidth, days)), false);
+    place(element, openingLeft(openat, trackOf(0, element.scrollWidth, element.clientWidth, days, dayWidth(zoom))), false);
     paint(measure(element), 0);
     tell();
     arrive(false);
@@ -130,6 +148,24 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
       wait();
     }
   }, [shift.key]);
+  useLayoutEffect(() => {
+    const element = box.current;
+    const was = last.current;
+    const from = zoomed.current;
+    if (!element || !was || from === zoom) {
+      return;
+    }
+    arrive(false);
+    place(element, zoomedLeft(was.left, from, zoom), false);
+    paint(measure(element), 0);
+  }, [zoom]);
+  useLayoutEffect(() => {
+    const element = box.current;
+    if (!element || !last.current) {
+      return;
+    }
+    paint(measure(element), 0);
+  }, [days]);
   useEffect(() => {
     const element = box.current;
     if (!element) {
@@ -235,18 +271,18 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
         false,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-          lineNumber: 413,
+          lineNumber: 462,
           columnNumber: 17
         }
       ),
       ways.back ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailfade dim-cal__trailfade--back", "aria-hidden": "true" }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-        lineNumber: 421,
+        lineNumber: 470,
         columnNumber: 30
       }) : null,
       ways.ahead ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailfade dim-cal__trailfade--ahead", "aria-hidden": "true" }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-        lineNumber: 422,
+        lineNumber: 471,
         columnNumber: 31
       }) : null,
       ways.scrolls ? /* @__PURE__ */ jsxDEV(
@@ -260,7 +296,7 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
           onClick: () => page(-1),
           children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-left", "aria-hidden": "true" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-            lineNumber: 432,
+            lineNumber: 481,
             columnNumber: 25
           })
         },
@@ -268,7 +304,7 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
         false,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-          lineNumber: 424,
+          lineNumber: 473,
           columnNumber: 21
         }
       ) : null,
@@ -283,7 +319,7 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
           onClick: () => page(1),
           children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-chevron-right", "aria-hidden": "true" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-            lineNumber: 444,
+            lineNumber: 493,
             columnNumber: 25
           })
         },
@@ -291,13 +327,13 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
         false,
         {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-          lineNumber: 436,
+          lineNumber: 485,
           columnNumber: 21
         }
       ) : null
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-      lineNumber: 412,
+      lineNumber: 461,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV(
@@ -317,7 +353,7 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
         children: /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailmapline", children: [
           /* @__PURE__ */ jsxDEV("span", { ref: thumb, className: "dim-cal__trailthumb", "data-region": "dim-cal-trailthumb" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-            lineNumber: 463,
+            lineNumber: 512,
             columnNumber: 21
           }),
           todayat >= 0 ? /* @__PURE__ */ jsxDEV(
@@ -330,13 +366,13 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-              lineNumber: 465,
+              lineNumber: 514,
               columnNumber: 25
             }
           ) : null
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-          lineNumber: 462,
+          lineNumber: 511,
           columnNumber: 17
         })
       },
@@ -344,13 +380,13 @@ const TrailScroll = /* @__PURE__ */ __name(({ days, todayat, openat, opening, sh
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-        lineNumber: 448,
+        lineNumber: 497,
         columnNumber: 13
       }
     )
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailScroll.tsx",
-    lineNumber: 411,
+    lineNumber: 460,
     columnNumber: 9
   });
 }, "TrailScroll");

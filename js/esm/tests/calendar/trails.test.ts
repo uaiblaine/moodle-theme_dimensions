@@ -23,11 +23,12 @@
 
 import {zone} from '../../src/calendar/days';
 import {
-    LOADED_CAP, STEP_INSET, TRACK, barOf, dayLeft, shiftedTarget, extendLoaded, keptLeft, linksOf, loadedOf, mergedOf, monthDays, monthStep,
-    monthsOf, nearEnd, openingLeft, pageLeft, rangeLabel, reachOf, readTrail, scrubLeft, shownDays, targetLeft, todayIndex,
-    todayLeft, trackOf, trailArgs, trailBarOf, windowDays, withTrail,
+    LOADED_CAP, NAMED_BAR, STEP_INSET, TRACK, barOf, datesOf, dayLeft, dayWidth, shiftedTarget, extendLoaded, keptLeft, linksOf,
+    loadedOf, mergedOf, monthDays, monthStep, monthsOf, namedBar, nearEnd, openingLeft, pageLeft, rangeLabel, reachOf, readTrail,
+    readZoom, scrubLeft, shownDays, targetLeft, todayIndex, todayLeft, trackOf, trailArgs, trailBarOf, weekCells, weekLabel,
+    windowDays, withTrail, zoomOf, zoomedLeft,
 } from '../../src/calendar/trails';
-import type {Trail, TrailAnswer, TrailStep} from '../../src/calendar/trails';
+import type {LinkPiece, Trail, TrailAnswer, TrailStep} from '../../src/calendar/trails';
 import {at} from './fixture';
 
 const utc = zone('UTC', 'en');
@@ -408,18 +409,18 @@ describe('linksOf', () => {
 
     it('joins a course to one that starts after it ends by an elbow into its start', () => {
         expect(linksOf([leg(1, '2026-11-02', '2026-11-09'), leg(2, '2026-11-13', '2026-11-23')], november, utc, true)).toEqual([
-            {kind: 'horizontal', left: 27, top: 1.5625, width: 0.625, height: 0.125},
-            {kind: 'vertical', left: 27.5625, top: 1.5625, width: 0.125, height: 3.375},
-            {kind: 'horizontal', left: 27.625, top: 4.8125, width: 8, height: 0.125},
-            {kind: 'right', left: 35.625, top: 4.625, width: 0.375, height: 0.5},
+            {kind: 'horizontal', left: 27, top: 1.6875, width: 0.625, height: 0.125},
+            {kind: 'vertical', left: 27.5625, top: 1.6875, width: 0.125, height: 3.625},
+            {kind: 'horizontal', left: 27.625, top: 5.1875, width: 8, height: 0.125},
+            {kind: 'right', left: 35.625, top: 5, width: 0.375, height: 0.5},
         ]);
     });
 
     it('drops from a course still running into the next, on the day the next starts', () => {
         expect(linksOf([leg(1, '2026-11-02', '2026-11-16'), leg(2, '2026-11-10', '2026-11-24')], november, utc, true)).toEqual([
-            {kind: 'dot', left: 27.4375, top: 2.1875, width: 0.375, height: 0.375},
-            {kind: 'vertical', left: 27.5625, top: 2.375, width: 0.125, height: 1.375},
-            {kind: 'down', left: 27.375, top: 3.75, width: 0.5, height: 0.375},
+            {kind: 'dot', left: 27.4375, top: 2.3125, width: 0.375, height: 0.375},
+            {kind: 'vertical', left: 27.5625, top: 2.5, width: 0.125, height: 1.625},
+            {kind: 'down', left: 27.375, top: 4.125, width: 0.5, height: 0.375},
         ]);
         // An open course is still running whenever the next starts after its start.
         expect(linksOf([leg(1, '2026-11-02', ''), leg(2, '2026-11-20', '2026-11-24')], november, utc, true)
@@ -428,10 +429,10 @@ describe('linksOf', () => {
 
     it('detours on the left into a course that starts before the previous one', () => {
         expect(linksOf([leg(1, '2026-11-11', '2026-11-23'), leg(2, '2026-11-04', '2026-11-15')], november, utc, true)).toEqual([
-            {kind: 'horizontal', left: 8.4375, top: 1.5625, width: 21.5625, height: 0.125},
-            {kind: 'vertical', left: 8.375, top: 1.5625, width: 0.125, height: 3.375},
-            {kind: 'horizontal', left: 8.4375, top: 4.8125, width: 0.1875, height: 0.125},
-            {kind: 'right', left: 8.625, top: 4.625, width: 0.375, height: 0.5},
+            {kind: 'horizontal', left: 8.4375, top: 1.6875, width: 21.5625, height: 0.125},
+            {kind: 'vertical', left: 8.375, top: 1.6875, width: 0.125, height: 3.625},
+            {kind: 'horizontal', left: 8.4375, top: 5.1875, width: 0.1875, height: 0.125},
+            {kind: 'right', left: 8.625, top: 5, width: 0.375, height: 0.5},
         ]);
     });
 
@@ -441,8 +442,8 @@ describe('linksOf', () => {
         expect(ahead[2].left + ahead[2].width).toBe(30 * TRACK.day);
         const behind = linksOf([leg(1, '2026-10-02', '2026-10-09'), leg(2, '2026-11-13', '2026-11-23')], november, utc, true);
         expect(behind).toEqual([
-            {kind: 'horizontal', left: 0, top: 4.8125, width: 35.625, height: 0.125},
-            {kind: 'right', left: 35.625, top: 4.625, width: 0.375, height: 0.5},
+            {kind: 'horizontal', left: 0, top: 5.1875, width: 35.625, height: 0.125},
+            {kind: 'right', left: 35.625, top: 5, width: 0.375, height: 0.5},
         ]);
     });
 
@@ -454,9 +455,291 @@ describe('linksOf', () => {
         // Dates out of order are read as the bar reads them: the start day alone, joined from there.
         const misordered = leg(4, '2026-11-02', '2026-10-20');
         expect(barOf(misordered, november, utc)).toMatchObject({from: 1, to: 1});
-        expect(linksOf([misordered, c], november, utc, true)[0]).toEqual({kind: 'horizontal', left: 6, top: 1.5625,
+        expect(linksOf([misordered, c], november, utc, true)[0]).toEqual({kind: 'horizontal', left: 6, top: 1.6875,
             width: 0.625, height: 0.125});
         expect(linksOf([a, c, none], november, utc, true)).toHaveLength(4);
         expect(linksOf([a, c], november, utc, false)).toEqual([]);
+    });
+});
+
+describe('the zoom (T3c)', () => {
+    it('reads a day\'s width per zoom from TRACK, and the address\'s zoom as the server does', () => {
+        expect([dayWidth('day'), dayWidth('week'), dayWidth('month')]).toEqual([TRACK.day, TRACK.week, TRACK.month]);
+        expect([dayWidth('day'), dayWidth('week'), dayWidth('month')]).toEqual([3, 1, 0.25]);
+        // The mockup's three months fit about 400px by months: 92 days at 16px a rem.
+        expect(92 * dayWidth('month') * 16).toBe(368);
+        expect([zoomOf('week'), zoomOf('month'), zoomOf('day'), zoomOf('Week'), zoomOf(''), zoomOf(null), zoomOf(['week'])])
+            .toEqual(['week', 'month', 'day', 'day', 'day', 'day', 'day']);
+        expect(readZoom('https://example.com/r.php/theme_dimensions/calendar?view=trail&zoom=month')).toBe('month');
+        expect(readZoom('https://example.com/r.php/theme_dimensions/calendar?view=trail&zoom=year')).toBe('day');
+        expect(readZoom('https://example.com/r.php/theme_dimensions/calendar?view=trail')).toBe('day');
+    });
+
+    it('writes the zoom beside the filters, days never, and takes it out with them', () => {
+        const base = 'https://example.com/r.php/theme_dimensions/calendar?view=trail&month=2026-11';
+        expect(new URL(withTrail(base, {trail: 7, mine: false}, 'week')).searchParams.get('zoom')).toBe('week');
+        expect(new URL(withTrail(base, {trail: 0, mine: false}, 'month')).searchParams.get('zoom')).toBe('month');
+        expect(new URL(withTrail(`${base}&zoom=week`, {trail: 0, mine: false}, 'day')).searchParams.has('zoom')).toBe(false);
+        expect(new URL(withTrail(`${base}&zoom=week`, {trail: 0, mine: false})).searchParams.has('zoom')).toBe(false);
+        expect(new URL(withTrail(`${base}&zoom=week&trail=7`, null, 'week')).searchParams.has('zoom')).toBe(false);
+    });
+
+    it('keeps the day at the start of the view across a switch, the same day at the new width', () => {
+        // The 12th day held at the start: 11 days in.
+        expect(zoomedLeft(11 * 48, 'day', 'week')).toBe(11 * 16);
+        expect(zoomedLeft(11 * 16, 'week', 'month')).toBe(11 * 4);
+        expect(zoomedLeft(11 * 4, 'month', 'day')).toBe(11 * 48);
+        expect(zoomedLeft(0, 'day', 'month')).toBe(0);
+        expect(zoomedLeft(500, 'week', 'week')).toBe(500);
+        // Read back through the scroller's arithmetic at the new zoom, the first day in view is the same.
+        const at = (zoom: 'day' | 'week' | 'month', left: number) => {
+            const pitch = dayWidth(zoom) * 16;
+            return shownDays(trackOf(left, (61 + TRACK.label / dayWidth(zoom)) * pitch, 600, 61, dayWidth(zoom)), 61).first;
+        };
+        expect(at('day', 20 * 48)).toBe(20);
+        expect(at('week', zoomedLeft(20 * 48, 'day', 'week'))).toBe(20);
+    });
+
+    it('reads the scroller at the zoom\'s day width', () => {
+        const total = (61 + TRACK.label / TRACK.week) * 16;
+        const track = trackOf(160, total, 1000, 61, TRACK.week);
+        expect(Math.round(track.pitch)).toBe(16);
+        expect(Math.round(track.view)).toBe(660);
+        expect(shownDays(track, 61)).toEqual({first: 10, last: 51});
+        expect(dayLeft(10, track)).toBe(160);
+        expect(dayLeft(30, track)).toBe(Math.round(track.max));
+    });
+
+    it('names a bar only when it is wide enough for it, at every zoom', () => {
+        const bar = (from: number, to: number) => ({from: from, to: to, before: false, after: false, open: false, milestone: false});
+        expect(NAMED_BAR).toBe(3.5);
+        // By days the least is one day: a one-day bar keeps its name there (3rem, under NAMED_BAR).
+        expect([namedBar(bar(4, 4), 'day'), namedBar(bar(4, 5), 'day')]).toEqual([true, true]);
+        expect(TRACK.day).toBeLessThan(NAMED_BAR);
+        // By weeks, three days are not, four are.
+        expect([namedBar(bar(4, 6), 'week'), namedBar(bar(4, 7), 'week')]).toEqual([false, true]);
+        // By months, thirteen days are not, fourteen are.
+        expect([namedBar(bar(0, 12), 'month'), namedBar(bar(0, 13), 'month')]).toEqual([false, true]);
+    });
+});
+
+describe('weekCells (T3c)', () => {
+    it('cuts the days held into weeks from the viewer\'s first weekday, the first and the last partial', () => {
+        // November 2026 begins on a Sunday: from Monday, its 1st is a week of its own.
+        const monday = weekCells(monthDays('2026-11'), 1);
+        expect(monday.slice(0, 3)).toEqual([
+            {at: 0, length: 1, first: '2026-11-01', last: '2026-11-01'},
+            {at: 1, length: 7, first: '2026-11-02', last: '2026-11-08'},
+            {at: 8, length: 7, first: '2026-11-09', last: '2026-11-15'},
+        ]);
+        expect(monday[monday.length - 1]).toEqual({at: 29, length: 1, first: '2026-11-30', last: '2026-11-30'});
+        expect(monday.reduce((sum, cell) => sum + cell.length, 0)).toBe(30);
+        // From Sunday, the 1st opens a whole week.
+        expect(weekCells(monthDays('2026-11'), 0)[0]).toEqual({at: 0, length: 7, first: '2026-11-01', last: '2026-11-07'});
+    });
+
+    it('runs a week across a month and a year', () => {
+        const held = windowDays(['2026-11', '2026-12', '2027-01']);
+        const cells = weekCells(held, 1);
+        expect(cells.find((cell) => cell.first === '2026-11-30')).toEqual({at: 29, length: 7, first: '2026-11-30',
+            last: '2026-12-06'});
+        expect(cells.find((cell) => cell.first === '2026-12-28')).toEqual({at: 57, length: 7, first: '2026-12-28',
+            last: '2027-01-03'});
+        expect(cells[cells.length - 1]).toEqual({at: 85, length: 7, first: '2027-01-25', last: '2027-01-31'});
+        expect(cells.reduce((sum, cell) => sum + cell.length, 0)).toBe(held.length);
+        expect(weekCells([], 1)).toEqual([]);
+    });
+});
+
+describe('datesOf (T3c)', () => {
+    /**
+     * A course's dates line, Intl's thin spaces read as plain ones.
+     *
+     * @param {string} from The start, '' for none.
+     * @param {string} to The end, '' for none.
+     * @param {string} language The language tag.
+     * @returns {object}
+     */
+    const dates = (from: string, to: string, language: string) => {
+        const got = datesOf(from === '' ? 0 : at(from, 12), to === '' ? 0 : at(to, 12), utc, language);
+        return {kind: got.kind, text: got.text.replace(/\s/g, ' ')};
+    };
+
+    it('says both ends as one range, one month name in a month and one year in a year', () => {
+        expect(dates('2026-11-02', '2026-11-20', 'pt-BR')).toEqual({kind: 'range', text: '2–20 nov. 2026'});
+        expect(dates('2026-11-16', '2026-12-12', 'pt-BR')).toEqual({kind: 'range', text: '16 nov. – 12 dez. 2026'});
+        expect(dates('2026-12-15', '2027-01-20', 'pt-BR')).toEqual({kind: 'range', text: '15 dez. 2026 – 20 jan. 2027'});
+        expect(dates('2026-11-02', '2026-11-20', 'en-GB')).toEqual({kind: 'range', text: '2–20 Nov 2026'});
+        expect(dates('2026-12-15', '2027-01-20', 'en-GB')).toEqual({kind: 'range', text: '15 Dec 2026 – 20 Jan 2027'});
+        // The language's own order.
+        expect(dates('2026-11-16', '2026-12-12', 'en')).toEqual({kind: 'range', text: 'Nov 16 – Dec 12, 2026'});
+        // One day, and dates out of order read as the start day, as the bar draws them.
+        expect(dates('2026-11-02', '2026-11-02', 'pt-BR')).toEqual({kind: 'range', text: '2 nov. 2026'});
+        expect(dates('2026-11-02', '2026-10-20', 'pt-BR')).toEqual({kind: 'range', text: '2 nov. 2026'});
+    });
+
+    it('gives a start alone, an end alone, or none, for the view to word', () => {
+        expect(dates('2026-12-01', '', 'pt-BR')).toEqual({kind: 'from', text: '1 dez. 2026'});
+        expect(dates('', '2026-11-20', 'en-GB')).toEqual({kind: 'until', text: '20 Nov 2026'});
+        expect(dates('', '', 'en')).toEqual({kind: 'none', text: ''});
+    });
+
+    it('reads the days in the viewer\'s timezone', () => {
+        // 02:00 UTC on the 2nd is still the 1st in São Paulo.
+        const early = Date.UTC(2026, 10, 2, 2) / 1000;
+        expect(datesOf(early, 0, zone('America/Sao_Paulo', 'pt-BR'), 'pt-BR').text.replace(/\s/g, ' ')).toBe('1 nov. 2026');
+        expect(datesOf(early, 0, utc, 'pt-BR').text.replace(/\s/g, ' ')).toBe('2 nov. 2026');
+    });
+});
+
+describe('linksOf at week and month zoom (T3c)', () => {
+    const november = monthDays('2026-11');
+
+    /**
+     * A step between two days of the timeline.
+     *
+     * @param {number} cmid Its activity.
+     * @param {string} from Its first day.
+     * @param {string} to Its last day.
+     * @returns {object}
+     */
+    const leg = (cmid: number, from: string, to: string): TrailStep => step({cmid: cmid, start: at(from, 12), end: at(to, 12)});
+
+    /**
+     * Whether no piece has a negative or empty measure.
+     *
+     * @param {Array} pieces The pieces.
+     * @returns {boolean}
+     */
+    const whole = (pieces: LinkPiece[]): boolean => pieces.every((piece) => piece.left >= 0 && piece.top >= 0
+        && piece.width > 0 && piece.height > 0);
+
+    it('narrows the elbow to half a narrow gap, never under its least', () => {
+        const pair = [leg(1, '2026-11-02', '2026-11-09'), leg(2, '2026-11-13', '2026-11-23')];
+        // By weeks the gap is 3rem: the elbow keeps the day zoom's offset.
+        expect(linksOf(pair, november, utc, true, 'week')).toEqual([
+            {kind: 'horizontal', left: 9, top: 1.6875, width: 0.625, height: 0.125},
+            {kind: 'vertical', left: 9.5625, top: 1.6875, width: 0.125, height: 3.625},
+            {kind: 'horizontal', left: 9.625, top: 5.1875, width: 2, height: 0.125},
+            {kind: 'right', left: 11.625, top: 5, width: 0.375, height: 0.5},
+        ]);
+        // By months the gap is .75rem: the elbow comes half way, and the line into the next bar has no room left.
+        expect(linksOf(pair, november, utc, true, 'month')).toEqual([
+            {kind: 'horizontal', left: 2.25, top: 1.6875, width: 0.375, height: 0.125},
+            {kind: 'vertical', left: 2.5625, top: 1.6875, width: 0.125, height: 3.625},
+            {kind: 'right', left: 2.625, top: 5, width: 0.375, height: 0.5},
+        ]);
+    });
+
+    it('joins two courses on following days with an elbow at its least, at every zoom', () => {
+        const pair = [leg(1, '2026-11-02', '2026-11-09'), leg(2, '2026-11-10', '2026-11-23')];
+        ['day', 'week', 'month'].forEach((zoom) => {
+            const pieces = linksOf(pair, november, utc, true, zoom as 'day' | 'week' | 'month');
+            const start = 9 * dayWidth(zoom as 'day' | 'week' | 'month');
+            expect(whole(pieces)).toBe(true);
+            expect(pieces[0]).toEqual({kind: 'horizontal', left: start, top: 1.6875, width: 0.1875, height: 0.125});
+            expect(pieces[pieces.length - 1]).toEqual({kind: 'right', left: start + 0.1875, top: 5, width: 0.375,
+                height: 0.5});
+        });
+    });
+
+    it('scales the drop into the day with the day\'s width', () => {
+        const pair = [leg(1, '2026-11-02', '2026-11-16'), leg(2, '2026-11-10', '2026-11-24')];
+        // A day is 3rem: the day zoom's offset; 1rem: half of it; .25rem: the least.
+        expect(linksOf(pair, november, utc, true, 'day')[0].left).toBe(27.625 - 0.1875);
+        expect(linksOf(pair, november, utc, true, 'week')).toEqual([
+            {kind: 'dot', left: 9.3125, top: 2.3125, width: 0.375, height: 0.375},
+            {kind: 'vertical', left: 9.4375, top: 2.5, width: 0.125, height: 1.625},
+            {kind: 'down', left: 9.25, top: 4.125, width: 0.5, height: 0.375},
+        ]);
+        expect(linksOf(pair, november, utc, true, 'month').map((piece) => piece.left)).toEqual([2.1875, 2.3125, 2.125]);
+    });
+
+    it('draws no piece of a negative or empty length at any zoom, a detour included', () => {
+        const chains = [
+            [leg(1, '2026-11-02', '2026-11-09'), leg(2, '2026-11-10', '2026-11-12')],
+            [leg(1, '2026-11-02', '2026-11-09'), leg(2, '2026-11-11', '2026-11-12')],
+            [leg(1, '2026-11-11', '2026-11-23'), leg(2, '2026-11-04', '2026-11-15')],
+            [leg(1, '2026-11-02', '2026-11-16'), leg(2, '2026-11-03', '2026-11-24')],
+        ];
+        chains.forEach((chain) => ['day', 'week', 'month'].forEach((zoom) => {
+            const pieces = linksOf(chain, november, utc, true, zoom as 'day' | 'week' | 'month');
+            expect(pieces.length).toBeGreaterThan(0);
+            expect(whole(pieces)).toBe(true);
+            // Every piece inside the days held at this zoom.
+            expect(pieces.every((piece) => piece.left + piece.width <= 30 * dayWidth(zoom as 'day' | 'week' | 'month')))
+                .toBe(true);
+        }));
+    });
+});
+
+describe('the review of T3c', () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('labels a week by its month, and one that crosses a month with the end\'s month too', () => {
+        const label = (cell: {at: number, length: number, first: string, last: string}, language: string) => {
+            const got = weekLabel(cell, language);
+            return [got.kicker, got.days].map((text) => text.replace(/\s/g, ' '));
+        };
+        expect(label({at: 1, length: 7, first: '2026-11-02', last: '2026-11-08'}, 'pt-BR')).toEqual(['nov.', '2–8']);
+        expect(label({at: 0, length: 7, first: '2026-10-26', last: '2026-11-01'}, 'pt-BR')).toEqual(['out.', '26–1 nov.']);
+        expect(label({at: 0, length: 7, first: '2026-12-28', last: '2027-01-03'}, 'en')).toEqual(['Dec', '28–3 Jan']);
+        expect(label({at: 29, length: 1, first: '2026-11-30', last: '2026-11-30'}, 'en')).toEqual(['Nov', '30']);
+    });
+
+    it('keeps a range\'s separator that is a word, compacting only inside one date', () => {
+        // A language whose range literal is a word ("2 a 20 de nov. de 2026"): only the dates' own words go.
+        jest.spyOn(Intl.DateTimeFormat.prototype, 'formatRangeToParts').mockReturnValue([
+            {type: 'day', value: '2', source: 'startRange'},
+            {type: 'literal', value: ' a ', source: 'shared'},
+            {type: 'day', value: '20', source: 'endRange'},
+            {type: 'literal', value: ' de ', source: 'shared'},
+            {type: 'month', value: 'nov.', source: 'shared'},
+            {type: 'literal', value: ' de ', source: 'shared'},
+            {type: 'year', value: '2026', source: 'shared'},
+        ] as Intl.DateTimeRangeFormatPart[]);
+        expect(datesOf(at('2026-11-02', 12), at('2026-11-20', 12), utc, 'pt-BR').text).toBe('2 a 20 nov. 2026');
+        // Between two months, the word stays as well, and each side's own words go.
+        jest.spyOn(Intl.DateTimeFormat.prototype, 'formatRangeToParts').mockReturnValue([
+            {type: 'day', value: '16', source: 'startRange'},
+            {type: 'literal', value: '. ', source: 'startRange'},
+            {type: 'month', value: 'Nov', source: 'startRange'},
+            {type: 'literal', value: ' bis ', source: 'shared'},
+            {type: 'day', value: '12', source: 'endRange'},
+            {type: 'literal', value: ' de ', source: 'endRange'},
+            {type: 'month', value: 'Dez', source: 'endRange'},
+            {type: 'literal', value: ' ', source: 'shared'},
+            {type: 'year', value: '2026', source: 'shared'},
+        ] as Intl.DateTimeRangeFormatPart[]);
+        expect(datesOf(at('2026-11-16', 12), at('2026-12-12', 12), utc, 'de').text).toBe('16. Nov bis 12 Dez 2026');
+    });
+
+    it('scales the detour with the day, its turn kept inside the days held, no piece of a negative length', () => {
+        const november = monthDays('2026-11');
+        const leg = (cmid: number, from: string, to: string): TrailStep => step({cmid: cmid, start: at(from, 12), end: at(to, 12)});
+        const pair = [leg(1, '2026-11-11', '2026-11-23'), leg(2, '2026-11-04', '2026-11-15')];
+        // By weeks the gap is 7rem: the day zoom's room before the next bar.
+        expect(linksOf(pair, november, utc, true, 'week')).toEqual([
+            {kind: 'horizontal', left: 2.4375, top: 1.6875, width: 7.5625, height: 0.125},
+            {kind: 'vertical', left: 2.375, top: 1.6875, width: 0.125, height: 3.625},
+            {kind: 'horizontal', left: 2.4375, top: 5.1875, width: 0.1875, height: 0.125},
+            {kind: 'right', left: 2.625, top: 5, width: 0.375, height: 0.5},
+        ]);
+        // By months the next bar starts .75rem in: the turn keeps the room the days held leave before it.
+        expect(linksOf(pair, november, utc, true, 'month')).toEqual([
+            {kind: 'horizontal', left: 0.1875, top: 1.6875, width: 2.3125, height: 0.125},
+            {kind: 'vertical', left: 0.125, top: 1.6875, width: 0.125, height: 3.625},
+            {kind: 'horizontal', left: 0.1875, top: 5.1875, width: 0.1875, height: 0.125},
+            {kind: 'right', left: 0.375, top: 5, width: 0.375, height: 0.5},
+        ]);
+        // A next course starting the 2nd, .25rem in: the turn moves in to stay inside the days held, and the line down is
+        // still drawn (at LINK.detour it fell before the first day and was cut away).
+        const early = [leg(1, '2026-11-11', '2026-11-23'), leg(2, '2026-11-02', '2026-11-15')];
+        const pieces = linksOf(early, november, utc, true, 'month');
+        expect(pieces.map((piece) => piece.kind)).toEqual(['horizontal', 'vertical', 'right']);
+        expect(pieces.every((piece) => piece.left >= 0 && piece.width > 0 && piece.height > 0)).toBe(true);
+        expect(pieces[1]).toEqual({kind: 'vertical', left: 0, top: 1.6875, width: 0.125, height: 3.625});
     });
 });

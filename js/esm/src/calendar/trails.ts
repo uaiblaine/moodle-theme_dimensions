@@ -32,6 +32,10 @@
  *   course, a page of days and the map's thumb are pure arithmetic over three numbers the scroll handlers read.
  * - Consecutive steps are joined in the trail's order ({@see linksOf()}), never by what their enrolment needs: the
  *   path is chosen from the dates alone, and a step with no date breaks the chain.
+ * - The desktop timeline has a zoom ({@see Zoom}): a day's width is TRACK's for it ({@see dayWidth()}), and every
+ *   position (the bars' columns, the connectors, today, the scroll arithmetic) follows it from there. The zoom is
+ *   navigation, like the trail (`zoom=week|month`, absent for days: local\calendar\page::zoom_from_request()), and a
+ *   switch keeps the day at the start of the view ({@see zoomedLeft()}).
  *
  * @module     theme_dimensions/calendar/trails
  * @copyright  2026 Anderson Blaine
@@ -48,6 +52,15 @@ export const TRAIL_PARAM = 'trail';
 
 /** The address parameter of "Só as minhas", exactly 1 when on (local\calendar\page::PARAM_MINE). */
 export const MINE_PARAM = 'mine';
+
+/** The address parameter of the timeline's zoom, week or month, absent for days (local\calendar\page::PARAM_ZOOM). */
+export const ZOOM_PARAM = 'zoom';
+
+/** The desktop timeline's zoom: a day's width is TRACK's of the same name. */
+export type Zoom = 'day' | 'week' | 'month';
+
+/** The zooms, in the order the control offers them. */
+export const ZOOMS: Zoom[] = ['day', 'week', 'month'];
 
 /** A step's state for a learner of the trail (local\trail\progress), or '' for anyone else. */
 export type StepState = 'done' | 'current' | 'late' | 'locked' | 'upcoming' | '';
@@ -97,7 +110,14 @@ export type TrailAnswer = {
 export type FoldIcons = {expanded: string, collapsed: string, collapsedrtl: string};
 
 /** What the page hands the view (calendar_page::props()'s `trails`). */
-export type TrailProps = {offered: boolean, answer: TrailAnswer | null, trail: number, mine: boolean, icons?: FoldIcons};
+export type TrailProps = {
+    offered: boolean,
+    answer: TrailAnswer | null,
+    trail: number,
+    mine: boolean,
+    zoom?: string,
+    icons?: FoldIcons,
+};
 
 /** The view's two filters: one trail (0 for every trail) and "Só as minhas". */
 export type TrailFilter = {trail: number, mine: boolean};
@@ -227,24 +247,46 @@ export const trailArgs = (month: string, filter: TrailFilter, categoryid: number
 });
 
 /**
- * An address with the view's filters written, or taken out (any other view).
+ * An address with the view's filters and its zoom written, or taken out (any other view). Days, the zoom a bare address
+ * reads as, is never written.
  *
  * @param {string} href The address.
- * @param {object|null} filter The filters, or null to take them out.
+ * @param {object|null} filter The filters, or null to take them and the zoom out.
+ * @param {string} zoom The timeline's zoom.
  * @returns {string}
  */
-export const withTrail = (href: string, filter: TrailFilter | null): string => {
+export const withTrail = (href: string, filter: TrailFilter | null, zoom: Zoom = 'day'): string => {
     const url = new URL(href, window.location.href);
     url.searchParams.delete(TRAIL_PARAM);
     url.searchParams.delete(MINE_PARAM);
+    url.searchParams.delete(ZOOM_PARAM);
     if (filter && filter.trail > 0) {
         url.searchParams.set(TRAIL_PARAM, String(filter.trail));
     }
     if (filter && filter.mine) {
         url.searchParams.set(MINE_PARAM, '1');
     }
+    if (filter && zoom !== 'day') {
+        url.searchParams.set(ZOOM_PARAM, zoom);
+    }
     return url.toString();
 };
+
+/**
+ * A zoom as the server reads it: week or month exactly, days for anything else.
+ *
+ * @param {*} value The value.
+ * @returns {string}
+ */
+export const zoomOf = (value: unknown): Zoom => (value === 'week' || value === 'month' ? value : 'day');
+
+/**
+ * The zoom an address names.
+ *
+ * @param {string} href The address.
+ * @returns {string}
+ */
+export const readZoom = (href: string): Zoom => zoomOf(new URL(href, window.location.href).searchParams.get(ZOOM_PARAM));
 
 /**
  * The filters an address names, as the server reads them: a positive integer trail, mine exactly 1.
@@ -491,11 +533,195 @@ export const rangeLabel = (first: string, last: string, language: string | undef
     }
 };
 
+/** A week's month, in the weeks row. */
+const WEEK_MONTH: Intl.DateTimeFormatOptions = {month: 'short'};
+
+/** One week of the timeline's weeks row: where it starts among the days held, how many days it holds, its first and last. */
+export type WeekCell = {at: number, length: number, first: string, last: string};
+
 /**
- * The desktop grid's measures, in rem: the trail column, one day, one row and a bar's height. scss/calendar.scss
- * declares the same four (--dim-cal-trail-label, -day, -row, -bar); calendar_component_source_test compares them.
+ * The weekday of a day, 0 for Sunday.
+ *
+ * @param {string} iso The day, YYYY-MM-DD.
+ * @returns {number}
  */
-export const TRACK = {label: 21.25, day: 3, row: 3.25, bar: 1.5};
+const weekdayOf = (iso: string): number =>
+    new Date(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)))).getUTCDay();
+
+/**
+ * The weeks of the days held, each beginning on the viewer's first weekday (core's calendar setting, the month grid's):
+ * the first starts on the first day held, whatever its weekday, and the last ends on the last day held, so a week cut
+ * by an edge of what is held is the part of it that is held.
+ *
+ * @param {Array} days The days held, in order.
+ * @param {number} firstday The weekday a week begins on, 0 for Sunday.
+ * @returns {Array} See WeekCell.
+ */
+export const weekCells = (days: string[], firstday: number): WeekCell[] => {
+    const cells: WeekCell[] = [];
+    days.forEach((iso, index) => {
+        if (index === 0 || weekdayOf(iso) === firstday) {
+            cells.push({at: index, length: 1, first: iso, last: iso});
+        } else {
+            const cell = cells[cells.length - 1];
+            cell.length++;
+            cell.last = iso;
+        }
+    });
+    return cells;
+};
+
+/**
+ * A week's cell of the weeks row: a short month over its days ("nov." over "2–8"); a week that crosses a month names the
+ * end's month beside its last day ("out." over "26–1 nov."), and a week of one day held is that day.
+ *
+ * @param {object} cell The week.
+ * @param {string|undefined} language The language tag.
+ * @returns {object} {kicker, days}.
+ */
+export const weekLabel = (cell: WeekCell, language: string | undefined): {kicker: string, days: string} => {
+    const first = Number(cell.first.slice(8, 10));
+    const last = Number(cell.last.slice(8, 10));
+    const kicker = say(cell.first, WEEK_MONTH, language);
+    if (cell.length <= 1) {
+        return {kicker: kicker, days: String(first)};
+    }
+    const crosses = cell.first.slice(0, 7) !== cell.last.slice(0, 7);
+    return {kicker: kicker, days: crosses ? `${first}–${last} ${say(cell.last, WEEK_MONTH, language)}` : `${first}–${last}`};
+};
+
+/** A course's dates as the trail column says them: a range, a start alone, an end alone, or none. */
+export type Dates = {kind: 'range' | 'from' | 'until' | 'none', text: string};
+
+/** A short date with its year: "2 nov. 2026", "Nov 2, 2026". */
+const SHORT_DATE: Intl.DateTimeFormatOptions = {day: 'numeric', month: 'short', year: 'numeric'};
+
+/** A formatter's part, of one date or of a range (whose parts say which side they come from). */
+type DatePart = {type: string, value: string, source?: string};
+
+/**
+ * Whether a range's part is its separator: the literal between the start's parts and the end's.
+ *
+ * @param {Array} parts The parts.
+ * @param {number} index The part's index.
+ * @returns {boolean}
+ */
+const separates = (parts: DatePart[], index: number): boolean =>
+    parts[index - 1]?.source === 'startRange' && parts[index + 1]?.source === 'endRange';
+
+/**
+ * A formatter's parts as one compact line: a literal holding a word inside one date ("2 de nov. de 2026" in Portuguese)
+ * gives way to a space, never the range's separator, which may be a word ("a", "bis", "au"); a dash separating two days
+ * of one month loses its spaces ("2–20 nov. 2026"). The order and the month's spelling stay the language's.
+ *
+ * @param {Array} parts The parts.
+ * @returns {string}
+ */
+const compactParts = (parts: DatePart[]): string => parts
+    .map((part, index) => {
+        if (part.type !== 'literal') {
+            return part.value;
+        }
+        if (separates(parts, index)) {
+            const tight = parts[index - 1].type === 'day' && parts[index + 1].type === 'day' && part.value.includes('–');
+            return tight ? '–' : part.value;
+        }
+        return /\p{L}/u.test(part.value) ? ' ' : part.value;
+    })
+    .join('').replace(/\s+/g, ' ').trim();
+
+/**
+ * A day as a short date with its year, compact.
+ *
+ * @param {string} iso The day, YYYY-MM-DD.
+ * @param {string|undefined} language The language tag.
+ * @returns {string}
+ */
+const shortDate = (iso: string, language: string | undefined): string => {
+    try {
+        return compactParts(new Intl.DateTimeFormat(language, {...SHORT_DATE, timeZone: 'UTC'})
+            .formatToParts(new Date(`${iso}T00:00:00Z`)));
+    } catch (error) {
+        return say(iso, SHORT_DATE, language);
+    }
+};
+
+/**
+ * A course's dates for its row in the trail column, in the viewer's timezone and language: both ends as one range
+ * (Intl's, so one month name when the month is the same and one year when the year is: "2–20 nov. 2026",
+ * "16 nov. – 12 dez. 2026", "15 dez. 2026 – 20 jan. 2027"), a start alone, an end alone (an expected completion date is
+ * the end), or none. The view words the last three ("A partir de", "Até", "Sem datas").
+ *
+ * @param {number} start The start, in seconds, 0 for none.
+ * @param {number} end The end, in seconds, 0 for none.
+ * @param {object} zone The viewer's timezone reader.
+ * @param {string|undefined} language The language tag.
+ * @returns {object} See Dates.
+ */
+export const datesOf = (start: number, end: number, zone: Zone, language: string | undefined): Dates => {
+    const from = start > 0 ? zone.day(start) : '';
+    const to = end > 0 ? zone.day(end) : '';
+    if (from !== '' && to !== '') {
+        // Dates out of order are the start day alone, as the bar draws them.
+        const last = to < from ? from : to;
+        try {
+            return {kind: 'range', text: compactParts(new Intl.DateTimeFormat(language, {...SHORT_DATE, timeZone: 'UTC'})
+                .formatRangeToParts(new Date(`${from}T00:00:00Z`), new Date(`${last}T00:00:00Z`)))};
+        } catch (error) {
+            return {kind: 'range', text: from === last ? shortDate(from, language)
+                : `${shortDate(from, language)} – ${shortDate(last, language)}`};
+        }
+    }
+    if (from !== '') {
+        return {kind: 'from', text: shortDate(from, language)};
+    }
+    return to !== '' ? {kind: 'until', text: shortDate(to, language)} : {kind: 'none', text: ''};
+};
+
+/**
+ * The desktop grid's measures, in rem: the trail column, one day at each zoom (days, weeks, months), one row and a
+ * bar's height. scss/calendar.scss declares the same (--dim-cal-trail-label, --dim-cal-trail-day on .dim-cal__trails and
+ * its --week and --month modifiers, -row, -bar); calendar_component_source_test compares them.
+ */
+export const TRACK = {label: 21.25, day: 3, week: 1, month: 0.25, row: 3.5, bar: 1.5};
+
+/**
+ * The narrowest bar that draws its step's name off the day zoom, in rem; a narrower one is named for a screen reader
+ * alone. By days the least is one day (TRACK.day), so a one-day bar keeps its name there.
+ */
+export const NAMED_BAR = 3.5;
+
+/**
+ * A day's width at a zoom, in rem.
+ *
+ * @param {string} zoom The zoom.
+ * @returns {number}
+ */
+export const dayWidth = (zoom: Zoom): number => TRACK[zoom];
+
+/**
+ * Whether a bar is wide enough to draw its step's name at a zoom: one day by days, {@see NAMED_BAR} off them.
+ *
+ * @param {object} bar The bar.
+ * @param {string} zoom The zoom.
+ * @returns {boolean}
+ */
+export const namedBar = (bar: TrailBar, zoom: Zoom): boolean => {
+    const least = zoom === 'day' ? TRACK.day : NAMED_BAR;
+    return (bar.to - bar.from + 1) * dayWidth(zoom) >= least;
+};
+
+/**
+ * The scroll position that keeps the day at the start of the view where it was once the zoom changes: the same days
+ * from the first day held, at the new width (the browser keeps it inside the new furthest scroll).
+ *
+ * @param {number} left The scroll position at the old zoom.
+ * @param {string} from The old zoom.
+ * @param {string} to The new zoom.
+ * @returns {number}
+ */
+export const zoomedLeft = (left: number, from: Zoom, to: Zoom): number =>
+    Math.max(0, Math.round(left * dayWidth(to) / dayWidth(from)));
 
 /** The scroller's geometry, from its scroll position and its two widths. */
 export type Track = {
@@ -510,24 +736,26 @@ export type Track = {
 };
 
 /**
- * The scroller's geometry: a day's width in pixels (the content is the trail column and the days, TRACK), the width
- * the days are seen through (the scroller's less the column held still), the furthest scroll, the position kept inside
- * it, the map's thumb (where the days in view start and how many they are, as fractions of the days held) and whether
- * there are days to scroll back or ahead to. A scroller with nothing to scroll has a whole thumb and no way to go.
+ * The scroller's geometry: a day's width in pixels (the content is the trail column and the days, TRACK, at the zoom's
+ * day width), the width the days are seen through (the scroller's less the column held still), the furthest scroll, the
+ * position kept inside it, the map's thumb (where the days in view start and how many they are, as fractions of the days
+ * held) and whether there are days to scroll back or ahead to. A scroller with nothing to scroll has a whole thumb and
+ * no way to go.
  *
  * @param {number} left The scroll position.
  * @param {number} total The scroller's content width.
  * @param {number} width The scroller's own width, the part of it in view.
  * @param {number} days The days' columns.
+ * @param {number} day A day's width in rem ({@see dayWidth()}).
  * @returns {object} See Track.
  */
-export const trackOf = (left: number, total: number, width: number, days: number): Track => {
-    const pitch = days > 0 ? total / (days + TRACK.label / TRACK.day) : 0;
+export const trackOf = (left: number, total: number, width: number, days: number, day: number = TRACK.day): Track => {
+    const pitch = days > 0 ? total / (days + TRACK.label / day) : 0;
     const max = Math.max(0, total - width);
     if (pitch <= 0 || max < 1) {
         return {pitch: pitch, view: Math.max(0, width), max: 0, left: 0, start: 0, span: 1, back: false, ahead: false};
     }
-    const view = Math.max(0, width - pitch * TRACK.label / TRACK.day);
+    const view = Math.max(0, width - pitch * TRACK.label / day);
     const span = Math.min(1, view / (days * pitch));
     const at = Math.max(0, Math.min(left, max));
     return {
@@ -681,10 +909,11 @@ export type LinkPiece = {
 };
 
 /**
- * A connector's measures, in rem: the line, the stub out of a bar's end, the room an elbow keeps before the next bar, the
- * detour's room before it, an arrowhead's length and half its width, and the dot.
+ * A connector's measures, in rem: the line, the stub out of a bar's end (the elbow's offset and the drop's, at the day
+ * zoom), the least an elbow's offset narrows to over a narrow gap and the least a drop's does on a narrow day, the
+ * detour's room before the next bar, an arrowhead's length and half its width, and the dot.
  */
-const LINK = {line: 0.125, stub: 0.625, room: 0.75, detour: 0.5625, head: 0.375, half: 0.25, dot: 0.375};
+const LINK = {line: 0.125, stub: 0.625, tight: 0.1875, least: 0.125, detour: 0.5625, head: 0.375, half: 0.25, dot: 0.375};
 
 /**
  * The days from one ISO day to another, negative when the second is earlier.
@@ -738,18 +967,23 @@ const clipped = (piece: LinkPiece, width: number): LinkPiece | null => {
  * The pieces joining one step's bar to the next one's, by the dates (the Conectores board of the approved mockup):
  *
  * - the next starts after the previous ends: an elbow out of the previous bar's right end, down, and into the next
- *   bar's left end with an arrowhead;
+ *   bar's left end with an arrowhead; over a narrow gap (a small zoom) the elbow comes half way, never under
+ *   LINK.tight, and the line into the next bar shrinks to nothing rather than run backwards, the arrowhead's tip kept
+ *   past the elbow;
  * - the next starts while the previous runs: a drop on the next's start day, a dot on the previous bar's base and a
- *   short arrow down into the next bar;
- * - the next starts before the previous starts: a detour on the left, from the previous bar's start into the next's.
+ *   short arrow down into the next bar; the drop's offset into the day is half the day's width on a narrow day, never
+ *   under LINK.least;
+ * - the next starts before the previous starts: a detour on the left, from the previous bar's start into the next's;
+ *   its turn keeps LINK.detour before the next bar, half the gap on a narrow one and no more than the room the days
+ *   held leave before it, never under LINK.tight, its line into the next bar shrinking to nothing as the elbow's does.
  *
  * @param {object} a The previous step's days ({@see reachOf()}).
  * @param {object} b The next step's days.
  * @param {number} row The previous step's row, from 0.
+ * @param {number} day A day's width, in rem.
  * @returns {Array} The pieces, unclipped.
  */
-const pathOf = (a: {from: number, to: number}, b: {from: number, to: number}, row: number): LinkPiece[] => {
-    const day = TRACK.day;
+const pathOf = (a: {from: number, to: number}, b: {from: number, to: number}, row: number, day: number): LinkPiece[] => {
     const amid = row * TRACK.row + TRACK.row / 2;
     const bmid = amid + TRACK.row;
     /**
@@ -787,16 +1021,16 @@ const pathOf = (a: {from: number, to: number}, b: {from: number, to: number}, ro
     if (b.from > a.to) {
         const start = (a.to + 1) * day;
         const end = b.from * day;
-        const elbow = Math.min(start + LINK.stub, end - LINK.room);
+        const elbow = start + Math.max(LINK.tight, Math.min(LINK.stub, (end - start) / 2));
         return [
             across(amid, start, elbow),
             down(elbow, amid - LINK.line / 2, bmid + LINK.line / 2),
-            across(bmid, elbow, end - LINK.head),
-            right(end, bmid),
+            across(bmid, elbow, Math.max(elbow, end - LINK.head)),
+            right(Math.max(end, elbow + LINK.head), bmid),
         ];
     }
     if (b.from >= a.from) {
-        const x = b.from * day + LINK.stub;
+        const x = b.from * day + Math.min(LINK.stub, Math.max(LINK.least, day / 2));
         const base = amid + TRACK.bar / 2;
         const head = bmid - TRACK.bar / 2;
         return [
@@ -807,12 +1041,12 @@ const pathOf = (a: {from: number, to: number}, b: {from: number, to: number}, ro
     }
     const start = a.from * day;
     const end = b.from * day;
-    const turn = end - LINK.detour;
+    const turn = end - Math.max(LINK.tight, Math.min(LINK.detour, (start - end) / 2, end - LINK.line / 2));
     return [
         across(amid, turn, start),
         down(turn, amid - LINK.line / 2, bmid + LINK.line / 2),
-        across(bmid, turn, end - LINK.head),
-        right(end, bmid),
+        across(bmid, turn, Math.max(turn, end - LINK.head)),
+        right(Math.max(end, turn + LINK.head), bmid),
     ];
 };
 
@@ -826,21 +1060,23 @@ const tidy = (value: number): number => Math.round(value * 10000) / 10000;
 
 /**
  * The connectors of a trail's steps over the days held, in the trail's order: each step joined to the next by
- * {@see pathOf()}'s rule, cut at the edges of what is held (a line whose other end is in a month not held runs to that
- * edge, and goes on once the month is held). A step with no date breaks the chain: nothing goes into it or out of it,
- * and the steps around it are not joined. A folded trail draws none.
+ * {@see pathOf()}'s rule at the zoom's day width, cut at the edges of what is held (a line whose other end is in a month
+ * not held runs to that edge, and goes on once the month is held). A step with no date breaks the chain: nothing goes
+ * into it or out of it, and the steps around it are not joined. A folded trail draws none.
  *
  * @param {Array} steps The trail's steps, in order.
  * @param {Array} days The days held, in order.
  * @param {object} zone The viewer's timezone reader.
  * @param {boolean} shown Whether the trail's steps are shown (not folded).
+ * @param {string} zoom The timeline's zoom.
  * @returns {Array} The pieces, in rem.
  */
-export const linksOf = (steps: TrailStep[], days: string[], zone: Zone, shown: boolean): LinkPiece[] => {
+export const linksOf = (steps: TrailStep[], days: string[], zone: Zone, shown: boolean, zoom: Zoom = 'day'): LinkPiece[] => {
     if (!shown || days.length === 0) {
         return [];
     }
-    const width = days.length * TRACK.day;
+    const day = dayWidth(zoom);
+    const width = days.length * day;
     const reaches = steps.map((step) => reachOf(step, days[0], zone));
     const pieces: LinkPiece[] = [];
     reaches.forEach((reach, index) => {
@@ -848,7 +1084,7 @@ export const linksOf = (steps: TrailStep[], days: string[], zone: Zone, shown: b
         if (reach === null || next === null) {
             return;
         }
-        pathOf(reach, next, index).forEach((piece) => {
+        pathOf(reach, next, index, day).forEach((piece) => {
             const kept = clipped(piece, width);
             if (kept) {
                 pieces.push({

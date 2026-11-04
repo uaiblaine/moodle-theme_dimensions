@@ -174,7 +174,10 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
 - **The switch**: the view control gains "Trilhas" (`calendar_viewtrail`), `view=trail` in the page's vocabulary
   (`page::VIEW_TRAIL`), offered to a real account while trails are available (`page::trails_offered()`); for the guest,
   a visitor or a site without mod_subcourse the address reads as the month. Like the week and the day it is
-  navigation, never remembered; so are its trail (`trail=<courseid>`) and "Só as minhas" (`mine=1`).
+  navigation, never remembered; so are its trail (`trail=<courseid>`), "Só as minhas" (`mine=1`) and, since T3c, its
+  timeline's zoom (`zoom=week|month`, absent for days: `page::zoom_from_request()`, dropped unless one of the two
+  words, carried by `page::trail_params()`, the page's address, the forward to the route and the server's arrows;
+  never in `state::STATE_PARAMS`).
 - **Rows**: `local\calendar\trails::answer()`. The trail courses (one statement, capped at `trails::CAP`, inside the
   category narrowing) the showcase gate admits (`population::admitted()` over the root scope: an unlisted trail only
   to an account enrolled in it or with a way to enrol), their steps by section 6's account rule
@@ -201,7 +204,9 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
 - **Bars**: from each step's start to its end in the viewer's timezone (`calendar/trails.ts` `barOf()`), placed by
   grid columns with no layout read; a milestone at an expected date inside the days held; a step that began earlier is
   marked at the left edge, one that runs past what is held is cut there (it goes on once the month is held), an open
-  one fades out. Rows are 52px with 24px bars, the trail column sticky. For a
+  one fades out. Rows are 56px with 24px bars (52px until T3c, which made room for the dates line), the trail column
+  sticky; a bar too narrow for its name (`trails.ts` `namedBar()`: under one day by days, so a one-day bar keeps it
+  there, and under 3.5rem by weeks and months) draws none and keeps its accessible name. For a
   learner of the trail (`classifier::enrolments()` active) the bar carries the state of section 3 (`progress::many()`)
   and the next step is drawn heavier; for anyone else the trail colour, schedule only. The colours are the view's own
   tokens (`--dim-cal-trail*`), copies of the measured default pairs, never an administrator's key colour.
@@ -220,6 +225,33 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
   never does). The trail's fold is core's course-section toggle (`btn btn-icon icons-collapse-expand`, `collapsed` when
   folded) with core's `t/expandedchevron`, `t/collapsedchevron` and `t/collapsedchevron_rtl`, rendered by the server
   (`calendar_page::fold_icons()`), so core draws the box and swaps the glyph.
+- **The zoom (T3c)**: "Dias", "Semanas", "Meses" (`calendar_trailzoomday`, `-week`, `-month`, the group named by
+  `calendar_trailzoom`), a segmented control of real buttons with `aria-pressed` in the filters' row, a desktop's only
+  (the phone's agenda is unchanged). A day is 3rem by days, 1rem by weeks and .25rem by months (`trails.ts` `TRACK`, the
+  stylesheet's `--dim-cal-trail-day` under the section's `--week` and `--month` modifiers: the approved mockup's
+  30/10/4px, the three months fitting about 400px by months). Every position follows it from `TRACK` (`dayWidth()`):
+  the bars' columns, the connectors, today, the band, the scroll arithmetic and the map; nothing is read to place
+  them. A switch keeps the day at the start of the view: the scroller's last measure at the new width (`zoomedLeft()`),
+  at once, then measured where that left it, as after an arrow; nothing is asked, the months held stay. A measure
+  records its zoom, so a new set of months opened at a new zoom in the same commit (Back or Forward across a zoom) is
+  not rescaled. When the days held grow the scroller is measured again where it is: where they fit it (by months on a
+  wide screen) the next month is asked for, up to the six held, and none past them while every day held is in view. By days the
+  header is as T3b drew it (weekday letters, day numbers, today's pill, the weekends hatched); by weeks its second row
+  is the weeks from the viewer's first weekday (core's calendar setting, `calendar_get_starting_weekday()`, as the
+  month grid; `weekCells()`, the first and the last cut at the edges of what is held), each a short month over its
+  days ("nov." over "2–8"; a week across a month names the end's month too, "out." over "26–1 nov.", `weekLabel()`),
+  the week holding today tinted; by months the band alone names the months (the month's name
+  without its year, the mockup's) and the second row draws only the weeks' lines. Off the days no weekend is shaded
+  and a quiet line marks each week's start. At every zoom a small "Hoje" tag (`calendar_today`) tops today's line,
+  in the current step's pair. The toolbar's arrows and "Hoje" still move a month; the arrows, the band and every write
+  of a Trilhas address keep the zoom (`withTrail()`'s third argument), and its own change replaces the address.
+- **The courses' dates (T3c)**: under each course's name in the trail column, a quieter line says its dates from the
+  answer's start and end, in the viewer's timezone and language through Intl (`trails.ts` `datesOf()`, Intl's range,
+  compacted as the agenda's dates are, a date's own words only: the range's separator stays, a word in some
+  languages): "2–20 nov. 2026", "16 nov. – 12 dez. 2026", "15 dez. 2026 – 20 jan. 2027";
+  a start alone "A partir de 1 dez. 2026" (`calendar_trailfrom`), an end alone "Até 20 nov. 2026" (`calendar_until`;
+  an expected completion date is the end), none "Sem datas" (`calendar_trailnodates`). The row's accessible name
+  carries them ("<course>, <dates>: mostrar na linha do tempo").
 - **Connectors (T3b)**: consecutive steps are joined in the trail's order, never by what their enrolment needs
   (`trails.ts` `linksOf()`, from the Conectores board): the next starting after the previous ends is an elbow out of the
   previous bar's right end into the next's left end with an arrowhead; starting while the previous runs, a drop on the
@@ -229,11 +261,16 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
   phone's agenda has none. They are an aria-hidden layer inside the steps' rows, placed in rem by the same day
   arithmetic (no layout read), under the sticky trail column, in the view's own neutral grey `--dim-cal-trail-link`
   (the palette's gray-700 in the light mode and its gray-500, lifted to 3:1, in the dark: the mockup's #6a737b is the
-  locked step's edge, which a connector must not be mistaken for).
+  locked step's edge, which a connector must not be mistaken for). T3c draws them at the zoom's day width: over a
+  narrow gap the elbow comes half way, never under 3px (`LINK.tight`), and the line into the next bar shrinks to
+  nothing rather than run backwards, the arrowhead kept past the elbow (two courses on following days included, at
+  every zoom); the drop's offset into its day is half a narrow day, never under 2px (`LINK.least`); the detour's turn
+  keeps its 9px before the next bar, half the gap over a narrow one and no more than the room the days held leave
+  before it, never under 3px; no piece has a negative length.
 - **Phone**: the trail as an agenda, a "Hoje" line before the first step not done whose end has not passed
   (`todayIndex()`). The phone decision is the frame's width, from the view's one ResizeObserver, as the grids'.
 - **No JavaScript**: the server's layer lists the trails of the month and the next (the first paint's answer) and their
-  steps with their dates and states; its toolbar's links keep the view and the trail and move by the month.
+  steps with their dates and states; its toolbar's links keep the view, the trail and the zoom and move by the month.
 - Core's `expectcompletionon` events of these activities stay in Mês, Semana and Dia as today: Trilhas is its own
   mode, so nothing is drawn twice.
 - **Cost**: the candidates, the gate, `trail::many()`'s one `{subcourse}` statement, `display::many()`'s one statement

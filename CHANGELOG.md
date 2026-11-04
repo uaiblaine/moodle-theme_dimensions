@@ -5,6 +5,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Trail model, stage T3c: a zoom and the courses' dates in the calendar's Trilhas view** (2026100587),
+  `docs/trail/PLAN.md` section 7. The desktop timeline has a zoom, "Days", "Weeks" and "Months", in the filters' row:
+  by weeks the header shows the weeks from the viewer's first weekday, a short month over each week's days, today's
+  week tinted; by months the band alone names the months. Switching keeps the day at the start of the view; the zoom
+  is written to the address (`zoom=week|month`) like the trail, never remembered, and kept by the arrows and the month
+  band, which still move a month. A "Today" tag tops today's line at every zoom; a bar too narrow for its name draws
+  none (a one-day bar keeps it by days); the connectors, the detour included, narrow with the days and never run
+  backwards. Where the months held fit a wide screen (by months), the next ones are loaded up to six. Each course in the trail column says its dates
+  under its name ("2–20 Nov 2026", "From 1 Dec 2026", "Until 20 Nov 2026", "No dates"), and its row's accessible name
+  carries them. Rows are 56px. New strings: `calendar_trailzoom`, `calendar_trailzoomday`, `calendar_trailzoommonth`,
+  `calendar_trailzoomweek`.
 - **Trail model, stage T3b: continuous months in the calendar's Trilhas view** (2026100586), `docs/trail/PLAN.md`
   section 7. The timeline holds the month in view and the next from its first paint (`theme_dimensions_get_calendar_trails`
   takes an optional `months`, 1 or 2), asks for the next month as the scroll nears its end and for the previous one on

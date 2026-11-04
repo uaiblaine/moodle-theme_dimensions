@@ -48,7 +48,8 @@ use theme_dimensions\output\opengraph;
  *    saved category or a shared link to a withheld one shows the whole calendar and says nothing about the id. The
  *    open day ({@see PARAM_DAY}) is kept only inside the shown window ({@see day_from_request()}). The Trilhas view
  *    ({@see VIEW_TRAIL}) is read only for an account while trails are available, its trail and "Só as minhas" as
- *    navigation ({@see trail_from_request()}, {@see mine_from_request()}).
+ *    navigation ({@see trail_from_request()}, {@see mine_from_request()}), and so is its timeline's zoom
+ *    ({@see zoom_from_request()}): written to the address, never to the state.
  * 6. The window (the month grid's, or the week's seven days), the range's answer ({@see range::answer()}) and the
  *    category tree are computed once and handed to the renderable, which embeds them: the first paint costs no request.
  *    In the Trilhas view the range asks no source and the trails of the month and the next are the answer
@@ -108,6 +109,18 @@ final class page {
 
     /** @var string The address parameter of the Trilhas view's "Só as minhas", exactly '1' when on; navigation. */
     public const PARAM_MINE = 'mine';
+
+    /**
+     * @var string The address parameter of the Trilhas timeline's zoom, {@see ZOOM_WEEK} or {@see ZOOM_MONTH}; absent for
+     *   days. Navigation, like the trail: never state, never saved.
+     */
+    public const PARAM_ZOOM = 'zoom';
+
+    /** @var string The Trilhas timeline by weeks. */
+    public const ZOOM_WEEK = 'week';
+
+    /** @var string The Trilhas timeline by months. */
+    public const ZOOM_MONTH = 'month';
 
     /** @var \core\url|null Where to send the client, or null. */
     public readonly ?\core\url $redirect;
@@ -305,6 +318,17 @@ final class page {
     }
 
     /**
+     * The Trilhas timeline's zoom the request names: exactly {@see ZOOM_WEEK} or {@see ZOOM_MONTH}, '' (days) for
+     * anything else, a list included.
+     *
+     * @return string
+     */
+    public static function zoom_from_request(): string {
+        $zoom = self::scalar_param(self::PARAM_ZOOM);
+        return in_array($zoom, [self::ZOOM_WEEK, self::ZOOM_MONTH], true) ? $zoom : '';
+    }
+
+    /**
      * The first day of the week holding a day, on the viewer's first weekday; calendar days counted in UTC, as grid() does.
      *
      * @param string $day A real day, YYYY-MM-DD ({@see is_day()}).
@@ -416,11 +440,11 @@ final class page {
      * @param string $month The month, YYYY-MM.
      * @param string $week The week's first day, YYYY-MM-DD, in the week view.
      * @param string $day The open day, or ''; in the day view its day.
-     * @return array name => value; in the Trilhas view its trail and "Só as minhas" too, when set.
+     * @return array name => value; in the Trilhas view its trail, "Só as minhas" and the zoom too, when set.
      */
     public static function span_params(string $view, string $month, string $week, string $day): array {
         if ($view === self::VIEW_TRAIL) {
-            return self::trail_params($month, self::trail_from_request(), self::mine_from_request());
+            return self::trail_params($month, self::trail_from_request(), self::mine_from_request(), self::zoom_from_request());
         }
         if ($view === self::VIEW_DAY) {
             return [self::PARAM_VIEW => self::VIEW_DAY, self::PARAM_DAY => $day];
@@ -432,22 +456,27 @@ final class page {
     }
 
     /**
-     * The address parameters of the Trilhas view: the view, the month, and the trail and "Só as minhas" when set.
+     * The address parameters of the Trilhas view: the view, the month, and the trail, "Só as minhas" and the zoom when
+     * set.
      *
      * The one spelling of a Trilhas address, the landing page's "Ver no calendário" included.
      *
      * @param string $month The month, YYYY-MM.
      * @param int $trail The one trail, 0 for every trail.
      * @param bool $mine Whether only the viewer's own trails are kept.
+     * @param string $zoom The timeline's zoom, {@see ZOOM_WEEK} or {@see ZOOM_MONTH}; anything else is days, unwritten.
      * @return array name => value.
      */
-    public static function trail_params(string $month, int $trail = 0, bool $mine = false): array {
+    public static function trail_params(string $month, int $trail = 0, bool $mine = false, string $zoom = ''): array {
         $params = [self::PARAM_VIEW => self::VIEW_TRAIL, state::PARAM_MONTH => $month];
         if ($trail > 0) {
             $params[self::PARAM_TRAIL] = $trail;
         }
         if ($mine) {
             $params[self::PARAM_MINE] = 1;
+        }
+        if (in_array($zoom, [self::ZOOM_WEEK, self::ZOOM_MONTH], true)) {
+            $params[self::PARAM_ZOOM] = $zoom;
         }
         return $params;
     }
@@ -486,6 +515,9 @@ final class page {
             }
             if (self::mine_from_request()) {
                 $params[self::PARAM_MINE] = 1;
+            }
+            if (self::zoom_from_request() !== '') {
+                $params[self::PARAM_ZOOM] = self::zoom_from_request();
             }
         }
         $week = self::scalar_param(self::PARAM_WEEK);
@@ -653,7 +685,8 @@ final class page {
             $week,
             $trailsanswer,
             self::trail_from_request(),
-            self::mine_from_request()
+            self::mine_from_request(),
+            self::zoom_from_request()
         ));
     }
 }

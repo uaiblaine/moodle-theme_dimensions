@@ -29,7 +29,15 @@
  *   the legend follows the grid.
  * - A course's row in the trail column is a button: it scrolls the timeline to the course's bar (asking for its month
  *   first when it is not held), then opens the bar's popover once the scroll has ended; a course with no date opens it
- *   on the row. A mouse over a row lights its bar and over a bar its row (a touch never does).
+ *   on the row. Under its name a quieter line gives its dates (trails.ts datesOf()), which its accessible name carries
+ *   too. A mouse over a row lights its bar and over a bar its row (a touch never does).
+ * - The desktop timeline has a zoom (trails.ts Zoom, the page's: `zoom`), days, weeks or months, which sets a day's width
+ *   (the stylesheet's --dim-cal-trail-day under the section's --week or --month modifier, trails.ts dayWidth() for the
+ *   arithmetic). By days the header is the weekdays and the days, today a pill, the weekends hatched; by weeks it is the
+ *   weeks from the viewer's first weekday (trails.ts weekCells()), each a short month over its days, the week holding
+ *   today tinted; by months the band alone names the months and the header draws the weeks' lines. Off the days no
+ *   weekend is shaded; at every zoom a small "Today" tag tops today's line. A bar too narrow for its name
+ *   (trails.ts namedBar()) draws none, and is still named by its step for a screen reader.
  * - On a phone, an agenda: each trail in a card, a learner's progress as one segment per step, the steps in order with
  *   their dates, a "Today" line between the steps behind and the steps ahead (trails.ts todayIndex()).
  * - For a learner of the trail each step carries its state (done, current, late, locked, upcoming) as a class and
@@ -66,8 +74,11 @@ import TrailScroll from './TrailScroll';
 import type {Near, ScrollControl, Shift} from './TrailScroll';
 import {
     ANSWER_MONTHS,
+    LOADED_CAP,
     SKELETON_DAYS,
+    ZOOMS,
     barOf,
+    datesOf,
     emptyTrails,
     extendLoaded,
     linksOf,
@@ -75,11 +86,14 @@ import {
     mergedOf,
     monthDays,
     monthStep,
+    namedBar,
     todayIndex,
     trailBarOf,
+    weekCells,
+    weekLabel,
     windowDays,
 } from './trails';
-import type {FoldIcons, Loaded, StepState, Trail, TrailAnswer, TrailFilter, TrailStep} from './trails';
+import type {FoldIcons, Loaded, StepState, Trail, TrailAnswer, TrailFilter, TrailStep, Zoom} from './trails';
 
 /** What the toolbar asks of the view: a month back or ahead, and today; false when the view draws no timeline. */
 export type TrailNav = {step: (direction: number) => boolean, today: () => boolean};
@@ -94,6 +108,8 @@ type TrailViewProps = {
     phone: boolean,
     captionid: string,
     chosen?: number,
+    zoom?: Zoom,
+    firstday?: number,
     icons?: FoldIcons,
     fetch?: (month: string, months: number) => Promise<TrailAnswer>,
     scope?: string,
@@ -125,6 +141,9 @@ const NO_ICONS: FoldIcons = {expanded: '', collapsed: '', collapsedrtl: ''};
 
 /** A month and its year, in the band. */
 const MONTH_YEAR: Intl.DateTimeFormatOptions = {month: 'long', year: 'numeric'};
+
+/** A month alone, in the band of the month zoom, where a month is a few rem wide (the approved mockup's). */
+const MONTH_ONLY: Intl.DateTimeFormatOptions = {month: 'long'};
 
 /** A day's letter in the header. */
 const WEEKDAY: Intl.DateTimeFormatOptions = {weekday: 'narrow'};
@@ -170,6 +189,38 @@ const dated = (step: TrailStep): boolean => step.start > 0 || step.end > 0;
  */
 const stepLabel = (step: TrailStep, look: Look, now: number): string =>
     [step.name, stepWhen(step, look), stateLine(step, look, now)].filter((part) => part !== '').join(', ');
+
+/**
+ * A course's dates for its row in the trail column: the range, "From" a start alone, "Until" an end alone, "No dates".
+ *
+ * @param {object} step The step.
+ * @param {object} look The page's look.
+ * @returns {string}
+ */
+const datesLine = (step: TrailStep, look: Look): string => {
+    const dates = datesOf(step.start, step.end, look.zone, look.language);
+    if (dates.kind === 'from') {
+        return fill(look.strings.calendar_trailfrom, dates.text);
+    }
+    if (dates.kind === 'until') {
+        return fill(look.strings.calendar_until, dates.text);
+    }
+    return dates.kind === 'none' ? look.strings.calendar_trailnodates : dates.text;
+};
+
+/**
+ * The zoom's name on its button.
+ *
+ * @param {object} strings The page's strings.
+ * @param {string} zoom The zoom.
+ * @returns {string}
+ */
+const zoomLabel = (strings: Strings, zoom: Zoom): string => {
+    if (zoom === 'week') {
+        return strings.calendar_trailzoomweek;
+    }
+    return zoom === 'month' ? strings.calendar_trailzoommonth : strings.calendar_trailzoomday;
+};
 
 /**
  * The trail's progress for a learner ("2 of 5 done"), else ''.
@@ -243,24 +294,32 @@ const shortOf = (iso: string, language: string | undefined): string => {
     }
 };
 
-/** What the view's filters are handed: the trail choice and "Só as minhas", then the page's own controls. */
+/**
+ * What the view's filters are handed: the trail choice and "Só as minhas", then the page's own controls; the zoom and its
+ * change on a desktop (none on a phone, whose agenda has no timeline).
+ */
 type TrailFiltersProps = {
     strings: Strings,
     filter: TrailFilter,
     answer: TrailAnswer | null,
     onChange: (fields: Partial<TrailFilter>) => void,
+    zoom?: Zoom,
+    onZoom?: (zoom: Zoom) => void,
+    phone?: boolean,
     children?: ReactNode,
 };
 
 /**
  * The Trilhas view's toolbar row: "Trilha" (every trail the answer offers, "Todas as trilhas" first) drawn as a button
  * with the trail's icon over a real select, "Só as minhas" as a toggle button, the page's category picker and "Clear
- * filters", and the count of what is drawn at the end. The event types are not part of it.
+ * filters", then on a desktop the timeline's zoom ("Dias", "Semanas", "Meses": a group of real buttons, the zoom shown
+ * pressed), and the count of what is drawn at the end. The event types are not part of it.
  *
  * @param {object} props See TrailFiltersProps.
  * @returns {object} The row.
  */
-export const TrailFilters = ({strings, filter, answer, onChange, children}: TrailFiltersProps) => (
+export const TrailFilters = ({strings, filter, answer, onChange, zoom = 'day', onZoom, phone = false, children}:
+    TrailFiltersProps) => (
     <div className="dim-cal__toolbar dim-cal__trailtools" data-region="dim-cal-trailfilters">
         <label className={`dim-cal__trailpick${filter.trail > 0 ? ' dim-cal__trailpick--chosen' : ''}`}>
             <TrailIcon />
@@ -290,6 +349,28 @@ export const TrailFilters = ({strings, filter, answer, onChange, children}: Trai
         </button>
         {children}
         <span className="dim-cal__spacer"></span>
+        {onZoom && !phone ? (
+            <span
+                className="dim-cal__trailzoom"
+                role="group"
+                aria-label={strings.calendar_trailzoom}
+                data-region="dim-cal-trailzoom"
+            >
+                {ZOOMS.map((one) => (
+                    <button
+                        key={one}
+                        type="button"
+                        className="dim-cal__trailzoombtn"
+                        data-action="dim-cal-trailzoom"
+                        data-zoom={one}
+                        aria-pressed={one === zoom}
+                        onClick={() => onZoom(one)}
+                    >
+                        {zoomLabel(strings, one)}
+                    </button>
+                ))}
+            </span>
+        ) : null}
         {answer && answer.trails.length > 0 ? (
             <span className="dim-cal__trailcount" data-region="dim-cal-trailcount">{countOf(strings, answer)}</span>
         ) : null}
@@ -302,8 +383,8 @@ export const TrailFilters = ({strings, filter, answer, onChange, children}: Trai
  * @param {object} props See TrailViewProps.
  * @returns {object} The region.
  */
-const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 0, icons = NO_ICONS, fetch, scope = '', nav,
-    onRange, onMonth, onDrawn, onWidth}: TrailViewProps) => {
+const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 0, zoom = 'day', firstday = 0, icons = NO_ICONS,
+    fetch, scope = '', nav, onRange, onMonth, onDrawn, onWidth}: TrailViewProps) => {
     const root = useRef<HTMLElement | null>(null);
     const width = useRef<(width: number) => void>(onWidth);
     width.current = onWidth;
@@ -692,7 +773,10 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         } else if (near === 'start') {
             target = monthAfter(months[0], -1);
         }
-        if (target !== '' && target !== failed.current) {
+        // At the cap with the first day held in view (every day held fits the scroller), the next month would only drop
+        // days in view: the months held stay.
+        const full = near === 'end' && months.length >= LOADED_CAP && first === 0;
+        if (target !== '' && target !== failed.current && !full) {
             extend(target);
         }
     };
@@ -744,6 +828,9 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     const poppedstep = poppedtrail?.steps.find((step) => step.cmid === popped?.cmid);
     const learner = merged.trails.some((trail) => trail.enrolled);
     const starts = win.loaded.months.map((one) => ({month: one, at: days.indexOf(`${one}-01`), length: monthDays(one).length}));
+    // By days the header draws the days; off them the weeks (their lines only by months), and no weekend is shaded.
+    const bydays = zoom === 'day';
+    const cells = bydays ? [] : weekCells(days, firstday);
 
     /**
      * A short day of an instant, in the viewer's timezone.
@@ -811,7 +898,9 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                 + (bar.open ? ' dim-cal__trailbar--open' : '')
                 + (bar.milestone ? ' dim-cal__trailbar--milestone' : '')
                 + (step.next ? ' dim-cal__trailbar--next' : '');
-            drawn = opener(trail, step, classes, {gridColumn: `${bar.from + 2} / ${bar.to + 3}`, gridRow: '1'}, step.name);
+            // A bar too narrow for its name draws none; its accessible name is the step's all the same.
+            drawn = opener(trail, step, classes, {gridColumn: `${bar.from + 2} / ${bar.to + 3}`, gridRow: '1'},
+                namedBar(bar, zoom) ? step.name : null);
             if (bar.milestone) {
                 diamond = (
                     <span
@@ -822,6 +911,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                 );
             }
         }
+        const dates = datesLine(step, look);
         return (
             <div className="dim-cal__trailrow dim-cal__trailrow--step" key={step.cmid} data-cmid={step.cmid}>
                 <span className="dim-cal__traillabel dim-cal__trailsteplabel">
@@ -831,7 +921,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                         data-region="dim-cal-trailrow"
                         data-cmid={step.cmid}
                         data-pair={step.cmid}
-                        aria-label={dated(step) ? fill(look.strings.calendar_trailshow, step.name) : undefined}
+                        aria-label={dated(step) ? fill(look.strings.calendar_trailshow, `${step.name}, ${dates}`) : undefined}
                         aria-haspopup="dialog"
                         aria-expanded={popped?.cmid === step.cmid}
                         onClick={(event) => find(trail, step, event.currentTarget)}
@@ -841,12 +931,16 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                         <span className={'dim-cal__trailnum' + (tone ? ` dim-cal__trailnum${tone}` : '')} aria-hidden="true">
                             {step.position}
                         </span>
-                        <span className="dim-cal__trailname">{step.name}</span>
+                        <span className="dim-cal__trailnames">
+                            <span className="dim-cal__trailname">{step.name}</span>
+                            <small
+                                className={`dim-cal__traildates${dated(step) ? '' : ' dim-cal__traildates--none'}`}
+                                data-region="dim-cal-traildates"
+                            >{dates}</small>
+                        </span>
                         {dated(step) ? (
                             <i className="fa fa-crosshairs dim-cal__traillocate" aria-hidden="true"></i>
-                        ) : (
-                            <small className="dim-cal__trailnodates">{look.strings.calendar_trailnodates}</small>
-                        )}
+                        ) : null}
                     </button>
                 </span>
                 {drawn}
@@ -866,7 +960,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         const open = !folded.includes(trail.id);
         const span = trailBarOf(trail, days, look.zone);
         const steps = `dim-cal-trailsteps-${trail.id}`;
-        const links = linksOf(trail.steps, days, look.zone, open);
+        const links = linksOf(trail.steps, days, look.zone, open, zoom);
         return (
             <div className="dim-cal__trail" key={trail.id} role="group" aria-label={trail.name} data-trail={trail.id}>
                 <div
@@ -966,7 +1060,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                         aria-current={entry.month === inview ? 'true' : undefined}
                         onClick={() => aim({kind: 'month', month: entry.month, tries: 0})}
                     >
-                        {say(`${entry.month}-01`, MONTH_YEAR, look.language)}
+                        {say(`${entry.month}-01`, zoom === 'month' ? MONTH_ONLY : MONTH_YEAR, look.language)}
                     </button>
                 </span>
             ))}
@@ -996,6 +1090,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                 openat={openat}
                 opening={String(win.generation)}
                 shift={win.shift}
+                zoom={zoom}
                 control={control}
                 onView={viewing}
                 onSettle={settled}
@@ -1005,7 +1100,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                     {band()}
                     <div className="dim-cal__trailrow dim-cal__trailrow--head" aria-hidden="true">
                         <span className="dim-cal__traillabel dim-cal__trailheading">{look.strings.calendar_trailheading}</span>
-                        {days.map((iso, index) => (
+                        {bydays ? days.map((iso, index) => (
                             <span
                                 key={iso}
                                 className={`dim-cal__trailday${isWeekend(iso) ? ' dim-cal__trailday--weekend' : ''}`
@@ -1016,16 +1111,41 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                                 <span className="dim-cal__trailweekday">{say(iso, WEEKDAY, look.language)}</span>
                                 <span className="dim-cal__traildaynum">{Number(iso.slice(8, 10))}</span>
                             </span>
+                        )) : cells.map((cell) => (
+                            <span
+                                key={cell.first}
+                                className={'dim-cal__trailweek'
+                                    + (zoom === 'week' && today >= cell.first && today <= cell.last
+                                        ? ' dim-cal__trailweek--today' : '')
+                                    + (cell.first.endsWith('-01') && cell.at > 0 ? ' dim-cal__trailweek--first' : '')}
+                                style={{gridColumn: `${cell.at + 2} / ${cell.at + cell.length + 2}`, gridRow: '1'}}
+                                data-region="dim-cal-trailweek"
+                                data-week={cell.first}
+                            >
+                                {zoom === 'week' ? (
+                                    <>
+                                        <span className="dim-cal__trailweekmonth">{weekLabel(cell, look.language).kicker}</span>
+                                        <span className="dim-cal__trailweekdays">{weekLabel(cell, look.language).days}</span>
+                                    </>
+                                ) : null}
+                            </span>
                         ))}
                     </div>
                     <div className="dim-cal__trailground" aria-hidden="true">
-                        {days.map((iso, index) => (isWeekend(iso) ? (
+                        {bydays ? days.map((iso, index) => (isWeekend(iso) ? (
                             <span
                                 key={iso}
                                 className="dim-cal__trailweekend"
                                 style={{'--dim-cal-trail-at': String(index)} as CSSProperties}
                             ></span>
-                        ) : null))}
+                        ) : null)) : null}
+                        {cells.filter((cell) => cell.at > 0 && !cell.first.endsWith('-01')).map((cell) => (
+                            <span
+                                key={cell.first}
+                                className="dim-cal__trailweekline"
+                                style={{'--dim-cal-trail-at': String(cell.at)} as CSSProperties}
+                            ></span>
+                        ))}
                         {starts.filter((entry) => entry.at > 0).map((entry) => (
                             <span
                                 key={entry.month}
@@ -1038,6 +1158,13 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                                 className="dim-cal__trailnow"
                                 style={{'--dim-cal-trail-at': String(todayat)} as CSSProperties}
                             ></span>
+                        ) : null}
+                        {todayat >= 0 ? (
+                            <span
+                                className="dim-cal__trailnowtag"
+                                data-region="dim-cal-trailnowtag"
+                                style={{'--dim-cal-trail-at': String(todayat)} as CSSProperties}
+                            >{look.strings.calendar_today}</span>
                         ) : null}
                     </div>
                     {merged.trails.map((trail) => trailRows(trail))}
@@ -1150,7 +1277,8 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     return (
         <section
             ref={root}
-            className={`dim-cal__trails${phone ? ' dim-cal__trails--phone' : ''}`}
+            className={'dim-cal__trails' + (phone ? ' dim-cal__trails--phone' : '')
+                + (!phone && zoom !== 'day' ? ` dim-cal__trails--${zoom}` : '')}
             role="region"
             aria-labelledby={captionid}
             data-region="dim-cal-trails"

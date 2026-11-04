@@ -1893,12 +1893,22 @@ body.dim-calendar {
         --dim-cal-ink: var(--dim-cal-trail-ink);
         --dim-cal-trail-label: 21.25rem;
         --dim-cal-trail-day: 3rem;
-        --dim-cal-trail-row: 3.25rem;
+        --dim-cal-trail-row: 3.5rem;
         --dim-cal-trail-bar: 1.5rem;
         --dim-cal-trail-band: 1.75rem;
         --dim-cal-trail-head: 2.5rem;
         flex: 1 1 auto;
         min-width: 0;
+    }
+
+    // The timeline's zoom (TrailView.tsx, trails.ts TRACK week and month): a day's width, which every column, connector,
+    // line and scroll position reads.
+    .dim-cal__trails--week {
+        --dim-cal-trail-day: 1rem;
+    }
+
+    .dim-cal__trails--month {
+        --dim-cal-trail-day: .25rem;
     }
 
     .dim-cal__trails > .dim-cal__empty {
@@ -1963,6 +1973,39 @@ body.dim-calendar {
     .dim-cal__trailcount {
         color: var(--dim-ds-text-muted, var(--bs-secondary-color));
         font-size: .8125rem;
+    }
+
+    // The zoom: one control of three real buttons, the zoom shown pressed in the chosen trail's tint.
+    .dim-cal__trailzoom {
+        display: inline-flex;
+        height: 2.25rem;
+        overflow: hidden;
+        border: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: var(--dim-cal-surface);
+    }
+
+    .dim-cal__trailzoombtn {
+        padding: 0 .75rem;
+        border: 0;
+        background: transparent;
+        color: var(--dim-ds-text-body, var(--bs-body-color));
+        font-size: .875rem;
+        font-weight: 400;
+    }
+
+    .dim-cal__trailzoombtn + .dim-cal__trailzoombtn {
+        border-inline-start: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
+    }
+
+    .dim-cal__trailzoombtn:hover {
+        background: var(--dim-cal-surface-hover);
+    }
+
+    .dim-cal__trailzoombtn[aria-pressed="true"] {
+        background: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+        color: var(--dim-ds-text-on-tint, var(--bs-primary-text-emphasis));
+        font-weight: 600;
     }
 
     // The card, its scroller and the grid.
@@ -2120,7 +2163,7 @@ body.dim-calendar {
         gap: .625rem;
         align-items: center;
         min-width: 0;
-        height: 2rem;
+        height: 2.875rem;
         padding: 0 .5rem;
         border: 0;
         border-radius: var(--dim-ds-radius-md, 8px);
@@ -2143,10 +2186,11 @@ body.dim-calendar {
         color: var(--dim-cal-trailcurrent-edge);
     }
 
-    .dim-cal__trailnodates {
-        flex: none;
+    // A course's dates, the quieter line under its name ("No dates" for a course with none).
+    .dim-cal__traildates {
         color: var(--dim-ds-text-muted, var(--bs-secondary-color));
         font-size: .6875rem;
+        font-variant-numeric: tabular-nums;
     }
 
     // The fold is core's course-section toggle (btn-icon icons-collapse-expand), which draws the box and swaps the
@@ -2159,13 +2203,15 @@ body.dim-calendar {
 
     .dim-cal__trailnames {
         display: flex;
+        flex: 1 1 auto;
         flex-direction: column;
         gap: 1px;
         min-width: 0;
     }
 
     .dim-cal__trailname,
-    .dim-cal__trailmeta {
+    .dim-cal__trailmeta,
+    .dim-cal__traildates {
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -2250,6 +2296,46 @@ body.dim-calendar {
         border-inline-start: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
     }
 
+    // The weeks row of the week zoom (a short month over the week's days, today's week tinted) and of the month zoom
+    // (the weeks' lines alone); each week starts on the viewer's first weekday.
+    .dim-cal__trailweek {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-self: stretch;
+        min-width: 0;
+        padding-inline-start: .375rem;
+        overflow: hidden;
+        border-inline-start: 1px solid var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
+        line-height: 1.15;
+        white-space: nowrap;
+    }
+
+    .dim-cal__trailweek--first {
+        border-inline-start-color: var(--dim-ds-border-default, var(--bs-border-color));
+    }
+
+    .dim-cal__trailweek--today {
+        background: var(--dim-ds-interactive-primary-tint, var(--bs-primary-bg-subtle));
+    }
+
+    .dim-cal__trailweekmonth {
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .625rem;
+        font-weight: 500;
+    }
+
+    .dim-cal__trailweekdays {
+        color: var(--dim-ds-text-body, var(--bs-body-color));
+        font-size: .75rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dim-cal__trailweek--today .dim-cal__trailweekdays {
+        color: var(--dim-ds-text-on-tint, var(--bs-primary-text-emphasis));
+    }
+
     // The ground under the rows: the weekends hatched as the month's are, and today's line, placed in multiples of the
     // day's width (no layout read). The rows paint over it; the still columns hide it.
     .dim-cal__trailground {
@@ -2262,11 +2348,19 @@ body.dim-calendar {
     }
 
     .dim-cal__trailweekend,
+    .dim-cal__trailweekline,
     .dim-cal__trailmonthedge,
     .dim-cal__trailnow {
         position: absolute;
         top: 0;
         bottom: 0;
+    }
+
+    // Off the day zoom, a quiet line where each week starts (a month's 1st keeps its own).
+    .dim-cal__trailweekline {
+        inset-inline-start: calc(var(--dim-cal-trail-label) + var(--dim-cal-trail-at, 0) * var(--dim-cal-trail-day));
+        width: 1px;
+        background: var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
     }
 
     .dim-cal__trailmonthedge {
@@ -2291,6 +2385,24 @@ body.dim-calendar {
         inset-inline-start: calc(var(--dim-cal-trail-label) + (var(--dim-cal-trail-at, 0) + .5) * var(--dim-cal-trail-day) - 1px);
         width: 2px;
         background: var(--dim-cal-trailcurrent-edge);
+    }
+
+    // At every zoom a small "Today" tag tops today's line (the day's pill is the day zoom's alone), in the current
+    // step's own pair, which reads in both modes.
+    .dim-cal__trailnowtag {
+        position: absolute;
+        top: .125rem;
+        inset-inline-start: calc(var(--dim-cal-trail-label) + (var(--dim-cal-trail-at, 0) + .5) * var(--dim-cal-trail-day));
+        margin-inline-start: .25rem;
+        padding: 0 .25rem;
+        border: 1px solid var(--dim-cal-trailcurrent-edge);
+        border-radius: 4px;
+        background: var(--dim-cal-trailcurrent-tint);
+        color: var(--dim-cal-trailcurrent-ink);
+        font-size: .625rem;
+        font-weight: 600;
+        line-height: 1rem;
+        white-space: nowrap;
     }
 
     // The trail's own span on its row, and the diamond of an end inside the month.
@@ -2373,6 +2485,16 @@ body.dim-calendar {
     .dim-cal__trailbar--next {
         border-width: 2px;
         font-weight: 700;
+    }
+
+    // A day is narrow off the day zoom: the bars keep less room inside, and by months none beside them.
+    .dim-cal__trails--week .dim-cal__trailbar {
+        padding-inline: .25rem;
+    }
+
+    .dim-cal__trails--month .dim-cal__trailbar {
+        margin-inline: 0;
+        padding-inline: 0;
     }
 
     .dim-cal__trailbar[data-lit] {
