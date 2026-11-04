@@ -171,6 +171,10 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
 
 ## 7. The calendar's Trilhas view (C6, built in T3)
 
+The owner's review of T3b, T3c and its follow-up has its own canvas (https://claude.ai/artifact/GPt7eYFoCtgM5jQk49a86Z,
+private to the owner), whose source is kept in [`mockups/`](mockups/README.md): the continuous timeline with its zoom and
+its courses' dates, the connectors' cases, and the four ways to end a course with no end date (the chip was chosen).
+
 - **The switch**: the view control gains "Trilhas" (`calendar_viewtrail`), `view=trail` in the page's vocabulary
   (`page::VIEW_TRAIL`), offered to a real account while trails are available (`page::trails_offered()`); for the guest,
   a visitor or a site without mod_subcourse the address reads as the month. Like the week and the day it is
@@ -204,7 +208,12 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
 - **Bars**: from each step's start to its end in the viewer's timezone (`calendar/trails.ts` `barOf()`), placed by
   grid columns with no layout read; a milestone at an expected date inside the days held; a step that began earlier is
   marked at the left edge, one that runs past what is held is cut there (it goes on once the month is held), an open
-  one fades out. Rows are 56px with 24px bars (52px until T3c, which made room for the dates line), the trail column
+  one (a start and no end, no expected date) is drawn as its first 30 days (`OPEN_DAYS`, the start day and 29 more),
+  then a quiet decorative chip, "→ sem término" (`calendar_trailopenchip`), .375rem after the bar's last day at every
+  zoom (`chipLeft()`, in rem by the bars' day arithmetic, none where the 30 days reach the last day held or run past
+  it: it appears once the next month is held); its connectors leave the end of the 30 days, and the trail's line ends
+  there too, with no chip. The bar's accessible name and the popover's dates line say it in full, "Sem término
+  definido" (`calendar_trailopenfull`), a step with an end or an expected date not. Rows are 56px with 24px bars (52px until T3c, which made room for the dates line), the trail column
   sticky; a bar too narrow for its name (`trails.ts` `namedBar()`: under one day by days, so a one-day bar keeps it
   there, and under 3.5rem by weeks and months) draws none and keeps its accessible name. For a
   learner of the trail (`classifier::enrolments()` active) the bar carries the state of section 3 (`progress::many()`)

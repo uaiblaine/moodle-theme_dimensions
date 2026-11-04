@@ -20,7 +20,8 @@
  *   another month asked for when the scroll nears the end of what is held or the arrows go back past its start, at most
  *   trails.ts capOf() held. Each step a bar from its start to its end (trails.ts barOf()), a diamond on an expected
  *   completion date, one that began earlier marked at the left edge, one that runs on past what is held cut there, an
- *   open one fading out; the trail's own row carries its span (trails.ts trailBarOf()). Above the days a band names each
+ *   open one (a start and no end) its first 30 days and a decorative "no end" chip after it; the trail's own row carries its span
+ *   (trails.ts trailBarOf()). Above the days a band names each
  *   month held, its name a button that scrolls to its 1st; a month on its way is a quiet skeleton at the end. Weekends
  *   are hatched, a month's first day is a line, and today is a line down the rows. Consecutive steps are joined by
  *   connectors in the trail's order (trails.ts linksOf()), drawn by the same day arithmetic, aria-hidden. The days have
@@ -69,7 +70,7 @@ import type {Look} from './look';
 import {safeHref} from './model';
 import {fill} from './strings';
 import type {Strings} from './strings';
-import TrailPopover, {TrailIcon, stateLabel, stateLine, stepWhen} from './TrailPopover';
+import TrailPopover, {TrailIcon, stateLabel, stateLine, stepOpenEnd, stepWhen} from './TrailPopover';
 import TrailScroll from './TrailScroll';
 import type {Near, ScrollControl, Shift} from './TrailScroll';
 import {
@@ -78,6 +79,7 @@ import {
     SKELETON_DAYS,
     ZOOMS,
     barOf,
+    chipLeft,
     datesOf,
     emptyTrails,
     extendLoaded,
@@ -189,7 +191,8 @@ const dated = (step: TrailStep): boolean => step.start > 0 || step.end > 0;
  * @returns {string}
  */
 const stepLabel = (step: TrailStep, look: Look, now: number): string =>
-    [step.name, stepWhen(step, look), stateLine(step, look, now)].filter((part) => part !== '').join(', ');
+    [step.name, stepWhen(step, look), stepOpenEnd(step, look), stateLine(step, look, now)]
+        .filter((part) => part !== '').join(', ');
 
 /**
  * A course's dates for its row in the trail column: the range, "From" a start alone, "Until" an end alone, "No dates".
@@ -891,15 +894,14 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
      */
     const stepRow = (trail: Trail, step: TrailStep) => {
         const bar = barOf(step, days, look.zone);
+        const chip = bar ? chipLeft(bar, days.length, zoom) : null;
         const tone = step.state ? `--${step.state}` : '';
         let drawn = null;
         let diamond = null;
         if (bar) {
-            const continued = bar.after && !bar.open;
             const classes = 'dim-cal__trailbar' + (tone ? ` dim-cal__trailbar${tone}` : '')
                 + (bar.before ? ' dim-cal__trailbar--before' : '')
-                + (continued ? ' dim-cal__trailbar--after' : '')
-                + (bar.open ? ' dim-cal__trailbar--open' : '')
+                + (bar.after ? ' dim-cal__trailbar--after' : '')
                 + (bar.milestone ? ' dim-cal__trailbar--milestone' : '')
                 + (step.next ? ' dim-cal__trailbar--next' : '');
             // A bar too narrow for its name draws none; its accessible name is the step's all the same.
@@ -949,6 +951,13 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                 </span>
                 {drawn}
                 {diamond}
+                {chip !== null ? (
+                    <span
+                        className="dim-cal__trailnoend"
+                        style={{'--dim-cal-chip-start': `${chip}rem`} as CSSProperties}
+                        aria-hidden="true"
+                    >{look.strings.calendar_trailopenchip}</span>
+                ) : null}
             </div>
         );
     };
@@ -1005,7 +1014,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                             aria-hidden="true"
                         ></span>
                     ) : null}
-                    {span && !span.after ? (
+                    {span && !span.after && !span.open ? (
                         <span
                             className="dim-cal__traildiamond dim-cal__traildiamond--trail"
                             style={{gridColumn: String(span.to + 2), gridRow: '1'}}

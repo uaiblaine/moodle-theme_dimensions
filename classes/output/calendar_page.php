@@ -163,6 +163,8 @@ class calendar_page implements renderable, templatable {
         'calendar_trailmonths',
         'calendar_trailnodates',
         'calendar_trailnotenrolled',
+        'calendar_trailopenchip',
+        'calendar_trailopenfull',
         'calendar_trailpage',
         'calendar_trailposition',
         'calendar_trailprogress',

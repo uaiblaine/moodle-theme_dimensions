@@ -1685,7 +1685,12 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
     week across a month names the end's month); off the days no weekend is drawn; a "Today" tag tops today's line at
     every zoom; a bar under one day by days, under `NAMED_BAR` (3.5rem) off them, draws no name. The trail column's second line is `datesOf()` (Intl's range, its own words compacted,
     never the separator), worded by the view; rows are 56px. A week cell narrower than `WEEK_LABEL_LEAST` (2.5rem: a
-    one or two day first week by weeks) draws no label and keeps its line (`weekLabelled()`). Gates: the "T3c" block.
+    one or two day first week by weeks) draws no label and keeps its line (`weekLabelled()`). A course with a start and no
+    end (`bar.open`) is its first `OPEN_DAYS` = 30 days (`reachOf()` and `spanOf()` read the same), then an aria-hidden
+    chip (`calendar_trailopenchip`, `chipLeft()`: `CHIP_GAP` .375rem after the last day at every zoom, none when those
+    days reach the last day held or run past it); the bar's name and the popover's dates line say `calendar_trailopenfull`
+    in full (`stepOpenEnd()`); the trail's line (`trailBarOf()`, the latest of its steps' ends and open steps' 30 days)
+    has no chip; an expected date is an end, so not open. Gates: the "T3c" block.
 - **R3: visual parity with the mockup** (PROPOSAL section 33). The desktop Trilhas grid scrolls sideways in
   `TrailScroll.tsx`, compass's strip in the theme's classes:
   - one native scroller with the scrollbar hidden, snapped per day;

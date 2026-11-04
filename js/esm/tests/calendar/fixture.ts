@@ -170,6 +170,8 @@ export const STRINGS: Record<string, string> = {
     'calendar_trailmonths': 'Months',
     'calendar_trailnodates': 'No dates',
     'calendar_trailnotenrolled': 'Not enrolled',
+    'calendar_trailopenchip': '→ no end date',
+    'calendar_trailopenfull': 'No end date set',
     'calendar_trailpage': 'View trail',
     'calendar_trailposition': 'Course {$a->position} of {$a->count} · {$a->trail}',
     'calendar_trailprogress': '{$a->done} of {$a->count} done',

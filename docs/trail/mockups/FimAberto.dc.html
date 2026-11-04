@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Fim aberto: variantes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f8f9fa}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1440px; height: 760px; padding: 32px; font-family: Outfit, system-ui, sans-serif; color: #1f1f1f; background: #f8f9fa; display: flex; flex-direction: column; gap: 18px;">
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: #070093;">Um curso sem data de término: como dizer "continua"</h2>
+    <p style="margin: 0; font-size: 14px; color: #343a40; max-width: 1060px;">A barra mostra os primeiros 30 dias. O que vem depois dela precisa dizer "segue sem data", sem se confundir com o esmaecido que já marca uma barra que continua fora da vista ao rolar, nem com uma barra cortada na borda do que foi carregado.</p>
+  </div>
+  <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+    <div style="display: grid; grid-template-columns: 300px minmax(0, 1fr) 360px; gap: 24px; align-items: center; background: #fff; border: 1px solid #e3e6ea; border-radius: 12px; padding: 14px 18px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <strong style="font-size: 15px; font-weight: 600;">{{r.title}}</strong>
+        <span style="font-size: 12px; color: #5c636a;">{{r.kicker}}</span>
+      </div>
+      <div aria-hidden="true" style="position: relative; height: 40px;">
+        <span style="position: absolute; top: 8px; left: 0; width: 480px; height: 24px; box-sizing: border-box; padding: 0 8px; border: 1px solid #070093; border-radius: 6px; background: #fff; color: #070093; font-size: 12px; font-weight: 500; line-height: 22px; white-space: nowrap;">TRAILDEMO Projeto final</span>
+        <sc-for list="{{r.pieces}}" as="p" hint-placeholder-count="3">
+          <span style="position: absolute; top: {{p.top}}px; left: {{p.left}}px; width: {{p.w}}px; height: {{p.h}}px; box-sizing: border-box; border: {{p.border}}; border-radius: {{p.radius}}; background: {{p.bg}}; opacity: {{p.op}}; color: #070093; font-size: 11px; font-weight: 600; line-height: {{p.lh}}px; text-align: center; white-space: nowrap;">{{p.text}}</span>
+        </sc-for>
+      </div>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #343a40;">{{r.text}}</p>
+    </div>
+  </sc-for>
+  <div style="display: flex; align-items: center; gap: 18px; font-size: 12px; color: #343a40; padding: 4px 18px;">
+    <span style="font-weight: 600;">Na legenda, com qualquer variante:</span>
+    <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 18px; height: 10px; border-radius: 3px; border: 1px solid #070093;"></span><span style="width: 7px; height: 7px; border-radius: 2px; border: 1px solid #070093; opacity: .6;"></span><span style="width: 4px; height: 4px; border-radius: 1px; border: 1px solid #070093; opacity: .35;"></span><span style="margin-left: 4px;">Sem data de término (os primeiros 30 dias)</span></span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const END = 480;
+    const EDGE = '1px solid #070093';
+    const piece = (left, w, h, op, extra) => ({
+      left, w, h, top: 8 + (24 - h) / 2, op, border: EDGE, bg: '#fff', radius: '5px', text: '', lh: h - 2, ...extra,
+    });
+    return {
+      rows: [
+        {title: 'A. Fragmentos que encolhem', kicker: 'O pedido, refinado: largura, altura e opacidade descem',
+          pieces: [piece(END + 6, 24, 16, .75), piece(END + 36, 14, 10, .5), piece(END + 56, 7, 6, .3)],
+          text: 'Lê como "vai sumindo". Sozinho pode parecer três itens soltos; com a legenda e o popover ("A partir de 15 dez., sem término") fica claro.'},
+        {title: 'B. Rastro pontilhado', kicker: 'A borda segue como pontos até sumir',
+          pieces: [piece(END, 90, 2, 1, {top: 19, border: '0', bg: 'transparent', radius: '0', text: ''}),
+            piece(END + 4, 4, 4, .9, {top: 18, radius: '50%', bg: '#070093', border: '0'}),
+            piece(END + 18, 4, 4, .7, {top: 18, radius: '50%', bg: '#070093', border: '0'}),
+            piece(END + 32, 4, 4, .5, {top: 18, radius: '50%', bg: '#070093', border: '0'}),
+            piece(END + 46, 4, 4, .3, {top: 18, radius: '50%', bg: '#070093', border: '0'}),
+            piece(END + 60, 4, 4, .15, {top: 18, radius: '50%', bg: '#070093', border: '0'})],
+          text: 'O pontilhado é o código usual de "estimado" ou "em aberto" nos cronogramas. Discreto, mas some a uma escala de meses.'},
+        {title: 'C. Rótulo de continuidade', kicker: 'A mesma ficha do "→ 12 dez.", com texto',
+          pieces: [piece(END + 8, 84, 20, 1, {text: '→ sem término', radius: '6px', lh: 18})],
+          text: 'O mais explícito: reaproveita a ficha que já diz onde termina uma barra fora da vista. Não depende de legenda; ocupa mais espaço.'},
+        {title: 'D. Ponta em setas', kicker: 'Divisas que se apagam, a barra "aponta" para frente',
+          pieces: [piece(END + 6, 16, 24, .8, {border: '0', bg: 'transparent', text: '›', lh: 22}),
+            piece(END + 18, 16, 24, .55, {border: '0', bg: 'transparent', text: '›', lh: 22}),
+            piece(END + 30, 16, 24, .3, {border: '0', bg: 'transparent', text: '›', lh: 22})],
+          text: 'Diz "segue em frente", mas setas já servem de navegação no calendário (as setas da linha do tempo), o que pode confundir.'},
+        {title: 'A + legenda + popover (recomendado)', kicker: 'Fragmentos que encolhem, nomeados na legenda e no popover',
+          pieces: [piece(END + 6, 24, 16, .75), piece(END + 36, 14, 10, .5), piece(END + 56, 7, 6, .3)],
+          text: 'Mantém a forma que você gostou e resolve a ambiguidade pelo texto: a legenda ganha "Sem data de término", o popover diz "Sem término; mostramos os primeiros 30 dias", e o nome acessível também.'},
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

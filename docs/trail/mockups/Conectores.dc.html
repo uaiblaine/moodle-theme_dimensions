@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Conectores: os casos de alinhamento</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f8f9fa}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1440px; height: 560px; padding: 32px; font-family: Outfit, system-ui, sans-serif; color: #1f1f1f; background: #f8f9fa; display: flex; flex-direction: column; gap: 20px;">
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: #070093;">O conector segue a ordem da trilha, não as datas</h2>
+    <p style="margin: 0; font-size: 14px; color: #343a40; max-width: 980px;">Cada curso liga ao seguinte pela posição na trilha. O desenho escolhe o caminho pelas datas: um cotovelo quando há folga, uma queda quando o próximo começa antes de o anterior terminar, um desvio pela esquerda quando começa antes de o anterior começar.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px;">
+    <sc-for list="{{panels}}" as="p" hint-placeholder-count="4">
+      <div style="background: #fff; border: 1px solid #e3e6ea; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 600;">{{p.title}}</h3>
+        <div aria-hidden="true" style="position: relative; height: 96px; border-radius: 8px; background: #fbfbfc; border: 1px solid #eef0f2; overflow: hidden;">
+          <sc-for list="{{p.edges}}" as="e" hint-placeholder-count="1">
+            <span style="position: absolute; top: 0; bottom: 0; left: {{e.left}}px; width: 1px; background: #dee2e6;"></span>
+          </sc-for>
+          <sc-for list="{{p.bars}}" as="b" hint-placeholder-count="2">
+            <span style="position: absolute; top: {{b.top}}px; left: {{b.left}}px; width: {{b.width}}px; height: 22px; box-sizing: border-box; border: {{b.border}}; border-radius: 6px; background: {{b.bg}}; color: {{b.ink}}; font-size: 11px; font-weight: 600; line-height: 20px; padding: 0 6px; white-space: nowrap; overflow: hidden;">{{b.name}}</span>
+          </sc-for>
+          <sc-for list="{{p.segs}}" as="g" hint-placeholder-count="3">
+            <span style="position: absolute; left: {{g.left}}px; top: {{g.top}}px; width: {{g.w}}px; height: {{g.h}}px; background: #505050; border-radius: 1px;"></span>
+          </sc-for>
+          <sc-for list="{{p.dots}}" as="o" hint-placeholder-count="1">
+            <span style="position: absolute; left: {{o.left}}px; top: {{o.top}}px; width: 6px; height: 6px; border-radius: 50%; background: #505050;"></span>
+          </sc-for>
+          <sc-for list="{{p.downs}}" as="a" hint-placeholder-count="1">
+            <svg width="8" height="6" viewBox="0 0 8 6" style="position: absolute; left: {{a.left}}px; top: {{a.top}}px;"><path d="M0 0H8L4 6Z" fill="#505050"></path></svg>
+          </sc-for>
+          <sc-for list="{{p.rights}}" as="a" hint-placeholder-count="1">
+            <svg width="6" height="8" viewBox="0 0 6 8" style="position: absolute; left: {{a.left}}px; top: {{a.top}}px;"><path d="M0 0L6 4L0 8Z" fill="#505050"></path></svg>
+          </sc-for>
+          <sc-if value="{{p.hasChip}}" hint-placeholder-val="{{ false }}">
+            <span style="position: absolute; right: 6px; top: {{p.chipTop}}px; padding: 1px 6px; border: 1px solid #070093; border-radius: 6px; background: #fff; color: #070093; font-size: 11px; font-weight: 600;">→ 3 dez.</span>
+          </sc-if>
+        </div>
+        <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #343a40;">{{p.text}}</p>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; gap: 28px; font-size: 13px; color: #343a40;">
+    <span><strong style="font-weight: 600;">Cor:</strong> cinza neutro do próprio calendário (#505050 no claro, 8,1:1 no branco), distinto da borda e da tinta de cada estado.</span>
+    <span><strong style="font-weight: 600;">Traçado:</strong> sai e entra pelas bordas das barras; nunca passa por cima do nome de um curso.</span>
+    <span><strong style="font-weight: 600;">Curso sem datas:</strong> a corrente se interrompe ali; nada entra nele nem sai dele, e a linha da lista diz "Sem datas".</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const DAY = 11;
+    const Y = [14, 58];
+    const UP = {bg: '#ffffff', border: '1px solid #070093', ink: '#070093'};
+    const NOW = {bg: '#070093', border: '2px solid #070093', ink: '#ffffff'};
+    const bar = (name, start, end, row, tone) => ({name, left: start * DAY, width: (end - start + 1) * DAY, top: Y[row], start, end, ...tone});
+    const build = (a, b, kind) => {
+      const segs = [];
+      const dots = [];
+      const downs = [];
+      const rights = [];
+      const ya = a.top + 10;
+      const yb = b.top + 10;
+      if (kind === 'elbow') {
+        const x0 = (a.end + 1) * DAY;
+        const xb = b.start * DAY;
+        const elbow = Math.min(x0 + 7, xb - 9);
+        segs.push({left: x0, top: ya, w: elbow - x0 + 2, h: 2});
+        segs.push({left: elbow, top: ya, w: 2, h: yb - ya + 1});
+        segs.push({left: elbow, top: yb, w: xb - 6 - elbow, h: 2});
+        rights.push({left: xb - 6, top: yb - 3});
+      } else if (kind === 'drop') {
+        const xd = b.start * DAY + 8;
+        dots.push({left: xd - 2, top: a.top + 20});
+        segs.push({left: xd, top: a.top + 22, w: 2, h: b.top - 6 - (a.top + 22)});
+        downs.push({left: xd - 3, top: b.top - 6});
+      } else if (kind === 'left') {
+        const xa = a.start * DAY;
+        const xl = b.start * DAY - 9;
+        segs.push({left: xl, top: ya, w: xa - xl, h: 2});
+        segs.push({left: xl, top: ya, w: 2, h: yb - ya + 1});
+        segs.push({left: xl, top: yb, w: b.start * DAY - 6 - xl, h: 2});
+        rights.push({left: b.start * DAY - 6, top: yb - 3});
+      } else if (kind === 'edge') {
+        const x0 = (a.end + 1) * DAY;
+        const right = 25 * DAY;
+        segs.push({left: x0, top: ya, w: 9, h: 2});
+        segs.push({left: x0 + 7, top: ya, w: 2, h: yb - ya + 1});
+        segs.push({left: x0 + 7, top: yb, w: right - x0 - 13, h: 2});
+        rights.push({left: right - 6, top: yb - 3});
+      }
+      return {segs, dots, downs, rights};
+    };
+    const p1a = bar('Curso 1', 1, 8, 0, NOW);
+    const p1b = bar('Curso 2', 12, 22, 1, UP);
+    const p2a = bar('Curso 1', 1, 15, 0, NOW);
+    const p2b = bar('Curso 2', 9, 23, 1, UP);
+    const p3a = bar('Curso 1', 10, 22, 0, NOW);
+    const p3b = bar('Curso 2', 3, 14, 1, UP);
+    const p4a = bar('Curso 1', 4, 15, 0, NOW);
+    return {
+      panels: [
+        {title: 'Com folga entre os cursos', bars: [p1a, p1b], edges: [], hasChip: false, chipTop: 0,
+          text: 'Cotovelo do fim de um curso ao início do seguinte: sai à direita da barra, desce e entra pela esquerda da próxima.',
+          ...build(p1a, p1b, 'elbow')},
+        {title: 'O próximo começa antes de o anterior terminar', bars: [p2a, p2b], edges: [], hasChip: false, chipTop: 0,
+          text: 'Queda no dia em que o próximo começa: um ponto na base da barra anterior e uma seta curta para baixo. Nada volta para trás.',
+          ...build(p2a, p2b, 'drop')},
+        {title: 'O próximo começa antes de o anterior começar', bars: [p3a, p3b], edges: [], hasChip: false, chipTop: 0,
+          text: 'Desvio pela esquerda: sai do início do anterior, contorna por fora e entra no início do próximo. É raro, e a ordem continua a da trilha.',
+          ...build(p3a, p3b, 'left')},
+        {title: 'O próximo está além do que foi carregado', bars: [p4a], edges: [{left: 25 * DAY}], hasChip: true, chipTop: Y[1] + 1,
+          text: 'O conector vai até a borda e termina no rótulo da data; ao rolar, o mês seguinte carrega e a linha continua até a barra.',
+          ...build(p4a, {top: Y[1], start: 30, end: 40}, 'edge')},
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

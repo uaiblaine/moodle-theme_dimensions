@@ -1290,3 +1290,99 @@ describe('the days\' scroller', () => {
         expect(weeks.map((week) => week.textContent).slice(3, 6)).toEqual(['Nov22–28', 'Nov29–5 Dec', 'Dec6–12']);
     });
 });
+
+describe('an open course (a start and no end)', () => {
+    /**
+     * A trail whose one course starts on a day and never ends, so the trail's own period is open.
+     *
+     * @param {string} from The course's first day.
+     * @param {object} fields What differs in the course.
+     * @param {number} last The trail's last end, 0 while open.
+     * @returns {object}
+     */
+    const opened = (from: string, fields: Partial<Trail['steps'][number]> = {}, last = 0): Trail => {
+        const source = trail();
+        return trail({
+            first: at(from, 12),
+            last: last,
+            steps: [{...source.steps[1], cmid: 80, position: 1, name: 'Aberto', start: at(from, 12), end: 0, ...fields}],
+        });
+    };
+
+    it('draws its first 30 days and an aria-hidden "no end date" chip after them, and no spill chip', async() => {
+        const page = await mount(offered(trails([opened('2026-11-01')], '2026-12-31')));
+        const bar = page.querySelector<HTMLElement>('.dim-cal__trailbar') as HTMLElement;
+        expect(bar.style.gridColumn).toBe('2 / 32');
+        expect(bar.classList.contains('dim-cal__trailbar--after')).toBe(false);
+        // The bar's name says it in full, where the chip is short.
+        expect(String(bar.getAttribute('aria-label'))).toContain('Aberto');
+        expect(String(bar.getAttribute('aria-label'))).toContain('No end date set');
+        const chips = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailnoend'));
+        expect(chips.map((chip) => [chip.textContent, chip.getAttribute('aria-hidden'), chip.style.getPropertyValue('--dim-cal-chip-start')]))
+            .toEqual([['→ no end date', 'true', '90.375rem']]);
+        expect(page.querySelector('.dim-cal__trailspill')).toBeNull();
+        expect(page.querySelector('[data-region="dim-cal-trailchip"]')).toBeNull();
+        // The trail's line ends with the course's 30 days: no chip and nothing after it.
+        const span = page.querySelector<HTMLElement>('.dim-cal__trailspan') as HTMLElement;
+        expect(span.style.gridColumn).toBe('2 / 32');
+        expect(page.querySelectorAll('.dim-cal__trailrow--trail .dim-cal__trailnoend')).toHaveLength(0);
+        expect(page.querySelector('.dim-cal__traildiamond--trail')).toBeNull();
+    });
+
+    it('places the chip a fixed gap after the bar at every zoom, by the zoom\'s day', async() => {
+        const placed = async(zoom: string) => {
+            const page = await mount(offered(trails([opened('2026-11-01')], '2026-12-31'), {zoom: zoom}));
+            const chips = Array.from(page.querySelectorAll<HTMLElement>('.dim-cal__trailnoend'));
+            document.body.replaceChildren();
+            return chips.map((chip) => chip.style.getPropertyValue('--dim-cal-chip-start'));
+        };
+        expect(await placed('')).toEqual(['90.375rem']);
+        expect(await placed('week')).toEqual(['30.375rem']);
+        expect(await placed('month')).toEqual(['7.875rem']);
+    });
+
+    it('draws no chip when the 30 days run past the months held, and the bar is cut there', async() => {
+        const page = await mount(offered(trails([opened('2026-11-10')])));
+        const bar = page.querySelector<HTMLElement>('.dim-cal__trailbar') as HTMLElement;
+        expect(bar.style.gridColumn).toBe('11 / 32');
+        expect(bar.classList.contains('dim-cal__trailbar--after')).toBe(true);
+        expect(page.querySelectorAll('.dim-cal__trailnoend')).toHaveLength(0);
+    });
+
+    it('draws no chip for a course with an end, or with an expected completion date', async() => {
+        const page = await mount(offered(trails([trail()], '2026-12-31')));
+        expect(page.querySelectorAll('.dim-cal__trailnoend')).toHaveLength(0);
+        document.body.replaceChildren();
+        const expected = await mount(offered(trails(
+            [opened('2026-11-01', {end: at('2026-11-25', 12), expected: true}, at('2026-11-25', 12))],
+            '2026-12-31'
+        )));
+        expect(expected.querySelectorAll('.dim-cal__trailnoend')).toHaveLength(0);
+        expect((expected.querySelector('.dim-cal__trailbar') as HTMLElement).style.gridColumn).toBe('2 / 27');
+        expect(String(expected.querySelector('.dim-cal__trailbar')?.getAttribute('aria-label'))).not.toContain('No end date set');
+    });
+
+    it('says in full in the step\'s popover that it has no end date, and not for a step with an end', async() => {
+        const page = await mount(offered(trails([opened('2026-11-01')], '2026-12-31')));
+        await act(async() => {
+            fireEvent.click(page.querySelector('.dim-cal__trailbar') as HTMLElement);
+        });
+        const when = (await waitFor(() => {
+            const row = document.querySelector('[data-region="dim-cal-trailwhen"]');
+            expect(row).not.toBeNull();
+            return row as HTMLElement;
+        })).textContent;
+        expect(String(when)).toContain('From November 1, 2026 · No end date set');
+        document.body.replaceChildren();
+        const closed = await mount(offered(trails([trail()], '2026-12-31')));
+        await act(async() => {
+            fireEvent.click(closed.querySelector('.dim-cal__trailbar') as HTMLElement);
+        });
+        const other = await waitFor(() => {
+            const row = document.querySelector('[data-region="dim-cal-trailwhen"]');
+            expect(row).not.toBeNull();
+            return row as HTMLElement;
+        });
+        expect(String(other.textContent)).not.toContain('No end date set');
+    });
+});

@@ -24,8 +24,10 @@
  *   month and the next (local\calendar\trails::MONTHS), each further month is one call, appended or prepended, and the
  *   answers are merged by trail id ({@see mergedOf()}), a trail kept while its period meets what is held.
  * - A bar runs from its step's start to its end, clipped at the edges of what is held: a step that began earlier is
- *   marked `before`, one that ends later `after`, and one with no end `open` (it fades at the edge). A step with an end
- *   and no start is a milestone on its end; an expected date drawn as the bar's end is a milestone too.
+ *   marked `before`, one that ends later `after`. A step with a start and no end is `open`: it is drawn as its first
+ *   {@see OPEN_DAYS} days, followed by a decorative chip ({@see chipLeft()}) saying it has no end;
+ *   an expected completion date is an end, so such a step is not open. A step with an end and no start is a milestone on
+ *   its end; an expected date drawn as the bar's end is a milestone too.
  * - On a desktop the days have a fixed width and only the timeline scrolls, the trail column held still beside it. The
  *   scroller's geometry is read from the scroller alone ({@see trackOf()}: its content width is the trail column and the
  *   days, TRACK, in rem, which scss/calendar.scss declares with the same numbers), so the position of today, a month, a
@@ -132,6 +134,53 @@ export type TrailBar = {
     milestone: boolean,
 };
 
+/** The days a course with a start and no end is drawn for, its start day included. */
+export const OPEN_DAYS = 30;
+
+/**
+ * An ISO day some days later (or earlier, negative).
+ *
+ * @param {string} day The day, YYYY-MM-DD.
+ * @param {number} count The days to add.
+ * @returns {string} The day, YYYY-MM-DD.
+ */
+const daysAfter = (day: string, count: number): string =>
+    new Date(Date.parse(`${day}T00:00:00Z`) + count * 86400000).toISOString().slice(0, 10);
+
+/**
+ * The last day of a span with a start and no end: its {@see OPEN_DAYS}th day, or the day given when it is later.
+ *
+ * @param {string} start The start day.
+ * @param {string|null} until A later last day, null for none.
+ * @returns {string} The day, YYYY-MM-DD.
+ */
+const openEnd = (start: string, until: string | null): string =>
+    until !== null && until > start ? until : daysAfter(start, OPEN_DAYS - 1);
+
+/**
+ * Where an open trail's period ends, as its row's line is drawn: the latest of its steps' ends and of each open
+ * step's {@see OPEN_DAYS} (the trail's own last end is 0 while any step is open, and says nothing).
+ *
+ * @param {object} trail The trail.
+ * @param {object} zone The viewer's timezone reader.
+ * @returns {string|null} The day, null when no step has a date.
+ */
+const openTrailEnd = (trail: Trail, zone: Zone): string | null => {
+    let latest: string | null = null;
+    trail.steps.forEach((step) => {
+        let day: string | null = null;
+        if (step.end > 0) {
+            day = zone.day(step.end);
+        } else if (step.start > 0) {
+            day = daysAfter(zone.day(step.start), OPEN_DAYS - 1);
+        }
+        if (day !== null && (latest === null || day > latest)) {
+            latest = day;
+        }
+    });
+    return latest;
+};
+
 /**
  * A month's own days, its 1st to its last (the Trilhas view's columns).
  *
@@ -164,7 +213,7 @@ export const barOf = (step: TrailStep, days: string[], zone: Zone): TrailBar | n
  * @returns {object|null} See TrailBar.
  */
 export const trailBarOf = (trail: Trail, days: string[], zone: Zone): TrailBar | null =>
-    spanOf(trail.first, trail.last, false, days, zone);
+    spanOf(trail.first, trail.last, false, days, zone, trail.first > 0 && trail.last <= 0 ? openTrailEnd(trail, zone) : null);
 
 /**
  * Where a span between two instants goes on the days held, or null when it does not touch them.
@@ -174,9 +223,17 @@ export const trailBarOf = (trail: Trail, days: string[], zone: Zone): TrailBar |
  * @param {boolean} expected Whether the end is an expected completion date (a milestone when inside the days held).
  * @param {Array} days The days held, in order.
  * @param {object} zone The viewer's timezone reader.
+ * @param {string|null} until The last day of a span with no end, null for its start's {@see OPEN_DAYS}th day.
  * @returns {object|null} See TrailBar.
  */
-const spanOf = (begins: number, ends: number, expected: boolean, days: string[], zone: Zone): TrailBar | null => {
+const spanOf = (
+    begins: number,
+    ends: number,
+    expected: boolean,
+    days: string[],
+    zone: Zone,
+    until: string | null = null,
+): TrailBar | null => {
     const first = days[0];
     const last = days[days.length - 1];
     const start = begins > 0 ? zone.day(begins) : null;
@@ -189,6 +246,11 @@ const spanOf = (begins: number, ends: number, expected: boolean, days: string[],
     if (start !== null && end !== null && end < start) {
         end = start;
     }
+    // A start with no end is open: its first OPEN_DAYS days, the bar and the connectors (reachOf()) reading the same ones.
+    const open = start !== null && end === null;
+    if (open) {
+        end = openEnd(String(start), until);
+    }
     if ((start !== null && start > last) || (end !== null && end < first)) {
         return null;
     }
@@ -200,6 +262,22 @@ const spanOf = (begins: number, ends: number, expected: boolean, days: string[],
         }
         return {from: at, to: at, before: false, after: false, open: false, milestone: true};
     }
+    return placedOf(start, end, open, expected, days);
+};
+
+/**
+ * Where a span with a start goes on the days held, which it touches: clipped at their edges.
+ *
+ * @param {string} start The start day.
+ * @param {string|null} end The end day, null for none.
+ * @param {boolean} open Whether the end is the start's {@see OPEN_DAYS}th day, not a stated one.
+ * @param {boolean} expected Whether the end is an expected completion date.
+ * @param {Array} days The days held, in order.
+ * @returns {object} See TrailBar.
+ */
+const placedOf = (start: string, end: string | null, open: boolean, expected: boolean, days: string[]): TrailBar => {
+    const first = days[0];
+    const last = days[days.length - 1];
     const before = start < first;
     const after = end === null || end > last;
     const from = before ? 0 : days.indexOf(start);
@@ -208,8 +286,8 @@ const spanOf = (begins: number, ends: number, expected: boolean, days: string[],
         to: Math.max(from, after ? days.length - 1 : days.indexOf(String(end))),
         before: before,
         after: after,
-        open: end === null,
-        milestone: expected && end !== null && end <= last,
+        open: open,
+        milestone: !open && expected && end !== null && end <= last,
     };
 };
 
@@ -738,6 +816,22 @@ export const namedBar = (bar: TrailBar, zoom: Zoom): boolean => {
     return (bar.to - bar.from + 1) * dayWidth(zoom) >= least;
 };
 
+/** The gap between an open bar's last day and its "no end date" chip, in rem: fixed at every zoom (decorative). */
+export const CHIP_GAP = 0.375;
+
+/**
+ * Where the chip after an open bar starts, in rem from the first day held, by the bars' day arithmetic: its gap after
+ * the end of the bar's last day, at every zoom. Null for a bar that is not open, and for one whose 30 days run to the
+ * last day held or past it: the chip is drawn once the next month is held, never at the edge.
+ *
+ * @param {object} bar The bar ({@see barOf()}).
+ * @param {number} count The days held.
+ * @param {string} zoom The zoom.
+ * @returns {number|null}
+ */
+export const chipLeft = (bar: TrailBar, count: number, zoom: Zoom): number | null =>
+    bar.open && bar.to + 1 < count ? Math.round(((bar.to + 1) * dayWidth(zoom) + CHIP_GAP) * 10000) / 10000 : null;
+
 /**
  * The scroll position that keeps the day at the start of the view where it was once the zoom changes: the same days
  * from the first day held, at the new width (the browser keeps it inside the new furthest scroll).
@@ -953,7 +1047,7 @@ const daysBetween = (from: string, to: string): number =>
     Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000);
 
 /**
- * A step's days counted from the first day held, unclipped (before it, negative; an open step runs on for ever), as
+ * A step's days counted from the first day held, unclipped (before it, negative; an open step runs its {@see OPEN_DAYS}), as
  * {@see barOf()} reads them: an end alone is its day, an end before the start the start day. Null for a step with no
  * date, which has no bar anywhere.
  *
@@ -971,7 +1065,7 @@ export const reachOf = (step: TrailStep, first: string, zone: Zone): {from: numb
         return {from: at, to: at};
     }
     const from = daysBetween(first, zone.day(step.start));
-    return {from: from, to: step.end <= 0 ? Infinity : Math.max(from, daysBetween(first, zone.day(step.end)))};
+    return {from: from, to: step.end <= 0 ? from + OPEN_DAYS - 1 : Math.max(from, daysBetween(first, zone.day(step.end)))};
 };
 
 /**

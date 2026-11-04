@@ -779,6 +779,13 @@ final class calendar_scss_test extends \advanced_testcase {
             $scss
         );
         $this->assertMatchesRegularExpression('~\.dim-cal__trailfind \{[^}]*height: 2\.875rem;~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailnoend \{\s*position: absolute;\s*inset-inline-start: calc\(var\(--dim-cal-trail-label\) \+ '
+                . 'var\(--dim-cal-chip-start, 0rem\)\);\s*top: 50%;\s*z-index: 1;\s*margin-top: -\.625rem;\s*'
+                . 'padding: 0 \.375rem;\s*border: 1px solid var\(--dim-cal-trailupcoming-edge\);~',
+            $scss,
+            'The "no end date" chip after an open bar: a bordered chip in the upcoming step\'s pair, centred on the bar.'
+        );
         $this->assertStringNotContainsString('trailnodates', $scss, 'A course with no dates says so on its dates line.');
         foreach ($this->compiled() as $mode => $tokens) {
             $this->assertGreaterThanOrEqual(

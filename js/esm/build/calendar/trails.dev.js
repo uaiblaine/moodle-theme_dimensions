@@ -11,8 +11,10 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *   month and the next (local\calendar\trails::MONTHS), each further month is one call, appended or prepended, and the
  *   answers are merged by trail id ({@see mergedOf()}), a trail kept while its period meets what is held.
  * - A bar runs from its step's start to its end, clipped at the edges of what is held: a step that began earlier is
- *   marked `before`, one that ends later `after`, and one with no end `open` (it fades at the edge). A step with an end
- *   and no start is a milestone on its end; an expected date drawn as the bar's end is a milestone too.
+ *   marked `before`, one that ends later `after`. A step with a start and no end is `open`: it is drawn as its first
+ *   {@see OPEN_DAYS} days, followed by a decorative chip ({@see chipLeft()}) saying it has no end;
+ *   an expected completion date is an end, so such a step is not open. A step with an end and no start is a milestone on
+ *   its end; an expected date drawn as the bar's end is a milestone too.
  * - On a desktop the days have a fixed width and only the timeline scrolls, the trail column held still beside it. The
  *   scroller's geometry is read from the scroller alone ({@see trackOf()}: its content width is the trail column and the
  *   days, TRACK, in rem, which scss/calendar.scss declares with the same numbers), so the position of today, a month, a
@@ -34,13 +36,31 @@ const TRAIL_PARAM = "trail";
 const MINE_PARAM = "mine";
 const ZOOM_PARAM = "zoom";
 const ZOOMS = ["day", "week", "month"];
+const OPEN_DAYS = 30;
+const daysAfter = /* @__PURE__ */ __name((day, count) => new Date(Date.parse(`${day}T00:00:00Z`) + count * 864e5).toISOString().slice(0, 10), "daysAfter");
+const openEnd = /* @__PURE__ */ __name((start, until) => until !== null && until > start ? until : daysAfter(start, OPEN_DAYS - 1), "openEnd");
+const openTrailEnd = /* @__PURE__ */ __name((trail, zone) => {
+  let latest = null;
+  trail.steps.forEach((step) => {
+    let day = null;
+    if (step.end > 0) {
+      day = zone.day(step.end);
+    } else if (step.start > 0) {
+      day = daysAfter(zone.day(step.start), OPEN_DAYS - 1);
+    }
+    if (day !== null && (latest === null || day > latest)) {
+      latest = day;
+    }
+  });
+  return latest;
+}, "openTrailEnd");
 const monthDays = /* @__PURE__ */ __name((month) => {
   const length = monthLength(Number(month.slice(0, 4)), Number(month.slice(5, 7)));
   return Array.from({ length }, (unused, index) => `${month}-${String(index + 1).padStart(2, "0")}`);
 }, "monthDays");
 const barOf = /* @__PURE__ */ __name((step, days, zone) => spanOf(step.start, step.end, step.expected, days, zone), "barOf");
-const trailBarOf = /* @__PURE__ */ __name((trail, days, zone) => spanOf(trail.first, trail.last, false, days, zone), "trailBarOf");
-const spanOf = /* @__PURE__ */ __name((begins, ends, expected, days, zone) => {
+const trailBarOf = /* @__PURE__ */ __name((trail, days, zone) => spanOf(trail.first, trail.last, false, days, zone, trail.first > 0 && trail.last <= 0 ? openTrailEnd(trail, zone) : null), "trailBarOf");
+const spanOf = /* @__PURE__ */ __name((begins, ends, expected, days, zone, until = null) => {
   const first = days[0];
   const last = days[days.length - 1];
   const start = begins > 0 ? zone.day(begins) : null;
@@ -50,6 +70,10 @@ const spanOf = /* @__PURE__ */ __name((begins, ends, expected, days, zone) => {
   }
   if (start !== null && end !== null && end < start) {
     end = start;
+  }
+  const open = start !== null && end === null;
+  if (open) {
+    end = openEnd(String(start), until);
   }
   if (start !== null && start > last || end !== null && end < first) {
     return null;
@@ -61,6 +85,11 @@ const spanOf = /* @__PURE__ */ __name((begins, ends, expected, days, zone) => {
     }
     return { from: at, to: at, before: false, after: false, open: false, milestone: true };
   }
+  return placedOf(start, end, open, expected, days);
+}, "spanOf");
+const placedOf = /* @__PURE__ */ __name((start, end, open, expected, days) => {
+  const first = days[0];
+  const last = days[days.length - 1];
   const before = start < first;
   const after = end === null || end > last;
   const from = before ? 0 : days.indexOf(start);
@@ -69,10 +98,10 @@ const spanOf = /* @__PURE__ */ __name((begins, ends, expected, days, zone) => {
     to: Math.max(from, after ? days.length - 1 : days.indexOf(String(end))),
     before,
     after,
-    open: end === null,
-    milestone: expected && end !== null && end <= last
+    open,
+    milestone: !open && expected && end !== null && end <= last
   };
-}, "spanOf");
+}, "placedOf");
 const todayIndex = /* @__PURE__ */ __name((steps, now) => {
   const index = steps.findIndex((step) => step.state !== "done" && (step.end === 0 || step.end >= now));
   return index < 0 ? steps.length : index;
@@ -277,6 +306,8 @@ const namedBar = /* @__PURE__ */ __name((bar, zoom) => {
   const least = zoom === "day" ? TRACK.day : NAMED_BAR;
   return (bar.to - bar.from + 1) * dayWidth(zoom) >= least;
 }, "namedBar");
+const CHIP_GAP = 0.375;
+const chipLeft = /* @__PURE__ */ __name((bar, count, zoom) => bar.open && bar.to + 1 < count ? Math.round(((bar.to + 1) * dayWidth(zoom) + CHIP_GAP) * 1e4) / 1e4 : null, "chipLeft");
 const zoomedLeft = /* @__PURE__ */ __name((left, from, to) => Math.max(0, Math.round(left * dayWidth(to) / dayWidth(from))), "zoomedLeft");
 const trackOf = /* @__PURE__ */ __name((left, total, width, days, day = TRACK.day) => {
   const pitch = days > 0 ? total / (days + TRACK.label / day) : 0;
@@ -347,7 +378,7 @@ const reachOf = /* @__PURE__ */ __name((step, first, zone) => {
     return { from: at, to: at };
   }
   const from = daysBetween(first, zone.day(step.start));
-  return { from, to: step.end <= 0 ? Infinity : Math.max(from, daysBetween(first, zone.day(step.end))) };
+  return { from, to: step.end <= 0 ? from + OPEN_DAYS - 1 : Math.max(from, daysBetween(first, zone.day(step.end))) };
 }, "reachOf");
 const clipped = /* @__PURE__ */ __name((piece, width) => {
   if (piece.kind !== "horizontal") {
@@ -443,11 +474,13 @@ const linksOf = /* @__PURE__ */ __name((steps, days, zone, shown, zoom = "day") 
 }, "linksOf");
 export {
   ANSWER_MONTHS,
+  CHIP_GAP,
   LOADED_CAP,
   LOAD_AHEAD,
   MINE_PARAM,
   MONTH_CAP,
   NAMED_BAR,
+  OPEN_DAYS,
   SKELETON_DAYS,
   STEP_INSET,
   TRACK,
@@ -457,6 +490,7 @@ export {
   ZOOM_PARAM,
   barOf,
   capOf,
+  chipLeft,
   datesOf,
   dayLeft,
   dayWidth,

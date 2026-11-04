@@ -11,8 +11,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   months instead of six, so a wide screen is filled; by days and weeks the cap stays six, and a switch down keeps the
   months held until the next load drops the far side. Five mutation gates.
 
-  The Trilhas filters' category panel opens from its button's start, so on a phone, where the picker opens a row
-  of its own, it no longer runs past the screen's left edge.
+  A course with a start and no end is no longer drawn to the edge of the months held: it is its first 30 days
+  (the start day and 29 more), then a quiet "→ no end date" chip after a small gap, at every zoom, so its end reads as
+  open; the chip waits for the next month when the 30 days reach the edge. The bar's accessible name and the step's
+  popover say "No end date set" in full. An expected completion date still counts as the end; the connectors leave
+  the end of the 30 days; the trail's thin line ends there. The phone's agenda is unchanged. Two new strings.
 - **Trail model, stage T3c: a zoom and the courses' dates in the calendar's Trilhas view** (2026100589),
   `docs/trail/PLAN.md` section 7. The desktop timeline has a zoom, "Days", "Weeks" and "Months", in the filters' row:
   by weeks the header shows the weeks from the viewer's first weekday, a short month over each week's days, today's

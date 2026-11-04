@@ -123,6 +123,8 @@ export const KEYS = [
     'calendar_trailmonths',
     'calendar_trailnodates',
     'calendar_trailnotenrolled',
+    'calendar_trailopenchip',
+    'calendar_trailopenfull',
     'calendar_trailpage',
     'calendar_trailposition',
     'calendar_trailprogress',

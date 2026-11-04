@@ -132,6 +132,17 @@ export const stepWhen = (step: TrailStep, look: Look): string => {
 };
 
 /**
+ * "No end date set" for a step with a start and no end (an expected date is an end), in full: the popover's dates line
+ * and the bar's accessible name say it, where the bar's chip says it short. Empty for any other step.
+ *
+ * @param {object} step The step.
+ * @param {object} look The page's look.
+ * @returns {string}
+ */
+export const stepOpenEnd = (step: TrailStep, look: Look): string =>
+    step.start > 0 && step.end <= 0 ? look.strings.calendar_trailopenfull : '';
+
+/**
  * The step's state line: "Starts on" for a current step whose course has not begun (the landing page's rule), else the
  * state's tag; '' for a reader who is not a learner.
  *
@@ -287,7 +298,7 @@ const TrailPopover = ({look, trail, step, opener, sheet, now, onClose}: TrailPop
                 <i className="fa fa-calendar dim-cal__popicon" aria-hidden="true"></i>
                 <span>
                     <span className="visually-hidden">{`${look.strings.calendar_when}: `}</span>
-                    {stepWhen(step, look)}
+                    {[stepWhen(step, look), stepOpenEnd(step, look)].filter((part) => part !== '').join(' · ')}
                     <small className="dim-cal__trailsource">
                         {step.expected ? look.strings.calendar_trailexpected : look.strings.calendar_trailcoursedates}
                     </small>
