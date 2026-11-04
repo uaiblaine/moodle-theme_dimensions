@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - The calendar's Trilhas view: the trails of one month, in one answer.
+ * Theme Dimensions - The calendar's Trilhas view: the trails of a month, or of the month and the next, in one answer.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -36,7 +36,7 @@ use theme_dimensions\local\trail\progress;
 use theme_dimensions\local\trail\trail;
 
 /**
- * The answer of the Trilhas view: the trails whose period meets a month, and under each
+ * The answer of the Trilhas view: the trails whose period meets a window of whole months, and under each
  * the steps this account sees, with their state for a learner of the trail.
  *
  * In order:
@@ -50,7 +50,7 @@ use theme_dimensions\local\trail\trail;
  * 3. Their structure ({@see trail::many()}) and the steps this account sees ({@see display::many()}, section 6's
  *    account rule: in full or not at all, never a ghost), each batch one statement for every trail.
  * 4. The progress of the trails the account is enrolled in ({@see progress::many()}), over the steps drawn.
- * 5. The rows: the trails with a step drawn whose period meets the month, narrowed to one trail or to the account's
+ * 5. The rows: the trails with a step drawn whose period meets the window, narrowed to one trail or to the account's
  *    own when asked. The period is the landing page's: from the first start to the last end over the steps drawn, left
  *    open by a step that starts and never ends.
  *
@@ -69,10 +69,13 @@ final class trails {
     /** @var int The most trail courses one answer reads; past it, the answer says it was truncated. */
     public const CAP = 100;
 
+    /** @var int The most months one answer covers: the view's first paint is the month and the next. */
+    public const MONTHS = window::MAX_MONTHS;
+
     /**
-     * The answer for one month.
+     * The answer for a window of whole months.
      *
-     * @param window $window The month's own days, its first to its last ({@see month_window()}).
+     * @param window $window The months' own days, the first's 1st to the last's last day ({@see month_window()}).
      * @param scope $scope The viewer's calendar scope, whose category narrowing applies to the trail course.
      * @param int $trailid One trail to keep, 0 for every trail.
      * @param bool $mine Whether only the trails the viewer is enrolled in are kept.
@@ -212,14 +215,16 @@ final class trails {
     }
 
     /**
-     * A month's own days as a window: its 1st to its last day, in the viewer's timezone.
+     * The days of a month, or of the month and the next ones, as a window: the first's 1st to the last's last day, in
+     * the viewer's timezone.
      *
-     * @param string $month The month, YYYY-MM.
+     * @param string $month The first month, YYYY-MM.
+     * @param int $months How many months, 1 to {@see MONTHS}.
      * @return window
+     * @throws refusal On a malformed month or a count outside 1 to MONTHS.
      */
-    public static function month_window(string $month): window {
-        $first = \DateTimeImmutable::createFromFormat('!Y-m-d', $month . '-01', new \DateTimeZone('UTC'));
-        return window::from_iso($first->format('Y-m-d'), $first->format('Y-m-t'));
+    public static function month_window(string $month, int $months = 1): window {
+        return window::whole_months($month, $months);
     }
 
     /**
@@ -306,7 +311,7 @@ final class trails {
      * @param int $first The first start, 0 for none.
      * @param int $last The last end, 0 for none.
      * @param bool $open Whether the period never ends.
-     * @param window $window The month.
+     * @param window $window The months.
      * @return bool
      */
     private static function meets(int $first, int $last, bool $open, window $window): bool {

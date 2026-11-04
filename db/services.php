@@ -104,8 +104,8 @@ $functions = [
     ],
     'theme_dimensions_get_calendar_trails' => [
         'classname' => 'theme_dimensions\external\get_calendar_trails',
-        'description' => 'The trails of one month for the calendar\'s Trilhas view: each trail the viewer may discover, '
-            . 'its steps and, for a learner, their states.',
+        'description' => 'The trails of a month, or of the month and the next, for the calendar\'s Trilhas view: each trail '
+            . 'the viewer may discover, its steps and, for a learner, their states.',
         'type' => 'read',
         'ajax' => true,
         'readonlysession' => true,

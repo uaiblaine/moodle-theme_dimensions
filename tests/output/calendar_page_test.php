@@ -284,6 +284,28 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
+     * The Trilhas view's fold is core's course-section toggle: the props carry core's three chevrons as the theme's core
+     * renderer draws them, decorative, and the visitor's props carry none of the account's view.
+     *
+     * @return void
+     */
+    public function test_the_trilhas_fold_draws_cores_chevrons(): void {
+        global $PAGE;
+        [$renderable] = $this->build(new state());
+        $icons = $renderable->props()['trails']['icons'];
+        $output = $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL);
+        $this->assertSame([
+            'expanded' => $output->render(new \pix_icon('t/expandedchevron', '')),
+            'collapsed' => $output->render(new \pix_icon('t/collapsedchevron', '')),
+            'collapsedrtl' => $output->render(new \pix_icon('t/collapsedchevron_rtl', '')),
+        ], $icons);
+        $this->assertCount(3, array_unique($icons), 'Three glyphs, each its own.');
+        foreach ($icons as $name => $html) {
+            $this->assertStringContainsString('aria-hidden="true"', $html, "{$name}: decorative, the button is named.");
+        }
+    }
+
+    /**
      * Every string the client reads exists in both languages, and is the list the client names.
      *
      * @return void

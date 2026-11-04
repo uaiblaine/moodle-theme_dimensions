@@ -48,6 +48,9 @@ final class window {
     /** @var int The most days one window may hold: six weeks, one month grid. */
     public const MAX_DAYS = 42;
 
+    /** @var int The most whole months one window of {@see whole_months()} holds: the Trilhas view's month and the next. */
+    public const MAX_MONTHS = 2;
+
     /** @var string The first day, YYYY-MM-DD. */
     public readonly string $from;
 
@@ -70,7 +73,7 @@ final class window {
      * Build a window from its two parsed ends; use {@see from_iso()}.
      *
      * @param \DateTimeImmutable $first Midnight of the first day, in the viewer's timezone.
-     * @param int $count The number of days, 1 to MAX_DAYS.
+     * @param int $count The number of days, 1 to MAX_DAYS (more for {@see whole_months()}).
      */
     private function __construct(\DateTimeImmutable $first, int $count) {
         $days = [];
@@ -113,6 +116,31 @@ final class window {
             throw new refusal();
         }
         return new self($first, $count);
+    }
+
+    /**
+     * A window of whole months: the 1st of a month to the last day of the month `$count - 1` after it, refusing a month
+     * that is none and a count outside 1 to {@see MAX_MONTHS}.
+     *
+     * The Trilhas view's window ({@see trails::month_window()}), which may pass {@see MAX_DAYS}: two months are up to
+     * 62 days, and the trails' answer reads the window's bounds only, never one row per day.
+     *
+     * @param string $month The first month, YYYY-MM.
+     * @param int $count How many months, 1 to MAX_MONTHS.
+     * @param \DateTimeZone|null $timezone The timezone the days are in; the current user's when null.
+     * @return self
+     * @throws refusal On a malformed month or a count outside 1 to MAX_MONTHS.
+     */
+    public static function whole_months(string $month, int $count, ?\DateTimeZone $timezone = null): self {
+        if ($count < 1 || $count > self::MAX_MONTHS || !preg_match('/^\d{4}-\d{2}$/D', $month)) {
+            throw new refusal();
+        }
+        $timezone ??= \core_date::get_user_timezone_object();
+        $first = self::midnight($month . '-01', $timezone);
+        // Calendar days counted in UTC, as from_iso() counts them.
+        $utc = self::midnight($month . '-01', new \DateTimeZone('UTC'));
+        $last = $utc->modify('+' . ($count - 1) . ' months')->modify('last day of this month');
+        return new self($first, (int) $utc->diff($last)->days + 1);
     }
 
     /**

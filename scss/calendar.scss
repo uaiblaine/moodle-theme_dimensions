@@ -141,6 +141,7 @@ body.dim-calendar,
     --dim-cal-trailupcoming-tint: #{$dim-ds-white};
     --dim-cal-trailupcoming-edge: #{$dim-ds-blue-600};
     --dim-cal-trailupcoming-ink: #{$dim-ds-blue-600};
+    --dim-cal-trail-link: #{$dim-ds-gray-700};
     --dim-cal-surface: #{$dim-ds-white};
     --dim-cal-surface-quiet: #{$dim-ds-gray-050};
     --dim-cal-weekend-hatch: #{$dim-ds-gray-200};
@@ -196,6 +197,7 @@ body.dim-calendar,
     --dim-cal-trailupcoming-tint: #{$dark-surface-raised};
     --dim-cal-trailupcoming-edge: #{dark-readable($dim-ds-blue-500, $dark-surface-raised, 3)};
     --dim-cal-trailupcoming-ink: #{dark-readable($dim-ds-blue-050, $dark-surface-raised)};
+    --dim-cal-trail-link: #{dark-readable($dim-ds-gray-500, $dark-surface-raised, 3)};
     --dim-cal-surface: #{$dark-surface-raised};
     --dim-cal-surface-quiet: #{$dark-surface-page};
     --dim-cal-weekend-hatch: #{$dark-surface-raised};
@@ -1876,11 +1878,11 @@ body.dim-calendar {
         background: var(--dim-cal-edge);
     }
 
-    // The Trilhas view. The month's days are grid columns of a fixed width between the trail column and the "next month"
-    // column (--dim-cal-trail-days, set by the client), so a bar is placed by its grid columns alone. The grid is as wide
-    // as its columns and scrolls inside its card (TrailScroll.tsx); the first and last column of every row are sticky, so
-    // only the days move. The three widths are trails.ts TRACK, which the client's scroll arithmetic reads:
-    // calendar_component_source_test compares them.
+    // The Trilhas view. The days of the months held are grid columns of a fixed width after the trail column
+    // (--dim-cal-trail-days, set by the client), so a bar is placed by its grid columns alone. The grid is as wide as its
+    // columns and scrolls inside its card (TrailScroll.tsx); the first column of every row is sticky, so only the days
+    // move. The trail column, a day, a row and a bar are trails.ts TRACK, which the client's scroll and connector
+    // arithmetic reads: calendar_component_source_test compares them. A band above the days names the months held.
     .dim-cal__toolbar[hidden] {
         display: none;
     }
@@ -1891,8 +1893,10 @@ body.dim-calendar {
         --dim-cal-ink: var(--dim-cal-trail-ink);
         --dim-cal-trail-label: 21.25rem;
         --dim-cal-trail-day: 3rem;
-        --dim-cal-trail-spill: 4.75rem;
-        --dim-cal-trail-head: 3rem;
+        --dim-cal-trail-row: 3.25rem;
+        --dim-cal-trail-bar: 1.5rem;
+        --dim-cal-trail-band: 1.75rem;
+        --dim-cal-trail-head: 2.5rem;
         flex: 1 1 auto;
         min-width: 0;
     }
@@ -1975,15 +1979,17 @@ body.dim-calendar {
     }
 
     // One native scroller, block_compass's strip: no scrollbar (the map replaces it), its overscroll kept from the
-    // page, snapped by the day. Its scroll padding is the still columns' widths and a day, so a bar the keyboard
-    // focuses is scrolled out from under them.
+    // page, snapped by the day. Its scroll padding is the still column's width and a day, so a bar the keyboard
+    // focuses is scrolled out from under it. A month added before the days moves the position itself (TrailScroll.tsx
+    // keptLeft()), so the browser's own scroll anchoring is off.
     .dim-cal__trailscroll {
+        overflow-anchor: none;
         overflow-x: auto;
         overflow-y: hidden;
         overscroll-behavior-x: contain;
         scroll-padding-inline:
             calc(var(--dim-cal-trail-label) + var(--dim-cal-trail-day))
-            calc(var(--dim-cal-trail-spill) + var(--dim-cal-trail-day));
+            var(--dim-cal-trail-day);
         scroll-snap-type: x proximity;
         scrollbar-width: none;
     }
@@ -2008,10 +2014,9 @@ body.dim-calendar {
         display: grid;
         grid-template-columns:
             var(--dim-cal-trail-label)
-            repeat(var(--dim-cal-trail-days, 31), var(--dim-cal-trail-day))
-            var(--dim-cal-trail-spill);
+            repeat(var(--dim-cal-trail-days, 31), var(--dim-cal-trail-day));
         align-items: center;
-        height: 2.5rem;
+        height: var(--dim-cal-trail-row);
         border-top: 1px solid var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
     }
 
@@ -2021,28 +2026,25 @@ body.dim-calendar {
         border-bottom: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
     }
 
-    .dim-cal__trailrow--trail {
-        height: 3.25rem;
+    // The band of the months held, above the days' header.
+    .dim-cal__trailrow--band {
+        height: var(--dim-cal-trail-band);
+        border-top: 0;
     }
 
     .dim-cal__trailrow--chosen,
-    .dim-cal__trailrow--chosen .dim-cal__traillabel,
-    .dim-cal__trailrow--chosen .dim-cal__trailspill {
+    .dim-cal__trailrow--chosen .dim-cal__traillabel {
         background: var(--dim-cal-surface-hover);
     }
 
-    // The trail column and the "next month" column hold still over the days, above every bar and diamond.
-    .dim-cal__traillabel,
-    .dim-cal__trailspill {
+    // The trail column holds still over the days, above every bar, diamond and connector.
+    .dim-cal__traillabel {
         position: sticky;
+        inset-inline-start: 0;
         z-index: 3;
         grid-row: 1;
         align-self: stretch;
         background: var(--dim-cal-surface);
-    }
-
-    .dim-cal__traillabel {
-        inset-inline-start: 0;
         display: flex;
         grid-column: 1;
         gap: .625rem;
@@ -2053,53 +2055,106 @@ body.dim-calendar {
         border-inline-end: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
     }
 
-    .dim-cal__trailspill {
-        inset-inline-end: 0;
-        display: flex;
-        grid-column: -2 / -1;
-        align-items: center;
-        justify-content: center;
-        padding-inline: .25rem;
-        border-inline-start: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
-        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
-        font-size: .6875rem;
-        font-variant-numeric: tabular-nums;
-        line-height: 1.2;
-        text-align: center;
-    }
-
-    .dim-cal__trailheading,
-    .dim-cal__trailday--next {
+    .dim-cal__trailheading {
         color: var(--dim-ds-text-muted, var(--bs-secondary-color));
         font-size: .75rem;
         font-weight: 600;
     }
 
-    .dim-cal__trailsteplabel {
-        padding-inline-start: 3.375rem;
+    // A month's segment of the band: its name stays at the start of the days while the segment is in view, and is the
+    // button that scrolls to its 1st; the month of the first day in view is marked. A month on its way is a quiet bar.
+    .dim-cal__trailmonth {
+        display: flex;
+        align-items: center;
+        align-self: stretch;
+        min-width: 0;
+        border-inline-start: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
     }
 
-    .dim-cal__trailfold {
-        display: inline-flex;
-        flex: none;
-        align-items: center;
-        justify-content: center;
-        width: 1.75rem;
-        height: 1.75rem;
-        padding: 0;
+    .dim-cal__trailmonthname {
+        position: sticky;
+        inset-inline-start: calc(var(--dim-cal-trail-label) + .5rem);
+        display: inline-block;
+        height: 1.25rem;
+        margin-inline-start: .5rem;
+        padding: 0 .5rem;
         border: 0;
         border-radius: var(--dim-ds-radius-sm, 6px);
         background: transparent;
         color: var(--dim-ds-text-body, var(--bs-body-color));
         font-size: .75rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        white-space: nowrap;
     }
 
-    .dim-cal__trailfold:hover {
+    .dim-cal__trailmonthname::first-letter {
+        text-transform: uppercase;
+    }
+
+    .dim-cal__trailmonthname:hover,
+    .dim-cal__trailmonth--inview .dim-cal__trailmonthname {
+        background: var(--dim-cal-surface-hover);
+        color: var(--dim-ds-text-on-tint, var(--bs-primary-text-emphasis));
+    }
+
+    .dim-cal__trailskeleton {
+        width: 6rem;
+        max-width: 100%;
+        height: .5rem;
+        margin-inline: .75rem;
+        border-radius: 4px;
+        background: var(--dim-ds-border-subtle, var(--bs-border-color-translucent));
+    }
+
+    // A course's row is a button over the trail column: its number, its name and the mark that it finds its bar
+    // ("No dates" for a course with none). A mouse over it lights its bar, and over the bar it lights the row
+    // (TrailView.tsx lit(), data-lit, a mouse only).
+    .dim-cal__trailsteplabel {
+        padding-inline: 2.125rem .5rem;
+    }
+
+    .dim-cal__trailfind {
+        display: flex;
+        flex: 1 1 auto;
+        gap: .625rem;
+        align-items: center;
+        min-width: 0;
+        height: 2rem;
+        padding: 0 .5rem;
+        border: 0;
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: transparent;
+        color: inherit;
+        text-align: start;
+    }
+
+    .dim-cal__trailfind[data-lit] {
         background: var(--dim-cal-surface-hover);
     }
 
-    .dim-cal__trailfold[aria-expanded="true"] > .fa {
-        transform: rotate(90deg);
+    .dim-cal__traillocate {
+        flex: none;
+        color: var(--dim-ds-text-subtle, var(--bs-secondary-color));
+        font-size: .75rem;
+    }
+
+    .dim-cal__trailfind[data-lit] .dim-cal__traillocate {
+        color: var(--dim-cal-trailcurrent-edge);
+    }
+
+    .dim-cal__trailnodates {
+        flex: none;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .6875rem;
+    }
+
+    // The fold is core's course-section toggle (btn-icon icons-collapse-expand), which draws the box and swaps the
+    // glyph in every version's look; the calendar's own button height is taken back off it.
+    .dim-cal .dim-cal__trailfold {
+        flex: none;
+        min-height: 0;
+        padding: 0;
     }
 
     .dim-cal__trailnames {
@@ -2191,17 +2246,15 @@ body.dim-calendar {
         color: inherit;
     }
 
-    .dim-cal__trailday--next {
-        flex-direction: row;
-        white-space: nowrap;
-        scroll-snap-align: none;
+    .dim-cal__trailday--first {
+        border-inline-start: 1px solid var(--dim-ds-border-default, var(--bs-border-color));
     }
 
     // The ground under the rows: the weekends hatched as the month's are, and today's line, placed in multiples of the
     // day's width (no layout read). The rows paint over it; the still columns hide it.
     .dim-cal__trailground {
         position: absolute;
-        top: var(--dim-cal-trail-head);
+        top: calc(var(--dim-cal-trail-band) + var(--dim-cal-trail-head));
         bottom: 0;
         inset-inline: 0;
         z-index: 0;
@@ -2209,10 +2262,17 @@ body.dim-calendar {
     }
 
     .dim-cal__trailweekend,
+    .dim-cal__trailmonthedge,
     .dim-cal__trailnow {
         position: absolute;
         top: 0;
         bottom: 0;
+    }
+
+    .dim-cal__trailmonthedge {
+        inset-inline-start: calc(var(--dim-cal-trail-label) + var(--dim-cal-trail-at, 0) * var(--dim-cal-trail-day));
+        width: 1px;
+        background: var(--dim-ds-border-default, var(--bs-border-color));
     }
 
     .dim-cal__trailweekend {
@@ -2270,7 +2330,7 @@ body.dim-calendar {
     .dim-cal__trailbar {
         z-index: 1;
         min-width: 0;
-        height: 1.5rem;
+        height: var(--dim-cal-trail-bar);
         margin: 0 2px;
         padding: 0 .5rem;
         overflow: hidden;
@@ -2293,7 +2353,7 @@ body.dim-calendar {
         border-end-start-radius: 0;
     }
 
-    // A bar that runs past the month stops at its edge, dashed; the last column's chip says where it ends.
+    // A bar that runs past what is held stops at its edge, dashed; it goes on once the next month is held.
     .dim-cal__trailbar--after {
         margin-inline-end: 0;
         border-inline-end-style: dashed;
@@ -2301,7 +2361,7 @@ body.dim-calendar {
         border-end-end-radius: 0;
     }
 
-    // An open window has no end to draw: the bar fades out at the month's edge.
+    // An open window has no end to draw: the bar fades out at the edge of what is held.
     .dim-cal__trailbar--open {
         margin-inline-end: 0;
         border-inline-end-style: dashed;
@@ -2315,21 +2375,55 @@ body.dim-calendar {
         font-weight: 700;
     }
 
-    // 4px a side: "→ 12 dez." in 11px fits the 76px column with its border, where 6px left it a pixel short.
-    .dim-cal__trailchip {
-        max-width: 100%;
-        height: 1.5rem;
-        padding: 0 .25rem;
-        overflow: hidden;
-        border: 1px solid var(--dim-cal-edge);
-        border-radius: var(--dim-ds-radius-sm, 6px);
-        background: var(--dim-cal-tint);
-        color: var(--dim-cal-ink);
-        font-size: .6875rem;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .dim-cal__trailbar[data-lit] {
+        outline: 2px solid var(--dim-cal-trailcurrent-edge);
+        outline-offset: 2px;
+    }
+
+    // The connectors between consecutive steps (trails.ts linksOf()): an aria-hidden layer over the steps' days, its
+    // pieces placed in rem by the same day arithmetic as the bars, in the view's own neutral grey; the trail column
+    // stands over it, so a line never crosses a course's name.
+    .dim-cal__trailsteprows {
+        position: relative;
+    }
+
+    .dim-cal__traillinks {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        inset-inline-start: var(--dim-cal-trail-label);
+        z-index: 2;
+        width: calc(var(--dim-cal-trail-days, 31) * var(--dim-cal-trail-day));
+        pointer-events: none;
+    }
+
+    // A piece's start is its own (--dim-cal-link-start, set by the client) from the start of the days, so a right-to-left
+    // page mirrors the connectors as it mirrors the grid; the arrowhead pointing right is mirrored below.
+    .dim-cal__traillink {
+        position: absolute;
+        inset-inline-start: var(--dim-cal-link-start, 0);
+        background: var(--dim-cal-trail-link);
+    }
+
+    .dim-cal__traillink--horizontal,
+    .dim-cal__traillink--vertical {
+        border-radius: 1px;
+    }
+
+    .dim-cal__traillink--dot {
+        border-radius: 50%;
+    }
+
+    .dim-cal__traillink--right {
+        clip-path: polygon(0 0, 100% 50%, 0 100%);
+    }
+
+    .dim-cal__traillink--down {
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+
+    &.dir-rtl .dim-cal__traillink--right {
+        transform: scaleX(-1);
     }
 
     @each $state in current, done, late, locked, upcoming {
@@ -2337,7 +2431,6 @@ body.dim-calendar {
         .dim-cal__trailstep--#{$state},
         .dim-cal__trailstate--#{$state},
         .dim-cal__trailnum--#{$state},
-        .dim-cal__trailchip--#{$state},
         .dim-cal__traildiamond--#{$state},
         .dim-cal__trailswatch--#{$state},
         .dim-cal__trailsegment--#{$state} {
@@ -2349,7 +2442,6 @@ body.dim-calendar {
 
     // A locked step is hatched over its fill, as a locked step reads.
     .dim-cal__trailbar--locked,
-    .dim-cal__trailchip--locked,
     .dim-cal__trailswatch--locked {
         background-image:
             repeating-linear-gradient(
@@ -2363,7 +2455,7 @@ body.dim-calendar {
     // fade takes the pointer.
     .dim-cal__trailfade {
         position: absolute;
-        top: 0;
+        top: var(--dim-cal-trail-band);
         bottom: 0;
         z-index: 4;
         width: 2.5rem;
@@ -2376,13 +2468,13 @@ body.dim-calendar {
     }
 
     .dim-cal__trailfade--ahead {
-        inset-inline-end: var(--dim-cal-trail-spill);
+        inset-inline-end: 0;
         background: linear-gradient(270deg, var(--dim-cal-surface), transparent);
     }
 
     .dim-cal__trailedge {
         position: absolute;
-        top: .5rem;
+        top: calc(var(--dim-cal-trail-band) + .25rem);
         z-index: 5;
         display: inline-flex;
         align-items: center;
@@ -2403,7 +2495,7 @@ body.dim-calendar {
     }
 
     .dim-cal__trailedge--ahead {
-        inset-inline-end: calc(var(--dim-cal-trail-spill) + 6px);
+        inset-inline-end: 6px;
     }
 
     .dim-cal__trailedge:hover {
@@ -2424,7 +2516,7 @@ body.dim-calendar {
         align-items: center;
         height: 1.5rem;
         margin-block-start: .25rem;
-        margin-inline: calc(var(--dim-cal-trail-label) + 2px) calc(var(--dim-cal-trail-spill) + 2px);
+        margin-inline: calc(var(--dim-cal-trail-label) + 2px) 2px;
         cursor: pointer;
         touch-action: pan-y;
         user-select: none;
@@ -2726,10 +2818,6 @@ body.dim-calendar {
         .dim-cal__daynum,
         .dim-cal__line {
             transition: background-color var(--dim-ds-motion-fast, 150ms) var(--dim-ds-motion-ease, ease);
-        }
-
-        .dim-cal__trailfold > .fa {
-            transition: transform var(--dim-ds-motion-fast, 150ms) var(--dim-ds-motion-ease, ease);
         }
     }
 }

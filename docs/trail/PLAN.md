@@ -1,6 +1,7 @@
 # The Trail model, its landing page and the calendar's Trilhas view: plan (2026-11-02)
 
-Status: **approved; T0 (#108), T1 (#109), T2 (#111) and T2b (#113) merged, T3 (the calendar's Trilhas view) built.**
+Status: **approved; T0 (#108), T1 (#109), T2 (#111) and T2b (#113) merged, T3 (the calendar's Trilhas view) built, and
+T3b (its continuous months, courses' rows and connectors) built.**
 T4 (related contents) is to come. The mockups are on the calendar design canvas:
 
 - page "Trilha (landing)": desktop (an account, not enrolled, paid enrolment), phone (an enrolled learner on
@@ -179,11 +180,28 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
   to an account enrolled in it or with a way to enrol), their steps by section 6's account rule
   (`display::many()`, in full or not at all), and the trails whose period meets the month: the landing page's period,
   first start to last end over the steps drawn, left open by a step that starts and never ends. A trail with no date
-  is no row. Previous and next move by month. The choice "Trilha" lists every admitted trail with a step drawn,
-  whatever its period.
+  is no row. The choice "Trilha" lists every admitted trail with a step drawn, whatever its period.
+- **Continuous months (T3b)**: the view always holds the month in view and the next. The first paint embeds the trails of
+  both (`trails::month_window($month, trails::MONTHS)`); the service takes `months`, 1 or 2 (anything else is the
+  request's shape, refused before login, and `window::whole_months()` refuses it too), so the first paint and a month
+  asked for share one service, and the read count does not grow with the window. On a desktop a scroll near the end of
+  what is held asks for the next month (one call) and appends its days; the previous arrow, or a scroll back to the
+  start, prepends the month before and moves the position by its width (`trails.ts` `keptLeft()`, arithmetic over the
+  last measure). The months stay contiguous, at most six, the far side dropped with the same compensation; the answers
+  merge by trail id (a trail's steps are the same in every answer), the list kept to the trails whose period meets what
+  is held and sorted as the server sorts. A band above the day numbers has one segment per month held, its name
+  sticky at the start of the days while the segment is in view and a button that scrolls (smoothly unless the reader
+  asked for less motion) to its 1st; a month on its way is a quiet skeleton at the end. The toolbar's title names the
+  months in view ("novembro – dezembro de 2026", "dezembro de 2026 – janeiro de 2027", Intl's range); its arrows move a
+  month from the first day in view (back to that month's 1st, or the month before from a 1st), asking for it when
+  needed, and "Hoje" scrolls to today, asking for its month (and the next, when it is not beside what is held). The
+  address's `month=` is the month of the first day in view, replaced when a scroll settles (navigation, never state;
+  the history module writes it). The phone's agenda lists the trails of the months held, and moves by the page's
+  request as before.
 - **Bars**: from each step's start to its end in the viewer's timezone (`calendar/trails.ts` `barOf()`), placed by
-  grid columns with no layout read; a milestone at an expected date inside the month; a step that began earlier is
-  marked at the left edge, one that runs past the month continues in the "dez →" column, an open one fades out. For a
+  grid columns with no layout read; a milestone at an expected date inside the days held; a step that began earlier is
+  marked at the left edge, one that runs past what is held is cut there (it goes on once the month is held), an open
+  one fades out. Rows are 52px with 24px bars, the trail column sticky. For a
   learner of the trail (`classifier::enrolments()` active) the bar carries the state of section 3 (`progress::many()`)
   and the next step is drawn heavier; for anyone else the trail colour, schedule only. The colours are the view's own
   tokens (`--dim-cal-trail*`), copies of the measured default pairs, never an administrator's key colour.
@@ -193,16 +211,36 @@ is then drawn in full, as a ghost, or not at all, decided on the referenced cour
 - **Popover** of a step (`TrailPopover.tsx`): category, name, "Curso 3 de 5 · <trail>", the dates and where they come
   from (expected date, or the course's dates), the referenced course's name when the activity's differs, the state
   ("Começa em" for a current step not begun), core's availability text when locked, "Abrir curso" and "Ver trilha".
+  It is drawn beside the scroller, never inside it, so the scroller's overflow cannot cut it.
+- **The courses' rows (T3b)**: a course in the "Trilhas e cursos" column is a button ("<course>: mostrar na linha do
+  tempo"). It scrolls the timeline (animated; at once under reduced motion) so the course's bar starts two days inside
+  the days area (`targetLeft()`), then opens that bar's popover once the scroll has ended (`scrollend`, or a fallback),
+  the focus on the popover; a course whose month is not held asks for it first; a course with no dates opens its
+  popover on the row, which says "Sem datas". Under a mouse a row lights its bar and a bar its row (`data-lit`; a touch
+  never does). The trail's fold is core's course-section toggle (`btn btn-icon icons-collapse-expand`, `collapsed` when
+  folded) with core's `t/expandedchevron`, `t/collapsedchevron` and `t/collapsedchevron_rtl`, rendered by the server
+  (`calendar_page::fold_icons()`), so core draws the box and swaps the glyph.
+- **Connectors (T3b)**: consecutive steps are joined in the trail's order, never by what their enrolment needs
+  (`trails.ts` `linksOf()`, from the Conectores board): the next starting after the previous ends is an elbow out of the
+  previous bar's right end into the next's left end with an arrowhead; starting while the previous runs, a drop on the
+  next's start day (a dot on the previous bar's base, a short arrow down); starting before the previous starts, a detour
+  on the left into the next's start. An end in a month not held runs the line to that edge; a step with no dates breaks
+  the chain (nothing goes into or out of it, and its neighbours are not joined); a folded trail draws none, and the
+  phone's agenda has none. They are an aria-hidden layer inside the steps' rows, placed in rem by the same day
+  arithmetic (no layout read), under the sticky trail column, in the view's own neutral grey `--dim-cal-trail-link`
+  (the palette's gray-700 in the light mode and its gray-500, lifted to 3:1, in the dark: the mockup's #6a737b is the
+  locked step's edge, which a connector must not be mistaken for).
 - **Phone**: the trail as an agenda, a "Hoje" line before the first step not done whose end has not passed
   (`todayIndex()`). The phone decision is the frame's width, from the view's one ResizeObserver, as the grids'.
-- **No JavaScript**: the server's layer lists the month's trails and their steps with their dates and states; its
-  toolbar's links keep the view and the trail.
+- **No JavaScript**: the server's layer lists the trails of the month and the next (the first paint's answer) and their
+  steps with their dates and states; its toolbar's links keep the view and the trail and move by the month.
 - Core's `expectcompletionon` events of these activities stay in Mês, Semana and Dia as today: Trilhas is its own
   mode, so nothing is drawn twice.
 - **Cost**: the candidates, the gate, `trail::many()`'s one `{subcourse}` statement, `display::many()`'s one statement
   for the steps' courses with their gate, the enrolments and at most one
   `{course_completions}` statement; each trail's modinfo and completion data are core's caches. Pinned by
-  `trails_test::test_six_trails_cost_what_two_do` (2 and 6 trails, a learner and an account enrolled in none).
+  `trails_test::test_six_trails_cost_what_two_do` (2 and 6 trails, a learner and an account enrolled in none, over one
+  month and over the month and the next, which cost the same).
 - **The landing page's "Ver no calendário"** (`landing_page::calendar_url()`), an account's only: the Trilhas view with
   the trail kept, on today's month while the trail runs, its first month before it starts, its last once it has ended.
 

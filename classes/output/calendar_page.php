@@ -160,12 +160,14 @@ class calendar_page implements renderable, templatable {
         'calendar_trailheading',
         'calendar_traillater',
         'calendar_trailmine',
-        'calendar_trailnext',
+        'calendar_trailmonths',
+        'calendar_trailnodates',
         'calendar_trailnotenrolled',
         'calendar_trailpage',
         'calendar_trailposition',
         'calendar_trailprogress',
         'calendar_trailsempty',
+        'calendar_trailshow',
         'calendar_trailstruncated',
         'calendar_trailtoggle',
         'calendar_truncated',
@@ -440,6 +442,7 @@ class calendar_page implements renderable, templatable {
                 'answer' => $this->trails,
                 'trail' => $this->trailid,
                 'mine' => $this->mine,
+                'icons' => self::fold_icons(),
             ],
             // Core's own answers ({@see editing}): whether core's calendar shows this viewer "New event", and the
             // context and the course core's site calendar hands its event form.
@@ -448,6 +451,23 @@ class calendar_page implements renderable, templatable {
                 'context' => editing::form_context(),
                 'course' => (int) SITEID,
             ],
+        ];
+    }
+
+    /**
+     * Core's course-section chevrons for the Trilhas view's fold, rendered here so the client draws core's own toggle
+     * (`btn-icon icons-collapse-expand`): the expanded glyph and the collapsed one in each direction, decorative (no
+     * alternative text: the button carries the name).
+     *
+     * @return array ['expanded', 'collapsed', 'collapsedrtl'], each the icon's HTML.
+     */
+    private static function fold_icons(): array {
+        global $PAGE;
+        $output = $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL);
+        return [
+            'expanded' => $output->render(new \pix_icon('t/expandedchevron', '')),
+            'collapsed' => $output->render(new \pix_icon('t/collapsedchevron', '')),
+            'collapsedrtl' => $output->render(new \pix_icon('t/collapsedchevron_rtl', '')),
         ];
     }
 

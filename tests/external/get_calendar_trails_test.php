@@ -27,6 +27,8 @@ namespace theme_dimensions\external;
 use core_course\customfield\course_handler;
 use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\calendar\scope;
+use theme_dimensions\local\calendar\trails;
 use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
@@ -167,9 +169,80 @@ final class get_calendar_trails_test extends \advanced_testcase {
         $nobody = self::call(['month' => '2027-03']);
         $this->assertTrue($nobody['error']);
         $this->assertNotSame('calendarrangeunavailable', $nobody['exception']->errorcode);
+        // The shape is refused before require_login(): core's call path turns nobody away first, so execute() itself.
+        foreach (['malformed' => 'march', 'month 13' => '2027-13', 'year 1899' => '1899-12'] as $name => $month) {
+            $this->assertSame('calendarrangeunavailable', self::refusal_of($month, 1), "nobody, {$name}");
+        }
+        $this->assertSame('redirecterrordetected', self::refusal_of('2027-03', 1), 'Control: nobody, a real month.');
 
         // The control: a real account is answered.
         $this->setUser(self::getDataGenerator()->create_user());
         $this->assertFalse(self::call(['month' => '2027-03'])['error']);
+    }
+
+    /**
+     * The month and the next come through the same service as the month alone: the answer trails::answer() gives over
+     * the two months' window.
+     *
+     * @return void
+     */
+    public function test_two_months_are_the_window_of_both(): void {
+        $trail = $this->seed();
+        $this->setUser(self::getDataGenerator()->create_user());
+
+        $one = self::call(['month' => '2027-02']);
+        $this->assertFalse($one['error']);
+        $this->assertSame(['2027-02-01', '2027-02-28', []], [$one['data']['from'], $one['data']['to'], $one['data']['trails']]);
+
+        $two = self::call(['month' => '2027-02', 'months' => trails::MONTHS]);
+        $this->assertFalse($two['error'], json_encode($two['exception'] ?? null));
+        $this->assertSame(['2027-02-01', '2027-03-31'], [$two['data']['from'], $two['data']['to']]);
+        $this->assertSame([(int) $trail->id], array_column($two['data']['trails'], 'id'), 'March\'s trail, from February.');
+        self::forget();
+        $expected = trails::answer(trails::month_window('2027-02', 2), scope::for_viewer(), 0, false, time());
+        $this->assertSame(array_column($expected['trails'], 'id'), array_column($two['data']['trails'], 'id'));
+        $this->assertSame([$expected['from'], $expected['to']], [$two['data']['from'], $two['data']['to']]);
+    }
+
+    /**
+     * A count of months outside 1 to trails::MONTHS is the request's shape: refused before login, as a month that is
+     * none is. Core's call path turns a logged-out caller away before execute() runs, so the logged-out half calls
+     * execute() itself: the refusal comes before require_login() would send anybody to the login page.
+     *
+     * @return void
+     */
+    public function test_a_count_of_months_outside_one_to_two_is_refused_before_login(): void {
+        $this->seed();
+        $this->setUser(null);
+        foreach ([0, -1, trails::MONTHS + 1, 12] as $months) {
+            $this->assertSame('calendarrangeunavailable', self::refusal_of('2027-03', $months), "nobody, {$months}");
+        }
+        // The control: with a count in range, nobody reaches require_login().
+        $this->assertSame('redirecterrordetected', self::refusal_of('2027-03', trails::MONTHS), 'nobody, in range');
+
+        $this->setUser(self::getDataGenerator()->create_user());
+        foreach ([0, -1, trails::MONTHS + 1, 12] as $months) {
+            $result = self::call(['month' => '2027-03', 'months' => $months]);
+            $this->assertTrue($result['error'], "an account, {$months}");
+            $this->assertSame('calendarrangeunavailable', $result['exception']->errorcode, "an account, {$months}");
+        }
+        $this->assertFalse(self::call(['month' => '2027-03', 'months' => 1])['error'], 'Control: an account is answered.');
+    }
+
+    /**
+     * The error code execute() throws for a month and a count, as the current user; '' when it answers.
+     *
+     * @param string $month The month.
+     * @param int $months The count of months.
+     * @return string
+     */
+    private static function refusal_of(string $month, int $months): string {
+        self::forget();
+        try {
+            get_calendar_trails::execute($month, 0, false, 0, true, $months);
+            return '';
+        } catch (\moodle_exception $exception) {
+            return $exception->errorcode;
+        }
     }
 }

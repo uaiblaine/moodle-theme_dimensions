@@ -166,9 +166,9 @@ final class page_trail_test extends \advanced_testcase {
     }
 
     /**
-     * The Trilhas view's first paint embeds the month's trails, the answer the service would give, and the range's
-     * answer with every key off; the page's address keeps the view, the month and the trail; the server's layer lists
-     * the trails.
+     * The Trilhas view's first paint embeds the trails of the month and the next (the two months its timeline opens on),
+     * the answer the service would give for both, and the range's answer with every key off; the page's address keeps
+     * the view, the month and the trail; the server's layer lists the trails.
      *
      * @return void
      */
@@ -196,8 +196,15 @@ final class page_trail_test extends \advanced_testcase {
         );
 
         self::forget_calendar();
-        $expected = trails::answer(trails::month_window('2027-03'), scope::for_viewer(), (int) $trail->id, false, time());
-        $this->assertSame($expected, $props['trails']['answer'], 'The answer the service would give.');
+        $expected = trails::answer(
+            trails::month_window('2027-03', trails::MONTHS),
+            scope::for_viewer(),
+            (int) $trail->id,
+            false,
+            time()
+        );
+        $this->assertSame($expected, $props['trails']['answer'], 'The answer the service would give for both months.');
+        $this->assertSame(['2027-03-01', '2027-04-30'], [$expected['from'], $expected['to']]);
 
         $context = $answer->page->export_for_template($PAGE->get_renderer('core'));
         $this->assertTrue($context['trailview']);

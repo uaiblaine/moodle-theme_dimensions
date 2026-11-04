@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - The trails of one month, for the calendar's Trilhas view
+ * Theme Dimensions - The trails of a month, or of the month and the next, for the calendar's Trilhas view
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -35,17 +35,17 @@ use theme_dimensions\local\calendar\trails;
 use theme_dimensions\local\calendar\window;
 
 /**
- * The calendar's trails over one month, in one answer.
+ * The calendar's trails over one month, or the month and the next ({@see trails::MONTHS}), in one answer.
  *
  * The order of the checks is {@see get_calendar_range}'s:
  *
  * 1. validate_parameters();
  * 2. the shape of the request, which says nothing about the site: a real month, YYYY-MM, of the years the page reads
- *    (1900 to 2999);
+ *    (1900 to 2999), and a count of months from 1 to {@see trails::MONTHS};
  * 3. require_login(), then the guest account refused with the same refusal as every other miss;
  * 4. validate_context() with the SYSTEM context: the answer spans the viewer's trails, so there is no one course to
  *    validate, and a course's would run require_login() against it, which throws for anybody not enrolled;
- * 5. the viewer's calendar type (Gregorian only), the month in the viewer's timezone, the category narrowing
+ * 5. the viewer's calendar type (Gregorian only), the months in the viewer's timezone, the category narrowing
  *    ({@see scope::for_viewer()}, which refuses a category the viewer may not narrow to), then {@see trails::answer()},
  *    which decides every trail and step for this account.
  *
@@ -74,17 +74,24 @@ class get_calendar_trails extends external_api {
                 VALUE_DEFAULT,
                 true
             ),
+            'months' => new external_value(
+                PARAM_INT,
+                'How many months from the month: 1, or 2 for the month and the next.',
+                VALUE_DEFAULT,
+                1
+            ),
         ]);
     }
 
     /**
-     * The trails of one month.
+     * The trails of a month, or of the month and the next.
      *
      * @param string $month The month.
      * @param int $trail One trail to keep, 0 for every trail.
      * @param bool $mine Whether only the viewer's own trails are kept.
      * @param int $categoryid The category narrowing.
      * @param bool $recursive Whether the category's whole subtree counts.
+     * @param int $months How many months from the month, 1 to trails::MONTHS.
      * @return array The answer of trails::answer().
      * @throws refusal On every miss, the same for each.
      */
@@ -93,7 +100,8 @@ class get_calendar_trails extends external_api {
         int $trail = 0,
         bool $mine = false,
         int $categoryid = 0,
-        bool $recursive = true
+        bool $recursive = true,
+        int $months = 1
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'month' => $month,
@@ -101,6 +109,7 @@ class get_calendar_trails extends external_api {
             'mine' => $mine,
             'categoryid' => $categoryid,
             'recursive' => $recursive,
+            'months' => $months,
         ]);
 
         // The shape, before login: it says nothing about the site.
@@ -108,6 +117,7 @@ class get_calendar_trails extends external_api {
             !preg_match('/^(\d{4})-(\d{2})$/D', $params['month'], $parts)
             || (int) $parts[2] < 1 || (int) $parts[2] > 12
             || (int) $parts[1] < 1900 || (int) $parts[1] > 2999
+            || $params['months'] < 1 || $params['months'] > trails::MONTHS
         ) {
             throw new refusal();
         }
@@ -121,7 +131,13 @@ class get_calendar_trails extends external_api {
         window::require_gregorian();
         $scope = scope::for_viewer($params['categoryid'], $params['recursive']);
 
-        return trails::answer(trails::month_window($params['month']), $scope, $params['trail'], $params['mine'], time());
+        return trails::answer(
+            trails::month_window($params['month'], $params['months']),
+            $scope,
+            $params['trail'],
+            $params['mine'],
+            time()
+        );
     }
 
     /**
@@ -131,8 +147,8 @@ class get_calendar_trails extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'from' => new external_value(PARAM_ALPHANUMEXT, 'The month\'s first day.'),
-            'to' => new external_value(PARAM_ALPHANUMEXT, 'The month\'s last day.'),
+            'from' => new external_value(PARAM_ALPHANUMEXT, 'The first month\'s first day.'),
+            'to' => new external_value(PARAM_ALPHANUMEXT, 'The last month\'s last day.'),
             'truncated' => new external_value(PARAM_BOOL, 'Whether trail courses were left out past the cap.'),
             'options' => new external_multiple_structure(new external_single_structure([
                 'id' => new external_value(PARAM_INT, 'A trail course the viewer may discover.'),

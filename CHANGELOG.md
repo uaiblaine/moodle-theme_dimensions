@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Trail model, stage T3b: continuous months in the calendar's Trilhas view** (2026100584), `docs/trail/PLAN.md`
+  section 7. The timeline holds the month in view and the next from its first paint (`theme_dimensions_get_calendar_trails`
+  takes an optional `months`, 1 or 2), asks for the next month as the scroll nears its end and for the previous one on
+  the way back to its start or from the "previous" arrow, keeping the view still, up to six months held. A band above
+  the days names each month, its name a button that scrolls to its 1st; the "Dec →" column is gone. The toolbar names
+  the months in view ("November – December 2026"), its arrows move a month and "Today" scrolls to today; the address
+  follows the month in view. A course in the trail column is a button that scrolls its bar into view and then opens its
+  popover; a row and its bar light each other under the mouse. The fold is core's course-section toggle. Consecutive
+  courses are joined by grey connectors in the trail's order (an elbow, a drop on an overlap, a detour for one that
+  starts earlier), broken by a course with no dates, which says "No dates". Rows are 52px. New strings:
+  `calendar_trailmonths`, `calendar_trailnodates`, `calendar_trailshow`; `calendar_trailnext` is gone and
+  `calendar_trailsempty` reads "No trail runs in these months."
 - **Audit of 2026-11-04** (2026100583). A logged-in user whom the theme would keep off an unlisted course now gets
   the same "not available" page for a course id or shortname that does not exist (`/enrol/index.php`,
   `/course/info.php`), so the answer no longer tells an unlisted course from no course. The crests answered to
