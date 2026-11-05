@@ -1692,6 +1692,19 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
     days reach the last day held or run past it); the bar's name and the popover's dates line say `calendar_trailopenfull`
     in full (`stepOpenEnd()`); the trail's line (`trailBarOf()`, the latest of its steps' ends and open steps' 30 days)
     has no chip; an expected date is an end, so not open. Gates: the "T3c" block.
+  - **T3d: who is shown a trail, and the folds.** `trails::kept()` is the one path, gate then rule, for the answer's
+    rows and options and for the landing page's "Ver no calendário" (`trails::offers()`, the candidates' statement
+    narrowed to the course); the rule, the private `shown_to()`: a relationship counting as enrolled
+    or on the way (`classifier::enrolments()` `type`), then `moodle/course:update` at the trail, then
+    `publicaccess::are_public()`, then `access::get_next_actions()` (open, guest, conditional), each batch over the
+    trails still undecided, inside each page of candidates before the cap counts; every read is the current user's (a
+    scope of another viewer is answered nothing), and a visitor is answered nothing before any read. The two lists copy
+    the plugin's private ones; `trails_test` reads both by reflection. On the client a trail takes its fold when first
+    drawn (`arrivedOf()`: open alone, folded beside another, reset by a new answer), the reader's fold wins (`openOf()`)
+    except over a new answer holding one trail (`freshFolds()`), a popover never opens on a folded trail, and the head
+    row's
+    "Expandir todas"/"Recolher todas" toggle is drawn for two trails or more; the head row's cells are aria-hidden one
+    by one, so the toggle is not. Gates: the "T3d" blocks.
 - **R3: visual parity with the mockup** (PROPOSAL section 33). The desktop Trilhas grid scrolls sideways in
   `TrailScroll.tsx`, compass's strip in the theme's classes:
   - one native scroller with the scrollbar hidden, snapped per day;

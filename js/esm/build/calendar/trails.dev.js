@@ -475,6 +475,35 @@ const linksOf = /* @__PURE__ */ __name((steps, days, zone, shown, zoom = "day") 
   });
   return pieces;
 }, "linksOf");
+const arrivedOf = /* @__PURE__ */ __name((was, ids) => {
+  const fresh = ids.filter((id) => !(id in was));
+  if (fresh.length === 0) {
+    return was;
+  }
+  const alone = ids.length <= 1;
+  const next = { ...was };
+  fresh.forEach((id) => {
+    next[id] = alone;
+  });
+  return next;
+}, "arrivedOf");
+const openOf = /* @__PURE__ */ __name((id, chosen, arrived) => chosen[id] ?? arrived[id] ?? true, "openOf");
+const foldedAll = /* @__PURE__ */ __name((chosen, ids, allopen) => {
+  const next = { ...chosen };
+  ids.forEach((id) => {
+    next[id] = !allopen;
+  });
+  return next;
+}, "foldedAll");
+const freshFolds = /* @__PURE__ */ __name((chosen, answer) => {
+  const trails = answer ? answer.trails : [];
+  if (trails.length !== 1 || !(trails[0].id in chosen)) {
+    return chosen;
+  }
+  const next = { ...chosen };
+  delete next[trails[0].id];
+  return next;
+}, "freshFolds");
 export {
   BATCH_MONTHS,
   CHIP_GAP,
@@ -492,6 +521,7 @@ export {
   WEEK_LABEL_LEAST,
   ZOOMS,
   ZOOM_PARAM,
+  arrivedOf,
   barOf,
   batchOf,
   capOf,
@@ -502,6 +532,8 @@ export {
   emptyTrails,
   extendLoaded,
   filterOf,
+  foldedAll,
+  freshFolds,
   keptLeft,
   linksOf,
   loadedOf,
@@ -512,6 +544,7 @@ export {
   monthsOf,
   namedBar,
   nearEnd,
+  openOf,
   openingLeft,
   pageLeft,
   rangeLabel,

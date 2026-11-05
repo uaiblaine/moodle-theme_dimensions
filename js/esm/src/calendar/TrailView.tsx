@@ -27,7 +27,10 @@
  *   connectors in the trail's order (trails.ts linksOf()), drawn by the same day arithmetic, aria-hidden. The days have
  *   a fixed width and only they scroll, in TrailScroll.tsx, the trail column held still; a trail's chevron (core's
  *   course-section toggle, its icons rendered by the server) folds its steps away, the view's own state, never saved;
- *   the legend follows the grid.
+ *   with more than one trail each arrives folded, one alone opens (trails.ts arrivedOf()), and the reader's own fold
+ *   is kept across every load, except that a new answer holding one trail opens it (freshFolds()); beside the
+ *   heading one more toggle expands every trail when any is folded and folds every one when all are open, drawn only
+ *   for two trails or more. The legend follows the grid.
  * - A course's row in the trail column is a button: it scrolls the timeline to the course's bar (asking for its month
  *   first when it is not held), then opens the bar's popover once the scroll has ended; a course with no date opens it
  *   on the row. Under its name a quieter line gives its dates (trails.ts datesOf()), which its accessible name carries
@@ -79,17 +82,21 @@ import {
     capOf,
     SKELETON_DAYS,
     ZOOMS,
+    arrivedOf,
     barOf,
     chipLeft,
     datesOf,
     emptyTrails,
     extendLoaded,
+    foldedAll,
+    freshFolds,
     linksOf,
     loadedOf,
     mergedOf,
     monthDays,
     monthStep,
     namedBar,
+    openOf,
     todayIndex,
     trailBarOf,
     weekCells,
@@ -97,7 +104,7 @@ import {
     weekLabelled,
     windowDays,
 } from './trails';
-import type {FoldIcons, Loaded, StepState, Trail, TrailAnswer, TrailFilter, TrailStep, Zoom} from './trails';
+import type {FoldIcons, Folds, Loaded, StepState, Trail, TrailAnswer, TrailFilter, TrailStep, Zoom} from './trails';
 
 /** What the toolbar asks of the view: a month back or ahead, and today; false when the view draws no timeline. */
 export type TrailNav = {step: (direction: number) => boolean, today: () => boolean};
@@ -383,6 +390,23 @@ export const TrailFilters = ({strings, filter, answer, onChange, zoom = 'day', o
 );
 
 /**
+ * The fold each trail drawn arrived with (trails.ts arrivedOf()), taken in the render it is first drawn in, so it is
+ * never painted with another; a new answer of the page starts again from none.
+ *
+ * @param {Array} ids The trails drawn, by id.
+ * @param {boolean} fresh Whether this render meets a new answer of the page.
+ * @returns {object} Trail id => open.
+ */
+const useArrivals = (ids: number[], fresh: boolean): Folds => {
+    const [arrivals, setArrivals] = useState<Folds>({});
+    const arriving = fresh ? {} : arrivedOf(arrivals, ids);
+    if (arriving !== arrivals) {
+        setArrivals(arriving);
+    }
+    return arriving;
+};
+
+/**
  * The view.
  *
  * @param {object} props See TrailViewProps.
@@ -396,7 +420,8 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     const [seen, setSeen] = useState<TrailAnswer | null>(answer);
     const [win, setWin] = useState<Win>(() => freshWin(answer, month, 0, scope));
     const [popped, setPopped] = useState<Popped | null>(null);
-    const [folded, setFolded] = useState<number[]>([]);
+    // The reader's own folds, kept across every load and answer.
+    const [folds, setFolds] = useState<Folds>({});
     const [inview, setInview] = useState<string>('');
     const control = useRef<ScrollControl | null>(null);
     const viewed = useRef<{first: number, last: number}>({first: 0, last: 0});
@@ -416,14 +441,28 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     const zooming = useRef<Zoom>(zoom);
     zooming.current = zoom;
 
-    // A new answer from the page (a first paint, a filter, Back or Forward) is a new set of months.
-    if (seen !== answer) {
+    // A new answer from the page (a first paint, a filter, Back or Forward) is a new set of months, whose trails arrive
+    // afresh: one chosen alone opens, whatever the reader's fold of it was.
+    const fresh = seen !== answer;
+    if (fresh) {
         setSeen(answer);
         setWin((was) => freshWin(answer, month, was.generation + 1, scope));
+        setFolds((was) => freshFolds(was, answer));
     }
     generation.current = win.generation;
 
     const merged = useMemo(() => mergedOf(win.loaded, look.zone), [win.loaded, look.zone]);
+    const ids = useMemo(() => merged.trails.map((one) => one.id), [merged]);
+    const arriving = useArrivals(ids, fresh);
+
+    /**
+     * Whether a trail's steps are shown: the reader's own fold, else the one it arrived with.
+     *
+     * @param {number} id The trail.
+     * @returns {boolean}
+     */
+    const isOpen = (id: number): boolean => openOf(id, folds, arriving);
+    const allopen = ids.every(isOpen);
     const days = useMemo(() => windowDays(win.loaded.months), [win.loaded]);
     const columns = days.length + (win.loading ? SKELETON_DAYS : 0);
     const timeline = !phone && merged.trails.length > 0;
@@ -460,7 +499,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     // the pair is put out rather than left half lit.
     useLayoutEffect(() => {
         root.current?.querySelectorAll<HTMLElement>('[data-lit]').forEach((element) => element.removeAttribute('data-lit'));
-    }, [win.loaded, folded]);
+    }, [win.loaded, folds, arriving]);
 
     // The page's count and choice follow what is drawn, in the frame it is drawn in.
     useLayoutEffect(() => onDrawn?.(merged), [merged]);
@@ -586,7 +625,8 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
     };
 
     /**
-     * Open a step's popover on its bar, the scroll ended.
+     * Open a step's popover on its bar, the scroll ended; nothing when the reader folded the trail meanwhile, which
+     * would leave the popover on a hidden opener.
      *
      * @param {number} trailid The trail.
      * @param {number} cmid The step.
@@ -596,7 +636,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
         const bar = root.current?.querySelector<HTMLElement>(
             `[data-trail="${trailid}"] [data-region="dim-cal-trailstep"][data-cmid="${cmid}"]`
         );
-        if (bar) {
+        if (bar && !bar.closest('[hidden]')) {
             setPopped({trail: trailid, cmid: cmid, opener: bar});
         }
         found();
@@ -827,8 +867,36 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
      * @returns {void}
      */
     const fold = (id: number): void => {
-        setFolded((was) => (was.includes(id) ? was.filter((one) => one !== id) : [...was, id]));
+        const open = isOpen(id);
+        setFolds((was) => ({...was, [id]: !open}));
     };
+
+    /**
+     * Expand every trail drawn when any is folded, or fold every one when all are open: the reader's own folds.
+     *
+     * @returns {void}
+     */
+    const foldAll = (): void => {
+        setFolds((was) => foldedAll(was, ids, allopen));
+    };
+
+    /**
+     * Core's chevrons inside a fold, as the server renders them: open, and folded in either direction.
+     *
+     * @returns {object}
+     */
+    const chevrons = () => (
+        <>
+            <span
+                className="expanded-icon icon-no-margin"
+                dangerouslySetInnerHTML={{__html: icons.expanded}}
+            ></span>
+            <span className="collapsed-icon icon-no-margin">
+                <span className="dir-rtl-hide" dangerouslySetInnerHTML={{__html: icons.collapsed}}></span>
+                <span className="dir-ltr-hide" dangerouslySetInnerHTML={{__html: icons.collapsedrtl}}></span>
+            </span>
+        </>
+    );
 
     const todayat = days.indexOf(today);
     // The opening aims at today only when the month opened on (the one the page or the reader asked for) holds it.
@@ -973,7 +1041,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
      * @returns {object}
      */
     const trailRows = (trail: Trail) => {
-        const open = !folded.includes(trail.id);
+        const open = isOpen(trail.id);
         const span = trailBarOf(trail, days, look.zone);
         const steps = `dim-cal-trailsteps-${trail.id}`;
         const links = linksOf(trail.steps, days, look.zone, open, zoom);
@@ -993,14 +1061,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                             aria-label={fill(look.strings.calendar_trailtoggle, trail.name)}
                             onClick={() => fold(trail.id)}
                         >
-                            <span
-                                className="expanded-icon icon-no-margin"
-                                dangerouslySetInnerHTML={{__html: icons.expanded}}
-                            ></span>
-                            <span className="collapsed-icon icon-no-margin">
-                                <span className="dir-rtl-hide" dangerouslySetInnerHTML={{__html: icons.collapsed}}></span>
-                                <span className="dir-ltr-hide" dangerouslySetInnerHTML={{__html: icons.collapsedrtl}}></span>
-                            </span>
+                            {chevrons()}
                         </button>
                         <span className="dim-cal__trailnames">
                             <a className="dim-cal__trailname dim-cal__trailname--trail" href={safeHref(trail.url, look.home)}>
@@ -1114,10 +1175,28 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
             >
                 <div className="dim-cal__trailgrid" data-region="dim-cal-trailgrid" style={grid}>
                     {band()}
-                    <div className="dim-cal__trailrow dim-cal__trailrow--head" aria-hidden="true">
-                        <span className="dim-cal__traillabel dim-cal__trailheading">{look.strings.calendar_trailheading}</span>
+                    <div className="dim-cal__trailrow dim-cal__trailrow--head">
+                        <span className="dim-cal__traillabel dim-cal__trailheading">
+                            {ids.length > 1 ? (
+                                <button
+                                    type="button"
+                                    className={'btn btn-icon icons-collapse-expand dim-cal__trailfold dim-cal__trailfoldall'
+                                        + (allopen ? '' : ' collapsed')}
+                                    data-action="dim-cal-trailfoldall"
+                                    aria-expanded={allopen}
+                                    aria-controls={ids.map((id) => `dim-cal-trailsteps-${id}`).join(' ')}
+                                    aria-label={allopen ? look.strings.calendar_trailcollapseall
+                                        : look.strings.calendar_trailexpandall}
+                                    onClick={foldAll}
+                                >
+                                    {chevrons()}
+                                </button>
+                            ) : null}
+                            <span aria-hidden="true">{look.strings.calendar_trailheading}</span>
+                        </span>
                         {bydays ? days.map((iso, index) => (
                             <span
+                                aria-hidden="true"
                                 key={iso}
                                 className={`dim-cal__trailday${isWeekend(iso) ? ' dim-cal__trailday--weekend' : ''}`
                                     + `${index === todayat ? ' dim-cal__trailday--today' : ''}`
@@ -1129,6 +1208,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                             </span>
                         )) : cells.map((cell) => (
                             <span
+                                aria-hidden="true"
                                 key={cell.first}
                                 className={'dim-cal__trailweek'
                                     + (zoom === 'week' && today >= cell.first && today <= cell.last

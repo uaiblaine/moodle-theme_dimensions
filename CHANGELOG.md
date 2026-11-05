@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Trail model, stage T3d: who is shown a trail, and folded trails** (2026100591). The calendar's Trilhas view shows a
+  trail only to an account enrolled in it or on the way (an enrolment that starts later, an application awaiting a
+  decision, a waiting-list place), one that may join it (an open method, guest access, a conditional enrolment, by
+  local_unlistedcourses' own answer), any account when the trail is public, and whoever may edit the trail course; a
+  suspended or ended enrolment with no way in left hides it. The trail picker follows the same rule, the cap counts the
+  trails shown, and the landing page's "View in the calendar" is offered exactly when the view would list the trail,
+  by the same gate and rule (no link on a page the listing withholds, such as a trail in an unlisted category).
+  The steps keep their rule: a public trail's unlisted course stays hidden from an account with no tie to it. The rule
+  reads at most two batches more a page of candidates, whatever the number of trails. With more than one trail the
+  timeline opens with every trail folded, and one alone opens; beside the "Trails and courses" heading a toggle expands
+  or folds them all; a trail chosen alone opens even if the reader had folded it, and a course pressed in a trail folded
+  before its scroll ends opens no popover. Two new strings. Twenty-seven new mutation gates, three retargeted.
+
 - **Trail model, T3c follow-up: a partial first week and the month zoom's cap** (2026100590). By weeks, a first week of
   one or two days (a month that starts just before the viewer's first weekday) is narrower than its label, which spilled
   into the next week: a cell under 2.5rem now draws no text and keeps its line. By months the timeline holds twelve

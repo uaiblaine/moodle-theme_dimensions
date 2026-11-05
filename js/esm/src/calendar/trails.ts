@@ -1237,3 +1237,74 @@ export const linksOf = (steps: TrailStep[], days: string[], zone: Zone, shown: b
     });
     return pieces;
 };
+
+/** Trail id => open: a fold of the view's own, never saved. */
+export type Folds = Record<number, boolean>;
+
+/**
+ * The fold each trail opens with, fixed when it first arrives (T3d): open when it arrives alone, folded when the answer
+ * holds more than one trail. A trail held already keeps the fold it arrived with, so one that is joined by another (a
+ * month loaded) is never folded under the reader; a new answer of the page (a filter, Back or Forward) starts again
+ * from none, so a trail chosen alone opens.
+ *
+ * @param {object} was The folds the trails held arrived with.
+ * @param {Array} ids The trails drawn now, by id.
+ * @returns {object} The same object when no trail arrived, else a new one with the arrivals' folds.
+ */
+export const arrivedOf = (was: Folds, ids: number[]): Folds => {
+    const fresh = ids.filter((id) => !(id in was));
+    if (fresh.length === 0) {
+        return was;
+    }
+    const alone = ids.length <= 1;
+    const next = {...was};
+    fresh.forEach((id) => {
+        next[id] = alone;
+    });
+    return next;
+};
+
+/**
+ * Whether a trail's steps are shown: the reader's own fold where they made one, else the one it arrived with.
+ *
+ * @param {number} id The trail.
+ * @param {object} chosen The reader's folds.
+ * @param {object} arrived The folds the trails arrived with (arrivedOf()).
+ * @returns {boolean}
+ */
+export const openOf = (id: number, chosen: Folds, arrived: Folds): boolean => chosen[id] ?? arrived[id] ?? true;
+
+/**
+ * The reader's folds after "Expand all" or "Collapse all": every trail drawn opened when any is folded, every one
+ * folded when all are open.
+ *
+ * @param {object} chosen The reader's folds.
+ * @param {Array} ids The trails drawn, by id.
+ * @param {boolean} allopen Whether every trail drawn is open.
+ * @returns {object} The new folds; the trails not drawn keep theirs.
+ */
+export const foldedAll = (chosen: Folds, ids: number[], allopen: boolean): Folds => {
+    const next = {...chosen};
+    ids.forEach((id) => {
+        next[id] = !allopen;
+    });
+    return next;
+};
+
+/**
+ * The reader's folds a new answer of the page leaves (T3d): an answer holding one trail (one chosen in the picker, or
+ * reached from its landing page) opens it, so the reader's fold of it is dropped; any other answer keeps every fold.
+ *
+ * @param {object} chosen The reader's folds.
+ * @param {object|null} answer The page's new answer.
+ * @returns {object} The same object when nothing is dropped.
+ */
+export const freshFolds = (chosen: Folds, answer: TrailAnswer | null): Folds => {
+    const trails = answer ? answer.trails : [];
+    if (trails.length !== 1 || !(trails[0].id in chosen)) {
+        return chosen;
+    }
+    const next = {...chosen};
+    delete next[trails[0].id];
+    return next;
+};

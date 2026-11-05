@@ -859,6 +859,46 @@ describe('the days\' scroller', () => {
         expect(document.activeElement).toBe(page.querySelector('[data-region="dim-cal-trailstep"][data-cmid="72"]'));
     });
 
+    it('opens no popover when the course\'s trail is folded before the scroll ends', async() => {
+        const second = trail({id: 8, name: 'Outra', steps: [{...trail().steps[0], cmid: 80, courseid: 81}]});
+        for (const control of ['dim-cal-trailfold', 'dim-cal-trailfoldall']) {
+            window.history.replaceState({}, '', '/r.php/theme_dimensions/calendar');
+            const page = await mount(offered(trails([trail(), second], '2026-12-31')));
+            const fold = page.querySelector<HTMLElement>('[data-trail="7"] [data-action="dim-cal-trailfold"]') as HTMLElement;
+            const all = page.querySelector<HTMLElement>('[data-action="dim-cal-trailfoldall"]') as HTMLElement;
+            const toggle = control === 'dim-cal-trailfold' ? fold : all;
+            // Two trails arrive folded: the reader opens them to press a course.
+            await act(async() => {
+                fireEvent.click(toggle);
+            });
+            expect(fold.getAttribute('aria-expanded')).toBe('true');
+            const row = page.querySelector<HTMLElement>('[data-region="dim-cal-trailrow"][data-cmid="72"]') as HTMLElement;
+            await act(async() => {
+                fireEvent.click(row);
+            });
+            await act(async() => {
+                fireEvent.click(toggle);
+            });
+            expect(fold.getAttribute('aria-expanded')).toBe('false');
+            await act(async() => {
+                fireEvent(scrollerOf(page), new Event('scrollend'));
+            });
+            expect(page.querySelector('[data-region="dim-cal-trailpopover"]')).toBeNull();
+            // The control: opened again, the same press opens the popover once its scroll ends.
+            await act(async() => {
+                fireEvent.click(toggle);
+            });
+            await act(async() => {
+                fireEvent.click(row);
+            });
+            await act(async() => {
+                fireEvent(scrollerOf(page), new Event('scrollend'));
+            });
+            expect(page.querySelector('[data-region="dim-cal-trailpopover"] h2')?.textContent).toBe('Prática');
+            document.body.replaceChildren();
+        }
+    });
+
     it('moves at once and opens at once for a reader who asked for less motion', async() => {
         const motion = jest.fn((query: string) => ({matches: query === '(prefers-reduced-motion: reduce)'}));
         window.matchMedia = motion as unknown as typeof window.matchMedia;
@@ -1520,5 +1560,175 @@ describe('an open course (a start and no end)', () => {
             return row as HTMLElement;
         });
         expect(String(other.textContent)).not.toContain('No end date set');
+    });
+});
+
+describe('the folds (T3d)', () => {
+    /**
+     * Another trail of one course, between two days.
+     *
+     * @param {number} id The trail.
+     * @param {string} name Its name.
+     * @param {string} start Its course's first day.
+     * @param {string} end Its course's last day.
+     * @returns {object}
+     */
+    const other = (id: number, name: string, start = '2026-11-03', end = '2026-11-20'): Trail => trail({
+        id: id,
+        name: name,
+        url: `https://example.com/r.php/theme_dimensions/landing/${id}`,
+        first: at(start, 12),
+        last: at(end, 12),
+        steps: [{
+            ...trail().steps[0], cmid: id * 10, courseid: id * 10 + 1, name: `${name} 1`, coursename: `${name} 1`,
+            start: at(start, 12), end: at(end, 12), expected: false,
+        }],
+    });
+
+    /**
+     * A trail's own fold.
+     *
+     * @param {object} page The page.
+     * @param {number} id The trail.
+     * @returns {object}
+     */
+    const foldOf = (page: HTMLElement, id: number): HTMLElement =>
+        page.querySelector<HTMLElement>(`[data-trail="${id}"] [data-action="dim-cal-trailfold"]`) as HTMLElement;
+
+    /**
+     * Whether each trail's steps are shown, by the fold's state and the steps' own.
+     *
+     * @param {object} page The page.
+     * @param {Array} ids The trails.
+     * @returns {Array} [aria-expanded, steps shown] per trail.
+     */
+    const opened = (page: HTMLElement, ids: number[]): Array<[string | null, boolean]> => ids.map((id) => [
+        foldOf(page, id).getAttribute('aria-expanded'),
+        !(page.querySelector<HTMLElement>(`#dim-cal-trailsteps-${id}`) as HTMLElement).hidden,
+    ]);
+
+    /**
+     * The toggle beside the heading.
+     *
+     * @param {object} page The page.
+     * @returns {object|null}
+     */
+    const allOf = (page: HTMLElement): HTMLElement | null =>
+        page.querySelector<HTMLElement>('[data-action="dim-cal-trailfoldall"]');
+
+    /**
+     * The services' answers, December's trails one more trail of its own.
+     *
+     * @param {object} call The call.
+     * @returns {Promise}
+     */
+    const december = ({methodname, args}: {methodname: string, args: Args}): Promise<unknown> => {
+        if (methodname === TRAILS) {
+            return Promise.resolve(args.month === '2026-12'
+                ? trails([other(9, 'Dezembro', '2026-12-02', '2026-12-20')], '2026-12-31', '2026-12-01')
+                : answerFor(args));
+        }
+        return Promise.resolve(methodname === 'theme_dimensions_get_calendar_range' ? answer([], args.from, args.to) : {});
+    };
+
+    it('opens with every trail folded when the answer holds two or more, and one alone open', async() => {
+        const page = await mount(offered(trails([trail(), other(8, 'Outra')])));
+        expect(opened(page, [7, 8])).toEqual([['false', false], ['false', false]]);
+        const all = allOf(page) as HTMLElement;
+        expect([all.getAttribute('aria-expanded'), all.getAttribute('aria-label'), all.getAttribute('aria-controls')])
+            .toEqual(['false', 'Expand all', 'dim-cal-trailsteps-7 dim-cal-trailsteps-8']);
+        expect(all.className).toBe('btn btn-icon icons-collapse-expand dim-cal__trailfold dim-cal__trailfoldall collapsed');
+        expect(all.querySelector('.expanded-icon')?.innerHTML).toBe(ICONS.expanded);
+        expect(all.closest('.dim-cal__trailheading')).not.toBeNull();
+        expect(all.closest('[aria-hidden="true"]')).toBeNull();
+        document.body.replaceChildren();
+
+        const alone = await mount(offered(trails([trail()])));
+        expect(opened(alone, [7])).toEqual([['true', true]]);
+        expect(allOf(alone)).toBeNull();
+    });
+
+    it('expands every trail when any is folded and folds every one when all are open, asking nothing', async() => {
+        const page = await mount(offered(trails([trail(), other(8, 'Outra')])));
+        const all = allOf(page) as HTMLElement;
+        const before = [window.location.href, fetched.mock.calls.length];
+        await act(async() => {
+            fireEvent.click(all);
+        });
+        expect(opened(page, [7, 8])).toEqual([['true', true], ['true', true]]);
+        expect([all.getAttribute('aria-expanded'), all.getAttribute('aria-label')]).toEqual(['true', 'Collapse all']);
+        expect(all.classList.contains('collapsed')).toBe(false);
+        await act(async() => {
+            fireEvent.click(all);
+        });
+        expect(opened(page, [7, 8])).toEqual([['false', false], ['false', false]]);
+        expect([all.getAttribute('aria-expanded'), all.getAttribute('aria-label')]).toEqual(['false', 'Expand all']);
+
+        // One opened by its own fold: still one folded, so the toggle expands.
+        await act(async() => {
+            fireEvent.click(foldOf(page, 7));
+        });
+        expect([all.getAttribute('aria-expanded'), all.getAttribute('aria-label')]).toEqual(['false', 'Expand all']);
+        await act(async() => {
+            fireEvent.click(all);
+        });
+        expect(opened(page, [7, 8])).toEqual([['true', true], ['true', true]]);
+        expect([window.location.href, fetched.mock.calls.length]).toEqual(before);
+    });
+
+    it('folds a trail that arrives with a later month and keeps the reader\'s own folds', async() => {
+        fetched.mockImplementation(december);
+        const page = await mount(offered(trails([trail(), other(8, 'Outra')])));
+        await act(async() => {
+            fireEvent.click(foldOf(page, 7));
+        });
+        expect(opened(page, [7, 8])).toEqual([['true', true], ['false', false]]);
+
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-next"]') as HTMLElement);
+        });
+        await waitFor(() => expect(page.querySelector('[data-trail="9"]')).not.toBeNull());
+        expect(opened(page, [7, 8, 9])).toEqual([['true', true], ['false', false], ['false', false]]);
+        expect(allOf(page)?.getAttribute('aria-controls')).toBe('dim-cal-trailsteps-7 dim-cal-trailsteps-8 dim-cal-trailsteps-9');
+    });
+
+    it('keeps a trail that arrived alone open when another joins it, which arrives folded', async() => {
+        fetched.mockImplementation(december);
+        const page = await mount(offered(trails([trail()])));
+        expect(allOf(page)).toBeNull();
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-action="dim-cal-next"]') as HTMLElement);
+        });
+        await waitFor(() => expect(page.querySelector('[data-trail="9"]')).not.toBeNull());
+        expect(opened(page, [7, 9])).toEqual([['true', true], ['false', false]]);
+        expect(allOf(page)?.getAttribute('aria-label')).toBe('Expand all');
+    });
+
+    it('opens a trail chosen alone in the picker', async() => {
+        const page = await mount(offered(trails([trail(), other(8, 'Outra')])));
+        expect(opened(page, [7, 8])).toEqual([['false', false], ['false', false]]);
+        await act(async() => {
+            fireEvent.change(page.querySelector('[data-action="dim-cal-trail"]') as HTMLElement, {target: {value: '7'}});
+        });
+        await waitFor(() => expect(page.querySelector('[data-trail="8"]')).toBeNull());
+        expect(opened(page, [7])).toEqual([['true', true]]);
+        expect(allOf(page)).toBeNull();
+    });
+
+    it('opens a trail chosen alone in the picker though the reader folded it', async() => {
+        const page = await mount(offered(trails([trail(), other(8, 'Outra')])));
+        // Opened, then folded again: the reader's own fold, no longer the one it arrived with.
+        await act(async() => {
+            fireEvent.click(foldOf(page, 7));
+        });
+        await act(async() => {
+            fireEvent.click(foldOf(page, 7));
+        });
+        expect(opened(page, [7])).toEqual([['false', false]]);
+        await act(async() => {
+            fireEvent.change(page.querySelector('[data-action="dim-cal-trail"]') as HTMLElement, {target: {value: '7'}});
+        });
+        await waitFor(() => expect(page.querySelector('[data-trail="8"]')).toBeNull());
+        expect(opened(page, [7])).toEqual([['true', true]]);
     });
 });

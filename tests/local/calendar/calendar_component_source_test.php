@@ -1464,4 +1464,65 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('const [zoom, setZoom] = useState<Zoom>(() => zoomOf(props.trails?.zoom));', $calendar);
         $this->assertStringNotContainsString('remember(zoom', $calendar, 'Never remembered.');
     }
+
+    /**
+     * T3d: the Trilhas timeline's folds, read where PHPUnit can see them; Jest is the behaviour gate
+     * (js/esm/tests/calendar/TrailView.test.tsx, "the folds (T3d)").
+     *
+     * - A trail takes its fold when it is first drawn: open alone, folded beside another; it keeps it while held, and a
+     *   new answer of the page starts again from none. The reader's own fold wins over it and is kept across every load,
+     *   except that a new answer holding one trail opens it. A course's popover never opens on a folded trail.
+     * - Beside the heading, a toggle expands every trail when any is folded and folds every one when all are open, its
+     *   aria-expanded saying "all open"; drawn for two trails or more, and outside the head row's decorative cells.
+     * - Folds are the view's own: never saved, no request, no new layout read.
+     *
+     * @return void
+     */
+    public function test_the_trilhas_folds(): void {
+        $trails = $this->sources()['trails.ts'];
+        $this->assertMatchesRegularExpression(
+            '~const fresh = ids\.filter\(\(id\) => !\(id in was\)\);\s*if \(fresh\.length === 0\) \{\s*return was;~',
+            $trails,
+            'A trail held already keeps the fold it arrived with.'
+        );
+        $this->assertStringContainsString('const alone = ids.length <= 1;', $trails, 'Open alone, folded beside another.');
+        $this->assertStringContainsString(
+            'export const openOf = (id: number, chosen: Folds, arrived: Folds): boolean => chosen[id] ?? arrived[id] ?? true;',
+            $trails,
+            'The reader\'s own fold first.'
+        );
+        $this->assertStringContainsString('next[id] = !allopen;', $trails);
+        $this->assertStringContainsString(
+            'if (trails.length !== 1 || !(trails[0].id in chosen)) {',
+            $trails,
+            'A new answer holding one trail drops the reader\'s fold of it.'
+        );
+
+        $view = $this->sources()['TrailView.tsx'];
+        $this->assertStringContainsString(
+            'const arriving = fresh ? {} : arrivedOf(arrivals, ids);',
+            $view,
+            'A new answer starts again.'
+        );
+        $this->assertStringContainsString('const isOpen = (id: number): boolean => openOf(id, folds, arriving);', $view);
+        $this->assertStringContainsString('const allopen = ids.every(isOpen);', $view);
+        $this->assertStringContainsString('setFolds((was) => freshFolds(was, answer));', $view);
+        $this->assertStringContainsString(
+            "if (bar && !bar.closest('[hidden]')) {",
+            $view,
+            'A popover never opens on a bar its trail folded away while the scroll ran.'
+        );
+        $this->assertStringContainsString('setFolds((was) => foldedAll(was, ids, allopen));', $view);
+        $this->assertStringContainsString('{ids.length > 1 ? (', $view, 'No toggle for one trail or none.');
+        $this->assertStringContainsString('data-action="dim-cal-trailfoldall"', $view);
+        $this->assertStringContainsString('aria-expanded={allopen}', $view);
+        $this->assertMatchesRegularExpression(
+            '~aria-label=\{allopen \? look\.strings\.calendar_trailcollapseall\s*: look\.strings\.calendar_trailexpandall\}~',
+            $view
+        );
+        $this->assertStringContainsString('<div className="dim-cal__trailrow dim-cal__trailrow--head">', $view);
+        $this->assertStringContainsString('<span aria-hidden="true">{look.strings.calendar_trailheading}</span>', $view);
+        $this->assertSame(2, substr_count($view, '{chevrons()}'), 'Both folds wear core\'s chevrons, the same three icons.');
+        $this->assertStringNotContainsString('remember', $view, 'A fold is never saved.');
+    }
 }
