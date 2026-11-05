@@ -783,6 +783,8 @@ final class trails_test extends \advanced_testcase {
             landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
         ]);
         self::getDataGenerator()->create_module('subcourse', ['course' => $course->id, 'refcourse' => $trail->id]);
+        // Open to the reader as the trail is, so only its model keeps it out (T3d's rule would hide it otherwise).
+        $this->enable_instance((int) $course->id, 'self', ['customint6' => 1]);
         $this->become(self::getDataGenerator()->create_user());
         $this->assertSame([(int) $trail->id], self::ids($this->answer('2027-03')));
 
