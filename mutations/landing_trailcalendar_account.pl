@@ -1,2 +1,2 @@
-# A visitor is led to the calendar, which asks them to log in.
-s/'calendarurl' => page::trails_offered\(\) \?/'calendarurl' => true ?/;
+# Every reader is led to the calendar: the view's rule is not asked.
+s/'calendarurl' => \$this->shows_in_calendar\(\) \?/'calendarurl' => true ?/;

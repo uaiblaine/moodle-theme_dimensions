@@ -188,6 +188,38 @@ its courses' dates, the connectors' cases, and the four ways to end a course wit
   (`display::many()`, in full or not at all), and the trails whose period meets the month: the landing page's period,
   first start to last end over the steps drawn, left open by a step that starts and never ends. A trail with no date
   is no row. The choice "Trilha" lists every admitted trail with a step drawn, whatever its period.
+- **Who is shown a trail (T3d, the owner's decision of 2026-11-04)**: of what the showcase gate admits, the view keeps
+  only the trails this account takes part in, may join, may see as public, or may edit, by local_unlistedcourses' own
+  answers, never re-derived (`trails::shown_to()`, private, reached only through `kept()` after the gate; the landing
+  page's link asks `trails::offers()`, the same gate and rule over the one course). Every read is the current user's:
+  a scope built for another viewer is answered nothing. In order, a trail decided by one step asked nothing further:
+  1. a relationship that counts as enrolled or on the way: active, scheduled (starts later), an application awaiting a
+     decision, a waiting-list place (`classifier::enrolments()`'s `type`, the plugin's `classify_enrolment()`; the
+     plugin's own discoverable relationships). A suspended or ended enrolment counts for nothing here;
+  2. staff, the owner's "who can edit": `moodle/course:update` at the trail course's own context (a site administrator
+     passes; the capability in another course does not), so a manager can check the view;
+  3. a public trail (`publicaccess::are_public()`, the landing page's predicate), shown to every account, asked once over
+     the trails still undecided: a public trail costs no next-action read;
+  4. a way in: `access::get_next_actions()` over the trails still undecided, once, is open, guest access (free or behind a
+     key) or conditional; blocked and none are no way in. The batch may read open where a method would refuse (it
+     drops the self enrolment capability and enrol_autoenrol's rule), never the reverse; it only narrows what the gate
+     admitted, never decides whether a course may be named.
+
+  The steps keep section 6's rule: a public trail's unlisted step stays hidden from an account with no tie to it. The
+  rule runs inside each page of candidates, after the gate and before the cap counts, so the cap counts the trails
+  shown and a trail not shown never takes a shown one's place nor says "more"; the two batches are asked once a page,
+  over at most `trails::CAP` ids (once in all for a site with up to a hundred trail courses in scope). It applies to the
+  rows and the choice alike; "Só as minhas" keeps the trails the account is actively enrolled in, which it always shows.
+- **The folds (T3d)**: when the trails drawn are more than one, each arrives folded; a trail alone (one chosen in the
+  picker, or reached from the landing page's link) arrives open (`trails.ts` `arrivedOf()`). A trail takes its fold when
+  it is first drawn and keeps it while held: one that arrived alone stays open when a month loaded brings a second,
+  which arrives folded; a new answer of the page (a filter, Back or Forward) starts again from none. The reader's own
+  fold wins and is kept across every load (`openOf()`), except that a new answer holding one trail drops it
+  (`freshFolds()`), so a trail chosen alone always opens; folds are never saved and ask nothing. A course pressed in a
+  trail the reader folds before its scroll ends opens no popover. Beside the
+  "Trilhas e cursos" heading, a desktop's only and drawn for two trails or more, core's same section toggle expands
+  every trail when any is folded and folds every one when all are open, `aria-expanded` saying "all open", named
+  "Expandir todas" / "Recolher todas" (`calendar_trailexpandall`, `calendar_trailcollapseall`).
 - **Continuous months (T3b)**: the view always holds the month in view and the next. The first paint embeds the trails of
   both (`trails::month_window($month, trails::OPENING)`, two months); the service takes `months`, 1 to 3 (`trails::MONTHS`;
   anything else is the request's shape, refused before login, and `window::whole_months()` refuses it too), so the first
@@ -288,10 +320,15 @@ its courses' dates, the connectors' cases, and the four ways to end a course wit
 - **Cost**: the candidates, the gate, `trail::many()`'s one `{subcourse}` statement, `display::many()`'s one statement
   for the steps' courses with their gate, the enrolments and at most one
   `{course_completions}` statement; each trail's modinfo and completion data are core's caches. Pinned by
-  `trails_test::test_six_trails_cost_what_two_do` (2 and 6 trails, a learner and an account enrolled in none, over one
-  month and over the month and the next, which cost the same).
-- **The landing page's "Ver no calendário"** (`landing_page::calendar_url()`), an account's only: the Trilhas view with
-  the trail kept, on today's month while the trail runs, its first month before it starts, its last once it has ended.
+  `trails_test::test_six_trails_cost_what_two_do` (2 and 6 trails, a learner, an account enrolled in none and, since
+  T3d, a manager enrolled in none, over one, two and three months, which cost the same) and the ten-by-ten test. T3d's
+  rule adds, once a page, the public batch and the next-action batch over the trails still undecided: a learner of
+  every trail and a manager pay neither, an account enrolled in none both.
+- **The landing page's "Ver no calendário"** (`landing_page::calendar_url()`), offered exactly when the view would list
+  the trail to the reader (`trails::offers()`, since T3d: the candidates' statement narrowed to the course, the gate,
+  the rule; a page served where the listing withholds the trail, an unlisted category or a hidden course, offers none;
+  a visitor never): the Trilhas view with the trail kept, on
+  today's month while the trail runs, its first month before it starts, its last once it has ended.
 
 ## 8. The dependency on mod_subcourse (Q9)
 

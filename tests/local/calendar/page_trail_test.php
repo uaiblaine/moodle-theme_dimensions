@@ -77,6 +77,8 @@ final class page_trail_test extends \advanced_testcase {
      * @return \stdClass The trail course.
      */
     private function trail(): \stdClass {
+        global $DB;
+
         $this->setAdminUser();
         course_handler::reset_caches();
         landingfields::reset_field_cache();
@@ -94,6 +96,10 @@ final class page_trail_test extends \advanced_testcase {
             'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_TRAIL,
         ]);
         $generator->create_module('subcourse', ['course' => $trail->id, 'refcourse' => $ref->id, 'name' => 'Alfa']);
+        // Open to self enrolment: the view shows a trail to an account with no tie to it only where it may enrol.
+        $instance = $DB->get_record('enrol', ['courseid' => $trail->id, 'enrol' => 'self'], '*', MUST_EXIST);
+        $DB->set_field('enrol', 'customint6', 1, ['id' => $instance->id]);
+        enrol_get_plugin('self')->update_status($instance, ENROL_INSTANCE_ENABLED);
         return $trail;
     }
 

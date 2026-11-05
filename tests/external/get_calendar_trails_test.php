@@ -105,6 +105,8 @@ final class get_calendar_trails_test extends \advanced_testcase {
             'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_TRAIL,
         ]);
         $generator->create_module('subcourse', ['course' => $trail->id, 'refcourse' => $ref->id, 'name' => 'Passo <b>1</b>']);
+        // Open to self enrolment: the view shows a trail to an account with no tie to it only where it may enrol.
+        $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
         return $trail;
     }
 

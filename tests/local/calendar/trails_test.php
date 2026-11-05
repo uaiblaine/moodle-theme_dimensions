@@ -118,12 +118,16 @@ final class trails_test extends \advanced_testcase {
     /**
      * A trail course whose steps refer to the given courses, in that order.
      *
+     * Open to self enrolment unless asked otherwise: the view shows a trail to an account with no tie to it only where
+     * it may enrol (trails::shown_to()), so the tests of everything else read an open trail.
+     *
      * @param string $name The trail's name.
      * @param \stdClass[] $refs The referenced courses.
      * @param array $record Further course fields.
+     * @param bool $open Whether the course's self enrolment instance is enabled, taking new enrolments.
      * @return \stdClass The trail course.
      */
-    private function trail(string $name, array $refs, array $record = []): \stdClass {
+    private function trail(string $name, array $refs, array $record = [], bool $open = true): \stdClass {
         $trail = $this->course($record + ['fullname' => $name, 'enablecompletion' => 1], [
             landingfields::SHORTNAME_MODEL => landingfields::MODEL_TRAIL,
         ]);
@@ -134,7 +138,24 @@ final class trails_test extends \advanced_testcase {
                 'name' => $ref->fullname,
             ]);
         }
+        if ($open) {
+            $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
+        }
         return $trail;
+    }
+
+    /**
+     * Whether the answer names a trail, in its rows and in its choice; the two must agree.
+     *
+     * @param array $answer The answer.
+     * @param int $trailid The trail course.
+     * @return bool
+     */
+    private function names(array $answer, int $trailid): bool {
+        $row = in_array($trailid, self::ids($answer), true);
+        $option = in_array($trailid, array_column($answer['options'], 'id'), true);
+        $this->assertSame($row, $option, 'The rows and the choice name the same trails.');
+        return $row;
     }
 
     /**
@@ -348,15 +369,18 @@ final class trails_test extends \advanced_testcase {
 
     /**
      * A trail the showcase would not list to this account is never named, in the rows or the choice: a hidden trail
-     * course, and an unlisted one to an account with no tie to it; the same trail is offered once the account is
-     * enrolled in it.
+     * course, even to a student of it, and an unlisted one to an account with no tie to it; the same trail is offered
+     * once the account is enrolled in it.
      */
     public function test_a_trail_the_account_may_not_discover_is_never_named(): void {
         $listed = $this->trail('Listada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))]);
         $hidden = $this->trail('Oculta', [$this->ref('Beta', self::at(3, 2), self::at(3, 20))], ['visible' => 0]);
-        $unlisted = $this->trail('Não listada', [$this->ref('Gama', self::at(3, 2), self::at(3, 20))]);
+        // Closed: an unlisted course an account could enrol in now is discoverable to it, which is not this test's case.
+        $unlisted = $this->trail('Não listada', [$this->ref('Gama', self::at(3, 2), self::at(3, 20))], [], false);
         $this->set_course_state((int) $unlisted->id, discoverability::STATE_UNLISTED);
         $reader = self::getDataGenerator()->create_user();
+        // Enrolled in the hidden trail: the view's rule would keep it, so only the gate withholds it.
+        self::getDataGenerator()->enrol_user($reader->id, $hidden->id, 'student');
         $this->become($reader);
 
         $answer = $this->answer('2027-03');
@@ -390,9 +414,322 @@ final class trails_test extends \advanced_testcase {
     }
 
     /**
-     * A visitor is answered nothing, whatever the trails: the view is an account's.
+     * The cap counts the trails the account is shown: a page of listed trails it has no tie to and no way into takes no
+     * shown trail's place and says nothing of itself. The control: an administrator, shown every one, is told "more".
+     */
+    public function test_the_cap_counts_the_trails_the_account_is_shown(): void {
+        for ($i = 0; $i < trails::CAP; $i++) {
+            $this->course(['fullname' => "Fechada {$i}"], [landingfields::SHORTNAME_MODEL => landingfields::MODEL_TRAIL]);
+        }
+        $this->category = self::getDataGenerator()->create_category(['name' => 'Depois']);
+        $open = $this->trail('Aberta', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))]);
+        $this->become(self::getDataGenerator()->create_user());
+
+        $answer = $this->answer('2027-03');
+        $this->assertSame([(int) $open->id], self::ids($answer));
+        $this->assertFalse($answer['truncated'], 'Trails the account is not shown are not "more".');
+
+        $this->become(get_admin());
+        $this->assertTrue($this->answer('2027-03')['truncated'], 'Control: shown every trail, the administrator is.');
+    }
+
+    /**
+     * A trail with no way in for an account with no tie to it is named nowhere: no row, no choice, not by its id; nor is
+     * one whose only method refuses the account. The control is the same trail once its self enrolment opens.
+     */
+    public function test_a_trail_with_no_way_in_is_not_shown(): void {
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        // A method that refuses the account (new enrolments off) is no way in either: blocked is no route.
+        $blocked = $this->trail('Recusada', [$this->ref('Beta', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->enable_instance((int) $blocked->id, 'self', ['customint6' => 0]);
+        $reader = self::getDataGenerator()->create_user();
+        $this->become($reader);
+
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id));
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $blocked->id), 'Blocked.');
+        $this->assertSame([], self::ids($this->answer('2027-03', (int) $trail->id)), 'Not by its id either.');
+
+        $this->setAdminUser();
+        $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
+        $this->become($reader);
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: a way in shows it.');
+    }
+
+    /**
+     * A learner of the trail is shown it with no way in left; somebody else is not.
+     */
+    public function test_an_enrolled_learner_is_shown_a_trail_with_no_way_in(): void {
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $learner = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($learner->id, $trail->id, 'student');
+        $this->become($learner);
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id));
+
+        $this->become(self::getDataGenerator()->create_user());
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: no tie, no way in.');
+    }
+
+    /**
+     * An enrolment that starts later is shown the trail with no way in; somebody else is not.
+     */
+    public function test_a_scheduled_enrolment_is_shown_a_trail_with_no_way_in(): void {
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $scheduled = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($scheduled->id, $trail->id, 'student', 'manual', time() + WEEKSECS);
+        $this->become($scheduled);
+        $answer = $this->answer('2027-03');
+        $this->assertTrue($this->names($answer, (int) $trail->id));
+        $this->assertFalse($answer['trails'][0]['enrolled'], 'Not enrolled yet: no progress.');
+
+        $this->become(self::getDataGenerator()->create_user());
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: no tie, no way in.');
+    }
+
+    /**
+     * A suspended enrolment keeps nothing: with no way in left the trail is hidden; with an open way in (a method the
+     * account holds no row on) it is shown again.
+     */
+    public function test_a_suspended_enrolment_is_shown_the_trail_only_with_a_way_in(): void {
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $suspended = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($suspended->id, $trail->id, 'student', 'manual', 0, 0, ENROL_USER_SUSPENDED);
+        $this->become($suspended);
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id));
+
+        $this->setAdminUser();
+        $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
+        $this->become($suspended);
+        $answer = $this->answer('2027-03');
+        $this->assertTrue($this->names($answer, (int) $trail->id), 'An open way in shows it.');
+        $this->assertFalse($answer['trails'][0]['enrolled'], 'Shown as to anybody: no progress.');
+    }
+
+    /**
+     * Give a trail an enrol_apply instance closed to new applications, or skip where enrol_apply is not installed.
+     *
+     * @param \stdClass $trail The trail course.
+     * @return void
+     */
+    private function closed_applications(\stdClass $trail): void {
+        global $DB;
+        if (!\core_component::get_component_directory('enrol_apply')) {
+            $this->markTestSkipped('enrol_apply is not installed.');
+        }
+        $this->enable_enrol('apply');
+        enrol_get_plugin('apply')->add_instance($trail, [
+            'status' => ENROL_INSTANCE_ENABLED,
+            'roleid' => (int) $DB->get_field('role', 'id', ['shortname' => 'student']),
+            'customint6' => 0,
+        ]);
+    }
+
+    /**
+     * An application awaiting a decision keeps the trail shown though applications are closed; an account with no
+     * application is not shown it. Runs only where enrol_apply is installed.
+     */
+    public function test_an_application_awaiting_a_decision_is_shown_the_trail(): void {
+        $trail = $this->trail('Inscrições', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->closed_applications($trail);
+        $pending = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($pending->id, $trail->id, null, 'apply', 0, 0, ENROL_USER_SUSPENDED);
+        $this->become($pending);
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id));
+
+        $this->become(self::getDataGenerator()->create_user());
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: applications are closed.');
+    }
+
+    /**
+     * A waiting-list place keeps the trail shown though applications are closed; an account with none is not shown it.
+     * Runs only where enrol_apply is installed.
+     */
+    public function test_a_waiting_list_place_is_shown_the_trail(): void {
+        $trail = $this->trail('Espera', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->closed_applications($trail);
+        $waiting = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($waiting->id, $trail->id, null, 'apply', 0, 0, 2);
+        $this->become($waiting);
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id));
+
+        $this->become(self::getDataGenerator()->create_user());
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: applications are closed.');
+    }
+
+    /**
+     * Whoever may edit the trail course is shown it with no enrolment and no way in: an editing teacher by a role
+     * assignment alone, and a site administrator. The controls: a non-editing teacher by the same kind of assignment,
+     * enrolled nowhere, and an account that may edit another course only, are not.
+     */
+    public function test_staff_are_shown_a_trail_with_no_way_in(): void {
+        global $DB;
+        $trail = $this->trail('Fechada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $context = \core\context\course::instance($trail->id);
+        $editor = self::getDataGenerator()->create_user();
+        role_assign((int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher']), $editor->id, $context->id);
+        $teacher = self::getDataGenerator()->create_user();
+        role_assign((int) $DB->get_field('role', 'id', ['shortname' => 'teacher']), $teacher->id, $context->id);
+        $elsewhere = $this->user_with('moodle/course:update', \core\context\course::instance($this->course([])->id));
+
+        foreach (['editing teacher' => $editor, 'administrator' => get_admin()] as $name => $user) {
+            $this->become($user);
+            $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id), $name);
+        }
+        foreach (['a teacher who may not edit' => $teacher, 'an editor of another course' => $elsewhere] as $name => $user) {
+            $this->become($user);
+            $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), "Control: {$name}.");
+        }
+    }
+
+    /**
+     * The rule's two lists are local_unlistedcourses' own, copied because the plugin keeps them private: the
+     * relationships that keep an unlisted course discoverable and the next actions that let a viewer in. A change of
+     * the plugin's reddens this before it parts the theme from the plugin.
+     */
+    public function test_the_rules_lists_are_the_plugins_own(): void {
+        $plugin = new \ReflectionClass(\local_unlistedcourses\access::class);
+        $theme = new \ReflectionClass(trails::class);
+        foreach (['DISCOVERABLE_RELATIONSHIPS' => 'KEPT_RELATIONSHIPS', 'ENROLABLE_ACTIONS' => 'ROUTES'] as $theirs => $ours) {
+            $this->assertEqualsCanonicalizing(
+                $plugin->getReflectionConstant($theirs)->getValue(),
+                $theme->getReflectionConstant($ours)->getValue(),
+                $ours
+            );
+        }
+    }
+
+    /**
+     * One viewer for the whole rule: a scope built for one account and answered while another is the current user
+     * is answered nothing. The control: the current user's own scope.
+     */
+    public function test_a_scope_of_another_viewer_is_answered_nothing(): void {
+        $trail = $this->trail('Aberta', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))]);
+        $this->become(self::getDataGenerator()->create_user());
+        $scope = scope::for_viewer(0);
+        $window = trails::month_window('2027-03');
+        $this->become(self::getDataGenerator()->create_user());
+        $this->assertSame([], trails::answer($window, $scope, 0, false, time())['trails']);
+        $this->assertSame(
+            [(int) $trail->id],
+            self::ids(trails::answer($window, scope::for_viewer(0), 0, false, time())),
+            'Control: the current user\'s own scope.'
+        );
+    }
+
+    /**
+     * A public trail is shown to every account, with no tie and no way in; the same trail, listed, is not.
+     */
+    public function test_a_public_trail_is_shown_to_every_account(): void {
+        global $DB;
+        $trail = $this->trail('Pública', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->set_course_state((int) $trail->id, discoverability::STATE_PUBLIC);
+        $reader = self::getDataGenerator()->create_user();
+        $this->become($reader);
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id));
+
+        // The landing page's question answers a visitor no, public or not, before anything is read.
+        $this->setGuestUser();
+        $before = $DB->perf_get_reads();
+        $this->assertFalse(trails::offers((int) $trail->id), 'A visitor.');
+        $this->assertSame(0, $DB->perf_get_reads() - $before, 'A visitor costs no statement.');
+        $this->become($reader);
+        $this->assertTrue(trails::offers((int) $trail->id), 'Control: an account.');
+
+        $this->set_course_state((int) $trail->id, discoverability::STATE_DEFAULT);
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: listed, it is not.');
+    }
+
+    /**
+     * A public trail is decided before the plugin's next-action batch, which it is not asked about: deciding it costs
+     * fewer statements than deciding a listed trail with no way in, which the batch is asked about. Both are measured
+     * warm (core's caches and the plugin's public memo), through the landing page's question, which takes the answer's
+     * path over one course.
+     */
+    public function test_a_public_trail_costs_no_next_action_read(): void {
+        global $DB;
+        $public = $this->trail('Pública', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->set_course_state((int) $public->id, discoverability::STATE_PUBLIC);
+        $closed = $this->trail('Fechada', [$this->ref('Beta', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->become(self::getDataGenerator()->create_user());
+
+        $reads = [];
+        foreach (['public' => $public, 'closed' => $closed] as $name => $trail) {
+            $shown = trails::offers((int) $trail->id);
+            $before = $DB->perf_get_reads();
+            $this->assertSame($shown, trails::offers((int) $trail->id), "Precondition: {$name} answers alike.");
+            $reads[$name] = $DB->perf_get_reads() - $before;
+            $this->assertSame($name === 'public', $shown, "Precondition: {$name} shown or not.");
+        }
+        $this->assertLessThan($reads['closed'], $reads['public'], 'The batch is not asked about a public trail.');
+    }
+
+    /**
+     * Guest access is a way in, free or behind a key; the control is the same trail with guest access off.
+     */
+    public function test_guest_access_is_a_way_in(): void {
+        $free = $this->trail('Livre', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->enable_instance((int) $free->id, 'guest');
+        $key = $this->trail('Chave', [$this->ref('Beta', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->enable_instance((int) $key->id, 'guest', ['password' => 'segredo']);
+        $off = $this->trail('Sem acesso', [$this->ref('Gama', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->become(self::getDataGenerator()->create_user());
+
+        $answer = $this->answer('2027-03');
+        $this->assertTrue($this->names($answer, (int) $free->id), 'Free.');
+        $this->assertTrue($this->names($answer, (int) $key->id), 'Behind a key.');
+        $this->assertFalse($this->names($answer, (int) $off->id), 'Control: no guest access.');
+    }
+
+    /**
+     * A conditional enrolment is a way in for an account actively enrolled in the course it waits for, and for nobody
+     * else. Runs only where enrol_coursecompleted is installed: the plugin's batch asks the plugin.
+     */
+    public function test_a_conditional_enrolment_is_a_way_in(): void {
+        if (!\core_component::get_component_directory('enrol_coursecompleted')) {
+            $this->markTestSkipped('enrol_coursecompleted is not installed.');
+        }
+        $prerequisite = $this->course(['fullname' => 'Antes']);
+        $trail = $this->trail('Depois', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $this->completed_instance($trail, (int) $prerequisite->id);
+        $learner = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($learner->id, $prerequisite->id, 'student');
+        $this->become($learner);
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id));
+
+        $this->become(self::getDataGenerator()->create_user());
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: not working towards it.');
+    }
+
+    /**
+     * A public trail does not open its steps: an unlisted step stays hidden from an account with no tie to it, beside a
+     * public step drawn in full. The control: an account enrolled in the unlisted course is drawn both.
+     */
+    public function test_a_public_trail_keeps_its_unlisted_step_hidden(): void {
+        $public = $this->ref('Aberto', self::at(3, 2), self::at(3, 10));
+        $unlisted = $this->ref('Reservado', self::at(3, 11), self::at(3, 20));
+        $trail = $this->trail('Pública', [$public, $unlisted], [], false);
+        foreach ([$trail, $public] as $course) {
+            $this->set_course_state((int) $course->id, discoverability::STATE_PUBLIC);
+        }
+        $this->set_course_state((int) $unlisted->id, discoverability::STATE_UNLISTED);
+        $reader = self::getDataGenerator()->create_user();
+        $this->become($reader);
+
+        $answer = $this->answer('2027-03');
+        $this->assertSame([(int) $trail->id], self::ids($answer), 'The trail is shown.');
+        $this->assertSame([(int) $public->id], array_column($answer['trails'][0]['steps'], 'courseid'));
+
+        $member = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($member->id, $unlisted->id, 'student');
+        $this->become($member);
+        $steps = $this->answer('2027-03')['trails'][0]['steps'];
+        $this->assertSame([(int) $public->id, (int) $unlisted->id], array_column($steps, 'courseid'), 'Control.');
+    }
+
+    /**
+     * A visitor is answered nothing, whatever the trails, and at no cost: the view is an account's.
      */
     public function test_a_visitor_is_answered_nothing(): void {
+        global $DB;
         $this->trail('Listada', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))]);
         $this->become(self::getDataGenerator()->create_user());
         $this->assertCount(1, $this->answer('2027-03')['trails'], 'Precondition: an account sees the trail.');
@@ -401,6 +738,11 @@ final class trails_test extends \advanced_testcase {
         $answer = $this->answer('2027-03');
         $this->assertSame([], $answer['trails']);
         $this->assertSame([], $answer['options']);
+        // Answered before anything is read: the view's rule would also refuse a visitor, but only after the candidates.
+        [$window, $scope] = [trails::month_window('2027-03'), scope::for_viewer(0)];
+        $before = $DB->perf_get_reads();
+        trails::answer($window, $scope, 0, false, time());
+        $this->assertSame(0, $DB->perf_get_reads() - $before, 'A visitor costs no statement.');
     }
 
     /**
@@ -451,8 +793,10 @@ final class trails_test extends \advanced_testcase {
     }
 
     /**
-     * Six trails cost the statements two do, for a learner of every one of them (progress included) and for an account
-     * enrolled in none, over one month, the month and the next and three months (the window is no statement's): the answer reads
+     * Six trails cost the statements two do, for a learner of every one of them (progress included), for an account
+     * enrolled in none (shown each trail by its open self enrolment: the public batch and the next-action batch, once
+     * each) and for a manager enrolled in none (shown each by the capability, which reads no statement per trail), over
+     * one month, the month and the next and three months (the window is no statement's): the answer reads
      * the trails and their steps in batches. Core's caches (each trail's modinfo, its
      * contexts and its completion data) are warm on a second answer, which is what is measured.
      */
@@ -460,6 +804,7 @@ final class trails_test extends \advanced_testcase {
         global $DB;
         $learner = self::getDataGenerator()->create_user();
         $reader = self::getDataGenerator()->create_user();
+        $manager = $this->user_with('moodle/course:update', \core\context\system::instance());
         $categories = [];
         foreach (['small' => 2, 'big' => 6] as $name => $count) {
             $category = self::getDataGenerator()->create_category(['name' => $name]);
@@ -474,7 +819,7 @@ final class trails_test extends \advanced_testcase {
             }
         }
 
-        foreach (['learner' => $learner, 'reader' => $reader] as $who => $user) {
+        foreach (['learner' => $learner, 'reader' => $reader, 'manager' => $manager] as $who => $user) {
             $this->become($user);
             $reads = [];
             foreach ([1, trails::OPENING, trails::MONTHS] as $months) {
@@ -541,14 +886,16 @@ final class trails_test extends \advanced_testcase {
 
     /**
      * Ten trails of ten courses (a hundred steps and a hundred referenced courses) cost the statements two trails of two
-     * do, for a learner of every trail who is enrolled in half the courses and has completed a quarter of them, and for an
-     * account enrolled in nothing, over one month, the month and the next and three months. Core's caches are warm on a
+     * do, for a learner of every trail who is enrolled in half the courses and has completed a quarter of them, for an
+     * account enrolled in nothing (shown the trails by their open self enrolment) and for a manager enrolled in nothing
+     * (shown them by the capability), over one month, the month and the next and three months. Core's caches are warm on a
      * second answer, which is what is measured; the generator builds about 116 courses and 104 steps, some twenty seconds.
      */
     public function test_ten_trails_of_ten_courses_cost_what_two_of_two_do(): void {
         global $DB;
         $learner = self::getDataGenerator()->create_user();
         $reader = self::getDataGenerator()->create_user();
+        $manager = $this->user_with('moodle/course:update', \core\context\system::instance());
         $categories = [];
         foreach (['few' => [2, 2], 'many' => [10, 10]] as $name => [$trails, $steps]) {
             $category = self::getDataGenerator()->create_category(['name' => $name]);
@@ -556,7 +903,7 @@ final class trails_test extends \advanced_testcase {
             $this->trails_across_the_window($category, $trails, $steps, $learner);
         }
 
-        foreach (['learner' => $learner, 'reader' => $reader] as $who => $user) {
+        foreach (['learner' => $learner, 'reader' => $reader, 'manager' => $manager] as $who => $user) {
             $this->become($user);
             $reads = [];
             foreach ([1, trails::OPENING, trails::MONTHS] as $months) {

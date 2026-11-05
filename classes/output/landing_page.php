@@ -35,6 +35,7 @@ use theme_dimensions\local\landing\redirector;
 use theme_dimensions\local\hook\course\after_form_validation;
 use theme_dimensions\local\landing\resolution;
 use theme_dimensions\local\calendar\page;
+use theme_dimensions\local\calendar\trails;
 use theme_dimensions\local\category\cards;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\local\styleurl;
@@ -216,10 +217,23 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
+     * Whether "Ver no calendário" is offered: exactly when the Trilhas view would list this trail to this reader
+     * ({@see trails::offers()}: the view's own gate and rule over this course, never a copy of them). A page served to a
+     * reader the listing withholds the trail from (an unlisted category, a hidden course) offers no link that would open
+     * on nothing. A visitor is offered none, as {@see page::trails_offered()} says; the trail's part exists only while
+     * trails are available.
+     *
+     * @return bool
+     */
+    private function shows_in_calendar(): bool {
+        return trails::offers((int) $this->course->id);
+    }
+
+    /**
      * Where "Ver no calendário" leads: the calendar's Trilhas view with this trail kept, on the month the trail is in.
      *
-     * Today's month while the trail runs; before it starts, its first month; once it has ended, its last. An account's
-     * only ({@see page::trails_offered()}): the calendar asks a visitor to log in, and the view is an account's.
+     * Today's month while the trail runs; before it starts, its first month; once it has ended, its last. Offered only
+     * where {@see shows_in_calendar()} says so: the calendar asks a visitor to log in, and the view is an account's.
      *
      * @param int $first The period's first start, 0 for none.
      * @param int $last The period's last end, 0 for an open period.
@@ -362,7 +376,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'period' => $period,
             'periodshort' => $this->period($first, $last, $this->format_date()),
             'continue' => $continue,
-            'calendarurl' => page::trails_offered() ? $this->calendar_url($first, $last)->out(false) : null,
+            'calendarurl' => $this->shows_in_calendar() ? $this->calendar_url($first, $last)->out(false) : null,
         ];
     }
 

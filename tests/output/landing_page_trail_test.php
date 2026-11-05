@@ -520,6 +520,10 @@ final class landing_page_trail_test extends \advanced_testcase {
             'running' => [$this->trail([$running]), $month(time())],
             'ended' => [$this->trail([$ended]), $month(time() - 10 * WEEKSECS)],
         ];
+        // Open to self enrolment: the link follows the view's rule, which shows such a trail to an account with no tie.
+        foreach ($cases as [$trail]) {
+            $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
+        }
         $this->become(self::getDataGenerator()->create_user());
 
         foreach ($cases as $name => [$trail, $expected]) {
@@ -541,5 +545,85 @@ final class landing_page_trail_test extends \advanced_testcase {
         $context = $this->export($trail, new resolution(resolution::STATE_VISITOR), true);
         $this->assertNotNull($context->trail, 'Precondition: the visitor sees the trail.');
         $this->assertNull($context->trailcalendarurl);
+    }
+
+    /**
+     * "Ver no calendário" follows the calendar's own rule ({@see \theme_dimensions\local\calendar\trails::offers()})
+     * both ways: an account with no tie to a closed trail is not offered it; a learner of it, an editing teacher, a way
+     * in and the trail made public each offer it, and the account with no tie is answered nothing by the view either.
+     */
+    public function test_the_calendar_link_follows_the_views_rule(): void {
+        global $CFG, $DB;
+        $CFG->routerconfigured = false;
+        $ref = $this->course(['fullname' => 'Agora', 'startdate' => time() - WEEKSECS, 'enddate' => time() + WEEKSECS]);
+        $trail = $this->trail([$ref]);
+        $context = \core\context\course::instance($trail->id);
+        $reader = self::getDataGenerator()->create_user();
+        $learner = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($learner->id, $trail->id, 'student');
+        $editor = self::getDataGenerator()->create_user();
+        role_assign((int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher']), $editor->id, $context->id);
+        $link = function (\stdClass $user, string $state) use ($trail): ?string {
+            $this->become($user);
+            return $this->export($trail, new resolution($state), false)->trailcalendarurl;
+        };
+
+        $this->assertNull($link($reader, resolution::STATE_CLOSED), 'No tie and no way in: no link.');
+        $this->assertFalse(\theme_dimensions\local\calendar\trails::offers((int) $trail->id), 'Nor a trail.');
+        $this->assertNotNull($link($learner, resolution::STATE_ENROLLED), 'A learner of the trail.');
+        $this->assertNotNull($link($editor, resolution::STATE_CLOSED), 'An editing teacher with no enrolment.');
+
+        $this->setAdminUser();
+        $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
+        $this->assertNotNull($link($reader, resolution::STATE_CLOSED), 'A way in.');
+
+        $this->setAdminUser();
+        enrol_get_plugin('self')->update_status(
+            $DB->get_record('enrol', ['courseid' => $trail->id, 'enrol' => 'self'], '*', MUST_EXIST),
+            ENROL_INSTANCE_DISABLED
+        );
+        $this->assertNull($link($reader, resolution::STATE_CLOSED), 'Closed again: no link.');
+        $this->set_course_state((int) $trail->id, discoverability::STATE_PUBLIC);
+        $this->assertNotNull($link($reader, resolution::STATE_CLOSED), 'Public: every account.');
+    }
+
+    /**
+     * The link follows the calendar's gate as well as its rule: a page served to a reader the listing withholds the trail
+     * from offers no link, though a way in is open, for a trail in an unlisted category and for a hidden trail; the
+     * calendar lists neither to the same reader. The control: a listed trail with the same way in.
+     */
+    public function test_the_calendar_link_follows_the_views_gate(): void {
+        global $CFG, $DB;
+        $CFG->routerconfigured = false;
+        $ref = $this->course(['fullname' => 'Agora', 'startdate' => time() - WEEKSECS, 'enddate' => time() + WEEKSECS]);
+        $listed = $this->trail([$ref]);
+        $hidden = $this->trail([$ref]);
+        $DB->set_field('course', 'visible', 0, ['id' => $hidden->id]);
+        rebuild_course_cache((int) $hidden->id, true);
+        $this->category = self::getDataGenerator()->create_category(['name' => 'Reservada']);
+        $unlisted = $this->trail([$ref]);
+        $this->set_category_state((int) $this->category->id, \local_unlistedcourses\category_discoverability::STATE_UNLISTED);
+        foreach ([$listed, $unlisted, $hidden] as $trail) {
+            $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
+        }
+        $reader = self::getDataGenerator()->create_user();
+
+        $month = userdate(time(), '%Y-%m');
+        $cases = ['unlisted category' => [$unlisted, false], 'hidden' => [$hidden, false], 'listed' => [$listed, true]];
+        foreach ($cases as $name => [$trail, $linked]) {
+            $this->become($reader);
+            $link = $this->export($trail, new resolution(resolution::STATE_CLOSED), false)->trailcalendarurl;
+            $this->assertSame($linked, $link !== null, $name);
+            $this->become($reader);
+            $answer = \theme_dimensions\local\calendar\trails::answer(
+                \theme_dimensions\local\calendar\trails::month_window($month),
+                \theme_dimensions\local\calendar\scope::for_viewer(0),
+                0,
+                false,
+                time()
+            );
+            $inanswer = in_array((int) $trail->id, array_column($answer['options'], 'id'), true);
+            $this->assertSame($linked, $inanswer, "{$name}: the calendar agrees.");
+        }
     }
 }
