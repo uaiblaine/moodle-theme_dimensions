@@ -254,7 +254,9 @@ final class trails {
      * calendário".
      *
      * The answer's own path over the one course, never a copy of it: the candidates' statement narrowed to the id (so a
-     * course of another model is no trail), the showcase's gate and the view's rule ({@see kept()}). No category
+     * course of another model is no trail), the showcase's gate and the view's rule ({@see kept()}), then the steps the
+     * view would draw for this account ({@see display::many()}): {@see answer()} lists a trail with none of them nowhere,
+     * so a learner of a trail whose every course is withheld from them is offered no link to an empty view. No category
      * narrowing: the link's address names a month, so the calendar reads no saved scope for it. A visitor is told no.
      *
      * @param int $courseid The trail course.
@@ -273,7 +275,11 @@ final class trails {
             return false;
         }
         $enrolments = null;
-        return isset(self::kept($rows, population::scope(new criteria(0)), $enrolments)[$courseid]);
+        $kept = self::kept($rows, population::scope(new criteria(0)), $enrolments);
+        if (!isset($kept[$courseid])) {
+            return false;
+        }
+        return !empty(display::many(trail::many($kept), $kept)[$courseid]);
     }
 
     /**

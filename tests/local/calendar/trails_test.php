@@ -640,26 +640,49 @@ final class trails_test extends \advanced_testcase {
 
     /**
      * A public trail is decided before the plugin's next-action batch, which it is not asked about: deciding it costs
-     * fewer statements than deciding a listed trail with no way in, which the batch is asked about. Both are measured
-     * warm (core's caches and the plugin's public memo), through the landing page's question, which takes the answer's
-     * path over one course.
+     * fewer statements than deciding a listed trail with a way in, which the batch is asked about. The two trails differ
+     * in their state alone (the same open method, one listed step each), so both pay the same reading of their steps after
+     * the rule and a batch asked about the public one would cost what it costs the other. Both are measured warm (core's
+     * caches and the plugin's public memo), through the landing page's question, which takes the answer's path over one
+     * course.
      */
     public function test_a_public_trail_costs_no_next_action_read(): void {
         global $DB;
-        $public = $this->trail('Pública', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))], [], false);
+        $public = $this->trail('Pública', [$this->ref('Alfa', self::at(3, 2), self::at(3, 20))]);
         $this->set_course_state((int) $public->id, discoverability::STATE_PUBLIC);
-        $closed = $this->trail('Fechada', [$this->ref('Beta', self::at(3, 2), self::at(3, 20))], [], false);
+        $open = $this->trail('Aberta', [$this->ref('Beta', self::at(3, 2), self::at(3, 20))]);
         $this->become(self::getDataGenerator()->create_user());
 
         $reads = [];
-        foreach (['public' => $public, 'closed' => $closed] as $name => $trail) {
+        foreach (['public' => $public, 'open' => $open] as $name => $trail) {
             $shown = trails::offers((int) $trail->id);
             $before = $DB->perf_get_reads();
             $this->assertSame($shown, trails::offers((int) $trail->id), "Precondition: {$name} answers alike.");
             $reads[$name] = $DB->perf_get_reads() - $before;
-            $this->assertSame($name === 'public', $shown, "Precondition: {$name} shown or not.");
+            $this->assertTrue($shown, "Precondition: {$name} is shown.");
         }
-        $this->assertLessThan($reads['closed'], $reads['public'], 'The batch is not asked about a public trail.');
+        $this->assertLessThan($reads['open'], $reads['public'], 'The batch is not asked about a public trail.');
+    }
+
+    /**
+     * The landing page's question asks what the view would draw as well as whom it shows: a learner of a trail whose
+     * one course is unlisted, with no tie to it, is offered no link, and the view lists the trail neither in its rows
+     * nor in its choice. The control: enrolled in that course as well, the learner is offered both.
+     */
+    public function test_a_trail_with_no_course_to_draw_is_not_offered(): void {
+        $ref = $this->ref('Alfa', self::at(3, 2), self::at(3, 20));
+        $this->set_course_state((int) $ref->id, discoverability::STATE_UNLISTED);
+        $trail = $this->trail('Fechada', [$ref], [], false);
+        $learner = self::getDataGenerator()->create_user();
+        self::getDataGenerator()->enrol_user($learner->id, $trail->id, 'student');
+        $this->become($learner);
+        $this->assertFalse(trails::offers((int) $trail->id), 'None of its courses is drawn: no link.');
+        $this->assertFalse($this->names($this->answer('2027-03'), (int) $trail->id), 'Nor the trail in the view.');
+
+        self::getDataGenerator()->enrol_user($learner->id, $ref->id, 'student');
+        $this->become($learner);
+        $this->assertTrue(trails::offers((int) $trail->id), 'Control: its course is drawn, so is the link.');
+        $this->assertTrue($this->names($this->answer('2027-03'), (int) $trail->id), 'Control: and the trail.');
     }
 
     /**

@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Trail model, T3d follow-up: no calendar link to a trail with nothing to draw.** The landing page's "View in the
+  calendar" now also asks which of the trail's courses the Trilhas view would draw for the reader: a learner of a trail
+  whose every course is withheld from them (unlisted, with no tie and no way in) was offered a link to an empty view,
+  since the view lists such a trail nowhere. One mutation gate.
+
 - **Trail model, stage T3d: who is shown a trail, and folded trails** (2026100591). The calendar's Trilhas view shows a
   trail only to an account enrolled in it or on the way (an enrolment that starts later, an application awaiting a
   decision, a waiting-list place), one that may join it (an open method, guest access, a conditional enrolment, by
