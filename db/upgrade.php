@@ -38,5 +38,11 @@ function xmldb_theme_dimensions_upgrade($oldversion) {
         \theme_dimensions\local\landingfields::add_trail_option();
         upgrade_plugin_savepoint(true, 2026100569, 'theme', 'dimensions');
     }
+    if ($oldversion < 2026100592) {
+        // A site installed with no Boost Union flavour never stored the looks a person may choose,
+        // which kept upgradesettings.php showing an empty page.
+        \theme_dimensions\local\flavourchoice::ensure_setting();
+        upgrade_plugin_savepoint(true, 2026100592, 'theme', 'dimensions');
+    }
     return true;
 }

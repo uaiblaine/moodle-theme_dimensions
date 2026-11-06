@@ -156,7 +156,8 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         // closure, so this file reads no table while it loads. An array callable would not do: the setting
         // keeps any array it is given as the choices themselves and then never calls the loader.
         // No stylesheet depends on the list, so it needs no theme cache reset. Each offered look has a
-        // cohort, made or emptied on save.
+        // cohort, made or emptied on save. With no flavour the setting draws and saves nothing, so
+        // db/install.php stores its empty list ({@see \theme_dimensions\local\flavourchoice::ensure_setting()}).
         $name = 'theme_dimensions/' . \theme_dimensions\local\flavourchoice::SETTING;
         $title = get_string('selectableflavours', 'theme_dimensions', null, true);
         $description = get_string('selectableflavours_desc', 'theme_dimensions', null, true);
