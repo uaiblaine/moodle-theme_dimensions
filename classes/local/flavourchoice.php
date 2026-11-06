@@ -91,6 +91,24 @@ final class flavourchoice {
     }
 
     /**
+     * Store an empty list in the setting when it holds no value at all; a stored value, empty or not, is kept.
+     *
+     * Core's multi-checkbox setting draws no field and writes nothing while its choices are empty, as they are
+     * on a site with no Boost Union flavour yet, so neither admin_apply_default_settings() nor a Save ever
+     * stores it. Left unset, it counts as a new setting for good: admin/index.php sends every administrator to
+     * upgradesettings.php, which draws "New settings - Dimensions" with no field, and its Save brings the same
+     * page back. An empty list is the setting's default and offers no look ({@see self::selectable_ids()}).
+     * Called from db/install.php and db/upgrade.php.
+     *
+     * @return void
+     */
+    public static function ensure_setting(): void {
+        if (get_config('theme_dimensions', self::SETTING) === false) {
+            set_config(self::SETTING, '', 'theme_dimensions');
+        }
+    }
+
+    /**
      * The ids the setting offers today.
      *
      * The multi-checkbox setting stores the ticked keys joined by commas; an unset or empty setting

@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A site with no Boost Union flavour no longer stalls on "New settings - Dimensions"** (2026100592). Core's
+  multi-checkbox setting draws and saves nothing while it has no choice, so "Looks a person may choose"
+  (`selectableflavours`) was never stored on such a site, and every visit to the notifications page sent the
+  administrator to an upgrade settings page with no field whose Save brought it back. The install now stores the
+  setting's empty list, and an upgrade step stores it where it is missing. Found installing the theme on a clean
+  5.3 site, its dependencies fetched from the plugins directory.
+
 - **Trail model, T3d follow-up: no calendar link to a trail with nothing to draw.** The landing page's "View in the
   calendar" now also asks which of the trail's courses the Trilhas view would draw for the reader: a learner of a trail
   whose every course is withheld from them (unlisted, with no tie and no way in) was offered a link to an empty view,
