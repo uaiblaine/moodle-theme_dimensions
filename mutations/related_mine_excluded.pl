@@ -1,2 +1,2 @@
 # An account would be suggested the courses it is enrolled in.
-s/\$rows = array_diff_key\(\$rows, array_flip\(self::mine\(array_keys\(\$rows\)\)\)\);/\$rows = \$rows;/;
+s/WHERE me\.courseid = c\.id AND mue\.userid = :enroluser\)/WHERE 1 = 0 AND mue.userid = :enroluser)/;

@@ -25,6 +25,8 @@
 namespace theme_dimensions\local\related;
 
 use core_competency\course_competency;
+use local_unlistedcourses\category_discoverability;
+use local_unlistedcourses\discoverability;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\landing\publicaccess;
@@ -37,14 +39,20 @@ use theme_dimensions\local\trail\display;
  * The plan is docs/related/PLAN.md. A candidate is a course, other than the ones excluded, linked to at least one
  * competency of the set ({competency_coursecomp}). {@see rank()} orders them, purely: in automatic mode by tier
  * (identical set, then a course that grants a shared competency, then any course sharing one) and overlap, in manual
- * mode by how many of the chosen competencies a course covers; then the nearest start date and the name. Only then
- * {@see find()} asks the reader's gate, slice by slice of the ranking, so its statements are bounded by the number of
- * cards asked for, never by the site: the trail's gate without its ghosts ({@see display}), since a list of
- * suggestions has no position for a ghost to keep, and an account is not shown the courses it is enrolled in or has
- * completed.
+ * mode by how many of the chosen competencies a course covers; then the nearest start date and the name.
  *
- * Nothing is stored and nothing is cached: one statement for the set, one for the candidates, then per slice the
- * rows, the account's own courses and the gate.
+ * Who is shown what is decided in two places, so a block is never left empty by refusals at the head of the ranking.
+ * The candidates' statement already leaves out every course the gate would refuse for a reason the database can
+ * tell (D10, D11): a hidden course, a frozen one while context freezing is on, for a visitor any course that is not
+ * public by its own state and its category path, for an account the courses it is enrolled in or has completed (D5).
+ * Then {@see find()} asks the reader's gate, the authority, slice by slice of the ranking, so its statements are
+ * bounded by the number of cards asked for, never by the site: the trail's gate without its ghosts ({@see display}),
+ * since a list of suggestions has no position for a ghost to keep. What the gate still refuses after the statement
+ * is what depends on the account (a category closed to it, an unlisted course it has no way into), and the slices
+ * reach past those.
+ *
+ * Nothing is stored and nothing is cached across requests (D39): one statement for the set, one for the candidates,
+ * then per slice the rows and the gate.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -296,7 +304,11 @@ final class finder {
     }
 
     /**
-     * Every course linked to a competency of the set, with how it relates to the set, one statement.
+     * Every course linked to a competency of the set that the current reader could be shown, with how it relates to
+     * the set, one statement.
+     *
+     * The reader's refusals the database can tell are terms of this statement, so the ranking holds no course the
+     * gate would refuse for them and a block is never emptied by a refused head ({@see refusals()}).
      *
      * @param int[] $set The competencies, each once.
      * @param int[] $excluded Courses left out; the site course always is.
@@ -315,6 +327,7 @@ final class finder {
             'out',
             false
         );
+        $refusals = self::refusals();
         return $DB->get_records_sql(
             "SELECT cc.courseid,
                     SUM(CASE WHEN cc.competencyid {$sharedsql} THEN 1 ELSE 0 END) AS shared,
@@ -323,20 +336,85 @@ final class finder {
                     c.startdate, c.fullname
                FROM {competency_coursecomp} cc
                JOIN {course} c ON c.id = cc.courseid
+               JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = :courselevel
+                    {$refusals['join']}
               WHERE cc.courseid {$outsql}
                 AND cc.courseid IN (SELECT s.courseid FROM {competency_coursecomp} s WHERE s.competencyid {$anysql})
+                AND c.visible = 1
+                    {$refusals['where']}
            GROUP BY cc.courseid, c.startdate, c.fullname",
-            $sharedparams + $grantparams + $anyparams + $outparams
-                + ['complete' => course_competency::OUTCOME_COMPLETE]
+            $sharedparams + $grantparams + $anyparams + $outparams + $refusals['params'] + [
+                'complete' => course_competency::OUTCOME_COMPLETE,
+                'courselevel' => CONTEXT_COURSE,
+            ]
         );
+    }
+
+    /**
+     * The terms of the candidates' statement that leave out what the reader's gate would refuse anyway.
+     *
+     * Each term only narrows: the gate in {@see admitted()} stays the authority, so a term that admitted too much would
+     * cost a card, never show one, while a term that refused too much would hide a course the reader may see. Hence
+     * only refusals that hold for every reader of the kind:
+     *
+     * - beside the statement's own `c.visible = 1` (D11: a hidden course is no suggestion, not even to a reader who
+     *   may open it), a frozen course while core's context freezing is on, its own context or any above it locked
+     *   (D10): core refuses every write capability there, self-enrolment included ({@see \core\context::is_locked()});
+     * - a visitor: a course public by its own state, in a category path holding no hidden and no unlisted category,
+     *   the terms of {@see discoverability::are_public()}; the plugin's answer is still asked of every card, and it
+     *   fails closed where these terms cannot (a missing ancestor);
+     * - an account: none it is enrolled in, in any state, or has completed, read on its own because an account may
+     *   have completed a course it is no longer enrolled in (D5).
+     *
+     * @return array ['join' => string, 'where' => string, 'params' => array], over the aliases c and ctx.
+     */
+    private static function refusals(): array {
+        global $CFG, $DB, $USER;
+
+        $join = '';
+        $where = '';
+        $params = [];
+        if (!empty($CFG->contextlocking)) {
+            // Core's own spelling of "below a context" (core\check\access\riskxss_result): sql_like() takes a bound
+            // pattern and calls a literal one an injection.
+            $below = 'ctx.path LIKE ' . $DB->sql_concat('lck.path', "'/%'");
+            $where .= " AND NOT EXISTS (SELECT 1 FROM {context} lck
+                                         WHERE lck.locked = 1 AND (lck.id = ctx.id OR {$below}))";
+        }
+
+        if (display::visitor()) {
+            $state = discoverability::state_sql('c', 'rls');
+            $closed = 'wcat.visible = 0';
+            $unlisted = category_discoverability::unlisted_ids();
+            if ($unlisted) {
+                [$unlistedsql, $unlistedparams] = $DB->get_in_or_equal($unlisted, SQL_PARAMS_NAMED, 'unl');
+                $closed .= " OR wcat.id {$unlistedsql}";
+                $params += $unlistedparams;
+            }
+            $under = 'cat.path LIKE ' . $DB->sql_concat('wcat.path', "'/%'");
+            $join .= " {$state['join']} JOIN {course_categories} cat ON cat.id = c.category";
+            $where .= " AND {$state['column']} = :publicstate
+                        AND NOT EXISTS (SELECT 1 FROM {course_categories} wcat
+                                         WHERE ({$closed}) AND (wcat.id = cat.id OR {$under}))";
+            $params['publicstate'] = discoverability::STATE_PUBLIC;
+            return ['join' => $join, 'where' => $where, 'params' => $params];
+        }
+
+        $where .= " AND NOT EXISTS (SELECT 1 FROM {user_enrolments} mue JOIN {enrol} me ON me.id = mue.enrolid
+                                     WHERE me.courseid = c.id AND mue.userid = :enroluser)
+                    AND NOT EXISTS (SELECT 1 FROM {course_completions} mcc
+                                     WHERE mcc.course = c.id AND mcc.userid = :doneuser AND mcc.timecompleted IS NOT NULL)";
+        $params['enroluser'] = (int) $USER->id;
+        $params['doneuser'] = (int) $USER->id;
+        return ['join' => $join, 'where' => $where, 'params' => $params];
     }
 
     /**
      * The rows of these courses the current reader may be shown as related contents.
      *
      * A visitor (nobody logged in, or the guest account): the public courses. An account: what the showcase would list
-     * to it ({@see population::admitted()} over the root scope, the trail's gate), less the courses it is enrolled in
-     * or has completed (D5). Never a ghost.
+     * to it ({@see population::admitted()} over the root scope, the trail's gate); its own courses never reach here
+     * ({@see refusals()}). Never a ghost.
      *
      * @param int[] $courseids The slice of the ranking.
      * @return \stdClass[] The rows admitted, keyed by course id.
@@ -349,41 +427,11 @@ final class finder {
         if (display::visitor()) {
             return array_intersect_key($rows, array_flip(publicaccess::are_public(array_keys($rows))));
         }
-        $rows = array_diff_key($rows, array_flip(self::mine(array_keys($rows))));
-        if (!$rows) {
-            return [];
-        }
         $admitted = [];
         foreach (population::admitted(population::scope(new criteria(0)), $rows) as $courseid => $row) {
             $admitted[(int) $courseid] = $row;
         }
         return $admitted;
-    }
-
-    /**
-     * Which of these courses the current account is enrolled in, in any state, or has completed, one statement.
-     *
-     * Completion is read on its own because an account may have completed a course it is no longer enrolled in.
-     *
-     * @param int[] $courseids The courses.
-     * @return int[] The ones the account holds.
-     */
-    private static function mine(array $courseids): array {
-        global $DB, $USER;
-
-        [$enrolsql, $enrolparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'enr');
-        [$donesql, $doneparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'don');
-        return array_map('intval', $DB->get_fieldset_sql(
-            "SELECT e.courseid
-               FROM {user_enrolments} ue
-               JOIN {enrol} e ON e.id = ue.enrolid
-              WHERE ue.userid = :enroluser AND e.courseid {$enrolsql}
-              UNION
-             SELECT cc.course
-               FROM {course_completions} cc
-              WHERE cc.userid = :doneuser AND cc.timecompleted IS NOT NULL AND cc.course {$donesql}",
-            $enrolparams + $doneparams + ['enroluser' => (int) $USER->id, 'doneuser' => (int) $USER->id]
-        ));
     }
 
     /**

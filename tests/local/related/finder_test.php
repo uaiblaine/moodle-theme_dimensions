@@ -25,6 +25,7 @@
 namespace theme_dimensions\local\related;
 
 use core_competency\course_competency;
+use local_unlistedcourses\category_discoverability;
 use local_unlistedcourses\discoverability;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -311,21 +312,113 @@ final class finder_test extends \advanced_testcase {
     }
 
     /**
-     * The limit is honoured past the first slice: courses the gate refuses at the head of the ranking leave room for
-     * the ones after them.
+     * The limit is honoured past the first slice: courses only the account's gate refuses, at the head of the
+     * ranking, leave room for the ones after them.
      */
     public function test_the_limit_reaches_past_a_refused_head(): void {
         $parent = $this->course(['a', 'b']);
-        // Twenty hidden twins outrank everything and a visitor is shown none of them.
+        // Twenty unlisted twins with no way in outrank everything: the statement keeps them (another account may have
+        // a way in) and the gate shows this one none of them.
         for ($i = 0; $i < 20; $i++) {
-            $this->course(['a', 'b'], ['visible' => 0]);
+            $this->course(['a', 'b'], [], discoverability::STATE_UNLISTED);
         }
         $first = $this->course(['a'], ['fullname' => 'Primeiro']);
         $second = $this->course(['b'], ['fullname' => 'Segundo']);
 
+        $this->become(self::getDataGenerator()->create_user());
+        $set = [$this->comps['a'], $this->comps['b']];
+        $this->assertSame([$first, $second], self::found($set, [$parent], 'auto', 'any', 2));
+        $this->assertSame([$first], self::found($set, [$parent], 'auto', 'any', 1));
+    }
+
+    /**
+     * A visitor's block is never emptied by courses it may not see at the head of the ranking, however many: each
+     * of the visitor's refusals is a term of the candidates' statement, so the ranking holds none of them.
+     *
+     * Thirty-seven of a kind outrank the public course: one more than the slices the gate reads (three of twelve).
+     */
+    public function test_a_visitor_is_not_left_empty_by_courses_it_may_not_see(): void {
+        global $DB;
+
+        $parent = $this->course(['a', 'b']);
+        // The unlisted category is an ANCESTOR of its courses' own, so the path is read, not only the category.
+        $unlistedcat = (int) self::getDataGenerator()->create_category()->id;
+        $beneath = (int) self::getDataGenerator()->create_category(['parent' => $unlistedcat])->id;
+        $hiddencat = (int) self::getDataGenerator()->create_category(['visible' => 0])->id;
+        $this->set_category_state($unlistedcat, category_discoverability::STATE_UNLISTED);
+        for ($i = 0; $i < 37; $i++) {
+            $this->course(['a', 'b'], [], discoverability::STATE_DEFAULT);
+            $this->course(['a', 'b'], ['category' => $beneath]);
+            $this->course(['a', 'b'], ['category' => $hiddencat]);
+        }
+        // Core hides a course created in a hidden category; these were made visible there by hand, which core allows
+        // and the plugin's predicate refuses by the category.
+        $DB->set_field('course', 'visible', 1, ['category' => $hiddencat]);
+        $public = $this->course(['a']);
+
         $this->become(null);
-        $this->assertSame([$first, $second], self::found([$this->comps['a'], $this->comps['b']], [$parent], 'auto', 'any', 2));
-        $this->assertSame([$first], self::found([$this->comps['a'], $this->comps['b']], [$parent], 'auto', 'any', 1));
+        $this->assertSame([$public], self::found([$this->comps['a'], $this->comps['b']], [$parent], 'auto', 'any', 1));
+    }
+
+    /**
+     * The plugin still decides what a visitor sees: a course the statement's terms admit and the plugin refuses (an
+     * ancestor category that is gone, which the plugin fails closed on) is not shown.
+     */
+    public function test_the_plugin_still_decides_for_a_visitor(): void {
+        global $DB;
+
+        $parent = $this->course(['a']);
+        $top = self::getDataGenerator()->create_category();
+        $below = self::getDataGenerator()->create_category(['parent' => $top->id]);
+        $public = $this->course(['a'], ['category' => $below->id]);
+
+        $this->become(null);
+        $this->assertSame([$public], self::found([$this->comps['a']], [$parent]), 'Precondition: the course is public.');
+
+        $DB->delete_records('course_categories', ['id' => $top->id]);
+        $this->become(null);
+        $this->assertSame([], self::found([$this->comps['a']], [$parent]));
+    }
+
+    /**
+     * A hidden course is no suggestion, not even to a reader who may open it.
+     */
+    public function test_a_hidden_course_is_never_related(): void {
+        $parent = $this->course(['a']);
+        $hidden = $this->course(['a'], ['visible' => 0]);
+
+        $this->become(get_admin());
+        $this->assertSame([], self::found([$this->comps['a']], [$parent]), 'The administrator may open it.');
+
+        // The control: the same course once visible.
+        update_course((object) ['id' => $hidden, 'visible' => 1]);
+        $this->become(get_admin());
+        $this->assertSame([$hidden], self::found([$this->comps['a']], [$parent]));
+    }
+
+    /**
+     * While context freezing is on, a frozen course is no suggestion, frozen itself or under a frozen category, for a
+     * visitor and for an account; with freezing off the flags mean nothing.
+     */
+    public function test_a_frozen_course_is_no_suggestion(): void {
+        $parent = $this->course(['a']);
+        $frozencat = (int) self::getDataGenerator()->create_category()->id;
+        $plain = $this->course(['a'], ['fullname' => 'A']);
+        $frozen = $this->course(['a'], ['fullname' => 'B']);
+        $under = $this->course(['a'], ['fullname' => 'C', 'category' => $frozencat]);
+        \core\context\course::instance($frozen)->set_locked(true);
+        \core\context\coursecat::instance($frozencat)->set_locked(true);
+
+        set_config('contextlocking', 1);
+        foreach (['visitor' => null, 'account' => self::getDataGenerator()->create_user()] as $who => $user) {
+            $this->become($user);
+            $this->assertSame([$plain], self::found([$this->comps['a']], [$parent]), "The {$who} is shown no frozen course.");
+        }
+
+        // The control: the same courses with freezing off.
+        set_config('contextlocking', 0);
+        $this->become(null);
+        $this->assertSame([$plain, $frozen, $under], self::found([$this->comps['a']], [$parent]));
     }
 
     /**

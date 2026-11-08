@@ -1,6 +1,6 @@
 # Related contents: plan (2026-11-08)
 
-Status: **decisions D1-D9 approved by the owner on 2026-11-08; R0 (the finder, its tests and its 14 mutation gates)
+Status: **decisions D1-D11 approved by the owner on 2026-11-08; R0 (the finder, its tests and its 22 mutation gates)
 built on branch `related-r0`, not merged.**
 
 Related contents are stage T4 of the trail plan ([../trail/PLAN.md](../trail/PLAN.md), Q7: "not in the first stage").
@@ -46,6 +46,18 @@ of suggestions has none, so it would only announce a course the reader cannot re
 | Visitor (nobody logged in, or the guest account) | public courses only (`publicaccess::are_public()`) |
 | Account | what the showcase's gate admits (`population::admitted()` over the root scope: core's course and category visibility, then local_unlistedcourses' terms; an unlisted course only to an account enrolled in it or with a way to enrol), minus the courses it is enrolled in or has completed (D5) |
 
+Every reader: never a hidden course (D11), and never a frozen one while core's context freezing is on, the course's
+own context or any above it locked (D10): core refuses every write capability there, self-enrolment included.
+
+**Where the rule is applied.** Every refusal the database can tell is a term of the statement that reads the
+candidates, before the ranking: hidden, frozen, for a visitor a course state other than public or a hidden or unlisted
+category on its path, for an account its own courses. The gate above is still asked of every card shown, and stays the
+authority (it fails closed where the terms cannot, a missing ancestor category). So a block is never emptied by
+courses the reader may not see at the head of the ranking; what the gate refuses after the statement is what depends
+on the account (a category closed to it, an unlisted course it has no way into), and three slices of the ranking reach
+past those. The first draft gated a reader-independent ranking slice by slice, and a visitor's block came out empty
+whenever 36 refused courses outranked the public ones.
+
 No result: the whole block is absent, its heading included.
 
 ## 3. Where it appears
@@ -86,9 +98,15 @@ No result: the whole block is absent, its heading included.
 - **Invalid reference** (unknown framework or competency, or a competency outside the framework given): nothing for a
   reader; a short notice naming what was not found for a reader who may edit that context.
 - **Cost**: one statement for the parent's competencies, one for the candidates (an aggregate over
-  `{competency_coursecomp}`), then per slice of ranked candidates the rows, the gate and the reader's own courses;
-  covers in one batch (`cards::images()`). Pinned by a read-count test, constant in the number of candidates. An MUC
-  cache only if a measurement asks for one.
+  `{competency_coursecomp}` carrying the reader's refusals), then per slice of ranked candidates the rows and the gate;
+  covers in one batch (`cards::images()`). Pinned by a read-count test, constant in the number of candidates.
+- **No cache across requests.** The ranking is the same for every reader, but it is one aggregate statement, and core
+  fires no event when a competency is linked to a course or unlinked (local_dimensions' `template_courses` cache
+  lives with a one-hour TTL for that reason). A visitors' list would be a cache of local_unlistedcourses' answers,
+  which needs the owner's sign-off in both repositories (the theme's D39 and OD-5); an accounts' list would be wrong,
+  since what an account sees depends on its enrolments, cohorts and roles, which change without events. If a
+  measurement ever asks for one, it narrows the candidates only and the gate is still asked of every card, so a stale
+  entry hides a course for a while and never shows one. Measure first on the 5,000-course set of m503b.
 - **Gate**: the diff reaches SQL, so tier 3 (`mdl ci --matrix`).
 - **Out of scope**: the Moodle App, which renders the filter's output without the theme's CSS.
 
@@ -105,12 +123,14 @@ No result: the whole block is absent, its heading included.
 | D7 | "Shared competencies" chips | Accounts only, after R1 |
 | D8 | Count and layout | 4 cards on the landing (site setting), the showcase's card, server-side Mustache (no React) |
 | D9 | Competency idnumbers are unique per framework only | The shortcode takes `framework` (required with `competencies`); one framework per shortcode; the landing field stores pairs |
+| D10 | Frozen courses (context freezing) | Never suggested while freezing is on, frozen themselves or under a frozen category, for every reader |
+| D11 | Hidden courses, and where the reader's rule applies | Never suggested, not even to staff who may open them; every refusal the database can tell filters the candidates before the ranking, the gate still asked of every card; no cache |
 
 ## 6. Stages
 
 | Stage | What | Gate |
 |---|---|---|
 | R0 | `local\related\finder`: competencies of a parent (trail union), idnumber pairs resolved, candidates ranked, the reader's gate; PHPUnit with a read count | tier 3 |
-| R1 | Landing band, automatic mode, `dimensions_related` field, site setting; mockups on the design canvas first | tier 3, browser look |
+| R1 | Landing band, automatic mode, `dimensions_related` field, site setting; mockups on the design canvas first. The card is a "Card" surface of the fleet's course card contract (`moodle-dev/docs/course-card/CONTRACT.md`, uaiblaine/moodle-dev#157, sections 1 and 13): its ten-slot anatomy, `--dim-card-*` tokens reading `--dimensions-card-*` first, the cover from the theme renderer's `get_generated_image_for_id()` (Boost Union's settings, no category colour of its own), progress and cover under `courseoverviewshowcourseprogress` and `courseoverviewshowcourseimages`, and a copy of `moodle-dev/templates/tests/course_card_contract_test.php`; a plugin-slot sentence needs that contract's definition first. No markup, CSS or card states of its own before the contract is merged | tier 3, browser look |
 | R2 | Manual mode on the landing: the pairs field and its autocomplete | tier 3 |
 | R3 | `[relatedcourses]`: `db/shortcodes.php`, recursion guard, theme check, Boost Union item; mount filter_shortcodes on m503 and m503b | tier 3, browser look |
