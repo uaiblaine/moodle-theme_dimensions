@@ -25,6 +25,7 @@
 namespace theme_dimensions\output;
 
 use core_course\customfield\course_handler;
+use theme_dimensions\local\card\boost_union;
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\dialogue;
@@ -231,7 +232,9 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @param \stdClass $course The course row ({@see \theme_dimensions\local\category\cards::records()}).
      * @param \stdClass $row The population row: state and favourite for a logged-in viewer, visible, category.
      * @param \stdClass $values The course's landing page values ({@see landingfields::values()} shape, filters off).
-     * @param \moodle_url|null $image The card image, or null for the flat fallback.
+     * @param \moodle_url|string|null $image The card image: the course's own, the renderer's answer for a course with
+     *   none (a data URI or Boost Union's fallback image, {@see \theme_dimensions\local\category\cards::images()}), or
+     *   null for the flat fallback.
      * @param string|null $overline The course's own subcategory, plain, or null when it sits in the listed root.
      * @param bool $showstar Whether the favourite star is drawn (a logged-in, non-guest viewer on the logged-in shell).
      * @param bool $anonymous Whether the anonymous shell is drawing, which knows no viewer state.
@@ -250,8 +253,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
         private readonly \stdClass $row,
         /** @var \stdClass The landing page values. */
         private readonly \stdClass $values,
-        /** @var \moodle_url|null The card image. */
-        private readonly ?\moodle_url $image,
+        /** @var \moodle_url|string|null The card image. */
+        private readonly \moodle_url|string|null $image,
         /** @var string|null The subcategory overline. */
         private readonly ?string $overline,
         /** @var bool Whether the star is drawn. */
@@ -343,6 +346,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
         // A visitor's card states a start day only where it prints one: an event's date tile.
         $hasstartday = !$this->anonymous || ($isevent && $start > 0);
         $rating = $this->rating === null ? null : dialogue::rating_line($this->rating->avg, $this->rating->count);
+        $showcover = boost_union::show_images(boost_union::VIEW_CARD);
+        $showthumb = boost_union::show_images(boost_union::VIEW_LIST);
 
         return (object) [
             'id' => $courseid,
@@ -351,8 +356,15 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'hasurl' => $url !== null,
             'overline' => $this->overline,
             'hasoverline' => $this->overline !== null && $this->overline !== '',
-            'imageurl' => $this->image ? $this->image->out(false) : null,
+            'imageurl' => $this->image instanceof \moodle_url ? $this->image->out(false) : $this->image,
             'hasimage' => $this->image !== null,
+            /* Boost Union's course overview settings, where it applies (contract section 8): the cover of the card
+               view, the thumbnail of the list view, and the progress row. One markup serves both views, so the media
+               band is drawn while either view shows it, and the article says which view leaves it out. */
+            'showcover' => $showcover,
+            'showthumb' => $showthumb,
+            'showmedia' => $showcover || $showthumb,
+            'showprogress' => boost_union::show_progress(),
             // Lazy unless the listing puts the card in its first row ({@see category_listing::FIRST_ROW}).
             'eager' => false,
             // Never fetched ahead of the rest unless the listing names this cover the page's first ({@see category_listing}).

@@ -598,8 +598,8 @@ class get_category_rows extends external_api {
             ),
             'hasoverline' => new external_value(PARAM_BOOL, 'Whether there is a subcategory to print.'),
             'imageurl' => new external_value(
-                PARAM_URL,
-                'The card image, null for the flat fallback.',
+                PARAM_RAW,
+                'The card image: a URL, or a data URI for a course with none of its own; null for the flat fallback.',
                 VALUE_REQUIRED,
                 null,
                 NULL_ALLOWED
@@ -607,6 +607,10 @@ class get_category_rows extends external_api {
             'hasimage' => new external_value(PARAM_BOOL, 'Whether there is an image.'),
             'eager' => new external_value(PARAM_BOOL, 'Whether the cover is in the first row of the first page, loaded at once.'),
             'priority' => new external_value(PARAM_BOOL, 'Whether the cover is fetched ahead of every other image.'),
+            'showcover' => new external_value(PARAM_BOOL, 'Whether the card view draws the cover (Boost Union\'s setting).'),
+            'showthumb' => new external_value(PARAM_BOOL, 'Whether the list view draws the thumbnail (Boost Union\'s setting).'),
+            'showmedia' => new external_value(PARAM_BOOL, 'Whether the media band is drawn: either view shows it.'),
+            'showprogress' => new external_value(PARAM_BOOL, 'Whether the progress row is drawn (Boost Union\'s setting).'),
             'badges' => new external_multiple_structure(
                 new external_single_structure([
                     'url' => new external_value(PARAM_URL, 'The badge image, through the theme\'s own file route.'),

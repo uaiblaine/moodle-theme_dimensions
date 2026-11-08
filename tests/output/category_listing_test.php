@@ -3172,8 +3172,9 @@ final class category_listing_test extends \advanced_testcase {
     /**
      * The first cover of the first paint is fetched ahead of every other image, and only where the hero paints none.
      *
-     * Of the first row's eager cards, the first with a cover gets the priority and no other card does: the first card
-     * in order has no cover here, so a rule that marked the first card, or every eager one, is seen. A hero that
+     * Of the first row's eager cards, the first with a cover to fetch gets the priority and no other card does: the first
+     * card in order has no image of its own here (its drawn cover is a data URI), so a rule that marked the first card,
+     * or every eager one, is seen. A hero that
      * paints a picture is the page's largest paint and already asks first, so with one armed for this category no
      * card asks; a hero armed for another category is the control that the hero's own picture is what is read. A
      * web service answer, which is never a first paint, marks nothing.
@@ -3205,7 +3206,11 @@ final class category_listing_test extends \advanced_testcase {
         );
 
         $flat = $this->export(['sort' => criteria::SORT_NAME], category_toolbar::VIEW_CARDS, true);
-        $this->assertFalse(array_values($flat->cards)[0]->hasimage, 'Precondition: the first card has no cover.');
+        $this->assertStringStartsWith(
+            'data:',
+            array_values($flat->cards)[0]->imageurl,
+            'Precondition: the first card has no cover of its own, only the drawn one, which nothing fetches.'
+        );
         $expected = array_fill(0, count($order), false);
         $expected[1] = true;
         $this->assertSame($expected, $priority($flat), 'The first cover of the first row, and nothing else.');

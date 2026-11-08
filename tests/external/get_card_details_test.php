@@ -28,6 +28,7 @@ use core_external\external_api;
 use local_unlistedcourses\category_discoverability;
 use local_unlistedcourses\discoverability;
 use PHPUnit\Framework\Attributes\CoversClass;
+use theme_dimensions\local\card\boost_union;
 use theme_dimensions\local\category\enrichment;
 
 defined('MOODLE_INTERNAL') || die();
@@ -211,6 +212,37 @@ final class get_card_details_test extends \advanced_testcase {
         $this->become($viewer);
         $moved = $this->details([(int) $tracked->id]);
         $this->assertSame(100, $moved[(int) $tracked->id]['progress']);
+    }
+
+    /**
+     * With Boost Union's progress setting off, a tracked learner's card gets no number and no sentence.
+     *
+     * The request draws in this theme, a child of Boost Union, so the setting applies; the control is the same
+     * call with the setting on. hascompletion keeps saying completion is on: the completed seal rests on it.
+     */
+    public function test_boost_unions_progress_setting_off_leaves_no_number(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = 1;
+        set_config('theme', 'dimensions');
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $tracked = $generator->create_course(['category' => $category->id, 'enablecompletion' => 1]);
+        $generator->create_module('page', ['course' => $tracked->id, 'completion' => COMPLETION_TRACKING_MANUAL]);
+        $viewer = $generator->create_user();
+        $generator->enrol_user($viewer->id, $tracked->id);
+        $this->become($viewer);
+
+        set_config(boost_union::SETTING_PROGRESS, 'yes', boost_union::COMPONENT);
+        $shown = $this->details([(int) $tracked->id])[(int) $tracked->id];
+        $this->assertSame(0, $shown['progress'], 'The control: the setting on gives the number.');
+        $this->assertArrayHasKey('progresslabel', $shown);
+
+        set_config(boost_union::SETTING_PROGRESS, 'no', boost_union::COMPONENT);
+        $hidden = $this->details([(int) $tracked->id])[(int) $tracked->id];
+        $this->assertTrue($hidden['hascompletion']);
+        $this->assertNull($hidden['progress']);
+        $this->assertArrayNotHasKey('progresslabel', $hidden);
     }
 
     /**

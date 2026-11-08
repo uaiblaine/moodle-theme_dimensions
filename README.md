@@ -300,6 +300,29 @@ course holds reviews the plugin lets the reader see, a link that opens the plugi
 popup. The theme only reads the plugin's summary table, one statement per page of cards, and keeps
 nothing of its own; a site without the plugin, or one where it rates no course, reads nothing.
 
+### Boost Union settings that change the course cards
+
+The theme is a child of Boost Union, so three of Boost Union's course overview settings decide the
+theme's course cards as well as Boost Union's own: the category showcase's cards, in both the card
+and the list view (the grouped panel included), and the step popover of the calendar's trails view.
+They apply only because the theme names Boost Union as its parent; the theme adds no setting of its
+own for them. An administrator finds them under *Site administration › Appearance › Boost Union ›
+Look*, tab *Dashboard / My courses*.
+
+- **Show course progress** (`courseoverviewshowcourseprogress`). *No* removes the progress row and
+  its percentage from every card; the theme then reads no progress at all. A completed course keeps
+  its completed seal.
+- **Course image source** (`courseoverviewimagesource`). Decides the picture of a course that has
+  no course image of its own. With *Course image with pattern fallback* (the default) the theme
+  draws the course category's cover: the category's colour, inherited from the nearest category
+  above it that has one, else the site's brand colour, under the same light gradient as every
+  cover. With *Course image with fallback image* and a fallback image uploaded, every such course
+  shows that image; with no image uploaded, the category's cover again. The same picture reaches
+  every page that asks the theme for it, the Dashboard and *My courses* included.
+- **Show course images** (`courseoverviewshowcourseimages`). With *Card* unchecked the cards are
+  drawn without their cover; with *List* unchecked the list view's rows are drawn without their
+  thumbnail. *Summary* changes nothing on the theme's cards, which have no summary view.
+
 ### The calendar blocks
 
 Moodle's *Calendar* (month) and *Upcoming events* blocks show the theme's calendar: a month with a

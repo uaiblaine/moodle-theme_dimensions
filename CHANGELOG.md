@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Course cards, stage C1: Boost Union's course overview settings and the cover of a course without an image.** A
+  course with no image of its own now shows its category's cover on the showcase's cards instead of the fixed navy:
+  an SVG in the category's colour (inherited from the nearest category with one, else the site's brand colour) under
+  the cover gradient, which the theme's renderer also answers to every page that asks core for a course's generated
+  image. Boost Union's "Course image source" with an uploaded fallback image shows that image instead; "Show course
+  progress" set to No leaves the card details service without a percentage; "Show course images" marks each card
+  for the view whose images are unchecked, and draws no media band when both the card and the list view are. The
+  rows services' card image may now be a data URI and the card carries four new flags (`showcover`, `showthumb`,
+  `showmedia`, `showprogress`). The README explains the three settings (2026100593).
 - **A site with no Boost Union flavour no longer stalls on "New settings - Dimensions"** (2026100592). Core's
   multi-checkbox setting draws and saves nothing while it has no choice, so "Looks a person may choose"
   (`selectableflavours`) was never stored on such a site, and every visit to the notifications page sent the
