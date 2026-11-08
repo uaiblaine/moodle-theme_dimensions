@@ -1,0 +1,1336 @@
+<title>Cartão de curso unificado</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: a design record read top to bottom; each card sits on a "Moodle stage" with its notes beside it. */
+:root {
+  --bg: #f4f5f2;
+  --fg: #1c211f;
+  --muted: #5d6662;
+  --rule: #d9ddd6;
+  --panel: #ffffff;
+  --accent: #1f6f5c;
+  --accent-soft: #e2efe9;
+  --warn: #8a4b0f;
+  --warn-soft: #f7ead9;
+  --font-page: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-moodle: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* The Moodle stage: Boost defaults on 5.3, light. */
+  --m-stage: #eef0f3;
+  --m-surface: #ffffff;
+  --m-surface-alt: #f8f9fa;
+  --m-surface-strong: #e9ecef;
+  --m-ink: #1d2125;
+  --m-muted: #6a737b;
+  --m-line: #dee2e6;
+  --m-control-line: #adb5bd;
+  --m-primary: #0f6cbf;
+  --m-primary-ink: #0a4b84;
+  --m-navy: #070093;
+  --m-navy-800: #030050;
+  --m-success: #357a32;
+  --m-success-bg: #d7ebd6;
+  --m-success-ink: #1f4b1d;
+  --m-public-bg: #d3ecf0;
+  --m-public-ink: #0c4b56;
+  --m-sched-bg: #edeefb;
+  --m-sched-ink: #050073;
+  --m-open-bg: #fcefdc;
+  --m-open-ink: #60451f;
+  --m-chip: rgba(255, 255, 255, .92);
+  --m-chip-ink: #1f1f1f;
+  --m-shadow: 0 1px 2px rgba(16, 24, 40, .08), 0 1px 3px rgba(16, 24, 40, .06);
+  --m-shadow-lift: 0 6px 16px rgba(16, 24, 40, .12);
+  --m-cat: #0b7a75;
+  --m-cat-2: #8a3b12;
+  --m-primary-hover: #0d5ca2;
+  --m-primary-active: #0c5699;
+  --m-emphasis: #000;
+  --m-brand-tint: #cfe2f2;
+  --m-brand-edge: #9fc4e5;
+  --m-brand-ink: #062b4c;
+  --t-btn: 150ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151917; --fg: #e4e8e5; --muted: #9ea8a3; --rule: #2e3532; --panel: #1c211f;
+    --accent: #6cc3a9; --accent-soft: #1f322c; --warn: #f0b37a; --warn-soft: #3a2a19;
+    --m-stage: #121417; --m-surface: #212529; --m-surface-alt: #2b3035; --m-surface-strong: #343a40;
+    --m-ink: #dee2e6; --m-muted: #adb5bd; --m-line: #495057; --m-control-line: #6c757d;
+    --m-primary-ink: #6ea8fe; --m-success-bg: #1d3a1c; --m-success-ink: #a3d9a0;
+    --m-public-bg: #12393f; --m-public-ink: #9fdbe4; --m-sched-bg: #1c2350; --m-sched-ink: #c9cdf7;
+    --m-open-bg: #3a2c0c; --m-open-ink: #f2d29b;
+    --m-shadow: 0 1px 2px rgba(0, 0, 0, .5); --m-shadow-lift: 0 6px 16px rgba(0, 0, 0, .55);
+    --m-emphasis: #fff; --m-brand-tint: #0b2a45; --m-brand-edge: #1d4f7d; --m-brand-ink: #9ec5fe;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151917; --fg: #e4e8e5; --muted: #9ea8a3; --rule: #2e3532; --panel: #1c211f;
+  --accent: #6cc3a9; --accent-soft: #1f322c; --warn: #f0b37a; --warn-soft: #3a2a19;
+  --m-stage: #121417; --m-surface: #212529; --m-surface-alt: #2b3035; --m-surface-strong: #343a40;
+  --m-ink: #dee2e6; --m-muted: #adb5bd; --m-line: #495057; --m-control-line: #6c757d;
+  --m-primary-ink: #6ea8fe; --m-success-bg: #1d3a1c; --m-success-ink: #a3d9a0;
+  --m-public-bg: #12393f; --m-public-ink: #9fdbe4; --m-sched-bg: #1c2350; --m-sched-ink: #c9cdf7;
+  --m-open-bg: #3a2c0c; --m-open-ink: #f2d29b;
+  --m-shadow: 0 1px 2px rgba(0, 0, 0, .5); --m-shadow-lift: 0 6px 16px rgba(0, 0, 0, .55);
+  --m-emphasis: #fff; --m-brand-tint: #0b2a45; --m-brand-edge: #1d4f7d; --m-brand-ink: #9ec5fe;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-page); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 80px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 56px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -.01em; }
+h2 { font-size: 24px; font-weight: 750; }
+h3 { font-size: 17px; font-weight: 700; }
+p { margin: 0; max-width: 72ch; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+header.top { display: grid; gap: 14px; }
+.eyebrow { font-size: 13px; font-weight: 700; color: var(--accent); }
+.lead { font-size: 17px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; padding-top: 6px; border-top: 1px solid var(--rule); }
+nav.toc a { text-decoration: none; font-weight: 600; }
+nav.toc a:hover, nav.toc a:focus-visible { text-decoration: underline; }
+section { display: grid; gap: 22px; scroll-margin-top: 16px; }
+.sechead { display: grid; gap: 8px; }
+.sechead p { color: var(--muted); }
+
+.findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 14px; }
+.finding { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.finding strong { font-size: 15px; }
+.finding p { color: var(--muted); font-size: 14px; }
+
+.plugin { display: grid; gap: 14px; }
+.plugin > h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.plugin > h3 small { font-weight: 500; color: var(--muted); font-size: 13px; }
+.stage { background: var(--m-stage); border-radius: 14px; padding: 22px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); align-items: start; }
+.stage.wide { grid-template-columns: 1fr; }
+.spec { display: grid; gap: 10px; margin: 0; min-width: 0; }
+.spec figcaption { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.spec figcaption b { color: var(--fg); font-size: 13.5px; }
+.spec figcaption ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.tag-real, .tag-repro { justify-self: start; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.tag-real { background: var(--accent-soft); color: var(--accent); }
+.tag-repro { background: var(--warn-soft); color: var(--warn); }
+.shot { display: grid; gap: 8px; margin: 0; }
+.shot img { border-radius: 10px; border: 1px solid var(--rule); display: block; width: 100%; height: auto; }
+.shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; }
+.shot figcaption { font-size: 13px; color: var(--muted); }
+
+/* ---------- Shared bits of the Moodle stage ---------- */
+.mf { font-family: var(--font-moodle); color: var(--m-ink); }
+.ico { width: 1em; height: 1em; display: inline-block; vertical-align: -.125em; fill: currentColor; flex: none; }
+.crests { position: absolute; right: 8px; bottom: 8px; display: flex; flex-direction: row-reverse; gap: 4px; pointer-events: none; }
+.crests svg { filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .5)); }
+.btn { font-family: var(--font-moodle); display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid transparent; text-decoration: none; line-height: 1.3; cursor: pointer; }
+.btn-primary { background: var(--m-primary); color: #fff; }
+.btn-outline { border-color: var(--m-primary); color: var(--m-primary-ink); background: transparent; }
+.btn-quiet { border-color: var(--m-control-line); color: var(--m-muted); background: transparent; }
+.btn-quiet:hover { background: var(--m-surface-alt); color: var(--m-ink); }
+.btn:focus-visible, .pc__title a:focus-visible, .starbtn:focus-visible, .iconbtn:focus-visible { outline: 3px solid #4456ff; outline-offset: 2px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; line-height: 1.4; white-space: nowrap; }
+.pill-enrolled { background: var(--m-navy); color: #fff; }
+.pill-public { background: var(--m-public-bg); color: var(--m-public-ink); }
+.pill-sched { background: var(--m-sched-bg); color: var(--m-sched-ink); }
+.pill-open { background: var(--m-open-bg); color: var(--m-open-ink); }
+.pill-done { background: var(--m-success-bg); color: var(--m-success-ink); }
+.starbtn { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--m-chip); color: #6a737b; border: 0; }
+.starbtn.on { color: #b8860b; }
+
+/* ---------- Theme today: full card ---------- */
+.tc { position: relative; background: var(--m-surface); border: 1px solid var(--m-line); border-radius: 12px; box-shadow: var(--m-shadow); overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 150ms; }
+.tc:hover { box-shadow: var(--m-shadow-lift); }
+.tc__media { height: 150px; background: var(--m-navy); position: relative; }
+.tc__kind { position: absolute; top: 10px; left: 10px; background: var(--m-chip); color: var(--m-chip-ink); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .06em; display: inline-flex; gap: 5px; align-items: center; }
+.tc__body { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+.tc__over { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--m-muted); }
+.tc__title { font-size: 16px; font-weight: 600; margin: 0; line-height: 1.3; }
+.tc__title a { color: var(--m-ink); text-decoration: none; }
+.tc__title a:hover { color: var(--m-primary-ink); text-decoration: underline; }
+.tc__meta { font-size: 13px; color: var(--m-muted); }
+.tc__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tc__prog { font-size: 13px; font-weight: 600; color: var(--m-muted); }
+.tc__actions { margin-top: auto; padding-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+.rating { color: #b37319; }
+
+/* ---------- Theme today: the panel's mini ---------- */
+.tm { position: relative; background: var(--m-surface); border: 1px solid var(--m-line); border-radius: 8px; box-shadow: var(--m-shadow); overflow: hidden; display: flex; flex-direction: column; max-width: 240px; }
+.tm__media { aspect-ratio: 16 / 9; max-width: 100%; position: relative; background: radial-gradient(circle at 82% 18%, rgba(255, 255, 255, .18), transparent 58%), linear-gradient(135deg, var(--m-navy), var(--m-navy-800)); }
+.tm__kind { position: absolute; top: 8px; left: 8px; background: var(--m-chip); color: #1b1f8f; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: .06em; }
+.tm__body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 5px; }
+.tm__over { font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--m-muted); }
+.tm__title { font-size: 15.5px; font-weight: 700; color: var(--m-primary-ink); line-height: 1.25; margin: 0; }
+.tm__meta { font-size: 12.8px; color: var(--m-muted); }
+.tm__row { min-height: 44px; padding-right: 48px; display: flex; flex-direction: column; gap: 5px; justify-content: flex-end; }
+.tm__bar { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--m-primary) var(--p), var(--m-surface-strong) var(--p)); }
+.tm__progtext { font-size: 12px; font-weight: 600; color: var(--m-muted); }
+.tm__star { position: absolute; right: 12px; bottom: 12px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--m-line); background: var(--m-surface); display: grid; place-items: center; color: #6a737b; }
+.tm__cta { position: absolute; right: 12px; bottom: 14px; font-size: 12.8px; font-weight: 600; color: var(--m-primary-ink); }
+
+/* ---------- Compass today ---------- */
+.cc { position: relative; background: var(--m-surface); border: 1px solid var(--m-line); border-radius: .375rem; overflow: hidden; display: flex; flex-direction: column; }
+.cc.new { border: 2px solid var(--m-primary); }
+.cc__media { height: 150px; position: relative; }
+.cc__empty { position: absolute; inset: 0; opacity: .6; background: repeating-linear-gradient(135deg, var(--m-line) 0 6px, var(--m-surface) 6px 14px); }
+.cc__badge { position: absolute; top: 8px; left: 8px; background: var(--m-primary); color: #fff; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+.cc__star { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--m-line); background: var(--m-surface); display: grid; place-items: center; color: var(--m-primary); }
+.cc__body { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.cc__cat { font-size: 12.8px; color: var(--m-muted); }
+.cc__title { font-size: 16px; font-weight: 600; margin: 0; line-height: 1.3; }
+.cc__meta { font-size: 13px; color: var(--m-muted); }
+.cc__bar { height: .4rem; border-radius: 4px; background: var(--m-surface-strong); overflow: hidden; }
+.cc__bar i { display: block; height: 100%; width: var(--p); background: var(--m-primary); }
+.cc__bar.done i { background: var(--m-success); }
+.cc__progtext { font-size: 12.5px; color: var(--m-muted); }
+.cc__foot { margin-top: auto; padding-top: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cc__foot .cc__progwrap { flex: 1; display: grid; gap: 4px; }
+.iconbtn { width: 30px; height: 30px; display: grid; place-items: center; border: 0; background: transparent; color: var(--m-muted); border-radius: 6px; }
+.row { display: flex; align-items: center; gap: 10px; min-height: 56px; padding-right: 14px; border: 1px solid var(--m-line); border-radius: 12px; background: var(--m-surface); overflow: hidden; }
+.row__thumb { width: 56px; align-self: stretch; flex: none; position: relative; }
+.row__name { flex: 1 1 8rem; min-width: 0; font-size: 14px; font-weight: 600; padding: 8px 0; }
+.row__meta { font-size: 12.5px; color: var(--m-muted); text-align: right; flex: 0 1 6rem; }
+.row__bar { width: 4.5rem; flex: none; }
+
+/* ---------- local_dimensions today ---------- */
+.ld { position: relative; background: var(--m-surface); border: 1px solid var(--m-line); border-radius: .5rem; box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075); min-height: 320px; display: flex; flex-direction: column; overflow: hidden; transition: transform 150ms, box-shadow 150ms; }
+.ld:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15); }
+.ld__head { background: var(--m-surface-alt); padding: 12px 16px; font-size: 18px; font-weight: 700; margin: 0; }
+.ld__head a { color: var(--m-ink); text-decoration: none; }
+.ld__body { padding: 22px 22px 22px 10px; display: grid; gap: 10px; }
+.tl { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.tl li { display: flex; gap: 10px; align-items: center; font-size: 14px; }
+.ring { width: 22px; height: 22px; flex: none; }
+.ld__continue { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; font-weight: 600; color: var(--m-primary-ink); text-decoration: none; padding-left: 12px; }
+.seal { display: inline-flex; align-items: center; gap: 6px; align-self: start; margin-left: 12px; background: var(--m-success-bg); color: var(--m-success-ink); border: 1px solid #9ccc99; border-radius: 999px; padding: 3px 10px; font-size: 13px; font-weight: 600; }
+.ld__toggle { margin-left: 12px; font-size: 13.5px; color: var(--m-muted); display: inline-flex; gap: 6px; align-items: center; }
+.ld__veil { position: absolute; inset: 0; top: 46px; backdrop-filter: blur(2px); background: rgba(255, 255, 255, .55); display: grid; place-items: center; align-content: center; gap: 10px; text-align: center; padding: 16px; }
+:root[data-theme="dark"] .ld__veil { background: rgba(33, 37, 41, .6); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ld__veil { background: rgba(33, 37, 41, .6); } }
+.ld__disc { width: 64px; height: 64px; border-radius: 50%; background: var(--m-open-bg); color: var(--m-open-ink); display: grid; place-items: center; font-size: 26px; }
+
+/* ---------- Comparison table ---------- */
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 12px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 900px; font-size: 13.5px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+thead th { font-size: 13px; background: var(--accent-soft); color: var(--fg); position: sticky; top: 0; }
+tbody th { font-weight: 700; white-space: nowrap; }
+td.prop { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); font-weight: 500; }
+tr:last-child th, tr:last-child td { border-bottom: 0; }
+.diff { color: var(--warn); font-weight: 700; }
+
+/* ---------- The proposed card, painted only through its tokens ----------
+   Each plugin declares its own --<plugin>-card-* names on the card root, each reading the family
+   token --dimensions-card-* first and its own Bootstrap chain after it. In this page --card-* stands
+   for the plugin's names and --m-* for Bootstrap's --bs-*. */
+.mf { --dimensions-focus-ring: #4456ff; --dimensions-card-focus-width: 3px; }
+.pc {
+  --card-radius: var(--dimensions-card-radius, 12px);
+  --card-border-width: var(--dimensions-card-border-width, 1px);
+  --card-border: var(--dimensions-card-border, var(--m-line));
+  --card-surface: var(--dimensions-card-surface, var(--m-surface));
+  --card-ink: var(--dimensions-card-ink, var(--m-ink));
+  --card-ink-muted: var(--dimensions-card-ink-muted, var(--m-muted));
+  --card-title-hover: var(--dimensions-card-title-hover, var(--m-primary-ink));
+  --card-cover-height: var(--dimensions-card-cover-height, 150px);
+  --card-cover-fallback: var(--dimensions-card-cover-fallback, var(--m-primary));
+  --card-cover-overlay: var(--dimensions-card-cover-overlay, linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(0, 0, 0, .34)));
+  --card-chip-bg: var(--dimensions-card-chip-bg, var(--m-chip));
+  --card-chip-ink: var(--dimensions-card-chip-ink, var(--m-chip-ink));
+  --card-extra-bg: var(--dimensions-card-extra-bg, var(--m-surface-alt));
+  --card-extra-icon: var(--dimensions-card-extra-icon, var(--m-primary-ink));
+  --card-track: var(--dimensions-card-track, var(--m-surface-strong));
+  --card-fill: var(--dimensions-card-fill, var(--m-primary));
+  --card-track-height: var(--dimensions-card-track-height, 6px);
+  --card-done: var(--dimensions-card-done, var(--m-success));
+  --card-done-bg: var(--dimensions-card-done-bg, var(--m-success-bg));
+  --card-done-ink: var(--dimensions-card-done-ink, var(--m-success-ink));
+  --card-done-edge: var(--dimensions-card-done-edge, 4px);
+  --card-shadow: var(--dimensions-card-shadow, var(--m-shadow));
+  --card-shadow-hover: var(--dimensions-card-shadow-hover, var(--m-shadow-lift));
+  --card-focus-ring: var(--dimensions-card-focus-ring, var(--dimensions-focus-ring, var(--m-emphasis)));
+  --card-focus-width: var(--dimensions-card-focus-width, 2px);
+  --card-locked-opacity: var(--dimensions-card-locked-opacity, .62);
+  --card-transition: var(--dimensions-card-transition, 150ms);
+  --band: var(--card-cover-fallback);
+  position: relative; background: var(--card-surface); color: var(--card-ink);
+  border: var(--card-border-width) solid var(--card-border); border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow); overflow: hidden; display: flex; flex-direction: column;
+  transition: box-shadow var(--card-transition);
+}
+.pc:hover, .pc:focus-within, .pc.is-hover, .pc.is-focus { box-shadow: var(--card-shadow-hover); }
+.pc.locked:hover, .pc.locked.is-hover { box-shadow: var(--card-shadow); }
+/* The category colour is instance data written on the card, not a token. */
+.pc.cat { --band: var(--m-cat); }
+.pc.cat2 { --band: var(--m-cat-2); }
+.pc.navy { --band: var(--m-navy); }
+.pc__media { height: var(--card-cover-height); position: relative; background: var(--card-cover-overlay), var(--band); }
+.pc__media.photo { background: linear-gradient(160deg, #6b8f71 0%, #345a4a 45%, #1f3a40 100%); }
+.pc__media.photo::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 25% 30%, rgba(255, 236, 190, .55), transparent 45%); }
+.pc.locked .pc__media { filter: grayscale(55%); opacity: var(--card-locked-opacity); }
+.pc__watermark { position: absolute; left: 14px; bottom: 6px; width: 64px; height: 64px; color: rgba(255, 255, 255, .16); fill: currentColor; }
+.pc.done .pc__media { box-shadow: inset 0 calc(-1 * var(--card-done-edge)) 0 var(--card-done); }
+.pc__kind { position: absolute; top: 10px; left: 10px; background: var(--card-chip-bg); color: var(--card-chip-ink); font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; display: inline-flex; gap: 5px; align-items: center; z-index: 1; }
+.pc__body { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 7px; flex: 1; }
+.pc__over { font-size: 12.5px; font-weight: 600; color: var(--card-ink-muted); }
+.pc__title { font-size: 16px; font-weight: 600; margin: 0; line-height: 1.3; }
+.pc__title a { color: var(--card-ink); text-decoration: none; }
+/* Stretched link: the title's link covers the card, so the whole card is one target and one hover. */
+.pc__title a::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.pc__title a:hover, .pc.is-hover .pc__title a, .pc.is-focus .pc__title a { color: var(--card-title-hover); text-decoration: underline; text-underline-offset: 2px; }
+.pc__title a:focus { outline: none; }
+.pc__title a:focus-visible::after, .pc.is-focus .pc__title a::after { outline: var(--card-focus-width) solid var(--card-focus-ring); outline-offset: calc(-1 * var(--card-focus-width)); }
+.pc.locked .pc__title { color: var(--card-ink); }
+.pc__meta { font-size: 13px; color: var(--card-ink-muted); }
+.pc__extra { display: flex; gap: 7px; align-items: flex-start; font-size: 13px; color: var(--card-ink); padding: 7px 9px; border-radius: 8px; background: var(--card-extra-bg); }
+.pc__extra .ico { color: var(--card-extra-icon); margin-top: 2px; }
+.pc__state { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pc__prog { display: flex; align-items: center; gap: 10px; }
+.pc__track { flex: 1; height: var(--card-track-height); border-radius: 6px; background: var(--card-track); overflow: hidden; }
+.pc__track i { display: block; height: 100%; width: var(--p); background: var(--card-fill); border-radius: 6px; }
+.pc__pct { font-size: 12.5px; font-weight: 700; color: var(--card-ink); font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; }
+.pc__actions { margin-top: auto; padding-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pc__actions > *, .pc__drawer { position: relative; z-index: 2; }
+.pc .starbtn { z-index: 2; }
+.pc__actions .iconbtn { margin-left: auto; }
+.pc .pill-done { background: var(--card-done-bg); color: var(--card-done-ink); }
+.pc__drawer { display: flex; align-items: center; gap: 7px; width: 100%; padding: 9px 16px; border: 0; border-top: 1px solid var(--card-border); background: var(--card-extra-bg); color: var(--card-ink-muted); font: 600 12.5px var(--font-moodle); text-align: left; cursor: pointer; transition: background-color var(--card-transition); }
+.pc__drawer .chev { margin-left: auto; }
+.pc__drawer:hover, .pc__drawer.is-hover { background: var(--m-surface-strong); color: var(--card-ink); }
+.pc__drawer:focus-visible, .pc__drawer.is-focus { outline: var(--card-focus-width) solid var(--card-focus-ring); outline-offset: calc(-1 * var(--card-focus-width)); }
+.pc__drawer[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.ribbon { position: absolute; top: 12px; right: -34px; transform: rotate(35deg); background: var(--card-done); color: #fff; font-size: 11.5px; font-weight: 700; padding: 3px 40px; }
+.pc.compact { max-width: 260px; }
+.pc.dialog { width: 100%; max-width: 360px; box-shadow: 0 12px 32px rgba(7, 0, 147, .14); --card-cover-height: 96px; }
+.pc.dialog:hover, .pc.dialog:focus-within { box-shadow: 0 12px 32px rgba(7, 0, 147, .14); }
+.pc__dhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.pc__dhead .iconbtn { margin: -4px -6px 0 0; position: relative; z-index: 2; }
+.pc__title--dialog { font-size: 18px; }
+/* The course dialogue's close (scss/category.scss .dim-cmodal__close), at the star's 32 px and place. */
+.pc__close { position: absolute; top: 8px; right: 8px; z-index: 2; width: var(--card-close-size, 32px); height: var(--card-close-size, 32px); display: grid; place-items: center; padding: 0; border: 1px solid var(--dimensions-card-close-edge, rgba(255, 255, 255, .4)); border-radius: 50%; background: var(--dimensions-card-close-bg, rgba(0, 0, 0, .5)); color: #fff; font-size: 14px; cursor: pointer; transition: background-color var(--t-btn); }
+.pc__close:hover, .pc__close.is-hover { background: var(--dimensions-card-close-bg-hover, rgba(0, 0, 0, .7)); }
+.pc__close:focus-visible, .pc__close.is-focus { outline: 3px solid #fff; outline-offset: 2px; }
+.pc__close:active, .pc__close.is-active { background: rgba(0, 0, 0, .8); }
+.pc__media.fallbackimg { background: linear-gradient(120deg, #c9b38a 0%, #8f7a55 50%, #5c4d36 100%); }
+.pc__media.pattern { background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .22) 0 22%, transparent 23%), radial-gradient(circle at 75% 70%, rgba(255, 255, 255, .18) 0 28%, transparent 29%), radial-gradient(circle at 90% 10%, rgba(255, 255, 255, .15) 0 16%, transparent 17%), #6d5aa6; }
+.pc__imgnote { position: absolute; left: 10px; bottom: 8px; font-size: 11.5px; font-weight: 600; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
+.pc__actions--end { justify-content: flex-end; }
+.pc.loading .sk { display: block; border-radius: 6px; background: var(--m-surface-strong); }
+.pc.loading .pc__media { background: var(--m-surface-strong); }
+
+/* ---------- Bootstrap's button variants, at the values measured on m503b (theme_dimensions) ---------- */
+.btn-p { background: var(--m-primary); border-color: var(--m-primary); color: #fff; transition: background-color var(--t-btn), border-color var(--t-btn); }
+.btn-p:hover, .btn-p.is-hover { background: var(--m-primary-hover); border-color: var(--m-primary-active); }
+.btn-p:active, .btn-p.is-active { background: var(--m-primary-active); border-color: var(--m-primary-active); }
+.btn-os { border-color: var(--m-muted); color: var(--m-muted); background: transparent; transition: background-color var(--t-btn), color var(--t-btn); }
+.btn-os:hover, .btn-os.is-hover, .btn-os:active, .btn-os.is-active { background: var(--m-muted); color: var(--m-surface); }
+.btn-op { border-color: var(--m-primary); color: var(--m-primary-ink); background: transparent; transition: background-color var(--t-btn), color var(--t-btn); }
+.btn-op:hover, .btn-op.is-hover, .btn-op:active, .btn-op.is-active { background: var(--m-primary); color: #fff; }
+.btn.is-focus { outline: var(--dimensions-card-focus-width, 2px) solid var(--dimensions-focus-ring, var(--m-emphasis)); outline-offset: 2px; }
+.btn.is-disabled, .btn:disabled { opacity: .65; pointer-events: none; }
+.btn .spin { width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; }
+.starbtn, .iconbtn { font-size: 15px; }
+.starbtn { transition: color var(--t-btn), background-color var(--t-btn); cursor: pointer; }
+.starbtn:hover, .starbtn.is-hover { background: #fff; color: var(--m-primary); }
+.starbtn.on:hover, .starbtn.on.is-hover { color: #9a6f00; }
+.starbtn.is-focus, .iconbtn.is-focus { outline: var(--dimensions-card-focus-width, 2px) solid var(--dimensions-focus-ring, var(--m-emphasis)); outline-offset: 2px; }
+.starbtn.is-busy { opacity: .6; }
+.iconbtn { cursor: pointer; transition: background-color var(--t-btn), color var(--t-btn); }
+.iconbtn:hover, .iconbtn.is-hover { background: var(--m-surface-strong); color: var(--m-ink); }
+.iconbtn:active, .iconbtn.is-active { background: var(--m-control-line); color: var(--m-ink); }
+.iconbtn.is-disabled { opacity: .5; pointer-events: none; }
+
+/* ---------- local_dimensions today: the plan's related-content carousel (accordion.js) ---------- */
+.lpwrap { display: grid; gap: 10px; min-width: 0; }
+.lphead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lphead b { font-size: 14px; }
+.lparrows { display: inline-flex; border: 1px solid var(--m-line); border-radius: 999px; background: var(--m-surface); overflow: hidden; }
+.lparrows span { width: 32px; height: 28px; display: grid; place-items: center; color: var(--m-muted); }
+.lparrows span + span { border-left: 1px solid var(--m-line); }
+.lptrack { display: flex; gap: 16px; overflow-x: auto; padding: 4px 4px 14px; scroll-snap-type: x mandatory; }
+.lp { flex: 0 0 270px; scroll-snap-align: start; background: var(--m-surface); border-radius: .75rem; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1), 0 2px 4px -2px rgba(0, 0, 0, .1); transition: box-shadow .2s; }
+.lp:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1), 0 4px 6px -4px rgba(0, 0, 0, .1); }
+.lp.blocked:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1), 0 2px 4px -2px rgba(0, 0, 0, .1); }
+.lp__img { height: 128px; background: var(--m-primary); color: #fff; display: grid; place-items: center; font-size: 24px; font-weight: 700; }
+.lp__img.photo { background: linear-gradient(160deg, #6b8f71 0%, #345a4a 45%, #1f3a40 100%); }
+.lp.blocked .lp__img.photo { filter: grayscale(55%); opacity: .62; }
+.lp.blocked .lp__img:not(.photo) { opacity: .5; }
+.lp__body { padding: 16px; display: flex; flex-direction: column; flex: 1; gap: 0; }
+.lp__name { font-size: 15px; font-weight: 600; line-height: 1.3; margin: 0 0 8px; }
+.lp__badge { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-bottom: 8px; padding: 3px 9px; border: 1px solid var(--m-brand-edge); border-radius: 6.4px; background: var(--m-brand-tint); color: var(--m-brand-ink); font-size: 11.4px; font-weight: 700; }
+.lp__prog { display: flex; align-items: center; gap: 8px; margin-top: auto; margin-bottom: 12px; }
+.lp__track { flex: 1; height: 8px; border-radius: 4px; background: var(--m-surface-strong); overflow: hidden; }
+.lp__track i { display: block; height: 100%; width: var(--p); background: var(--m-success-ink); border-radius: 4px; }
+.lp__pct { font-size: 12px; color: var(--m-muted); font-weight: 500; min-width: 2rem; text-align: right; }
+.lp__ok { color: var(--m-success-ink); }
+.lp__state { display: grid; gap: 6px; justify-items: start; margin-bottom: 8px; }
+.lp__pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--m-success-bg); color: var(--m-success-ink); }
+.lp__when { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--m-brand-edge); background: var(--m-brand-tint); color: var(--m-brand-ink); font-size: 12px; font-weight: 600; }
+.lp__cta { display: inline-flex; padding: 5px 12px; border-radius: 6.4px; background: var(--m-primary); color: #fff; font-size: 13px; font-weight: 600; text-decoration: none; }
+.lp__single { display: flex; align-items: center; gap: 8px; margin-top: auto; margin-bottom: 12px; font-size: 13px; }
+.lp__single .ico { color: var(--m-muted); }
+.lp__single small { margin-left: auto; color: var(--m-muted); font-size: 12px; }
+.lp__go { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; padding: 0 12.8px 12.8px; font-size: 12px; font-weight: 600; color: var(--m-primary-ink); text-decoration: none; }
+.lp__acts { display: flex; align-items: center; gap: 6px; padding: 8px 12.8px; border-top: 1px solid var(--m-line); background: var(--m-surface-alt); color: var(--m-muted); font-size: 12.5px; font-weight: 600; }
+.lp__acts .chev { margin-left: auto; }
+.lpfoot { display: flex; justify-content: flex-end; }
+.lpmore { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--m-line); border-radius: 6px; background: var(--m-surface); color: var(--m-muted); font-size: 13px; font-weight: 600; }
+.lpnotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px 22px; font-size: 13px; color: var(--muted); margin: 0; padding: 0; list-style: none; }
+.lpnotes li b { color: var(--fg); display: block; font-size: 13.5px; }
+
+/* ---------- States ---------- */
+.livehint { font-size: 13px; color: var(--muted); }
+.stategrid { display: grid; grid-template-columns: 150px repeat(5, minmax(120px, 1fr)); min-width: 860px; }
+.stategrid > div { padding: 12px 10px; border-bottom: 1px solid var(--rule); display: grid; place-items: center; gap: 6px; text-align: center; font-size: 12px; color: var(--muted); }
+.stategrid > .h { font-weight: 700; font-size: 12.5px; color: var(--fg); background: var(--accent-soft); place-items: center; }
+.stategrid > .rh { justify-items: start; text-align: left; font-size: 13px; color: var(--fg); font-weight: 700; }
+.stategrid > .rh small { font-weight: 500; color: var(--muted); font-size: 12px; }
+.stategrid > .c { background: var(--m-stage); }
+.stategrid .na { color: var(--muted); font-size: 12px; }
+.minititle { font-family: var(--font-moodle); font-size: 15px; font-weight: 600; }
+.minititle a { color: var(--m-ink); text-decoration: none; }
+.minititle a.is-hover { color: var(--m-primary-ink); text-decoration: underline; text-underline-offset: 2px; }
+.minititle a.is-focus { outline: 3px solid #4456ff; outline-offset: 2px; border-radius: 2px; }
+.cardstates { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+.cardstates .pc__media { height: 96px; }
+.cardstates .pc__body { padding: 10px 12px 12px; }
+
+/* ---------- Tokens ---------- */
+.layers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; counter-reset: l; }
+.layer { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; font-size: 13.5px; color: var(--muted); }
+.layer b { color: var(--fg); font-size: 14px; }
+.layer b::before { counter-increment: l; content: counter(l) " · "; color: var(--accent); }
+pre.code { margin: 0; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-x: auto; color: var(--fg); }
+pre.code .c { color: var(--muted); }
+.tokens td code, .tokens th code { white-space: nowrap; }
+.skinbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.skinbar span { font-size: 13px; font-weight: 600; color: var(--muted); margin-right: 4px; }
+.skinbar button { font: 600 13px var(--font-page); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--rule); background: var(--panel); color: var(--fg); cursor: pointer; }
+.skinbar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.skinbar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.skinnote { font-size: 13px; color: var(--muted); }
+.skin-boost { --dimensions-focus-ring: initial; --dimensions-card-focus-width: initial; }
+.skin-green { --m-primary: #1d6b45; --m-primary-ink: #14502f; --m-primary-hover: #195b3b; --m-primary-active: #175637; }
+.skin-third { --dimensions-focus-ring: #c2185b; --dimensions-card-radius: 2px; --dimensions-card-border-width: 2px; --dimensions-card-border: var(--m-ink); --dimensions-card-shadow: none; --dimensions-card-shadow-hover: 6px 6px 0 var(--m-ink); --dimensions-card-cover-height: 112px; --dimensions-card-cover-overlay: linear-gradient(transparent, transparent); --dimensions-card-chip-bg: var(--m-ink); --dimensions-card-chip-ink: var(--m-surface); --dimensions-card-extra-bg: transparent; --dimensions-card-track-height: 10px; --dimensions-card-fill: #c2185b; }
+@media (prefers-reduced-motion: reduce) { .pc, .lp, .btn, .starbtn, .iconbtn, .pc__drawer { transition: none; } }
+
+.anatomy { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 760px) { .anatomy { grid-template-columns: 1fr; } }
+.slotmark { position: absolute; z-index: 3; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font: 700 12px/22px var(--font-page); text-align: center; box-shadow: 0 0 0 2px var(--m-surface); }
+.slots { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; counter-reset: s; }
+.slots li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; font-size: 14px; }
+.slots li::before { counter-increment: s; content: counter(s); width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; font-size: 12px; display: grid; place-items: center; margin-top: 1px; }
+.slots li span { color: var(--muted); }
+.slots li b { color: var(--fg); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.rule { align-content: start; background: var(--panel); border: 1px solid var(--rule); border-left: 0; border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; }
+.rule b { font-size: 14.5px; }
+.rule p { font-size: 13.5px; color: var(--muted); }
+
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+.option { background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; }
+.option.rec { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.option .verdict { font-size: 12px; font-weight: 700; color: var(--accent); }
+.option p, .option li { font-size: 13.5px; color: var(--muted); }
+.option ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+
+.checks { display: grid; gap: 10px; }
+.checkrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 16px; font-size: 14px; }
+.checkrow span { color: var(--muted); }
+@media (max-width: 640px) { .checkrow { grid-template-columns: 1fr; gap: 4px; } }
+
+.decisions { display: grid; gap: 12px; }
+.decision { background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 18px; display: grid; gap: 6px; }
+.decision header { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.decision .id { font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.decision p { font-size: 14px; color: var(--muted); }
+.decision .rec { font-size: 14px; color: var(--fg); }
+.decision .rec b { color: var(--accent); }
+
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.steps li { font-size: 14.5px; }
+.steps li span { color: var(--muted); }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 14px; }
+@media (prefers-reduced-motion: reduce) { .tc, .pc, .ld { transition: none; } .ld:hover { transform: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 3 1 9l11 6 9-4.9V17h2V9L12 3zm-6.8 9.9V16c0 1.9 3 4 6.8 4s6.8-2.1 6.8-4v-3.1L12 16.6l-6.8-3.7z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 17.3 6.2 3.7-1.7-7 5.5-4.8-7.2-.6L12 2 9.2 8.6 2 9.2l5.5 4.8-1.7 7z"/></symbol>
+  <symbol id="i-staro" viewBox="0 0 24 24"><path d="m22 9.2-7.2-.6L12 2 9.2 8.6 2 9.2l5.5 4.8L5.8 21 12 17.3l6.2 3.7-1.7-7L22 9.2zm-10 6.2-3.8 2.3 1-4.3-3.3-2.9 4.4-.4L12 6.1l1.7 4 4.4.4-3.3 2.9 1 4.3-3.8-2.3z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.4 14.6-4.2-4.2 1.4-1.4 2.8 2.8 5.8-5.8 1.4 1.4-7.2 7.2z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-14a6 6 0 1 0 6 6 6 6 0 0 0-6-6zm0 10a4 4 0 1 1 4-4 4 4 0 0 1-4 4zm0-6a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><path d="M20.5 5.2 19.1 3.5A1.5 1.5 0 0 0 18 3H6a1.5 1.5 0 0 0-1.2.5L3.5 5.2A2 2 0 0 0 3 6.5V19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.5a2 2 0 0 0-.5-1.3zM12 17.5 6.5 12H10v-2h4v2h3.5L12 17.5zM5.1 5l.8-1h12l.9 1H5.1z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 14.5v-9l6 4.5-6 4.5z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zM9 6a3 3 0 0 1 6 0v2H9V6z"/></symbol>
+  <symbol id="crest" viewBox="0 0 40 44"><path d="M20 1 38 7v14c0 11-8 18.5-18 22C10 39.5 2 32 2 21V7z" fill="#f4f1e6" stroke="#8b6b1f" stroke-width="2"/><path d="M20 8 31 12v9c0 7-5 12-11 14.5C14 33 9 28 9 21v-9z" fill="#1d4f8f"/><path d="m20 14 2 4.5 4.8.4-3.7 3.1 1.2 4.7L20 24.2l-4.3 2.5 1.2-4.7-3.7-3.1 4.8-.4z" fill="#f2c94c"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 2h10v2h4v4a4 4 0 0 1-4 4h-.4A5 5 0 0 1 13 14.9V18h3v2H8v-2h3v-3.1A5 5 0 0 1 7.4 12H7a4 4 0 0 1-4-4V4h4V2zM5 6v2a2 2 0 0 0 2 2V6H5zm14 0h-2v4a2 2 0 0 0 2-2V6zM7 21h10v2H7z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M2 21 23 12 2 3v7l15 2-15 2z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 5h3v3H3zm5 .5h13v2H8zM3 10.5h3v3H3zm5 .5h13v2H8zM3 16h3v3H3zm5 .5h13v2H8z"/></symbol>
+  <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"/></symbol>
+  <symbol id="i-chev-left" viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></symbol>
+  <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="M8.6 16.6 10 18l6-6-6-6-1.4 1.4 4.6 4.6z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="m12 4-1.4 1.4 5.6 5.6H4v2h12.2l-5.6 5.6L12 20l8-8z"/></symbol>
+  <symbol id="i-circle" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18.3 5.7 16.9 4.3 12 9.2 7.1 4.3 5.7 5.7 10.6 12l-4.9 4.9 1.4 1.4 4.9-4.9 4.9 4.9 1.4-1.4-4.9-4.9z"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><path d="M5 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm14-12a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM8 17h5a4 4 0 0 0 0-8h-2a2 2 0 0 1 0-4h5V3h-5a4 4 0 0 0 0 8h2a2 2 0 0 1 0 4H8z"/></symbol>
+</svg>
+
+<div class="wrap">
+
+<header class="top">
+  <span class="eyebrow">Levantamento e proposta · theme_dimensions (vitrine e calendário), block_compass, local_dimensions</span>
+  <h1>Cartão de curso unificado</h1>
+  <p class="lead">Todos os cartões de curso que os três plugins desenham hoje no Moodle 5.3, lado a lado, e a proposta de um cartão único com um espaço reservado para o que só cada plugin sabe. Nada no código foi alterado.</p>
+  <div class="chips">
+    <span class="chip">Fonte: código de <code>main</code> do tema e do local_dimensions, <code>MOODLE_503_STABLE</code> do compass, em 2026-11-08</span>
+    <span class="chip">Capturas reais: m503b (visitante e admin) e m503 (plano, admin)</span>
+    <span class="chip">Visões logadas: reproduzidas a partir dos templates e do SCSS</span>
+    <span class="chip">Botões e cores do tema: medidos no m503b</span>
+    <span class="chip">Rodada 2: estados, tokens e o cartão do plano no local_dimensions</span>
+    <span class="chip">Rodada 3: o popover da trilha no calendário</span>
+    <span class="chip">Rodada 4: barra e imagem pelas configurações do Boost Union; o X do popover</span>
+  </div>
+  <nav class="toc" aria-label="Seções">
+    <a href="#achados">Achados</a><a href="#hoje">Como está hoje</a><a href="#comparacao">Comparação</a><a href="#proposta">Proposta</a><a href="#estados">Estados</a><a href="#tokens">Tokens</a><a href="#codigo">Onde o código mora</a><a href="#ajustes">Seus ajustes</a><a href="#decisoes">Decisões</a>
+  </nav>
+</header>
+
+<section id="achados">
+  <div class="sechead"><h2>Achados</h2><p>O que explica as diferenças que você viu na vitrine, e o que separa os três plugins.</p></div>
+  <div class="findings">
+    <div class="finding"><strong>A vitrine tem um template só</strong><p>Lista plana, mini do painel, vista em lista e visitante são o mesmo <code>category_card.mustache</code>. O mini não é outro cartão: o CSS de <code>.dim-panel__rail</code> esconde "Mais informações", troca a capa por 16:9, muda o título para azul em negrito e move a estrela.</p></div>
+    <div class="finding"><strong>Sem imagem, o tema pinta azul-marinho fixo</strong><p><code>--dim-fallback</code> é o <code>#070093</code> do design system, e não a primária (<code>#0f6cbf</code>) nem a cor da categoria. A cor da categoria só chega ao pôster da área (<code>--dim-card-band</code>). O compass pinta hachuras cinza e o local_dimensions, a primária chapada com as iniciais do curso. Conferido na página: a faixa do mini é o gradiente <code>#070093 → #030050</code>.</p></div>
+    <div class="finding"><strong>Quatro jeitos de mostrar progresso</strong><p>Lista plana do tema: só o texto "40% concluído", ao lado da etiqueta. Mini do tema: barra de 4 px e texto. Compass: barra e texto embaixo, verde em 100 %. local_dimensions: barra verde de 8 px com o percentual e um ícone verde em 100 %. Em nenhum dos três o cartão concluído muda de aparência.</p></div>
+    <div class="finding"><strong>Visitante: dois links para o mesmo lugar</strong><p>"Saiba mais" e "Mais informações" usam o mesmo <code>{{url}}</code>, a landing page. O diálogo não é armado para o visitante, então o segundo botão só repete o primeiro. No mini, "Saiba mais" é o mesmo botão sem a aparência de botão, por isso parece texto.</p></div>
+    <div class="finding"><strong>Quatro geometrias</strong><p>Os raios são 12 px (tema), 8 px (mini), .375rem (compass, padrão do Bootstrap) e .75rem sem borda (local_dimensions). No hover, o tema e o local_dimensions aumentam a sombra, e o compass não muda nada.</p></div>
+    <div class="finding"><strong>Concluído com "Começar"</strong><p>Na captura do compass, dois cursos novos e já concluídos mostram a barra verde e "Concluído" ao lado do botão "Começar": <code>action_text()</code> (<code>classes/local/cards.php</code>) testa "inscrição nova" antes de "concluído", então um curso novo e concluído recebe "Começar". Na vitrine, um curso concluído aparece como "Inscrito", igual a um recém-começado. A proposta tira o rótulo da ação do mesmo estado que pinta o cartão: concluído leva "Rever".</p></div>
+    <div class="finding"><strong>Dois primários dentro do tema</strong><p>O calendário remapeia <code>btn-primary</code> para o marinho do design system (<code>#070093</code>), com 14 px e raio de 8 px. A vitrine usa o <code>#0f6cbf</code> do Bootstrap, com 13 px e raio de 6 px. O popover da trilha já pinta a capa com a cor da categoria (<code>categoryCover()</code>), a mesma regra que a D3 leva para os outros cartões.</p></div>
+    <div class="finding"><strong>Caixa alta nos rótulos do tema</strong><p>O tipo ("CURSO"), o sobretítulo da categoria e "CURSOS DA ÁREA" estão em versalete com espaçamento largo. O compass já usa sentence case. A proposta tira a caixa alta de todos.</p></div>
+  </div>
+</section>
+
+<section id="hoje">
+  <div class="sechead"><h2>Como está hoje</h2><p>As capturas são do m503b, como visitante e como admin. O admin não tem curso com progresso rastreável nem plano com cursos ligados a competências no m503b, então o progresso na vitrine e os estados de inscrito do carrossel do local_dimensions continuam desenhados a partir do código, com as medidas do CSS. O carrossel sem acesso foi capturado no m503.</p></div>
+
+  <div class="shots">
+    <figure class="shot"><img src="img/visitante-lista-plana.jpg" alt="Vitrine Showcase load probe em A-Z, vista de visitante: grade de cartões com faixa colorida, etiqueta Acesso público, botão Saiba mais e botão Mais informações" loading="lazy"><figcaption><span class="tag-real">Captura</span> Visitante, lista plana (A-Z): "Saiba mais" e "Mais informações" levam à mesma landing page.</figcaption></figure>
+    <figure class="shot"><img src="img/visitante-painel.jpg" alt="Vitrine em modo Por área, painel de Probe area 0 aberto entre as fileiras de pôsteres, com minis de curso em rolagem horizontal e Saiba mais como texto" loading="lazy"><figcaption><span class="tag-real">Captura</span> Visitante, modo agrupado: o painel aberto entre as fileiras. Nos minis, "Saiba mais" aparece como texto no canto.</figcaption></figure>
+    <figure class="shot"><img src="img/logado-lista-plana.png" alt="Três cartões da vitrine logado como admin: capa azul-marinho, etiqueta Curso ou Trilha em caixa alta, estrela, pílula Inscrito ou Inscrições abertas, botões Acessar e Mais informações" loading="lazy"><figcaption><span class="tag-real">Captura</span> Admin, lista plana (Category 1): "Inscrito" em marinho com ícone, "Acessar" e "Mais informações". Sem percentual, porque nenhum desses cursos tem atividade rastreável para o admin; TRAILPERF 10.0, concluído, também aparece só como "Inscrito".</figcaption></figure>
+    <figure class="shot"><img src="img/logado-painel.png" alt="Painel Cursos em Probe area 0 aberto, logado como admin: minis com capa marinho, sobretítulo em caixa alta, pílula Sem inscrição disponível quebrada em duas linhas ao lado da estrela" loading="lazy"><figcaption><span class="tag-real">Captura</span> Admin, painel do modo agrupado: nos minis não há botão nenhum, e a pílula "Sem inscrição disponível" quebra em duas linhas para caber ao lado da estrela de 40 px.</figcaption></figure>
+  </div>
+
+  <div class="plugin">
+    <h3>theme_dimensions <small>vitrine da categoria · <code>templates/category_card.mustache</code>, <code>scss/category.scss</code></small></h3>
+    <div class="stage mf">
+      <figure class="spec">
+        <article class="tc">
+          <div class="tc__media"><span class="tc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn on" aria-label="Remover dos favoritos"><svg class="ico"><use href="#i-star"/></svg></button><div class="crests"><svg width="56" height="62"><use href="#crest"/></svg></div></div>
+          <div class="tc__body">
+            <span class="tc__over">Segurança do trabalho</span>
+            <h4 class="tc__title"><a href="#hoje">Gestão de riscos em obras</a></h4>
+            <p class="tc__meta"><span class="rating">★</span> 4,6 (12) · 20 h · Online</p>
+            <div class="tc__row"><span class="pill pill-enrolled">Inscrito</span><span class="tc__prog">40% concluído</span></div>
+            <div class="tc__actions"><a class="btn btn-primary" href="#hoje">Acessar</a><a class="btn btn-quiet" href="#hoje">Mais informações</a></div>
+          </div>
+        </article>
+        <figcaption><span class="tag-repro">Reprodução</span><b>A · Lista plana, logado, inscrito</b><ul><li>Capa de 150 px; sem imagem, azul-marinho fixo.</li><li>O progresso é só texto, na mesma linha da etiqueta.</li><li>Em 100 %, a frase é a mesma; não há estado de concluído.</li><li>"Mais informações" abre o diálogo.</li></ul></figcaption>
+      </figure>
+      <figure class="spec">
+        <article class="tm">
+          <div class="tm__media"><span class="tm__kind">Curso</span><div class="crests"><svg width="40" height="44"><use href="#crest"/></svg></div></div>
+          <div class="tm__body">
+            <span class="tm__over">Segurança do trabalho</span>
+            <h4 class="tm__title">Gestão de riscos em obras</h4>
+            <p class="tm__meta">20 h · Online</p>
+            <div class="tm__row"><div class="tm__bar" style="--p:40%"></div><span class="tm__progtext">40% concluído</span></div>
+          </div>
+          <span class="tm__star"><svg class="ico"><use href="#i-staro"/></svg></span>
+        </article>
+        <figcaption><span class="tag-repro">Reprodução</span><b>B · Mini do painel, logado</b><ul><li>Mesmo HTML que A, com outro CSS: capa 16:9 e raio de 8 px.</li><li>A barra de 4 px aparece só aqui.</li><li>"Acessar" e "Mais informações" ficam ocultos; o cartão inteiro é o link.</li><li>A estrela de 40 px fica no canto inferior.</li></ul></figcaption>
+      </figure>
+      <figure class="spec">
+        <article class="tc">
+          <div class="tc__media" style="background:#9e3b26"><span class="tc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span></div>
+          <div class="tc__body">
+            <span class="tc__over">Probe unit 3.0</span>
+            <h4 class="tc__title"><a href="#hoje">Probe course 0009</a></h4>
+            <p class="tc__meta">Online</p>
+            <div class="tc__row"><span class="pill pill-public">Acesso público</span></div>
+            <div class="tc__actions"><a class="btn btn-primary" href="#hoje">Saiba mais</a><a class="btn btn-quiet" href="#hoje">Mais informações</a></div>
+          </div>
+        </article>
+        <figcaption><span class="tag-real">Como na captura</span><b>C · Visitante, lista plana</b><ul><li>Os dois botões têm o mesmo <code>href</code>, a landing page.</li><li>Sem estrela e sem progresso.</li><li>Um curso sem modelo de landing não tem botão nem link no título.</li></ul></figcaption>
+      </figure>
+      <figure class="spec">
+        <article class="tm">
+          <div class="tm__media"><span class="tm__kind">Curso</span></div>
+          <div class="tm__body">
+            <span class="tm__over">Probe unit 0.9</span>
+            <h4 class="tm__title">Probe course 4409</h4>
+            <p class="tm__meta">Online</p>
+            <div class="tm__row"><span class="pill pill-public" style="align-self:flex-start">Acesso público</span></div>
+          </div>
+          <span class="tm__cta">Saiba mais</span>
+        </article>
+        <figcaption><span class="tag-real">Como na captura</span><b>D · Visitante, mini do painel</b><ul><li>"Saiba mais" é o mesmo <code>.btn</code> sem borda e sem fundo.</li><li>Fica no canto onde, logado, estaria a estrela.</li></ul></figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="plugin">
+    <h3>theme_dimensions · calendário, modo Trilhas <small>popover de uma etapa · <code>js/esm/src/calendar/TrailPopover.tsx</code>, <code>look.ts</code> (<code>categoryCover</code>), <code>scss/calendar.scss</code></small></h3>
+    <div class="shots">
+      <figure class="shot"><img src="img/calendario-trilha-popover.jpg" alt="Popover da etapa Playground no calendário em modo Trilhas: faixa azul sem imagem, Category 1 acima do título Playground, pílula Em andamento, linha Curso 1 de 11 · TRAILPERF Trilha 1, as datas do curso e os botões Ver trilha e Abrir curso" loading="lazy"><figcaption><span class="tag-real">Captura</span> Admin no m503b, etapa em andamento: faixa de 64 px na cor da categoria, categoria acima do título, a pílula do estado, a posição na trilha, as datas com a origem delas e as duas ações.</figcaption></figure>
+      <figure class="shot"><img src="img/calendario-trilha-popover-concluido.jpg" alt="Popover da etapa TRAILPERF 1.0 concluída: a mesma faixa azul, pílula verde Concluído, Curso 11 de 11, as datas e os botões Ver trilha e Abrir curso" loading="lazy"><figcaption><span class="tag-real">Captura</span> Etapa concluída: só a pílula muda para "Concluído". A faixa e a ação "Abrir curso" ficam iguais às de uma etapa em andamento.</figcaption></figure>
+    </div>
+    <ul class="lpnotes">
+      <li><b>É um diálogo, não um cartão de lista</b><code>role="dialog"</code> com 360 px, raio de 12 px e sombra grande, ancorado na barra que o abriu; num celular vira uma folha que sobe do rodapé. O foco vai para o título; Esc, o X e um clique fora fecham.</li>
+      <li><b>A capa já usa a cor da categoria</b><code>categoryCover()</code> lê o par de cores (fundo e texto) da marca da categoria e, sem ele, as cores do estado. É a regra da D3, só que aqui ela já existe. A etapa não traz a imagem do curso, então a faixa nunca tem foto.</li>
+      <li><b>Textos</b>Categoria em sentence case, 12 px, acima do título; título com 18 px e peso 600, maior que os 16 px do cartão, porque é o título do diálogo. Linhas com ícone: "Curso 1 de 11 · trilha" e as datas, com "Datas do curso" ou "Data prevista de conclusão" embaixo.</li>
+      <li><b>Estado sem progresso</b>Cinco pílulas: Em andamento, Concluído, Atrasado, Bloqueado e A seguir. Não há barra nem percentual, porque a etapa não traz percentual. Uma etapa bloqueada mostra o motivo do core numa caixa discreta.</li>
+      <li><b>Botões com outro desenho</b>"Ver trilha" (<code>btn-secondary</code>, branco com borda) e "Abrir curso" (<code>btn-primary</code>), com 14 px e raio de 8 px. O calendário remapeia o primário para o marinho do design system (<code>--dim-ds-interactive-primary</code>, <code>#070093</code>). Na vitrine, o botão primário é o <code>#0f6cbf</code> do Bootstrap, com 13 px e raio de 6 px.</li>
+      <li><b>Concluído não muda a ação</b>Uma etapa concluída continua com "Abrir curso". Na proposta, ela leva "Rever", como em qualquer cartão concluído.</li>
+    </ul>
+  </div>
+
+  <div class="plugin">
+    <h3>block_compass <small>bloco do painel · <code>js/esm/src/Card.tsx</code>, <code>RowCard.tsx</code>, <code>Row.tsx</code>, <code>styles.css</code></small></h3>
+    <div class="shots">
+      <figure class="shot"><img src="img/compass-continuar.jpg" alt="Faixa Continuar de onde parei do compass: três cartões com hachura cinza, categoria, título, último acesso e botão de contorno Continuar ou Acessar" loading="lazy"><figcaption><span class="tag-real">Captura</span> Admin, Painel do m503b, "Continuar de onde parei": hachura, último acesso e o botão de contorno decorativo. Sem barra quando o curso não tem nada rastreável.</figcaption></figure>
+      <figure class="shot"><img src="img/compass-novas.jpg" alt="Faixa Novas inscrições do compass: cartões com borda azul de 2 px e selo Novo; dois mostram barra verde e Concluído com o botão Começar" loading="lazy"><figcaption><span class="tag-real">Captura</span> "Novas inscrições": borda de 2 px e selo "Novo". Dois cursos concluídos mostram a barra verde e "Concluído", mas o botão diz "Começar".</figcaption></figure>
+    </div>
+    <div class="stage mf">
+      <figure class="spec">
+        <article class="cc">
+          <div class="cc__media"><div class="cc__empty"></div><span class="cc__star"><svg class="ico"><use href="#i-star"/></svg></span><div class="crests"><svg width="56" height="62"><use href="#crest"/></svg></div></div>
+          <div class="cc__body">
+            <span class="cc__cat">Segurança do trabalho</span>
+            <h4 class="cc__title">Gestão de riscos em obras</h4>
+            <p class="cc__meta">Último acesso há 3 dias</p>
+            <div class="cc__progwrap" style="display:grid;gap:4px"><div class="cc__bar"><i style="--p:40%"></i></div><span class="cc__progtext">40% concluído</span></div>
+            <div style="margin-top:auto;padding-top:6px"><span class="btn btn-outline">Continuar</span></div>
+          </div>
+        </article>
+        <figcaption><span class="tag-repro">Reprodução</span><b>E · Destaque (Ativos, Favoritos)</b><ul><li>Sem imagem: hachura cinza, sem cor.</li><li>Sem sombra e sem efeito no hover.</li><li>O botão é decorativo; o cartão inteiro é o link.</li><li>Do compass: último acesso, inscrição recente e prazo.</li></ul></figcaption>
+      </figure>
+      <figure class="spec">
+        <article class="cc new">
+          <div class="cc__media"><div class="cc__empty"></div><span class="cc__badge">Novo</span></div>
+          <div class="cc__body">
+            <span class="cc__cat">Gestão pública</span>
+            <h4 class="cc__title">Licitações e contratos</h4>
+            <span class="pill pill-sched" style="align-self:flex-start"><svg class="ico"><use href="#i-cal"/></svg>Acesso a partir de 12/11/2026</span>
+          </div>
+        </article>
+        <figcaption><span class="tag-repro">Reprodução</span><b>E' · Começa em breve</b><ul><li>Sem estrela, progresso e botão.</li><li>O título leva à página de inscrição.</li><li>Borda de 2 px na primária quando é novo.</li></ul></figcaption>
+      </figure>
+      <figure class="spec">
+        <article class="cc">
+          <div class="cc__media"><div class="cc__empty"></div><span class="cc__star"><svg class="ico"><use href="#i-staro"/></svg></span></div>
+          <div class="cc__body">
+            <h4 class="cc__title">Primeiros socorros</h4>
+            <p class="cc__meta">Aberto há 2 dias</p>
+            <div class="cc__foot"><div class="cc__progwrap"><div class="cc__bar done"><i style="--p:100%"></i></div><span class="cc__progtext">Concluído</span></div><button class="iconbtn" aria-label="Arquivar Primeiros socorros"><svg class="ico"><use href="#i-archive"/></svg></button></div>
+          </div>
+        </article>
+        <figcaption><span class="tag-repro">Reprodução</span><b>F · Inventário, vista em cartões</b><ul><li>Dentro de uma categoria, a linha da categoria some.</li><li>Concluído = barra verde e a palavra "Concluído".</li><li>O botão de arquivar é só do compass.</li></ul></figcaption>
+      </figure>
+    </div>
+    <div class="stage wide mf">
+      <figure class="spec">
+        <div class="row"><div class="row__thumb"><div class="cc__empty"></div></div><span class="row__name">Gestão de riscos em obras</span><span class="row__meta">Aberto há 2 dias</span><div class="row__bar"><div class="cc__bar"><i style="--p:40%"></i></div></div><button class="iconbtn" aria-label="Favorito"><svg class="ico"><use href="#i-staro"/></svg></button><button class="iconbtn" aria-label="Arquivar"><svg class="ico"><use href="#i-archive"/></svg></button></div>
+        <figcaption><span class="tag-repro">Reprodução</span><b>G · Inventário, vista em lista</b> Linha de 56 px com miniatura, barra sem texto e raio de 12 px. A vista em lista do tema segue a mesma ideia, com miniatura de 56 px e brasões de 24 × 26.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="plugin">
+    <h3>local_dimensions <small>visão do plano, acordeão da competência, aba "Conteúdo relacionado" · <code>amd/src/accordion.js</code> (<code>renderCourseCardsScrollable</code>), <code>styles.css</code></small></h3>
+    <div class="shots">
+      <figure class="shot"><img src="img/plano-conteudo-relacionado.jpg" alt="Acordeão da competência Lesson design aberto na aba Related content, com quatro cursos em carrossel: capas com imagem, nome, pílula No enrolment available, um com a etiqueta Opens 14/11/26, setas no canto e o botão View detailed progress" loading="lazy"><figcaption><span class="tag-real">Captura</span> Admin no m503, plano "Teaching Excellence Pathway" de demo.student. O admin não está inscrito, então todos os cartões estão sem acesso: capa esmaecida, "No enrolment available" e, num deles, a data de abertura. Os cartões não se esticam (<code>align-items: flex-start</code> na trilha), então o que tem a data fica mais alto que os vizinhos. A proposta iguala a altura numa fileira.</figcaption></figure>
+    </div>
+    <div class="stage wide mf">
+      <figure class="spec">
+        <div class="lpwrap">
+          <div class="lphead"><b>Conteúdo relacionado</b><span class="lparrows" aria-hidden="true"><span><svg class="ico"><use href="#i-chev-left"/></svg></span><span><svg class="ico"><use href="#i-chev-right"/></svg></span></span></div>
+          <div class="lptrack">
+            <article class="lp">
+              <div class="lp__img photo"></div>
+              <div class="lp__body">
+                <h4 class="lp__name">Gestão de riscos em obras</h4>
+                <span class="lp__badge"><svg class="ico"><use href="#i-trophy"/></svg>Conclui a competência</span>
+                <div class="lp__prog"><div class="lp__track"><i style="--p:40%"></i></div><span class="lp__pct">40%</span></div>
+              </div>
+              <div class="lp__acts"><svg class="ico"><use href="#i-list"/></svg>3 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></div>
+            </article>
+            <article class="lp">
+              <div class="lp__img">PS</div>
+              <div class="lp__body">
+                <h4 class="lp__name">Primeiros socorros</h4>
+                <span class="lp__badge"><svg class="ico"><use href="#i-send"/></svg>Envia para avaliação</span>
+                <div class="lp__prog"><div class="lp__track"><i style="--p:100%"></i></div><span class="lp__pct">100%</span><svg class="ico lp__ok"><use href="#i-check"/></svg></div>
+              </div>
+            </article>
+            <article class="lp blocked">
+              <div class="lp__img photo"></div>
+              <div class="lp__body">
+                <h4 class="lp__name">Licitações e contratos</h4>
+                <span class="lp__badge"><svg class="ico"><use href="#i-trophy"/></svg>Conclui a competência</span>
+                <div class="lp__state"><span class="lp__pill"><svg class="ico"><use href="#i-arrow"/></svg>Inscrições abertas</span><a class="lp__cta" href="#hoje">Inscrever-se</a></div>
+              </div>
+              <div class="lp__acts"><svg class="ico"><use href="#i-list"/></svg>2 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></div>
+            </article>
+            <article class="lp">
+              <div class="lp__body">
+                <h4 class="lp__name">Ergonomia no escritório</h4>
+                <span class="lp__badge"><svg class="ico"><use href="#i-trophy"/></svg>Conclui a competência</span>
+                <div class="lp__single"><svg class="ico"><use href="#i-circle"/></svg><span>Questionário final</span><small>Não concluído</small></div>
+              </div>
+              <a class="lp__go" href="#hoje">Ir para a atividade<svg class="ico"><use href="#i-arrow"/></svg></a>
+            </article>
+          </div>
+          <div class="lpfoot"><span class="lpmore">Ver progresso detalhado<svg class="ico"><use href="#i-arrow"/></svg></span></div>
+        </div>
+        <figcaption><span class="tag-repro">Reprodução</span><b>H · Os quatro formatos do carrossel</b></figcaption>
+        <ul class="lpnotes">
+          <li><b>Inscrito, em andamento</b>Capa de 128 px; sem imagem, a cor de marca chapada com as iniciais. Nome com até três linhas, sem categoria nem linha meta. O selo "Conclui a competência" ou "Envia para avaliação" diz o que o curso faz pela competência. Barra verde de 8 px e o percentual. O cartão inteiro é o link para o curso.</li>
+          <li><b>Concluído</b>A barra cheia e um ícone verde ao lado do 100%. Não há selo nem outra marca no cartão.</li>
+          <li><b>Sem inscrição</b>Capa em tons de cinza, o cartão deixa de ser link e não reage ao hover. A pílula do estado (onze estados, seis famílias de cor), a data de abertura quando existe e a ação do estado como botão.</li>
+          <li><b>Compacto</b>Quando o curso tem uma só atividade ou uma só seção rastreável, sai a capa e a barra; entra a linha da atividade (ou o anel da seção) e o link "Ir para a atividade" ou "Acessar conteúdo".</li>
+          <li><b>Gaveta "N atividades"</b>Abaixo do corpo, fora do link: lista as atividades do curso ligadas à competência, com o próprio selo de resultado. Some quando repetiria a atividade do cartão compacto.</li>
+          <li><b>Geometria</b>270 px de largura no carrossel, raio .75rem, sem borda, sombra em repouso e maior no hover. Rodapé "Ver progresso detalhado" a partir de três cursos. O cartão da página da competência (<code>course_card.mustache</code>) é outro cenário e fica fora do padrão.</li>
+        </ul>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="comparacao">
+  <div class="sechead"><h2>Comparação</h2><p>Região por região. A última coluna é o que a proposta padroniza; em laranja, onde os plugins divergem hoje.</p></div>
+  <div class="tablewrap">
+    <table style="min-width:1040px">
+      <thead><tr><th scope="col">Região</th><th scope="col">Tema · completo</th><th scope="col">Tema · mini</th><th scope="col">Compass · destaque e inventário</th><th scope="col">local_dimensions · plano</th><th scope="col">Tema · popover da trilha</th><th scope="col">Proposta</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Capa</th><td>150 px</td><td class="diff">16:9</td><td>150 px</td><td class="diff">128 px; nenhuma no compacto</td><td class="diff">64 px, nunca com imagem</td><td class="prop">150 px em todos</td></tr>
+        <tr><th scope="row">Sem imagem</th><td class="diff">azul-marinho <code>#070093</code> chapado</td><td class="diff">gradiente marinho</td><td class="diff">hachura cinza</td><td class="diff">primária chapada, iniciais</td><td>cor da categoria (fundo e texto), senão a do estado</td><td class="prop">cor da categoria, senão a primária, com gradiente</td></tr>
+        <tr><th scope="row">Tipo</th><td class="diff">"CURSO" em caixa alta</td><td class="diff">"CURSO", sem ícone</td><td>só o selo "Novo"</td><td>—</td><td>—</td><td class="prop">"Curso", "Evento", "Trilha", em sentence case</td></tr>
+        <tr><th scope="row">Categoria</th><td class="diff">caixa alta, 11 px</td><td class="diff">caixa alta</td><td>sentence case, 12,8 px, configurável</td><td>—</td><td>sentence case, 12 px, acima do título</td><td class="prop">sentence case, 12,5 px, peso 600</td></tr>
+        <tr><th scope="row">Título</th><td>16 px/600; sublinha no hover</td><td class="diff">15,5 px/700, azul</td><td>16 px/600; 2 linhas</td><td class="diff">15 px/600, 3 linhas; o cartão é o link</td><td>18 px/600, título do diálogo</td><td class="prop">16 px/600, 2 linhas; sublinha no hover</td></tr>
+        <tr><th scope="row">Linha meta</th><td>avaliação · carga · modalidade · cidade</td><td>igual</td><td class="diff">último acesso ou inscrição</td><td>—</td><td>datas e a origem delas</td><td class="prop">fatos do curso (avaliação, carga, modalidade)</td></tr>
+        <tr><th scope="row">Extra do plugin</th><td>"Você também pode se inscrever", "Abre em…"</td><td>oculto</td><td>último acesso, prazo, "Aberto há…"</td><td>selo "Conclui a competência"; gaveta "N atividades"</td><td>"Curso 1 de 11 · trilha"; motivo do bloqueio</td><td class="prop">um espaço próprio, abaixo da linha meta; a gaveta do plano no rodapé</td></tr>
+        <tr><th scope="row">Brasões</th><td>80 × 88 (56 × 62 abaixo de 992 px)</td><td class="diff">40 × 44</td><td>56 × 62</td><td>—</td><td>—</td><td class="prop">uma escala só (D2)</td></tr>
+        <tr><th scope="row">Estado</th><td>pílula, "Inscrito" em marinho sólido</td><td>pílula</td><td class="diff">pílula; "Inscrito" nunca</td><td>pílula só sem acesso (11 estados)</td><td>pílula sempre, 5 estados da trilha</td><td class="prop">pílula só quando o estado não é o normal da lista</td></tr>
+        <tr><th scope="row">Progresso</th><td class="diff">texto ao lado da pílula</td><td>barra 4 px + texto</td><td>barra .4rem + texto</td><td class="diff">barra 8 px verde + percentual</td><td class="diff">nenhum</td><td class="prop">barra de 6 px + percentual, numa linha própria</td></tr>
+        <tr><th scope="row">Concluído</th><td class="diff">nada</td><td class="diff">nada</td><td>barra verde + "Concluído"</td><td class="diff">barra cheia + ícone verde</td><td class="diff">pílula verde; capa e ação iguais</td><td class="prop">a barra sai e entra o selo, com borda verde na capa</td></tr>
+        <tr><th scope="row">Favorito</th><td>32 px no topo da capa</td><td class="diff">40 px no rodapé</td><td>28 px no topo</td><td>—</td><td>—</td><td class="prop">32 px no topo da capa</td></tr>
+        <tr><th scope="row">Ações</th><td>CTA + "Mais informações"</td><td class="diff">nenhuma (visitante: texto)</td><td class="diff">botão decorativo; cartão é o link</td><td class="diff">cartão é o link; sem acesso: ação do estado; compacto: "Ir para a atividade"</td><td class="diff">Ver trilha + Abrir curso; 14 px, raio 8, primário marinho</td><td class="prop">CTA + "Mais informações"; visitante só "Saiba mais"; o cartão inteiro é clicável (D9)</td></tr>
+        <tr><th scope="row">Raio · sombra · hover</th><td>12 px · sombra · sombra maior</td><td class="diff">8 px · sombra · nada</td><td class="diff">.375rem · nada · nada</td><td class="diff">.75rem sem borda · sombra · sombra maior</td><td>12 px · sombra grande · diálogo, sem hover</td><td class="prop">por tokens: 12 px · sombra · sombra maior</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="proposta">
+  <div class="sechead"><h2>Proposta: um cartão com um espaço de plugin</h2><p>A mesma anatomia nos três plugins. Cada um preenche os mesmos espaços com os próprios dados e usa um espaço reservado para o que só ele sabe.</p></div>
+
+  <div class="anatomy">
+    <div class="stage mf" style="grid-template-columns:1fr;padding:26px">
+      <article class="pc" style="max-width:300px">
+        <div class="pc__media"><span class="slotmark" style="left:-6px;top:-6px">1</span><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><span class="slotmark" style="left:76px;top:6px">2</span><button class="starbtn" aria-label="Adicionar aos favoritos"><svg class="ico"><use href="#i-staro"/></svg></button><span class="slotmark" style="right:44px;top:6px">3</span><div class="crests"><svg width="56" height="62"><use href="#crest"/></svg></div><span class="slotmark" style="right:68px;bottom:20px">4</span><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+        <div class="pc__body" style="position:relative">
+          <span class="pc__over">Segurança do trabalho <span class="slotmark" style="position:relative;display:inline-block;margin-left:4px">5</span></span>
+          <h4 class="pc__title"><a href="#proposta">Gestão de riscos em obras</a> <span class="slotmark" style="position:relative;display:inline-block">6</span></h4>
+          <p class="pc__meta">★ 4,6 (12) · 20 h · Online <span class="slotmark" style="position:relative;display:inline-block">7</span></p>
+          <div class="pc__extra"><svg class="ico"><use href="#i-clock"/></svg><span>Espaço do plugin <span class="slotmark" style="position:relative;display:inline-block;margin-left:4px">8</span></span></div>
+          <div class="pc__state"><span class="pill pill-enrolled">Inscrito</span><span class="slotmark" style="position:relative;display:inline-block">9</span></div>
+          <div class="pc__prog" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="40% concluído"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div>
+          <div class="pc__actions"><a class="btn btn-p" href="#proposta">Continuar</a><a class="btn btn-os" href="#proposta">Mais informações</a><span class="slotmark" style="position:relative;display:inline-block">10</span></div>
+        </div>
+      </article>
+    </div>
+    <ol class="slots">
+      <li><div><b>Capa.</b> <span>Imagem do curso com 150 px. Sem imagem: a cor da categoria mais próxima no caminho que tiver uma cor; sem nenhuma, a primária do tema; sempre com um gradiente escuro por cima e o ícone do tipo em marca d'água.</span></div></li>
+      <li><div><b>Tipo.</b> <span>"Curso", "Evento" ou "Trilha", em sentence case, numa pílula clara. O compass usa o mesmo canto para "Novo".</span></div></li>
+      <li><div><b>Favorito.</b> <span>Estrela de 32 px no canto superior direito, só para quem está logado. A mesma posição na lista plana, no painel e no compass.</span></div></li>
+      <li><div><b>Brasões.</b> <span>Até três, no canto inferior direito da capa, vindos do hook que já existe (<code>course_badges</code>).</span></div></li>
+      <li><div><b>Categoria.</b> <span>Sentence case. Some dentro de um grupo da mesma categoria, como o compass já faz.</span></div></li>
+      <li><div><b>Título.</b> <span>Até duas linhas. Sublinhado só no hover e no foco, na cor da primária.</span></div></li>
+      <li><div><b>Linha meta.</b> <span>Só fatos do curso, iguais em qualquer plugin: avaliação, carga horária, modalidade, cidade e data do evento.</span></div></li>
+      <li><div><b>Espaço do plugin.</b> <span>Uma linha com ícone sobre um fundo sutil, para o que só o plugin sabe: "Último acesso há 3 dias" no compass, "Conclui a competência" no local_dimensions, "Inscrições a partir de 12/11" ou "Você também pode se inscrever agora" na vitrine. Sem nada a dizer, o espaço não aparece.</span></div></li>
+      <li><div><b>Estado e progresso.</b> <span>A pílula de estado aparece só quando foge do normal da lista: na vitrine, "Inscrito" informa; no compass e no local_dimensions, onde tudo já é inscrito, não aparece. O progresso fica numa linha própria, com barra de 6 px e o percentual à direita.</span></div></li>
+      <li><div><b>Ações.</b> <span>Uma ação principal, cujo rótulo vem do estado (Acessar, Continuar, Rever, Inscrever-se, Saiba mais), e "Mais informações" abrindo o diálogo para quem está logado. A ação própria do plugin, como "Arquivar" no compass, fica à direita, só com ícone. A gaveta "N atividades" do plano ocupa o rodapé, fora do link.</span></div></li>
+    </ol>
+  </div>
+
+  <div class="rules">
+    <div class="rule"><b>Visitante: um botão só</b><p>"Saiba mais" leva à landing page. "Mais informações" não é desenhado, porque o diálogo não existe para o visitante. Um curso sem landing não tem botão.</p></div>
+    <div class="rule"><b>O painel usa o cartão inteiro</b><p>O mini sai: dentro do painel, o cartão fica igual ao da lista plana, com "Acessar" e "Mais informações". O trilho continua rolando na horizontal; cada cartão fica com a largura de uma coluna da grade.</p></div>
+    <div class="rule"><b>Concluído no lugar da barra</b><p>Em 100 % a barra some. Entram o selo verde "Concluído" na linha de estado e uma borda verde de 4 px na base da capa. A ação passa a "Rever".</p></div>
+    <div class="rule"><b>Uma geometria</b><p>Raio de 12 px, sombra pequena em repouso e maior no hover e no foco, sem movimento. Foco: o anel de 3 px <code>#4456FF</code> com 2 px de afastamento, a regra do design system do tema. O compass ganha a sombra e o local_dimensions troca o .75rem sem borda pelo cartão padrão. Todos esses valores são tokens (seção Tokens). Numa fileira ou num carrossel, os cartões têm a mesma altura e as ações se alinham na base.</p></div>
+  </div>
+
+  <h3>O mesmo cartão em cada lugar</h3>
+  <div class="stage mf">
+    <figure class="spec">
+      <article class="pc">
+        <div class="pc__media photo"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><div class="crests"><svg width="56" height="62"><use href="#crest"/></svg></div></div>
+        <div class="pc__body">
+          <span class="pc__over">Segurança do trabalho</span>
+          <h4 class="pc__title"><a href="#proposta">Gestão de riscos em obras</a></h4>
+          <p class="pc__meta">★ 4,6 (12) · 20 h · Online</p>
+          <div class="pc__state"><span class="pill pill-public">Acesso público</span></div>
+          <div class="pc__actions"><a class="btn btn-p" href="#proposta">Saiba mais</a></div>
+        </div>
+      </article>
+      <figcaption><b>Vitrine · visitante</b> Um botão, para a landing page. Vale para a lista plana e para o painel.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc cat">
+        <div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn" aria-label="Adicionar aos favoritos"><svg class="ico"><use href="#i-staro"/></svg></button><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+        <div class="pc__body">
+          <span class="pc__over">Saúde ocupacional</span>
+          <h4 class="pc__title"><a href="#proposta">Ergonomia no escritório</a></h4>
+          <p class="pc__meta">8 h · Online</p>
+          <div class="pc__state"><span class="pill pill-open">Inscrições abertas</span></div>
+          <div class="pc__actions"><a class="btn btn-p" href="#proposta">Inscrever-se</a><a class="btn btn-os" href="#proposta">Mais informações</a></div>
+        </div>
+      </article>
+      <figcaption><b>Vitrine · logado, inscrições abertas</b> Sem imagem, a capa usa a cor da categoria (aqui, verde-petróleo).</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc">
+        <div class="pc__media photo"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn on" aria-label="Remover dos favoritos"><svg class="ico"><use href="#i-star"/></svg></button><div class="crests"><svg width="56" height="62"><use href="#crest"/></svg></div></div>
+        <div class="pc__body">
+          <span class="pc__over">Segurança do trabalho</span>
+          <h4 class="pc__title"><a href="#proposta">Gestão de riscos em obras</a></h4>
+          <p class="pc__meta">★ 4,6 (12) · 20 h · Online</p>
+          <div class="pc__state"><span class="pill pill-enrolled">Inscrito</span></div>
+          <div class="pc__prog" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="40% concluído"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div>
+          <div class="pc__actions"><a class="btn btn-p" href="#proposta">Continuar</a><a class="btn btn-os" href="#proposta">Mais informações</a></div>
+        </div>
+      </article>
+      <figcaption><b>Vitrine · inscrito, em andamento</b> A barra fica numa linha própria, abaixo da etiqueta.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc done">
+        <div class="pc__media photo"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn" aria-label="Adicionar aos favoritos"><svg class="ico"><use href="#i-staro"/></svg></button></div>
+        <div class="pc__body">
+          <span class="pc__over">Saúde ocupacional</span>
+          <h4 class="pc__title"><a href="#proposta">Primeiros socorros</a></h4>
+          <p class="pc__meta">12 h · Presencial · Recife</p>
+          <div class="pc__state"><span class="pill pill-done"><svg class="ico"><use href="#i-check"/></svg>Concluído</span></div>
+          <div class="pc__actions"><a class="btn btn-op" href="#proposta">Rever</a><a class="btn btn-os" href="#proposta">Mais informações</a></div>
+        </div>
+      </article>
+      <figcaption><b>Vitrine · concluído (opção A)</b> Sem barra; selo verde e borda verde na base da capa.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc">
+        <div class="pc__media photo"><button class="starbtn on" aria-label="Remover dos favoritos"><svg class="ico"><use href="#i-star"/></svg></button><div class="crests"><svg width="56" height="62"><use href="#crest"/></svg></div></div>
+        <div class="pc__body">
+          <span class="pc__over">Segurança do trabalho</span>
+          <h4 class="pc__title"><a href="#proposta">Gestão de riscos em obras</a></h4>
+          <p class="pc__meta">20 h · Online</p>
+          <div class="pc__extra"><svg class="ico"><use href="#i-clock"/></svg><span>Último acesso há 3 dias</span></div>
+          <div class="pc__prog" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="40% concluído"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div>
+          <div class="pc__actions"><a class="btn btn-p" href="#proposta">Continuar</a></div>
+        </div>
+      </article>
+      <figcaption><b>Compass · destaque</b> Último acesso no espaço do plugin. Sem a pílula "Inscrito", porque todo cartão do compass já é de um curso em que a pessoa está inscrita.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc done cat2">
+        <div class="pc__media"><svg class="pc__watermark"><use href="#i-cap"/></svg><button class="starbtn" aria-label="Adicionar aos favoritos"><svg class="ico"><use href="#i-staro"/></svg></button></div>
+        <div class="pc__body">
+          <h4 class="pc__title"><a href="#proposta">Licitações e contratos</a></h4>
+          <p class="pc__meta">30 h · Online</p>
+          <div class="pc__extra"><svg class="ico"><use href="#i-clock"/></svg><span>Aberto há 2 dias</span></div>
+          <div class="pc__state"><span class="pill pill-done"><svg class="ico"><use href="#i-check"/></svg>Concluído</span></div>
+          <div class="pc__actions"><a class="btn btn-op" href="#proposta">Rever</a><button class="iconbtn" aria-label="Arquivar Licitações e contratos"><svg class="ico"><use href="#i-archive"/></svg></button></div>
+        </div>
+      </article>
+      <figcaption><b>Compass · inventário, concluído</b> Dentro do grupo da categoria, a linha da categoria some. "Arquivar" fica à direita, nas ações.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc">
+        <div class="pc__media photo"><div class="crests"><svg width="56" height="62"><use href="#crest"/></svg></div></div>
+        <div class="pc__body">
+          <span class="pc__over">Segurança do trabalho</span>
+          <h4 class="pc__title"><a href="#proposta">Gestão de riscos em obras</a></h4>
+          <div class="pc__extra"><svg class="ico"><use href="#i-trophy"/></svg><span>Conclui a competência</span></div>
+          <div class="pc__prog" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="40% concluído"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div>
+        </div>
+        <button class="pc__drawer" type="button" aria-expanded="false"><svg class="ico"><use href="#i-list"/></svg>3 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></button>
+      </article>
+      <figcaption><b>local_dimensions · plano, inscrito</b> O selo de resultado vai para o espaço do plugin, sem resumo de seções. O cartão inteiro continua sendo o link; a gaveta "3 atividades" fica no rodapé, fora do link (D6).</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc locked cat">
+        <div class="pc__media"><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+        <div class="pc__body">
+          <span class="pc__over">Gestão pública</span>
+          <h4 class="pc__title">Licitações e contratos</h4>
+          <div class="pc__extra"><svg class="ico"><use href="#i-trophy"/></svg><span>Conclui a competência</span></div>
+          <div class="pc__state"><span class="pill pill-open">Inscrições abertas</span></div>
+          <div class="pc__actions"><a class="btn btn-p" href="#proposta">Inscrever-se</a></div>
+        </div>
+        <button class="pc__drawer" type="button" aria-expanded="false"><svg class="ico"><use href="#i-list"/></svg>2 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></button>
+      </article>
+      <figcaption><b>local_dimensions · plano, sem inscrição</b> Capa esmaecida e sem hover, como hoje. A pílula usa o padrão; a ação do estado vira o botão principal. O modo compacto troca a barra pela linha da atividade e ganha "Ir para a atividade" como ação.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc navy">
+        <div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cal"/></svg>Evento</span><svg class="pc__watermark"><use href="#i-cal"/></svg></div>
+        <div class="pc__body">
+          <span class="pc__over">Gestão pública</span>
+          <h4 class="pc__title"><a href="#proposta">Seminário de compras públicas</a></h4>
+          <p class="pc__meta">18/11/2026 · Presencial · Brasília</p>
+          <div class="pc__extra"><svg class="ico"><use href="#i-cal"/></svg><span>Inscrições a partir de 12/11/2026</span></div>
+          <div class="pc__state"><span class="pill pill-sched">Em breve</span></div>
+          <div class="pc__actions"><a class="btn btn-os" href="#proposta">Mais informações</a></div>
+        </div>
+      </article>
+      <figcaption><b>Agendado</b> Sem ação principal enquanto a inscrição não abre. A data de abertura fica no espaço do plugin, que hoje é a linha "Abre em…" da vitrine.</figcaption>
+    </figure>
+  </div>
+
+  <h3>No popover da trilha</h3>
+  <div class="stage mf" style="grid-template-columns:repeat(auto-fill, minmax(min(100%, 340px), 1fr))">
+    <figure class="spec">
+      <article class="pc dialog" role="dialog" aria-label="Playground">
+        <div class="pc__media photo"><button class="pc__close" type="button" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+        <div class="pc__body">
+          <span class="pc__over">Category 1</span>
+          <h4 class="pc__title pc__title--dialog">Playground</h4>
+          <p class="pc__meta">17 de outubro de 2026 a 17 de outubro de 2027 · Datas do curso</p>
+          <div class="pc__extra"><svg class="ico"><use href="#i-route"/></svg><span>Curso 1 de 11 · TRAILPERF Trilha 1</span></div>
+          <div class="pc__state"><span class="pill pill-enrolled">Em andamento</span></div>
+          <div class="pc__prog" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="40% concluído"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div>
+          <div class="pc__actions pc__actions--end"><a class="btn btn-os" href="#proposta">Ver trilha</a><a class="btn btn-p" href="#proposta">Continuar</a></div>
+        </div>
+      </article>
+      <figcaption><b>Popover · em andamento</b> As mesmas peças do cartão. A capa ganha a imagem do curso quando existe, e a cor da categoria quando não existe, como já faz. A posição na trilha vai para o espaço do plugin, as datas para a linha meta, e a barra aparece se o serviço das trilhas passar o percentual (D11).</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc dialog done cat" role="dialog" aria-label="TRAILPERF 1.0">
+        <div class="pc__media"><button class="pc__close" type="button" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+        <div class="pc__body">
+          <span class="pc__over">TRAILPERF: dez trilhas de dez cursos</span>
+          <h4 class="pc__title pc__title--dialog">TRAILPERF 1.0</h4>
+          <p class="pc__meta">3 a 21 de novembro de 2026 · Datas do curso</p>
+          <div class="pc__extra"><svg class="ico"><use href="#i-route"/></svg><span>Curso 11 de 11 · TRAILPERF Trilha 1</span></div>
+          <div class="pc__state"><span class="pill pill-done"><svg class="ico"><use href="#i-check"/></svg>Concluído</span></div>
+          <div class="pc__actions pc__actions--end"><a class="btn btn-os" href="#proposta">Ver trilha</a><a class="btn btn-op" href="#proposta">Rever</a></div>
+        </div>
+      </article>
+      <figcaption><b>Popover · concluído</b> Selo verde e borda verde na base da capa, como no cartão, e a ação passa a "Rever". Uma etapa bloqueada mantém o motivo do core na caixa discreta, abaixo do estado.</figcaption>
+    </figure>
+    <figure class="spec">
+      <div class="rule" style="border-left:0"><b>O que muda por ser um diálogo</b><p>Sem link esticado nem hover de cartão: o diálogo já foi aberto, as ações são explícitas e ficam alinhadas à direita. O título é o cabeçalho do diálogo (18 px, recebe o foco ao abrir). O X fica onde a estrela ficaria, no canto da capa: o disco escuro do diálogo "Mais informações" (fundo preto a 50 %, contorno branco a 40 %, X branco), reduzido de 44 para 32 px. Largura de 360 px; num celular, a folha que sobe do rodapé continua.</p></div>
+    </figure>
+  </div>
+
+  <h3>As configurações do Boost Union mandam na barra e na imagem</h3>
+  <div class="rules">
+    <div class="rule"><b>Quando vale</b><p>Quando o tema ativo é o Boost Union ou um filho dele, como o Dimensions (<code>$THEME-&gt;parents</code> contém <code>boost_union</code>). Vale para os quatro lugares: vitrine, popover da trilha, compass e cartão do plano. Com outro tema, cada plugin segue a própria regra.</p></div>
+    <div class="rule"><b>Barra: <code>courseoverviewshowcourseprogress</code></b><p>Sim ou não, padrão sim. O Boost Union aplica a regra só no bloco Visão geral do curso, escondendo <code>.progress-text</code> por SCSS. No padrão, cada plugin lê a configuração no servidor e não desenha a barra nem o percentual quando ela está desligada; não é só esconder com CSS.</p></div>
+    <div class="rule"><b>Imagem: <code>courseoverviewimagesource</code></b><p>"Imagem do curso, senão padrão geométrico" (padrão) ou "Imagem do curso, senão a imagem de fallback" (<code>courseoverviewimagefallback</code>). O Boost Union decide em <code>get_generated_image_for_id()</code> do renderer, que o core chama quando o curso não tem imagem. O padrão pede ao renderer do tema ativo a imagem do curso sem foto, e assim herda a escolha do administrador.</p></div>
+  </div>
+  <div class="stage mf">
+    <figure class="spec">
+      <article class="pc compact">
+        <div class="pc__media photo"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span></div>
+        <div class="pc__body"><h4 class="pc__title"><a href="#proposta" tabindex="-1">Gestão de riscos em obras</a></h4><p class="pc__meta">20 h · Online</p><div class="pc__state"><span class="pill pill-enrolled">Inscrito</span></div><div class="pc__actions"><a class="btn btn-p" href="#proposta" tabindex="-1">Continuar</a></div></div>
+      </article>
+      <figcaption><b>Progresso desligado</b> Sem barra e sem percentual. A pílula e a ação continuam. O selo de concluído continua, porque é estado e não progresso (D13).</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc compact">
+        <div class="pc__media fallbackimg"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><span class="pc__imgnote">imagem de fallback do Boost Union</span></div>
+        <div class="pc__body"><h4 class="pc__title"><a href="#proposta" tabindex="-1">Curso sem imagem</a></h4><p class="pc__meta">Imagem de fallback escolhida</p></div>
+      </article>
+      <figcaption><b>Fonte: imagem de fallback</b> O curso sem foto mostra a imagem que o administrador enviou, em todos os cartões. Sem imagem enviada, cai na regra seguinte.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc compact">
+        <div class="pc__media pattern"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span></div>
+        <div class="pc__body"><h4 class="pc__title"><a href="#proposta" tabindex="-1">Curso sem imagem</a></h4><p class="pc__meta">Boost Union, padrão geométrico</p></div>
+      </article>
+      <figcaption><b>Fonte: padrão geométrico, no Boost Union</b> O padrão do core, nas cores do curso que o Boost Union deixa configurar.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc compact cat">
+        <div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+        <div class="pc__body"><h4 class="pc__title"><a href="#proposta" tabindex="-1">Curso sem imagem</a></h4><p class="pc__meta">Dimensions, padrão geométrico</p></div>
+      </article>
+      <figcaption><b>Fonte: padrão geométrico, no Dimensions</b> O Dimensions troca o padrão pela capa na cor da categoria (D3), sobrescrevendo <code>get_generated_image_for_id()</code> como o Boost Union já faz (D14).</figcaption>
+    </figure>
+  </div>
+
+  <h3>Capa sem imagem</h3>
+  <div class="stage mf">
+    <figure class="spec"><article class="pc navy compact"><div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><svg class="pc__watermark"><use href="#i-cap"/></svg></div><div class="pc__body"><h4 class="pc__title">Hoje: azul-marinho fixo</h4><p class="pc__meta"><code>#070093</code> em toda categoria e todo flavour</p></div></article><figcaption>Ignora a primária e a categoria. Num flavour verde, a vitrine continua azul.</figcaption></figure>
+    <figure class="spec"><article class="pc compact"><div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><svg class="pc__watermark"><use href="#i-cap"/></svg></div><div class="pc__body"><h4 class="pc__title">Proposta: primária do tema</h4><p class="pc__meta"><code>var(--bs-primary)</code>, segue o flavour</p></div></article><figcaption>Quando nenhuma categoria do caminho tem cor.</figcaption></figure>
+    <figure class="spec"><article class="pc cat compact"><div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><svg class="pc__watermark"><use href="#i-cap"/></svg></div><div class="pc__body"><h4 class="pc__title">Proposta: cor da categoria</h4><p class="pc__meta">a mesma cor do pôster da área</p></div></article><figcaption>A cor de fundo do editor da categoria, a mesma que hoje pinta só o pôster.</figcaption></figure>
+    <figure class="spec"><article class="pc cat2 compact"><div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><svg class="pc__watermark"><use href="#i-cap"/></svg></div><div class="pc__body"><h4 class="pc__title">Outra categoria</h4><p class="pc__meta">o gradiente escuro mantém a pílula legível</p></div></article><figcaption>A pílula do tipo é clara sobre qualquer cor; nenhum texto escuro fica direto sobre a faixa.</figcaption></figure>
+  </div>
+
+  <h3>Concluído: duas formas</h3>
+  <div class="stage mf">
+    <figure class="spec">
+      <article class="pc done compact"><div class="pc__media photo"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span></div><div class="pc__body"><h4 class="pc__title">Primeiros socorros</h4><div class="pc__state"><span class="pill pill-done"><svg class="ico"><use href="#i-check"/></svg>Concluído</span></div><div class="pc__actions"><a class="btn btn-op" href="#proposta">Rever</a></div></div></article>
+      <figcaption><b>A · Selo e borda (recomendada)</b> O selo ocupa o lugar da pílula de estado e a borda verde marca a capa. Usa a mesma pílula de sucesso que o local_dimensions já tem.</figcaption>
+    </figure>
+    <figure class="spec">
+      <article class="pc compact" style="overflow:hidden"><div class="pc__media photo"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><span class="ribbon">Concluído</span></div><div class="pc__body"><h4 class="pc__title">Primeiros socorros</h4><p class="pc__meta">12 h · Presencial</p><div class="pc__actions"><a class="btn btn-op" href="#proposta">Rever</a></div></div></article>
+      <figcaption><b>B · Faixa na capa</b> Chama mais atenção, mas disputa o canto com a estrela e esconde parte da imagem.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="estados">
+  <div class="sechead"><h2>Estados e interação</h2><p>Como o cartão e cada botão respondem ao mouse, ao teclado e ao toque. Os valores dos botões foram medidos na vitrine do m503b com o tema Dimensions; os botões são as variantes do Bootstrap, então seguem o tema sem regra própria.</p></div>
+
+  <h3>Experimente</h3>
+  <p class="livehint">Estes cartões respondem de verdade: passe o mouse, clique na gaveta e use Tab para ver o foco.</p>
+  <div class="stage mf">
+    <article class="pc">
+      <div class="pc__media photo"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn" type="button" aria-pressed="false" aria-label="Adicionar aos favoritos" data-star><svg class="ico"><use href="#i-staro"/></svg></button></div>
+      <div class="pc__body">
+        <span class="pc__over">Segurança do trabalho</span>
+        <h4 class="pc__title"><a href="#estados">Gestão de riscos em obras</a></h4>
+        <p class="pc__meta">20 h · Online</p>
+        <div class="pc__state"><span class="pill pill-enrolled">Inscrito</span></div>
+        <div class="pc__prog" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="40% concluído"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div>
+        <div class="pc__actions"><a class="btn btn-p" href="#estados">Continuar</a><button class="btn btn-os" type="button">Mais informações</button></div>
+      </div>
+    </article>
+    <article class="pc done">
+      <div class="pc__media photo"><button class="starbtn on" type="button" aria-pressed="true" aria-label="Remover dos favoritos" data-star><svg class="ico"><use href="#i-star"/></svg></button></div>
+      <div class="pc__body">
+        <h4 class="pc__title"><a href="#estados">Primeiros socorros</a></h4>
+        <p class="pc__meta">12 h · Presencial</p>
+        <div class="pc__extra"><svg class="ico"><use href="#i-clock"/></svg><span>Aberto há 2 dias</span></div>
+        <div class="pc__state"><span class="pill pill-done"><svg class="ico"><use href="#i-check"/></svg>Concluído</span></div>
+        <div class="pc__actions"><a class="btn btn-op" href="#estados">Rever</a><button class="iconbtn" type="button" aria-label="Arquivar Primeiros socorros"><svg class="ico"><use href="#i-archive"/></svg></button></div>
+      </div>
+    </article>
+    <article class="pc">
+      <div class="pc__media photo"></div>
+      <div class="pc__body">
+        <h4 class="pc__title"><a href="#estados">Ergonomia no escritório</a></h4>
+        <div class="pc__extra"><svg class="ico"><use href="#i-trophy"/></svg><span>Conclui a competência</span></div>
+        <div class="pc__prog" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" aria-label="75% concluído"><div class="pc__track"><i style="--p:75%"></i></div><span class="pc__pct">75%</span></div>
+      </div>
+      <button class="pc__drawer" type="button" aria-expanded="false" data-drawer><svg class="ico"><use href="#i-list"/></svg>3 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></button>
+    </article>
+    <article class="pc locked cat2">
+      <div class="pc__media"><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+      <div class="pc__body">
+        <h4 class="pc__title">Licitações e contratos</h4>
+        <div class="pc__state"><span class="pill pill-open">Inscrições abertas</span></div>
+        <div class="pc__actions"><a class="btn btn-p" href="#estados">Inscrever-se</a><button class="btn btn-p is-disabled" type="button" disabled>Lotado</button></div>
+      </div>
+    </article>
+  </div>
+
+  <h3>O cartão</h3>
+  <div class="stage mf cardstates">
+    <figure class="spec"><article class="pc compact"><div class="pc__media photo"></div><div class="pc__body"><h4 class="pc__title"><a href="#estados" tabindex="-1">Gestão de riscos em obras</a></h4><p class="pc__meta">20 h · Online</p></div></article><figcaption><b>Repouso</b> Sombra pequena, título na cor do texto.</figcaption></figure>
+    <figure class="spec"><article class="pc compact is-hover"><div class="pc__media photo"></div><div class="pc__body"><h4 class="pc__title"><a href="#estados" tabindex="-1">Gestão de riscos em obras</a></h4><p class="pc__meta">20 h · Online</p></div></article><figcaption><b>Hover em qualquer ponto</b> Sombra maior e título sublinhado na cor da primária, em 150 ms. Nada se move, nada aumenta.</figcaption></figure>
+    <figure class="spec"><article class="pc compact is-focus"><div class="pc__media photo"></div><div class="pc__body"><h4 class="pc__title"><a href="#estados" tabindex="-1">Gestão de riscos em obras</a></h4><p class="pc__meta">20 h · Online</p></div></article><figcaption><b>Foco pelo teclado</b> O anel contorna o cartão inteiro, porque o link do título cobre o cartão. Com a sombra do hover.</figcaption></figure>
+    <figure class="spec"><article class="pc compact locked is-hover cat2"><div class="pc__media"><svg class="pc__watermark"><use href="#i-cap"/></svg></div><div class="pc__body"><h4 class="pc__title">Licitações e contratos</h4><p class="pc__meta">sem link</p></div></article><figcaption><b>Sem acesso, com o mouse em cima</b> Não muda: o cartão não é link. Só o botão do estado reage.</figcaption></figure>
+    <figure class="spec"><article class="pc compact loading" aria-hidden="true"><div class="pc__media"></div><div class="pc__body"><span class="sk" style="height:14px;width:80%"></span><span class="sk" style="height:12px;width:50%"></span><span class="sk" style="height:6px;width:100%"></span></div></article><figcaption><b>Carregando</b> Os blocos do cartão em cinza, sem brilho animado. O compass e o plano carregam depois da página.</figcaption></figure>
+  </div>
+
+  <h3>Os botões</h3>
+  <div class="tablewrap">
+    <div class="stategrid mf">
+      <div class="h">Elemento</div><div class="h">Repouso</div><div class="h">Hover</div><div class="h">Foco pelo teclado</div><div class="h">Pressionado</div><div class="h">Desabilitado ou ocupado</div>
+
+      <div class="rh">Ação principal<small><code>btn btn-primary btn-sm</code></small></div>
+      <div class="c"><span class="btn btn-p">Acessar</span><span>#0f6cbf</span></div>
+      <div class="c"><span class="btn btn-p is-hover">Acessar</span><span>#0d5ca2</span></div>
+      <div class="c"><span class="btn btn-p is-focus">Acessar</span><span>anel 3 px #4456ff</span></div>
+      <div class="c"><span class="btn btn-p is-active">Acessar</span><span>#0c5699</span></div>
+      <div class="c"><span class="btn btn-p is-disabled"><span class="spin"></span>Inscrevendo</span><span>opacidade .65</span></div>
+
+      <div class="rh">Mais informações<small><code>btn btn-outline-secondary btn-sm</code></small></div>
+      <div class="c"><span class="btn btn-os">Mais informações</span><span>contorno #6a737b</span></div>
+      <div class="c"><span class="btn btn-os is-hover">Mais informações</span><span>preenche #6a737b</span></div>
+      <div class="c"><span class="btn btn-os is-focus">Mais informações</span><span>anel</span></div>
+      <div class="c"><span class="btn btn-os is-active">Mais informações</span><span>como o hover</span></div>
+      <div class="c"><span class="na">não ocorre</span></div>
+
+      <div class="rh">Rever<small><code>btn btn-outline-primary btn-sm</code></small></div>
+      <div class="c"><span class="btn btn-op">Rever</span><span>contorno primária</span></div>
+      <div class="c"><span class="btn btn-op is-hover">Rever</span><span>preenche primária</span></div>
+      <div class="c"><span class="btn btn-op is-focus">Rever</span><span>anel</span></div>
+      <div class="c"><span class="btn btn-op is-active">Rever</span><span>como o hover</span></div>
+      <div class="c"><span class="na">não ocorre</span></div>
+
+      <div class="rh">Favorito<small>32 px, sobre a capa</small></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px;background:#345a4a;border-radius:50%"><span class="starbtn" style="top:0;right:0"><svg class="ico"><use href="#i-staro"/></svg></span></span><span>cinza sobre branco</span></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px;background:#345a4a;border-radius:50%"><span class="starbtn is-hover" style="top:0;right:0"><svg class="ico"><use href="#i-staro"/></svg></span></span><span>estrela na primária</span></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px;background:#345a4a;border-radius:50%"><span class="starbtn is-focus" style="top:0;right:0"><svg class="ico"><use href="#i-staro"/></svg></span></span><span>anel</span></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px;background:#345a4a;border-radius:50%"><span class="starbtn on" style="top:0;right:0"><svg class="ico"><use href="#i-star"/></svg></span></span><span>marcado: dourado</span></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px;background:#345a4a;border-radius:50%"><span class="starbtn on is-busy" style="top:0;right:0"><svg class="ico"><use href="#i-star"/></svg></span></span><span>gravando: .6</span></div>
+
+      <div class="rh">Ação do plugin<small>só ícone, 30 px (Arquivar)</small></div>
+      <div class="c"><span class="iconbtn"><svg class="ico"><use href="#i-archive"/></svg></span><span>sem fundo</span></div>
+      <div class="c"><span class="iconbtn is-hover"><svg class="ico"><use href="#i-archive"/></svg></span><span>fundo cinza</span></div>
+      <div class="c"><span class="iconbtn is-focus"><svg class="ico"><use href="#i-archive"/></svg></span><span>anel</span></div>
+      <div class="c"><span class="iconbtn is-active"><svg class="ico"><use href="#i-archive"/></svg></span><span>cinza mais escuro</span></div>
+      <div class="c"><span class="iconbtn is-disabled"><svg class="ico"><use href="#i-archive"/></svg></span><span>opacidade .5</span></div>
+
+      <div class="rh">Gaveta de atividades<small>local_dimensions</small></div>
+      <div class="c" style="padding-inline:0"><div class="pc" style="width:100%;box-shadow:none;border:0;border-radius:0;background:transparent"><span class="pc__drawer" style="border-top:0"><svg class="ico"><use href="#i-list"/></svg>3 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></span></div></div>
+      <div class="c" style="padding-inline:0"><div class="pc" style="width:100%;box-shadow:none;border:0;border-radius:0;background:transparent"><span class="pc__drawer is-hover" style="border-top:0"><svg class="ico"><use href="#i-list"/></svg>3 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></span></div></div>
+      <div class="c" style="padding-inline:0"><div class="pc" style="width:100%;box-shadow:none;border:0;border-radius:0;background:transparent"><span class="pc__drawer is-focus" style="border-top:0"><svg class="ico"><use href="#i-list"/></svg>3 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></span></div></div>
+      <div class="c" style="padding-inline:0"><div class="pc" style="width:100%;box-shadow:none;border:0;border-radius:0;background:transparent"><span class="pc__drawer" aria-expanded="true" style="border-top:0"><svg class="ico"><use href="#i-list"/></svg>3 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></span></div><span>aberta: seta para cima</span></div>
+      <div class="c"><span class="na">não ocorre</span></div>
+
+      <div class="rh">Fechar<small>popover da trilha, 32 px</small></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px"><span class="pc__close" style="top:0;right:0;background-color:rgba(0,0,0,.5)"><svg class="ico"><use href="#i-x"/></svg></span></span><span>preto a 50 %</span></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px"><span class="pc__close is-hover" style="top:0;right:0"><svg class="ico"><use href="#i-x"/></svg></span></span><span>preto a 70 %</span></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px;background:#345a4a;border-radius:50%"><span class="pc__close is-focus" style="top:0;right:0"><svg class="ico"><use href="#i-x"/></svg></span></span><span>anel branco 3 px</span></div>
+      <div class="c"><span style="position:relative;width:32px;height:32px"><span class="pc__close is-active" style="top:0;right:0"><svg class="ico"><use href="#i-x"/></svg></span></span><span>preto a 80 %</span></div>
+      <div class="c"><span class="na">não ocorre</span></div>
+
+      <div class="rh">Título<small>link esticado</small></div>
+      <div class="c"><span class="minititle"><a href="#estados" tabindex="-1">Primeiros socorros</a></span></div>
+      <div class="c"><span class="minititle"><a class="is-hover" href="#estados" tabindex="-1">Primeiros socorros</a></span></div>
+      <div class="c"><span class="minititle"><a class="is-focus" href="#estados" tabindex="-1">Primeiros socorros</a></span><span>o anel vai no cartão</span></div>
+      <div class="c"><span class="na">sem estado próprio</span></div>
+      <div class="c"><span class="minititle" style="color:var(--m-ink)">Licitações e contratos</span><span>bloqueado: texto, sem link</span></div>
+    </div>
+  </div>
+
+  <div class="rules">
+    <div class="rule"><b>Um alvo, um hover</b><p>O link do título se estica sobre o cartão (<code>::after</code> com <code>inset: 0</code>), como o compass já faz pela ADR-013 e o plano faz com o cartão inteiro como link. Os botões, a estrela e a gaveta ficam por cima e têm hover próprio. Assim o cartão inteiro reage, e o leitor de tela ouve um link só, com o nome do curso (D9).</p></div>
+    <div class="rule"><b>Hover sem movimento</b><p>Só a sombra e o sublinhado do título mudam, em 150 ms. Sem subir, sem zoom na capa: no carrossel e no painel, mexer no tamanho ou na posição corta a sombra e empurra os vizinhos. Com <code>prefers-reduced-motion</code>, a troca é instantânea.</p></div>
+    <div class="rule"><b>Foco sempre visível</b><p>O anel vem de um token: <code>#4456ff</code> com 3 px sob o Dimensions; fora dele, a cor de ênfase do Bootstrap com 2 px, a regra que o local_dimensions já segue. Nunca só uma sombra, nunca na cor da marca.</p></div>
+    <div class="rule"><b>Os botões são do Bootstrap</b><p><code>btn-primary</code>, <code>btn-outline-secondary</code> e <code>btn-outline-primary</code>, tamanho <code>btn-sm</code>. Hover, pressionado e desabilitado vêm das variáveis <code>--bs-btn-*</code> do tema. "Mais informações" troca o estilo próprio da vitrine (<code>dim-card__summary</code>) pela variante do Bootstrap (D10).</p></div>
+    <div class="rule"><b>Toque</b><p>Nada depende do hover: a estrela e a ação do plugin ficam sempre visíveis, e todo alvo tem pelo menos 32 px. No toque, o estado pressionado é o único retorno.</p></div>
+    <div class="rule"><b>Ocupado</b><p>Enquanto grava, a estrela fica em .6 e não aceita outro clique. Um botão que dispara uma ação demorada, como inscrever-se, mostra o giro e fica desabilitado até a resposta.</p></div>
+  </div>
+</section>
+
+<section id="tokens">
+  <div class="sechead"><h2>Tokens: o tema ajusta, o plugin não muda</h2><p>Todo valor visual do cartão sai de uma propriedade CSS com nome fixo. Um tema muda o cartão nos três plugins declarando esses nomes, sem tocar em seletor nenhum. É o mesmo modelo dos tokens da família que o local_dimensions e o block_dimensions já leem (<code>docs/tokens.md</code> do tema).</p></div>
+
+  <div class="layers">
+    <div class="layer"><b>O tema declara</b><code>--dimensions-card-*</code> em <code>:root</code>, <code>body</code> e <code>.modal</code>, claro e escuro. Só o tema declara esse prefixo.</div>
+    <div class="layer"><b>O plugin lê</b>Cada plugin declara os próprios nomes na raiz do cartão (<code>--block-compass-card-*</code>, <code>--local-dimensions-card-*</code>, <code>--theme-dimensions-card-*</code>), cada um lendo o token da família primeiro.</div>
+    <div class="layer"><b>Sem o tema</b>O plugin cai na própria cadeia do Bootstrap (<code>--bs-*</code>) e termina num valor literal. Em Boost ou Boost Union, o cartão segue a primária e as cores do tema ativo.</div>
+    <div class="layer"><b>Dado da instância</b>A cor da categoria não é token: o template escreve <code>--…-card-band</code> na capa, já sanitizada, como hoje faz com as cores do admin.</div>
+  </div>
+
+<pre class="code"><span class="c">/* block_compass, styles.css: um token de exemplo, com a cadeia completa. */</span>
+.block-compass-card {
+    --block-compass-card-radius: var(--dimensions-card-radius, 12px);
+    --block-compass-card-cover-fallback: var(--dimensions-card-cover-fallback, var(--bs-primary, #0f6cbf));
+    --block-compass-card-focus-ring: var(--dimensions-card-focus-ring, var(--dimensions-focus-ring, var(--bs-emphasis-color, #000)));
+}
+<span class="c">/* theme_dimensions, scss/post.scss: o tema muda o cartão nos três plugins de uma vez. */</span>
+:root, body, .modal {
+    --dimensions-card-shadow: 0 1px 2px rgb(7 0 147 / 8%), 0 1px 3px rgb(7 0 147 / 6%);
+    --dimensions-card-focus-width: 3px;
+}</pre>
+
+  <div class="tablewrap">
+    <table class="tokens">
+      <thead><tr><th scope="col">Token (sufixo de <code>--dimensions-card-</code>)</th><th scope="col">O que pinta</th><th scope="col">Sem o tema</th><th scope="col">Sob o Dimensions hoje</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" colspan="4">Forma</th></tr>
+        <tr><td><code>radius</code></td><td>raio do cartão</td><td>12 px</td><td>12 px</td></tr>
+        <tr><td><code>border-width</code>, <code>border</code></td><td>contorno</td><td>1 px, <code>--bs-border-color</code></td><td>1 px #dee2e6</td></tr>
+        <tr><td><code>cover-height</code></td><td>altura da capa</td><td>150 px</td><td>150 px</td></tr>
+        <tr><td><code>track-height</code></td><td>espessura da barra</td><td>6 px</td><td>6 px</td></tr>
+        <tr><td><code>done-edge</code></td><td>borda verde da capa concluída</td><td>4 px</td><td>4 px</td></tr>
+        <tr><th scope="row" colspan="4">Cor</th></tr>
+        <tr><td><code>surface</code>, <code>ink</code>, <code>ink-muted</code></td><td>fundo, título, linhas secundárias</td><td><code>--bs-body-bg</code>, <code>--bs-body-color</code>, <code>--bs-secondary-color</code></td><td>tokens da família <code>surface</code>, <code>ink</code>, <code>ink-muted</code></td></tr>
+        <tr><td><code>title-hover</code></td><td>título no hover</td><td><code>--bs-link-hover-color</code></td><td>#0c5699</td></tr>
+        <tr><td><code>cover-fallback</code></td><td>capa sem imagem e sem cor de categoria</td><td><code>--bs-primary</code></td><td>#0f6cbf (sai o <code>#070093</code>)</td></tr>
+        <tr><td><code>cover-overlay</code></td><td>gradiente sobre a cor da capa</td><td>branco 16 % → preto 34 %</td><td>igual</td></tr>
+        <tr><td><code>chip-bg</code>, <code>chip-ink</code></td><td>pílula do tipo sobre a capa</td><td>branco 92 %, #1f1f1f</td><td>igual</td></tr>
+        <tr><td><code>extra-bg</code>, <code>extra-icon</code></td><td>espaço do plugin, gaveta</td><td><code>--bs-tertiary-bg</code>, <code>--bs-primary-text-emphasis</code></td><td>#f8f9fa, #062b4c</td></tr>
+        <tr><td><code>track</code>, <code>fill</code></td><td>barra de progresso</td><td><code>--bs-secondary-bg</code>, <code>--bs-primary</code></td><td>#e9ecef, #0f6cbf</td></tr>
+        <tr><td><code>done</code>, <code>done-bg</code>, <code>done-ink</code></td><td>borda e selo de concluído</td><td><code>--bs-success</code>, <code>--bs-success-bg-subtle</code>, <code>--bs-success-text-emphasis</code></td><td>#357a32, #d7e4d6, #153114</td></tr>
+        <tr><td>pílulas de estado</td><td>Inscrito, Inscrições abertas, Em breve…</td><td colspan="2">reaproveitam os tokens de estado que já estão no contrato da família (<code>--dimensions-state-*-bg</code> e <code>-ink</code>, seis famílias)</td></tr>
+        <tr><th scope="row" colspan="4">Profundidade, foco e tempo</th></tr>
+        <tr><td><code>shadow</code>, <code>shadow-hover</code></td><td>repouso e hover</td><td>sombras neutras de 1 e 6 px</td><td>tingidas de marinho (medido: <code>rgba(7, 0, 147, .08)</code>)</td></tr>
+        <tr><td><code>focus-ring</code>, <code>focus-width</code></td><td>anel do cartão e dos botões</td><td><code>--bs-emphasis-color</code>, 2 px</td><td><code>--dimensions-focus-ring</code> #4456ff, 3 px</td></tr>
+        <tr><td><code>close-bg</code>, <code>close-bg-hover</code>, <code>close-edge</code></td><td>X sobre a capa (popover)</td><td>preto 50 % / 70 %, branco 40 %</td><td>igual ao diálogo "Mais informações"</td></tr>
+        <tr><td><code>locked-opacity</code></td><td>capa de um cartão sem acesso</td><td>.62, com 55 % de cinza</td><td>igual</td></tr>
+        <tr><td><code>transition</code></td><td>duração do hover</td><td>150 ms</td><td>150 ms</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>O mesmo HTML com quatro temas</h3>
+  <div class="skinbar" role="group" aria-label="Tema de exemplo">
+    <span>Tema:</span>
+    <button type="button" aria-pressed="true" data-skin="">Dimensions</button>
+    <button type="button" aria-pressed="false" data-skin="skin-boost">Boost puro</button>
+    <button type="button" aria-pressed="false" data-skin="skin-green">Flavour verde</button>
+    <button type="button" aria-pressed="false" data-skin="skin-third">Outro tema, só tokens</button>
+  </div>
+  <p class="skinnote" data-skinnote>Os valores medidos no m503b: foco #4456ff de 3 px.</p>
+  <div class="stage mf" data-skinstage>
+    <article class="pc">
+      <div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn" type="button" aria-label="Adicionar aos favoritos"><svg class="ico"><use href="#i-staro"/></svg></button><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+      <div class="pc__body">
+        <span class="pc__over">Segurança do trabalho</span>
+        <h4 class="pc__title"><a href="#tokens">Gestão de riscos em obras</a></h4>
+        <p class="pc__meta">20 h · Online</p>
+        <div class="pc__extra"><svg class="ico"><use href="#i-clock"/></svg><span>Último acesso há 3 dias</span></div>
+        <div class="pc__prog" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="40% concluído"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div>
+        <div class="pc__actions"><a class="btn btn-p" href="#tokens">Continuar</a><button class="btn btn-os" type="button">Mais informações</button></div>
+      </div>
+    </article>
+    <article class="pc cat done">
+      <div class="pc__media"><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+      <div class="pc__body">
+        <span class="pc__over">Saúde ocupacional</span>
+        <h4 class="pc__title"><a href="#tokens">Primeiros socorros</a></h4>
+        <div class="pc__state"><span class="pill pill-done"><svg class="ico"><use href="#i-check"/></svg>Concluído</span></div>
+        <div class="pc__actions"><a class="btn btn-op" href="#tokens">Rever</a></div>
+      </div>
+    </article>
+    <article class="pc">
+      <div class="pc__media photo"></div>
+      <div class="pc__body">
+        <h4 class="pc__title"><a href="#tokens">Ergonomia no escritório</a></h4>
+        <div class="pc__extra"><svg class="ico"><use href="#i-trophy"/></svg><span>Conclui a competência</span></div>
+        <div class="pc__prog" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" aria-label="75% concluído"><div class="pc__track"><i style="--p:75%"></i></div><span class="pc__pct">75%</span></div>
+      </div>
+      <button class="pc__drawer" type="button" aria-expanded="false"><svg class="ico"><use href="#i-list"/></svg>3 atividades<svg class="ico chev"><use href="#i-chev-down"/></svg></button>
+    </article>
+  </div>
+  <p class="skinnote">Cada botão troca só propriedades no contêiner; o HTML e o CSS dos cartões são os mesmos nos quatro. Use Tab sobre os cartões para comparar o foco.</p>
+</section>
+
+<section id="codigo">
+  <div class="sechead"><h2>Onde o código mora</h2><p>Os três plugins vão para o diretório do Moodle e precisam funcionar com qualquer tema. O compass desenha em React, a vitrine em Mustache com React, e o local_dimensions em Mustache com AMD. Nenhum deles pode depender do outro para desenhar um cartão.</p></div>
+  <div class="options">
+    <div class="option">
+      <h3>1 · Template do tema, usado por todos</h3>
+      <p>Os plugins chamam <code>theme_dimensions/course_card</code> quando o tema está ativo.</p>
+      <ul><li>Um só HTML.</li><li>Fora do Dimensions, cada plugin precisa de uma segunda implementação de qualquer jeito.</li><li>O React do compass não renderiza Mustache sem uma ida ao servidor.</li></ul>
+    </div>
+    <div class="option rec">
+      <span class="verdict">Recomendada</span>
+      <h3>2 · Um contrato, três implementações</h3>
+      <p>Uma especificação curta em <code>moodle-dev/docs/</code> com a anatomia, as medidas, os nomes das classes e os tokens. Cada plugin implementa o contrato no próprio namespace.</p>
+      <ul><li>Cada plugin continua independente e passa na revisão do diretório.</li><li>Um teste de varredura por plugin confere os espaços e as medidas, como os testes de compatibilidade com Bootstrap já fazem.</li><li>A cor da categoria e os brasões chegam ao compass e ao local_dimensions pelo hook <code>course_badges</code> do tema, ampliado com a cor da capa; sem o tema, entra a primária.</li></ul>
+    </div>
+    <div class="option">
+      <h3>3 · Um plugin novo de componente</h3>
+      <p>Um <code>local_coursecard</code> como dependência dos três.</p>
+      <ul><li>Uma dependência a mais para instalar em cada site.</li><li>Um quarto plugin para manter e publicar.</li><li>O React do compass continuaria precisando de cópia própria.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section id="ajustes">
+  <div class="sechead"><h2>Seus ajustes nesta proposta</h2><p>Os pedidos desta rodada, e onde cada um entra.</p></div>
+  <div class="checks">
+    <div class="checkrow"><b>Painel do modo agrupado com o cartão da lista plana, com "Acessar" e "Mais informações" abrindo o diálogo</b><span>O painel passa a usar o cartão inteiro; o mini e o CSS de <code>.dim-panel__rail .dim-card</code> saem. O diálogo já é armado para quem está logado.</span></div>
+    <div class="checkrow"><b>Visitante: só "Saiba mais", para a landing page</b><span>"Mais informações" deixa de ser desenhado no shell anônimo, na lista plana e no painel. "Saiba mais" volta a ser botão no painel.</span></div>
+    <div class="checkrow"><b>Cabeçalho do painel: tirar "Cursos da área"</b><span>O rótulo <code>category_panel_eyebrow</code> sai do template e das duas línguas.</span></div>
+    <div class="checkrow"><b>Nome da categoria sem sublinhado fixo, com sublinhado no hover</b><span>O link de "Cursos em" ganha a regra do título do cartão: sem sublinhado em repouso, sublinhado no hover e no foco.</span></div>
+    <div class="checkrow"><b>Capa sem imagem com a primária ou a cor da categoria</b><span>Sai o azul-marinho fixo. Entra a cor da categoria mais próxima com cor, senão a primária, com gradiente escuro (D3).</span></div>
+    <div class="checkrow"><b>Barra de progresso na lista plana e um destaque para concluído</b><span>Barra numa linha própria, abaixo da etiqueta. Em 100 %, a barra dá lugar ao selo e à borda verde (D4).</span></div>
+    <div class="checkrow"><b>Rodada 2 · D6 sem o resumo "3 de 5 seções"</b><span>O espaço do plugin no local_dimensions leva só o resultado ("Conclui a competência" ou "Envia para avaliação").</span></div>
+    <div class="checkrow"><b>Rodada 2 · estados dos botões e hover dos cartões</b><span>Nova seção Estados: os cartões ao vivo, o cartão em repouso, hover, foco, sem acesso e carregando, e a tabela de cada botão em cinco estados, com os valores medidos.</span></div>
+    <div class="checkrow"><b>Rodada 2 · tokens para o tema ajustar</b><span>Nova seção Tokens: as quatro camadas, os nomes <code>--dimensions-card-*</code> com as cadeias sem o tema, e o mesmo cartão sob quatro temas.</span></div>
+    <div class="checkrow"><b>Rodada 4 · barra e imagem seguem o Boost Union</b><span><code>courseoverviewshowcourseprogress</code> e <code>courseoverviewimagesource</code> valem para todo cartão quando o Boost Union ou o Dimensions é o tema ativo, inclusive no compass e no local_dimensions (D13 a D15).</span></div>
+    <div class="checkrow"><b>Rodada 4 · o X do popover no lugar da estrela</b><span>O disco escuro do diálogo "Mais informações", com 32 px, no canto superior direito da capa; também na tabela de estados dos botões.</span></div>
+    <div class="checkrow"><b>Rodada 4 · a sessão do conteúdo relacionado espera este padrão</b><span>Ela segue com o leitor (R0, <code>finder.php</code>) e não fixa markup, CSS nem estados de cartão antes do contrato; registrou a dependência no <code>docs/related/PLAN.md</code>.</span></div>
+    <div class="checkrow"><b>Rodada 3 · o popover da trilha entra no pacote</b><span>Levantamento com duas capturas reais (em andamento e concluído), uma coluna na comparação, o popover no padrão como variante de diálogo, e D11 e D12.</span></div>
+    <div class="checkrow"><b>Rodada 2 · o cartão do local_dimensions é o do plano</b><span>O levantamento troca o cartão da página da competência pelo carrossel "Conteúdo relacionado" do acordeão da visão do plano (<code>accordion.js</code>).</span></div>
+  </div>
+</section>
+
+<section id="decisoes">
+  <div class="sechead"><h2>Decisões</h2><p>D1 a D10 foram aceitas como recomendadas, com o ajuste da D6. D11 e D12 vêm do popover da trilha; D13 a D15, das configurações do Boost Union. Todas esperam a sua resposta.</p></div>
+  <div class="decisions">
+    <div class="decision"><header><span class="id">D1</span><h3>Como o código é compartilhado</h3></header><p>Template do tema, um contrato com três implementações, ou um plugin novo.</p><p class="rec"><b>Aceita</b>: o contrato com três implementações e um teste de varredura em cada plugin.</p></div>
+    <div class="decision"><header><span class="id">D2</span><h3>Tamanho dos brasões</h3></header><p>O tema usa 80 × 88 desde a rodada E1 por decisão sua; o compass usa 56 × 62. Numa capa de 150 px, três brasões de 80 px cobrem metade da largura do cartão.</p><p class="rec"><b>Aceita</b>: 56 × 62 em todos, e 80 × 88 só no herói e no diálogo.</p></div>
+    <div class="decision"><header><span class="id">D3</span><h3>Qual cor da categoria vale</h3></header><p>Um curso fica numa subcategoria que pode não ter cor, embaixo de uma área que tem.</p><p class="rec"><b>Aceita</b>: a categoria mais próxima no caminho que tiver cor; sem nenhuma, a primária do tema.</p></div>
+    <div class="decision"><header><span class="id">D4</span><h3>Como marcar concluído</h3></header><p>Opção A: selo e borda verde. Opção B: faixa na capa.</p><p class="rec"><b>Aceita</b>: a opção A.</p></div>
+    <div class="decision"><header><span class="id">D5</span><h3>Ação visível no compass</h3></header><p>A ADR-013 decidiu que o cartão inteiro é o link e o botão é só decorativo. O padrão dá ao compass a mesma ação que a vitrine tem, como um link de verdade.</p><p class="rec"><b>Aceita</b>: manter o cartão como link e tornar o botão real só no compass destaque, sem "Mais informações", porque o compass não tem o diálogo.</p></div>
+    <div class="decision"><header><span class="id">D6</span><h3>As atividades no cartão do plano</h3></header><p>O cartão certo do local_dimensions é o do plano, que mostra as atividades ligadas à competência numa gaveta "N atividades", não uma trilha de seções.</p><p class="rec"><b>Aceita, com ajuste</b>: a gaveta fica recolhida no rodapé do cartão, fora do link, e o espaço do plugin leva só o resultado, sem o resumo "3 de 5 seções".</p></div>
+    <div class="decision"><header><span class="id">D7</span><h3>A pílula "Inscrito"</h3></header><p>A regra é mostrar o estado só quando ele foge do normal da lista. Isso mantém "Inscrito" na vitrine e tira de onde todo curso já é inscrito.</p><p class="rec"><b>Aceita</b>: a regra como está.</p></div>
+    <div class="decision"><header><span class="id">D9</span><h3>O cartão inteiro clicável</h3></header><p>Hoje o tema tem o título e os botões como links; o compass e o plano fazem do cartão inteiro o link. O link esticado do título resolve as três formas com um só alvo e um só hover.</p><p class="rec"><b>Aceita</b>: o link esticado nos três, com botões, estrela e gaveta por cima. Cartão sem acesso não tem link.</p></div>
+    <div class="decision"><header><span class="id">D10</span><h3>"Mais informações" como botão do Bootstrap</h3></header><p>A vitrine usa um estilo próprio (<code>dim-card__summary</code>), um contorno cinza que não muda de cor no hover. <code>btn-outline-secondary</code> preenche de cinza no hover e segue qualquer tema.</p><p class="rec"><b>Aceita</b>: a variante do Bootstrap nos três plugins.</p></div>
+    <div class="decision"><header><span class="id">D11</span><h3>Imagem e progresso no popover da trilha</h3></header><p>A etapa que o serviço das trilhas devolve (<code>TrailStep</code>) não tem imagem do curso nem percentual; tem o estado e a data de conclusão. Sem esses dois campos, o popover fica sem foto e sem barra.</p><p class="rec"><b>Recomendo</b> acrescentar a imagem do curso à etapa, e o percentual só se <code>local\trail\progress</code> já o calcula sem consulta nova; senão, o popover mostra só o estado.</p></div>
+    <div class="decision"><header><span class="id">D12</span><h3>Os botões do popover</h3></header><p>O popover vive no calendário, que desenha todos os seus botões com o primário marinho, 14 px e raio de 8 px. O cartão padrão usa <code>btn-sm</code> e o primário do Bootstrap.</p><p class="rec"><b>Recomendo</b> que o popover siga o calendário nos botões, para não destoar de "Hoje" e das setas ao redor, e siga o cartão em todo o resto. Os rótulos seguem o padrão: "Continuar" ou "Rever" conforme o estado, e "Ver trilha" no contorno cinza.</p></div>
+    <div class="decision"><header><span class="id">D13</span><h3>Concluído com o progresso desligado</h3></header><p><code>courseoverviewshowcourseprogress</code> tira a barra e o percentual. O selo "Concluído" e a borda verde dizem o estado do curso, não o quanto falta.</p><p class="rec"><b>Recomendo</b> manter o selo e a borda com o progresso desligado, e esconder só a barra e o número.</p></div>
+    <div class="decision"><header><span class="id">D14</span><h3>"Padrão geométrico" sob o Dimensions</h3></header><p>No Boost Union, a opção padrão mostra o padrão geométrico do core no curso sem foto. A D3 decidiu a cor da categoria para o Dimensions. As duas regras se cruzam.</p><p class="rec"><b>Recomendo</b>: a imagem de fallback vence sempre que for a escolha do administrador e houver imagem enviada. Com a opção do padrão geométrico, o Boost Union mostra o padrão do core e o Dimensions mostra a capa na cor da categoria, sobrescrevendo <code>get_generated_image_for_id()</code> como o Boost Union já faz. Os plugins só pedem a imagem ao renderer.</p></div>
+    <div class="decision"><header><span class="id">D15</span><h3>Também <code>courseoverviewshowcourseimages</code>?</h3></header><p>O Boost Union tem uma terceira opção vizinha: mostrar ou não a imagem nas vistas cartão, lista e resumo do bloco Visão geral do curso. Ela não estava no seu pedido.</p><p class="rec"><b>Recomendo</b> seguir também: com "cartão" desmarcado, o cartão fica sem capa (a estrela e a pílula do tipo passam para o corpo); com "lista" desmarcada, a linha da D8 fica sem miniatura.</p></div>
+    <div class="decision"><header><span class="id">D8</span><h3>Vista em lista</h3></header><p>O tema e o compass têm uma linha de 56 px parecida, mas diferente em detalhes.</p><p class="rec"><b>Aceita</b>: incluir a linha no mesmo contrato, depois dos cartões.</p></div>
+  </div>
+
+  <h3>Ordem, depois de D11 a D15</h3>
+  <ol class="steps">
+    <li>Contrato em <code>moodle-dev/docs/</code> com a anatomia, os estados, os tokens e as regras do Boost Union (como detectar o tema e ler as duas configurações), mais o teste de varredura modelo; os nomes <code>--dimensions-card-*</code> entram em <code>docs/tokens.md</code> do tema. <span>Só documentação e um teste.</span></li>
+    <li>theme_dimensions: painel com o cartão inteiro, visitante com um botão, cabeçalho do painel, capa sem imagem, barra e concluído, e o popover da trilha. <span>Na branch de desenvolvimento do 5.3, com bump e Behat da vitrine.</span></li>
+    <li>block_compass: geometria, capa, espaço do plugin e concluído. <span>No 5.3 e no 5.2.</span></li>
+    <li>local_dimensions: o cartão do plano (<code>accordion.js</code>) adota o padrão; o selo de resultado vai para o espaço do plugin e a gaveta fica no rodapé. <span>No main e nos branches de versão que você escolher.</span></li>
+    <li>Passada no navegador dos três, nas duas cores de tema e a 390, 800 e 1200 px.</li>
+  </ol>
+</section>
+
+<footer>Arquivo de origem: <code>moodle-theme_dimensions/docs/course-card/mockup.html</code>, com as capturas em <code>docs/course-card/img/</code>. As capturas marcadas como tal são do m503b e do m503; as demais visões são reproduções feitas a partir do código, com as medidas do CSS.</footer>
+</div>
+<script>
+document.querySelectorAll('[data-drawer]').forEach(function (b) {
+  b.addEventListener('click', function () { b.setAttribute('aria-expanded', b.getAttribute('aria-expanded') === 'true' ? 'false' : 'true'); });
+});
+document.querySelectorAll('[data-star]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var on = b.getAttribute('aria-pressed') !== 'true';
+    b.classList.add('is-busy');
+    setTimeout(function () {
+      b.classList.remove('is-busy'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.setAttribute('aria-label', on ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
+      b.querySelector('use').setAttribute('href', on ? '#i-star' : '#i-staro');
+    }, 450);
+  });
+});
+(function () {
+  var stage = document.querySelector('[data-skinstage]'), note = document.querySelector('[data-skinnote]');
+  if (!stage) { return; }
+  var notes = {
+    '': 'Os valores medidos no m503b: foco #4456ff de 3 px.',
+    'skin-boost': 'Sem os tokens da família: o foco cai na cor de ênfase do Bootstrap, com 2 px.',
+    'skin-green': 'O tema só muda a primária: capa, barra, botões e hover do título acompanham.',
+    'skin-third': 'Um tema de terceiros declarando só --dimensions-card-*: cantos retos, contorno, sombra sólida, capa menor e barra mais grossa.'
+  };
+  document.querySelectorAll('[data-skin]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('[data-skin]').forEach(function (o) { o.setAttribute('aria-pressed', o === btn ? 'true' : 'false'); });
+      stage.classList.remove('skin-boost', 'skin-green', 'skin-third');
+      if (btn.dataset.skin) { stage.classList.add(btn.dataset.skin); }
+      note.textContent = notes[btn.dataset.skin];
+    });
+  });
+})();
+</script>
