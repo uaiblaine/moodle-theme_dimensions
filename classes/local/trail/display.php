@@ -152,12 +152,15 @@ final class display {
     }
 
     /**
-     * The referenced courses' rows, in the shape the showcase's gate and its images read, one statement.
+     * The courses' rows, in the shape the showcase's gate and its images read, one statement.
      *
-     * @param int[] $courseids The referenced course ids.
+     * Also the related contents' reader ({@see \theme_dimensions\local\related\finder}), which gates its candidates
+     * with the same rows.
+     *
+     * @param int[] $courseids The course ids.
      * @return \stdClass[] Map of course id => row.
      */
-    private static function rows(array $courseids): array {
+    public static function rows(array $courseids): array {
         global $DB;
 
         [$insql, $params] = $DB->get_in_or_equal(array_values(array_unique($courseids)), SQL_PARAMS_NAMED, 'ref');

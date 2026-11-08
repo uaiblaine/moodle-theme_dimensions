@@ -14,6 +14,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   for the view whose images are unchecked, and draws no media band when both the card and the list view are. The
   rows services' card image may now be a data URI and the card carries four new flags (`showcover`, `showthumb`,
   `showmedia`, `showprogress`). The README explains the three settings (2026100593).
+
+- **Related contents, stage R0: the reader behind them** (docs/related/PLAN.md). `local\related\finder` answers
+  which courses relate to a parent through the competencies linked to both: in automatic mode the parent's whole set
+  (a trail's with its steps'), ranked by an identical set, then a course whose completion grants a shared competency,
+  then overlap; in manual mode competencies named by their framework's and their own idnumbers, ranked by how many a
+  course covers. The reader is shown the trail's gate without ghosts: a visitor the public courses, an account what
+  the showcase lists to it, less the courses it is enrolled in or has completed. A hidden course is never suggested,
+  nor, while context freezing is on, a frozen one (itself or under a frozen category). Every refusal the database
+  can tell is a term of the candidates' statement, so courses the reader may not see never fill the head of the
+  ranking and empty the block; the gate is still asked of every card. Nothing draws it yet; the landing page band
+  (R1) and the `[relatedcourses]` shortcode (R3) will. Constant statements in the number of candidates; 22 mutation
+  gates.
+
 - **A site with no Boost Union flavour no longer stalls on "New settings - Dimensions"** (2026100592). Core's
   multi-checkbox setting draws and saves nothing while it has no choice, so "Looks a person may choose"
   (`selectableflavours`) was never stored on such a site, and every visit to the notifications page sent the
