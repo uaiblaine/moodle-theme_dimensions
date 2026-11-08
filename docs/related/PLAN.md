@@ -1,0 +1,116 @@
+# Related contents: plan (2026-11-08)
+
+Status: **decisions D1-D9 approved by the owner on 2026-11-08; R0 (the finder, its tests and its 14 mutation gates)
+built on branch `related-r0`, not merged.**
+
+Related contents are stage T4 of the trail plan ([../trail/PLAN.md](../trail/PLAN.md), Q7: "not in the first stage").
+They are courses related to a parent course through the competencies linked to both, shown at the end of a landing
+page and, through a shortcode, on any page that runs `filter_shortcodes`.
+
+## 1. The model
+
+A **candidate** is any course other than the parent with at least one competency linked to it
+(`{competency_coursecomp}`). Three signals relate it to the parent's set of competencies P:
+
+- **Parity**: its set equals P.
+- **Overlap**: it shares part of P; candidates are ordered by Jaccard, shared / (|P| + its own count - shared).
+- **Proficiency**: one of the shared competencies is linked to it with the outcome "Complete the competency"
+  (`\core_competency\course_competency::OUTCOME_COMPLETE`): completing the candidate makes the learner proficient.
+
+**Automatic mode** (the default), in tiers:
+
+1. parity;
+2. shares a competency and grants proficiency in one it shares;
+3. shares a competency, higher overlap first.
+
+Inside a tier: higher overlap, then open enrolment first (R1, where the card already reads the enrolment state),
+then the nearest start date (upcoming first, then the most recent past), then the name. Deterministic, never random.
+
+**Manual mode**: an editor picks some of the competencies linked to the parent (or, in a shortcode with no parent,
+any competencies of one framework). A candidate is a course linked to any of them (`match="all"`: to all of them),
+ordered by how many it covers, then as above.
+
+A **trail** contributes the union of its own competencies and its steps' competencies; its steps are never
+related contents, since the landing page already lists them under "Cursos da trilha".
+
+Nothing is related when competencies are disabled on the site (`\core_competency\api::is_enabled()`), or when P
+is empty.
+
+## 2. Who sees what
+
+The trail's rule (section 6 of the trail plan) **without ghosts**: a ghost keeps a position in a sequence, and a list
+of suggestions has none, so it would only announce a course the reader cannot reach.
+
+| Reader | Sees |
+|---|---|
+| Visitor (nobody logged in, or the guest account) | public courses only (`publicaccess::are_public()`) |
+| Account | what the showcase's gate admits (`population::admitted()` over the root scope: core's course and category visibility, then local_unlistedcourses' terms; an unlisted course only to an account enrolled in it or with a way to enrol), minus the courses it is enrolled in or has completed (D5) |
+
+No result: the whole block is absent, its heading included.
+
+## 3. Where it appears
+
+- **Landing page**: a full-width band after the textarea sections, where the sticky card ends. A course field
+  `dimensions_related` (select: Automatic, Manual, Off; Automatic by default) and, for Manual, the chosen competencies
+  (D3). A site setting for the number of cards (4 by default).
+- **Shortcode** `[relatedcourses]` (filter_shortcodes allows letters and digits only; on a name conflict only one
+  plugin wins):
+
+  | Attribute | Default | Meaning |
+  |---|---|---|
+  | `mode="auto\|manual"` | `auto` | the mode |
+  | `framework="FW01"` | none | the framework's idnumber; required with `competencies` |
+  | `competencies="LID01,LID02"` | none | competency idnumbers, read inside `framework`; implies manual |
+  | `course="shortname"` | the page's course | the parent course |
+  | `match="any\|all"` | `any` | manual mode: any or all of the competencies |
+  | `limit="4"` | the site setting | number of cards, capped |
+
+  Identifiers, never ids: the filter's README warns that ids break on backup and restore. A competency idnumber is
+  unique only inside its framework; a framework idnumber is unique on the site (D9).
+
+- Uses the shortcode opens: a `local_page` page ("Formação em liderança") as a catalogue curated by competency with
+  no parent course; a label at the end of a course ("Próximos passos"); a category description.
+
+## 4. Technical points
+
+- **Recursion**: a card shows another course's summary, which may carry the shortcode. The summary is formatted
+  without the shortcode filter, and a re-entrancy guard returns '' inside a related block.
+- **Unrestricted usage**: anybody who writes text (a forum post) can use the shortcode. The output shows only what
+  the reader may already discover, so nothing leaks; the cost is capped (instances per request, `limit`).
+- **Competency names**: no "shared competencies" chips for a visitor (the framework may not be visible to them); for
+  accounts only, after R1 (D7).
+- **Another theme**: the block's CSS is the theme's; a page drawn by another theme (course or category theme)
+  gets ''.
+- **Soft dependency**: without filter_shortcodes `db/shortcodes.php` is ignored; with the filter disabled the raw
+  `[relatedcourses]` text shows. A Boost Union recommendation item says which.
+- **Invalid reference** (unknown framework or competency, or a competency outside the framework given): nothing for a
+  reader; a short notice naming what was not found for a reader who may edit that context.
+- **Cost**: one statement for the parent's competencies, one for the candidates (an aggregate over
+  `{competency_coursecomp}`), then per slice of ranked candidates the rows, the gate and the reader's own courses;
+  covers in one batch (`cards::images()`). Pinned by a read-count test, constant in the number of candidates. An MUC
+  cache only if a measurement asks for one.
+- **Gate**: the diff reaches SQL, so tier 3 (`mdl ci --matrix`).
+- **Out of scope**: the Moodle App, which renders the filter's output without the theme's CSS.
+
+## 5. Decisions of 8 November
+
+| # | Question | Owner's answer |
+|---|---|---|
+| D1 | Parity: identical set only, or ranked overlap? | Ranked overlap, identical sets first |
+| D2 | Proficiency and tier order | `ruleoutcome = OUTCOME_COMPLETE`; parity, then grants, then shares |
+| D3 | Where a landing's manual choice is stored | A text course custom field holding framework + competency idnumber pairs (travels with backup), written by an autocomplete of the course's competencies on the course form |
+| D4 | A shortcode with no parent course | Allowed, manual mode only, any competencies of one framework |
+| D5 | Courses the account is enrolled in or completed | Excluded |
+| D6 | Visitor | Public courses only, no ghosts |
+| D7 | "Shared competencies" chips | Accounts only, after R1 |
+| D8 | Count and layout | 4 cards on the landing (site setting), the showcase's card, server-side Mustache (no React) |
+| D9 | Competency idnumbers are unique per framework only | The shortcode takes `framework` (required with `competencies`); one framework per shortcode; the landing field stores pairs |
+
+## 6. Stages
+
+| Stage | What | Gate |
+|---|---|---|
+| R0 | `local\related\finder`: competencies of a parent (trail union), idnumber pairs resolved, candidates ranked, the reader's gate; PHPUnit with a read count | tier 3 |
+| R1 | Landing band, automatic mode, `dimensions_related` field, site setting; mockups on the design canvas first | tier 3, browser look |
+| R2 | Manual mode on the landing: the pairs field and its autocomplete | tier 3 |
+| R3 | `[relatedcourses]`: `db/shortcodes.php`, recursion guard, theme check, Boost Union item; mount filter_shortcodes on m503 and m503b | tier 3, browser look |
