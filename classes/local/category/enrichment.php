@@ -25,6 +25,7 @@
 namespace theme_dimensions\local\category;
 
 use local_unlistedcourses\access;
+use theme_dimensions\local\card\boost_union;
 
 /**
  * The one method behind theme_dimensions_get_card_details.
@@ -46,6 +47,13 @@ use local_unlistedcourses\access;
  *
  * The course records are read in one statement for the batch; the
  * completion reads after that are per course.
+ *
+ * Where Boost Union's course progress setting hides the progress
+ * ({@see boost_union::show_progress()}), no percentage is read or returned:
+ * progress is null and there is no progresslabel, so no card draws a progress
+ * row. hascompletion still says whether completion is on in the course, a fact
+ * about the course that the completed seal rests on and the setting leaves
+ * drawn (D13 of the course card contract).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -88,6 +96,8 @@ final class enrichment {
             }
         }
         $kept = access::filter_courses($visible);
+        // Read after validate_context() in the web service, which sets the theme of the request.
+        $showprogress = boost_union::show_progress();
 
         $details = [];
         foreach ($courseids as $courseid) {
@@ -96,7 +106,9 @@ final class enrichment {
             }
             $course = $kept[$courseid];
             $completion = new \completion_info($course);
-            $progress = \core_completion\progress::get_course_progress_percentage($course, (int) $USER->id);
+            $progress = $showprogress
+                ? \core_completion\progress::get_course_progress_percentage($course, (int) $USER->id)
+                : null;
             $row = [
                 'id' => $courseid,
                 'hascompletion' => $completion->is_enabled(),

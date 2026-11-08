@@ -117,7 +117,7 @@ class get_card_details extends external_api {
                     'hascompletion' => new external_value(PARAM_BOOL, 'Whether completion is on in the course.'),
                     'progress' => new external_value(
                         PARAM_INT,
-                        'The percentage complete, null when there is no number for this viewer.',
+                        'The percentage complete, null when there is no number for this viewer or Boost Union hides it.',
                         VALUE_OPTIONAL,
                         null,
                         NULL_ALLOWED

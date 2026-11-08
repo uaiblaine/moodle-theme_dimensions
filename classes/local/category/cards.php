@@ -234,19 +234,34 @@ final class cards {
      * that cache is what Boost Union's own cards and the Dashboard read, and a theme route
      * written into it would leak onto pages behind the login, where it is not the one to use.
      *
+     * With $generated, a course with no image of its own gets what the theme's renderer answers for it
+     * ({@see \theme_dimensions\output\core_renderer::get_generated_image_for_id()}, D14 of the course card
+     * contract): its category's cover as an SVG data URI, or Boost Union's fallback image where that is the
+     * administrator's choice. Both shells take it as it is: the data URI needs no route, and Boost Union serves its
+     * fallback image from the system context without a login. The theme's own renderer is asked through
+     * course_covers() with the categories the rows already hold, so the answer costs no statement per course: one
+     * branding cache read for the page's categories (cold, seven statements per category missing from it and one
+     * for all), and Boost Union's file area once while its fallback is chosen. Another theme's renderer is asked
+     * course by course. Without $generated such a course stays null (the calendar and the landing page's steps,
+     * until they draw the card).
+     *
      * @param \stdClass[] $rows Population rows carrying the context preload columns, keyed by course id.
      * @param bool $public Whether this is the public shell, whose reader has no session.
-     * @return array courseid => \moodle_url or null, for every row given.
+     * @param bool $generated Whether a course without an image gets the renderer's image for it.
+     * @return array courseid => \moodle_url, a string (the renderer's answer) or null, for every row given.
      */
-    public static function images(array $rows, bool $public = false): array {
+    public static function images(array $rows, bool $public = false, bool $generated = false): array {
         global $CFG, $DB;
 
         $images = [];
         foreach ($rows as $courseid => $row) {
             $images[(int) $courseid] = null;
         }
-        if (!$rows || empty($CFG->courseoverviewfileslimit)) {
+        if (!$rows) {
             return $images;
+        }
+        if (empty($CFG->courseoverviewfileslimit)) {
+            return $generated ? self::generated_images($rows, $images) : $images;
         }
         $contexts = population::page_contexts($rows);
         $bycontext = [];
@@ -316,6 +331,45 @@ final class cards {
             foreach ($picked as $courseid => $file) {
                 $images[$courseid] = publicfiles::cover_url((object) ['id' => $courseid], $file);
             }
+        }
+        return $generated ? self::generated_images($rows, $images) : $images;
+    }
+
+    /**
+     * The renderer's image for every course of the page that has none of its own, the others kept.
+     *
+     * @param \stdClass[] $rows Population rows, keyed by course id; their category column names the cover (a row
+     *   without one is asked about by id, a statement for it).
+     * @param array $images courseid => what {@see images()} found, null for none.
+     * @return array The same keys, every null replaced by the renderer's answer.
+     */
+    private static function generated_images(array $rows, array $images): array {
+        global $PAGE;
+
+        $known = [];
+        $unknown = [];
+        foreach ($images as $courseid => $image) {
+            if ($image !== null) {
+                continue;
+            }
+            if (isset($rows[$courseid]->category)) {
+                $known[(int) $courseid] = (int) $rows[$courseid]->category;
+            } else {
+                $unknown[] = (int) $courseid;
+            }
+        }
+        if (!$known && !$unknown) {
+            return $images;
+        }
+        // The general target: under the command line (PHPUnit, a CLI script) the factory answers core's CLI renderer.
+        $renderer = $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL);
+        if ($renderer instanceof \theme_dimensions\output\core_renderer) {
+            $images = array_replace($images, $renderer->course_covers($known));
+        } else {
+            $unknown = array_merge(array_keys($known), $unknown);
+        }
+        foreach ($unknown as $courseid) {
+            $images[$courseid] = (string) $renderer->get_generated_image_for_id($courseid);
         }
         return $images;
     }
