@@ -351,6 +351,46 @@ tr:last-child th, tr:last-child td { border-bottom: 0; }
 .iconbtn:active, .iconbtn.is-active { background: var(--m-control-line); color: var(--m-ink); }
 .iconbtn.is-disabled { opacity: .5; pointer-events: none; }
 
+
+/* ---------- courseoverviewshowcourseimages: a card without its cover, a row without its thumbnail ---------- */
+.pc__top { display: none; align-items: center; gap: 8px; min-height: 32px; }
+.pc.noimg .pc__top { display: flex; }
+.pc.noimg .pc__media { display: none; }
+.pc.noimg { border-top: 4px solid var(--band); }
+.pc.noimg.done { border-top-color: var(--card-done); }
+.pc.noimg .pc__over--cover { display: none; }
+.pc__kind--flat { position: static; background: var(--m-surface-alt); color: var(--card-ink); border: 1px solid var(--card-border); }
+.pc__topcrests { display: flex; gap: 2px; }
+.pc__top .starbtn--flat, .pc__top .iconbtn { position: relative; z-index: 2; margin-left: auto; }
+.starbtn--flat { position: static; top: auto; right: auto; border: 1px solid var(--m-line); background: var(--m-surface); color: var(--m-muted); }
+.starbtn--flat.on { color: #b8860b; }
+.lrlist { display: grid; gap: 8px; grid-column: 1 / -1; }
+.lrcap { margin: 0; font-size: 12.5px; color: var(--m-muted); }
+.lr { --band: var(--m-primary); display: flex; align-items: center; gap: 10px; min-height: 56px; padding-right: 10px; border: 1px solid var(--m-line); border-radius: 12px; background: var(--m-surface); overflow: hidden; font-family: var(--font-moodle); color: var(--m-ink); }
+.lr.cat { --band: var(--m-cat); }
+.lr.cat2 { --band: var(--m-cat-2); }
+.lr__thumb { width: 56px; align-self: stretch; flex: none; background: linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(0, 0, 0, .34)), var(--band); }
+.lr__thumb.photo { background: linear-gradient(160deg, #6b8f71 0%, #345a4a 45%, #1f3a40 100%); }
+.lr.noimg { border-left: 4px solid var(--band); padding-left: 12px; }
+.lr.noimg.done { border-left-color: var(--m-success); }
+.lr.noimg .lr__thumb { display: none; }
+.lr__name { flex: 1 1 8rem; min-width: 0; font-size: 14px; font-weight: 600; padding: 8px 0; }
+.lr__meta { font-size: 12.5px; color: var(--m-muted); white-space: nowrap; }
+.lr__bar { width: 4.5rem; flex: none; }
+.lr__bar .pc__track { height: 6px; border-radius: 6px; overflow: hidden; background: var(--m-surface-strong); }
+.lr__bar .pc__track i { display: block; height: 100%; width: var(--p); background: var(--m-primary); }
+.scibar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 14px; }
+.scibar span { font-weight: 600; color: var(--muted); font-size: 13px; }
+.scibar label { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; cursor: pointer; }
+.scibar input { width: 16px; height: 16px; accent-color: var(--accent); }
+.combohead { margin: 0; font-size: 15px; }
+.combos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 14px; }
+.combo { margin: 0; display: grid; gap: 8px; align-content: start; }
+.combo figcaption { font-size: 13px; color: var(--muted); }
+.combo figcaption b { color: var(--fg); }
+.combostage { grid-template-columns: 1fr; padding: 14px; gap: 10px; }
+.combostage .pc__media { height: 96px; }
+
 /* ---------- local_dimensions today: the plan's related-content carousel (accordion.js) ---------- */
 .lpwrap { display: grid; gap: 10px; min-width: 0; }
 .lphead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -504,6 +544,8 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
     <span class="chip">Rodada 2: estados, tokens e o cartão do plano no local_dimensions</span>
     <span class="chip">Rodada 3: o popover da trilha no calendário</span>
     <span class="chip">Rodada 4: barra e imagem pelas configurações do Boost Union; o X do popover</span>
+    <span class="chip">Rodada 5: exibir imagens dos cursos, combinação por combinação</span>
+    <span class="chip">Contrato: <code>moodle-dev/docs/course-card/CONTRACT.md</code> (uaiblaine/moodle-dev#157)</span>
   </div>
   <nav class="toc" aria-label="Seções">
     <a href="#achados">Achados</a><a href="#hoje">Como está hoje</a><a href="#comparacao">Comparação</a><a href="#proposta">Proposta</a><a href="#estados">Estados</a><a href="#tokens">Tokens</a><a href="#codigo">Onde o código mora</a><a href="#ajustes">Seus ajustes</a><a href="#decisoes">Decisões</a>
@@ -982,6 +1024,73 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
     </figure>
   </div>
 
+  <h3 id="imagens">Exibir imagens dos cursos: <code>courseoverviewshowcourseimages</code></h3>
+  <div class="rules">
+    <div class="rule"><b>Três caixas no Boost Union</b><p>Cartão, Lista e Resumo, as três marcadas por padrão (o m503b está assim). O Boost Union aplica cada uma a uma vista do bloco Visão geral do curso. No padrão, a mesma caixa vale para a vista equivalente de cada plugin.</p></div>
+    <div class="rule"><b>Cartão</b><p>A grade da vitrine, o painel do modo agrupado, os cartões do compass (destaque e inventário), o carrossel do plano e o popover da trilha. Desmarcada, o cartão perde a capa: a pílula do tipo, os brasões e a estrela sobem para uma linha no topo do corpo, e uma borda de 4 px na cor da categoria mantém a identidade. Concluído, a borda fica verde.</p></div>
+    <div class="rule"><b>Lista e Resumo</b><p>Lista vale para a vista em lista da vitrine e do compass (a linha de 56 px da D8): desmarcada, a linha perde a miniatura e ganha uma borda de 4 px à esquerda, na cor da categoria. Resumo não muda nada: nenhum dos quatro lugares tem a vista resumo do bloco.</p></div>
+  </div>
+
+  <div class="scibar" role="group" aria-label="Simular a configuração Exibir imagens dos cursos">
+    <span>Exibir imagens em:</span>
+    <label><input type="checkbox" data-sci="card" checked> Cartão</label>
+    <label><input type="checkbox" data-sci="list" checked> Lista</label>
+    <label><input type="checkbox" data-sci="summary" checked> Resumo</label>
+  </div>
+  <p class="skinnote" data-scinote>As três marcadas, o padrão do Boost Union: cartões com capa e linhas com miniatura.</p>
+  <div class="stage mf scistage" data-scistage>
+    <article class="pc cat sci-card">
+      <div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn" type="button" aria-label="Adicionar aos favoritos"><svg class="ico"><use href="#i-staro"/></svg></button><div class="crests"><svg width="56" height="62"><use href="#crest"/></svg></div><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+      <div class="pc__body">
+        <div class="pc__top"><span class="pc__kind pc__kind--flat"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><span class="pc__topcrests"><svg width="24" height="26"><use href="#crest"/></svg></span><button class="starbtn starbtn--flat" type="button" aria-label="Adicionar aos favoritos"><svg class="ico"><use href="#i-staro"/></svg></button></div>
+        <span class="pc__over">Saúde ocupacional</span>
+        <h4 class="pc__title"><a href="#imagens">Ergonomia no escritório</a></h4>
+        <p class="pc__meta">8 h · Online</p>
+        <div class="pc__state"><span class="pill pill-enrolled">Inscrito</span></div>
+        <div class="pc__prog" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="40% concluído"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div>
+        <div class="pc__actions"><a class="btn btn-p" href="#imagens">Continuar</a><button class="btn btn-os" type="button">Mais informações</button></div>
+      </div>
+    </article>
+    <article class="pc done sci-card">
+      <div class="pc__media photo"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn on" type="button" aria-label="Remover dos favoritos"><svg class="ico"><use href="#i-star"/></svg></button></div>
+      <div class="pc__body">
+        <div class="pc__top"><span class="pc__kind pc__kind--flat"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><button class="starbtn starbtn--flat on" type="button" aria-label="Remover dos favoritos"><svg class="ico"><use href="#i-star"/></svg></button></div>
+        <span class="pc__over">Segurança do trabalho</span>
+        <h4 class="pc__title"><a href="#imagens">Primeiros socorros</a></h4>
+        <p class="pc__meta">12 h · Presencial</p>
+        <div class="pc__state"><span class="pill pill-done"><svg class="ico"><use href="#i-check"/></svg>Concluído</span></div>
+        <div class="pc__actions"><a class="btn btn-op" href="#imagens">Rever</a><button class="btn btn-os" type="button">Mais informações</button></div>
+      </div>
+    </article>
+    <article class="pc dialog cat2 sci-card" role="dialog" aria-label="TRAILPERF 1.1">
+      <div class="pc__media"><button class="pc__close" type="button" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button><svg class="pc__watermark"><use href="#i-cap"/></svg></div>
+      <div class="pc__body">
+        <div class="pc__top"><span class="pc__over">Gestão pública</span><button class="iconbtn" type="button" aria-label="Fechar"><svg class="ico"><use href="#i-x"/></svg></button></div>
+        <span class="pc__over pc__over--cover">Gestão pública</span>
+        <h4 class="pc__title pc__title--dialog">TRAILPERF 1.1</h4>
+        <p class="pc__meta">18 de novembro a 6 de dezembro de 2026 · Datas do curso</p>
+        <div class="pc__extra"><svg class="ico"><use href="#i-route"/></svg><span>Curso 2 de 11 · TRAILPERF Trilha 1</span></div>
+        <div class="pc__state"><span class="pill pill-sched">A seguir</span></div>
+        <div class="pc__actions pc__actions--end"><a class="btn btn-os" href="#imagens">Ver trilha</a><a class="btn btn-p" href="#imagens">Abrir curso</a></div>
+      </div>
+    </article>
+    <div class="lrlist">
+      <div class="lr cat sci-list"><div class="lr__thumb"></div><span class="lr__name">Ergonomia no escritório</span><span class="lr__meta">Aberto há 2 dias</span><div class="lr__bar"><div class="pc__track" style="--card-track:var(--m-surface-strong);--card-fill:var(--m-primary)"><i style="--p:40%"></i></div></div><button class="iconbtn" type="button" aria-label="Favorito"><svg class="ico"><use href="#i-staro"/></svg></button></div>
+      <div class="lr done sci-list"><div class="lr__thumb photo"></div><span class="lr__name">Primeiros socorros</span><span class="lr__meta"><svg class="ico" style="color:var(--m-success)"><use href="#i-check"/></svg> Concluído</span><div class="lr__bar"></div><button class="iconbtn" type="button" aria-label="Favorito"><svg class="ico"><use href="#i-star"/></svg></button></div>
+      <div class="lr cat2 sci-list"><div class="lr__thumb"></div><span class="lr__name">Licitações e contratos</span><span class="lr__meta">Inscrito há 5 dias</span><div class="lr__bar"><div class="pc__track" style="--card-track:var(--m-surface-strong);--card-fill:var(--m-primary)"><i style="--p:10%"></i></div></div><button class="iconbtn" type="button" aria-label="Favorito"><svg class="ico"><use href="#i-staro"/></svg></button></div>
+      <p class="lrcap">Vista em lista: vitrine e compass</p>
+    </div>
+  </div>
+
+  <h4 class="combohead">As quatro combinações que mudam algo</h4>
+  <div class="combos">
+    <figure class="combo"><figcaption><b>Cartão ✓ · Lista ✓</b> o padrão</figcaption><div class="stage mf combostage"><article class="pc cat compact"><div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><span class="starbtn"><svg class="ico"><use href="#i-staro"/></svg></span><svg class="pc__watermark"><use href="#i-cap"/></svg></div><div class="pc__body"><h4 class="pc__title">Ergonomia no escritório</h4><div class="pc__prog"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div></div></article><div class="lr cat"><div class="lr__thumb"></div><span class="lr__name">Ergonomia no escritório</span></div></div></figure>
+    <figure class="combo"><figcaption><b>Cartão ✗ · Lista ✓</b></figcaption><div class="stage mf combostage"><article class="pc cat compact noimg"><div class="pc__body"><div class="pc__top"><span class="pc__kind pc__kind--flat"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><span class="starbtn starbtn--flat"><svg class="ico"><use href="#i-staro"/></svg></span></div><h4 class="pc__title">Ergonomia no escritório</h4><div class="pc__prog"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div></div></article><div class="lr cat"><div class="lr__thumb"></div><span class="lr__name">Ergonomia no escritório</span></div></div></figure>
+    <figure class="combo"><figcaption><b>Cartão ✓ · Lista ✗</b></figcaption><div class="stage mf combostage"><article class="pc cat compact"><div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><span class="starbtn"><svg class="ico"><use href="#i-staro"/></svg></span><svg class="pc__watermark"><use href="#i-cap"/></svg></div><div class="pc__body"><h4 class="pc__title">Ergonomia no escritório</h4><div class="pc__prog"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div></div></article><div class="lr cat noimg"><div class="lr__thumb"></div><span class="lr__name">Ergonomia no escritório</span></div></div></figure>
+    <figure class="combo"><figcaption><b>Cartão ✗ · Lista ✗</b> nenhuma imagem</figcaption><div class="stage mf combostage"><article class="pc cat compact noimg"><div class="pc__body"><div class="pc__top"><span class="pc__kind pc__kind--flat"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><span class="starbtn starbtn--flat"><svg class="ico"><use href="#i-staro"/></svg></span></div><h4 class="pc__title">Ergonomia no escritório</h4><div class="pc__prog"><div class="pc__track"><i style="--p:40%"></i></div><span class="pc__pct">40%</span></div></div></article><div class="lr cat noimg"><div class="lr__thumb"></div><span class="lr__name">Ergonomia no escritório</span></div></div></figure>
+  </div>
+  <p class="skinnote">Resumo marcado ou desmarcado repete estas quatro: nenhum dos nossos cartões é a vista resumo. Sem a capa, o popover da trilha troca o disco escuro pelo botão de ícone do padrão no canto do corpo, porque o disco foi feito para ficar sobre uma imagem.</p>
+
   <h3>Capa sem imagem</h3>
   <div class="stage mf">
     <figure class="spec"><article class="pc navy compact"><div class="pc__media"><span class="pc__kind"><svg class="ico"><use href="#i-cap"/></svg>Curso</span><svg class="pc__watermark"><use href="#i-cap"/></svg></div><div class="pc__body"><h4 class="pc__title">Hoje: azul-marinho fixo</h4><p class="pc__meta"><code>#070093</code> em toda categoria e todo flavour</p></div></article><figcaption>Ignora a primária e a categoria. Num flavour verde, a vitrine continua azul.</figcaption></figure>
@@ -1136,16 +1245,16 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
 
   <div class="layers">
     <div class="layer"><b>O tema declara</b><code>--dimensions-card-*</code> em <code>:root</code>, <code>body</code> e <code>.modal</code>, claro e escuro. Só o tema declara esse prefixo.</div>
-    <div class="layer"><b>O plugin lê</b>Cada plugin declara os próprios nomes na raiz do cartão (<code>--block-compass-card-*</code>, <code>--local-dimensions-card-*</code>, <code>--theme-dimensions-card-*</code>), cada um lendo o token da família primeiro.</div>
+    <div class="layer"><b>O plugin lê</b>Cada plugin declara os próprios nomes na raiz do cartão (<code>--block_compass-card-*</code>, <code>--local-dimensions-card-*</code>, <code>--dim-card-*</code>), cada um lendo o token da família primeiro.</div>
     <div class="layer"><b>Sem o tema</b>O plugin cai na própria cadeia do Bootstrap (<code>--bs-*</code>) e termina num valor literal. Em Boost ou Boost Union, o cartão segue a primária e as cores do tema ativo.</div>
     <div class="layer"><b>Dado da instância</b>A cor da categoria não é token: o template escreve <code>--…-card-band</code> na capa, já sanitizada, como hoje faz com as cores do admin.</div>
   </div>
 
 <pre class="code"><span class="c">/* block_compass, styles.css: um token de exemplo, com a cadeia completa. */</span>
-.block-compass-card {
-    --block-compass-card-radius: var(--dimensions-card-radius, 12px);
-    --block-compass-card-cover-fallback: var(--dimensions-card-cover-fallback, var(--bs-primary, #0f6cbf));
-    --block-compass-card-focus-ring: var(--dimensions-card-focus-ring, var(--dimensions-focus-ring, var(--bs-emphasis-color, #000)));
+.block_compass .compass-card {
+    --block_compass-card-radius: var(--dimensions-card-radius, 12px);
+    --block_compass-card-cover-fallback: var(--dimensions-card-cover-fallback, var(--bs-primary, #0f6cbf));
+    --block_compass-card-focus-ring: var(--dimensions-card-focus-ring, var(--dimensions-focus-ring, var(--bs-emphasis-color, #000)));
 }
 <span class="c">/* theme_dimensions, scss/post.scss: o tema muda o cartão nos três plugins de uma vez. */</span>
 :root, body, .modal {
@@ -1260,6 +1369,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
     <div class="checkrow"><b>Rodada 2 · D6 sem o resumo "3 de 5 seções"</b><span>O espaço do plugin no local_dimensions leva só o resultado ("Conclui a competência" ou "Envia para avaliação").</span></div>
     <div class="checkrow"><b>Rodada 2 · estados dos botões e hover dos cartões</b><span>Nova seção Estados: os cartões ao vivo, o cartão em repouso, hover, foco, sem acesso e carregando, e a tabela de cada botão em cinco estados, com os valores medidos.</span></div>
     <div class="checkrow"><b>Rodada 2 · tokens para o tema ajustar</b><span>Nova seção Tokens: as quatro camadas, os nomes <code>--dimensions-card-*</code> com as cadeias sem o tema, e o mesmo cartão sob quatro temas.</span></div>
+    <div class="checkrow"><b>Rodada 5 · as combinações de <code>courseoverviewshowcourseimages</code></b><span>Prévia ao vivo com as três caixas, e as quatro combinações de Cartão e Lista lado a lado. D11 a D15 aceitas.</span></div>
     <div class="checkrow"><b>Rodada 4 · barra e imagem seguem o Boost Union</b><span><code>courseoverviewshowcourseprogress</code> e <code>courseoverviewimagesource</code> valem para todo cartão quando o Boost Union ou o Dimensions é o tema ativo, inclusive no compass e no local_dimensions (D13 a D15).</span></div>
     <div class="checkrow"><b>Rodada 4 · o X do popover no lugar da estrela</b><span>O disco escuro do diálogo "Mais informações", com 32 px, no canto superior direito da capa; também na tabela de estados dos botões.</span></div>
     <div class="checkrow"><b>Rodada 4 · a sessão do conteúdo relacionado espera este padrão</b><span>Ela segue com o leitor (R0, <code>finder.php</code>) e não fixa markup, CSS nem estados de cartão antes do contrato; registrou a dependência no <code>docs/related/PLAN.md</code>.</span></div>
@@ -1269,7 +1379,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
 </section>
 
 <section id="decisoes">
-  <div class="sechead"><h2>Decisões</h2><p>D1 a D10 foram aceitas como recomendadas, com o ajuste da D6. D11 e D12 vêm do popover da trilha; D13 a D15, das configurações do Boost Union. Todas esperam a sua resposta.</p></div>
+  <div class="sechead"><h2>Decisões</h2><p>As quinze foram aceitas como recomendadas, com o ajuste da D6. D11 e D12 vêm do popover da trilha; D13 a D15, das configurações do Boost Union.</p></div>
   <div class="decisions">
     <div class="decision"><header><span class="id">D1</span><h3>Como o código é compartilhado</h3></header><p>Template do tema, um contrato com três implementações, ou um plugin novo.</p><p class="rec"><b>Aceita</b>: o contrato com três implementações e um teste de varredura em cada plugin.</p></div>
     <div class="decision"><header><span class="id">D2</span><h3>Tamanho dos brasões</h3></header><p>O tema usa 80 × 88 desde a rodada E1 por decisão sua; o compass usa 56 × 62. Numa capa de 150 px, três brasões de 80 px cobrem metade da largura do cartão.</p><p class="rec"><b>Aceita</b>: 56 × 62 em todos, e 80 × 88 só no herói e no diálogo.</p></div>
@@ -1280,15 +1390,15 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
     <div class="decision"><header><span class="id">D7</span><h3>A pílula "Inscrito"</h3></header><p>A regra é mostrar o estado só quando ele foge do normal da lista. Isso mantém "Inscrito" na vitrine e tira de onde todo curso já é inscrito.</p><p class="rec"><b>Aceita</b>: a regra como está.</p></div>
     <div class="decision"><header><span class="id">D9</span><h3>O cartão inteiro clicável</h3></header><p>Hoje o tema tem o título e os botões como links; o compass e o plano fazem do cartão inteiro o link. O link esticado do título resolve as três formas com um só alvo e um só hover.</p><p class="rec"><b>Aceita</b>: o link esticado nos três, com botões, estrela e gaveta por cima. Cartão sem acesso não tem link.</p></div>
     <div class="decision"><header><span class="id">D10</span><h3>"Mais informações" como botão do Bootstrap</h3></header><p>A vitrine usa um estilo próprio (<code>dim-card__summary</code>), um contorno cinza que não muda de cor no hover. <code>btn-outline-secondary</code> preenche de cinza no hover e segue qualquer tema.</p><p class="rec"><b>Aceita</b>: a variante do Bootstrap nos três plugins.</p></div>
-    <div class="decision"><header><span class="id">D11</span><h3>Imagem e progresso no popover da trilha</h3></header><p>A etapa que o serviço das trilhas devolve (<code>TrailStep</code>) não tem imagem do curso nem percentual; tem o estado e a data de conclusão. Sem esses dois campos, o popover fica sem foto e sem barra.</p><p class="rec"><b>Recomendo</b> acrescentar a imagem do curso à etapa, e o percentual só se <code>local\trail\progress</code> já o calcula sem consulta nova; senão, o popover mostra só o estado.</p></div>
-    <div class="decision"><header><span class="id">D12</span><h3>Os botões do popover</h3></header><p>O popover vive no calendário, que desenha todos os seus botões com o primário marinho, 14 px e raio de 8 px. O cartão padrão usa <code>btn-sm</code> e o primário do Bootstrap.</p><p class="rec"><b>Recomendo</b> que o popover siga o calendário nos botões, para não destoar de "Hoje" e das setas ao redor, e siga o cartão em todo o resto. Os rótulos seguem o padrão: "Continuar" ou "Rever" conforme o estado, e "Ver trilha" no contorno cinza.</p></div>
-    <div class="decision"><header><span class="id">D13</span><h3>Concluído com o progresso desligado</h3></header><p><code>courseoverviewshowcourseprogress</code> tira a barra e o percentual. O selo "Concluído" e a borda verde dizem o estado do curso, não o quanto falta.</p><p class="rec"><b>Recomendo</b> manter o selo e a borda com o progresso desligado, e esconder só a barra e o número.</p></div>
-    <div class="decision"><header><span class="id">D14</span><h3>"Padrão geométrico" sob o Dimensions</h3></header><p>No Boost Union, a opção padrão mostra o padrão geométrico do core no curso sem foto. A D3 decidiu a cor da categoria para o Dimensions. As duas regras se cruzam.</p><p class="rec"><b>Recomendo</b>: a imagem de fallback vence sempre que for a escolha do administrador e houver imagem enviada. Com a opção do padrão geométrico, o Boost Union mostra o padrão do core e o Dimensions mostra a capa na cor da categoria, sobrescrevendo <code>get_generated_image_for_id()</code> como o Boost Union já faz. Os plugins só pedem a imagem ao renderer.</p></div>
-    <div class="decision"><header><span class="id">D15</span><h3>Também <code>courseoverviewshowcourseimages</code>?</h3></header><p>O Boost Union tem uma terceira opção vizinha: mostrar ou não a imagem nas vistas cartão, lista e resumo do bloco Visão geral do curso. Ela não estava no seu pedido.</p><p class="rec"><b>Recomendo</b> seguir também: com "cartão" desmarcado, o cartão fica sem capa (a estrela e a pílula do tipo passam para o corpo); com "lista" desmarcada, a linha da D8 fica sem miniatura.</p></div>
+    <div class="decision"><header><span class="id">D11</span><h3>Imagem e progresso no popover da trilha</h3></header><p>A etapa que o serviço das trilhas devolve (<code>TrailStep</code>) não tem imagem do curso nem percentual; tem o estado e a data de conclusão. Sem esses dois campos, o popover fica sem foto e sem barra.</p><p class="rec"><b>Aceita</b>: acrescentar a imagem do curso à etapa, e o percentual só se <code>local\trail\progress</code> já o calcula sem consulta nova; senão, o popover mostra só o estado.</p></div>
+    <div class="decision"><header><span class="id">D12</span><h3>Os botões do popover</h3></header><p>O popover vive no calendário, que desenha todos os seus botões com o primário marinho, 14 px e raio de 8 px. O cartão padrão usa <code>btn-sm</code> e o primário do Bootstrap.</p><p class="rec"><b>Aceita</b>: que o popover siga o calendário nos botões, para não destoar de "Hoje" e das setas ao redor, e siga o cartão em todo o resto. Os rótulos seguem o padrão: "Continuar" ou "Rever" conforme o estado, e "Ver trilha" no contorno cinza.</p></div>
+    <div class="decision"><header><span class="id">D13</span><h3>Concluído com o progresso desligado</h3></header><p><code>courseoverviewshowcourseprogress</code> tira a barra e o percentual. O selo "Concluído" e a borda verde dizem o estado do curso, não o quanto falta.</p><p class="rec"><b>Aceita</b>: manter o selo e a borda com o progresso desligado, e esconder só a barra e o número.</p></div>
+    <div class="decision"><header><span class="id">D14</span><h3>"Padrão geométrico" sob o Dimensions</h3></header><p>No Boost Union, a opção padrão mostra o padrão geométrico do core no curso sem foto. A D3 decidiu a cor da categoria para o Dimensions. As duas regras se cruzam.</p><p class="rec"><b>Aceita</b>: a imagem de fallback vence sempre que for a escolha do administrador e houver imagem enviada. Com a opção do padrão geométrico, o Boost Union mostra o padrão do core e o Dimensions mostra a capa na cor da categoria, sobrescrevendo <code>get_generated_image_for_id()</code> como o Boost Union já faz. Os plugins só pedem a imagem ao renderer.</p></div>
+    <div class="decision"><header><span class="id">D15</span><h3>Também <code>courseoverviewshowcourseimages</code>?</h3></header><p>O Boost Union tem uma terceira opção vizinha: mostrar ou não a imagem nas vistas cartão, lista e resumo do bloco Visão geral do curso. Ela não estava no seu pedido.</p><p class="rec"><b>Aceita</b>: seguir também: com "cartão" desmarcado, o cartão fica sem capa (a estrela e a pílula do tipo passam para o corpo); com "lista" desmarcada, a linha da D8 fica sem miniatura.</p></div>
     <div class="decision"><header><span class="id">D8</span><h3>Vista em lista</h3></header><p>O tema e o compass têm uma linha de 56 px parecida, mas diferente em detalhes.</p><p class="rec"><b>Aceita</b>: incluir a linha no mesmo contrato, depois dos cartões.</p></div>
   </div>
 
-  <h3>Ordem, depois de D11 a D15</h3>
+  <h3>Ordem</h3>
   <ol class="steps">
     <li>Contrato em <code>moodle-dev/docs/</code> com a anatomia, os estados, os tokens e as regras do Boost Union (como detectar o tema e ler as duas configurações), mais o teste de varredura modelo; os nomes <code>--dimensions-card-*</code> entram em <code>docs/tokens.md</code> do tema. <span>Só documentação e um teste.</span></li>
     <li>theme_dimensions: painel com o cartão inteiro, visitante com um botão, cabeçalho do painel, capa sem imagem, barra e concluído, e o popover da trilha. <span>Na branch de desenvolvimento do 5.3, com bump e Behat da vitrine.</span></li>
@@ -1332,5 +1442,24 @@ document.querySelectorAll('[data-star]').forEach(function (b) {
       note.textContent = notes[btn.dataset.skin];
     });
   });
+})();
+</script>
+<script>
+(function () {
+  var stage = document.querySelector('[data-scistage]'), note = document.querySelector('[data-scinote]');
+  if (!stage) { return; }
+  var boxes = document.querySelectorAll('[data-sci]');
+  var update = function () {
+    var on = {};
+    boxes.forEach(function (b) { on[b.dataset.sci] = b.checked; });
+    stage.querySelectorAll('.sci-card').forEach(function (c) { c.classList.toggle('noimg', !on.card); });
+    stage.querySelectorAll('.sci-list').forEach(function (c) { c.classList.toggle('noimg', !on.list); });
+    var parts = [];
+    parts.push(on.card ? 'cartões com capa' : 'cartões sem capa, com a borda da categoria no topo');
+    parts.push(on.list ? 'linhas com miniatura' : 'linhas sem miniatura, com a borda à esquerda');
+    note.textContent = (on.card && on.list ? 'O padrão do Boost Union: ' : 'Resultado: ') + parts.join('; ') + '.' +
+      (on.summary ? '' : ' Resumo desmarcado não muda nada aqui.');
+  };
+  boxes.forEach(function (b) { b.addEventListener('change', update); });
 })();
 </script>

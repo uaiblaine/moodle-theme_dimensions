@@ -126,6 +126,47 @@ Only `local_dimensions` reads these.
 The state pills are the theme's own category showcase's: the same colour pairs, in both modes. The
 theme's pills draw no edge, so under the theme each `-edge` is its pill's own ground.
 
+## Card tokens (30)
+
+The course card's tokens, read by every plugin that draws a course card (`block_compass` and `local_dimensions`
+besides the theme's own cards), each through its own name: `--dim-card-*`, `--block_compass-card-*`,
+`--local-dimensions-card-*`. The card's anatomy, states and the plugins' fallback chains are in
+`moodle-dev/docs/course-card/CONTRACT.md`; the design record is `docs/course-card/mockup.html`. The theme declares
+these names in its card round, on the same roots and in the same light and dark blocks as the tokens above.
+
+| Name | Meaning |
+|---|---|
+| `--dimensions-card-radius` | The card's corner radius. |
+| `--dimensions-card-border-width` | The width of its outline. |
+| `--dimensions-card-border` | The colour of its outline. |
+| `--dimensions-card-surface` | Its ground. |
+| `--dimensions-card-ink` | Its title and body text. |
+| `--dimensions-card-ink-muted` | Its secondary lines: category, meta. |
+| `--dimensions-card-title-hover` | The title's colour on hover and focus. |
+| `--dimensions-card-cover-height` | The cover's height. |
+| `--dimensions-card-cover-fallback` | The ground of a cover with no image from the theme's renderer. |
+| `--dimensions-card-cover-overlay` | The gradient laid over a coloured cover. |
+| `--dimensions-card-chip-bg` | The ground of the kind pill on the cover. |
+| `--dimensions-card-chip-ink` | Its text. |
+| `--dimensions-card-extra-bg` | The ground of the plugin slot and of the activities drawer. |
+| `--dimensions-card-extra-icon` | The plugin slot's icon. |
+| `--dimensions-card-track` | The progress bar's track. |
+| `--dimensions-card-fill` | The progress bar's fill. |
+| `--dimensions-card-track-height` | The progress bar's thickness. |
+| `--dimensions-card-done` | The completed card's green base and edge. |
+| `--dimensions-card-done-bg` | The ground of the "Concluído" seal. |
+| `--dimensions-card-done-ink` | Its text. |
+| `--dimensions-card-done-edge` | The thickness of the completed base. |
+| `--dimensions-card-shadow` | The card's shadow at rest. |
+| `--dimensions-card-shadow-hover` | Its shadow on hover and focus. |
+| `--dimensions-card-focus-ring` | The focus ring of the card and its controls; read before `--dimensions-focus-ring`. |
+| `--dimensions-card-focus-width` | The ring's width. |
+| `--dimensions-card-locked-opacity` | The opacity of the cover of a card the viewer cannot open. |
+| `--dimensions-card-close-bg` | The ground of the trail popover's close disc. |
+| `--dimensions-card-close-bg-hover` | Its ground on hover. |
+| `--dimensions-card-close-edge` | Its edge. |
+| `--dimensions-card-transition` | The duration of the card's hover. |
+
 ## Not part of the contract
 
 `--dimensions-navbar-band` (the 3px rule under the navbar, which a Boost Union flavour sets),
