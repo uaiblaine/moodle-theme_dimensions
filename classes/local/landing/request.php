@@ -27,6 +27,7 @@ namespace theme_dimensions\local\landing;
 use theme_dimensions\local\blockless;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\output\landing_guestentry;
+use theme_dimensions\output\landing_hero;
 use theme_dimensions\output\landing_page;
 use theme_dimensions\output\opengraph;
 
@@ -104,6 +105,9 @@ final class request {
      */
     public static function handle(int $courseid, bool $guest = false): self {
         global $CFG, $PAGE, $SESSION, $USER;
+
+        // A banner armed for an earlier page of this process is never this page's.
+        landing_hero::reset();
 
         $landingurl = links::page($courseid);
 
@@ -229,7 +233,15 @@ final class request {
             }
         }
 
-        $page = new landing_page($course, $values, $resolution, $fallbackhtml, $ispublic);
+        /* The banner's format is the site's: full width, it is drawn by the page header (full_header() reads the
+           registry while the layout renders, after this method returns), and the body class lets the stylesheet take
+           the header out of the content column. */
+        $fullwidth = heroformat::is_fullwidth();
+        $page = new landing_page($course, $values, $resolution, $fallbackhtml, $ispublic, $fullwidth);
+        if ($fullwidth) {
+            $PAGE->add_body_class(heroformat::BODY_CLASS);
+            landing_hero::arm(new landing_hero($page));
+        }
 
         /* A public course gets its head tags whoever is looking, so that an editor can check them
            from the page source and a scraper - which is always a visitor - finds them. Registered

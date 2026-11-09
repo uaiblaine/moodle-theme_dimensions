@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The landing page banner can run full width** (setting `landingheroformat` on the *Course landing page* tab). In the
+  content column, the default, the banner stays the card it was. Full width, it is drawn as the page header, from edge
+  to edge under the navbar, with the category showcase hero's geometry: its text keeps the column's edges, the course
+  image is shown whole under the brand colour at the category hero's default overlay (78%), the chamfer sits at the
+  window's lower left and the kicker takes the category eyebrow's bar. One choice for the whole site, the public page
+  included; the page and the header read one export of the page (2026100594). Nine mutation gates.
+
 - **Related contents, stage R0: the reader behind them** (docs/related/PLAN.md). `local\related\finder` answers
   which courses relate to a parent through the competencies linked to both: in automatic mode the parent's whole set
   (a trail's with its steps'), ranked by an identical set, then a course whose completion grants a shared competency,

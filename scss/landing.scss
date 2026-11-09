@@ -1124,6 +1124,155 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
     }
 }
 
+// The banner drawn full width (theme_dimensions\local\landing\heroformat): the page header itself, from edge to edge under
+// the navbar, while everything under it keeps the column it had. The geometry is the category showcase's (the
+// body.dim-category block of scss/category.scss, which says where each number comes from in Boost's layout.scss);
+// keep the two in step. The landing page has no left drawer (no course index, no block region), so the drawer's
+// offsets that page needs are not repeated here.
+// Boost's side padding of #page.drawers from md up, the padding of .main-inner, and the padding of div[role="main"].
+$dim-landing-page-pad: 48px;
+$dim-landing-inner-pad: 8px;
+$dim-landing-main-pad: 15px;
+// What the header escapes to reach the page's edges from md up.
+$dim-landing-bleed: $dim-landing-page-pad + $dim-landing-inner-pad;
+// Boost's cap of the standard layout's .main-inner, which Boost Union sets from its course content width setting.
+// Declared here only for a compile of this sheet alone (landing_scss_test); the theme's compile keeps Boost Union's.
+$course-content-maxwidth: 830px !default;
+// The box the main region had under that cap: the column every child but the header keeps, and the banner's track.
+$dim-landing-column: $course-content-maxwidth - 2 * $dim-landing-inner-pad;
+// How much of the brand colour covers the course image: the category hero's default overlay (branding::DEFAULT_OVERLAY).
+$dim-landing-veil: .78;
+
+body.dim-landing-fullwidth {
+    // The banner meets the navbar's 3px band: no top margin or padding of .main-inner between them. Its white ground
+    // goes too, or the page would sit on a white sheet as wide as the window.
+    #page.drawers .main-inner {
+        margin-top: 0;
+        padding-top: 0;
+        background-color: transparent;
+    }
+
+    #region-main {
+        background-color: transparent;
+    }
+
+    // Below md #page pays no side padding, so .main-inner's own 8px is all the header escapes.
+    #page-header {
+        margin-inline: -$dim-landing-inner-pad;
+    }
+
+    // From md up .main-inner spans the page and pays the side padding itself, so every child but the header lands where
+    // Boost put it and the header escapes by one constant at every width (scss/category.scss says why the column cannot
+    // stay capped and centred).
+    @include media-breakpoint-up(md) {
+        #page.drawers .main-inner {
+            width: auto;
+            max-width: none;
+            margin-inline: -$dim-landing-page-pad;
+            padding-inline: $dim-landing-bleed;
+        }
+
+        #page.drawers .main-inner > :not(#page-header) {
+            max-width: $dim-landing-column;
+            margin-inline: auto;
+        }
+
+        #page-header {
+            max-width: none;
+            margin-inline: -$dim-landing-bleed;
+        }
+    }
+
+    // The band: no corners and no clipped chamfer. It pays the escape back as padding, so its inside is the column.
+    .dimensions-landing__hero--fullwidth {
+        padding-inline: $dim-landing-inner-pad;
+        border-radius: 0;
+        clip-path: none;
+        background: linear-gradient(120deg, var(--dim-landing-from), var(--dim-landing-mid) 58%, var(--dim-landing-to));
+    }
+
+    // The chamfer of the design is a triangle in the page's colour at the band's lower left, as on the category hero.
+    .dimensions-landing__hero--fullwidth::after {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        z-index: 1;
+        width: 18px;
+        height: 18px;
+        background: linear-gradient(to top right, var(--bs-body-bg, #fff) 50%, transparent 50%);
+        content: "";
+        pointer-events: none;
+    }
+
+    // The course image is shown whole under the brand colour, laid over it at the category hero's default strength;
+    // the flat stop shows while it loads. The image, the veil, the chamfer and the content stack in that order.
+    .dimensions-landing__hero--image {
+        background: var(--dim-landing-from);
+    }
+
+    .dimensions-landing__hero--image .dimensions-landing__hero-media {
+        z-index: 0;
+        opacity: 1;
+    }
+
+    .dimensions-landing__hero--image::before {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background:
+            linear-gradient(
+                120deg,
+                rgba($dim-landing-from, $dim-landing-veil),
+                rgba($dim-landing-base, $dim-landing-veil) 58%,
+                rgba($dim-landing-to, $dim-landing-veil)
+            );
+        content: "";
+    }
+
+    // The inside keeps the main region's box, then the page's own inset, so the title starts where the summary does
+    // at every width; from md up div[role="main"] pays its 15px as well (below md it pays none).
+    .dimensions-landing__hero--fullwidth .dimensions-landing__hero-content,
+    .dimensions-landing__hero--fullwidth .dimensions-landing__hero-actions {
+        position: relative;
+        z-index: 2;
+        max-width: $dim-landing-column;
+        margin-inline: auto;
+        padding-inline: var(--dim-landing-inset);
+    }
+
+    .dimensions-landing__hero--fullwidth .dimensions-landing__hero-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    // The kicker is the category hero's eyebrow: the band's bar, then the name in white.
+    .dimensions-landing__hero--fullwidth .dimensions-landing__kicker {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--dim-ds-text-inverse);
+    }
+
+    .dimensions-landing__hero--fullwidth .dimensions-landing__kicker::before {
+        flex: none;
+        width: 18px;
+        height: 3px;
+        background: var(--dimensions-navbar-band, var(--dim-ds-accent-highlight, #4456ff));
+        content: "";
+    }
+
+    @include media-breakpoint-up(md) {
+        .dimensions-landing__hero--fullwidth {
+            padding-inline: $dim-landing-bleed;
+        }
+
+        .dimensions-landing__hero--fullwidth .dimensions-landing__hero-content,
+        .dimensions-landing__hero--fullwidth .dimensions-landing__hero-actions {
+            padding-inline: calc(#{$dim-landing-main-pad} + var(--dim-landing-inset));
+        }
+    }
+}
+
 // The guest entry's interstitial: the moment between the "enter as guest" address and the course.
 // One card on the embedded layout, in the hero's gradient with the design system's chamfer. The
 // focus ring turns white on it, as the category hero's does on its band: the ring's blue is lost
