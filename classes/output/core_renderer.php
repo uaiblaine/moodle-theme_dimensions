@@ -360,6 +360,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     /**
      * The page header: the category showcase's hero on its page, Boost Union's header everywhere else.
      *
+     * A course landing page whose banner is full width ({@see landing_hero}) has that banner as its header, the
+     * header actions handed over the same way; its page header is otherwise empty (no heading, no breadcrumb).
+     *
      * Core calls the course renderer's course_category() before it renders the header, and
      * that method arms a {@see category_hero} for the page when the showcase renders; here
      * the hero replaces the whole of Boost Union's header - the context header with its h1,
@@ -375,6 +378,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * @return string HTML to display the main header.
      */
     public function full_header() {
+        $landinghero = landing_hero::current();
+        if ($landinghero !== null) {
+            return $this->render($landinghero);
+        }
         $hero = category_hero::current();
         if ($hero === null) {
             return $this->focus_full_header();

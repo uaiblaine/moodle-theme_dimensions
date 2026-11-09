@@ -15,7 +15,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   the kind, the crests and the star in a row at the top of the card. The grouped panel draws the flat list's card
   instead of a smaller restyle of it. In dark mode the title keeps no underline at rest, against core's dark-mode
   underline of the main region's links, and the hover underlines it as in light mode. The rows services' card carries
-  three new keys (`band`, `hasband`, `hastop`) (2026100594).
+  three new keys (`band`, `hasband`, `hastop`) (2026100595).
+
+- **The landing page banner can run full width** (setting `landingheroformat` on the *Course landing page* tab). In the
+  content column, the default, the banner stays the card it was. Full width, it is drawn as the page header, from edge
+  to edge under the navbar, with the category showcase hero's geometry: its text keeps the column's edges, the course
+  image is shown whole under the brand colour at the category hero's default overlay (78%), the chamfer sits at the
+  window's lower left and the kicker takes the category eyebrow's bar. One choice for the whole site, the public page
+  included; the page and the header read one export of the page (2026100594). Nine mutation gates.
 
 - **Course cards, stage C1: Boost Union's course overview settings and the cover of a course without an image.** A
   course with no image of its own now shows its category's cover on the showcase's cards instead of the fixed navy:

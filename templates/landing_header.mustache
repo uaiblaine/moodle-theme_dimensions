@@ -1,0 +1,57 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/landing_header
+
+    The page header of a course landing page whose banner is drawn full width
+    (theme_dimensions\local\landing\heroformat): the banner itself, theme_dimensions/landing_hero, from edge to
+    edge under the navbar, as the category showcase's hero is drawn (theme_dimensions/category_hero). It takes
+    the place of Boost Union's header, whose heading and breadcrumb the landing page leaves empty; the header
+    actions and extras are core's own, handed over by the core renderer's full_header() as the parent hands them
+    to core's header. The page below it draws no banner of its own.
+
+    Example context (json):
+    {
+        "courseid": 42,
+        "fullname": "Pre-hospital Care & Rescue",
+        "categoryname": "Alpha",
+        "heroimageurl": "https://example.com/pluginfile.php/31/theme_dimensions/hero/42/abc123/cover.jpg",
+        "badges": [],
+        "hasbadges": false,
+        "chips": ["Online", "6 hours", "Self-paced"],
+        "haschips": true,
+        "haslivechip": false,
+        "headeractions": ["<a class=\"btn btn-secondary\" href=\"https://example.com/course/edit.php?id=42\">Settings</a>"],
+        "headerextras": [],
+        "hasheaderextras": false
+    }
+}}
+<header id="page-header" class="header-maxwidth d-print-none dimensions-landing__hero dimensions-landing__hero--fullwidth{{#heroimageurl}} dimensions-landing__hero--image{{/heroimageurl}}" data-for="page-heading" data-courseid="{{courseid}}">
+    {{> theme_dimensions/landing_hero }}
+    <div class="dimensions-landing__hero-actions header-actions-container" data-region="header-actions-container">
+        {{#headeractions}}
+            <div class="header-action ms-2">{{{.}}}</div>
+        {{/headeractions}}
+    </div>
+    {{#hasheaderextras}}
+        <div class="dimensions-landing__hero-actions header-extras-container" data-region="header-extras-container">
+            {{#headerextras}}
+                <div class="header-extra ms-2">{{{.}}}</div>
+            {{/headerextras}}
+        </div>
+    {{/hasheaderextras}}
+</header>
