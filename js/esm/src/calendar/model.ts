@@ -370,6 +370,18 @@ export const safeHref = (url: string, fallback: string): string => {
     }
 };
 
+/** The one data address an image may carry: the cover the theme's renderer draws (local\card\cover::PREFIX), whole. */
+const COVER_DATA = /^data:image\/svg\+xml;base64,[A-Za-z0-9+/]+={0,2}$/;
+
+/**
+ * An image's address from the answer: a web address ({@see safeHref()}), or the SVG cover of a course with no image of
+ * its own as the server spells it (local\card\cover::data_uri(), core's geometric pattern), base64 and nothing else.
+ *
+ * @param {string} url The address the answer carries.
+ * @returns {string} The address as given, or ''.
+ */
+export const safeImage = (url: string): string => (COVER_DATA.test(url) ? url : safeHref(url, ''));
+
 /**
  * Where an item leads: its own page, else its course's page, else the site's home (calendar_page::item_url()).
  *

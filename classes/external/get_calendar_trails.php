@@ -177,6 +177,11 @@ class get_calendar_trails extends external_api {
                     'reason' => new external_value(PARAM_RAW, 'Core\'s availability text of a locked step, plain; else empty.'),
                     'completed' => new external_value(PARAM_INT, 'When core recorded it done, 0 otherwise.'),
                     'url' => new external_value(PARAM_URL, 'The referenced course\'s page.'),
+                    'image' => new external_value(
+                        PARAM_RAW,
+                        'Its card image: a URL, or a data URI for a course with none of its own; empty when the card view '
+                            . 'draws no image (Boost Union\'s setting).'
+                    ),
                     'next' => new external_value(PARAM_BOOL, 'Whether it is the learner\'s next step.'),
                 ])),
             ])),

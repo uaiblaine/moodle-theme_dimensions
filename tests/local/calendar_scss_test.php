@@ -136,7 +136,24 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * No :has(), no !important, no literal colour outside the two token blocks.
+     * The step popover's card readers (the course card contract, section 7): the block's declarations, one per line.
+     *
+     * @return string[] The declarations, as written.
+     */
+    private function card_readers(): array {
+        $scss = $this->scss();
+        $head = "\n    .dim-cal__trailpop {\n";
+        $start = strpos($scss, $head);
+        $this->assertNotFalse($start, 'The popover declares its card readers.');
+        $end = strpos($scss, "\n    }\n", $start);
+        $body = substr($scss, $start + strlen($head), $end - $start - strlen($head));
+        return array_values(array_filter(array_map('trim', explode("\n", $body)), fn(string $line): bool => $line !== ''));
+    }
+
+    /**
+     * No :has(), no !important, no literal colour outside the two token blocks, but in the step popover's card readers:
+     * each of them is the theme's card name reading the family token of the same suffix first, a literal last, and
+     * nothing else.
      *
      * @return void
      */
@@ -144,7 +161,12 @@ final class calendar_scss_test extends \advanced_testcase {
         $scss = $this->scss();
         $this->assertStringNotContainsString(':has(', $scss);
         $this->assertStringNotContainsString('!important', $scss);
-        $rules = substr($scss, strpos($scss, '@each'));
+        $readers = $this->card_readers();
+        $this->assertCount(11, $readers, 'The extra slot\'s two, the four done, the focus ring\'s two, the close disc\'s three.');
+        foreach ($readers as $reader) {
+            $this->assertMatchesRegularExpression('~^--dim-card-([a-z-]+): var\(--dimensions-card-\1, .+\);$~', $reader);
+        }
+        $rules = str_replace($readers, '', substr($scss, strpos($scss, '@each')));
         $this->assertDoesNotMatchRegularExpression('~#[0-9a-fA-F]{3,6}\b~', $rules, 'A colour outside the tokens.');
         $this->assertDoesNotMatchRegularExpression('~\brgba?\(~', $rules);
     }
@@ -604,6 +626,69 @@ final class calendar_scss_test extends \advanced_testcase {
         $scss = $this->scss();
         $this->assertMatchesRegularExpression('~\.dim-cal__trailstate \{\s*align-self: flex-start;~', $scss);
         $this->assertMatchesRegularExpression('~\.dim-cal__trailtitle \{\s*display: flex;\s*flex-direction: column;~', $scss);
+    }
+
+    /**
+     * C4: the step popover is the course card's dialog variant (the course card contract, section 9). The 96px cover;
+     * the close disc where a card's star would be, the course dialogue's cut to 32px, its colours the card tokens, darker
+     * on hover, the card's focus ring, Bootstrap's close icon through the white filter; a completed step's green base and
+     * green seal; the plugin's slot on its quiet ground; without the cover, a top edge in the category's colour, green
+     * when completed. Every card name it paints with is declared by the family in both colour modes, so the dark mode
+     * reads its own values (post.scss).
+     *
+     * @return void
+     */
+    public function test_the_trail_popover_is_the_cards_dialog(): void {
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailcover \{[^}]*height: 6rem;~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal \.dim-cal__coverclose \{[^}]*position: absolute;[^}]*top: \.5rem;[^}]*right: \.5rem;[^}]*'
+                . 'width: 2rem;[^}]*height: 2rem;[^}]*border: 1px solid var\(--dim-card-close-edge\);[^}]*'
+                . 'border-radius: 50%;[^}]*background: var\(--dim-card-close-bg\);~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression('~&:hover \{\s*background: var\(--dim-card-close-bg-hover\);~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~&:focus-visible \{\s*outline: var\(--dim-card-focus-width\) solid var\(--dim-card-focus-ring\);~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.btn-close \{[^}]*opacity: 1;\s*@include btn-close-white\(\);\s*filter: var\(--bs-btn-close-filter\);~',
+            $scss,
+            'The white cross, as the course dialogue draws it.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailcover--done::after \{[^}]*position: absolute;[^}]*bottom: 0;[^}]*'
+                . 'height: var\(--dim-card-done-edge\);[^}]*background: var\(--dim-card-done\);~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailpop \.dim-cal__trailseal \{[^}]*background: var\(--dim-card-done-bg\);[^}]*'
+                . 'color: var\(--dim-card-done-ink\);~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression('~\.dim-cal__trailextra \{[^}]*background: var\(--dim-card-extra-bg\);~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailextra > \.dim-cal__trailicon \{\s*color: var\(--dim-card-extra-icon\);~',
+            $scss
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailpop--nocover \{\s*border-top: var\(--dim-card-done-edge\) solid var\(--dim-cal-cover-bg,~',
+            $scss,
+            'The category\'s colour, the band the cover would have worn.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailpop--nocover\.dim-cal__trailpop--done \{\s*border-top-color: var\(--dim-card-done\);~',
+            $scss
+        );
+
+        $post = (string) file_get_contents(dirname(__DIR__, 2) . '/scss/post.scss');
+        foreach ($this->card_readers() as $reader) {
+            preg_match('~^(--dim-card-[a-z-]+):~', $reader, $name);
+            $this->assertStringContainsString("var({$name[1]})", $scss, "{$name[1]} paints something.");
+            $family = str_replace('--dim-card-', '--dimensions-card-', $name[1]);
+            $this->assertSame(2, substr_count($post, "    {$family}: "), "{$family}: light and dark.");
+        }
     }
 
     /**

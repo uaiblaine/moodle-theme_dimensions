@@ -14,19 +14,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * A step's popover in the Trilhas view: its category, its name, "Course 3 of 5 · trail",
- * its dates and where they come from, its state and core's availability text for a learner, "View trail" and "Open
- * course".
+ * A step's popover in the Trilhas view, the course card's dialog variant (moodle-dev/docs/course-card/CONTRACT.md,
+ * section 9): its course's cover, its category over its name, its dates as the meta line, "Course 3 of 5 · trail" in the
+ * plugin's slot, its state and core's availability text for a learner, "View trail" and the main action.
  *
  * The event popover's behaviour (EventPopover.tsx), for a step: role="dialog" labelled by the name, not modal; anchored
  * to the bar that opened it by the same rule ({@see anchor}), a bottom sheet on a phone; the focus on its heading once
  * shown; Escape, the close button, a press outside, or Tab past its last control close it and give the focus back to
  * the bar. Its two layout reads are the opener's box and its own, on an opening.
  *
- * It draws a band in the step's category colours (look.ts
- * categoryCover(), else the state's), the category and the name, the state as a pill, a row with the trail's icon for
- * "Course 3 of 5 · trail", a row with the calendar's for the dates and their source, core's reason in a quiet box, and
- * the actions at the end, "View trail" before "Open course".
+ * - The cover is the step's course image (the answer's `image`, {@see safeImage()}: an address or the theme's SVG
+ *   cover), an <img> with an empty alt; the category's band (look.ts categoryCover(), else the state's) is only the
+ *   ground under it, which shows when the image is missing or fails to load. The close button sits on the cover where a
+ *   card's star would: the course dialogue's dark disc at 32 px.
+ * - Boost Union's card view off (`covers` false, calendar_page::props()): no cover; the category and the close button
+ *   share a row at the top of the body, the close the calendar's standard icon button, since the disc is made to sit on
+ *   an image; the popover keeps a top edge in the category's colour.
+ * - A completed step: the state pill is the green seal, the cover gets a green base, and the main action reads "Review"
+ *   instead of "Open course". There is no progress bar: the service carries no percentage per step (D11).
+ * - The buttons are the calendar's own (D12): "View trail" btn-secondary, the main action btn-primary.
  *
  * @module     theme_dimensions/calendar/TrailPopover
  * @copyright  2026 Anderson Blaine
@@ -39,7 +45,7 @@ import {say} from '../daterange/calendar';
 import {anchor} from './EventPopover';
 import {categoryCover} from './look';
 import type {Look} from './look';
-import {safeHref} from './model';
+import {safeHref, safeImage} from './model';
 import {fill} from './strings';
 import type {Strings} from './strings';
 import type {StepState, Trail, TrailStep} from './trails';
@@ -58,6 +64,7 @@ type TrailPopoverProps = {
     opener: HTMLElement,
     sheet: boolean,
     now: number,
+    covers?: boolean,
     onClose: (refocus: boolean) => void,
 };
 
@@ -159,16 +166,126 @@ export const stateLine = (step: TrailStep, look: Look, now: number): string => {
 };
 
 /**
+ * The main action's label: "Review" for a completed step, "Open course" for any other (the course card contract,
+ * section 3: a completed course reads "Review", whatever else is true of it).
+ *
+ * @param {object} step The step.
+ * @param {object} strings The page's strings.
+ * @returns {string}
+ */
+export const mainLabel = (step: TrailStep, strings: Strings): string =>
+    step.state === 'done' ? strings.category_cta_review : strings.calendar_trailcourse;
+
+/** Where the popover sits once measured: a desktop's anchored box, nothing for a sheet. */
+type At = {top: number, left: number, maxHeight?: number} | null;
+
+/**
+ * The popover's inline style: its measured place, and without a cover its category's colours for the top edge.
+ *
+ * @param {object|null} at The measured place.
+ * @param {boolean} covers Whether the popover draws its cover.
+ * @param {object} step The step.
+ * @param {object} look The page's look.
+ * @returns {object} The style.
+ */
+const placed = (at: At, covers: boolean, step: TrailStep, look: Look): CSSProperties => {
+    const style: CSSProperties = covers ? {} : {...categoryCover(step.categoryid, look)};
+    if (at) {
+        style.top = `${at.top}px`;
+        style.left = `${at.left}px`;
+        if (at.maxHeight !== undefined) {
+            style.maxHeight = `${at.maxHeight}px`;
+            style.overflowY = 'auto';
+        }
+    }
+    return style;
+};
+
+/**
+ * The popover's classes: the sheet on a phone, hidden while it measures, without its cover, completed.
+ *
+ * @param {boolean} sheet Whether it is a phone's bottom sheet.
+ * @param {boolean} measuring Whether it is being measured, hidden.
+ * @param {boolean} covers Whether it draws its cover.
+ * @param {boolean} done Whether the step is completed.
+ * @returns {string}
+ */
+const popClasses = (sheet: boolean, measuring: boolean, covers: boolean, done: boolean): string =>
+    'dim-cal__pop dim-cal__trailpop' + (sheet ? ' dim-cal__pop--sheet' : '') + (measuring ? ' dim-cal__pop--measuring' : '')
+        + (covers ? '' : ' dim-cal__trailpop--nocover') + (done ? ' dim-cal__trailpop--done' : '');
+
+/**
+ * The state pill: the state's own colours, the green seal with its check for a completed step.
+ *
+ * @param {object} props The step and the line {@see stateLine()} says of it.
+ * @returns {object} The pill.
+ */
+const StatePill = ({step, state}: {step: TrailStep, state: string}) => {
+    const done = step.state === 'done';
+    const tone = step.state ? ` dim-cal__trailstate--${step.state}` : '';
+    return (
+        <p className={`dim-cal__trailstate${tone}` + (done ? ' dim-cal__trailseal' : '')} data-region="dim-cal-trailstate">
+            {done ? <i className="fa fa-check" aria-hidden="true"></i> : null}
+            {state}
+        </p>
+    );
+};
+
+/** What the cover is handed. */
+type CoverProps = {
+    step: TrailStep,
+    look: Look,
+    image: string,
+    failed: string,
+    setFailed: (image: string) => void,
+    onClose: (refocus: boolean) => void,
+};
+
+/**
+ * The cover: the step's image over its category's band (the band alone once the image fails), a green base for a
+ * completed step, and the close disc where a card's star would be.
+ *
+ * @param {object} props See CoverProps.
+ * @returns {object} The cover.
+ */
+const Cover = ({step, look, image, failed, setFailed, onClose}: CoverProps) => {
+    const done = step.state === 'done';
+    const tone = step.state ? ` dim-cal__trailstate--${step.state}` : '';
+    return (
+        <div
+            className={`dim-cal__popcover dim-cal__trailcover${tone}` + (done ? ' dim-cal__trailcover--done' : '')}
+            style={categoryCover(step.categoryid, look)}
+            data-region="dim-cal-trailcover"
+        >
+            {image !== '' && image !== failed ? (
+                <img className="dim-cal__popcoverimg" src={image} alt="" onError={() => setFailed(image)} />
+            ) : null}
+            <button
+                type="button"
+                className="dim-cal__coverclose"
+                aria-label={look.strings.calendar_close}
+                data-action="dim-cal-pop-close"
+                onClick={() => onClose(true)}
+            >
+                <span className="btn-close" aria-hidden="true"></span>
+            </button>
+        </div>
+    );
+};
+
+/**
  * The popover.
  *
  * @param {object} props See TrailPopoverProps.
  * @returns {object} The dialog.
  */
-const TrailPopover = ({look, trail, step, opener, sheet, now, onClose}: TrailPopoverProps) => {
+const TrailPopover = ({look, trail, step, opener, sheet, now, covers = true, onClose}: TrailPopoverProps) => {
     const dialog = useRef<HTMLDivElement | null>(null);
     const heading = useRef<HTMLHeadingElement | null>(null);
     const focused = useRef<number>(0);
-    const [at, setAt] = useState<{top: number, left: number, maxHeight?: number} | null>(null);
+    const [at, setAt] = useState<At>(null);
+    // The image that failed to load, so the band under it shows instead of a broken image.
+    const [failed, setFailed] = useState<string>('');
 
     // The position, measured once the popover is drawn for this step: an opening, never the page's mount.
     useLayoutEffect(() => {
@@ -238,53 +355,55 @@ const TrailPopover = ({look, trail, step, opener, sheet, now, onClose}: TrailPop
 
     const category = look.categories.get(step.categoryid);
     const state = stateLine(step, look, now);
-    const style: CSSProperties = {};
-    if (at) {
-        style.top = `${at.top}px`;
-        style.left = `${at.left}px`;
-        if (at.maxHeight !== undefined) {
-            style.maxHeight = `${at.maxHeight}px`;
-            style.overflowY = 'auto';
-        }
-    }
-    const tone = step.state ? ` dim-cal__trailstate--${step.state}` : '';
+    const image = covers ? safeImage(step.image) : '';
+    const names = category ? <span className="dim-cal__trailcategory">{category.name}</span> : null;
+    const when = [stepWhen(step, look), stepOpenEnd(step, look)].filter((part) => part !== '').join(' · ');
 
     return (
         <div
             ref={dialog}
-            className={'dim-cal__pop dim-cal__trailpop' + (sheet ? ' dim-cal__pop--sheet' : '')
-                + (!sheet && !at ? ' dim-cal__pop--measuring' : '')}
+            className={popClasses(sheet, !sheet && !at, covers, step.state === 'done')}
             role="dialog"
             aria-labelledby={TITLE}
             data-region="dim-cal-trailpopover"
             data-cmid={step.cmid}
-            style={style}
+            style={placed(at, covers, step, look)}
             onKeyDown={onKeyDown}
         >
-            <div
-                className={`dim-cal__popcover dim-cal__trailcover${tone}`}
-                style={categoryCover(step.categoryid, look)}
-                aria-hidden="true"
-            ></div>
-            <div className="dim-cal__pophead dim-cal__trailpophead">
-                <div className="dim-cal__trailpopnames">
-                    {category ? <span className="dim-cal__trailcategory">{category.name}</span> : null}
-                    <h2 ref={heading} className="dim-cal__poptitle" id={TITLE} tabIndex={-1}>{step.name}</h2>
+            {covers ? (
+                <Cover step={step} look={look} image={image} failed={failed} setFailed={setFailed} onClose={onClose} />
+            ) : (
+                <div className="dim-cal__traildialogtop">
+                    {names}
+                    <button
+                        type="button"
+                        className="btn btn-icon dim-cal__close"
+                        aria-label={look.strings.calendar_close}
+                        data-action="dim-cal-pop-close"
+                        onClick={() => onClose(true)}
+                    >
+                        <i className="fa fa-xmark" aria-hidden="true"></i>
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    className="btn btn-icon dim-cal__close"
-                    aria-label={look.strings.calendar_close}
-                    data-action="dim-cal-pop-close"
-                    onClick={() => onClose(true)}
-                >
-                    <i className="fa fa-xmark" aria-hidden="true"></i>
-                </button>
+            )}
+            <div className="dim-cal__trailpopnames">
+                {covers ? names : null}
+                <h2 ref={heading} className="dim-cal__poptitle" id={TITLE} tabIndex={-1}>{step.name}</h2>
             </div>
-            {state !== '' ? (
-                <p className={`dim-cal__trailstate${tone}`} data-region="dim-cal-trailstate">{state}</p>
+            <p className="dim-cal__trailmeta" data-region="dim-cal-trailwhen">
+                <span className="visually-hidden">{`${look.strings.calendar_when}: `}</span>
+                {when !== '' ? `${when} · ` : ''}
+                <span className="dim-cal__trailsource">
+                    {step.expected ? look.strings.calendar_trailexpected : look.strings.calendar_trailcoursedates}
+                </span>
+            </p>
+            {step.coursename !== step.name ? (
+                <p className="dim-cal__trailmeta" data-region="dim-cal-trailcoursename">
+                    <span className="visually-hidden">{`${look.strings.calendar_course}: `}</span>
+                    {step.coursename}
+                </p>
             ) : null}
-            <p className="dim-cal__poprow" data-region="dim-cal-trailposition">
+            <p className="dim-cal__poprow dim-cal__trailextra" data-region="dim-cal-trailposition">
                 <TrailIcon />
                 <span>
                     {fill(look.strings.calendar_trailposition, {
@@ -294,31 +413,13 @@ const TrailPopover = ({look, trail, step, opener, sheet, now, onClose}: TrailPop
                     })}
                 </span>
             </p>
-            <p className="dim-cal__poprow" data-region="dim-cal-trailwhen">
-                <i className="fa fa-calendar dim-cal__popicon" aria-hidden="true"></i>
-                <span>
-                    <span className="visually-hidden">{`${look.strings.calendar_when}: `}</span>
-                    {[stepWhen(step, look), stepOpenEnd(step, look)].filter((part) => part !== '').join(' · ')}
-                    <small className="dim-cal__trailsource">
-                        {step.expected ? look.strings.calendar_trailexpected : look.strings.calendar_trailcoursedates}
-                    </small>
-                </span>
-            </p>
-            {step.coursename !== step.name ? (
-                <p className="dim-cal__poprow" data-region="dim-cal-trailcoursename">
-                    <i className="fa fa-graduation-cap dim-cal__popicon" aria-hidden="true"></i>
-                    <span>
-                        <span className="visually-hidden">{`${look.strings.calendar_course}: `}</span>
-                        {step.coursename}
-                    </span>
-                </p>
-            ) : null}
+            {state !== '' ? <StatePill step={step} state={state} /> : null}
             {step.state === 'locked' && step.reason !== '' ? (
                 <p className="dim-cal__popquiet" data-region="dim-cal-trailreason">{step.reason}</p>
             ) : null}
             <div className="dim-cal__popactions dim-cal__trailpopactions">
                 <a className="btn btn-secondary" href={safeHref(trail.url, look.home)}>{look.strings.calendar_trailpage}</a>
-                <a className="btn btn-primary" href={safeHref(step.url, look.home)}>{look.strings.calendar_trailcourse}</a>
+                <a className="btn btn-primary" href={safeHref(step.url, look.home)}>{mainLabel(step, look.strings)}</a>
             </div>
         </div>
     );

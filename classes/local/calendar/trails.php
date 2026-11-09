@@ -27,6 +27,8 @@ namespace theme_dimensions\local\calendar;
 use core\context_helper;
 use local_unlistedcourses\access;
 use local_unlistedcourses\discoverability;
+use theme_dimensions\local\card\boost_union;
+use theme_dimensions\local\category\cards;
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\population;
@@ -58,6 +60,9 @@ use theme_dimensions\local\trail\trail;
  * 5. The rows: the trails with a step drawn whose period meets the window, narrowed to one trail or to the account's
  *    own when asked. The period is the landing page's: from the first start to the last end over the steps drawn, left
  *    open by a step that starts and never ends.
+ * 6. The image of each step's course, the popover's cover (the course card contract, section 9): one batch over the
+ *    courses of the steps drawn ({@see cards::images()}, the showcase's reader, with the renderer's cover for a course
+ *    without one), and none while Boost Union's card view draws no image ({@see boost_union::show_images()}).
  *
  * `options` lists every trail of step 2 that has a step drawn, whatever its period: the view's "Trilha" choice. A
  * trail is never named to an account the gate or the view's rule refuses, so a shared address naming one shows nothing
@@ -65,7 +70,8 @@ use theme_dimensions\local\trail\trail;
  *
  * The statements do not grow with the trails up to the cap: one for the candidates, the gate's, the enrolments, the
  * public batch and the plugin's next-action batch (each once a page of candidates, and only over the trails still
- * undecided), one for the steps' referenced courses and their gate, and at most one on {course_completions}.
+ * undecided), one for the steps' referenced courses and their gate, at most one on {course_completions}, and at most
+ * one on {files} for the steps' images.
  * Each trail course's modinfo and completion data are core's caches (trails_budget_test measures a warm page).
  *
  * @package    theme_dimensions
@@ -170,6 +176,8 @@ final class trails {
 
         $categoryids = [];
         $built = [];
+        // The steps' courses, the rows display::many() read: the shape cards::images() reads.
+        $refrows = [];
         foreach ($drawn as $courseid => $entries) {
             if (!$entries) {
                 continue;
@@ -192,6 +200,7 @@ final class trails {
                 $step = $entry['step'];
                 $ref = $entry['row'];
                 $categoryids[(int) $ref->category] = true;
+                $refrows[(int) $step->refcourseid] = $ref;
                 $state = $enrolled ? $progress[$courseid]['states'][$step->cmid] : null;
                 $steps[] = [
                     'cmid' => $step->cmid,
@@ -213,6 +222,7 @@ final class trails {
                     'reason' => $state === null ? '' : (string) $state['reason'],
                     'completed' => $state === null ? 0 : $state['completed'],
                     'url' => links::page($step->refcourseid)->out(false),
+                    'image' => '',
                     'next' => $enrolled && $progress[$courseid]['next'] === $step->cmid,
                 ];
             }
@@ -236,10 +246,12 @@ final class trails {
         ) ?: $a['id'] <=> $b['id']);
 
         $categories = range::categories(array_keys($categoryids));
+        $images = $refrows && boost_union::show_images(boost_union::VIEW_CARD) ? cards::images($refrows, false, true) : [];
         foreach ($built as &$entry) {
             $entry['categoryid'] = isset($categories[$entry['categoryid']]) ? $entry['categoryid'] : 0;
             foreach ($entry['steps'] as &$step) {
                 $step['categoryid'] = isset($categories[$step['categoryid']]) ? $step['categoryid'] : 0;
+                $step['image'] = self::image($images[$step['courseid']] ?? null);
             }
             unset($step);
         }
@@ -247,6 +259,17 @@ final class trails {
         $answer['trails'] = $built;
         $answer['categories'] = array_values($categories);
         return $answer;
+    }
+
+    /**
+     * A step's image as the answer carries it: an uploaded image's address, the renderer's answer for a course without
+     * one (a data URI, or Boost Union's fallback image), or '' for none.
+     *
+     * @param \moodle_url|string|null $image What {@see cards::images()} answered for the step's course.
+     * @return string
+     */
+    private static function image(\moodle_url|string|null $image): string {
+        return $image instanceof \moodle_url ? $image->out(false) : (string) $image;
     }
 
     /**

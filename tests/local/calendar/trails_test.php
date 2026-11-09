@@ -26,6 +26,8 @@ namespace theme_dimensions\local\calendar;
 
 use core_course\customfield\course_handler;
 use local_unlistedcourses\discoverability;
+use theme_dimensions\local\card\boost_union;
+use theme_dimensions\local\card\cover;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\local\trail\progress;
@@ -868,6 +870,116 @@ final class trails_test extends \advanced_testcase {
             $this->assertSame($reads[1], $reads[trails::OPENING], "{$who}: the month and the next cost what one month does.");
             $this->assertSame($reads[1], $reads[trails::MONTHS], "{$who}: three months cost what one month does.");
         }
+    }
+
+    /**
+     * A one-pixel PNG as a course's own image.
+     *
+     * @param \stdClass $course The course.
+     * @return void
+     */
+    private static function upload_image(\stdClass $course): void {
+        get_file_storage()->create_file_from_string([
+            'contextid' => \core\context\course::instance($course->id)->id,
+            'component' => 'course',
+            'filearea' => 'overviewfiles',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'capa.png',
+        ], base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='));
+    }
+
+    /**
+     * Draw the global page in the theme, so the renderer cards::images() asks is the theme's and Boost Union's settings
+     * apply, and let a course keep one image.
+     *
+     * @return void
+     */
+    private static function theme(): void {
+        global $CFG, $PAGE;
+
+        $PAGE->set_context(\context_system::instance());
+        $PAGE->force_theme('dimensions');
+        $CFG->courseoverviewfileslimit = 1;
+        $CFG->courseoverviewfilesext = '.jpg,.gif,.png';
+    }
+
+    /**
+     * C4: each step carries its course's card image (the popover's cover): the course's own image, else the renderer's
+     * cover for a course with none; nothing while Boost Union's card view is off.
+     */
+    public function test_each_step_carries_its_courses_image(): void {
+        global $PAGE;
+        self::theme();
+        $with = $this->ref('Com imagem', self::at(3, 2), self::at(3, 10));
+        $without = $this->ref('Sem imagem', self::at(3, 11), self::at(3, 20));
+        self::upload_image($with);
+        $this->trail('Trilha', [$with, $without]);
+        $this->become(self::getDataGenerator()->create_user());
+
+        $steps = $this->answer('2027-03')['trails'][0]['steps'];
+        $this->assertSame([(int) $with->id, (int) $without->id], array_column($steps, 'courseid'));
+        $this->assertStringEndsWith('/course/overviewfiles/capa.png', $steps[0]['image'], 'The course\'s own image.');
+        $this->assertStringStartsWith(cover::PREFIX, $steps[1]['image'], 'The theme\'s cover for a course with none.');
+        $this->assertSame(
+            $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL)->get_generated_image_for_id((int) $without->id),
+            $steps[1]['image'],
+            'The renderer\'s own answer.'
+        );
+
+        set_config(boost_union::SETTING_IMAGES, 'list,summary', boost_union::COMPONENT);
+        $this->assertSame(['', ''], array_column($this->answer('2027-03')['trails'][0]['steps'], 'image'), 'No card view.');
+    }
+
+    /**
+     * C4: the steps' images are one batch: two trails of two steps and six trails of two steps each pay one statement
+     * for them (the {files} read, the renderer's covers coming from the warm branding cache), measured as the answer
+     * with Boost Union's card view on less the same answer with it off, every course with an image of its own but one.
+     */
+    public function test_the_steps_images_cost_one_statement(): void {
+        global $DB;
+        self::theme();
+        $reader = self::getDataGenerator()->create_user();
+        $categories = [];
+        foreach (['small' => 2, 'big' => 6] as $name => $count) {
+            $category = self::getDataGenerator()->create_category(['name' => $name]);
+            $categories[$name] = (int) $category->id;
+            for ($i = 0; $i < $count; $i++) {
+                $refs = [
+                    $this->ref("{$name} {$i} a", self::at(3, 2), self::at(3, 10), ['category' => $category->id]),
+                    $this->ref("{$name} {$i} b", self::at(3, 11), self::at(3, 20), ['category' => $category->id]),
+                ];
+                if ($i > 0) {
+                    self::upload_image($refs[0]);
+                }
+                self::upload_image($refs[1]);
+                $this->trail("{$name} {$i}", $refs, ['category' => $category->id]);
+            }
+        }
+        $this->become($reader);
+
+        $extra = [];
+        foreach ($categories as $name => $categoryid) {
+            $reads = [];
+            foreach (['card,list,summary' => 'on', 'list,summary' => 'off'] as $value => $setting) {
+                set_config(boost_union::SETTING_IMAGES, $value, boost_union::COMPONENT);
+                $scope = scope::for_viewer($categoryid);
+                $window = trails::month_window('2027-03');
+                trails::answer($window, $scope, 0, false, self::at(3, 15));
+                self::forget();
+                $before = $DB->perf_get_reads();
+                $answer = trails::answer($window, $scope, 0, false, self::at(3, 15));
+                $reads[$setting] = $DB->perf_get_reads() - $before;
+                $images = [];
+                foreach ($answer['trails'] as $trail) {
+                    $images = array_merge($images, array_column($trail['steps'], 'image'));
+                }
+                $this->assertCount($name === 'small' ? 4 : 12, $images, "Precondition: {$name} {$setting}.");
+                $this->assertSame($setting === 'off', in_array('', $images, true), "Precondition: {$name} {$setting} images.");
+            }
+            $extra[$name] = $reads['on'] - $reads['off'];
+        }
+        $this->assertSame(['small' => 1, 'big' => 1], $extra, 'One statement for the images, whatever the count of steps.');
     }
 
     /**

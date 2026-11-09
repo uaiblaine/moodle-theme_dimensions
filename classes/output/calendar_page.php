@@ -34,6 +34,7 @@ use theme_dimensions\local\calendar\range;
 use theme_dimensions\local\calendar\state;
 use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\calendar\window;
+use theme_dimensions\local\card\boost_union;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\local\trail\progress;
 use theme_dimensions\local\trail\trail;
@@ -189,6 +190,7 @@ class calendar_page implements renderable, templatable {
         'calendar_weekempty',
         'calendar_when',
         'calendar_withsub',
+        'category_cta_review',
         'landing_trail_coursecount',
         'landing_trail_onecourse',
         'landing_trail_startson',
@@ -450,7 +452,9 @@ class calendar_page implements renderable, templatable {
                 'home' => (new \core\url('/'))->out(false),
             ],
             // The Trilhas view offered while trails are available, its answer in that
-            // view only; the trail, "Só as minhas" and the zoom are navigation, like the view.
+            // view only; the trail, "Só as minhas" and the zoom are navigation, like the view. `covers` is Boost Union's
+            // card view (the course card contract, section 8): off, the step's popover draws no cover, and the answer
+            // carries no image.
             'trails' => [
                 'offered' => page::trails_offered(),
                 'answer' => $this->trails,
@@ -458,6 +462,7 @@ class calendar_page implements renderable, templatable {
                 'mine' => $this->mine,
                 'zoom' => $this->zoom,
                 'icons' => self::fold_icons(),
+                'covers' => boost_union::show_images(boost_union::VIEW_CARD),
             ],
             // Core's own answers ({@see editing}): whether core's calendar shows this viewer "New event", and the
             // context and the course core's site calendar hands its event form.

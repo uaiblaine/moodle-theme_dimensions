@@ -5,6 +5,20 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Course cards, stage C4: the trail popover.** The Trilhas view's step popover is the course card's dialog: a 96px
+  cover with the step's course image (its own, else the theme's cover in its category's colour or Boost Union's
+  fallback image), the category over the title, the dates as the meta line, "Course n of N · trail" on a quiet ground
+  with the trail's icon, the state pill, core's reason for a locked step, and the actions on the right. The close
+  button is the course dialogue's dark disc at 32px on the cover, darker on hover and ringed on keyboard focus; Escape,
+  Tab past the last control and a press outside still close it and return the focus to the bar. A completed step wears
+  the green "Completed" seal and a green base on its cover, and its main action reads "Review"; the calendar's own
+  buttons stay. No progress bar: the trails service computes no percentage per step. With Boost Union's card images
+  off the popover draws no cover, keeps a top edge in the category's colour (green when completed), and puts the
+  category and the standard close button in a row. `theme_dimensions_get_calendar_trails` answers each step's `image`
+  (a URL or a data URI), read in one batch for the whole answer. The calendar page sets its context before its
+  answers, since the trails' answer reads Boost Union's settings through the page's theme. The popover's date line
+  wraps instead of cutting its source short. Seventeen mutation gates (2026100598).
+
 - **Course cards, stage C3: the showcase's behaviour.** A visitor's card draws one button, "Learn more", to the
   course's landing page, in the flat list and the panel; "More information" is a signed-in reader's, since its
   dialogue is never armed for a visitor, and a course without a landing page has no button. The panel's heading loses

@@ -330,8 +330,9 @@ Look*, tab *Dashboard / My courses*.
   shows that image; with no image uploaded, the category's cover again. The same picture reaches
   every page that asks the theme for it, the Dashboard and *My courses* included.
 - **Show course images** (`courseoverviewshowcourseimages`). With *Card* unchecked the cards are
-  drawn without their cover; with *List* unchecked the list view's rows are drawn without their
-  thumbnail. *Summary* changes nothing on the theme's cards, which have no summary view.
+  drawn without their cover, and so is a course's popover in the calendar's trail view; with *List*
+  unchecked the list view's rows are drawn without their thumbnail. *Summary* changes nothing on the
+  theme's cards, which have no summary view.
 
 ### The calendar blocks
 

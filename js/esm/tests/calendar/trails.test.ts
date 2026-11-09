@@ -54,6 +54,7 @@ const step = (fields: Partial<TrailStep>): TrailStep => ({
     reason: '',
     completed: 0,
     url: 'https://example.com/course/view.php?id=2',
+    image: '',
     next: false,
     ...fields,
 });

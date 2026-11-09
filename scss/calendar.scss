@@ -2916,19 +2916,111 @@ body.dim-calendar {
         background: var(--dim-cal-trailcurrent-edge);
     }
 
-    // The step's popover: a band in its category's colours (or its state's), the category over the name, the state as
-    // a pill, its rows with their icons, core's reason in a quiet box, the actions at the end.
-    .dim-cal__trailcover {
-        height: 4rem;
+    // The step's popover, the course card's dialog variant (moodle-dev/docs/course-card/CONTRACT.md, section 9): the
+    // course's cover with the close disc on it, the category over the name, the dates as the meta line, the trail's
+    // place in the plugin's slot, the state, core's reason in a quiet box, the actions at the end. The card's colours
+    // are the family's card tokens (post.scss), read here through the theme's card names, each the family token first
+    // and a literal last, as scss/category.scss's .dim-card reads them: these declarations hold the only colour
+    // literals of the sheet's rules (calendar_scss_test reads each one as such a reader and nothing else).
+    .dim-cal__trailpop {
+        --dim-card-extra-bg: var(--dimensions-card-extra-bg, var(--bs-tertiary-bg, #f8f9fa));
+        --dim-card-extra-icon: var(--dimensions-card-extra-icon, var(--bs-primary-text-emphasis, #062b4c));
+        --dim-card-done: var(--dimensions-card-done, var(--bs-success, #357a32));
+        --dim-card-done-bg: var(--dimensions-card-done-bg, var(--bs-success-bg-subtle, #d7e4d6));
+        --dim-card-done-ink: var(--dimensions-card-done-ink, var(--bs-success-text-emphasis, #153114));
+        --dim-card-done-edge: var(--dimensions-card-done-edge, 4px);
+        --dim-card-focus-ring: var(--dimensions-card-focus-ring, var(--dimensions-focus-ring, var(--bs-emphasis-color, #000)));
+        --dim-card-focus-width: var(--dimensions-card-focus-width, 2px);
+        --dim-card-close-bg: var(--dimensions-card-close-bg, rgba(0, 0, 0, .5));
+        --dim-card-close-bg-hover: var(--dimensions-card-close-bg-hover, rgba(0, 0, 0, .7));
+        --dim-card-close-edge: var(--dimensions-card-close-edge, rgba(255, 255, 255, .4));
     }
 
-    .dim-cal__trailpophead {
-        align-items: flex-start;
+    // The 96px cover: the course's image over its category's band, which shows only where the image is missing.
+    .dim-cal__trailcover {
+        flex: none;
+        height: 6rem;
+    }
+
+    // A completed step's cover gets a green base, over the image.
+    .dim-cal__trailcover--done::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 1;
+        height: var(--dim-card-done-edge);
+        background: var(--dim-card-done);
+    }
+
+    // The close button where a card's star would be: the course dialogue's dark disc (.dim-cmodal__close) at 32px, its
+    // cross Bootstrap's close icon through the white filter, the card's focus ring on the disc.
+    .dim-cal .dim-cal__coverclose {
+        position: absolute;
+        top: .5rem;
+        right: .5rem;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border: 1px solid var(--dim-card-close-edge);
+        border-radius: 50%;
+        background: var(--dim-card-close-bg);
+
+        &:hover {
+            background: var(--dim-card-close-bg-hover);
+        }
+
+        &:focus-visible {
+            outline: var(--dim-card-focus-width) solid var(--dim-card-focus-ring);
+            outline-offset: 2px;
+        }
+
+        .btn-close {
+            display: block;
+            box-sizing: content-box;
+            width: .75rem;
+            height: .75rem;
+            padding: 0;
+            background-size: .75rem auto;
+            opacity: 1;
+            @include btn-close-white();
+            filter: var(--bs-btn-close-filter);
+        }
+    }
+
+    &.dir-rtl .dim-cal__coverclose {
+        right: auto;
+        left: .5rem;
+    }
+
+    // Without its cover (Boost Union's card view off): the category and the standard close button share the top row,
+    // and the popover keeps a top edge in the category's colour, green for a completed step.
+    .dim-cal__trailpop--nocover {
+        border-top: var(--dim-card-done-edge) solid var(--dim-cal-cover-bg, var(--dim-ds-interactive-primary, var(--bs-primary)));
+    }
+
+    .dim-cal__trailpop--nocover.dim-cal__trailpop--done {
+        border-top-color: var(--dim-card-done);
+    }
+
+    .dim-cal__traildialogtop {
+        display: flex;
+        gap: .5rem;
+        align-items: center;
+        min-height: 2rem;
+    }
+
+    .dim-cal__traildialogtop .dim-cal__close {
+        margin-inline-start: auto;
     }
 
     .dim-cal__trailpopnames {
         display: flex;
-        flex: 1 1 auto;
         flex-direction: column;
         gap: 2px;
         min-width: 0;
@@ -2940,15 +3032,44 @@ body.dim-calendar {
         font-weight: 600;
     }
 
+    // The meta lines: the dates and where they come from, and the course's own name when it is not the step's. They
+    // share the trail column's class, which cuts its line short with an ellipsis; in the dialogue there is room, and the
+    // dates' source would be the part cut, so they wrap.
+    .dim-cal__trailpop .dim-cal__trailmeta {
+        overflow: visible;
+        margin: 0;
+        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
+        font-size: .8125rem;
+        line-height: 1.35;
+        white-space: normal;
+        text-overflow: clip;
+    }
+
+    // The plugin's slot: the trail's place on a quiet ground, with the trail's icon.
+    .dim-cal__trailextra {
+        padding: .4375rem .5625rem;
+        border-radius: var(--dim-ds-radius-md, 8px);
+        background: var(--dim-card-extra-bg);
+        font-size: .8125rem;
+    }
+
+    .dim-cal__trailextra > .dim-cal__trailicon {
+        color: var(--dim-card-extra-icon);
+    }
+
     .dim-cal__trailpop .dim-cal__trailstate {
+        display: inline-flex;
+        gap: .375rem;
+        align-items: center;
         padding: 2px .625rem;
         font-size: .75rem;
     }
 
-    .dim-cal__trailsource {
-        display: block;
-        color: var(--dim-ds-text-muted, var(--bs-secondary-color));
-        font-size: .75rem;
+    // A completed step's pill is the card's green seal.
+    .dim-cal__trailpop .dim-cal__trailseal {
+        border-color: var(--dim-card-done-bg);
+        background: var(--dim-card-done-bg);
+        color: var(--dim-card-done-ink);
     }
 
     .dim-cal__trailpopactions {
@@ -2958,7 +3079,8 @@ body.dim-calendar {
     @media (prefers-reduced-motion: no-preference) {
         .dim-cal__chip,
         .dim-cal__daynum,
-        .dim-cal__line {
+        .dim-cal__line,
+        .dim-cal .dim-cal__coverclose {
             transition: background-color var(--dim-ds-motion-fast, 150ms) var(--dim-ds-motion-ease, ease);
         }
     }

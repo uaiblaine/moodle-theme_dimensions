@@ -636,6 +636,12 @@ final class page {
             return new self(self::core_calendar(), null);
         }
 
+        // The context comes before the answers: the Trilhas view's asks Boost Union's card settings, which read the
+        // page's theme ({@see \theme_dimensions\local\card\boost_union::active()}), and an unset context makes core
+        // abort that read on a real request.
+        $context = \core\context\system::instance();
+        $PAGE->set_context($context);
+
         [$scope, $state] = self::scope_for(state::for_request());
         $root = $state->categoryid ? scope::for_viewer() : $scope;
 
@@ -659,8 +665,6 @@ final class page {
             $answer = range::answer($window, $scope, $state->on(), $state->filters());
         }
 
-        $context = \core\context\system::instance();
-        $PAGE->set_context($context);
         $PAGE->set_pagetype(self::PAGETYPE);
         $PAGE->set_pagelayout('standard');
         $PAGE->set_url(self::url(self::span_params($view, $month, $week, $day) + $state->query()));

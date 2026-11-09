@@ -1040,6 +1040,7 @@ const Calendar = (props: Props) => {
                     zoom={zoom}
                     firstday={firstday}
                     icons={iconsOf(props)}
+                    covers={props.trails?.covers !== false}
                     fetch={fetchTrails}
                     nav={trailnav}
                     scope={`${filter.trail}:${filter.mine}:${state.categoryid}:${state.recursive}`}
