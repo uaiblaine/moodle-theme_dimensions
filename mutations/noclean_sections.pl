@@ -1,3 +1,3 @@
-# Skip the cleaner on the public page's textarea sections: trusted editor HTML then
+# Skip the cleaned re-read of the public page's textarea sections: trusted editor HTML then
 # reaches every visitor uncleaned.
-s/\$html = \$this->ispublic \? clean_text\(\$html, FORMAT_HTML\) : \$html;/\$html = \$html;/;
+s/        if \(\$this->ispublic\) \{\n            \/\* The textarea\x27s export_value\(\).*?\n        \}\n//s;

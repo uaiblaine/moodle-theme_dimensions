@@ -837,12 +837,17 @@ class landingfields {
      * controllers, and the keys they fill keep their empty values. Without $only every field is read,
      * as values() needs.
      *
+     * $clean asks for the textareas cleaned whatever their trust mark, as a page served to the open internet needs
+     * them: HTMLPurifier then runs inside format_text(), before the text filters, so what a filter adds (a shortcode's
+     * markup) is not stripped, as on every other page of Moodle.
+     *
      * @param int[] $courseids The courses.
      * @param bool $filters Whether the textareas go through the text filters (the landing page) or not (a listing).
      * @param string[]|null $only The shortnames to read, null for every field; `names` then holds these alone.
+     * @param bool $clean Whether the textareas are cleaned past their trust mark (a public landing page).
      * @return \stdClass[] courseid => the typed values of values(), for every id given.
      */
-    public static function values_many(array $courseids, bool $filters = true, ?array $only = null): array {
+    public static function values_many(array $courseids, bool $filters = true, ?array $only = null, bool $clean = false): array {
         global $DB;
 
         $courseids = array_values(array_unique(array_map('intval', $courseids)));
@@ -910,7 +915,7 @@ class landingfields {
                 $controllers[$fieldid] = $data[$courseid][$fieldid]
                     ?? ($defaults[$fieldid] ??= data_controller::create(0, (object) ['instanceid' => $courseid], $field));
             }
-            $results[$courseid] = self::typed_values($courseid, $controllers, $table, $names, $filters, $badges);
+            $results[$courseid] = self::typed_values($courseid, $controllers, $table, $names, $filters, $badges, $clean);
         }
         return $results;
     }
@@ -979,6 +984,7 @@ class landingfields {
      * @param string[]|null $names The formatted names, field id => plain, or null to format them in this course's context.
      * @param bool $filters Whether the textareas go through the text filters.
      * @param array $badges The badge files, data id => \stored_file or null ({@see crest_files()}).
+     * @param bool $clean Whether the textareas are cleaned past their trust mark.
      * @return \stdClass The typed values.
      */
     private static function typed_values(
@@ -987,7 +993,8 @@ class landingfields {
         array $table,
         ?array $names,
         bool $filters,
-        array $badges
+        array $badges,
+        bool $clean = false
     ): \stdClass {
         $values = (object) [
             'model' => 0,
@@ -1047,13 +1054,13 @@ class landingfields {
                     $values->meetings = self::plain_text_value($data->get_value(), $context);
                     break;
                 case self::SHORTNAME_AUDIENCE:
-                    $values->audience = self::textarea_value($data, $context, $filters);
+                    $values->audience = self::textarea_value($data, $context, $filters, $clean);
                     break;
                 case self::SHORTNAME_PROGRAMME:
-                    $values->programme = self::textarea_value($data, $context, $filters);
+                    $values->programme = self::textarea_value($data, $context, $filters, $clean);
                     break;
                 case self::SHORTNAME_CERTIFICATION:
-                    $values->certification = self::textarea_value($data, $context, $filters);
+                    $values->certification = self::textarea_value($data, $context, $filters, $clean);
                     break;
                 case self::SHORTNAME_CITY:
                     $values->city = self::plain_text_value($data->get_value(), $context);
@@ -1273,19 +1280,26 @@ class landingfields {
     /**
      * The HTML of a textarea field, with or without the text filters.
      *
-     * With $filters true this is exactly core's export_value(); without, the
-     * same pluginfile rewriting and cleaning with the filter pass skipped -
-     * see values_many() for why a listing asks for that.
+     * With $filters true and $clean false this is exactly core's export_value(); otherwise the same pluginfile
+     * rewriting, with the filter pass skipped (see values_many() for why a listing asks for that) or the cleaning
+     * forced past the value's trust mark (`noclean` false, which format_text() reads before the trust mark and
+     * applies before the text filters).
      *
      * @param data_controller $data The textarea's controller, a default included.
      * @param \core\context\course $context The course context.
      * @param bool $filters Whether the text filters run.
+     * @param bool $clean Whether the value is cleaned whatever its trust mark.
      * @return string|null Final HTML, or null when empty.
      */
-    private static function textarea_value(data_controller $data, \core\context\course $context, bool $filters): ?string {
+    private static function textarea_value(
+        data_controller $data,
+        \core\context\course $context,
+        bool $filters,
+        bool $clean = false
+    ): ?string {
         global $CFG;
 
-        if ($filters) {
+        if ($filters && !$clean) {
             return $data->export_value();
         }
         require_once($CFG->libdir . '/filelib.php');
@@ -1306,8 +1320,8 @@ class landingfields {
             return format_text($processed, $data->get('valueformat'), [
                 'context' => $context,
                 'trusted' => $data->get('valuetrust'),
-                'filter' => false,
-            ]);
+                'filter' => $filters,
+            ] + ($clean ? ['noclean' => false] : []));
         }
         $field = $data->get_field();
         $configcontext = $field->get_handler()->get_configuration_context();
@@ -1322,8 +1336,8 @@ class landingfields {
         return format_text($processed, $field->get_configdata_property('defaultvalueformat'), [
             'context' => $configcontext,
             'trusted' => true,
-            'filter' => false,
-        ]);
+            'filter' => $filters,
+        ] + ($clean ? ['noclean' => false] : []));
     }
 
     /**
