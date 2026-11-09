@@ -122,6 +122,7 @@ type TrailViewProps = {
     zoom?: Zoom,
     firstday?: number,
     icons?: FoldIcons,
+    covers?: boolean,
     fetch?: (month: string, months: number) => Promise<TrailAnswer>,
     scope?: string,
     nav?: MutableRefObject<TrailNav | null>,
@@ -413,7 +414,7 @@ const useArrivals = (ids: number[], fresh: boolean): Folds => {
  * @returns {object} The region.
  */
 const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 0, zoom = 'day', firstday = 0, icons = NO_ICONS,
-    fetch, scope = '', nav, onRange, onMonth, onDrawn, onWidth}: TrailViewProps) => {
+    covers = true, fetch, scope = '', nav, onRange, onMonth, onDrawn, onWidth}: TrailViewProps) => {
     const root = useRef<HTMLElement | null>(null);
     const width = useRef<(width: number) => void>(onWidth);
     width.current = onWidth;
@@ -1393,6 +1394,7 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                     opener={popped.opener}
                     sheet={phone}
                     now={now}
+                    covers={covers}
                     onClose={close}
                 />
             ) : null}

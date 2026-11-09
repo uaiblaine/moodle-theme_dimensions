@@ -26,6 +26,7 @@
 namespace theme_dimensions\local\calendar;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
+use theme_dimensions\local\card\cover;
 use theme_dimensions\output\calendar_page;
 
 /**
@@ -1524,5 +1525,50 @@ final class calendar_component_source_test extends \basic_testcase {
         $this->assertStringContainsString('<span aria-hidden="true">{look.strings.calendar_trailheading}</span>', $view);
         $this->assertSame(2, substr_count($view, '{chevrons()}'), 'Both folds wear core\'s chevrons, the same three icons.');
         $this->assertStringNotContainsString('remember', $view, 'A fold is never saved.');
+    }
+
+    /**
+     * C4: the step's popover is the course card's dialog variant (the course card contract, section 9), read where
+     * PHPUnit can see it; Jest is the behaviour gate (TrailView.test.tsx, "the step's popover"). Its cover is the step's
+     * image, only a web address or the server's SVG cover, and none while Boost Union's card view is off, when the
+     * close is the calendar's icon button instead of the disc; a failed image leaves the band; a completed step wears the
+     * seal and the green base and its main action reads "Review"; no progress bar (D11); the calendar's buttons (D12).
+     *
+     * @return void
+     */
+    public function test_the_trail_popover_is_the_cards_dialog(): void {
+        $popover = $this->sources()['TrailPopover.tsx'];
+        $this->assertStringContainsString("const image = covers ? safeImage(step.image) : '';", $popover);
+        $this->assertStringContainsString('{covers ? (', $popover);
+        $this->assertStringContainsString(
+            '<img className="dim-cal__popcoverimg" src={image} alt="" onError={() => setFailed(image)} />',
+            $popover
+        );
+        $this->assertStringContainsString("{image !== '' && image !== failed ? (", $popover, 'A failed image leaves the band.');
+        $this->assertStringContainsString("(covers ? '' : ' dim-cal__trailpop--nocover')", $popover);
+        $this->assertSame(2, substr_count($popover, 'data-action="dim-cal-pop-close"'), 'The disc, or the icon button.');
+        $this->assertStringContainsString('className="dim-cal__coverclose"', $popover);
+        $this->assertStringContainsString(
+            "step.state === 'done' ? strings.category_cta_review : strings.calendar_trailcourse;",
+            $popover
+        );
+        $this->assertStringContainsString("(done ? ' dim-cal__trailseal' : '')", $popover);
+        $this->assertStringContainsString("(done ? ' dim-cal__trailcover--done' : '')", $popover);
+        $this->assertStringNotContainsString('progressbar', $popover, 'D11: no percentage per step, so no bar.');
+        $this->assertStringContainsString('<a className="btn btn-secondary" href={safeHref(trail.url, look.home)}>', $popover);
+        $this->assertStringContainsString(
+            '<a className="btn btn-primary" href={safeHref(step.url, look.home)}>{mainLabel(step, look.strings)}</a>',
+            $popover
+        );
+
+        $model = $this->sources()['model.ts'];
+        $prefix = str_replace(['/', '+'], ['\\/', '\\+'], cover::PREFIX);
+        $this->assertStringContainsString("const COVER_DATA = /^{$prefix}[A-Za-z0-9+/]+={0,2}$/;", $model, 'The server\'s prefix.');
+        $this->assertStringContainsString(
+            "export const safeImage = (url: string): string => (COVER_DATA.test(url) ? url : safeHref(url, ''));",
+            $model
+        );
+        $this->assertStringContainsString('covers={props.trails?.covers !== false}', $this->sources()['Calendar.tsx']);
+        $this->assertStringContainsString('covers={covers}', $this->sources()['TrailView.tsx']);
     }
 }

@@ -35,6 +35,7 @@ use theme_dimensions\local\calendar\scope;
 use theme_dimensions\local\calendar\state;
 use theme_dimensions\local\calendar\tree;
 use theme_dimensions\local\calendar\window;
+use theme_dimensions\local\card\boost_union;
 use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
@@ -359,6 +360,25 @@ final class calendar_page_test extends \advanced_testcase {
         $this->assertContains('calendar_trailfrom', calendar_page::STRINGS, 'A start alone.');
         $this->assertContains('calendar_until', calendar_page::STRINGS, 'An end alone.');
         $this->assertContains('calendar_trailnodates', calendar_page::STRINGS, 'No dates.');
+    }
+
+    /**
+     * C4: Boost Union's card view reaches the client as the Trilhas view's `covers` (the course card contract, section 8):
+     * on by default, off once the administrator unchecks the card view, when the step's popover draws no cover; the
+     * completed step's "Review" is among the client's strings.
+     *
+     * @return void
+     */
+    public function test_the_trail_popover_follows_boost_unions_card_view(): void {
+        global $PAGE;
+        $PAGE->force_theme('dimensions');
+        [$renderable] = $this->build(new state());
+        $this->assertTrue($renderable->props()['trails']['covers'], 'Boost Union\'s default draws the images.');
+        set_config(boost_union::SETTING_IMAGES, 'list,summary', boost_union::COMPONENT);
+        $this->assertFalse($renderable->props()['trails']['covers'], 'The card view unchecked.');
+        set_config(boost_union::SETTING_IMAGES, 'card', boost_union::COMPONENT);
+        $this->assertTrue($renderable->props()['trails']['covers'], 'The control: the card view alone.');
+        $this->assertContains('category_cta_review', calendar_page::STRINGS);
     }
 
     /**

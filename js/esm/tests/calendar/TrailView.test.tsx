@@ -60,12 +60,12 @@ const trail = (fields: Partial<Trail> = {}): Trail => ({
         {
             cmid: 70, position: 1, name: 'Fundamentos', courseid: 71, coursename: 'Fundamentos', categoryid: 3,
             start: at('2026-11-02', 12), end: at('2026-11-10', 12), expected: true, state: '', reason: '', completed: 0,
-            url: 'https://example.com/course/view.php?id=71', next: false,
+            url: 'https://example.com/course/view.php?id=71', image: '', next: false,
         },
         {
             cmid: 72, position: 2, name: 'Prática', courseid: 73, coursename: 'Prática supervisionada', categoryid: 3,
             start: at('2026-11-11', 12), end: at('2026-12-10', 12), expected: false, state: '', reason: '', completed: 0,
-            url: 'https://example.com/course/view.php?id=73', next: false,
+            url: 'https://example.com/course/view.php?id=73', image: '', next: false,
         },
     ],
     ...fields,
@@ -157,11 +157,22 @@ const mount = async(given: Props): Promise<HTMLElement> => {
  * @param {object} more Further trails props.
  * @returns {object}
  */
-const offered = (shown: TrailAnswer | null, more: {trail?: number, mine?: boolean, today?: string, zoom?: string} = {}): Props =>
+const offered = (
+    shown: TrailAnswer | null,
+    more: {trail?: number, mine?: boolean, today?: string, zoom?: string, covers?: boolean} = {}
+): Props =>
     props([], {
         view: shown ? 'trail' : 'month',
         today: more.today || '2026-11-17',
-        trails: {offered: true, answer: shown, trail: more.trail || 0, mine: more.mine || false, zoom: more.zoom || '', icons: ICONS},
+        trails: {
+            offered: true,
+            answer: shown,
+            trail: more.trail || 0,
+            mine: more.mine || false,
+            zoom: more.zoom || '',
+            icons: ICONS,
+            ...(more.covers === undefined ? {} : {covers: more.covers}),
+        },
     });
 
 /** Core's chevrons as the server renders them. */
@@ -686,6 +697,124 @@ describe('the step\'s popover', () => {
         expect(pop.querySelector('[data-region="dim-cal-trailstate"]')?.textContent).toBe('Locked');
         expect(pop.querySelector('[data-region="dim-cal-trailreason"]')?.textContent)
             .toBe('Not available unless: Fundamentos is complete');
+    });
+
+    /**
+     * Open the second step's popover.
+     *
+     * @param {object} page The page.
+     * @returns {Promise} The popover and the bar that opened it.
+     */
+    const popSecond = async(page: HTMLElement): Promise<{pop: HTMLElement, bar: HTMLElement}> => {
+        const bar = page.querySelectorAll<HTMLElement>('.dim-cal__trailbar')[1];
+        await act(async() => {
+            fireEvent.click(bar);
+        });
+        return {pop: page.querySelector<HTMLElement>('[data-region="dim-cal-trailpopover"]') as HTMLElement, bar: bar};
+    };
+
+    it('draws the course\'s image as its cover, the band under it, and the close disc on it', async() => {
+        const pictured = trail();
+        pictured.steps[1].image = 'https://example.com/pluginfile.php/5/course/overviewfiles/capa.png';
+        const page = await mount(offered(trails([pictured])));
+        const {pop, bar} = await popSecond(page);
+        const cover = pop.querySelector<HTMLElement>('[data-region="dim-cal-trailcover"]') as HTMLElement;
+        expect(pop.firstElementChild).toBe(cover);
+        const image = cover.querySelector('img') as HTMLImageElement;
+        expect(image.getAttribute('src')).toBe('https://example.com/pluginfile.php/5/course/overviewfiles/capa.png');
+        expect(image.getAttribute('alt')).toBe('');
+        expect(cover.style.getPropertyValue('--dim-cal-cover-bg')).toBe('#ffffff');
+        expect(pop.classList.contains('dim-cal__trailpop--nocover')).toBe(false);
+        expect(pop.querySelector('[role="progressbar"]')).toBeNull();
+        // The meta line, the plugin's slot and the category over the title.
+        expect(pop.querySelector('[data-region="dim-cal-trailwhen"]')?.classList.contains('dim-cal__trailmeta')).toBe(true);
+        expect(pop.querySelector('[data-region="dim-cal-trailposition"]')?.classList.contains('dim-cal__trailextra')).toBe(true);
+        expect(pop.querySelector('.dim-cal__trailpopnames')?.textContent).toBe('GestãoPrática');
+
+        // A failed image leaves the band.
+        fireEvent.error(image);
+        expect(cover.querySelector('img')).toBeNull();
+        expect(page.querySelector('[data-region="dim-cal-trailcover"]')).toBe(cover);
+
+        // The disc is the cover's, named, and closes the popover with the focus back on the bar.
+        const close = cover.querySelector<HTMLButtonElement>('.dim-cal__coverclose') as HTMLButtonElement;
+        expect(close.getAttribute('aria-label')).toBe('Close');
+        expect(close.querySelector('.btn-close')?.getAttribute('aria-hidden')).toBe('true');
+        expect(pop.querySelectorAll('[data-action="dim-cal-pop-close"]')).toHaveLength(1);
+        await act(async() => {
+            fireEvent.click(close);
+        });
+        expect(page.querySelector('[data-region="dim-cal-trailpopover"]')).toBeNull();
+        expect(document.activeElement).toBe(bar);
+    });
+
+    it('takes the server\'s SVG cover and refuses any other data address', async() => {
+        const cover = 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=';
+        const pictured = trail();
+        pictured.steps[0].image = cover;
+        pictured.steps[1].image = 'data:text/html;base64,PHN2Zz48L3N2Zz4=';
+        const page = await mount(offered(trails([pictured])));
+        const {pop} = await popSecond(page);
+        expect(pop.querySelector('img')).toBeNull();
+        fireEvent.keyDown(pop, {key: 'Escape'});
+        await act(async() => {
+            fireEvent.click(page.querySelectorAll<HTMLElement>('.dim-cal__trailbar')[0]);
+        });
+        expect(page.querySelector('[data-region="dim-cal-trailpopover"] img')?.getAttribute('src')).toBe(cover);
+    });
+
+    it('marks a completed step with the green seal and base, and its main action reads Review', async() => {
+        const learner = trail({enrolled: true});
+        learner.steps[0].state = 'current';
+        learner.steps[1].state = 'done';
+        const page = await mount(offered(trails([learner])));
+        const {pop} = await popSecond(page);
+        const pill = pop.querySelector('[data-region="dim-cal-trailstate"]') as HTMLElement;
+        expect(pill.textContent).toBe('Completed');
+        expect(pill.classList.contains('dim-cal__trailseal')).toBe(true);
+        expect(pill.querySelector('.fa-check')?.getAttribute('aria-hidden')).toBe('true');
+        expect(pop.querySelector('[data-region="dim-cal-trailcover"]')?.classList.contains('dim-cal__trailcover--done')).toBe(true);
+        expect(pop.classList.contains('dim-cal__trailpop--done')).toBe(true);
+        const actions = Array.from(pop.querySelectorAll<HTMLAnchorElement>('.dim-cal__trailpopactions a'));
+        expect(actions.map((link) => [link.className, link.textContent])).toEqual([
+            ['btn btn-secondary', 'View trail'],
+            ['btn btn-primary', 'Review'],
+        ]);
+
+        // The control: a step in progress keeps its pill and "Open course".
+        fireEvent.keyDown(pop, {key: 'Escape'});
+        await act(async() => {
+            fireEvent.click(page.querySelectorAll<HTMLElement>('.dim-cal__trailbar')[0]);
+        });
+        const current = page.querySelector<HTMLElement>('[data-region="dim-cal-trailpopover"]') as HTMLElement;
+        expect(current.querySelector('.dim-cal__trailseal')).toBeNull();
+        expect(current.querySelector('.dim-cal__trailcover--done')).toBeNull();
+        expect(current.querySelector('.dim-cal__trailpopactions .btn-primary')?.textContent).toBe('Open course');
+    });
+
+    it('draws no cover while Boost Union\'s card view is off, the category and the icon button in a row', async() => {
+        const pictured = trail({enrolled: true});
+        pictured.steps[1].image = 'https://example.com/pluginfile.php/5/course/overviewfiles/capa.png';
+        pictured.steps[1].state = 'done';
+        const page = await mount(offered(trails([pictured]), {covers: false}));
+        const {pop, bar} = await popSecond(page);
+        expect(pop.querySelector('[data-region="dim-cal-trailcover"]')).toBeNull();
+        expect(pop.querySelector('img')).toBeNull();
+        expect(pop.querySelector('.dim-cal__coverclose')).toBeNull();
+        expect(pop.classList.contains('dim-cal__trailpop--nocover')).toBe(true);
+        expect(pop.style.getPropertyValue('--dim-cal-cover-bg')).toBe('#ffffff');
+        const top = pop.querySelector('.dim-cal__traildialogtop') as HTMLElement;
+        expect(top).toBe(pop.firstElementChild);
+        expect(top.querySelector('.dim-cal__trailcategory')?.textContent).toBe('Gestão');
+        const close = top.querySelector<HTMLButtonElement>('button.btn.btn-icon.dim-cal__close') as HTMLButtonElement;
+        expect(close.getAttribute('aria-label')).toBe('Close');
+        expect(pop.querySelectorAll('.dim-cal__trailcategory')).toHaveLength(1);
+        // The seal stays without the cover; the keyboard is unchanged: Tab past the last control closes.
+        expect(pop.querySelector('.dim-cal__trailseal')).not.toBeNull();
+        const last = pop.querySelector<HTMLElement>('.dim-cal__trailpopactions .btn-primary') as HTMLElement;
+        fireEvent.keyDown(last, {key: 'Tab'});
+        expect(page.querySelector('[data-region="dim-cal-trailpopover"]')).toBeNull();
+        expect(document.activeElement).toBe(bar);
     });
 });
 
@@ -1359,7 +1488,7 @@ describe('the days\' scroller', () => {
                 cmid: 1000 + i * 10 + j, position: j + 1, name: `Curso ${i}.${j}`, courseid: 5000 + i * 10 + j,
                 coursename: `Curso ${i}.${j}`, categoryid: 3, start: at(start, 12), end: at(end, 12), expected: false,
                 state: j % 4 === 0 ? 'complete' : '', reason: '', completed: j % 4 === 0 ? at(end, 12) : 0,
-                url: `https://example.com/course/view.php?id=${5000 + i * 10 + j}`, next: j === 1,
+                url: `https://example.com/course/view.php?id=${5000 + i * 10 + j}`, image: '', next: j === 1,
             };
         }),
     }));

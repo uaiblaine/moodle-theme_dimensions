@@ -68,7 +68,11 @@ export const ZOOMS: Zoom[] = ['day', 'week', 'month'];
 /** A step's state for a learner of the trail (local\trail\progress), or '' for anyone else. */
 export type StepState = 'done' | 'current' | 'late' | 'locked' | 'upcoming' | '';
 
-/** One step of a trail as the answer carries it. */
+/**
+ * One step of a trail as the answer carries it. `image` is its course's card image (an address, or the data URI of the
+ * cover of a course with none), '' while Boost Union's card view draws no image; there is no percentage, which
+ * local\trail\progress does not compute per step (D11 of the course card contract).
+ */
 export type TrailStep = {
     cmid: number,
     position: number,
@@ -83,6 +87,7 @@ export type TrailStep = {
     reason: string,
     completed: number,
     url: string,
+    image: string,
     next: boolean,
 };
 
@@ -112,7 +117,10 @@ export type TrailAnswer = {
 /** Core's course-section chevrons, rendered by the server (calendar_page::props()'s `trails.icons`). */
 export type FoldIcons = {expanded: string, collapsed: string, collapsedrtl: string};
 
-/** What the page hands the view (calendar_page::props()'s `trails`). */
+/**
+ * What the page hands the view (calendar_page::props()'s `trails`). `covers` is Boost Union's card view: false, the
+ * step's popover draws no cover; absent reads as true.
+ */
 export type TrailProps = {
     offered: boolean,
     answer: TrailAnswer | null,
@@ -120,6 +128,7 @@ export type TrailProps = {
     mine: boolean,
     zoom?: string,
     icons?: FoldIcons,
+    covers?: boolean,
 };
 
 /** The view's two filters: one trail (0 for every trail) and "Só as minhas". */

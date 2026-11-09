@@ -130,6 +130,8 @@ const safeHref = /* @__PURE__ */ __name((url, fallback) => {
     return fallback;
   }
 }, "safeHref");
+const COVER_DATA = /^data:image\/svg\+xml;base64,[A-Za-z0-9+/]+={0,2}$/;
+const safeImage = /* @__PURE__ */ __name((url) => COVER_DATA.test(url) ? url : safeHref(url, ""), "safeImage");
 const itemHref = /* @__PURE__ */ __name((item, courses, home) => {
   const own = safeHref(item.url, "");
   if (own !== "") {
@@ -193,6 +195,7 @@ export {
   rangeArgs,
   readAddress,
   safeHref,
+  safeImage,
   sameState,
   shownOn,
   withDay

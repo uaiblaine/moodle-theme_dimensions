@@ -53,4 +53,10 @@ request on `main`. The design record is `mockup.html` beside this file; the owne
 - The dialog variant (contract section 9): the 96 px cover, the close disc at 32 px where the star would be, the
   plugin slot "Curso n de N · trilha", the completed seal and base, the main action by state ("Rever" when done),
   the calendar's buttons kept (D12), and the cover-less form when Boost Union's card images are off.
+- As built: `get_calendar_trails` answers each step's `image` (PARAM_RAW), one `cards::images(..., true)` batch over the
+  steps' rows (one `{files}` statement, the covers from the warm branding cache), none while Boost Union's card view is
+  off; the page hands the client that view as `trails.covers`. The close disc is a button over Bootstrap's white
+  `.btn-close`, its colours the card tokens read on `.dim-cal__trailpop` (`--dim-card-close-*`, `-done*`, `-extra-*`,
+  `-focus-*`); "Rever" reuses `category_cta_review`. The cover-less popover keeps a 4px top edge in the category's
+  colour, green when completed.
 - Gate: tier 3, `--matrix --behat` (the trail feature).

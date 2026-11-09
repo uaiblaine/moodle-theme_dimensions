@@ -149,6 +149,7 @@ export const KEYS = [
     'calendar_weekempty',
     'calendar_when',
     'calendar_withsub',
+    'category_cta_review',
     'landing_trail_coursecount',
     'landing_trail_onecourse',
     'landing_trail_startson',

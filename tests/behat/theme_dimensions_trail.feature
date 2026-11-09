@@ -74,3 +74,9 @@ Feature: A trail's landing page draws its courses in order
     # A course's row in the trail column scrolls to its bar and opens its popover once the scroll has ended.
     And I click on "[data-region='dim-cal-trailrow'][data-cmid]" "css_element"
     And I should see "Course 1 of 2 · Trail of Management" in the "[data-region='dim-cal-trailpopover']" "css_element"
+    # C4: the popover is the course card's dialog: the course's cover with the close disc on it, the calendar's buttons.
+    And "[data-region='dim-cal-trailpopover'] [data-region='dim-cal-trailcover'] img" "css_element" should exist
+    And "Open course" "link" should exist in the "[data-region='dim-cal-trailpopover']" "css_element"
+    And "View trail" "link" should exist in the "[data-region='dim-cal-trailpopover']" "css_element"
+    And I click on "Close" "button" in the "[data-region='dim-cal-trailcover']" "css_element"
+    And "[data-region='dim-cal-trailpopover']" "css_element" should not exist

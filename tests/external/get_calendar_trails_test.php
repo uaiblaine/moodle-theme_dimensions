@@ -29,6 +29,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\calendar\scope;
 use theme_dimensions\local\calendar\trails;
+use theme_dimensions\local\card\cover;
 use theme_dimensions\local\landingfields;
 
 defined('MOODLE_INTERNAL') || die();
@@ -128,6 +129,8 @@ final class get_calendar_trails_test extends \advanced_testcase {
         $this->assertSame('Trilha um', $data['trails'][0]['name']);
         $this->assertSame('Passo 1', $data['trails'][0]['steps'][0]['name']);
         $this->assertSame('Fire & rescue', $data['trails'][0]['steps'][0]['coursename']);
+        // C4: the step's cover, here the renderer's for a course with no image: a data URI, which PARAM_URL would refuse.
+        $this->assertStringStartsWith(cover::PREFIX, $data['trails'][0]['steps'][0]['image']);
         $json = json_encode($data);
         $this->assertStringNotContainsString('<', $json);
 

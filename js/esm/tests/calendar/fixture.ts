@@ -196,6 +196,7 @@ export const STRINGS: Record<string, string> = {
     'calendar_weekempty': 'Nothing this week.',
     'calendar_when': 'When',
     'calendar_withsub': 'with subcategories',
+    'category_cta_review': 'Review',
     'landing_trail_coursecount': '{$a} courses',
     'landing_trail_onecourse': '1 course',
     'landing_trail_startson': 'Starts on {$a}',
