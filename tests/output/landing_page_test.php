@@ -504,9 +504,11 @@ final class landing_page_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_public_course_cleans_a_fields_default_too(): void {
-        global $DB, $PAGE;
+        global $CFG, $DB, $PAGE;
 
         $this->resetAfterTest();
+        // Without trusted text on, format_text() cleans a trusted default anyway, and the control would be vacuous.
+        $CFG->enabletrusttext = 1;
         $this->setAdminUser();
         \core_course\customfield\course_handler::reset_caches();
         landingfields::reset_field_cache();
