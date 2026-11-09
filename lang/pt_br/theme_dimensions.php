@@ -883,13 +883,38 @@ $string['recommendation_profileveto_description'] = 'Este tema restringe quem po
 $string['recommendation_profileveto_summary_off'] = 'A exigência de login para perfis do núcleo está desligada, então todo perfil está aberto a todos e a regra do tema não é aplicada.';
 $string['recommendation_profileveto_summary_ok'] = 'O núcleo exige login para ver perfis, então a regra de perfis do tema vale.';
 $string['recommendation_profileveto_title'] = 'Dimensions: Regra de acesso a perfis';
+$string['recommendation_relatedshortcode_description'] = 'O shortcode [{$a}] desenha a faixa de cursos relacionados de uma página de apresentação em qualquer texto: uma página, um rótulo, a descrição de uma categoria. Ele é lido pelo filtro Shortcodes (filter_shortcodes), que este tema não exige: sem o plugin o shortcode não faz nada, e com o filtro desligado um texto que o contém o mostra como foi escrito. A faixa das próprias páginas de apresentação não precisa de nenhum dos dois. Instale o filter_shortcodes e ligue-o em Administração do site > Plugins > Filtros > Gerenciar filtros para usar o shortcode.';
+$string['recommendation_relatedshortcode_summary_missing'] = 'O filtro Shortcodes (filter_shortcodes) não está instalado, então o shortcode [{$a}] não faz nada.';
+$string['recommendation_relatedshortcode_summary_off'] = 'O filtro Shortcodes está instalado mas desativado, então um texto com [{$a}] o mostra como foi escrito.';
+$string['recommendation_relatedshortcode_summary_ok'] = 'O filtro Shortcodes está ligado: [{$a}] desenha a faixa de cursos relacionados em qualquer texto.';
+$string['recommendation_relatedshortcode_title'] = 'Dimensions: Shortcode de cursos relacionados';
 $string['recommendation_unlistedcourses_description'] = 'Este tema lê os estados de descobribilidade do plugin Descobribilidade de cursos (local_unlistedcourses) nas páginas de categoria, na página de apresentação e no encaminhamento da inscrição, e chama as classes dele diretamente. O plugin não tem configurações, então o que se verifica é a presença e a atualização. Ausente, as páginas anônimas respondem como se nada fosse público, a verificação de curso oculto na inscrição deixa todos passarem e as páginas que chamam o plugin diretamente falham. Instale ou atualize em Administração do site > Plugins > Visão geral dos Plugins.';
 $string['recommendation_unlistedcourses_summary_behind'] = 'O plugin Descobribilidade de cursos está ausente ou aguardando atualização.';
 $string['recommendation_unlistedcourses_summary_ok'] = 'O plugin Descobribilidade de cursos está instalado e atualizado.';
 $string['recommendation_unlistedcourses_title'] = 'Dimensions: Plugin de descobribilidade de cursos';
+$string['related_shortcode_nocompetencies'] = 'o modo manual precisa de competencies="número de identificação, número de identificação"';
+$string['related_shortcode_nocourse'] = 'ele precisa de um curso: course="nome breve", ou um texto dentro de um curso';
+$string['related_shortcode_noframework'] = 'as competências precisam da estrutura em que são lidas, framework="número de identificação"';
+$string['related_shortcode_notfound'] = 'este site não tem {$a}';
+$string['related_shortcode_problem'] = 'O shortcode de cursos relacionados não mostra nada aqui: {$a}.';
 $string['selectableflavours'] = 'Visuais que a pessoa pode escolher';
 $string['selectableflavours_desc'] = 'Os flavours do Boost Union que uma pessoa logada pode escolher como seu próprio visual. O flavour escolhido aparece em todas as páginas para quem o escolheu, acima dos flavours aplicados pelas regras de categoria e de coorte, por isso cada flavour desta lista precisa funcionar fora da categoria para a qual foi feito. Cada visual da lista ganha uma coorte ("Visual: ...") com as pessoas que o escolheram, para que um menu inteligente possa ser restrito por visual; não use essas coortes na regra de coorte de um flavour. Um visual retirado da lista mantém a coorte, esvaziada. Sem nenhum marcado, ninguém escolhe e as regras do Boost Union decidem o visual como antes.';
 $string['settingsoverviewdesc'] = 'Com o Dimensions, você estende o Boost Union com página de acesso própria, vitrine de categorias, páginas de destino e modo foco.';
+$string['shortcode:relatedcourses'] = 'Mostra os cursos relacionados a um curso pelas competências, como o fim da sua página de apresentação.';
+$string['shortcode:relatedcourses_help'] = 'Mostra os cursos relacionados a um curso pelas competências do Moodle, os que cada leitor pode ver, como cartões que levam às suas páginas de apresentação. Nada aparece quando não há nenhum.
+
+Atributos, todos opcionais:
+
+- **course**: o nome breve do curso a relacionar. Por padrão, o curso a que o texto pertence; um texto fora de um curso precisa dele, ou do modo manual.
+- **framework** e **competencies**: modo manual, o número de identificação da estrutura de competências e os das competências, separados por vírgulas. Num curso, só contam as competências ligadas a ele; fora de um, qualquer uma da estrutura.
+- **match**: no modo manual, **all** mantém só os cursos ligados a todas as competências; **any**, o padrão, a qualquer uma.
+- **limit**: quantos cursos, de 1 a 12; por padrão, a configuração das páginas de apresentação do site.
+
+Exemplos:
+
+    [relatedcourses]
+    [relatedcourses course="LEAD101" limit="3"]
+    [relatedcourses framework="FW01" competencies="LID01,LID02" match="all"]';
 $string['task_empty_look_cohort'] = 'Esvaziar a coorte de um visual que deixou de ser oferecido';
 $string['task_materialise_focusmode_default'] = 'Gravar o padrão anterior do modo foco nos cursos existentes';
 $string['task_reconcile_look_cohorts'] = 'Manter as coortes de visual de acordo com os visuais escolhidos';

@@ -5,6 +5,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Related contents, stage R3: the `[relatedcourses]` shortcode** (docs/related/PLAN.md). With filter_shortcodes, the
+  shortcode draws the landing page's related courses band in any text the theme draws (a page, a label, a category
+  description): by default for the course the text belongs to, or for `course="short name"`, or in manual mode over
+  `framework` and `competencies` ID numbers (in a course, only those linked to it), with `match="all"` and `limit`.
+  Each reader sees only what the band would show them. It draws nothing on a page another theme draws, while
+  competencies are off, inside another shortcode's band, past four shortcodes a request, or for a reference the site
+  does not have, of which an editor of the text's course or category is told. A recommendation in Boost Union's
+  overview says when filter_shortcodes is missing or off. The landing page's band and the shortcode draw one partial,
+  `related_band` (2026100600).
+
 - **Related contents, stage R2: manual mode on the landing page** (docs/related/PLAN.md). The *Related courses* field
   gains a third line, Manual: the band then relates by the competencies an editor chose among the course's own (for a
   trail, the trail's and its courses'), the courses covering more of them first, and draws nothing while none is

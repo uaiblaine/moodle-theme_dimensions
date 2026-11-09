@@ -88,3 +88,4 @@ jobs:
         uaiblaine/moodle-block_compass,MOODLE_503_STABLE
         marinaglancy/moodle-tool_courserating,MOODLE_405_STABLE
         uaiblaine/moodle-mod_subcourse,MOODLE_503_STABLE
+        uaiblaine/moodle-filter_shortcodes,master

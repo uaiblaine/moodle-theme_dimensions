@@ -339,4 +339,28 @@ final class landing_scss_test extends \advanced_testcase {
             $this->rule($css, 'body.dim-landing-fullwidth .dimensions-landing__hero--image .dimensions-landing__hero-media')
         );
     }
+
+    /**
+     * The shortcode's block draws the band with the landing page's own rules, and declares the ground it reads.
+     */
+    public function test_the_shortcode_block_takes_the_landing_bands_rules(): void {
+        $css = $this->compile('#0f6cbf');
+
+        $parts = [
+            'dimensions-landing__stepcard',
+            'dimensions-landing__stepname a',
+            'dimensions-landing__relateditem',
+            'dimensions-landing__sectiontitle',
+        ];
+        foreach ($parts as $part) {
+            $this->assertSame(
+                $this->rule($css, ".theme_dimensions-landing .{$part}"),
+                $this->rule($css, ".theme_dimensions-related .{$part}"),
+                $part
+            );
+        }
+        $this->assertSame($this->stops($css, '.theme_dimensions-landing'), $this->stops($css, '.theme_dimensions-related'));
+        $dark = $this->rule($css, ':root[data-bs-theme="dark"] .theme_dimensions-related');
+        $this->assertSame($this->rule($css, ':root[data-bs-theme="dark"] .theme_dimensions-landing'), $dark);
+    }
 }

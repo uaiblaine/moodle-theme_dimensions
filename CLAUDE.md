@@ -21,7 +21,7 @@ and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
 on Boost Union's `MOODLE_503_STABLE` branch (v5.3-r1 onwards). Hard-depends on
 `theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);
-`customfield_picture`, `auth_loginsteps`, `local_page` and `tool_courserating` are optional and asked for at run time,
+`customfield_picture`, `auth_loginsteps`, `local_page`, `tool_courserating` and `filter_shortcodes` (which reads `db/shortcodes.php`) are optional and asked for at run time,
 never declared (the first through `landingfields::picture_type_available()`, the other three by class name). CI is the moodle-an-hochschulen reusable workflow, one job in
 `.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
 branch in `plugin-dependencies` at the same time (`MOODLE_503_STABLE`).

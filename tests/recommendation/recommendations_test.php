@@ -49,6 +49,7 @@ use theme_dimensions\local\landingfields;
 #[CoversClass(customfieldpicture::class)]
 #[CoversClass(landingaddresses::class)]
 #[CoversClass(lookcohorts_hidden::class)]
+#[CoversClass(relatedshortcode::class)]
 final class recommendations_test extends \advanced_testcase {
     /**
      * Provision the theme's course fields, as an installed site has them.
@@ -65,7 +66,7 @@ final class recommendations_test extends \advanced_testcase {
     }
 
     /**
-     * The callback names exactly the five classes, each one a recommendation with a prefixed id and title.
+     * The callback names exactly the six classes, each one a recommendation with a prefixed id and title.
      *
      * @return void
      */
@@ -80,6 +81,7 @@ final class recommendations_test extends \advanced_testcase {
                 customfieldpicture::class,
                 landingaddresses::class,
                 lookcohorts_hidden::class,
+                relatedshortcode::class,
             ],
             $classes
         );
@@ -98,7 +100,7 @@ final class recommendations_test extends \advanced_testcase {
     }
 
     /**
-     * Boost Union's manager finds all five through the plugin callback.
+     * Boost Union's manager finds all six through the plugin callback.
      *
      * @return void
      */
@@ -124,6 +126,8 @@ final class recommendations_test extends \advanced_testcase {
                 'dimensions_landingaddresses' => recommendation::NOTICE,
                 'dimensions_lookcohorts' => recommendation::OK,
                 'dimensions_profileveto' => recommendation::OK,
+                // A notice until filter_shortcodes is installed and on, which a fresh test site leaves to the admin.
+                'dimensions_relatedshortcode' => self::shortcodes_on() ? recommendation::OK : recommendation::NOTICE,
                 'dimensions_unlistedcourses' => recommendation::OK,
             ],
             $listed
@@ -154,6 +158,51 @@ final class recommendations_test extends \advanced_testcase {
         $this->assertNotSame($on->get_summary(), $off->get_summary());
         $this->assertSame(recommendation::CATEGORY_MOODLECORE, $off->get_category());
         $this->assertStringContainsString('sitepolicies', $off->get_action_url()->out(false));
+    }
+
+    /**
+     * Whether filter_shortcodes is installed and on, read the way the site reads it.
+     *
+     * @return bool
+     */
+    private static function shortcodes_on(): bool {
+        global $CFG;
+        require_once($CFG->libdir . '/filterlib.php');
+        return \core_component::get_component_directory('filter_shortcodes') !== null && filter_is_enabled('shortcodes');
+    }
+
+    /**
+     * The related courses shortcode is fine while filter_shortcodes is on, a notice while it is off, and a notice with
+     * no action while the plugin is missing.
+     *
+     * @return void
+     */
+    public function test_the_shortcode_notes_a_missing_or_disabled_filter(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/filterlib.php');
+        $this->resetAfterTest();
+
+        if (\core_component::get_component_directory('filter_shortcodes') === null) {
+            $missing = new relatedshortcode();
+            $this->assertSame(recommendation::NOTICE, $missing->get_status());
+            $this->assertNull($missing->get_action_url());
+            $this->markTestSkipped('filter_shortcodes is not installed: its on and off states cannot be set.');
+        }
+
+        filter_set_global_state('shortcodes', TEXTFILTER_ON);
+        // Core keeps the enabled filters in a request cache that setting a state leaves as it was.
+        \cache::make_from_params(\cache_store::MODE_REQUEST, 'core_filter', 'global_filters')->purge();
+        $on = new relatedshortcode();
+        $this->assertSame(recommendation::OK, $on->get_status());
+
+        filter_set_global_state('shortcodes', TEXTFILTER_DISABLED);
+        // Core keeps the enabled filters in a request cache that setting a state leaves as it was.
+        \cache::make_from_params(\cache_store::MODE_REQUEST, 'core_filter', 'global_filters')->purge();
+        $off = new relatedshortcode();
+        $this->assertSame(recommendation::NOTICE, $off->get_status());
+        $this->assertNotSame($on->get_summary(), $off->get_summary());
+        $this->assertStringContainsString('/admin/filters.php', $off->get_action_url()->out(false));
+        $this->assertSame(recommendation::CATEGORY_THIRDPARTY, $off->get_category());
     }
 
     /**

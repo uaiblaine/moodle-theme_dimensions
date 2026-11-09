@@ -883,13 +883,38 @@ $string['recommendation_profileveto_description'] = 'This theme narrows who may 
 $string['recommendation_profileveto_summary_off'] = 'Core\'s login requirement for profiles is off, so every profile is open to everyone and the theme\'s rule is not applied.';
 $string['recommendation_profileveto_summary_ok'] = 'Core requires a login for profiles, so the theme\'s profile rule applies.';
 $string['recommendation_profileveto_title'] = 'Dimensions: Profile access rule';
+$string['recommendation_relatedshortcode_description'] = 'The [{$a}] shortcode draws a landing page\'s related courses band in any text: a page, a label, a category description. It is read by the Shortcodes filter (filter_shortcodes), which this theme does not require: without the plugin the shortcode does nothing, and with the filter off a text holding it shows it as written. The landing pages\' own band needs neither. Install filter_shortcodes and turn it on under Site administration > Plugins > Filters > Manage filters to use the shortcode.';
+$string['recommendation_relatedshortcode_summary_missing'] = 'The Shortcodes filter (filter_shortcodes) is not installed, so the [{$a}] shortcode does nothing.';
+$string['recommendation_relatedshortcode_summary_off'] = 'The Shortcodes filter is installed but disabled, so a text holding [{$a}] shows it as written.';
+$string['recommendation_relatedshortcode_summary_ok'] = 'The Shortcodes filter is on: [{$a}] draws the related courses band in any text.';
+$string['recommendation_relatedshortcode_title'] = 'Dimensions: Related courses shortcode';
 $string['recommendation_unlistedcourses_description'] = 'This theme reads the discoverability states of the Course discoverability plugin (local_unlistedcourses) on the category pages, the landing page and the enrolment forwarding, and calls its classes directly. The plugin has no settings, so what is checked is its presence and its upgrade. When it is missing, the anonymous pages answer as if nothing were public, the enrolment ghost check lets everybody through, and the pages that call the plugin directly fail. Install or upgrade it from Site administration > Plugins > Plugins overview.';
 $string['recommendation_unlistedcourses_summary_behind'] = 'The Course discoverability plugin is missing or waiting for an upgrade.';
 $string['recommendation_unlistedcourses_summary_ok'] = 'The Course discoverability plugin is installed and upgraded.';
 $string['recommendation_unlistedcourses_title'] = 'Dimensions: Course discoverability plugin';
+$string['related_shortcode_nocompetencies'] = 'manual mode needs competencies="ID number, ID number"';
+$string['related_shortcode_nocourse'] = 'it needs a course: course="short name", or a text inside a course';
+$string['related_shortcode_noframework'] = 'competencies need the framework they are read in, framework="ID number"';
+$string['related_shortcode_notfound'] = 'this site has no {$a}';
+$string['related_shortcode_problem'] = 'The related courses shortcode shows nothing here: {$a}.';
 $string['selectableflavours'] = 'Looks a person may choose';
 $string['selectableflavours_desc'] = 'The Boost Union flavours a logged-in person may choose as their own look. A chosen flavour is shown on every page to the person who chose it, over the flavours the category and cohort rules apply, so each flavour listed here must work outside the category it was made for. Each listed look gets a cohort ("Look: ...") holding the people who chose it, so a smart menu can be restricted by look; do not use those cohorts in a flavour\'s own cohort rule. A look taken off the list keeps its cohort, emptied. With none ticked, nobody can choose and Boost Union\'s rules decide the look as before.';
 $string['settingsoverviewdesc'] = 'With Dimensions, you extend Boost Union with its own login page, category showcase, landing pages and focus mode.';
+$string['shortcode:relatedcourses'] = 'Shows the courses related to a course through their competencies, as the end of its landing page does.';
+$string['shortcode:relatedcourses_help'] = 'Shows the courses related to a course through their Moodle competencies, the ones each reader may see, as cards leading to their landing pages. Nothing is shown when there is none.
+
+Attributes, all optional:
+
+- **course**: the short name of the course to relate to. By default the course the text belongs to; a text outside a course needs it, or manual mode.
+- **framework** and **competencies**: manual mode, the competency framework\'s ID number and the competencies\' ID numbers, separated by commas. In a course, only competencies linked to it count; outside one, any of the framework\'s.
+- **match**: in manual mode, **all** keeps only the courses linked to every competency; **any**, the default, any of them.
+- **limit**: how many courses, 1 to 12; the site\'s landing page setting by default.
+
+Examples:
+
+    [relatedcourses]
+    [relatedcourses course="LEAD101" limit="3"]
+    [relatedcourses framework="FW01" competencies="LID01,LID02" match="all"]';
 $string['task_empty_look_cohort'] = 'Empty the cohort of a look no longer offered';
 $string['task_materialise_focusmode_default'] = 'Write the previous focus mode default into existing courses';
 $string['task_reconcile_look_cohorts'] = 'Keep the look cohorts in step with the chosen looks';
