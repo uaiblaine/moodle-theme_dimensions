@@ -465,23 +465,71 @@ final class landing_page_test extends \advanced_testcase {
         landingfields::reset_field_cache();
 
         $course = self::getDataGenerator()->create_course();
-        \core_course\customfield\course_handler::create()->instance_form_save((object) [
-            'id' => $course->id,
-            'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
-                'text' => '<p>Módulo 1.</p><script>alert(1)</script>',
+        $sections = [
+            landingfields::SHORTNAME_AUDIENCE => 'Público',
+            landingfields::SHORTNAME_PROGRAMME => 'Módulo 1.',
+            landingfields::SHORTNAME_CERTIFICATION => 'Certificado',
+        ];
+        $record = ['id' => $course->id];
+        foreach ($sections as $shortname => $text) {
+            $record['customfield_' . $shortname . '_editor'] = [
+                'text' => "<p>{$text}</p><script>alert(1)</script>",
                 'format' => FORMAT_HTML,
-            ],
-        ]);
+            ];
+        }
+        \core_course\customfield\course_handler::create()->instance_form_save((object) $record);
         $values = landingfields::values($course->id);
         $this->assertStringContainsString('<script', (string) $values->programme, 'Precondition: the value is trusted.');
         $resolution = resolver::resolve($course);
         $PAGE->set_url('/theme/dimensions/landing.php', ['id' => $course->id]);
         $renderer = $PAGE->get_renderer('core');
 
+        // Every section, each in its own field: one left trusted would ship its script.
         $public = (new landing_page($course, $values, $resolution, [], true))->export_for_template($renderer);
-        $this->assertCount(1, $public->sections);
-        $this->assertStringContainsString('Módulo 1.', $public->sections[0]['html']);
-        $this->assertStringNotContainsString('<script', $public->sections[0]['html'], 'A public page is cleaned.');
+        $internal = (new landing_page($course, $values, $resolution, [], false))->export_for_template($renderer);
+        $this->assertCount(3, $public->sections);
+        foreach (array_values($sections) as $i => $text) {
+            $this->assertStringContainsString($text, $public->sections[$i]['html']);
+            $this->assertStringNotContainsString('<script', $public->sections[$i]['html'], "A public page is cleaned: {$text}.");
+            $this->assertStringContainsString('<script', $internal->sections[$i]['html'], "Control, behind login: {$text}.");
+        }
+    }
+
+    /**
+     * A public course without a row of its own shows the field's default, cleaned as well.
+     *
+     * The default is formatted as trusted (customfield_textarea's export_value() does the same), so only the forced
+     * cleaning removes the script; the page behind login keeps it, and is the control.
+     *
+     * @return void
+     */
+    public function test_a_public_course_cleans_a_fields_default_too(): void {
+        global $DB, $PAGE;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        \core_course\customfield\course_handler::reset_caches();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+
+        $field = $DB->get_record('customfield_field', ['shortname' => landingfields::SHORTNAME_PROGRAMME], '*', MUST_EXIST);
+        $config = json_decode($field->configdata, true);
+        $config['defaultvalue'] = '<p>Programa padrão.</p><script>alert(1)</script>';
+        $config['defaultvalueformat'] = FORMAT_HTML;
+        $DB->set_field('customfield_field', 'configdata', json_encode($config), ['id' => $field->id]);
+        \core_course\customfield\course_handler::reset_caches();
+        landingfields::reset_field_cache();
+
+        $course = self::getDataGenerator()->create_course();
+        $values = landingfields::values($course->id);
+        $resolution = resolver::resolve($course);
+        $PAGE->set_url('/theme/dimensions/landing.php', ['id' => $course->id]);
+        $renderer = $PAGE->get_renderer('core');
+
+        $public = (new landing_page($course, $values, $resolution, [], true))->export_for_template($renderer);
+        $this->assertStringContainsString('Programa padrão.', $public->sections[0]['html']);
+        $this->assertStringNotContainsString('<script', $public->sections[0]['html'], 'The default is cleaned on a public page.');
 
         $internal = (new landing_page($course, $values, $resolution, [], false))->export_for_template($renderer);
         $this->assertStringContainsString('<script', $internal->sections[0]['html'], 'Control: trusted rendering behind login.');
