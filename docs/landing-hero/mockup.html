@@ -1,0 +1,671 @@
+<meta charset="utf-8">
+<title>Banner em largura total</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: a design record read top to bottom; the Moodle stage is a scaled 1280px (or 375px) screen with the notes beside it. */
+:root {
+  --bg: #f3f4f1;
+  --fg: #1b201e;
+  --muted: #5b6460;
+  --rule: #d8dcd5;
+  --panel: #ffffff;
+  --accent: #1f5f8f;
+  --accent-soft: #e1ecf5;
+  --ok: #2c6e3f;
+  --ok-soft: #e0efe4;
+  --font-page: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-moodle: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* The Moodle stage: m503 with theme_dimensions, light, values measured on landing/28. */
+  --m-navbar: #0f6cbf;
+  --m-band: #4456ff;
+  --m-page: #f8f9fa;
+  --m-card: #ffffff;
+  --m-line: #dee2e6;
+  --m-ink: #1d2125;
+  --m-muted: #6a737b;
+  --m-primary: #0f6cbf;
+  --m-from: #0b5596;
+  --m-mid: #0e68b7;
+  --m-to: #2b7ac0;
+  --m-kicker: #69e000;
+  --m-cat-from: #0d2a66;
+  --m-cat-mid: #173f8c;
+  --m-cat-to: #2c5bb0;
+  --m-shadow: 0 4px 12px rgba(16, 24, 40, .12);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141816; --fg: #e3e7e4; --muted: #9da7a2; --rule: #2d3431; --panel: #1b201e;
+    --accent: #7db4de; --accent-soft: #1b2c3a; --ok: #8fd0a1; --ok-soft: #1c3124;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141816; --fg: #e3e7e4; --muted: #9da7a2; --rule: #2d3431; --panel: #1b201e;
+  --accent: #7db4de; --accent-soft: #1b2c3a; --ok: #8fd0a1; --ok-soft: #1c3124;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-page);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+header.doc { max-width: 760px; margin-bottom: 28px; }
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+h1 { margin: 0 0 12px; font-size: 32px; line-height: 1.15; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+h2 { margin: 0 0 6px; font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -.01em; text-wrap: balance; }
+h3 { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
+p { margin: 0 0 12px; }
+.lede { color: var(--muted); font-size: 16px; max-width: 68ch; }
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+section { margin-top: 56px; }
+.sechead { max-width: 760px; margin-bottom: 20px; }
+.sechead p { color: var(--muted); }
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+.controls fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.controls legend { padding: 0; margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); padding: 3px; gap: 3px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms;
+  white-space: nowrap;
+}
+.seg input:checked + label { background: var(--accent); color: var(--panel); }
+.seg input:focus-visible + label { outline: 3px solid #4456ff; outline-offset: 2px; }
+
+/* Stage + notes */
+.demo { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+@media (max-width: 980px) { .demo { grid-template-columns: minmax(0, 1fr); } }
+.viewport {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: #d9dde2;
+}
+.viewport.is-phone { background: transparent; border: 0; display: flex; justify-content: center; }
+.viewport .scaler { transform-origin: 0 0; }
+.viewport.is-phone .scaler { transform-origin: top center; }
+.notes { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 18px 6px; }
+.notes ol { margin: 0; padding-left: 20px; }
+.notes li { margin-bottom: 12px; font-size: 14px; }
+.notes li b { display: block; font-size: 14px; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--accent-soft); color: var(--accent); }
+.tag.ok { background: var(--ok-soft); color: var(--ok); }
+
+/* ---- The Moodle screen (fixed light: it depicts m503 in light mode) ---- */
+.screen {
+  width: 1280px;
+  background: var(--m-page);
+  color: var(--m-ink);
+  font-family: var(--font-moodle);
+  font-size: 15px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+.screen.phone { width: 375px; border-radius: 28px; border: 10px solid #1c1f23; }
+.m-nav {
+  position: relative;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 16px;
+  background: var(--m-navbar);
+  color: #fff;
+  font-size: 14px;
+}
+.m-nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--m-band); }
+.m-nav .brand { font-weight: 700; font-size: 18px; }
+.m-nav .pill { padding: 3px 10px; border-radius: 6px; }
+.m-nav .pill.on { background: #fff; color: var(--m-navbar); font-weight: 600; }
+.m-nav .spacer { flex: 1; }
+.m-nav .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.22); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.m-nav .burger { width: 22px; height: 14px; border-block: 2px solid #fff; position: relative; }
+.m-nav .burger::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; border-top: 2px solid #fff; }
+.phone .m-nav { height: 56px; gap: 12px; }
+
+.m-main { padding: 78px 0 64px; }
+.m-col { width: 784px; margin: 0 auto; }
+.phone .m-main { padding: 20px 0 40px; }
+.phone .m-col { width: auto; margin: 0 16px; }
+
+/* The hero, the shared parts */
+.l-hero {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(135deg, var(--m-from), var(--m-mid) 55%, var(--m-to));
+}
+.l-hero__media {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 78% 30%, rgba(255,255,255,.55) 0 9%, transparent 9.3%),
+    radial-gradient(circle at 88% 74%, rgba(255,255,255,.4) 0 13%, transparent 13.3%),
+    radial-gradient(circle at 62% 86%, rgba(160,230,255,.6) 0 7%, transparent 7.3%),
+    radial-gradient(circle at 18% 20%, rgba(255,220,150,.5) 0 6%, transparent 6.3%),
+    linear-gradient(120deg, #2f7f8f, #3d5fa8 60%, #7b62b3);
+}
+.l-hero__inner { position: relative; z-index: 2; }
+.l-kicker { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--m-kicker); }
+.l-title { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; max-width: 30rem; text-wrap: balance; }
+.l-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; }
+.l-chips li { padding: 2px 12px; border: 1px solid rgba(255,255,255,.4); border-radius: 999px; background: rgba(255,255,255,.1); font-size: 13px; }
+.phone .l-title { font-size: 24px; }
+
+/* Format 1: in the content column (today) */
+[data-format="column"] .l-hero {
+  padding: 40px 28px 52px;
+  border-radius: 16px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+[data-format="column"] .l-hero__media { opacity: .22; }
+[data-format="column"] .bleed-slot { display: none; }
+[data-format="column"] .m-main { padding-top: 78px; }
+.phone[data-format="column"] .l-hero { padding: 28px 20px 44px; }
+
+/* Format 2: full width, the category's pattern */
+[data-format="fullwidth"] .col-slot { display: none; }
+[data-format="fullwidth"] .m-main { padding-top: 0; }
+[data-format="fullwidth"] .l-hero {
+  padding: 40px 0 56px;
+  background: linear-gradient(120deg, var(--m-from), var(--m-mid) 58%, var(--m-to));
+}
+.with-image[data-format="fullwidth"] .l-hero.has-image { background: #22304a; }
+.with-image[data-format="fullwidth"] .l-hero.has-image::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(120deg, rgba(11,85,150,.92), rgba(14,104,183,.80) 58%, rgba(43,122,192,.58));
+}
+[data-format="fullwidth"] .l-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(to top right, var(--m-page) 50%, transparent 50%);
+}
+[data-format="fullwidth"] .l-hero__inner { width: 784px; margin: 0 auto; padding-inline: 28px; }
+[data-format="fullwidth"] .l-kicker { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 11px; letter-spacing: .12em; }
+[data-format="fullwidth"] .l-kicker::before { content: ""; width: 18px; height: 3px; background: var(--m-band); }
+.phone[data-format="fullwidth"] .l-hero { padding: 28px 0 44px; }
+.phone[data-format="fullwidth"] .l-hero__inner { width: auto; margin: 0 16px; padding-inline: 4px; }
+.screen:not(.with-image) .l-hero__media { display: none; }
+.screen:not(.with-image) .l-hero::before { display: none; }
+
+/* The columns under the hero */
+.l-cols { display: flex; gap: 24px; align-items: flex-start; margin-top: 24px; }
+.l-content { flex: 1 1 62%; min-width: 0; padding-inline: 28px; color: var(--m-ink); font-size: 15px; line-height: 1.65; }
+.l-content p { margin: 0 0 14px; }
+.l-content h4 { margin: 22px 0 8px; font-size: 19px; font-weight: 700; color: var(--m-mid); }
+.l-content ul { margin: 0; padding-left: 18px; }
+.l-aside { flex: 0 0 300px; width: 300px; }
+.l-card {
+  margin-top: -56px;
+  position: relative;
+  z-index: 3;
+  padding: 20px;
+  background: var(--m-card);
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+  box-shadow: var(--m-shadow);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+  font-size: 14px;
+}
+.l-facts { margin: 0 0 16px; display: grid; grid-template-columns: 88px 1fr; }
+.l-facts dt, .l-facts dd { margin: 0; padding: 9px 0; border-bottom: 1px solid var(--m-line); }
+.l-facts dt { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--m-muted); }
+.l-facts dd { font-weight: 600; }
+.l-facts dd small { display: block; font-weight: 400; color: var(--m-muted); font-size: 12px; }
+.l-card h5 { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
+.m-btn { display: block; width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--m-primary); background: var(--m-primary); color: #fff; font: inherit; font-weight: 500; text-align: center; }
+.m-btn.outline { background: transparent; color: var(--m-primary); margin-top: 22px; }
+.l-card .note { margin: 6px 0 0; font-size: 12px; color: var(--m-muted); }
+.phone .l-cols { flex-direction: column; gap: 0; margin-top: 0; }
+.phone .l-aside { order: -1; width: 100%; flex-basis: auto; }
+.phone .l-card { margin-top: -32px; }
+.phone .l-content { padding-inline: 4px; margin-top: 22px; }
+.phone .m-nav .desk { display: none; }
+.screen:not(.phone) .m-nav .mob { display: none; }
+
+/* Reference: the category hero today */
+.c-hero { position: relative; color: #fff; background: linear-gradient(120deg, var(--m-cat-from), var(--m-cat-mid) 58%, var(--m-cat-to)); padding: 26px 0 0; }
+.c-hero__inner { width: 1184px; margin: 0 auto; padding-inline: 15px; }
+.c-trail { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; padding: 0; list-style: none; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.c-trail::before { content: ""; width: 18px; height: 3px; background: var(--m-band); }
+.c-trail li + li::before { content: "/"; margin-right: 10px; color: rgba(255,255,255,.55); }
+.c-title { margin: 0 0 18px; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.c-tabs { display: flex; gap: 4px; padding: 0 15px; width: 1184px; margin: 0 auto; }
+.c-tabs span { padding: 9px 14px; font-size: 13px; border-radius: 8px 8px 0 0; color: rgba(255,255,255,.9); }
+.c-tabs span.on { background: var(--m-page); color: var(--m-ink); font-weight: 600; }
+.c-body { width: 1184px; margin: 18px auto 0; padding: 0 15px 30px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.c-body i { display: block; height: 120px; border-radius: 12px; background: linear-gradient(135deg, #1d3f86, #2c5bb0); }
+
+/* Admin settings mock */
+.admin { border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: #fff; color: var(--m-ink); font-family: var(--font-moodle); font-size: 14px; }
+.admin-in { padding: 22px 24px 26px; }
+.admin .crumbs { color: var(--m-muted); font-size: 13px; margin-bottom: 6px; }
+.admin .crumbs span + span::before { content: " / "; }
+.admin h3.page { font-size: 24px; font-weight: 700; margin: 0 0 16px; }
+.admin .tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--m-line); margin-bottom: 20px; }
+.admin .tabs span { padding: 8px 12px; color: var(--m-primary); border: 1px solid transparent; border-bottom: 0; border-radius: 6px 6px 0 0; margin-bottom: -1px; font-size: 13px; }
+.admin .tabs span.on { color: var(--m-ink); border-color: var(--m-line); background: #fff; }
+.admin h4 { margin: 24px 0 6px; font-size: 19px; font-weight: 700; }
+.admin h4:first-of-type { margin-top: 0; }
+.admin .hdesc { color: var(--m-ink); margin: 0 0 14px; max-width: 80ch; font-size: 14px; }
+.setrow { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 8px 24px; padding: 14px 0; border-top: 1px solid var(--m-line); }
+.setrow.new { background: linear-gradient(90deg, rgba(68,86,255,.07), transparent 60%); box-shadow: inset 3px 0 0 #4456ff; padding-left: 12px; }
+.setrow .lbl { font-weight: 600; }
+.setrow .key { display: block; font-weight: 400; color: var(--m-muted); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+.setrow select { font: inherit; font-size: 14px; padding: 6px 34px 6px 10px; border: 1px solid #8f959e; border-radius: 6px; background: #fff; color: var(--m-ink); max-width: 100%; }
+.setrow .def { color: var(--m-muted); font-size: 13px; margin: 6px 0; }
+.setrow .desc { margin: 0; max-width: 72ch; }
+.setrow.muted { opacity: .55; }
+@media (max-width: 720px) { .setrow { grid-template-columns: minmax(0, 1fr); } }
+
+/* Tables and lists */
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--rule); }
+thead th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+tbody th { font-weight: 600; width: 18%; }
+tbody tr:last-child > * { border-bottom: 0; }
+td.same { color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.dec { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; }
+.dec .id { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .06em; }
+.dec h3 { margin: 4px 0 8px; }
+.dec p { font-size: 14px; margin-bottom: 8px; }
+.dec .rec { font-size: 14px; margin: 0; padding-top: 8px; border-top: 1px dashed var(--rule); }
+.dec .rec b { color: var(--ok); }
+.steps { margin: 0; padding-left: 20px; max-width: 80ch; }
+.steps li { margin-bottom: 10px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.strings { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; font-size: 13.5px; }
+.strings dt { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.strings dt:first-child { margin-top: 0; }
+.strings dd { margin: 2px 0 0; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="doc">
+  <p class="eyebrow">theme_dimensions · Página de apresentação do curso</p>
+  <h1>Banner em largura total</h1>
+  <p class="lede">Uma segunda forma de desenhar o banner da página de apresentação: de borda a borda, colado à barra de navegação, como o banner das páginas de categoria. O administrador escolhe o formato em uma configuração do tema, e todas as páginas de apresentação do site seguem a escolha. Nada muda num site que não mexer na configuração.</p>
+</header>
+
+<section id="mockup" style="margin-top: 0">
+  <div class="controls" role="group" aria-label="Opções do mockup">
+    <fieldset>
+      <legend>Formato do banner</legend>
+      <div class="seg">
+        <input type="radio" name="format" id="f-column" value="column"><label for="f-column">Na coluna (hoje)</label>
+        <input type="radio" name="format" id="f-fullwidth" value="fullwidth" checked><label for="f-fullwidth">Largura total</label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Tela</legend>
+      <div class="seg">
+        <input type="radio" name="device" id="d-desk" value="desk" checked><label for="d-desk">Computador</label>
+        <input type="radio" name="device" id="d-phone" value="phone"><label for="d-phone">Celular</label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Imagem do curso</legend>
+      <div class="seg">
+        <input type="radio" name="image" id="i-on" value="on" checked><label for="i-on">Com imagem</label>
+        <input type="radio" name="image" id="i-off" value="off"><label for="i-off">Sem imagem</label>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="demo">
+    <div class="viewport" id="viewport">
+      <div class="scaler" id="scaler">
+        <div class="screen with-image" id="screen" data-format="fullwidth">
+          <nav class="m-nav" aria-label="Barra de navegação (ilustração)">
+            <span class="burger mob" aria-hidden="true"></span>
+            <span class="brand">m503</span>
+            <span class="pill desk">Dashboard</span>
+            <span class="pill on desk">Site administration</span>
+            <span class="spacer"></span>
+            <span class="desk">Edit mode</span>
+            <span class="avatar">AU</span>
+          </nav>
+
+          <div class="bleed-slot">
+            <header class="l-hero has-image">
+              <div class="l-hero__media" aria-hidden="true"></div>
+              <div class="l-hero__inner">
+                <span class="l-kicker">Digital Pedagogy</span>
+                <p class="l-title">Generative AI in the Classroom</p>
+                <ul class="l-chips"><li>Online</li><li>6 hours</li><li>Self-paced</li></ul>
+              </div>
+            </header>
+          </div>
+
+          <div class="m-main">
+            <div class="m-col">
+              <div class="col-slot">
+                <header class="l-hero">
+                  <div class="l-hero__media" aria-hidden="true"></div>
+                  <div class="l-hero__inner">
+                    <span class="l-kicker">Digital Pedagogy</span>
+                    <p class="l-title">Generative AI in the Classroom</p>
+                    <ul class="l-chips"><li>Online</li><li>6 hours</li><li>Self-paced</li></ul>
+                  </div>
+                </header>
+              </div>
+              <div class="l-cols">
+                <div class="l-content">
+                  <p>Generative AI in the Classroom: a 6-hour programme of the Educator Academy demo catalogue.</p>
+                  <p>Plan lessons with AI assistants, write prompts that serve a learning goal, and judge what the tools return before it reaches a student.</p>
+                  <h4>Target audience</h4>
+                  <ul><li>Teachers of any subject.</li><li>Coordinators planning a school's AI policy.</li></ul>
+                </div>
+                <aside class="l-aside">
+                  <div class="l-card">
+                    <dl class="l-facts">
+                      <dt>Modality</dt><dd>Online</dd>
+                      <dt>Study format</dt><dd>Self-paced<small>at your own pace</small></dd>
+                      <dt>Workload (hours)</dt><dd>6 hours</dd>
+                    </dl>
+                    <h5>Enrolment</h5>
+                    <span class="m-btn">Access as guest</span>
+                    <span class="m-btn outline">Access the course</span>
+                    <p class="note">Shown only to those who manage this course.</p>
+                  </div>
+                </aside>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="notes" aria-live="polite">
+      <div id="notes-fullwidth">
+        <h3><span class="tag ok">Largura total</span></h3>
+        <ol>
+          <li><b>Colado à barra.</b>O degradê começa logo abaixo da faixa de 3px da navbar, sem a margem branca de 78px que existe hoje.</li>
+          <li><b>De borda a borda.</b>Sem cantos arredondados; o chanfro de 18px vai para o canto inferior esquerdo da tela, na cor da página, como na categoria.</li>
+          <li><b>O texto não sai da coluna.</b>Título, rótulo e chips começam na mesma borda do resumo abaixo (coluna de 784px no m503).</li>
+          <li><b>Imagem inteira sob o degradê.</b>A foto do curso aparece em força total por baixo de um degradê translúcido, o tratamento da categoria, no lugar dos 22% de opacidade de hoje.</li>
+          <li><b>Rótulo no estilo da categoria.</b>Barra da cor da faixa e o nome da categoria em branco, no lugar do verde.</li>
+          <li><b>O cartão de inscrição não muda.</b>Continua subindo 56px sobre a borda do banner, fixo ao rolar.</li>
+        </ol>
+      </div>
+      <div id="notes-column" hidden>
+        <h3><span class="tag">Na coluna (hoje)</span></h3>
+        <ol>
+          <li><b>Um cartão na coluna.</b>O banner tem a largura do conteúdo (784px no m503), com cantos de 16px e o chanfro no canto inferior esquerdo.</li>
+          <li><b>Margem acima.</b>A página paga o espaço que o Boost reserva acima do conteúdo.</li>
+          <li><b>Imagem como textura.</b>A foto do curso entra a 22% de opacidade sobre o degradê.</li>
+          <li><b>Continua sendo o padrão.</b>Um site que atualizar o tema sem mexer na configuração vê exatamente esta página.</li>
+        </ol>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section id="referencia">
+  <div class="sechead">
+    <h2>O padrão de origem: a página de categoria</h2>
+    <p>O banner da categoria já é desenhado assim: o degradê vai até as bordas da janela, e o conteúdo dentro dele fica preso à coluna da listagem, de modo que o título começa na borda do primeiro cartão. A proposta aplica a mesma geometria à página de apresentação.</p>
+  </div>
+  <div class="viewport" id="viewport-ref">
+    <div class="scaler" id="scaler-ref">
+      <div class="screen" aria-hidden="true">
+        <div class="m-nav"><span class="brand">m503</span><span class="pill">Dashboard</span><span class="pill on">Site administration</span><span class="spacer"></span><span class="avatar">AU</span></div>
+        <div class="c-hero">
+          <div class="c-hero__inner">
+            <ul class="c-trail"><li>Courses</li><li>Educator Academy</li><li>Teaching and learning</li></ul>
+            <p class="c-title">Digital Pedagogy</p>
+          </div>
+          <div class="c-tabs"><span class="on">Category</span><span>Settings</span><span>Dynamic cohort rules</span><span>Category appearance</span></div>
+        </div>
+        <div class="c-body"><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="configuracao">
+  <div class="sechead">
+    <h2>A configuração do administrador</h2>
+    <p>Fica na aba que já cuida da página de apresentação, em <em>Administração do site › Aparência › Temas › Dimensions</em>, num cabeçalho novo acima dos padrões para cursos novos. É uma lista de opções, porque o valor é comparado com um vocabulário fixo.</p>
+  </div>
+
+  <div class="admin" role="img" aria-label="Ilustração da página de configurações do tema com a nova opção Banner format">
+    <div class="admin-in">
+      <div class="crumbs"><span>Site administration</span><span>Appearance</span><span>Themes</span><span>Dimensions</span></div>
+      <h3 class="page">Dimensions</h3>
+      <div class="tabs"><span>Login page</span><span>Identity</span><span>Focus mode</span><span class="on">Course landing page</span><span>Category showcase</span><span>Calendar</span></div>
+
+      <h4>Banner</h4>
+      <div class="setrow new">
+        <div class="lbl">Banner format<span class="key">theme_dimensions | landingheroformat</span></div>
+        <div>
+          <select id="admin-format" aria-label="Banner format">
+            <option>In the content column</option>
+            <option selected>Full width</option>
+          </select>
+          <p class="def">Default: In the content column</p>
+          <p class="desc">How the banner at the top of a course landing page is drawn. In the content column, it is a card as wide as the page's text, with rounded corners. Full width, it runs from edge to edge under the navigation bar, as the category pages draw theirs, and the text inside it keeps the column's edges. Every course landing page of the site follows this choice, the public one and a trail's included.</p>
+        </div>
+      </div>
+
+      <h4>Defaults for new courses</h4>
+      <p class="hdesc" style="color: var(--m-muted)">What a course created from now on starts with in the page model, the modality and the study format…</p>
+      <div class="setrow muted">
+        <div class="lbl">Enrolment page model<span class="key">theme_dimensions | landingdefaultmodel</span></div>
+        <div><select aria-label="Enrolment page model" disabled><option>None</option></select></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two" style="margin-top: 16px">
+    <dl class="strings">
+      <dt>landingheroheading</dt><dd>Banner</dd>
+      <dt>landingheroformat</dt><dd>Banner format</dd>
+      <dt>landingheroformat_column</dt><dd>In the content column</dd>
+      <dt>landingheroformat_fullwidth</dt><dd>Full width</dd>
+    </dl>
+    <dl class="strings">
+      <dt>landingheroheading (pt_br)</dt><dd>Banner</dd>
+      <dt>landingheroformat (pt_br)</dt><dd>Formato do banner</dd>
+      <dt>landingheroformat_column (pt_br)</dt><dd>Na coluna do conteúdo</dd>
+      <dt>landingheroformat_fullwidth (pt_br)</dt><dd>Largura total</dd>
+    </dl>
+  </div>
+</section>
+
+<section id="comparacao">
+  <div class="sechead">
+    <h2>O que muda entre os dois formatos</h2>
+    <p>Em cinza, o que é igual nos dois. O resto da página (resumo, seções, vídeo, cartão de inscrição, barra fixa no celular) não muda.</p>
+  </div>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th scope="col">Parte</th><th scope="col">Na coluna (hoje)</th><th scope="col">Largura total</th><th scope="col">Categoria (referência)</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Largura do fundo</th><td>A coluna do conteúdo</td><td>A janela inteira</td><td>A janela inteira</td></tr>
+        <tr><th scope="row">Topo</th><td>Margem do Boost acima</td><td>Colado à faixa da navbar</td><td>Colado à faixa da navbar</td></tr>
+        <tr><th scope="row">Cantos</th><td>16px arredondados + chanfro</td><td>Retos + chanfro no canto da tela</td><td>Retos + chanfro</td></tr>
+        <tr><th scope="row">Borda do texto</th><td>Recuo de 1,75rem dentro do cartão</td><td>A borda do resumo, igual a hoje</td><td>A borda do primeiro cartão</td></tr>
+        <tr><th scope="row">Imagem do curso</th><td>22% de opacidade sobre o degradê</td><td>Inteira, sob degradê translúcido</td><td>Inteira, sob degradê translúcido</td></tr>
+        <tr><th scope="row">Rótulo da categoria</th><td>Verde, maiúsculas</td><td>Barra da faixa + branco</td><td>Barra da faixa + trilha de links</td></tr>
+        <tr><th scope="row">Cores</th><td class="same" colspan="2">A cor da marca (brandcolor ou a do flavour), escurecida até o branco ler 4,5:1</td><td>A marca da categoria, escolhida no editor</td></tr>
+        <tr><th scope="row">Cartão de inscrição</th><td class="same" colspan="2">Sobe 56px sobre a borda do banner (32px no celular)</td><td>—</td></tr>
+        <tr><th scope="row">Celular</th><td>Cartão com 16px de margem lateral</td><td>Faixa de borda a borda</td><td>Faixa de borda a borda</td></tr>
+        <tr><th scope="row">Modo escuro</th><td class="same" colspan="2">O banner é o mesmo; o chanfro pega a cor da página escura</td><td>Igual</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="decisoes">
+  <div class="sechead">
+    <h2>Decisões para você confirmar</h2>
+    <p>Cada uma com a recomendação. As que você não mudar entram como estão.</p>
+  </div>
+  <div class="cards">
+    <article class="dec">
+      <span class="id">LB1</span>
+      <h3>O padrão continua sendo "na coluna"</h3>
+      <p>Um site que atualizar o tema vê a página como hoje até o administrador escolher outra coisa. A leitura trata só o valor <code>fullwidth</code> gravado como largura total; qualquer outro valor, ou nenhum, desenha na coluna.</p>
+      <p class="rec"><b>Recomendado.</b> A outra opção (largura total como padrão) muda todas as páginas de todos os sites no upgrade.</p>
+    </article>
+    <article class="dec">
+      <span class="id">LB2</span>
+      <h3>A imagem segue o tratamento da categoria</h3>
+      <p>Em largura total, a foto aparece inteira por baixo do degradê translúcido, como no banner da categoria. Na coluna, continua a 22%. O contraste do rótulo e do título é medido sobre a parada mais clara do degradê, com o piso de 4,5:1 que o teste do SCSS já mede.</p>
+      <p class="rec"><b>Recomendado.</b> Alternativa: manter os 22% nos dois formatos, se as capas do site forem fotos muito carregadas.</p>
+    </article>
+    <article class="dec">
+      <span class="id">LB3</span>
+      <h3>O rótulo é o da categoria, sem links</h3>
+      <p>Barra na cor da faixa e o nome da categoria em branco. A trilha completa com links (como na categoria) fica de fora: na página pública ela levaria o visitante a categorias que podem não estar abertas, e a regra que hoje protege o nome da categoria para quem está logado teria que cobrir cada nível.</p>
+      <p class="rec"><b>Recomendado.</b> Alternativa: a trilha completa, com a mesma regra aplicada a cada ancestral.</p>
+    </article>
+    <article class="dec">
+      <span class="id">LB4</span>
+      <h3>O texto fica na coluna de hoje</h3>
+      <p>O fundo ocupa a janela, mas o conteúdo do banner continua com a largura da coluna da página (784px no m503), alinhado ao resumo e ao cartão de inscrição. A página não fica mais larga.</p>
+      <p class="rec"><b>Recomendado.</b> Alternativa: alargar a página inteira para os 1.200px da vitrine, o que muda também o resumo e as seções.</p>
+    </article>
+    <article class="dec">
+      <span class="id">LB5</span>
+      <h3>Uma escolha para o site inteiro</h3>
+      <p>Como você pediu, a configuração é só do administrador. Nenhum campo novo no curso e nenhuma escolha por flavour; a página pública, a de trilha e a de curso seguem a mesma configuração. A página de entrada como visitante (o cartão do convidado) não tem banner e não muda.</p>
+      <p class="rec"><b>Recomendado.</b> Um campo por curso pode vir depois, se algum curso precisar fugir da regra.</p>
+    </article>
+    <article class="dec">
+      <span class="id">LB6</span>
+      <h3>O banner sai do conteúdo e vai para o cabeçalho</h3>
+      <p>O banner da categoria é desenhado pelo <code>full_header()</code>, fora de <code>#region-main</code>, e escapa da coluna com uma margem negativa fixa. Em largura total, o da página de apresentação vai para o mesmo lugar, pelo mesmo mecanismo. Margens com <code>100vw</code> foram descartadas: contam a barra de rolagem e criam rolagem lateral no Windows.</p>
+      <p class="rec"><b>Recomendado.</b> Detalhes na seção seguinte.</p>
+    </article>
+  </div>
+</section>
+
+<section id="implementacao">
+  <div class="sechead">
+    <h2>Como seria implementado</h2>
+    <p>Uma mudança de camada 2 pela tabela da frota: PHP, template e SCSS, sem SQL. O portão é <code>mdl ci moodle-theme_dimensions --branch MOODLE_503_STABLE --behat</code>.</p>
+  </div>
+  <ol class="steps">
+    <li><b>Configuração.</b> <code>admin_setting_configselect</code> <code>theme_dimensions/landingheroformat</code>, valores <code>column</code> e <code>fullwidth</code>, padrão <code>column</code>, num cabeçalho <code>landingheroheading</code> no topo da aba <em>Course landing page</em>. Quatro strings em <code>lang/en</code> e <code>lang/pt_br</code>, em ordem alfabética.</li>
+    <li><b>Leitura.</b> Uma classe só, <code>local\landing\heroformat</code>: <code>is_fullwidth()</code> responde sim apenas para o valor gravado <code>fullwidth</code>; qualquer outro valor, ou nenhum, é a coluna.</li>
+    <li><b>Template.</b> O banner sai de <code>landing_page.mustache</code> para um parcial <code>landing_hero.mustache</code>. Na coluna, a página o inclui onde está hoje. Em largura total, <code>request::handle()</code> arma o banner num registro estático (como <code>category_hero</code>) e o <code>full_header()</code> do renderer o desenha; a página não o inclui. Os dois caminhos usam o mesmo contexto, então a URL da imagem continua passando por <code>styleurl::safe()</code>.</li>
+    <li><b>Classe no body.</b> <code>dim-landing-fullwidth</code>, adicionada em <code>request::handle()</code> junto de <code>theme_dimensions-landing</code>, nas duas entradas (script e rota).</li>
+    <li><b>SCSS.</b> A geometria de saída da coluna que <code>category.scss</code> já tem (o <code>.main-inner</code> que ocupa a página e o <code>#page-header</code> que escapa por <code>$dim-bleed</code>) é copiada em <code>landing.scss</code>, com um comentário que manda manter as duas em sincronia. Um mixin compartilhado foi descartado na implementação: <code>landing.scss</code> é compilado antes de <code>category.scss</code> e sozinho no <code>landing_scss_test</code>, e os testes de <code>category.scss</code> leem o texto da folha. A página de apresentação não tem gaveta de blocos nem índice do curso, então o caso da gaveta aberta não se aplica a ela.</li>
+    <li><b>Testes.</b> <code>landing_scss_test</code> mede o contraste do degradê com imagem; um teste de renderização confirma que o banner aparece uma vez só em cada formato (no cabeçalho ou no conteúdo, nunca nos dois), com o formato na coluna como controle; um gate de mutação na leitura da configuração; um cenário Behat que troca a configuração e procura o banner no cabeçalho.</li>
+    <li><b>Versão.</b> Bump do <code>version.php</code> e linha no <code>CHANGELOG.md</code>, no commit e não antes, porque o m503 é compartilhado.</li>
+  </ol>
+</section>
+
+</div>
+
+<script>
+(function () {
+  var screen = document.getElementById('screen');
+  var viewport = document.getElementById('viewport');
+  var scaler = document.getElementById('scaler');
+  var notesFull = document.getElementById('notes-fullwidth');
+  var notesCol = document.getElementById('notes-column');
+  var adminSelect = document.getElementById('admin-format');
+
+  function fit(vp, sc) {
+    var scr = sc.firstElementChild;
+    var natural = scr.offsetWidth;
+    var avail = vp.clientWidth;
+    var s = Math.min(1, avail / natural);
+    sc.style.transform = 'scale(' + s + ')';
+    sc.style.width = natural + 'px';
+    vp.style.height = Math.ceil(scr.offsetHeight * s) + 'px';
+  }
+
+  function value(name) {
+    var el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : '';
+  }
+
+  function apply() {
+    var format = value('format');
+    var phone = value('device') === 'phone';
+    screen.setAttribute('data-format', format);
+    screen.classList.toggle('phone', phone);
+    screen.classList.toggle('with-image', value('image') === 'on');
+    viewport.classList.toggle('is-phone', phone);
+    notesFull.hidden = format !== 'fullwidth';
+    notesCol.hidden = format !== 'column';
+    adminSelect.selectedIndex = format === 'fullwidth' ? 1 : 0;
+    fit(viewport, scaler);
+  }
+
+  document.querySelectorAll('.controls input').forEach(function (input) {
+    input.addEventListener('change', apply);
+  });
+  adminSelect.addEventListener('change', function () {
+    document.getElementById(adminSelect.selectedIndex === 1 ? 'f-fullwidth' : 'f-column').checked = true;
+    apply();
+  });
+
+  var ref = document.getElementById('viewport-ref');
+  var refScaler = document.getElementById('scaler-ref');
+  function fitAll() { fit(viewport, scaler); fit(ref, refScaler); }
+  if (window.ResizeObserver) {
+    new ResizeObserver(fitAll).observe(document.querySelector('.wrap'));
+  } else {
+    window.addEventListener('resize', fitAll);
+  }
+  apply();
+  fit(ref, refScaler);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fitAll); }
+})();
+</script>

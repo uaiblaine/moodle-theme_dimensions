@@ -39,6 +39,7 @@ use theme_dimensions\local\drawernav;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\guesthome;
 use theme_dimensions\local\guestnav;
+use theme_dimensions\local\landing\heroformat;
 use theme_dimensions\local\landingdefaults;
 use theme_dimensions\local\login;
 use theme_dimensions\local\readingbar;
@@ -514,6 +515,26 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             'theme_dimensions_landing',
             get_string('landingtab', 'theme_dimensions', null, true)
         );
+
+        // Create the banner heading.
+        $name = 'theme_dimensions/landingheroheading';
+        $title = get_string('landingheroheading', 'theme_dimensions', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
+        $tab->add($setting);
+
+        // Setting: How the banner of every course landing page is drawn. Only a stored 'fullwidth' moves it out of the
+        // content column (heroformat::is_fullwidth()), so the default keeps the page a site had before the setting.
+        $name = 'theme_dimensions/' . heroformat::SETTING;
+        $title = get_string('landingheroformat', 'theme_dimensions', null, true);
+        $description = get_string('landingheroformat_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            heroformat::COLUMN,
+            heroformat::choices()
+        );
+        $tab->add($setting);
 
         // Create the defaults for new courses heading.
         $name = 'theme_dimensions/landingdefaultsheading';

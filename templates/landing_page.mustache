@@ -25,6 +25,9 @@
     fact rows, the enrolment area for the resolved state and, for somebody who
     manages the course without an enrolment, a way into it (landing_page::manage()).
 
+    The hero's inside is theme_dimensions/landing_hero. With herofullwidth the site draws the hero full width in
+    the page header (theme_dimensions/landing_header, armed as landing_hero) and this page draws none.
+
     The summary is cut after its third paragraph by theme_dimensions/landingsummary, which unhides
     the "See more" toggle only when there is more; without JavaScript it is whole and the toggle
     stays hidden.
@@ -84,6 +87,7 @@
     Example context (json):
     {
         "courseid": 42,
+        "herofullwidth": false,
         "fullname": "Pre-hospital Care & Rescue",
         "categoryname": "Alpha",
         "heroimageurl": "https://example.com/pluginfile.php/31/course/overviewfiles/capa.jpg",
@@ -307,120 +311,11 @@
     }
 }}
 <div class="dimensions-landing{{#bar}} dimensions-landing--hasbar{{/bar}}" data-region="dimensions-landing" data-courseid="{{courseid}}">
+    {{^herofullwidth}}
     <header class="dimensions-landing__hero">
-        {{#heroimageurl}}
-            <div class="dimensions-landing__hero-media" style="background-image: url('{{heroimageurl}}');" aria-hidden="true"></div>
-        {{/heroimageurl}}
-        <div class="dimensions-landing__hero-content{{#hasbadges}} dimensions-landing__hero-content--badges{{/hasbadges}}">
-            <div class="dimensions-landing__hero-text">
-            {{#categoryname}}
-                <span class="dimensions-landing__kicker">{{categoryname}}</span>
-            {{/categoryname}}
-            <h1 class="dimensions-landing__title">{{fullname}}</h1>
-            {{#haschips}}
-                <ul class="dimensions-landing__chips list-unstyled m-0">
-                    {{#chips}}
-                        <li class="dimensions-landing__chip">{{.}}</li>
-                    {{/chips}}
-                    {{#haslivechip}}
-                        <li class="dimensions-landing__chip dimensions-landing__chip--live"><span class="dimensions-landing__livedot" aria-hidden="true"></span>{{#str}} landing_livechip, theme_dimensions {{/str}}</li>
-                    {{/haslivechip}}
-                </ul>
-            {{/haschips}}
-            {{#trail}}
-                <div class="dimensions-landing__em dimensions-landing__trailem">
-                    <span class="dimensions-landing__em-main">{{sequence}}</span>
-                    {{#period}}
-                        <span class="dimensions-landing__em-sub">{{.}}</span>
-                    {{/period}}
-                    <span class="dimensions-landing__trailsegs" role="img" aria-label="{{segmentslabel}}">
-                        {{#steps}}
-                            <span class="dimensions-landing__trailseg{{#state}} dimensions-landing__trailseg--{{.}}{{/state}}"></span>
-                        {{/steps}}
-                    </span>
-                </div>
-            {{/trail}}
-            {{#herodate}}
-                <div class="dimensions-landing__em dimensions-landing__em--big">
-                    <span class="dimensions-landing__em-main">{{datebig}}</span>
-                    <span class="dimensions-landing__em-sub">{{sub}}</span>
-                    {{#countdown}}
-                        <span class="dimensions-landing__em-chip">{{countdown}}</span>
-                    {{/countdown}}
-                </div>
-            {{/herodate}}
-            {{#heroticket}}
-                <div class="dimensions-landing__ticket">
-                    <div class="dimensions-landing__ticket-date">
-                        <span class="dimensions-landing__em-main">{{datebig}}</span>
-                        <span class="dimensions-landing__em-sub">{{sub}}</span>
-                        {{#countdown}}
-                            <span class="dimensions-landing__em-chip">{{.}}</span>
-                        {{/countdown}}
-                    </div>
-                    <div class="dimensions-landing__ticket-cut" aria-hidden="true"></div>
-                    <ul class="dimensions-landing__ticket-ways list-unstyled m-0">
-                        <li class="dimensions-landing__way">
-                            {{#pix}} i/location, core {{/pix}}
-                            <span class="dimensions-landing__way-text">
-                                <span class="dimensions-landing__way-main">{{site}}</span>
-                                {{#venue}}
-                                    <span class="dimensions-landing__way-sub">{{.}}</span>
-                                {{/venue}}
-                            </span>
-                        </li>
-                        <li class="dimensions-landing__way">
-                            {{#pix}} t/play, core {{/pix}}
-                            <span class="dimensions-landing__way-text">
-                                <span class="dimensions-landing__way-main">{{live}}</span>
-                                <span class="dimensions-landing__way-sub">{{livesub}}</span>
-                            </span>
-                        </li>
-                    </ul>
-                </div>
-            {{/heroticket}}
-            {{#herocomp}}
-                <div class="dimensions-landing__comp">
-                    <div class="dimensions-landing__comp-head">
-                        <span class="dimensions-landing__comp-total">{{total}}</span>
-                        {{#meetings}}
-                            <span class="dimensions-landing__comp-meetings">{{.}}</span>
-                        {{/meetings}}
-                    </div>
-                    <div class="dimensions-landing__comp-bar" role="img" aria-label="{{arialabel}}">
-                        <span class="dimensions-landing__comp-online" style="width: {{onlinepct}}%"></span>
-                        <span class="dimensions-landing__comp-inperson" style="width: {{inpersonpct}}%"></span>
-                    </div>
-                    <div class="dimensions-landing__comp-legend" aria-hidden="true">
-                        <span class="dimensions-landing__comp-key"><span class="dimensions-landing__comp-swatch dimensions-landing__comp-swatch--online"></span>{{onlinelabel}}</span>
-                        <span class="dimensions-landing__comp-key"><span class="dimensions-landing__comp-swatch dimensions-landing__comp-swatch--inperson"></span>{{inpersonlabel}}</span>
-                    </div>
-                </div>
-            {{/herocomp}}
-            {{#heroplace}}
-                <div class="dimensions-landing__em {{#big}}dimensions-landing__em--big{{/big}}">
-                    <span class="dimensions-landing__em-main">{{city}}</span>
-                    {{#venue}}
-                        <span class="dimensions-landing__em-sub">{{venue}}</span>
-                    {{/venue}}
-                    {{#dateline}}
-                        <span class="dimensions-landing__em-sub">{{dateline}}</span>
-                    {{/dateline}}
-                    {{#meetings}}
-                        <span class="dimensions-landing__em-sub">{{.}}</span>
-                    {{/meetings}}
-                </div>
-            {{/heroplace}}
-            </div>
-            {{#hasbadges}}
-                <ul class="dimensions-landing__badges" role="list" aria-label="{{#str}} landing_badges, theme_dimensions {{/str}}">
-                    {{#badges}}
-                        <li class="dimensions-landing__badge" role="listitem"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
-                    {{/badges}}
-                </ul>
-            {{/hasbadges}}
-        </div>
+        {{> theme_dimensions/landing_hero }}
     </header>
+    {{/herofullwidth}}
     <div class="dimensions-landing__columns">
         <div class="dimensions-landing__content">
             {{#video}}

@@ -238,12 +238,12 @@ final class band_test extends \advanced_testcase {
         $this->assertSame(0, $DB->count_records('customfield_field', $where), 'Nothing recreates it on a read.');
         $this->assertNull(landingfields::get_field(landingfields::SHORTNAME_RELATED), 'Control: the field is gone.');
 
-        set_config('version', 2026100593, 'theme_dimensions');
-        xmldb_theme_dimensions_upgrade(2026100593);
+        set_config('version', 2026100594, 'theme_dimensions');
+        xmldb_theme_dimensions_upgrade(2026100594);
         \core_course\customfield\course_handler::reset_caches();
         landingfields::reset_field_cache();
 
         $this->assertNotNull(landingfields::get_field(landingfields::SHORTNAME_RELATED));
-        $this->assertSame('2026100594', get_config('theme_dimensions', 'version'));
+        $this->assertSame('2026100595', get_config('theme_dimensions', 'version'));
     }
 }
