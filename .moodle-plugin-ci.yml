@@ -5,3 +5,4 @@ filter:
     - docs/category/probe
     - docs/vitrine-react/probe
     - docs/calendar/probe
+    - docs/related/demo
