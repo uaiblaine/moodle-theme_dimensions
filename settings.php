@@ -28,6 +28,7 @@ use theme_dimensions\local\calendar\blocks;
 use theme_dimensions\local\calendar\coreview;
 use theme_dimensions\local\calendar\keycolour_setting;
 use theme_dimensions\local\calendar\keycolours;
+use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\filterfields_setting;
@@ -746,6 +747,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $name = 'theme_dimensions/' . blocks::SETTING;
         $title = get_string('calendarblocks', 'theme_dimensions', null, true);
         $description = get_string('calendarblocks_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: The Trilhas view of the calendar page and its choice in the view switch. Default on, and read as on
+        // unless an explicit '0' was stored ({@see page::trails_enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . page::TRAILS_SETTING;
+        $title = get_string('calendartrails', 'theme_dimensions', null, true);
+        $description = get_string('calendartrails_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
         $tab->add($setting);
 

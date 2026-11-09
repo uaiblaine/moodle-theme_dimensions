@@ -26,6 +26,7 @@ namespace theme_dimensions\output;
 
 use core_course\customfield\course_handler;
 use local_unlistedcourses\discoverability;
+use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\landing\resolution;
 use theme_dimensions\local\landingfields;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -545,6 +546,27 @@ final class landing_page_trail_test extends \advanced_testcase {
         $context = $this->export($trail, new resolution(resolution::STATE_VISITOR), true);
         $this->assertNotNull($context->trail, 'Precondition: the visitor sees the trail.');
         $this->assertNull($context->trailcalendarurl);
+    }
+
+    /**
+     * With the site's Trilhas view off, no card leads to it, though the reader would be shown the trail; the control is
+     * the same card with the view on again, and anything but an explicit '0' is on.
+     */
+    public function test_no_calendar_link_while_the_site_offers_no_trail_view(): void {
+        global $CFG;
+        $CFG->routerconfigured = false;
+        $running = $this->course(['fullname' => 'Agora', 'startdate' => time() - WEEKSECS, 'enddate' => time() + WEEKSECS]);
+        $trail = $this->trail([$running]);
+        $this->enable_instance((int) $trail->id, 'self', ['customint6' => 1]);
+        $this->become(self::getDataGenerator()->create_user());
+        $link = fn() => $this->export($trail, new resolution(resolution::STATE_CLOSED), false)->trailcalendarurl;
+
+        set_config(page::TRAILS_SETTING, '0', 'theme_dimensions');
+        $this->assertNull($link(), 'The view off.');
+        set_config(page::TRAILS_SETTING, '1', 'theme_dimensions');
+        $this->assertNotNull($link(), 'Control: the view on.');
+        unset_config(page::TRAILS_SETTING, 'theme_dimensions');
+        $this->assertNotNull($link(), 'Never set reads as on.');
     }
 
     /**

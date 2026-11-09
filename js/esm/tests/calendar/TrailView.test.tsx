@@ -357,6 +357,44 @@ describe('the Trilhas view', () => {
         expect([window.location.href, fetched.mock.calls.length]).toEqual([before, calls]);
     });
 
+    it('folds and unfolds a trail from its span and its end\'s diamond, the chevron told, the span left aria-hidden', async() => {
+        const page = await mount(offered(trails([trail()], '2026-12-31')));
+        const fold = page.querySelector<HTMLElement>('[data-action="dim-cal-trailfold"]') as HTMLElement;
+        const steps = page.querySelector<HTMLElement>('#dim-cal-trailsteps-7') as HTMLElement;
+        const span = page.querySelector<HTMLElement>('.dim-cal__trailspan') as HTMLElement;
+        const diamond = page.querySelector<HTMLElement>('.dim-cal__traildiamond--trail') as HTMLElement;
+        expect([span.dataset.action, span.getAttribute('aria-hidden')]).toEqual(['dim-cal-trailspan', 'true']);
+        expect([diamond.dataset.action, diamond.getAttribute('aria-hidden')]).toEqual(['dim-cal-trailspan', 'true']);
+        expect([fold.getAttribute('aria-expanded'), steps.hidden]).toEqual(['true', false]);
+        const before = window.location.href;
+        const calls = fetched.mock.calls.length;
+
+        await act(async() => {
+            fireEvent.click(span);
+        });
+        expect([fold.getAttribute('aria-expanded'), steps.hidden]).toEqual(['false', true]);
+        await act(async() => {
+            fireEvent.click(page.querySelector('.dim-cal__trailspan') as HTMLElement);
+        });
+        expect([fold.getAttribute('aria-expanded'), steps.hidden]).toEqual(['true', false]);
+        await act(async() => {
+            fireEvent.click(page.querySelector('.dim-cal__traildiamond--trail') as HTMLElement);
+        });
+        expect([fold.getAttribute('aria-expanded'), steps.hidden]).toEqual(['false', true]);
+        expect([window.location.href, fetched.mock.calls.length]).toEqual([before, calls]);
+    });
+
+    it('opens the trail a press on its span names, beside another left folded', async() => {
+        const second = trail({id: 8, name: 'Outra', steps: [{...trail().steps[0], cmid: 80, courseid: 81}]});
+        const page = await mount(offered(trails([trail(), second])));
+        const steps = (id: number) => page.querySelector<HTMLElement>(`#dim-cal-trailsteps-${id}`) as HTMLElement;
+        expect([steps(7).hidden, steps(8).hidden]).toEqual([true, true]);
+        await act(async() => {
+            fireEvent.click(page.querySelector('[data-trail="8"] .dim-cal__trailspan') as HTMLElement);
+        });
+        expect([steps(7).hidden, steps(8).hidden]).toEqual([true, false]);
+    });
+
     it('lights a course\'s bar from its row and its row from the bar, for a mouse only', async() => {
         const page = await mount(offered(trails([trail()])));
         const row = page.querySelector<HTMLElement>('[data-region="dim-cal-trailrow"][data-cmid="72"]') as HTMLElement;
