@@ -15,7 +15,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   buttons stay. No progress bar: the trails service computes no percentage per step. With Boost Union's card images
   off the popover draws no cover, keeps a top edge in the category's colour (green when completed), and puts the
   category and the standard close button in a row. `theme_dimensions_get_calendar_trails` answers each step's `image`
-  (a URL or a data URI), read in one batch for the whole answer. Seventeen mutation gates.
+  (a URL or a data URI), read in one batch for the whole answer. The calendar page sets its context before its
+  answers, since the trails' answer reads Boost Union's settings through the page's theme. The popover's date line
+  wraps instead of cutting its source short. Seventeen mutation gates (2026100598).
 
 - **Course cards, stage C3: the showcase's behaviour.** A visitor's card draws one button, "Learn more", to the
   course's landing page, in the flat list and the panel; "More information" is a signed-in reader's, since its
