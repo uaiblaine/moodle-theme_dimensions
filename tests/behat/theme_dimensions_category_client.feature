@@ -292,11 +292,12 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
       | student1 | TRACK  | student |
       | student1 | RESG   | student |
     And I log in as "student1"
-    # The details are asked for the cards an IntersectionObserver reports on screen, after the page has loaded and
-    # outside core's pending-JS count: a large window puts every card of the category on screen, and the wait spins
-    # until the answer is painted.
+    # The details are asked only for the cards an IntersectionObserver reports on screen, after the page has loaded and
+    # outside core's pending-JS count. The test category's long description pushes the grid below the fold, so the
+    # hero is folded on a large window to bring every card on screen, and the wait spins until the answer is painted.
     And I change window size to "large"
     When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    And I press "Collapse"
     Then I wait until "//article[@data-region='dim-card'][contains(., 'Curso Rastreado')]//*[@data-region='dim-card-progress'][@role='progressbar'][@aria-valuenow='0'][not(@hidden)]" "xpath_element" exists
     And I should see "0%" in the "//article[@data-region='dim-card'][contains(., 'Curso Rastreado')]//*[@data-region='dim-card-pct']" "xpath_element"
     And "//article[@data-region='dim-card'][contains(., 'Resgate em Altura')]//*[@data-region='dim-card-progress'][@hidden]" "xpath_element" should exist
