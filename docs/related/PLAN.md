@@ -1,8 +1,9 @@
 # Related contents: plan (2026-11-08)
 
 Status: **decisions D1-D11 approved by the owner on 2026-11-08; R0 (the finder, its tests and its 22 mutation gates)
-merged as uaiblaine/moodle-theme_dimensions#129. R1 in progress on branch `related-r1`: the field, the setting, the band's
-decision (`local\related\band`) and its place on the page are built; the card waits for the course card stages C2-C3.**
+merged as uaiblaine/moodle-theme_dimensions#129; R1 (the band, the field, the setting) as #135, drawn with the trail's step
+card until the course card stages C2-C3 hand it the contract's card. R2 (manual mode, `local\related\choice`) in progress
+on branch `related-r2`.**
 
 Related contents are stage T4 of the trail plan ([../trail/PLAN.md](../trail/PLAN.md), Q7: "not in the first stage").
 They are courses related to a parent course through the competencies linked to both, shown at the end of a landing
@@ -64,9 +65,13 @@ No result: the whole block is absent, its heading included.
 ## 3. Where it appears
 
 - **Landing page**: a full-width band after the textarea sections, where the sticky card ends. A course field
-  `dimensions_related` (select: Automatic, Off; empty reads as Automatic, the field's default staying empty as every
-  select of the theme's) and, for Manual, the chosen competencies (D3): R2 appends Manual as the select's third line
-  with an upgrade step, since a select stores its line's position. A site setting for the number of cards
+  `dimensions_related` (select: Automatic, Off, Manual; empty reads as Automatic, the field's default staying empty as
+  every select of the theme's; Manual is the third line, appended by R2's upgrade step on a site provisioned with two,
+  since a select stores its line's position) and, for Manual, the chosen competencies (D3) in the hidden text field
+  `dimensions_relatedpairs`: a JSON list of [framework idnumber, competency idnumber] pairs, written by an autocomplete
+  of the course's competencies that takes the field's place in the course form and shows only for Manual. The band
+  keeps the chosen competencies still linked to the course (for a trail, to the trail or its courses), matches any of
+  them, and draws nothing while none is chosen. A site setting for the number of cards
   (`theme_dimensions/relatedcount`, 4 by default, 1 to 12).
 - **Shortcode** `[relatedcourses]` (filter_shortcodes allows letters and digits only; on a name conflict only one
   plugin wins):
