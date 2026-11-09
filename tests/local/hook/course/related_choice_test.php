@@ -155,10 +155,9 @@ final class related_choice_test extends \advanced_testcase {
             array_map(static fn(array $option): int => (int) $option['attr']['value'], $element->_options)
         );
         $this->assertSame([$this->comps['B']], $mform->_defaultValues[choice::ELEMENT]);
-        $this->assertSame(
-            [choice::ELEMENT],
-            $mform->_hideifs[self::SELECT]['neq'][(string) landingfields::RELATED_MANUAL] ?? null
-        );
+        // The rules are protected, and a `??` over a protected property reads null: reflection reads them.
+        $rules = (new \ReflectionProperty($mform, '_hideifs'))->getValue($mform);
+        $this->assertSame([choice::ELEMENT], $rules[self::SELECT]['neq'][(string) landingfields::RELATED_MANUAL]);
     }
 
     /**
