@@ -49,5 +49,11 @@ function xmldb_theme_dimensions_upgrade($oldversion) {
         \theme_dimensions\local\landingfields::ensure_fields();
         upgrade_plugin_savepoint(true, 2026100595, 'theme', 'dimensions');
     }
+    if ($oldversion < 2026100599) {
+        // Manual mode of the related courses band: the select's third line, and the field holding the chosen competencies.
+        \theme_dimensions\local\landingfields::add_related_manual_option();
+        \theme_dimensions\local\landingfields::ensure_fields();
+        upgrade_plugin_savepoint(true, 2026100599, 'theme', 'dimensions');
+    }
     return true;
 }

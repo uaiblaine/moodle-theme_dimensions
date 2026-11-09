@@ -166,8 +166,10 @@ to the trail's and its courses'), the ones with exactly the same competencies fi
 makes the learner proficient in a shared competency, then the most overlap. Each reader sees only the courses they
 may see: a visitor the public ones, an account what the category showcase lists to it, never a course it is enrolled
 in or has completed, never a hidden course, and never a frozen one while context freezing is on. A course turns the
-band off with its *Related courses* field; `theme_dimensions/relatedcount` (4 by default, up to 12) caps it. Nothing
-is shown while competencies are disabled on the site, and nothing is stored or cached.
+band off with its *Related courses* field, or sets it to Manual and picks, in the course settings, which of its
+competencies the band relates by (the choice is kept as framework and competency ID numbers in the hidden field
+*Competencies for related courses*, so it travels with a backup); `theme_dimensions/relatedcount` (4 by default, up
+to 12) caps it. Nothing is shown while competencies are disabled on the site, and nothing is stored or cached.
 
 
 Focus mode

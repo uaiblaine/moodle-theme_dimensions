@@ -31,15 +31,18 @@ use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\offer;
 use theme_dimensions\local\landing\publicaccess;
 use theme_dimensions\local\landingfields;
+use theme_dimensions\local\related\choice;
+use theme_dimensions\local\related\finder;
 use theme_dimensions\local\trail\trail;
 
 /**
  * Adjusts the parts of the course settings form made of the fields this theme provisions.
  *
- * Four edits, not expressible through the custom field configuration itself: a course which already has a landing page
+ * Five edits, not expressible through the custom field configuration itself: a course which already has a landing page
  * gains its public address and a link to the page, an event whose enrolment methods set no deadline is told so, the
- * landing page fields that only apply to some models, modalities and formats are hidden while they do not, and the
- * focus mode box leaves the form while focus mode's master switch is off.
+ * landing page fields that only apply to some models, modalities and formats are hidden while they do not, the
+ * related courses' manual choice is an autocomplete of the course's competencies, and the focus mode box leaves the
+ * form while focus mode's master switch is off.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -62,6 +65,7 @@ class after_form_definition {
         self::warn_open_ended_event($hook->formwrapper->get_course(), $hook->mform);
         self::hide_inapplicable_fields($hook->mform);
         self::hide_unavailable_model($hook->formwrapper->get_course(), $hook->mform);
+        self::offer_related_choice($hook->formwrapper->get_course(), $hook->mform);
         self::remove_focusmode_field($hook->mform);
     }
 
@@ -98,6 +102,69 @@ class after_form_definition {
         }
         $element->removeOptions();
         $element->loadArray($offered);
+    }
+
+    /**
+     * Put an autocomplete of the course's competencies in the place of the related courses' pairs field (D3).
+     *
+     * The pairs field holds idnumbers, which nobody should have to type; its text box becomes a hidden element of
+     * the same name, which core validates and saves back unchanged, and {@see after_form_submission} then writes it
+     * from the autocomplete. It cannot simply leave the form as the focus mode box does: customfield_text's
+     * validation indexes the submission by the element's name, and a missing key fails every save. The
+     * autocomplete offers the competencies linked to the SAVED course, preselects the stored choice among them, and is
+     * shown only while the select says Manual: hidden, it is not submitted, and the choice is kept as stored. A course
+     * being created has no competency yet, and its autocomplete offers none. While competencies are off on the site the
+     * text box becomes the hidden element all the same and no autocomplete is offered.
+     *
+     * @param \stdClass $course The course being edited (no id when it is being created).
+     * @param \MoodleQuickForm $mform The course form.
+     * @return void
+     */
+    private static function offer_related_choice(\stdClass $course, \MoodleQuickForm $mform): void {
+        $pairs = 'customfield_' . landingfields::SHORTNAME_RELATEDPAIRS;
+        $select = 'customfield_' . landingfields::SHORTNAME_RELATED;
+        if (!$mform->elementExists($pairs)) {
+            return;
+        }
+        $mform->removeElement($pairs);
+        if ($mform->elementExists($pairs . '_static')) {
+            $mform->removeElement($pairs . '_static');
+        }
+        // Core's text field validation reads the element from every submission (customfield_text's
+        // instance_form_validation()), so the field stays as a hidden element carrying its stored value, which
+        // set_data() fills in; the submission hook then overwrites it from the autocomplete for Manual.
+        $mform->addElement('hidden', $pairs);
+        $mform->setType($pairs, PARAM_RAW);
+        if (!$mform->elementExists($select) || !finder::available()) {
+            return;
+        }
+
+        $linked = choice::linked_to_course($course);
+        $element = $mform->createElement(
+            'autocomplete',
+            choice::ELEMENT,
+            get_string('landingfield_relatedpairs', landingfields::COMPONENT),
+            choice::options($linked),
+            [
+                'multiple' => true,
+                'noselectionstring' => get_string('landingfield_relatedpairs_none', landingfields::COMPONENT),
+            ]
+        );
+        $mform->insertElementBefore($element, $select);
+        $mform->insertElementBefore($mform->removeElement($select, false), choice::ELEMENT);
+        if ($mform->elementExists($select . '_static')) {
+            $mform->insertElementBefore($mform->removeElement($select . '_static', false), choice::ELEMENT);
+        }
+        $mform->setType(choice::ELEMENT, PARAM_INT);
+        $mform->addHelpButton(choice::ELEMENT, 'landingfield_relatedpairs', landingfields::COMPONENT);
+        if ($linked) {
+            $stored = landingfields::values((int) $course->id)->relatedpairs;
+            $mform->setDefault(choice::ELEMENT, choice::chosen(choice::decode($stored), $linked));
+        }
+        $mform->hideIf(choice::ELEMENT, $select, 'neq', (string) landingfields::RELATED_MANUAL);
+
+        $mform->addElement('hidden', choice::MARKER, 1);
+        $mform->setType(choice::MARKER, PARAM_INT);
     }
 
     /**

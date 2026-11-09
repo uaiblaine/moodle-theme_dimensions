@@ -28,13 +28,14 @@ use theme_dimensions\local\landingfields;
 use theme_dimensions\local\trail\trail;
 
 /**
- * The related courses band at the end of a landing page, in automatic mode (R1 of docs/related/PLAN.md).
+ * The related courses band at the end of a landing page (R1 and R2 of docs/related/PLAN.md).
  *
- * The course's `dimensions_related` select decides whether the band is drawn: empty or Automatic draws it, Off and
- * any value this release does not know (a line appended later, such as manual mode) draw nothing. The set is the
- * course's competencies, and for a trail the union of the trail's and its steps' courses'; those courses are never
- * related, since the page already lists a trail's steps. {@see finder} ranks and gates the candidates for the
- * current reader. A band with nothing to list is not drawn at all, its heading included.
+ * The course's `dimensions_related` select decides how the band is drawn: empty or Automatic relates by the course's
+ * whole set of competencies, Manual by the competencies an editor chose among them ({@see choice}), Off and any value
+ * this release does not know draw nothing. The set is the course's competencies, and for a trail the union of the
+ * trail's and its steps' courses'; those courses are never related, since the page already lists a trail's steps.
+ * {@see finder} ranks and gates the candidates for the current reader. A band with nothing to list, a manual one with
+ * nothing chosen included, is not drawn at all, its heading included.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -72,13 +73,44 @@ final class band {
     }
 
     /**
-     * Whether a course's choice draws the band: its select is empty or Automatic.
+     * The finder's mode a course's select asks for: automatic while it is empty or Automatic, manual for Manual.
+     *
+     * @param \stdClass $values The course's landing page values ({@see landingfields::values()}).
+     * @return string|null finder::MODE_AUTO or finder::MODE_MANUAL; null when the band is not drawn.
+     */
+    public static function mode(\stdClass $values): ?string {
+        $related = (int) ($values->related ?? 0);
+        if (in_array($related, [0, landingfields::RELATED_AUTO], true)) {
+            return finder::MODE_AUTO;
+        }
+        return $related === landingfields::RELATED_MANUAL ? finder::MODE_MANUAL : null;
+    }
+
+    /**
+     * Whether a course's choice draws the band: its select is empty, Automatic or Manual.
      *
      * @param \stdClass $values The course's landing page values ({@see landingfields::values()}).
      * @return bool
      */
     public static function wanted(\stdClass $values): bool {
-        return in_array((int) ($values->related ?? 0), [0, landingfields::RELATED_AUTO], true);
+        return self::mode($values) !== null;
+    }
+
+    /**
+     * The courses whose competencies are the band's set: the course, and for a trail its steps' courses.
+     *
+     * @param \stdClass $course The landing page's course.
+     * @param trail|null $trail Its trail, when the page is a trail's ({@see trail::of()}).
+     * @return int[] The course ids, the course's first; never related.
+     */
+    public static function courseids(\stdClass $course, ?trail $trail): array {
+        $courseids = [(int) $course->id];
+        if ($trail !== null) {
+            foreach ($trail->steps as $step) {
+                $courseids[] = $step->refcourseid;
+            }
+        }
+        return $courseids;
     }
 
     /**
@@ -92,19 +124,20 @@ final class band {
      *   empty when the band is not drawn.
      */
     public static function courses(\stdClass $course, \stdClass $values, ?trail $trail = null, ?int $now = null): array {
-        if (!self::wanted($values)) {
+        $mode = self::mode($values);
+        if ($mode === null) {
             return [];
         }
-        $courseids = [(int) $course->id];
-        if ($trail !== null) {
-            foreach ($trail->steps as $step) {
-                $courseids[] = $step->refcourseid;
-            }
+        $courseids = self::courseids($course, $trail);
+        $set = finder::competencies_of($courseids);
+        if ($mode === finder::MODE_MANUAL) {
+            // Only the chosen competencies still linked to the course: a manual choice picks among its set.
+            $set = array_values(array_intersect(choice::competencies(choice::decode($values->relatedpairs ?? '')), $set));
         }
         return finder::find(
-            finder::competencies_of($courseids),
+            $set,
             $courseids,
-            finder::MODE_AUTO,
+            $mode,
             finder::MATCH_ANY,
             self::count(),
             $now

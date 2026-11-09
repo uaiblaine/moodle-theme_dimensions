@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Related contents, stage R2: manual mode on the landing page** (docs/related/PLAN.md). The *Related courses* field
+  gains a third line, Manual: the band then relates by the competencies an editor chose among the course's own (for a
+  trail, the trail's and its courses'), the courses covering more of them first, and draws nothing while none is
+  chosen. The choice is kept in a new course field, *Competencies for related courses* (`dimensions_relatedpairs`),
+  as framework and competency ID number pairs so it survives a backup; the course settings form shows an autocomplete
+  of the course's competencies in its place, only while Manual is chosen. A competency unlinked from the course later
+  drops out of the band by itself. The upgrade appends the line and creates the field (2026100599).
+
 - **Course cards, stage C4: the trail popover.** The Trilhas view's step popover is the course card's dialog: a 96px
   cover with the step's course image (its own, else the theme's cover in its category's colour or Boost Union's
   fallback image), the category over the title, the dates as the meta line, "Course n of N · trail" on a quiet ground

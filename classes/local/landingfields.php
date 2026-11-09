@@ -184,6 +184,15 @@ class landingfields {
      */
     public const SHORTNAME_RELATED = 'dimensions_related';
 
+    /**
+     * @var string Shortname of the related contents' manual choice: the competencies the band relates by (D3).
+     *
+     * A text field holding framework and competency idnumber pairs ({@see related\choice}), read only while the
+     * select says {@see RELATED_MANUAL}. Its form element is replaced by an autocomplete of the course's competencies
+     * ({@see hook\course\after_form_definition}); identifiers, never ids, so the choice survives a backup and restore.
+     */
+    public const SHORTNAME_RELATEDPAIRS = 'dimensions_relatedpairs';
+
     /** @var string Shortname of the retired "public landing page" checkbox, kept only so the upgrade can find it. */
     public const SHORTNAME_RETIRED_PUBLIC = 'dimensions_public';
 
@@ -222,6 +231,9 @@ class landingfields {
     /** @var int Stored value of the related contents select for "off": the band is not drawn. */
     public const RELATED_OFF = 2;
 
+    /** @var int Stored value of the related contents select for "manual", the line appended for the chosen competencies. */
+    public const RELATED_MANUAL = 3;
+
     /**
      * @var string[] The custom field type of every field of {@see definitions()}, in the same order: shortname => type.
      *
@@ -253,6 +265,7 @@ class landingfields {
         self::SHORTNAME_VIDEOURL => 'text',
         self::SHORTNAME_SHAREIMAGE => self::PICTURE_TYPE,
         self::SHORTNAME_RELATED => 'select',
+        self::SHORTNAME_RELATEDPAIRS => 'text',
     ];
 
     /** @var array|null Request cache of resolved field controllers keyed by shortname (null = missing). */
@@ -461,16 +474,31 @@ class landingfields {
                     'visibility' => course_handler::NOTVISIBLE,
                 ],
             ],
-            /* After the share picture, for the same reason. Its lines are bound to RELATED_*: manual mode (R2 of
-               docs/related/PLAN.md) is appended as a third line by an upgrade step, never inserted. */
+            /* After the share picture, for the same reason. Its lines are bound to RELATED_*: a site provisioned
+               with the first two gets the third from {@see add_related_manual_option()}, never inserted. */
             self::SHORTNAME_RELATED => [
                 'type' => 'select',
                 'stringkey' => 'landingfield_related',
                 'config' => [
                     'options' => get_string('landingfield_related_auto', self::COMPONENT) . "\n" .
-                        get_string('landingfield_related_off', self::COMPONENT),
+                        get_string('landingfield_related_off', self::COMPONENT) . "\n" .
+                        get_string('landingfield_related_manual', self::COMPONENT),
                     'defaultvalue' => '',
                     // A choice about the landing page, never a fact of the course a card would print.
+                    'visibility' => course_handler::NOTVISIBLE,
+                ],
+            ],
+            // Right after its select. The course form never shows it: an autocomplete of the course's competencies writes it.
+            self::SHORTNAME_RELATEDPAIRS => [
+                'type' => 'text',
+                'stringkey' => 'landingfield_relatedpairs',
+                'config' => [
+                    'displaysize' => 50,
+                    // The column's own size; {@see related\choice::encode()} keeps a choice under it.
+                    'maxlength' => related\choice::MAX_LENGTH,
+                    'ispassword' => 0,
+                    'link' => '',
+                    'linktarget' => '',
                     'visibility' => course_handler::NOTVISIBLE,
                 ],
             ],
@@ -979,6 +1007,7 @@ class landingfields {
             'publicdescription' => null,
             'videourl' => null,
             'related' => 0,
+            'relatedpairs' => '',
             'crests' => [],
             'names' => [],
         ];
@@ -1043,6 +1072,10 @@ class landingfields {
                     break;
                 case self::SHORTNAME_RELATED:
                     $values->related = (int) $data->get_value();
+                    break;
+                case self::SHORTNAME_RELATEDPAIRS:
+                    // Raw: {@see related\choice::decode()} reads it, and nothing prints it.
+                    $values->relatedpairs = (string) $data->get_value();
                     break;
                 case self::SHORTNAME_CREST1:
                 case self::SHORTNAME_CREST2:
@@ -1369,6 +1402,39 @@ class landingfields {
             return false;
         }
         $lines[] = get_string('landingfield_model_trail', self::COMPONENT);
+        $config['options'] = implode("\n", $lines);
+        $DB->update_record('customfield_field', (object) [
+            'id' => $field->get('id'),
+            'configdata' => json_encode($config),
+            'timemodified' => time(),
+        ]);
+        self::reset_field_cache();
+        return true;
+    }
+
+    /**
+     * Append the manual line to the related contents select of a site provisioned before it.
+     *
+     * The same step as {@see add_hybrid_option()}, for the same reasons: the line is appended only to a select that
+     * still holds exactly the two lines it was created with (automatic and off), because the stored value of an
+     * option is its position.
+     *
+     * @return bool Whether the option was appended.
+     */
+    public static function add_related_manual_option(): bool {
+        global $DB;
+
+        self::reset_field_cache();
+        $field = self::get_field(self::SHORTNAME_RELATED);
+        if (!$field) {
+            return false;
+        }
+        $config = (array) $field->get('configdata');
+        $lines = preg_split("/\s*\n\s*/", trim((string) ($config['options'] ?? '')));
+        if (count(array_filter($lines, 'strlen')) !== 2) {
+            return false;
+        }
+        $lines[] = get_string('landingfield_related_manual', self::COMPONENT);
         $config['options'] = implode("\n", $lines);
         $DB->update_record('customfield_field', (object) [
             'id' => $field->get('id'),

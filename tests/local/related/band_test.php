@@ -108,10 +108,11 @@ final class band_test extends \advanced_testcase {
      * The landing page values of a course choosing a line of the related select.
      *
      * @param int $related The stored value: 0 for none, a RELATED_* constant, or any other line.
+     * @param array $pairs The manual choice, as [framework idnumber, competency idnumber] pairs.
      * @return \stdClass
      */
-    private static function values(int $related): \stdClass {
-        return (object) ['model' => landingfields::MODEL_COURSE, 'related' => $related];
+    private static function values(int $related, array $pairs = []): \stdClass {
+        return (object) ['model' => landingfields::MODEL_COURSE, 'related' => $related, 'relatedpairs' => choice::encode($pairs)];
     }
 
     /**
@@ -145,7 +146,7 @@ final class band_test extends \advanced_testcase {
     }
 
     /**
-     * Automatic and the empty choice draw the band; Off and a line this release does not know draw nothing.
+     * Automatic, the empty choice and Manual draw the band; Off and a line this release does not know draw nothing.
      */
     public function test_the_select_decides_whether_the_band_is_drawn(): void {
         $parent = $this->course(['a']);
@@ -154,7 +155,51 @@ final class band_test extends \advanced_testcase {
         $this->assertSame([$related], self::listed($parent, self::values(landingfields::RELATED_AUTO)));
         $this->assertSame([$related], self::listed($parent, self::values(0)), 'An empty choice reads as automatic.');
         $this->assertSame([], self::listed($parent, self::values(landingfields::RELATED_OFF)));
-        $this->assertSame([], self::listed($parent, self::values(3)), 'A line appended later is not automatic.');
+        $this->assertSame([], self::listed($parent, self::values(4)), 'A line appended later is not automatic.');
+        $this->assertSame([$related], self::listed($parent, self::values(landingfields::RELATED_MANUAL, [['FW1', 'A']])));
+        $this->assertSame(finder::MODE_MANUAL, band::mode(self::values(landingfields::RELATED_MANUAL)));
+        $this->assertSame(finder::MODE_AUTO, band::mode(self::values(0)));
+        $this->assertNull(band::mode(self::values(landingfields::RELATED_OFF)));
+    }
+
+    /**
+     * Manual relates by the chosen competencies alone, and only by those still linked to the course.
+     */
+    public function test_manual_relates_by_the_chosen_competencies_among_the_courses(): void {
+        $parent = $this->course(['a', 'b']);
+        $bya = (int) $this->course(['a'], 'Por A')->id;
+        $byb = (int) $this->course(['b'], 'Por B')->id;
+        $this->course(['c'], 'Por C');
+
+        $this->assertEqualsCanonicalizing([$bya, $byb], self::listed($parent, self::values(0)), 'Control: automatic.');
+        $this->assertSame([$byb], self::listed($parent, self::values(landingfields::RELATED_MANUAL, [['FW1', 'B']])));
+        $this->assertSame(
+            [$byb],
+            self::listed($parent, self::values(landingfields::RELATED_MANUAL, [['FW1', 'B'], ['FW1', 'C']])),
+            'A chosen competency the course is not linked to relates nothing.'
+        );
+        $this->assertSame([], self::listed($parent, self::values(landingfields::RELATED_MANUAL, [['FW1', 'C']])));
+        $this->assertSame([], self::listed($parent, self::values(landingfields::RELATED_MANUAL)), 'Nothing chosen, no band.');
+        $this->assertSame([], self::listed($parent, self::values(landingfields::RELATED_MANUAL, [['FW9', 'B']])));
+    }
+
+    /**
+     * Manual orders by how many of the chosen competencies a course covers, and a trail chooses among its steps' too.
+     */
+    public function test_manual_counts_the_chosen_and_reads_a_trails_steps(): void {
+        $parent = $this->course(['a', 'b']);
+        $one = (int) $this->course(['a'], 'A só')->id;
+        $both = (int) $this->course(['a', 'b'], 'Z ambas')->id;
+        $chosen = [['FW1', 'A'], ['FW1', 'B']];
+
+        $this->assertSame([$both, $one], self::listed($parent, self::values(landingfields::RELATED_MANUAL, $chosen)));
+
+        $trail = $this->course([]);
+        $step = (int) $this->course(['c'])->id;
+        $byc = (int) $this->course(['c'], 'Por C')->id;
+        $manualc = self::values(landingfields::RELATED_MANUAL, [['FW1', 'C']]);
+        $this->assertSame([], self::listed($trail, $manualc), 'Control: the trail course alone has no C.');
+        $this->assertSame([$byc], self::listed($trail, $manualc, $this->trail((int) $trail->id, [$step])));
     }
 
     /**
@@ -244,6 +289,42 @@ final class band_test extends \advanced_testcase {
         landingfields::reset_field_cache();
 
         $this->assertNotNull(landingfields::get_field(landingfields::SHORTNAME_RELATED));
-        $this->assertSame('2026100595', get_config('theme_dimensions', 'version'));
+        $this->assertGreaterThanOrEqual(2026100595, (int) get_config('theme_dimensions', 'version'));
+    }
+
+    /**
+     * A site provisioned with the two lines and no pairs field gets the manual line and the field from the upgrade.
+     */
+    public function test_the_upgrade_brings_manual_mode(): void {
+        global $CFG, $DB;
+        require_once($CFG->libdir . '/upgradelib.php');
+        require_once($CFG->dirroot . '/theme/dimensions/db/upgrade.php');
+
+        $where = ['shortname' => landingfields::SHORTNAME_RELATEDPAIRS];
+        $DB->delete_records('customfield_field', $where);
+        $select = $DB->get_record('customfield_field', ['shortname' => landingfields::SHORTNAME_RELATED], '*', MUST_EXIST);
+        $config = json_decode($select->configdata, true);
+        $lines = explode("\n", $config['options']);
+        $this->assertCount(3, $lines, 'A fresh install has the manual line.');
+        $config['options'] = implode("\n", array_slice($lines, 0, 2));
+        $DB->set_field('customfield_field', 'configdata', json_encode($config), ['id' => $select->id]);
+        \core_course\customfield\course_handler::reset_caches();
+        landingfields::reset_field_cache();
+        $this->assertSame(0, $DB->count_records('customfield_field', $where), 'Control: the field is gone.');
+        $this->assertCount(2, landingfields::option_lines(landingfields::SHORTNAME_RELATED), 'Control: two lines.');
+
+        set_config('version', 2026100598, 'theme_dimensions');
+        xmldb_theme_dimensions_upgrade(2026100598);
+        \core_course\customfield\course_handler::reset_caches();
+        landingfields::reset_field_cache();
+
+        $this->assertNotNull(landingfields::get_field(landingfields::SHORTNAME_RELATEDPAIRS));
+        $this->assertSame(
+            get_string('landingfield_related_manual', landingfields::COMPONENT),
+            landingfields::option_label(landingfields::SHORTNAME_RELATED, landingfields::RELATED_MANUAL)
+        );
+        $this->assertFalse(landingfields::add_related_manual_option(), 'Run again, the step appends nothing.');
+        $this->assertCount(3, landingfields::option_lines(landingfields::SHORTNAME_RELATED));
+        $this->assertGreaterThanOrEqual(2026100599, (int) get_config('theme_dimensions', 'version'));
     }
 }
