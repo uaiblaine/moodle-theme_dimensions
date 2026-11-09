@@ -2,8 +2,8 @@
 
 Status: **decisions D1-D11 approved by the owner on 2026-11-08; R0 (the finder, its tests and its 22 mutation gates)
 merged as uaiblaine/moodle-theme_dimensions#129; R1 (the band, the field, the setting) as #135, drawn with the trail's step
-card until the course card stages C2-C3 hand it the contract's card. R2 (manual mode, `local\related\choice`) in progress
-on branch `related-r2`.**
+card until the course card stages C2-C3 hand it the contract's card. R2 (manual mode, `local\related\choice`) merged as
+#138. Next: R3, the `[relatedcourses]` shortcode.**
 
 Related contents are stage T4 of the trail plan ([../trail/PLAN.md](../trail/PLAN.md), Q7: "not in the first stage").
 They are courses related to a parent course through the competencies linked to both, shown at the end of a landing
