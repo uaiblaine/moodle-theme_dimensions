@@ -145,7 +145,7 @@ final class related_choice_test extends \advanced_testcase {
         $mform = $this->form($course);
 
         $this->assertSame(
-            [self::SELECT, self::SELECT . '_static', choice::ELEMENT, 'shortname', choice::MARKER],
+            [self::SELECT, self::SELECT . '_static', choice::ELEMENT, 'shortname', self::PAIRS, choice::MARKER],
             self::names($mform)
         );
         $element = $mform->getElement(choice::ELEMENT);
@@ -167,17 +167,34 @@ final class related_choice_test extends \advanced_testcase {
         $course = $this->course(['A']);
         set_config('enabled', 0, 'core_competency');
 
-        $this->assertSame([self::SELECT, self::SELECT . '_static', 'shortname'], self::names($this->form($course)));
+        $this->assertSame([self::SELECT, self::SELECT . '_static', 'shortname', self::PAIRS], self::names($this->form($course)));
     }
 
     /**
-     * A course being created offers no competency, and the field still leaves the form.
+     * A course being created offers no competency, and the field is still the hidden element.
      */
     public function test_a_new_course_offers_none(): void {
         $mform = $this->form(new \stdClass());
 
-        $this->assertNotContains(self::PAIRS, self::names($mform));
+        $this->assertSame('hidden', $mform->getElement(self::PAIRS)->getType());
         $this->assertSame([], $mform->getElement(choice::ELEMENT)->_options);
+    }
+
+    /**
+     * The submission still carries the pairs field, which core's text field validation reads by name.
+     */
+    public function test_the_submission_carries_what_core_validates(): void {
+        $course = $this->course(['A']);
+        $mform = $this->form($course);
+
+        $this->assertSame('hidden', $mform->getElement(self::PAIRS)->getType());
+        $controllers = course_handler::create()->get_instance_data((int) $course->id, true);
+        $pairs = array_values(array_filter(
+            $controllers,
+            static fn($data): bool => $data->get_field()->get('shortname') === landingfields::SHORTNAME_RELATEDPAIRS
+        ))[0];
+        $submitted = array_fill_keys(self::names($mform), '') + ['id' => $course->id];
+        $this->assertSame([], $pairs->instance_form_validation($submitted, []));
     }
 
     /**

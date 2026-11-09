@@ -107,13 +107,14 @@ class after_form_definition {
     /**
      * Put an autocomplete of the course's competencies in the place of the related courses' pairs field (D3).
      *
-     * The pairs field holds idnumbers, which nobody should have to type; it leaves the form, and core stores nothing
-     * for it (data_controller::instance_form_save() returns early for an element absent from the submission, as
-     * {@see remove_focusmode_field()} says), so {@see after_form_submission} writes it from the autocomplete. The
+     * The pairs field holds idnumbers, which nobody should have to type; its text box becomes a hidden element of
+     * the same name, which core validates and saves back unchanged, and {@see after_form_submission} then writes it
+     * from the autocomplete. It cannot simply leave the form as the focus mode box does: customfield_text's
+     * validation indexes the submission by the element's name, and a missing key fails every save. The
      * autocomplete offers the competencies linked to the SAVED course, preselects the stored choice among them, and is
      * shown only while the select says Manual: hidden, it is not submitted, and the choice is kept as stored. A course
      * being created has no competency yet, and its autocomplete offers none. While competencies are off on the site the
-     * field leaves the form all the same and nothing takes its place.
+     * text box becomes the hidden element all the same and no autocomplete is offered.
      *
      * @param \stdClass $course The course being edited (no id when it is being created).
      * @param \MoodleQuickForm $mform The course form.
@@ -129,6 +130,11 @@ class after_form_definition {
         if ($mform->elementExists($pairs . '_static')) {
             $mform->removeElement($pairs . '_static');
         }
+        // Core's text field validation reads the element from every submission (customfield_text's
+        // instance_form_validation()), so the field stays as a hidden element carrying its stored value, which
+        // set_data() fills in; the submission hook then overwrites it from the autocomplete for Manual.
+        $mform->addElement('hidden', $pairs);
+        $mform->setType($pairs, PARAM_RAW);
         if (!$mform->elementExists($select) || !finder::available()) {
             return;
         }
