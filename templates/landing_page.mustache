@@ -48,6 +48,11 @@
     An account's card also leads to the calendar's Trilhas view with this trail kept
     (trailcalendarurl, landing_page::calendar_url()).
 
+    The page ends with the related courses band (landing_page::related(), local\related\band): courses
+    sharing competencies with this course, the ones the reader may see, drawn only when there is one. Its
+    cards are the trail's course cards without a number or a state, until the band draws the fleet's course
+    card (moodle-dev docs/course-card/CONTRACT.md); their covers are images.
+
     The hero image's url is printed into a style attribute, a CSS context the
     double stash does not protect, because a browser decodes the attribute
     before the CSS parser reads it; landing_page::hero_image_url() therefore
@@ -124,6 +129,13 @@
             "venue": "Central Campus · Main Hall",
             "live": "Live, from wherever you are",
             "livesub": "Streamed on the platform"
+        },
+        "related": {
+            "cards": [
+                {"courseid": 51, "name": "Advanced Life Support", "url": "https://example.com/theme/dimensions/landing.php?id=51", "imageurl": "https://example.com/pluginfile.php/9/course/overviewfiles/als.jpg", "category": "Emergency care", "hours": "40 hours"},
+                {"courseid": 52, "name": "Triage in Mass Casualty Incidents", "url": "https://example.com/theme/dimensions/landing.php?id=52", "imageurl": null, "category": null, "hours": null}
+            ],
+            "count": 2
         },
         "trail": {
             "steps": [
@@ -684,6 +696,33 @@
             </div>
         </aside>
     </div>
+    {{#related}}
+        <section class="dimensions-landing__related" data-region="dimensions-landing-related" aria-labelledby="dimensions-landing-related-title">
+            <h2 class="dimensions-landing__sectiontitle" id="dimensions-landing-related-title">{{#str}} landing_related, theme_dimensions {{/str}}</h2>
+            <ul class="dimensions-landing__relatedlist">
+                {{#cards}}
+                    <li class="dimensions-landing__relateditem" data-courseid="{{courseid}}">
+                        <article class="dimensions-landing__stepcard">
+                            <div class="dimensions-landing__stepcover" aria-hidden="true">
+                                {{#imageurl}}<img src="{{.}}" alt="" loading="lazy">{{/imageurl}}
+                            </div>
+                            <div class="dimensions-landing__stepbody">
+                                {{#category}}
+                                    <span class="dimensions-landing__stepcat">{{.}}</span>
+                                {{/category}}
+                                <h3 class="dimensions-landing__stepname"><a href="{{url}}">{{name}}</a></h3>
+                                {{#hours}}
+                                    <div class="dimensions-landing__stepmeta">
+                                        <span class="dimensions-landing__stephours">{{.}}</span>
+                                    </div>
+                                {{/hours}}
+                            </div>
+                        </article>
+                    </li>
+                {{/cards}}
+            </ul>
+        </section>
+    {{/related}}
     {{#bar}}
         <div class="dimensions-landing__bar">
             <a class="btn btn-primary dimensions-landing__btn" href="{{url}}">{{label}}</a>

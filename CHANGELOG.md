@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Related contents, stage R1: the landing page's band** (docs/related/PLAN.md). A landing page ends with the
+  courses related to its course through their competencies, in the order and for the readers R0's reader decides,
+  and draws nothing, heading included, when there is none. A trail's page reads the trail's and its courses'
+  competencies and never lists its own courses. A new course field, *Related courses* (`dimensions_related`:
+  Automatic, Off; empty reads as Automatic), turns the band off per course; the setting
+  `theme_dimensions/relatedcount` (4 by default, 1 to 12) caps it. The upgrade creates the field (2026100594).
+  `docs/related/demo/seed.php` seeds a demonstration category on a development stack.
+
 - **Course cards, stage C1: Boost Union's course overview settings and the cover of a course without an image.** A
   course with no image of its own now shows its category's cover on the showcase's cards instead of the fixed navy:
   an SVG in the category's colour (inherited from the nearest category with one, else the site's brand colour) under

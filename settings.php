@@ -42,6 +42,7 @@ use theme_dimensions\local\guestnav;
 use theme_dimensions\local\landingdefaults;
 use theme_dimensions\local\login;
 use theme_dimensions\local\readingbar;
+use theme_dimensions\local\related\band;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -537,6 +538,20 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             );
             $tab->add($setting);
         }
+
+        // Create the related courses heading.
+        $name = 'theme_dimensions/landingrelatedheading';
+        $title = get_string('landingrelatedheading', 'theme_dimensions', null, true);
+        $description = get_string('landingrelatedheading_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_heading($name, $title, $description);
+        $tab->add($setting);
+
+        // Setting: How many related courses the band at the end of a landing page lists at most.
+        $name = 'theme_dimensions/' . band::SETTING_COUNT;
+        $title = get_string('landingrelatedcount', 'theme_dimensions', null, true);
+        $description = get_string('landingrelatedcount_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, band::DEFAULT_COUNT, band::choices());
+        $tab->add($setting);
 
         // Add tab to settings page.
         $page->add($tab);
