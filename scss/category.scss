@@ -2163,9 +2163,8 @@ body.dim-category {
     // CONTENT's, so one long word in a course name would make its track wider than its share
     // and push the other two. It is what makes a bare 1fr behave like minmax(0, 1fr).
     //
-    // Two tracks below xl and one below sm; the numbers come from the crests, which do not
-    // shrink above lg (see .dim-card__crests): three 80px crests plus a date tile need about
-    // 325px of card.
+    // Two tracks below xl and one below sm; the numbers come from the cover's corners: three 56px
+    // crests (see .dim-card__crests) plus a date tile need about 260px of card.
     .dim-vitrine__grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
@@ -2188,27 +2187,107 @@ body.dim-category {
     }
 
     // ---- The card -----------------------------------------------------------------------------
+    // The course card contract (moodle-dev/docs/course-card/CONTRACT.md): every visual value of the card is one of
+    // its 30 tokens, read here through the theme's own names (--dim-card-<suffix>), each the family token first
+    // (post.scss declares them, light and dark) and then Bootstrap's property and a literal, so the card keeps its look
+    // where a sheet without the family block draws it. A colour literal lives only in these declarations: a rule
+    // naming the card paints through them (tests/local/course_card_contract_test.php). The rest of the card's own
+    // names are measures, a filter, and the category's band, which is instance data the template writes on the
+    // article ({@see \theme_dimensions\output\category_card}), never a token.
     .dim-card {
-        --dim-card-media: 150px;
-        --dim-card-crest-w: 80px;
-        --dim-card-crest-h: 88px;
+        --dim-card-radius: var(--dimensions-card-radius, var(--bs-border-radius-lg, 12px));
+        --dim-card-border-width: var(--dimensions-card-border-width, var(--bs-border-width, 1px));
+        --dim-card-border: var(--dimensions-card-border, var(--bs-border-color, #dee2e6));
+        --dim-card-surface: var(--dimensions-card-surface, var(--bs-body-bg, #fff));
+        --dim-card-ink: var(--dimensions-card-ink, var(--bs-body-color, #1f1f1f));
+        --dim-card-ink-muted: var(--dimensions-card-ink-muted, var(--bs-secondary-color, #6a737b));
+        --dim-card-title-hover: var(--dimensions-card-title-hover, var(--bs-link-hover-color, #0c5699));
+        --dim-card-cover-height: var(--dimensions-card-cover-height, 150px);
+        --dim-card-cover-fallback: var(--dimensions-card-cover-fallback, var(--bs-primary, #0f6cbf));
+        // White at 16 % to black at 34 %, in eight-digit hex to keep the line.
+        --dim-card-cover-overlay: var(--dimensions-card-cover-overlay, linear-gradient(135deg, #ffffff29, #00000057));
+        --dim-card-chip-bg: var(--dimensions-card-chip-bg, rgba(255, 255, 255, .92));
+        --dim-card-chip-ink: var(--dimensions-card-chip-ink, #1f1f1f);
+        --dim-card-extra-bg: var(--dimensions-card-extra-bg, var(--bs-tertiary-bg, #f8f9fa));
+        --dim-card-extra-icon: var(--dimensions-card-extra-icon, var(--bs-primary-text-emphasis, #062b4c));
+        --dim-card-track: var(--dimensions-card-track, var(--bs-secondary-bg, #e9ecef));
+        --dim-card-fill: var(--dimensions-card-fill, var(--bs-primary, #0f6cbf));
+        --dim-card-track-height: var(--dimensions-card-track-height, 6px);
+        --dim-card-done: var(--dimensions-card-done, var(--bs-success, #357a32));
+        --dim-card-done-bg: var(--dimensions-card-done-bg, var(--bs-success-bg-subtle, #d7e4d6));
+        --dim-card-done-ink: var(--dimensions-card-done-ink, var(--bs-success-text-emphasis, #153114));
+        --dim-card-done-edge: var(--dimensions-card-done-edge, 4px);
+        --dim-card-shadow: var(--dimensions-card-shadow, 0 1px 2px rgba(0, 0, 0, .08));
+        --dim-card-shadow-hover: var(--dimensions-card-shadow-hover, 0 6px 16px rgba(0, 0, 0, .12));
+        --dim-card-focus-ring: var(--dimensions-card-focus-ring, var(--dimensions-focus-ring, var(--bs-emphasis-color, #000)));
+        --dim-card-focus-width: var(--dimensions-card-focus-width, 2px);
+        --dim-card-locked-opacity: var(--dimensions-card-locked-opacity, .62);
+        --dim-card-close-bg: var(--dimensions-card-close-bg, rgba(0, 0, 0, .5));
+        --dim-card-close-bg-hover: var(--dimensions-card-close-bg-hover, rgba(0, 0, 0, .7));
+        --dim-card-close-edge: var(--dimensions-card-close-edge, rgba(255, 255, 255, .4));
+        --dim-card-transition: var(--dimensions-card-transition, 150ms);
+        // The crests' size on a card at every width (D2: 80 x 88 is the hero's and the dialogue's), and the soft
+        // shadow that makes them read on a photograph as well as on a flat colour.
+        --dim-card-crest-w: 56px;
+        --dim-card-crest-h: 62px;
+        --dim-card-crest-shadow: drop-shadow(0 1px 3px rgba(0, 0, 0, .5));
         // The film over the image while the filter line previews: nothing on a card that stays (see the preview below).
         --dim-card-film: transparent;
         position: relative;
         display: flex;
         flex-direction: column;
         width: 100%;
-        border: 1px solid var(--dim-line);
-        border-radius: var(--dim-radius);
-        background: var(--dim-surface);
-        box-shadow: var(--dim-shadow);
-        transition: box-shadow var(--dim-motion) var(--dim-ease);
+        border: var(--dim-card-border-width) solid var(--dim-card-border);
+        border-radius: var(--dim-card-radius);
+        background: var(--dim-card-surface);
+        color: var(--dim-card-ink);
+        // The page's face wherever the card is drawn: the grouped panel sits in the areas, whose running text is the
+        // reading face, and draws the flat list's card.
+        font-family: var(--dim-font-brand);
+        box-shadow: var(--dim-card-shadow);
+        transition: box-shadow var(--dim-card-transition) var(--dim-ease);
+    }
 
-        // The lift is a shadow, never a transform: a transform makes the card a stacking context,
-        // and its open details panel would then paint under the cards of the next row.
-        &:hover {
-            box-shadow: var(--dim-shadow-lift);
-        }
+    // One target, one hover (contract sections 4 and 5): the title's link stretches over a card the viewer can open
+    // (dim-card--link: it has a page and is not muted), so the whole card is the link a screen reader hears once,
+    // named by the course. The hover is the larger shadow and the title underlined in its hover colour, and nothing
+    // moves: a transform makes the card a stacking context and cuts its shadow in a rail. Every other control of the
+    // card is lifted over the link (z-index 2 against the link's 1), so no press is swallowed by it. Each state is a
+    // flat selector naming the card, which is what the contract test reads.
+    .dim-card--link .dim-card__title a::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        border-radius: var(--dim-card-radius);
+    }
+
+    .dim-card--link:hover {
+        box-shadow: var(--dim-card-shadow-hover);
+    }
+
+    .dim-card--link:hover .dim-card__title a,
+    .dim-card--link .dim-card__title a:focus-visible {
+        color: var(--dim-card-title-hover);
+        text-decoration: underline;
+    }
+
+    // The keyboard's ring is the card's, drawn by the stretched link around the whole card, with the hover's shadow.
+    .dim-card--link .dim-card__title a:focus-visible {
+        outline: 0;
+    }
+
+    .dim-card--link .dim-card__title a:focus-visible::after {
+        outline: var(--dim-card-focus-width) solid var(--dim-card-focus-ring);
+        outline-offset: 2px;
+        box-shadow: var(--dim-card-shadow-hover);
+    }
+
+    .dim-card__cta,
+    .dim-card__summary,
+    .dim-card__star {
+        position: relative;
+        z-index: 2;
     }
 
     // Past the twenty-fourth poster the rest sit inside a native disclosure. Its summary is
@@ -2250,8 +2329,9 @@ body.dim-category {
         }
     }
 
-    // A course without an image gets ONE flat solid, the fallback navy.
-    // The band is 150px tall: the crests over its bottom-right corner are 88px, and the date tile
+    // A course without an image gets the renderer's cover (its category's, contract section 8); a band with no image at
+    // all is the cover fallback under the cover overlay.
+    // The band is the cover's height: the crests sit over its bottom-right corner, and the date tile
     // and the kind tag keep their own corners without the three meeting. Its height is a custom
     // property because the crests are positioned against the CARD and have to know it (see
     // .dim-card__crests).
@@ -2264,9 +2344,9 @@ body.dim-category {
         position: relative;
         z-index: 0;
         flex: none;
-        height: var(--dim-card-media);
-        border-radius: var(--dim-radius) var(--dim-radius) 0 0;
-        background: var(--dim-fallback);
+        height: var(--dim-card-cover-height);
+        border-radius: var(--dim-card-radius) var(--dim-card-radius) 0 0;
+        background: var(--dim-card-cover-overlay), var(--dim-card-cover-fallback);
         overflow: hidden;
     }
 
@@ -2278,7 +2358,8 @@ body.dim-category {
     }
 
     // The three marks of the media band sit over a photograph when the course has one, so
-    // each states its own ink over an opaque white and frosts what shows through the rest.
+    // each states its own ink over the light chip and frosts what shows through the rest. Sentence
+    // case, as every word of the card (contract section 3).
     .dim-card__kind {
         position: absolute;
         top: 10px;
@@ -2288,17 +2369,11 @@ body.dim-category {
         gap: 6px;
         padding: 3px 10px;
         border-radius: var(--dim-radius-pill);
-        background: rgba(255, 255, 255, .92);
+        background: var(--dim-card-chip-bg);
         backdrop-filter: blur(4px);
-        color: #1f1f1f;
-        font-size: .6875rem;
+        color: var(--dim-card-chip-ink);
+        font-size: .75rem;
         font-weight: 600;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-    }
-
-    .dim-card__kind--event {
-        color: #00343c;
     }
 
     .dim-card__datetile {
@@ -2309,33 +2384,29 @@ body.dim-category {
         flex-direction: column;
         padding: 4px 10px 5px;
         border-radius: var(--dim-radius-sm);
-        background: rgba(255, 255, 255, .92);
+        background: var(--dim-card-chip-bg);
         backdrop-filter: blur(4px);
-        color: #1f1f1f;
+        color: var(--dim-card-chip-ink);
         line-height: 1.05;
         text-align: center;
+    }
 
-        b {
-            font-size: 1.125rem;
-            font-weight: 800;
-            font-variant-numeric: tabular-nums;
-        }
+    .dim-card__datetile b {
+        font-size: 1.125rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+    }
 
-        span {
-            color: #505050;
-            font-size: .625rem;
-            font-weight: 600;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-        }
+    .dim-card__datetile span {
+        font-size: .6875rem;
+        font-weight: 600;
     }
 
     // ---- The crests over the image ------------------------------------------------------------
     // Up to three of the course's own badges in the bottom-right corner of the band, with no
     // plate behind them and a soft drop shadow instead, so that they read on a photograph as
-    // well as on a flat colour. 80x88 is a floor, not a preference: the drawings are detailed
-    // and stop being legible under it, which is why the band is 150px tall rather than the crests
-    // smaller.
+    // well as on a flat colour. 56x62 on a card at every width (D2); the hero and the course
+    // dialogue keep the 80x88 the drawings were made for.
     //
     // They are written in the badge ROW of the body - one markup serves the card and the list
     // views - so what they are positioned against is the CARD, exactly as the favourite star is,
@@ -2347,7 +2418,7 @@ body.dim-category {
     // so adding one never moves the ones already there. The order is the editor's.
     .dim-card__crests {
         position: absolute;
-        top: calc(var(--dim-card-media) - var(--dim-card-crest-h) - 8px);
+        top: calc(var(--dim-card-cover-height) - var(--dim-card-crest-h) - 8px);
         right: 8px;
         display: flex;
         flex-direction: row-reverse;
@@ -2362,20 +2433,7 @@ body.dim-category {
         width: var(--dim-card-crest-w);
         height: var(--dim-card-crest-h);
         object-fit: contain;
-        filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .5));
-    }
-
-    // Below lg the crests step down to 56x62, and the arithmetic is the whole reason: three
-    // crests, their gaps and the inset need 260px of the band's width, the date tile and its
-    // own inset another 64, and a two-track grid on a 768px viewport gives a card 305px wide -
-    // so at 80px the two marks would meet on an event card. At 56px the row needs 188px and
-    // clears the tile at every width down to a 320px phone. The hero's crests do not step down:
-    // the band is the width of the page and nothing shares that corner with them.
-    @media (max-width: 991.98px) {
-        .dim-card {
-            --dim-card-crest-w: 56px;
-            --dim-card-crest-h: 62px;
-        }
+        filter: var(--dim-card-crest-shadow);
     }
 
     .dim-card__body {
@@ -2393,12 +2451,11 @@ body.dim-category {
         min-width: 0;
     }
 
+    // The category, one line in sentence case (contract section 2, slot 5).
     .dim-card__over {
-        color: var(--dim-muted);
-        font-size: .6875rem;
+        color: var(--dim-card-ink-muted);
+        font-size: .78125rem;
         font-weight: 600;
-        letter-spacing: .12em;
-        text-transform: uppercase;
     }
 
     .dim-card__title {
@@ -2406,22 +2463,18 @@ body.dim-category {
         font-size: 1rem;
         font-weight: 600;
         line-height: 1.3;
+    }
 
-        a {
-            color: var(--dim-ink);
-            text-decoration: none;
-
-            &:hover,
-            &:focus-visible {
-                color: var(--dim-primary-ink);
-                text-decoration: underline;
-            }
-        }
+    .dim-card__title a {
+        color: var(--dim-card-ink);
+        text-decoration: none;
+        text-underline-offset: 2px;
+        transition: color var(--dim-card-transition) var(--dim-ease);
     }
 
     .dim-card__meta {
         margin: 0;
-        color: var(--dim-muted);
+        color: var(--dim-card-ink-muted);
         font-size: .8125rem;
         font-variant-numeric: tabular-nums;
     }
@@ -2450,7 +2503,7 @@ body.dim-category {
     .dim-card__prog {
         display: inline-flex;
         align-items: center;
-        color: var(--dim-muted);
+        color: var(--dim-card-ink-muted);
         font-size: .8125rem;
         font-weight: 600;
         font-variant-numeric: tabular-nums;
@@ -2549,7 +2602,7 @@ body.dim-category {
         align-items: center;
         gap: 6px;
         margin: 0;
-        color: var(--dim-muted);
+        color: var(--dim-card-ink-muted);
         font-size: .78rem;
     }
 
@@ -2563,32 +2616,11 @@ body.dim-category {
         padding-top: 4px;
     }
 
-    // The design's small primary and quiet buttons. Boost's .btn-sm carries the baseline;
-    // these outbid its measures without touching the focus ring or the disabled state.
-    .dim-card__cta {
-        padding: 6px 12px;
-        border-radius: var(--dim-radius-sm);
-        font-size: .8125rem;
-        font-weight: 600;
-    }
+    // The buttons are Bootstrap's own variants at btn-sm (D10): the call to action btn-primary or btn-outline-primary,
+    // "More information" btn-outline-secondary. Their hover, pressed and disabled states are the theme's --bs-btn-*;
+    // the card restyles no button, it only lifts them over the stretched link (above).
 
-    // "More information": a link to the card's own page, which the course dialogue intercepts for an account.
-    .dim-card__summary {
-        padding: 6px 12px;
-        border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-sm);
-        background: transparent;
-        color: var(--dim-muted);
-        font-size: .8125rem;
-        font-weight: 600;
-
-        &:hover,
-        &:focus-visible {
-            background: var(--dim-surface-subtle);
-            color: var(--dim-ink);
-        }
-    }
-
+    // The favourite: a 32px light disc at the top right of the cover, core's course star in the card's place.
     .dim-card__star {
         position: absolute;
         top: 8px;
@@ -2600,36 +2632,125 @@ body.dim-category {
         height: 32px;
         border: 0;
         border-radius: 50%;
-        background: rgba(255, 255, 255, .92);
+        background: var(--dim-card-chip-bg);
         backdrop-filter: blur(4px);
-        color: #505050;
+        color: var(--dim-card-chip-ink);
         font-size: .9375rem;
         cursor: pointer;
-        transition: color var(--dim-motion) var(--dim-ease);
+        transition: color var(--dim-card-transition) var(--dim-ease);
+    }
 
-        &[aria-pressed="true"] {
-            color: var(--dim-star-on);
-        }
+    .dim-card__star[aria-pressed="true"] {
+        color: var(--dim-star-on);
+    }
 
-        &:hover {
-            color: var(--dim-primary-ink);
-        }
+    .dim-card__star:hover {
+        color: var(--dim-primary-ink);
+    }
 
-        &:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 3px var(--dim-ring);
-        }
+    .dim-card__star:focus-visible {
+        outline: var(--dim-card-focus-width) solid var(--dim-card-focus-ring);
+        outline-offset: 2px;
     }
 
     // A course the viewer has no way into - no enrolment method, or a held event - is shown,
-    // muted, never explained. category_card::export_for_template() decides which.
+    // muted, never explained. category_card::export_for_template() decides which. Its title is no
+    // stretched link (the article carries no dim-card--link), so the card answers no hover and only
+    // its own controls respond; the cover recedes as the contract's locked card does.
+    .dim-card--muted {
+        cursor: default;
+    }
+
     .dim-card--muted .dim-card__media {
-        filter: saturate(.35);
-        opacity: .72;
+        filter: grayscale(.55);
+        opacity: var(--dim-card-locked-opacity);
     }
 
     .dim-card--muted .dim-card__title a {
-        color: var(--dim-muted);
+        color: var(--dim-card-ink-muted);
+    }
+
+    // ---- Boost Union's "Show course images" (contract section 8) -------------------------------
+    // The card view without its cover: the band goes, the kind, the crests (24x26) and the star share a row at the top
+    // of the body (dim-card__top, drawn by the template only for such a card), and a 4px top edge keeps the course
+    // category's colour (--dim-card-band, which the template writes on the article), green once the course is
+    // completed. The crests and the star stay where the markup has them, positioned against the card in that row's
+    // place, so nothing is moved by a script and the list view keeps its own order.
+    .dim-card__top {
+        display: none;
+    }
+
+    .dim-vitrine--cards .dim-card--nocover {
+        --dim-card-crest-w: 24px;
+        --dim-card-crest-h: 26px;
+        border-top: var(--dim-card-done-edge) solid var(--dim-card-band, var(--dim-card-cover-fallback));
+    }
+
+    .dim-vitrine--cards .dim-card--nocover.dim-card--done {
+        border-top-color: var(--dim-card-done);
+    }
+
+    .dim-vitrine--cards .dim-card--nocover .dim-card__media {
+        display: none;
+    }
+
+    // The row is as tall as the star, and keeps the star's 32px and three crests clear on its right.
+    .dim-vitrine--cards .dim-card--nocover .dim-card__top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 32px;
+        padding-right: 128px;
+    }
+
+    .dim-card__topkind {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border: var(--dim-card-border-width) solid var(--dim-card-border);
+        border-radius: var(--dim-radius-pill);
+        background: var(--dim-card-extra-bg);
+        color: var(--dim-card-ink);
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .dim-vitrine--cards .dim-card--nocover .dim-card__crests {
+        top: 15px;
+        right: 56px;
+        gap: 4px;
+    }
+
+    .dim-vitrine--cards .dim-card--nocover .dim-card__crest img {
+        filter: none;
+    }
+
+    // On the card's ground rather than a cover, the star is the quiet outlined disc of the list view.
+    .dim-vitrine--cards .dim-card--nocover .dim-card__star {
+        top: 12px;
+        right: 16px;
+        border: var(--dim-card-border-width) solid var(--dim-card-border);
+        background: var(--dim-card-surface);
+        backdrop-filter: none;
+        color: var(--dim-card-ink-muted);
+    }
+
+    .dim-vitrine--cards .dim-card--nocover .dim-card__star[aria-pressed="true"] {
+        color: var(--dim-star-on);
+    }
+
+    // The list view without its thumbnail: no 56px cell, and a 4px leading edge in the same colour.
+    .dim-vitrine--list .dim-card--nothumb {
+        border-inline-start: var(--dim-card-done-edge) solid var(--dim-card-band, var(--dim-card-cover-fallback));
+    }
+
+    .dim-vitrine--list .dim-card--nothumb.dim-card--done {
+        border-inline-start-color: var(--dim-card-done);
+    }
+
+    .dim-vitrine--list .dim-card--nothumb .dim-card__media {
+        display: none;
     }
 
     // ---- The filter line's preview ---------------------------------------------------------
@@ -2647,11 +2768,7 @@ body.dim-category {
     }
 
     .dim-vitrine--previewing .dim-card--dim {
-        --dim-surface: var(--dim-recede-surface);
-        --dim-ink: var(--dim-recede-ink);
-        --dim-muted: var(--dim-recede-ink);
         --dim-primary-ink: var(--dim-recede-ink);
-        --dim-line: var(--dim-recede-line);
         --dim-star-on: var(--dim-recede-ink);
         --dim-card-film: var(--dim-recede-film);
         --dim-badge-enrolled-bg: var(--dim-recede-pill-bg);
@@ -2681,6 +2798,28 @@ body.dim-category {
             --bs-btn-color: var(--dim-recede-pill-fg);
             --bs-btn-border-color: var(--dim-recede-pill-bg);
         }
+
+        .dim-card__summary {
+            --bs-btn-color: var(--dim-recede-ink);
+            --bs-btn-border-color: var(--dim-recede-line);
+        }
+    }
+
+    // The card's own colours are contract tokens, which only the family token feeds, so a receding card sets the
+    // receding pair on what those tokens paint: its ground and line, and every ink of its text.
+    .dim-vitrine--previewing .dim-card--dim {
+        border-color: var(--dim-recede-line);
+        background: var(--dim-recede-surface);
+        color: var(--dim-recede-ink);
+    }
+
+    .dim-vitrine--previewing .dim-card--dim .dim-card__title a,
+    .dim-vitrine--previewing .dim-card--dim .dim-card__over,
+    .dim-vitrine--previewing .dim-card--dim .dim-card__meta,
+    .dim-vitrine--previewing .dim-card--dim .dim-card__prog,
+    .dim-vitrine--previewing .dim-card--dim .dim-card__route,
+    .dim-vitrine--previewing .dim-card--dim .dim-card__opens {
+        color: var(--dim-recede-ink);
     }
 
     .dim-vitrine--previewing .dim-card__media::after {
@@ -2699,7 +2838,9 @@ body.dim-category {
     // takes the card's transition away).
     @media (prefers-reduced-motion: no-preference) {
         .dim-card {
-            transition: box-shadow var(--dim-motion) var(--dim-ease), background-color var(--dim-motion) var(--dim-ease);
+            transition:
+                box-shadow var(--dim-card-transition) var(--dim-ease),
+                background-color var(--dim-card-transition) var(--dim-ease);
         }
     }
 
@@ -2726,7 +2867,7 @@ body.dim-category {
         width: 56px;
         height: auto;
         min-height: 56px;
-        border-radius: var(--dim-radius) 0 0 var(--dim-radius);
+        border-radius: var(--dim-card-radius) 0 0 var(--dim-card-radius);
     }
 
     // The cell's height comes from the row, so the image fills it from the corners instead of
@@ -2753,9 +2894,8 @@ body.dim-category {
         border-radius: 0;
         background: transparent;
         backdrop-filter: none;
-        color: rgba(255, 255, 255, .92);
+        color: var(--dim-card-chip-bg);
         font-size: 1rem;
-        letter-spacing: 0;
     }
 
     .dim-vitrine--list .dim-card__kind--event .fa {
@@ -2779,14 +2919,14 @@ body.dim-category {
         left: 50%;
         padding: 2px 4px;
         transform: translate(-50%, -50%);
+    }
 
-        b {
-            font-size: .875rem;
-        }
+    .dim-vitrine--list .dim-card__datetile b {
+        font-size: .875rem;
+    }
 
-        span {
-            font-size: .5rem;
-        }
+    .dim-vitrine--list .dim-card__datetile span {
+        font-size: .5625rem;
     }
 
     .dim-vitrine--list .dim-card__body {
@@ -2830,12 +2970,13 @@ body.dim-category {
     }
 
     // In list view the star is a member of the action cluster, not a floating
-    // element over the leading cell.
+    // element over the leading cell: in the flow, and still positioned, so it stays over the stretched link.
     .dim-vitrine--list .dim-card__star {
-        position: static;
+        position: relative;
+        inset: auto;
         background: var(--dim-surface-strong);
         backdrop-filter: none;
-        color: var(--dim-ink);
+        color: var(--dim-card-ink);
     }
 
     // ==== The areas as posters, and one panel between their rows ================================
@@ -2870,16 +3011,10 @@ body.dim-category {
     .dim-panel__eyebrow,
     .dim-panel__title,
     .dim-panel__sortopt,
+    .dim-panel__suggestion,
     .dim-panel__tile,
     .dim-panel__retry,
-    .dim-panel__cta,
-    .dim-panel__suggestion,
-    .dim-panel__rail .dim-card__kind,
-    .dim-panel__rail .dim-card__datetile,
-    .dim-panel__rail .dim-card__over,
-    .dim-panel__rail .dim-card__title,
-    .dim-panel__rail .dim-card__badge,
-    .dim-panel__rail .dim-card__cta {
+    .dim-panel__cta {
         font-family: var(--dim-font-brand);
     }
 
@@ -3073,7 +3208,9 @@ body.dim-category {
     // invalid background is no background at all.
     .dim-poster {
         --dim-card-band: var(--dim-ds-blue-600, #070093);
-        --dim-card-ink: #fff;
+        // The poster's ink: the server's pair on the style attribute (--dim-card-ink there), white without one. Its
+        // own name, because --dim-card-ink is the course card's contract token (the card section above).
+        --dim-poster-ink: var(--dim-card-ink, #fff);
         --dim-mark: none;
         --dim-mark-a: .2;
         --dim-poster-h: 288px;
@@ -3093,7 +3230,7 @@ body.dim-category {
         height: var(--dim-poster-h);
         border-radius: var(--dim-ds-radius-lg, 12px);
         background: var(--dim-card-band);
-        color: var(--dim-card-ink);
+        color: var(--dim-poster-ink);
         box-shadow: var(--dim-ds-shadow-sm), 0 0 0 1px var(--dim-poster-edge);
         overflow: hidden;
         transition:
@@ -3187,7 +3324,7 @@ body.dim-category {
 
     .dim-poster__name {
         margin: 0;
-        color: var(--dim-card-ink);
+        color: var(--dim-poster-ink);
         font-size: 1.32rem;
         font-weight: 700;
         line-height: 1.18;
@@ -3586,7 +3723,7 @@ body.dim-category {
             content: "";
             position: absolute;
             inset: 0;
-            background-color: var(--dim-card-ink);
+            background-color: var(--dim-poster-ink);
             -webkit-mask-image: var(--dim-mark);
             mask-image: var(--dim-mark);
             -webkit-mask-repeat: no-repeat;
@@ -4409,220 +4546,6 @@ body.dim-category {
         }
     }
 
-    // ---- The mini: the course card itself, in a smaller presentation (the card's own template) ----
-    // A 16:9 band, the title stretched over the card, the star alone at the bottom-right, and
-    // neither the call to action nor "More information": the card's page is its title, and the
-    // link is out of reach on purpose.
-    .dim-panel__rail .dim-card {
-        --dim-card-crest-w: 40px;
-        --dim-card-crest-h: 44px;
-        min-width: 0;
-        border-radius: var(--dim-ds-radius-md, 8px);
-        box-shadow: var(--dim-ds-shadow-sm);
-        overflow: hidden;
-
-        &:hover {
-            box-shadow: var(--dim-ds-shadow-sm);
-        }
-    }
-
-    // The ring is the card's, drawn inward because the rail clips.
-    .dim-panel__rail .dim-card:has(.dim-card__title a:focus-visible) {
-        outline: 3px solid var(--dim-ring);
-        outline-offset: -3px;
-    }
-
-    .dim-panel__rail .dim-card__media {
-        height: auto;
-        border-radius: 0;
-        background:
-            radial-gradient(circle at 82% 18%, rgba(255, 255, 255, .18), transparent 58%),
-            linear-gradient(135deg, var(--dim-fallback), var(--dim-ds-blue-800, #030050));
-        aspect-ratio: 16 / 9;
-    }
-
-    .dim-panel__rail .dim-card__kind {
-        top: 8px;
-        left: 8px;
-        padding: 3px 8px;
-        background: rgba(255, 255, 255, .94);
-        color: var(--dim-ds-blue-700, #050073);
-        font-size: .64rem;
-        letter-spacing: .06em;
-
-        .fa {
-            display: none;
-        }
-    }
-
-    .dim-panel__rail .dim-card__datetile {
-        bottom: 8px;
-        left: 8px;
-        padding: 4px 8px;
-        box-shadow: var(--dim-ds-shadow-sm);
-
-        b {
-            font-size: 1.08rem;
-        }
-
-        // The design's month is an inline box inside its day's 15px line, so its line keeps that
-        // line's 15px x 1.05 strut; here it is a flex item of its own, whose line would be only
-        // 9.6px x 1.05 and leave the tile short of the design's, so the strut is stated.
-        span {
-            font-size: .6rem;
-            line-height: 15.75px;
-        }
-    }
-
-    // The crests are positioned against the CARD (they live in its badge row), so on a band of
-    // 16:9 they are an overlay of the band's own shape, anchored at its bottom-right corner.
-    .dim-panel__rail .dim-card__crests {
-        top: 0;
-        right: 0;
-        left: 0;
-        align-items: flex-end;
-        gap: 4px;
-        padding: 0 8px 6px;
-        aspect-ratio: 16 / 9;
-        pointer-events: none;
-    }
-
-    .dim-panel__rail .dim-card__body {
-        gap: 5px;
-        padding: 10px 12px 12px;
-    }
-
-    .dim-panel__rail .dim-card__titlewrap {
-        gap: 5px;
-    }
-
-    // Every mini carries its overline, so the titles of one rail line up.
-    .dim-panel__rail .dim-card__over {
-        overflow: hidden;
-        font-size: .66rem;
-        letter-spacing: .08em;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .dim-panel__rail .dim-card__title {
-        display: -webkit-box;
-        min-height: 2.56em;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
-        font-size: .98rem;
-        font-weight: 700;
-        line-height: 1.28;
-
-        a {
-            color: var(--dim-primary-ink);
-
-            &::after {
-                content: "";
-                position: absolute;
-                inset: 0;
-                z-index: 1;
-            }
-
-            &:focus-visible {
-                outline: none;
-            }
-        }
-    }
-
-    .dim-panel__rail .dim-card__meta {
-        font-family: var(--dim-ds-font-reading);
-        font-size: .8rem;
-    }
-
-    // The badge row keeps the star's room on its right, level with it. The star is out of the
-    // row's flow, so the row states the height the star gives it in the design: its 4px of top
-    // padding plus the 40px star (a border box), which puts the badge's centre on the star's.
-    .dim-panel__rail .dim-card__row {
-        min-height: 44px;
-        margin-top: auto;
-        padding-top: 4px;
-        padding-right: 48px;
-    }
-
-    .dim-panel__rail .dim-card__badge {
-        padding: 3px 9px;
-        font-size: .7rem;
-        letter-spacing: .03em;
-        line-height: 1.5;
-    }
-
-    // The progress sentence is a line of its own over the badge, with a 4px bar.
-    .dim-panel__rail .dim-card__prog {
-        --dim-progress: 0%;
-        display: flex;
-        flex: 1 1 100%;
-        gap: 8px;
-        order: -1;
-        font-size: .74rem;
-        font-weight: 400;
-
-        &::before {
-            content: "";
-            flex: 1;
-            height: 4px;
-            border-radius: var(--dim-ds-radius-pill, 50rem);
-            background: linear-gradient(to right, var(--dim-primary) var(--dim-progress), var(--dim-surface-strong) 0);
-        }
-    }
-
-    .dim-panel__rail .dim-card__actions {
-        position: absolute;
-        right: 12px;
-        bottom: 12px;
-        z-index: 2;
-        margin: 0;
-        padding: 0;
-    }
-
-    .dim-panel__rail .dim-card__summary {
-        display: none;
-    }
-
-    // The mini keeps no call to action, so it keeps no route line either: the title's page offers the route,
-    // and says when enrolment opens.
-    .dim-panel__rail .dim-card__route,
-    .dim-panel__rail .dim-card__opens {
-        display: none;
-    }
-
-    // A logged-in reader's mini keeps its star and not its call to action, whose page is the
-    // title's. A visitor's has no star, and keeps "Learn more" as quiet text in the same corner.
-    .dim-panel__rail .dim-card__actions:has(.dim-card__star) .dim-card__cta {
-        display: none;
-    }
-
-    .dim-panel__rail .dim-card__actions .dim-card__cta {
-        padding: 0;
-        border: 0;
-        background: none;
-        color: var(--dim-primary-ink);
-        font-size: .8rem;
-        font-weight: 600;
-        box-shadow: none;
-    }
-
-    .dim-panel__rail .dim-card__star {
-        position: static;
-        width: 40px;
-        height: 40px;
-        border: 1px solid var(--dim-line);
-        background: var(--dim-surface);
-        backdrop-filter: none;
-        color: var(--dim-muted);
-
-        &[aria-pressed="true"] {
-            border-color: var(--dim-star-on);
-            color: var(--dim-star-on);
-        }
-    }
-
     // ---- The list view: posters as rows, the rail as dense rows ------------------------------------
     .dim-vitrine--list .dim-poster__card {
         flex-direction: row;
@@ -4763,69 +4686,6 @@ body.dim-category {
         display: none;
     }
 
-    .dim-vitrine--list .dim-panel__rail .dim-card {
-        flex-wrap: nowrap;
-        align-items: center;
-        gap: 12px;
-        min-height: 0;
-        padding: 8px 10px;
-        box-shadow: none;
-    }
-
-    .dim-vitrine--list .dim-panel__rail .dim-card__media {
-        align-self: auto;
-        flex: 0 0 96px;
-        width: 96px;
-        height: auto;
-        min-height: 0;
-        border-radius: var(--dim-ds-radius-sm, 6px);
-    }
-
-    .dim-vitrine--list .dim-panel__rail .dim-card__kind,
-    .dim-vitrine--list .dim-panel__rail .dim-card__datetile,
-    .dim-vitrine--list .dim-panel__rail .dim-card__crests {
-        display: none;
-    }
-
-    .dim-vitrine--list .dim-panel__rail .dim-card__body {
-        flex: 1 1 auto;
-        flex-direction: column;
-        flex-wrap: nowrap;
-        align-items: stretch;
-        gap: 1px;
-        min-width: 0;
-        padding: 0;
-    }
-
-    .dim-vitrine--list .dim-panel__rail .dim-card__titlewrap {
-        flex: none;
-        gap: 1px;
-    }
-
-    .dim-vitrine--list .dim-panel__rail .dim-card__title {
-        min-height: 0;
-        -webkit-line-clamp: 1;
-    }
-
-    .dim-vitrine--list .dim-panel__rail .dim-card__row {
-        min-height: 36px;
-        margin-top: 2px;
-        padding-top: 0;
-        padding-right: 44px;
-    }
-
-    .dim-vitrine--list .dim-panel__rail .dim-card__actions {
-        right: 10px;
-        bottom: 8px;
-    }
-
-    .dim-vitrine--list .dim-panel__rail .dim-card__star {
-        width: 36px;
-        height: 36px;
-        background: var(--dim-surface);
-        color: var(--dim-muted);
-    }
-
     // ---- The medium and narrow widths --------------------------------------------------------------
     @media (max-width: 1199.98px) {
         .dim-poster {
@@ -4914,33 +4774,6 @@ body.dim-category {
 
         .dim-panel__cta {
             flex: 1 1 100%;
-        }
-
-        .dim-panel__rail .dim-card__star,
-        .dim-vitrine--list .dim-panel__rail .dim-card__star {
-            width: 44px;
-            height: 44px;
-        }
-
-        // The star is out of the row's flow, so the row states the height the star gives it: the
-        // 44px star plus the card row's 4px of top padding, and the list row has no padding.
-        .dim-panel__rail .dim-card__row {
-            min-height: 48px;
-        }
-
-        .dim-vitrine--list .dim-panel__rail .dim-card__row {
-            min-height: 44px;
-        }
-
-        .dim-panel__rail .dim-card__actions .dim-card__cta {
-            display: inline-flex;
-            align-items: center;
-            min-height: 44px;
-        }
-
-        .dim-vitrine--list .dim-panel__rail .dim-card__media {
-            flex-basis: 72px;
-            width: 72px;
         }
     }
 
@@ -6335,6 +6168,7 @@ body.dim-category {
 
     @media (prefers-reduced-motion: reduce) {
         .dim-card,
+        .dim-card__title a,
         .dim-pill,
         .dim-card__star {
             transition: none;
@@ -6465,6 +6299,22 @@ body.dim-category {
 // dark page; the signature band stays, as the design draws it in both modes.
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
     --dim-cmodal-cover-end: var(--dim-surface);
+}
+
+// Core's dark mode underlines every link of #region-main but core's own controls (theme/boost/scss/moodle/dark.scss,
+// WCAG 1.4.1, for a link inside prose), at (1,6,1). A card's title is the card's stretched link, which the card's own
+// frame tells apart, so at rest it keeps the light mode's none, and the hover and the keyboard's focus underline it as
+// in light mode (moodle-dev/docs/course-card/CONTRACT.md, section 5). The selectors' own weight is what wins, (1,7,2)
+// and (1,8,2): category_scss_test compares them with core's.
+:root[data-bs-theme="dark"] body.dim-category {
+    #region-main .dim-card .dim-card__title a[href]:not(.btn) {
+        text-decoration: none;
+    }
+
+    #region-main .dim-card--link:hover .dim-card__title a[href]:not(.btn),
+    #region-main .dim-card--link .dim-card__title a[href]:not(.btn):focus-visible {
+        text-decoration: underline;
+    }
 }
 
 // ---- The filter line's preview in the dark mode -----------------------------------------------------------

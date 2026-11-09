@@ -28,6 +28,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\card\boost_union;
 use theme_dimensions\local\card\cover;
 use theme_dimensions\output\category_card;
+use theme_dimensions\output\category_listing;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -45,6 +46,7 @@ require_once(__DIR__ . '/fixture.php');
  */
 #[CoversClass(cards::class)]
 #[CoversClass(category_card::class)]
+#[CoversClass(category_listing::class)]
 final class cards_cover_test extends \advanced_testcase {
     use fixture;
 
@@ -243,5 +245,94 @@ final class cards_cover_test extends \advanced_testcase {
         $html = $output->render_from_template('theme_dimensions/category_card', $context);
         $this->assertStringNotContainsString('dim-card__media', $html, 'Neither view shows an image.');
         $this->assertStringContainsString('dim-card--nocover dim-card--nothumb', $html);
+    }
+
+    /**
+     * Each card's band is its category's colour, from the same cache as the covers, for every row with a category.
+     */
+    public function test_the_bands_are_the_categories_colours(): void {
+        $this->resetAfterTest();
+        [$categoryid, $with, $without] = $this->seed();
+        self::theme();
+        $rows = $this->rows($categoryid);
+
+        $this->assertEqualsCanonicalizing([$with => '#b3261e', $without => '#b3261e'], cards::bands($rows));
+
+        // A row without its category has no band, and an empty page asks nothing.
+        $rows[$with]->category = 0;
+        $this->assertSame([$without => '#b3261e'], cards::bands($rows));
+        $this->assertSame([], cards::bands([]));
+    }
+
+    /**
+     * A card without its cover writes its band on the article, sanitised, and draws the row at the top of its body.
+     */
+    public function test_a_card_without_its_cover_carries_its_band_and_its_top_row(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        [$categoryid, , $without] = $this->seed();
+        self::theme();
+        $output = $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL);
+        $rows = $this->rows($categoryid);
+        $card = fn(?string $band, bool $showstar = true): category_card => new category_card(
+            cards::records([$without])[$without],
+            $rows[$without],
+            cards::values($rows)[$without],
+            null,
+            null,
+            $showstar,
+            band: $band
+        );
+
+        $context = $card('#B3261E')->export_for_template($output);
+        $this->assertSame(['#b3261e', true], [$context->band, $context->hasband], 'The hex as branding spells it.');
+        $this->assertFalse($context->hastop, 'With its cover, a card has no top row.');
+        $html = $output->render_from_template('theme_dimensions/category_card', $context);
+        $this->assertStringContainsString('style="--dim-card-band: #b3261e;"', $html);
+        $this->assertStringNotContainsString('dim-card__top', $html);
+
+        $context = $card('red;background:url(x)')->export_for_template($output);
+        $this->assertSame(['', false], [$context->band, $context->hasband], 'Anything but a colour is dropped.');
+        $html = $output->render_from_template('theme_dimensions/category_card', $context);
+        $this->assertStringNotContainsString('style=', $html);
+        $context = $card(null)->export_for_template($output);
+        $this->assertSame(['', false], [$context->band, $context->hasband], 'No band read, none written.');
+
+        set_config(boost_union::SETTING_IMAGES, 'list,summary', boost_union::COMPONENT);
+        $context = $card('#b3261e')->export_for_template($output);
+        $this->assertTrue($context->hastop, 'Without its cover, the star needs the row the cover held.');
+        $html = $output->render_from_template('theme_dimensions/category_card', $context);
+        $this->assertStringContainsString('class="dim-card__top"', $html);
+        $this->assertFalse(
+            $card('#b3261e', false)->export_for_template($output)->hastop,
+            'No kind, no crest and no star: nothing to hold, no row.'
+        );
+    }
+
+    /**
+     * The listing reads the bands only while Boost Union draws a view without its image.
+     */
+    public function test_the_listing_reads_the_bands_only_without_an_image(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        [$categoryid, $with, $without] = $this->seed();
+        self::theme();
+        $output = $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL);
+        $bands = function () use ($categoryid, $output): array {
+            self::forget();
+            $result = population::resolve(new criteria($categoryid));
+            $cards = [];
+            foreach (category_listing::export_cards($result, $categoryid, false, $output) as $card) {
+                $cards[(int) $card->id] = $card->hasband ? $card->band : null;
+            }
+            ksort($cards);
+            return $cards;
+        };
+
+        $this->assertEquals([$with => null, $without => null], $bands(), 'Both images shown: nothing paints a band.');
+        set_config(boost_union::SETTING_IMAGES, 'card,summary', boost_union::COMPONENT);
+        $this->assertEquals([$with => '#b3261e', $without => '#b3261e'], $bands(), 'A row without its thumbnail.');
+        set_config(boost_union::SETTING_IMAGES, 'list,summary', boost_union::COMPONENT);
+        $this->assertEquals([$with => '#b3261e', $without => '#b3261e'], $bands(), 'A card without its cover.');
     }
 }

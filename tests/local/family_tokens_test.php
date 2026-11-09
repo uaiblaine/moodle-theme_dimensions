@@ -28,9 +28,9 @@ namespace theme_dimensions\local;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Guards the theme's half of the --dimensions-* contract with local_dimensions and block_dimensions.
+ * Guards the theme's half of the --dimensions-* contract with local_dimensions, block_dimensions and block_compass.
  *
- * The contract is a list of names, read by two other repositories that no test here can run: a name
+ * The contract is a list of names, read by other repositories that no test here can run: a name
  * renamed, dropped or declared on one mode only is a plugin quietly falling back to its own look, and
  * nothing in this pipeline would notice. So the list is written down here, and the stylesheet
  * (scss/post.scss) and the public document (docs/tokens.md) are each read against it.
@@ -49,6 +49,24 @@ final class family_tokens_test extends \basic_testcase {
         'success-tint', 'success-edge', 'success-ink', 'warning-tint', 'warning-edge', 'warning-ink', 'danger-tint',
         'danger-edge', 'danger-ink', 'info-tint', 'info-edge', 'info-ink', 'neutral-tint', 'neutral-edge', 'neutral-ink',
         'shadow', 'scrim',
+    ];
+
+    /**
+     * @var string[] The course card's suffixes after "card-", read by every plugin that draws a course card (the theme,
+     *      block_compass, local_dimensions), each through its own names: moodle-dev/docs/course-card/CONTRACT.md, section 7.
+     */
+    private const CARD = [
+        'radius', 'border-width', 'border', 'surface', 'ink', 'ink-muted', 'title-hover', 'cover-height',
+        'cover-fallback', 'cover-overlay', 'chip-bg', 'chip-ink', 'extra-bg', 'extra-icon', 'track', 'fill',
+        'track-height', 'done', 'done-bg', 'done-ink', 'done-edge', 'shadow', 'shadow-hover', 'focus-ring',
+        'focus-width', 'locked-opacity', 'close-bg', 'close-bg-hover', 'close-edge', 'transition',
+    ];
+
+    /** @var string[] The card suffixes whose value is a colour: a token, or a token's channels at an alpha. */
+    private const CARD_COLOURS = [
+        'border', 'surface', 'ink', 'ink-muted', 'title-hover', 'cover-fallback', 'chip-bg', 'chip-ink', 'extra-bg',
+        'extra-icon', 'track', 'fill', 'done', 'done-bg', 'done-ink', 'focus-ring', 'close-bg', 'close-bg-hover',
+        'close-edge',
     ];
 
     /** @var string[] The motion suffixes local_dimensions alone reads; its state suffixes come from STATES. */
@@ -113,14 +131,26 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
-     * Every name of the contract, shared first.
+     * The course card's names, with their prefix.
+     *
+     * @return string[]
+     */
+    private static function card(): array {
+        return array_map(static fn(string $suffix): string => '--dimensions-card-' . $suffix, self::CARD);
+    }
+
+    /**
+     * Every name of the contract, shared first, the card's last.
      *
      * @return string[] The custom property names, with their prefix.
      */
     private static function names(): array {
-        return array_map(
-            static fn(string $suffix): string => '--dimensions-' . $suffix,
-            array_merge(self::SHARED, self::local_only())
+        return array_merge(
+            array_map(
+                static fn(string $suffix): string => '--dimensions-' . $suffix,
+                array_merge(self::SHARED, self::local_only())
+            ),
+            self::card()
         );
     }
 
@@ -256,15 +286,17 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
-     * The list holds 33 shared names and 21 local-only ones, none twice.
+     * The list holds 33 shared names, 21 local-only ones and the card's 30, none twice.
      *
      * Every other test reads the stylesheet and the document against these constants, so a typo
      * here would be copied into both and pass.
      */
-    public function test_the_contract_is_thirty_three_shared_names_and_twenty_one_local_ones(): void {
+    public function test_the_contract_is_thirty_three_shared_twenty_one_local_and_thirty_card_names(): void {
         $this->assertCount(33, self::SHARED);
         $this->assertCount(21, self::local_only());
-        $this->assertCount(54, array_unique(self::names()));
+        $this->assertCount(30, array_unique(self::card()));
+        $this->assertSame([], array_values(array_diff(self::CARD_COLOURS, self::CARD)), 'Every colour is a card suffix.');
+        $this->assertCount(84, array_unique(self::names()));
     }
 
     /**
@@ -335,6 +367,10 @@ final class family_tokens_test extends \basic_testcase {
             $declarations = $this->family_declarations($blocks[$mode][0]['body']);
             $names = array_column($declarations, 0);
             foreach ($declarations as [$name, $value]) {
+                if (in_array($name, self::card(), true)) {
+                    // The card's lengths, shadows and gradients have a test of their own.
+                    continue;
+                }
                 if (preg_match('~^#[0-9a-f]{6}$~', $value)) {
                     $literals++;
                     $this->assertSame('dark', $mode, "{$name}: a literal on the light page.");
@@ -372,6 +408,64 @@ final class family_tokens_test extends \basic_testcase {
             $palette['--dim-ds-shadow-rgb'],
             'The shadow channels are the navy\'s, the tint of every elevation token.'
         );
+    }
+
+    /**
+     * The card's values hold no colour literal: a colour is a token or a token's channels, the rest a measure.
+     *
+     * A card token is read by three plugins, and a colour written here as a literal is one no flavour and no colour mode
+     * moves. A colour suffix is a token or a token's channels at an alpha, as the shared names are; a measure (a length,
+     * a duration, an opacity) may be a literal; a shadow or a gradient draws its colours from channels. The focus ring is
+     * the family's ring in both modes, never a colour of its own.
+     */
+    public function test_the_card_values_are_tokens_or_measures(): void {
+        $palette = $this->palette();
+        $blocks = $this->blocks();
+        $colours = array_map(static fn(string $suffix): string => '--dimensions-card-' . $suffix, self::CARD_COLOURS);
+        foreach (['light', 'dark'] as $mode) {
+            $declarations = $this->family_declarations($blocks[$mode][0]['body']);
+            $names = array_column($declarations, 0);
+            $values = array_column($declarations, 1, 0);
+            $checked = 0;
+            foreach (self::card() as $name) {
+                $value = $values[$name];
+                $checked++;
+                $this->assertDoesNotMatchRegularExpression('~#[0-9a-fA-F]{3,8}\b~', $value, "{$name}: a colour literal.");
+                preg_match_all('~rgba?\(([^()]*(?:\([^()]*\))?[^()]*)\)~', $value, $alphas);
+                foreach ($alphas[1] as $inside) {
+                    $this->assertMatchesRegularExpression(
+                        '~^var\(--[a-z0-9-]+-rgb\), \.\d+$~',
+                        $inside,
+                        "{$name}: a colour at an alpha reads a token's channels."
+                    );
+                }
+                if (in_array($name, $colours, true)) {
+                    $this->assertMatchesRegularExpression(
+                        '~^(var\((--[a-z0-9-]+)\)|rgba\(var\((--[a-z0-9-]+-rgb)\), \.\d+\))$~',
+                        $value,
+                        "{$name}: {$value} is neither a token nor a token's channels at an alpha."
+                    );
+                } else {
+                    $this->assertMatchesRegularExpression(
+                        '~^(var\(--[a-z0-9-]+\)|\.?\d+(px|ms)?|0 \d+px \d+px rgba\(.*\)|linear-gradient\(.*\))$~',
+                        $value,
+                        "{$name}: {$value} is no token, measure, shadow or gradient."
+                    );
+                }
+                preg_match_all('~var\((--[a-z0-9-]+)~', $value, $reads);
+                foreach ($reads[1] as $read) {
+                    if (str_starts_with($read, '--dim-ds-')) {
+                        $this->assertArrayHasKey($read, $palette, "{$name} reads {$read}, which post.scss does not declare.");
+                    } else if (str_starts_with($read, '--dimensions-')) {
+                        $this->assertContains($read, $names, "{$name} reads {$read}, which its own block does not declare.");
+                    } else {
+                        $this->assertStringStartsWith('--bs-', $read, "{$name} reads {$read}, which nothing declares.");
+                    }
+                }
+            }
+            $this->assertSame(30, $checked, "Control: the {$mode} block's 30 card values were read.");
+            $this->assertSame('var(--dimensions-focus-ring)', $values['--dimensions-card-focus-ring'], "The {$mode} ring.");
+        }
     }
 
     /**
@@ -432,7 +526,7 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
-     * The public document lists exactly the declared names, the shared ones and the local-only ones apart.
+     * The public document lists exactly the declared names, the shared, the local-only and the card's apart.
      *
      * docs/ is left out of the release archive (.gitattributes), so a site installed from it has no
      * document to read and the test skips there; in the repository and in CI the folder is present, and
@@ -448,18 +542,23 @@ final class family_tokens_test extends \basic_testcase {
 
         $sections = [];
         foreach (preg_split('~^## ~m', $document) as $section) {
-            if (preg_match('~^(Shared tokens|Local-only tokens) \((\d+)\)~', $section, $heading)) {
+            if (preg_match('~^(Shared tokens|Local-only tokens|Card tokens) \((\d+)\)~', $section, $heading)) {
                 preg_match_all('~^\| \x60(--dimensions-[a-z0-9-]+)\x60 \| [^|\n]*\S[^|\n]* \|$~m', $section, $rows);
                 $sections[$heading[1]] = ['count' => (int) $heading[2], 'names' => $rows[1]];
             }
         }
-        $this->assertSame(['Shared tokens', 'Local-only tokens'], array_keys($sections), 'The two sections, shared first.');
+        $this->assertSame(
+            ['Shared tokens', 'Local-only tokens', 'Card tokens'],
+            array_keys($sections),
+            'The three sections, shared first, the card\'s last.'
+        );
 
         $declared = array_column($this->family_declarations($this->blocks()['light'][0]['body']), 0);
         $shared = array_map(static fn(string $suffix): string => '--dimensions-' . $suffix, self::SHARED);
         $expected = [
             'Shared tokens' => $shared,
-            'Local-only tokens' => array_values(array_diff($declared, $shared)),
+            'Local-only tokens' => array_values(array_diff($declared, $shared, self::card())),
+            'Card tokens' => array_values(array_intersect($declared, self::card())),
         ];
         foreach ($expected as $title => $names) {
             $listed = $sections[$title]['names'];
@@ -468,5 +567,6 @@ final class family_tokens_test extends \basic_testcase {
             $this->assertSame(count($names), $sections[$title]['count'], "{$title}: the heading's count.");
         }
         $this->assertCount(21, $sections['Local-only tokens']['names'], 'Control: the local-only names are the 21.');
+        $this->assertCount(30, $sections['Card tokens']['names'], 'Control: the card names are the 30.');
     }
 }

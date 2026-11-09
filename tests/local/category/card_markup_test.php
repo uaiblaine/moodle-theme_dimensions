@@ -149,6 +149,69 @@ final class card_markup_test extends \advanced_testcase {
     }
 
     /**
+     * One target per card: the stretched link is armed on a card the viewer can open, and the buttons are Bootstrap's.
+     *
+     * Contract sections 4 and 6 (D9, D10): the stylesheet stretches the title's link over a card carrying
+     * dim-card--link, which the template writes only where the card has a page and is not muted, so a card the viewer
+     * cannot open is no link and answers no hover. "More information" is btn-outline-secondary at btn-sm and keeps its
+     * hook, which the course dialogue and the Behat steps find it by.
+     */
+    public function test_the_card_is_one_target_and_its_buttons_are_bootstraps(): void {
+        $this->resetAfterTest();
+        $card = $this->example_context('category_card');
+        $this->assertTrue($card['hasurl'] && !$card['ismuted'], 'Precondition: the example card may be opened.');
+        $article = fn(array $context): \DOMElement => $this->render_context('category_card', $context)
+            ->query('//article[@data-region="dim-card"]')->item(0);
+
+        $this->assertStringContainsString(' dim-card--link ', ' ' . $article($card)->getAttribute('class') . ' ');
+        $this->assertStringNotContainsString(
+            'dim-card--link',
+            $article(['ismuted' => true] + $card)->getAttribute('class'),
+            'A muted card is no link.'
+        );
+        $this->assertStringNotContainsString(
+            'dim-card--link',
+            $article(['hasurl' => false] + $card)->getAttribute('class'),
+            'A card with no page is no link.'
+        );
+
+        $more = $this->render('category_card')->query('//a[@data-region="dim-card-more"]');
+        $this->assertSame(1, $more->length);
+        $this->assertSame(
+            ['btn', 'btn-sm', 'btn-outline-secondary', 'dim-card__summary'],
+            explode(' ', $more->item(0)->getAttribute('class')),
+            '"More information" is Bootstrap\'s outlined secondary button.'
+        );
+    }
+
+    /**
+     * A card without its cover writes its category's colour on the article and holds its kind in the top row.
+     *
+     * The colour is instance data in a style attribute (contract section 8): the card hands in a hex, and the row at
+     * the top of the body is drawn only when the card says so, with the kind in the cover's place.
+     */
+    public function test_a_card_without_its_cover_draws_its_top_row_and_band(): void {
+        $this->resetAfterTest();
+        $card = $this->example_context('category_card');
+        $this->assertTrue($card['hasband'] && $card['haskind'] && !$card['hastop'], 'Precondition: the example\'s flags.');
+
+        $xpath = $this->render('category_card');
+        $article = $xpath->query('//article[@data-region="dim-card"]')->item(0);
+        $this->assertSame('--dim-card-band: ' . $card['band'] . ';', $article->getAttribute('style'));
+        $this->assertSame(0, $xpath->query('//*[' . self::has_class('dim-card__top') . ']')->length);
+
+        $xpath = $this->render_context('category_card', ['hastop' => true, 'showcover' => false] + $card);
+        $top = $xpath->query('//div[' . self::has_class('dim-card__body') . ']/*[1][' . self::has_class('dim-card__top') . ']');
+        $this->assertSame(1, $top->length, 'The top row opens the body.');
+        $kind = $xpath->query('.//*[' . self::has_class('dim-card__topkind') . ']', $top->item(0));
+        $this->assertSame($card['kindlabel'], trim($kind->item(0)->textContent));
+
+        $article = $this->render_context('category_card', ['hasband' => false] + $card)
+            ->query('//article[@data-region="dim-card"]')->item(0);
+        $this->assertFalse($article->hasAttribute('style'), 'No band, no style attribute.');
+    }
+
+    /**
      * The crests are written in the BADGE ROW, not in the media band, and each one is an image with a name.
      *
      * The card view draws them over the bottom-right corner of the image and the list view puts
@@ -1764,7 +1827,7 @@ final class card_markup_test extends \advanced_testcase {
             'A cover of the first row is loaded as the browser finds it.'
         );
         foreach ($lazy->query('//li[' . self::has_class('dim-card__crest') . ']/img') as $crest) {
-            $this->assertSame(['80', '88'], [$crest->getAttribute('width'), $crest->getAttribute('height')]);
+            $this->assertSame(['56', '62'], [$crest->getAttribute('width'), $crest->getAttribute('height')], 'D2: 56 x 62.');
         }
 
         $hero = $this->example_context('category_hero');

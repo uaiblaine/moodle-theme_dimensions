@@ -25,6 +25,7 @@
 namespace theme_dimensions\local\category;
 
 use local_unlistedcourses\access;
+use theme_dimensions\local\card\cover;
 use theme_dimensions\local\landing\publicfiles;
 use theme_dimensions\local\landingfields;
 
@@ -372,6 +373,44 @@ final class cards {
             $images[$courseid] = (string) $renderer->get_generated_image_for_id($courseid);
         }
         return $images;
+    }
+
+    /**
+     * The band colour of each card's course: its category's, for a card or a row drawn without its image.
+     *
+     * Contract section 8: a card without its cover keeps a top edge, and a row without its thumbnail a leading edge,
+     * in the colour of the course's category, the one its cover would wear ({@see cover::colours()}: the category's
+     * pair, inherited, else the stylesheet's primary). The theme's renderer answers it, so a flavour's brand colour
+     * is the primary as it is on the covers; another theme's renderer leaves Boost's own blue. One branding cache read
+     * for the page's categories, as the covers' (cold, seven statements per category missing from it and one for all).
+     *
+     * @param \stdClass[] $rows Population rows carrying the course's category, keyed by course id.
+     * @return array courseid => lower-case #rrggbb, for every row with a category.
+     */
+    public static function bands(array $rows): array {
+        global $PAGE;
+
+        $categories = [];
+        foreach ($rows as $courseid => $row) {
+            if ((int) ($row->category ?? 0) > 0) {
+                $categories[(int) $courseid] = (int) $row->category;
+            }
+        }
+        if (!$categories) {
+            return [];
+        }
+        // The general target: under the command line (PHPUnit, a CLI script) the factory answers core's CLI renderer.
+        $renderer = $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL);
+        $colours = $renderer instanceof \theme_dimensions\output\core_renderer
+            ? $renderer->category_bands(array_values($categories))
+            : cover::colours(array_values($categories), cover::BOOST_PRIMARY);
+        $bands = [];
+        foreach ($categories as $courseid => $categoryid) {
+            if (isset($colours[$categoryid])) {
+                $bands[$courseid] = $colours[$categoryid];
+            }
+        }
+        return $bands;
     }
 
     /**

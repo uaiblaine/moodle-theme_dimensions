@@ -29,13 +29,13 @@ request on `main`. The design record is `mockup.html` beside this file; the owne
   title link (D9); hover as shadow and underline only; the four uppercase rules go (kind, datetile, over, the panel
   eyebrow's goes in C3); crests at 56 x 62 (D2); equal heights in a row; "Mais informações" as
   `btn btn-sm btn-outline-secondary` (D10); the card without its cover and the row without its thumbnail (section 8).
+- The grouped panel draws the flat list's card: the `.dim-panel__rail .dim-card` restyle goes, with
+  `dark_tokens_test`'s allow-list entry (moved here from C3: the contract test's colour-literal arm reads those rules).
 - `tests/local/course_card_contract_test.php`, copied from `moodle-dev/templates/tests/`, every arm mutation-checked.
 - Gate: tier 1 and 2 (CSS and markup), one full leg with `--behat`, and a browser pass at 390, 800 and 1200 px.
 
 ## C3. The showcase's behaviour
 
-- The grouped panel draws the flat list's card: the `.dim-panel__rail .dim-card` restyle goes, with
-  `dark_tokens_test`'s allow-list entry.
 - The visitor's one button: "Mais informações" is not drawn for an anonymous viewer.
 - The panel header: no "Cursos da área" eyebrow (`category_panel_eyebrow` leaves both lang files); the category link
   underlined on hover and focus only.

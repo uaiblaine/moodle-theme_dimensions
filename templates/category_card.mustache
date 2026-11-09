@@ -19,7 +19,12 @@
 
     One course of the category showcase. The same markup serves the card view
     and the dense list view - the view is one class on the listing container,
-    never a second template - and the panel's rail restyles it as a mini card.
+    never a second template - and the panel's rail draws it as it is.
+
+    It is the fleet's course card (moodle-dev/docs/course-card/CONTRACT.md): one
+    target, the title's link, which the stylesheet stretches over a card the
+    viewer can open (dim-card--link: it has a page and is not muted), with every
+    other control lifted over it; the buttons are Bootstrap's own variants.
 
     Anatomy: a media band holding the course image (or the flat fallback the
     stylesheet paints), the event's date tile and the kind pill; a body with the
@@ -83,7 +88,13 @@
     Boost Union applies (category_card: showcover for the card view, showthumb
     for the list view): it is drawn while either view shows it (showmedia), and
     the article carries dim-card--nocover or dim-card--nothumb for the view that
-    leaves it out. showprogress is the same setting's progress switch.
+    leaves it out. showprogress is the same setting's progress switch. A card or
+    row drawn without its image keeps an edge in its course category's colour,
+    which the card hands in as band (a #rrggbb, hasband) and the article carries
+    as --dim-card-band, instance data and never a token; a card without its
+    cover also draws the row at the top of its body (hastop), holding the kind
+    in the cover's place beside the crests and the star, which the stylesheet
+    places there without moving them.
 
     Its cover is lazy unless the listing puts the card in the first row of the
     page's first paint (eager), and the first such cover is fetched ahead of
@@ -116,6 +127,9 @@
         "showthumb": true,
         "showmedia": true,
         "showprogress": true,
+        "band": "#0a4a85",
+        "hasband": true,
+        "hastop": false,
         "badges": [
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc/crest-alpha.png", "alt": "crest alpha"},
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/def/dimensions.svg", "alt": "dimensions"}
@@ -157,7 +171,7 @@
         }
     }
 }}
-<article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}{{^showcover}} dim-card--nocover{{/showcover}}{{^showthumb}} dim-card--nothumb{{/showthumb}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}>
+<article class="dim-card{{#hasurl}}{{^ismuted}} dim-card--link{{/ismuted}}{{/hasurl}}{{#ismuted}} dim-card--muted{{/ismuted}}{{^showcover}} dim-card--nocover{{/showcover}}{{^showthumb}} dim-card--nothumb{{/showthumb}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}{{#hasband}} style="--dim-card-band: {{band}};"{{/hasband}}>
     {{#showmedia}}
     <div class="dim-card__media{{#hasimage}} dim-card__media--image{{/hasimage}}">
         {{#hasimage}}
@@ -172,6 +186,13 @@
     </div>
     {{/showmedia}}
     <div class="dim-card__body">
+        {{#hastop}}
+        <div class="dim-card__top">
+            {{#haskind}}
+            <span class="dim-card__topkind"><i class="fa {{#isevent}}fa-calendar-day{{/isevent}}{{^isevent}}fa-graduation-cap{{/isevent}}" aria-hidden="true"></i>{{kindlabel}}</span>
+            {{/haskind}}
+        </div>
+        {{/hastop}}
         <div class="dim-card__titlewrap">
             {{#hasoverline}}
             <span class="dim-card__over">{{overline}}</span>
@@ -190,7 +211,7 @@
             {{#hasbadges}}
             <ul class="dim-card__crests" role="list" aria-label="{{badgeslabel}}">
                 {{#badges}}
-                <li class="dim-card__crest"><img src="{{url}}" alt="{{alt}}" width="80" height="88" loading="lazy" decoding="async"></li>
+                <li class="dim-card__crest"><img src="{{url}}" alt="{{alt}}" width="56" height="62" loading="lazy" decoding="async"></li>
                 {{/badges}}
             </ul>
             {{/hasbadges}}
@@ -211,7 +232,7 @@
             <a class="btn btn-sm dim-card__cta {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}}" href="{{url}}">{{label}}</a>
             {{/cta}}
             {{#hasurl}}
-            <a class="btn btn-sm dim-card__summary" href="{{url}}" data-region="dim-card-more"{{#modal}}{{#haskicker}} data-kicker="{{kicker}}"{{/haskicker}}{{#primary}} data-primary="{{label}}" data-primary-icon="{{icon}}"{{#disabled}} data-primary-closed="{{note}}"{{/disabled}}{{^disabled}} data-primary-url="{{url}}"{{/disabled}}{{/primary}}{{#secondary}} data-secondary="{{label}}" data-secondary-url="{{url}}"{{/secondary}}{{/modal}}>{{detailslabel}}</a>
+            <a class="btn btn-sm btn-outline-secondary dim-card__summary" href="{{url}}" data-region="dim-card-more"{{#modal}}{{#haskicker}} data-kicker="{{kicker}}"{{/haskicker}}{{#primary}} data-primary="{{label}}" data-primary-icon="{{icon}}"{{#disabled}} data-primary-closed="{{note}}"{{/disabled}}{{^disabled}} data-primary-url="{{url}}"{{/disabled}}{{/primary}}{{#secondary}} data-secondary="{{label}}" data-secondary-url="{{url}}"{{/secondary}}{{/modal}}>{{detailslabel}}</a>
             {{/hasurl}}
             {{#showstar}}
             <button type="button" class="dim-card__star dim-js-only" aria-pressed="{{#favourite}}true{{/favourite}}{{^favourite}}false{{/favourite}}" data-action="dim-star" data-courseid="{{id}}" data-star-add="{{starlabeladd}}" data-star-remove="{{starlabelremove}}"><i class="{{#favourite}}fa-solid{{/favourite}}{{^favourite}}fa-regular{{/favourite}} fa-star" aria-hidden="true"></i><span class="visually-hidden" data-region="dim-star-label">{{starlabel}}</span></button>
