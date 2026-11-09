@@ -347,6 +347,7 @@ final class get_card_details_test extends \advanced_testcase {
 
     /**
      * The guest account is refused outright, with the course refusal every other miss carries.
+     */
     public function test_the_guest_account_is_refused(): void {
         $this->resetAfterTest();
         $generator = self::getDataGenerator();
