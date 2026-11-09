@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Course cards, stage C3: the showcase's behaviour.** A visitor's card draws one button, "Learn more", to the
+  course's landing page, in the flat list and the panel; "More information" is a signed-in reader's, since its
+  dialogue is never armed for a visitor, and a course without a landing page has no button. The panel's heading loses
+  its "Courses in the area" line (the `category_panel_eyebrow` string goes), and its category link is underlined on
+  hover and keyboard focus only, in dark mode too. An enrolled card shows its progress on a line of its own under the
+  state pill: a bar and the percentage in tabular figures, announced as a progress bar; a course without completion
+  tracking shows none, and Boost Union's "Show course progress" set to No removes the row. A course the reader has
+  completed trades the bar for a green "Completed" seal, a green base on its cover and "Review" as its main action,
+  and keeps them with the progress row off. `theme_dimensions_get_card_details` answers `completed` (the reader's
+  course completion, one statement per batch) and `progresspct`; the rows services' card carries `hasdetails`,
+  `hasprogress` and `done`. Seventeen mutation gates (2026100596).
+
 - **Course cards, stage C2: the card's look.** The theme declares the course card's 30 family tokens
   (`--dimensions-card-*`, light and dark, listed in `docs/tokens.md`), and the showcase's card paints through its own
   readers of them. The whole card is one link and one hover: the title's link covers a card the reader can open, its

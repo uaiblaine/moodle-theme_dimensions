@@ -185,6 +185,61 @@ final class card_markup_test extends \advanced_testcase {
     }
 
     /**
+     * The progress row is a line of its own under the state pill, drawn only while Boost Union shows progress.
+     *
+     * Contract section 3: the row follows the badge row and is no member of it, ships hidden (the logged-in shell
+     * fills it once the course's details answer, and leaves it hidden for a course without completion tracking), and
+     * a card without hasprogress (not enrolled, or Boost Union's courseoverviewshowcourseprogress set to "no") draws
+     * no row at all.
+     */
+    public function test_the_progress_row_is_its_own_line_under_the_pill_and_follows_the_setting(): void {
+        $this->resetAfterTest();
+        $card = $this->example_context('category_card');
+        $this->assertTrue($card['hasprogress'], 'Precondition: the example draws the row.');
+
+        $xpath = $this->render_context('category_card', $card);
+        $rows = $xpath->query('//*[@data-region="dim-card-progress"]');
+        $this->assertSame(1, $rows->length);
+        $row = $rows->item(0);
+        $this->assertTrue($row->hasAttribute('hidden'), 'Hidden until the shell has a number for it.');
+        $previous = $row->previousElementSibling;
+        $this->assertNotNull($previous);
+        $this->assertStringContainsString('dim-card__row', $previous->getAttribute('class'), 'Right under the pill\'s row.');
+        $inrow = '//*[' . self::has_class('dim-card__row') . ']//*[@data-region="dim-card-progress"]';
+        $this->assertSame(0, $xpath->query($inrow)->length, 'No member of the pill\'s row.');
+        $bar = './/*[' . self::has_class('dim-card__track') . ']/*[' . self::has_class('dim-card__fill') . ']';
+        $this->assertSame(1, $xpath->query($bar, $row)->length);
+
+        $off = $this->render_context('category_card', ['hasprogress' => false] + $card);
+        $this->assertSame(0, $off->query('//*[@data-region="dim-card-progress"]')->length, 'No row where none is drawn.');
+    }
+
+    /**
+     * The visitor's card draws one button and an enrolled card carries its completed words on the article.
+     *
+     * hasdetails is false on a visitor's card (contract section 3), so "More information" is not drawn and the call to
+     * action, "Learn more", is the card's one button; done (an enrolled card's) becomes data-done and data-review.
+     */
+    public function test_the_details_link_and_the_completed_words_follow_the_card(): void {
+        $this->resetAfterTest();
+        $card = $this->example_context('category_card');
+        $this->assertTrue($card['hasdetails'] && !empty($card['cta']), 'Precondition: the example draws both buttons.');
+        $article = fn(array $context): \DOMElement => $this->render_context('category_card', $context)
+            ->query('//article[@data-region="dim-card"]')->item(0);
+
+        $visitor = $this->render_context('category_card', ['hasdetails' => false] + $card);
+        $this->assertSame(0, $visitor->query('//a[@data-region="dim-card-more"]')->length);
+        $buttons = '//div[' . self::has_class('dim-card__actions') . ']/a[' . self::has_class('btn') . ']';
+        $this->assertSame(1, $visitor->query($buttons)->length);
+        $this->assertSame(1, $visitor->query('//h3/a[@data-region="dim-card-titlelink"]')->length, 'The title still links.');
+
+        $this->assertFalse($article($card)->hasAttribute('data-done'), 'No completed words on a card that is not enrolled.');
+        $done = $article(['done' => ['label' => 'Completed', 'review' => 'Review']] + $card);
+        $this->assertSame('Completed', $done->getAttribute('data-done'));
+        $this->assertSame('Review', $done->getAttribute('data-review'));
+    }
+
+    /**
      * A card without its cover writes its category's colour on the article and holds its kind in the top row.
      *
      * The colour is instance data in a style attribute (contract section 8): the card hands in a hex, and the row at
@@ -370,8 +425,9 @@ final class card_markup_test extends \advanced_testcase {
         $this->assertSame('true', $xpath->query('./i', $line)->item(0)->getAttribute('aria-hidden'), 'The sentence carries it.');
         $this->assertSame(
             'dim-card__row',
-            $xpath->query('preceding-sibling::div[1]', $line)->item(0)->getAttribute('class'),
-            'Right under the pill\'s row, where the route line sits.'
+            $xpath->query('preceding-sibling::div[not(@data-region="dim-card-progress")][1]', $line)
+                ->item(0)->getAttribute('class'),
+            'Right under the pill\'s row and its progress row, where the route line sits.'
         );
         $this->assertSame(0, $xpath->query('//p[' . self::has_class('dim-card__route') . ']')->length, 'Control: no route.');
     }
@@ -609,7 +665,13 @@ final class card_markup_test extends \advanced_testcase {
             // The heading, where the search term is marked, around the link and the plain title alike.
             'dim-card-title' => '//h3[@data-region="dim-card-title"][' . self::has_class('dim-card__title') . ']'
                 . '/a[@data-region="dim-card-titlelink"]',
-            'dim-card-progress' => '//*[@data-region="dim-card-progress"][@hidden]',
+            // The progress row, hidden until the logged-in shell writes its value, and its percentage.
+            'dim-card-progress' => '//div[' . self::has_class('dim-card__progress') . '][@data-region="dim-card-progress"]'
+                . '[@role="progressbar"][@aria-valuemin="0"][@aria-valuemax="100"][@hidden]',
+            'dim-card-pct' => '//*[@data-region="dim-card-progress"]//*[@data-region="dim-card-pct"]',
+            // The call to action, which a completed course relabels.
+            'dim-card-cta' => '//div[' . self::has_class('dim-card__actions') . ']/a[@data-region="dim-card-cta"]'
+                . '[' . self::has_class('dim-card__cta') . ']',
             'dim-star' => '//button[@data-action="dim-star"][@data-star-add][@data-star-remove]',
             'dim-star-label' => '//button[@data-action="dim-star"]//*[@data-region="dim-star-label"]',
         ];

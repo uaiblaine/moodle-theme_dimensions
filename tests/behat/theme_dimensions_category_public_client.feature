@@ -110,6 +110,9 @@ Feature: A visitor's public category page narrows in place once the site opens i
     When I mark the page in the browser
     And I click on "//article[@data-name='Area publica']//a[@data-region='dim-poster-control']" "xpath_element"
     Then I should see "Curso da Area" in the "[data-region='dim-panel-rail']" "css_element"
+    # The panel draws the visitor's card with its one button, as the flat list does.
+    And I should see "Learn more" in the "[data-region='dim-panel-rail']" "css_element"
+    And "[data-region='dim-panel-rail'] [data-region='dim-card-more']" "css_element" should not exist
     And the page in the browser is the one I marked
     And the url should match "[?&]open=[0-9]+"
     And "//article[@data-name='Area publica']//a[@data-region='dim-poster-control'][@aria-expanded='true']" "xpath_element" should exist

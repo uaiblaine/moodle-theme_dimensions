@@ -35,13 +35,14 @@
     the line), then the badge
     row - the course's crests, the state pill (the design system's own pair of
     tokens, never a Bootstrap utility, with a decorative icon before its
-    sentence) and, for staff, the hidden badge; then the route line, only on a
+    sentence) and, for staff, the hidden badge; then the progress row (below);
+    then the route line, only on a
     card whose viewer holds a row that is not active and could also enrol now
     (the sentence beside the call to action
     that goes there); in the same place, the opening line, only on a card whose
     way in is refused until an enrolment window opens, with that date (plain
     text, its icon decorative); then the trailing action cluster - the call to action, the "More information"
-    link, and last the favourite star, so that in
+    link (a signed-in viewer's only: hasdetails), and last the favourite star, so that in
     list view it falls into the cluster's flow beside the button instead of over
     the kind glyph. The star is drawn only for a logged-in viewer and stays
     hidden until a client module marks the body (the star's dim-star-js, or
@@ -67,9 +68,7 @@
     dim-card-titlelink takes the focus on the first appended card when no load-more button or next-page
     link remains; dim-card-title, the heading rather than the link, is where the
     search term is marked, because a visitor's card with no page to open draws
-    its title as plain text; the badge row holds an empty, hidden
-    dim-card-progress span the module fills with the progress sentence, so no
-    row changes height when a batch lands; and the star carries both spellings
+    its title as plain text; dim-card-cta is the call to action; and the star carries both spellings
     of its label plus a hook on the visually hidden span, so pressing it
     relabels it without a round trip.
 
@@ -96,12 +95,24 @@
     in the cover's place beside the crests and the star, which the stylesheet
     places there without moving them.
 
+    The progress row (contract section 3), drawn on an enrolled card while
+    showprogress (hasprogress), ships hidden: a line of its own under the state
+    pill, a bar and the percentage (dim-card-pct) at its right, a progressbar
+    (its children presentational) whose value and label the
+    logged-in shell writes once the details service has answered for the
+    course, and which stays hidden for a course with no completion tracking.
+    An enrolled card also carries done (data-done, data-review): the seal's
+    and the main action's words for a course the viewer completed, which the
+    same painter applies with dim-card--done (the bar goes, the pill becomes
+    the seal, the cover gets its green base, the action reads "Review").
+
     Its cover is lazy unless the listing puts the card in the first row of the
     page's first paint (eager), and the first such cover is fetched ahead of
     every other image (priority) only where the hero paints no picture.
 
     "More information" is a link to the card's own page (url: the course, the
-    landing page or the enrolment page), drawn only where the card has one;
+    landing page or the enrolment page), drawn only where the card has one and
+    its viewer is signed in (a visitor's card draws "Learn more" alone);
     without JavaScript it leads there, where everything about the course is.
     For an account, categorycoursemodal intercepts it and opens the course
     dialogue at once from what the card holds - the cover, the pill, the title,
@@ -127,6 +138,7 @@
         "showthumb": true,
         "showmedia": true,
         "showprogress": true,
+        "hasprogress": true,
         "band": "#0a4a85",
         "hasband": true,
         "hastop": false,
@@ -162,7 +174,9 @@
         "starlabel": "Add to favourites: Pre-hospital Care & Rescue",
         "starlabeladd": "Add to favourites: Pre-hospital Care & Rescue",
         "starlabelremove": "Remove from favourites: Pre-hospital Care & Rescue",
+        "hasdetails": true,
         "detailslabel": "More information",
+        "done": null,
         "modal": {
             "kicker": "Brigade",
             "haskicker": true,
@@ -171,7 +185,7 @@
         }
     }
 }}
-<article class="dim-card{{#hasurl}}{{^ismuted}} dim-card--link{{/ismuted}}{{/hasurl}}{{#ismuted}} dim-card--muted{{/ismuted}}{{^showcover}} dim-card--nocover{{/showcover}}{{^showthumb}} dim-card--nothumb{{/showthumb}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}{{#hasband}} style="--dim-card-band: {{band}};"{{/hasband}}>
+<article class="dim-card{{#hasurl}}{{^ismuted}} dim-card--link{{/ismuted}}{{/hasurl}}{{#ismuted}} dim-card--muted{{/ismuted}}{{^showcover}} dim-card--nocover{{/showcover}}{{^showthumb}} dim-card--nothumb{{/showthumb}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}{{#done}} data-done="{{label}}" data-review="{{review}}"{{/done}}{{#hasband}} style="--dim-card-band: {{band}};"{{/hasband}}>
     {{#showmedia}}
     <div class="dim-card__media{{#hasimage}} dim-card__media--image{{/hasimage}}">
         {{#hasimage}}
@@ -219,8 +233,10 @@
             {{#ishidden}}
             <span class="dim-card__badge {{hiddenbadge.classes}}"><i class="fa fa-eye-slash" aria-hidden="true"></i> {{hiddenbadge.label}}</span>
             {{/ishidden}}
-            <span class="dim-card__prog" data-region="dim-card-progress" hidden></span>
         </div>
+        {{#hasprogress}}
+        <div class="dim-card__progress" data-region="dim-card-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" hidden><span class="dim-card__track"><span class="dim-card__fill"></span></span><span class="dim-card__pct" data-region="dim-card-pct"></span></div>
+        {{/hasprogress}}
         {{#hasroute}}
         <p class="dim-card__route"><i class="fa fa-arrow-right" aria-hidden="true"></i> {{routelabel}}</p>
         {{/hasroute}}
@@ -229,11 +245,11 @@
         {{/hasopens}}
         <div class="dim-card__actions">
             {{#cta}}
-            <a class="btn btn-sm dim-card__cta {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}}" href="{{url}}">{{label}}</a>
+            <a class="btn btn-sm dim-card__cta {{#primary}}btn-primary{{/primary}}{{^primary}}btn-outline-primary{{/primary}}" href="{{url}}" data-region="dim-card-cta">{{label}}</a>
             {{/cta}}
-            {{#hasurl}}
+            {{#hasdetails}}
             <a class="btn btn-sm btn-outline-secondary dim-card__summary" href="{{url}}" data-region="dim-card-more"{{#modal}}{{#haskicker}} data-kicker="{{kicker}}"{{/haskicker}}{{#primary}} data-primary="{{label}}" data-primary-icon="{{icon}}"{{#disabled}} data-primary-closed="{{note}}"{{/disabled}}{{^disabled}} data-primary-url="{{url}}"{{/disabled}}{{/primary}}{{#secondary}} data-secondary="{{label}}" data-secondary-url="{{url}}"{{/secondary}}{{/modal}}>{{detailslabel}}</a>
-            {{/hasurl}}
+            {{/hasdetails}}
             {{#showstar}}
             <button type="button" class="dim-card__star dim-js-only" aria-pressed="{{#favourite}}true{{/favourite}}{{^favourite}}false{{/favourite}}" data-action="dim-star" data-courseid="{{id}}" data-star-add="{{starlabeladd}}" data-star-remove="{{starlabelremove}}"><i class="{{#favourite}}fa-solid{{/favourite}}{{^favourite}}fa-regular{{/favourite}} fa-star" aria-hidden="true"></i><span class="visually-hidden" data-region="dim-star-label">{{starlabel}}</span></button>
             {{/showstar}}

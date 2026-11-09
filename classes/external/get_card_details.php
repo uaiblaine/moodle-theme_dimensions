@@ -33,7 +33,7 @@ use theme_dimensions\local\category\enrichment;
 use theme_dimensions\local\category\guard;
 
 /**
- * The viewport batch: completion progress for the cards the reader can actually see.
+ * The viewport batch: completion progress, and whether the viewer completed each course, for the cards on screen.
  *
  * Unlike the other web services of the showcase, the ids are not validated but
  * filtered: an id this viewer may not see is dropped from the answer and never
@@ -115,6 +115,10 @@ class get_card_details extends external_api {
                 new external_single_structure([
                     'id' => new external_value(PARAM_INT, 'The course id.'),
                     'hascompletion' => new external_value(PARAM_BOOL, 'Whether completion is on in the course.'),
+                    'completed' => new external_value(
+                        PARAM_BOOL,
+                        'Whether this viewer completed the course; answered whether or not Boost Union hides the progress.'
+                    ),
                     'progress' => new external_value(
                         PARAM_INT,
                         'The percentage complete, null when there is no number for this viewer or Boost Union hides it.',
@@ -124,7 +128,12 @@ class get_card_details extends external_api {
                     ),
                     'progresslabel' => new external_value(
                         PARAM_TEXT,
-                        'The localised sentence to paint beside the badge, absent without a number.',
+                        'The localised sentence the progress row is labelled with, absent without a number.',
+                        VALUE_OPTIONAL
+                    ),
+                    'progresspct' => new external_value(
+                        PARAM_TEXT,
+                        'The localised percentage printed at the right of the bar, absent without a number.',
                         VALUE_OPTIONAL
                     ),
                 ]),

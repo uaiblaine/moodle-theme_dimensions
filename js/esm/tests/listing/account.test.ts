@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for an account's shell: the remembered state, the view preference, and the progress.
+ * Tests for an account's shell: the remembered state, the view preference, the progress and the completed state.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -58,15 +58,34 @@ let batches: Array<{ids: number[], resolve: (answer: object) => void}>;
 let rememberAnswers: boolean;
 
 /**
- * A card as the server draws it, with its "More information" link and its progress slot.
+ * A card as the server draws it: its state pill, its progress row, its call to action and its "More information" link;
+ * an enrolled one carries the completed state's words.
  *
  * @param {number} id The course id.
  * @param {string} state The classifier's state.
  * @returns {string}
  */
 const cardOf = (id: number, state = 'enrolled'): string => `<li><article data-region="dim-card" data-courseid="${id}" `
-    + `data-state="${state}"><a data-region="dim-card-more" href="#course-${id}">More</a>`
-    + '<span data-region="dim-card-progress" hidden></span></article></li>';
+    + `data-state="${state}"${state === 'enrolled' ? ' data-done="Completed" data-review="Review"' : ''}>`
+    + '<span class="dim-card__badge dim-badge dim-badge--enrolled" data-region="dim-card-pill">'
+    + '<i class="fa fa-circle-check" aria-hidden="true"></i> Enrolled</span>'
+    + '<div data-region="dim-card-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" hidden>'
+    + '<span aria-hidden="true"><span></span></span><span data-region="dim-card-pct" aria-hidden="true"></span></div>'
+    + `<a class="btn btn-sm dim-card__cta btn-primary" data-region="dim-card-cta" href="#view-${id}">Access</a>`
+    + `<a data-region="dim-card-more" href="#course-${id}">More</a></article></li>`;
+
+/**
+ * One card's parts, by course id.
+ *
+ * @param {number} id The course id.
+ * @returns {object} The card, its progress row, its percentage, its pill and its call to action.
+ */
+const partsOf = (id: number): {card: HTMLElement, row: HTMLElement, pct: HTMLElement, pill: HTMLElement, cta: HTMLElement} => {
+    const card = document.querySelector<HTMLElement>(`[data-region="dim-card"][data-courseid="${id}"]`) as HTMLElement;
+    const part = (region: string): HTMLElement => card.querySelector<HTMLElement>(`[data-region="${region}"]`) as HTMLElement;
+    return {card: card, row: part('dim-card-progress'), pct: part('dim-card-pct'), pill: part('dim-card-pill'),
+        cta: part('dim-card-cta')};
+};
 
 /**
  * An account's flat page: a toolbar with the organisation, a chip and the view, a tree, a grid and the pager.
@@ -263,16 +282,84 @@ describe('theme_dimensions/listing/account', () => {
         // One request at a time: the next drain waits for the first batch.
         jest.advanceTimersByTime(100);
         expect(batches).toHaveLength(1);
-        batches[0].resolve({details: [{id: 1, progresslabel: '40% complete'}]});
+        batches[0].resolve({details: [{id: 1, completed: false, progress: 40, progresslabel: '40% complete',
+            progresspct: '40%'}]});
         await jest.advanceTimersByTimeAsync(0);
-        const slot = document.querySelector<HTMLElement>('[data-courseid="1"] [data-region="dim-card-progress"]') as HTMLElement;
-        expect(slot.textContent).toBe('40% complete');
+        const slot = partsOf(1).row;
+        expect(slot.getAttribute('aria-label')).toBe('40% complete');
         expect(slot.hidden).toBe(false);
         expect(watcher.observed.size).toBe(6);
         // Seen again, a settled course is not asked again; the six left are the next batch.
         watcher.seeAll();
         await jest.advanceTimersByTimeAsync(100);
         expect(batches.map((batch) => batch.ids)).toEqual([batches[0].ids, [25, 26, 27, 28, 29, 30]]);
+        // The module's state outlives the test: the batch in flight is answered, so the next test's batch can go.
+        batches[1].resolve({details: []});
+        await jest.advanceTimersByTimeAsync(0);
+    });
+
+    it('paints the progress row: the bar\'s width, the value, the label and the percentage; no number, no row', async() => {
+        // Courses no other test settled.
+        page({}, cardOf(61) + cardOf(62) + cardOf(63));
+        start();
+        Watcher.last.seeAll();
+        jest.advanceTimersByTime(100);
+        expect(batches[0].ids).toEqual([61, 62, 63]);
+        batches[0].resolve({details: [
+            {id: 61, completed: false, progress: 40, progresslabel: '40% complete', progresspct: '40%'},
+            // No completion tracking: no number, and the row stays hidden rather than reading 0 %.
+            {id: 62, completed: false, progress: null},
+            // Boost Union's progress setting off: the same, the server sends no number.
+            {id: 63, completed: false},
+        ]});
+        await jest.advanceTimersByTimeAsync(0);
+
+        const tracked = partsOf(61);
+        expect(tracked.row.hidden).toBe(false);
+        expect(tracked.row.getAttribute('role')).toBe('progressbar');
+        expect(tracked.row.getAttribute('aria-valuenow')).toBe('40');
+        expect(tracked.row.getAttribute('aria-label')).toBe('40% complete');
+        expect(tracked.row.style.getPropertyValue('--dim-progress')).toBe('40%');
+        expect(tracked.pct.textContent).toBe('40%');
+        expect(tracked.card.classList.contains('dim-card--done')).toBe(false);
+        expect(tracked.pill.textContent).toBe(' Enrolled');
+        expect(tracked.cta.textContent).toBe('Access');
+
+        [62, 63].forEach((id) => {
+            const parts = partsOf(id);
+            expect(parts.row.hidden).toBe(true);
+            expect(parts.row.hasAttribute('aria-valuenow')).toBe(false);
+            expect(parts.pct.textContent).toBe('');
+        });
+    });
+
+    it('turns a completed course\'s card into the seal and "Review", with no bar, whatever its progress', async() => {
+        page({}, cardOf(71) + cardOf(72));
+        start();
+        Watcher.last.seeAll();
+        jest.advanceTimersByTime(100);
+        batches[0].resolve({details: [
+            {id: 71, completed: true, progress: 100, progresslabel: '100% complete', progresspct: '100%'},
+            // Completed with Boost Union's progress row off: the seal stays (D13).
+            {id: 72, completed: true, progress: null},
+        ]});
+        await jest.advanceTimersByTimeAsync(0);
+
+        [71, 72].forEach((id) => {
+            const {card, row, pill, cta} = partsOf(id);
+            expect(card.classList.contains('dim-card--done')).toBe(true);
+            expect(row.hidden).toBe(true);
+            expect(row.hasAttribute('aria-valuenow')).toBe(false);
+            expect(pill.textContent).toBe(' Completed');
+            expect(pill.classList.contains('dim-badge--done')).toBe(true);
+            expect(pill.classList.contains('dim-badge--enrolled')).toBe(false);
+            expect(pill.classList.contains('dim-card__badge')).toBe(true);
+            expect((pill.querySelector('i') as HTMLElement).className).toBe('fa fa-check');
+            expect(cta.textContent).toBe('Review');
+            expect(cta.classList.contains('btn-outline-primary')).toBe(true);
+            expect(cta.classList.contains('btn-primary')).toBe(false);
+            expect(cta.getAttribute('href')).toBe(`#view-${id}`);
+        });
     });
 
     it('gives a replaced grid\'s cards back to the observer and watches the cards an answer drew', async() => {

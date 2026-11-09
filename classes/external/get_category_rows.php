@@ -611,6 +611,7 @@ class get_category_rows extends external_api {
             'showthumb' => new external_value(PARAM_BOOL, 'Whether the list view draws the thumbnail (Boost Union\'s setting).'),
             'showmedia' => new external_value(PARAM_BOOL, 'Whether the media band is drawn: either view shows it.'),
             'showprogress' => new external_value(PARAM_BOOL, 'Whether the progress row is drawn (Boost Union\'s setting).'),
+            'hasprogress' => new external_value(PARAM_BOOL, 'Whether this card draws the progress row: an enrolled one.'),
             'band' => new external_value(
                 PARAM_TEXT,
                 'The course category\'s colour, #rrggbb, edging a card or row drawn without its image; empty when not read.'
@@ -686,7 +687,12 @@ class get_category_rows extends external_api {
             'starlabel' => new external_value(PARAM_RAW, 'The star\'s label in its current state.'),
             'starlabeladd' => new external_value(PARAM_RAW, 'The label of the star once it means "add".'),
             'starlabelremove' => new external_value(PARAM_RAW, 'The label of the star once it means "remove".'),
+            'hasdetails' => new external_value(PARAM_BOOL, 'Whether the card draws "More information", a signed-in reader\'s.'),
             'detailslabel' => new external_value(PARAM_TEXT, 'The text of the card\'s "More information" link.'),
+            'done' => new external_single_structure([
+                'label' => new external_value(PARAM_TEXT, 'The completed seal\'s text.'),
+                'review' => new external_value(PARAM_TEXT, 'The main action\'s text once the course is completed.'),
+            ], 'What an enrolled card becomes once completed, null on any other card.', VALUE_REQUIRED, null, NULL_ALLOWED),
             'modal' => new external_single_structure([
                 'kicker' => new external_value(PARAM_RAW, 'The course\'s own category, plain; empty where it is not named.'),
                 'haskicker' => new external_value(PARAM_BOOL, 'Whether the dialogue names the category.'),

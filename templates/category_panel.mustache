@@ -131,6 +131,7 @@
                 "starlabel": "Add to favourites: Pre-hospital Care & Rescue",
                 "starlabeladd": "Add to favourites: Pre-hospital Care & Rescue",
                 "starlabelremove": "Remove from favourites: Pre-hospital Care & Rescue",
+                "hasdetails": true,
                 "detailslabel": "More information",
                 "modal": {"kicker": "Brigade", "haskicker": true, "primary": {"label": "Continue course", "url": "https://example.com/course/view.php?id=42", "disabled": false, "note": "", "icon": "fa-play"}, "secondary": {"label": "Course page", "url": "https://example.com/course/view.php?id=42"} }
             },
@@ -164,7 +165,11 @@
                 "starlabel": "Remove from favourites: Water Lifesaving Seminar",
                 "starlabeladd": "Add to favourites: Water Lifesaving Seminar",
                 "starlabelremove": "Remove from favourites: Water Lifesaving Seminar",
+                "hasdetails": true,
                 "detailslabel": "More information",
+                "showprogress": true,
+                "hasprogress": true,
+                "done": {"label": "Completed", "review": "Review"},
                 "modal": {"kicker": "Brigade", "haskicker": true, "primary": {"label": "Continue course", "url": "https://example.com/course/view.php?id=43", "disabled": false, "note": "", "icon": "fa-play"}, "secondary": {"label": "Course page", "url": "https://example.com/course/view.php?id=43"} }
             }
         ]
@@ -176,7 +181,6 @@
             <div class="dim-panel__box">
                 <div class="dim-panel__head">
                     <div class="dim-panel__titles">
-                        <span class="dim-panel__eyebrow">{{#str}}category_panel_eyebrow, theme_dimensions{{/str}}</span>
                         <h3 class="dim-panel__title" id="dim-panel-title" tabindex="-1" aria-describedby="dim-panel-sub" data-region="dim-panel-title" data-focuskey="title">{{#str}}category_panel_title, theme_dimensions{{/str}} {{#haslink}}<a href="{{titleurl}}">{{name}}</a>{{/haslink}}{{^haslink}}{{name}}{{/haslink}}</h3>
                         <p class="dim-panel__sub" id="dim-panel-sub" data-region="dim-panel-subtitle">{{#isloading}}{{#str}}category_panel_loading, theme_dimensions, {{name}}{{/str}}{{/isloading}}{{#isskeleton}}{{#str}}category_panel_loading, theme_dimensions, {{name}}{{/str}}{{/isskeleton}}{{#iserror}}{{#str}}category_panel_error, theme_dimensions, {{name}}{{/str}}{{/iserror}}{{^isloading}}{{^isskeleton}}{{^iserror}}{{subtitle}}{{/iserror}}{{/isskeleton}}{{/isloading}}</p>
                     </div>

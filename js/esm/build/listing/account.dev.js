@@ -3,7 +3,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 /**
  * The logged-in shell of the showcase listing: what only an account has, over the shared store.
  *
- * The listing's and a panel's rows, the progress of the enrolled courses on screen (once per course), the state
+ * The listing's and a panel's rows, the progress and completion of the enrolled courses on screen (once per course), the state
  * remembered per category and the view preference, the automatic opening's note and the dim-js mark;
  * a failure is core's exception dialogue; it arms the card's star (./star). Armed by amd/src/listingaccount.js for a
  * real account only, never the guest (course_renderer.php); the visitor's page never loads it
@@ -24,11 +24,17 @@ import { arm as armStar } from "./star";
 import { current, init } from "./store";
 const HOOKS = {
   progress: '[data-region="dim-card-progress"]',
+  pct: '[data-region="dim-card-pct"]',
+  pill: '[data-region="dim-card-pill"]',
+  cta: '[data-region="dim-card-cta"]',
   areapanel: '[data-region="dim-panel"]',
   countnotetext: '[data-region="dim-vitrine-countnotetext"]'
 };
 const ROWS_METHOD = "theme_dimensions_get_category_rows";
 const DETAILS_METHOD = "theme_dimensions_get_card_details";
+const DONE_CLASS = "dim-card--done";
+const DONE_PILL = "dim-badge--done";
+const DONE_ICON = "fa fa-check";
 const REMEMBER_METHOD = "theme_dimensions_remember_category_state";
 const VIEW_PREFERENCE = "theme_dimensions_categoryview";
 const BODY_CLASS = "dim-js";
@@ -174,25 +180,61 @@ const discard = /* @__PURE__ */ __name((card) => {
   }
   pending.delete(courseid);
 }, "discard");
+const markDone = /* @__PURE__ */ __name((card) => {
+  const seal = card.dataset.done || "";
+  const review = card.dataset.review || "";
+  card.classList.add(DONE_CLASS);
+  const row = card.querySelector(HOOKS.progress);
+  if (row) {
+    row.hidden = true;
+  }
+  const pill = card.querySelector(HOOKS.pill);
+  if (pill) {
+    Array.from(pill.classList).filter((name) => name.startsWith("dim-badge--")).forEach((name) => pill.classList.remove(name));
+    pill.classList.add(DONE_PILL);
+    const icon = pill.querySelector("i");
+    pill.textContent = " " + seal;
+    if (icon) {
+      icon.className = DONE_ICON;
+      pill.prepend(icon);
+    }
+  }
+  const cta = card.querySelector(HOOKS.cta);
+  if (cta && review) {
+    cta.textContent = review;
+    cta.classList.remove("btn-primary");
+    cta.classList.add("btn-outline-primary");
+  }
+}, "markDone");
+const paintDetail = /* @__PURE__ */ __name((card, detail) => {
+  if (detail.completed && card.dataset.done) {
+    markDone(card);
+    return;
+  }
+  const row = card.querySelector(HOOKS.progress);
+  if (!row || !detail.progresslabel || typeof detail.progress !== "number") {
+    return;
+  }
+  row.style.setProperty("--dim-progress", detail.progress + "%");
+  row.setAttribute("aria-valuenow", String(detail.progress));
+  row.setAttribute("aria-label", detail.progresslabel);
+  const pct = row.querySelector(HOOKS.pct);
+  if (pct) {
+    pct.textContent = detail.progresspct || "";
+  }
+  row.hidden = false;
+}, "paintDetail");
 const paintAnswer = /* @__PURE__ */ __name((card, courseid) => {
-  const label = answers.get(courseid);
-  if (!card || !label) {
+  const detail = answers.get(courseid);
+  if (!card || !detail) {
     return;
   }
-  const slot = card.querySelector(HOOKS.progress);
-  if (!slot) {
-    return;
-  }
-  slot.textContent = label;
-  slot.hidden = false;
+  paintDetail(card, detail);
 }, "paintAnswer");
 const paintProgress = /* @__PURE__ */ __name((details) => {
   (details || []).forEach((detail) => {
     const courseid = Number(detail.id);
-    if (!detail.progresslabel) {
-      return;
-    }
-    answers.set(courseid, detail.progresslabel);
+    answers.set(courseid, detail);
     paintAnswer(cardOf(courseid), courseid);
   });
 }, "paintProgress");
@@ -299,13 +341,9 @@ const paintPanelProgress = /* @__PURE__ */ __name(async (panel) => {
     });
     (response.details || []).forEach((detail) => {
       const card = cards.find((one) => Number(one.dataset.courseid) === Number(detail.id));
-      const slot = card ? card.querySelector(HOOKS.progress) : null;
-      if (!slot || !detail.progresslabel) {
-        return;
+      if (card) {
+        paintDetail(card, detail);
       }
-      slot.textContent = detail.progresslabel;
-      slot.style.setProperty("--dim-progress", Number(detail.progress || 0) + "%");
-      slot.hidden = false;
     });
   } catch (error) {
   }

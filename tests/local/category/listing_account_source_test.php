@@ -633,13 +633,25 @@ final class listing_account_source_test extends \basic_testcase {
     }
 
     /**
-     * A panel's enrolled courses get their progress in one batch of at most eight, onto the cards the rows drew.
+     * A panel's enrolled courses get their progress in one batch of at most eight, onto the cards the rows drew, through
+     * the flat list's own painter: one painting path for both (the progress row and the completed state).
      */
     public function test_a_panels_progress_is_one_batch_of_eight(): void {
         $paint = $this->body('paintPanelProgress');
         $this->assertStringContainsString("filter((card) => card.dataset.state === 'enrolled')", $paint);
         $this->assertStringContainsString('args: {courseids: ids.slice(0, PANEL_SIZE)},', $paint);
-        $this->assertStringContainsString("slot.style.setProperty('--dim-progress', Number(detail.progress || 0) + '%');", $paint);
-        $this->assertStringContainsString('slot.hidden = false;', $paint);
+        $this->assertStringContainsString('paintDetail(card, detail);', $paint);
+        $this->assertStringNotContainsString('--dim-progress', $paint, 'The panel paints nothing of its own.');
+        $this->assertStringContainsString('paintDetail(card, detail);', $this->body('paintAnswer'));
+
+        $detail = $this->body('paintDetail');
+        $this->assertStringContainsString("row.style.setProperty('--dim-progress', detail.progress + '%');", $detail);
+        $this->assertStringContainsString('row.hidden = false;', $detail);
+        // A completed course never shows the bar: the seal returns before the row is painted.
+        $this->assertMatchesRegularExpression(
+            '~if \(detail\.completed && card\.dataset\.done\) \{\s*markDone\(card\);\s*return;\s*\}~',
+            $detail
+        );
+        $this->assertStringContainsString('row.hidden = true;', $this->body('markDone'));
     }
 }
