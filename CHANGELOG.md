@@ -9,7 +9,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   the calendar's settings, on by default) offers the view beside Month and Week; off, the view switch shows Month and
   Week only, an address naming the view opens the month, and course landing pages offer no "Ver no calendário" link.
   On the desktop timeline, a press on a trail's span (the line of its whole period) or on its end's diamond folds and
-  unfolds its courses as the chevron does, with a hit area taller than the line.
+  unfolds its courses as the chevron does, with a hit area taller than the line (2026100601).
 
 - **Related contents, stage R3: the `[relatedcourses]` shortcode** (docs/related/PLAN.md). With filter_shortcodes, the
   shortcode draws the landing page's related courses band in any text the theme draws (a page, a label, a category
