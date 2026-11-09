@@ -59,6 +59,9 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     /** @var string Component name for get_string calls. */
     private const COMPONENT = 'theme_dimensions';
 
+    /** @var \stdClass|null The exported context, once computed: the full width banner and the page read the same one. */
+    private ?\stdClass $exported = null;
+
     /**
      * Constructor.
      *
@@ -69,6 +72,8 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
      *   enrol_page_hook() returned a widget (collected by the page before output started).
      * @param bool $ispublic Whether the course is public - served to visitors who are not logged in -
      *   in which case the summary is cleaned for everybody.
+     * @param bool $fullwidth Whether the banner is drawn full width in the page header ({@see landing_hero}),
+     *   in which case the page leaves its own out.
      */
     public function __construct(
         /** @var \stdClass The course record. */
@@ -81,6 +86,8 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
         private readonly array $fallbackhtml = [],
         /** @var bool Whether the course is public: served to visitors who are not logged in. */
         private readonly bool $ispublic = false,
+        /** @var bool Whether the banner is drawn full width in the page header. */
+        private readonly bool $fullwidth = false,
     ) {
     }
 
@@ -95,12 +102,25 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * Export the page context.
+     * Export the page context, once: a full width banner asks for it while the header is drawn, the page after.
      *
      * @param \core\output\renderer_base $output The renderer.
      * @return \stdClass The template context.
      */
     public function export_for_template(\core\output\renderer_base $output): \stdClass {
+        if ($this->exported === null) {
+            $this->exported = $this->export($output);
+        }
+        return $this->exported;
+    }
+
+    /**
+     * Compute the page context.
+     *
+     * @param \core\output\renderer_base $output The renderer.
+     * @return \stdClass The template context.
+     */
+    private function export(\core\output\renderer_base $output): \stdClass {
         $context = \core\context\course::instance($this->course->id);
 
         $trail = $this->trail_part($context);
@@ -149,6 +169,8 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
         $haslivechip = $this->values->liveclasses;
         $exported = (object) [
             'courseid' => $this->course->id,
+            // The banner is the page header's: the page draws none of its own.
+            'herofullwidth' => $this->fullwidth,
             'fullname' => $this->plain($this->course->fullname, $context),
             'categoryname' => $this->category_name(),
             'heroimageurl' => $this->hero_image_url(),

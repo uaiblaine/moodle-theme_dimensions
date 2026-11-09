@@ -1,0 +1,169 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/landing_hero
+
+    The inside of a course landing page's banner: the course image behind it, the kicker, the title, the chips,
+    the scenario's emphasis block and the grid of badges. Drawn by theme_dimensions/landing_page inside its own
+    banner when the banner sits in the content column, and by theme_dimensions/landing_header when the site draws
+    it full width in the page header (theme_dimensions\local\landing\heroformat); both hand it the landing
+    page's exported context, so the two formats print the same banner.
+
+    The image's url is printed into a style attribute, a CSS context the double stash does not protect:
+    landing_page::hero_image_url() answers null for any url styleurl::safe() refuses. The workload bar's two
+    widths are integers from 0 to 100 made by landing_page::hero_comp(). Every other value is plain text.
+
+    Example context (json):
+    {
+        "fullname": "Pre-hospital Care & Rescue",
+        "categoryname": "Alpha",
+        "heroimageurl": "https://example.com/pluginfile.php/31/theme_dimensions/hero/42/abc123/cover.jpg",
+        "badges": [
+            {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc123/crest-alpha.png", "alt": "crest-alpha"}
+        ],
+        "hasbadges": true,
+        "chips": ["Hybrid", "60 hours", "Tutored"],
+        "haschips": true,
+        "haslivechip": true,
+        "herodate": {
+            "datebig": "12 Mar 2027",
+            "sub": "7:00–9:00 pm · Live stream",
+            "countdown": "196 days to go"
+        },
+        "herocomp": {
+            "total": "60 hours",
+            "meetings": ["4 in-person meetings"],
+            "arialabel": "36 hours online, 24 hours in person",
+            "onlinepct": 60,
+            "inpersonpct": 40,
+            "onlinelabel": "36 h online",
+            "inpersonlabel": "24 h in person"
+        }
+    }
+}}
+{{#heroimageurl}}
+    <div class="dimensions-landing__hero-media" style="background-image: url('{{heroimageurl}}');" aria-hidden="true"></div>
+{{/heroimageurl}}
+<div class="dimensions-landing__hero-content{{#hasbadges}} dimensions-landing__hero-content--badges{{/hasbadges}}">
+    <div class="dimensions-landing__hero-text">
+    {{#categoryname}}
+        <span class="dimensions-landing__kicker">{{categoryname}}</span>
+    {{/categoryname}}
+    <h1 class="dimensions-landing__title">{{fullname}}</h1>
+    {{#haschips}}
+        <ul class="dimensions-landing__chips list-unstyled m-0">
+            {{#chips}}
+                <li class="dimensions-landing__chip">{{.}}</li>
+            {{/chips}}
+            {{#haslivechip}}
+                <li class="dimensions-landing__chip dimensions-landing__chip--live"><span class="dimensions-landing__livedot" aria-hidden="true"></span>{{#str}} landing_livechip, theme_dimensions {{/str}}</li>
+            {{/haslivechip}}
+        </ul>
+    {{/haschips}}
+    {{#trail}}
+        <div class="dimensions-landing__em dimensions-landing__trailem">
+            <span class="dimensions-landing__em-main">{{sequence}}</span>
+            {{#period}}
+                <span class="dimensions-landing__em-sub">{{.}}</span>
+            {{/period}}
+            <span class="dimensions-landing__trailsegs" role="img" aria-label="{{segmentslabel}}">
+                {{#steps}}
+                    <span class="dimensions-landing__trailseg{{#state}} dimensions-landing__trailseg--{{.}}{{/state}}"></span>
+                {{/steps}}
+            </span>
+        </div>
+    {{/trail}}
+    {{#herodate}}
+        <div class="dimensions-landing__em dimensions-landing__em--big">
+            <span class="dimensions-landing__em-main">{{datebig}}</span>
+            <span class="dimensions-landing__em-sub">{{sub}}</span>
+            {{#countdown}}
+                <span class="dimensions-landing__em-chip">{{countdown}}</span>
+            {{/countdown}}
+        </div>
+    {{/herodate}}
+    {{#heroticket}}
+        <div class="dimensions-landing__ticket">
+            <div class="dimensions-landing__ticket-date">
+                <span class="dimensions-landing__em-main">{{datebig}}</span>
+                <span class="dimensions-landing__em-sub">{{sub}}</span>
+                {{#countdown}}
+                    <span class="dimensions-landing__em-chip">{{.}}</span>
+                {{/countdown}}
+            </div>
+            <div class="dimensions-landing__ticket-cut" aria-hidden="true"></div>
+            <ul class="dimensions-landing__ticket-ways list-unstyled m-0">
+                <li class="dimensions-landing__way">
+                    {{#pix}} i/location, core {{/pix}}
+                    <span class="dimensions-landing__way-text">
+                        <span class="dimensions-landing__way-main">{{site}}</span>
+                        {{#venue}}
+                            <span class="dimensions-landing__way-sub">{{.}}</span>
+                        {{/venue}}
+                    </span>
+                </li>
+                <li class="dimensions-landing__way">
+                    {{#pix}} t/play, core {{/pix}}
+                    <span class="dimensions-landing__way-text">
+                        <span class="dimensions-landing__way-main">{{live}}</span>
+                        <span class="dimensions-landing__way-sub">{{livesub}}</span>
+                    </span>
+                </li>
+            </ul>
+        </div>
+    {{/heroticket}}
+    {{#herocomp}}
+        <div class="dimensions-landing__comp">
+            <div class="dimensions-landing__comp-head">
+                <span class="dimensions-landing__comp-total">{{total}}</span>
+                {{#meetings}}
+                    <span class="dimensions-landing__comp-meetings">{{.}}</span>
+                {{/meetings}}
+            </div>
+            <div class="dimensions-landing__comp-bar" role="img" aria-label="{{arialabel}}">
+                <span class="dimensions-landing__comp-online" style="width: {{onlinepct}}%"></span>
+                <span class="dimensions-landing__comp-inperson" style="width: {{inpersonpct}}%"></span>
+            </div>
+            <div class="dimensions-landing__comp-legend" aria-hidden="true">
+                <span class="dimensions-landing__comp-key"><span class="dimensions-landing__comp-swatch dimensions-landing__comp-swatch--online"></span>{{onlinelabel}}</span>
+                <span class="dimensions-landing__comp-key"><span class="dimensions-landing__comp-swatch dimensions-landing__comp-swatch--inperson"></span>{{inpersonlabel}}</span>
+            </div>
+        </div>
+    {{/herocomp}}
+    {{#heroplace}}
+        <div class="dimensions-landing__em {{#big}}dimensions-landing__em--big{{/big}}">
+            <span class="dimensions-landing__em-main">{{city}}</span>
+            {{#venue}}
+                <span class="dimensions-landing__em-sub">{{venue}}</span>
+            {{/venue}}
+            {{#dateline}}
+                <span class="dimensions-landing__em-sub">{{dateline}}</span>
+            {{/dateline}}
+            {{#meetings}}
+                <span class="dimensions-landing__em-sub">{{.}}</span>
+            {{/meetings}}
+        </div>
+    {{/heroplace}}
+    </div>
+    {{#hasbadges}}
+        <ul class="dimensions-landing__badges" role="list" aria-label="{{#str}} landing_badges, theme_dimensions {{/str}}">
+            {{#badges}}
+                <li class="dimensions-landing__badge" role="listitem"><img src="{{url}}" alt="{{alt}}" loading="lazy"></li>
+            {{/badges}}
+        </ul>
+    {{/hasbadges}}
+</div>

@@ -297,4 +297,46 @@ final class landing_scss_test extends \advanced_testcase {
             $this->rule($css, '.theme_dimensions-guestentry .dimensions-guestentry__button')
         );
     }
+
+    /**
+     * Full width, the banner takes the category hero's geometry and veils the course image in the page's own stops.
+     *
+     * Below md the header escapes .main-inner's 8px; from md up .main-inner spans the page and pays the 56px itself,
+     * the header escapes them and every other child keeps Boost's column (830px less the 8px each side). The image is
+     * veiled at the category hero's default overlay, 78%, in the three stops the ground declares.
+     */
+    public function test_the_full_width_banner_takes_the_category_geometry(): void {
+        $primary = '#7a1f2b';
+        $css = $this->compile($primary);
+
+        $this->assertMatchesRegularExpression(
+            '~(^|;)\s*margin-inline:\s*-8px;~',
+            $this->rule($css, 'body.dim-landing-fullwidth #page-header')
+        );
+        $this->assertMatchesRegularExpression(
+            '~@media \(min-width: 768px\)\s*\{[^@]*?body\.dim-landing-fullwidth #page\.drawers \.main-inner\s*\{'
+            . '\s*width: auto;\s*max-width: none;\s*margin-inline: -48px;\s*padding-inline: 56px;~',
+            $css
+        );
+        $this->assertMatchesRegularExpression(
+            '~body\.dim-landing-fullwidth #page\.drawers \.main-inner > :not\(#page-header\)\s*\{\s*max-width: 814px;'
+            . '\s*margin-inline: auto;~',
+            $css
+        );
+        $this->assertMatchesRegularExpression(
+            '~@media \(min-width: 768px\)\s*\{[^@]*?body\.dim-landing-fullwidth #page-header\s*\{\s*max-width: none;'
+            . '\s*margin-inline: -56px;~',
+            $css
+        );
+
+        $veil = $this->rule($css, 'body.dim-landing-fullwidth .dimensions-landing__hero--image::before');
+        $stops = branding::stops($primary);
+        foreach (['from', 'mid', 'to'] as $stop) {
+            $this->assertStringContainsString(branding::rgba($stops[$stop], 0.78), $veil, $stop);
+        }
+        $this->assertStringContainsString(
+            'opacity: 1',
+            $this->rule($css, 'body.dim-landing-fullwidth .dimensions-landing__hero--image .dimensions-landing__hero-media')
+        );
+    }
 }
