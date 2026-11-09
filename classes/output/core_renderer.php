@@ -25,6 +25,8 @@
 namespace theme_dimensions\output;
 
 use theme_dimensions\local\calendar\blocks;
+use theme_dimensions\local\card\boost_union;
+use theme_dimensions\local\card\cover;
 use theme_dimensions\local\calendar\coreview;
 use theme_dimensions\local\compactnav;
 use theme_dimensions\local\coursenotice\builder as coursenotice_builder;
@@ -75,6 +77,18 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * parent's.
      */
     protected ?array $focusshell = null;
+
+    /** @var bool Whether {@see boost_union_fallback()} has asked Boost Union for its fallback image yet. */
+    private bool $fallbackasked = false;
+
+    /** @var string|null Boost Union's answer while its fallback image is chosen and exists, else null. */
+    private ?string $fallbackanswer = null;
+
+    /** @var string|null The primary a category with no branding pair is painted in, once per renderer. */
+    private ?string $coverprimary = null;
+
+    /** @var array The category of each course asked about so far: courseid => categoryid, 0 for none. */
+    private array $coursecategories = [];
 
     /**
      * Renders the login form.
@@ -845,5 +859,124 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         } finally {
             $this->page->theme->usescourseindex = $usescourseindex;
         }
+    }
+
+    /**
+     * The image of a course with none of its own (D14 of the course card contract): its category's cover.
+     *
+     * Core asks this for every course whose overview files hold no image (course_summary_exporter, so the
+     * Dashboard, My courses and Boost Union's cards among others), and the plugins of the card family ask it as
+     * well. When Boost Union's image source is the fallback image and one is uploaded, the answer is Boost Union's
+     * (the parent's); otherwise an SVG of the course category's cover ({@see cover}), and for an id that names no
+     * course, or the site course, the parent's pattern.
+     *
+     * One call costs, cold, a statement for the course's category (none for the page's own course) and the branding
+     * cache's miss for that category (seven statements and one); warm, the category statement alone, and nothing
+     * for a course this renderer was already asked about. A grid asks {@see course_covers()} instead, with the
+     * categories its rows hold.
+     *
+     * @param int $id The course id.
+     * @return string A data URI, or the URL of Boost Union's fallback image.
+     */
+    public function get_generated_image_for_id($id) {
+        $courseid = (int) $id;
+        return $this->course_covers([$courseid => $this->course_category($courseid)])[$courseid];
+    }
+
+    /**
+     * The image of each of several courses with none of their own, with the categories already known.
+     *
+     * {@see get_generated_image_for_id()} for a page of cards: no statement per course, the branding of all the
+     * categories in one cache read ({@see cover::colours()}), and Boost Union's fallback asked once.
+     *
+     * @param array $categories courseid => the course's category id, 0 where it has none (the site course).
+     * @return array courseid => a data URI, or the URL of Boost Union's fallback image.
+     */
+    public function course_covers(array $categories): array {
+        $covers = [];
+        if (!$categories) {
+            return $covers;
+        }
+        $fallback = $this->boost_union_fallback((int) array_key_first($categories));
+        $colours = $fallback === null ? cover::colours(array_values($categories), $this->cover_primary()) : [];
+        foreach ($categories as $courseid => $categoryid) {
+            $courseid = (int) $courseid;
+            $colour = $colours[(int) $categoryid] ?? null;
+            if ($fallback !== null) {
+                $covers[$courseid] = $fallback;
+            } else if ($colour !== null) {
+                $covers[$courseid] = cover::data_uri($colour);
+            } else {
+                $covers[$courseid] = parent::get_generated_image_for_id($courseid);
+            }
+        }
+        return $covers;
+    }
+
+    /**
+     * Boost Union's answer while its image source is the fallback image and an administrator uploaded one, else null.
+     *
+     * Boost Union's renderer answers that image's URL for every course alike (its get_generated_image_for_id()), and
+     * reads the file area to find it on every call, so it is asked once per renderer and the answer is reused.
+     * Re-read that method on every Boost Union update: an answer that ever depends on the course breaks the reuse.
+     *
+     * @param int $courseid A course of the batch, handed to the parent.
+     * @return string|null
+     */
+    protected function boost_union_fallback(int $courseid): ?string {
+        global $CFG;
+
+        if (boost_union::image_source($this->page) !== boost_union::SOURCE_FALLBACK) {
+            return null;
+        }
+        if (!$this->fallbackasked) {
+            $this->fallbackasked = true;
+            require_once($CFG->dirroot . '/theme/boost_union/locallib.php');
+            if (theme_boost_union_get_course_overview_fallback_image_url() !== null) {
+                $this->fallbackanswer = parent::get_generated_image_for_id($courseid);
+            }
+        }
+        return $this->fallbackanswer;
+    }
+
+    /**
+     * The primary a category with no branding pair on its path is painted in: the stylesheet's ({@see cover::primary()}).
+     *
+     * @return string
+     */
+    protected function cover_primary(): string {
+        return $this->coverprimary ??= cover::primary($this->cover_flavour());
+    }
+
+    /**
+     * The Boost Union flavour whose brand colour the covers take, or null.
+     *
+     * Only for a page that set its URL: Boost Union's lookup reads it, and a web service (core's AJAX entry sets
+     * none) would print a debugging notice; such a request paints the site's brand colour. A seam as well, so a
+     * test can hand in a flavour ({@see darklogo_flavour()} says why).
+     *
+     * @return \stdClass|null
+     */
+    protected function cover_flavour(): ?\stdClass {
+        return $this->page->has_set_url() ? darklogo::applied_flavour() : null;
+    }
+
+    /**
+     * The category of a course, read once per renderer: none for the page's own course, a statement for another.
+     *
+     * @param int $courseid The course.
+     * @return int The category id, 0 for a course that does not exist or for the site course.
+     */
+    protected function course_category(int $courseid): int {
+        global $DB;
+
+        if (!array_key_exists($courseid, $this->coursecategories)) {
+            $pagecourse = $this->page->course;
+            $category = (int) $pagecourse->id === $courseid
+                ? $pagecourse->category
+                : $DB->get_field('course', 'category', ['id' => $courseid]);
+            $this->coursecategories[$courseid] = $courseid === SITEID ? 0 : (int) $category;
+        }
+        return $this->coursecategories[$courseid];
     }
 }

@@ -79,6 +79,12 @@
     badges: the panel's rail resizes them through it, while the design-system
     classes keep every colour.
 
+    The media band follows Boost Union's "Show course images" setting where
+    Boost Union applies (category_card: showcover for the card view, showthumb
+    for the list view): it is drawn while either view shows it (showmedia), and
+    the article carries dim-card--nocover or dim-card--nothumb for the view that
+    leaves it out. showprogress is the same setting's progress switch.
+
     Its cover is lazy unless the listing puts the card in the first row of the
     page's first paint (eager), and the first such cover is fetched ahead of
     every other image (priority) only where the hero paints no picture.
@@ -106,6 +112,10 @@
         "hasimage": true,
         "eager": false,
         "priority": false,
+        "showcover": true,
+        "showthumb": true,
+        "showmedia": true,
+        "showprogress": true,
         "badges": [
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/abc/crest-alpha.png", "alt": "crest alpha"},
             {"url": "https://example.com/pluginfile.php/31/theme_dimensions/badge/42/def/dimensions.svg", "alt": "dimensions"}
@@ -147,7 +157,8 @@
         }
     }
 }}
-<article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}>
+<article class="dim-card{{#ismuted}} dim-card--muted{{/ismuted}}{{^showcover}} dim-card--nocover{{/showcover}}{{^showthumb}} dim-card--nothumb{{/showthumb}}" data-region="dim-card" data-courseid="{{id}}" data-state="{{state}}" data-chip="{{chip}}" data-fields="{{fieldvalues}}"{{#hasstartday}} data-start="{{startday}}"{{/hasstartday}}>
+    {{#showmedia}}
     <div class="dim-card__media{{#hasimage}} dim-card__media--image{{/hasimage}}">
         {{#hasimage}}
         <img class="dim-card__image" data-region="dim-card-cover" src="{{imageurl}}" alt=""{{^eager}} loading="lazy"{{/eager}}{{#priority}} fetchpriority="high"{{/priority}} decoding="async" width="320" height="150">
@@ -159,6 +170,7 @@
         <span class="dim-card__kind{{#isevent}} dim-card__kind--event{{/isevent}}"><i class="fa {{#isevent}}fa-calendar-day{{/isevent}}{{^isevent}}fa-graduation-cap{{/isevent}}" aria-hidden="true"></i><span class="dim-card__kindlabel">{{kindlabel}}</span></span>
         {{/haskind}}
     </div>
+    {{/showmedia}}
     <div class="dim-card__body">
         <div class="dim-card__titlewrap">
             {{#hasoverline}}

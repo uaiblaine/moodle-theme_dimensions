@@ -135,7 +135,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * Ask for the first cover of the first row ahead of every other image, where no hero picture is the page's largest paint.
      *
      * Called on the page's own first paint alone, after the first row was marked eager: of those cards, the first
-     * that has a cover gets `priority` (fetchpriority="high"), and no other card does. A hero that paints a
+     * that has a cover to fetch gets `priority` (fetchpriority="high"), and no other card does: the drawn cover of a
+     * course with no image is a data URI, which nothing fetches ({@see cards::images()}). A hero that paints a
      * picture already asks for it first (category_hero.mustache) and is the larger paint, so with one armed for
      * this category no card asks: two images asking for the front of the queue would share it.
      *
@@ -148,7 +149,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
             return;
         }
         foreach (array_slice($cardcontexts, 0, self::FIRST_ROW) as $card) {
-            if ($card->hasimage) {
+            if ($card->hasimage && !str_starts_with((string) $card->imageurl, 'data:')) {
                 $card->priority = true;
                 return;
             }
@@ -361,8 +362,10 @@ class category_listing implements \core\output\named_templatable, \core\output\r
         $courses = cards::records($ids);
         $values = cards::values($rows);
         /* The public shell's covers go through the theme's own file route: core's route for the
-           course image answers a visitor with the login page while the site forces login. */
-        $images = cards::images($rows, $result->anonymous);
+           course image answers a visitor with the login page while the site forces login. A course
+           with no image gets the renderer's (its category's cover, or Boost Union's fallback image),
+           on both shells: neither needs a session. */
+        $images = cards::images($rows, $result->anonymous, true);
         /* The two layers only some cards need, each read for those cards alone: the routes beside a relationship
            with the opening dates, and the prerequisite of a conditional card. A visitor's card carries neither. */
         $nextactions = $result->anonymous ? [] : cards::next_actions($rows);
