@@ -244,6 +244,7 @@ final class category_test extends \core\tests\router\route_testcase {
         $this->assertStringNotContainsString('Curso Interno', $body, 'A listed course has no place on the open internet.');
         $this->assertStringContainsString(get_string('category_state_public', self::COMPONENT), $body);
         $this->assertStringContainsString(get_string('category_cta_landing', self::COMPONENT), $body);
+        $this->assertStringNotContainsString('data-region="dim-card-more"', $body, 'A visitor\'s card has one button.');
         $this->assertStringNotContainsString('dim-card__star', $body, 'A visitor has no favourites.');
 
         $canonical = links::category_page($categoryid)->out(false);

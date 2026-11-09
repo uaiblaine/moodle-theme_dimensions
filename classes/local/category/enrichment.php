@@ -46,14 +46,15 @@ use theme_dimensions\local\card\boost_union;
  * the plugin's predicate after it.
  *
  * The course records are read in one statement for the batch; the
- * completion reads after that are per course.
+ * viewer's course completions in one more ({@see completed()}); the
+ * activity completion reads after that are per course.
  *
  * Where Boost Union's course progress setting hides the progress
  * ({@see boost_union::show_progress()}), no percentage is read or returned:
  * progress is null and there is no progresslabel, so no card draws a progress
  * row. hascompletion still says whether completion is on in the course, a fact
  * about the course that the completed seal rests on and the setting leaves
- * drawn (D13 of the course card contract).
+ * drawn (D13 of the course card contract), and so does completed.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -70,8 +71,8 @@ final class enrichment {
      * What the cards of this batch can say once they are on screen.
      *
      * @param array $courseids The course ids of the batch.
-     * @return array One row per id the viewer may see: id (int), hascompletion (bool),
-     *   progress (int|null) and, when there is a number, progresslabel (string).
+     * @return array One row per id the viewer may see: id (int), hascompletion (bool), completed (bool),
+     *   progress (int|null) and, when there is a number, progresslabel and progresspct (string).
      */
     public static function details(array $courseids): array {
         global $CFG, $DB, $USER;
@@ -99,26 +100,69 @@ final class enrichment {
         // Read after validate_context() in the web service, which sets the theme of the request.
         $showprogress = boost_union::show_progress();
 
+        $enabled = [];
+        foreach ($kept as $courseid => $course) {
+            if ((new \completion_info($course))->is_enabled()) {
+                $enabled[] = (int) $courseid;
+            }
+        }
+        // Whatever the progress setting says: the completed seal stays when the row is off (D13).
+        $done = self::completed($enabled, (int) $USER->id);
+
         $details = [];
         foreach ($courseids as $courseid) {
             if (!isset($kept[$courseid])) {
                 continue;
             }
             $course = $kept[$courseid];
-            $completion = new \completion_info($course);
             $progress = $showprogress
                 ? \core_completion\progress::get_course_progress_percentage($course, (int) $USER->id)
                 : null;
             $row = [
                 'id' => $courseid,
-                'hascompletion' => $completion->is_enabled(),
+                'hascompletion' => in_array($courseid, $enabled, true),
+                'completed' => isset($done[$courseid]),
                 'progress' => $progress === null ? null : (int) round($progress),
             ];
             if ($row['progress'] !== null) {
                 $row['progresslabel'] = get_string('category_progress', self::COMPONENT, $row['progress']);
+                $row['progresspct'] = get_string('category_progress_pct', self::COMPONENT, $row['progress']);
             }
             $details[] = $row;
         }
         return $details;
+    }
+
+    /**
+     * Which of these courses the user completed: one statement for the batch, whatever its size.
+     *
+     * It mirrors {@see \completion_info::is_course_complete()}, which reads one course_completions row per course: a
+     * course counts only while completion is on in it (the caller passes those alone) and only once that row carries a
+     * completion time, which is what {@see \completion_completion::is_complete()} asks. A course that turned
+     * completion off keeps its rows, and they say nothing any more.
+     *
+     * @param array $courseids The ids of the courses with completion on, at most {@see MAX_COURSES}.
+     * @param int $userid The user.
+     * @return array courseid => true for every course the user completed; nothing is read for no course.
+     */
+    public static function completed(array $courseids, int $userid): array {
+        global $DB;
+
+        if (!$courseids) {
+            return [];
+        }
+        [$insql, $params] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'course');
+        $params['userid'] = $userid;
+        $courses = $DB->get_fieldset_select(
+            'course_completions',
+            'course',
+            "userid = :userid AND course {$insql} AND timecompleted > 0",
+            $params
+        );
+        $done = [];
+        foreach ($courses as $courseid) {
+            $done[(int) $courseid] = true;
+        }
+        return $done;
     }
 }

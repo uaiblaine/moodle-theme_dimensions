@@ -1949,7 +1949,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-recede-surface\);~', $ground[1]);
         $this->assertMatchesRegularExpression('~color:\s*var\(--dim-recede-ink\);~', $ground[1]);
         $this->assertSame(0, preg_match_all('~(?<![\w-])(?:opacity|filter)\s*:~', $ground[1]), 'No opacity, no filter.');
-        foreach (['title a', 'over', 'meta', 'prog', 'route', 'opens'] as $ink) {
+        foreach (['title a', 'over', 'meta', 'pct', 'route', 'opens'] as $ink) {
             $this->assertStringContainsString(
                 '.dim-vitrine--previewing .dim-card--dim .dim-card__' . $ink,
                 $scss,
@@ -2336,5 +2336,92 @@ final class category_scss_test extends \basic_testcase {
             $weight = self::specificity($dark . ' ' . $state);
             $this->assertGreaterThan(0, $weight <=> $atrest, 'Hover and focus must outweigh the rest: ' . implode(',', $weight));
         }
+    }
+
+    /**
+     * The panel's heading has no eyebrow, and its category link is underlined on hover and focus only, in both modes.
+     *
+     * The link reads as the card's title does (contract section 5). In light mode the heading's own rule says so; in
+     * dark mode core underlines every link of #region-main at (1,6,1), so the theme's two rules outweigh it, as the
+     * card title's do ({@see test_the_card_title_outranks_cores_dark_underline()}).
+     */
+    public function test_the_panel_heading_has_no_eyebrow_and_its_link_underlines_on_hover_and_focus(): void {
+        $scss = $this->stylesheet('category.scss');
+        $this->assertStringNotContainsString('dim-panel__eyebrow', $scss);
+        $template = (string) file_get_contents($this->plugin_root() . '/templates/category_panel.mustache');
+        $this->assertStringNotContainsString('eyebrow', $template);
+        foreach (['en', 'pt_br'] as $lang) {
+            $strings = (string) file_get_contents($this->plugin_root() . '/lang/' . $lang . '/theme_dimensions.php');
+            $this->assertStringNotContainsString("'category_panel_eyebrow'", $strings, "The {$lang} pack keeps no eyebrow.");
+        }
+
+        $title = $this->rule_body($scss, '.dim-panel__title');
+        $this->assertMatchesRegularExpression(
+            '~\n        a \{\s*color: var\(--dim-primary-ink\);\s*text-decoration: none;\s*\}~',
+            $title,
+            'Not underlined at rest.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\n        a:hover,\s*a:focus-visible \{\s*text-decoration: underline;\s*\}~',
+            $title,
+            'Underlined on hover and on the keyboard\'s focus.'
+        );
+
+        $cores = self::specificity('[data-bs-theme="dark"] #region-main '
+            . 'a:not(.btn):not(.nav-link):not(.dropdown-item):not(.list-group-item):not(.page-link)');
+        $dark = ':root[data-bs-theme="dark"] body.dim-category';
+        $rest = '#region-main .dim-panel__title a[href]:not(.btn)';
+        $hover = $rest . ':hover';
+        $focus = $rest . ':focus-visible';
+        $this->assertMatchesRegularExpression(
+            '~^' . preg_quote($dark, '~') . ' \{\s*' . preg_quote($rest, '~') . ' \{\s*text-decoration: none;\s*\}\s*'
+                . preg_quote($hover, '~') . ',\s*' . preg_quote($focus, '~') . ' \{\s*text-decoration: underline;\s*\}~m',
+            $scss
+        );
+        $atrest = self::specificity($dark . ' ' . $rest);
+        $this->assertGreaterThan(0, $atrest <=> $cores, 'The link at rest must outweigh core: ' . implode(',', $atrest));
+        foreach ([$hover, $focus] as $state) {
+            $weight = self::specificity($dark . ' ' . $state);
+            $this->assertGreaterThan(0, $weight <=> $atrest, 'Hover and focus must outweigh the rest: ' . implode(',', $weight));
+        }
+    }
+
+    /**
+     * The progress row is a bar and a percentage in the card's tokens, and a completed card trades it for the seal.
+     *
+     * Contract sections 3 and 7: a 6px track (--dim-card-track, --dim-card-fill, --dim-card-track-height) whose fill
+     * is the course's percentage, the number at the right in tabular figures; hidden until filled, and never drawn on
+     * a completed card, whose pill is the green seal and whose cover gets its green base (--dim-card-done,
+     * --dim-card-done-edge). The old inline sentence is gone.
+     */
+    public function test_the_progress_row_and_the_completed_card_paint_through_the_card_tokens(): void {
+        $scss = $this->stylesheet('category.scss');
+        $this->assertDoesNotMatchRegularExpression('~\.dim-card__prog(?!ress)\b~', $scss, 'The inline sentence is gone.');
+
+        $row = $this->rule_body($scss, '.dim-card__progress');
+        $this->assertMatchesRegularExpression('~display:\s*flex;~', $row);
+        $this->assertStringContainsString('--dim-progress: 0%;', $row, 'Nothing is filled until the shell writes the number.');
+        $this->assertMatchesRegularExpression(
+            '~\n    \.dim-card__progress\[hidden\],\s*\.dim-card--done \.dim-card__progress \{\s*display: none;\s*\}~',
+            $scss,
+            'Hidden until filled, whatever display the row has, and never beside the seal.'
+        );
+        $track = $this->rule_body($scss, '.dim-card__track');
+        $this->assertStringContainsString('height: var(--dim-card-track-height);', $track);
+        $this->assertStringContainsString('background: var(--dim-card-track);', $track);
+        $fill = $this->rule_body($scss, '.dim-card__fill');
+        $this->assertStringContainsString('width: var(--dim-progress);', $fill);
+        $this->assertStringContainsString('background: var(--dim-card-fill);', $fill);
+        $pct = $this->rule_body($scss, '.dim-card__pct');
+        $this->assertStringContainsString('font-variant-numeric: tabular-nums;', $pct);
+        $this->assertStringContainsString('text-align: right;', $pct);
+
+        $seal = $this->rule_body($scss, '.dim-badge--done');
+        $this->assertStringContainsString('background: var(--dim-card-done-bg);', $seal);
+        $this->assertStringContainsString('color: var(--dim-card-done-ink);', $seal);
+        $base = $this->rule_body($scss, '.dim-card--done .dim-card__media::before');
+        $this->assertStringContainsString('bottom: 0;', $base);
+        $this->assertStringContainsString('height: var(--dim-card-done-edge);', $base);
+        $this->assertStringContainsString('background: var(--dim-card-done);', $base);
     }
 }

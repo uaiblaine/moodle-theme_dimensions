@@ -16,7 +16,7 @@
 /**
  * The logged-in shell of the showcase listing: what only an account has, over the shared store.
  *
- * The listing's and a panel's rows, the progress of the enrolled courses on screen (once per course), the state
+ * The listing's and a panel's rows, the progress and completion of the enrolled courses on screen (once per course), the state
  * remembered per category and the view preference, the automatic opening's note and the dim-js mark;
  * a failure is core's exception dialogue; it arms the card's star (./star). Armed by amd/src/listingaccount.js for a
  * real account only, never the guest (course_renderer.php); the visitor's page never loads it
@@ -41,6 +41,9 @@ import type {Rows, Shell} from './store';
 /** Hooks the account's shell reads beside the shared ones. */
 const HOOKS = {
     progress: '[data-region="dim-card-progress"]',
+    pct: '[data-region="dim-card-pct"]',
+    pill: '[data-region="dim-card-pill"]',
+    cta: '[data-region="dim-card-cta"]',
     areapanel: '[data-region="dim-panel"]',
     countnotetext: '[data-region="dim-vitrine-countnotetext"]',
 };
@@ -48,8 +51,24 @@ const HOOKS = {
 /** The listing's service, for a page and for a panel's rows. */
 const ROWS_METHOD = 'theme_dimensions_get_category_rows';
 
-/** The progress of the enrolled courses on screen. */
+/** The progress of the enrolled courses on screen, and whether the viewer completed them. */
 const DETAILS_METHOD = 'theme_dimensions_get_card_details';
+
+/** What the details service answers for one course. */
+type Detail = {
+    id: number | string,
+    completed?: boolean,
+    progress?: number | null,
+    progresslabel?: string,
+    progresspct?: string,
+};
+
+/** The card's mark once its course is completed: the stylesheet takes the bar away and greens the cover's base. */
+const DONE_CLASS = 'dim-card--done';
+
+/** The state pill's own classes once it is the completed seal, and its icon. */
+const DONE_PILL = 'dim-badge--done';
+const DONE_ICON = 'fa fa-check';
 
 /** The service that remembers the state the reader left this category in. */
 const REMEMBER_METHOD = 'theme_dimensions_remember_category_state';
@@ -123,8 +142,8 @@ const pending = new Set<number>();
 /** Course ids whose answer has arrived, or failed to. Neither is ever asked again. */
 const settled = new Set<number>();
 
-/** Course id to the progress sentence the server gave for it: an id is asked once, and its card can come back. */
-const answers = new Map<number, string>();
+/** Course id to the details the server gave for it: an id is asked once, and its card can come back. */
+const answers = new Map<number, Detail>();
 
 /** Whether a details request is in flight: one at a time. */
 let inflight = false;
@@ -344,6 +363,71 @@ const discard = (card: HTMLElement): void => {
 };
 
 /**
+ * Turn an enrolled card into the completed one (D4, option A): the seal for the pill, "Review" for the main action.
+ *
+ * The words are the card's own (data-done, data-review: the server writes them on an enrolled card alone), and the
+ * mark takes the progress row away in the stylesheet as well as here, so a card never shows the bar and the seal.
+ *
+ * @param {HTMLElement} card The card.
+ * @returns {void}
+ */
+const markDone = (card: HTMLElement): void => {
+    const seal = card.dataset.done || '';
+    const review = card.dataset.review || '';
+    card.classList.add(DONE_CLASS);
+    const row = card.querySelector<HTMLElement>(HOOKS.progress);
+    if (row) {
+        row.hidden = true;
+    }
+    const pill = card.querySelector<HTMLElement>(HOOKS.pill);
+    if (pill) {
+        Array.from(pill.classList).filter((name) => name.startsWith('dim-badge--')).forEach((name) => pill.classList.remove(name));
+        pill.classList.add(DONE_PILL);
+        const icon = pill.querySelector('i');
+        pill.textContent = ' ' + seal;
+        if (icon) {
+            icon.className = DONE_ICON;
+            pill.prepend(icon);
+        }
+    }
+    const cta = card.querySelector<HTMLElement>(HOOKS.cta);
+    if (cta && review) {
+        cta.textContent = review;
+        cta.classList.remove('btn-primary');
+        cta.classList.add('btn-outline-primary');
+    }
+};
+
+/**
+ * Paint one course's details onto one of its cards: the completed state, or else the progress row.
+ *
+ * The one painter of the flat list's cards and the panel's. A course with no number (no completion tracking, or Boost
+ * Union's progress setting off) leaves the row hidden, never at 0 %; a completed course trades the row for the seal.
+ *
+ * @param {HTMLElement} card The card.
+ * @param {object} detail The course's details.
+ * @returns {void}
+ */
+const paintDetail = (card: HTMLElement, detail: Detail): void => {
+    if (detail.completed && card.dataset.done) {
+        markDone(card);
+        return;
+    }
+    const row = card.querySelector<HTMLElement>(HOOKS.progress);
+    if (!row || !detail.progresslabel || typeof detail.progress !== 'number') {
+        return;
+    }
+    row.style.setProperty('--dim-progress', detail.progress + '%');
+    row.setAttribute('aria-valuenow', String(detail.progress));
+    row.setAttribute('aria-label', detail.progresslabel);
+    const pct = row.querySelector<HTMLElement>(HOOKS.pct);
+    if (pct) {
+        pct.textContent = detail.progresspct || '';
+    }
+    row.hidden = false;
+};
+
+/**
  * Paint the answer already held for a course onto a card of it, if there is one of each.
  *
  * @param {HTMLElement|null} card The card.
@@ -351,31 +435,23 @@ const discard = (card: HTMLElement): void => {
  * @returns {void}
  */
 const paintAnswer = (card: HTMLElement | null, courseid: number): void => {
-    const label = answers.get(courseid);
-    if (!card || !label) {
+    const detail = answers.get(courseid);
+    if (!card || !detail) {
         return;
     }
-    const slot = card.querySelector<HTMLElement>(HOOKS.progress);
-    if (!slot) {
-        return;
-    }
-    slot.textContent = label;
-    slot.hidden = false;
+    paintDetail(card, detail);
 };
 
 /**
- * Paint the progress sentences of one batch into their cards.
+ * Paint the details of one batch into their cards.
  *
  * @param {Array} details The details the server returned, one entry per id it was willing to answer.
  * @returns {void}
  */
-const paintProgress = (details: Array<{id: number | string, progresslabel?: string}>): void => {
+const paintProgress = (details: Detail[]): void => {
     (details || []).forEach((detail) => {
         const courseid = Number(detail.id);
-        if (!detail.progresslabel) {
-            return;
-        }
-        answers.set(courseid, detail.progresslabel);
+        answers.set(courseid, detail);
         paintAnswer(cardOf(courseid), courseid);
     });
 };
@@ -396,7 +472,7 @@ const drainPending = async(): Promise<void> => {
     batch.forEach((id) => pending.delete(id));
     inflight = true;
     try {
-        const response = await fetchOne<{details: Array<{id: number, progresslabel?: string}>}>({
+        const response = await fetchOne<{details: Detail[]}>({
             methodname: DETAILS_METHOD,
             args: {courseids: batch},
         });
@@ -533,8 +609,8 @@ const ask = (poster: HTMLElement, psort: string): Promise<Rows> => {
 };
 
 /**
- * Paint the progress of the panel's enrolled courses, in one batch of at most eight, once the rows are on screen.
- * A failure leaves the cards as they are: progress is decoration.
+ * Paint the progress and completion of the panel's enrolled courses, in one batch of at most eight, once the rows are
+ * on screen, through the flat list's painter. A failure leaves the cards as they are: progress is decoration.
  *
  * @param {HTMLElement} panel The panel's element.
  * @returns {Promise} Resolving when the batch has been dealt with.
@@ -547,19 +623,15 @@ const paintPanelProgress = async(panel: HTMLElement): Promise<void> => {
         return;
     }
     try {
-        const response = await fetchOne<{details: Array<{id: number, progress?: number, progresslabel?: string}>}>({
+        const response = await fetchOne<{details: Detail[]}>({
             methodname: DETAILS_METHOD,
             args: {courseids: ids.slice(0, PANEL_SIZE)},
         });
         (response.details || []).forEach((detail) => {
             const card = cards.find((one) => Number(one.dataset.courseid) === Number(detail.id));
-            const slot = card ? card.querySelector<HTMLElement>(HOOKS.progress) : null;
-            if (!slot || !detail.progresslabel) {
-                return;
+            if (card) {
+                paintDetail(card, detail);
             }
-            slot.textContent = detail.progresslabel;
-            slot.style.setProperty('--dim-progress', Number(detail.progress || 0) + '%');
-            slot.hidden = false;
         });
     } catch (error) {
         // Progress is decoration: a card without it is still the card the server drew.

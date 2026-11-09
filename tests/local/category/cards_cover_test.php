@@ -248,6 +248,50 @@ final class cards_cover_test extends \advanced_testcase {
     }
 
     /**
+     * The progress row is an enrolled card's alone and follows Boost Union's setting; the completed words stay (D13).
+     *
+     * The same course drawn as an enrolled card and as one in any other state: only the enrolled one is ever asked about
+     * its details, so only it draws the row (hasprogress) and carries the seal's and "Review"'s words (done). With
+     * "Show course progress" set to No the row goes and the words stay, since the seal is no part of the row.
+     */
+    public function test_the_progress_row_is_an_enrolled_cards_and_follows_the_setting(): void {
+        global $PAGE;
+        $this->resetAfterTest();
+        [$categoryid, , $without] = $this->seed();
+        self::theme();
+        $output = $PAGE->get_renderer('core', null, RENDERER_TARGET_GENERAL);
+        $rows = $this->rows($categoryid);
+        $enrolledrow = clone $rows[$without];
+        $enrolledrow->state = classifier::STATE_ENROLLED;
+        $otherrow = clone $rows[$without];
+        $otherrow->state = classifier::STATE_OPEN;
+        $values = cards::values($rows)[$without];
+        $record = cards::records([$without])[$without];
+        $enrolled = new category_card($record, $enrolledrow, $values, null, null, true);
+        $other = new category_card($record, $otherrow, $values, null, null, true);
+
+        $context = $enrolled->export_for_template($output);
+        $this->assertTrue($context->hasprogress);
+        $this->assertNotNull($context->done);
+        $this->assertStringContainsString(
+            'data-region="dim-card-progress"',
+            $output->render_from_template('theme_dimensions/category_card', $context)
+        );
+        $context = $other->export_for_template($output);
+        $this->assertFalse($context->hasprogress, 'A card the details are never asked for draws no row.');
+        $this->assertNull($context->done);
+        $this->assertStringNotContainsString(
+            'data-region="dim-card-progress"',
+            $output->render_from_template('theme_dimensions/category_card', $context)
+        );
+
+        set_config(boost_union::SETTING_PROGRESS, 'no', boost_union::COMPONENT);
+        $context = $enrolled->export_for_template($output);
+        $this->assertFalse($context->hasprogress, 'No row with Boost Union\'s setting off.');
+        $this->assertSame(get_string('category_state_completed', 'theme_dimensions'), $context->done['label'], 'The seal stays.');
+    }
+
+    /**
      * Each card's band is its category's colour, from the same cache as the covers, for every row with a category.
      */
     public function test_the_bands_are_the_categories_colours(): void {

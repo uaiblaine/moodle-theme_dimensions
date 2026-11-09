@@ -1300,6 +1300,7 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertSame(get_string('category_cta_landing', 'theme_dimensions'), $card->cta['label']);
         $this->assertSame(links::page((int) $card->id)->out(false), $card->cta['url']);
         $this->assertTrue($card->cta['primary']);
+        $this->assertFalse($card->hasdetails, 'The visitor\'s one button: no "More information", whose dialogue is never armed.');
         $this->assertTrue($cards[$this->ids['public']]->hasurl);
         $this->assertSame(links::page($this->ids['public'])->out(false), $cards[$this->ids['public']]->url);
         $this->assertFalse($cards[$this->ids['nomodel']]->hasurl, 'Nowhere a visitor may go.');

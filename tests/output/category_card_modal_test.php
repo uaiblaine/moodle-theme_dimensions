@@ -371,6 +371,69 @@ final class category_card_modal_test extends \advanced_testcase {
     }
 
     /**
+     * A visitor's card draws its one button, "Learn more" to the landing page, and no "More information".
+     *
+     * Contract section 3: the course dialogue is never armed for a visitor, so the link that opens it is not drawn,
+     * in the flat list and the panel alike (both draw this card). The control is the same course's card for a
+     * signed-in learner, which keeps both; a course with no landing page gives a visitor no button at all.
+     */
+    public function test_a_visitor_has_one_button_and_a_signed_in_viewer_keeps_the_dialogue(): void {
+        global $PAGE;
+
+        $learner = $this->seed();
+        $this->become($learner);
+        $render = fn(\stdClass $card): string => $PAGE->get_renderer('core')
+            ->render_from_template('theme_dimensions/category_card', $card);
+        $signed = $this->card($this->ids['open']);
+        $this->assertTrue($signed->hasdetails, 'The control: a signed-in viewer is offered the dialogue.');
+        $this->assertStringContainsString('data-region="dim-card-more"', $render($signed));
+
+        $this->become($learner);
+        $visitor = $this->card($this->ids['open'], null, true);
+        $this->assertFalse($visitor->hasdetails);
+        $this->assertTrue($visitor->hasurl, 'Precondition: the visitor\'s card links its landing page.');
+        $this->assertSame(get_string('category_cta_landing', self::COMPONENT), $visitor->cta['label']);
+        $this->assertSame(links::page($this->ids['open'])->out(false), $visitor->cta['url']);
+        $html = $render($visitor);
+        $this->assertStringNotContainsString('data-region="dim-card-more"', $html);
+        $this->assertSame(1, substr_count($html, 'class="btn '), 'One button on a visitor\'s card.');
+
+        $this->become($learner);
+        $plain = $this->card($this->ids['openplain'], null, true);
+        $this->assertFalse($plain->hascta);
+        $this->assertSame(0, substr_count($render($plain), 'class="btn '), 'No landing page, no button.');
+    }
+
+    /**
+     * Only an enrolled card carries the completed state's words, which the client applies once the course is completed.
+     *
+     * The seal's "Completed" and the main action's "Review" (D4, option A) ride on the article as data-done and
+     * data-review; a card the details service is never asked about (any other state, or a visitor's) carries neither.
+     */
+    public function test_only_an_enrolled_card_carries_its_completed_words(): void {
+        global $PAGE;
+
+        $learner = $this->seed();
+        $this->become($learner);
+        $cards = $this->cards();
+        $enrolled = $cards[$this->ids['enrolled']];
+        $this->assertSame(classifier::STATE_ENROLLED, $enrolled->state, 'Precondition: the learner is enrolled.');
+        $label = get_string('category_state_completed', self::COMPONENT);
+        $review = get_string('category_cta_review', self::COMPONENT);
+        $this->assertSame(['label' => $label, 'review' => $review], $enrolled->done);
+        $this->assertNull($cards[$this->ids['open']]->done, 'An open course the learner is not in.');
+        $this->assertNull($this->card($this->ids['enrolled'], null, true)->done, 'A visitor is enrolled in nothing.');
+
+        $html = $PAGE->get_renderer('core')->render_from_template('theme_dimensions/category_card', $enrolled);
+        $this->assertStringContainsString('data-done="' . s($label) . '" data-review="' . s($review) . '"', $html);
+        $this->assertMatchesRegularExpression(
+            '~<a class="btn btn-sm dim-card__cta btn-primary" [^>]*data-region="dim-card-cta"~',
+            $html,
+            'The call to action the client relabels "Review" carries its hook.'
+        );
+    }
+
+    /**
      * A window that opens later is a disabled button carrying the date, which the dialogue prints nowhere else.
      *
      * The date is the plugin's own, through the card's opening rule, in day/month/full year; the card itself

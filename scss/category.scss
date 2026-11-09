@@ -2497,16 +2497,67 @@ body.dim-category {
         gap: 8px;
     }
 
-    // The progress sentence the client paints into an enrolled card once its viewport batch has
-    // answered. It ships empty and hidden, so a page whose batch never lands - or never had one
-    // to send - is exactly the page the server drew, with no reserved gap and no reflow.
-    .dim-card__prog {
-        display: inline-flex;
+    // The progress row (contract section 3): a line of its own under the state pill, the bar and the percentage at its
+    // right in tabular figures. The logged-in shell fills it once the course's details have answered; it ships hidden,
+    // so a page whose batch never lands - or never had one to send, or a course with no completion tracking - is the
+    // page the server drew. A completed card never draws it: the seal replaces the bar (D4, option A).
+    // --dim-progress is the course's percentage, which the shell writes on the row; nothing is filled until it does.
+    .dim-card__progress {
+        --dim-progress: 0%;
+        display: flex;
         align-items: center;
-        color: var(--dim-card-ink-muted);
-        font-size: .8125rem;
-        font-weight: 600;
+        gap: 10px;
+    }
+
+    .dim-card__progress[hidden],
+    .dim-card--done .dim-card__progress {
+        display: none;
+    }
+
+    .dim-card__track {
+        flex: 1 1 auto;
+        height: var(--dim-card-track-height);
+        border-radius: var(--dim-card-track-height);
+        background: var(--dim-card-track);
+        overflow: hidden;
+    }
+
+    .dim-card__fill {
+        display: block;
+        width: var(--dim-progress);
+        height: 100%;
+        border-radius: inherit;
+        background: var(--dim-card-fill);
+    }
+
+    .dim-card__pct {
+        flex: none;
+        min-width: 4ch;
+        color: var(--dim-card-ink);
+        font-size: .78rem;
+        font-weight: 700;
         font-variant-numeric: tabular-nums;
+        text-align: right;
+    }
+
+    // The completed card (D4, option A): the state pill becomes the green seal and the cover gets a green base, drawn
+    // over the image and the film. The cover-less card's top edge and the thumbnail-less row's leading edge turn green
+    // in their own rules (Boost Union's images, below), and the seal and the base stay with the progress row off (D13).
+    .dim-badge--done {
+        background: var(--dim-card-done-bg);
+        color: var(--dim-card-done-ink);
+    }
+
+    .dim-card--done .dim-card__media::before {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 4;
+        height: var(--dim-card-done-edge);
+        background: var(--dim-card-done);
+        pointer-events: none;
     }
 
     // The state badge. One class per state, each reading the pair of tokens declared on the
@@ -2816,7 +2867,7 @@ body.dim-category {
     .dim-vitrine--previewing .dim-card--dim .dim-card__title a,
     .dim-vitrine--previewing .dim-card--dim .dim-card__over,
     .dim-vitrine--previewing .dim-card--dim .dim-card__meta,
-    .dim-vitrine--previewing .dim-card--dim .dim-card__prog,
+    .dim-vitrine--previewing .dim-card--dim .dim-card__pct,
     .dim-vitrine--previewing .dim-card--dim .dim-card__route,
     .dim-vitrine--previewing .dim-card--dim .dim-card__opens {
         color: var(--dim-recede-ink);
@@ -2947,7 +2998,8 @@ body.dim-category {
         padding-top: 0;
     }
 
-    // In list view the route and opening lines take a row of their own under the title and the cluster.
+    // In list view the progress, route and opening lines take a row of their own under the title and the cluster.
+    .dim-vitrine--list .dim-card__progress,
     .dim-vitrine--list .dim-card__route,
     .dim-vitrine--list .dim-card__opens {
         flex: 1 1 100%;
@@ -3008,7 +3060,6 @@ body.dim-category {
     .dim-areas__allempty b,
     .dim-areas__allemptyclear,
     .dim-areas__searchall,
-    .dim-panel__eyebrow,
     .dim-panel__title,
     .dim-panel__sortopt,
     .dim-panel__suggestion,
@@ -3991,14 +4042,6 @@ body.dim-category {
         min-width: 0;
     }
 
-    .dim-panel__eyebrow {
-        color: var(--dim-muted);
-        font-size: .72rem;
-        font-weight: 600;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-    }
-
     // No margin: the design's sheet asks for 2px above it and its own heading rule takes them away
     // again, and the page is matched to what the design RENDERS.
     .dim-panel__title {
@@ -4008,8 +4051,15 @@ body.dim-category {
         font-weight: 700;
         line-height: 1.2;
 
+        // The category's link reads as the card title does (contract section 5): no underline at rest, underlined on
+        // hover and on the keyboard's focus. The dark mode's weight is at the foot of this file.
         a {
             color: var(--dim-primary-ink);
+            text-decoration: none;
+        }
+
+        a:hover,
+        a:focus-visible {
             text-decoration: underline;
         }
 
@@ -6313,6 +6363,19 @@ body.dim-category {
 
     #region-main .dim-card--link:hover .dim-card__title a[href]:not(.btn),
     #region-main .dim-card--link .dim-card__title a[href]:not(.btn):focus-visible {
+        text-decoration: underline;
+    }
+}
+
+// The panel's heading links its category the same way, and core's dark underline reaches it as well: the weights are
+// (1,6,2) at rest and (1,7,2) on hover and focus, against core's (1,6,1) (category_scss_test).
+:root[data-bs-theme="dark"] body.dim-category {
+    #region-main .dim-panel__title a[href]:not(.btn) {
+        text-decoration: none;
+    }
+
+    #region-main .dim-panel__title a[href]:not(.btn):hover,
+    #region-main .dim-panel__title a[href]:not(.btn):focus-visible {
         text-decoration: underline;
     }
 }

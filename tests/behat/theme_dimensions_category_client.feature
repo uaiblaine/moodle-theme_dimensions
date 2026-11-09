@@ -276,6 +276,32 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     Then "Busca Terrestre" "dialogue" should not exist
     And the focused element is "//article[@data-region='dim-card'][contains(., 'Busca Terrestre')]//a[@data-region='dim-card-more']" "xpath_element"
 
+  @javascript
+  Scenario: An enrolled learner's card paints its progress row under the state pill once the card is on screen
+    # theme_dimensions_get_card_details answers for the enrolled cards in view: a course with completion tracking and
+    # one tracked activity reads 0 %, as the bar's value and the number at its right; a course without tracking draws
+    # no row, never "0 %" (moodle-dev/docs/course-card/CONTRACT.md, section 3).
+    Given the following "courses" exist:
+      | fullname        | shortname | category | customfield_dimensions_model | enablecompletion |
+      | Curso Rastreado | TRACK     | TESTCAT  | 1                            | 1                |
+    And the following "activities" exist:
+      | activity | name             | course | completion |
+      | page     | Pagina rastreada | TRACK  | 1          |
+    And the following "course enrolments" exist:
+      | user     | course | role    |
+      | student1 | TRACK  | student |
+      | student1 | RESG   | student |
+    And I log in as "student1"
+    # The details are asked only for the cards an IntersectionObserver reports on screen, after the page has loaded and
+    # outside core's pending-JS count. The test category's long description pushes the grid below the fold, so the
+    # hero is folded on a large window to bring every card on screen, and the wait spins until the answer is painted.
+    And I change window size to "large"
+    When I am on the "TESTCAT" "theme_dimensions > Category showcase" page
+    And I press "Collapse"
+    Then I wait until "//article[@data-region='dim-card'][contains(., 'Curso Rastreado')]//*[@data-region='dim-card-progress'][@role='progressbar'][@aria-valuenow='0'][not(@hidden)]" "xpath_element" exists
+    And I should see "0%" in the "//article[@data-region='dim-card'][contains(., 'Curso Rastreado')]//*[@data-region='dim-card-pct']" "xpath_element"
+    And "//article[@data-region='dim-card'][contains(., 'Resgate em Altura')]//*[@data-region='dim-card-progress'][@hidden]" "xpath_element" should exist
+
   @javascript @tool_courserating
   Scenario: A rated course shows its rating on the card and in the dialogue, whose reviews open the plugin's popup
     # tool_courserating is optional for this theme: the theme's CI installs it, and a site without it excludes this

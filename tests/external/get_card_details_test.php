@@ -194,6 +194,7 @@ final class get_card_details_test extends \advanced_testcase {
         $details = $this->details([(int) $tracked->id, (int) $plain->id]);
 
         $this->assertTrue($details[(int) $tracked->id]['hascompletion']);
+        $this->assertFalse($details[(int) $tracked->id]['completed']);
         $this->assertSame(0, $details[(int) $tracked->id]['progress']);
         $this->assertSame(
             get_string('category_progress', 'theme_dimensions', 0),
@@ -243,6 +244,105 @@ final class get_card_details_test extends \advanced_testcase {
         $this->assertTrue($hidden['hascompletion']);
         $this->assertNull($hidden['progress']);
         $this->assertArrayNotHasKey('progresslabel', $hidden);
+    }
+
+    /**
+     * Completed is the viewer's own course completion, in a course with completion on, whatever the progress setting.
+     *
+     * The controls: a tracked course the viewer is under way in (a row with no completion time), another user's
+     * completion of that course, and a
+     * course that turned completion off after the viewer completed it, whose row core no longer reads
+     * ({@see \completion_info::is_course_complete()}). With Boost Union's progress row off the completed course still
+     * says so (D13): the seal stays where the bar goes.
+     */
+    public function test_completed_is_the_viewers_course_completion_and_survives_the_progress_setting(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = 1;
+        set_config('theme', 'dimensions');
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $done = $generator->create_course(['category' => $category->id, 'enablecompletion' => 1]);
+        $going = $generator->create_course(['category' => $category->id, 'enablecompletion' => 1]);
+        $off = $generator->create_course(['category' => $category->id, 'enablecompletion' => 0]);
+        $viewer = $generator->create_user();
+        $other = $generator->create_user();
+        foreach ([$done, $going, $off] as $course) {
+            if ($course->enablecompletion) {
+                $generator->create_module('page', ['course' => $course->id, 'completion' => COMPLETION_TRACKING_MANUAL]);
+            }
+            $generator->enrol_user($viewer->id, $course->id);
+            $generator->enrol_user($other->id, $course->id);
+        }
+        (new \completion_completion(['course' => $done->id, 'userid' => $viewer->id]))->mark_complete();
+        (new \completion_completion(['course' => $going->id, 'userid' => $other->id]))->mark_complete();
+        // The row core's completion task keeps for a course under way: no completion time yet.
+        $DB->insert_record('course_completions', [
+            'userid' => $viewer->id,
+            'course' => $going->id,
+            'timeenrolled' => time(),
+            'timestarted' => time(),
+            'timecompleted' => null,
+            'reaggregate' => 0,
+        ]);
+        $DB->insert_record('course_completions', [
+            'userid' => $viewer->id,
+            'course' => $off->id,
+            'timeenrolled' => 0,
+            'timestarted' => 0,
+            'timecompleted' => time(),
+            'reaggregate' => 0,
+        ]);
+        $this->become($viewer);
+        $ids = [(int) $done->id, (int) $going->id, (int) $off->id];
+
+        set_config(boost_union::SETTING_PROGRESS, 'yes', boost_union::COMPONENT);
+        $shown = $this->details($ids);
+        $this->assertTrue($shown[(int) $done->id]['completed']);
+        $this->assertFalse($shown[(int) $going->id]['completed'], 'Another user\'s completion is not the viewer\'s.');
+        $this->assertFalse($shown[(int) $off->id]['completed'], 'A course with completion off completes nobody.');
+        $this->assertSame('0%', $shown[(int) $going->id]['progresspct']);
+
+        set_config(boost_union::SETTING_PROGRESS, 'no', boost_union::COMPONENT);
+        $hidden = $this->details($ids);
+        $this->assertTrue($hidden[(int) $done->id]['completed'], 'The seal stays with the progress row off.');
+        $this->assertNull($hidden[(int) $done->id]['progress']);
+        $this->assertArrayNotHasKey('progresspct', $hidden[(int) $done->id]);
+        $this->assertFalse($hidden[(int) $going->id]['completed']);
+    }
+
+    /**
+     * The viewer's completions are one statement for a whole batch, and none for a batch with completion on nowhere.
+     *
+     * The slope test below bounds what each course costs; this one pins the read the completed seal added, which costs
+     * the same for twenty-four courses as for one.
+     */
+    public function test_the_completions_of_a_batch_are_one_statement(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablecompletion = 1;
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $viewer = $generator->create_user();
+        $ids = [];
+        for ($i = 0; $i < enrichment::MAX_COURSES; $i++) {
+            $course = $generator->create_course(['category' => $category->id, 'enablecompletion' => 1]);
+            $generator->enrol_user($viewer->id, $course->id);
+            $ids[] = (int) $course->id;
+        }
+        (new \completion_completion(['course' => $ids[3], 'userid' => $viewer->id]))->mark_complete();
+
+        $done = [];
+        $this->assertSame(1, $this->reads(function () use ($ids, $viewer, &$done) {
+            $done = enrichment::completed($ids, (int) $viewer->id);
+        }));
+        $this->assertSame([$ids[3] => true], $done, 'The control: the statement found the one completion.');
+        $this->assertSame(1, $this->reads(function () use ($ids, $viewer) {
+            enrichment::completed(array_slice($ids, 0, 1), (int) $viewer->id);
+        }));
+        $this->assertSame(0, $this->reads(function () use ($viewer) {
+            $this->assertSame([], enrichment::completed([], (int) $viewer->id));
+        }));
     }
 
     /**

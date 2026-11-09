@@ -361,6 +361,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $rating = $this->rating === null ? null : dialogue::rating_line($this->rating->avg, $this->rating->count);
         $showcover = boost_union::show_images(boost_union::VIEW_CARD);
         $showthumb = boost_union::show_images(boost_union::VIEW_LIST);
+        $showprogress = boost_union::show_progress();
         $band = $this->band === null ? null : branding::hex($this->band);
 
         return (object) [
@@ -378,7 +379,9 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'showcover' => $showcover,
             'showthumb' => $showthumb,
             'showmedia' => $showcover || $showthumb,
-            'showprogress' => boost_union::show_progress(),
+            'showprogress' => $showprogress,
+            // The progress row: on an enrolled card alone, the only card the logged-in shell asks the details of.
+            'hasprogress' => $enrolled && $showprogress,
             // The category's colour, a #rrggbb after branding::hex() or nothing: the edge of a card or row without its image.
             'band' => $band ?? '',
             'hasband' => $band !== null,
@@ -421,7 +424,17 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'starlabel' => get_string($favourite ? 'category_star_remove' : 'category_star_add', self::COMPONENT, $fullname),
             'starlabeladd' => get_string('category_star_add', self::COMPONENT, $fullname),
             'starlabelremove' => get_string('category_star_remove', self::COMPONENT, $fullname),
+            /* "More information" opens the course dialogue, which is armed for a signed-in viewer only: a visitor's card
+               draws its one button, "Learn more", and nothing beside it (contract section 3). */
+            'hasdetails' => !$this->anonymous && $url !== null,
             'detailslabel' => self::text('category_details'),
+            /* What an enrolled card becomes once the details service says the viewer completed the course (D4, option A):
+               the seal's words and the main action's. The client applies them with dim-card--done; no other card
+               is asked about its completion, so no other card carries them. */
+            'done' => $enrolled ? [
+                'label' => self::text('category_state_completed'),
+                'review' => self::text('category_cta_review'),
+            ] : null,
             'modal' => $this->modal($state, $url, $held, $openslabel, $isevent, $cta),
         ];
     }

@@ -708,6 +708,8 @@ Feature: The category showcase lists what a person may discover, and its filters
     Then I should see "Curso Público" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should see "Public access" in the "[data-region='dim-vitrine-grid']" "css_element"
     And I should see "Learn more" in the "[data-region='dim-vitrine-grid']" "css_element"
+    # The visitor's one button: the course dialogue is never armed for a visitor, so "More information" is not drawn.
+    And "[data-region='dim-vitrine-grid'] [data-region='dim-card-more']" "css_element" should not exist
     # The listed course of the same category is what a visitor may not be told about.
     And I should not see "Curso Interno"
     And "Username" "field" should not exist
