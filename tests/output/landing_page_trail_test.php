@@ -626,4 +626,24 @@ final class landing_page_trail_test extends \advanced_testcase {
             $this->assertSame($linked, $inanswer, "{$name}: the calendar agrees.");
         }
     }
+
+    /**
+     * A trail's related band reaches a course through a step's competencies and never lists the trail's own courses.
+     */
+    public function test_the_related_band_reads_the_trail_and_leaves_its_steps_out(): void {
+        set_config('enabled', 1, 'core_competency');
+        $generator = self::getDataGenerator()->get_plugin_generator('core_competency');
+        $framework = $generator->create_framework(['idnumber' => 'FW1']);
+        $competencyid = (int) $generator->create_competency(['competencyframeworkid' => $framework->get('id')])->get('id');
+        $step = $this->course(['fullname' => 'Etapa']);
+        $related = $this->course(['fullname' => 'Relacionado']);
+        foreach ([$step, $related] as $course) {
+            $generator->create_course_competency(['courseid' => $course->id, 'competencyid' => $competencyid]);
+        }
+        $trail = $this->trail([$step]);
+
+        $context = $this->export($trail, new resolution(resolution::STATE_CLOSED), false);
+
+        $this->assertSame([(int) $related->id], array_column($context->related['cards'], 'courseid'));
+    }
 }

@@ -15,7 +15,7 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   completed trades the bar for a green "Completed" seal, a green base on its cover and "Review" as its main action,
   and keeps them with the progress row off. `theme_dimensions_get_card_details` answers `completed` (the reader's
   course completion, one statement per batch) and `progresspct`; the rows services' card carries `hasdetails`,
-  `hasprogress` and `done`. Seventeen mutation gates (2026100596).
+  `hasprogress` and `done`. Seventeen mutation gates (2026100597).
 
 - **Course cards, stage C2: the card's look.** The theme declares the course card's 30 family tokens
   (`--dimensions-card-*`, light and dark, listed in `docs/tokens.md`), and the showcase's card paints through its own
@@ -27,7 +27,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   the kind, the crests and the star in a row at the top of the card. The grouped panel draws the flat list's card
   instead of a smaller restyle of it. In dark mode the title keeps no underline at rest, against core's dark-mode
   underline of the main region's links, and the hover underlines it as in light mode. The rows services' card carries
-  three new keys (`band`, `hasband`, `hastop`) (2026100595).
+  three new keys (`band`, `hasband`, `hastop`) (2026100596).
+
+- **Related contents, stage R1: the landing page's band** (docs/related/PLAN.md). A landing page ends with the
+  courses related to its course through their competencies, in the order and for the readers R0's reader decides,
+  and draws nothing, heading included, when there is none. A trail's page reads the trail's and its courses'
+  competencies and never lists its own courses. A new course field, *Related courses* (`dimensions_related`:
+  Automatic, Off; empty reads as Automatic), turns the band off per course; the setting
+  `theme_dimensions/relatedcount` (4 by default, 1 to 12) caps it. The upgrade creates the field (2026100595).
+  `docs/related/demo/seed.php` seeds a demonstration category on a development stack.
 
 - **The landing page banner can run full width** (setting `landingheroformat` on the *Course landing page* tab). In the
   content column, the default, the banner stays the card it was. Full width, it is drawn as the page header, from edge

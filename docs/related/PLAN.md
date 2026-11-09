@@ -1,7 +1,8 @@
 # Related contents: plan (2026-11-08)
 
 Status: **decisions D1-D11 approved by the owner on 2026-11-08; R0 (the finder, its tests and its 22 mutation gates)
-built on branch `related-r0`, not merged.**
+merged as uaiblaine/moodle-theme_dimensions#129. R1 in progress on branch `related-r1`: the field, the setting, the band's
+decision (`local\related\band`) and its place on the page are built; the card waits for the course card stages C2-C3.**
 
 Related contents are stage T4 of the trail plan ([../trail/PLAN.md](../trail/PLAN.md), Q7: "not in the first stage").
 They are courses related to a parent course through the competencies linked to both, shown at the end of a landing
@@ -63,8 +64,10 @@ No result: the whole block is absent, its heading included.
 ## 3. Where it appears
 
 - **Landing page**: a full-width band after the textarea sections, where the sticky card ends. A course field
-  `dimensions_related` (select: Automatic, Manual, Off; Automatic by default) and, for Manual, the chosen competencies
-  (D3). A site setting for the number of cards (4 by default).
+  `dimensions_related` (select: Automatic, Off; empty reads as Automatic, the field's default staying empty as every
+  select of the theme's) and, for Manual, the chosen competencies (D3): R2 appends Manual as the select's third line
+  with an upgrade step, since a select stores its line's position. A site setting for the number of cards
+  (`theme_dimensions/relatedcount`, 4 by default, 1 to 12).
 - **Shortcode** `[relatedcourses]` (filter_shortcodes allows letters and digits only; on a name conflict only one
   plugin wins):
 

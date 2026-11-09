@@ -44,5 +44,10 @@ function xmldb_theme_dimensions_upgrade($oldversion) {
         \theme_dimensions\local\flavourchoice::ensure_setting();
         upgrade_plugin_savepoint(true, 2026100592, 'theme', 'dimensions');
     }
+    if ($oldversion < 2026100595) {
+        // The related courses select, the last field of the landing page's definitions.
+        \theme_dimensions\local\landingfields::ensure_fields();
+        upgrade_plugin_savepoint(true, 2026100595, 'theme', 'dimensions');
+    }
     return true;
 }

@@ -161,6 +161,14 @@ study format to start with; a course that already exists never changes when they
 banner at the top of every landing page is drawn (`theme_dimensions/landingheroformat`): as a card in the content
 column, the default, or full width, from edge to edge under the navigation bar as the category pages draw theirs.
 
+A landing page ends with the courses related to it: courses linked to the same Moodle competencies (for a trail,
+to the trail's and its courses'), the ones with exactly the same competencies first, then a course whose completion
+makes the learner proficient in a shared competency, then the most overlap. Each reader sees only the courses they
+may see: a visitor the public ones, an account what the category showcase lists to it, never a course it is enrolled
+in or has completed, never a hidden course, and never a frozen one while context freezing is on. A course turns the
+band off with its *Related courses* field; `theme_dimensions/relatedcount` (4 by default, up to 12) caps it. Nothing
+is shown while competencies are disabled on the site, and nothing is stored or cached.
+
 
 Focus mode
 ----------
@@ -437,7 +445,7 @@ Settings
 | Login page | The login page switch, the institutional panel's copy and the guest home page. |
 | Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
-| Course landing page | The banner's format (`theme_dimensions/landingheroformat`: in the content column, the default, or full width); the page model, modality and study format a new course starts with; existing courses never change. |
+| Course landing page | The banner's format (`theme_dimensions/landingheroformat`: in the content column, the default, or full width); the page model, modality and study format a new course starts with; existing courses never change. `theme_dimensions/relatedcount`: how many related courses a landing page shows at most (4 by default). |
 | Category showcase | The showcase switch, the public pages and their live listing, the page size, the grouping by state, the tree depth, the filter groups, the cover video size limit and the site-wide hero image. |
 | Calendar | `theme_dimensions/calendarcoreview` (on by default: Moodle's calendar and its iCal feed lead to the theme's calendar), `theme_dimensions/calendarblocks` (on by default: the calendar blocks drawn with the theme's calendar), `theme_dimensions/calendarpublic` (off by default: the public calendar for visitors), and one colour per event type under *Event type colours* (`theme_dimensions/calendarcoloursite`, `calendarcolourcategory`, `calendarcolourcourse`, `calendarcolourgroup`, `calendarcolouruser`, `calendarcolouractivity`, `calendarcolourother`, `calendarcolouropen` and `calendarcolouroverdue`; each defaults to the theme's own colour, accepts a hexadecimal colour only, and a fill and a text colour readable in the light and the dark mode are derived from it). |
 

@@ -134,6 +134,7 @@ final class flavourchoice_setting_test extends \advanced_testcase {
         xmldb_theme_dimensions_upgrade(2026100591);
 
         $this->assertSame('', get_config('theme_dimensions', flavourchoice::SETTING));
-        $this->assertSame('2026100592', get_config('theme_dimensions', 'version'));
+        // The step's savepoint, or a later step's: the upgrade runs every step after it.
+        $this->assertGreaterThanOrEqual(2026100592, (int) get_config('theme_dimensions', 'version'));
     }
 }
