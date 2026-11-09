@@ -74,8 +74,8 @@ final class category_scss_test extends \basic_testcase {
      */
     private const DARK_PREFIX = ':root[data-bs-theme="dark"] ';
 
-    /** @var string The card's transition while motion is welcome: its shadow, and the surface a preview recedes. */
-    private const PREVIEW_EASE = 'box-shadow var(--dim-motion) var(--dim-ease), background-color var(--dim-motion) var(--dim-ease)';
+    /** @var string The second half of the card's transition while motion is welcome: the surface a preview recedes. */
+    private const PREVIEW_EASE = 'background-color var(--dim-card-transition) var(--dim-ease)';
 
     /**
      * Absolute path to the theme root.
@@ -422,17 +422,24 @@ final class category_scss_test extends \basic_testcase {
             'The old percentage basis is gone: with any grow factor a lone card fills its row.'
         );
         $this->assertMatchesRegularExpression(
-            '~--dim-card-media:\s*150px;~',
+            '~--dim-card-cover-height:\s*var\(--dimensions-card-cover-height, 150px\);~',
             $scss,
-            'The media band is 150px, which is what makes room for an 88px crest beside the tiles.'
+            'The media band is the contract\'s cover height, 150px where the family block is absent.'
         );
+        $card = $this->rule_body($scss, '.dim-card');
         $this->assertMatchesRegularExpression(
-            '~\.dim-card__media\s*\{[^}]*height:\s*var\(--dim-card-media\);~',
+            '~--dim-card-crest-w:\s*56px;\s*--dim-card-crest-h:\s*62px;~',
+            $card,
+            'D2: the crests are 56 x 62 on a card.'
+        );
+        $this->assertSame(1, substr_count($scss, '--dim-card-crest-w: 56px;'), 'At every width: no query steps them.');
+        $this->assertMatchesRegularExpression(
+            '~\.dim-card__media\s*\{[^}]*height:\s*var\(--dim-card-cover-height\);~',
             $scss,
             'And the band reads that property rather than repeating the number.'
         );
         $this->assertMatchesRegularExpression(
-            '~\.dim-card__crests\s*\{[^}]*top:\s*calc\(var\(--dim-card-media\) - var\(--dim-card-crest-h\) - 8px\);~',
+            '~\.dim-card__crests\s*\{[^}]*top:\s*calc\(var\(--dim-card-cover-height\) - var\(--dim-card-crest-h\) - 8px\);~',
             $scss,
             'The crests hang off the band\'s own height: they are positioned against the CARD, '
                 . 'because they are written in the badge row so that the list view can move them.'
@@ -1875,8 +1882,10 @@ final class category_scss_test extends \basic_testcase {
      *
      * Contract section 6, drawn as block_compass's calendar strip draws it: the ring is the accent, 2px and
      * inside the card's edge (a rail that scrolls would clip an outside one), a pixel narrower than the 3px focus
-     * ring; a dim card remaps its surface, its inks, its line, every state pill's fill WITH its ink, the call to
-     * action and the film over its image, and nothing of it is opacity or a filter, which would fade the focus
+     * ring; a dim card paints its surface, its inks and its line with the receding values (the card's own colours
+     * are contract tokens, which only the family token feeds, so the receding card sets what they paint), and
+     * remaps every state pill's fill WITH its ink, the call to action, "More information" and the film over its
+     * image, and nothing of it is opacity or a filter, which would fade the focus
      * ring of whatever is inside it. The change eases only where motion is welcome. Each of the tokens has its
      * dark value in a block at the foot of the file, where the badge test reads the dark half.
      *
@@ -1892,11 +1901,7 @@ final class category_scss_test extends \basic_testcase {
 
         $dim = $this->rule_body($scss, '.dim-vitrine--previewing .dim-card--dim');
         $remapped = [
-            '--dim-surface' => '--dim-recede-surface',
-            '--dim-ink' => '--dim-recede-ink',
-            '--dim-muted' => '--dim-recede-ink',
             '--dim-primary-ink' => '--dim-recede-ink',
-            '--dim-line' => '--dim-recede-line',
             '--dim-star-on' => '--dim-recede-ink',
             '--dim-card-film' => '--dim-recede-film',
         ];
@@ -1928,6 +1933,29 @@ final class category_scss_test extends \basic_testcase {
             $dim,
             'The call to action is re-pointed through its own variables, fill with ink.'
         );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-card__summary \{\s*--bs-btn-color:\s*var\(--dim-recede-ink\);\s*'
+                . '--bs-btn-border-color:\s*var\(--dim-recede-line\);~',
+            $dim,
+            '"More information" recedes through its own variables too.'
+        );
+        // The second rule of the same selector, flat: the first is the token remap rule_body() returns.
+        $this->assertSame(
+            1,
+            preg_match('~\n    \.dim-vitrine--previewing \.dim-card--dim \{([^{}]*background:[^{}]*)\}~', $scss, $ground),
+            'The receding card paints what its contract tokens would.'
+        );
+        $this->assertMatchesRegularExpression('~border-color:\s*var\(--dim-recede-line\);~', $ground[1]);
+        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-recede-surface\);~', $ground[1]);
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-recede-ink\);~', $ground[1]);
+        $this->assertSame(0, preg_match_all('~(?<![\w-])(?:opacity|filter)\s*:~', $ground[1]), 'No opacity, no filter.');
+        foreach (['title a', 'over', 'meta', 'prog', 'route', 'opens'] as $ink) {
+            $this->assertStringContainsString(
+                '.dim-vitrine--previewing .dim-card--dim .dim-card__' . $ink,
+                $scss,
+                "The {$ink} line recedes with the card."
+            );
+        }
 
         $this->assertMatchesRegularExpression('~--dim-card-film:\s*transparent;~', $this->rule_body($scss, '.dim-card'));
         $film = $this->rule_body($scss, '.dim-vitrine--previewing .dim-card__media::after');
@@ -1949,7 +1977,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~^\s*\.dim-card \{\s*transition:~', $motion);
         $this->assertSame(1, substr_count($scss, self::PREVIEW_EASE), 'And nowhere outside it.');
         $this->assertMatchesRegularExpression(
-            '~transition:\s*box-shadow var\(--dim-motion\) var\(--dim-ease\);~',
+            '~transition:\s*box-shadow var\(--dim-card-transition\) var\(--dim-ease\);~',
             $this->rule_body($scss, '.dim-card'),
             'The card\'s own rule eases its shadow alone, so under reduced motion the change is instant.'
         );
@@ -1983,6 +2011,60 @@ final class category_scss_test extends \basic_testcase {
         foreach (['--dim-preview-ring', '--dim-recede-surface', '--dim-recede-ink', '--dim-recede-film'] as $token) {
             $this->assertMatchesRegularExpression('~' . preg_quote($token, '~') . ':~', $last[1], "{$token} has its dark value.");
         }
+    }
+
+    /**
+     * The card is one target: the title's link stretches over it, and every control of the card stays over the link.
+     *
+     * Contract section 4 (D9). The stretched link is armed by dim-card--link alone, which the template writes on a
+     * card the reader may open; the call to action, "More information" and the star are positioned over its z-index,
+     * the list view's star included (in the flow there, and still positioned, or the link would swallow its press).
+     * Without its image (section 8) the card view drops the band and keeps a top edge in the category's colour, and
+     * the list view drops the thumbnail and keeps a leading edge.
+     */
+    public function test_the_card_is_one_target_with_its_controls_over_it(): void {
+        $scss = $this->stylesheet('category.scss');
+        $after = $this->rule_body($scss, '.dim-card--link .dim-card__title a::after');
+        $this->assertMatchesRegularExpression('~position:\s*absolute;\s*inset:\s*0;\s*z-index:\s*1;~', $after);
+        $this->assertMatchesRegularExpression(
+            '~\n    \.dim-card__cta,\s*\.dim-card__summary,\s*\.dim-card__star \{\s*position:\s*relative;\s*z-index:\s*2;\s*\}~',
+            $scss,
+            'Every control of the card is lifted over the link.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~position:\s*relative;\s*inset:\s*auto;~',
+            $this->rule_body($scss, '.dim-vitrine--list .dim-card__star'),
+            'The list view\'s star stays positioned, so its z-index holds.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~outline:\s*var\(--dim-card-focus-width\) solid var\(--dim-card-focus-ring\);~',
+            $this->rule_body($scss, '.dim-card--link .dim-card__title a:focus-visible::after'),
+            'The keyboard ring is the card\'s, from the focus tokens.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~display:\s*none;~',
+            $this->rule_body($scss, '.dim-vitrine--cards .dim-card--nocover .dim-card__media'),
+            'A card without its cover draws no band.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~border-top:\s*var\(--dim-card-done-edge\) solid var\(--dim-card-band, var\(--dim-card-cover-fallback\)\);~',
+            $this->rule_body($scss, '.dim-vitrine--cards .dim-card--nocover')
+        );
+        $this->assertMatchesRegularExpression(
+            '~display:\s*none;~',
+            $this->rule_body($scss, '.dim-vitrine--list .dim-card--nothumb .dim-card__media'),
+            'A row without its thumbnail draws no cell.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~border-inline-start:\s*var\(--dim-card-done-edge\) solid var\(--dim-card-band, var\(--dim-card-cover-fallback\)\);~',
+            $this->rule_body($scss, '.dim-vitrine--list .dim-card--nothumb')
+        );
+        $this->assertMatchesRegularExpression('~display:\s*none;~', $this->rule_body($scss, '.dim-card__top'));
+        $this->assertMatchesRegularExpression(
+            '~display:\s*flex;~',
+            $this->rule_body($scss, '.dim-vitrine--cards .dim-card--nocover .dim-card__top'),
+            'The top row shows in the card view of a card without its cover only.'
+        );
     }
 
     /**
@@ -2194,5 +2276,65 @@ final class category_scss_test extends \basic_testcase {
         $this->assertStringContainsString('@include btn-close-white();', $button[1]);
         $this->assertStringContainsString('filter: var(--bs-btn-close-filter);', $button[1]);
         $this->assertStringNotContainsString('btn-close-white-filter', $scss);
+    }
+
+    /**
+     * A selector's specificity as a browser counts it: ids, classes with attributes and pseudo-classes, elements.
+     *
+     * A :not() counts as its argument; pseudo-elements are not used in the selectors this reads.
+     *
+     * @param string $selector One compound selector list item.
+     * @return array The three counts, ids first.
+     */
+    private static function specificity(string $selector): array {
+        $total = [0, 0, 0];
+        while (preg_match('~:not\(([^()]*)\)~', $selector, $not)) {
+            $inner = self::specificity($not[1]);
+            foreach ($inner as $i => $count) {
+                $total[$i] += $count;
+            }
+            $selector = str_replace($not[0], ' ', $selector);
+        }
+        $selector = (string) preg_replace('~\[[^\]]*\]~', ' .attr ', $selector);
+        $total[0] += preg_match_all('~#[\w-]+~', $selector);
+        $total[1] += preg_match_all('~\.[\w-]+|:(?!:)[\w-]+~', $selector);
+        $total[2] += preg_match_all('/(?:^|[\s>+~])([a-z][\w-]*)/i', $selector);
+        return $total;
+    }
+
+    /**
+     * A card's title keeps no underline at rest in dark mode, and the hover and the keyboard's focus underline it: the
+     * two rules outweigh core's dark-mode underline of #region-main's links, read from core's stylesheet.
+     *
+     * @return void
+     */
+    public function test_the_card_title_outranks_cores_dark_underline(): void {
+        global $CFG;
+        $core = (string) file_get_contents($CFG->dirroot . '/theme/boost/scss/moodle/dark.scss');
+        $link = 'a:not(.btn):not(.nav-link):not(.dropdown-item):not(.list-group-item):not(.page-link)';
+        $this->assertStringContainsString(
+            $link . " {\n            text-decoration: underline;",
+            $core,
+            "Precondition: core's rule, as read on 5.3."
+        );
+        $cores = self::specificity('[data-bs-theme="dark"] #region-main ' . $link);
+        $this->assertSame([1, 6, 1], $cores, 'The helper reads core\'s weight as a browser does.');
+
+        $scss = $this->stylesheet('category.scss');
+        $dark = ':root[data-bs-theme="dark"] body.dim-category';
+        $rest = '#region-main .dim-card .dim-card__title a[href]:not(.btn)';
+        $hover = '#region-main .dim-card--link:hover .dim-card__title a[href]:not(.btn)';
+        $focus = '#region-main .dim-card--link .dim-card__title a[href]:not(.btn):focus-visible';
+        $this->assertMatchesRegularExpression(
+            '~^' . preg_quote($dark, '~') . ' \{\s*' . preg_quote($rest, '~') . ' \{\s*text-decoration: none;\s*\}\s*'
+                . preg_quote($hover, '~') . ',\s*' . preg_quote($focus, '~') . ' \{\s*text-decoration: underline;\s*\}~m',
+            $scss
+        );
+        $atrest = self::specificity($dark . ' ' . $rest);
+        $this->assertGreaterThan(0, $atrest <=> $cores, 'The title at rest must outweigh core: ' . implode(',', $atrest));
+        foreach ([$hover, $focus] as $state) {
+            $weight = self::specificity($dark . ' ' . $state);
+            $this->assertGreaterThan(0, $weight <=> $atrest, 'Hover and focus must outweigh the rest: ' . implode(',', $weight));
+        }
     }
 }

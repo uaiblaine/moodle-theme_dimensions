@@ -202,13 +202,15 @@ $dim-ds-red-800: #51140d;
 }
 
 /* ---- Family tokens: the contract with local_dimensions and block_dimensions ---- */
-/* The family tokens, the public half of the contract: 54 names under --dimensions-, the 33 both plugins read and the
-   21 local_dimensions alone reads. A plugin reads each as var(--dimensions-x, <its own chain>), so
+/* The family tokens, the public half of the contract: 84 names under --dimensions-, the 33 both plugins read, the
+   21 local_dimensions alone reads and the course card's 30, which every plugin drawing a course card reads
+   (moodle-dev/docs/course-card/CONTRACT.md, section 7). A plugin reads each as var(--dimensions-x, <its own chain>), so
    it looks the same without this theme and takes the theme's look under it. Every value is a
    Bootstrap property (so a flavour's brand colour and the page's colour mode move it), a design
-   system token of this file, or another family token; the only literals are the dark pills' own
+   system token of this file, or another family token; the only colour literals are the dark pills' own
    colours, which the showcase's badges already measured (scss/category.scss, at its foot) and the
-   palette has no token for. tests/local/family_tokens_test.php holds the list, the roots and the
+   palette has no token for. A card token may also be a length, a duration, an opacity, or a shadow or a
+   gradient drawn from a token's channels. tests/local/family_tokens_test.php holds the list, the roots and the
    values.
 
    Three roots, because a token derived from a --bs-* property is computed where it is declared:
@@ -283,6 +285,39 @@ body,
     --dimensions-state-neutral-bg: var(--dim-ds-gray-200);
     --dimensions-state-neutral-ink: var(--dim-ds-gray-700);
     --dimensions-state-neutral-edge: var(--dimensions-state-neutral-bg);
+    /* The course card, every plugin's (CONTRACT.md section 7, the column "Under theme_dimensions"): the family's ground
+       and inks, Bootstrap's line, link hover, tertiary ground, track, brand and success triple, the design system's
+       radius, ring width, elevations (the navy tint of the theme's own card shadow) and motion. */
+    --dimensions-card-radius: var(--dim-ds-radius-lg);
+    --dimensions-card-border-width: var(--bs-border-width);
+    --dimensions-card-border: var(--bs-border-color);
+    --dimensions-card-surface: var(--dimensions-surface);
+    --dimensions-card-ink: var(--dimensions-ink);
+    --dimensions-card-ink-muted: var(--dimensions-ink-muted);
+    --dimensions-card-title-hover: var(--dimensions-accent-hover);
+    --dimensions-card-cover-height: 150px;
+    --dimensions-card-cover-fallback: var(--bs-primary);
+    --dimensions-card-cover-overlay: linear-gradient(135deg, rgba(var(--bs-white-rgb), .16), rgba(var(--bs-black-rgb), .34));
+    --dimensions-card-chip-bg: rgba(var(--bs-white-rgb), .92);
+    --dimensions-card-chip-ink: var(--dim-ds-gray-900);
+    --dimensions-card-extra-bg: var(--bs-tertiary-bg);
+    --dimensions-card-extra-icon: var(--bs-primary-text-emphasis);
+    --dimensions-card-track: var(--bs-secondary-bg);
+    --dimensions-card-fill: var(--bs-primary);
+    --dimensions-card-track-height: 6px;
+    --dimensions-card-done: var(--bs-success);
+    --dimensions-card-done-bg: var(--bs-success-bg-subtle);
+    --dimensions-card-done-ink: var(--bs-success-text-emphasis);
+    --dimensions-card-done-edge: 4px;
+    --dimensions-card-shadow: var(--dim-ds-shadow-sm);
+    --dimensions-card-shadow-hover: var(--dim-ds-shadow-md);
+    --dimensions-card-focus-ring: var(--dimensions-focus-ring);
+    --dimensions-card-focus-width: var(--dim-ds-focus-ring-width);
+    --dimensions-card-locked-opacity: .62;
+    --dimensions-card-close-bg: rgba(var(--bs-black-rgb), .5);
+    --dimensions-card-close-bg-hover: rgba(var(--bs-black-rgb), .7);
+    --dimensions-card-close-edge: rgba(var(--bs-white-rgb), .4);
+    --dimensions-card-transition: var(--dim-ds-motion-fast);
 }
 
 /* The dark half. Moodle 5.3's one colour-mode signal is data-bs-theme on the html element, so the
@@ -350,6 +385,40 @@ body,
     --dimensions-state-neutral-bg: #262b3b;
     --dimensions-state-neutral-ink: #b4bccd;
     --dimensions-state-neutral-edge: var(--dimensions-state-neutral-bg);
+    /* The course card on the dark page. Four differ from the light chain: the brand's stop for the extra slot's icon
+       and the bar's fill (Bootstrap's dark primary reads under 3:1 on the dark track), the success emphasis for the
+       completed base (a graphic on a dark ground), and black shadows, which a navy tint cannot draw on a dark page.
+       The chips on a cover stay light in both modes: they sit on the cover, never on the page. */
+    --dimensions-card-radius: var(--dim-ds-radius-lg);
+    --dimensions-card-border-width: var(--bs-border-width);
+    --dimensions-card-border: var(--bs-border-color);
+    --dimensions-card-surface: var(--dimensions-surface);
+    --dimensions-card-ink: var(--dimensions-ink);
+    --dimensions-card-ink-muted: var(--dimensions-ink-muted);
+    --dimensions-card-title-hover: var(--dimensions-accent-hover);
+    --dimensions-card-cover-height: 150px;
+    --dimensions-card-cover-fallback: var(--bs-primary);
+    --dimensions-card-cover-overlay: linear-gradient(135deg, rgba(var(--bs-white-rgb), .16), rgba(var(--bs-black-rgb), .34));
+    --dimensions-card-chip-bg: rgba(var(--bs-white-rgb), .92);
+    --dimensions-card-chip-ink: var(--dim-ds-gray-900);
+    --dimensions-card-extra-bg: var(--bs-tertiary-bg);
+    --dimensions-card-extra-icon: var(--dimensions-brand-ink);
+    --dimensions-card-track: var(--bs-secondary-bg);
+    --dimensions-card-fill: var(--dimensions-brand-ink);
+    --dimensions-card-track-height: 6px;
+    --dimensions-card-done: var(--bs-success-text-emphasis);
+    --dimensions-card-done-bg: var(--bs-success-bg-subtle);
+    --dimensions-card-done-ink: var(--bs-success-text-emphasis);
+    --dimensions-card-done-edge: 4px;
+    --dimensions-card-shadow: 0 1px 2px rgba(var(--bs-black-rgb), .5);
+    --dimensions-card-shadow-hover: 0 6px 16px rgba(var(--bs-black-rgb), .6);
+    --dimensions-card-focus-ring: var(--dimensions-focus-ring);
+    --dimensions-card-focus-width: var(--dim-ds-focus-ring-width);
+    --dimensions-card-locked-opacity: .62;
+    --dimensions-card-close-bg: rgba(var(--bs-black-rgb), .5);
+    --dimensions-card-close-bg-hover: rgba(var(--bs-black-rgb), .7);
+    --dimensions-card-close-edge: rgba(var(--bs-white-rgb), .4);
+    --dimensions-card-transition: var(--dim-ds-motion-fast);
 }
 
 /* A dark page needs a heavier veil than a light one for the same separation. */

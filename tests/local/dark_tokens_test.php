@@ -298,7 +298,7 @@ final class dark_tokens_test extends \basic_testcase {
      *
      * A primitive is the same in both modes, so an ink read from one stays navy on the dark page; the ink a ground of
      * the page needs is a semantic alias, which turns with it. The exceptions sit on a plate they state themselves,
-     * the same in both modes: the login tag on the green accent, and the two kind tags on their white plate. The
+     * the same in both modes: the login tag on the green accent, and the poster's kind tag on its white plate. The
      * control is that each exception is still found where it is named.
      *
      * @return void
@@ -307,7 +307,6 @@ final class dark_tokens_test extends \basic_testcase {
         $allowed = [
             'login.scss .dimensions-login-tag',
             'category.scss .dim-poster__kind',
-            'category.scss .dim-panel__rail .dim-card__kind',
         ];
         $found = [];
         foreach (glob(dirname(__DIR__, 2) . '/scss/*.scss') as $path) {

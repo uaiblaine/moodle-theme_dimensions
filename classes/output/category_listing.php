@@ -25,6 +25,7 @@
 namespace theme_dimensions\output;
 
 use core_course_category;
+use theme_dimensions\local\card\boost_union;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\cards;
 use theme_dimensions\local\category\criteria;
@@ -373,6 +374,11 @@ class category_listing implements \core\output\named_templatable, \core\output\r
         /* tool_courserating's aggregate over the page's ids, on both shells: a rating is shown to whoever may see the
            course listed, as the plugin decides. Nothing is read without the plugin or where it rates no course. */
         $ratings = cards::ratings($ids);
+        /* The category's colour edges a card or a row Boost Union draws without its image (contract section 8), and is
+           read only then: with both images shown nothing paints it. */
+        $bands = boost_union::show_images(boost_union::VIEW_CARD) && boost_union::show_images(boost_union::VIEW_LIST)
+            ? []
+            : cards::bands($rows);
 
         $showstar = !$result->anonymous && isloggedin() && !isguestuser();
         // The filter fields, for the facts the filter line's preview reads off each card: read once, cached by core.
@@ -400,7 +406,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
                 // The dialogue's kicker names the course's own category on every page, the listed one included.
                 $result->categorynames[(int) $row->category] ?? null,
                 $fields,
-                $ratings[$courseid] ?? null
+                $ratings[$courseid] ?? null,
+                $bands[$courseid] ?? null
             );
             $cardcontexts[] = $card->export_for_template($output);
         }

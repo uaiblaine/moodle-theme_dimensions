@@ -26,6 +26,7 @@ namespace theme_dimensions\output;
 
 use core_course\customfield\course_handler;
 use theme_dimensions\local\card\boost_union;
+use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\classifier;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\dialogue;
@@ -147,6 +148,14 @@ use theme_dimensions\local\landingfields;
  * visitor's card states less: no chip and no star (it knows no viewer), only the fields a visitor may see,
  * and a start day only where the card prints one, an event's date tile. Nothing of it costs a statement.
  *
+ * A card Boost Union draws without its cover, or a row without its thumbnail (contract section 8), keeps an edge in
+ * its course category's colour: the band, instance data the listing hands in
+ * ({@see \theme_dimensions\local\category\cards::bands()}) and the template writes on the article as
+ * --dim-card-band, never a token. It leaves only through
+ * {@see branding::hex()}, so the style attribute holds a #rrggbb or nothing. Such a card also draws the row at the
+ * top of its body (`hastop`) that holds the kind, the crests and the star in the cover's place, when it has any of
+ * the three.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -191,9 +200,9 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @var int How many of the course's badges a card draws.
      *
      * The landing page's grid holds four; a card's corner holds three. The geometry decides it: at
-     * 80px each, the smallest size the crests are legible at, three of them and their gaps already
-     * run most of the width of a card in the three-column grid, and a fourth would reach the kind
-     * tag on the other side.
+     * the card's 56px each (D2 of the course card contract), three of them, their gaps and the date
+     * tile already run most of the width of a card on a phone, and a fourth would reach the tile on
+     * the other side.
      */
     public const MAX_BADGES = 3;
 
@@ -245,6 +254,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * @param \core_customfield\field_controller[] $fields The page's filter fields, fieldid => field ({@see field_values()}).
      * @param \stdClass|null $rating The course's rating, {avg, count} ({@see \theme_dimensions\local\category\cards::ratings()}),
      *   null for a course the plugin does not rate, nobody rated, or a site without the plugin.
+     * @param string|null $band The course category's colour ({@see \theme_dimensions\local\category\cards::bands()}), the
+     *   edge of a card or row drawn without its image; null where the listing read none.
      */
     public function __construct(
         /** @var \stdClass The course row. */
@@ -273,6 +284,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
         private readonly array $fields = [],
         /** @var \stdClass|null tool_courserating's aggregate for this course, {avg, count}, or null where it has none. */
         private readonly ?\stdClass $rating = null,
+        /** @var string|null The course category's colour, for the edge of a card drawn without its image. */
+        private readonly ?string $band = null,
     ) {
     }
 
@@ -348,6 +361,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
         $rating = $this->rating === null ? null : dialogue::rating_line($this->rating->avg, $this->rating->count);
         $showcover = boost_union::show_images(boost_union::VIEW_CARD);
         $showthumb = boost_union::show_images(boost_union::VIEW_LIST);
+        $band = $this->band === null ? null : branding::hex($this->band);
 
         return (object) [
             'id' => $courseid,
@@ -365,6 +379,11 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'showthumb' => $showthumb,
             'showmedia' => $showcover || $showthumb,
             'showprogress' => boost_union::show_progress(),
+            // The category's colour, a #rrggbb after branding::hex() or nothing: the edge of a card or row without its image.
+            'band' => $band ?? '',
+            'hasband' => $band !== null,
+            // The row at the top of the body that holds the kind, the crests and the star where the cover would.
+            'hastop' => !$showcover && ($kindkey !== null || $this->showstar || !empty($badges)),
             // Lazy unless the listing puts the card in its first row ({@see category_listing::FIRST_ROW}).
             'eager' => false,
             // Never fetched ahead of the rest unless the listing names this cover the page's first ({@see category_listing}).

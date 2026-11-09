@@ -907,6 +907,19 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
+     * The band colour of each of several categories: what a card without its cover edges itself with.
+     *
+     * The colour of the cover a course with no image gets ({@see course_covers()}), whatever the image source: its
+     * category's pair, inherited, else the stylesheet's primary (contract section 8, "A card without its cover").
+     *
+     * @param int[] $categoryids The categories.
+     * @return array categoryid => lower-case #rrggbb.
+     */
+    public function category_bands(array $categoryids): array {
+        return cover::colours($categoryids, $this->cover_primary());
+    }
+
+    /**
      * Boost Union's answer while its image source is the fallback image and an administrator uploaded one, else null.
      *
      * Boost Union's renderer answers that image's URL for every course alike (its get_generated_image_for_id()), and

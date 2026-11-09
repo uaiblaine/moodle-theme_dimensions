@@ -611,6 +611,12 @@ class get_category_rows extends external_api {
             'showthumb' => new external_value(PARAM_BOOL, 'Whether the list view draws the thumbnail (Boost Union\'s setting).'),
             'showmedia' => new external_value(PARAM_BOOL, 'Whether the media band is drawn: either view shows it.'),
             'showprogress' => new external_value(PARAM_BOOL, 'Whether the progress row is drawn (Boost Union\'s setting).'),
+            'band' => new external_value(
+                PARAM_TEXT,
+                'The course category\'s colour, #rrggbb, edging a card or row drawn without its image; empty when not read.'
+            ),
+            'hasband' => new external_value(PARAM_BOOL, 'Whether the card carries its category\'s colour.'),
+            'hastop' => new external_value(PARAM_BOOL, 'Whether the card draws the top row of its body in its cover\'s place.'),
             'badges' => new external_multiple_structure(
                 new external_single_structure([
                     'url' => new external_value(PARAM_URL, 'The badge image, through the theme\'s own file route.'),

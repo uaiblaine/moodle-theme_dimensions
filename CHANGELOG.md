@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Course cards, stage C2: the card's look.** The theme declares the course card's 30 family tokens
+  (`--dimensions-card-*`, light and dark, listed in `docs/tokens.md`), and the showcase's card paints through its own
+  readers of them. The whole card is one link and one hover: the title's link covers a card the reader can open, its
+  buttons and star stay pressable over it, the hover is a larger shadow and the title underlined, nothing moves, and
+  the keyboard ring is drawn around the whole card. "More information" is Bootstrap's outlined secondary button. The
+  kind, the date tile and the category are in sentence case, the crests are 56 x 62 at every width, and a card
+  Boost Union draws without its cover (or a row without its thumbnail) keeps an edge in its category's colour, with
+  the kind, the crests and the star in a row at the top of the card. The grouped panel draws the flat list's card
+  instead of a smaller restyle of it. In dark mode the title keeps no underline at rest, against core's dark-mode
+  underline of the main region's links, and the hover underlines it as in light mode. The rows services' card carries
+  three new keys (`band`, `hasband`, `hastop`) (2026100594).
+
 - **Course cards, stage C1: Boost Union's course overview settings and the cover of a course without an image.** A
   course with no image of its own now shows its category's cover on the showcase's cards instead of the fixed navy:
   an SVG in the category's colour (inherited from the nearest category with one, else the site's brand colour) under
