@@ -176,6 +176,14 @@ class landingfields {
         self::SHORTNAME_SHAREIMAGE,
     ];
 
+    /**
+     * @var string Shortname of the related contents select: what the landing page's related courses band shows.
+     *
+     * Its empty value, the field's own default and every course without a row, reads as {@see RELATED_AUTO}: the band
+     * is on unless an editor turns it off ({@see related\band}).
+     */
+    public const SHORTNAME_RELATED = 'dimensions_related';
+
     /** @var string Shortname of the retired "public landing page" checkbox, kept only so the upgrade can find it. */
     public const SHORTNAME_RETIRED_PUBLIC = 'dimensions_public';
 
@@ -208,6 +216,12 @@ class landingfields {
     /** @var int Stored value of the format select for "tutored". */
     public const FORMAT_TUTORED = 2;
 
+    /** @var int Stored value of the related contents select for "automatic", what an empty value reads as. */
+    public const RELATED_AUTO = 1;
+
+    /** @var int Stored value of the related contents select for "off": the band is not drawn. */
+    public const RELATED_OFF = 2;
+
     /**
      * @var string[] The custom field type of every field of {@see definitions()}, in the same order: shortname => type.
      *
@@ -238,6 +252,7 @@ class landingfields {
         self::SHORTNAME_CREST4 => self::PICTURE_TYPE,
         self::SHORTNAME_VIDEOURL => 'text',
         self::SHORTNAME_SHAREIMAGE => self::PICTURE_TYPE,
+        self::SHORTNAME_RELATED => 'select',
     ];
 
     /** @var array|null Request cache of resolved field controllers keyed by shortname (null = missing). */
@@ -443,6 +458,19 @@ class landingfields {
                     'maximumbytes' => self::SHAREIMAGE_MAXBYTES,
                     /* Never displayed on the platform - it exists for the og:image of the public
                        landing page, the pair of the public description above. */
+                    'visibility' => course_handler::NOTVISIBLE,
+                ],
+            ],
+            /* After the share picture, for the same reason. Its lines are bound to RELATED_*: manual mode (R2 of
+               docs/related/PLAN.md) is appended as a third line by an upgrade step, never inserted. */
+            self::SHORTNAME_RELATED => [
+                'type' => 'select',
+                'stringkey' => 'landingfield_related',
+                'config' => [
+                    'options' => get_string('landingfield_related_auto', self::COMPONENT) . "\n" .
+                        get_string('landingfield_related_off', self::COMPONENT),
+                    'defaultvalue' => '',
+                    // A choice about the landing page, never a fact of the course a card would print.
                     'visibility' => course_handler::NOTVISIBLE,
                 ],
             ],
@@ -950,6 +978,7 @@ class landingfields {
             'address' => null,
             'publicdescription' => null,
             'videourl' => null,
+            'related' => 0,
             'crests' => [],
             'names' => [],
         ];
@@ -1011,6 +1040,9 @@ class landingfields {
                     break;
                 case self::SHORTNAME_VIDEOURL:
                     $values->videourl = self::plain_text_value($data->get_value(), $context);
+                    break;
+                case self::SHORTNAME_RELATED:
+                    $values->related = (int) $data->get_value();
                     break;
                 case self::SHORTNAME_CREST1:
                 case self::SHORTNAME_CREST2:

@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Related contents, stage R1: the landing page's band** (docs/related/PLAN.md). A landing page ends with the
+  courses related to its course through their competencies, in the order and for the readers R0's reader decides,
+  and draws nothing, heading included, when there is none. A trail's page reads the trail's and its courses'
+  competencies and never lists its own courses. A new course field, *Related courses* (`dimensions_related`:
+  Automatic, Off; empty reads as Automatic), turns the band off per course; the setting
+  `theme_dimensions/relatedcount` (4 by default, 1 to 12) caps it. The upgrade creates the field (2026100595).
+  `docs/related/demo/seed.php` seeds a demonstration category on a development stack.
+
 - **The landing page banner can run full width** (setting `landingheroformat` on the *Course landing page* tab). In the
   content column, the default, the banner stays the card it was. Full width, it is drawn as the page header, from edge
   to edge under the navbar, with the category showcase hero's geometry: its text keeps the column's edges, the course
