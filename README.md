@@ -92,7 +92,7 @@ week, Next week). *Done*, or a press outside, applies it; Escape leaves the peri
 force. Days are the site's days, never the browser's. The badge on *Filters* counts what the panel
 holds.
 
-![Pointing at the Open for enrolment cell: the two open courses on screen are outlined, every other card recedes](docs/screenshots/preview.png)
+![Pointing at the Open for enrolment cell: the open courses on screen are outlined, every other card recedes](docs/screenshots/preview.png)
 
 **Preview before you press.** Pointing at a scope cell, the star, a panel option or a suggestion
 rings the cards it would keep and recedes the rest, by colour rather than transparency, so the
