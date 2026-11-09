@@ -171,6 +171,14 @@ competencies the band relates by (the choice is kept as framework and competency
 *Competencies for related courses*, so it travels with a backup); `theme_dimensions/relatedcount` (4 by default, up
 to 12) caps it. Nothing is shown while competencies are disabled on the site, and nothing is stored or cached.
 
+With the Shortcodes filter (filter_shortcodes, below), `[relatedcourses]` draws the same band in any text the theme
+draws: a page, a label at the end of a course, a category description. By default it relates to the course the text
+belongs to; `course="short name"` names another, and `framework="ID number" competencies="ID number,ID number"`
+relates by those competencies (in a course, only those linked to it), `match="all"` keeping the courses linked to
+every one; `limit` caps it like the setting. It names identifiers, never ids, so it survives a backup restored
+elsewhere. A reference the site does not have draws nothing, and an editor of the text's course or category is told
+what was not found; at most four shortcodes are drawn on a page.
+
 
 Focus mode
 ----------
@@ -404,6 +412,7 @@ Requirements
 | auth_loginsteps | Its logo and identity provider data on the login page, its own shell for the second factor and privileged session pages, and the CPF mask of the login form (`logincpfmask`). The theme asks it by class name and never requires it. |
 | [local_page](https://github.com/uaiblaine/moodle-local_page) | The pages strip on a category page. Without it the strip is simply not drawn. |
 | [mod_subcourse](https://github.com/uaiblaine/moodle-mod_subcourse) | The *Trail* page model: a course whose Subcourse activities are the courses of a trail, in order. Without it, or with the module disabled, the Trail line of the page model is not offered (it stays in the field, whose lines are positions) and a course saved as a trail reads as a course. |
+| [filter_shortcodes](https://github.com/uaiblaine/moodle-filter_shortcodes) | The `[relatedcourses]` shortcode (*Course landing pages* above). Without it the theme's `db/shortcodes.php` is never read; with the filter off, a text holding the shortcode shows it as written. The theme's recommendation in Boost Union's overview says which. |
 | [tool_courserating](https://github.com/marinaglancy/moodle-tool_courserating) | The course ratings on the showcase's cards and in its course dialogue (*Course ratings* above). Without it, or where it rates no course, nothing is drawn or read. The theme asks it by class name and never requires it. |
 
 

@@ -9,6 +9,8 @@
 #   auth_loginsteps       the second factor on the plugin's shell (private: GitHub cannot install it)
 #   mod_subcourse         the Trail model's steps; GitHub's ci.yml installs it too, and this entry stands in
 #                         until moodle-dev's extra_deps_for() lists it beside the theme's other optional plugins
+#   filter_shortcodes     the [relatedcourses] shortcode through the filter; GitHub's ci.yml installs it too, as
+#                         mod_subcourse above
 extra-plugins:
   - repo: moodle-enrol_apply
     path: enrol/apply
@@ -24,4 +26,7 @@ extra-plugins:
     branches: [MOODLE_503_STABLE]
   - repo: moodle-mod_subcourse
     path: mod/subcourse
+    branches: [MOODLE_503_STABLE]
+  - repo: moodle-filter_shortcodes
+    path: filter/shortcodes
     branches: [MOODLE_503_STABLE]

@@ -229,7 +229,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'hasmethods' => !empty($methods),
             'offers' => $state === resolution::STATE_VISITOR ? $this->visitor_offers() : [],
             'manage' => $this->manage($state),
-            'related' => $this->related($trailof),
+            'related' => $this->related($trailof, $output),
         ];
         $exported->hasoffers = !empty($exported->offers);
         /* A visitor no login would take anywhere, on a course without guest access, has nothing to press:
@@ -493,51 +493,18 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
      * The related courses band at the end of the page, or null when it is not drawn (R1 of docs/related/PLAN.md).
      *
      * What it lists, and to whom, is {@see band::courses()}'s decision; nothing is drawn, the heading included, when
-     * it lists nothing. Each card is the trail's course card without a number or a state ({@see trail_part()}), until
-     * the band draws the fleet's course card (contract section 13, the "Card" surface): the cover, the category, the
-     * name leading to the course's landing page and the workload, a course without an image of its own taking the
-     * renderer's cover ({@see cards::images()} with $generated), a visitor's through the theme's file route. Three
-     * statements whatever the count: the covers, the workloads, and the categories from core's cache.
-     * The cover is an <img> source, never a style attribute, so it needs no {@see styleurl} pass.
+     * it lists nothing. The cards are {@see related_band}'s, which the `[relatedcourses]` shortcode draws too.
      *
      * @param trail|null $trail The course's trail, for a trail's page.
-     * @return array|null ['cards' => list of ['courseid', 'name', 'url', 'imageurl', 'category', 'hours'],
-     *   'count' => int], or null.
+     * @param \core\output\renderer_base $output The renderer.
+     * @return array|null {@see related_band::export_for_template()}'s context, or null.
      */
-    private function related(?trail $trail): ?array {
+    private function related(?trail $trail, \core\output\renderer_base $output): ?array {
         $found = band::courses($this->course, $this->values, $trail);
         if (!$found) {
             return null;
         }
-        $rows = [];
-        foreach ($found as $entry) {
-            $rows[(int) $entry['row']->id] = $entry['row'];
-        }
-        $images = cards::images($rows, display::visitor(), true);
-        $hours = landingfields::values_many(array_keys($rows), false, [landingfields::SHORTNAME_WORKLOAD]);
-        $categories = \core_course_category::get_many(
-            array_values(array_unique(array_map(static fn(\stdClass $row): int => (int) $row->category, $rows)))
-        );
-        $cards = [];
-        foreach ($rows as $courseid => $row) {
-            // An <img> source, as the showcase's card prints it: a url, or the renderer's data URI.
-            $image = $images[$courseid] ?? null;
-            $category = $categories[(int) $row->category] ?? null;
-            $workload = isset($hours[$courseid]) ? $hours[$courseid]->workload : null;
-            $cards[] = [
-                'courseid' => $courseid,
-                'name' => $this->plain($row->fullname, \core\context\course::instance($courseid)),
-                'url' => links::page($courseid)->out(false),
-                'imageurl' => $image instanceof \moodle_url ? $image->out(false) : $image,
-                'category' => $category === null ? null : format_string($category->name, true, [
-                    'context' => \core\context\coursecat::instance($category->id),
-                    'escape' => false,
-                ]),
-                'hours' => $workload === null ? null
-                    : get_string('landing_hours', self::COMPONENT, $this->hours_number($workload)),
-            ];
-        }
-        return ['cards' => $cards, 'count' => count($cards)];
+        return (new related_band($found, 'dimensions-landing-related'))->export_for_template($output);
     }
 
     /**

@@ -1,0 +1,49 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/related_block
+
+    What the [relatedcourses] shortcode prints (local\related\shortcode): for a reader who may edit the
+    text, a notice naming what the shortcode refers to and this site lacks; then the related courses band,
+    when there is a course to list. The root carries theme_dimensions-related, the second root of the
+    landing page's stylesheet (scss/landing.scss), so the band is drawn as on a landing page on any page
+    the theme draws.
+
+    Context variables required for this template:
+    * notice - Core's warning notification's context (message already escaped, no close button), or null.
+    * band - The related_band context, or null.
+
+    Example context (json):
+    {
+        "notice": {"message": "The related courses shortcode refers to what this site does not have: framework FW09.", "closebutton": false, "announce": false},
+        "band": {
+            "region": "dimensions-related-block",
+            "cards": [
+                {"courseid": 51, "name": "Advanced Life Support", "url": "https://example.com/theme/dimensions/landing.php?id=51", "imageurl": null, "category": "Emergency care", "hours": "40 hours"}
+            ],
+            "count": 1
+        }
+    }
+}}
+<div class="theme_dimensions-related" data-region="dimensions-related">
+    {{#notice}}
+        {{> core/notification_warning }}
+    {{/notice}}
+    {{#band}}
+        {{> theme_dimensions/related_band }}
+    {{/band}}
+</div>

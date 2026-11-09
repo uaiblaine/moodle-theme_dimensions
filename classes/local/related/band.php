@@ -97,6 +97,16 @@ final class band {
     }
 
     /**
+     * A course's trail when its page model is the trail's, else null: what {@see courseids()} reads the steps of.
+     *
+     * @param \stdClass $course The course.
+     * @return trail|null
+     */
+    public static function trail_of(\stdClass $course): ?trail {
+        return landingfields::model((int) $course->id) === landingfields::MODEL_TRAIL ? trail::of($course) : null;
+    }
+
+    /**
      * The courses whose competencies are the band's set: the course, and for a trail its steps' courses.
      *
      * @param \stdClass $course The landing page's course.

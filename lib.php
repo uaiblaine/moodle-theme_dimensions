@@ -535,6 +535,7 @@ function theme_dimensions_extend_burecommendations(): array {
         \theme_dimensions\recommendation\customfieldpicture::class,
         \theme_dimensions\recommendation\landingaddresses::class,
         \theme_dimensions\recommendation\lookcohorts_hidden::class,
+        \theme_dimensions\recommendation\relatedshortcode::class,
     ];
 }
 

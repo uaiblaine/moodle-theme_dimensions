@@ -26,7 +26,6 @@ namespace theme_dimensions\local\related;
 
 use core_customfield\data_controller;
 use theme_dimensions\local\landingfields;
-use theme_dimensions\local\trail\trail;
 
 /**
  * The competencies an editor chose for a landing page's related courses band in manual mode (R2, D3, D9).
@@ -148,8 +147,7 @@ final class choice {
         if (empty($course->id)) {
             return [];
         }
-        $trail = landingfields::model((int) $course->id) === landingfields::MODEL_TRAIL ? trail::of($course) : null;
-        return self::linked(band::courseids($course, $trail));
+        return self::linked(band::courseids($course, band::trail_of($course)));
     }
 
     /**
