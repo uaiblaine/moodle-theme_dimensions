@@ -177,7 +177,9 @@ belongs to; `course="short name"` names another, and `framework="ID number" comp
 relates by those competencies (in a course, only those linked to it), `match="all"` keeping the courses linked to
 every one; `limit` caps it like the setting. It names identifiers, never ids, so it survives a backup restored
 elsewhere. A reference the site does not have draws nothing, and an editor of the text's course or category is told
-what was not found; at most four shortcodes are drawn on a page.
+what was not found; at most four shortcodes are drawn on a page. On a course's own landing page, a shortcode written
+in its summary or its audience, programme or certification sections is not drawn inside the text: the page draws it
+in the band's place, after the description and the enrolment card, instead of the automatic band.
 
 
 Focus mode

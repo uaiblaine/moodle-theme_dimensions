@@ -39,6 +39,7 @@ use theme_dimensions\local\calendar\trails;
 use theme_dimensions\local\category\cards;
 use theme_dimensions\local\landingfields;
 use theme_dimensions\local\related\band;
+use theme_dimensions\local\related\shortcode;
 use theme_dimensions\local\styleurl;
 use theme_dimensions\local\trail\display;
 use theme_dimensions\local\trail\progress;
@@ -144,6 +145,9 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             }
         }
         $sections = $this->sections();
+        $summaryhtml = $this->summary_html($context);
+        // After the summary and the sections, whose [relatedcourses] instances it draws.
+        $related = $this->related($trailof, $output);
         $methods = $this->method_contexts();
 
         $state = $this->resolution->state;
@@ -187,7 +191,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'badges' => $badges,
             'hasbadges' => !empty($badges),
             'video' => $this->video($context, $isheld),
-            'summaryhtml' => $this->summary_html($context),
+            'summaryhtml' => $summaryhtml,
             'chips' => $chips,
             // The list is drawn for either half: the text chips, or the live-classes chip after them.
             'haschips' => !empty($chips) || $haslivechip,
@@ -236,7 +240,8 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             'hasmethods' => !empty($methods),
             'offers' => $state === resolution::STATE_VISITOR ? $this->visitor_offers() : [],
             'manage' => $this->manage($state),
-            'related' => $this->related($trailof, $output),
+            'related' => $related['band'],
+            'relatednotice' => $related['notice'],
         ];
         $exported->hasoffers = !empty($exported->offers);
         /* A visitor no login would take anywhere, on a course without guest access, has nothing to press:
@@ -498,21 +503,27 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * The related courses band at the end of the page, or null when it is not drawn (R1 of docs/related/PLAN.md).
+     * The related courses band at the end of the page, after both columns (R1 of docs/related/PLAN.md).
      *
      * What it lists, and to whom, is {@see band::courses()}'s decision; nothing is drawn, the heading included, when
-     * it lists nothing. The cards are {@see related_band}'s, which the `[relatedcourses]` shortcode draws too.
+     * it lists nothing. A `[relatedcourses]` shortcode written in the course's summary or sections takes the band's
+     * place instead ({@see shortcode::lifted()}): it draws nothing where it is written, and its answer, with the
+     * editors' notice, is drawn here, whatever the course's own choice for the band says. The cards are
+     * {@see related_band}'s in both cases.
      *
      * @param trail|null $trail The course's trail, for a trail's page.
      * @param \core\output\renderer_base $output The renderer.
-     * @return array|null {@see related_band::export_for_template()}'s context, or null.
+     * @return array ['band' => {@see related_band::export_for_template()}'s context or null, 'notice' => the
+     *   shortcode's notice for an editor (core/notification_warning's context) or null].
      */
-    private function related(?trail $trail, \core\output\renderer_base $output): ?array {
-        $found = band::courses($this->course, $this->values, $trail);
-        if (!$found) {
-            return null;
-        }
-        return (new related_band($found, 'dimensions-landing-related'))->export_for_template($output);
+    private function related(?trail $trail, \core\output\renderer_base $output): array {
+        // Read after the summary and the sections were formatted: an instance written there is kept, not drawn.
+        $lifted = shortcode::lifted();
+        $found = $lifted === null ? band::courses($this->course, $this->values, $trail) : $lifted['found'];
+        return [
+            'band' => $found ? (new related_band($found, 'dimensions-landing-related'))->export_for_template($output) : null,
+            'notice' => $lifted['notice'] ?? null,
+        ];
     }
 
     /**
@@ -1042,7 +1053,8 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             landingfields::SHORTNAME_CERTIFICATION => $values->certification,
         ];
         foreach ($order as $shortname => $html) {
-            if ($html !== null && trim((string) $html) !== '' && isset($this->values->names[$shortname])) {
+            // A section that held only a [relatedcourses] shortcode, drawn in the band's place, is blank now.
+            if ($html !== null && !html_is_blank((string) $html) && isset($this->values->names[$shortname])) {
                 $sections[] = ['title' => $this->values->names[$shortname], 'html' => $html];
             }
         }
@@ -1408,7 +1420,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
      * stored script executing same-origin.
      *
      * @param \core\context\course $context The course context.
-     * @return string|null The HTML, or null when the summary is empty.
+     * @return string|null The HTML, or null when the summary is empty or blank once formatted.
      */
     private function summary_html(\core\context\course $context): ?string {
         global $CFG;
@@ -1423,12 +1435,14 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
             // Files are stored under itemid 0 but the pluginfile URL carries no itemid segment.
             $text = file_rewrite_pluginfile_urls($this->course->summary, 'pluginfile.php', $context->id, 'course', 'summary', null);
         }
-        return format_text($text, $this->course->summaryformat, [
+        $html = format_text($text, $this->course->summaryformat, [
             'context' => $context,
             'overflowdiv' => true,
             'noclean' => !$this->ispublic,
             'para' => false,
         ]);
+        // A summary that held only a [relatedcourses] shortcode, drawn in the band's place ({@see related()}), is blank.
+        return html_is_blank($html) ? null : $html;
     }
 
     /**

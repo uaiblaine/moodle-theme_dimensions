@@ -31,6 +31,7 @@ use theme_dimensions\local\card\cover;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\resolution;
 use theme_dimensions\local\landingfields;
+use theme_dimensions\local\related\shortcode;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -197,5 +198,132 @@ final class landing_page_related_test extends \advanced_testcase {
 
         $internal = (new landing_page($parent, $values, $closed, [], false))->export_for_template($renderer);
         $this->assertStringContainsString('<script', $internal->sections[0]['html'], 'Control: trusted rendering behind login.');
+    }
+
+    /**
+     * A [relatedcourses] in the page's texts is drawn in the band's place, after both columns, instead of in the text:
+     * it replaces the automatic band, and a section or a summary that held only the shortcode is not drawn.
+     *
+     * The lift is armed as request::handle() arms it, before the values are read. Skipped without filter_shortcodes.
+     */
+    public function test_a_shortcode_in_the_pages_texts_takes_the_bands_place(): void {
+        global $CFG, $PAGE;
+        if (\core_component::get_component_directory('filter_shortcodes') === null) {
+            $this->markTestSkipped('filter_shortcodes is not installed.');
+        }
+        require_once($CFG->libdir . '/filterlib.php');
+        $PAGE->force_theme('dimensions');
+        shortcode::reset();
+        filter_set_global_state('shortcodes', TEXTFILTER_ON);
+        \cache::make_from_params(\cache_store::MODE_REQUEST, 'core_filter', 'global_filters')->purge();
+        \filter_manager::reset_caches();
+
+        $this->setAdminUser();
+        $parent = $this->course('Primeiros socorros', true, 0, ['summary' => '<p>[relatedcourses]</p>']);
+        $automatic = (int) $this->course('Suporte avançado')->id;
+        $generator = self::getDataGenerator()->get_plugin_generator('core_competency');
+        $other = $generator->create_competency([
+            'competencyframeworkid' => \core_competency\competency::get_record(['id' => $this->competencyid])
+                ->get('competencyframeworkid'),
+            'idnumber' => 'B',
+        ]);
+        $chosen = $this->course('Escolhido', false, 0, ['shortname' => 'ESCOLHIDO']);
+        $listed = (int) $this->course('Listado', false)->id;
+        foreach ([$chosen->id, $listed] as $courseid) {
+            $generator->create_course_competency([
+                'courseid' => $courseid,
+                'competencyid' => $other->get('id'),
+                'ruleoutcome' => course_competency::OUTCOME_EVIDENCE,
+            ]);
+        }
+        \core_course\customfield\course_handler::create()->instance_form_save((object) [
+            'id' => $parent->id,
+            'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
+                'text' => '<p>Veja também:</p><p>[relatedcourses course="ESCOLHIDO"]</p>',
+                'format' => FORMAT_HTML,
+            ],
+            'customfield_' . landingfields::SHORTNAME_AUDIENCE . '_editor' => [
+                'text' => '<p>[relatedcourses course="ESCOLHIDO"]</p>',
+                'format' => FORMAT_HTML,
+            ],
+        ]);
+        $parent = get_course($parent->id);
+
+        shortcode::lift((int) $parent->id);
+        [$context, $html] = self::page($parent);
+
+        $this->assertSame([$listed], array_column($context->related['cards'], 'courseid'), 'Not the automatic band.');
+        $this->assertNull($context->relatednotice, 'What it names was found.');
+        $this->assertCount(1, $context->sections, 'The audience held only the shortcode.');
+        $this->assertStringContainsString('Veja também:', $context->sections[0]['html']);
+        $this->assertStringNotContainsString('dimensions-related-block', $html, 'Drawn in no text.');
+        $this->assertNull($context->summaryhtml, 'The summary held only the shortcode.');
+        $this->assertSame(1, substr_count($html, 'data-region="dimensions-landing-related"'));
+        $this->assertMatchesRegularExpression(
+            '~</aside>\s*</div>\s*<section[^>]*data-region="dimensions-landing-related"~',
+            $html,
+            'After both columns.'
+        );
+
+        // An editor is told above the band's place what the first one names and this site does not have.
+        \core_course\customfield\course_handler::create()->instance_form_save((object) [
+            'id' => $parent->id,
+            'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
+                'text' => '<p>[relatedcourses course="NENHUM"]</p>',
+                'format' => FORMAT_HTML,
+            ],
+            'customfield_' . landingfields::SHORTNAME_AUDIENCE . '_editor' => [
+                'text' => '<p>[relatedcourses course="NENHUM"]</p>',
+                'format' => FORMAT_HTML,
+            ],
+        ]);
+        shortcode::lift((int) $parent->id);
+        [$context, $html] = self::page($parent);
+        $this->assertNull($context->related);
+        $this->assertStringContainsString('NENHUM', $context->relatednotice['message']);
+        $this->assertMatchesRegularExpression('~dimensions-landing__relatednotice">\s*<div[^>]*alert-warning~', $html);
+
+        // Control: with no landing page drawn for the course, the text draws the block in place, and the band is the
+        // automatic one.
+        shortcode::reset();
+        [$context] = self::page($parent);
+        $this->assertStringContainsString('alert-warning', $context->sections[0]['html']);
+        $this->assertSame([$automatic], array_column($context->related['cards'], 'courseid'));
+    }
+
+    /**
+     * The landing page's request arms the lift before it reads the course's texts: its page draws the programme's
+     * shortcode in the band's place. Skipped without filter_shortcodes.
+     */
+    public function test_the_landing_request_draws_the_texts_shortcode_in_the_bands_place(): void {
+        global $CFG, $PAGE;
+        if (\core_component::get_component_directory('filter_shortcodes') === null) {
+            $this->markTestSkipped('filter_shortcodes is not installed.');
+        }
+        require_once($CFG->libdir . '/filterlib.php');
+        shortcode::reset();
+        filter_set_global_state('shortcodes', TEXTFILTER_ON);
+        \cache::make_from_params(\cache_store::MODE_REQUEST, 'core_filter', 'global_filters')->purge();
+        \filter_manager::reset_caches();
+
+        $this->setAdminUser();
+        $parent = $this->course('Primeiros socorros');
+        $related = (int) $this->course('Suporte avançado')->id;
+        \core_course\customfield\course_handler::create()->instance_form_save((object) [
+            'id' => $parent->id,
+            'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
+                'text' => '<p>Módulo 1.</p><p>[relatedcourses]</p>',
+                'format' => FORMAT_HTML,
+            ],
+        ]);
+
+        $PAGE = new \moodle_page();
+        $answer = \theme_dimensions\local\landing\request::handle((int) $parent->id);
+        $context = $answer->page->export_for_template($PAGE->get_renderer('core'));
+
+        $this->assertStringContainsString('Módulo 1.', $context->sections[0]['html']);
+        $this->assertStringNotContainsString('dimensions-related-block', $context->sections[0]['html'], 'Not in the text.');
+        $this->assertNotNull(shortcode::lifted(), 'Kept for the band.');
+        $this->assertSame([$related], array_column($context->related['cards'], 'courseid'));
     }
 }

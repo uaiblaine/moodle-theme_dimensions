@@ -282,6 +282,46 @@ final class shortcode_test extends \advanced_testcase {
     }
 
     /**
+     * On a course's landing page, an instance in a text of that course's own context draws nothing in place and is
+     * kept for the page's band, the first one alone; a text of any other context still draws in place.
+     */
+    public function test_on_its_landing_page_the_courses_texts_keep_it_for_the_band(): void {
+        $parent = $this->course(['A'], 'PAI');
+        $related = (int) $this->course(['A'], 'REL')->id;
+        $other = $this->course(['B'], 'OUTRO');
+        $byb = (int) $this->course(['B'], 'POR-B')->id;
+        $label = self::getDataGenerator()->create_module('label', ['course' => $parent->id]);
+        $incourse = \core\context\course::instance($parent->id);
+
+        $this->assertNull(shortcode::lifted(), 'Nothing kept before any page asked.');
+        shortcode::lift((int) $parent->id);
+        $this->assertSame('', self::draw(['course' => 'OUTRO'], $incourse, false), 'Kept, not drawn in the text.');
+        $this->assertSame('', self::draw([], $incourse, false), 'A second one draws nothing either.');
+        $this->assertSame([$byb], array_map(
+            static fn(array $entry): int => (int) $entry['row']->id,
+            shortcode::lifted()['found']
+        ), 'The first one is the band.');
+        $this->assertNull(shortcode::lifted()['notice']);
+
+        $this->assertSame([$related], self::listed(self::draw([], \core\context\module::instance($label->cmid), false)));
+        $inother = \core\context\course::instance($other->id);
+        $this->assertSame([$byb], self::listed(self::draw([], $inother, false)), 'Another course\'s text.');
+
+        set_config('enabled', 0, 'core_competency');
+        $this->assertNull(shortcode::lifted(), 'Competencies off, the page draws nothing.');
+        set_config('enabled', 1, 'core_competency');
+
+        shortcode::lift((int) $parent->id);
+        $this->assertNull(shortcode::lifted(), 'A new page keeps nothing of the last one.');
+        self::draw(['course' => 'NENHUM'], $incourse, false);
+        $this->assertSame([], shortcode::lifted()['found']);
+        $this->assertStringContainsString('NENHUM', shortcode::lifted()['notice']['message'], 'The editor is told on the page.');
+
+        shortcode::reset();
+        $this->assertNotSame('', self::draw([], $incourse), 'Control: on any other page it draws in place.');
+    }
+
+    /**
      * Through the filter itself, the text's shortcode becomes the band; skipped without filter_shortcodes.
      */
     public function test_the_filter_draws_the_band(): void {

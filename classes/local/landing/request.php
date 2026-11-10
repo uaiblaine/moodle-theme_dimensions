@@ -26,6 +26,7 @@ namespace theme_dimensions\local\landing;
 
 use theme_dimensions\local\blockless;
 use theme_dimensions\local\landingfields;
+use theme_dimensions\local\related\shortcode;
 use theme_dimensions\output\landing_guestentry;
 use theme_dimensions\output\landing_hero;
 use theme_dimensions\output\landing_page;
@@ -135,6 +136,9 @@ final class request {
         $PAGE->set_course($course);
         $PAGE->set_context($context->get_parent_context());
 
+        /* The page draws a [relatedcourses] shortcode written in the course's texts in its band's place, after both
+           columns; told before the first of those texts is formatted. */
+        shortcode::lift((int) $course->id);
         $values = landingfields::values($course->id);
         if (!$values->model) {
             return self::redirect_to(new \core\url('/enrol/index.php', ['id' => $course->id]));
