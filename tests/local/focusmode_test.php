@@ -54,7 +54,7 @@ final class focusmode_test extends \advanced_testcase {
         parent::setUp();
         $this->resetAfterTest();
         focusmode::reset_caches();
-        set_config('focusmode', login::SELECT_YES, focusmode::COMPONENT);
+        set_config('focusmode', yesno::YES, focusmode::COMPONENT);
     }
 
     /**
@@ -178,7 +178,7 @@ final class focusmode_test extends \advanced_testcase {
         $course = $this->switched_on_course();
         $page = $this->activity_page($course, $this->activity($course));
 
-        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        set_config('focusmode', yesno::NO, focusmode::COMPONENT);
 
         $this->assertFalse(focusmode::applies($page));
         $this->assertSame('master', focusmode::why($page));
@@ -483,7 +483,7 @@ final class focusmode_test extends \advanced_testcase {
         $this->assertSame('editing', focusmode::why($page));
 
         // And the master switch is named before either of them.
-        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        set_config('focusmode', yesno::NO, focusmode::COMPONENT);
         $this->assertSame('master', focusmode::why($page));
     }
 
@@ -847,7 +847,7 @@ final class focusmode_test extends \advanced_testcase {
 
         $this->assertStringContainsString($token, theme_dimensions_get_main_scss_content($theme), 'Control: on.');
 
-        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        set_config('focusmode', yesno::NO, focusmode::COMPONENT);
         $this->assertStringNotContainsString($token, theme_dimensions_get_main_scss_content($theme));
     }
 }

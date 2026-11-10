@@ -146,8 +146,8 @@ final class compactnav {
      * The layout's body attributes with {@see BODY_ARMED} added.
      *
      * Boost Union's layout files build the attribute string with body_attributes() before they export the primary
-     * navigation, and hand both to one render_from_template() call, so the class is spliced in there, with the
-     * regular expression the theme's login page uses ({@see login::layout_context()}).
+     * navigation, and hand both to one render_from_template() call, so the class is spliced into the string there,
+     * as Boost Union splices its own login arrangement class.
      *
      * @param string $attributes The layout's bodyattributes.
      * @return string

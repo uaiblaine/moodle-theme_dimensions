@@ -39,11 +39,9 @@ namespace theme_dimensions\output;
  *    this feature's), and none without a page to name;
  *  - an address outside this site is dropped. The plugin spells its addresses through
  *    \local_page\local\links, so the rule costs nothing real; it keeps a strip of internal pages
- *    from ever becoming a list of outbound links, as {@see \theme_dimensions\local\login::local_icon_url()}
- *    does for a provider's icon.
+ *    from ever becoming a list of outbound links.
  *
- * No try/catch around the call, as in {@see \theme_dimensions\local\login::logo_url()}:
- * a throw from the plugin is a real fault and shows as one, and a catch-all would make the
+ * No try/catch around the call: a throw from the plugin is a real fault and shows as one, and a catch-all would make the
  * class_exists() guard dead code. It is built by the page's two entries - the course renderer's
  * shell and the anonymous request - and never by the listing's export, which the web service calls
  * on every search: the strip is outside what a search rewrites, and would cost the catalogue's

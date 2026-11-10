@@ -42,9 +42,9 @@ use theme_dimensions\local\guesthome;
 use theme_dimensions\local\guestnav;
 use theme_dimensions\local\landing\heroformat;
 use theme_dimensions\local\landingdefaults;
-use theme_dimensions\local\login;
 use theme_dimensions\local\readingbar;
 use theme_dimensions\local\related\band;
+use theme_dimensions\local\yesno;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -87,8 +87,8 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         // Prepare options array for select settings.
         // Due to MDL-58376, we will use binary select settings instead of checkbox settings throughout this theme.
         $yesnooption = [
-                login::SELECT_YES => get_string('yes'),
-                login::SELECT_NO => get_string('no'),
+                yesno::YES => get_string('yes'),
+                yesno::NO => get_string('no'),
         ];
 
         // Create the settings page of this theme with tabs and tertiary navigation
@@ -180,85 +180,6 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $title = get_string('lookmenufavicons', 'theme_dimensions', null, true);
         $description = get_string('lookmenufavicons_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configcheckbox($name, $title, $description, 0);
-        $tab->add($setting);
-
-        // Add tab to settings page.
-        $page->add($tab);
-
-        // Create login page tab.
-        $tab = new admin_settingpage(
-            'theme_dimensions_login',
-            get_string('logintab', 'theme_dimensions', null, true)
-        );
-
-        // Create login page heading.
-        $name = 'theme_dimensions/loginpageheading';
-        $title = get_string('loginpageheading', 'theme_dimensions', null, true);
-        $setting = new admin_setting_heading($name, $title, null);
-        $tab->add($setting);
-
-        // Setting: Which login page is shown.
-        // No cache reset on change: the login styles are always compiled, and the body class the
-        // renderer adds is what switches them on, so the choice takes effect on the next request.
-        $name = 'theme_dimensions/loginpage';
-        $title = get_string('loginpage', 'theme_dimensions', null, true);
-        $description = get_string('loginpage_desc', 'theme_dimensions', null, true);
-        $loginpageoptions = [
-                login::SELECT_YES => get_string('loginpage_custom', 'theme_dimensions'),
-                login::SELECT_NO => get_string('loginpage_boostunion', 'theme_dimensions'),
-        ];
-        $setting = new admin_setting_configselect(
-            $name,
-            $title,
-            $description,
-            login::SELECT_YES,
-            $loginpageoptions
-        );
-        $tab->add($setting);
-
-        // Create institutional panel heading.
-        // Empty settings fall back to the language strings, which follow each user's language; a
-        // value typed here is shown to everyone exactly as typed.
-        $name = 'theme_dimensions/loginpanelheading';
-        $title = get_string('loginpanelheading', 'theme_dimensions', null, true);
-        $description = get_string('loginpanelheading_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_heading($name, $title, $description);
-        $tab->add($setting);
-
-        // Setting: Panel kicker.
-        $name = 'theme_dimensions/loginpanelkicker';
-        $title = get_string('loginpanelkicker', 'theme_dimensions', null, true);
-        $description = get_string('loginpanelkicker_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
-        $tab->add($setting);
-
-        // Setting: Panel title.
-        $name = 'theme_dimensions/loginpaneltitle';
-        $title = get_string('loginpaneltitle', 'theme_dimensions', null, true);
-        $description = get_string('loginpaneltitle_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
-        $tab->add($setting);
-
-        // Setting: Panel text.
-        $name = 'theme_dimensions/loginpaneltext';
-        $title = get_string('loginpaneltext', 'theme_dimensions', null, true);
-        $description = get_string('loginpaneltext_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configtextarea($name, $title, $description, '', PARAM_TEXT);
-        $tab->add($setting);
-
-        // Setting: Show the monitoring notice.
-        $name = 'theme_dimensions/loginpanelshowmonitoring';
-        $title = get_string('loginpanelshowmonitoring', 'theme_dimensions', null, true);
-        $description = get_string('loginpanelshowmonitoring_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configselect($name, $title, $description, login::SELECT_YES, $yesnooption);
-        $tab->add($setting);
-
-        // Setting: Monitoring notice text. PARAM_RAW because it may carry a link to the policy it
-        // names; format_text() cleans it on the way out, as it does Boost Union's own instructions.
-        $name = 'theme_dimensions/loginpanelfoot';
-        $title = get_string('loginpanelfoot', 'theme_dimensions', null, true);
-        $description = get_string('loginpanelfoot_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configtextarea($name, $title, $description, '', PARAM_RAW);
         $tab->add($setting);
 
         // Create guest heading.
@@ -440,7 +361,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             $name,
             $title,
             $description,
-            login::SELECT_NO,
+            yesno::NO,
             $yesnooption
         );
         $setting->set_updatedcallback('theme_reset_all_caches');
@@ -492,7 +413,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             $name,
             $title,
             $description,
-            login::SELECT_NO,
+            yesno::NO,
             $yesnooption
         );
         $setting->set_updatedcallback('theme_dimensions_sync_focusmode_default');
@@ -504,7 +425,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
                 'theme_dimensions/' . $dependent,
                 'theme_dimensions/focusmode',
                 'neq',
-                login::SELECT_YES
+                yesno::YES
             );
         }
 
@@ -596,7 +517,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $name = 'theme_dimensions/' . population::SETTING_ENABLED;
         $title = get_string('categorypageenabled', 'theme_dimensions', null, true);
         $description = get_string('categorypageenabled_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configselect($name, $title, $description, login::SELECT_YES, $yesnooption);
+        $setting = new admin_setting_configselect($name, $title, $description, yesno::YES, $yesnooption);
         $tab->add($setting);
 
         // Setting: The anonymous shell. Default-on; only a stored 0 switches it off, and
@@ -605,7 +526,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $name = 'theme_dimensions/' . publicaccess::SETTING_ENABLED;
         $title = get_string('categorypublicenabled', 'theme_dimensions', null, true);
         $description = get_string('categorypublicenabled_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configselect($name, $title, $description, login::SELECT_YES, $yesnooption);
+        $setting = new admin_setting_configselect($name, $title, $description, yesno::YES, $yesnooption);
         $tab->add($setting);
 
         /* Setting: the root of the course index on the internet. Read the opposite way round from
@@ -653,7 +574,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $name = 'theme_dimensions/' . population::SETTING_STATESORT;
         $title = get_string('categorystatesort', 'theme_dimensions', null, true);
         $description = get_string('categorystatesort_desc', 'theme_dimensions', null, true);
-        $setting = new admin_setting_configselect($name, $title, $description, login::SELECT_YES, $yesnooption);
+        $setting = new admin_setting_configselect($name, $title, $description, yesno::YES, $yesnooption);
         $tab->add($setting);
 
         // Setting: How deep the navigation goes. It bounds the tree beside the listing and the

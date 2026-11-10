@@ -4,15 +4,15 @@ moodle-theme_dimensions
 [![Moodle Plugin CI](https://github.com/uaiblaine/moodle-theme_dimensions/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/uaiblaine/moodle-theme_dimensions/actions/workflows/ci.yml?query=branch%3Amain)
 
 A Moodle 5.3 theme for catalogues people browse: a category showcase with one filter line, course
-landing pages, a login page of its own, focus mode and Moodle's competency pages in one design.
+landing pages, focus mode and Moodle's competency pages in one design.
 
 ![The category showcase of Educator Academy: the hero with its counts, the filter line, the posters of the areas and the open area's courses in a panel between the rows](docs/screenshots/vitrine.png)
 
 Dimensions is a child of
 [Boost Union](https://github.com/moodle-an-hochschulen/moodle-theme_boost_union), which makes it a
 grandchild of Boost. It inherits everything Boost Union does - every setting, every template, every
-line of SCSS - and adds its own login page, category showcase, course landing pages, focus mode and
-course notice on top of it.
+line of SCSS - and adds its own category showcase, course landing pages, focus mode and course notice
+on top of it. The login page is Boost Union's.
 
 It is the theme of the *dimensions* family of plugins, beside
 [local_dimensions](https://github.com/uaiblaine/moodle-local_dimensions),
@@ -117,30 +117,14 @@ simply wraps, and every control still works as an ordinary form.
 The showcase follows Moodle's light and dark colour modes.
 
 
-Custom login page
------------------
+Login page
+----------
 
-![The login page: an institutional panel with a kicker, a title, a short text and the monitoring notice on the left; the username and password form on the right](docs/screenshots/login.png)
-
-On by default (*Login page > Login page to show*). The theme draws the login page itself: an
-institutional panel on the left - the logo, a kicker, a title and an optional monitoring notice -
-and, on the right, the ways in, stacked with an "or" between them: the identity providers first,
-then the username and password form, then "Create my account" whenever core's self registration is
-on. The panel follows the whole login flow (password recovery, the MFA challenge and every other
-page on the login layout).
-
-- **No request to an identity provider before a choice.** Core renders each provider's image from
-  the provider's own address, which makes every visitor's browser announce itself to it. This page
-  draws known providers from the Font Awesome Brands font Moodle already ships, and shows a
-  provider it has no mark for by name only, unless its image is served by this site.
-- **A reset hint after the second failed login in a row**, counted per browser session and never per
-  account, so it reveals nothing about which usernames exist.
-- **The panel's copy is a setting** (*Login page > Institutional panel*); a field left empty shows its
-  language string, which follows each user's language.
-- While the page is on, Boost Union's login page settings that shape the form are not read; core's
-  own switches (`showloginform`, the enabled authentication plugins, `guestloginbutton`,
-  `registerauth`) decide what is drawn. *Leave it to Boost Union* gives Boost Union's page back
-  exactly as configured there.
+The theme draws no login page of its own: the login page, its arrangement and every login setting are
+Boost Union's (*Boost Union > Look > Login page*). With
+[auth_loginsteps](#optional-plugins) installed and its shell the site's door, the two sign-in steps other
+components own - tool_mfa's second factor and tool_musudo's privileged session - stand on that plugin's
+shell, so the whole door reads as one; every other page on the login layout keeps Boost Union's.
 
 
 Course landing pages
@@ -245,8 +229,8 @@ core's `forceloginforprofiles` is on (Boost Union's recommendations overview say
 
 A course whose guest access needs no password gets an *Enter as guest* address beside its landing
 page's: a visitor lands on the course as the guest account in one step, while link previews never
-open a guest session. The login page tab also sets where the guest account goes from the site's
-home page (*Guest home page*).
+open a guest session. The *General settings* tab also sets where the guest account goes from the
+site's home page (*Guest home page*).
 
 ### Open Graph
 
@@ -411,7 +395,7 @@ Requirements
 | Plugin | What it adds |
 |---|---|
 | [customfield_picture](https://github.com/uaiblaine/moodle-customfield_picture) (recommended) | The field type of the landing pages' four badges and their share picture. Without it, or with the Picture type disabled, those five fields are not created and nothing draws them; the theme's recommendation in Boost Union's overview says so. Install it later and use that recommendation's fix to create them. |
-| auth_loginsteps | Its logo and identity provider data on the login page, its own shell for the second factor and privileged session pages, and the CPF mask of the login form (`logincpfmask`). The theme asks it by class name and never requires it. |
+| auth_loginsteps | Its own shell for the second factor and privileged session pages, while that shell is the site's door (*Login page* above). The theme asks it by class name and never requires it. |
 | [local_page](https://github.com/uaiblaine/moodle-local_page) | The pages strip on a category page. Without it the strip is simply not drawn. |
 | [mod_subcourse](https://github.com/uaiblaine/moodle-mod_subcourse) | The *Trail* page model: a course whose Subcourse activities are the courses of a trail, in order. Without it, or with the module disabled, the Trail line of the page model is not offered (it stays in the field, whose lines are positions) and a course saved as a trail reads as a course. |
 | [filter_shortcodes](https://github.com/uaiblaine/moodle-filter_shortcodes) | The `[relatedcourses]` shortcode (*Course landing pages* above). Without it the theme's `db/shortcodes.php` is never read; with the filter off, a text holding the shortcode shows it as written. The theme's recommendation in Boost Union's overview says which. |
@@ -455,8 +439,7 @@ Settings
 
 | Tab | What it holds |
 |---|---|
-| General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. The *Look* section's `theme_dimensions/selectableflavours`: the Boost Union flavours a logged-in person may choose as their own look (none ticked: nobody chooses). A chosen flavour is shown to that person on every page, over the flavours Boost Union's category and cohort rules apply. Saving the list gives each listed look a cohort (*Look: ...*) and empties the cohort of a look taken off it. `theme_dimensions/lookmenufavicons` (off by default) puts each look's mark before its name in those menus: the flavour's favicon, else a dot in its brand colour; the site default shows the site's favicon. Each listed look's stylesheet is compiled before its first visitor by the warm-up task (*Boost Union flavours compiled ahead of time*); without it, the first person to pick a look after a cache reset waits for a whole theme compile. |
-| Login page | The login page switch, the institutional panel's copy and the guest home page. |
+| General settings | Boost Union Child's two SCSS inheritance settings; leave them on *Inherit*. The *Look* section's `theme_dimensions/selectableflavours`: the Boost Union flavours a logged-in person may choose as their own look (none ticked: nobody chooses). A chosen flavour is shown to that person on every page, over the flavours Boost Union's category and cohort rules apply. Saving the list gives each listed look a cohort (*Look: ...*) and empties the cohort of a look taken off it. `theme_dimensions/lookmenufavicons` (off by default) puts each look's mark before its name in those menus: the flavour's favicon, else a dot in its brand colour; the site default shows the site's favicon. Each listed look's stylesheet is compiled before its first visitor by the warm-up task (*Boost Union flavours compiled ahead of time*); without it, the first person to pick a look after a cache reset waits for a whole theme compile. The *Guest account* section's guest home page (`theme_dimensions/guesthomepage`, `theme_dimensions/guesthomepageurl`). |
 | Identity | The navbar style: dark in the brand colour with a 3px signature band, or *Leave it to Boost Union*; the visitor's actions, the side menu, the context bar while reading and its colour (`theme_dimensions/navbarcontextcolor`), auto-hide, the compact navbar on tablets and the logos for dark surfaces. |
 | Focus mode | The master switch, the default width, the excluded page types and the default for new courses. |
 | Course landing page | The banner's format (`theme_dimensions/landingheroformat`: in the content column, the default, or full width); the page model, modality and study format a new course starts with; existing courses never change. `theme_dimensions/relatedcount`: how many related courses a landing page shows at most (4 by default). |
@@ -469,8 +452,8 @@ Brazil-specific today
 
 The theme was built for a Brazilian site. The CPF username mask it once carried lives in the
 authentication plugin `auth_loginsteps` now (its setting `logincpfmask`, with the same `?nocpf=1` way
-back to a plain form): the theme draws the login page and keeps the form hooks that mask binds to,
-and nothing of the mask itself.
+back to a plain form), which arms it on core's login form under any theme; nothing of the mask is the
+theme's.
 
 
 Data stored

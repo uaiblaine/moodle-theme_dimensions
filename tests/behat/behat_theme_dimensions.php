@@ -386,7 +386,7 @@ class behat_theme_dimensions extends behat_base {
     public function focus_mode_is_switched_on_for_the_site(): void {
         global $CFG;
 
-        set_config('focusmode', \theme_dimensions\local\login::SELECT_YES, 'theme_dimensions');
+        set_config('focusmode', \theme_dimensions\local\yesno::YES, 'theme_dimensions');
         if (!$this->running_javascript()) {
             return;
         }

@@ -55,5 +55,20 @@ function xmldb_theme_dimensions_upgrade($oldversion) {
         \theme_dimensions\local\landingfields::ensure_fields();
         upgrade_plugin_savepoint(true, 2026100599, 'theme', 'dimensions');
     }
+    if ($oldversion < 2026100602) {
+        // The theme's own login page is retired: the login page is Boost Union's, and its settings go.
+        $names = [
+            'loginpage',
+            'loginpanelkicker',
+            'loginpaneltitle',
+            'loginpaneltext',
+            'loginpanelshowmonitoring',
+            'loginpanelfoot',
+        ];
+        foreach ($names as $name) {
+            unset_config($name, 'theme_dimensions');
+        }
+        upgrade_plugin_savepoint(true, 2026100602, 'theme', 'dimensions');
+    }
     return true;
 }

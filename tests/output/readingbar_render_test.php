@@ -353,7 +353,7 @@ final class readingbar_render_test extends \advanced_testcase {
         $plain = $this->activity_header($course, $cm);
         $this->assertStringContainsString(self::LAYER, $plain, 'Control: the ordinary activity page.');
 
-        set_config('focusmode', \theme_dimensions\local\login::SELECT_YES, focusmode::COMPONENT);
+        set_config('focusmode', \theme_dimensions\local\yesno::YES, focusmode::COMPONENT);
         focusmode::choose((int) $course->id, true);
         $html = $this->activity_header($course, $cm);
         $this->assertStringContainsString('dimensions-focusmode', $this->body_tag($html), 'Precondition: the page opens focused.');
@@ -404,7 +404,7 @@ final class readingbar_render_test extends \advanced_testcase {
     public function test_the_layer_and_the_phone_menu_carry_the_page_controls(): void {
         global $PAGE;
         [$course, $cm] = $this->course();
-        set_config('focusmode', \theme_dimensions\local\login::SELECT_YES, focusmode::COMPONENT);
+        set_config('focusmode', \theme_dimensions\local\yesno::YES, focusmode::COMPONENT);
         $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'student'));
 
         $navbar = $this->navbar($this->activity_header($course, $cm));

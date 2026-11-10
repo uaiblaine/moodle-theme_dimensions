@@ -18,7 +18,7 @@
 // The shell's own look is the plugin's stylesheet; this file lays the PAGE's content - core's
 // moodleform, the factor's header, its buttons - into the shell's single column. Every rule is
 // scoped under the bare page's own class, which only that layout writes, so nothing here reaches
-// an ordinary page, the theme's login page or the plugin's own screens.
+// an ordinary page, Boost Union's login page or the plugin's own screens.
 
 .theme-dimensions-loginshell .auth-loginsteps-shell__corepage {
     display: flex;

@@ -51,12 +51,9 @@ function theme_dimensions_get_main_scss_content($theme) {
     // Then the enrolment landing page styles, which consume the tokens post.scss declares.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/landing.scss');
 
-    // And the login page, scoped to the body class the renderer adds while the custom login page is on.
-    // Every sheet is named here by hand: a file added to scss/ and not listed is never served.
-    $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/login.scss');
-
     // And the sign-in steps of other components drawn on auth_loginsteps' shell (layout/login.php),
-    // scoped under the class only that layout's bare page writes.
+    // scoped under the class only that layout's bare page writes. Every sheet is named here by hand:
+    // a file added to scss/ and not listed is never served.
     $scss .= file_get_contents($CFG->dirroot . '/theme/dimensions/scss/loginshell.scss');
 
     // And the focus mode styles, which consume the same tokens, only while the master switch is on:
@@ -360,7 +357,7 @@ function theme_dimensions_sync_focusmode_default(): void {
 
     $newdefault = get_config('theme_dimensions', 'focusmodenewcourses');
     \theme_dimensions\local\focusmodefields::sync_default(
-        $newdefault == \theme_dimensions\local\login::SELECT_YES
+        $newdefault == \theme_dimensions\local\yesno::YES
     );
 }
 
