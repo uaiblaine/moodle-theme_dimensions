@@ -646,19 +646,20 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         }
 
         // The editor's bullet lists read as a checklist: a check in the brand's ink before each item, drawn with
-        // borders (no image). Numbered lists keep their numbers.
-        ul {
+        // borders (no image). Numbered lists keep their numbers, and the related courses band a section may hold
+        // (the [relatedcourses] shortcode) keeps its cards: its list is the theme's, not the editor's.
+        ul:not(.dimensions-landing__relatedlist) {
             padding-inline-start: 0;
             list-style: none;
         }
 
-        ul > li {
+        ul:not(.dimensions-landing__relatedlist) > li {
             position: relative;
             margin-bottom: 0.5rem;
             padding-inline-start: 2rem;
         }
 
-        ul > li::before {
+        ul:not(.dimensions-landing__relatedlist) > li::before {
             content: "";
             position: absolute;
             top: 0.2em;
@@ -669,7 +670,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
             background: var(--dim-landing-ink);
         }
 
-        ul > li::after {
+        ul:not(.dimensions-landing__relatedlist) > li::after {
             content: "";
             position: absolute;
             top: calc(0.2em + 0.25rem);
