@@ -224,14 +224,9 @@ final class landing_scss_test extends \advanced_testcase {
             'color: var(--dim-landing-ink)',
             $this->rule($css, '.theme_dimensions-landing .dimensions-landing__sectiontitle')
         );
-        $this->assertStringContainsString(
-            'background: var(--dim-landing-ink)',
-            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__panel ul > li::before')
-        );
-        $this->assertStringContainsString(
-            'list-style: none',
-            $this->rule($css, '.theme_dimensions-landing .dimensions-landing__panel ul')
-        );
+        $checklist = '.theme_dimensions-landing .dimensions-landing__panel ul:not(.dimensions-landing__relatedlist)';
+        $this->assertStringContainsString('background: var(--dim-landing-ink)', $this->rule($css, "{$checklist} > li::before"));
+        $this->assertStringContainsString('list-style: none', $this->rule($css, $checklist));
     }
 
     /**
@@ -362,5 +357,18 @@ final class landing_scss_test extends \advanced_testcase {
         $this->assertSame($this->stops($css, '.theme_dimensions-landing'), $this->stops($css, '.theme_dimensions-related'));
         $dark = $this->rule($css, ':root[data-bs-theme="dark"] .theme_dimensions-related');
         $this->assertSame($this->rule($css, ':root[data-bs-theme="dark"] .theme_dimensions-landing'), $dark);
+    }
+
+    /**
+     * The panel's checklist marks the editor's lists only: the related courses band a section holds keeps its cards.
+     */
+    public function test_the_panel_checklist_leaves_the_related_band_alone(): void {
+        $css = $this->compile('#0f6cbf');
+        $panel = '.theme_dimensions-landing .dimensions-landing__panel ul';
+
+        foreach (['', ' > li', ' > li::before', ' > li::after'] as $part) {
+            $this->assertStringNotContainsString("{$panel}{$part} {", $css, "A bare list{$part} would reach the band.");
+            $this->rule($css, "{$panel}:not(.dimensions-landing__relatedlist){$part}");
+        }
     }
 }
