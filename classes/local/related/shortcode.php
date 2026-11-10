@@ -48,6 +48,11 @@ use theme_dimensions\output\related_band;
  * a site with competencies off. A reference this site does not have draws nothing, and a reader who may edit the
  * text's course or category (moodle/course:update in its context) is told what was not found.
  *
+ * On a course's landing page the band has its own place, after both columns: {@see lift()} names the course whose page
+ * the request draws, and an instance in a text of that course's own context (its summary, its landing page sections)
+ * draws nothing where it is written. The first one is kept, and the page draws {@see lifted()}'s answer in its band's
+ * place instead of the automatic band. A text of another context (a label, a field's site-wide default) draws in place.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -74,6 +79,12 @@ final class shortcode {
     /** @var int How many instances this request has drawn. */
     private static int $drawn = 0;
 
+    /** @var int|null The course whose landing page this request draws, {@see lift()}; null on any other page. */
+    private static ?int $liftfor = null;
+
+    /** @var array|null The first instance written in that course's texts: ['args' => array, 'context' => context]. */
+    private static ?array $lifted = null;
+
     /**
      * filter_shortcodes' callback.
      *
@@ -85,17 +96,26 @@ final class shortcode {
      * @return string The block's HTML, or '' for nothing.
      */
     public static function handle($shortcode, $args, $content, $env, $next): string {
-        if (self::$depth > 0 || self::$drawn >= self::MAX_PER_REQUEST || !self::themed() || !finder::available()) {
+        if (self::$depth > 0) {
             return '';
         }
         $context = $env->context ?? null;
         if (!$context instanceof \core\context) {
             $context = \core\context\system::instance();
         }
+        $args = is_array($args) ? $args : [];
+        if (self::lifts($context)) {
+            // Read before the theme or the competencies are asked: the page's texts are formatted before its setup ends.
+            self::$lifted ??= ['args' => $args, 'context' => $context];
+            return '';
+        }
+        if (self::$drawn >= self::MAX_PER_REQUEST || !self::themed() || !finder::available()) {
+            return '';
+        }
         self::$drawn++;
         self::$depth++;
         try {
-            return self::draw(is_array($args) ? $args : [], $context);
+            return self::draw($args, $context);
         } finally {
             self::$depth--;
         }
@@ -109,6 +129,47 @@ final class shortcode {
     public static function reset(): void {
         self::$depth = 0;
         self::$drawn = 0;
+        self::$liftfor = null;
+        self::$lifted = null;
+    }
+
+    /**
+     * Name the course whose landing page this request draws, before any of its texts is formatted: an instance in a
+     * text of that course's own context is kept for the page's band ({@see lifted()}) and draws nothing in place.
+     *
+     * @param int $courseid The course.
+     * @return void
+     */
+    public static function lift(int $courseid): void {
+        self::$liftfor = $courseid;
+        self::$lifted = null;
+    }
+
+    /**
+     * What the first instance written in the landing page course's texts asks for, or null when none was.
+     *
+     * Resolved here, when the page draws its band, never while the text was formatted. With competencies off it is
+     * null too: the page's own band draws nothing then either.
+     *
+     * @return array|null ['found' => {@see finder::find()}'s answer, 'notice' => the editors' notice context or null].
+     */
+    public static function lifted(): ?array {
+        if (self::$lifted === null || !finder::available()) {
+            return null;
+        }
+        return self::resolve(self::$lifted['args'], self::$lifted['context']);
+    }
+
+    /**
+     * Whether an instance in this context belongs to the landing page this request draws.
+     *
+     * @param \core\context $context The text's context.
+     * @return bool
+     */
+    private static function lifts(\core\context $context): bool {
+        return self::$liftfor !== null
+            && $context->contextlevel === CONTEXT_COURSE
+            && (int) $context->instanceid === self::$liftfor;
     }
 
     /**
@@ -132,23 +193,7 @@ final class shortcode {
     private static function draw(array $args, \core\context $context): string {
         global $PAGE;
 
-        $request = self::request($args, $context);
-        $found = $request->problems ? [] : finder::find(
-            $request->set,
-            $request->excluded,
-            $request->mode,
-            $request->match,
-            $request->limit
-        );
-
-        $notice = null;
-        if ($request->problems && has_capability('moodle/course:update', $context)) {
-            $notice = [
-                'message' => s(get_string('related_shortcode_problem', self::COMPONENT, implode('; ', $request->problems))),
-                'closebutton' => false,
-                'announce' => false,
-            ];
-        }
+        ['found' => $found, 'notice' => $notice] = self::resolve($args, $context);
         if (!$found && $notice === null) {
             return '';
         }
@@ -159,6 +204,33 @@ final class shortcode {
             'notice' => $notice,
             'band' => $found ? (new related_band($found, self::REGION))->export_for_template($output) : null,
         ]);
+    }
+
+    /**
+     * The courses the attributes find, and the editors' notice of what was not found.
+     *
+     * @param array $args The attributes.
+     * @param \core\context $context The text's context.
+     * @return array ['found' => {@see finder::find()}'s answer, 'notice' => core/notification_warning's context or null].
+     */
+    private static function resolve(array $args, \core\context $context): array {
+        $request = self::request($args, $context);
+        $found = $request->problems ? [] : finder::find(
+            $request->set,
+            $request->excluded,
+            $request->mode,
+            $request->match,
+            $request->limit
+        );
+        $notice = null;
+        if ($request->problems && has_capability('moodle/course:update', $context)) {
+            $notice = [
+                'message' => s(get_string('related_shortcode_problem', self::COMPONENT, implode('; ', $request->problems))),
+                'closebutton' => false,
+                'announce' => false,
+            ];
+        }
+        return ['found' => $found, 'notice' => $notice];
     }
 
     /**

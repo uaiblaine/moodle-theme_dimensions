@@ -175,6 +175,12 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         padding-inline: var(--dim-landing-inset);
     }
 
+    // What a [relatedcourses] shortcode of the page's texts could not find, told an editor above the band's place.
+    .dimensions-landing__relatednotice {
+        margin-top: 0.5rem;
+        padding-inline: var(--dim-landing-inset);
+    }
+
     .dimensions-landing__relatedlist {
         display: flex;
         flex-wrap: wrap;

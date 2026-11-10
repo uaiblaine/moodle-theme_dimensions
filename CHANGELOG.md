@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **On a landing page, `[relatedcourses]` takes the band's place after both columns.** A shortcode written in the
+  course's own summary or sections was drawn inside the description column. The page now draws the first one in the
+  related courses band's place, below the description and the enrolment card, instead of the automatic band (with
+  the notice for an editor of what it does not find), and leaves a section or a summary that held only the shortcode
+  out. A shortcode in any other text (a label, another course's page) is drawn where it is written.
+
 - **Calendar: the Trails view is a site setting, and a trail's line opens it.** *Trails view* (`calendartrails`, under
   the calendar's settings, on by default) offers the view beside Month and Week; off, the view switch shows Month and
   Week only, an address naming the view opens the month, and course landing pages offer no "Ver no calendário" link.

@@ -51,9 +51,11 @@
     An account's card also leads to the calendar's Trilhas view with this trail kept
     (trailcalendarurl, landing_page::calendar_url()).
 
-    The page ends with the related courses band (landing_page::related(), local\related\band): courses
-    sharing competencies with this course, the ones the reader may see, drawn only when there is one, by
-    the partial theme_dimensions/related_band (the [relatedcourses] shortcode draws it too).
+    The page ends with the related courses band (landing_page::related(), local\related\band), after both
+    columns: courses sharing competencies with this course, the ones the reader may see, drawn only when
+    there is one, by the partial theme_dimensions/related_band. A [relatedcourses] shortcode written in the
+    course's summary or sections is drawn here instead of in the text, with its notice for an editor
+    (relatednotice, core's warning) above the band.
 
     The hero image's url is printed into a style attribute, a CSS context the
     double stash does not protect, because a browser decodes the attribute
@@ -591,6 +593,11 @@
             </div>
         </aside>
     </div>
+    {{#relatednotice}}
+        <div class="dimensions-landing__relatednotice">
+            {{> core/notification_warning }}
+        </div>
+    {{/relatednotice}}
     {{#related}}
         {{> theme_dimensions/related_band }}
     {{/related}}
