@@ -11,6 +11,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   On the desktop timeline, a press on a trail's span (the line of its whole period) or on its end's diamond folds and
   unfolds its courses as the chevron does, with a hit area taller than the line (2026100601).
 
+- **The cover video size setting keeps its default on a site with a small upload limit.** Core's upload sizes leave
+  out every size at or above the site's limit, so under 20 MB the 20 MB default was no choice at all: the install
+  never stored it, and *Cover video size limit* stayed among the new settings on every upgrade. The limit in force is
+  now always one of the choices; the site's own limit still applies on top of it.
+
 - **Related contents, stage R3: the `[relatedcourses]` shortcode** (docs/related/PLAN.md). With filter_shortcodes, the
   shortcode draws the landing page's related courses band in any text the theme draws (a page, a label, a category
   description): by default for the course the text belongs to, or for `course="short name"`, or in manual mode over
