@@ -1186,14 +1186,50 @@ final class branding {
      * How large a cover video may be, from the site setting, with {@see DEFAULT_COVERVIDEO_MAXBYTES} behind it.
      *
      * An unwritten setting (no administrator has saved the tab yet) and an empty value both mean
-     * "nobody chose" and take the default. A stored zero would mean an unusable field, which is
-     * not a choice the select offers.
+     * "nobody chose" and take the default. A stored zero is core's "site upload limit" entry of
+     * {@see covervideo_maxbytes_choices()}; it reads as the default too, never as a field bounded by
+     * zero, and the site's own limit still applies on top of it.
      *
      * @return int The limit in bytes.
      */
     public static function covervideo_maxbytes(): int {
         $stored = (int) get_config(self::COMPONENT, self::SETTING_COVERVIDEO_MAXBYTES);
         return $stored > 0 ? $stored : self::DEFAULT_COVERVIDEO_MAXBYTES;
+    }
+
+    /**
+     * The choices of the cover video size setting: core's upload sizes, with the default and the stored limit always among them.
+     *
+     * get_max_upload_sizes() drops every size at or above the site's upload limit, the custom one
+     * included. Without the two additions, a site whose limit is under the default (PHP's 2 MB
+     * upload_max_filesize is enough) has a setting whose default is not a choice:
+     * admin_setting_configselect::write_setting() ignores such a value at install, so the setting
+     * is never stored and stays "new" on the upgrade settings page for good. A stored limit above
+     * the site's would likewise be missing, and saving the tab would replace it with the first
+     * choice. Offering a size above the site's limit is what the setting's help says: the site's
+     * own limit still applies on top.
+     *
+     * $CFG->maxbytes is read through ?? and never bare: during a fresh install the admin tree is
+     * built before core's own defaults are stored, so the property does not exist yet and a bare
+     * read is a PHP warning.
+     *
+     * @return array Bytes => the size as core displays it, core's "site upload limit" entry first, then largest first.
+     */
+    public static function covervideo_maxbytes_choices(): array {
+        global $CFG;
+
+        $choices = get_max_upload_sizes((int) ($CFG->maxbytes ?? 0), 0, 0, self::covervideo_maxbytes());
+        foreach ([self::DEFAULT_COVERVIDEO_MAXBYTES, self::covervideo_maxbytes()] as $bytes) {
+            if (!array_key_exists($bytes, $choices)) {
+                $choices[$bytes] = display_size($bytes, 0);
+            }
+        }
+
+        // Core's own order: its key 0, the site's limit, ahead of the sizes, largest first.
+        $sitelimit = array_intersect_key($choices, [0 => true]);
+        unset($choices[0]);
+        krsort($choices, SORT_NUMERIC);
+        return $sitelimit + $choices;
     }
 
     /**

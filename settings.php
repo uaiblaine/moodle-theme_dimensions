@@ -687,14 +687,12 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         /* Setting: how large a category's card cover video may be, 20 MB by default. The vocabulary
            is core's own upload sizes rather than a free field, because the value is read straight
            back into the field's maxbytes - a configtext defaults to PARAM_RAW and validates
-           nothing, so a plausible number typed by hand would silently become the limit. The stored
-           value is passed as the custom size so that whatever a site chose is always one of the
-           options, and the site's own upload limit still applies on top: the field is bounded by
-           the smaller of the two, which is what the help string says (an admin holding
-           ignorefilesizelimits is exempt from both, as core intends).
-           $CFG->maxbytes is read through ?? and never bare: during a fresh install the admin tree
-           is built before core's own defaults are stored, so the property does not exist yet and
-           the bare read is a PHP warning, which fails moodle-plugin-ci's install step. */
+           nothing, so a plausible number typed by hand would silently become the limit. The
+           default and whatever a site stored are always among the choices, whatever the site's
+           upload limit ({@see branding::covervideo_maxbytes_choices()} says why), and the site's
+           own limit still applies on top: the field is bounded by the smaller of the two, which
+           is what the help string says (an admin holding ignorefilesizelimits is exempt from both,
+           as core intends). */
         $name = 'theme_dimensions/' . branding::SETTING_COVERVIDEO_MAXBYTES;
         $title = get_string('categorycovervideomaxbytes', 'theme_dimensions', null, true);
         $description = get_string('categorycovervideomaxbytes_desc', 'theme_dimensions', null, true);
@@ -703,7 +701,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             $title,
             $description,
             branding::DEFAULT_COVERVIDEO_MAXBYTES,
-            get_max_upload_sizes((int) ($CFG->maxbytes ?? 0), 0, 0, branding::covervideo_maxbytes())
+            branding::covervideo_maxbytes_choices()
         );
         $tab->add($setting);
 

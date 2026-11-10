@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The cover video size limit is stored on every site.** The setting's default, 20 MB, was not one of its choices on a
+  site whose upload limit is under it (core lists only the sizes below that limit, and PHP's own default is 2 MB), so
+  the install never stored it and the setting stayed new on the upgrade settings page for good. The default and the
+  stored limit are now always among the choices; what a stored value means is unchanged, and the site's upload limit
+  still applies on top. The upgrade stores the default on a site that never had it (2026100602).
+
 - **Related contents, stage R3: the `[relatedcourses]` shortcode** (docs/related/PLAN.md). With filter_shortcodes, the
   shortcode draws the landing page's related courses band in any text the theme draws (a page, a label, a category
   description): by default for the course the text belongs to, or for `course="short name"`, or in manual mode over

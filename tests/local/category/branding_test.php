@@ -1582,8 +1582,8 @@ final class branding_test extends \advanced_testcase {
      * The video's size limit is the site setting's, and an unwritten setting is twenty megabytes.
      *
      * A default read with a falsy fallback would report a stored value of nothing as a usable
-     * limit and a stored zero as one too; the select offers neither, and a picker bounded by zero
-     * is a field that refuses every file with no explanation. The settings page is read from its
+     * limit and a stored zero (core's "site upload limit" entry) as one too, and a picker bounded
+     * by zero is a field that refuses every file with no explanation. The settings page is read from its
      * own source, because a setting nothing registers has a default nobody can change.
      */
     public function test_the_video_size_limit_comes_from_the_setting_and_falls_back_to_twenty_megabytes(): void {
@@ -1602,7 +1602,7 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame(
             branding::DEFAULT_COVERVIDEO_MAXBYTES,
             branding::covervideo_maxbytes(),
-            'A stored zero is not a choice the select offers, so it reads as nobody having chosen.'
+            'A stored zero is core\'s "site upload limit" entry, and it reads as nobody having chosen.'
         );
 
         // The two option sets the editor's pickers take, spelled once each.
@@ -1618,7 +1618,88 @@ final class branding_test extends \advanced_testcase {
             'The setting is registered, on the Vitrine tab, or its default is one nobody can change.'
         );
         $this->assertStringContainsString('branding::DEFAULT_COVERVIDEO_MAXBYTES', $source);
-        $this->assertStringContainsString('get_max_upload_sizes(', $source, 'And its vocabulary is core\'s own sizes.');
+        $this->assertStringContainsString(
+            'branding::covervideo_maxbytes_choices()',
+            $source,
+            'And its vocabulary is core\'s own sizes, with the default among them.'
+        );
+    }
+
+    /**
+     * On a site whose upload limit is under the default, the default is still a choice, so the install stores it.
+     *
+     * Core's get_max_upload_sizes() drops every size at or above the site's upload limit (PHP's 2 MB
+     * on GitHub's runner), and admin_setting_configselect::write_setting() ignores a value that is not
+     * a choice: the default was never stored and the setting stayed new on the upgrade settings page
+     * for good. The limit here is $CFG->maxbytes, which core bounds the PHP one by, so the case runs
+     * on any stack. The control is core's own vocabulary under the same limit, which must lack the
+     * default, or the small limit was never in force.
+     *
+     * Changes that must make it fail: dropping the default from the choices' additions; reading the
+     * choices from get_max_upload_sizes() alone in settings.php.
+     */
+    public function test_a_site_under_the_default_upload_limit_stores_the_default(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $CFG->maxbytes = 1048576;
+        $this->assertArrayNotHasKey(
+            branding::DEFAULT_COVERVIDEO_MAXBYTES,
+            get_max_upload_sizes($CFG->maxbytes, 0, 0, branding::DEFAULT_COVERVIDEO_MAXBYTES),
+            'Control: under a 1 MB limit, core offers no 20 MB, not even as the custom size.'
+        );
+
+        $choices = branding::covervideo_maxbytes_choices();
+        $this->assertArrayHasKey(branding::DEFAULT_COVERVIDEO_MAXBYTES, $choices, 'The default is a choice all the same.');
+        $sizes = array_keys($choices);
+        $this->assertSame(0, array_shift($sizes), 'Core\'s "site upload limit" entry stays first.');
+        $sorted = $sizes;
+        rsort($sorted, SORT_NUMERIC);
+        $this->assertSame($sorted, $sizes, 'And the sizes follow it largest first, as core lists them.');
+
+        // The install's own path: an unwritten setting is new until the defaults are applied, and then it is not.
+        unset_config(branding::SETTING_COVERVIDEO_MAXBYTES, branding::COMPONENT);
+        $node = admin_get_root(true, true)->locate('theme_dimensions');
+        $this->assertArrayHasKey(
+            'theme_dimensions',
+            admin_output_new_settings_by_page($node),
+            'Precondition: unwritten, the setting counts as new.'
+        );
+        admin_apply_default_settings($node, false);
+        $this->assertSame(
+            (string) branding::DEFAULT_COVERVIDEO_MAXBYTES,
+            get_config(branding::COMPONENT, branding::SETTING_COVERVIDEO_MAXBYTES),
+            'The default was stored.'
+        );
+        $this->assertSame(
+            [],
+            admin_output_new_settings_by_page(admin_get_root(true, true)->locate('theme_dimensions')),
+            'And nothing of the theme stays new.'
+        );
+    }
+
+    /**
+     * A limit a site stored above its upload limit stays a choice, so saving the tab keeps it.
+     *
+     * Core drops the custom size with the rest once it reaches the site's limit, so the select
+     * would draw the stored 50 MB as no option at all and the tab's next save would write the
+     * first choice over it. The control is core's vocabulary with the same custom size.
+     */
+    public function test_a_stored_limit_above_the_upload_limit_stays_a_choice(): void {
+        global $CFG;
+        $this->resetAfterTest();
+
+        $CFG->maxbytes = 1048576;
+        set_config(branding::SETTING_COVERVIDEO_MAXBYTES, 52428800, branding::COMPONENT);
+        $this->assertArrayNotHasKey(
+            52428800,
+            get_max_upload_sizes($CFG->maxbytes, 0, 0, 52428800),
+            'Control: core drops the stored size under this limit.'
+        );
+        $this->assertArrayHasKey(52428800, branding::covervideo_maxbytes_choices(), 'The stored limit is a choice.');
+        $this->assertSame(52428800, branding::covervideo_maxbytes(), 'And it still means what it meant.');
     }
 
     /**
@@ -1687,7 +1768,7 @@ final class branding_test extends \advanced_testcase {
      * warning raised from this theme's files into a failure by name, because a PHPUnit warning
      * is not a failure.
      *
-     * Changes that must make it fail: reading $CFG->maxbytes bare in settings.php.
+     * Changes that must make it fail: reading $CFG->maxbytes bare where the settings page's choices are built.
      */
     public function test_the_settings_page_builds_on_a_site_with_no_maxbytes_yet(): void {
         global $CFG;
