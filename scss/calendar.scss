@@ -2413,12 +2413,22 @@ body.dim-calendar {
         white-space: nowrap;
     }
 
-    // The trail's own span on its row, and the diamond of an end inside the month.
+    // The trail's own span on its row, and the diamond of an end inside the month. Both fold the trail as its chevron
+    // does, a pointer's shortcut (the chevron stays the named control): the span's hit area reaches over and under the
+    // thin line.
     .dim-cal__trailspan {
+        position: relative;
         z-index: 1;
         height: .5rem;
         border-radius: var(--dim-ds-radius-pill, 50rem);
         background: var(--dim-cal-trail-tint);
+        cursor: pointer;
+    }
+
+    .dim-cal__trailspan::before {
+        content: "";
+        position: absolute;
+        inset: -.75rem 0;
     }
 
     .dim-cal__trailspan--before {
@@ -2445,6 +2455,10 @@ body.dim-calendar {
     .dim-cal__traildiamond--trail,
     .dim-cal__traildiamond--legend {
         background: var(--dim-ds-text-body, var(--bs-body-color));
+    }
+
+    .dim-cal__traildiamond--trail {
+        cursor: pointer;
     }
 
     .dim-cal__trailbar {

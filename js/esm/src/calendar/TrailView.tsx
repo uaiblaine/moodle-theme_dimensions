@@ -26,7 +26,8 @@
  *   are hatched, a month's first day is a line, and today is a line down the rows. Consecutive steps are joined by
  *   connectors in the trail's order (trails.ts linksOf()), drawn by the same day arithmetic, aria-hidden. The days have
  *   a fixed width and only they scroll, in TrailScroll.tsx, the trail column held still; a trail's chevron (core's
- *   course-section toggle, its icons rendered by the server) folds its steps away, the view's own state, never saved;
+ *   course-section toggle, its icons rendered by the server) folds its steps away, the view's own state, never saved,
+ *   and a press on the trail's span (or its end's diamond) does the same, a pointer's shortcut the chevron names;
  *   with more than one trail each arrives folded, one alone opens (trails.ts arrivedOf()), and the reader's own fold
  *   is kept across every load, except that a new answer holding one trail opens it (freshFolds()); beside the
  *   heading one more toggle expands every trail when any is folded and folds every one when all are open, drawn only
@@ -1076,14 +1077,18 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
                             className={'dim-cal__trailspan' + (span.before ? ' dim-cal__trailspan--before' : '')
                                 + (span.after ? ' dim-cal__trailspan--after' : '')}
                             style={{gridColumn: `${span.from + 2} / ${span.to + 3}`, gridRow: '1'}}
+                            data-action="dim-cal-trailspan"
                             aria-hidden="true"
+                            onClick={() => fold(trail.id)}
                         ></span>
                     ) : null}
                     {span && !span.after && !span.open ? (
                         <span
                             className="dim-cal__traildiamond dim-cal__traildiamond--trail"
                             style={{gridColumn: String(span.to + 2), gridRow: '1'}}
+                            data-action="dim-cal-trailspan"
                             aria-hidden="true"
+                            onClick={() => fold(trail.id)}
                         ></span>
                     ) : null}
                 </div>

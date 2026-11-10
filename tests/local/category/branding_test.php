@@ -1622,6 +1622,51 @@ final class branding_test extends \advanced_testcase {
     }
 
     /**
+     * On a site whose upload limit is under 20 MB, core's sizes drop the default, so the setting keeps it among its choices
+     * in their order, and the installer's write of it is stored: the setting is no longer "new" on every upgrade. The
+     * control is a list that already holds the default, which comes back unchanged.
+     */
+    public function test_the_video_size_default_stays_a_choice_under_a_small_upload_limit(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+        $this->resetAfterTest();
+        // The admin tree holds the theme's page only for somebody who may configure it.
+        $this->setAdminUser();
+
+        $small = get_max_upload_sizes(1048576, 0, 0, branding::covervideo_maxbytes());
+        $this->assertArrayNotHasKey('20971520', $small, 'Precondition: core drops the default under a 1 MB limit.');
+        $choices = branding::covervideo_choices($small);
+        $this->assertArrayHasKey('20971520', $choices);
+        $this->assertSame('0', (string) array_key_first($choices), 'Core\'s "site upload limit" line stays first.');
+        $sizes = array_map('intval', array_slice(array_keys($choices), 1));
+        $sorted = $sizes;
+        rsort($sorted);
+        $this->assertSame($sorted, $sizes, 'The rest keeps core\'s descending order.');
+
+        // The control is a list that already holds the default. Core's own list under a larger site limit is no such
+        // list everywhere: get_max_upload_sizes() also caps at PHP's upload_max_filesize, 2 MB on the CI runners.
+        $this->assertSame($choices, branding::covervideo_choices($choices), 'Control: a list holding the default, unchanged.');
+
+        // The installer's path, under the small limit: core applies the page's defaults, and this one is stored.
+        $CFG->maxbytes = 1048576;
+        unset_config(branding::SETTING_COVERVIDEO_MAXBYTES, branding::COMPONENT);
+        $page = admin_get_root(true, true)->locate('theme_dimensions');
+        $this->assertNotNull($page, 'The theme settings page is in the admin tree.');
+        $this->assertStringContainsString(
+            branding::SETTING_COVERVIDEO_MAXBYTES,
+            admin_output_new_settings_by_page($page)['theme_dimensions'] ?? '',
+            'Precondition: unset, the setting counts as new.'
+        );
+        admin_apply_default_settings($page, false);
+        $this->assertSame('20971520', (string) get_config(branding::COMPONENT, branding::SETTING_COVERVIDEO_MAXBYTES));
+        $this->assertStringNotContainsString(
+            branding::SETTING_COVERVIDEO_MAXBYTES,
+            admin_output_new_settings_by_page(admin_get_root(true, true)->locate('theme_dimensions'))['theme_dimensions'] ?? '',
+            'Stored, it is no longer new.'
+        );
+    }
+
+    /**
      * Every file field of the editor takes a copy, and an alias never reaches its area.
      *
      * A file manager's default admits an alias and a controlled link beside a copy. An alias is a

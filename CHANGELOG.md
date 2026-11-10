@@ -5,6 +5,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Calendar: the Trails view is a site setting, and a trail's line opens it.** *Trails view* (`calendartrails`, under
+  the calendar's settings, on by default) offers the view beside Month and Week; off, the view switch shows Month and
+  Week only, an address naming the view opens the month, and course landing pages offer no "Ver no calendário" link.
+  On the desktop timeline, a press on a trail's span (the line of its whole period) or on its end's diamond folds and
+  unfolds its courses as the chevron does, with a hit area taller than the line (2026100601).
+
+- **The cover video size setting keeps its default on a site with a small upload limit.** Core's upload sizes leave
+  out every size at or above the site's limit, so under 20 MB the 20 MB default was no choice at all: the install
+  never stored it, and *Cover video size limit* stayed among the new settings on every upgrade. The limit in force is
+  now always one of the choices; the site's own limit still applies on top of it.
+
 - **The related courses band keeps its cards inside a landing page section.** The panel of the audience, programme
   and certification sections draws the editor's bullet lists as a checklist, and its rules reached the band's own list
   too, so `[relatedcourses]` in a section drew a check beside each card. The checklist now leaves that list alone.

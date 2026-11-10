@@ -1197,6 +1197,30 @@ final class branding {
     }
 
     /**
+     * The choices of the cover video size setting: core's upload sizes, with the limit in force always among them.
+     *
+     * get_max_upload_sizes() drops every size at or above the site's upload limit, the custom one included, so on a
+     * site below 20 MB the default would be no choice at all: the installer's write of it is then ignored
+     * (admin_setting_configselect refuses a value outside its choices) and the setting stays "new" on every upgrade.
+     * The limit in force is offered anyway, in the list's own descending order after core's "site upload limit"
+     * line; the site's limit still applies on top of it, as the setting's help says.
+     *
+     * @param array $sizes What get_max_upload_sizes() answered: bytes (as a string) => label, '0' for the site's limit.
+     * @return array The same map, holding {@see covervideo_maxbytes()}.
+     */
+    public static function covervideo_choices(array $sizes): array {
+        $chosen = (string) self::covervideo_maxbytes();
+        if (isset($sizes[$chosen])) {
+            return $sizes;
+        }
+        $site = array_key_exists('0', $sizes) ? ['0' => $sizes['0']] : [];
+        unset($sizes['0']);
+        $sizes[$chosen] = display_size((int) $chosen, 0);
+        krsort($sizes, SORT_NUMERIC);
+        return $site + $sizes;
+    }
+
+    /**
      * The file manager options of the card cover video: one file, the two extensions, the setting's limit.
      *
      * accepted_types is the extensions of {@see VIDEO_TYPES} and not a core type group: the group

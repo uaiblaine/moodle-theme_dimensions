@@ -253,13 +253,14 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
      * Whether "Ver no calendário" is offered: exactly when the Trilhas view would list this trail to this reader
      * ({@see trails::offers()}: the view's own gate and rule over this course, never a copy of them). A page served to a
      * reader the listing withholds the trail from (an unlisted category, a hidden course) offers no link that would open
-     * on nothing. A visitor is offered none, as {@see page::trails_offered()} says; the trail's part exists only while
-     * trails are available.
+     * on nothing. A visitor is offered none, as {@see page::trails_offered()} says, and nobody is while the site offers
+     * no Trilhas view ({@see page::trails_enabled()}), asked first so a site with the view off pays no read; the trail's
+     * part exists only while trails are available.
      *
      * @return bool
      */
     private function shows_in_calendar(): bool {
-        return trails::offers((int) $this->course->id);
+        return page::trails_enabled() && trails::offers((int) $this->course->id);
     }
 
     /**

@@ -28,6 +28,7 @@ use theme_dimensions\local\calendar\blocks;
 use theme_dimensions\local\calendar\coreview;
 use theme_dimensions\local\calendar\keycolour_setting;
 use theme_dimensions\local\calendar\keycolours;
+use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\calendar\visitor;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\filterfields_setting;
@@ -687,9 +688,10 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         /* Setting: how large a category's card cover video may be, 20 MB by default. The vocabulary
            is core's own upload sizes rather than a free field, because the value is read straight
            back into the field's maxbytes - a configtext defaults to PARAM_RAW and validates
-           nothing, so a plausible number typed by hand would silently become the limit. The stored
-           value is passed as the custom size so that whatever a site chose is always one of the
-           options, and the site's own upload limit still applies on top: the field is bounded by
+           nothing, so a plausible number typed by hand would silently become the limit. The limit in
+           force is always one of the options (branding::covervideo_choices(): core drops every size at
+           or above the site's upload limit, the custom one included, which on a small-limit site left
+           the default unstorable), and the site's own upload limit still applies on top: the field is bounded by
            the smaller of the two, which is what the help string says (an admin holding
            ignorefilesizelimits is exempt from both, as core intends).
            $CFG->maxbytes is read through ?? and never bare: during a fresh install the admin tree
@@ -703,7 +705,9 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             $title,
             $description,
             branding::DEFAULT_COVERVIDEO_MAXBYTES,
-            get_max_upload_sizes((int) ($CFG->maxbytes ?? 0), 0, 0, branding::covervideo_maxbytes())
+            branding::covervideo_choices(
+                get_max_upload_sizes((int) ($CFG->maxbytes ?? 0), 0, 0, branding::covervideo_maxbytes())
+            )
         );
         $tab->add($setting);
 
@@ -746,6 +750,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $name = 'theme_dimensions/' . blocks::SETTING;
         $title = get_string('calendarblocks', 'theme_dimensions', null, true);
         $description = get_string('calendarblocks_desc', 'theme_dimensions', null, true);
+        $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
+        $tab->add($setting);
+
+        // Setting: The Trilhas view of the calendar page and its choice in the view switch. Default on, and read as on
+        // unless an explicit '0' was stored ({@see page::trails_enabled()}), so no upgrade step writes it.
+        $name = 'theme_dimensions/' . page::TRAILS_SETTING;
+        $title = get_string('calendartrails', 'theme_dimensions', null, true);
+        $description = get_string('calendartrails_desc', 'theme_dimensions', null, true);
         $setting = new admin_setting_configcheckbox($name, $title, $description, 1);
         $tab->add($setting);
 

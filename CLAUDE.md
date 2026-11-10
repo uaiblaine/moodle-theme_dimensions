@@ -1649,7 +1649,9 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   - In dark mode, core underlines every `#region-main` link at (1,6,1); one rule of `calendar.scss`, at (1,7,4), takes
     the underline off the calendar's own links.
 - **T3: the Trilhas view** (docs/trail/PLAN.md section 7). `view=trail` (`page::VIEW_TRAIL`) is an account's while
-  trails are available (`page::trails_offered()`), its `trail=` and `mine=1` navigation like the view; its answer is
+  trails are available and the site offers it (`page::trails_offered()`; setting `calendartrails`, on unless an
+  explicit '0', `page::trails_enabled()`, which the landing page's "Ver no calendário" asks first: no read decides the
+  switch), its `trail=` and `mine=1` navigation like the view; its answer is
   `local\calendar\trails::answer()` through `theme_dimensions_get_calendar_trails`, embedded on a first paint, and the
   range is asked with every key off. The client is `calendar/TrailView.tsx` (the grid of bars, the phone's agenda, the
   filters' row) and `TrailPopover.tsx` over the pure `trails.ts`; `Calendar.tsx`'s one request path asks the trails

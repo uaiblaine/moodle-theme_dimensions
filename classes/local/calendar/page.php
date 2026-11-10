@@ -100,9 +100,13 @@ final class page {
 
     /**
      * @var string The Trilhas view: the trails of the month, an account's only and only
-     *   while trails are available ({@see trail::available()}); for anyone else the address reads as the month.
+     *   while trails are available ({@see trail::available()}) and the site offers the view ({@see TRAILS_SETTING});
+     *   for anyone else the address reads as the month.
      */
     public const VIEW_TRAIL = 'trail';
+
+    /** @var string The setting that offers the Trilhas view and its choice in the view switch ({@see trails_enabled()}). */
+    public const TRAILS_SETTING = 'calendartrails';
 
     /** @var string The address parameter of the one trail the Trilhas view keeps, its course id; navigation, never state. */
     public const PARAM_TRAIL = 'trail';
@@ -285,15 +289,25 @@ final class page {
     }
 
     /**
-     * Whether the page offers the Trilhas view: to a real account, while trails are available.
+     * Whether the page offers the Trilhas view: to a real account, while the site offers it and trails are available.
      *
      * A visitor's public calendar has no such view (the calendar asks an account to log in for it),
-     * and without mod_subcourse there are no trails.
+     * and without mod_subcourse there are no trails. Whether this account is shown any trail is not asked here: that
+     * is the view's answer, and the switch must cost the month and the week no read.
      *
      * @return bool
      */
     public static function trails_offered(): bool {
-        return isloggedin() && !isguestuser() && trail::available();
+        return isloggedin() && !isguestuser() && self::trails_enabled() && trail::available();
+    }
+
+    /**
+     * Whether the site offers the Trilhas view: on unless an explicit '0' was stored, so no upgrade step writes it.
+     *
+     * @return bool
+     */
+    public static function trails_enabled(): bool {
+        return (string) get_config('theme_dimensions', self::TRAILS_SETTING) !== '0';
     }
 
     /**

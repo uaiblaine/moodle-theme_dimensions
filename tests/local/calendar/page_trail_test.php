@@ -307,4 +307,44 @@ final class page_trail_test extends \advanced_testcase {
         $this->assertFalse($context['trailview']);
         $this->assertStringContainsString('view=trail', $context['trailurl']);
     }
+
+    /**
+     * The site's switch takes the Trilhas view away from every account: the switch draws no choice, the toolbar no link
+     * and the address reads as the month. The control is the same account and trail with the view on again, and anything
+     * but an explicit '0' is on.
+     *
+     * @return void
+     */
+    public function test_the_sites_switch_takes_the_view_away(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/calendar/lib.php');
+        $CFG->routerconfigured = false;
+        $this->trail();
+        $this->as_viewer(self::getDataGenerator()->create_user());
+        $draw = function (array $get): array {
+            global $PAGE;
+            self::forget_calendar();
+            $_GET = $get;
+            $PAGE = new \moodle_page();
+            $page = page::handle()->page;
+            return [$page->props(), $page->export_for_template($PAGE->get_renderer('core'))];
+        };
+
+        set_config(page::TRAILS_SETTING, '0', 'theme_dimensions');
+        $this->assertFalse(page::trails_offered());
+        [$props, $context] = $draw([page::PARAM_VIEW => 'trail', state::PARAM_MONTH => '2027-03']);
+        $this->assertSame(page::VIEW_MONTH, $props['view'], 'The address reads as the month.');
+        $this->assertNull($props['trails']['answer']);
+        $this->assertFalse($props['trails']['offered']);
+        $this->assertFalse($context['trailsoffered']);
+
+        set_config(page::TRAILS_SETTING, '1', 'theme_dimensions');
+        [$props, $context] = $draw([page::PARAM_VIEW => 'trail', state::PARAM_MONTH => '2027-03']);
+        $this->assertSame(page::VIEW_TRAIL, $props['view'], 'Control: the view on.');
+        $this->assertTrue($props['trails']['offered']);
+        $this->assertTrue($context['trailsoffered']);
+
+        unset_config(page::TRAILS_SETTING, 'theme_dimensions');
+        $this->assertTrue(page::trails_offered(), 'Never set reads as on.');
+    }
 }
