@@ -151,4 +151,51 @@ final class landing_page_related_test extends \advanced_testcase {
         [$context] = self::page($this->course('Automático'));
         $this->assertNotNull($context->related);
     }
+
+    /**
+     * A public page cleans its sections before the text filters: the editor's script goes, the shortcode's band stays.
+     *
+     * Cleaning the finished HTML stripped the band's markup with the script (no covers, no data or aria attributes);
+     * the fixture holds both, saved trusted by an administrator with trusted text on, so only the cleaning removes the
+     * script. The page behind login keeps the trusted rendering, and is the control. Skipped without filter_shortcodes.
+     */
+    public function test_a_public_pages_sections_are_cleaned_before_the_filters(): void {
+        global $CFG, $PAGE;
+        if (\core_component::get_component_directory('filter_shortcodes') === null) {
+            $this->markTestSkipped('filter_shortcodes is not installed.');
+        }
+        require_once($CFG->libdir . '/filterlib.php');
+        $PAGE->force_theme('dimensions');
+        \theme_dimensions\local\related\shortcode::reset();
+        filter_set_global_state('shortcodes', TEXTFILTER_ON);
+        \cache::make_from_params(\cache_store::MODE_REQUEST, 'core_filter', 'global_filters')->purge();
+        \filter_manager::reset_caches();
+        $CFG->enabletrusttext = 1;
+
+        $this->setAdminUser();
+        $parent = $this->course('Primeiros socorros');
+        $this->course('Suporte avançado');
+        \core_course\customfield\course_handler::create()->instance_form_save((object) [
+            'id' => $parent->id,
+            'customfield_' . landingfields::SHORTNAME_PROGRAMME . '_editor' => [
+                'text' => '<p>Módulo 1.</p><script>alert(1)</script><p>[relatedcourses]</p>',
+                'format' => FORMAT_HTML,
+            ],
+        ]);
+        $values = landingfields::values((int) $parent->id);
+        $PAGE->set_url('/theme/dimensions/landing.php', ['id' => $parent->id]);
+        $renderer = $PAGE->get_renderer('core');
+        $closed = new resolution(resolution::STATE_CLOSED);
+
+        $public = (new landing_page($parent, $values, $closed, [], true))->export_for_template($renderer);
+        $html = $public->sections[0]['html'];
+        $this->assertStringNotContainsString('<script', $html, 'The editor\'s script is cleaned.');
+        $this->assertStringContainsString('data-region="dimensions-related-block"', $html, 'The filter\'s markup stays.');
+        $this->assertStringContainsString('<section', $html);
+        $this->assertStringContainsString('Suporte avançado', $html);
+        $this->assertStringContainsString('Módulo 1.', $html);
+
+        $internal = (new landing_page($parent, $values, $closed, [], false))->export_for_template($renderer);
+        $this->assertStringContainsString('<script', $internal->sections[0]['html'], 'Control: trusted rendering behind login.');
+    }
 }
