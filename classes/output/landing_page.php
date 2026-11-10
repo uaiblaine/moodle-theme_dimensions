@@ -60,6 +60,13 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     /** @var string Component name for get_string calls. */
     private const COMPONENT = 'theme_dimensions';
 
+    /** @var string[] The textarea fields drawn as the page's content sections, in their order. */
+    private const SECTION_SHORTNAMES = [
+        landingfields::SHORTNAME_AUDIENCE,
+        landingfields::SHORTNAME_PROGRAMME,
+        landingfields::SHORTNAME_CERTIFICATION,
+    ];
+
     /** @var \stdClass|null The exported context, once computed: the full width banner and the page read the same one. */
     private ?\stdClass $exported = null;
 
@@ -1012,25 +1019,30 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     /**
      * The content sections: one per non-empty textarea field, in a fixed order.
      *
-     * On a public course every section is run through the HTML cleaner, as the
-     * summary is; see {@see summary_html()} for why.
+     * On a public course every section is cleaned whoever is looking, as the summary is ({@see summary_html()} says
+     * why), and the cleaning happens where format_text() does it, BEFORE the text filters: the sections are read again
+     * with {@see landingfields::values_many()}'s $clean. Cleaning the finished HTML instead also stripped what a filter
+     * added, such as the markup of the [relatedcourses] shortcode, which no other page of Moodle cleans.
      *
      * @return array Sections of ['title' => plain string, 'html' => final HTML].
      */
     private function sections(): array {
+        $values = $this->values;
+        if ($this->ispublic) {
+            /* The textarea's export_value() honours the value's trust mark, so with enabletrusttext on, an editor
+               holding moodle/site:trustcontent ships uncleaned HTML: fine behind login, stored script on the open
+               internet. One more statement, on a public page only. */
+            $courseid = (int) $this->course->id;
+            $values = landingfields::values_many([$courseid], true, self::SECTION_SHORTNAMES, true)[$courseid];
+        }
         $sections = [];
         $order = [
-            landingfields::SHORTNAME_AUDIENCE => $this->values->audience,
-            landingfields::SHORTNAME_PROGRAMME => $this->values->programme,
-            landingfields::SHORTNAME_CERTIFICATION => $this->values->certification,
+            landingfields::SHORTNAME_AUDIENCE => $values->audience,
+            landingfields::SHORTNAME_PROGRAMME => $values->programme,
+            landingfields::SHORTNAME_CERTIFICATION => $values->certification,
         ];
         foreach ($order as $shortname => $html) {
             if ($html !== null && trim((string) $html) !== '' && isset($this->values->names[$shortname])) {
-                /* Same rule as the summary: a public page is cleaned for everybody. The
-                   textarea's export_value() honours the value's trust mark, so with
-                   enabletrusttext on, an editor holding moodle/site:trustcontent ships
-                   uncleaned HTML - fine behind login, stored script on the open internet. */
-                $html = $this->ispublic ? clean_text($html, FORMAT_HTML) : $html;
                 $sections[] = ['title' => $this->values->names[$shortname], 'html' => $html];
             }
         }

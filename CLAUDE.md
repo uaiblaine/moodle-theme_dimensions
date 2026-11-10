@@ -971,8 +971,12 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   rendering, and the test holds both halves. **The textarea sections have the same hole by
   another route** - `customfield_textarea`'s `export_value()` passes the value's trust mark
   to `format_text()`, so with `enabletrusttext` on an editor holding
-  `moodle/site:trustcontent` ships uncleaned HTML - and `sections()` runs them through
-  `clean_text()` on a public course. The first review of stage 2 found the summary fixed
+  `moodle/site:trustcontent` ships uncleaned HTML - and on a public course `sections()` reads
+  them again with `landingfields::values_many()`'s `$clean` (`noclean` false). That cleans
+  where `format_text()` cleans, BEFORE the text filters: cleaning the finished HTML with
+  `clean_text()`, as it once did, also stripped what a filter adds (the `[relatedcourses]`
+  shortcode's covers, sections and data attributes), which no other page of Moodle cleans.
+  Never clean a filtered result again. The first review of stage 2 found the summary fixed
   and the sections not, 190 lines apart on the same page: fix this class of defect by the
   SINK (every triple stash on the public page), not by the field.
 - **The registry of head tags is armed last, right before `$OUTPUT->header()`.** The head

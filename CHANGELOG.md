@@ -16,6 +16,16 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
   never stored it, and *Cover video size limit* stayed among the new settings on every upgrade. The limit in force is
   now always one of the choices; the site's own limit still applies on top of it.
 
+- **The related courses band keeps its cards inside a landing page section.** The panel of the audience, programme
+  and certification sections draws the editor's bullet lists as a checklist, and its rules reached the band's own list
+  too, so `[relatedcourses]` in a section drew a check beside each card. The checklist now leaves that list alone.
+
+- **A public landing page cleans its text sections before the text filters.** The audience, programme and
+  certification sections of a public course were cleaned after the filters had run, which stripped what a filter adds:
+  the `[relatedcourses]` shortcode drew its band without covers, sections or data attributes there. They are now read
+  with the cleaning forced inside `format_text()`, where Moodle cleans every text, before its filters; an editor's
+  trusted HTML is still cleaned for every visitor.
+
 - **Related contents, stage R3: the `[relatedcourses]` shortcode** (docs/related/PLAN.md). With filter_shortcodes, the
   shortcode draws the landing page's related courses band in any text the theme draws (a page, a label, a category
   description): by default for the course the text belongs to, or for `course="short name"`, or in manual mode over
