@@ -1624,7 +1624,7 @@ final class branding_test extends \advanced_testcase {
     /**
      * On a site whose upload limit is under 20 MB, core's sizes drop the default, so the setting keeps it among its choices
      * in their order, and the installer's write of it is stored: the setting is no longer "new" on every upgrade. The
-     * control is a site whose limit already holds the default, which gets core's list unchanged.
+     * control is a list that already holds the default, which comes back unchanged.
      */
     public function test_the_video_size_default_stays_a_choice_under_a_small_upload_limit(): void {
         global $CFG;
@@ -1643,9 +1643,9 @@ final class branding_test extends \advanced_testcase {
         rsort($sorted);
         $this->assertSame($sorted, $sizes, 'The rest keeps core\'s descending order.');
 
-        $large = get_max_upload_sizes(104857600, 0, 0, branding::covervideo_maxbytes());
-        $this->assertArrayHasKey('20971520', $large, 'Precondition: a 100 MB limit holds the default.');
-        $this->assertSame($large, branding::covervideo_choices($large), 'Control: core\'s list, unchanged.');
+        // The control is a list that already holds the default. Core's own list under a larger site limit is no such
+        // list everywhere: get_max_upload_sizes() also caps at PHP's upload_max_filesize, 2 MB on the CI runners.
+        $this->assertSame($choices, branding::covervideo_choices($choices), 'Control: a list holding the default, unchanged.');
 
         // The installer's path, under the small limit: core applies the page's defaults, and this one is stored.
         $CFG->maxbytes = 1048576;
