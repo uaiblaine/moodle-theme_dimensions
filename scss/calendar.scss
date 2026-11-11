@@ -749,11 +749,12 @@ body.dim-calendar {
         }
     }
 
-    // The toolbar's height (a 2.25rem row and its margin, twice: the toolbar and the filters) and the month's frame:
-    // the weekday band (1.875rem) over six weeks of the grid's minimum row (9.25rem), the rows and the seven columns
-    // drawn as lines of the border tokens. The week view keeps the frame's shape with a header, a strip and ten hours.
+    // The toolbar's height (a 2.25rem row and its .75rem margin, twice: the toolbar and the filters) and the month's
+    // frame: the weekday band (1.875rem) over six weeks of the grid's minimum row (9.25rem), the rows and the seven
+    // columns drawn as lines of the border tokens. The week view takes the drawn week's height: its header row, the
+    // empty all-day strip and the hour box within that box's own bounds (.dim-cal__hourbox--week below).
     .dim-cal__ghosttools {
-        height: 4.5rem;
+        height: 6rem;
     }
 
     .dim-cal__ghostframe {
@@ -786,11 +787,15 @@ body.dim-calendar {
     }
 
     .dim-cal__placeholder--week .dim-cal__ghosthead {
-        height: 3.5rem;
+        height: 4rem;
     }
 
+    // The strip (2.625rem) over the hour box: the viewport less the navbar and 14rem, at least 15rem, at most the
+    // whole day (24 hours of 2.5rem).
     .dim-cal__placeholder--week .dim-cal__ghostbody {
-        height: 28rem;
+        height: calc(100vh - #{$navbar-height} - 11.375rem);
+        min-height: 17.625rem;
+        max-height: 62.625rem;
         background-size: calc(100% / 7) 100%, 100% 2.5rem;
         background-image:
             linear-gradient(

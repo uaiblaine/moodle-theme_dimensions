@@ -407,8 +407,9 @@ body.dim-categoryhero .dim-pair-preview__caption {
 
 // ---- The colours section in two columns ---------------------------------------
 // The rows stay where core drew them (JavaScript never moves a form row: a moved
-// row can leave a field painted nowhere while still focusable), and a grid over the colours fieldset's own container places them: the colour fields,
-// the overlay and the preview in the left track, the contrast panel the module
+// row can leave a field painted nowhere while still focusable), and a grid over the
+// colours fieldset's own container places them: the colour fields, the overlay and
+// the preview in the left track, the contrast panel the module
 // appends last in the right one.
 //
 // The markup is core's and is pinned by a PHPUnit render
