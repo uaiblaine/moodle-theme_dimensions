@@ -73,26 +73,22 @@ final class daterange_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The body of one top-level arrow function of an AMD module or of the shared listing.
+     * The body of one top-level arrow function of the shared listing's TypeScript sources.
      *
      * A signature may run over several lines in the TypeScript, one parameter a line.
      *
      * @param string $name The function's name.
-     * @param string $module The AMD module's name, or listing for the shared listing's TypeScript sources.
      * @return string The body, without the signature or the closing brace.
      */
-    private function body(string $name, string $module = 'listing'): string {
+    private function body(string $name): string {
         $text = '';
-        foreach ($module === 'listing' ? self::LISTING : [] as $file) {
+        foreach (self::LISTING as $file) {
             $text .= $this->read('js/esm/src/listing/' . $file . '.ts') . "\n";
-        }
-        if ($module !== 'listing') {
-            $text = $this->read('amd/src/' . $module . '.js');
         }
         $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
             . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
         $found = preg_match($pattern, $text, $matches);
-        $this->assertSame(1, $found, "No top-level function named {$name} in {$module}.");
+        $this->assertSame(1, $found, "No top-level function named {$name} in the listing sources.");
         $this->assertNotSame('', trim($matches[1]), "The body of {$name} is empty.");
         return $matches[1];
     }

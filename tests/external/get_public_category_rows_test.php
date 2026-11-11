@@ -959,12 +959,18 @@ final class get_public_category_rows_test extends \advanced_testcase {
     /**
      * Record one measurement in the budget's JSON file of numbers, beside budget_test's.
      *
+     * Nothing is written unless the site opted in to the performance probe.
+     *
      * @param string $label What was measured.
      * @param array $numbers The numbers.
      * @return void
      */
     private function record(string $label, array $numbers): void {
         // Outside the test data root, which PHPUnit empties between tests.
+        require_once(dirname(__DIR__) . '/behat/theme_dimensions_perf_probe.php');
+        if (\theme_dimensions_perf_probe::options() === null) {
+            return;
+        }
         $path = sys_get_temp_dir() . '/theme_dimensions-vitrine-budget.json';
         $all = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
         $all[$label] = $numbers + ['measured' => date('c')];

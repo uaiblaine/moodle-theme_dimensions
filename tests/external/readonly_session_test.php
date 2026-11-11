@@ -59,6 +59,7 @@ require_once(__DIR__ . '/../local/category/fixture.php');
 #[CoversClass(get_course_dialogue::class)]
 #[CoversClass(get_drawer_summary::class)]
 #[CoversClass(get_calendar_range::class)]
+#[CoversClass(get_calendar_trails::class)]
 final class readonly_session_test extends \advanced_testcase {
     use \theme_dimensions\local\category\fixture;
 

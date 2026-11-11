@@ -578,7 +578,7 @@ describe('the phone\'s week', () => {
             });
         }
         await act(async() => {
-            watcher.takeRecords();
+            changes.push(...watcher.takeRecords().map(() => frame.style.getPropertyValue('--dim-cal-gridheight')));
         });
         watcher.disconnect();
         expect(document.querySelector('[data-region="dim-cal-weekgrid"]')).not.toBeNull();
@@ -586,7 +586,7 @@ describe('the phone\'s week', () => {
         expect(document.querySelector('.dim-cal__body--drawer')).not.toBeNull();
         // Six equal reports wrote the property once (835), not six times.
         expect(frame.style.getPropertyValue('--dim-cal-gridheight')).toBe('835px');
-        expect(changes.length).toBeLessThanOrEqual(1);
+        expect(changes.length).toBe(1);
     });
 });
 

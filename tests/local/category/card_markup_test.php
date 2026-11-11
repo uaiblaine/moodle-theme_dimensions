@@ -1392,8 +1392,9 @@ final class card_markup_test extends \advanced_testcase {
      *
      * No page renders this template: the client (DateRange.tsx) draws the same markup itself and the
      * template is its reference, which the mustache lint renders but reads for structure rather than
-     * attributes. This test keeps the reference naming every hook; it does not read DateRange.tsx, so
-     * the component's own markup is the Jest tests' (js/esm/tests/daterange).
+     * attributes. This test keeps the reference naming every hook; the component's own markup is
+     * checked against the same hooks by the source test that follows and by the Jest tests
+     * (js/esm/tests/daterange).
      *
      * Two boxes, each a button named by its label and its date and each with its own clearing
      * control, and ONE popover both of them control: a start alone, an end alone and a range are
@@ -1499,6 +1500,50 @@ final class card_markup_test extends \advanced_testcase {
                 'An icon-only control with no name is a control a screen reader cannot announce.'
             );
         }
+    }
+
+    /**
+     * The component writes every hook the calendar's reference template is asserted on.
+     *
+     * The template is rendered by no page, so a hook renamed in DateRange.tsx would leave the
+     * template test green. Each hook the template test reads is looked for, spelled as an attribute,
+     * in the component's source.
+     */
+    public function test_the_calendar_component_writes_every_hook_the_template_test_reads(): void {
+        $source = file_get_contents(dirname(__DIR__, 3) . '/js/esm/src/daterange/DateRange.tsx');
+        $this->assertNotFalse($source, 'Precondition: the component source is readable.');
+        $hooks = [
+            'data-region' => [
+                'dim-daterange-pop',
+                'dim-daterange-label',
+                'dim-daterange-value',
+                'dim-daterange-monthblock',
+                'dim-daterange-month',
+                'dim-daterange-grid',
+                'dim-daterange-prompt',
+            ],
+            'data-action' => [
+                'dim-daterange-open',
+                'dim-daterange-clear',
+                'dim-daterange-prev',
+                'dim-daterange-next',
+                'dim-daterange-done',
+            ],
+        ];
+        foreach ($hooks as $attribute => $values) {
+            foreach ($values as $value) {
+                $this->assertStringContainsString(
+                    $attribute . '="' . $value . '"',
+                    $source,
+                    'The component writes ' . $attribute . '="' . $value . '", which the template and its module share.'
+                );
+            }
+        }
+        $this->assertStringContainsString(
+            'data-bound={bound}',
+            $source,
+            'The component names the bound each box and clearing control serves.'
+        );
     }
 
     /**

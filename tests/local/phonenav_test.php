@@ -178,10 +178,23 @@ final class phonenav_test extends \advanced_testcase {
         $course = self::getDataGenerator()->create_course();
         $this->setUser(self::getDataGenerator()->create_and_enrol($course, 'editingteacher'));
 
-        $entries = phonenav::entries(self::MAIL . self::MESSAGES, $this->course_page($course));
+        $module = self::getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $cm = get_fast_modinfo($course)->get_cm((int) $module->cmid);
+        $page = new \moodle_page();
+        $page->set_context(\core\context\module::instance($cm->id));
+        $page->set_course($course);
+        $page->set_cm($cm, $course);
+        $page->set_url('/mod/page/view.php', ['id' => $cm->id]);
+        $page->set_pagelayout('incourse');
+        set_config('focusmode', yesno::YES, focusmode::COMPONENT);
+        focusmode::choose((int) $course->id, true);
+        $this->assertTrue(focusmode::available($page), 'Precondition: focus mode has its entry on this page.');
+        $this->assertTrue($page->user_allowed_editing(), 'Precondition: core lets the teacher edit.');
+
+        $entries = phonenav::entries(self::MAIL . self::MESSAGES, $page);
         $expected = \core_component::get_component_directory('local_mail') === null
-            ? [phonenav::MESSAGES, phonenav::EDIT]
-            : [phonenav::MESSAGES, phonenav::MAIL, phonenav::EDIT];
+            ? [phonenav::MESSAGES, phonenav::FOCUS, phonenav::EDIT]
+            : [phonenav::MESSAGES, phonenav::MAIL, phonenav::FOCUS, phonenav::EDIT];
 
         $this->assertSame($expected, $this->keys($entries));
     }

@@ -205,7 +205,10 @@ final class compactnav_test extends \advanced_testcase {
     }
 
     /**
-     * The armed class is spliced into the body's class attribute, once, keeping what was there.
+     * The armed class is spliced into the body's first class attribute, once, keeping what was there.
+     *
+     * Once means one splice, however many class attributes the string carries; the class already being present
+     * is not checked for, so the layout hands over attributes without it.
      *
      * @return void
      */
@@ -219,6 +222,13 @@ final class compactnav_test extends \advanced_testcase {
             compactnav::body_attributes('id="x"'),
             'No class attribute yet.'
         );
+        $twice = compactnav::body_attributes('class="a" data-x="1" class="b"');
+        $this->assertSame(
+            'class="a ' . compactnav::BODY_ARMED . '" data-x="1" class="b"',
+            $twice,
+            'Only the first class attribute takes the class.'
+        );
+        $this->assertSame(1, substr_count($twice, compactnav::BODY_ARMED), 'The armed class is written once.');
         $this->assertSame(['maxhidden' => compactnav::MAXHIDDEN], compactnav::client_config());
     }
 }

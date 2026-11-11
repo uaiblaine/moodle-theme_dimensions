@@ -523,6 +523,14 @@ final class focusmodefields_test extends \advanced_testcase {
         ob_end_clean();
 
         $this->assertFalse($DB->record_exists('customfield_data', ['fieldid' => $fieldid]));
+
+        // Control: with the field on and the setting off the same task does write the rowless course.
+        focusmodefields::set_default(true);
+        focusmodefields::reset_field_cache();
+        ob_start();
+        $task->execute();
+        ob_end_clean();
+        $this->assertTrue($DB->record_exists('customfield_data', ['fieldid' => $fieldid]), 'Disagreeing, the task writes.');
     }
 
     /**
@@ -567,5 +575,11 @@ final class focusmodefields_test extends \advanced_testcase {
         focusmodefields::sync_default(false);
 
         $this->assertFalse($DB->record_exists('customfield_data', ['fieldid' => $fieldid]));
+
+        // Control: moving it from on to off does write the rowless course.
+        focusmodefields::set_default(true);
+        focusmodefields::reset_field_cache();
+        focusmodefields::sync_default(false);
+        $this->assertTrue($DB->record_exists('customfield_data', ['fieldid' => $fieldid]), 'A default that moves writes.');
     }
 }

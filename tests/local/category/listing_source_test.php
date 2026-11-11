@@ -83,13 +83,21 @@ final class listing_source_test extends \basic_testcase {
     }
 
     /**
-     * Every TypeScript source of js/esm/src, by its path under the theme root.
+     * Every TypeScript source under js/esm/src, at any depth, by its path under the theme root.
      *
      * @return string[]
      */
     private function esm_sources(): array {
         $root = $this->plugin_root();
-        $files = array_merge(glob($root . '/js/esm/src/*.ts'), glob($root . '/js/esm/src/*/*.{ts,tsx}', GLOB_BRACE));
+        $files = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root . '/js/esm/src', \FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $file) {
+            if ($file->isFile() && in_array($file->getExtension(), ['ts', 'tsx'], true)) {
+                $files[] = $file->getPathname();
+            }
+        }
         sort($files);
         return array_map(static fn(string $file): string => substr($file, strlen($root) + 1), $files);
     }

@@ -378,7 +378,7 @@ final class category_test extends \core\tests\router\route_testcase {
         $this->assertSame(
             $CFG->wwwroot . '/theme_dimensions/category/0',
             $root,
-            'MEASURE 1: the root has a route of its own, spelled without r.php.'
+            'The root has a route of its own, spelled without r.php.'
         );
         $this->assertSame($root, $SESSION->wantsurl, 'And the way back after logging in is this page.');
     }

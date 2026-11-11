@@ -458,6 +458,11 @@ unprefixed names (`--surface-page`, `--text-muted`, `--radius-sm`, ...) were any
 renamed in 2026100503; a new token takes the prefix too, and its name must not already be one of
 the palette primitives (`--dim-ds-blue-600` and friends).
 
+The course card's `--dimensions-card-*` tokens are the exception: a contract shared with block_compass and
+local_dimensions, specified in the fleet's `moodle-dev/docs/course-card/CONTRACT.md` (section 3, the progress row;
+section 7, the tokens; section 9, the dialog variant). `tests/local/course_card_contract_test.php` and
+`family_tokens_test` hold this repository's half; change a suffix in all three plugins at once.
+
 Rules from the design system's readme which this theme has to keep honouring, and which have
 already shaped decisions here:
 
@@ -1048,9 +1053,9 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   router of its own, and the request then fails with FastRoute's "Cannot register two routes matching"
   and a 500: every route ends up mapped twice. Measured 2026-09-13 on `shortlink_route_test`, in three
   orderings, with and without `\core\di::reset_container()`. Seed the `shortlink` row directly in
-  such a test; `links_test` covers the spelling of `share()`. **And one `process_request()` per test**:
-  the harness builds a router per call, and the second call in one test fails the same way (a loop over
-  two ids cost a round). Expected addresses are fine to spell AFTER the request, through the same router.
+  such a test; `links_test` covers the spelling of `share()`. Two `process_request()` calls in one test are
+  fine on 5.3 (`calendar_test`'s week and day tests make two): what fails is a router built outside the
+  harness before a request. Expected addresses are fine to spell AFTER the request, through the same router.
 - **Under PHPUnit `$OUTPUT->header()` renders nothing**, so a route test cannot read the head tags from
   the response body; the controller guards the write like core's `restricted_module` does, and
   `landing_test` reads `opengraph::current()`, the registry the shared request arms, while
@@ -1518,18 +1523,18 @@ The plan is `docs/calendar/PROPOSAL.md` (section 11 for C2); the range service u
   ones ON, with an empty `keys[]` member for none. Written by `theme_dimensions_remember_calendar_state` only.
 - **The client is `js/esm/src/calendar/`**: `Calendar.tsx` mounts on the node `calendar_page.mustache` draws and hides the
   server's layer once drawn; `layout.ts` (slots, density, counts) is pure; `history.ts` is its one address writer
-  (`listing_source_test` names the two writers); `strings.ts` lists the strings, equal to `calendar_page::STRINGS`; the
-  item and day seams C3 replaces are `model.ts`'s `itemHref()` and `dayHref()`. The client reads instants in the VIEWER's
-  timezone through Intl (`days.ts` `zone()`), never the browser's; core's day and month views are linked by
-  `cal_d`/`cal_m`/`cal_y`, so the client computes no timestamp.
+  (`listing_source_test` names the two writers); `strings.ts` lists the strings, equal to `calendar_page::STRINGS`; an
+  item's address is `model.ts`'s `itemHref()` and the popover's primary action `primaryOf()`, and no page links core's
+  calendar views (R1). The client reads instants in the VIEWER's timezone through Intl (`days.ts` `zone()`), never the
+  browser's.
 - **Item elements carry `data-first`/`data-last`, never `data-from`**: `esm_source_test`'s import parser reads `from"` in the
   minified build as a specifier.
 - **C3: the day drawer and the event popover** (PROPOSAL section 13). A day opens `DayDrawer.tsx` (the phone's sheet below
   `MonthGrid.PHONE`, the width of the frame the grid shares with the drawer, read by the grid's one ResizeObserver: the
   grid's own width would flip when the drawer narrows it). The open day is `day=` (`page::PARAM_DAY`), navigation and never
   state, kept by `page::day_from_request()` inside `page::grid()`'s window, written with replaceState. An item marked
-  `data-cal-pop` opens `EventPopover.tsx` through one delegated listener in `Calendar.tsx`; `itemHref()` and `dayHref()`
-  stay the fallbacks. The day's layout is `overlap.ts` (pure); the description is core's
+  `data-cal-pop` opens `EventPopover.tsx` through one delegated listener in `Calendar.tsx`; `itemHref()` stays the
+  fallback. The day's layout is `overlap.ts` (pure); the description is core's
   `core_calendar_get_calendar_event_by_id` through `description.ts` (cached per event, a refusal reads as ''), the
   calendar's one trusted HTML sink. The popover's two box reads are the tree's only layout reads, on an opening.
 - **CV: the public calendar** (PROPOSAL section 19). `page::handle()`'s first step splits: a visitor goes to the login

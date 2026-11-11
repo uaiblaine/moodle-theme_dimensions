@@ -82,17 +82,16 @@ final class filterline_component_source_test extends \advanced_testcase {
     }
 
     /**
-     * The body of one top-level arrow function of an AMD module or of the shared listing.
+     * The body of one top-level arrow function of the shared listing or of one TypeScript module.
      *
      * A signature may run over several lines in the TypeScript, one parameter a line.
      *
      * @param string $name The function's name.
-     * @param string $module The AMD module's name, or listing for the shared listing's TypeScript sources.
+     * @param string $module Listing for the shared listing's sources, or a path under js/esm/src without its extension.
      * @return string The body, without the signature or the closing brace.
      */
     private function body(string $name, string $module = 'listing'): string {
-        $text = $module === 'listing' ? $this->listing() : (str_contains($module, '/')
-            ? $this->read('js/esm/src/' . $module . '.ts') : $this->read('amd/src/' . $module . '.js'));
+        $text = $module === 'listing' ? $this->listing() : $this->read('js/esm/src/' . $module . '.ts');
         $pattern = '~\n(?:export )?const ' . preg_quote($name, '~')
             . ' = (?:[^\n]*\(\n(?:    [^\n]*\n)*?\)[^\n]*|[^\n]*)\{\n(.*?)\n\};~s';
         $found = preg_match($pattern, $text, $matches);

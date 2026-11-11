@@ -199,6 +199,15 @@ final class publicaccess_test extends \advanced_testcase {
         set_config(publicaccess::SETTING_ENABLED, '1', 'theme_dimensions');
         $this->assertTrue(publicaccess::is_public($public), 'Control: a stored 1 serves.');
 
+        foreach (['no', ''] as $stored) {
+            set_config(publicaccess::SETTING_ENABLED, $stored, 'theme_dimensions');
+            $this->assertTrue(
+                publicaccess::is_public($public),
+                'A stored ' . var_export($stored, true) . ' is not an explicit 0, so the surface stays open.'
+            );
+        }
+        set_config(publicaccess::SETTING_ENABLED, '1', 'theme_dimensions');
+
         // The showcase's own kill switch closes this surface too: off, both shells render what
         // the site renders without the showcase.
         set_config(population::SETTING_ENABLED, '0', 'theme_dimensions');

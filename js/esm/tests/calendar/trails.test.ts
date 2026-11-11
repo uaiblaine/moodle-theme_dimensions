@@ -585,7 +585,7 @@ describe('linksOf', () => {
     });
 });
 
-describe('the zoom (T3c)', () => {
+describe('the zoom', () => {
     it('reads a day\'s width per zoom from TRACK, and the address\'s zoom as the server does', () => {
         expect([dayWidth('day'), dayWidth('week'), dayWidth('month')]).toEqual([TRACK.day, TRACK.week, TRACK.month]);
         expect([dayWidth('day'), dayWidth('week'), dayWidth('month')]).toEqual([3, 1, 0.25]);
@@ -646,7 +646,7 @@ describe('the zoom (T3c)', () => {
     });
 });
 
-describe('capOf and weekLabelled (T3c follow-up)', () => {
+describe('capOf and weekLabelled', () => {
     it('holds twelve months by months and six by days and weeks', () => {
         expect([capOf('day'), capOf('week'), capOf('month')]).toEqual([LOADED_CAP, LOADED_CAP, MONTH_CAP]);
         expect([LOADED_CAP, MONTH_CAP]).toEqual([6, 12]);
@@ -685,7 +685,7 @@ describe('capOf and weekLabelled (T3c follow-up)', () => {
     });
 });
 
-describe('weekCells (T3c)', () => {
+describe('weekCells', () => {
     it('cuts the days held into weeks from the viewer\'s first weekday, the first and the last partial', () => {
         // November 2026 begins on a Sunday: from Monday, its 1st is a week of its own.
         const monday = weekCells(monthDays('2026-11'), 1);
@@ -713,7 +713,7 @@ describe('weekCells (T3c)', () => {
     });
 });
 
-describe('datesOf (T3c)', () => {
+describe('datesOf', () => {
     /**
      * A course's dates line, Intl's thin spaces read as plain ones.
      *
@@ -754,7 +754,7 @@ describe('datesOf (T3c)', () => {
     });
 });
 
-describe('linksOf at week and month zoom (T3c)', () => {
+describe('linksOf at week and month zoom', () => {
     const november = monthDays('2026-11');
 
     /**
@@ -835,7 +835,7 @@ describe('linksOf at week and month zoom (T3c)', () => {
     });
 });
 
-describe('the review of T3c', () => {
+describe('week labels, compacted ranges and detours', () => {
     afterEach(() => {
         jest.restoreAllMocks();
     });

@@ -237,11 +237,17 @@ final class first_paint_budget_test extends \advanced_testcase {
     /**
      * Record a measurement in the system temp directory, in the file the other budget tests write to.
      *
+     * Nothing is written unless the site opted in to the performance probe.
+     *
      * @param string $label What was measured.
      * @param array $numbers The numbers.
      * @return void
      */
     private function record(string $label, array $numbers): void {
+        require_once(dirname(__DIR__, 2) . '/behat/theme_dimensions_perf_probe.php');
+        if (\theme_dimensions_perf_probe::options() === null) {
+            return;
+        }
         $path = sys_get_temp_dir() . '/theme_dimensions-vitrine-budget.json';
         $all = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
         $all[$label] = $numbers + ['measured' => date('c')];

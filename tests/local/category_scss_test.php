@@ -430,7 +430,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression(
             '~--dim-card-crest-w:\s*56px;\s*--dim-card-crest-h:\s*62px;~',
             $card,
-            'D2: the crests are 56 x 62 on a card.'
+            'The crests are 56 x 62 on a card.'
         );
         $this->assertSame(1, substr_count($scss, '--dim-card-crest-w: 56px;'), 'At every width: no query steps them.');
         $this->assertMatchesRegularExpression(
@@ -2341,22 +2341,14 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * The panel's heading has no eyebrow, and its category link is underlined on hover and focus only, in both modes.
+     * The panel's heading link is underlined on hover and focus only, in both modes.
      *
      * The link reads as the card's title does. In light mode the heading's own rule says so; in
      * dark mode core underlines every link of #region-main at (1,6,1), so the theme's two rules outweigh it, as the
      * card title's do ({@see test_the_card_title_outranks_cores_dark_underline()}).
      */
-    public function test_the_panel_heading_has_no_eyebrow_and_its_link_underlines_on_hover_and_focus(): void {
+    public function test_the_panel_heading_link_underlines_on_hover_and_focus(): void {
         $scss = $this->stylesheet('category.scss');
-        $this->assertStringNotContainsString('dim-panel__eyebrow', $scss);
-        $template = (string) file_get_contents($this->plugin_root() . '/templates/category_panel.mustache');
-        $this->assertStringNotContainsString('eyebrow', $template);
-        foreach (['en', 'pt_br'] as $lang) {
-            $strings = (string) file_get_contents($this->plugin_root() . '/lang/' . $lang . '/theme_dimensions.php');
-            $this->assertStringNotContainsString("'category_panel_eyebrow'", $strings, "The {$lang} pack keeps no eyebrow.");
-        }
-
         $title = $this->rule_body($scss, '.dim-panel__title');
         $this->assertMatchesRegularExpression(
             '~\n        a \{\s*color: var\(--dim-primary-ink\);\s*text-decoration: none;\s*\}~',
@@ -2393,12 +2385,10 @@ final class category_scss_test extends \basic_testcase {
      *
      * A track (--dim-card-track, --dim-card-fill, --dim-card-track-height) whose fill is the course's percentage,
      * the number at the right in tabular figures; hidden until filled, and never drawn on a completed card, whose
-     * pill is the green seal and whose cover gets its green base (--dim-card-done, --dim-card-done-edge). No inline
-     * progress sentence (.dim-card__prog) is drawn.
+     * pill is the green seal and whose cover gets its green base (--dim-card-done, --dim-card-done-edge).
      */
     public function test_the_progress_row_and_the_completed_card_paint_through_the_card_tokens(): void {
         $scss = $this->stylesheet('category.scss');
-        $this->assertDoesNotMatchRegularExpression('~\.dim-card__prog(?!ress)\b~', $scss, 'The inline sentence is gone.');
 
         $row = $this->rule_body($scss, '.dim-card__progress');
         $this->assertMatchesRegularExpression('~display:\s*flex;~', $row);

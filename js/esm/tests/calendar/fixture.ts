@@ -21,7 +21,6 @@
  */
 
 import type {Answer, Item, Key, Props} from '../../src/calendar/model';
-import {KEYS} from '../../src/calendar/model';
 
 /**
  * Midnight UTC of a day, or an hour of it, in seconds.
@@ -238,6 +237,3 @@ export const props = (events: Item[] = [], more: Partial<Props> = {}): Props => 
     },
     ...more,
 });
-
-/** Every key, for counts. */
-export const ALL_KEYS = KEYS;

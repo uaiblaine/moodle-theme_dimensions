@@ -234,7 +234,7 @@ class landingfields {
      *
      * The readers that only need to know whether a shortname is the theme's, and of which type
      * ({@see get_field()}, {@see load_field_cache()}, {@see values_many()}), read this list instead of
-     * building the definitions, which format some forty language strings on every call.
+     * building the definitions, which calls get_string() for every select option.
      * landingfields_test holds the two in step, order included.
      */
     public const FIELD_TYPES = [
