@@ -21,8 +21,9 @@ Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->suppor
 on Boost Union's `MOODLE_503_STABLE` branch (v5.3-r1 onwards). Hard-depends on
 `theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);
 `customfield_picture`, `auth_loginsteps`, `local_page`, `tool_courserating` and `filter_shortcodes` (which reads `db/shortcodes.php`) are optional and asked for at run time,
-never declared (the first through `landingfields::picture_type_available()`, the other three by class name). CI is the moodle-an-hochschulen reusable workflow, one job in
-`.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
+never declared (`customfield_picture` through `landingfields::picture_type_available()`, `filter_shortcodes` through
+`core_component` and its config version, the other three by class name). CI is the fleet's fork of the moodle-an-hochschulen reusable workflow
+(`uaiblaine/moodle-workflows`), one job in `.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
 branch in `plugin-dependencies` at the same time (`MOODLE_503_STABLE`).
 The theme is mounted on the shared stack **m503** at `theme/dimensions`; the 5.2 history below
 (measurements on m502, the 5.02 CI legs) is the record of the release it was imported on.
@@ -77,7 +78,8 @@ In a Claude Code cloud session none of `mdl`, the stacks, `~/dev/CLAUDE.md` or t
 exist. The cloud environment's setup script (`moodle-dev/cloud/setup.sh`) installs
 `moodle-plugin-ci` and the `mpci` runner instead, and `mpci` reads this repo's `ci.yml`: it installs
 `MOODLE_503_STABLE` with the `plugin-dependencies` (Boost Union's `MOODLE_503_STABLE`, `local_unlistedcourses`,
-and the optional `customfield_picture` and `local_page`, all public) by itself.
+and the optional `customfield_picture`, `local_page`, `block_compass`, `tool_courserating`, `mod_subcourse` and
+`filter_shortcodes`, all public) by itself.
 
 ```sh
 mpci                                                         # every gate on MOODLE_503_STABLE
@@ -214,7 +216,10 @@ React and TypeScript live in `js/esm/src`, built to `js/esm/build`, tested in `j
 ```
 config.php                     Inherits Boost Union's whole $THEME config, then overrides
                                name/parents/SCSS callbacks. Copied from the boilerplate.
-lib.php                        SCSS callbacks + the Boost Union settings-overview card callback.
+lib.php                        The SCSS callbacks and Boost Union's flavour CSS urls; the user preference declarations;
+                               the user and category settings navigation nodes; the settings' updated callbacks;
+                               the profile veto (control_view_profile); the pluginfile route; Boost Union's
+                               settings-overview card and recommendations list; theme_dimensions_course_badges().
 locallib.php                   Required from config.php on every request. Keep it empty-ish.
 settings.php                   Adds a tabbed page into Boost Union's settings category.
 classes/local/yesno.php        The stored values (1, 0) of the theme's yes/no select settings.
@@ -305,7 +310,8 @@ classes/local/upstream.php     The copies of core and Boost Union code and today
                                (*.upstream beside each copy), tests/local/upstream_test.php, scripts/upstream-merge.sh.
 tests/output/core_renderer_test.php  Renders real pages through a real header: the login layout (Boost Union's, or
                                auth_loginsteps' shell), the navbar's name, the category hero.
-db/install.php, db/upgrade.php Provision the course custom fields; upgrade.php also builds the branding table.
+db/install.php, db/upgrade.php Provision the course custom fields and the offered looks setting; the upgrade steps
+                               bring an older site's fields and settings up to date. The branding table is install.xml's.
 scss/pre.scss, scss/post.scss  The design system's tokens, all under --dim-ds-; lib.php assigns no $primary.
 scss/competency.scss           The competency pages and dialogues, scoped to core's page classes and dim-comp-.
 templates/tool_lp/, templates/report_competency/, templates/block_lp/  Copies of core 5.3's competency
@@ -764,15 +770,17 @@ The theme reads no profile fields: the navbar shows what `fullname()` composes (
 
 ## Boost Union recommendations
 
-The theme adds five items to Boost Union's recommendations overview
+The theme adds six items to Boost Union's recommendations overview
 (`theme/boost_union/recommendations/overview.php`): `dimensions_profileveto` (core's
 `forceloginforprofiles`, without which the profile rule above is inert), `dimensions_unlistedcourses`
 (the dependency is installed, upgraded and at the required version), `dimensions_customfieldpicture`
 (every course field of `landingfields::definitions()` whose type the site has resolves - a warning
 otherwise, fixed by `ensure_fields()` - and the optional Picture type is installed and enabled - a
-notice otherwise, because the plugin is recommended, not required) and `dimensions_landingaddresses` (a notice while Moodle's router is not
-configured, so every landing page is shared under its long address) and `dimensions_lookcohorts` (a warning while smart
-menus or items stay hidden after their look cohort was deleted; see "The chosen look"). The classes are in
+notice otherwise, because the plugin is recommended, not required), `dimensions_landingaddresses` (a notice while Moodle's router is not
+configured, so every landing page is shared under its long address), `dimensions_lookcohorts` (a warning while smart
+menus or items stay hidden after their look cohort was deleted; see "The chosen look") and `dimensions_relatedshortcode`
+(a notice while filter_shortcodes is missing or disabled, so the `[relatedcourses]` shortcode does nothing or shows as
+written; the landing pages' own band needs neither). The classes are in
 `classes/recommendation/`, sharing `base`, and `theme_dimensions_extend_burecommendations()` in
 `lib.php` names them.
 
@@ -899,9 +907,10 @@ not logged in, with `forcelogin` left on. The facts that shape it:
 - **The registry of head tags is armed last, right before `$OUTPUT->header()`.** The head
   hook fires from the fatal-error page too, and a throw in the enrol hooks would otherwise
   put the course's `og:` tags on an error page.
-- **The `dimensions_public` checkbox is retired**, and the upgrade deletes it: a checkbox any
-  course editor could tick would be a way around the publish capability. Nothing is
-  migrated - a course is published by somebody who may.
+- **The `dimensions_public` checkbox is retired, and never provisioned**: a checkbox any
+  course editor could tick would be a way around the publish capability. `landingfields::definitions()`
+  has no such field, so a site installed from this code never has it, and no upgrade step removes
+  one. Nothing is migrated - a course is published by somebody who may.
 - **Flavours brand the anonymous page only halfway** (measured): the flavour CSS - brand
   colour, raw SCSS - is served anonymously, its images (logo, background) 303 to login
   through `theme_boost_union_flavours_require_login_for_file()`. Cohort-scoped flavours
@@ -919,10 +928,13 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   `file_pluginfile()` dispatches on the COMPONENT IN THE URL, and its generic third-party
   branch makes no login check, while core's `course/overviewfiles` and `course/summary`
   branches call `require_login()` under forcelogin (`lib/filelib.php` ~4964). So a public
-  page mints URLs under `theme_dimensions` - areas `hero`, `summary`, `ogimage` -
-  and `theme_dimensions_pluginfile()` hands them to `publicfiles::serve()`. Every
-  check is in `publicfiles::resolve()`: public NOW and carrying a landing page model (the page
-  that minted the URL is not trusted, and the route is reachable exactly when the page is),
+  page mints URLs under `theme_dimensions` - areas `hero`, `cover` (the same course image, for
+  a public course without a landing page), `ogimage`, `summary` and `badge` (a crest, a file of
+  a customfield_picture badge field) - and `theme_dimensions_pluginfile()` hands them to
+  `publicfiles::serve()`. Every check is in `publicfiles::resolve()`: public NOW (or, for
+  `badge` alone, a logged-in reader `viewer_may_see()` admits, because the crests are drawn on
+  the cards of courses that are not public) and carrying a landing page model, except `cover`
+  (the page that minted the URL is not trusted, and the route is reachable exactly when the page is),
   the course id in the path is the context's own instance - the summary area looks its file
   up by the CONTEXT, so that is the sink where a mismatch would hand one course's files to a
   request naming another - a hashed area names the current content and its own file name,
@@ -945,7 +957,8 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   never updates a preview after the image is replaced. The derivative under `localcachedir`
   is named by that hash plus the canvas and quality it was made with, so it needs no
   invalidation - a changed constant is a new name - and a purge costs one rebuild. It is
-  made inside the page render, once, under `MEMORY_EXTRA` (384 MB): the 25-megapixel
+  made inside the page render, once, under `MEMORY_EXTRA` (at least 384 MB on 64-bit,
+  `$CFG->extramemorylimit` when that is higher): the 25-megapixel
   ceiling comes from measuring that a PNG at that size, rotated upright (core's
   `stored_file::rotate_image()` honours the EXIF orientation, GD alone does not) and
   cropped, peaks 200 MB over the request's baseline. Quality 82 holds a 1200x630 of pure
@@ -1094,9 +1107,11 @@ facts the code rests on.
 
 - **Boost Union overrides `coursecat_category()`, `coursecat_tree()` and `course_category()`
   and not `coursecat_subcategories()` or `course_category_name()`.** So the subcategory
-  listing is a COPY of core's method (`course/renderer.php:709-772` on 5.2) with the children
-  fetched unpaginated, filtered and recounted before the slice; re-diff it against that range
-  on every core upgrade. It keeps core's `html_writer` calls because it is core's method. It
+  listing is a COPY of core's `core_course_renderer::coursecat_subcategories()` with the children
+  fetched unpaginated, filtered and recounted before the slice. It is one of `upstream::METHODS`:
+  its snapshot `course_renderer.php.coursecat_subcategories.upstream` makes `upstream_test` redden
+  when core changes the method or Boost Union starts overriding it, and `scripts/upstream-merge.sh` prints the diff to apply (section
+  "Copies of upstream code"). It keeps core's `html_writer` calls because it is core's method. It
   fetches the children even under `nodisplay`: a filtered total cannot be had without the
   fetch, and core's "View all subcategories" link on the browse=courses branch depends on it.
 - **The card and list presentations name a course's category through
@@ -1108,13 +1123,15 @@ facts the code rests on.
   reachability argument, recorded in that method's docblock, to re-check on each Boost Union
   release.
 - **The expand affordances are post-processed, not forked.** Core and Boost Union decide a
-  node's `with_children collapsed` classes from the raw `get_children_count()`
-  (`course/renderer.php:850-858`, Boost Union `:695-703`, byte for byte the same) and write
-  the class attribute first in the node's opening tag (`:873-874`, `:718-719`); the tree's
-  "Expand all" control is one self-contained `collapsible-actions` div (`:925`, `:798`). Both
-  are removed from the rendered string when the filtered child count is zero. A Boost Union
-  release that changes either shape silently stops withholding: the gates `cat_expand_count`
-  and `cat_expandall_filter` hold the logic, the line ranges above are what to re-diff.
+  node's `with_children collapsed` classes from the raw `get_children_count()` in
+  `coursecat_category()` (core's and Boost Union's copy, the same logic) and write the class
+  attribute first in the node's opening tag; the tree's "Expand all" control is one
+  self-contained `collapsible-actions` div written by `coursecat_tree()` (core's and Boost
+  Union's). Both are removed from the rendered string when the filtered child count is zero.
+  These two methods are not copied, so no snapshot watches them: a core or Boost Union release
+  that changes either shape silently stops withholding. The gates `cat_expand_count` and
+  `cat_expandall_filter` hold the logic; re-diff those two methods, in core and in Boost Union,
+  on every update of either.
 - **The top-level pseudo-category has id 0 and is always discoverable.** Every guard tests
   `$coursecat->id` before asking the predicate, which fails closed on a path no row holds.
 - **The AJAX expander enters the renderer past every hook.** `course/category.ajax.php` calls
