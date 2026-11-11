@@ -1072,6 +1072,7 @@ final class branding {
      * @param int $categoryid The category.
      * @param \stored_file $source The source image ({@see og_source()}).
      * @return \core\url The URL.
+     * @throws \dml_missing_record_exception When the category does not exist.
      */
     public static function ogimage_url(int $categoryid, \stored_file $source): \core\url {
         return \core\url::make_pluginfile_url(

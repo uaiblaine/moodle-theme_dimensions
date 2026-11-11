@@ -27,7 +27,9 @@ namespace theme_dimensions\output;
 use core\output\renderable;
 use core\output\renderer_base;
 use core\output\templatable;
+use theme_dimensions\local\calendar\blocks;
 use theme_dimensions\local\calendar\editing;
+use theme_dimensions\local\calendar\source\event_courses;
 use theme_dimensions\local\calendar\keys;
 use theme_dimensions\local\calendar\page;
 use theme_dimensions\local\calendar\range;
@@ -353,20 +355,15 @@ class calendar_page implements renderable, templatable {
      * Where an item leads: its own page, else its course's page, else the site's home.
      *
      * The no-JavaScript agenda's link, and the client's fallback (model.ts itemHref()): with JavaScript an item
-     * opens the event popover, and this address stays the item's href for a middle click or a copied link.
+     * opens the event popover, and this address stays the item's href for a middle click or a copied link. One rule
+     * with the upcoming block's: {@see blocks::item_url()}, which refuses anything but an http(s) address.
      *
      * @param array $item A range item.
      * @param array $courses The answer's courses, keyed by id.
      * @return string The address.
      */
     public static function item_url(array $item, array $courses): string {
-        if ($item['url'] !== '') {
-            return $item['url'];
-        }
-        if (isset($courses[$item['courseid']])) {
-            return $courses[$item['courseid']]['url'];
-        }
-        return (new \core\url('/'))->out(false);
+        return blocks::item_url($item, $courses);
     }
 
     /**
@@ -521,7 +518,7 @@ class calendar_page implements renderable, templatable {
             if ($index === null || $last < $this->window->tstart || $start > $this->window->tend) {
                 continue;
             }
-            $multiday = $first !== $end || $item['source'] === 'course';
+            $multiday = $first !== $end || $item['source'] === event_courses::SOURCE;
             if ($multiday) {
                 $when = get_string('calendar_span', 'theme_dimensions', (object) [
                     'from' => userdate($start, get_string('strftimedateshort', 'langconfig')),

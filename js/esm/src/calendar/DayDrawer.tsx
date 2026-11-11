@@ -226,7 +226,7 @@ export const DayBody = ({look, iso, gridheight = 0, placed, list, onCreate}: Day
      * @returns {void}
      */
     const onDoubleClick = (event: MouseEvent): void => {
-        const row = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-hour]') : null;
+        const row = rowOf(event.target);
         if (onCreate && row) {
             event.preventDefault();
             onCreate(Number(row.dataset.hour));

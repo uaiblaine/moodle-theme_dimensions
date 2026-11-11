@@ -453,11 +453,17 @@ export const createPanel = (nodes: Nodes, ui: Ui, mode: Options = optionsOf({}))
         const rect = panel.getBoundingClientRect();
         const bar = parseFloat(window.getComputedStyle(areas).getPropertyValue('--dim-navbar')) || 0;
         if (rect.bottom > window.innerHeight || rect.top < bar) {
-            const timer = window.setTimeout(resolve, SCROLL_END);
-            window.addEventListener('scrollend', () => {
+            /**
+             *
+             */
+            const done = (): void => {
                 window.clearTimeout(timer);
+                window.removeEventListener('scrollend', done);
                 resolve();
-            }, {once: true});
+            };
+            // The fallback removes the listener too, so a scroll that never ends does not leave one behind.
+            const timer = window.setTimeout(done, SCROLL_END);
+            window.addEventListener('scrollend', done);
             window.scrollBy({top: rect.top - (bar + SCROLL_GAP), behavior: reduced() ? 'auto' : 'smooth'});
             return;
         }

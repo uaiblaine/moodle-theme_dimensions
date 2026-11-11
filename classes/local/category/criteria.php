@@ -458,9 +458,11 @@ final class criteria {
      */
     public static function from_request(int $categoryid, array $fieldids, bool $anonymous = false): self {
         $fields = [];
+        // A value no option has would keep no course and draw no chip: the remembered path drops it the same way.
+        $counts = $fieldids ? remembered::field_options() : [];
         foreach ($fieldids as $fieldid) {
             $value = optional_param(self::PARAM_FIELD_PREFIX . (int) $fieldid, 0, PARAM_INT);
-            if ($value > 0) {
+            if ($value > 0 && $value <= ($counts[(int) $fieldid] ?? 0)) {
                 $fields[(int) $fieldid] = $value;
             }
         }

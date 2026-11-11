@@ -1,0 +1,35 @@
+    protected function coursecat_category_content(coursecat_helper $chelper, $coursecat, $depth) {
+        $content = '';
+        // Subcategories
+        $content .= $this->coursecat_subcategories($chelper, $coursecat, $depth);
+
+        // AUTO show courses: Courses will be shown expanded if this is not nested category,
+        // and number of courses no bigger than $CFG->courseswithsummarieslimit.
+        $showcoursesauto = $chelper->get_show_courses() == self::COURSECAT_SHOW_COURSES_AUTO;
+        if ($showcoursesauto && $depth) {
+            // this is definitely collapsed mode
+            $chelper->set_show_courses(self::COURSECAT_SHOW_COURSES_COLLAPSED);
+        }
+
+        // Courses
+        if ($chelper->get_show_courses() > core_course_renderer::COURSECAT_SHOW_COURSES_COUNT) {
+            $courses = array();
+            if (!$chelper->get_courses_display_option('nodisplay')) {
+                $courses = $coursecat->get_courses($chelper->get_courses_display_options());
+            }
+            if ($viewmoreurl = $chelper->get_courses_display_option('viewmoreurl')) {
+                // the option for 'View more' link was specified, display more link (if it is link to category view page, add category id)
+                if ($viewmoreurl->compare(new moodle_url('/course/index.php'), URL_MATCH_BASE)) {
+                    $chelper->set_courses_display_option('viewmoreurl', new moodle_url($viewmoreurl, array('categoryid' => $coursecat->id)));
+                }
+            }
+            $content .= $this->coursecat_courses($chelper, $courses, $coursecat->get_courses_count());
+        }
+
+        if ($showcoursesauto) {
+            // restore the show_courses back to AUTO
+            $chelper->set_show_courses(self::COURSECAT_SHOW_COURSES_AUTO);
+        }
+
+        return $content;
+    }

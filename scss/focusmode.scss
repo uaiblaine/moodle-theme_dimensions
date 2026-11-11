@@ -379,7 +379,7 @@ body.dimensions-focusmode .dimensions-focusbar-leave {
 /* Core's own skip link is printed before the bar and must land on top of it: the bar is
    fixed, so without this the pill opens underneath and a keyboard user sees nothing. */
 body.dimensions-focusmode .visually-hidden-focusable:focus {
-    z-index: 1040;
+    z-index: $zindex-fixed + 10;
 }
 
 /* ---- The reading type --------------------------------------------------- */

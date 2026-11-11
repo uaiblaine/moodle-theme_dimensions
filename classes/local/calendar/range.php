@@ -328,7 +328,7 @@ final class range {
             "SELECT e.courseid, COUNT(DISTINCT ue.userid)
                FROM {enrol} e
                JOIN {user_enrolments} ue ON ue.enrolid = e.id
-              JOIN {user} u ON u.id = ue.userid
+               JOIN {user} u ON u.id = ue.userid
               WHERE e.courseid {$insql} AND e.status = :instanceenabled AND ue.status = :rowactive
                     AND u.deleted = 0 AND u.suspended = 0
                     AND ue.timestart <= :nowstart AND (ue.timeend = 0 OR ue.timeend > :nowend)

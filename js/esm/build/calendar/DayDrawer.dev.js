@@ -120,7 +120,7 @@ const DayBody = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, lis
   }, "drop");
   useEffect(() => drop, [iso]);
   const onDoubleClick = /* @__PURE__ */ __name((event) => {
-    const row = event.target instanceof Element ? event.target.closest("[data-hour]") : null;
+    const row = rowOf(event.target);
     if (onCreate && row) {
       event.preventDefault();
       onCreate(Number(row.dataset.hour));

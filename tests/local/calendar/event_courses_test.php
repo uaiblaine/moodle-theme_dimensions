@@ -155,6 +155,23 @@ final class event_courses_test extends \advanced_testcase {
     }
 
     /**
+     * "held" is judged against the instant the caller passes, so one answer has one clock.
+     *
+     * @return void
+     */
+    public function test_held_is_judged_against_the_given_instant(): void {
+        $this->resetAfterTest();
+        $row = $this->getDataGenerator()->create_course(['startdate' => 1000, 'enddate' => 2000]);
+        $item = new \ReflectionMethod(event_courses::class, 'item');
+        $item->setAccessible(true);
+
+        // Well before the real clock, so only the passed instant can tell the three apart.
+        $this->assertFalse($item->invoke(null, $row, keys::COURSE, 2000)['held'], 'The end instant itself is not held.');
+        $this->assertTrue($item->invoke(null, $row, keys::COURSE, 2001)['held']);
+        $this->assertFalse($item->invoke(null, $row, keys::COURSE, 1500)['held'], 'Not held before its end.');
+    }
+
+    /**
      * The controls of the refused cases: undo the one difference and each course is answered.
      *
      * @return void

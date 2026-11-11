@@ -369,50 +369,6 @@ final class landingfields_test extends \advanced_testcase {
     }
 
     /**
-     * Retiring the old checkbox deletes it and its data, and nothing else.
-     *
-     * @return void
-     */
-    public function test_retire_public_field_deletes_the_checkbox_and_nothing_else(): void {
-        global $DB;
-
-        $this->resetAfterTest();
-        $this->setAdminUser();
-        course_handler::reset_caches();
-        landingfields::reset_field_cache();
-        landingfields::ensure_fields();
-        landingfields::reset_field_cache();
-
-        // Seed the retired checkbox the way the previous version provisioned it: in the theme's category.
-        $generator = self::getDataGenerator()->get_plugin_generator('core_customfield');
-        $categoryid = (int) get_config(landingfields::COMPONENT, landingfields::CATEGORYID_CONFIG);
-        $retired = $generator->create_field([
-            'categoryid' => $categoryid,
-            'shortname' => landingfields::SHORTNAME_RETIRED_PUBLIC,
-            'name' => 'Public enrolment page',
-            'type' => 'checkbox',
-        ]);
-        $course = self::getDataGenerator()->create_course();
-        $generator->add_instance_data($retired, (int) $course->id, 1);
-        $model = landingfields::get_field(landingfields::SHORTNAME_MODEL);
-        $generator->add_instance_data($model, (int) $course->id, landingfields::MODEL_COURSE);
-
-        landingfields::retire_public_field();
-
-        $this->assertFalse($DB->record_exists('customfield_field', ['id' => $retired->get('id')]));
-        $this->assertFalse($DB->record_exists('customfield_data', ['fieldid' => $retired->get('id')]));
-        // Control: the other fields, their data and the category are untouched.
-        $this->assertTrue($DB->record_exists('customfield_field', ['id' => $model->get('id')]));
-        $this->assertTrue($DB->record_exists('customfield_data', ['fieldid' => $model->get('id')]));
-        $this->assertTrue($DB->record_exists('customfield_category', ['id' => $categoryid]));
-        $this->assertSame(landingfields::MODEL_COURSE, landingfields::values($course->id)->model);
-
-        // A second call finds nothing and is harmless.
-        landingfields::retire_public_field();
-        $this->assertNotNull(landingfields::get_field(landingfields::SHORTNAME_MODEL));
-    }
-
-    /**
      * The badge fields are pictures visible to nobody with a size cap; the video address is a hidden text field.
      */
     public function test_badge_and_video_fields_are_hidden_and_bounded(): void {

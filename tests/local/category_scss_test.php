@@ -845,7 +845,7 @@ final class category_scss_test extends \basic_testcase {
         $checked = $this->rule_body($scss, '.dim-pill__input:checked + .dim-pill');
         $this->assertMatchesRegularExpression('~border-color:\s*var\(--dim-cta\);~', $checked);
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);~', $checked, 'The chosen chip is FILLED.');
-        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-cta-ink\);~', $checked, 'The ink follows the fill (category_cta_ink_test).');
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-cta-ink\);~', $checked, 'The ink follows the fill.');
         $this->assertDoesNotMatchRegularExpression('~box-shadow~', $checked, 'The track\'s raised white face is gone.');
         $focus = $this->rule_body($scss, '.dim-pill__input:focus-visible + .dim-pill');
         $this->assertMatchesRegularExpression('~outline:\s*3px solid var\(--dim-ring\);\s*outline-offset:\s*2px;~', $focus);

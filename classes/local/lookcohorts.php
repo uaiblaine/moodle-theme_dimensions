@@ -108,7 +108,8 @@ final class lookcohorts {
      * take it leaves the work to the next run (the reconcile task runs daily). A flavour whose idnumber a
      * cohort of another owner already holds is left alone and reported, never taken over.
      *
-     * @return int[] The flavour ids whose cohort could not be made because another owner holds the idnumber.
+     * @return int[] The flavour ids whose cohort could not be made because another owner holds the idnumber;
+     *     empty too when the lock could not be taken.
      */
     public static function provision(): array {
         global $DB;

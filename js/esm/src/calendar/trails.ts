@@ -512,7 +512,8 @@ export const meets = (trail: Trail, from: string, to: string, zone: Zone): boole
     (trail.first <= 0 || zone.day(trail.first) <= to) && (trail.last <= 0 || zone.day(trail.last) >= from);
 
 /**
- * Two names in the server's order (core_text::strtolower(), then the bytes).
+ * Two names in an order close to the server's (core_text::strtolower(), then the bytes), not equal to it:
+ * PHP compares numeric strings numerically and sorts UTF-8 bytes, where this compares UTF-16 code units.
  *
  * @param {string} a One name.
  * @param {string} b The other.

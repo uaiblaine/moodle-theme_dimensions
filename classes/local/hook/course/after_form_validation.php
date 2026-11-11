@@ -53,7 +53,7 @@ class after_form_validation {
      * @return void
      */
     public static function callback(\core_course\hook\after_form_validation $hook): void {
-        $hook->add_errors(self::round6_errors($hook->get_data()));
+        $hook->add_errors(self::format_and_workload_errors($hook->get_data()));
         $element = 'customfield_' . landingfields::SHORTNAME_VIDEOURL;
         $data = $hook->get_data();
         if (!isset($data[$element])) {
@@ -78,7 +78,7 @@ class after_form_validation {
      * @param array $data The submitted data.
      * @return array Errors keyed by element name, empty when the submission passes.
      */
-    private static function round6_errors(array $data): array {
+    private static function format_and_workload_errors(array $data): array {
         $model = (int) ($data['customfield_' . landingfields::SHORTNAME_MODEL] ?? 0);
         $modality = (int) ($data['customfield_' . landingfields::SHORTNAME_MODALITY] ?? 0);
         $format = (int) ($data['customfield_' . landingfields::SHORTNAME_FORMAT] ?? 0);

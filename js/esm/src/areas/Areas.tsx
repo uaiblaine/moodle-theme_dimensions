@@ -186,7 +186,7 @@ const Areas = (props: Props) => {
         // A focus the reader had on an entry the server drew goes to the same entry, drawn by React.
         if (drawn.focused instanceof HTMLAnchorElement && !drawn.focused.isConnected && drawn.list) {
             const href = drawn.focused.getAttribute('href');
-            drawn.list.querySelector<HTMLElement>(`a[href="${href}"]`)?.focus({preventScroll: true});
+            drawn.list.querySelector<HTMLElement>(`a[href="${CSS.escape(href ?? '')}"]`)?.focus({preventScroll: true});
             drawn.focused = null;
         }
     }, [adopted, filtered, label]);

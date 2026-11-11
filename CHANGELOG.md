@@ -5,6 +5,26 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The comment audit's improvements, and code left behind removed** (2026100605).
+  - *Guest home page.* On a site whose home page is a URL and whose Dashboard is not the home page (the 5.3
+    default), a guest left on the "site home page" option no longer loops between the site root and `/my/`: core's own
+    URL home page applies.
+  - *Category showcase.* A filter address naming a custom-field value no option has (a mistyped link, or one shared
+    before the option was deleted) no longer empties the listing with no chip to undo it: the value is ignored. A
+    course card whose category the reader must not discover drops the screen reader's "Course category" label with
+    the name. The hero's active tab text follows the brand colour, like the call to action.
+  - *Calendar.* A visitor's answer no longer carries an event course whose course row was deleted mid-request; the
+    agenda links only to http(s) addresses, as the upcoming block does; a trail step's completion time is 0 for a step
+    that is not done.
+  - *Smaller fixes.* An Alt-modified press on a Look item is no longer intercepted; the category page builds its
+    selectors with `CSS.escape()` and runs its progress batch timer only while cards wait for progress; the hex colour
+    fields of the category editor use tabular figures.
+  - *Removed.* `band::wanted()`, three landing field helpers only tests called (`add_hybrid_option()`,
+    `place_format_fields()`, `retire_public_field()`) and the retired field's constant, the calendar's unused
+    `openableDay` export, and five CSS rules and custom properties nothing emitted or read.
+  - Four more copies of core's course renderer are tracked by `upstream_test`; the trails web service's description
+    names the view "Trails".
+
 - **Six defects the comment audit found, fixed** (2026100604).
   - *Focus mode default for new courses.* The queued task now reconciles the field with the setting as it stands when
     it runs, so flipping the setting back before cron no longer writes the stale value, and a refused provisioning

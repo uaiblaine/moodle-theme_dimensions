@@ -79,6 +79,33 @@ final class guesthome_test extends \advanced_testcase {
     }
 
     /**
+     * Without the dashboard, the site option leaves a URL home page to core, which would loop otherwise.
+     *
+     * With enablemyhome off, core turns HOMEPAGE_SITE into the dashboard, sends the guest to /my/ and
+     * back to /?redirect=0, which index.php ignores: an endless redirect. The custom URL is unaffected.
+     */
+    public function test_the_site_option_is_left_to_core_where_the_dashboard_is_off(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $CFG->enablemyhome = 0;
+        $this->site_home(self::ACCOUNT_HOME);
+        $this->setGuestUser();
+
+        $this->assertNull(guesthome::replacement());
+        guesthome::apply();
+        $this->assertSame(self::ACCOUNT_HOME, $CFG->defaulthomepage);
+        $this->assertSame(HOMEPAGE_URL, get_home_page());
+
+        // Control: a custom URL is still returned, and the dashboard being on still gives the site home page.
+        set_config('guesthomepage', guesthome::OPTION_URL, 'theme_dimensions');
+        set_config('guesthomepageurl', '/course/index.php', 'theme_dimensions');
+        $this->assertSame('/course/index.php', guesthome::replacement());
+        unset_config('guesthomepage', 'theme_dimensions');
+        $CFG->enablemyhome = 1;
+        $this->assertSame(HOMEPAGE_SITE, guesthome::replacement());
+    }
+
+    /**
      * A visitor who is not logged in is not the guest account, and is left alone.
      */
     public function test_a_visitor_who_is_not_logged_in_is_left_alone(): void {
@@ -123,6 +150,7 @@ final class guesthome_test extends \advanced_testcase {
     public function test_the_custom_url_is_used_only_when_it_is_chosen(): void {
         global $CFG;
         $this->resetAfterTest();
+        $CFG->enablemyhome = 1;
         $this->site_home(self::ACCOUNT_HOME);
         set_config(guesthome::SETTING_URL, '/course/index.php', 'theme_dimensions');
         $this->setGuestUser();
@@ -146,7 +174,9 @@ final class guesthome_test extends \advanced_testcase {
      * A custom URL core would not read as a home page falls back to the site home page.
      */
     public function test_an_invalid_custom_url_falls_back_to_the_site_home_page(): void {
+        global $CFG;
         $this->resetAfterTest();
+        $CFG->enablemyhome = 1;
         $this->site_home(self::ACCOUNT_HOME);
         set_config(guesthome::SETTING, guesthome::OPTION_URL, 'theme_dimensions');
         $this->setGuestUser();

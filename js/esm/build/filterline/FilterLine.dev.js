@@ -78,7 +78,7 @@ const adopt = /* @__PURE__ */ __name((source, target) => {
 }, "adopt");
 const counterpart = /* @__PURE__ */ __name((line, was) => {
   if (was.id) {
-    const found = line.querySelector(`[id="${was.id}"]`);
+    const found = line.querySelector(`#${CSS.escape(was.id)}`);
     if (found) {
       return found;
     }
@@ -86,7 +86,7 @@ const counterpart = /* @__PURE__ */ __name((line, was) => {
   const action = was.getAttribute("data-action");
   if (action) {
     const value = was.getAttribute("value");
-    const selector = `[data-action="${action}"]` + (value === null ? "" : `[value="${value}"]`);
+    const selector = `[data-action="${CSS.escape(action)}"]` + (value === null ? "" : `[value="${CSS.escape(value)}"]`);
     return line.querySelector(selector);
   }
   const summary = was.closest("details");

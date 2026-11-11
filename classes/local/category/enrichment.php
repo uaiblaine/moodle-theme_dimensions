@@ -114,7 +114,8 @@ final class enrichment {
                 continue;
             }
             $course = $kept[$courseid];
-            $progress = $showprogress
+            // Core answers null for a course with completion off, after building a completion_info of its own: skip it.
+            $progress = $showprogress && in_array((int) $courseid, $enabled, true)
                 ? \core_completion\progress::get_course_progress_percentage($course, (int) $USER->id)
                 : null;
             $row = [

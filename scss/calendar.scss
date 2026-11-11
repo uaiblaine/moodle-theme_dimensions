@@ -394,8 +394,7 @@ body.dim-calendar {
 
     .dim-cal__form,
     .dim-cal__chips,
-    .dim-cal__filters,
-    .dim-cal__chiprow {
+    .dim-cal__filters {
         display: flex;
         flex-wrap: wrap;
         gap: .5rem;
@@ -1778,8 +1777,7 @@ body.dim-calendar {
         line-height: 1.35;
     }
 
-    .dim-cal__poprow > .dim-cal__trailicon,
-    .dim-cal__popicon {
+    .dim-cal__poprow > .dim-cal__trailicon {
         flex: none;
         width: 1rem;
         margin-top: 2px;

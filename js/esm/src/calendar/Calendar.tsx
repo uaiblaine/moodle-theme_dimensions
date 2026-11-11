@@ -195,15 +195,6 @@ const report = (failure: unknown): Promise<void> =>
 export const openingDay = (month: string, today: string): string => (today.startsWith(month) ? today : `${month}-01`);
 
 /**
- * The open day an address names, kept only when the span's days hold it (local\calendar\page::day_from_request()).
- *
- * @param {string|null} day The day the address names.
- * @param {Array} days The days shown.
- * @returns {string|null} The day, or null.
- */
-export const openableDay = (day: string | null, days: string[]): string | null => (day && days.includes(day) ? day : null);
-
-/**
  * The span the server's props name: the week or the day (a phone's) when they say so and name
  * one, else the month.
  *

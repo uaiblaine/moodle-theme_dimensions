@@ -128,7 +128,7 @@ const Areas = /* @__PURE__ */ __name((props) => {
     setHidden(drawn2.box, !filtered || label === "");
     if (drawn2.focused instanceof HTMLAnchorElement && !drawn2.focused.isConnected && drawn2.list) {
       const href = drawn2.focused.getAttribute("href");
-      drawn2.list.querySelector(`a[href="${href}"]`)?.focus({ preventScroll: true });
+      drawn2.list.querySelector(`a[href="${CSS.escape(href ?? "")}"]`)?.focus({ preventScroll: true });
       drawn2.focused = null;
     }
   }, [adopted, filtered, label]);

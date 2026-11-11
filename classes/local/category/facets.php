@@ -291,10 +291,12 @@ final class facets {
     public static function option_labels(field_controller $field): array {
         // The same split as customfield_select's field_controller::get_options(), which prepends the empty choice.
         $options = preg_split("/\s*\n\s*/", trim((string) $field->get_configdata_property('options')), -1, PREG_SPLIT_NO_EMPTY);
+        // The context core's select field formats its options in.
+        $context = $field->get_handler()->get_configuration_context();
         $labels = [];
         foreach ($options ?: [] as $index => $option) {
             $labels[$index + 1] = format_string($option, true, [
-                'context' => \context_system::instance(),
+                'context' => $context,
                 'escape' => false,
             ]);
         }

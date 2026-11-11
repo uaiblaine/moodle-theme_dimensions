@@ -73,7 +73,8 @@ export const init = () => {
 
     document.addEventListener('click', (event) => {
         const item = event.target.closest(`[${ATTRIBUTE}]`);
-        if (!item || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) {
+        if (!item || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey
+            || event.altKey) {
             return;
         }
         event.preventDefault();

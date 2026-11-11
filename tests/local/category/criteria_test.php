@@ -750,4 +750,28 @@ final class criteria_test extends \advanced_testcase {
         $this->assertFalse($shell->favourites, 'The anonymous shell restores no favourites.');
         $this->assertNull($shell->state, 'Nor anything else the session left.');
     }
+
+    /**
+     * A field value no option has is dropped, so no filter is in force that the toolbar cannot draw.
+     */
+    public function test_a_field_value_beyond_the_options_is_dropped(): void {
+        $this->resetAfterTest();
+        $field = $this->getDataGenerator()->get_plugin_generator('core_customfield')->create_field([
+            'categoryid' => $this->getDataGenerator()->get_plugin_generator('core_customfield')->create_category()->get('id'),
+            'type' => 'select',
+            'shortname' => 'threeopts',
+            'name' => 'Three options',
+            'configdata' => ['options' => "One\nTwo\nThree", 'defaultvalue' => ''],
+        ]);
+        set_config(facets::SETTING, 'threeopts', 'theme_dimensions');
+        $fieldid = (int) $field->get('id');
+        $name = criteria::PARAM_FIELD_PREFIX . $fieldid;
+
+        $_GET = [$name => '99'];
+        $this->assertSame([], criteria::from_request(7, [$fieldid])->fields, 'No option 99: no filter.');
+        $_GET = [$name => '2'];
+        $this->assertSame([$fieldid => 2], criteria::from_request(7, [$fieldid])->fields, 'Control: option 2 is kept.');
+        $_GET = [$name => '3'];
+        $this->assertSame([$fieldid => 3], criteria::from_request(7, [$fieldid])->fields, 'Control: the last option is kept.');
+    }
 }

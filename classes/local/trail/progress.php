@@ -140,7 +140,7 @@ final class progress {
             if ($completion->is_enabled($cm) != COMPLETION_TRACKING_NONE) {
                 $data = $completion->get_data($cm, true);
                 $isdone = in_array((int) $data->completionstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS], true);
-                $completed = (int) $data->timemodified;
+                $completed = $isdone ? (int) $data->timemodified : 0;
             } else if (isset($coursedone[$step->refcourseid])) {
                 $isdone = true;
                 $completed = $coursedone[$step->refcourseid];

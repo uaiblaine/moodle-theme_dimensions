@@ -83,7 +83,7 @@ class get_public_calendar_range extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'from' => new external_value(PARAM_RAW, 'The first day, YYYY-MM-DD, in the site\'s timezone.'),
-            'to' => new external_value(PARAM_RAW, 'The last day, YYYY-MM-DD, inclusive; at most 42 days after from.'),
+            'to' => new external_value(PARAM_RAW, 'The last day, YYYY-MM-DD, inclusive; at most 42 days in all, from included.'),
             'keys' => new external_multiple_structure(
                 new external_value(PARAM_RAW, 'A key: category or open.'),
                 'The keys that are on; empty for both.',

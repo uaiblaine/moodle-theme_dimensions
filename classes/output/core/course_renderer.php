@@ -589,7 +589,7 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
     }
 
     /**
-     * Empty the category badge of a Boost Union course card, for a category this user must not discover.
+     * Remove the category badge of a Boost Union course card, for a category this user must not discover.
      *
      * The rule of {@see course_category_name()}, on Boost Union's card and list presentations: with
      * courselistingpresentation set to anything but "nochange", coursecat_coursebox_content() takes
@@ -598,10 +598,11 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
      * predicate. course_category_name() is never reached there.
      *
      * Both of Boost Union's templates (courselistingcard, courselistinglist) wrap the value in a
-     * span.categoryname.text-truncate, and nothing else in a course box carries that class (core's
-     * own category line is a div.coursecat), so emptying it is one unambiguous replacement and
-     * costs no copy of the upstream method. Only the name goes: the reader was rescued into this
-     * listing by access::filter_courses() through their own relationship with the course.
+     * span.categoryname.text-truncate, right after a span.visually-hidden holding the string
+     * aria:coursecategory, and nothing else in a course box carries that class (core's own category
+     * line is a div.coursecat), so removing the pair is one unambiguous replacement and costs no copy
+     * of the upstream method. Only the category goes: the reader was rescued into this listing by
+     * access::filter_courses() through their own relationship with the course.
      *
      * Boost Union's sticky category headers need no guard: they print only while
      * get_show_courses() <= COURSECAT_SHOW_COURSES_COLLAPSED, and every listing that mixes
@@ -621,7 +622,13 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             return $content;
         }
 
-        return preg_replace('~(<span class="categoryname[^"]*">).*?(</span>)~s', '$1$2', $content, 1);
+        // The label span right before the name goes with it: a reader would hear "Course category:" and no value.
+        return preg_replace(
+            '~(?:<span class="visually-hidden">[^<]*</span>\s*)?<span class="categoryname[^"]*">.*?</span>~s',
+            '',
+            $content,
+            1
+        );
     }
 
     /**

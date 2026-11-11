@@ -465,6 +465,7 @@ function theme_dimensions_pluginfile($course, $cm, $context, $filearea, $args, $
     );
     if ($context->contextlevel == CONTEXT_COURSECAT && in_array($filearea, $brandingareas, true)) {
         $branding::serve($context, $filearea, $args);
+        return;
     }
     // The site's logo variants for dark surfaces: theme settings' own files in the system context, public
     // like Boost Union's logos, which every visitor's navbar and login page draw.

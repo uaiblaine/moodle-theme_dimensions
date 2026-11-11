@@ -164,6 +164,8 @@ body.dim-category {
         --dim-hero-page-strong: var(--bs-secondary-bg, #e9ecef);
         --dim-hero-page-muted: var(--bs-secondary-color, #6a737b);
         --dim-hero-primary: var(--bs-primary, #0f6cbf);
+        // The ink on that fill, derived from the same $primary the way --dim-cta-ink is: a brand colour can be light.
+        --dim-hero-primary-ink: #{color-contrast($primary)};
         margin-bottom: 0;
         padding: 0;
         color: var(--dim-hero-ink);
@@ -620,7 +622,7 @@ body.dim-category {
 
             .nav-link.active {
                 background: var(--dim-hero-primary);
-                color: #fff;
+                color: var(--dim-hero-primary-ink);
             }
         }
     }
@@ -661,7 +663,6 @@ body.dim-category {
         // theme's body face is the brand one, and the toolbar has both.
         --dim-font-brand: var(--bs-font-sans-serif);
         --dim-shadow: var(--dim-ds-shadow-sm, 0 1px 2px rgba(3, 0, 80, .08));
-        --dim-shadow-lift: var(--dim-ds-shadow-md, 0 6px 18px rgba(3, 0, 80, .14));
         // The site's own fixed navbar, which the sticky sidebar has to clear. It is Boost's own
         // $navbar-height, in scope because this file is compiled into the theme's main SCSS after
         // Boost's variables (scss/focusmode.scss reads it the same way). Declared here because two
@@ -766,10 +767,6 @@ body.dim-category {
         gap: 14px;
         padding-top: 18px;
         color: var(--dim-ink);
-    }
-
-    .dim-vitrine__description {
-        max-width: 66ch;
     }
 
     // ---- The two-column shell and the navigation tree ----------------------------------------

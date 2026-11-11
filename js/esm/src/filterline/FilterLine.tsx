@@ -165,7 +165,7 @@ const adopt = (source: Element | null, target: Element | null): void => {
  */
 const counterpart = (line: HTMLElement, was: Element): HTMLElement | null => {
     if (was.id) {
-        const found = line.querySelector<HTMLElement>(`[id="${was.id}"]`);
+        const found = line.querySelector<HTMLElement>(`#${CSS.escape(was.id)}`);
         if (found) {
             return found;
         }
@@ -173,7 +173,7 @@ const counterpart = (line: HTMLElement, was: Element): HTMLElement | null => {
     const action = was.getAttribute('data-action');
     if (action) {
         const value = was.getAttribute('value');
-        const selector = `[data-action="${action}"]` + (value === null ? '' : `[value="${value}"]`);
+        const selector = `[data-action="${CSS.escape(action)}"]` + (value === null ? '' : `[value="${CSS.escape(value)}"]`);
         return line.querySelector<HTMLElement>(selector);
     }
     const summary = was.closest('details');

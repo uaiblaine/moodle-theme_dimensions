@@ -63,6 +63,7 @@ const pending = /* @__PURE__ */ new Set();
 const settled = /* @__PURE__ */ new Set();
 const answers = /* @__PURE__ */ new Map();
 let inflight = false;
+let drainTimer = null;
 const exception = /* @__PURE__ */ __name(async (error) => {
   const Notification = await load("core/notification");
   await Notification.exception(error);
@@ -238,12 +239,24 @@ const paintProgress = /* @__PURE__ */ __name((details) => {
     paintAnswer(cardOf(courseid), courseid);
   });
 }, "paintProgress");
+const stopDraining = /* @__PURE__ */ __name(() => {
+  if (drainTimer !== null) {
+    window.clearInterval(drainTimer);
+    drainTimer = null;
+  }
+}, "stopDraining");
 const drainPending = /* @__PURE__ */ __name(async () => {
-  if (inflight || pending.size === 0) {
+  if (pending.size === 0) {
+    stopDraining();
+    return;
+  }
+  if (inflight) {
     return;
   }
   const batch = Array.from(pending).filter((id) => !settled.has(id)).slice(0, BATCH_SIZE);
   if (!batch.length) {
+    pending.clear();
+    stopDraining();
     return;
   }
   batch.forEach((id) => pending.delete(id));
@@ -261,6 +274,11 @@ const drainPending = /* @__PURE__ */ __name(async () => {
     inflight = false;
   }
 }, "drainPending");
+const startDraining = /* @__PURE__ */ __name(() => {
+  if (drainTimer === null) {
+    drainTimer = window.setInterval(drainPending, BATCH_INTERVAL);
+  }
+}, "startDraining");
 const watchCard = /* @__PURE__ */ __name((card) => {
   const courseid = Number(card.dataset.courseid);
   if (!observer || card.dataset.state !== "enrolled" || !Number.isInteger(courseid)) {
@@ -390,6 +408,7 @@ const start = /* @__PURE__ */ __name(() => {
   if (!init(SHELL, Number(payload.categoryid) || Number(root.dataset.categoryid) || 0)) {
     return;
   }
+  drainTimer = null;
   observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const courseid = Number(entry.target.dataset.courseid);
@@ -398,12 +417,12 @@ const start = /* @__PURE__ */ __name(() => {
       }
       if (entry.isIntersecting) {
         pending.add(courseid);
+        startDraining();
       } else {
         pending.delete(courseid);
       }
     });
   }, { rootMargin: OBSERVER_MARGIN });
-  window.setInterval(drainPending, BATCH_INTERVAL);
   attachCards(Array.from(root.querySelectorAll(SELECTORS.card)).filter((card) => !card.closest(HOOKS.areapanel)));
   listen();
   if (current().remembered) {

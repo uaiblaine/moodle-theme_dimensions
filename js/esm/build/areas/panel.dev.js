@@ -239,11 +239,13 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
     const rect = panel.getBoundingClientRect();
     const bar = parseFloat(window.getComputedStyle(areas).getPropertyValue("--dim-navbar")) || 0;
     if (rect.bottom > window.innerHeight || rect.top < bar) {
-      const timer = window.setTimeout(resolve, SCROLL_END);
-      window.addEventListener("scrollend", () => {
+      const done = /* @__PURE__ */ __name(() => {
         window.clearTimeout(timer);
+        window.removeEventListener("scrollend", done);
         resolve();
-      }, { once: true });
+      }, "done");
+      const timer = window.setTimeout(done, SCROLL_END);
+      window.addEventListener("scrollend", done);
       window.scrollBy({ top: rect.top - (bar + SCROLL_GAP), behavior: reduced() ? "auto" : "smooth" });
       return;
     }

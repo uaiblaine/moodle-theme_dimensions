@@ -99,6 +99,15 @@ final class publicrange {
             }
         }
         $courses = self::courses($courseids, $public);
+        $named = [];
+        foreach ($courses as $course) {
+            $named[$course['id']] = true;
+        }
+        // A course gone between the statements has no dictionary entry: drop its items, as range::answer() does.
+        $items = array_values(array_filter(
+            $items,
+            static fn(array $item): bool => $item['source'] !== public_courses::SOURCE || isset($named[$item['courseid']])
+        ));
         foreach ($courses as $course) {
             if ($course['categoryid']) {
                 $categoryids[$course['categoryid']] = true;

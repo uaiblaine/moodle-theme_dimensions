@@ -87,16 +87,6 @@ final class band {
     }
 
     /**
-     * Whether a course's choice draws the band: its select is empty, Automatic or Manual.
-     *
-     * @param \stdClass $values The course's landing page values ({@see landingfields::values()}).
-     * @return bool
-     */
-    public static function wanted(\stdClass $values): bool {
-        return self::mode($values) !== null;
-    }
-
-    /**
      * A course's trail when its page model is the trail's, else null: what {@see courseids()} reads the steps of.
      *
      * @param \stdClass $course The course.

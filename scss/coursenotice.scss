@@ -300,7 +300,7 @@ body#page-course-view-mtube .dim-coursenotice.dim-coursenotice--mtube {
 // ---- The dark half ----------------------------------------------------------------------------
 // The surfaces, lines and body inks follow Bootstrap's own dark tokens already. The brand inks move
 // to the design system's lighter stops (the navy would be a hole in a dark page), and the chip tones
-// take the dark pairs the category showcase's badges were audited with (category.scss): each over
+// take the dark pairs the category showcase's badges were audited with (the $dim-dark-* variables of post.scss): each over
 // the 4.5:1 floor.
 :root[data-bs-theme="dark"] .dim-coursenotice {
     --dim-notice-mark: var(--dim-ds-blue-300, #7c84ff);
@@ -308,10 +308,10 @@ body#page-course-view-mtube .dim-coursenotice.dim-coursenotice--mtube {
     --dim-notice-link: var(--dim-ds-blue-200, #adb2f0);
     --dim-notice-cta: var(--dim-ds-blue-400, #4456ff);
     --dim-notice-ring: var(--dim-ds-blue-300, #7c84ff);
-    --dim-notice-ok-bg: #18330c;
-    --dim-notice-ok-fg: #a9ee55; // 9.9:1.
-    --dim-notice-warn-bg: #3a2c0c;
-    --dim-notice-warn-fg: #f0c674; // 8.4:1.
-    --dim-notice-info-bg: #0c2e33;
-    --dim-notice-info-fg: #7fd8e4; // 8.8:1.
+    --dim-notice-ok-bg: #{$dim-dark-open-bg};
+    --dim-notice-ok-fg: #{$dim-dark-open-fg}; // 9.9:1.
+    --dim-notice-warn-bg: #{$dim-dark-pending-bg};
+    --dim-notice-warn-fg: #{$dim-dark-pending-fg}; // 8.4:1.
+    --dim-notice-info-bg: #{$dim-dark-info-bg};
+    --dim-notice-info-fg: #{$dim-dark-info-fg}; // 8.8:1.
 }

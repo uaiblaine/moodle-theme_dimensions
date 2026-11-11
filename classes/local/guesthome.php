@@ -78,7 +78,7 @@ final class guesthome {
     /**
      * The value defaulthomepage takes for this request, or null to leave the site's own.
      *
-     * @return int|string|null HOMEPAGE_SITE, a root-relative URL, or null.
+     * @return int|string|null HOMEPAGE_SITE (only where the dashboard is on), a root-relative URL, or null.
      */
     public static function replacement(): int|string|null {
         global $CFG;
@@ -95,7 +95,8 @@ final class guesthome {
                 return $url;
             }
         }
-        return HOMEPAGE_SITE;
+        // Without the dashboard core reads HOMEPAGE_SITE as it, and the guest loops between / and /my/.
+        return empty($CFG->enablemyhome) ? null : HOMEPAGE_SITE;
     }
 
     /**
