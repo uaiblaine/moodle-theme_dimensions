@@ -124,7 +124,7 @@ final class population_test extends \advanced_testcase {
     }
 
     /**
-     * A category the viewer was clamped out of names no card: off the overline as it is off the chip.
+     * A category the viewer was clamped out of names no card: off the overline as it is off the tree.
      *
      * The enrolment rescues the course (the control that the page rendered it), and the
      * withheld subcategory's name reaches neither surface; an admin, whom nothing clamps, gets it.
@@ -3240,6 +3240,9 @@ final class population_test extends \advanced_testcase {
 
     /**
      * Whether a watermark at an opacity leaves the name 4.5:1 and the chevron 3:1, recomputed here.
+     *
+     * An independent copy of {@see population::mark_alpha()}'s check, its constants spelled out (0.18 is
+     * population::CHEVRON_ALPHA).
      *
      * @param string $band The band.
      * @param string $ink The ink.

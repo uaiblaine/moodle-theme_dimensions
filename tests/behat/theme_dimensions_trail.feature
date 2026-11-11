@@ -61,10 +61,10 @@ Feature: A trail's landing page draws its courses in order
     And I should see "Open Fundamentals" in the "[data-region='dim-cal-trails']" "css_element"
     And "[data-region='dim-cal-trailfilters']" "css_element" should be visible
     And "[data-action='dim-cal-types']" "css_element" should not be visible
-    # The months held are named in a band above the days; R3's "next month" column is gone.
+    # The months held are named in a band above the days, with no "next month" column after them.
     And "[data-region='dim-cal-trailmonths'] [data-action='dim-cal-trailmonth']" "css_element" should exist
     And ".dim-cal__trailday--next" "css_element" should not exist
-    # T3c: a course's dates are the quieter line under its name (a start alone here: the generator sets no end).
+    # A course's dates are the quieter line under its name (a start alone here: the generator sets no end).
     And I should see "From" in the "[data-region='dim-cal-trailrow'] [data-region='dim-cal-traildates']" "css_element"
     # By weeks the second header row is the weeks; the zoom is written to the address.
     And I click on "Weeks" "button" in the "[data-region='dim-cal-trailzoom']" "css_element"
@@ -74,7 +74,7 @@ Feature: A trail's landing page draws its courses in order
     # A course's row in the trail column scrolls to its bar and opens its popover once the scroll has ended.
     And I click on "[data-region='dim-cal-trailrow'][data-cmid]" "css_element"
     And I should see "Course 1 of 2 · Trail of Management" in the "[data-region='dim-cal-trailpopover']" "css_element"
-    # C4: the popover is the course card's dialog: the course's cover with the close disc on it, the calendar's buttons.
+    # The popover is the course card's dialog: the course's cover with the close disc on it, the calendar's buttons.
     And "[data-region='dim-cal-trailpopover'] [data-region='dim-cal-trailcover'] img" "css_element" should exist
     And "Open course" "link" should exist in the "[data-region='dim-cal-trailpopover']" "css_element"
     And "View trail" "link" should exist in the "[data-region='dim-cal-trailpopover']" "css_element"

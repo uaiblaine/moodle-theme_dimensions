@@ -197,7 +197,7 @@ final class category_hero_test extends \advanced_testcase {
      *
      * One rule in three parts: the crests are the category's and inherit nothing (a parent with
      * crests leaves a child without any showing none), they arrive in the editor's order with a
-     * gap closed, and a folded band drops them with the tagline and the counts.
+     * gap closed, and a folded band, which drops the tagline and the counts, keeps them.
      */
     public function test_the_hero_draws_the_categorys_own_crests(): void {
         $this->resetAfterTest();
@@ -230,8 +230,8 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertStringContainsString('/categorybadge3/' . $child . '/', $context->badges[1]['url']);
         $this->assertNotEmpty($context->badgeslabel, 'The list is labelled, because its items are images.');
 
-        /* Folded: the band drops the tagline and the counts and KEEPS the crests, the same
-           files with the same alternative text - the stylesheet alone makes them small. */
+        /* Folded: the band drops the tagline and the counts and keeps the crests, the same
+           files with the same alternative text; the stylesheet alone makes them small. */
         $folded = $this->export($this->hero($child, [], true));
         $this->assertTrue($folded->compact, 'Precondition: this is the folded band.');
         $this->assertTrue($folded->hasbadges, 'A folded hero keeps its crests.');
@@ -241,11 +241,11 @@ final class category_hero_test extends \advanced_testcase {
     }
 
     /**
-     * The compact LAYOUT keeps the crests too, and the markup puts them in the band beside the title.
+     * The compact layout keeps the crests too, and the markup puts them in the band beside the title.
      *
      * The fold is a reader's choice and the compact layout a manager's; both make the band compact,
-     * and neither drops the crests any more. Rendered through the template, so a list that the
-     * context carried and the markup no longer drew in the compact band would fail here.
+     * and neither drops the crests. Rendered through the template, so a list the context carries but
+     * the compact band's markup does not draw fails here.
      */
     public function test_the_compact_layout_draws_the_crests_beside_the_title(): void {
         global $PAGE;
@@ -752,7 +752,7 @@ final class category_hero_test extends \advanced_testcase {
         $this->assertSame(branding::DEFAULT_BG, $branding['bgcolour']);
         $this->assertSame(branding::DEFAULT_INK, $branding['inkcolour']);
         /* The image layout over no image of its own: the root hero paints the site-wide fallback
-           image behind the default navy, and on a site with no fallback it falls back to the solid
+           image behind the default colour, and on a site with no fallback it falls back to the solid
            band asserted below. It is the one value of this payload that is not the default. */
         $this->assertSame(branding::LAYOUT_IMAGE, $branding['layout']);
         $this->assertNull($branding['image']);

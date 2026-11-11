@@ -178,9 +178,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     # end of the listing: ten appends put eleven cards on screen and leave a twelfth behind, so
     # "the window closed" and "there is nothing more" are different answers.
     #
-    # Every click is followed by its own wait on the grid, and that is the synchronisation: the
-    # module registers nothing in M.util.pending_js, so Behat's after-step wait does not cover the
-    # whole of an append. "I wait until" spins; a bare run of ten clicks would race the rows.
+    # Every click is followed by its own wait on the grid, which holds each step to the row count
+    # it asked for: a bare run of ten clicks would assert on whatever count the last one left.
     Given the following "courses" exist:
       | fullname          | shortname | category | customfield_dimensions_model |
       | Brigada Um        | BRIG01    | TESTCAT  | 1                          |
@@ -280,7 +279,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   Scenario: An enrolled learner's card paints its progress row under the state pill once the card is on screen
     # theme_dimensions_get_card_details answers for the enrolled cards in view: a course with completion tracking and
     # one tracked activity reads 0 %, as the bar's value and the number at its right; a course without tracking draws
-    # no row, never "0 %" (moodle-dev/docs/course-card/CONTRACT.md, section 3).
+    # no row, never "0 %".
     Given the following "courses" exist:
       | fullname        | shortname | category | customfield_dimensions_model | enablecompletion |
       | Curso Rastreado | TRACK     | TESTCAT  | 1                            | 1                |
@@ -372,7 +371,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
 
   @javascript
   Scenario: The page remembers the organisation chosen in this category, and only in this one
-    # A real account's organisation, view and filters are remembered per category (round I): the
+    # A real account's organisation, view and filters are remembered per category: the
     # bare address of the category opens in them, the client then writes that address out in full,
     # and another category is untouched. The rules - what a bare address is, what is validated, the
     # bound - are PHPUnit's (remembered_test); this is the wiring, end to end.
@@ -854,8 +853,8 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
     And I should not see "Resgate em Altura" in the "[data-region='dim-panel-rail']" "css_element"
     When I set the field "Search courses" to ""
     # The rail is asked again only after the answer at rest has repainted the posters and the
-    # summary, and this step waits for it; the two visibility steps after it do not wait: the
-    # search is debounced, and the module registers nothing in M.util.pending_js.
+    # summary, so once the rail's course is back the posters and the summary are painted and the
+    # two visibility steps below need no wait of their own.
     Then I should see "Resgate em Altura" in the "[data-region='dim-panel-rail']" "css_element"
     And "[data-region='dim-areas-nomatch']" "css_element" should not be visible
     And "//article[@data-name='Test category']//*[@data-region='dim-poster-pill']" "xpath_element" should not be visible
@@ -863,7 +862,7 @@ Feature: With JavaScript on, the category showcase narrows, pages and stars with
   @javascript
   Scenario: Arriving on a remembered bare address writes it out in full without a history entry
     # The bare address of a category draws a reader's remembered state, and the client writes that
-    # address out in full in place (R4b3): pushed, Back would stop on the bare address, which draws
+    # address out in full in place: pushed, Back would stop on the bare address, which draws
     # the same page again, and the reader could never leave it with one press.
     Given the following "categories" exist:
       | name           | category | idnumber |

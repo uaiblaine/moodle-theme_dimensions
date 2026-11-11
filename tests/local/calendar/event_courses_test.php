@@ -38,7 +38,7 @@ require_once(__DIR__ . '/fixture.php');
 /**
  * An event course the viewer is in is theirs; one they could join is open; nothing else reaches the calendar.
  *
- * Every refused course differs from the open control in ONE property: hidden, in an unlisted category, its
+ * Every refused course differs from the open control in one property: hidden, in an unlisted category, its
  * enrolment closed, its dates outside the window, a course of the course model, a row of the viewer's that is
  * not active. The control is answered in the same call, so a refusal cannot pass because nothing answers.
  *
@@ -172,7 +172,8 @@ final class event_courses_test extends \advanced_testcase {
     }
 
     /**
-     * The controls of the refused cases: undo the one difference and each course is answered.
+     * The controls of three refused cases: the hidden, unlisted-category and closed courses are open once their one
+     * difference is undone.
      *
      * @return void
      */

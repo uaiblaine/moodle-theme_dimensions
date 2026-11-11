@@ -43,7 +43,8 @@ require_once($CFG->libdir . '/completionlib.php');
 /**
  * The trails of a month: which trails, which steps, their states, the filters, the cost.
  *
- * Every test needs mod_subcourse and skips without it. The months are March and June 2027, in the viewer's timezone.
+ * Every test needs mod_subcourse and skips without it. Days are 2027's, at noon in the viewer's timezone ({@see at()});
+ * most tests read March 2027.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -808,7 +809,7 @@ final class trails_test extends \advanced_testcase {
             landingfields::SHORTNAME_MODEL => landingfields::MODEL_COURSE,
         ]);
         self::getDataGenerator()->create_module('subcourse', ['course' => $course->id, 'refcourse' => $trail->id]);
-        // Open to the reader as the trail is, so only its model keeps it out (T3d's rule would hide it otherwise).
+        // Open to the reader as the trail is, so only its model keeps it out (the view's rule would hide it otherwise).
         $this->enable_instance((int) $course->id, 'self', ['customint6' => 1]);
         $this->become(self::getDataGenerator()->create_user());
         $this->assertSame([(int) $trail->id], self::ids($this->answer('2027-03')));
@@ -905,7 +906,7 @@ final class trails_test extends \advanced_testcase {
     }
 
     /**
-     * C4: each step carries its course's card image (the popover's cover): the course's own image, else the renderer's
+     * Each step carries its course's card image (the popover's cover): the course's own image, else the renderer's
      * cover for a course with none; nothing while Boost Union's card view is off.
      */
     public function test_each_step_carries_its_courses_image(): void {
@@ -932,7 +933,7 @@ final class trails_test extends \advanced_testcase {
     }
 
     /**
-     * C4: the steps' images are one batch: two trails of two steps and six trails of two steps each pay one statement
+     * The steps' images are one batch: two trails of two steps and six trails of two steps each pay one statement
      * for them (the {files} read, the renderer's covers coming from the warm branding cache), measured as the answer
      * with Boost Union's card view on less the same answer with it off, every course with an image of its own but one.
      */
@@ -1026,7 +1027,7 @@ final class trails_test extends \advanced_testcase {
      * do, for a learner of every trail who is enrolled in half the courses and has completed a quarter of them, for an
      * account enrolled in nothing (shown the trails by their open self enrolment) and for a manager enrolled in nothing
      * (shown them by the capability), over one month, the month and the next and three months. Core's caches are warm on a
-     * second answer, which is what is measured; the generator builds about 116 courses and 104 steps, some twenty seconds.
+     * second answer, which is what is measured. A slow test: the fixture builds 116 courses and 104 steps.
      */
     public function test_ten_trails_of_ten_courses_cost_what_two_of_two_do(): void {
         global $DB;

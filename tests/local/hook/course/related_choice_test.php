@@ -161,7 +161,7 @@ final class related_choice_test extends \advanced_testcase {
     }
 
     /**
-     * While competencies are off the pairs field leaves the form and nothing takes its place.
+     * While competencies are off the pairs field's text box becomes a hidden element and no autocomplete takes its place.
      */
     public function test_no_choice_while_competencies_are_off(): void {
         $course = $this->course(['A']);

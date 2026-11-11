@@ -49,7 +49,7 @@ final class builder_test extends \advanced_testcase {
      *
      * Boost Union ships every hint off, so a test switches on exactly the one it is about.
      * local_unlistedcourses memoises per course id in statics that PHPUnit does not reset, and the
-     * sequences are restored between tests, so its three memos are reset here.
+     * sequences are restored between tests, so its memos are reset here.
      *
      * @return void
      */

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - Tests for how the logged-in shell mounts its calendar component
+ * Theme Dimensions - Tests for how the shared listing mounts the calendar component
  *
  * @package    theme_dimensions
  * @category   test
@@ -28,10 +28,10 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the AMD half of the date range component by reading the source.
+ * Pins the listing's half of the date range component by reading the source.
  *
- * The component's behaviour is Jest's (js/esm/tests/daterange); what Jest cannot see is how the AMD
- * listing mounts it and talks to it, and what the component must never compute. Core's react_autoinit
+ * The component's behaviour is Jest's (js/esm/tests/daterange); what Jest cannot see is how the shared
+ * listing (js/esm/src/listing) mounts it and talks to it, and what the component must never compute. Core's react_autoinit
  * mounts a node added to the document and reads no attribute change, so the listing APPENDS a node
  * carrying the component and its props; it listens to the component before the node goes in; and the
  * native date fields go behind the calendar only once the component says it is drawn, which it never
@@ -121,8 +121,8 @@ final class daterange_component_source_test extends \basic_testcase {
     /**
      * The component is the calendar of every shell, appended wherever the toolbar has the period's region.
      *
-     * No shell mounts the AMD calendar and it is gone: an address's period is read by
-     * js/esm/src/daterange/calendar.ts's period(), on both shells.
+     * There is no other calendar: an address's period is read by js/esm/src/daterange/calendar.ts's
+     * period(), on both shells.
      *
      * Changes that must make it fail: the AMD calendar mounted again beside the component; the specifier
      * handed in by a caller instead of named in the listing.
@@ -239,8 +239,8 @@ final class daterange_component_source_test extends \basic_testcase {
     /**
      * The shared listing names the component, which is built, and both shells mount it through it.
      *
-     * Changes that must make it fail: a client naming the component itself, or mounting no calendar
-     * (gate js_public_calendar_mounted on the visitor's).
+     * Changes that must make it fail: a client naming the component itself, or the store mounting no
+     * calendar.
      */
     public function test_both_shells_mount_the_component_named_in_the_listing(): void {
         $this->assertStringContainsString(

@@ -4,7 +4,7 @@ Feature: The category showcase's first paint, measured in a throttled browser
   As a developer of the theme
   I need the browser's own paint, blocking, shift, interaction and request numbers of its pages, run by run
 
-  # The performance probe of docs/vitrine-react/PLAN.md, section 5.4. It SKIPS unless the site opts
+  # The showcase's performance probe (theme_dimensions_perf_probe.php). It skips unless the site opts
   # in ($CFG->behat_theme_dimensions_perfprobe = true, or THEME_DIMENSIONS_PERFPROBE=1 in the runner's
   # environment), so ordinary suites and CI never spend its minutes. Opted in, every probe step loads
   # its page five times under 4x CPU throttling and a 150 ms / 1.6 Mbps network (Chrome DevTools,
@@ -12,7 +12,7 @@ Feature: The category showcase's first paint, measured in a throttled browser
   # presses one control for INP, and writes every run and the medians as JSON under the faildump
   # path, in theme_dimensions_perf/. The timings are a trend; nothing here fails on a number. The
   # deterministic counts (scripts and stylesheets before load, their bytes, DOM nodes, HTML bytes)
-  # are read from the cold series. The theme CLAUDE.md, "The performance probe (R0)", says how to run it.
+  # are read from the cold series.
 
   Background:
     Given the theme_dimensions performance probe is enabled

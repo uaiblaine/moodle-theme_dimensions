@@ -362,7 +362,7 @@ final class opengraph_test extends \advanced_testcase {
             ],
         ]);
         $branding = branding::for_category($categoryid);
-        // The preconditions: both of the retired sources really do hold a value here.
+        // The preconditions: both fields og:description must not read really do hold a value here.
         $this->assertSame('Formação continuada e eventos', $branding['tagline']);
         $this->assertStringContainsString('Primeiro parágrafo', $branding['publicdescription']);
         $this->assertSame('', $branding['publicsummary']);

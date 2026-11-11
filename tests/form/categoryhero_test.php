@@ -628,13 +628,8 @@ final class categoryhero_test extends \advanced_testcase {
      * compute their drop zone from - and the two byte limits refuse anything that reached a
      * repository anyway.
      *
-     * In a browser, with these four the dialogue opens with a URL field and a repository list of
-     * "Embedded files" and "Wikimedia", no file input and no drop target; a YouTube address and a
-     * direct .mp4 address are both inserted as an `external-media-provider` anchor; and an image
-     * pasted into the body fires one repository upload that answers `invalidrepositoryid` and
-     * stores nothing. What that paste does leave behind is a data: URI in the submitted text,
-     * which is what {@see test_an_image_pasted_into_the_public_page_text_is_refused_on_its_own_field}
-     * covers.
+     * An image pasted into the body stores no file, but leaves a data: URI in the submitted text,
+     * which {@see test_an_image_pasted_into_the_public_page_text_is_refused_on_its_own_field} covers.
      *
      * Note FILE_EXTERNAL is 1 and FILE_INTERNAL is 2 (repository/lib.php), the reverse of the
      * order the names suggest: the control below reads the constants, never the numbers.
@@ -798,10 +793,9 @@ final class categoryhero_test extends \advanced_testcase {
      *
      * branding::single_file_areas() is what the form, form_data() and save() all read, so an
      * element offered with one option set, a draft prepared with a second and an area written
-     * back with a third cannot happen: they are the same array. The identity assertion below is
-     * the whole of that property - the element's accepted types and limits are the list's. The types are
-     * compared expanded into extensions: tool_imagepicker's element, where it is installed, stores the list's
-     * 'web_image' that way, and the set is what is accepted.
+     * back with a third cannot happen: they are the same array. The loop below compares each element's
+     * accepted types with the list's, expanded into extensions: tool_imagepicker's element, where it is
+     * installed, stores the list's 'web_image' that way, and the set is what is accepted.
      *
      * The second half needs the hero image beside it as the control: every file row of this form
      * is a manager. A file picker shows a name, offers no thumbnail and has no control that
@@ -1101,7 +1095,7 @@ final class categoryhero_test extends \advanced_testcase {
     }
 
     /**
-     * The editor page really saves that description, and really prepares it before showing the form.
+     * The editor page saves that description, and prepares it before showing the form.
      *
      * The page is a script: nothing else here can execute it, and without this a whole feature
      * could be deleted from it with every other test in this file still green. So the wiring is

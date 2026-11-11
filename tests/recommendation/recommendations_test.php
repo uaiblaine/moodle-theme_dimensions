@@ -35,8 +35,8 @@ use theme_dimensions\local\landingfields;
 /**
  * Tests for the recommendations this theme adds to Boost Union's overview.
  *
- * Every status is asserted in both of its states, because a check that always answers OK passes
- * the half that expects OK.
+ * Every status tested here is asserted in both of its states, because a check that always answers OK
+ * passes the half that expects OK. The look cohorts' item has its two states in lookcohorts_test.
  *
  * @package    theme_dimensions
  * @category   test
@@ -196,7 +196,7 @@ final class recommendations_test extends \advanced_testcase {
         $this->assertSame(recommendation::OK, $on->get_status());
 
         filter_set_global_state('shortcodes', TEXTFILTER_DISABLED);
-        // Core keeps the enabled filters in a request cache that setting a state leaves as it was.
+        // The same request cache, purged again for the new state.
         \cache::make_from_params(\cache_store::MODE_REQUEST, 'core_filter', 'global_filters')->purge();
         $off = new relatedshortcode();
         $this->assertSame(recommendation::NOTICE, $off->get_status());

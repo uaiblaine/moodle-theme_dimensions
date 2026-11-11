@@ -19,12 +19,12 @@ namespace theme_dimensions\local;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the course card contract (moodle-dev/docs/course-card/CONTRACT.md) in this plugin's files.
+ * Pins the shared course card contract in this plugin's files.
  *
  * Copied between plugins: only the constants above the first method change. It reads files only, so it
  * runs wherever the PHPUnit suite runs. A card rule is an innermost CSS block whose selector names
  * CARD_ROOT; in a nested SCSS source, name the root in each card rule's own selector, or the rule is
- * not seen. Every arm is mutation-checked when the copy lands (contract, section 12).
+ * not seen.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -47,7 +47,7 @@ final class course_card_contract_test extends \basic_testcase {
     /** @var bool True in theme_dimensions only: the one plugin that declares --dimensions-card-* names. */
     private const PROVIDER = true;
 
-    /** @var array Every token suffix of the contract's section 7. */
+    /** @var array Every token suffix of the card contract. */
     private const SUFFIXES = [
         'radius', 'border-width', 'border', 'surface', 'ink', 'ink-muted', 'title-hover', 'cover-height',
         'cover-fallback', 'cover-overlay', 'chip-bg', 'chip-ink', 'extra-bg', 'extra-icon', 'track', 'fill',
@@ -55,7 +55,7 @@ final class course_card_contract_test extends \basic_testcase {
         'focus-width', 'locked-opacity', 'close-bg', 'close-bg-hover', 'close-edge', 'transition',
     ];
 
-    /** @var array Boost Union's settings of the contract's section 8. */
+    /** @var array Boost Union's settings the card contract reads. */
     private const BOOST_UNION_SETTINGS = [
         'courseoverviewshowcourseprogress',
         'courseoverviewimagesource',

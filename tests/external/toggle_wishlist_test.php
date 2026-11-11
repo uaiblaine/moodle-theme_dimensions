@@ -106,7 +106,7 @@ final class toggle_wishlist_test extends \advanced_testcase {
     }
 
     /**
-     * The refusal matrix: four ways to miss, one answer, and an admitted course as the control.
+     * The refusal matrix: six ways to miss, one answer, and an admitted course as the control.
      */
     public function test_every_course_it_withholds_answers_alike(): void {
         $this->resetAfterTest();
@@ -324,16 +324,16 @@ final class toggle_wishlist_test extends \advanced_testcase {
     }
 
     /**
-     * The theme never calls core's own favourite web service, from PHP or from JavaScript.
+     * The theme's PHP and AMD modules never name core's own favourite web service.
      *
      * core_course_set_favourite_courses instantiates a course context and checks
      * nothing else: no visibility question, no discoverability question. Reaching
-     * it from this feature's client would be a way around every gate in this file,
-     * so the rule is that the name appears nowhere the theme owns.
+     * it from this feature's client would be a way around every gate in this file.
+     * The sweep reads lib.php, classes/, amd/src and amd/build; the ES star module
+     * is held by {@see \theme_dimensions\local\category\listing_star_source_test}.
      *
-     * amd/build is swept as well as amd/src, and it is the half that matters:
-     * Moodle serves the build and never the source, so a source that was cleaned
-     * and never rebuilt still ships the old call to every browser.
+     * amd/build is swept as well as amd/src because Moodle serves the build, so a
+     * source that was cleaned and never rebuilt still ships the old call.
      */
     public function test_core_s_own_favourite_service_is_named_nowhere_in_the_theme(): void {
         $root = dirname(__DIR__, 2);

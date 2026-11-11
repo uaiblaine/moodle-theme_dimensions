@@ -23,9 +23,9 @@
  * counted as uncovered: it is absent from the clover report, so leaving it out makes the
  * percentage look better, not worse.
  *
- * What the default misses here is every page script of the theme - the two entries of the
- * category showcase, the landing page, focus mode, the refusal page - plus the settings page and the
- * two database scripts. Those hold guards: the appearance editor's capability check, focus
+ * What the default misses here is the theme's page scripts - the category showcase's anonymous
+ * entry and its appearance editor, the landing page, focus mode, the refusal page - plus the settings
+ * page and the two database scripts. Those hold guards: the appearance editor's capability check, focus
  * mode's enter and leave, the anonymous shell's forward. They are added below; a figure measured
  * with them is not comparable with one measured without.
  *

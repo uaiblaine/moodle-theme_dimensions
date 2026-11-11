@@ -35,9 +35,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * categorypublic_source_test's, and the behaviour Jest's (js/esm/tests/listing). The test keeps the name it was
  * written under, for the AMD client the store replaced.
  *
- * moodle-plugin-ci has no JavaScript unit-test runner, so the properties whose loss costs a server rather than a
- * screenshot are pinned the way category_scss_test pins class names: assertions about spelling, each scoped to the
- * one function it is about through body(). The builds are esm_source_test's.
+ * The properties whose loss costs a server rather than a screenshot are pinned here as well, the way
+ * category_scss_test pins class names: assertions about spelling, each scoped to the one function it is about
+ * through body(). The builds are esm_source_test's.
  *
  * @package    theme_dimensions
  * @category   test
@@ -529,8 +529,8 @@ final class amd_source_test extends \basic_testcase {
      * The rows of a repainted grid are held as pending JavaScript until their fade has run.
      *
      * They are inserted at opacity 0 and revealed two frames later, and WebDriver reads an element at
-     * opacity 0 as not displayed: a step counting a repainted grid's visible rows found none on a
-     * slow leg while the frames were still to come. The token is taken before the frames and given
+     * opacity 0 as not displayed, so a step counting a repainted grid's visible rows would find none
+     * while the frames are still to come. The token is taken before the frames and given
      * back after the stylesheet's own duration, so Behat waits for the settled grid by itself.
      *
      * Changes that must make it fail: taking the token inside the frames; releasing it before the

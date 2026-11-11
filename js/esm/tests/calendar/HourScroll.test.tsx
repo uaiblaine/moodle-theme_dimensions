@@ -14,8 +14,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the hour column's scroll box re-placing itself when the grid hands the drawer its height (PROPOSAL.md
- * section 30.7): until the reader takes the box, and once more for each new opening.
+ * Tests for the hour column's scroll box re-placing itself when the grid hands the drawer its height: until the
+ * reader takes the box, and once more for each new opening.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

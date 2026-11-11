@@ -14,11 +14,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the calendar page's client, by what a reader and a screen reader meet (PROPOSAL.md section 11.3).
+ * Tests for the calendar page's client, by what a reader and a screen reader meet.
  *
  * The component is rendered inside a page like calendar_page.mustache's (its server layer beside the mount); the
- * range, the state and core's event services are core/ajax's fetchOne, mocked. C3's day drawer, phone sheet and event
- * popover (PROPOSAL.md sections 13.2 and 13.3) are read here by what they draw and where the focus goes.
+ * range, the state and core's event services are core/ajax's fetchOne, mocked. The day drawer, the phone's sheet and
+ * the event popover are read by what they draw and where the focus goes.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -1167,8 +1167,8 @@ describe('the phone', () => {
             observers[0]([{target: frame, contentRect: {width: 900, height: 999}}]);
         });
         expect(frame.style.getPropertyValue('--dim-cal-gridheight')).toBe('702px');
-        // The regression: the report re-renders the calendar, and a custom property written by hand did not survive it.
-        // React owns it now, so opening the drawer (the frame's class changes) leaves the same frame carrying it.
+        // A custom property written outside React would not survive a re-render: opening the drawer changes the
+        // frame's class, and the same frame must still carry the height.
         await act(async() => {
             fireEvent.click(day('2026-11-17'));
         });

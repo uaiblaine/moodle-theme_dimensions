@@ -340,8 +340,7 @@ final class page_test extends \advanced_testcase {
     }
 
     /**
-     * A list where one value is expected is dropped, never an exception: optional_param() would throw, and the public
-     * calendar would answer a visitor with an error page.
+     * A list where one value is expected is dropped, never an exception ({@see page::scalar_param()} says why).
      *
      * @return void
      */
@@ -357,8 +356,7 @@ final class page_test extends \advanced_testcase {
     }
 
     /**
-     * A list for the month or the open day is dropped too, in the readers and in the script's forward: optional_param()
-     * would throw, and the public calendar would answer a visitor with an error page.
+     * A list for the month or the open day is dropped too, in the readers and in the script's forward.
      *
      * @return void
      */

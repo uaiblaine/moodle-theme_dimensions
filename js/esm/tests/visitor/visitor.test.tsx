@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The three components on the visitor's own markup, mounted as the visitor's module mounts them (R4a).
+ * The three components on the visitor's own markup, mounted as the visitor's module mounts them.
  *
  * The page is ./page's: the anonymous shell's toolbar and areas as a public category page draws them. Each
  * component must draw it and say so - the listing holds a pending until it does - and a line mounted again

@@ -101,7 +101,7 @@ final class planner_test extends \advanced_testcase {
     }
 
     /**
-     * A sheet is missing until its file exists for the CURRENT revisions; one at an older sub-revision does not count.
+     * A sheet is missing until its file exists for the current revisions; one at an older sub-revision does not count.
      *
      * @return void
      */

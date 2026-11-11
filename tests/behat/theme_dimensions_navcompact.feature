@@ -34,8 +34,8 @@ Feature: The navbar goes compact on a tablet when its navigation does not fit
     And "Side panel" "button" should not be visible
 
   # The two layouts of the bar differ, and where the compact one gives the navigation more room, the navigation
-  # re-splits to fit there; reading that split as "the full bar fits" flipped the mode on every frame after a resize
-  # (amd/src/compactnav.js, the hold). The step below makes that difference certain at any width.
+  # re-splits to fit there; reading that split as "the full bar fits" would flip the mode on every frame after a
+  # resize (see the hold in amd/src/compactnav.js). The step below makes that difference certain at any width.
   Scenario: Resizing through narrow, wide and medium keeps the menu button and the mode in step
     Given I change window size to "small"
     And I log in as "student1"

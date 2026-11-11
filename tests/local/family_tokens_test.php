@@ -53,7 +53,7 @@ final class family_tokens_test extends \basic_testcase {
 
     /**
      * @var string[] The course card's suffixes after "card-", read by every plugin that draws a course card (the theme,
-     *      block_compass, local_dimensions), each through its own names: moodle-dev/docs/course-card/CONTRACT.md, section 7.
+     *      block_compass, local_dimensions), each through its own names.
      */
     private const CARD = [
         'radius', 'border-width', 'border', 'surface', 'ink', 'ink-muted', 'title-hover', 'cover-height',
@@ -340,7 +340,7 @@ final class family_tokens_test extends \basic_testcase {
      *
      * A token chained to a --bs-* property is computed where it is declared, so a root left out is a
      * place a plugin reads a value computed somewhere else; and the dark mode is read on the html element
-     * alone, or Boost Union's dark navbar would turn every plugin inside it dark.
+     * alone, or an element carrying its own data-bs-theme would turn every plugin inside it dark.
      */
     public function test_the_declarations_sit_on_the_three_roots(): void {
         $blocks = $this->blocks();

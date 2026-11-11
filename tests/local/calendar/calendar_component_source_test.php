@@ -182,15 +182,13 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * No layout is read on the mount path: the reads of the tree are the popover's, when it opens, and the hour box's,
-     * when a day or a week opens it and while it scrolls; each grid is measured by one ResizeObserver: the month's watches
-     * the rows (the density) and the frame the drawer shares (the phone), the week's the frame and its own root (the
-     * height it reports to the drawer), and the phone's Day view, drawn with no grid beside it, has one of its own on the
-     * same frame, as the Trilhas view does; the step's popover reads as the event popover does, on an opening; and the
-     * Trilhas view's days scroller (TrailScroll.tsx) reads
-     * itself once per opening (today into view) and on a scroll, an arrow, a target the view asks for, a new zoom (T3c:
-     * after placing the same day by arithmetic, through the same measure, so the count is unchanged) or the map, never on
-     * another render, and writes every position through one place.
+     * No layout is read on the mount path. The reads of the tree are the event and step popovers', when they open; the
+     * hour box's, when a day or a week opens it and while it scrolls; and the Trilhas days scroller's (TrailScroll.tsx),
+     * once per opening (today into view) and on a scroll, an arrow, a target the view asks for, a new zoom (placed by
+     * arithmetic, then measured once) or the map, never on another render, with every position written through one
+     * place. Each grid is measured by one ResizeObserver: the month's watches the rows (the density) and the frame the
+     * drawer shares (the phone), the week's the frame and its own root (the height it reports to the drawer); the
+     * phone's Day view and the Trilhas view each have one of their own on the same frame.
      *
      * @return void
      */
@@ -313,8 +311,8 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The two seams are fallbacks, one function each: an item's href (and the popover's "Open"), and the
-     * drawer's link to core's day view. Nothing redirects: a day opens the drawer, an item the popover.
+     * The two seams are fallbacks, one function each: an item's href (itemHref(), also the popover's "Open") and
+     * its primary action (primaryOf()). Nothing redirects: a day opens the drawer, an item the popover.
      *
      * @return void
      */
@@ -546,9 +544,9 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The calendar's review points, read where PHPUnit can see it; Jest is the
-     * behaviour gate (js/esm/tests/calendar). A weekend is the date's own weekday; a double-click creates only while
-     * core would show "New event"; "Clear filters" is drawn only while a filter is applied.
+     * Three rules of the page, read where PHPUnit can see them; Jest holds the behaviour (js/esm/tests/calendar).
+     * A weekend is the date's own weekday; a double-click creates only while core would show "New event"; "Clear
+     * filters" is drawn only while a filter is applied.
      *
      * @return void
      */
@@ -633,7 +631,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * No page links a view of core's calendar any more: core's calendar/view.php leads to the page, so a link to it
+     * No page links a view of core's calendar: core's calendar/view.php leads to the page, so a link to it
      * would only come back; the drawer and the toolbar draw none, and neither shell is handed core's address.
      *
      * @return void
@@ -709,8 +707,8 @@ final class calendar_component_source_test extends \basic_testcase {
         );
     }
     /**
-     * The week view: what each gate of the "C4 week view" block breaks, read where PHPUnit can see it. The
-     * behaviour is Jest's (js/esm/tests/calendar/weeks.test.ts and WeekGrid.test.tsx).
+     * The week view, read where PHPUnit can see it. The behaviour is Jest's (js/esm/tests/calendar/weeks.test.ts and
+     * WeekGrid.test.tsx).
      *
      * - The week's days start on the viewer's first weekday, and the address names the view and the week as the server
      *   reads them back (exactly `view=week`, the month dropped from a week's address).
@@ -780,7 +778,7 @@ final class calendar_component_source_test extends \basic_testcase {
             $this->sources()['PublicCalendar.tsx']
         );
         $this->assertStringNotContainsString('remember', $this->sources()['weeks.ts'], 'The view is never remembered.');
-        // The address's week falls back and is bounded as page::week_from_request() does it (security read F2).
+        // The address's week falls back and is bounded as page::week_from_request() does it.
         $this->assertStringContainsString('const valid = parse(week) !== null && year >= 1900 && year <= 2999;', $weeks);
         $this->assertStringContainsString(
             "weekStart(valid ? week : openingOf({view: 'month', month: month}, today), firstday)",
@@ -803,7 +801,7 @@ final class calendar_component_source_test extends \basic_testcase {
             $month
         );
         $week = $this->sources()['WeekGrid.tsx'];
-        // One element's height, reported only on a change; the phone decision reads the frame's width alone (30.7).
+        // One element's height, reported only on a change; the phone decision reads the frame's width alone.
         $this->assertStringContainsString(
             'if (entry.target === root.current && reported > 0 && reported !== lastheight.current) {',
             $week
@@ -1045,8 +1043,7 @@ final class calendar_component_source_test extends \basic_testcase {
      * The Trilhas view's days scroll in a scroller of block_compass's shape.
      * Its arithmetic reads the measures the stylesheet declares (trails.ts TRACK: the trail column, a day, a row and a
      * bar), so the two must agree; every bar and agenda row is a button named by its step, and no control repeats one
-     * out of the tab order (the last column's chip went with the column in T3b); the map is aria-hidden and the arrows are
-     * named; a folded trail is the view's own state.
+     * out of the tab order; the map is aria-hidden and the arrows are named; a folded trail is the view's own state.
      *
      * @return void
      */
@@ -1060,7 +1057,7 @@ final class calendar_component_source_test extends \basic_testcase {
         [, $label, $day, $week, $month, $row, $bar] = preg_replace('~^0\.~', '.', $track);
         $this->assertStringContainsString("--dim-cal-trail-label: {$label}rem;", $scss);
         $this->assertStringContainsString("--dim-cal-trail-day: {$day}rem;", $scss);
-        // T3c: the zoom's day widths, each on its modifier of the section, which every column and line reads.
+        // The zoom's day widths, each on its modifier of the section, which every column and line reads.
         $this->assertMatchesRegularExpression(
             '~\.dim-cal__trails--week \{\s*--dim-cal-trail-day: ' . preg_quote($week, '~') . 'rem;\s*\}~',
             $scss
@@ -1088,7 +1085,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * T3b: the Trilhas view's continuous months, its courses' rows and its connectors, read where PHPUnit can see them;
+     * The Trilhas view's continuous months, its courses' rows and its connectors, read where PHPUnit can see them;
      * Jest is the behaviour gate (js/esm/tests/calendar: trails.test.ts, TrailView.test.tsx).
      *
      * - The months held are contiguous and capped, the far side dropped with the first day's move told; the answers
@@ -1247,7 +1244,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * T3c: the Trilhas timeline's zoom and the courses' dates, read where PHPUnit can see them; Jest is the behaviour gate
+     * The Trilhas timeline's zoom and the courses' dates, read where PHPUnit can see them; Jest is the behaviour gate
      * (js/esm/tests/calendar: trails.test.ts, TrailView.test.tsx).
      *
      * - The zoom is read as the server reads it (week or month exactly), days never written; it travels with the filters
@@ -1468,7 +1465,7 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * T3d: the Trilhas timeline's folds, read where PHPUnit can see them; Jest is the behaviour gate
+     * The Trilhas timeline's folds, read where PHPUnit can see them; Jest is the behaviour gate
      * (js/esm/tests/calendar/TrailView.test.tsx, "the folds (T3d)").
      *
      * - A trail takes its fold when it is first drawn: open alone, folded beside another; it keeps it while held, and a
@@ -1529,11 +1526,11 @@ final class calendar_component_source_test extends \basic_testcase {
     }
 
     /**
-     * C4: the step's popover is the course card's dialog variant (the course card contract, section 9), read where
-     * PHPUnit can see it; Jest is the behaviour gate (TrailView.test.tsx, "the step's popover"). Its cover is the step's
-     * image, only a web address or the server's SVG cover, and none while Boost Union's card view is off, when the
-     * close is the calendar's icon button instead of the disc; a failed image leaves the band; a completed step wears the
-     * seal and the green base and its main action reads "Review"; no progress bar (D11); the calendar's buttons (D12).
+     * The step's popover is the course card's dialog variant, read where PHPUnit can see it; Jest is the behaviour gate
+     * (TrailView.test.tsx, "the step's popover"). Its cover is the step's image, only a web address or the server's SVG
+     * cover, and none while Boost Union's card view is off, when the close is the calendar's icon button instead of the
+     * disc; a failed image leaves the band; a completed step wears the seal and the green base and its main action reads
+     * "Review"; no progress bar, since a step has no percentage; the actions are the calendar's own buttons.
      *
      * @return void
      */

@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins the invariants of amd/src/focusmode.js by reading its source, as readingbar_source_test does.
  *
- * Plugin CI runs no JavaScript unit tests, and Behat sees a switch only as the end state, so the
+ * No JavaScript unit test covers the AMD modules, and Behat sees a switch only as the end state, so the
  * properties whose loss costs a reader are pinned by spelling, each assertion scoped to the one function
  * it is about: the switch is the body class and nothing is fetched to make it, the header actions are moved
  * and never copied, the region main settings menu stays in the page header, the menus close first, the

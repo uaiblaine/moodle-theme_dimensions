@@ -1149,7 +1149,7 @@ final class category_listing_test extends \advanced_testcase {
     }
 
     /**
-     * A PUBLIC root with a PUBLIC child, one public course in each, and a listed course beside them.
+     * A public root with a public child, one public course in each, and a listed course beside them.
      *
      * The listed course is what makes the anonymous assertions non-vacuous: the shell has to
      * leave something out for "the public ones alone" to mean anything.
@@ -1197,7 +1197,7 @@ final class category_listing_test extends \advanced_testcase {
         $this->ids['childpublic'] = $make((int) $child->id, 'Curso do Filho', true);
         $this->ids['listed'] = $make((int) $root->id, 'Curso Interno', false);
         // A public course that chose no landing page model, and a teacher on the public one: what a
-        // visitor's card must NOT link to and must NOT name.
+        // visitor's card must not link to and must not name.
         $nomodel = $generator->create_course(['category' => $root->id, 'fullname' => 'Curso Sem Modelo']);
         \local_unlistedcourses\discoverability::set_state(
             (int) $nomodel->id,
@@ -1256,7 +1256,7 @@ final class category_listing_test extends \advanced_testcase {
                 $flat->tree
             )
         );
-        /* Every entry of a visitor's tree is an address of the ANONYMOUS shell: a filter that
+        /* Every entry of a visitor's tree is an address of the anonymous shell: a filter that
            left the shell would land the reader on the login form. */
         foreach ($flat->tree as $entry) {
             $this->assertStringContainsString($script, $entry['url']);
@@ -1446,7 +1446,7 @@ final class category_listing_test extends \advanced_testcase {
     }
 
     /**
-     * Holding moodle/course:view does not open a HIDDEN course, because in core it does not either.
+     * Holding moodle/course:view does not open a hidden course, because in core it does not either.
      *
      * `can_access_course()` refuses a course hidden from students to anybody without
      * `moodle/course:viewhiddencourses` before it ever asks `is_viewing()`, so a card that
@@ -1668,7 +1668,7 @@ final class category_listing_test extends \advanced_testcase {
      * Past twenty-four posters the export cuts the directory in two, and an open poster past the cut opens the reveal.
      *
      * The export is where the cut becomes visible, so this is where the boundary is asserted
-     * over REAL categories rather than over a helper's arguments: twenty-five top-level
+     * over real categories rather than over a helper's arguments: twenty-five top-level
      * categories, twenty-four open, one behind the reveal, and the label the singular key spells
      * because there is exactly one. The population's own test pins the helper; what this one
      * adds is that the context the template reads is built from it, that no poster is lost or
@@ -1739,9 +1739,9 @@ final class category_listing_test extends \advanced_testcase {
         $this->assertFalse($incut->areas['moreopen'], 'Leaves the reveal closed.');
         $this->assertTrue($incut->areas['panelinmain']);
 
-        /* The OTHER arm of the same literal branch, which the singular case above cannot reach:
+        /* The other arm of the same literal branch, which the singular case above cannot reach:
            two hidden posters are named by the plural key, and the count reaches it as its
-           placeholder. A branch with one arm asserted passes just as well inverted. */
+           placeholder. */
         self::getDataGenerator()->create_category(['name' => 'Branch ' . $wanted]);
         self::forget();
         [, $plural] = $export();
@@ -1757,7 +1757,7 @@ final class category_listing_test extends \advanced_testcase {
     /**
      * Each poster links its own panel, and an open one is drawn with the integers, the links and the shell of its poster.
      *
-     * The open poster is the THIRD, so every one of the five integers differs from the defaults
+     * The open poster is the third, so every one of the five integers differs from the defaults
      * and from each other's reading. The page of the direct courses and the page size travel with
      * every no-JavaScript address, or opening a panel from the second page of this category's
      * own courses would drop the reader back on the first.
@@ -1811,7 +1811,7 @@ final class category_listing_test extends \advanced_testcase {
             $open->areas['panelstyle'],
             'Five integers and one colour are the attribute\'s whole vocabulary.'
         );
-        /* The colour is the open AREA's band - here the theme's, since nobody branded it - and a
+        /* The colour is the open area's band - here the theme's, since nobody branded it - and a
            branded area's panel wears that area's own, the colour its poster is painted with. */
         $this->setAdminUser();
         branding::save($areas['Transito'], (object) ['bgcolour' => '#12484F', 'inkcolour' => '#ffffff', 'owncolours' => 1]);
@@ -2060,7 +2060,7 @@ final class category_listing_test extends \advanced_testcase {
     }
 
     /**
-     * A root whose every top-level category is withheld says so about CATEGORIES, not about courses.
+     * A root whose every top-level category is withheld says so about categories, not about courses.
      *
      * The directory lists categories, so its empty state cannot be the
      * listing's "there is no course to show here yet" - the reader would be

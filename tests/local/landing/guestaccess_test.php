@@ -31,6 +31,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
  *
  * Each condition of available() is broken alone on a course where the other conditions hold, and the
  * course where they all hold is asserted first in the same test, so a refusal is never the fixture's.
+ * Tests that expect the entry set autologinguests: available() withdraws it from a site that admits the
+ * guest account neither way, and guestloginbutton is off by default.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -57,7 +59,6 @@ final class guestaccess_test extends \advanced_testcase {
     public function test_an_enabled_passwordless_instance_offers_the_entry(): void {
         global $DB;
         $this->resetAfterTest();
-        // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         [$course, $instance] = $this->open_course();
 
@@ -73,7 +74,6 @@ final class guestaccess_test extends \advanced_testcase {
     public function test_a_password_withdraws_the_entry(): void {
         global $DB;
         $this->resetAfterTest();
-        // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         [$course, $instance] = $this->open_course();
         $this->assertTrue(guestaccess::available($course));
@@ -88,7 +88,6 @@ final class guestaccess_test extends \advanced_testcase {
     public function test_guest_access_disabled_for_the_site_withdraws_the_entry(): void {
         global $CFG;
         $this->resetAfterTest();
-        // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         [$course] = $this->open_course();
         $this->assertTrue(guestaccess::available($course));
@@ -122,7 +121,6 @@ final class guestaccess_test extends \advanced_testcase {
      */
     public function test_only_the_courses_own_instance_counts(): void {
         $this->resetAfterTest();
-        // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         [$open] = $this->open_course();
         $closed = $this->getDataGenerator()->create_course();
@@ -149,7 +147,6 @@ final class guestaccess_test extends \advanced_testcase {
     public function test_an_anonymous_visitor_is_logged_in_as_the_guest(): void {
         global $SESSION;
         $this->resetAfterTest();
-        // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         $this->setUser(null);
         $SESSION->lang = 'en';
@@ -169,7 +166,6 @@ final class guestaccess_test extends \advanced_testcase {
     public function test_a_logged_in_session_is_never_replaced(): void {
         global $USER;
         $this->resetAfterTest();
-        // The site must admit the guest account, or the entry is withdrawn (guestaccess::available()).
         set_config('autologinguests', 1);
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);

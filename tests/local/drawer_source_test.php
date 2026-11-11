@@ -30,8 +30,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins the invariants of amd/src/drawer.js by reading its source, as the showcase's source tests do.
  *
- * Plugin CI runs no JavaScript unit tests, so the properties whose loss costs a reader rather than a
- * screenshot are pinned by spelling, each assertion scoped to the one function it is about: a hidden
+ * No unit test runs the AMD modules (Jest covers js/esm alone), so the properties whose loss costs a
+ * reader rather than a screenshot are pinned by spelling, each assertion scoped to the one function it is about: a hidden
  * panel is inert, the focus follows the panels both ways, Escape goes back one level, and the summary is
  * asked for when the primary drawer is shown and never before. The Behat feature
  * theme_dimensions_drawer.feature is what runs the module. The build-currency assertion at the foot is

@@ -208,8 +208,9 @@ final class get_public_calendar_range_test extends \advanced_testcase {
     /**
      * Every request it may not answer for who is asking or for the switch is refused with one exception, byte for byte.
      *
-     * A logged-in account, the guest, the switch never saved, stored '0' and stored 'yes'. Compared whole, below
-     * DEVELOPER (the only level at which the refusal is one). The control: the visitor, the switch on, answered.
+     * A logged-in account, the guest, the switch never saved, stored '0' and stored 'yes'. Compared whole with debugging
+     * below DEVELOPER, where the framework adds no backtrace that would tell them apart. The control: the visitor, the
+     * switch on, answered.
      *
      * @return void
      */
@@ -373,7 +374,7 @@ final class get_public_calendar_range_test extends \advanced_testcase {
     }
 
     /**
-     * A malformed request is an invalid parameter, read before anything; the switch off does not mask it.
+     * A malformed request is an invalid parameter, refused before anything is read; the switch off does not mask it.
      *
      * @return void
      */

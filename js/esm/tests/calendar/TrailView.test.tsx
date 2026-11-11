@@ -14,8 +14,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the calendar's Trilhas view (docs/trail/PLAN.md section 7), through the page's client: the switch, the
- * request, the filters, the bars, the months held, the courses' rows, the connectors and the step's popover.
+ * Tests for the calendar's Trilhas view, through the page's client: the switch, the request, the filters, the bars,
+ * the months held, the courses' rows, the connectors and the step's popover.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -1169,7 +1169,8 @@ describe('the days\' scroller', () => {
         await act(async() => {
             fireEvent.click(page.querySelector('[data-region="dim-cal-trailrow"][data-cmid="72"]') as HTMLElement);
         });
-        // December is asked for, not held yet: nothing has superseded the course's scroll.
+        // December is asked for and not held yet, so no new scroll replaces the course's: the press alone keeps the
+        // popover shut.
         await act(async() => {
             fireEvent.click(page.querySelector('[data-action="dim-cal-next"]') as HTMLElement);
         });
@@ -1387,7 +1388,7 @@ describe('the days\' scroller', () => {
         });
         expect(HTMLElement.prototype.scrollTo).toHaveBeenLastCalledWith({left: 17, behavior: 'auto'});
         // By months the 61 days fit: nothing scrolls, so the browser keeps the first day at the start, and the next months
-        // are asked for, three at a time, until the days fill the scroller (five months are 944px: eight, 1312px).
+        // are asked for, three at a time, until the days fill the scroller (five months are 944px: eight, 1308px).
         expect(scroller.scrollLeft).toBe(0);
         await waitFor(() => expect(page.querySelectorAll('[data-action="dim-cal-trailmonth"]')).toHaveLength(8));
         expect(trailRequests().map((args) => args.months)).toEqual([3, 3]);

@@ -29,9 +29,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 /**
  * Tests for the guard over a url printed inside url('...') in a style attribute.
  *
- * Every test here carries the control, because a guard tested only by refusals passes while
- * answering '' to everything - which is a guard that has silently taken every image off every
- * surface it stands on.
+ * Every refusal test ends with an ordinary url that must still pass: a guard answering '' to
+ * everything would pass refusal-only tests while removing every image it stands over.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -89,10 +88,9 @@ final class styleurl_test extends \basic_testcase {
     /**
      * A character reference is refused too, because the browser decodes the attribute first.
      *
-     * The class docblock of {@see styleurl} explains how each spelling reaches the CSS parser
-     * through a triple and a double stash, and why the refusal is on the ampersand itself. The
-     * second assertion of the loop is what says the refusal is this class's: PARAM_URL hands every
-     * one of these back unchanged.
+     * {@see styleurl} explains how each spelling reaches the CSS parser and why the refusal is on
+     * the ampersand itself. The second assertion of the loop proves the refusal is this class's:
+     * PARAM_URL hands every one of these back unchanged.
      *
      * @return void
      */
@@ -124,10 +122,9 @@ final class styleurl_test extends \basic_testcase {
     /**
      * A file name holding one of those characters costs nobody an image: it arrives encoded.
      *
-     * This pins the price of the guard. Every wired source builds through core's pluginfile url
-     * factory, which rawurlencode()s each path segment (core\url::set_slashargument), so a course
-     * image called "capa (1) & anexo.jpg" reaches the guard with %28, %29, %20 and %26 in it and is
-     * printed. A refusal means no image at all, so a guard that refused these would remove real ones.
+     * Pins the price of the guard: core's pluginfile url factory rawurlencode()s each path segment
+     * (core\url::set_slashargument()), so a course image called "capa (1) & anexo.jpg" reaches the
+     * guard as %20, %28, %29 and %26 and must be printed. See {@see styleurl} for the wired sources.
      *
      * @return void
      */

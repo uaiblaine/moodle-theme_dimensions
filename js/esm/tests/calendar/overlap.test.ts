@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for a day's layout (PROPOSAL.md section 13.2): the columns, the clusters, the boundaries of an overlap.
+ * Tests for a day's layout: the columns, the clusters, the boundaries of an overlap.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

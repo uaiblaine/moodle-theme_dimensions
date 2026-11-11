@@ -129,7 +129,7 @@ final class guestnav_test extends \advanced_testcase {
     }
 
     /**
-     * The login and maintenance layouts draw no navbar this feature could change.
+     * The login, maintenance, embedded and secure layouts draw no navbar this feature could change.
      *
      * @return void
      */

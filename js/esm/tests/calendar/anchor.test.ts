@@ -43,9 +43,9 @@ describe('the popover\'s anchor', () => {
     });
 
     it('stays under the fixed navbar: flips below an opener near the top, and never rises above it', () => {
-        // A bar at the top of the viewport, a 60px navbar: above would start at -8 px.
+        // A bar just under a 60px navbar: there is room below, so it goes there (above would start at -138px).
         expect(anchor({top: 70, left: 50, bottom: 90, right: 200}, SIZE, VIEWPORT, 60)).toEqual({top: 98, left: 50});
-        // Pushed below by the navbar offset where the old placement put it at the viewport's edge.
+        // A tall popover near the bottom goes above, between the navbar's offset and the viewport's bottom gap.
         const flipped = anchor({top: 740, left: 50, bottom: 760, right: 200}, {width: 300, height: 600}, VIEWPORT, 60);
         expect(flipped.top).toBeGreaterThanOrEqual(68);
         expect(flipped.top + 600).toBeLessThanOrEqual(792);

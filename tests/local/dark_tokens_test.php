@@ -33,10 +33,10 @@ use theme_dimensions\local\category\branding;
  * Every semantic alias of scss/post.scss turns with the page's colour mode, and every dark pair it forms reads.
  *
  * Core 5.3's dark mode turns Bootstrap's surfaces and ink and none of the theme's --dim-ds-* aliases, so an alias
- * left at its light value drew navy ink on a card the page had darkened or a white card
- * under the ink the page had lightened (the profile and landing cards, 1.30 to 2.35:1). The dark half is compiled
- * by core's own dark-readable() and mix(), so its pairs are measured on compiled values, against core's dark
- * surfaces as the default preset sets them (a Boost Union "branded grey tones" site moves those surfaces).
+ * left at its light value draws navy ink on a card the page has darkened, or a white card under the ink the page
+ * has lightened. The dark half is compiled by core's own dark-readable() and mix(), so its pairs are measured on
+ * compiled values, against core's dark surfaces as the default preset sets them (a Boost Union "branded grey
+ * tones" site moves those surfaces).
  *
  * @package    theme_dimensions
  * @category   test
@@ -112,8 +112,8 @@ final class dark_tokens_test extends \basic_testcase {
      *
      * Only what the dark half reads is imported: the design system's tokens and Bootstrap's functions, the three
      * greys core's default preset takes from those tokens (theme/boost/scss/preset/default.scss, which
-     * test_the_greys_are_the_presets_own holds), and colour-mode.scss itself. The whole preset is the same answer
-     * at eighty times the cost.
+     * test_the_greys_are_the_presets_own holds), and colour-mode.scss itself. Importing the whole preset gives the
+     * same answer at many times the cost.
      *
      * @return array The compiled declarations.
      */
@@ -186,8 +186,9 @@ final class dark_tokens_test extends \basic_testcase {
     /**
      * The dark rule is read on the html element's mode, on the three roots the family tokens use.
      *
-     * Boost Union's navbar once carried a colour mode of its own, and a plugin inside it must still get the page's
-     * tokens; the dialogue core/modal appends to body is a root of its own for a value derived from a --bs-* one.
+     * The attribute is read on the html element alone, so markup under a nested data-bs-theme still gets the
+     * page's tokens; the dialogue core/modal appends to body is a root of its own for a value derived from a
+     * --bs-* one.
      *
      * @return void
      */

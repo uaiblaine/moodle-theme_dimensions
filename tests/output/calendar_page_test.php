@@ -59,7 +59,7 @@ final class calendar_page_test extends \advanced_testcase {
     private array $ids = [];
 
     /**
-     * A student in two courses of a category tree, with a ten-day event, a timed event and a user event next month.
+     * A student in one course of a two-level category tree, with a ten-day and a timed course event next month.
      *
      * @return void
      */
@@ -246,9 +246,9 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
-     * Core's answers reach the page: "New event" in the props and core's export in the footer, each only
-     * where core offers it, beside its control: the export with the switch off, both for an account core's calendar
-     * offers neither.
+     * Core's answers reach the page: "New event" in the props and core's export link in the footer, each only where
+     * core offers it. With enablecalendarexport off the link goes and "New event" stays; for an account denied
+     * moodle/calendar:manageownentries both go.
      *
      * @return void
      */
@@ -286,7 +286,7 @@ final class calendar_page_test extends \advanced_testcase {
 
     /**
      * The Trilhas view's fold is core's course-section toggle: the props carry core's three chevrons as the theme's core
-     * renderer draws them, decorative, and the visitor's props carry none of the account's view.
+     * renderer draws them, each decorative (aria-hidden).
      *
      * @return void
      */
@@ -323,8 +323,8 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
-     * T3c: the Trilhas timeline's zoom reaches the client as one of its two words or as days, its control's four strings
-     * among the client's, and a zoom the page does not know is days.
+     * The Trilhas timeline's zoom reaches the client as one of its two words or as '' (days), its control's four strings
+     * are among the client's, and a zoom the page does not know is days.
      *
      * @return void
      */
@@ -363,9 +363,9 @@ final class calendar_page_test extends \advanced_testcase {
     }
 
     /**
-     * C4: Boost Union's card view reaches the client as the Trilhas view's `covers` (the course card contract, section 8):
-     * on by default, off once the administrator unchecks the card view, when the step's popover draws no cover; the
-     * completed step's "Review" is among the client's strings.
+     * Boost Union's card view image setting reaches the client as the Trilhas view's `covers`: on by default, off once
+     * the administrator unchecks the card view, when the step's popover draws no cover; the completed step's "Review" is
+     * among the client's strings.
      *
      * @return void
      */

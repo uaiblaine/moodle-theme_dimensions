@@ -354,7 +354,7 @@ describe('theme_dimensions/listing/account', () => {
         jest.advanceTimersByTime(100);
         batches[0].resolve({details: [
             {id: 71, completed: true, progress: 100, progresslabel: '100% complete', progresspct: '100%'},
-            // Completed with Boost Union's progress row off: the seal stays (D13).
+            // Completed with Boost Union's progress row off: the seal stays.
             {id: 72, completed: true, progress: null},
         ]});
         await jest.advanceTimersByTimeAsync(0);

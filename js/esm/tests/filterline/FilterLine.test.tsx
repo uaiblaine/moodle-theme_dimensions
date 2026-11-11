@@ -212,7 +212,7 @@ describe('theme_dimensions/filterline/FilterLine', () => {
 
         expect(Array.from(page.line.children).map((child) => shape(child, ADDED)).join('')).toBe(server);
         expect(Array.from(new FormData(page.form).entries())).toEqual(posted);
-        // The very server nodes, moved: what the listing paints there and what R1's calendar is mounted in.
+        // The very server nodes, moved: what the listing paints there and what the period control is mounted in.
         expect(page.line.querySelector('[data-region="dim-filters-panel"] [data-name="cf_12"]')).toBe(panel);
         expect(page.line.querySelector('[data-region="dim-sort"]')).toBe(menu);
         expect(page.line.querySelector('[data-region="dim-line-manage"] .action-menu')).toBe(manage);

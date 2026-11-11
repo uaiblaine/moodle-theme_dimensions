@@ -161,10 +161,9 @@ final class range_budget_test extends \advanced_testcase {
     /**
      * The probe's shape at 5 and 25 courses stays within its budget, and its answer within its weight.
      *
-     * The shape costs 112 statements for 61 events at 5 courses, 531 for 283
-     * at 25, with 108,957 bytes of JSON (4,930 gzipped) at 25. The same shape without activities costs 21 and 15
-     * statements: what grows is the module callbacks' (about ten statements per assignment due date), core's
-     * own. The bounds keep a tenth of headroom; the weight bound is twice the floor of 55,189 bytes at 25.
+     * The statement bounds are the shape's cost plus a tenth: 112 statements at 5 courses, 531 at 25. What grows with
+     * the courses is core's module callbacks (about ten statements per assignment due date); without activities the
+     * shape costs 21 and 15. The weight bound at 25 courses is twice the floor of 55,189 bytes of JSON.
      *
      * @return void
      */

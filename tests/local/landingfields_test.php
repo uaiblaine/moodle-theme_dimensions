@@ -651,8 +651,8 @@ final class landingfields_test extends \advanced_testcase {
      * The list of field types the cheap readers check is the definitions' own, order included.
      *
      * get_field(), the field cache and values_many() read FIELD_TYPES so as not to build the
-     * definitions, which format forty strings each time: a field added to one and not the other, or a
-     * type changed in one, would make a provisioned field unreadable or a foreign one adopted.
+     * definitions, which call get_string() for every select option: a field added to one and not the
+     * other, or a type changed in one, would make a provisioned field unreadable or a foreign one adopted.
      */
     public function test_the_field_types_are_the_definitions_types(): void {
         $this->assertSame(

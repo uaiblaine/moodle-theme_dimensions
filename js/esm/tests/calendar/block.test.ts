@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the month calendar block's client (PROPOSAL.md sections 17.2 and 17.3).
+ * Tests for the month calendar block's client.
  *
  * The block is drawn as calendar_block_month.mustache draws it, by a stand-in for core/templates that writes the
  * partial's hooks from the context it is given; the range is core/ajax's fetchOne, mocked.

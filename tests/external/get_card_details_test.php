@@ -253,7 +253,7 @@ final class get_card_details_test extends \advanced_testcase {
      * completion of that course, and a
      * course that turned completion off after the viewer completed it, whose row core no longer reads
      * ({@see \completion_info::is_course_complete()}). With Boost Union's progress row off the completed course still
-     * says so (D13): the seal stays where the bar goes.
+     * says so: the seal stays where the bar goes.
      */
     public function test_completed_is_the_viewers_course_completion_and_survives_the_progress_setting(): void {
         global $CFG, $DB;
@@ -314,8 +314,8 @@ final class get_card_details_test extends \advanced_testcase {
     /**
      * The viewer's completions are one statement for a whole batch, and none for a batch with completion on nowhere.
      *
-     * The slope test below bounds what each course costs; this one pins the read the completed seal added, which costs
-     * the same for twenty-four courses as for one.
+     * The slope test below bounds what each course costs; this one pins the completed seal's read, which costs the
+     * same for twenty-four courses as for one.
      */
     public function test_the_completions_of_a_batch_are_one_statement(): void {
         global $CFG;
@@ -374,9 +374,9 @@ final class get_card_details_test extends \advanced_testcase {
      * context - from the number, so one extra read per course moves the slope
      * by twenty and fails; a ceiling on the total would have room for it.
      *
-     * Twenty more courses cost 54 statements, about 2.7 each: the course's
-     * modinfo and its completion data. The ceiling is three per course (60),
-     * which one more read in the loop (74) exceeds.
+     * A course costs between two and three statements, its modinfo and its
+     * completion data; the ceiling is three per course, which one more read in
+     * the loop exceeds.
      */
     public function test_the_per_course_cost_of_a_batch_stays_on_the_measured_slope(): void {
         global $CFG;

@@ -31,8 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\landingfields;
 
 /**
- * Tests for course_kinds::answer(), the theme's listener on block_compass's course kinds hook (ADR-019 of
- * block_compass).
+ * Tests for course_kinds::answer(), the theme's listener on block_compass's course kinds hook.
  *
  * @package    theme_dimensions
  * @category   test

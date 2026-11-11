@@ -28,7 +28,7 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the AMD half of the posters' component by reading the source.
+ * Pins the shells' half of the posters' component by reading the source.
  *
  * The component's behaviour is Jest's (js/esm/tests/areas), in both shells' modes. What Jest cannot see is how
  * the shells hand the posters and their panel over and keep out of them: the shared listing's mountAreas()
@@ -142,16 +142,14 @@ final class areas_component_source_test extends \basic_testcase {
     }
 
     /**
-     * The events are spelled once, in the shared listing's events.ts, and the AMD clients spell them alike.
+     * The events are spelled once, in the shared listing's events.ts, and every other module imports them.
      *
      * A name spelled differently on one side errors nowhere: the component never hears an answer, or the page's
-     * client never answers a question and every panel opens into its error. The component and the
-     * listing's mounts import the names from one file; the two AMD clients, until they move to the store, still
-     * spell their document events themselves, held equal here.
+     * client never answers a question and every panel opens into its error. The component, the store and the
+     * listing's mounts import the names from that one file.
      *
-     * Changes that must make it fail: a name of events.ts's AREAS spelled otherwise (gate js_areas_events_spelled),
-     * the visitor's EVENTS (gate js_public_events_spelled), or a component spelling an event of its own instead of
-     * importing it (gate js_events_one_spelling).
+     * Changes that must make it fail: a name of events.ts's AREAS or LISTING spelled otherwise, or a module of
+     * js/esm/src spelling an event of its own instead of importing it.
      */
     public function test_the_two_sides_spell_the_events_alike(): void {
         $events = $this->read('js/esm/src/listing/events.ts');
@@ -305,7 +303,7 @@ final class areas_component_source_test extends \basic_testcase {
      * The listing writes nothing into the posters: the store tells the component an answer and writes none of
      * them, and the component writes them.
      *
-     * Changes that must make it fail: paintAreas() writing a poster's shell again (gate js_areas_shells_untouched).
+     * Changes that must make it fail: paintAreas() writing into a poster.
      */
     public function test_the_listing_writes_nothing_into_the_posters(): void {
         $shells = $this->body('paintAreas', 'listing/store');

@@ -40,7 +40,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__ . '/fixture.php');
 
 /**
- * The facts the filter line's preview reads off a card (contract section 6), on both shells.
+ * The facts the filter line's preview reads off a card, on both shells.
  *
  * A card carries the state chip the course counts under, each filter field's value and the start day in the
  * site's timezone, and its star says whether the course is a favourite; the preview decides from those alone.
