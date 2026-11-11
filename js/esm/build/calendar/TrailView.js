@@ -2,12 +2,12 @@ import{Fragment as ut,useCallback as _t,useEffect as A,useLayoutEffect as Pa,use
  * The Trilhas view: the trails of the months it holds, one row per trail and its steps under it.
  *
  * - On a desktop, a timeline of contiguous months (trails.ts Loaded): the month in view and the next on a first paint,
- *   another month asked for when the scroll nears the end of what is held or the arrows go back past its start, at most
+ *   another month asked for when the scroll nears the end of what is held or moves back to its start, at most
  *   trails.ts capOf() held. Each step a bar from its start to its end (trails.ts barOf()), a diamond on an expected
  *   completion date, one that began earlier marked at the left edge, one that runs on past what is held cut there, an
- *   open one (a start and no end) its first 30 days and a decorative "no end" chip after it; the trail's own row carries its span
- *   (trails.ts trailBarOf()). Above the days a band names each
- *   month held, its name a button that scrolls to its 1st; a month on its way is a quiet skeleton at the end. Weekends
+ *   open one (a start and no end) its first 30 days and a decorative "no end" chip after it; the trail's own row
+ *   carries its span (trails.ts trailBarOf()). Above the days a band names each month held, its name a button that
+ *   scrolls to its 1st; a month on its way is a quiet skeleton at the end. Weekends
  *   are hatched, a month's first day is a line, and today is a line down the rows. Consecutive steps are joined by
  *   connectors in the trail's order (trails.ts linksOf()), drawn by the same day arithmetic, aria-hidden. The days have
  *   a fixed width and only they scroll, in TrailScroll.tsx, the trail column held still; a trail's chevron (core's
@@ -39,7 +39,7 @@ import{Fragment as ut,useCallback as _t,useEffect as A,useLayoutEffect as Pa,use
  *   asking for it when needed; the toolbar's title is the months in view (`onRange`), and the address's month is the
  *   month of the first day in view once a scroll settles (`onMonth`): the page's history writes it, never this view.
  *
- * Its ONE ResizeObserver watches the frame it is drawn in and reports the frame's width alone, the grids' rule
+ * Its one ResizeObserver watches the frame it is drawn in and reports the frame's width alone, the grids' rule
  * (MonthGrid.tsx PHONE): the frame's width does not depend on what it holds, so the phone decision cannot feed back
  * into the measure. Nothing is measured here, and no layout is read to place a bar or a connector: the bars, the
  * weekends and today are grid columns or multiples of the day's width the stylesheet declares; the scroller's reads are

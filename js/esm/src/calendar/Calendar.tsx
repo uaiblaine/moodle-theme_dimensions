@@ -15,8 +15,8 @@
 
 /**
  * The calendar page's client: the toolbar, the event types' dropdown, the category picker, "More filters" and "Clear
- * filters", the month grid or the week (WeekGrid.tsx), the day drawer (the agenda sheet on a phone) and the
- * event popover.
+ * filters", the month grid, the week (WeekGrid.tsx), a phone's Day view (DayView.tsx) or the Trilhas view
+ * (TrailView.tsx), the day drawer (the agenda sheet on a phone) and the event popover.
  *
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws, never moved (a node that leaves the
  * document is unmounted). The props carry the range's first answer, so the first paint asks for nothing; once the
@@ -25,9 +25,10 @@
  *
  * - The latest request wins: a ticket is taken per request and checked after the await; a superseded answer is
  *   dropped. A Pending token (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - What is shown is a span, a month or a week (calendar/weeks.ts), with its answer: one range call either way. The
- *   view switch keeps the selected day (the week holding it, or its month), and the open day when the new span holds
- *   it. The view and the week are navigation, in the address and never in the remembered state.
+ * - What is shown is a span, a month, a week, a day or the Trilhas view's month (calendar/weeks.ts), with its answer:
+ *   one call per span, the range service's or, for the Trilhas view, the trails service's. The view switch keeps the
+ *   selected day (the week holding it, or its month), and the open day when the new span holds it. The view and the
+ *   week are navigation, in the address and never in the remembered state.
  * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a
  *   change of state replaces it; Back and Forward read the address again (popstate) and ask for what it names, writing
  *   nothing.
@@ -40,7 +41,7 @@
  * - An item opens the popover (EventPopover.tsx) on a press, Enter or Space, through one delegated listener on the
  *   elements marked data-cal-pop; a modified press and a middle click follow the item's href.
  * - The phone layout is the frame's width, measured by the shown grid's one ResizeObserver (MonthGrid.tsx PHONE), or
- *   the Day view's, which watches the same frame.
+ *   the Day view's or the Trilhas view's, which watch the same frame.
  * - The Day view is a phone's (DayView.tsx): the switch offers it only on a phone, a request
  *   asks for its one day, and a day span on a desktop is asked for and drawn as its month with the day's drawer open
  *   (weeks.ts deskOf(), gridOf()), in the one request path, so a first measure, Back and Forward and a phone turned
@@ -478,7 +479,7 @@ const Calendar = (props: Props) => {
             }
         }
         if (write !== 'none' && span.view === 'trail') {
-            // The Trilhas view opens no day; its trail and "Só as minhas" are navigation, like the view.
+            // The Trilhas view opens no day; its trail and "Only mine" are navigation, like the view.
             writeAddress(
                 withTrail(inSpan(address(props.urls.page, span.month, next), span), filtering.current, zooming.current),
                 write === 'push'
@@ -1021,7 +1022,7 @@ const Calendar = (props: Props) => {
     };
 
     /**
-     * What the frame draws: the phone's day, the week or the month (weeks.ts gridOf()).
+     * What the frame draws: the Trilhas view, the phone's day, the week or the month (weeks.ts gridOf()).
      *
      * @returns {object} The grid.
      */

@@ -9,9 +9,8 @@ import{normalise as d}from"./mark";/**
  * That count is the server's last answer given while the field held no term ({@see remember}), so a term
  * typed since - which the client searches as it is typed, and which zeroes the options of a word that
  * names no course - neither changes nor hides a suggestion. A page opened on an address that already
- * carries a term has no such answer and offers the counts it shows, which include the term: a departure
- * from "the count it would give without the typed text", which only the
- * server could answer, with a request per keystroke.
+ * carries a term has no such answer and offers the counts it shows, which include the term: the count
+ * without the term is the server's to answer, and asking it would cost a request per keystroke.
  *
  * @module     theme_dimensions/filterline/suggest
  * @copyright  2026 Anderson Blaine

@@ -44,31 +44,26 @@ use theme_dimensions\output\category_toolbar;
 /**
  * Keeps unlisted courses and unlisted categories out of every listing this theme renders.
  *
- * WHY A THEME AND NOT A PLUGIN. Overriding a core renderer is a theme
- * privilege and nothing else's: theme_config::renderer_prefixes() returns only
- * theme_<name> prefixes, for the theme and its parents, and Moodle has no
- * db/renderers.php at all - that is a Totara mechanism. A local plugin cannot
- * substitute core_course_renderer, which is why the DECISION lives in
- * local_unlistedcourses and only the RENDERING lives here.
+ * Only a theme can override a core renderer (theme_config::renderer_prefixes() returns the
+ * theme_<name> prefixes of the theme and its parents; Moodle has no db/renderers.php), so the
+ * decision lives in local_unlistedcourses and only the rendering lives here.
  *
- * COURSES. Two layers, on purpose:
+ * Courses, in two layers:
  *
  * 1. coursecat_courses() filters whatever it is handed. Almost every listing
  *    surface in the course renderer funnels through it - the category page,
  *    the frontpage, search results, the exclusive tagged-courses page and the
- *    AJAX category expansion - so this is the net that catches the surfaces
- *    not enumerated below, and any that core adds later. It cannot fix the paging bar,
- *    because the $totalcount it receives was counted by somebody else.
+ *    AJAX category expansion - so it catches the surfaces not enumerated below,
+ *    and any that core adds later. It cannot fix the paging bar, because the
+ *    $totalcount it receives was counted by somebody else.
  *
- * 2. coursecat_category_content(), search_courses() and
- *    frontpage_available_courses() fetch, filter and paginate themselves, so
- *    on the surfaces that print a count or a paging bar those agree with what
- *    is actually shown. By the time layer 1 sees those lists it has nothing
- *    left to drop. Without this, a viewer who can see two of four courses is
- *    offered a second page that renders empty, and a search that withheld one
- *    result still says how many there were.
+ * 2. coursecat_category_content(), search_courses(), tagged_courses() and
+ *    frontpage_available_courses() fetch, filter and paginate themselves, so a
+ *    printed count or paging bar agrees with what is shown: otherwise a viewer
+ *    who can see two of four courses is offered a second page that renders
+ *    empty, and a search that withheld one result still says how many there were.
  *
- * CATEGORIES, the same two layers over category_access:
+ * Categories, the same two layers over category_access:
  *
  * 1. coursecat_category() withholds the node of a category this user must not
  *    discover, whoever hands it over, and strips the expand affordance from a
@@ -86,19 +81,15 @@ use theme_dimensions\output\category_toolbar;
  * AJAX expander (course/category.ajax.php) enters there directly with an id
  * from the request, past both the node override and the after_config guard.
  *
- * Fetching a category unpaginated costs what core already pays: core never
- * paginates these queries in SQL. core_course_category::get_courses() loads
- * the whole category, sorts it, caches the id list in the per-session
- * coursecat cache and only then applies array_slice() in PHP - and
- * search_courses() and get_children() do the same.
+ * Fetching unpaginated costs what core already pays: core_course_category::get_courses(),
+ * search_courses() and get_children() load and sort the whole list, cache the ids in the
+ * coursecat cache and only then array_slice() in PHP.
  *
  * This extends Boost Union's renderer rather than core's, so its card and
  * list-of-boxes presentations (courselistingpresentation,
- * categorylistingpresentation) keep working. They are touched in exactly one
- * place: those presentations name a course's category from their own helper
- * and never reach core's "Category: name" line, so coursecat_coursebox_content()
- * repeats the same guard over the badge they print - and nothing else about
- * them changes.
+ * categorylistingpresentation) keep working. Those presentations name a course's
+ * category from their own helper and never reach core's "Category: name" line, so
+ * coursecat_coursebox_content() repeats the category guard over the badge they print.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -119,8 +110,8 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
      * core gate is asked before the plugin's: the plugin is a layer over core
      * visibility and answers "yes" wholesale for a hidden category.
      *
-     * The ROOT of the course index (category 0) is served too, and as a
-     * DIRECTORY rather than a listing: the hero, the search line, then a
+     * The root of the course index (category 0) is served too, and as a
+     * directory rather than a listing: the hero, the search line, then a
      * poster per top-level category the viewer may discover, with no filter,
      * no course grid and no pager.
      *
@@ -143,14 +134,11 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
 
         $isroot = $categoryid === 0;
         $fields = facets::fields();
-        /* The root draws a search box and no other control that narrows, so it reads its term
-           and no filter off the query string: a hand-typed field or state filter would otherwise
-           change every poster's number, and the hero's fold form would carry the phantom filter
-           forward with it. population::resolve() honours nothing else at the root either - this
-           is the half that keeps the rest out of the hero. It also reads its open panel: its
-           posters open panels like any other page's. */
         /* The view first: a view named in the address is remembered for this category
-           (category_listing::view()), and the request below then knows the reader has a state here. */
+           (category_listing::view()), and the request below then knows the reader has a state here.
+           The root reads its term and its open panel and no filter (criteria::root_from_request()):
+           a hand-typed filter would otherwise change every poster's number and ride along in the
+           hero's fold form. */
         $view = category_listing::view(optional_param(category_toolbar::PARAM_VIEW, '', PARAM_ALPHA), $categoryid);
         $criteria = $isroot
             ? criteria::root_from_request()
@@ -162,28 +150,23 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
         $this->page->set_title($isroot ? get_string('courses') : $coursecat->get_formatted_name(['escape' => false]));
         $this->page->add_body_class(self::BODY_CLASS);
 
-        /* The root's directory has no manage menu of its own: category_actions builds the menu of
-           ONE category, and the pseudo-category is not one - core offers "add a category" from the
-           management page instead. */
+        /* The root has no manage menu: category_actions builds the menu of one category, and the
+           pseudo-category is not one. */
         $manageactions = $isroot ? '' : (new category_actions($this->page, $coursecat))->render_actions($this);
         // The pages strip is built by the page's two entries, never by the listing's export: see category_pages.
         $pages = category_pages::export($categoryid);
         $listing = new category_listing($coursecat, $criteria, $result, $view, $manageactions, $pages, true);
 
-        /* The listing's account client belongs to THIS shell and to no other. The anonymous shell
-           draws the same listing with its own client (request.php arms listingvisitor), and this one
-           is a client of the showcase's login-required services; so the call that arms it is here
-           rather than in the listing.
-
-           And not for the guest account, which core counts as logged in and which request.php
-           therefore routes to this shell on purpose. All three of the showcase's web services
-           refuse the guest, so an armed module there would hide the no-JavaScript "Filter"
-           submit and the numbered pager - the only controls that DO work for a guest - and
-           answer every click with an exception dialogue. The card's star follows the same rule
-           (showstar). The guest is kept out here; never loosen the services' refusal instead. */
+        /* The account's client is armed here rather than in the listing, because the anonymous
+           shell draws the same listing with its own client (request.php arms listingvisitor).
+           Not for the guest account, which core counts as logged in: every service this client
+           calls refuses the guest, so an armed module would hide the no-JavaScript "Filter" submit
+           and the numbered pager - the guest's only working controls - and answer every click with
+           an exception dialogue. The card's star follows the same rule (showstar). Keep the guest
+           out here; never loosen the services' refusal instead. */
         if (isloggedin() && !isguestuser()) {
-            /* The root included: its search line is the listing's own, live as on a category page, and its
-               posters open panels as a category's do (js/esm/src/listing/account.ts, with the stars). */
+            /* The root included: its search line and its posters' panels are live as on a category page
+               (js/esm/src/listing/account.ts). */
             $this->page->requires->js_call_amd('theme_dimensions/listingaccount', 'init');
             /* The course dialogue's module, under the same rule: it fetches a course's content from a service
                that refuses the guest. Without it "More information" is the link to the card's own page, which
@@ -191,18 +174,13 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             $this->page->requires->js_call_amd('theme_dimensions/categorycoursemodal', 'init');
         }
 
-        /* The cover film's module is armed for EVERYBODY and on every one of these pages, which
-           is the opposite of the rule above and is not an inconsistency. It calls no web service
-           - it imports nothing at all - so none of the three refusals that shut the guest out of
-           the account's client reaches it, and it hides no control: its own body class reveals the
-           cluster and says nothing about the toolbar's no-JavaScript submit. And the ROOT is
-           where category cards live, so an arming that skipped the root would skip the whole
-           feature; the same line stands in request.php for the anonymous shell. */
+        /* The cover film's module is armed for everybody, the root included (its panels draw
+           cards too): it calls no web service (it imports core/pending alone) and hides no control,
+           its body class only reveals the film. request.php arms it for the anonymous shell. */
         $this->page->requires->js_call_amd('theme_dimensions/covervideo', 'init');
 
         // The hero is drawn by the core renderer's full_header(), which core calls after this
-        // method returns; it is armed here because this is where the counts are known. The root
-        // is a directory of posters with a search line and no grid of courses.
+        // method returns; it is armed here because this is where the counts are known.
         $description = '';
         if (!$isroot) {
             $chelper = new coursecat_helper();
@@ -230,11 +208,10 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             return null;
         }
         if ($categoryid === 0) {
-            /* The ROOT of the course index. Core's course/index.php hands 0 over through
-               user_top() whenever the viewer may see more than one top-level category, so the
-               question core would ask about the root is already answered. A visitor and the guest
-               account get core's own page here; the anonymous root, when the site opens it, is
-               served by request::handle() instead. */
+            /* The root of the course index: core's course/index.php hands 0 over through
+               user_top() unless the viewer may see exactly one top-level category, so core's own
+               question is already answered. A visitor and the guest account get core's page;
+               the anonymous root, when the site opens it, is served by request::handle(). */
             if (!isloggedin() || isguestuser()) {
                 return null;
             }
@@ -255,13 +232,10 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
      * Drop the courses this user must not discover, then render as usual.
      *
      * The safety net described in the class docblock. $totalcount is reduced by
-     * what THIS page dropped, which is exact for the three surfaces overridden
-     * below (their lists arrive already filtered, so the reduction is zero and
-     * the count they computed is already right) and a best effort everywhere
-     * else: a global total cannot be corrected from one page of it. Every
-     * listing this renderer owns is now in that overridden set, so the best
-     * effort applies only to a caller core might add later - which is what the
-     * net is for. Names never leak either way; only a count could.
+     * what this page dropped, which is exact for the surfaces overridden below
+     * (their lists arrive already filtered, so the reduction is zero) and a best
+     * effort for any other caller: a global total cannot be corrected from one
+     * page of it. Names never leak either way; only a count could.
      *
      * @param coursecat_helper $chelper Display options.
      * @param array $courses The courses to display.
@@ -281,19 +255,16 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
     /**
      * Render a category tree, minus an expand-all control that would open onto nothing.
      *
-     * The twin, one level up, of the expand affordance {@see coursecat_category()} strips from a
-     * single node. Core prints the "Expand all" / "Collapse all" control whenever the RAW
-     * get_children_count() of the tree's own category is non-zero (course/renderer.php:925, and
-     * Boost Union's copy at classes/output/core/course_renderer.php:798, line for line the same),
-     * so a category whose children are ALL unlisted keeps the control over a tree holding no
-     * expandable node at all - the same existence signal the arrow was, printed by a different
-     * method. The tree's contents are already right underneath: the children were filtered by
-     * coursecat_subcategories() before they got here.
+     * The tree-wide twin of the expand affordance {@see coursecat_category()} strips from a node.
+     * Core's coursecat_tree() and Boost Union's copy of it print the "Expand all" / "Collapse all"
+     * control whenever the raw get_children_count() of the tree's category is non-zero, so a
+     * category whose children are all unlisted would keep the control over a tree with nothing to
+     * expand - an existence signal. The tree's contents are already filtered by
+     * coursecat_subcategories().
      *
-     * Core writes the control as one self-contained block that holds nothing but the link
-     * (html_writer::start_tag('div', ['class' => 'collapsible-actions'])), and both upstreams
-     * write it identically, so removing it from the rendered string is unambiguous and costs no
-     * copy of either method - the same trade this class makes for the node's own classes.
+     * Both upstreams write the control as one self-contained div.collapsible-actions holding only
+     * the link, so removing it from the rendered string is unambiguous and costs no copy of either
+     * method. Re-check that shape on every core or Boost Union update.
      *
      * @param coursecat_helper $chelper Display options.
      * @param core_course_category $coursecat The category the tree is rooted at.
@@ -311,33 +282,24 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
     /**
      * Render the subcategories of one category, minus the ones this user must not discover.
      *
-     * A COPY of core's method (course/renderer.php:709-772 on 5.2). Boost Union does not
-     * override it, so there is no parent to call and no upstream presentation to preserve;
-     * core's own html_writer calls are therefore kept exactly as core writes them, this being
-     * a copy of a core renderer method rather than new plugin code. Re-diff it against that
-     * range on every core upgrade.
+     * A copy of core_course_renderer::coursecat_subcategories(), which Boost Union does not
+     * override; it keeps core's html_writer calls because it is core's method. Its snapshot is
+     * course_renderer.php.coursecat_subcategories.upstream ({@see \theme_dimensions\local\upstream}):
+     * bring the copy back to parity when core changes it.
      *
-     * What changed, and only this: the children are fetched UNPAGINATED, run through
-     * category_access::filter_categories(), counted, and only then sliced. Filtering after core
-     * has paginated would leave the total overstated and every page short - a page can render
-     * empty - which is the same reason the course half of this class fetches unpaginated, and
-     * it costs what core already pays: get_children() caches the whole sorted id list in the
-     * session coursecat cache and slices it in PHP (course/classes/category.php:1329).
+     * Modifications:
+     * - The children are fetched unpaginated, run through category_access::filter_categories(),
+     *   counted, and only then sliced: filtering after core paginated would overstate the total
+     *   and leave pages short or empty.
+     * - Core reads the total from get_children_count() and skips the fetch under 'nodisplay'; a
+     *   filtered total needs the fetch, so 'nodisplay' only empties the rendered list. That keeps
+     *   course_category()'s "View all subcategories" link on its browse=courses branch, which sets
+     *   nodisplay.
+     * - $pagingbar and $morelink start as '' and are tested against '' where core leaves them
+     *   undefined and tests empty(); the two agree in every case.
      *
-     * One departure from core's shape, deliberate. Core takes the total from
-     * get_children_count(), a cached scalar it can read whether or not 'nodisplay' is set, so
-     * it skips the fetch in that case. A FILTERED total cannot be had without the fetch, so
-     * the fetch happens either way and 'nodisplay' only empties the list that is RENDERED -
-     * which is what keeps course_category()'s "View all subcategories" link alive on its
-     * browse=courses branch, where nodisplay is exactly what is set.
-     *
-     * One more divergence, cosmetic, disclosed here so that a re-diff against that range is not
-     * a surprise: core leaves $pagingbar and $morelink undefined and tests them with empty();
-     * this copy declares both as '' and tests them against ''. The two agree in every case -
-     * neither ever holds the string "0" - and nothing else in those blocks changed.
-     *
-     * This one override covers every surface that lists categories: the category page tree,
-     * coursecat_tree() and both front page category methods all reach the children through it.
+     * Every surface that lists categories reaches the children through it: the category page
+     * tree, coursecat_tree() and both front page category methods.
      *
      * @param coursecat_helper $chelper Display options.
      * @param core_course_category $coursecat The category whose children are listed.
@@ -437,35 +399,24 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
     /**
      * Render one category node, unless this user must not discover the category.
      *
-     * Two things happen here.
+     * The node of an undiscoverable category is not rendered at all, subtree included, which
+     * catches a category handed over from anywhere but the filtered listing above. The top-level
+     * pseudo-category (id 0) is always discoverable, while is_category_discoverable(0) would fail
+     * closed, so the id is tested first.
      *
-     * The node of an undiscoverable category is not rendered at all - its name, its link, its
-     * count and its whole subtree - which catches a category handed to this method from
-     * anywhere but the filtered listing above. The top-level pseudo-category has id 0 and is
-     * always discoverable: is_category_discoverable(0) would fail closed on a path no row
-     * holds, so the id is tested first.
+     * Core's not-loaded branch, and Boost Union's copy of it, decide the with_children and
+     * collapsed classes from the raw get_children_count() and, at COURSECAT_SHOW_COURSES_COLLAPSED or
+     * above, the raw get_courses_count(), so a category whose children or courses are all withheld
+     * would keep an expand arrow opening onto nothing - an existence signal. When the filtered child
+     * count is zero and, at COURSECAT_SHOW_COURSES_COLLAPSED or above, the filtered course count is
+     * zero too, the two classes are removed from the node's opening tag. Both upstreams write the class
+     * attribute first in that tag, so one replacement of the first class attribute is unambiguous.
      *
-     * Then the expand affordance. Core's not-loaded branch (course/renderer.php:850-858, and
-     * Boost Union's copy at classes/output/core/course_renderer.php:695-703, byte for byte the
-     * same) decides the with_children and collapsed classes from the RAW get_children_count(),
-     * so a discoverable category whose children are ALL unlisted would keep a live expand arrow
-     * opening onto nothing - an existence signal, and one the AJAX expander then answers with
-     * an empty box. When that branch applies, the FILTERED child count is zero and the course
-     * half of core's condition is false as well, the two classes are removed from the node's
-     * own opening tag. Both upstreams write the class attribute FIRST in that tag (core
-     * :873-874, Boost Union :718-719), so the first class attribute of the string is that tag's
-     * and one targeted replacement is unambiguous.
-     *
-     * The course half of that condition, and the number core prints in COUNT mode, are both
-     * read from the FILTERED direct courses: get_courses_count() counts unlisted courses, so
-     * the raw scalar would keep an arrow over a category whose only course is withheld, and
-     * would print the number beside a name with the withheld courses in it: " (N)" in core
-     * (course/renderer.php:886-890, the front page's category list), a bare "N" badge in Boost
-     * Union's copy under its categorylistingpresentation setting (:731-735). The count is taken once
-     * per node and only when one of those two branches needs it. In COUNT mode the span's
-     * number is rewritten to the filtered one, and the span is dropped at zero as core drops
-     * it. The node's own span is the one inside its FIRST name heading: a child's span sits
-     * further down and was rewritten when that child was rendered.
+     * The number printed in COUNT mode (" (N)" in core's front page category list, a bare "N"
+     * badge under Boost Union's categorylistingpresentation) is rewritten to the filtered direct
+     * courses, and the span is dropped at zero as core drops it. The count is taken once per node,
+     * only when one of those two branches needs it. The node's own span is the one inside its first
+     * name heading: a child's span sits further down and was rewritten when that child rendered.
      *
      * @param coursecat_helper $chelper Display options.
      * @param core_course_category $coursecat The category to render.
@@ -562,12 +513,10 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
     /**
      * Render the contents of one category, minus what this user must not discover.
      *
-     * The guard is what covers course/category.ajax.php, whose only entry is core's
-     * coursecat_ajax() (course/renderer.php:1044-1071) calling straight into this method with a
-     * category id taken from the request. The after_config guard cannot see that path at all -
-     * it returns early for AJAX_SCRIPT - and the node override above is never reached either,
-     * because the AJAX request asks for the CONTENTS of a category, not for its node. The
-     * top-level pseudo-category has id 0 and is always discoverable, so the id is tested first.
+     * The guard covers course/category.ajax.php, whose coursecat_ajax() calls straight into this
+     * method with a category id from the request: the after_config guard returns early for
+     * AJAX_SCRIPT, and the node override above is never reached because the request asks for the
+     * contents of a category, not its node. The id 0 is tested first, as in coursecat_category().
      *
      * @param coursecat_helper $chelper Display options.
      * @param core_course_category $coursecat The category.
@@ -623,12 +572,10 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
     /**
      * The "Category: name" line of a course box, unless this user must not discover the category.
      *
-     * Belt and braces, and cheap. access::filter_courses() already drops a course sitting inside
-     * an unlisted category from every listing except for the people who hold a relationship with
-     * the COURSE - enrolled, awaiting a decision, or staff - and for THEM the name of the
-     * category their own course sits in is knowledge they already hold. So this withholds
-     * nothing that was reachable; it exists so that a surface which renders such a course box
-     * cannot name the category as a side effect.
+     * Defence in depth: access::filter_courses() already drops a course inside an unlisted category
+     * for everyone but those related to the course itself (enrolled, awaiting a decision, or staff),
+     * who know its category already. This keeps any surface rendering such a course box from naming
+     * the category as a side effect.
      *
      * @param coursecat_helper $chelper Display options.
      * @param core_course_list_element $course The course whose box is being rendered.
@@ -644,32 +591,24 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
     /**
      * Empty the category badge of a Boost Union course card, for a category this user must not discover.
      *
-     * The rule {@see course_category_name()} states, on the presentation this theme actually
-     * runs. Core reaches that method only in EXPANDED_WITH_CAT mode and Boost Union's card and
-     * list presentations never reach it at all: with courselistingpresentation set to anything
-     * but "nochange", coursecat_coursebox_content() takes its own branch and names the category
-     * from theme_boost_union\util\course::get_category() (its course_renderer.php:576, its
-     * util/course.php:113-124), which asks core_course_category::get() and no predicate at all,
-     * whenever courselistinghowcategory is on. So the guard above is dead on exactly the
-     * configuration this theme is deployed with, and this is where it has to be repeated.
+     * The rule of {@see course_category_name()}, on Boost Union's card and list presentations: with
+     * courselistingpresentation set to anything but "nochange", coursecat_coursebox_content() takes
+     * its own branch and, while courselistinghowcategory is on, names the category through
+     * theme_boost_union\util\course::get_category(), which asks core_course_category::get() and no
+     * predicate. course_category_name() is never reached there.
      *
-     * Both of Boost Union's templates wrap the value in the same element - a span carrying the
-     * classes "categoryname text-truncate", templates/courselistingcard.mustache:90-92 and
-     * templates/courselistinglist.mustache:92-94 - and nothing else in a course box carries that
-     * class (core's own category line is a div.coursecat, course/renderer.php:550), so emptying
-     * it is one unambiguous replacement and costs no copy of a 140-line upstream method. Only the
-     * NAME goes: the card, the course and its link stay, because whoever is reading it was by
-     * construction rescued into this listing by access::filter_courses() through their own
-     * relationship with the COURSE.
+     * Both of Boost Union's templates (courselistingcard, courselistinglist) wrap the value in a
+     * span.categoryname.text-truncate, and nothing else in a course box carries that class (core's
+     * own category line is a div.coursecat), so emptying it is one unambiguous replacement and
+     * costs no copy of the upstream method. Only the name goes: the reader was rescued into this
+     * listing by access::filter_courses() through their own relationship with the course.
      *
-     * Boost Union's sticky category headers (its course_renderer.php:250-262 and :331-343) need
-     * no guard of their own. They are printed only when $showstickyheaders is true, which
-     * requires get_show_courses() <= COURSECAT_SHOW_COURSES_COLLAPSED (its :198-206), while every
-     * listing that mixes categories in one call asks for more than that: this theme's
-     * search_courses() and frontpage_available_courses() set EXPANDED_WITH_CAT and EXPANDED, and
-     * so does core's tagged_courses(). What is left is the per-category tree, where the only name
-     * such a header can print is that of the category whose own node and content are withheld
-     * above.
+     * Boost Union's sticky category headers need no guard: they print only while
+     * get_show_courses() <= COURSECAT_SHOW_COURSES_COLLAPSED, and every listing that mixes
+     * categories asks for more (search_courses(), frontpage_available_courses() and
+     * tagged_courses() set EXPANDED_WITH_CAT or EXPANDED). In the per-category tree a header can
+     * only name the category whose node and content are withheld above. Re-check on each Boost
+     * Union release.
      *
      * @param coursecat_helper $chelper Display options.
      * @param \stdClass|core_course_list_element $course The course whose box is being rendered.
@@ -745,10 +684,7 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             $imgwithlink = \html_writer::link($url, $img);
             $coursename = \html_writer::link($url, $course->get_formatted_name());
             $details = '';
-            /* Belt and braces, exactly as course_category_name() above: filter_courses() has already
-               dropped a course inside an unlisted category for everyone but the people who hold a
-               relationship with the course itself, and for them the category their own course sits
-               in is knowledge they already hold. */
+            // The category guard of course_category_name(), for the same reason.
             $showcat = $showcategories && $course->category
                 && category_access::is_category_discoverable((int) $course->category);
             if ($showcat && ($cat = core_course_category::get($course->category, IGNORE_MISSING))) {
@@ -769,10 +705,8 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
      *
      * Overridden for the count, not for the list: the safety net above already
      * drops the rows, but core prints "Search results: N" from a $totalcount it
-     * obtained separately through search_courses_count(). Left alone, the page
-     * says six and shows five - which does not name the withheld course but does
-     * announce that one exists, and on this platform that is the fact being
-     * withheld.
+     * obtained separately through search_courses_count(), which would announce
+     * that a withheld course exists.
      *
      * @param array $searchcriteria Search criteria, as built by course/search.php.
      * @return string
@@ -808,10 +742,7 @@ class course_renderer extends \theme_boost_union\output\core\course_renderer {
             ->set_search_criteria($searchcriteria)
             ->set_attributes(['class' => $class]);
 
-        /* Search everything, filter, then paginate - the same shape as the category
-           listing, and for the same reason: core paginates this in PHP over a fully
-           materialised list anyway (core_course_category::search_courses() slices with
-           array_slice), so asking for all of it costs what core already pays. */
+        // Search everything, filter, then paginate: see the class docblock for the cost.
         $unpaged = $displayoptions;
         unset($unpaged['limit'], $unpaged['offset']);
         $all = access::filter_courses(core_course_category::search_courses($searchcriteria, $unpaged));

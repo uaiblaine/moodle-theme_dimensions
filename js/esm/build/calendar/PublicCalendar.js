@@ -12,17 +12,17 @@ import{useCallback as $e,useEffect as ve,useLayoutEffect as Fe,useMemo as O,useR
  *   the page's language.
  * - The latest request wins: a ticket is taken per request and checked after the await. A Pending token
  *   (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - The month view and the week view as on the logged-in page: what is shown is a span with its answer,
- *   one call of the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
+ * - The month view and the week view as on the logged-in page: what is shown is a span with its answer, one call of
+ *   the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
  *   asked for and drawn as its month with the day's drawer open, as on the logged-in page.
- * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a chip
- *   and the open day replace it; Back and Forward read the address again.
+ * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a
+ *   key toggled and the open day replace it; Back and Forward read the address again.
  * - A failure loads the address of what was asked for, which the server draws: a visitor is never shown the server's
  *   words.
  * - The description is the answer's own text, drawn as text; nothing is asked of core.
  *
- * What it imports is the point: nothing that reads the session or asks a logged-in service
- * (categorypublic_source_test walks its whole graph).
+ * What it imports is the point: nothing that reads the session or asks a logged-in service, not even named in a
+ * comment (categorypublic_source_test walks its whole graph, comments included).
  *
  * @module     theme_dimensions/calendar/PublicCalendar
  * @copyright  2026 Anderson Blaine

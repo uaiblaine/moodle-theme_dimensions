@@ -1,17 +1,17 @@
 /**
  * One day's items, pure: the all-day strip, the hour column in columns, and who overlaps whom.
  *
- * - The ALL-DAY strip holds every item touching the day that is a bar of the month grid (it spans more than one day,
+ * - The all-day strip holds every item touching the day that is a bar of the month grid (it spans more than one day,
  *   or it is an event course) or that fills whole days ({@see isAllDay()}).
- * - The HOUR column holds the day's other items. Those with a duration are laid out in columns: sorted by start,
+ * - The hour column holds the day's other items. Those with a duration are laid out in columns: sorted by start,
  *   then longer first, an item takes the first column whose last item ended at or before its start, and a cluster
  *   of items that overlap one another (directly or through each other) shares one column count. A point item (a
- *   deadline, duration 0) sits in the column at its time, alone in its own cluster.
- * - Two items OVERLAP when both have a duration and each starts before the other ends: touching ends do not, a
+ *   deadline, duration 0) sits at its time in the first column, outside every cluster.
+ * - Two items overlap when both have a duration and each starts before the other ends: touching ends do not, a
  *   point item never does, and an all-day or multi-day item never counts.
- * - The hour column draws the whole day in a scroll box:
- *   the busy band (hourWindow()) or the working hours (EMPTY_WINDOW) is where the box starts ({@see boxTopOf()}),
- *   and a fade marks each end it can still scroll to ({@see edgesOf()}).
+ * - The hour column draws the whole day in a scroll box that opens on the busy band ({@see hourWindow()}) or on the
+ *   working hours ({@see EMPTY_WINDOW}), {@see boxTopOf()}; a fade marks each end it can still scroll to
+ *   ({@see edgesOf()}).
  *
  * @module     theme_dimensions/calendar/overlap
  * @copyright  2026 Anderson Blaine

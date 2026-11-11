@@ -32,10 +32,10 @@ namespace theme_dimensions\local\hook\block_compass;
  * and never dispatched, because nothing can construct the hook. Without the block nothing calls this.
  *
  * The rule is theme_dimensions_course_badges()'s, in lib.php, and the hook's contract is that function's
- * own: only the courses the current reader may see, whatever ids the block passes (an MDL Shield finding,
- * {@see \theme_dimensions\local\landing\publicfiles::viewer_may_see_many()}), one batch for every id,
- * nothing written to $SESSION. This class adds no rule of its own and only carries the answer, so the
- * filter stays in the one place every caller goes through.
+ * own: only the courses the current reader may see, whatever ids the block passes
+ * ({@see \theme_dimensions\local\landing\publicfiles::viewer_may_see_many()}), one batch for every id,
+ * nothing written to $SESSION. This class adds no rule of its own, so the filter stays in the one place
+ * every caller goes through.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

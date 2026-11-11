@@ -23,20 +23,19 @@
     under the focus mode body class; the theme_dimensions/focusmode module moves that class and the
     header actions without a reload.
 
-    It keeps the navbar and fixed-top classes deliberately: every offset which stops the
-    page sliding under a fixed bar is compiled from Boost's own navbar height, and none of
-    those selectors matches on the navbar class itself. So the box, the height, the print
-    removal and this theme's signature band all come for free, and only the contents change.
+    It keeps the navbar and fixed-top classes on purpose: the rules for a fixed navbar (its box,
+    its removal from print, this theme's signature band) apply to it unchanged, and the page
+    offsets that keep content clear of a fixed bar are compiled from Boost's navbar height.
 
-    The colour classes and the Bootstrap colour mode arrive already resolved from the layout
-    context, which is what lets a Boost Union flavour recolour the bar with no code here.
+    The colour classes arrive already resolved from the layout context, which is what lets a
+    Boost Union flavour recolour the bar with no code here.
 
-    The bar is one row which cannot wrap, and the controls hold no free space of their own: an
-    auto margin in the stylesheet pushes them to the end of it.
+    The bar is one row which cannot wrap; an auto margin in the stylesheet pushes the controls to
+    its end.
 
-    The exit label follows the entry button's idiom exactly - a span hidden from view below the
-    medium breakpoint and a visually-hidden twin shown only there - so the control has an
-    accessible name at every width and never two at once.
+    The exit label follows the entry button's idiom (theme_dimensions/focusmode_entry): a span
+    hidden from view below the medium breakpoint and a visually-hidden twin shown only there, so
+    the control has one accessible name at every width.
 
     Context variables required for this template (described without braces, because a
     Mustache comment closes at the first pair of closing braces it meets):

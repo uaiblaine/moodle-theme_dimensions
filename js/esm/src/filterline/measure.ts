@@ -16,8 +16,8 @@
 /**
  * What the filter line reads off the page: the width each step needs, and where its floating layers go.
  *
- * Every function here reads layout, and each says when it forces one. The steps' widths are measured
- * ONCE per content - the words, the counts, the slots - with the line under the measuring class (one
+ * Most functions here read layout, and each says when it forces one. The steps' widths are measured
+ * once per content - the words, the counts, the slots - with the line under the measuring class (one
  * row that never wraps, no transition, only the search shrinking, down to its step's floor) and every
  * cell of the scope drawn, a cell the counts hide shown for the measure and hidden again before anything
  * is painted: so a step follows the width and the language and never the numbers of the moment. A width change
@@ -107,7 +107,7 @@ export const requiredWidth = (line: HTMLElement): number => {
  * The open search is set aside for the measure (its slide would read as controls of no width), and the
  * fold the line carried, the searching class and every hidden cell are put back before the caller paints.
  * Forces one layout per try, so with a width it stops at the first try that fits: a wide line pays one
- * layout, not five ({@see settled()} says when the tries left out are needed).
+ * layout, not five ({@see ./steps settled()} says when the tries left out are needed).
  *
  * @param {HTMLElement} line The line.
  * @param {object} drawn The fold the line carries now, put back afterwards; null for none.

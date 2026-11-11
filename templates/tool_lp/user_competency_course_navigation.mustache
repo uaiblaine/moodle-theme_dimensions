@@ -23,17 +23,19 @@
     admin/tool/lp/templates/user_competency_course_navigation.mustache. Re-diff it against that file on
     every core upgrade.
 
-    Kept from core, because tool_lp/user_competency_course_navigation and core/form-autocomplete read
-    them: the two selects' ids user-nav-<uniqid> and competency-nav-<uniqid>, their labels and their
-    form-select class, every option with its value and selected state, the form's class
-    user-competency-course-navigation (core's tool_lp stylesheet hides the selects by it until the
-    autocomplete has drawn), the hidden fields userid, competencyid and courseid, the group selector
-    (core's own HTML, triple-stashed) and the JavaScript itself. The names keep core's escaping.
+    Kept from core: the two selects' ids user-nav-<uniqid> and competency-nav-<uniqid>, which the
+    JavaScript hands to tool_lp/user_competency_course_navigation and core/form-autocomplete, their
+    labels and their form-select class, every option with its value and selected state, the form's
+    class user-competency-course-navigation (core's tool_lp stylesheet hides the native selects by it;
+    the autocomplete draws the visible control), the hidden fields userid, competencyid and courseid
+    (no module reads them; kept as core has them), the group selector (core's own HTML,
+    triple-stashed) and the JavaScript itself. The names keep core's escaping.
     Changed: the panel is the theme's (dim-comp-nav); the group selector sits in a div rather than a
-    paragraph, because core's single_select markup is a form, which a paragraph cannot hold; the line
-    break between the two selects is the panel's gap.
+    paragraph, because core's single_select markup is a form, which a paragraph cannot hold, and is
+    left out when empty; the line break between the two selects is the panel's gap.
     The JavaScript is core's statement for statement, with the constructor's parameter capitalised
-    (Nav) and long lines wrapped: core's copy has no example context and was never linted.
+    (Nav) and one long line wrapped: core's copy has no example context, so the template lint never
+    ran eslint over it.
 
     Context variables required for this template:
     * groupselector - HTML

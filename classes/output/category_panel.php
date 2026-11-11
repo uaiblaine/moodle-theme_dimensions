@@ -203,13 +203,13 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
     }
 
     /**
-     * What the client needs of a poster BEFORE the panel's rows arrive: where its title and its call to action go.
+     * What the client needs of a poster before the panel's rows arrive: where its title and its call to action go.
      *
      * Written on every poster by the page and handed back for every accordion entry by the web
      * service after a filter change, so the skeleton and the error state can draw a working
      * footer and the client composes nothing. The call to action carries the request's narrowing
      * parameters and the newest-first order (the client swaps the one `sort` parameter when the
-     * panel is in A-Z order, in the server's own vocabulary), and its label carries the POSTER's
+     * panel is in A-Z order, in the server's own vocabulary), and its label carries the poster's
      * count - except at the root at rest, which counts nothing. A visitor's merely listed child has no
      * page of its own, so its call to action is the "see all as a list" address instead.
      *
@@ -288,7 +288,7 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
     /**
      * The server's context: the whole panel, its cards included, and the zero state's suggestions.
      *
-     * The suggestions are PAGE data, like the cards: the page's other posters holding a result,
+     * The suggestions are page data, like the cards: the page's other posters holding a result,
      * which the web service's copy does not know. The client builds the same list from the posters
      * it holds and merges it into the service's context, as it does the cards.
      *
@@ -422,7 +422,7 @@ class category_panel implements \core\output\named_templatable, \core\output\ren
     /**
      * The line under the title: how many of how many, or how many there are.
      *
-     * Under a criterion it counts RESULTS and names what they answer - the search term, or "the
+     * Under a criterion it counts results and names what they answer - the search term, or "the
      * filters" when only filters narrow the page - so the reader can tell a narrowed rail from the
      * area's whole listing.
      *

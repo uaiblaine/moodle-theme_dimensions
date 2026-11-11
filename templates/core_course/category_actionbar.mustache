@@ -18,19 +18,18 @@
 
     Modification compared to the original template:
     * The category selector is removed. Core builds it from make_categories_list(), which names
-      every category on the site with no capability required, so on a platform where a category
-      may be unlisted the selector hands out the whole tree in one control. Removing it here
-      rather than in the renderer is what keeps the rest of core's action bar - the search box
-      and the additional options - working against two upstreams; the alternative was a copy of
-      Boost Union's course_category() to re-diff on every release. The context key the block
-      read is left in the example below, unused, so the diff against core stays readable.
-    * The example context gives additionaloptions the string the action bar really exports - a
-      rendered action menu, or the empty string (see
-      \core_course\output\category_action_bar::export_for_template()).
-      Core's own example declares an object there, which the template then triple stashes:
-      rendering it is a fatal "Object of class stdClass could not be converted to string", and the
-      plugin CI's mustache lint renders the example of every template the plugin ships, while it
-      never lints core's own copy. Do not copy the object back.
+      every category on the site with no capability required, so where a category may be
+      unlisted the selector would reveal the whole tree. Removing it in the template rather than
+      in the renderer keeps the rest of the action bar (the search box and the additional
+      options) as core and Boost Union draw it, without a copy of Boost Union's course_category().
+      The example below keeps the context key the selector read, unused, so the diff against
+      core stays readable.
+    * The example context gives additionaloptions the string the action bar exports - a rendered
+      action menu, or the empty string (see
+      \core_course\output\category_action_bar::export_for_template()). Core's own example
+      declares an object there, which the triple stash cannot render ("Object of class stdClass
+      could not be converted to string"); the plugin CI's mustache lint renders the example of
+      every template the plugin ships, never core's own. Do not copy the object back.
 
     Context variables required for this template:
     * search Object - The core/search_input context of the search box

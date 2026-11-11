@@ -19,8 +19,7 @@
  * The page hands every one of them to core's string cache with itself (calendar_page::STRINGS, through
  * strings_for_js), so {@see load()} resolves without a request. A label with a count or a date is filled here from
  * the string read once ({@see fill()}, core's own placeholders, {$a} and {$a->name}), rather than asked of
- * stringUtils again for each of the forty-two days of a grid. calendar_component_source_test holds the list against
- * the server's.
+ * stringUtils again for each of the forty-two days of a grid. calendar_page_test holds the list against the server's.
  *
  * @module     theme_dimensions/calendar/strings
  * @copyright  2026 Anderson Blaine

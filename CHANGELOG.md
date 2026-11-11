@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Comments say what the code does.** A review of every comment in the shipped code (PHP, JavaScript, templates,
+  stylesheets) against the code it describes: 211 comments that no longer matched were corrected, and history,
+  measurements and notes about the development environment were taken out. No code changed; the JavaScript builds
+  were rebuilt because they carry the source text (2026100603).
+
 - **The login page is Boost Union's.** The theme's own login page (the institutional panel, the two ways in, the
   local identity provider marks and the reset hint), retired once auth_loginsteps took over the sign-in, is removed
   with its *Login page* tab: the login page, its arrangement and every login setting are Boost Union's again, on

@@ -17,12 +17,12 @@
  * The Trilhas view: the trails of the months it holds, one row per trail and its steps under it.
  *
  * - On a desktop, a timeline of contiguous months (trails.ts Loaded): the month in view and the next on a first paint,
- *   another month asked for when the scroll nears the end of what is held or the arrows go back past its start, at most
+ *   another month asked for when the scroll nears the end of what is held or moves back to its start, at most
  *   trails.ts capOf() held. Each step a bar from its start to its end (trails.ts barOf()), a diamond on an expected
  *   completion date, one that began earlier marked at the left edge, one that runs on past what is held cut there, an
- *   open one (a start and no end) its first 30 days and a decorative "no end" chip after it; the trail's own row carries its span
- *   (trails.ts trailBarOf()). Above the days a band names each
- *   month held, its name a button that scrolls to its 1st; a month on its way is a quiet skeleton at the end. Weekends
+ *   open one (a start and no end) its first 30 days and a decorative "no end" chip after it; the trail's own row
+ *   carries its span (trails.ts trailBarOf()). Above the days a band names each month held, its name a button that
+ *   scrolls to its 1st; a month on its way is a quiet skeleton at the end. Weekends
  *   are hatched, a month's first day is a line, and today is a line down the rows. Consecutive steps are joined by
  *   connectors in the trail's order (trails.ts linksOf()), drawn by the same day arithmetic, aria-hidden. The days have
  *   a fixed width and only they scroll, in TrailScroll.tsx, the trail column held still; a trail's chevron (core's
@@ -54,7 +54,7 @@
  *   asking for it when needed; the toolbar's title is the months in view (`onRange`), and the address's month is the
  *   month of the first day in view once a scroll settles (`onMonth`): the page's history writes it, never this view.
  *
- * Its ONE ResizeObserver watches the frame it is drawn in and reports the frame's width alone, the grids' rule
+ * Its one ResizeObserver watches the frame it is drawn in and reports the frame's width alone, the grids' rule
  * (MonthGrid.tsx PHONE): the frame's width does not depend on what it holds, so the phone decision cannot feed back
  * into the measure. Nothing is measured here, and no layout is read to place a bar or a connector: the bars, the
  * weekends and today are grid columns or multiples of the day's width the stylesheet declares; the scroller's reads are
@@ -155,7 +155,7 @@ const NO_ICONS: FoldIcons = {expanded: '', collapsed: '', collapsedrtl: ''};
 /** A month and its year, in the band. */
 const MONTH_YEAR: Intl.DateTimeFormatOptions = {month: 'long', year: 'numeric'};
 
-/** A month alone, in the band of the month zoom, where a month is a few rem wide (the approved mockup's). */
+/** A month alone, in the band of the month zoom, where a month is a few rem wide. */
 const MONTH_ONLY: Intl.DateTimeFormatOptions = {month: 'long'};
 
 /** A day's letter in the header. */
@@ -309,7 +309,7 @@ const shortOf = (iso: string, language: string | undefined): string => {
 };
 
 /**
- * What the view's filters are handed: the trail choice and "Só as minhas", then the page's own controls; the zoom and its
+ * What the view's filters are handed: the trail choice and "Only mine", then the page's own controls; the zoom and its
  * change on a desktop (none on a phone, whose agenda has no timeline).
  */
 type TrailFiltersProps = {
@@ -324,10 +324,10 @@ type TrailFiltersProps = {
 };
 
 /**
- * The Trilhas view's toolbar row: "Trilha" (every trail the answer offers, "Todas as trilhas" first) drawn as a button
- * with the trail's icon over a real select, "Só as minhas" as a toggle button, the page's category picker and "Clear
- * filters", then on a desktop the timeline's zoom ("Dias", "Semanas", "Meses": a group of real buttons, the zoom shown
- * pressed), and the count of what is drawn at the end. The event types are not part of it.
+ * The Trilhas view's toolbar row: "Trail" (every trail the answer offers, "All trails" first) drawn as a button with the
+ * trail's icon over a real select, "Only mine" as a toggle button, the page's category picker and "Clear filters", then
+ * on a desktop the timeline's zoom ("Days", "Weeks", "Months": a group of real buttons, the zoom shown pressed), and the
+ * count of what is drawn at the end. The event types are not part of it.
  *
  * @param {object} props See TrailFiltersProps.
  * @returns {object} The row.
@@ -884,6 +884,8 @@ const TrailView = ({look, month, answer, today, now, phone, captionid, chosen = 
 
     /**
      * Core's chevrons inside a fold, as the server renders them: open, and folded in either direction.
+     *
+     * Trusted HTML: the server's own pix icons ({@see calendar_page::fold_icons()}), never user content.
      *
      * @returns {object}
      */

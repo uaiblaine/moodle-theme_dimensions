@@ -17,9 +17,9 @@
  * The panel's rail: its arrows, its phone counter and the drag of a mouse.
  *
  * The rail itself is the panel template's markup; this module reads its scroll and writes its arrows' state and its
- * counter. {@see railState} is the one place layout is read, and Areas.tsx calls it
- * only where the layout is already clean: from a ResizeObserver entry (after layout, before paint) and
- * from the rail's own scroll and the reader's own press.
+ * counter. Layout is read only where it is already clean: {@see railState}, which panel.ts calls from a
+ * ResizeObserver entry (after layout, before paint) and from the rail's own scroll, and the reader's own press
+ * ({@see scrollRail}, {@see dragRail}).
  *
  * @module     theme_dimensions/areas/rail
  * @copyright  2026 Anderson Blaine

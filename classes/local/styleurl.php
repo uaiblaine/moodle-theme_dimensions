@@ -50,13 +50,13 @@ namespace theme_dimensions\local;
  * and a browser's agreeing.
  *
  * The cost is that a url with a second query parameter is refused too, and a refusal means no
- * image at all (the landing page hero shows the navy, the poster's watermark the theme's folder).
- * Today that costs nothing: every wired source builds through core's pluginfile url factory,
- * which rawurlencode()s each path segment
- * (core\url::set_slashargument()), so a file name holding a quote, a parenthesis, a space or an
- * ampersand arrives here as %27, %28, %20 or %26 and passes; the factory adds a query parameter
- * only for forcedownload, and core's course_summary_exporter::get_course_image() goes through the
- * same factory. styleurl_test pins that with an encoded file name.
+ * image at all (the landing page hero keeps its gradient, the poster's watermark is the theme's
+ * folder). No wired source pays it: each builds through core's pluginfile url factory, which
+ * rawurlencode()s each path segment (core\url::set_slashargument()), so a file name holding a
+ * quote, a parenthesis, a space or an ampersand arrives here as %27, %28, %20 or %26 and passes;
+ * the factory adds a second query parameter only for forcedownload, or for a token while slash
+ * arguments are off, and core's course_summary_exporter::get_course_image() goes through the same
+ * factory. styleurl_test pins that with an encoded file name.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -68,8 +68,7 @@ class styleurl {
      *
      * A quote closes the url and a second one could close the attribute, a parenthesis closes the
      * function, a backslash escapes whatever follows it, whitespace starts a second value, and the
-     * ampersand is every character reference's first character - see the class docblock for what
-     * is being closed and why the last one is not obvious.
+     * ampersand is every character reference's first character (the class docblock says why).
      */
     private const REFUSED = '~[\s\'"()&\\\\]~';
 
@@ -87,8 +86,8 @@ class styleurl {
             return '';
         }
 
-        /* PARAM_URL either hands the value back or answers '' - it repairs nothing - so the second
-           comparison is what says so out loud rather than a second cleaning step. */
+        /* PARAM_URL is expected to hand the value back or answer ''; the second comparison refuses
+           anything it did change rather than printing a repaired copy. */
         $clean = clean_param($url, PARAM_URL);
         if ($clean === '' || $clean !== $url) {
             return '';

@@ -16,14 +16,13 @@
 /**
  * The posters of the areas and the panel between their rows, on both shells of the showcase.
  *
- * Drawn on both shells; the visitor's differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
- * false}` on the visitor's page, nothing on the logged-in one. A rule changes in the module of this tree
- * that carries it (`panel.ts` for the panel, `posters.ts` for the posters' result layer, `rail.ts`,
- * `model.ts`).
+ * The visitor's differences are the mount's props ({@see ./panel Options}): `{links: true, quiet, autoopen:
+ * false}` on the visitor's page, nothing on the logged-in one. The rules live in the modules of this tree
+ * (`panel.ts` for the panel, `posters.ts` for the posters' result layer, `rail.ts`, `model.ts`).
  *
- * WHO OWNS WHAT. The mount node is an empty, hidden child js/esm/src/listing/mounts.ts's mountAreas() appends
- * to the areas section, so the mount draws no box and the first paint stays the server's, to the pixel.
- * From it the component owns, and is the only writer of:
+ * The mount node is an empty, hidden child that mountAreas() (js/esm/src/listing/mounts.ts) appends to the
+ * areas section, so the mount draws no box and the first paint stays the server's. The component is the only
+ * writer of:
  *
  * - the panel's frame: the one list item of the grid (`panel.ts`), whose content is category_panel
  *   rendered by core/templates and inserted whole, never diffed;
@@ -33,8 +32,8 @@
  * - the "nothing in N areas" summary, which React draws: its sentence and its list, through portals into
  *   the server's `<summary>` and `<ul>`, read off them in the first render and drawn back hook for hook.
  *
- * Nothing of the AMD side writes into those, but for the address of a visitor's poster that stays a link,
- * which the visitor's module points at the area's panel. It speaks to the component through events
+ * Nothing else writes into those, except the address of a visitor's poster that stays a link, which the
+ * visitor's shell points at the area's panel. The listing speaks to the component through events
  * ({@see EVENTS}): the listing client's `dim-vitrine:pending`, `:criteria` and `:failed` and the listing's
  * `:view` on the document; the component answers `dim-panel:autoopened` there. On the areas section,
  * mountAreas() hears, for the page's client, `dim-areas:ask` (the client fills the detail's `answer` with

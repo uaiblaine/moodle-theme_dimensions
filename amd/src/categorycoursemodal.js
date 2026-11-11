@@ -16,34 +16,25 @@
 /**
  * The course dialogue of the category showcase: "More information" opens a core/modal.
  *
- * "More information" is a link to the card's own page, which is the whole of the fallback: without this
- * module, for a modified press (a new tab, a new window) and for the guest and the visitor, whose pages
- * never arm it, the link is followed. This module intercepts a plain press on it and opens the dialogue AT
- * ONCE with what the card already holds - the cover, the state pill and the title from the card's markup,
- * the kicker and the two buttons the server wrote onto the link (category_card) - and a skeleton where the
- * content goes; then it fills that region with theme_dimensions_get_course_dialogue's answer (the excerpt,
- * the facts, the programme), rendered from the same template, category_card_modal. A failed request keeps
- * the header and the buttons and says so in one sentence, with the course's page.
+ * "More information" is a link to the card's own page, and that is the whole fallback: a modified press (a new
+ * tab, a new window), the guest and the visitor, whose pages never arm this module, follow it. A plain press
+ * opens the dialogue at once with what the card already holds - the cover, the state pill and the title from
+ * its markup, the kicker and the two buttons the server wrote onto the link (category_card) - and a skeleton;
+ * then the content region alone is replaced with theme_dimensions_get_course_dialogue's answer, rendered from
+ * the same template, category_card_modal. A failed request keeps the header and the buttons and says so in one
+ * sentence, with the course's page.
  *
- * The content may carry tool_courserating's rating block, whose "Read reviews" is that plugin's own trigger: its
- * document listener opens its reviews popup. This module only closes the dialogue on that press and lets the event
- * through, so two dialogues never stack.
+ * The request starts on intent (a pointer or the focus resting on the link for INTENT_DELAY), and answers are
+ * kept per course for the page's life. core/modal, core/ajax and core/templates are imported on first use: most
+ * readers never open a dialogue. The press is pending until the content is painted or the failure said.
  *
- * The request starts before the press where the reader shows intent: a pointer resting on the link, or
- * the focus reaching it, for INTENT_DELAY. Answers are kept per course for the page's life, so a second
- * opening asks nothing, and the press reuses an answer, or the request, it finds.
+ * The content may carry tool_courserating's "Read reviews", that plugin's own trigger (its document listener
+ * opens the reviews popup): this module closes the dialogue on that press and lets the event through, so two
+ * dialogues never stack.
  *
- * core/modal brings the focus trap, Escape, the close button and the focus given back to the link. It is
- * imported on first use, not with the page, as core/ajax and core/templates are: most readers never open a
- * dialogue. The press is held as pending until the content is painted (or the failure said), so nothing
- * reads the page between the press and the dialogue's last paint; this module adds what core's markup
- * cannot say on its own: the dialogue's own class on the root it appends to the body, the id core's root is
- * labelled by on the title the cover carries (core's header keeps only its close button here, so that the
- * title scrolls away with its picture), and the footer's shadow while the sheet has more to scroll.
- *
- * It calls a service that refuses the guest, so only the account's shell arms it, for a real account. Its
- * listeners are on the document because cards arrive long after it is armed: a page appended by "Load
- * more", a filter answered in place, a panel.
+ * The service refuses the guest, so course_renderer arms this module for a real account only. The listeners are
+ * on the document because cards arrive after it is armed: a page appended by "Load more", a filter answered in
+ * place, a panel.
  *
  * @module     theme_dimensions/categorycoursemodal
  * @copyright  2026 Anderson Blaine

@@ -29,53 +29,47 @@ namespace theme_dimensions\local\category;
  *
  * Plain data, validated once in the constructor so that every consumer of
  * {@see population::resolve()} - the page, the web services and the tests -
- * hands over the same shape. Nothing here is about the viewer: who is asking
- * is read from the session by the population, because resolving for somebody
- * else would silently lie about capabilities.
+ * hands over the same shape. Nothing here is about the viewer: the population
+ * reads who is asking from the session, because its capability checks are the
+ * session user's, and resolving for somebody else would answer with the wrong rights.
  *
  * The search term is normalised here and nowhere else: whitespace collapsed,
- * and anything shorter than two characters treated as no search at all, so
- * that a one-letter query costs no statement on any surface.
+ * and anything shorter than {@see MIN_SEARCH_LENGTH} characters treated as no
+ * search at all, so a one-letter query costs no statement on any surface.
  *
- * The period is the authority for what the start-date filter keeps, and every
- * other reader of it (the predicate, the web service, the client) points here.
- * It compares one date of a course, its start date (`startdate`), and each of
- * its two bounds is optional and independent:
+ * The period is the authority for what the start-date filter keeps; the
+ * predicate, the web service and the client point here. It compares a course's
+ * `startdate`, and each of its two bounds is optional and independent:
  *
  * - `from` alone keeps every course starting on that day or later:
- *   startdate >= midnight at the start of `from`. There is no upper bound.
+ *   startdate >= midnight at the start of `from`.
  * - `to` alone keeps every course starting on that day or earlier:
  *   startdate < midnight at the start of the day AFTER `to`, so a course
- *   starting at any hour of the last day is kept. There is no lower bound.
+ *   starting at any hour of the last day is kept.
  * - Both keep the courses that satisfy both comparisons, the two days included.
  * - A course with no start date (0) is outside every period with a bound, a
- *   `to` alone included: a zero is not a date ({@see population::date_sql()}).
- * - A pair given backwards (`from` after `to`) is the same period described
- *   from its other end, so the two are swapped here and every address minted
- *   from this request carries them in order. The web service refuses such a
- *   pair instead, because its one client orders them before it asks.
+ *   `to` alone included ({@see population::date_sql()}).
+ * - A pair given backwards (`from` after `to`) is swapped here, so every address
+ *   minted from this request carries them in order. The web service refuses such
+ *   a pair instead, because its client orders them before it asks.
  * - A malformed bound is dropped and the other one stands alone.
  *
- * The dates are ISO strings on the wire and timestamps in the predicate, and
- * both resolutions are taken here so that no consumer takes a third. A bound
- * arrives as YYYY-MM-DD - shareable, readable, and what the date input and
- * the client's calendar both speak - and is resolved in the site timezone
- * ({@see \core_date::get_server_timezone()}), never the viewer's: the
- * logged-in and anonymous shells must agree about what "today" is, and a
- * visitor has no timezone to ask. Both instants come from core's calendar
- * arithmetic rather than from adding 86400 to a timestamp, which shifts a
- * boundary by an hour across a daylight saving transition.
+ * A bound arrives as YYYY-MM-DD (what the date input and the client's calendar
+ * use) and is resolved to a timestamp here, in the site timezone
+ * ({@see \core_date::get_server_timezone()}), never the viewer's: the logged-in
+ * and anonymous shells must agree about what "today" is, and a visitor has no
+ * timezone. Both instants come from core's calendar arithmetic, never from adding
+ * 86400 to a timestamp, which shifts a boundary by an hour across a daylight
+ * saving transition.
  *
- * A malformed sort or a malformed date is dropped, never an error: these
- * arrive from a query string, exactly as the state chip does, and a page that
- * refuses to render because somebody edited the address is a page that cannot
- * be linked to.
+ * A malformed sort or date is dropped, never an error: these arrive from a query
+ * string, as the state chip does, and the page must still render an address
+ * somebody edited.
  *
- * The favourites filter is a criterion of its own beside the state chip, and the two combine: a
- * reader may ask for their favourites among the courses they are enrolled in. It is a reader's own
- * rows, so only a real account reads it off an address ({@see can_favourite()}), and an older
- * address that spelled it as a value of the state chip is read as it with no state
- * ({@see from_request()}).
+ * The favourites filter is a criterion of its own beside the state chip, and the two combine (a
+ * reader's favourites among the courses they are enrolled in). Only a real account reads it off an
+ * address ({@see can_favourite()}), and an older address that spelled it as a value of the state
+ * chip is read as the favourites with no state ({@see from_request()}).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -192,7 +186,7 @@ final class criteria {
     /**
      * @var string How the listing is organised: one of {@see SORTS}, '' for the grouped default.
      *
-     * The organisation IN FORCE: the one the request named, else {@see $defaultsort}. Everything
+     * The organisation in force: the one the request named, else {@see $defaultsort}. Everything
      * that orders or shapes the page reads this; only {@see sort_params()} compares it with the
      * default, to leave out of an address what an address naming nothing would get anyway.
      */
@@ -216,9 +210,8 @@ final class criteria {
      * bare address of the category means that state to this reader and the category's default to
      * everybody else, so {@see sort_params()} names the organisation in every address minted from
      * this request - the category's default and the grouped organisation included - and an address
-     * that names its organisation is read as written ({@see with_remembered()}). Whether the state
-     * filled anything in is not what this says: an address the reader followed may have named all
-     * of it.
+     * that names its organisation is read as written ({@see with_remembered()}). It says the reader
+     * has a state, not that the state filled anything in.
      */
     public bool $remembered = false;
 
@@ -232,13 +225,11 @@ final class criteria {
      * @var int The category of the tree the listing is narrowed to, 0 for the whole subtree.
      *
      * The tree is a filter, not a navigation: pressing a category beside a flat listing narrows
-     * that listing to the subtree below it, and the page stays where it is. It is one of the
-     * filters in every respect - {@see has_filters()}, {@see narrowing_count()},
-     * {@see query_params()} and "clear filters" all count it - and it is dropped rather than
-     * refused wherever it does not apply, exactly as an unknown sort is: in the constructor under
-     * the grouped organisation, where the posters play the tree's part and no tree is drawn; and
-     * in {@see population::cat_ids()} when the id is not an admitted category below the page's
-     * own, the half that needs a scope.
+     * that listing to the subtree below it, and the page stays where it is. {@see has_filters()},
+     * {@see narrowing_count()}, {@see query_params()} and "clear filters" all count it. Where it
+     * does not apply it is dropped, never refused: in the constructor under the grouped
+     * organisation, which draws no tree; and in {@see population::resolve()} when
+     * {@see population::cat_ids()} finds no admitted category for it below the page's own.
      */
     public int $cat = 0;
 
@@ -279,10 +270,11 @@ final class criteria {
     /**
      * @var bool Whether the answer carries the posters of the grouped page.
      *
-     * A second switch beside {@see $withcategories}, set by the page's own
-     * requests - {@see from_request()} and {@see root_from_request()} - and never by the web
-     * service: a filter fetch repaints the accordion's numbers and not the posters, so it pays
-     * nothing for a visual it would throw away.
+     * A second switch beside {@see $withcategories}, set by the page's own requests
+     * ({@see from_request()}, {@see root_from_request()}) and by the visitor's panel slice, which
+     * needs the page's posters to admit the slice ({@see rows::fetch()}). A filter fetch never sets
+     * it: it repaints the accordion's numbers and not the posters, so it pays nothing for a visual
+     * it would throw away.
      */
     public bool $withposters = false;
 
@@ -349,10 +341,10 @@ final class criteria {
         }
         $this->fields = $fields;
 
-        /* The organisation and the two bounds, all three of them from a query string: unknown is
-           none. An address naming no organisation gets the category's default, resolved HERE so
-           that every reader below - the grouped switch, the order, the tree's criterion, the panel -
-           agrees about the organisation in force. */
+        /* The organisation and the two bounds come from a query string: unknown is none. An
+           address naming no organisation gets the category's default, resolved here so that every
+           reader below - the grouped switch, the order, the tree's criterion, the panel - agrees
+           about the organisation in force. */
         $default = (string) ($options['defaultsort'] ?? '');
         $this->defaultsort = in_array($default, self::SORTS, true) ? $default : '';
         $sort = (string) ($options['sort'] ?? '');
@@ -370,11 +362,9 @@ final class criteria {
         // Midnight after the chosen day, so the predicate keeps every hour of it (see the class note).
         $this->totime = $this->dateto === '' ? null : self::day_start($this->dateto, 1);
 
-        /* The tree's own criterion, and the grouped organisation drops it here rather than at the
-           predicate: that page draws no tree at all, so a cat arriving with it is an address
-           nothing on screen could have written, and a filter nothing can clear is worse than no
-           filter. Dropped this early, every consumer of the request agrees about it - the count
-           on the summary, the clear link, the pager's parameters and the statement alike. */
+        /* The grouped organisation draws no tree, so a cat arriving with it is a filter nothing on
+           screen could have set or can clear. Dropped here rather than at the predicate, so the
+           summary's count, the clear link, the pager's parameters and the statement all agree. */
         $this->cat = $this->is_grouped() ? 0 : max(0, (int) ($options['cat'] ?? 0));
 
         /* A panel's switch. It is not read from the query string: the page has no address that
@@ -434,15 +424,14 @@ final class criteria {
     /**
      * The organisation an address naming none gets on a category: the one seam every page entry reads.
      *
-     * The category's own default ({@see branding::sort_choice()}'s vocabulary, stored by the
-     * appearance editor and read from the cached branding, so it costs no statement on a page that
-     * draws the hero), and '' - the theme's default, the grouped organisation - for a category that
-     * set none and at the root. It stays the same for every reader: the organisation a reader left
-     * the category in is NOT answered here but filled into the request by {@see with_remembered()},
-     * because whatever this answers is what {@see sort_params()} leaves out of the addresses the
-     * page mints, and a per-person answer would make every such address mean something different
-     * to each reader. The precedence is the address, then the reader's remembered state, then this,
-     * then the theme's default.
+     * The category's own default ({@see branding::sort_choice()}'s vocabulary, read from the cached
+     * branding, so it costs no statement on a page that draws the hero), and '' - the theme's
+     * default, the grouped organisation - for a category that set none and at the root. It is the
+     * same for every reader: what this answers is what {@see sort_params()} leaves out of the
+     * addresses the page mints, so a per-person answer would make each such address mean something
+     * different to each reader. A reader's remembered organisation is filled in by
+     * {@see with_remembered()} instead. The precedence is the address, then the reader's remembered
+     * state, then this, then the theme's default.
      *
      * @param int $categoryid The category, 0 for the root.
      * @return string One of {@see SORTS}.
@@ -526,17 +515,16 @@ final class criteria {
     /**
      * A request's options with the reader's remembered state filled in where the address names none of it.
      *
-     * The state is one whole: it fills in a BARE address - one that names no organisation, no panel
-     * and nothing that narrows (a term, a state, the favourites, a field, a bound of the period, the tree's category)
-     * - and nothing else, so an address that names any of these is read exactly as written, with the
-     * category's default for whatever it leaves out. That is what makes an address a reader shares
-     * mean the same to whoever opens it: every address the page mints for a reader with a remembered
-     * state names its organisation ({@see $remembered}, set here whether or not anything was filled
-     * in), so it is never bare, and an address minted for anybody else means what the category's
-     * default makes of it. "Clear filters" is an address of that kind too: it names the organisation
-     * and no filter, so it clears. The page, the panel and the page size are not the state and are
-     * never filled in. The view is not a criterion at all: {@see \theme_dimensions\output\category_listing::view()}
-     * reads the remembered one beside the address's own.
+     * The state is one whole: it fills in a bare address - one that names no organisation, no panel
+     * and nothing that narrows (a term, a state, the favourites, a field, a bound of the period, the
+     * tree's category) - and nothing else, so an address that names any of these is read as written,
+     * with the category's default for whatever it leaves out. That keeps a shared address meaning the
+     * same to whoever opens it: every address the page mints for a reader with a remembered state
+     * names its organisation ({@see $remembered}, set here whether or not anything was filled in), so
+     * it is never bare. "Clear filters" names the organisation and no filter, so it clears. The page,
+     * the panel and the page size are never filled in. The view is not a criterion:
+     * {@see \theme_dimensions\output\category_listing::view()} reads the remembered one beside the
+     * address's own.
      *
      * @param array $options The options the address gave ({@see from_request()}).
      * @param array $entry The reader's entry for the category ({@see remembered::for_category()}).
@@ -637,9 +625,9 @@ final class criteria {
      * The query parameters that narrow the listing: the search, the state chip, the favourites, the field filters, the period.
      *
      * What a panel's call to action carries to the area's own page, so that page opens on the
-     * same question. Never the tree's category (it is asked about this page's subtree, and the
-     * web service refuses one that is not below the category it lists), never the organisation
-     * nor the page size (the panel's own order replaces them), never the page and never the panel.
+     * same question. Never the tree's category (it names a category of this page's tree, which the
+     * area's page drops unless it lies below that area), never the organisation nor the page size
+     * (the panel's own order replaces them), never the page and never the panel.
      *
      * @return array name => value.
      */
@@ -669,22 +657,20 @@ final class criteria {
     /**
      * The query parameter naming the organisation, for an address that keeps it while dropping the filters.
      *
-     * The default organisation names itself with no parameter at all, so
-     * "clear filters" over an unsorted listing is the bare address it always
-     * was, and over a sorted one it is that address plus the sort: clearing
-     * the filters must not silently reorganise the page.
+     * The default organisation names itself with no parameter at all, so "clear filters" over an
+     * unsorted listing is the bare address, and over a sorted one that address plus the sort:
+     * clearing the filters must not silently reorganise the page.
      *
-     * The default is the CATEGORY's ({@see $defaultsort}), so every address must round-trip
-     * against it: the category's own default may be left out, because the bare address gets it,
-     * and anything else is named - the grouped organisation included, as `sort=category`, on a
-     * category whose default is a flat order. Leaving that one out because it is the THEME's
-     * default would send the reader who pressed "By area" back to the flat order.
+     * The default is the category's ({@see $defaultsort}), not the theme's: only the category's own
+     * default may be left out, because the bare address gets it, and anything else is named - the
+     * grouped organisation included, as `sort=category`, on a category whose default is a flat
+     * order, or pressing "By area" would lead back to the flat order.
      *
      * For a reader with a remembered state on the category ({@see $remembered}) the organisation is
-     * ALWAYS named, the default included and the theme's default as `sort=category`: the bare
+     * always named, the default included and the theme's default as `sort=category`: the bare
      * address gets that reader's remembered state, so an address that left the organisation out
-     * would be read back as the remembered state rather than as what is on screen, and a reader it
-     * was shared with would get theirs.
+     * would be read back as that state rather than as what is on screen, and a reader it was shared
+     * with would get theirs.
      *
      * @return array name => value, empty for the default.
      */
@@ -809,13 +795,12 @@ final class criteria {
     /**
      * The first instant of a calendar day in the site timezone, optionally some days later.
      *
-     * Core's own arithmetic ({@see make_timestamp()}, which is what
-     * {@see usergetmidnight()} is) rather than seconds added to a timestamp:
-     * a day is not always 86400 seconds long, and the day after a daylight
-     * saving transition would otherwise begin an hour early or an hour late -
-     * silently, and only twice a year. The day offset is handed to
-     * DateTime::setDate(), which rolls a month and a year over by itself, so
-     * the last day of December plus one is the first of January.
+     * Core's own arithmetic ({@see make_timestamp()}, which {@see usergetmidnight()}
+     * uses) rather than seconds added to a timestamp: a day is not always 86400
+     * seconds long, and the day after a daylight saving transition would otherwise
+     * begin an hour early or late. make_timestamp() hands the day offset to
+     * DateTime::setDate(), which rolls the month and the year over, so the last day
+     * of December plus one is the first of January.
      *
      * @param string $iso A date as YYYY-MM-DD, already through {@see parse_date()}.
      * @param int $offsetdays Whole days to add to that date.
@@ -865,9 +850,8 @@ final class criteria {
      * A calendar day some whole days after another one, both as YYYY-MM-DD in the site timezone.
      *
      * Goes through {@see day_start()} rather than through strtotime(), which
-     * would read the string in whatever timezone PHP's default happens to be:
-     * the whole point of these two helpers is that one timezone decides every
-     * boundary of this feature.
+     * would read the string in PHP's default timezone: the site timezone decides
+     * every boundary of the period.
      *
      * @param string $iso A date as YYYY-MM-DD.
      * @param int $offsetdays Whole days to add.
@@ -900,13 +884,10 @@ final class criteria {
     /**
      * The weekday the site starts its weeks on, 0 for Sunday, as core's calendar reports it.
      *
-     * Read here rather than in the two places that want it, so the quick
-     * option "this week" and the column the calendar of the client draws its
-     * grid under cannot disagree about which day a week begins on. The client
-     * is handed this number on the date fieldset and does no calendar
-     * configuration of its own: a week that starts on Monday in the toolbar's
-     * links and on Sunday in the popover would put the reader's own choice one
-     * column away from the range they had just followed.
+     * Read here rather than in each place that wants it, so the "this week"
+     * quick option and the first column of the client's calendar cannot disagree
+     * about which day a week begins on: the client is handed this number on the
+     * date fieldset (data-firstday) and configures no week start of its own.
      *
      * @return int 0 (Sunday) to 6 (Saturday).
      */

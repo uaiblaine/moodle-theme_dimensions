@@ -31,11 +31,12 @@
  *   the day's items (its bars, its own items, its "+N"), Escape goes back to the day. The items are links and
  *   buttons out of the Tab order, so Tab from a day leaves the grid as from any other control.
  *
- * ONE ResizeObserver measures the grid, never per cell and never read on the mount path (its first entries are the
+ * One ResizeObserver measures the grid, never per cell and never read on the mount path (its first entries are the
  * first measures): the rows' container, whose height decides the density (until then the stylesheet's height stands,
- * layout.ROW_DEFAULT), and the frame the grid shares with the drawer, whose width decides the phone layout
- * ({@see PHONE}). The frame, not the grid: the open drawer narrows the grid, and the grid's own width would flip the
- * layout to the phone's the moment the drawer opened.
+ * layout.ROW_DEFAULT); the grid itself, whose height is handed to the page (onHeight) to cap the drawer; and the
+ * frame the grid shares with the drawer, whose width decides the phone layout ({@see PHONE}). The frame, not the
+ * grid: the open drawer narrows the grid, and the grid's own width would flip the layout to the phone's the moment
+ * the drawer opened.
  *
  * @module     theme_dimensions/calendar/MonthGrid
  * @copyright  2026 Anderson Blaine

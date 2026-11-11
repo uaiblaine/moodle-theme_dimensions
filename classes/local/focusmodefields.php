@@ -128,10 +128,9 @@ final class focusmodefields {
     /**
      * Ensure the focus mode course custom field exists, creating it when missing.
      *
-     * Invoked from db/install.php, and by any upgrade step that introduces
-     * the field. Guarded on the customfield tables existing, not on during_initial_install() -
-     * that stays true for the whole of a fresh site install, which is exactly when
-     * db/install.php runs (the same reasoning as {@see landingfields::ensure_fields()}).
+     * Invoked from db/install.php. Guarded on the customfield tables existing, not on
+     * during_initial_install(), which stays true for the whole of a fresh site install,
+     * when db/install.php runs ({@see landingfields::ensure_fields()} does the same).
      *
      * @return void
      */
@@ -169,12 +168,10 @@ final class focusmodefields {
     /**
      * Move the default for new courses without changing any existing course's answer.
      *
-     * The checkbox's own checkbydefault does two jobs: it is what a new course's form
-     * shows pre-ticked and what every course WITHOUT a data row reads. Moving it alone
-     * would therefore silently switch focus mode on - or off - in every course whose
-     * settings form has never been saved since the field was created, which is the one
-     * failure this setting exists to avoid. So the previous answer is written into those
-     * courses first, and only then does the default move.
+     * The checkbox's checkbydefault is both what a new course's form shows ticked and what
+     * every course without a data row reads. Moving it alone would switch focus mode in
+     * every course whose settings were never saved, so the previous answer is written into
+     * those courses first, and only then does the default move.
      *
      * Above $inlinelimit row-less courses the write moves into an adhoc task, which
      * finishes the sequence on the next cron run.
@@ -226,10 +223,9 @@ final class focusmodefields {
     /**
      * Write one answer into every course which has never stored one.
      *
-     * Through core's own data controller, so the row shape is core's: the course
-     * settings form, backup, restore and tool_uploadcourse all read it without knowing
-     * this code exists. The site course is skipped - it has no ordinary settings form
-     * to host the switch, and focus mode never applies there.
+     * Through core's data controller, so the row is the one the course settings form,
+     * backup, restore and tool_uploadcourse read. The site course is skipped: focus mode
+     * never applies there.
      *
      * @param int $old The answer to write, as the checkbox stores it (0 or 1).
      * @return int The number of rows written.
@@ -323,8 +319,8 @@ final class focusmodefields {
     /**
      * The FROM and WHERE of the row-less course query, shared by the count and the list.
      *
-     * One spelling, so the number which decides between the inline and the queued path
-     * can never describe a different set of courses from the one actually written to.
+     * One spelling, so the count that chooses the inline or the queued path describes the
+     * set of courses actually written to.
      *
      * @return string The SQL fragment, with the siteid and fieldid placeholders.
      */
@@ -377,8 +373,7 @@ final class focusmodefields {
      * Create the field inside the theme's category, creating the category first if needed.
      *
      * The display name and description are resolved through get_string() at creation time
-     * and stored once - custom field names are not translatable after creation, exactly
-     * like the other fields this theme provisions.
+     * and stored once: custom field names are not translated after creation.
      *
      * @return void
      */

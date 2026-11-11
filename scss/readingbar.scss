@@ -23,13 +23,13 @@
    motion exists only under prefers-reduced-motion: no-preference; otherwise every change is a swap. */
 
 /* ---- The context layer's colour ------------------------------------------ */
-/* The layer comes in with a ground of its own, so the change from the global bar is seen at once (Fandom's sticky
-   community bar is the model). An administrator may choose it (readingbar::SETTING_COLOUR, which the pre SCSS
-   callback writes into $dimensions-ctxbar-color); left empty, it is a step of the brand colour, $primary, which a
-   flavour sets too. Either way the ink is white or the dark grey, whichever reads better on the ground, and the
-   ground is moved, never the ink, until the pair reaches the contrast: 4.6 rather than 4.5, as core's dark palette
-   asks ($dark-min-contrast), so a checker that rounds differently does not report it. Every value the layer paints
-   with is derived here, from Bootstrap's own colour functions, so the stylesheet names no colour by hand. */
+/* The layer comes in with a ground of its own, so the change from the global bar is seen at once. An administrator
+   may choose it (readingbar::SETTING_COLOUR, which the pre SCSS callback writes into $dimensions-ctxbar-color); left
+   empty, it is a step of the brand colour, $primary, which a flavour sets too. Either way the ink is white or the
+   dark grey, whichever reads better on the ground, and the ground is moved, never the ink, until the pair reaches
+   the contrast: 4.6 rather than 4.5, as core's dark palette asks ($dark-min-contrast), so a checker that rounds
+   differently does not report it. Every value the layer paints with is derived here, from Bootstrap's own colour
+   functions, so the stylesheet names no colour by hand. */
 $dimensions-ctxbar-color: null !default;
 $dimensions-ctxbar-min-contrast: 4.6;
 
@@ -109,7 +109,7 @@ body.dimensions-readingbar {
         }
     }
 
-    /* Below md the swap is a slide, as Fandom's phone navbar does it: the layer comes down from above the bar while
+    /* Below md the swap is a slide: the layer comes down from above the bar while
        the global bar's items go down out of it, both by the bar's height, with no fade. The nav clips them while the
        layer is in, and, through the keyframes below, for the length of the slide back; after it the nav overflows
        again, because its menus and popovers drop out of it. With the motion reduced the same states swap at once. */
@@ -151,8 +151,8 @@ body.dimensions-readingbar {
     }
 }
 
-/* Overflow animates discretely: held hidden for the whole run, it is the clip of the slide back (Fandom's
-   overflowHiddenForAnimation). Run each time the layer leaves, and once at load, when the bar is not moving. */
+/* Overflow animates discretely: held hidden for the whole run, it is the clip of the slide back. Run each time the
+   layer leaves, and once at load, when the bar is not moving. */
 @keyframes dimensions-ctxbar-clip {
     0%,
     100% {
@@ -166,7 +166,7 @@ body.dimensions-readingbar {
    Boost Union's compiled sheets set no position on #usernavigation, .navbar-nav or .container-fluid).
    It keeps off the band's 3px. Its ground and ink are the pair derived above, at every width and in either
    colour mode; the type everything in it reads is that ink, through the navbar's own brand colour property
-   (the focus bar's lesson: the nav sets no colour of its own, so inherit would walk up to the body), and the
+   (the nav sets no colour of its own, so inherit would walk up to the body), and the
    pills' hairline, hover and the focus ring are the same ink, so they read on whatever ground was chosen. The
    hairline and the hover are the layer's own properties, set on each pill after the mixin: the family's
    --dimensions-pill-* names are post.scss's alone (tests/local/family_tokens_test.php). */

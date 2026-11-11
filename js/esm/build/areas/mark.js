@@ -2,7 +2,7 @@ import{fold as i,runs as m}from"../filterline/mark";/**
  * The searched term marked on the titles of cards, a panel's and the listing's grid's alike, over the filter line's
  * matching ({@see ../filterline/mark runs}).
  *
- * On the TEXT of the title's heading (data-region="dim-card-title"), never on a link's hook: a card with no
+ * On the text of the title's heading (data-region="dim-card-title"), never on a link's hook: a card with no
  * page to open draws its title as a plain span. It unmarks before it marks, so it is idempotent.
  *
  * @module     theme_dimensions/areas/mark

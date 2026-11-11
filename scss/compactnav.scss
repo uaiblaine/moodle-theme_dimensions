@@ -23,7 +23,7 @@
    main SCSS and it reaches every page of the site (tests/local/compactnav_scss_test.php), and every rule
    sits inside media-breakpoint-between(md, xl), the range the module's RANGE spells.
 
-   The hamburger is NOT shown here: core's toggler carries d-md-none, a Bootstrap utility compiled as
+   The hamburger is not shown here: core's toggler carries d-md-none, a Bootstrap utility compiled as
    display: none !important, which no selector outranks without !important of its own. The module takes that
    one class off the toggler while the navbar is compact and puts it back after. */
 body.dimensions-navcompact-armed {
@@ -74,7 +74,7 @@ body.dimensions-navcompact-armed {
             /* Core restyles every .drawer-left from lg up on the standard layouts and on body.limitedwidth
                (boost/scss/moodle/drawer.scss, "Anchored drawers"): zero width, an anchored right offset, overflow
                clip, a top that clears the page title, rounded corners. That is the course index's geometry, and the
-               primary drawer carries drawer-left too, so at tablet width it opened 58px wide, cut at the left edge.
+               primary drawer carries drawer-left too, so at tablet width it would open narrow and clipped.
                Here it is the plain overlay drawer of post.scss: against the left edge, offscreen while closed, over
                the navbar, the full height of the viewport, with core's own slide. The
                compact body classes and the drawer's id outrank the anchored selectors (which also carry :has() for

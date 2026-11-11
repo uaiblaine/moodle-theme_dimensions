@@ -27,7 +27,7 @@ namespace theme_dimensions\local\landing;
 /**
  * How the banner of every course landing page of the site is drawn: in the content column, or full width.
  *
- * In the column, the banner is a card inside the page's main region, as it always was. Full width, it is drawn
+ * In the column, the banner is a card inside the page's main region. Full width, it is drawn
  * in the page header and runs from edge to edge under the navbar, the geometry of the category showcase's hero
  * (scss/landing.scss keeps its own copy of that geometry, in step with scss/category.scss). One site-wide choice:
  * no course field and no flavour moves it.

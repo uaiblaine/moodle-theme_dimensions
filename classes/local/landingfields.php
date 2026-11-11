@@ -185,7 +185,7 @@ class landingfields {
     public const SHORTNAME_RELATED = 'dimensions_related';
 
     /**
-     * @var string Shortname of the related contents' manual choice: the competencies the band relates by (D3).
+     * @var string Shortname of the related contents' manual choice: the competencies the band relates by.
      *
      * A text field holding framework and competency idnumber pairs ({@see related\choice}), read only while the
      * select says {@see RELATED_MANUAL}. Its form element is replaced by an autocomplete of the course's competencies
@@ -775,16 +775,16 @@ class landingfields {
      * everyone. The video URL is the plain spelling of what the editor typed;
      * the page decides whether a player embeds it.
      *
-     * @param int $courseid The course id.
      * The format, live class and in-person fields arrive already read without contradiction
      * ({@see coherent()}): a page never has to ask whether a format, a live class or an
      * in-person figure may be shown beside the model and the modality it was saved with.
      *
-     * @return \stdClass Typed values: model/modality/format (int, 0 = unset), workload/
+     * @param int $courseid The course id.
+     * @return \stdClass Typed values: model/modality/format/related (int, 0 = unset), workload/
      *   inpersonworkload (float|null), liveclasses (bool), audience/programme/certification (HTML
      *   string|null), city/venue/address/publicdescription/videourl/liveclasseswhen/meetings
-     *   (plain string|null), crests (array of \stored_file in grid order), names (array of
-     *   shortname => plain field name).
+     *   (plain string|null), relatedpairs (raw string), crests (array of \stored_file in grid
+     *   order), names (array of shortname => plain field name).
      */
     public static function values(int $courseid): \stdClass {
         return self::values_many([$courseid], true)[$courseid];
@@ -800,7 +800,7 @@ class landingfields {
      * array statement (our field ids, the page's course ids; rides the
      * instanceid-fieldid-component-area-itemid index) and turned into the
      * same data controllers core would build, defaults included for a course
-     * without a row. Everything after that is exactly what values() did.
+     * without a row.
      *
      * The course contexts are asked for one by one; a caller listing a page
      * preloads them first (population::page_contexts(), which cards::values()
@@ -810,10 +810,10 @@ class landingfields {
      * textarea export runs format_text() with the text filters on, in the
      * course's context, and the first format_text() in a context loads that
      * context's active filters (a recordset) and then lets every active filter
-     * run - filter_activitynames alone reads the course record for each context
-     * it meets. On a page of 48 cards that is dozens of statements the card's
-     * excerpt cannot justify, so a listing asks for the textareas with $filters
-     * false: the same cleaning, the same pluginfile rewriting, no filter pass.
+     * run (filter_activitynames builds the course's modinfo). On a page of cards
+     * that is dozens of statements the card's excerpt cannot justify, so a listing
+     * asks for the textareas with $filters false: the same cleaning, the same
+     * pluginfile rewriting, no filter pass.
      * The landing page keeps the full, filtered rendering. The rewrite mirrors
      * customfield_textarea's data_controller::export_value() and must be
      * re-read against it on each core upgrade.
@@ -1463,8 +1463,8 @@ class landingfields {
      * Move the format, live class and in-person fields to their place right after the workload.
      *
      * {@see ensure_fields()} appends a field it creates to the end of the category, which on a
-     * site provisioned before these fields existed puts the format and the live classes after the share
-     * picture. Each field is moved ahead of the target audience field, the one that follows them
+     * site provisioned before these fields existed puts them after every older field. Each field
+     * is moved ahead of the target audience field, the one that follows them
      * in {@see self::definitions()}, when both sit in the same category;
      * moved one after the other in their own order, they land in that order. A field an
      * administrator has moved to another category is left where it is.

@@ -19,8 +19,8 @@
  * The film itself is theme_dimensions/local/coverfilm. This module is what the page arms, on both
  * shells and for everybody, and it does three things only:
  *
- * - It marks the body (dim-cover-js), which reveals the cluster and the progress bar, as the film's
- *   module did when it was armed with the page.
+ * - It marks the body (dim-cover-js), which reveals the cluster and the progress bar before the film
+ *   has loaded, so a finger has a control to press.
  * - It imports the film on the first intent towards a cover: a pointer over one, a focus inside one
  *   or a finger on one (the capture phase, so nothing in the card can hide the intent from it). A
  *   page whose covers nobody approaches never loads the film at all.

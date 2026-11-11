@@ -52,8 +52,8 @@ use theme_dimensions\local\trail\trail;
  * Every text in the props is in the plain spelling (the answer's own, format_string() with escape off), for the
  * client's textContent; the template's double stashes escape the server's layer once.
  *
- * In the week view ({@see page::VIEW_WEEK}) the window is the week's seven days: the toolbar's links move by the week,
- * the view switch is two links, and the agenda lists the week's days.
+ * In the week view ({@see page::VIEW_WEEK}) the window is the week's seven days: the toolbar's links move by the week
+ * and the agenda lists the week's days. The view switch is one link per view.
  *
  * For an account the props carry core's editing answers ({@see editing}: "New event", the form's context) and the
  * page's footer links core's iCal export where core's calendar offers it.
@@ -233,7 +233,7 @@ class calendar_page implements renderable, templatable {
     private bool $visitor;
 
     /**
-     * @var string The view, page::VIEW_MONTH, page::VIEW_WEEK or page::VIEW_DAY.
+     * @var string The view, page::VIEW_MONTH, page::VIEW_WEEK, page::VIEW_DAY or page::VIEW_TRAIL.
      *
      * The day view is the client's alone (a phone's): its window is the day's month grid and the
      * no-JavaScript layer draws that month, so only the props carry it.
@@ -268,7 +268,8 @@ class calendar_page implements renderable, templatable {
      * @param array $tree The categories the picker offers ({@see \theme_dimensions\local\calendar\tree}).
      * @param string $day The day the drawer opens on, kept by {@see page::day_from_request()}; '' for none.
      * @param bool $visitor Whether the page is the public calendar, drawn for a visitor.
-     * @param string $view The view, {@see page::VIEW_MONTH}, {@see page::VIEW_WEEK} or {@see page::VIEW_DAY}.
+     * @param string $view The view, {@see page::VIEW_MONTH}, {@see page::VIEW_WEEK}, {@see page::VIEW_DAY} or
+     *   {@see page::VIEW_TRAIL} (kept only for an account with a Trilhas answer).
      * @param string $week The week's first day in the week view ({@see page::week_from_request()}); '' in the month's.
      * @param array|null $trails The Trilhas view's answer in that view, else null.
      * @param int $trailid The one trail the Trilhas view keeps, 0 for every trail.
@@ -451,10 +452,9 @@ class calendar_page implements renderable, templatable {
                 'page' => page::url()->out(false),
                 'home' => (new \core\url('/'))->out(false),
             ],
-            // The Trilhas view offered while trails are available, its answer in that
-            // view only; the trail, "Só as minhas" and the zoom are navigation, like the view. `covers` is Boost Union's
-            // card view (the course card contract, section 8): off, the step's popover draws no cover, and the answer
-            // carries no image.
+            // The Trilhas view offered while trails are available, its answer in that view only; the trail, the
+            // viewer's-own filter and the zoom are navigation, like the view. `covers` is Boost Union's card view
+            // image setting: off, the step's popover draws no cover, and the answer carries no image.
             'trails' => [
                 'offered' => page::trails_offered(),
                 'answer' => $this->trails,
@@ -551,9 +551,10 @@ class calendar_page implements renderable, templatable {
     }
 
     /**
-     * What the toolbar draws for the view: the caption, "Today", previous and next, and the view switch's two links.
+     * What the toolbar draws for the view: the caption, "Today", previous and next, and the view switch's links.
      *
-     * In the week view the caption is the week's span and the links move by the week; in the month view by the month.
+     * In the week view the caption is the week's span and the links move by the week; in the month and Trilhas views
+     * by the month.
      * Every link carries the state (or the visitor's keys), never the open day: the server's layer opens no drawer.
      *
      * @param array $query The address parameters naming the state or the keys.

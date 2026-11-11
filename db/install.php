@@ -23,7 +23,7 @@
  */
 
 /**
- * Create the course custom fields on a fresh install.
+ * Create the course custom fields on a fresh install, and store the offered looks setting's empty default.
  *
  * @return bool
  */

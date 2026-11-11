@@ -23,17 +23,14 @@
  * than at the next save, and a live panel grading the pair, with up to two one-click fixes when
  * it fails AA.
  *
- * The theme does not depend on local_dimensions at runtime. The contrast
- * maths follow WCAG 2.x (sRGB linearisation, relative luminance, (L1 + 0.05) / (L2 + 0.05)) and
- * mirror {@see branding::contrast()}; tests/fixtures/contrast_pairs.json is the fixture both are
- * measured against, so the panel cannot grade a pair differently from the server.
+ * The contrast maths follow WCAG 2.x (sRGB linearisation, relative luminance,
+ * (L1 + 0.05) / (L2 + 0.05)) and mirror {@see branding::contrast()}; tests/fixtures/contrast_pairs.json
+ * is the fixture both are measured against, so the panel cannot grade a pair differently from the server.
  *
  * Nothing here moves a form row: relocating moodleform rows with JavaScript hides any field the
  * script does not know about, and can leave a field focusable while it is painted nowhere. The
  * panel is appended as the last child of the colours fieldset's container and every row stays
- * where the form drew it. The editor's two columns are a CSS grid over that container, switched
- * on by the class this module adds once the panel is mounted, so with JavaScript off the section
- * is a single column with no empty track.
+ * where the form drew it; the two columns are a CSS grid switched on by SPLIT_CLASS.
  *
  * @module     theme_dimensions/categoryhero
  * @copyright  2026 Anderson Blaine
@@ -253,8 +250,8 @@ const toSixDigit = (colour) => {
 /**
  * Write a value into a colour field and tell every listener, exactly as typing would.
  *
- * The swatch, the panel and the browser's own validation all hang off these two events; a
- * value assigned without them is a field the page believes still holds the old colour.
+ * The swatch, the validity message and the panel all listen to these two events; a value
+ * assigned without them is a field the page believes still holds the old colour.
  *
  * @param {HTMLInputElement} input The field to write into.
  * @param {String} value The hex value to write.

@@ -32,8 +32,8 @@ use theme_dimensions\local\lookcohorts;
  * Queued by lookcohorts::empty_cohort(). The cohort is kept: a smart menu restricted by it then shows
  * to nobody, where a deleted cohort would leave the menu's rule empty and show it to everyone.
  *
- * It never throws. A throwing adhoc task is retried for ever, and the daily reconcile task empties
- * the cohort again if this run stopped half way.
+ * It never throws: core would retry a failed adhoc task, and the daily reconcile task empties the
+ * cohort again if this run stopped half way.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -68,7 +68,7 @@ class empty_look_cohort extends \core\task\adhoc_task {
             lookcohorts::empty_members($cohortid);
             mtrace('Look cohorts: emptied cohort ' . $cohortid . '.');
         } catch (\Throwable $e) {
-            // Never throw: an adhoc task which throws is retried for ever.
+            // Never throw: core would retry the task, and the daily reconcile finishes the work.
             mtrace('Look cohorts: emptying cohort ' . $cohortid . ' failed - ' . $e->getMessage());
         }
     }

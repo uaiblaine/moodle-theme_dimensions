@@ -22,7 +22,7 @@ namespace theme_dimensions\local;
  * Every template the theme overrides (templates/<component>/...) and every method it copies from core
  * keeps, next to the copy, a verbatim snapshot of the upstream it was last re-diffed against:
  * <copy>.upstream for a template, <copy file>.<method>.upstream for a method. Boost Union keeps its
- * copy of core's React navigation the same way (js/esm/src/nav/Nav.tsx.upstream).
+ * own copies of core the same way (e.g. templates/core/loginform.mustache.upstream).
  *
  * A script copied whole (core's calendar/export_execute.php, {@see self::FILES}) keeps the whole file as its snapshot:
  * <copy file>.<name>.upstream.

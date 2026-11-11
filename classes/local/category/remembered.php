@@ -38,16 +38,14 @@ namespace theme_dimensions\local\category;
  * period the next time. An entry written while the favourites were a value of the state chip
  * (`t` = favourites) is read as the toggle with no state ({@see entry()}).
  *
- * Remembered PER CATEGORY is what answers the rule this listing kept from its first stage, that a
- * filter is stored nowhere because a filter carried into another category is how a person
- * concludes that category is empty: an entry is read only on the page of its own category.
+ * Remembered per category because a filter carried into another category makes that category look
+ * empty: an entry is read only on the page of its own category.
  *
- * The value is validated on the way IN and on the way OUT ({@see decode()}): every key and value is
+ * The value is validated on the way in and on the way out ({@see decode()}): every key and value is
  * checked against the vocabularies above, so a stale field (taken off the site's filter list, or an
  * option removed from its field), an id that is not one, or a hand-edited row is dropped rather than
- * handed to {@see criteria}. And it is bounded so it stays inside the column core stores a preference
- * in ({@see MAX_LENGTH}): at most {@see MAX_CATEGORIES} categories, the least recently written going
- * first, and then as many more as it takes to fit.
+ * handed to {@see criteria}. And it is bounded ({@see MAX_LENGTH}): at most {@see MAX_CATEGORIES}
+ * categories, the least recently written going first, and then as many more as it takes to fit.
  *
  * Only a real account remembers anything ({@see can_remember()}): the guest account's preferences
  * live in its session alone and a visitor has none, so both read and write nothing here.
@@ -70,7 +68,10 @@ final class remembered {
     /** @var int The most categories remembered: the least recently written goes first. */
     public const MAX_CATEGORIES = 20;
 
-    /** @var int The longest value stored, in characters: the size of core's user_preferences.value column. */
+    /**
+     * @var int The longest value stored, in bytes. The theme's own bound: user_preferences.value has been a text column
+     *   since Moodle 5.0 (it was char(1333) before), so this only keeps the row small.
+     */
     public const MAX_LENGTH = 1333;
 
     /** @var string Key of an entry: the organisation. */

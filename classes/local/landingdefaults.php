@@ -32,17 +32,17 @@ use theme_dimensions\local\trail\trail;
  * What a new course answers in the page model, the modality and the study format, and the one write of it.
  *
  * The three select fields keep their own default value at '' for good. Core's select
- * data_controller::get_value() returns the field default for every course WITHOUT a data row,
+ * data_controller::get_value() returns the field default for every course without a data row,
  * so a moving field default would change every course nobody ever saved; with the field
  * default fixed, an existing course's read path never moves and changing a setting here
  * writes nothing. The default reaches a course once, when it is created
  * ({@see hook\course\after_form_submission}), as an ordinary data row, and the course form
  * of a new course shows it preselected ({@see hook\course\after_form_definition_after_data}).
  *
- * Select values are 1-based indexes into the field's option lines, as the field is configured
- * NOW ({@see landingfields::option_lines()}), so a stored setting is clamped against them on
- * every read: an administrator who removes an option line turns a setting that pointed past
- * the end into "none", never into a value the field cannot show.
+ * Select values are 1-based indexes into the field's option lines as the field is configured
+ * at read time ({@see landingfields::option_lines()}), so a stored setting is clamped against
+ * them on every read: an administrator who removes an option line turns a setting that pointed
+ * past the end into "none", never into a value the field cannot show.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -82,7 +82,8 @@ final class landingdefaults {
      * The plain spelling of each option line: admin_setting_configselect's template escapes.
      * While the field does not resolve (not provisioned yet, during the install that is about
      * to provision it, or deleted by an administrator) the lines the theme provisions it with
-     * stand in, so settings.php always has a full list to offer.
+     * stand in, so settings.php always has a full list to offer. A line
+     * {@see \theme_dimensions\local\trail\trail::hides_option()} withholds is left out.
      *
      * @param string $shortname One of the shortnames of {@see settings()}.
      * @return array Map of stored value => label, NONE first.
@@ -103,7 +104,8 @@ final class landingdefaults {
      * The default a new course gets for one field, clamped to the field as configured.
      *
      * @param string $shortname One of the shortnames of {@see settings()}.
-     * @return int A 1-based option index, or NONE: when unset, out of range, or the field does not resolve.
+     * @return int A 1-based option index, or NONE: when unset, out of range, withheld by trail::hides_option(),
+     *   or the field does not resolve.
      */
     public static function value(string $shortname): int {
         $raw = get_config(landingfields::COMPONENT, self::setting($shortname));
@@ -121,9 +123,9 @@ final class landingdefaults {
     /**
      * Write the defaults into a course that has just been created.
      *
-     * Decides on the recorded fact: a field the course already holds a data row for was
-     * answered, by the creator in the form, by an upload or a web service, and is left alone,
-     * an explicit empty answer included (core stores the form's empty choice as intvalue 0).
+     * A field the course already holds a data row for was answered (by the creator in the form,
+     * by an upload or a web service) and is left alone, an explicit empty answer included: core
+     * stores the form's empty choice as intvalue 0.
      * The row is written through core's own data controller, as
      * {@see focusmodefields::materialise_default()} does, so backup, restore, the course
      * form and tool_uploadcourse read it without knowing this code exists.

@@ -38,11 +38,11 @@ use theme_dimensions\local\trail\trail;
 /**
  * Adjusts the parts of the course settings form made of the fields this theme provisions.
  *
- * Five edits, not expressible through the custom field configuration itself: a course which already has a landing page
+ * Six edits, not expressible through the custom field configuration itself: a course which already has a landing page
  * gains its public address and a link to the page, an event whose enrolment methods set no deadline is told so, the
- * landing page fields that only apply to some models, modalities and formats are hidden while they do not, the
- * related courses' manual choice is an autocomplete of the course's competencies, and the focus mode box leaves the
- * form while focus mode's master switch is off.
+ * landing page fields that only apply to some models, modalities and formats are hidden while they do not, the trail
+ * model is not offered while trails are unavailable, the related courses' manual choice is an autocomplete of the
+ * course's competencies, and the focus mode box leaves the form while focus mode's master switch is off.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -105,16 +105,16 @@ class after_form_definition {
     }
 
     /**
-     * Put an autocomplete of the course's competencies in the place of the related courses' pairs field (D3).
+     * Put an autocomplete of the course's competencies in the place of the related courses' pairs field.
      *
      * The pairs field holds idnumbers, which nobody should have to type; its text box becomes a hidden element of
      * the same name, which core validates and saves back unchanged, and {@see after_form_submission} then writes it
-     * from the autocomplete. It cannot simply leave the form as the focus mode box does: customfield_text's
-     * validation indexes the submission by the element's name, and a missing key fails every save. The
-     * autocomplete offers the competencies linked to the SAVED course, preselects the stored choice among them, and is
-     * shown only while the select says Manual: hidden, it is not submitted, and the choice is kept as stored. A course
-     * being created has no competency yet, and its autocomplete offers none. While competencies are off on the site the
-     * text box becomes the hidden element all the same and no autocomplete is offered.
+     * from the autocomplete. It cannot leave the form as the focus mode box does: customfield_text's validation
+     * indexes the submission by the element's name, and a missing key fails every save.
+     *
+     * The autocomplete offers the competencies linked to the saved course (none for a course being created),
+     * preselects the stored choice among them, and is shown only while the select says Manual: hidden, it is not
+     * submitted and the stored choice is kept. While competencies are off on the site no autocomplete is offered.
      *
      * @param \stdClass $course The course being edited (no id when it is being created).
      * @param \MoodleQuickForm $mform The course form.
@@ -170,12 +170,10 @@ class after_form_definition {
     /**
      * Take the focus mode box, its description and its category's header out of the form while the master switch is off.
      *
-     * Off, nothing of the feature is loaded, and a box nobody's answer reaches would
-     * be a question with no effect. Removing the elements stores nothing: core's
-     * data_controller::instance_form_save() returns early for an element absent from the
-     * submission (customfield/classes/data_controller.php), so every course keeps its answer for the
-     * day the switch is turned back on. The category's header goes too, but only while the field is
-     * alone in it: an administrator may have moved other fields into the theme's category.
+     * Removing the elements stores nothing: {@see \core_customfield\data_controller::instance_form_save()}
+     * returns early for an element absent from the submission, so every course keeps its answer for when
+     * the switch is turned back on. The category's header goes too, but only while the field is alone in
+     * it: an administrator may have moved other fields into the theme's category.
      *
      * @param \MoodleQuickForm $mform The course form.
      * @return void
@@ -260,18 +258,15 @@ class after_form_definition {
      * - When the live classes happen: hidden while the box is not ticked.
      * - The in-person meetings belong to hybrid offerings: hidden otherwise.
      *
-     * The in-person workload belongs to hybrid offerings too and is NOT hidden: it is a
-     * customfield_number, a float element, and a hideIf on it stops the course form from saving
-     * under JavaScript (the save never completes on core_course/formatchooser).
-     * Its description says it applies to hybrid offerings, the validation compares it with the
-     * total only there, and the page reads it only there.
+     * The in-person workload belongs to hybrid offerings too and is not hidden: it is a
+     * customfield_number (a float element), and a hideIf on it stops the course form from saving
+     * under JavaScript (core_course/formatchooser). Its description, the validation and the page
+     * limit it to hybrid offerings instead.
      *
-     * A hidden field keeps the value it had and is submitted with it, which is why the page
-     * reads the fields through {@see landingfields::coherent()} and the validation refuses only
-     * what the editor can see. Every rule is set on the control AND on its '_static'
-     * description, the second element core adds for a field that has one; core's form script
-     * hides a static element by its data-name. Values are compared as the strings the selects
-     * submit.
+     * A hidden field keeps its value and is submitted with it, which is why the page reads the
+     * fields through {@see landingfields::coherent()} and the validation refuses only what the
+     * editor can see. Every rule is set on the control and on its '_static' description element.
+     * Values are compared as the strings the selects submit.
      *
      * @param \MoodleQuickForm $mform The course form.
      * @return void
@@ -308,34 +303,23 @@ class after_form_definition {
     /**
      * Offer the course's landing page address and a link to the page once the course actually has one.
      *
-     * The page model is what turns a landing page on - landing.php redirects to the
-     * standard enrolment page without it - so it is also what decides whether
-     * there is anything to look at. The value is read from the database rather
-     * than from the form, which is the point: the link opens the SAVED page,
-     * and an editor arriving to check "how it turned out" is looking at what
-     * the last save produced.
+     * The page model turns a landing page on (landing.php redirects to the standard enrolment
+     * page without it), so it also decides whether there is a page to link. It is read from the
+     * database, not the form: the link opens the saved page.
      *
-     * The address is the public one, {@see links::share()}: the course's short
-     * address, minted on the first visit to the form by an editor who may edit
-     * the fields - or earlier, by the course notice on the course page, which
-     * mints for editors holding moodle/course:update
-     * ({@see \theme_dimensions\local\coursenotice\builder}) - and shown
-     * as text beside the button, because an address that is dictated needs to be read.
+     * The address is the public one, {@see links::share()}: the course's short address, minted on
+     * the first visit to the form by an editor who may edit the fields, or earlier by the course
+     * notice ({@see \theme_dimensions\local\coursenotice\builder}). It is shown as text beside the
+     * button so it can be read out.
      *
-     * A course whose guest access needs no password gets a second row, the guest
-     * entry's address ({@see links::guest_share()}, minted here beside the first),
-     * which skips the landing page and opens the course as a guest. It is driven by the
-     * stored instances like the link by the stored model, and a course that is not
-     * public is told the address only takes in readers who are already logged in:
-     * an anonymous visitor of a non-public course gets the login page, as on the
-     * landing page itself.
+     * A course whose guest access needs no password gets a second row, the guest entry's address
+     * ({@see links::guest_share()}, minted here), which skips the landing page and opens the course
+     * as a guest. On a course that is not public it is marked as admitting only readers who are
+     * already logged in: an anonymous visitor gets the login page, as on the landing page.
      *
-     * Placement is the reason for the three calls below. QuickForm can only
-     * insert ahead of a named element, and repositioning is done by removing
-     * and re-inserting - the idiom HTML_QuickForm documents for itself. So the
-     * link goes in ahead of the model select, and the select and its
-     * description are then moved back over it, which lands the link directly
-     * underneath them however the admin has sorted the category.
+     * QuickForm can only insert before a named element, so the link goes in before the model
+     * select and the select and its description are moved back over it, which lands the link
+     * directly under them however the category is sorted.
      *
      * @param \stdClass $course The course being edited (no id when it is being created).
      * @param \MoodleQuickForm $mform The course form.

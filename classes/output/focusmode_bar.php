@@ -38,7 +38,7 @@ use theme_dimensions\local\focusmode;
  * that context - navbarcolorclasses - so an organisation's flavour, or an administrator's
  * navbar colour, recolours the bar with no code here at all.
  *
- * Every value below lands in a Mustache double stash and therefore leaves in the PLAIN
+ * Every value below lands in a Mustache double stash and therefore leaves in the plain
  * spelling, which is why the activity and course names are formatted with escape => false. The header
  * actions and the edit switch are the exceptions - they are finished HTML core rendered,
  * and the template puts them in triple stashes.
@@ -217,7 +217,8 @@ class focusmode_bar implements \core\output\renderable, \core\output\templatable
     /**
      * The language menu's nodes, as core's language_menu exported them.
      *
-     * Core hands an empty array for a logged-in, non-guest user, and so does this.
+     * Core's primary navigation exports none for a logged-in, non-guest user (their language
+     * switch is in the user menu), and so does this.
      *
      * @return array List of node arrays.
      */

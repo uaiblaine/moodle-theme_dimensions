@@ -16,17 +16,17 @@
 /**
  * The week view, pure: the span a page shows, the week's days, its layout, its "now" line and its keyboard's moves.
  *
- * - A SPAN is what a page shows: a month (its grid of whole weeks, calendar/days.ts), a week (seven days from the
- *   viewer's first weekday) or, on a phone only, a day. The view, the week and the day view's
- *   day travel in the address as navigation, never in the saved state: `view=week&week=<first day>` and
- *   `view=day&day=<day>` (local\calendar\page::PARAM_VIEW, PARAM_WEEK and PARAM_DAY), the month view writing none.
- * - A DAY SPAN IS A PHONE'S: on a frame at or above MonthGrid PHONE it is drawn, and asked for, as its month with the
+ * - A span is what a page shows: a month (its grid of whole weeks, calendar/days.ts), a week (seven days from the
+ *   viewer's first weekday), on a phone only a day, or the Trails view's month. The view, the week and the day view's
+ *   day travel in the address as navigation, never in the saved state: `view=week&week=<first day>`,
+ *   `view=day&day=<day>` and `view=trail&month=<month>` (local\calendar\page::PARAM_VIEW, PARAM_WEEK and PARAM_DAY),
+ *   the month view writing no view.
+ * - A day span is a phone's: on a frame at or above MonthGrid PHONE it is drawn, and asked for, as its month with the
  *   day's drawer open ({@see deskOf()}, {@see gridOf()}); the switch offers the day only on a phone ({@see viewsOf()}).
- * - The week's LAYOUT is the month's and the drawer's, reused: the all-day strip is layout.ts weekLayout() over the
+ * - The week's layout is the month's and the drawer's, reused: the all-day strip is layout.ts weekLayout() over the
  *   items that are bars or fill whole days (overlap.ts isAllDay()), every slot shown; each day's hour items are
  *   overlap.ts dayPlan()'s, in the drawer's columns; and the hour window is overlap.ts hourWindow() over the whole
- *   week's hour items at once: the band the hour body's scroll box opens on, which
- *   draws the whole day.
+ *   week's hour items at once: the band the hour body's scroll box, which draws the whole day, opens on.
  * - Days are calendar days counted in UTC (daterange/calendar.ts): a daylight-saving change moves no day, and an
  *   item's row is its wall-clock time in the viewer's timezone (days.ts zone().minutes()).
  *
@@ -52,10 +52,10 @@ export const VIEW_PARAM = 'view';
 /** The address parameter of the week shown, its first day (local\calendar\page::PARAM_WEEK). */
 export const WEEK_PARAM = 'week';
 
-/** The three views: the day only on a phone. */
+/** The views: the day only on a phone, the Trails view only where the page offers it. */
 export type View = 'month' | 'week' | 'day' | 'trail';
 
-/** What a page shows: a month, YYYY-MM, a week by its first day, YYYY-MM-DD, or a day, YYYY-MM-DD. */
+/** What a page shows: a month, YYYY-MM, a week by its first day, YYYY-MM-DD, a day, YYYY-MM-DD, or a Trails month. */
 export type Span = {view: 'month', month: string} | {view: 'week', week: string} | {view: 'day', day: string}
     | {view: 'trail', month: string};
 
@@ -216,7 +216,7 @@ export const stepSpan = (span: Span, iso: string, offset: number): string => {
 
 /**
  * An address with its span written: `month=` for a month, `view=week&week=` for a week, `view=day&day=` for a day,
- * first, the rest as written (a day's own `day=` replacing the open day's).
+ * `view=trail&month=` for the Trails view, first, the rest as written (a day's own `day=` replacing the open day's).
  *
  * @param {string} href The address (model.ts address(), whose month this replaces).
  * @param {object} span The span.
@@ -265,14 +265,14 @@ export const viewDay = (day: string, month: string, today: string): string => {
  * view_day_from_request()): the day for exactly `view=day`, its `day=` when that is a day of the month's years, else
  * the month's opening day; the week for exactly `view=week`, its day snapped to the week's first day; a week that is
  * not a day, or whose year is outside the month's bounds (1900 to 2999), being the week of the month's opening day
- * (today when the month holds it, else its 1st, page::opening_day()); the Trilhas view's month for exactly
+ * (today when the month holds it, else its 1st, page::opening_day()); the Trails view's month for exactly
  * `view=trail` on a page that offers it (page::view_from_request()); the month for anything else.
  *
  * @param {string} href The address.
  * @param {number} firstday The weekday a week begins on.
  * @param {string} month The month the address names, or the page's.
  * @param {string} today Today, YYYY-MM-DD.
- * @param {boolean} trails Whether the page offers the Trilhas view: `view=trail` reads as the month otherwise.
+ * @param {boolean} trails Whether the page offers the Trails view: `view=trail` reads as the month otherwise.
  * @returns {object} The span.
  */
 export const readSpan = (href: string, firstday: number, month: string, today: string, trails: boolean = false): Span => {
@@ -304,8 +304,8 @@ export const weekCaption = (days: string[], strings: Strings, language: string |
     fill(strings.calendar_span, {from: say(days[0], FROM_DAY, language), to: say(days[days.length - 1], TO_DAY, language)});
 
 /**
- * What the toolbar says for a span: the month's or the week's caption, and "previous" and "next" by the month or by the
- * week.
+ * What the toolbar says for a span: the day's, the week's or (for any other span) the month's caption, and "previous"
+ * and "next" by the same unit.
  *
  * @param {object} span The span.
  * @param {Array} days Its days.
@@ -345,8 +345,8 @@ export const spanLabels = (span: Span, days: string[], strings: Strings, languag
 export const dayIn = (iso: string | null, days: string[]): string | null => (iso !== null && days.includes(iso) ? iso : null);
 
 /**
- * The views the switch offers: the day only on a phone. Trilhas, where the page offers it,
- * follows them (ViewSwitch.tsx).
+ * The views the switch offers: the day only on a phone. The Trails view, where the page offers it, follows them
+ * (ViewSwitch.tsx).
  *
  * @param {boolean} phone Whether the frame is a phone's.
  * @returns {Array} The views, in the switch's order.
@@ -405,7 +405,7 @@ export const drawerOf = (span: Span, open: string | null, days: string[], phone:
     if (span.view === 'day') {
         return phone ? null : span.day;
     }
-    // The Trilhas view opens no day.
+    // The Trails view opens no day.
     return span.view === 'trail' ? null : dayIn(open, days);
 };
 
@@ -426,8 +426,8 @@ export const selectedIn = (selected: string, span: Span, days: string[], today: 
  *
  * The strip holds every item touching the week that is a bar of the month grid (it spans more than one day, or it is
  * an event course) or that fills whole days; each is a bar across the columns it covers, clipped at the week's ends,
- * in the lowest slot free on all of them, and every slot is drawn. The hour window is the drawer's rule over the whole
- * week's hour items: from an hour before the earliest start to an hour after the latest end, at least four hours.
+ * in the lowest slot free on all of them, and every slot is drawn. The hour window is the drawer's rule
+ * ({@see hourWindow()}) over the whole week's hour items, null when none is timed.
  *
  * @param {Array} days The week's days.
  * @param {Array} placed Every placed item of the answer.

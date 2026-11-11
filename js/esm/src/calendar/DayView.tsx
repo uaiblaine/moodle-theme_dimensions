@@ -21,10 +21,10 @@
  * DayBody): the all-day strip, then the whole day's hour column in its scroll box, with the drawer's creation paths
  * (a double-tap or a held touch on an hour row). Items open the popover through the page's delegated listener.
  *
- * Shown only on a phone, so no grid is drawn beside it: its ONE ResizeObserver watches the frame it is drawn in and
- * reports the frame's width alone, the grids' rule (MonthGrid.tsx PHONE), so the page leaves
- * the Day view when the frame becomes a desktop's. The frame's width does not depend on what it holds. Nothing is
- * measured on the mount path: the observer's entries are the measures.
+ * Shown only on a phone, so no grid is drawn beside it: its one ResizeObserver watches the frame it is drawn in and
+ * reports the frame's width alone, the grids' rule (MonthGrid.tsx PHONE), so the page leaves the Day view when the
+ * frame becomes a desktop's. The frame's width does not depend on what it holds. Nothing is measured on the mount
+ * path: the observer's entries are the measures.
  *
  * @module     theme_dimensions/calendar/DayView
  * @copyright  2026 Anderson Blaine

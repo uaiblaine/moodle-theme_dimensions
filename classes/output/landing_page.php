@@ -255,12 +255,11 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * Whether "Ver no calendário" is offered: exactly when the Trilhas view would list this trail to this reader
-     * ({@see trails::offers()}: the view's own gate and rule over this course, never a copy of them). A page served to a
-     * reader the listing withholds the trail from (an unlisted category, a hidden course) offers no link that would open
-     * on nothing. A visitor is offered none, as {@see page::trails_offered()} says, and nobody is while the site offers
-     * no Trilhas view ({@see page::trails_enabled()}), asked first so a site with the view off pays no read; the trail's
-     * part exists only while trails are available.
+     * Whether "View in the calendar" is offered: exactly when the calendar's Trails view would list this trail to this
+     * reader ({@see trails::offers()}: the view's own gate and rule over this course, never a copy of them), so a reader
+     * the listing withholds the trail from (an unlisted category, a hidden course) gets no link that opens on nothing.
+     * A visitor is offered none, and nobody is while the site has the view switched off ({@see page::trails_enabled()},
+     * asked first so that site pays no read).
      *
      * @return bool
      */
@@ -269,7 +268,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * Where "Ver no calendário" leads: the calendar's Trilhas view with this trail kept, on the month the trail is in.
+     * Where "View in the calendar" leads: the calendar's Trails view with this trail kept, on the month the trail is in.
      *
      * Today's month while the trail runs; before it starts, its first month; once it has ended, its last. Offered only
      * where {@see shows_in_calendar()} says so: the calendar asks a visitor to log in, and the view is an account's.
@@ -503,7 +502,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
     }
 
     /**
-     * The related courses band at the end of the page, after both columns (R1 of docs/related/PLAN.md).
+     * The related courses band at the end of the page, after both columns.
      *
      * What it lists, and to whom, is {@see band::courses()}'s decision; nothing is drawn, the heading included, when
      * it lists nothing. A `[relatedcourses]` shortcode written in the course's summary or sections takes the band's
@@ -1317,7 +1316,7 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
      * applies the field's visibility rule, and the badge fields are visible to
      * nobody. The alternative text is the file name without its extension - what
      * the field's description tells the editor, and the one thing the editor
-     * controls (route B has no caption field).
+     * controls (the picture field has no caption).
      *
      * @return array Entries of url and alt, in grid order, plain spelling.
      */
@@ -1381,16 +1380,9 @@ class landing_page implements \core\output\named_templatable, \core\output\rende
      * a redirect to the login page under forcelogin, and a public page is the
      * same page for everybody. Otherwise, core's cached course image URL.
      *
-     * The URL is refused outright unless it may stand inside url('...'), which
-     * is {@see styleurl}'s decision: the template prints it into a style
-     * attribute, and a double stash is an HTML escaping rather than a CSS one -
-     * a browser hands the CSS parser the decoded attribute, so s() turning a
-     * quote into `&#039;` gives the engine a quote back. PARAM_URL alone passes
-     * a quote and a parenthesis straight through.
-     *
-     * A refusal costs the hero its image and nothing else, and no real image is
-     * refused: both sources above build through core's pluginfile url factory,
-     * whose path segments are percent-encoded.
+     * The template prints the URL into a style attribute, which the double stash
+     * does not protect, so a URL {@see styleurl::safe()} refuses is dropped and
+     * the hero shows no image; the styleurl class says why and what it costs.
      *
      * @return string|null The URL, or null when the course has no image.
      */

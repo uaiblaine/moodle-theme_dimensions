@@ -47,19 +47,19 @@ use theme_dimensions\local\landing\links;
  * and the pager is core's own paging bar over real links, so every page of
  * the listing has an address and works with JavaScript off.
  *
- * A logged-in reader's organisation, view and filters are remembered PER
- * CATEGORY ({@see remembered}): a filter carried into another category is
+ * A logged-in reader's organisation, view and filters are remembered per
+ * category ({@see remembered}): a filter carried into another category is
  * how a person concludes it is empty, so an entry is only ever read on its
  * own category's page. The view is also remembered once for the whole site,
  * which is what a category with no entry of its own opens in.
  *
- * The ROOT of the course index is the one page this class draws differently:
+ * The root of the course index is the one page this class draws differently:
  * a course can never sit directly in the top-level pseudo-category, so that
- * page is a DIRECTORY - a card per admitted top-level category - and
+ * page is a directory - a card per admitted top-level category - and
  * {@see get_template_name()} switches to the directory template while
  * {@see export_for_template()} returns before a single card of a course is
  * built. Every category page lists its whole subtree, recursively. Both draw
- * their categories as AREAS - posters, with the panel of the open one
+ * their categories as areas - posters, with the panel of the open one
  * between their rows ({@see areas()}) - and past
  * {@see population::DIRECTORY_SLICE} posters the rest sit inside a closed
  * native disclosure, which is a page cut and not a data cut.
@@ -267,8 +267,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
                opens on forty category names is a page whose courses start below the fold. */
             'treeboxlabel' => get_string('category_treebox', self::COMPONENT),
             'isgrouped' => $isgrouped,
-            /* A grouped page is two sections: the AREAS - one poster per child, the accordion's
-               set, with the panel slot between the rows - and then the courses sitting DIRECTLY
+            /* A grouped page is two sections: the areas - one poster per child, the accordion's
+               set, with the panel slot between the rows - and then the courses sitting directly
                here, with the grid, empty state and pager. The second section is hidden when
                nothing sits directly here, under a criterion too (a narrowed page shows only where
                the results are, and "nothing anywhere" is the areas' own box); it stays in the
@@ -341,7 +341,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * Shared by this listing and by a panel ({@see category_panel}), whose rail draws the same card
      * in a smaller presentation. A card names the course's own category as its overline, except
      * on the page of that very category, where the overline would repeat the heading above it -
-     * a rule a PANEL lifts ($alloverlines), so that every title of one rail sits at the same
+     * a rule a panel lifts ($alloverlines), so that every title of one rail sits at the same
      * height and the courses of the area's own level are told from its subareas'.
      *
      * @param page_result $result The resolved listing.
@@ -374,8 +374,8 @@ class category_listing implements \core\output\named_templatable, \core\output\r
         /* tool_courserating's aggregate over the page's ids, on both shells: a rating is shown to whoever may see the
            course listed, as the plugin decides. Nothing is read without the plugin or where it rates no course. */
         $ratings = cards::ratings($ids);
-        /* The category's colour edges a card or a row Boost Union draws without its image (contract section 8), and is
-           read only then: with both images shown nothing paints it. */
+        /* The category's colour edges a card or a row Boost Union draws without its image, and is read only
+           then: with both images shown nothing paints it. */
         $bands = boost_union::show_images(boost_union::VIEW_CARD) && boost_union::show_images(boost_union::VIEW_LIST)
             ? []
             : cards::bands($rows);
@@ -440,7 +440,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * languages this theme ships, Portuguese and English. A third language putting the number
      * elsewhere would need one string per sentence with the number inside it.
      *
-     * - Grouped, at rest: the SUBTREE's number (the hero's, {@see page_result::$counts}) "courses in"
+     * - Grouped, at rest: the subtree's number (the hero's, {@see page_result::$counts}) "courses in"
      *   the category. It also counts a course rescued inside a clamped child that no poster shows,
      *   where the sum of what the page draws would not.
      * - Grouped, under a criterion: what the page draws - the direct matches plus every poster's
@@ -562,7 +562,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * - The "nothing in N areas" sentence, in two counts: every zero area (`nomatchlabelall`) and
      *   one fewer (`nomatchlabelless`), the one to print while the open poster is one of them and
      *   stays in the grid.
-     * - `elsewhere`, the second half of a zero panel's announcement: how many OTHER areas hold a
+     * - `elsewhere`, the second half of a zero panel's announcement: how many other areas hold a
      *   result.
      * - The reveal past {@see population::DIRECTORY_SLICE}: how many of its posters hold a result,
      *   and its label - "N more areas with results" when any does, else the label at rest.
@@ -653,7 +653,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
     /**
      * Where "Search all areas" goes: the root, carrying the term alone, for a reader who may open it.
      *
-     * Offered on a CATEGORY page searched for a term: the root reads the search and nothing else,
+     * Offered on a category page searched for a term: the root reads the search and nothing else,
      * so a page narrowed by filters alone has nothing to carry there. And only where the root is a
      * page this reader may open - a real account's, or for a visitor the site's public root when
      * the site opened it ({@see publicaccess::is_public()}) - because a way out that lands on the
@@ -720,11 +720,11 @@ class category_listing implements \core\output\named_templatable, \core\output\r
     }
 
     /**
-     * The tree beside the listing: this category, then every admitted one below it, as FILTERS.
+     * The tree beside the listing: this category, then every admitted one below it, as filters.
      *
      * The entries are ordinary links, one of them marked as the chosen one, and
      * depth travels as a number the stylesheet indents by rather than as
-     * characters inside a label. Each entry is an address of THIS page carrying
+     * characters inside a label. Each entry is an address of this page carrying
      * the tree's own parameter ({@see criteria::PARAM_CAT}) and every other
      * filter the request already holds, so following one narrows the listing to
      * that category's subtree and leaves the reader where they were; the first
@@ -739,11 +739,11 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * sort). Nothing is exported, so the shell has no column to lay out either.
      *
      * The walk is bounded by {@see population::tree_depth()}, which bounds the
-     * NAVIGATION and never the listing: the page under this tree lists the
+     * navigation and never the listing: the page under this tree lists the
      * whole subtree whatever the tree offers.
      *
      * Every entry is a link, a visitor's merely listed child included. The
-     * population's `linkable` says whether the child's OWN page is public,
+     * population's `linkable` says whether the child's own page is public,
      * which is the question of the posters and the accordion, whose links open
      * that page; an entry of this tree never leaves this page, and narrowing it
      * to a listed child only regroups rows the page already lists, because a
@@ -797,7 +797,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * The areas section: the posters, cut at {@see population::DIRECTORY_SLICE}, and the slot of the one panel.
      *
      * One context for the root's directory and a category page's grouped listing, rendered by one
-     * partial. A poster is a LINK without JavaScript, whose address opens its panel
+     * partial. A poster is a link without JavaScript, whose address opens its panel
      * (open, and the page of the direct courses the reader is on) or, on the open poster, closes it;
      * the client turns the expandable ones into buttons. The panel is drawn by the server when the
      * request's open survived admission ({@see population::resolve()}), right after its poster in
@@ -809,10 +809,10 @@ class category_listing implements \core\output\named_templatable, \core\output\r
      * no result leaves its grid - `hidden` on its item, never removed, and never the open one,
      * which stays with "0 results" - and the areas with no result are named in a closed "nothing
      * in N areas" summary after the grids. The panel's row is counted among the posters still
-     * VISIBLE in its grid. The reveal opens by itself when it holds a result, and is hidden when it
+     * visible in its grid. The reveal opens by itself when it holds a result, and is hidden when it
      * holds none and not the open poster (it stays in the document for the client). When nothing
      * matched anywhere and no panel is open, the areas draw the "nothing matches" box with its way
-     * out, since the direct courses' section is hidden then. The ROOT under a search is in result
+     * out, since the direct courses' section is hidden then. The root under a search is in result
      * mode too: its posters carry their numbers of matches ({@see population::resolve_root()}),
      * and its box speaks of the search alone.
      *
@@ -857,7 +857,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
         }
         $isopen = $openindex >= 0;
         $inmore = $isopen && $openindex >= population::DIRECTORY_SLICE;
-        // The open poster's place among the VISIBLE posters of its grid: the row integers come from it.
+        // The open poster's place among the visible posters of its grid: the row integers come from it.
         $grid = $inmore ? $slice['directorymore'] : $slice['directory'];
         $before = array_slice($grid, 0, max(0, $inmore ? $openindex - population::DIRECTORY_SLICE : $openindex));
         $position = count(array_filter($before, static fn(array $entry): bool => !$entry['hidden']));
@@ -904,7 +904,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
             'elsewhere' => $results['elsewhere'],
             'hasposters' => $entries !== [],
             'posters' => $slice['directory'],
-            /* Past the slice, the rest of the posters go behind a native disclosure, drawn OPEN
+            /* Past the slice, the rest of the posters go behind a native disclosure, drawn open
                when the open poster is among them - or the panel would be drawn where nobody can
                see it - and, under a criterion, when a poster behind it holds a result. */
             'hasmore' => $slice['hasmore'],
@@ -933,7 +933,7 @@ class category_listing implements \core\output\named_templatable, \core\output\r
             'clearlabel' => get_string($isroot ? 'category_clearsearch' : 'category_clearfilters', self::COMPONENT),
             'searchallurl' => $results['searchallurl'],
             'clearurl' => $clearurl,
-            // A directory lists CATEGORIES, so its empty state cannot be the listing's "no course".
+            // A directory lists categories, so its empty state cannot be the listing's "no course".
             'emptylabel' => get_string('category_directory_empty', self::COMPONENT),
         ];
     }

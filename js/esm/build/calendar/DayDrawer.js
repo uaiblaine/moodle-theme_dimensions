@@ -8,9 +8,9 @@ import{useEffect as T,useLayoutEffect as $,useMemo as g,useRef as N}from"react";
  *
  * - The drawer: an all-day strip (the bars covering the day, whole-day items, event courses), then the hour column
  *   with the overlap layout (calendar/overlap.ts). The column is the whole day, 00:00 to 24:00, in a scroll box of its
- *   own that is the drawer's body (HourScroll.tsx): it
- *   opens on the day's busy band (overlap.ts hourWindow()), or on the working hours (EMPTY_WINDOW) of a day with
- *   nothing timed on it, and is a Tab stop of its own while it holds no item.
+ *   own that is the drawer's body (HourScroll.tsx): it opens on the day's busy band (overlap.ts hourWindow()), or on
+ *   the working hours (EMPTY_WINDOW) of a day with nothing timed on it, and is a Tab stop of its own while it holds no
+ *   item.
  * - The sheet: the same content as a list, no hour column.
  *
  * An overlapping item carries a visible label as well as its column. Every item is a link to its own page that
@@ -18,8 +18,8 @@ import{useEffect as T,useLayoutEffect as $,useMemo as g,useRef as N}from"react";
  * offers "New event"), a double-click on an hour row of the column opens core's form at that hour; the "New event"
  * "+" button in its head is the keyboard's way. On a day with nothing on it the column is still drawn while creation
  * is offered, under the "nothing on this day" line. A touch (or pen) held on an hour row for {@see HOLD_MS} without
- * moving more than {@see HOLD_SLOP}px opens the form at that hour too, the phone's way: a
- * move, a lift or the browser taking the touch to scroll the box (pointercancel) drops it, so it never fights the scroll.
+ * moving more than {@see HOLD_SLOP}px opens the form at that hour too, the phone's way: a move, a lift or the browser
+ * taking the touch to scroll the box (pointercancel) drops it, so it never fights the scroll.
  *
  * {@see DayBody} is everything under the drawer's head, exported for the Day view, so the day is drawn by one piece of
  * code wherever it is shown.

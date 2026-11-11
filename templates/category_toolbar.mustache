@@ -18,8 +18,8 @@
     @template theme_dimensions/category_toolbar
 
     The toolbar of the category showcase: a real GET form that works with
-    JavaScript off, drawn as ONE line in the filter line's slot order, then the too-short notice, then a
-    second row that shows only while something narrows.
+    JavaScript off, drawn as one line in the filter line's slot order, then the
+    too-short notice, then a second row that shows only while something narrows.
 
     The line (dim-line) holds, in order: the scope - the state chip's values
     criteria::SCOPE names, as counted cells of one radio group, legend visually
@@ -30,7 +30,7 @@
     category's managers (dim-line-manage). With no JavaScript the line wraps
     where it does not fit and every control still submits.
 
-    On the logged-in shell the line is a React component's mount
+    On both shells the line is a React component's mount
     (js/esm/src/filterline/FilterLine.tsx), which draws this same
     markup from the markup it replaces and adopts three subtrees of it whole,
     never redrawn: the Filters panel (dim-filters-panel), the Organise menu
@@ -39,7 +39,7 @@
     js/esm/tests/filterline/toolbar.ts is this template rendered from its
     example context, and filterline_component_source_test holds the two equal.
 
-    The scope fieldset and the panel's "More statuses" fieldset are ONE radio
+    The scope fieldset and the panel's "More statuses" fieldset are one radio
     group by name (chip), so a choice holds across both; each carries
     data-region dim-vitrine-group, data-name chip and a data-role (scope, more),
     which is how the client splits the web service's status group between them.
@@ -50,15 +50,14 @@
     client's control (dim-live-only, which both client marks reveal) and is
     hidden while the field is empty; the client shows it as the reader types.
 
-    Four parts of the line are the client's alone (the line component,
-    js/esm/src/filterline, on both shells), and the stylesheet draws none of them until that client
-    has folded the line into one of its steps (dim-line--s1 to s4), so a page
-    without JavaScript never shows them: the search's icon button
-    (dim-search-open), which stands for the field once the line is too narrow
-    for it; the button that closes the search where it has grown over the line
-    (dim-search-close), the line's last control; the listbox of suggestions
-    (dim-line-suggest, given its role and name by the client, which fills it),
-    carrying its id and its two headings so the client
+    Four parts of the line belong to the line component alone, and the
+    stylesheet draws none of them until it has folded the line into one of its
+    steps (dim-line--s1 to s4), so a page without JavaScript never shows them:
+    the search's icon button (dim-search-open), which stands for the field once
+    the line is too narrow for it; the button that closes the search where it
+    has grown over the line (dim-search-close), the line's last control; the
+    listbox of suggestions (dim-line-suggest), which the client gives its role
+    and name and fills, carrying its id and its two headings so the client
     composes no word of it; and the Organise menu's "Show as" section
     (dim-showas), the view toggle's place when the line takes two lines, whose
     buttons carry the view toggle's own action (dim-view) and so reach the

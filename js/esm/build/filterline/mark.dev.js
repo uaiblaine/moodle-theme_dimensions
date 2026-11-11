@@ -1,15 +1,14 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 /**
- * A term marked in a text, in the text's own spelling, as runs a component draws rather than nodes it writes: the
- * rule of the line's suggestions and of the card titles ({@see ../areas/mark}, which marks the titles with it).
+ * A term marked in a text, in the text's own spelling, as runs a component draws rather than nodes it writes.
+ *
+ * The filter line marks its suggestions with {@see pieces()}; the card titles, which are the server's markup,
+ * are marked on both shells by {@see ../areas/mark}, which reuses {@see fold()} and {@see runs()}.
  *
  * The match ignores case and accents, as the server's search does: each character is folded on its own
  * and every folded character remembers the character it came from, so a match found in the folded text is
  * cut from the original one - "Incêndio" is marked whole for "incendio", accent and capital included.
- *
- * The card titles are the server's markup, which no component draws: the listing's store marks them through
- * areas/mark.ts on both shells. The filter line marks its suggestions with this module.
  *
  * @module     theme_dimensions/filterline/mark
  * @copyright  2026 Anderson Blaine

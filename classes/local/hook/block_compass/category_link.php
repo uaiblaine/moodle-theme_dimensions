@@ -38,8 +38,9 @@ use theme_dimensions\local\landing\links;
  * for the root (0), the address {@see links::showcase()} gives. This class adds no visibility rule of its
  * own: the URL only filters a page that runs its own checks (who may see the category, which courses the
  * reader may see), so a category the reader cannot see gets that page's refusal, not a leak. It answers
- * nothing when the showcase is off, when the state chip is off (the page would drop it, so the block's
- * default address is the right one) and for a visitor or the guest account (their page draws no chips).
+ * nothing when the showcase is off, when the listing is cut in SQL ({@see population::state_sort()} false:
+ * the page then drops the state chip, so the block's default address is the right one) and for a visitor
+ * or the guest account (their page draws no chips).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

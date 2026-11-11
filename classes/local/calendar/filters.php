@@ -27,7 +27,7 @@ namespace theme_dimensions\local\calendar;
 /**
  * The course model, the modality, the city and "only things to do".
  *
- * The first three are facts of a COURSE (the theme's custom fields), so they apply to course-bound items
+ * The first three are facts of a course (the theme's custom fields), so they apply to course-bound items
  * alone: an item of a course other than the site, whether core's (a course, group, activity or component
  * event) or an event course. A site, user or category event has no course to ask and stays whatever they
  * say. "Only things to do" applies to every item: what stays is an action event whose action core's

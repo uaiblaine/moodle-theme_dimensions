@@ -19,8 +19,7 @@
  * The cut is measured, not counted: a summary written in the editor is as often one block broken by
  * <br> as a run of <p>, so a paragraph ends at the bottom of a leaf block or at a line break, and the
  * text is clipped at the third such end. A summary with no more than three paragraphs is never cut and
- * shows no toggle. The page loads cut every time: the choice is not stored (local_dimensions'
- * collapsible_description is the same pattern, with a height cap instead of a paragraph count).
+ * shows no toggle. The page loads cut every time: the choice is not stored.
  *
  * With JavaScript off the summary is whole and the toggle stays hidden, so nothing is out of reach.
  *

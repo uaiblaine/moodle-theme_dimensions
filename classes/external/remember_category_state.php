@@ -37,7 +37,7 @@ use theme_dimensions\local\category\remembered;
  * Store the organisation, the view and the filters the reader left one category's listing in.
  *
  * A web service rather than a declaration in the theme's user_preferences callback, which is how
- * the view's own preference is written: on 5.2 core's preference route refuses any value its
+ * the view's own preference is written: core's preference route refuses any value its
  * clean callback changes (`user/classes/route/api/preferences.php`, `$cleanvalue !== $value`), so a
  * declared map would have to arrive already merged, bounded and validated, byte for byte as the
  * server would store it. That puts the merge of one category into the reader's other categories,

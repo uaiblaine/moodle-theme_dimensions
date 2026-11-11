@@ -31,7 +31,7 @@ use theme_dimensions\local\category\branding;
  * SCSS callback ({@see theme_dimensions_get_pre_scss()}).
  *
  * Each setting defaults to its key's light edge in scss/calendar.scss (the design system's primitive, from post.scss;
- * keycolours_test reads both files), and only a stored value that is a hexadecimal colour AND differs from that default
+ * keycolours_test reads both files), and only a stored value that is a hexadecimal colour and differs from that default
  * reaches the compiler, so an untouched site compiles the stylesheet's hand-picked triples unchanged. A value is parsed
  * by {@see branding::hex()} on the way out as well as by the setting on the way in ({@see keycolour_setting}): a value
  * forced in config.php, which no validation saw, is read as unset rather than written into the compiler.

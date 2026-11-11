@@ -33,19 +33,18 @@ use core\output\action_menu\link_secondary;
  * Core's export builds three things: a selector naming every category on the
  * site, a search form, and the menu of management links (add a course, add a
  * subcategory, manage courses, course requests). The showcase draws its own
- * search and, where a category may be unlisted, must never print the selector
- * (this theme's override of core's action bar template drops it too). So the
- * showcase asks for the menu alone, through core's own capability checks, and
- * skips the walk over the whole category tree the selector costs.
+ * search and must never print the selector, which would name unlisted
+ * categories (this theme's override of core's action bar template drops it
+ * too). So it asks for the menu alone, through core's own capability checks,
+ * and skips the walk over the whole category tree the selector costs.
  *
  * One item is this theme's own: the category appearance editor, also reachable
- * from the hero's pencil and from the category's settings navigation. It is
- * gated on the same capability as the editor and that navigation node, and it
- * is added AFTER core's own options so that the menu a manager already knows
- * does not change order.
+ * from the hero's pencil and from the category's settings navigation, gated on
+ * the same capability as both. It comes after core's options so the menu a
+ * manager knows keeps its order.
  *
- * The menu is drawn only by the showcase, so render_actions() checks neither
- * the kill switch nor the category's visibility: its one caller,
+ * render_actions() checks neither the kill switch nor the category's
+ * visibility: its one caller,
  * {@see \theme_dimensions\output\core\course_renderer::course_category()},
  * has passed those guards already.
  *

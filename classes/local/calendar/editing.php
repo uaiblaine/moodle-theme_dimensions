@@ -39,7 +39,7 @@ use core_calendar\local\event\entities\event_interface;
  *   ({@see \core_calendar\external\event_exporter_base::get_other_values()} and
  *   {@see \core_calendar\external\calendar_event_exporter::get_other_values()}), with the drop limits core's
  *   timestart range callbacks set ({@see draglimits});
- * - the iCal export is offered where core's calendar footer offers it ({@see export_url()}).
+ * - the iCal export is offered where core's calendar footer leads to it ({@see export_url()}).
  *
  * The server does the work again whatever the page drew: core's form, its delete service and
  * core_calendar_update_event_start_day each check calendar_edit_event_allowed() themselves.
@@ -79,9 +79,9 @@ final class editing {
     /**
      * Core's export page, where core's calendar offers it to this viewer; '' where it does not.
      *
-     * calendar/export.php itself refuses nothing but the switch ($CFG->enablecalendarexport); core's calendar page
-     * offers it from its footer only to a viewer who may also add an event
-     * ({@see \core_calendar\external\footer_options_exporter}), and the page follows that offer.
+     * calendar/export.php itself refuses nothing but the switch ($CFG->enablecalendarexport). Core's calendar reaches
+     * it through the footer's "Manage subscriptions" link, drawn only with that switch on and for a viewer who may add
+     * an event ({@see \core_calendar\external\footer_options_exporter}); the page follows the same rule.
      *
      * @return string The address, or ''.
      */

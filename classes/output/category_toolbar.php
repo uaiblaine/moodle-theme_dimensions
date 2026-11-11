@@ -44,7 +44,7 @@ use theme_dimensions\local\landing\links;
  * carrying the view parameter, so a choice made without JavaScript still
  * reaches the server and is remembered.
  *
- * ONE line, in the filter line's slot order:
+ * One line, in the filter line's slot order:
  * the scope (the state chip's values {@see criteria::SCOPE}, counted, for a
  * logged-in reader with the state sort on), the search, the favourites star,
  * the Filters disclosure, the Organise menu, the view toggle and the managers'
@@ -66,13 +66,10 @@ use theme_dimensions\local\landing\links;
  * have typed into the two date fields. Either field may be left empty: each
  * bound stands alone ({@see criteria} says what each keeps). The calendar - a
  * start box and an end box opening one popover - is the client's, and it
- * speaks the same two parameters: that is the whole seam between server and
- * client. The server side of that seam is three pieces of data and no markup:
- * the two bounds of each quick option as attributes, the site's first weekday
- * on the date fieldset, and an EMPTY region for the client to mount its boxes
- * in - empty because a page without JavaScript must show the two native inputs
- * and nothing else, and a skeleton drawn here would be a control that never
- * becomes one.
+ * speaks the same two parameters. The server gives it data and no markup: the
+ * two bounds of each quick option as attributes, the site's first weekday on
+ * the date fieldset, and an empty region to mount its boxes in, because a page
+ * without JavaScript must show the two native inputs alone.
  *
  * The favourites toggle is a submit button of its own on the line, because it
  * combines with the state rather than being one of its values: pressing it
@@ -178,7 +175,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
         $favourites = $this->favourites_toggle();
         $facets = $this->facet_groups();
         $chips = $this->chips();
-        /* "Clear all" keeps the ORGANISATION and the open panel, and drops everything that
+        /* "Clear all" keeps the organisation and the open panel, and drops everything that
            narrows: reordering hides no course and neither does a panel, and a control that
            silently put the page back into the grouped default, or shut the panel the reader was
            reading, would send them looking for what they had just pressed. */
@@ -237,17 +234,13 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
             'datelegend' => get_string('category_dategroup', self::COMPONENT),
             'datefromlabel' => get_string('category_datefrom', self::COMPONENT),
             'datetolabel' => get_string('category_dateto', self::COMPONENT),
-            /* The one calendar fact the client is given, so the popover's grid begins its weeks on
-               the day the quick option "this week" begins them on and the day every other calendar
-               of the site begins them on. The client does no calendar configuration and no
-               timezone arithmetic of its own: what it reads here and on the quick options is
-               already resolved in the SITE timezone. */
+            /* The site's first weekday, so the popover's weeks begin where "this week" and the site's
+               other calendars begin them; the client does no calendar configuration or timezone
+               arithmetic of its own. */
             'firstday' => criteria::week_start_day(),
-            /* The other calendar fact, and the reason the client never asks its own clock what
-               day it is: a browser reads its own timezone, the site resolves every bound of this
-               filter in the SITE's, and the two differ by a day for part of every day. It decides
-               which month the popover opens on and which cell is marked as today - both cosmetic,
-               and both wrong on the same page whose quick options say otherwise. */
+            /* Today in the site timezone, which decides the popover's opening month and its today
+               cell: the browser's own clock reads its own timezone, a day off from the site's for
+               part of every day. */
             'today' => criteria::iso(time()),
             'datequick' => $this->quick_dates(),
             'filterslabel' => get_string('category_filters', self::COMPONENT),
@@ -328,7 +321,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      * The scope with every one of its cells drawn: a cell with nothing to offer is drawn hidden.
      *
      * A zero cell is not shown unless it is the chosen one ({@see status_group()}), but it is
-     * still WRITTEN, carrying `absent`, which the template turns into the hidden attribute: the
+     * still written, carrying `absent`, which the template turns into the hidden attribute: the
      * line component's folding (js/esm/src/filterline/measure.ts) measures the line with every cell of the scope drawn, so
      * the step a line takes follows its width and its language and never what the counts happen
      * to be, and a cell an answer brings back is found in place by its value
@@ -387,8 +380,8 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      * the chip never does.
      *
      * Each chip is a link to this listing with that one criterion dropped and every other part of
-     * the request kept - the other criteria, the organisation, the page size and the open panel,
-     * as "Clear all" keeps them - so it works with no JavaScript; `param` names what it drops:
+     * the request kept - the other criteria, the organisation, the page size and the open panel -
+     * so it works with no JavaScript; `param` names what it drops:
      * {@see criteria::PARAM_SEARCH}, a field's parameter, {@see criteria::PARAM_STATE},
      * {@see criteria::PARAM_CAT} or {@see CHIP_PERIOD} for both bounds of the period.
      *
@@ -470,7 +463,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
      *
      * The three shapes a period takes have a language string each: a range, a start alone and an
      * end alone. The days are the instants {@see criteria::day_start()} computed, printed in the
-     * SITE timezone, so the chip names the days the predicate keeps whoever reads it.
+     * site timezone, so the chip names the days the predicate keeps whoever reads it.
      *
      * @param criteria $criteria The request, with a period.
      * @return string Plain text.
@@ -490,7 +483,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     }
 
     /**
-     * The ROOT's toolbar: its search line and nothing else.
+     * The root's toolbar: its search line and nothing else.
      *
      * The root reads the search and no filter ({@see criteria::root_from_request()}), so its
      * toolbar is the first line of this one - the same form, the same box, the same name-less
@@ -581,7 +574,7 @@ class category_toolbar implements \core\output\renderable, \core\output\templata
     /**
      * The four quick date ranges, as ordinary addresses carrying this request's other filters.
      *
-     * Computed HERE and not in the client, which is what keeps the whole
+     * Computed here and not in the client, which is what keeps the whole
      * control working with JavaScript off: each one is a link to this listing
      * with `from` and `to` set, and a reader who follows one can read the two
      * dates back out of the address bar and out of the two date fields.

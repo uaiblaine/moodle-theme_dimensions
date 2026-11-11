@@ -337,7 +337,7 @@ const onSubmit = (event) => {
  * Bring a page the back-forward cache restored to the mode this tab last chose for the course.
  *
  * The page comes back exactly as it was left, and the reader may have switched the course since on
- * another page of it; the server already holds that choice, so this paints and records nothing.
+ * another page of it; the server already holds that choice, so this only paints and records nothing.
  *
  * @param {PageTransitionEvent} event The pageshow event.
  * @return {void}

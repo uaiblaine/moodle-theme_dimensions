@@ -27,13 +27,14 @@
     them: the selects' ids user-nav-<uniqid> and module-nav-<uniqid> and their labels (core's Behat
     sets the activity filter through its label, "Filter competencies by resource or activity"), every
     option with its value and selected state, the form's class user-competency-course-navigation
-    (which hides the selects until the autocomplete has drawn), the hidden fields user, id and mod, the
+    (tool_lp's stylesheet hides the native selects under it; the autocomplete draws in their place), the
+    hidden fields user, id and mod, the
     group selector (core's own HTML, triple-stashed) and the JavaScript itself. The names keep core's
     double stash.
     Changed: the panel is the theme's (dim-comp-nav); the group selector sits in a div rather than a
     paragraph, because core's single_select markup is a form, which a paragraph cannot hold.
     The JavaScript is core's statement for statement, with the constructor's parameter capitalised
-    (Nav) and long lines wrapped: core's copy has no example context and was never linted.
+    (Nav) and long lines wrapped, for the template lint a plugin's templates go through and core's do not.
 
     Context variables required for this template:
     * groupselector - HTML

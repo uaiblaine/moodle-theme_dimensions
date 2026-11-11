@@ -36,7 +36,7 @@ namespace theme_dimensions\local;
  *
  * 1. The most recent item of block_recentlyaccesseditems, while that block is installed and enabled - its
  *    helper is the record of what this person opened. The helper already drops what the reader may not see,
- *    and the card decides AGAIN on the activity it is about to link ({@see self::from_recent_items()}): the
+ *    and the card decides again on the activity it is about to link ({@see self::from_recent_items()}): the
  *    course module as get_fast_modinfo() answers it now, uservisible, in a course the reader can access.
  *    The helper records nothing under "log in as", so that session falls through to step 2.
  * 2. Otherwise the course this person entered last (core's course_get_recent_courses(), its visible and

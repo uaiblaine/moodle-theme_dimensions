@@ -2,14 +2,13 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The "More filters" panel: the course model, the modality, the city, "only what I have to do" and
- * the colouring.
+ * The "More filters" panel: the course model, the modality, the city, "only what I have to do" and the colouring.
  *
  * A disclosure: the button says how many filters narrow the calendar, and the panel applies every change at once (the
  * page asks the range again and remembers the state after a quiet). The model's and the modality's boxes all start
- * checked, meaning every option, as the event types' dropdown starts with every key on:
- * the server reads an empty list as every option, so an empty list draws every box on, unchecking one writes the
- * others, and checking them all again writes the empty list (model.ts shownOn(), keptAfter()). The last box on of a
+ * checked, meaning every option, as the event types' dropdown starts with every key on: the server reads an empty
+ * list as every option, so an empty list draws every box on, unchecking one writes the others, and checking them all
+ * again writes the empty list (model.ts shownOn(), keptAfter()). The last box on of a
  * group is disabled: "none" has no spelling in the server's contract. Each input carries data-on, the state the
  * component drew, which a test reads where the live checked property is out of its reach. "Clear filters" is the
  * toolbar's, beside this button (Calendar.tsx): it puts back the keys and the category scope as well as these.
@@ -35,7 +34,7 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
     return /* @__PURE__ */ jsxDEV("fieldset", { children: [
       /* @__PURE__ */ jsxDEV("legend", { children: legend }, void 0, false, {
         fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-        lineNumber: 88,
+        lineNumber: 87,
         columnNumber: 17
       }),
       choices.map((option) => {
@@ -58,20 +57,20 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-              lineNumber: 93,
+              lineNumber: 92,
               columnNumber: 29
             }
           ),
           option.label
         ] }, option.value, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-          lineNumber: 92,
+          lineNumber: 91,
           columnNumber: 25
         });
       })
     ] }, void 0, true, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-      lineNumber: 87,
+      lineNumber: 86,
       columnNumber: 13
     });
   }, "group");
@@ -88,24 +87,24 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
         children: [
           /* @__PURE__ */ jsxDEV("i", { className: "fa fa-sliders", "aria-hidden": "true" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-            lineNumber: 122,
+            lineNumber: 121,
             columnNumber: 17
           }),
           strings.calendar_morefilters,
           count ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__badge", children: [
             /* @__PURE__ */ jsxDEV("span", { "aria-hidden": "true", children: count }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-              lineNumber: 126,
+              lineNumber: 125,
               columnNumber: 25
             }),
             /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: fill(strings.calendar_filtercount, count) }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-              lineNumber: 127,
+              lineNumber: 126,
               columnNumber: 25
             })
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-            lineNumber: 125,
+            lineNumber: 124,
             columnNumber: 21
           }) : null
         ]
@@ -114,7 +113,7 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-        lineNumber: 114,
+        lineNumber: 113,
         columnNumber: 13
       }
     ),
@@ -134,7 +133,7 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
           /* @__PURE__ */ jsxDEV("label", { className: "dim-cal__field", children: [
             /* @__PURE__ */ jsxDEV("span", { children: strings.calendar_city }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-              lineNumber: 143,
+              lineNumber: 142,
               columnNumber: 21
             }),
             /* @__PURE__ */ jsxDEV(
@@ -146,12 +145,12 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
                 children: [
                   /* @__PURE__ */ jsxDEV("option", { value: "", children: strings.calendar_cityany }, void 0, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-                    lineNumber: 149,
+                    lineNumber: 148,
                     columnNumber: 25
                   }),
                   cities.map((city) => /* @__PURE__ */ jsxDEV("option", { value: city, children: city }, city, false, {
                     fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-                    lineNumber: 150,
+                    lineNumber: 149,
                     columnNumber: 47
                   }))
                 ]
@@ -160,13 +159,13 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
               true,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-                lineNumber: 144,
+                lineNumber: 143,
                 columnNumber: 21
               }
             )
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-            lineNumber: 142,
+            lineNumber: 141,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("label", { className: "dim-cal__check", children: [
@@ -181,20 +180,20 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
               false,
               {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-                lineNumber: 154,
+                lineNumber: 153,
                 columnNumber: 21
               }
             ),
             strings.calendar_actiononly
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-            lineNumber: 153,
+            lineNumber: 152,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("fieldset", { children: [
             /* @__PURE__ */ jsxDEV("legend", { children: strings.calendar_colourby }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-              lineNumber: 162,
+              lineNumber: 161,
               columnNumber: 21
             }),
             ["key", "category"].map((colour) => /* @__PURE__ */ jsxDEV("label", { className: "dim-cal__check", children: [
@@ -211,19 +210,19 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-                  lineNumber: 165,
+                  lineNumber: 164,
                   columnNumber: 29
                 }
               ),
               colour === "key" ? strings.calendar_colourbykey : strings.calendar_colourbycategory
             ] }, colour, true, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-              lineNumber: 164,
+              lineNumber: 163,
               columnNumber: 25
             }))
           ] }, void 0, true, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-            lineNumber: 161,
+            lineNumber: 160,
             columnNumber: 17
           })
         ]
@@ -232,13 +231,13 @@ const MoreFilters = /* @__PURE__ */ __name(({ strings, state, options, onChange 
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-        lineNumber: 131,
+        lineNumber: 130,
         columnNumber: 13
       }
     )
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/MoreFilters.tsx",
-    lineNumber: 113,
+    lineNumber: 112,
     columnNumber: 9
   });
 }, "MoreFilters");

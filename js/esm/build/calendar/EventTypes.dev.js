@@ -10,8 +10,7 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  * through a document listener, because the list re-renders under a press of "Select all" and the focus can fall
  * outside the dropdown, where no handler on it would see the key; the focus goes back to the button) holding real
  * checkboxes with their labels and a "Select all" button. A key unchecked is a key the range is not asked for, so it
- * carries no count: the server never counted it. The state is the same `off` as the chips' it
- * replaces, so nothing changes on the server.
+ * carries no count: the server never counted it. What it writes is the page state's `off` list of keys.
  *
  * @module     theme_dimensions/calendar/EventTypes
  * @copyright  2026 Anderson Blaine
@@ -43,7 +42,7 @@ const keyLabel = /* @__PURE__ */ __name((strings, key) => {
 const toggledOff = /* @__PURE__ */ __name((keys, off, key, on) => keys.filter((other) => other === key ? !on : off.includes(other)), "toggledOff");
 const ClearFilters = /* @__PURE__ */ __name(({ shown, label, onClear }) => shown ? /* @__PURE__ */ jsxDEV("button", { type: "button", className: "btn btn-link dim-cal__clear", "data-action": "dim-cal-clear", onClick: onClear, children: label }, void 0, false, {
   fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-  lineNumber: 95,
+  lineNumber: 94,
   columnNumber: 5
 }) : null, "ClearFilters");
 const EventTypes = /* @__PURE__ */ __name(({ strings, keys, off, counts, onChange }) => {
@@ -79,17 +78,17 @@ const EventTypes = /* @__PURE__ */ __name(({ strings, keys, off, counts, onChang
         children: [
           /* @__PURE__ */ jsxDEV("i", { className: "fa fa-tags", "aria-hidden": "true" }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-            lineNumber: 142,
+            lineNumber: 141,
             columnNumber: 17
           }),
           strings.calendar_eventtypes,
           all ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__typesall", children: strings.calendar_eventtypes_all }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-            lineNumber: 144,
+            lineNumber: 143,
             columnNumber: 24
           }) : /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__badge", "data-region": "dim-cal-types-count", children: some }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-            lineNumber: 145,
+            lineNumber: 144,
             columnNumber: 21
           })
         ]
@@ -98,7 +97,7 @@ const EventTypes = /* @__PURE__ */ __name(({ strings, keys, off, counts, onChang
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-        lineNumber: 133,
+        lineNumber: 132,
         columnNumber: 13
       }
     ),
@@ -127,7 +126,7 @@ const EventTypes = /* @__PURE__ */ __name(({ strings, keys, off, counts, onChang
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-              lineNumber: 157,
+              lineNumber: 156,
               columnNumber: 17
             }
           ),
@@ -148,28 +147,28 @@ const EventTypes = /* @__PURE__ */ __name(({ strings, keys, off, counts, onChang
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-                  lineNumber: 168,
+                  lineNumber: 167,
                   columnNumber: 29
                 }
               ),
               /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__swatch", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-                lineNumber: 176,
+                lineNumber: 175,
                 columnNumber: 29
               }),
               /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__chiplabel", children: keyLabel(strings, key) }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-                lineNumber: 177,
+                lineNumber: 176,
                 columnNumber: 29
               }),
               checked ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__chipcount", children: counts[key] || 0 }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-                lineNumber: 178,
+                lineNumber: 177,
                 columnNumber: 40
               }) : null
             ] }, key, true, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-              lineNumber: 167,
+              lineNumber: 166,
               columnNumber: 25
             });
           })
@@ -179,13 +178,13 @@ const EventTypes = /* @__PURE__ */ __name(({ strings, keys, off, counts, onChang
       true,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-        lineNumber: 148,
+        lineNumber: 147,
         columnNumber: 13
       }
     )
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/EventTypes.tsx",
-    lineNumber: 132,
+    lineNumber: 131,
     columnNumber: 9
   });
 }, "EventTypes");

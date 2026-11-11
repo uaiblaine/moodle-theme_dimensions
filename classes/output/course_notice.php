@@ -32,7 +32,7 @@ use theme_dimensions\local\coursenotice\notice;
 /**
  * The one notice region of a course page: a bar of chips and actions, and the detail under it.
  *
- * Every decision about WHAT is said is {@see \theme_dimensions\local\coursenotice\builder}'s;
+ * Every decision about what is said is {@see \theme_dimensions\local\coursenotice\builder}'s;
  * this class decides only how it is drawn. A notice carrying the promotion section (a course editor's)
  * can be folded to its bar, where the addresses keep a copy button each; the fold is the person's
  * preference, unset meaning unfolded, written by the AMD module through core's preference service.

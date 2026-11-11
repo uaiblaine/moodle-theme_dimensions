@@ -42,8 +42,8 @@ use core_customfield\field_controller;
  * A GROUP BY carrying the population's capped exception lists would print no
  * number past either cap; reading the values instead costs O(N) rows the
  * listing already pays for its ids, has no cap, and makes the filter and the
- * counts one computation that cannot disagree. The grouped shape survives only
- * in {@see groups_sql()}, for the page cut in SQL.
+ * counts one computation that cannot disagree. The grouped statement is used
+ * only by {@see groups_sql()}, for the page cut in SQL.
  *
  * Only select fields are facets, and only their 1-based option index is
  * stored (in intvalue, which the fieldid-intvalue index covers); the label is
@@ -65,7 +65,7 @@ final class facets {
     /**
      * @var array|null The last answer of {@see fields()}: ['setting' => string, 'all' => the fields read, 'ids' => int[]].
      *
-     * The page asks for the filter fields from five places (the renderer, the listing, the population, the
+     * One page asks for the filter fields from several places (the renderer, the listing, the population, the
      * toolbar, the remembered state), and the answer depends on the setting and on the course fields alone.
      * The memo is keyed on both: the raw setting, and the very list of field controllers the course handler
      * hands back (compared by identity, which costs no read of a field). The handler builds that list anew

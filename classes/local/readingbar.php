@@ -25,13 +25,13 @@
 namespace theme_dimensions\local;
 
 /**
- * Where the navbar follows the reading, and what it says while it does: phase 3 of the navbar.
+ * Where the navbar follows the reading, and what it says while it does.
  *
  * The features share one page predicate and live here, so the renderer only asks:
  *
  * - The band as progress ({@see applies()}): on an activity page the 3px signature band fills from the left as
  *   the page is scrolled; on the course page it shows the reader's completion of the course, computed here
- *   ({@see client_config()}). Everywhere else it stays full, as before.
+ *   ({@see client_config()}). Everywhere else it stays full.
  * - The context bar ({@see context_applies()}): past the page header the navbar's content swaps for a layer at
  *   the same 60px carrying the activity's (or the course's) name, the course and its completion, a read-only
  *   status of the activity and, where the course index exists, a control that opens it with core's own toggler
@@ -132,7 +132,7 @@ final class readingbar {
     }
 
     /**
-     * Whether the page being rendered is a reading page this phase reaches: the band follows it.
+     * Whether the page being rendered is a reading page: the band follows it.
      *
      * The base of the three features. Not in the Moodle app, which draws its own chrome around a plugin's web
      * view, and not in focus mode, whose bar replaces the navbar and prints no navbar_plugin_output().
@@ -319,8 +319,9 @@ final class readingbar {
      * - The sub line: the course's name on an activity page (coursename), then "X of Y completed" while the reader
      *   is tracked in the course (progress, with its two numbers, completed and total, which amd/src/readingbar.js
      *   moves when core's manual completion button is toggled); on the course page the count alone.
-     * - The status of the activity, read-only: on 5.3 core's linear navigation footer owns the manual completion
-     *   button, and a status cannot duplicate it. Read from core's own cm_completion_details, never computed here.
+     * - The status of the activity, read-only, so it never duplicates core's manual completion button (which core 5.3
+     *   moves into the linear navigation footer when that footer is shown). Read from core's own cm_completion_details,
+     *   never computed here.
      * - The course index control, only where the drawer exists ({@see has_course_index()}).
      * - Whether the reader gets core's edit mode switch in the layer ({@see edit_applies()}); the renderer adds the
      *   switch itself, core's edit_switch() output, as editswitch.

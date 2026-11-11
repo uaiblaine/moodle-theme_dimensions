@@ -25,7 +25,8 @@
 namespace theme_dimensions\local\calendar;
 
 /**
- * The window of one range call: two ISO days, both inclusive, at most {@see MAX_DAYS} of them, in the viewer's timezone.
+ * The window of one range call: two ISO days, both inclusive, in the viewer's timezone; at most {@see MAX_DAYS} of them,
+ * except a window of {@see whole_months()}.
  *
  * A month grid with its neighbours' days is six weeks, so one window is one grid and one call. The days are
  * the viewer's own ({@see \core_date::get_user_timezone_object()}), as core's month view computes its bounds:

@@ -402,7 +402,8 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
         text ? (
           // Core's own formatted HTML: core's event service's description, which core's event exporter ran
           // through format_text() for this viewer, handed in as describe by the logged-in page alone; nothing
-          // else may reach it. The one trusted sink of the calendar.
+          // else may reach it. The calendar's one trusted sink of event content (the Trilhas view's fold icons
+          // are the server's pix icons).
           /* @__PURE__ */ jsxDEV(
             "div",
             {
@@ -414,14 +415,14 @@ const EventPopover = /* @__PURE__ */ __name((props) => {
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-              lineNumber: 473,
+              lineNumber: 474,
               columnNumber: 17
             }
           )
         ) : null,
         /* @__PURE__ */ jsxDEV(PopActions, { item, course, look, models, actions }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/EventPopover.tsx",
-          lineNumber: 479,
+          lineNumber: 480,
           columnNumber: 13
         })
       ]

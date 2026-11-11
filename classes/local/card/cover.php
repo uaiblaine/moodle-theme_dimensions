@@ -27,11 +27,11 @@ namespace theme_dimensions\local\card;
 use theme_dimensions\local\category\branding;
 
 /**
- * The cover of a course with no image of its own, as an SVG data URI (D14, D3 of the course card contract).
+ * The cover of a course with no image of its own, as an SVG data URI.
  *
  * The colour is the course category's band: its own branding pair, else its nearest ancestor's
  * ({@see branding::colours()}), and where no category on the path has a pair, the theme's primary as the page's
- * stylesheet compiles it ({@see primary()}), never {@see branding::DEFAULT_BG}. The contract's cover overlay, a
+ * stylesheet compiles it ({@see primary()}), never {@see branding::DEFAULT_BG}. The card's cover overlay, a
  * 135 degree gradient from white at 16 % to black at 34 %, is baked into the image, because an image gets no CSS
  * overlay; the kind's watermark stays the card's own markup.
  *
@@ -52,10 +52,10 @@ final class cover {
     /** @var int The image's width, the card's cover at its widest grid column; the SVG stretches to any box. */
     private const WIDTH = 320;
 
-    /** @var int The image's height, the contract's 150 px cover. */
+    /** @var int The image's height, the card's 150 px cover. */
     private const HEIGHT = 150;
 
-    /** @var string The overlay's first stop: white at 16 % (the contract's cover-overlay token). */
+    /** @var string The overlay's first stop: white at 16 % (the --dimensions-card-cover-overlay token). */
     private const OVERLAY_FROM = '<stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>';
 
     /** @var string The overlay's last stop: black at 34 %. */

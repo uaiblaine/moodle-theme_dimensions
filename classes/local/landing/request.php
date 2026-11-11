@@ -61,12 +61,11 @@ use theme_dimensions\output\opengraph;
  *    under forcelogin, and its visibility half is already inside
  *    publicaccess::is_public(), which the visitor passed.
  * 6. The guest entry ({@see guestaccess}), asked for by guest=1 on the address or by the
- *    interstitial's form, and only where the course offers it: a session already logged in,
- *    the guest's included, goes straight to the course; the form's POST, with the session key,
- *    logs an anonymous visitor in as the guest and sends them there; an anonymous visitor of the
- *    address gets the interstitial, with the landing page's own head tags. Where the course does not
- *    offer it, the request is the plain landing page. It sits after every guard above, so it opens
- *    nothing they close: an anonymous visitor reaches it only for a public course.
+ *    interstitial's form, where the course offers it: a logged-in session (the guest's included)
+ *    goes straight to the course; the form's POST with the session key logs an anonymous visitor
+ *    in as the guest and sends them there; an anonymous visitor of the address gets the
+ *    interstitial. Where the course does not offer it, the answer is the plain landing page. It
+ *    comes after every guard above, so an anonymous visitor reaches it only for a public course.
  *
  * The guards mirror enrol/index.php rather than calling require_login($course),
  * which is exactly the call that sends a non-enrolled user to the standard
@@ -261,9 +260,9 @@ final class request {
     /**
      * The answer for an anonymous visitor of the guest entry's address: the interstitial.
      *
-     * A 200 carrying the landing page's own head tags - og:url and the canonical stay the landing page's
-     * page, the robots rule is the hook's - so a shared link unfurls exactly as the landing page's does,
-     * on a layout that prints the standard head and nothing of the site's navigation. $PAGE's own
+     * A 200 carrying the landing page's own head tags (og:url and the canonical stay the landing page's
+     * address, the robots rule is the head hook's), so a shared link unfurls exactly as the landing page's
+     * does, on a layout that prints the standard head and none of the site's navigation. $PAGE's own
      * address is the guest entry's, so a language switch comes back here rather than to the landing page.
      *
      * @param \stdClass $course The course.

@@ -293,7 +293,7 @@ final class flavourchoice {
         $cache = \cache::make('theme_dimensions', 'flavourmenu');
         $key = current_language() . '_' . implode('_', $ids);
         $looks = $cache->get($key);
-        // An entry of the shape before the marks (a bare list of titles) is built again.
+        // A miss, or an entry without both halves, is built again.
         if (is_array($looks) && isset($looks['titles'], $looks['marks'])) {
             return $looks;
         }

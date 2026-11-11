@@ -7,8 +7,7 @@ import{useEffect as v}from"react";import{usePopover as f}from"./popover";import{
  * through a document listener, because the list re-renders under a press of "Select all" and the focus can fall
  * outside the dropdown, where no handler on it would see the key; the focus goes back to the button) holding real
  * checkboxes with their labels and a "Select all" button. A key unchecked is a key the range is not asked for, so it
- * carries no count: the server never counted it. The state is the same `off` as the chips' it
- * replaces, so nothing changes on the server.
+ * carries no count: the server never counted it. What it writes is the page state's `off` list of keys.
  *
  * @module     theme_dimensions/calendar/EventTypes
  * @copyright  2026 Anderson Blaine

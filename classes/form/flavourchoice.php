@@ -46,7 +46,7 @@ class flavourchoice extends \moodleform {
     /**
      * One radio per look, the page to come back to, save and cancel.
      *
-     * A radio's text is printed raw by core's form template, so each label goes in ESCAPED, after its mark.
+     * A radio's text is printed raw by core's form template, so each label goes in escaped, after its mark.
      *
      * @return void
      */

@@ -30,41 +30,35 @@ use theme_dimensions\local\landingfields;
  * The file route of the public landing page: the course image, the summary's files and the Open Graph image.
  *
  * Under forcelogin, core's file_pluginfile() answers course/overviewfiles and course/summary
- * with require_login(), so a visitor of a public page gets 303 for the course image and for
- * every image embedded in the summary, and a scraper finds no og:image to fetch. This route
- * serves the same stored files - it copies nothing - under the theme's own component, which
- * file_pluginfile() hands to theme_dimensions_pluginfile() with no login check of
- * its own. Every check is here, in {@see resolve()}: the course must be public NOW (the page
- * that minted the URL is not trusted), the course id in the path must be the context's own
- * instance (so a URL cannot pair one course's context with another's id), and an area keyed by
- * content must name the current content.
+ * with require_login(), so a visitor of a public page is redirected to the login page for the
+ * course image and for every image embedded in the summary, and a scraper finds no og:image.
+ * This route serves the same stored files (it copies nothing) under the theme's own component,
+ * which file_pluginfile()'s generic branch hands to theme_dimensions_pluginfile() with no login
+ * check of its own. So every check is in {@see resolve()}: the course must be public at request
+ * time (the page that minted the URL is not trusted), the course id in the path must be the
+ * context's own instance (so a URL cannot pair one course's context with another's id), and a
+ * hashed area must name the current content.
  *
  * Five areas, each carrying the course id as its item id:
  *  - hero/<courseid>/<contenthash>/<filename>: the first overview image, bytes as stored;
- *  - cover/<courseid>/<contenthash>/<filename>: the same file again, for a public page that is
- *    NOT a landing page - the card of the public category listing. The one area a course reaches
- *    WITHOUT a landing page model, because a public category lists every public course and most of
- *    them chose no model: the hero and og areas belong to the landing page, and the page they belong
- *    to exists only with a model, so their requirement stays exactly as it was;
+ *  - cover/<courseid>/<contenthash>/<filename>: the same file, for the card of the public category
+ *    listing. The one area served without a landing page model, because a public category lists
+ *    every public course and most of them chose no model;
  *  - ogimage/<courseid>/<contenthash>/og.jpg: a 1200x630 JPEG derivative made once per content
- *    under localcachedir - of the share picture when the course has one a derivative can be
- *    made of, else of the course image ({@see og_source()});
+ *    under localcachedir, of the share picture when a derivative can be made of it, else of the
+ *    course image ({@see og_source()});
  *  - summary/<courseid>/<filepath><filename>: a file embedded in the course summary;
  *  - badge/<courseid>/<contenthash>/<filename>: one of the course's badge pictures, bytes as
- *    stored. The one area that also serves a course that is NOT public, to a logged-in user
- *    who may see the course: the badge fields are custom fields visible to nobody, so the
- *    picture type's own route refuses them to everyone and the landing page has no other way to
- *    show them. The rule mirrors the logged-in guards of {@see request::handle()}. The cover
- *    area gets no such rescue: a course that is not public is refused there whoever asks, and
- *    the logged-in listing never mints that URL - it keeps core's own.
+ *    stored. The one area also served for a course that is not public, to a logged-in user who
+ *    may see the course ({@see viewer_may_see()}): the badge fields are visible to nobody, so the
+ *    picture type's own route refuses them to everyone. The cover area has no such exception; the
+ *    logged-in listing keeps core's URL.
  *
- * The content hash in the hero and og paths is the cache-buster: social networks keep a
- * scrape from a day to indefinitely, so a stable name would never update a preview after
- * the image was replaced. Every answer is sent cacheability private:
- * send_stored_file() defaults to public for an anonymous requester, and a shared proxy would
- * keep serving an unpublished course's image for the whole max-age with nothing at the Moodle
- * layer able to clear it. A refusal is a bare 404, never send_file_not_found(), which throws
- * and renders a themed error page through core_renderer::header() for an anonymous user.
+ * The content hash in the hashed paths is the cache-buster: social networks keep a scrape from a
+ * day to indefinitely, so a stable name would never update a preview after the image changed.
+ * Every answer is sent with cacheability private: send_stored_file() defaults to public for an
+ * anonymous requester, and a shared proxy would keep serving an unpublished course's image for the
+ * whole max-age. A refusal is a bare 404 ({@see refuse()}).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -125,10 +119,10 @@ final class publicfiles {
     /**
      * @var int Source pixels above which no derivative is attempted.
      *
-     * The derivative is made inside a page render, under raise_memory_limit(MEMORY_EXTRA):
-     * 384 MB on 64-bit. At 25 million pixels, decoding a PNG, rotating it and covering the
-     * canvas peaks about 200 MB over the request's baseline. The ceiling leaves room for the
-     * raw bytes and the page, and still admits a 24-megapixel camera photo.
+     * The derivative is made inside a page render, under raise_memory_limit(MEMORY_EXTRA): at
+     * least 384 MB on 64-bit ($CFG->extramemorylimit when higher). At 25 million pixels, decoding a
+     * PNG, rotating it and covering the canvas peaks about 200 MB over the request's baseline. The
+     * ceiling leaves room for the raw bytes and the page, and still admits a 24-megapixel photo.
      */
     public const MAX_SOURCE_PIXELS = 25000000;
 
@@ -200,11 +194,11 @@ final class publicfiles {
      * "crest-alpha.png" is announced as "crest alpha" rather than as a slug. The editor
      * names the file; the field's description and the category editor's help both say so.
      *
-     * One spelling for every badge of this theme: the landing page's grid, the course card of the
-     * category showcase and a category's own crests on its hero and its directory card all
-     * call this, so the same file cannot be announced two ways on two pages. It takes the file
-     * NAME rather than a stored_file because the category's cached branding payload holds the
-     * name and never the file ({@see \theme_dimensions\local\category\branding}).
+     * Every badge of this theme is announced through this (the landing page's grid, the
+     * showcase's course card, a category's crests on its hero and directory card), so one file
+     * reads the same everywhere. It takes the file name rather than a stored_file because the
+     * category's cached branding payload holds the name only
+     * ({@see \theme_dimensions\local\category\branding}).
      *
      * @param string $filename The badge's file name.
      * @return string The plain spelling.
@@ -430,19 +424,17 @@ final class publicfiles {
     /**
      * Resolve a request to the stored file it names, or refuse it.
      *
-     * Nothing about the request is trusted: the course must be public at this moment and -
-     * on every area but the cover - have a landing page model, the two conditions under which
-     * {@see request::handle()} serves a visitor, so those areas are reachable exactly when the
-     * page is.
-     * The cover area answers for the public category listing, which lists every public
-     * course whether or not it chose a model, so the model requirement would refuse most of
-     * the covers it exists to serve; the public predicate is what guards it. The course id
-     * in the path must be the context's own instance (the summary area looks its file up by
-     * the context, so a mismatch there would pair one course's id with another's files), a
-     * hashed area must name the current content and its own file name, and the summary and
-     * badge areas serve images only: a page for the open internet embeds pictures, and an inline
-     * .html from either area would be same-origin script for every visitor. The site course and bad
-     * ids are refused by {@see publicaccess::is_public()}, which never holds them public.
+     * Nothing about the request is trusted. The course must be public now and, on every area but
+     * the cover, have a landing page model: the two conditions under which {@see request::handle()}
+     * serves a visitor, so those areas are reachable exactly when the page is. The cover serves the
+     * public category listing, which lists public courses with or without a model, so only the
+     * public predicate guards it. The badge area also admits {@see viewer_may_see()}.
+     *
+     * The course id in the path must be the context's own instance (the summary area looks its file
+     * up by the context, so a mismatch would pair one course's id with another's files), a hashed
+     * area must name the current content and its own file name, and the summary and badge areas
+     * serve images only: an inline .html from either would be same-origin script for every visitor.
+     * The site course and bad ids are refused by {@see publicaccess::is_public()}.
      *
      * @param \core\context $context The context the URL names.
      * @param string $filearea The area.
@@ -503,13 +495,13 @@ final class publicfiles {
     /**
      * The courses among these whose badges the route would serve a logged-in reader: {@see viewer_may_see()} for many.
      *
-     * The same four tests, in the same order, read in bulk: logged in and not the guest account; a
-     * course local_unlistedcourses keeps discoverable by its own state (the course term
-     * {@see redirector::is_ghosted()} asks, one batch for them all); visible, or hidden with the
+     * The same four tests in the same order, read in bulk: logged in and not the guest account; a
+     * course local_unlistedcourses keeps discoverable by its own state (the term
+     * {@see redirector::is_ghosted()} asks, one batch for all); visible, or hidden with the
      * capability to see it; and a view of its category's listing or an active enrolment. Keep the
-     * two in step: course_badges_test holds this answer against what {@see resolve()} really serves.
-     * A visitor is answered nothing here, although the route serves a public course's badge to
-     * anybody: the callback that asks is for a logged-in reader's cards, and nothing is the safe side.
+     * two in step; course_badges_test compares this answer with what {@see resolve()} serves.
+     * A visitor gets nothing here, although the route serves a public course's badge to anybody:
+     * the caller builds a logged-in reader's cards, and nothing is the safe answer.
      *
      * @param \stdClass[] $courses Course rows carrying id, category and visible, their contexts preloaded.
      * @return int[] The ids of the courses kept, in the order given.
@@ -607,9 +599,9 @@ final class publicfiles {
     /**
      * Refuse with a bare 404 and stop.
      *
-     * Not send_file_not_found(): that throws, and the handler renders a full themed error
-     * page through core_renderer::header() for an anonymous user - the render this whole
-     * design avoids, and one that answered a missing file with a 500 rather than a 404.
+     * Not send_file_not_found(): that throws, and the exception handler then renders a full
+     * themed error page through core_renderer::header() for an anonymous user, which can end in
+     * a 500 rather than a 404.
      *
      * @return void
      */

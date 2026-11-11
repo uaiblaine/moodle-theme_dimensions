@@ -29,13 +29,12 @@ use theme_dimensions\local\landingfields;
 /**
  * Validates the landing page fields of the course settings form.
  *
- * Three rules. The video address: the landing page embeds it through core's
- * media manager, so an address no enabled media player handles would save
- * fine and then render as nothing. Refusing it here, with the field named,
- * is the only moment the editor is looking. The check is the same the page
- * will make, {@see embeddable()}, so the two cannot drift apart. And two
- * more rules: a self-paced course is always online, and a hybrid
- * offering's in-person hours fit inside its total.
+ * Three rules:
+ * - The video address: the landing page embeds it through core's media manager, so an
+ *   address no enabled media player handles would save and then render as nothing. The
+ *   check is the one the page makes, {@see embeddable()}.
+ * - A self-paced course is always online.
+ * - A hybrid offering's in-person hours fit inside its total.
  *
  * Only what the editor can see is refused. A field the form hides
  * ({@see after_form_definition::hide_inapplicable_fields()}) keeps its value and is
@@ -48,7 +47,7 @@ use theme_dimensions\local\landingfields;
  */
 class after_form_validation {
     /**
-     * Refuse a video address no enabled media player embeds.
+     * Add the errors of the three rules to the form's validation.
      *
      * @param \core_course\hook\after_form_validation $hook The hook.
      * @return void

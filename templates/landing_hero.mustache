@@ -23,7 +23,8 @@
     it full width in the page header (theme_dimensions\local\landing\heroformat); both hand it the landing
     page's exported context, so the two formats print the same banner.
 
-    The image's url is printed into a style attribute, a CSS context the double stash does not protect:
+    The image's url is printed into a style attribute, a CSS context the double stash does not protect
+    (the browser decodes the attribute before the CSS parser reads it):
     landing_page::hero_image_url() answers null for any url styleurl::safe() refuses. The workload bar's two
     widths are integers from 0 to 100 made by landing_page::hero_comp(). Every other value is plain text.
 

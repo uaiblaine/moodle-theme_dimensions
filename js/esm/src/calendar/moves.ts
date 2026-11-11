@@ -19,7 +19,7 @@
  * Every decision here is core's, read from the answer (`editing`, local\calendar\editing::entries()): an item is
  * edited, deleted or dragged only when core's month view would. What is computed here is the guard of a drop (the
  * limits core gave, as core's month_view_drag_drop checks them before it asks) and the instants core's form and
- * core_calendar_update_event_start_day take, which are timestamps: the day the reader picked, in the VIEWER's
+ * core_calendar_update_event_start_day take, which are timestamps: the day the reader picked, in the viewer's
  * timezone (Intl's zone data, as days.ts reads instants), never the browser's.
  *
  * @module     theme_dimensions/calendar/moves

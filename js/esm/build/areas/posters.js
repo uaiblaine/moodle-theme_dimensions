@@ -1,12 +1,11 @@
 import{CLASSES as b,PANEL_ID as y,SELECTORS as o}from"./model";/**
- * The posters' result layer: what Areas.tsx writes onto the server's posters, and nobody else does.
+ * The posters' result layer: everything the areas component writes onto the server's posters.
  *
- * The posters are the server's markup
- * (category_directory_card) and stay it: the component never re-renders one. What changes with an answer -
- * the pill, the counts and the shell on the article, whether the poster opens (its control a button or the
- * link to its page), its open state, its item's place in the grid, the reveal and the "nothing anywhere"
- * box - is written here, by Areas.tsx alone, on both shells. Every write is made only when it changes something,
- * so a pass that agrees with the page invalidates no style.
+ * The posters are the server's markup (category_directory_card) and stay it: the component never re-renders
+ * one. What changes with an answer - the pill, the counts and the shell on the article, whether the poster
+ * opens (its control a button or the link to its page), its open state, its item's place in the grid, the
+ * reveal and the "nothing anywhere" box - is written here, on both shells. Every write is made only when it
+ * changes something, so a pass that agrees with the page invalidates no style.
  *
  * Two kinds of poster control. The logged-in shell's become buttons. The visitor's stay the links the server
  * drew (`links`), each announced as the button it acts as - its role, its state, the panel it controls - so a

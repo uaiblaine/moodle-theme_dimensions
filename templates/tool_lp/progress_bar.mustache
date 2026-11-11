@@ -25,13 +25,12 @@
     percentlabel, so the block names are its interface.
 
     Kept from core: the three blocks and their context fallbacks, and a native progress element with
-    value and max="100" (no style attribute ever carries the number).
+    value and max="100" (no style attribute carries the number).
     Changed: the percentlabel block, which core declares and never prints, is printed beside the
-    sentence; the bar is NAMED by the sentence, through a label wrapping both, where core only
-    described it through aria-describedby on the id progress-<uniqid>. That id is gone on purpose: the
-    uniqid helper is one value per render, so template_statistics, which draws up to three bars,
-    wrote it three times and pointed every bar at the first sentence. Nothing in core reads the id.
-    The classes are the theme's (scss/competency.scss).
+    sentence; a label wrapping both names the bar, where core only described it through
+    aria-describedby="progress-<uniqid>". That id is dropped: uniqid is one value per render, so
+    template_statistics, which draws up to three bars, repeated it and pointed every bar at the first
+    sentence. Nothing in core reads it. The classes are the theme's (scss/competency.scss).
 
     Context variables required for this template:
     * progresstextvalue A brief text that describes the progress bar.

@@ -16,9 +16,9 @@
 /**
  * The filter line's folding steps, as a rule over numbers.
  *
- * The line takes the first step at which its controls fit
- * on its OWN width - full; Filters without its word; the search as an icon; two lines, the scope on the
- * second and the view toggle in the Organise menu - and the last one whatever it measures.
+ * The line takes the first step at which its controls fit on its own width - full; Filters without its
+ * word; the search as an icon; two lines, the scope on the second and the view toggle in the Organise
+ * menu - and the last one whatever it measures.
  *
  * Trying each step on the page and reading whether a control is drawn past an edge would force a layout on every
  * width change. This module measures, once per content, how wide the line must be for each step

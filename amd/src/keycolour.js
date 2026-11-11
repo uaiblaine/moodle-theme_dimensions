@@ -17,9 +17,9 @@
  * Keeps the swatch of an event type's colour setting in step with its hexadecimal field.
  *
  * The server draws the whole control (templates/admin_setting_keycolour.mustache), so the field works alone without
- * this module. It adds the two-way sync, with listeners delegated from the document so that nine settings, or one
- * added to the page later, cost one pair of listeners: typing updates the preview and the native colour input, and
- * picking writes the hex into the field and dispatches input and change on it.
+ * this module. It adds the two-way sync, with one input listener delegated from the document so that nine settings, or
+ * one added to the page later, cost one listener: typing updates the preview and the native colour input, and picking
+ * writes the hex into the field and dispatches input and change on it.
  *
  * @module     theme_dimensions/keycolour
  * @copyright  2026 Anderson Blaine

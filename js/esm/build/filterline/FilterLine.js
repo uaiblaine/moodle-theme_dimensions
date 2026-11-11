@@ -5,7 +5,7 @@ import{Fragment as Oe,useLayoutEffect as P,useReducer as Ge,useRef as p,useState
  * Drawn on both shells; on the visitor's no star is drawn and the scope may be absent: it draws what the server
  * drew. block_compass's FilterLine implements the same contract on its own; nothing is shared.
  *
- * WHO OWNS WHAT. The mount node is the server's line itself (dim-line), which the listing's
+ * Who owns what. The mount node is the server's line itself (dim-line), which the listing's
  * mountLine() names for core's react_autoinit, so the line keeps its place, its classes and the sibling
  * rules the stylesheet writes against it. A mount replaces its markup, so the first render draws the
  * markup the server drew, read off it ({@see ./model read()}), with the same names inside the same GET
@@ -28,7 +28,7 @@ import{Fragment as Oe,useLayoutEffect as P,useReducer as Ge,useRef as p,useState
  * - `dim-line:failed`, sent instead where the markup is not a line this component can draw, so the listing
  *   releases what it holds for the mount: the line stays the server's.
  *
- * A MOUNT AGAIN DRAWS THE LINE AGAIN. Core's react_autoinit unmounts a mounted node that leaves the document
+ * A second mount draws the line again. Core's react_autoinit unmounts a mounted node that leaves the document
  * and mounts it when it comes back, so a line moved after the hand-over - or under an ancestor that moved -
  * is mounted a second time onto a node React has just emptied. Unmounting therefore gives the adopted frames'
  * nodes back to the server's frames and keeps them, with the line's last state, for that node

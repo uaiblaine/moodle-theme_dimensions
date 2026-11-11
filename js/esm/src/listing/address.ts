@@ -351,7 +351,8 @@ export const readUrl = (state: ListingState): void => {
 };
 
 /**
- * Whether a state narrows the page: the server's has_filters().
+ * Whether a state narrows the page: the server's has_filters() without the tree's category, which the one
+ * caller (the posters' pending event) can leave out because a grouped page never carries one.
  *
  * @param {object} state The calling client's state.
  * @returns {boolean}

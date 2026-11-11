@@ -24,12 +24,13 @@
     core upgrade. tool_lp/renderer renders it on user_competency.php, and tool_lp/user_competency_info
     re-renders it through core/templates after a rating or a change of review status and replaces the
     root element with the answer. Its two siblings, user_competency_summary_in_plan and
-    user_competency_summary_in_course, are NOT overridden: they carry the same proficiency badge, which
+    user_competency_summary_in_course, are not overridden: they carry the same proficiency badge, which
     scss/competency.scss gives the pill's shape and an icon.
 
     Kept from core, because tool_lp's modules read them: the root's data-region="user-competency-full-info",
     data-node="user-competency" with data-competencyid and data-userid (tool_lp/user_competency_workflow
-    reads the ids off the ONE ancestor with that node, so nothing inside may carry it again) and
+    reads the ids off that ancestor and throws unless exactly one carries the node, so nothing inside
+    may carry it again) and
     data-region-id="<uniqid>" (the reloader's root); data-region="competency-summary";
     data-region="user-competency-status" around the four review buttons, which the workflow finds
     inside it by data-action="request-review", "cancel-review-request", "start-review" and

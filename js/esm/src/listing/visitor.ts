@@ -105,8 +105,8 @@ const publicOnly = (state: ListingState): void => {
 };
 
 /**
- * Ask the visitor's web service one question: the one call site of this shell. Login not required, which posts
- * to service-nologin.php; a cachekey would make it a GET answered with ninety days of public caching.
+ * Ask the visitor's web service one question: the one call site of this shell, login not required and never
+ * with a cachekey (the module docblock says why).
  *
  * @param {object} args The service's arguments.
  * @returns {Promise} The answer.
@@ -369,7 +369,7 @@ const SHELL = {
     written: linkPosters,
     leave: navigate,
     answered: linkPosters,
-    // The native fields stay the server's and work: the visitor is told nothing, as before.
+    // The native fields stay the server's and work: the visitor is told nothing.
     unmounted: nothing,
     areas: {
         props: AREAS_PROPS,

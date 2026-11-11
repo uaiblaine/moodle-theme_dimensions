@@ -29,8 +29,7 @@
  * - it sends `dim-daterange:pick`, detail {from, to}, whenever the period in force changes;
  * - it takes `dim-daterange:set`, detail {from, to}, the period the address says, silently.
  *
- * Without the day the site calls today it draws nothing and says nothing, so the native fields stay
- * exactly as the server drew them: the browser's clock is the one answer this control may not use.
+ * Without the day the site calls today it draws nothing and says nothing ({@see DateRange}).
  *
  * @module     theme_dimensions/daterange/DateRange
  * @copyright  2026 Anderson Blaine
@@ -61,7 +60,7 @@ const DAY = '[data-region="dim-daterange-day"]';
 /** The component every string of this control belongs to. */
 const COMPONENT = 'theme_dimensions';
 
-/** The strings the control writes, all of them the template category_daterange's own. */
+/** The strings the control writes: the template category_daterange's, and the two prompts above the months. */
 const KEYS = [
     'category_daterange',
     'category_datefrom',

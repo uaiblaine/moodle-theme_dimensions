@@ -23,15 +23,16 @@
     Re-diff it against that file on every core upgrade.
 
     Kept from core, because tool_lp/evidence_delete reads them: the container's
-    data-region="evidence" and data-id (the delete handler takes the id from the ONE ancestor with
+    data-region="evidence" and data-id (the delete handler refuses unless exactly one ancestor carries
     that region, so no element inside may carry it again), the trigger's data-action="delete-evidence",
     and the JavaScript registering the two selectors. Kept for Behat: the rating is a span with the
     class badge (tool_lp's "competency grade" selector). Every context key keeps core's escaping
     (all double-stashed: the description and the note are plain text from the exporter).
     Changed: the evidence is a card (dim-comp-evidence) with the person, the date and the delete action
     on one line; the date is a span, because core's time element carried the formatted date as its
-    datetime attribute, which is no machine-readable date (the HTML validator refuses it); the rating is a rated pill with an icon; the delete icon carries the "Delete" string
-    as its accessible name, where core's had none; the note is a styled quote.
+    datetime attribute, which is no machine-readable date (the HTML validator refuses it); the rating
+    is a rated pill with an icon; the delete icon carries the "Delete" string as its accessible name,
+    where core's had none; the note is a styled quote.
 
     Context variables required for this template:
     * id - the evidence id

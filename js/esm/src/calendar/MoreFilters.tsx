@@ -14,14 +14,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The "More filters" panel: the course model, the modality, the city, "only what I have to do" and
- * the colouring.
+ * The "More filters" panel: the course model, the modality, the city, "only what I have to do" and the colouring.
  *
  * A disclosure: the button says how many filters narrow the calendar, and the panel applies every change at once (the
  * page asks the range again and remembers the state after a quiet). The model's and the modality's boxes all start
- * checked, meaning every option, as the event types' dropdown starts with every key on:
- * the server reads an empty list as every option, so an empty list draws every box on, unchecking one writes the
- * others, and checking them all again writes the empty list (model.ts shownOn(), keptAfter()). The last box on of a
+ * checked, meaning every option, as the event types' dropdown starts with every key on: the server reads an empty
+ * list as every option, so an empty list draws every box on, unchecking one writes the others, and checking them all
+ * again writes the empty list (model.ts shownOn(), keptAfter()). The last box on of a
  * group is disabled: "none" has no spelling in the server's contract. Each input carries data-on, the state the
  * component drew, which a test reads where the live checked property is out of its reach. "Clear filters" is the
  * toolbar's, beside this button (Calendar.tsx): it puts back the keys and the category scope as well as these.

@@ -35,8 +35,8 @@ use theme_dimensions\local\focusmodefields;
  * the previous answer first and moves the default afterwards, in that order, because
  * checkbydefault is also what every course without a row reads.
  *
- * It never throws. A throwing adhoc task is retried for ever, and there is nothing here a
- * retry could fix that mtrace has not already said.
+ * It never throws: core would retry a failed adhoc task, and the failure is reported through
+ * mtrace instead.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -75,7 +75,7 @@ class materialise_focusmode_default extends \core\task\adhoc_task {
                 mtrace('Focus mode: the default for new courses is now ' . ($data['new'] ? '1' : '0') . '.');
             }
         } catch (\Throwable $e) {
-            // Never throw: an adhoc task which throws is retried for ever.
+            // Never throw: core would retry the task (see the class docblock).
             mtrace('Focus mode: writing the previous default failed - ' . $e->getMessage());
             return;
         }

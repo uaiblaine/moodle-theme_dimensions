@@ -21,10 +21,11 @@
     and the dense list view - the view is one class on the listing container,
     never a second template - and the panel's rail draws it as it is.
 
-    It is the fleet's course card (moodle-dev/docs/course-card/CONTRACT.md): one
-    target, the title's link, which the stylesheet stretches over a card the
-    viewer can open (dim-card--link: it has a page and is not muted), with every
-    other control lifted over it; the buttons are Bootstrap's own variants.
+    It is the course card the sibling plugins draw too, through the same
+    --dimensions-card-* tokens (scss/post.scss): one target, the title's
+    link, which the stylesheet stretches over a card the viewer can open
+    (dim-card--link: it has a page and is not muted), with every other
+    control lifted over it; the buttons are Bootstrap's own variants.
 
     Anatomy: a media band holding the course image (or the flat fallback the
     stylesheet paints), the event's date tile and the kind pill; a body with the
@@ -95,7 +96,7 @@
     in the cover's place beside the crests and the star, which the stylesheet
     places there without moving them.
 
-    The progress row (contract section 3), drawn on an enrolled card while
+    The progress row, drawn on an enrolled card while
     showprogress (hasprogress), ships hidden: a line of its own under the state
     pill, a bar and the percentage (dim-card-pct) at its right, a progressbar
     (its children presentational) whose value and label the

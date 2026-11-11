@@ -10,8 +10,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * shift a calendar square by that offset. The browser's clock is never read: the day the site calls
  * today arrives from the server.
  *
- * {@see period()} is criteria's reading of a period, the one both shells read an address through (the listing's
- * store and its shells).
+ * {@see period()} mirrors criteria's reading of a period; both shells read the period of an address through it.
  *
  * @module     theme_dimensions/daterange/calendar
  * @copyright  2026 Anderson Blaine

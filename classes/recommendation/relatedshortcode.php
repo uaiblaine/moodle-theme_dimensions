@@ -29,9 +29,9 @@ use theme_boost_union\recommendation\recommendation;
 use theme_dimensions\local\related\shortcode;
 
 /**
- * Notes when the `[relatedcourses]` shortcode cannot run: filter_shortcodes is not installed, or is installed and off.
+ * Notes when the `[relatedcourses]` shortcode cannot run: filter_shortcodes is not installed, or is installed and disabled.
  *
- * Without the plugin the theme's db/shortcodes.php is never read; with the filter off a text holding the shortcode
+ * Without the plugin the theme's db/shortcodes.php is never read; with the filter disabled a text holding the shortcode
  * shows it as written. A notice and not a warning: the landing pages' band needs neither.
  *
  * @package    theme_dimensions
@@ -85,7 +85,7 @@ class relatedshortcode extends base {
     }
 
     /**
-     * Decide the status: OK while the filter is installed and on, a notice otherwise.
+     * Decide the status: OK while the filter is installed and enabled (on, or off but available), a notice otherwise.
      *
      * @return string
      */

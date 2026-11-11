@@ -363,7 +363,7 @@ const discard = (card: HTMLElement): void => {
 };
 
 /**
- * Turn an enrolled card into the completed one (D4, option A): the seal for the pill, "Review" for the main action.
+ * Turn an enrolled card into the completed one: the seal for the pill, "Review" for the main action.
  *
  * The words are the card's own (data-done, data-review: the server writes them on an enrolled card alone), and the
  * mark takes the progress row away in the stylesheet as well as here, so a card never shows the bar and the seal.

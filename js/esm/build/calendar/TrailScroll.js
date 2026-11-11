@@ -1,8 +1,8 @@
 import{useEffect as te,useLayoutEffect as L,useRef as d,useState as U}from"react";import{dayWidth as $,keptLeft as j,nearEnd as re,openingLeft as ae,pageLeft as ne,scrubLeft as le,shiftedTarget as oe,shownDays as q,targetLeft as B,trackOf as F,zoomedLeft as ie}from"./trails";import{jsx as o,jsxs as P}from"react/jsx-runtime";/**
- * The Trilhas view's horizontal scroller, drawn as block_compass's calendar
- * strip is: one native scroller with its scrollbar hidden, its overscroll kept from the page, snapped by the day; round
- * arrows over the ends of the days' header, a fade over a side it can still scroll to, and under the grid the map, a 2px
- * line of the days held whose thumb is the days in view and whose tick is today.
+ * The Trilhas view's horizontal scroller, drawn as block_compass's calendar strip is: one native scroller with its
+ * scrollbar hidden, its overscroll kept from the page, snapped by the day; round arrows over the ends of the days'
+ * header, a fade over a side it can still scroll to, and under the grid the map, a 2px line of the days held whose thumb
+ * is the days in view and whose tick is today.
  *
  * - The grid inside it holds its trail column still (position: sticky), so only the days move; their widths are
  *   trails.ts TRACK, and every position is trails.ts arithmetic over the scroller's three numbers.

@@ -32,33 +32,24 @@ use renderable;
 /**
  * Renders the user profile in the theme's design system, from templates rather than from PHP.
  *
- * WHY A THEME. Overriding a core renderer is a theme privilege and nothing else's:
- * theme_config::renderer_prefixes() returns only theme_<name> prefixes for the active theme and
- * its parents, and Moodle has no db/renderers.php at all - that is a Totara mechanism. The class
- * name this file must carry is derived in renderer_factory_base::standard_renderer_classnames():
- * for the request $PAGE->get_renderer('core_user', 'myprofile') the prefixed candidate is
- * '\output\' . $component . '\' . $subtype . '_renderer'.
+ * The class name is derived by renderer_factory_base::standard_renderer_classnames(): for
+ * $PAGE->get_renderer('core_user', 'myprofile') the theme's candidate is
+ * theme_dimensions\output\core_user\myprofile_renderer, so a wrong namespace silently falls back
+ * to core's renderer.
  *
- * ONE OVERRIDE, BOTH PAGES. user/profile.php and user/view.php build the same tree through
- * manager::build_tree() and hand it to the same renderer, so the site profile and the in-course
- * profile change together. What they do NOT hand over is the heading, the user picture and the
- * "About me" description: those are printed by the two scripts themselves, before the tree, and
- * only $CFG->hiddenuserfields reaches the description. Styling for them is in scss/post.scss;
- * their visibility is a matter of configuration, not of this class.
+ * user/profile.php and user/view.php build the same tree through manager::build_tree() and hand
+ * it to this renderer, so the site profile and the in-course profile change together. The heading,
+ * the user picture and the "About me" description are printed by those scripts before the tree;
+ * they are styled in scss/post.scss and their visibility is configuration.
  *
- * WHAT CHANGES, beyond paint. Core renders every node of a category into one flat list, so a
- * fact ("Email address: ...") and an action ("Edit profile") sit at the same level with the same
- * weight. Here the two are separated: nodes carrying content become a definition list of facts,
- * nodes that are only a link become a list of actions at the foot of the card. Nothing is
- * dropped, reordered across categories, or invented - the tree decides what exists and in which
- * category, exactly as before.
+ * Core renders every node of a category into one flat list. Here nodes carrying content become a
+ * definition list of facts and nodes that are only a link become a list of actions at the foot of
+ * the card; nothing is dropped, invented or moved across categories.
  *
- * WHAT IS NOT FILTERED HERE, on purpose. The tree offers no removal API - node's properties are
- * all private behind a __get, and tree::add_node() throws on a duplicate name, so a callback can
- * add but never prune - which makes a renderer the only place a node could be withheld. It is
- * deliberately not used for that: on this platform the profile's privacy is configured through
- * $CFG->hiddenuserfields, which core consults while BUILDING the tree, and a second, invisible
- * rule in the presentation layer would be a place for the two to disagree.
+ * Nothing is filtered here, on purpose: the tree has no removal API (a callback can add but never
+ * prune), so a renderer could withhold a node, but the profile's privacy is $CFG->hiddenuserfields,
+ * which core consults while building the tree, and a second rule here would be a place for the two
+ * to disagree.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -153,10 +144,8 @@ class myprofile_renderer extends \core_user\output\myprofile\renderer {
             }
         }
 
-        // Core prints nothing for a category with no nodes, and neither does this. A card headed
-        // "User details" with nothing under it would be a statement about the person - it says
-        // there is something here you may not have - which is the opposite of what an empty
-        // category means.
+        // Core prints nothing for a category with no nodes, and neither does this: an empty card
+        // headed "User details" would suggest something is being withheld.
         if (empty($facts) && empty($actions)) {
             return null;
         }
@@ -174,16 +163,13 @@ class myprofile_renderer extends \core_user\output\myprofile\renderer {
     /**
      * Build the template context for one node.
      *
-     * NEITHER the title NOR the content is escaped, and both must stay that way.
+     * Neither the title nor the content is escaped, and both must stay that way: whoever builds a
+     * node owns the escaping of everything in it.
      *
-     * The content is pre-built HTML by contract, assembled with html_writer by core (the course
-     * list in lib/myprofilelib.php is a whole <ul>) and by every plugin adding a node.
-     *
-     * So is the title: core passes it through html_writer::link() and html_writer::tag(), neither
-     * of which escapes, and plugins rely on that - tool_muloginas renders its whole "Log in as"
-     * button and passes it as the node's title, with no content and no url at all
-     * (tool/muloginas/lib.php). Escaping it here would print that markup as text. Whoever builds a
-     * node owns the escaping of everything in it. Pinned by myprofile_renderer_test.
+     * The content is pre-built HTML by contract (core's course list in lib/myprofilelib.php is a
+     * whole <ul>). So is the title: core passes it through html_writer::link() and
+     * html_writer::tag(), neither of which escapes, and tool_muloginas passes its whole "Log in as"
+     * button as a node's title, with no content and no url. Pinned by myprofile_renderer_test.
      *
      * @param node $node The node.
      * @return array The context.

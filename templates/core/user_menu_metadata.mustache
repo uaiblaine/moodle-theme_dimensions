@@ -20,10 +20,10 @@
     User menu metadata template, overridden by Dimensions.
 
     Modification compared to the original template:
-    * Show the user's name beside the avatar in the navbar, from the md breakpoint up. Core renders
-      only the avatar here and keeps the name inside the open menu; on a platform where people are
-      addressed by rank, the name is what identifies the session at a glance. The name itself is
-      core's, whatever fullname() composes under the site's fullnamedisplay setting.
+    * Show the user's name beside the avatar in the navbar, from the md breakpoint up, so the
+      session is identified at a glance. Core renders only the avatar here and keeps the name
+      inside the open menu. The name itself is core's, whatever fullname() composes under the
+      site's fullnamedisplay setting.
 
     Context variables required for this template:
     * metadata - Array of extra badges (logged in as, failed logins), each with classes and content

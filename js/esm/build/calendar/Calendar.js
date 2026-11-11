@@ -1,7 +1,7 @@
 import{useCallback as on,useEffect as tt,useLayoutEffect as an,useMemo as U,useRef as u,useState as m}from"react";import{fetchOne as se}from"@moodle/lms/core/ajax";import Y from"@moodle/lms/core/pending";import{load as ln}from"../amd";import{parse as Me,say as nt}from"../daterange/calendar";import{RANGE_METHOD as sn,REMEMBER_METHOD as cn,TRAILS_METHOD as rt}from"./account";import ot from"./CategoryPicker";import dn from"./DayDrawer";import un from"./DayView";import{frameStyle as mn,gridWeeks as fn,zone as gn}from"./days";import{description as wn}from"./description";import vn from"./EditActions";import yn,{ClearFilters as at}from"./EventTypes";import{moveStart as hn,onChange as it,openForm as pn,refuse as bn}from"./editing";import Tn from"./EventPopover";import{writeAddress as D}from"./history";import{dayDots as _n,place as En}from"./layout";import{KEYS as lt,DAY_PARAM as Sn,address as Ee,cleared as kn,emptyAnswer as st,filtered as Dn,keysOn as On,normalise as $,rangeArgs as Pn,readAddress as Cn,sameState as Se,withDay as ke}from"./model";import Mn,{PHONE as An,guessPhone as Nn}from"./MonthGrid";import{itemKey as De,overlapsOf as Ln}from"./overlap";import Hn from"./MoreFilters";import{MOVE_MINUTE as zn,createStart as ct,dayStart as dt,dropRefusal as ut,editOf as Ae,editsOf as Fn,instantOf as In,toolbarStart as Rn}from"./moves";import{fill as mt,load as Kn}from"./strings";import Wn,{TrailFilters as $n}from"./TrailView";import{OPENING_MONTHS as Gn,filterOf as Vn,rangeLabel as xn,readTrail as Zn,readZoom as qn,trailArgs as ft,trailFiltered as Bn,withTrail as Oe,zoomOf as Un}from"./trails";import Yn from"./ViewSwitch";import Qn from"./WeekGrid";import{deskOf as jn,drawerOf as Jn,gridOf as Xn,inSpan as Pe,monthOfSpan as gt,openOf as wt,openingOf as vt,readSpan as er,selectedIn as tr,spanDays as ce,spanKey as yt,spanLabels as nr,spanOf as ht,stepSpan as rr}from"./weeks";import{jsx as l,jsxs as j}from"react/jsx-runtime";/**
  * The calendar page's client: the toolbar, the event types' dropdown, the category picker, "More filters" and "Clear
- * filters", the month grid or the week (WeekGrid.tsx), the day drawer (the agenda sheet on a phone) and the
- * event popover.
+ * filters", the month grid, the week (WeekGrid.tsx), a phone's Day view (DayView.tsx) or the Trilhas view
+ * (TrailView.tsx), the day drawer (the agenda sheet on a phone) and the event popover.
  *
  * Mounted by core's react_autoinit on the node calendar_page.mustache draws, never moved (a node that leaves the
  * document is unmounted). The props carry the range's first answer, so the first paint asks for nothing; once the
@@ -10,9 +10,10 @@ import{useCallback as on,useEffect as tt,useLayoutEffect as an,useMemo as U,useR
  *
  * - The latest request wins: a ticket is taken per request and checked after the await; a superseded answer is
  *   dropped. A Pending token (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - What is shown is a span, a month or a week (calendar/weeks.ts), with its answer: one range call either way. The
- *   view switch keeps the selected day (the week holding it, or its month), and the open day when the new span holds
- *   it. The view and the week are navigation, in the address and never in the remembered state.
+ * - What is shown is a span, a month, a week, a day or the Trilhas view's month (calendar/weeks.ts), with its answer:
+ *   one call per span, the range service's or, for the Trilhas view, the trails service's. The view switch keeps the
+ *   selected day (the week holding it, or its month), and the open day when the new span holds it. The view and the
+ *   week are navigation, in the address and never in the remembered state.
  * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a
  *   change of state replaces it; Back and Forward read the address again (popstate) and ask for what it names, writing
  *   nothing.
@@ -25,7 +26,7 @@ import{useCallback as on,useEffect as tt,useLayoutEffect as an,useMemo as U,useR
  * - An item opens the popover (EventPopover.tsx) on a press, Enter or Space, through one delegated listener on the
  *   elements marked data-cal-pop; a modified press and a middle click follow the item's href.
  * - The phone layout is the frame's width, measured by the shown grid's one ResizeObserver (MonthGrid.tsx PHONE), or
- *   the Day view's, which watches the same frame.
+ *   the Day view's or the Trilhas view's, which watch the same frame.
  * - The Day view is a phone's (DayView.tsx): the switch offers it only on a phone, a request
  *   asks for its one day, and a day span on a desktop is asked for and drawn as its month with the day's drawer open
  *   (weeks.ts deskOf(), gridOf()), in the one request path, so a first measure, Back and Forward and a phone turned

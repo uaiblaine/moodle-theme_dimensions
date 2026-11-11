@@ -24,8 +24,8 @@
 // a tail 12% lighter). Boost Union compiles this sheet once per flavour with that flavour's
 // look_brandcolor as $primary (Boost Union's brandcolor otherwise), so every flavour gets its own ground,
 // the anonymous visitor's included. Both grounds carry white text, so a brand colour on whose lightest stop
-// white reads under branding::FLOOR (4.5:1) is shaded in 4% steps until it does: Boost's default blue
-// moves one step, a light amber several, and the page stays in the brand's hue (never the design system's navy).
+// white reads under branding::FLOOR (4.5:1) is shaded in 4% steps until it does, so the page stays in the
+// brand's hue (never the design system's navy).
 $dim-landing-floor: 4.5;
 
 @function dim-landing-base($colour) {
@@ -256,10 +256,9 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         max-width: 42rem;
     }
 
-    // The badge grid: 100px squares, two per row, each a glass tile on the
-    // gradient (the design system's rule for panels over the navy). The image is
-    // fitted, never cropped. Below the text on narrow viewports, beside it from
-    // md up.
+    // The badge grid: 100px squares, two per row, each a white-over-glass tile on
+    // the gradient. The image is fitted, never cropped. Below the text on narrow
+    // viewports, beside it from md up.
     .dimensions-landing__badges {
         display: grid;
         grid-template-columns: repeat(2, 100px);
@@ -380,9 +379,8 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
     }
 
     // The scenario emphasis block: big date on online events, big place on
-    // in-person events, medium place on in-person courses. White-over-navy
-    // glass, per the design system's rule for panels on the institutional
-    // gradient.
+    // in-person events, medium place on in-person courses. White-over-glass on
+    // the brand gradient.
     .dimensions-landing__em {
         display: flex;
         flex-direction: column;
@@ -440,8 +438,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
     }
 
     // The hybrid event's double ticket: the date, a dashed perforation, and the two ways to
-    // take part, in one glass block. It never asks for more than the text column it sits in, which with
-    // the badge grid beside it is 460px of the hero's interior.
+    // take part, in one glass block. It never asks for more than the text column it sits in.
     .dimensions-landing__ticket {
         display: flex;
         max-width: 100%;
@@ -606,7 +603,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
 
     // The cut after the third paragraph: theme_dimensions/landingsummary measures it into the custom property and
     // sets the class. The fade is drawn under the cut, over the start of the fourth paragraph, so the third reads
-    // whole; {@see SLACK_REM} in the module is this 3rem.
+    // whole; the module's SLACK_REM is this 3rem.
     .dimensions-landing__summary--cut .dimensions-landing__summarytext {
         max-height: calc(var(--dim-landing-summary-cut) + 3rem);
         overflow: hidden;

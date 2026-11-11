@@ -27,15 +27,15 @@ namespace theme_dimensions\local\related;
 use theme_dimensions\output\related_band;
 
 /**
- * The `[relatedcourses]` shortcode of filter_shortcodes (R3 of docs/related/PLAN.md, declared in db/shortcodes.php).
+ * The `[relatedcourses]` shortcode of filter_shortcodes, declared in db/shortcodes.php.
  *
  * It draws the landing page's related courses band anywhere filter_shortcodes runs: a page of local_page, a label, a
  * category description. The attributes name identifiers, never ids, which break on a backup restored elsewhere:
  *
  * - `course="shortname"`: the parent course; by default the course the text belongs to, none on the site's pages;
  * - `framework="FW01" competencies="LID01,LID02"`: manual mode over those competencies, read inside that framework
- *   (D9); with a parent, only those linked to it (to a trail or its courses) count, without one any of the framework's
- *   do (D4);
+ *   (a competency idnumber is unique only inside its framework); with a parent, only those linked to it (to a trail
+ *   or its courses) count, without one any of the framework's do;
  * - `mode="auto|manual"`: automatic, the default, relates by the parent's whole set and needs a parent; manual needs
  *   `competencies`;
  * - `match="any|all"`: manual mode, a course linked to any of the competencies or to all of them;
@@ -282,7 +282,7 @@ final class shortcode {
                 foreach ($resolved['missing'] as $idnumber) {
                     $request->problems[] = get_string('related_shortcode_notfound', self::COMPONENT, "{$framework}/{$idnumber}");
                 }
-                // With a parent, a manual choice picks among its set (D4); without one, any of the framework's.
+                // With a parent, a manual choice picks among its set; without one, any of the framework's.
                 $request->set = $parent === null ? $resolved['ids'] : array_values(array_intersect($resolved['ids'], $parentset));
             }
         } else if ($parent === null) {

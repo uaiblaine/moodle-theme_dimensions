@@ -17,7 +17,7 @@
 namespace theme_dimensions\local\flavourcss;
 
 /**
- * Theme Dimensions - Compiles ONE Boost Union flavour's stylesheet before its first visitor asks for it.
+ * Theme Dimensions - Compiles one Boost Union flavour's stylesheet before its first visitor asks for it.
  *
  * Boost Union compiles a flavour's sheet only when a browser requests it (flavours/styles.php), so after
  * every theme cache reset the first visitor of each flavour waits for a whole theme compile. This class
@@ -35,8 +35,9 @@ namespace theme_dimensions\local\flavourcss;
  *
  * The file names, the cache key and the store sequence are copies of Boost Union's styles.php helpers,
  * which cannot be included (the file runs its request at the top level); {@see \theme_dimensions\local\upstream}
- * keeps their snapshots. The lock is the one styles.php and core's theme/styles.php take for the theme
- * (styles.php:189-190), so a visitor waits for this compile instead of running a second one.
+ * keeps their snapshots. The lock is the one Boost Union's flavours/styles.php and core's theme/styles.php take
+ * for the theme (lock factory 'core_theme_get_css_content', resource the theme name), so a visitor waits for
+ * this compile instead of running a second one.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

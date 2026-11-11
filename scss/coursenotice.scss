@@ -19,12 +19,11 @@
 // stacked course related hints. The notice is a card cut at its top
 // right corner, a 4px brand mark down its left edge, a bar of chips and buttons, and the detail rows.
 //
-// This file is concatenated into the theme's main SCSS and so reaches every page of the site, and
-// plugin and theme CSS is compiled before nothing that would yield to a bare class: every selector is
-// qualified with the notice's own class. The tokens are declared on the region itself, read from
+// This file is concatenated into the theme's main SCSS and so reaches every page of the site: every
+// selector is qualified with the notice's own class. The tokens are declared on the region itself, read from
 // Bootstrap's own (which follow the colour mode) with the design system's tokens and a literal as the
 // fallback chain; the dark half re-points the brand inks and the chip tones at the foot of the file.
-// Moodle 5.2 has one dark mechanism, data-bs-theme on the html element.
+// Moodle's dark mode is data-bs-theme on the html element.
 
 .dim-coursenotice {
     --dim-notice-card: var(--bs-body-bg, var(--dim-ds-surface-card, #fff));

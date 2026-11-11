@@ -28,17 +28,16 @@ namespace theme_dimensions\local\landing;
  * The seats and the enrolment deadline an enrolment instance declares.
  *
  * Read off the instance record alone, so it costs no statement and answers the same for whoever
- * looks: the page prints the CONFIGURED total, never what is left - a method whose cap is
- * reached is already hidden by the resolver, and a count of what is left would be a number that
- * changes under the reader. Only the plugins whose own checks read these fields are named here, so
- * a number on the page is one the plugin enforces:
+ * looks: the page prints the configured total, never what is left (a method whose cap is
+ * reached is already hidden by the resolver). Only the plugins whose own checks read these
+ * fields are named here, so a number on the page is one the plugin itself counts:
  *
  * - enrol_self caps at customint3 and enrol_autoenrol at customint5, both counting every row of
- *   the instance (enrol/self/lib.php is_self_enrol_available(), enrol/autoenrol/lib.php
- *   enrol_allowed());
- * - the enrol_apply fork caps places at customint4 and applications at customint3
- *   (classes/local/capacity.php); places are the seats when set, otherwise the page speaks of
- *   applications, never of seats;
+ *   the instance ({@see \enrol_self_plugin::is_self_enrol_available()},
+ *   {@see \enrol_autoenrol_plugin::enrol_allowed()});
+ * - enrol_apply accepts applications up to customint3 (a hard limit) and counts places at
+ *   customint4 (a warning to the manager, never a block; {@see \enrol_apply\local\capacity});
+ *   places are the seats when set, otherwise the page speaks of applications, never of seats;
  * - enrolenddate closes enrol_self, enrol_autoenrol, enrol_apply, enrol_fee and enrol_paypal, and
  *   nothing in core closes an enrolment at the course's own dates.
  *

@@ -27,25 +27,23 @@ namespace theme_dimensions\output;
 /**
  * The "Pages of this area" strip: a category's local_page pages the viewer may read, under the hero.
  *
- * local_page is OPTIONAL and version.php does not declare it: installed, its category pages sit
+ * local_page is optional and version.php does not declare it: installed, its category pages sit
  * beside the courses; absent, the showcase draws no strip and raises no error. The one coupling is
- * a class name asked through class_exists() and method_exists(), the shape this theme already uses
- * for local_unlistedcourses and auth_loginsteps, and every rule of what a viewer may read is the
- * plugin's own ({@see \local_page\local\catalogue::for_viewer()}): the visitor's refusal, the
- * category's own pages, live ones in their window, each page's access level. The theme adds two
- * rules and no more:
+ * a class name asked through class_exists() and method_exists(), and every rule of what a viewer
+ * may read is the plugin's own ({@see \local_page\local\catalogue::for_viewer()}): the visitor's
+ * refusal, the category's own pages, live ones in their window, each page's access level. The
+ * theme adds two rules:
  *
  *  - no strip at the root (the course index has no category, and the site-wide pages are not
  *    this feature's), and none without a page to name;
  *  - an address outside this site is dropped. The plugin spells its addresses through
- *    \local_page\local\links, so the rule costs nothing real; it keeps a strip of internal pages
- *    from ever becoming a list of outbound links.
+ *    \local_page\local\links, so this only keeps a strip of internal pages from ever becoming a
+ *    list of outbound links.
  *
- * No try/catch around the call: a throw from the plugin is a real fault and shows as one, and a catch-all would make the
- * class_exists() guard dead code. It is built by the page's two entries - the course renderer's
- * shell and the anonymous request - and never by the listing's export, which the web service calls
- * on every search: the strip is outside what a search rewrites, and would cost the catalogue's
- * statement on each keystroke otherwise.
+ * No try/catch around the call: a throw from the plugin is a real fault and shows as one. The
+ * strip is built by the page's two entries (the course renderer's shell and the anonymous request)
+ * and never by the listing's export, which the rows web service calls on every search: the strip is
+ * outside what a search rewrites, and would cost the catalogue's statement on each keystroke.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

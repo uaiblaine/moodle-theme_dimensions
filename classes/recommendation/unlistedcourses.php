@@ -32,7 +32,7 @@ use theme_boost_union\recommendation\recommendation;
  *
  * The plugin has no settings of its own, so its state is the one thing to check. The theme calls its
  * classes directly in the listing, the guard and the renderers; only the two anonymous-page adapters
- * and the enrolment forwarding survive its absence, the first failing closed and the second open.
+ * and the enrolment forwarding survive its absence, the adapters failing closed and the forwarding open.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

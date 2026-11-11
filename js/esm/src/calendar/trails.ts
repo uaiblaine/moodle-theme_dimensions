@@ -14,16 +14,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The Trilhas view's model: the answer's shape, its address, the months it holds and where each step's bar and each
+ * The Trails view's model: the answer's shape, its address, the months it holds and where each step's bar and each
  * connector goes on them. Pure: no layout is read, the bars are grid columns and the connectors rem.
  *
- * - The view's trail and "Só as minhas" are navigation, like the view: in the address (`trail=`, `mine=1`), never in
+ * - The view's trail and "Only mine" are navigation, like the view: in the address (`trail=`, `mine=1`), never in
  *   the remembered state (local\calendar\page::trail_from_request(), mine_from_request()).
  * - A step's days are read in the viewer's timezone (days.ts zone()), as every item of the calendar.
- * - The view holds contiguous whole months ({@see Loaded}), at most {@see LOADED_CAP}: the first paint's answer is the
- *   month and the next (local\calendar\trails::OPENING), each further load is one call of one month, or by months of up to
- *   {@see BATCH_MONTHS} (local\calendar\trails::MONTHS, {@see batchOf()}), appended or prepended, and the
- *   answers are merged by trail id ({@see mergedOf()}), a trail kept while its period meets what is held.
+ * - The view holds contiguous whole months ({@see Loaded}), at most {@see capOf()}: the first paint's answer is the
+ *   month and the next (local\calendar\trails::OPENING), each further load is one call of one month or, at the month
+ *   zoom, of up to {@see BATCH_MONTHS} (local\calendar\trails::MONTHS, {@see batchOf()}), appended or prepended, and
+ *   the answers are merged by trail id ({@see mergedOf()}), a trail kept while its period meets what is held.
  * - A bar runs from its step's start to its end, clipped at the edges of what is held: a step that began earlier is
  *   marked `before`, one that ends later `after`. A step with a start and no end is `open`: it is drawn as its first
  *   {@see OPEN_DAYS} days, followed by a decorative chip ({@see chipLeft()}) saying it has no end;
@@ -53,7 +53,7 @@ import type {Category} from './model';
 /** The address parameter of the one trail kept (local\calendar\page::PARAM_TRAIL). */
 export const TRAIL_PARAM = 'trail';
 
-/** The address parameter of "Só as minhas", exactly 1 when on (local\calendar\page::PARAM_MINE). */
+/** The address parameter of "Only mine", exactly 1 when on (local\calendar\page::PARAM_MINE). */
 export const MINE_PARAM = 'mine';
 
 /** The address parameter of the timeline's zoom, week or month, absent for days (local\calendar\page::PARAM_ZOOM). */
@@ -71,7 +71,7 @@ export type StepState = 'done' | 'current' | 'late' | 'locked' | 'upcoming' | ''
 /**
  * One step of a trail as the answer carries it. `image` is its course's card image (an address, or the data URI of the
  * cover of a course with none), '' while Boost Union's card view draws no image; there is no percentage, which
- * local\trail\progress does not compute per step (D11 of the course card contract).
+ * local\trail\progress does not compute per step.
  */
 export type TrailStep = {
     cmid: number,
@@ -131,7 +131,7 @@ export type TrailProps = {
     covers?: boolean,
 };
 
-/** The view's two filters: one trail (0 for every trail) and "Só as minhas". */
+/** The view's two filters: one trail (0 for every trail) and "Only mine". */
 export type TrailFilter = {trail: number, mine: boolean};
 
 /** Where a step's bar goes on the days held: day indexes, 0 for the first day held. */
@@ -192,7 +192,7 @@ const openTrailEnd = (trail: Trail, zone: Zone): string | null => {
 };
 
 /**
- * A month's own days, its 1st to its last (the Trilhas view's columns).
+ * A month's own days, its 1st to its last (the Trails view's columns).
  *
  * @param {string} month The month, YYYY-MM.
  * @returns {Array} The days, YYYY-MM-DD.
@@ -408,7 +408,7 @@ export const emptyTrails = (month: string): TrailAnswer => {
 export const filterOf = (props: TrailProps | undefined): TrailFilter => ({trail: props?.trail || 0, mine: props?.mine === true});
 
 /**
- * Whether any of the Trilhas view's filters is applied: a trail, "Só as minhas" or a category ("Clear filters" shows).
+ * Whether any of the Trails view's filters is applied: a trail, "Only mine" or a category ("Clear filters" shows).
  *
  * @param {object} filter The view's filters.
  * @param {number} categoryid The category narrowing, 0 for none.
@@ -627,8 +627,8 @@ export const monthStep = (first: string, direction: number): string => {
 const MONTH_YEAR: Intl.DateTimeFormatOptions = {month: 'long', year: 'numeric'};
 
 /**
- * The months in view as the toolbar names them, in the viewer's language: "novembro de 2026", "novembro – dezembro de
- * 2026", "dezembro de 2026 – janeiro de 2027", Intl's own range where it has one.
+ * The months in view as the toolbar names them, in the viewer's language, with Intl's own range where it has one
+ * (in Portuguese: "novembro – dezembro de 2026", "dezembro de 2026 – janeiro de 2027").
  *
  * @param {string} first The first day in view, YYYY-MM-DD.
  * @param {string} last The last day in view, YYYY-MM-DD.
@@ -688,8 +688,8 @@ export const weekCells = (days: string[], firstday: number): WeekCell[] => {
 };
 
 /**
- * A week's cell of the weeks row: a short month over its days ("nov." over "2–8"); a week that crosses a month names the
- * end's month beside its last day ("out." over "26–1 nov."), and a week of one day held is that day.
+ * A week's cell of the weeks row: a short month over its days ("nov." over "2–8" in Portuguese); a week that crosses a
+ * month names the end's month beside its last day ("out." over "26–1 nov."), and a week of one day held is that day.
  *
  * @param {object} cell The week.
  * @param {string|undefined} language The language tag.
@@ -780,8 +780,9 @@ const shortDate = (iso: string, language: string | undefined): string => {
 /**
  * A course's dates for its row in the trail column, in the viewer's timezone and language: both ends as one range
  * (Intl's, so one month name when the month is the same and one year when the year is: "2–20 nov. 2026",
- * "16 nov. – 12 dez. 2026", "15 dez. 2026 – 20 jan. 2027"), a start alone, an end alone (an expected completion date is
- * the end), or none. The view words the last three ("A partir de", "Até", "Sem datas").
+ * "16 nov. – 12 dez. 2026", "15 dez. 2026 – 20 jan. 2027" in Portuguese), a start alone, an end alone (an expected
+ * completion date is the end), or none. The view words the last three (calendar_trailfrom, calendar_until,
+ * calendar_trailnodates).
  *
  * @param {number} start The start, in seconds, 0 for none.
  * @param {number} end The end, in seconds, 0 for none.
@@ -847,8 +848,8 @@ export const CHIP_GAP = 0.375;
 
 /**
  * Where the chip after an open bar starts, in rem from the first day held, by the bars' day arithmetic: its gap after
- * the end of the bar's last day, at every zoom. Null for a bar that is not open, and for one whose 30 days run to the
- * last day held or past it: the chip is drawn once the next month is held, never at the edge.
+ * the end of the bar's last day, at every zoom. Null for a bar that is not open, and for one whose {@see OPEN_DAYS}
+ * run to the last day held or past it: the chip is drawn once the next month is held, never at the edge.
  *
  * @param {object} bar The bar ({@see barOf()}).
  * @param {number} count The days held.
@@ -1111,7 +1112,7 @@ const clipped = (piece: LinkPiece, width: number): LinkPiece | null => {
 };
 
 /**
- * The pieces joining one step's bar to the next one's, by the dates (the Conectores board of the approved mockup):
+ * The pieces joining one step's bar to the next one's, by the dates:
  *
  * - the next starts after the previous ends: an elbow out of the previous bar's right end, down, and into the next
  *   bar's left end with an arrowhead; over a narrow gap (a small zoom) the elbow comes half way, never under
@@ -1251,7 +1252,7 @@ export const linksOf = (steps: TrailStep[], days: string[], zone: Zone, shown: b
 export type Folds = Record<number, boolean>;
 
 /**
- * The fold each trail opens with, fixed when it first arrives (T3d): open when it arrives alone, folded when the answer
+ * The fold each trail opens with, fixed when it first arrives: open when it arrives alone, folded when the answer
  * holds more than one trail. A trail held already keeps the fold it arrived with, so one that is joined by another (a
  * month loaded) is never folded under the reader; a new answer of the page (a filter, Back or Forward) starts again
  * from none, so a trail chosen alone opens.
@@ -1301,7 +1302,7 @@ export const foldedAll = (chosen: Folds, ids: number[], allopen: boolean): Folds
 };
 
 /**
- * The reader's folds a new answer of the page leaves (T3d): an answer holding one trail (one chosen in the picker, or
+ * The reader's folds a new answer of the page leaves: an answer holding one trail (one chosen in the picker, or
  * reached from its landing page) opens it, so the reader's fold of it is dropped; any other answer keeps every fold.
  *
  * @param {object} chosen The reader's folds.

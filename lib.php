@@ -228,10 +228,10 @@ function theme_dimensions_get_settings_extra_scss() {
 /**
  * Declare the user preferences this theme owns.
  *
- * Core discovers them through get_plugins_with_function('user_preferences'), which is what lets
- * core_user_update_user_preferences() accept a write from the focus mode AMD module. The
- * permission callback is core's own "only the person themselves", which is the whole access rule
- * for a reading-width choice.
+ * Core collects them through get_plugins_with_function('user_preferences'), and only a declared
+ * preference can be written through core's preference services, such as the REST route the AMD
+ * modules reach with core_user/repository's setUserPreference(). Every entry but the look uses
+ * core's "only the person themselves" permission callback.
  *
  * @return array[]
  */
@@ -419,7 +419,8 @@ function theme_dimensions_alter_css_urls(&$urls) {
  *
  * Registered as the core_user profile callback: \core\user::can_view_profile() dispatches it through
  * \core\user::process_profile_callbacks() before it consults has_coursecontact_role(), so a veto here is
- * final. The rule itself, and why it is a veto and never a force-allow, is in the class docblock.
+ * final. The rule itself, and why it is a veto and never a force-allow, is in
+ * {@see \theme_dimensions\local\profileaccess}.
  *
  * get_plugins_with_function() reads this file for every installed theme, active or not, so the
  * rule applies even while the site uses or previews another theme. For a privacy rule that is the
@@ -435,13 +436,14 @@ function theme_dimensions_control_view_profile($user, $course = null, $userconte
 }
 
 /**
- * Serve the theme's file areas: the public landing page's, the category branding's and the dark logos'.
+ * Serve the theme's file areas: the public landing page's, the category branding's, the hero fallback's and the
+ * dark logos'.
  *
  * file_pluginfile() hands any component carrying an underscore to <component>_pluginfile()
  * with no login check of its own, which is what makes an anonymous image route possible
- * under forcelogin. Every check is in publicfiles::resolve() and branding::resolve(); a
- * request they refuse gets a bare 404. Core's sending options are not passed on to either
- * route: each decides cacheability itself.
+ * under forcelogin. Every check of the landing and branding routes is in publicfiles::resolve()
+ * and branding::resolve(); a request they refuse gets a bare 404. Core's sending options are not
+ * passed on to those two routes: each decides cacheability itself.
  *
  * @param stdClass $course The course, as core resolved it from the context.
  * @param stdClass|null $cm Unused: no area lives at module level.
@@ -471,7 +473,7 @@ function theme_dimensions_pluginfile($course, $cm, $context, $filearea, $args, $
         $theme->setting_file_serve($filearea, $args, $forcedownload, $options);
         return;
     }
-    // The site-wide fallback of that image: a theme setting's own file in the system context,
+    // The site-wide fallback of a category's hero image: a theme setting's own file in the system context,
     // institutional content with nothing to protect; core serves it cacheable by browsers and
     // proxies, as it serves Boost Union's own global images.
     if ($context->contextlevel == CONTEXT_SYSTEM && $filearea === $branding::AREA_FALLBACK) {
@@ -539,10 +541,9 @@ function theme_dimensions_extend_burecommendations(): array {
 /**
  * The course's own institutional crests, for another plugin's course cards: at most three per course, in grid order.
  *
- * block_compass asks for them through its own hook, \block_compass\hook\course_badges, which this theme answers in
- * {@see \theme_dimensions\local\hook\block_compass\course_badges::answer()} by calling this function with the hook's ids;
- * no core callback looks it up by name any more. It stays as the hook's answer and the one place its viewer filter
- * lives. The answer is what the category showcase's own card draws
+ * block_compass asks for them through its hook \block_compass\hook\course_badges, which
+ * {@see \theme_dimensions\local\hook\block_compass\course_badges::answer()} answers by calling this function; this
+ * function is the one place the viewer filter lives. The answer is what the category showcase's own card draws
  * ({@see \theme_dimensions\output\category_card::crests()}): the badges of the course's landing page, named through the
  * theme's file route. A course with no landing page model gets none, even where badge files survive a model that was
  * cleared.
@@ -552,10 +553,9 @@ function theme_dimensions_extend_burecommendations(): array {
  * its alternative text name the file, so a course the reader may not discover - hidden, unlisted, or in a listing
  * they cannot view and are not enrolled in - gets none, whatever the caller passed. A visitor gets none.
  *
- * One statement for the courses and their contexts, one batch of local_unlistedcourses' course states, the
- * category contexts of the courses' categories, then landingfields::values_many() over the courses kept, which
- * reads the field data in one statement and each uploaded badge file through customfield_picture, one lookup per
- * badge row, its own per-row cost.
+ * Cost: one statement for the courses and their contexts, one batch of local_unlistedcourses' course states, the
+ * category contexts can_view_course_info() reads, then landingfields::values_many() over the courses kept (the field
+ * data and the badge files, one statement each).
  *
  * @param int[] $courseids Course ids.
  * @return array courseid => list of ['url' => string, 'alt' => plain string], for every positive id given; empty for

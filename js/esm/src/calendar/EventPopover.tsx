@@ -214,8 +214,8 @@ const cover = (entry: Placed, look: Look) => {
 type Facts = {place: string, modality: string, course: Course | null, participants: number | null};
 
 /**
- * The facts of an item: its place, and for an event course its modality and its participant count (a number only); the course for
- * anything course-bound.
+ * The facts of an item: its place, and for an event course its modality and its participant count (a number only);
+ * the course for anything course-bound.
  *
  * @param {object} item The item.
  * @param {object} look The page's look.
@@ -241,10 +241,10 @@ export const MODEL_COURSE = 1;
 export const MODEL_EVENT = 2;
 
 /**
- * The text of the course's button, after the course's page model: a string of its own for
- * each model the theme knows (an unset model is a plain course), and for any other the generic one over the model's
- * own option label as the field is configured, so a model added to the field is named without code. A value with no
- * option left reads as a course.
+ * The text of the course's button, after the course's page model: a string of its own for each model the theme knows
+ * (an unset model is a plain course), and for any other the generic one over the model's own option label as the
+ * field is configured, so a model added to the field is named without code. A value with no option left reads as a
+ * course.
  *
  * @param {object} course The item's course.
  * @param {Array} models The model field's options.
@@ -347,7 +347,7 @@ const EventPopover = (props: EventPopoverProps) => {
         ));
     }, [item.source, item.id, opener, sheet]);
 
-    // The focus moves to the heading once the popover is SHOWN, once per opened item: while it is measuring it is
+    // The focus moves to the heading once the popover is shown, once per opened item: while it is measuring it is
     // visibility: hidden and focus() is a no-op there. A re-measure of the same item does not take the focus back.
     useLayoutEffect(() => {
         const key = `${item.source}-${item.id}`;
@@ -469,7 +469,8 @@ const EventPopover = (props: EventPopoverProps) => {
             {text ? (
                 // Core's own formatted HTML: core's event service's description, which core's event exporter ran
                 // through format_text() for this viewer, handed in as describe by the logged-in page alone; nothing
-                // else may reach it. The one trusted sink of the calendar.
+                // else may reach it. The calendar's one trusted sink of event content (the Trilhas view's fold icons
+                // are the server's pix icons).
                 <div
                     className="dim-cal__popdesc"
                     data-region="dim-cal-description"

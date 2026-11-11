@@ -24,7 +24,7 @@
 // This file is concatenated into the theme's main SCSS and so reaches every page of the site. Every
 // top-level selector is therefore scoped, to one of:
 // - the body class core derives from the script's path (moodle_page::initialise_standard_body_classes()):
-//   path-admin-tool-lp for the 21 scripts of admin/tool/lp, path-report-competency for
+//   path-admin-tool-lp for the scripts of admin/tool/lp, path-report-competency for
 //   report/competency/index.php, path-blocks-lp for the block's two review pages. None of them sets
 //   its own page type, so the class is the script's directory, renamed admin directory included;
 // - .block_lp, the class core puts on the block's own root wherever the block is added;

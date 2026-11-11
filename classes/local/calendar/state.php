@@ -408,8 +408,9 @@ final class state {
     /**
      * The address parameters naming this state, as the page's links and its client spell them.
      *
-     * Every parameter is written, so the address names the state whatever it holds; the keys are listed only when
-     * one is off, with an empty member when every key is off.
+     * The subtree flag and the colouring are always written, so the address names the state whatever it holds; the
+     * other parameters only when they differ from the default. The keys are listed only when one is off, with an empty
+     * member when every key is off.
      *
      * @return array name => value (arrays as lists).
      */

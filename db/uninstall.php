@@ -23,14 +23,12 @@
  */
 
 /**
- * Remove what is the theme's own and not user-authored: its six user preferences; release the look cohorts.
+ * Remove what is the theme's own and not user-authored: its seven user preferences; release the look cohorts.
  *
- * Core's uninstall_plugin() already drops the theme's table through XMLDB and every file
- * of the theme's component - the category hero images and the site-wide fallback among
- * them. Those images are institutional content, and deleting them with the theme is
- * correct; this theme's other precedent (the landing page custom fields, which hold what people
- * typed about their courses) points the other way and is left alone on purpose. Favourites
- * are core's rows and core_favourites owns them.
+ * Core's uninstall_plugin() already drops the theme's table and every file of the theme's
+ * component, the category hero images and the site-wide fallback among them. The landing page
+ * course custom fields hold what people typed about their courses and are left in place on
+ * purpose. Favourites are core's rows, owned by core_favourites.
  *
  * @return bool
  */

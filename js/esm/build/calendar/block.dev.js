@@ -5,11 +5,11 @@ var __name = (target2, value) => __defProp(target2, "name", { value, configurabl
  *
  * The server draws the whole block (theme_dimensions/calendar_block_month, classes/output/calendar_block_month.php),
  * and every control is a link to the theme's calendar page, so the block works without this module. Armed, a press of
- * an arrow asks the range service for the next month's grid with the state the block drew, builds the partial's
- * context the way the server builds it ({@see context()}), and paints theme_dimensions/calendar_block_month_body in
- * place; the latest press wins, and a failure follows the link the arrow already is. The keyboard is the page's grid
- * contract in small: arrows by day and week, Home and End, PageUp and PageDown
- * by month, Enter follows the day's link.
+ * an arrow asks the range service for the next month's grid with the state the block drew (nothing is asked while
+ * every key is off), builds the partial's context the way the server builds it ({@see context()}), and paints
+ * theme_dimensions/calendar_block_month_body in place; the latest press wins, and a failure follows the link the arrow
+ * already is. The keyboard is the page's grid contract in small: arrows by day and week, Home and End, PageUp and
+ * PageDown by month, Enter follows the day's link.
  *
  * @module     theme_dimensions/calendar/block
  * @copyright  2026 Anderson Blaine

@@ -30,14 +30,15 @@ use theme_dimensions\local\landing\publicfiles;
 /**
  * The head tags of a public page: Open Graph, canonical link and robots directive.
  *
- * Three pages carry them, and all three are anonymous surfaces of this theme: a course's landing page
- * ({@see for_course()}), a category's public page ({@see for_category()}) and the root of the
- * course index ({@see for_root()}). One class and one template for all of them, because a social
- * scraper reads the same tags either way; what differs is only where each value is read from -
- * the category's are in its branding, and the root's are the site's own, it having none.
+ * Four pages carry them, all anonymous surfaces of this theme: a course's landing page
+ * ({@see for_course()}), a category's public page ({@see for_category()}), the root of the
+ * course index ({@see for_root()}) and the public calendar ({@see for_calendar()}). One class and
+ * one template for all of them, because a social scraper reads the same tags either way; what
+ * differs is only where each value is read from - the category's are in its branding, and the
+ * root's are the site's own, it having none.
  *
- * Built by the page's request (\theme_dimensions\local\landing\request and
- * \theme_dimensions\local\category\request) before output starts, registered with
+ * Built by the page's request (\theme_dimensions\local\landing\request,
+ * \theme_dimensions\local\category\request and \theme_dimensions\local\calendar\page) before output starts, registered with
  * {@see set()}, and rendered into the document head by the before_standard_head_html_generation
  * hook callback. Every value is held in the plain spelling and the template's double stashes
  * escape it exactly once for the attribute; the test fixture is a course name carrying a bare

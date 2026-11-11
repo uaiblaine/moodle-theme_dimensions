@@ -28,9 +28,9 @@ namespace theme_dimensions\local\landing;
  * What the enrolment area of the landing page shows the current user.
  *
  * One of six states, plus the usable methods where applicable. STATE_OPEN
- * with only TYPE_FALLBACK methods is provisional: the page calls each
- * fallback's enrol_page_hook() at render time and downgrades to STATE_CLOSED
- * when every hook returns falsy.
+ * with only TYPE_FALLBACK methods is provisional: {@see request::handle()}
+ * calls each fallback's enrol_page_hook() before output starts, and the page
+ * downgrades to STATE_CLOSED when every hook returns falsy.
  *
  * The state says what the area offers; the relationship says what the
  * viewer's own rows are, in local_unlistedcourses' vocabulary, so the page can

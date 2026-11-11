@@ -17,9 +17,9 @@
 /**
  * Theme Dimensions - Write today's upstream of every copy into a directory, for scripts/upstream-merge.sh.
  *
- * A development tool, never shipped (/scripts is export-ignored). It runs inside a stack that mounts this
- * checkout, because today's upstream is what that site's template finder and class loader resolve
- * ({@see \theme_dimensions\local\upstream}). It writes into the export directory only, never into the theme.
+ * A development tool, never shipped (/scripts is export-ignored). It runs on a Moodle site where this checkout
+ * is installed as theme/dimensions, because today's upstream is what that site's template finder and class loader
+ * resolve ({@see \theme_dimensions\local\upstream}). It writes into the export directory only, never into the theme.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

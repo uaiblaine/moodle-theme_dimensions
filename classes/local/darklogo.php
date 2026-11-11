@@ -32,7 +32,8 @@ namespace theme_dimensions\local;
  * A dark file is a variant, never a logo of its own: without its light partner it is not used, and the page shows
  * what Boost Union shows today (the site name, for the compact one).
  *
- * The browser decides which surface is dark, by the nearest `data-bs-theme` (scss/post.scss); this class decides
+ * The stylesheet decides which surface is dark (scss/post.scss: the colour mode, a `.navbar-dark` bar, the nearest
+ * `data-bs-theme` pin); this class decides
  * whether the rules that paint the variant are armed, which takes two facts recorded in two different places:
  *
  * - {@see self::url()}: the file, its light partner and an address {@see styleurl::safe()} accepts. Config and file

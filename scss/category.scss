@@ -52,25 +52,25 @@ $dim-column: 1200px;
 // What the navy has to escape to reach the viewport edge, and the track its content keeps
 // inside it: the box the column has, minus the padding that box pays.
 $dim-bleed: $dim-page-pad + $dim-inner-pad;
-// What Boost pays on the left INSTEAD of the 3rem above once a left drawer is open: its rule
-// (drawer.scss:102) sets padding-left: 1rem and outbids the page padding, so with a drawer the
-// side inset is 16px, not 48. In px because SCSS cannot add rem to px; the root size is 16px.
+// What Boost pays on the left instead of the 3rem above once a left drawer is open: its rule
+// (drawer.scss, body.drawer-open-left #page.drawers) sets padding-left: 1rem and outbids the page
+// padding, so with a drawer the side inset is 16px, not 48. In px because SCSS cannot add rem to
+// px; the root size is 16px.
 $dim-drawer-gap: 16px;
 $dim-track: $dim-column - 2 * $dim-inner-pad;
 
 body.dim-category {
     // The navy meets the navbar's 3px band on this page: the top padding and margin Boost's
-    // .main-inner pays above the page header would be a white gutter between two navy blocks.
-    // Its white ground goes too: Boost hardcodes it (layout.scss:44) with no dark variant, so in
-    // dark mode the cards would sit on a white sheet and the page-coloured chamfer read as a notch
-    // cut into it. The page's own ground is right in both modes.
+    // .main-inner pays above the page header would be a gutter between two navy blocks.
+    // Its ground goes too (Boost paints it, and #region-main below, as a sheet of --bs-body-bg), so
+    // the cards and the page-coloured chamfer sit on the page's own ground in both modes.
     #page.drawers .main-inner {
         margin-top: 0;
         padding-top: 0;
         background-color: transparent;
     }
 
-    // The same white, painted a second time one box further in.
+    // The same ground, painted a second time one box further in.
     #region-main {
         background-color: transparent;
     }
@@ -158,9 +158,8 @@ body.dim-category {
         --dim-hero-page-ink: var(--bs-body-color, #1f1f1f);
         // The brand ink of the page colour. It is resolved here and inherited, never read from
         // inside the tab list: a theme's core/moremenu override may stamp its own data-bs-theme on
-        // the more menu's <ul> (Boost Union's stamped "light" up to its 5.2 branch), and every
-        // --bs-* token read below that element would then be that mode's - the active tab read
-        // 1.2:1 on the dark page.
+        // the more menu's <ul>, and every --bs-* token read below that element would then be that
+        // mode's, leaving the active tab unreadable on the dark page.
         --dim-hero-page-primary-ink: var(--bs-primary-text-emphasis, var(--bs-body-color, #1f1f1f));
         --dim-hero-page-strong: var(--bs-secondary-bg, #e9ecef);
         --dim-hero-page-muted: var(--bs-secondary-color, #6a737b);
@@ -170,10 +169,10 @@ body.dim-category {
         color: var(--dim-hero-ink);
     }
 
-    // The focus ring of the band is the hero's own INK, never the institutional blue: on the
-    // navy that ring is blue on blue (2.6:1, under WCAG 1.4.11's 3:1), and since the colours
-    // became free a fixed white ring would vanish on any light band a manager picks. The ink is
-    // the one colour the pair already guarantees 4.5:1 against the background.
+    // The focus ring of the band is the hero's own ink, never the institutional blue: on the
+    // navy that ring is blue on blue (2.6:1, under WCAG 1.4.11's 3:1), and a fixed white ring
+    // would vanish on any light band a manager picks. The ink is the one colour the pair already
+    // guarantees 4.5:1 against the background.
     .dim-hero :focus-visible {
         outline-color: var(--dim-hero-ring);
     }
@@ -493,16 +492,16 @@ body.dim-category {
 
     // The tab strip: core's more menu, on the band's own colour so an inactive tab reads on the page.
     // Boost gives .moremenu and every .nav-link inside it a fixed 60px height, which is the
-    // navigation bar's measure, not the design's 40px strip. The LINK goes back to its content
-    // height; the MENU keeps a fixed one, at the design's 40px, because that is how core's
+    // navigation bar's measure, not the design's 40px strip. The link goes back to its content
+    // height; the menu keeps a fixed one, at the design's 40px, because that is how core's
     // more-menu decides what to collapse: autoCollapse() in lib/amd/src/moremenu.js compares the
     // list's own height with `menu.parentNode.offsetHeight + 1`, so a nav that grows with its
     // list can never be taller than itself and nothing is ever moved into "More" - the tabs wrap
     // onto several lines instead. For the same reason the list keeps Bootstrap's flex-wrap:
     // wrapping is the signal the collapse reads, not a layout accident.
-    // The strip is a stacking context of its own ABOVE the filter line (.dim-toolbar, 30) that follows
-    // the hero in the document: its "More" menu overflows the strip downwards, and under the line the
-    // menu opened hidden. It must not be a scroll container either (overflow-x other than visible
+    // The strip is a stacking context of its own above the filter line (.dim-toolbar, 30) that follows
+    // the hero in the document: its "More" menu overflows the strip downwards and would otherwise open
+    // under the line. It must not be a scroll container either (overflow-x other than visible
     // computes overflow-y to auto), which would clip the menu to the strip's own height; core's
     // more-menu already collapses what does not fit, so the rail has nothing to scroll.
     .dim-hero__tabs {
@@ -551,7 +550,8 @@ body.dim-category {
         }
 
         // The active tab is the page colour, so its ink is the brand ink the hero resolves for the
-        // page's colour mode (the tab list may carry a colour mode of its own, see the visual refinement).
+        // page's colour mode (the tab list may carry a colour mode of its own; see
+        // --dim-hero-page-primary-ink on .dim-hero).
         .nav-link.active {
             border: 0;
             background: var(--dim-hero-page);
@@ -639,15 +639,15 @@ body.dim-category {
         // 2.0:1 dark. This is Boost's own .form-control boundary, 3.0:1 and 5.4:1.
         --dim-control-line: var(--bs-gray-500, #8f959e);
         --dim-primary: var(--bs-primary, #0f6cbf);
-        // The primary as TEXT. --dim-primary is the institutional navy, which is a fill: on a
-        // dark card it is unreadable, and this is the one brand ink that follows the mode.
+        // The primary as text. --dim-primary is the site's primary (Boost Union's brand colour or a
+        // flavour's), a fill that a dark brand colour makes unreadable on a dark card; this is the
+        // brand ink that follows the mode.
         --dim-primary-ink: var(--bs-primary-text-emphasis, var(--dim-primary));
         --dim-accent: var(--dimensions-navbar-band, var(--dim-ds-accent-highlight, #4456ff));
-        // The focus ring is a FILL, so it does not take the ink above - but the institutional
-        // navy reads 1.10:1 on a dark card, under WCAG 1.4.11's 3:1 floor.
-        // The theme's own ring colour is the one blue that clears it on both grounds: 5.2:1 on
-        // the white card, 3.1:1 on the dark one, and it is what every other focus ring of the
-        // site already is.
+        // The focus ring is a fill, so it does not take the ink above, and a dark primary (the
+        // design's navy reads 1.10:1 on a dark card) would fail WCAG 1.4.11's 3:1 floor.
+        // The theme's own ring colour clears it on both grounds: 5.2:1 on the white card and
+        // 3.1:1 on the dark one (the dark mode moves it a stop lighter, at the foot of this file).
         --dim-ring: var(--dim-ds-focus-ring, var(--dim-ds-blue-400, #4456ff));
         // A rating's star: the design system's amber, a graphic beside digits that keep their line's ink. It turns
         // with the page in post.scss (3:1 on a raised dark surface); 3.9:1 on the white card.
@@ -705,8 +705,8 @@ body.dim-category {
         --dim-badge-conditional-bg: var(--dim-ds-blue-050, #edeefb);
         --dim-badge-conditional-fg: var(--dim-ds-blue-700, #050073); // 14.5:1.
         // The posters' five, each with its dark value at the foot of this file. The call to
-        // action's fill (the institutional navy, a lighter blue in the dark mode, where the navy
-        // is a hole in the page) and its hover; the tint of a pressed quiet control and of the
+        // action's fill (the site's primary, the design's lighter blue in the dark mode, where a
+        // dark primary is a hole in the page) and its hover; the tint of a pressed quiet control and of the
         // panel's "+N" tile; the ring of the open poster; and the poster's edge, which is nothing
         // on the light page and the card line on the dark one, where a dark band would otherwise
         // melt into the page.
@@ -742,7 +742,7 @@ body.dim-category {
         // its dark half, so the mark follows the colour mode without a rule of ours.
         --dim-mark-bg: var(--bs-highlight-bg, #fff3cd);
         --dim-mark-ink: var(--bs-highlight-color, var(--dim-ink));
-        // The filter line's preview (filterline/preview.ts, contract section 6): the ring a card the pointed filter
+        // The filter line's preview (filterline/preview.ts): the ring a card the pointed filter
         // would keep wears, and the receding values a card that would go takes for its own tokens. Every fill is
         // named with its ink: the receding surface with the receding ink (4.6:1), the receding pill with its
         // ink (the none pair, 6.8:1), the film over the image with nothing over it but the band's own tag and
@@ -792,7 +792,7 @@ body.dim-category {
     // not the row's. The height it may take is the screen minus that navbar, and past it the
     // tree scrolls inside itself; overscroll-behavior keeps that scroll from becoming the page's
     // the moment it ends. An overflow other than visible on any ancestor kills sticky silently:
-    // every ancestor up to body is overflow: visible under Boost Union 5.2, and
+    // every ancestor up to body is overflow: visible under Boost Union, and
     // category_scss_test forbids one on the boxes of ours between the tree and #region-main.
     .dim-vitrine__tree {
         position: sticky;
@@ -948,12 +948,11 @@ body.dim-category {
     }
 
     // ---- Toolbar: a real form ---------------------------------------------------------------
-    // The toolbar states its stack. Its manage menu opens DOWNWARD out of it, over rows that
-    // hold an explicit z-index of their own - the card's details panel, 20 - and 30 puts the
-    // whole toolbar over it whatever the document order later becomes. The cost: Bootstrap's 1000 on the menu is
-    // INSIDE this context, so the menu ranks against the rest of the page at 30. Nothing between 30 and 1000 exists on
-    // this page; the site's fixed navbar (1030) covers the menu when it flips upward into it,
-    // with or without this rule.
+    // The toolbar states its stack. Its menus and popovers open downward out of it, over cards and
+    // posters that stack their own layers, and 30 puts the whole toolbar over them whatever the
+    // document order later becomes. The cost: Bootstrap's 1000 on a menu is inside this context, so
+    // the menu ranks against the rest of the page at 30; the hero's tab strip (31) stays over the
+    // toolbar, and the site's fixed navbar (1030) covers a menu that flips upward into it.
     //
     // The toolbar is no card: the filter line, the notice and the row under the line are a column
     // 10px apart with no border, no surface and no padding, so the controls sit on the page
@@ -975,7 +974,7 @@ body.dim-category {
     }
 
     // ---- The filter line -----------------------------------------------------------------------
-    // ONE row in the contract's slot order: scope,
+    // One row, in this order: scope,
     // search, star, Filters, Organise, view, the managers' menu. It wraps where it does not fit -
     // which is the whole of its narrow behaviour without JavaScript - and the search is the item
     // that grows and shrinks, so the other controls keep their size. It is the positioned ancestor
@@ -1073,8 +1072,8 @@ body.dim-category {
         }
     }
 
-    // Where the eraser is armed it is the field's one way to empty itself: the browser's own cross
-    // goes, because the contract's eraser is never a cross.
+    // Where a client is armed the eraser is the field's one way to empty itself, so the browser's
+    // own cross goes.
     &.dim-js .dim-line__search .dim-toolbar__input::-webkit-search-cancel-button,
     &.dim-public-js .dim-line__search .dim-toolbar__input::-webkit-search-cancel-button {
         display: none;
@@ -1317,9 +1316,9 @@ body.dim-category {
         }
     }
 
-    // The chosen chip is FILLED, in the call to action's pair: the navy with white on the light
-    // page and #4456ff with white on the dark one (--dim-cta follows the mode, where the navy of
-    // --dim-primary would be a hole in the dark page, 1.1:1 against its surface).
+    // The chosen chip is filled, in the call to action's pair: the site's primary with white on the
+    // light page and #4456ff with white on the dark one (--dim-cta follows the mode, where a dark
+    // primary would be a hole in the dark page; the design's navy is 1.1:1 against its surface).
     .dim-pill__input:checked + .dim-pill {
         border-color: var(--dim-cta);
         background: var(--dim-cta);
@@ -1543,18 +1542,18 @@ body.dim-category {
         white-space: nowrap;
     }
 
-    // The open state's line is the open poster's ring: the navy on the light card, and on the dark
-    // one a light violet, where the navy is 1.1:1. Under it, the design's pressed face: the tint
-    // and its ink.
+    // The open state's line is the open poster's ring: the site's primary on the light card, and on
+    // the dark one a light violet, where a dark primary would not read. Under it, the design's
+    // pressed face: the tint and its ink.
     .dim-toolbar__filters[open] .dim-toolbar__filterstoggle {
         border-color: var(--dim-open-ring);
         background: var(--dim-tint);
         color: var(--dim-primary-ink);
     }
 
-    // The count badge is the call to action's pair: the navy with white on the light page, and in the
-    // dark mode #4456ff with white (5.2:1) - the same pair as the dark "enrolled" badge. The page's
-    // surface is never its ink: on the dark page that is the dark surface on the navy, 1.1:1.
+    // The count badge is the call to action's pair: the site's primary with white on the light page,
+    // and in the dark mode #4456ff with white (5.2:1), the same pair as the dark "enrolled" badge.
+    // The page's surface is never its ink: on the dark page that would be a dark surface on a fill.
     // The design's geometry: a 20px disc that grows into a pill past one digit, its number
     // centred. The sentence beside the digit is visually hidden and absolutely placed, so it is no
     // grid item and does not move it.
@@ -1689,8 +1688,8 @@ body.dim-category {
     }
 
     // The one in force is filled, which is the pressed face of the same button - the chosen chip's
-    // own pair. Never the page's surface as its ink: in the dark mode that is the dark surface on
-    // the navy, 1.1:1.
+    // own pair. Never the page's surface as its ink, which in the dark mode is a dark surface on
+    // the fill.
     .dim-quick--on {
         border-color: var(--dim-cta);
         background: var(--dim-cta);
@@ -1945,10 +1944,10 @@ body.dim-category {
         color: var(--dim-primary-ink);
     }
 
-    // The two ends of the period, and the day the SITE calls today. The ends are filled rather
+    // The two ends of the period, and the day the site calls today. The ends are filled rather
     // than outlined because they are a choice; today is outlined because it is a fact. The fill
-    // is the call to action's pair: the page's surface as its ink would read 1.1:1 in the dark
-    // mode.
+    // is the call to action's pair: the page's surface as its ink would read under 3:1 in the
+    // dark mode.
     .dim-daterange__day--edge {
         background: var(--dim-cta);
         color: #fff;
@@ -2078,8 +2077,8 @@ body.dim-category {
     }
 
     // A chip: a link in the brand face at full control height, whose line is the open poster's
-    // ring - the navy on the light page and the light violet on the dark one, where a navy line
-    // would be 1.1:1 - with its cross after the label, and focus the design's ring.
+    // ring (--dim-open-ring: the site's primary on the light page, the light violet on the dark
+    // one) - with its cross after the label, and focus the design's ring.
     .dim-chip {
         display: inline-flex;
         align-items: center;
@@ -2187,7 +2186,7 @@ body.dim-category {
     }
 
     // ---- The card -----------------------------------------------------------------------------
-    // The course card contract (moodle-dev/docs/course-card/CONTRACT.md): every visual value of the card is one of
+    // The course card contract: every visual value of the card is one of
     // its 30 tokens, read here through the theme's own names (--dim-card-<suffix>), each the family token first
     // (post.scss declares them, light and dark) and then Bootstrap's property and a literal, so the card keeps its look
     // where a sheet without the family block draws it. A colour literal lives only in these declarations: a rule
@@ -2226,7 +2225,7 @@ body.dim-category {
         --dim-card-close-bg-hover: var(--dimensions-card-close-bg-hover, rgba(0, 0, 0, .7));
         --dim-card-close-edge: var(--dimensions-card-close-edge, rgba(255, 255, 255, .4));
         --dim-card-transition: var(--dimensions-card-transition, 150ms);
-        // The crests' size on a card at every width (D2: 80 x 88 is the hero's and the dialogue's), and the soft
+        // The crests' size on a card at every width (80 x 88 is the hero's and the dialogue's), and the soft
         // shadow that makes them read on a photograph as well as on a flat colour.
         --dim-card-crest-w: 56px;
         --dim-card-crest-h: 62px;
@@ -2248,7 +2247,7 @@ body.dim-category {
         transition: box-shadow var(--dim-card-transition) var(--dim-ease);
     }
 
-    // One target, one hover (contract sections 4 and 5): the title's link stretches over a card the viewer can open
+    // One target, one hover: the title's link stretches over a card the viewer can open
     // (dim-card--link: it has a page and is not muted), so the whole card is the link a screen reader hears once,
     // named by the course. The hover is the larger shadow and the title underlined in its hover colour, and nothing
     // moves: a transform makes the card a stacking context and cuts its shadow in a rail. Every other control of the
@@ -2329,17 +2328,16 @@ body.dim-category {
         }
     }
 
-    // A course without an image gets the renderer's cover (its category's, contract section 8); a band with no image at
+    // A course without an image gets the renderer's cover (its category's); a band with no image at
     // all is the cover fallback under the cover overlay.
     // The band is the cover's height: the crests sit over its bottom-right corner, and the date tile
     // and the kind tag keep their own corners without the three meeting. Its height is a custom
-    // property because the crests are positioned against the CARD and have to know it (see
+    // property because the crests are positioned against the card and have to know it (see
     // .dim-card__crests).
-    // The z-index is what makes the band a STACKING CONTEXT: the cover film's layers are ordered
-    // inside it, and without a context of its own the still lifted to z-index 1 would rank
-    // against the crests and the favourite star, which are positioned against the CARD rather
-    // than the band and carry no z-index at all. On a card with no film it changes nothing: at a
-    // tie of 0 against its siblings the document order decides.
+    // The z-index makes the band a stacking context: the cover film's layers are ordered inside it,
+    // and without a context of its own the still lifted to z-index 1 would rank against the crests,
+    // which are positioned against the card rather than the band and carry no z-index. On a card
+    // with no film it changes nothing: at a tie of 0 against its siblings the document order decides.
     .dim-card__media {
         position: relative;
         z-index: 0;
@@ -2359,7 +2357,7 @@ body.dim-category {
 
     // The three marks of the media band sit over a photograph when the course has one, so
     // each states its own ink over the light chip and frosts what shows through the rest. Sentence
-    // case, as every word of the card (contract section 3).
+    // case, as every word of the card.
     .dim-card__kind {
         position: absolute;
         top: 10px;
@@ -2405,16 +2403,15 @@ body.dim-category {
     // ---- The crests over the image ------------------------------------------------------------
     // Up to three of the course's own badges in the bottom-right corner of the band, with no
     // plate behind them and a soft drop shadow instead, so that they read on a photograph as
-    // well as on a flat colour. 56x62 on a card at every width (D2); the hero and the course
+    // well as on a flat colour. 56x62 on a card at every width; the hero and the course
     // dialogue keep the 80x88 the drawings were made for.
     //
-    // They are written in the badge ROW of the body - one markup serves the card and the list
-    // views - so what they are positioned against is the CARD, exactly as the favourite star is,
-    // and the offset from its top is the band's height minus the crest and the inset. The card
-    // is the relative box; the media band's own overflow: hidden never reaches them, because
-    // they are not inside it.
+    // They are written in the badge row of the body - one markup serves the card and the list
+    // views - so what they are positioned against is the card, as the favourite star is, and
+    // the offset from its top is the band's height minus the crest and the inset. The media
+    // band's own overflow: hidden never reaches them, because they are not inside it.
     //
-    // row-reverse anchors the FIRST crest at the corner and lets a third one enter on the LEFT,
+    // row-reverse anchors the first crest at the corner and lets a third one enter on the left,
     // so adding one never moves the ones already there. The order is the editor's.
     .dim-card__crests {
         position: absolute;
@@ -2451,7 +2448,7 @@ body.dim-category {
         min-width: 0;
     }
 
-    // The category, one line in sentence case (contract section 2, slot 5).
+    // The category, one line in sentence case.
     .dim-card__over {
         color: var(--dim-card-ink-muted);
         font-size: .78125rem;
@@ -2497,10 +2494,10 @@ body.dim-category {
         gap: 8px;
     }
 
-    // The progress row (contract section 3): a line of its own under the state pill, the bar and the percentage at its
+    // The progress row: a line of its own under the state pill, the bar and the percentage at its
     // right in tabular figures. The logged-in shell fills it once the course's details have answered; it ships hidden,
     // so a page whose batch never lands - or never had one to send, or a course with no completion tracking - is the
-    // page the server drew. A completed card never draws it: the seal replaces the bar (D4, option A).
+    // page the server drew. A completed card never draws it: the seal replaces the bar.
     // --dim-progress is the course's percentage, which the shell writes on the row; nothing is filled until it does.
     .dim-card__progress {
         --dim-progress: 0%;
@@ -2540,9 +2537,9 @@ body.dim-category {
         text-align: right;
     }
 
-    // The completed card (D4, option A): the state pill becomes the green seal and the cover gets a green base, drawn
+    // The completed card: the state pill becomes the green seal and the cover gets a green base, drawn
     // over the image and the film. The cover-less card's top edge and the thumbnail-less row's leading edge turn green
-    // in their own rules (Boost Union's images, below), and the seal and the base stay with the progress row off (D13).
+    // in their own rules (Boost Union's images, below), and the seal and the base stay when the progress row is off.
     .dim-badge--done {
         background: var(--dim-card-done-bg);
         color: var(--dim-card-done-ink);
@@ -2657,7 +2654,7 @@ body.dim-category {
         font-size: .78rem;
     }
 
-    // The trailing action cluster: the call to action, "More information", and LAST the star.
+    // The trailing action cluster: the call to action, "More information", and last the star.
     .dim-card__actions {
         display: flex;
         flex-wrap: wrap;
@@ -2667,7 +2664,7 @@ body.dim-category {
         padding-top: 4px;
     }
 
-    // The buttons are Bootstrap's own variants at btn-sm (D10): the call to action btn-primary or btn-outline-primary,
+    // The buttons are Bootstrap's own variants at btn-sm: the call to action btn-primary or btn-outline-primary,
     // "More information" btn-outline-secondary. Their hover, pressed and disabled states are the theme's --bs-btn-*;
     // the card restyles no button, it only lifts them over the stretched link (above).
 
@@ -2707,7 +2704,7 @@ body.dim-category {
     // A course the viewer has no way into - no enrolment method, or a held event - is shown,
     // muted, never explained. category_card::export_for_template() decides which. Its title is no
     // stretched link (the article carries no dim-card--link), so the card answers no hover and only
-    // its own controls respond; the cover recedes as the contract's locked card does.
+    // its own controls respond; the cover recedes by the contract's locked opacity.
     .dim-card--muted {
         cursor: default;
     }
@@ -2721,7 +2718,7 @@ body.dim-category {
         color: var(--dim-card-ink-muted);
     }
 
-    // ---- Boost Union's "Show course images" (contract section 8) -------------------------------
+    // ---- Boost Union's "Show course images" ---------------------------------------------------
     // The card view without its cover: the band goes, the kind, the crests (24x26) and the star share a row at the top
     // of the body (dim-card__top, drawn by the template only for such a card), and a 4px top edge keeps the course
     // category's colour (--dim-card-band, which the template writes on the article), green once the course is
@@ -3718,7 +3715,7 @@ body.dim-category {
     }
 
     // ---- A photograph with no film pans while a fine pointer rests on it ------------------------
-    // The film's own timing: 180ms of intent (covervideo's INTENT_DELAY), a 600ms lead-in that
+    // The film's own timing: 180ms of intent (INTENT_DELAY in local/coverfilm), a 600ms lead-in that
     // carries the hover's scale(1.04) to the pan's first frame, then the pan, 12s each way. Never
     // on a touch screen, never under reduced motion, never in the list view; a poster with a film
     // plays the film instead.
@@ -4051,7 +4048,7 @@ body.dim-category {
         font-weight: 700;
         line-height: 1.2;
 
-        // The category's link reads as the card title does (contract section 5): no underline at rest, underlined on
+        // The category's link reads as the card title does: no underline at rest, underlined on
         // hover and on the keyboard's focus. The dark mode's weight is at the foot of this file.
         a {
             color: var(--dim-primary-ink);
@@ -5367,11 +5364,10 @@ body.dim-category {
         display: inline-flex;
     }
 
-    // The cover film's cluster has a gate of ITS OWN, and it is not the dim-js above. That class
-    // is the vitrine module's mark and it also HIDES the toolbar's no-JavaScript submit, while
-    // covervideo runs where the vitrine module never does: the whole anonymous shell and the
-    // guest's pages, where that submit is the only filter control the reader has. One module's
-    // mark cannot be read as another module's presence, so there are two marks.
+    // The cover film's cluster has a gate of its own, not the dim-js above. That class is the
+    // account shell's mark and also hides the toolbar's no-JavaScript submit, while covervideo runs
+    // where that shell never does: the anonymous pages and the guest's, where that submit may be
+    // the only filter control the reader has. One module's mark cannot stand for another's.
     .dim-cover-js-only {
         display: none;
     }
@@ -5554,10 +5550,9 @@ body.dim-category {
 
     // ---- The phone's own half of the filter line ---------------------------------------------
     // The Filters word goes and the icon and its number stay, so the control is the same control
-    // at a width where naming it would take the search box's room (the contract's second folding
-    // step, which the client's folding takes at any width once it measures the line). It is taken
-    // out of the PICTURE and not out of the document: it is the summary's accessible name, and the
-    // technique is the one that keeps text available to a screen reader while it paints nowhere.
+    // at a width where naming it would take the search box's room (the line's second folding
+    // step, dim-line--s2, which the client takes at any width once it measures the line). It is
+    // visually hidden, not removed: it is the summary's accessible name.
     @media (max-width: 575.98px) {
         .dim-toolbar__filterslabel {
             position: absolute;
@@ -5724,9 +5719,10 @@ body.dim-category {
             padding: 0;
             border-radius: 50%;
             opacity: 1;
-            // Bootstrap 5.3.4 (core 5.3) reads the filter from --bs-btn-close-filter, which its mixin sets to the
-            // white one; the --bs-btn-close-white-filter of earlier releases is no longer declared, and reading it
-            // left the dark cross on the dark disc.
+            // Core 5.3's Bootstrap reads the filter from --bs-btn-close-filter, which its mixin sets to the
+            // white one; the --bs-btn-close-white-filter of earlier releases is no longer declared (the SCSS
+            // variable $btn-close-white-filter is deprecated since Bootstrap 5.3.4), so reading it would leave
+            // the dark cross on the dark disc.
             @include btn-close-white();
             filter: var(--bs-btn-close-filter);
 
@@ -6269,9 +6265,9 @@ body.dim-category {
 }
 
 // ---- The dark half of every state badge ---------------------------------------------------
-// Moodle 5.2 has ONE dark mechanism: the data-bs-theme attribute on the html element. There is
-// no .theme-dark class and no prefers-color-scheme query behind it, so this is the selector,
-// and it still names the showcase's body class - the file reaches every page of the site.
+// Core's dark mode is the data-bs-theme attribute on the html element alone (Boost's dark-mode()
+// mixin); there is no .theme-dark class and no prefers-color-scheme query behind it, so this is the
+// selector, and it still names the showcase's body class - the file reaches every page of the site.
 // Each pair's contrast is beside it, over the 4.5:1 floor. Keep the dark blocks at the foot of
 // the file: card_markup_test reads everything before the first dark selector as the light half.
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
@@ -6308,8 +6304,8 @@ body.dim-category {
 
 // ---- The posters' tokens in the dark mode -------------------------------------------------
 // The posters are the area's own pair and identical in both modes, but for their EDGE: a dark band
-// would melt into the dark page. The call to action is a lighter blue, where the navy would be a
-// hole in the page; the tint of a pressed quiet control is the strong surface; the open poster's
+// would melt into the dark page. The call to action is a lighter blue, where a dark primary would be
+// a hole in the page; the tint of a pressed quiet control is the strong surface; the open poster's
 // ring is the design system's light violet.
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
@@ -6327,11 +6323,11 @@ body.dim-category {
 }
 
 // ---- The brand ink of a dark surface ------------------------------------------------------
-// Bootstrap's own --bs-primary-text-emphasis is #6a66be in the dark mode, which reads 4.9:1 on
-// the white card and only 3.28:1 on the dark one - under the 4.5:1 floor for the type it paints
-// (the active tab, the pressed view toggle, a hovered card title). --dim-ds-blue-200, the design system's
-// lighter stop of that hue, reads 8.0:1 on the dark surface, so the ink follows the mode in both
-// directions instead of only one. Light mode keeps the emphasis token.
+// Bootstrap's own --bs-primary-text-emphasis is a 40% tint of $primary in the dark mode; for a dark
+// brand colour such as the design's navy that is #6a66be, 3.28:1 on the dark surface - under the
+// 4.5:1 floor for the type it paints (the active tab, the pressed view toggle, a hovered card title).
+// --dim-ds-blue-200, the design system's lighter stop of that hue, reads 8.0:1 on the dark surface.
+// Light mode keeps the emphasis token.
 :root[data-bs-theme="dark"] body.dim-category .dim-hero,
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
@@ -6354,7 +6350,7 @@ body.dim-category {
 // Core's dark mode underlines every link of #region-main but core's own controls (theme/boost/scss/moodle/dark.scss,
 // WCAG 1.4.1, for a link inside prose), at (1,6,1). A card's title is the card's stretched link, which the card's own
 // frame tells apart, so at rest it keeps the light mode's none, and the hover and the keyboard's focus underline it as
-// in light mode (moodle-dev/docs/course-card/CONTRACT.md, section 5). The selectors' own weight is what wins, (1,7,2)
+// in light mode. The selectors' own weight is what wins, (1,7,2)
 // and (1,8,2): category_scss_test compares them with core's.
 :root[data-bs-theme="dark"] body.dim-category {
     #region-main .dim-card .dim-card__title a[href]:not(.btn) {
