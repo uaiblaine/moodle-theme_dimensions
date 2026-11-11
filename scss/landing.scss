@@ -1198,16 +1198,12 @@ $dim-landing-column: $course-content-maxwidth - 2 * $dim-landing-inner-pad;
 $dim-landing-veil: .78;
 
 body.dim-landing-fullwidth {
-    // The banner meets the navbar's 3px band: no top margin or padding of .main-inner between them. Its white ground
-    // goes too, or the page would sit on a white sheet as wide as the window.
+    // The banner meets the navbar's 3px band: no top margin or padding of .main-inner between them. Boost's ground
+    // (--bs-body-bg, on .main-inner and #region-main) stays, so the page covers a page background image as Boost's
+    // content does.
     #page.drawers .main-inner {
         margin-top: 0;
         padding-top: 0;
-        background-color: transparent;
-    }
-
-    #region-main {
-        background-color: transparent;
     }
 
     // Below md #page pays no side padding, so .main-inner's own 8px is all the header escapes.

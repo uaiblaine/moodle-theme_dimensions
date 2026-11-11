@@ -184,6 +184,10 @@ function theme_dimensions_get_extra_scss($theme) {
     $inheritanceconfig = get_config('theme_dimensions', 'extrascssinheritance');
     if ($inheritanceconfig == THEME_DIMENSIONS_SETTING_INHERITANCE_DUPLICATE) {
         $scss .= theme_boost_union_get_extra_scss(\core\output\theme_config::load('boost_union'));
+    } else {
+        // Boost Union's page background image, which the inherited callbacks never print for this theme (the class
+        // says why); under 'Duplicate' the call above prints it already.
+        $scss .= \theme_dimensions\local\pagebackground::scss();
     }
 
     // Then, the settings-dependent rules which need Bootstrap's mixins, so they cannot live in the

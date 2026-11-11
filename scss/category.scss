@@ -61,18 +61,12 @@ $dim-track: $dim-column - 2 * $dim-inner-pad;
 
 body.dim-category {
     // The navy meets the navbar's 3px band on this page: the top padding and margin Boost's
-    // .main-inner pays above the page header would be a gutter between two navy blocks.
-    // Its ground goes too (Boost paints it, and #region-main below, as a sheet of --bs-body-bg), so
-    // the cards and the page-coloured chamfer sit on the page's own ground in both modes.
+    // .main-inner pays above the page header would be a gutter between two navy blocks. Boost's ground
+    // (--bs-body-bg, on .main-inner and #region-main) stays, so the showcase covers a page background
+    // image as Boost's content does, and the page-coloured chamfer sits on the same colour.
     #page.drawers .main-inner {
         margin-top: 0;
         padding-top: 0;
-        background-color: transparent;
-    }
-
-    // The same ground, painted a second time one box further in.
-    #region-main {
-        background-color: transparent;
     }
 
     // The band bleeds past the content column by .main-inner's own 8px, which at phone widths,
