@@ -34,7 +34,6 @@ use theme_dimensions\local\darklogo;
 use theme_dimensions\local\drawernav;
 use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\guestnav;
-use theme_dimensions\local\login;
 use theme_dimensions\local\phonenav;
 use theme_dimensions\local\readingbar;
 
@@ -91,79 +90,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     private array $coursecategories = [];
 
     /**
-     * Renders the login form.
-     *
-     * With the theme's login page switched off, Boost Union renders its form exactly as configured
-     * there; switched on, the form comes from this theme's own template, and every Boost Union login
-     * setting that shapes the form stops applying. A username mask is not this theme's business:
-     * auth_loginsteps arms its own on core's form hooks, which the theme's template keeps.
-     *
-     * @param \core_auth\output\login $form The renderable.
-     * @return string
-     */
-    public function render_login(\core_auth\output\login $form) {
-        // Boost Union's login page, exactly as it is, when this theme's page is switched off.
-        if (!login::page_enabled()) {
-            return parent::render_login($form);
-        }
-
-        return $this->render_from_template('theme_dimensions/loginform', $this->login_page_context($form));
-    }
-
-    /**
-     * The template context of the theme's login page, built from core's renderable.
-     *
-     * Core's export carries the form itself - urls, token, flags, error - and the identity
-     * providers as prepare_identity_providers_for_output() left them. What is added is what this
-     * page draws differently: the providers with a local mark instead of the provider's image, the
-     * panel's logo for the mobile band, and the site's short name as the wordmark fallback.
-     *
-     * @param \core_auth\output\login $form The renderable.
-     * @return \stdClass
-     */
-    protected function login_page_context(\core_auth\output\login $form): \stdClass {
-        global $SITE;
-
-        $context = $form->export_for_template($this);
-        $context->sitename = format_string(
-            $SITE->shortname,
-            true,
-            ['context' => \context_course::instance(SITEID), 'escape' => false]
-        );
-        $context->logourl = login::logo_url($this->compact_logo_url());
-        // The panel's copy reaches the form column too: below lg the aside is hidden and the
-        // kicker moves into the band above the heading.
-        $context->dimensionsloginpanel = login::panel();
-        $context->idps = login::providers_for_output((array) $context->identityproviders);
-        $context->hasidps = !empty($context->idps);
-        $context->showseparator = $context->hasidps && !empty($context->showloginform);
-        $context->showsignupseparator = !empty($context->cansignup) && ($context->hasidps || !empty($context->showloginform));
-
-        // The reset hint, from the second failed login in a row. Core's set_error() fills errortitle
-        // for AUTH_LOGIN_FAILED alone, and login/index.php folds every credential failure - a wrong
-        // password, an unknown username, a suspended or locked-out account - into that code before
-        // calling it; only a failed captcha and an unauthorised login keep their own code, carry no
-        // title, and neither count nor show the hint.
-        $context->suggestreset = false;
-        if (!empty($context->errortitle)) {
-            $context->suggestreset = login::suggest_reset(login::record_failed_attempt());
-        }
-
-        return $context;
-    }
-
-    /**
      * Renders a template, rewriting the layout contexts this theme draws differently.
      *
-     * The login layout gets the custom login page's context while that page is on: the arrangement is
-     * forced side by side, the body gains the class the login styles are scoped to, and the panel's
-     * logo and copy are added for the core/login_panel override. That happens here because Boost
-     * Union's layout/login.php builds the context and renders it in one call, and this is the only
-     * place a child theme sees it without owning a copy of that file.
-     *
-     * A layout carrying the user menu gets the navbar's colour and the name block in the menu, for
-     * the same reason: Boost Union's layouts build that context and render it in one call. The name
-     * itself is left exactly as core wrote it - fullname($USER), from
+     * A layout carrying the user menu gets the navbar's colour and the name block in the menu, because Boost
+     * Union's layouts build that context and render it in one call, and this is the only place a child theme
+     * sees it without owning a copy of every layout file. The name itself is left exactly as core wrote it -
+     * fullname($USER), from
      * \core\user::get_user_navigation_info() through core\navigation\output\primary::get_user_menu() - so
      * the navbar shows whatever the site's fullnamedisplay composes. The guard is the context's
      * shape rather than the template's name on purpose: it survives Boost Union renaming or
@@ -204,10 +136,6 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * @return string
      */
     public function render_from_template($templatename, $context) {
-        if ($templatename === 'theme_boost/login' && is_array($context) && login::page_enabled()) {
-            $context = login::layout_context($context, $this->compact_logo_url());
-        }
-
         /* The navbar style keys on the navbar's own context key: core's get_user_menu() never sets
            usermenu.userfullname for a visitor who is not logged in, and the public pages still need
            the navbar colours. */
@@ -334,27 +262,6 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             return '';
         }
         return $this->render(course_notice::for_current_user($notice));
-    }
-
-    /**
-     * Boost Union's compact logo as a plain url, or '' when the site has none.
-     *
-     * Wherever the login page prints the brand, the image is Boost Union's compact logo
-     * (`theme_boost_union | logocompact`). Boost Union's own override of this core method resolves an
-     * applicable flavour's compact logo first, then a Multi-tenancy tenant's logo where that is
-     * installed, then its own logocompact setting - the order an organisation's branding needs - and
-     * answers moodle_url|false, false when none is set. It is resolved here
-     * because only a renderer has it, and handed to {@see login::logo_url()}, which stays static.
-     *
-     * out(false) on purpose: the raw url. The panel and the band double-stash it, which escapes it
-     * once.
-     *
-     * @return string
-     */
-    protected function compact_logo_url(): string {
-        $url = $this->get_compact_logo_url();
-
-        return ($url instanceof \moodle_url) ? $url->out(false) : '';
     }
 
     /**

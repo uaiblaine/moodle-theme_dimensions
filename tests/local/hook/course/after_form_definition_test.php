@@ -27,8 +27,8 @@ namespace theme_dimensions\local\hook\course;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\focusmodefields;
 use theme_dimensions\local\landing\links;
-use theme_dimensions\local\login;
 use theme_dimensions\local\landingfields;
+use theme_dimensions\local\yesno;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -529,13 +529,13 @@ final class after_form_definition_test extends \advanced_testcase {
         $element = 'customfield_' . focusmodefields::SHORTNAME;
         $header = 'category_' . focusmodefields::get_field()->get_category()->get('id');
 
-        set_config('focusmode', login::SELECT_YES, focusmode::COMPONENT);
+        set_config('focusmode', yesno::YES, focusmode::COMPONENT);
         $mform = $this->course_form($course);
         $this->assertTrue($mform->elementExists($element), 'Control: on, the box is offered.');
         $this->assertTrue($mform->elementExists($element . '_static'));
         $this->assertTrue($mform->elementExists($header));
 
-        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        set_config('focusmode', yesno::NO, focusmode::COMPONENT);
         $mform = $this->course_form($course);
         $this->assertFalse($mform->elementExists($element));
         $this->assertFalse($mform->elementExists($element . '_static'));

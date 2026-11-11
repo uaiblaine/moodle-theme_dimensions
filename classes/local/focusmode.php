@@ -217,7 +217,7 @@ final class focusmode {
      * @return bool True when focus mode is allowed to apply anywhere on this site.
      */
     public static function master_enabled(): bool {
-        return ((int) get_config(self::COMPONENT, 'focusmode')) === login::SELECT_YES;
+        return ((int) get_config(self::COMPONENT, 'focusmode')) === yesno::YES;
     }
 
     /**

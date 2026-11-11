@@ -29,18 +29,17 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\population;
 use theme_dimensions\local\darklogo;
 use theme_dimensions\local\guestnav;
-use theme_dimensions\local\login;
 use theme_dimensions\output\category_hero;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Tests for what this theme's core renderer draws: the login page, the navbar's name and the category page's header.
+ * Tests for what this theme's core renderer draws: the login layout, the navbar's name and the category page's header.
  *
  * These render the real thing - core's renderable, this theme's renderer, the templates and,
  * through header(), Boost Union's layout files - because the rules that matter are only visible
- * in the output: that no identity provider's image is ever fetched from the provider, that
- * switching the login page off gives Boost Union's page back exactly, image and all, and that the
- * category hero replaces the secondary navigation band rather than adding to it.
+ * in the output: that the login page is Boost Union's, that the second factor stands on
+ * auth_loginsteps' shell while that is the door, and that the category hero replaces the secondary
+ * navigation band rather than adding to it.
  *
  * @package    theme_dimensions
  * @category   test
@@ -49,21 +48,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
  */
 #[CoversClass(core_renderer::class)]
 final class core_renderer_test extends \advanced_testcase {
-    /** @var array The Google issuer as auth_loginsteps hands it to the page: a remote image, and the servicetype beside it. */
-    private const GOOGLE = [
-        'url' => 'https://www.example.com/moodle/auth/loginsteps/login.php?id=1',
-        'iconurl' => 'https://accounts.google.com/favicon.ico',
-        'name' => 'Google',
-        'servicetype' => 'google',
-    ];
-
-    /** @var array A provider this theme has no mark for, with an image on its own servers, as auth_oauth2 would list it. */
-    private const OTHER = [
-        'url' => 'https://www.example.com/moodle/auth/oauth2/login.php?id=2',
-        'iconurl' => 'https://idp.example.org/mark.png',
-        'name' => 'Other IdP',
-    ];
-
     /**
      * @var string The primary navigation as 5.3 draws it: core/primarymoremenu, a React mount around a no-JS
      *      fallback whose nav is "moremenu observed navigation" and so never counted as a plain more menu.
@@ -104,370 +88,33 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * Core's login renderable, with the identity providers a site would list.
+     * The login page is Boost Union's: the theme draws no login form and rewrites nothing of the login layout.
      *
-     * @param array $identityproviders The providers, as loginpage_idp_list() returns them.
-     * @return \core_auth\output\login
-     */
-    private function form(array $identityproviders = []): \core_auth\output\login {
-        $form = new \core_auth\output\login(['manual'], '');
-        $form->identityproviders = $identityproviders;
-
-        return $form;
-    }
-
-    /**
-     * The provider's mark is drawn locally: the glyph is there, the provider's image is not.
-     *
-     * The image url is Google's favicon on Google's servers. Rendering it would make every
-     * visitor's browser announce itself to Google before the person has chosen anything.
+     * The form comes from Boost Union's renderer, and the page from Boost Union's layout/login.php, which the theme's
+     * own layout file requires for every page it does not put on auth_loginsteps' shell. Boost Union's legacy
+     * arrangement is the control: it reaches the body only while nothing of the theme stands between the setting and
+     * the page.
      *
      * @return void
      */
-    public function test_the_provider_mark_is_drawn_locally(): void {
-        $this->resetAfterTest();
-
-        $html = $this->renderer()->render_login($this->form([self::GOOGLE]));
-
-        $this->assertStringContainsString('fa-brands fa-google', $html);
-        $this->assertStringContainsString('Sign in with Google Workspace', $html);
-        $this->assertStringContainsString('href="https://www.example.com/moodle/auth/loginsteps/login.php?id=1"', $html);
-        $this->assertStringNotContainsString('accounts.google.com', $html);
-        $this->assertStringNotContainsString('<img', $html);
-    }
-
-    /**
-     * A provider this theme has no mark for gets its name and nothing from its servers.
-     *
-     * @return void
-     */
-    public function test_an_unknown_provider_shows_no_remote_image(): void {
-        $this->resetAfterTest();
-
-        $html = $this->renderer()->render_login($this->form([self::OTHER]));
-
-        $this->assertStringContainsString('Sign in with Other IdP', $html);
-        $this->assertStringNotContainsString('idp.example.org', $html);
-        $this->assertStringNotContainsString('<img', $html);
-        $this->assertStringNotContainsString('fa-brands', $html);
-    }
-
-    /**
-     * An icon this site serves itself is rendered - the control for the two tests above.
-     *
-     * @return void
-     */
-    public function test_an_icon_this_site_serves_is_rendered(): void {
-        global $CFG;
-        $this->resetAfterTest();
-
-        $local = self::OTHER;
-        $local['iconurl'] = $CFG->wwwroot . '/theme/image.php/boost/auth_other/1/icon';
-
-        $html = $this->renderer()->render_login($this->form([$local]));
-
-        $this->assertStringContainsString('<img class="dimensions-login-icon" src="' . $local['iconurl'] . '"', $html);
-    }
-
-    /**
-     * Switching the page off hands the form back to Boost Union, exactly as it is.
-     *
-     * Exactly includes the provider's image: Boost Union's page renders core's iconurl, which is
-     * the whole reason the custom login page exists. Asserting it here is what proves the page rendered
-     * is Boost Union's and not a variant of ours.
-     *
-     * @return void
-     */
-    public function test_switching_the_page_off_hands_the_form_back_to_boost_union(): void {
-        $this->resetAfterTest();
-
-        set_config('loginpage', login::SELECT_NO, 'theme_dimensions');
-
-        $html = $this->renderer()->render_login($this->form([self::GOOGLE]));
-
-        $this->assertStringContainsString('theme_boost_union-loginform', $html);
-        $this->assertStringContainsString('accounts.google.com/favicon.ico', $html);
-        $this->assertStringNotContainsString('dimensions-login', $html);
-    }
-
-    /**
-     * The form keeps every hook core's Behat step and auth_loginsteps' CPF mask rely on.
-     *
-     * @return void
-     */
-    public function test_the_form_keeps_the_hooks_core_and_the_cpf_mask_rely_on(): void {
-        $this->resetAfterTest();
-
-        $html = $this->renderer()->render_login($this->form());
-
-        $this->assertStringContainsString('id="login"', $html);
-        $this->assertStringContainsString('id="anchor"', $html);
-        $this->assertStringContainsString('name="logintoken"', $html);
-        $this->assertStringContainsString('id="username"', $html);
-        $this->assertStringContainsString('id="password"', $html);
-        $this->assertStringContainsString('id="loginbtn"', $html);
-        $this->assertStringContainsString('action="https://www.example.com/moodle/login/index.php"', $html);
-        // No provider, no separator: the local form stands alone.
-        $this->assertStringNotContainsString('dimensions-login-separator', $html);
-        $this->assertStringNotContainsString('dimensions-login-route-lead', $html);
-    }
-
-    /**
-     * The sign-up link follows core's own answer on self registration.
-     *
-     * @return void
-     */
-    public function test_the_sign_up_link_follows_core(): void {
-        $this->resetAfterTest();
-
-        // One renderer for both renders: the page can be set up once per test, and the
-        // renderable reads registerauth when it is constructed.
-        $renderer = $this->renderer();
-
-        set_config('registerauth', 'email');
-        $html = $renderer->render_login($this->form());
-        $this->assertStringContainsString('Create my account', $html);
-        $this->assertStringContainsString('dimensions-login-signup', $html);
-        $button = '<a class="btn btn-outline-primary w-100" href="https://www.example.com/moodle/login/signup.php">';
-        $this->assertStringContainsString($button, $html);
-        // A block of its own, after an "or": with no provider the form still precedes it.
-        $this->assertSame(1, substr_count($html, 'dimensions-login-separator'));
-
-        set_config('registerauth', '');
-        $html = $renderer->render_login($this->form());
-        $this->assertStringNotContainsString('Create my account', $html);
-        $this->assertStringNotContainsString('dimensions-login-signup', $html);
-        $this->assertStringNotContainsString('dimensions-login-separator', $html);
-    }
-
-    /**
-     * The hero above the form carries the brand and the kicker for the screens that hide the aside.
-     *
-     * The kicker is the panel's, so a kicker typed into the settings reaches the band too.
-     *
-     * @return void
-     */
-    public function test_the_hero_carries_the_brand_and_the_kicker_for_small_screens(): void {
-        $this->resetAfterTest();
-
-        set_config('loginpanelkicker', 'Ensino a distância', 'theme_dimensions');
-
-        $html = $this->renderer()->render_login($this->form());
-
-        $this->assertStringContainsString('<div class="dimensions-login-hero">', $html);
-        $this->assertStringContainsString('<div class="dimensions-login-brand d-lg-none">', $html);
-        $this->assertStringContainsString('<span class="dimensions-login-wordmark">', $html);
-        $this->assertStringContainsString('<p class="dimensions-login-kicker d-lg-none">Ensino a distância</p>', $html);
-        $heading = '<h1 class="dimensions-login-heading">Sign in to the learning platform</h1>';
-        $this->assertMatchesRegularExpression(
-            '~<div class="dimensions-login-hero">.*?' . preg_quote($heading, '~') . '\s*</div>~s',
-            $html
-        );
-    }
-
-    /**
-     * The second wrong password in a row suggests resetting it; the first does not.
-     *
-     * Each render with core's invalid-credentials error is one attempt, which is how the real page
-     * behaves: core redirects after a failed post and renders the error once. A render without an
-     * error - the page reloaded - shows no hint whatever the count.
-     *
-     * @return void
-     */
-    public function test_the_second_wrong_password_suggests_a_reset(): void {
-        $this->resetAfterTest();
-
-        $renderer = $this->renderer();
-
-        $first = $this->form();
-        $first->set_error('x', AUTH_LOGIN_FAILED);
-        $html = $renderer->render_login($first);
-        $this->assertStringContainsString('id="loginerrormessage"', $html);
-        $this->assertStringNotContainsString('dimensions-login-resethint', $html);
-
-        $second = $this->form();
-        $second->set_error('x', AUTH_LOGIN_FAILED);
-        $html = $renderer->render_login($second);
-        $this->assertStringContainsString('dimensions-login-resethint', $html);
-        $this->assertStringContainsString('Reset my password', $html);
-        $this->assertStringContainsString('href="https://www.example.com/moodle/login/forgot_password.php"', $html);
-
-        $html = $renderer->render_login($this->form());
-        $this->assertStringNotContainsString('dimensions-login-resethint', $html);
-    }
-
-    /**
-     * Only what core reports as an invalid login counts - the control for the test above.
-     *
-     * On the real page core folds every credential failure - a wrong password, an unknown
-     * username, a suspended account, a lockout - into AUTH_LOGIN_FAILED before set_error(), and
-     * only two codes keep their own: a failed captcha and an unauthorised login. Neither carries a
-     * title, so two failed captchas must neither count nor show the hint - a missing captcha says
-     * nothing about a password the person may have forgotten. The captcha code is used because it
-     * is one login/index.php really delivers; a lockout is not, it arrives as an invalid login.
-     *
-     * @return void
-     */
-    public function test_only_an_invalid_login_counts_towards_the_reset_hint(): void {
-        global $SESSION;
-        $this->resetAfterTest();
-
-        $renderer = $this->renderer();
-        unset($SESSION->{login::FAILURES_SESSION_KEY});
-
-        foreach ([1, 2] as $attempt) {
-            $form = $this->form();
-            $form->set_error('Captcha missing', AUTH_LOGIN_FAILED_RECAPTCHA);
-            $html = $renderer->render_login($form);
-            $this->assertStringContainsString('Captcha missing', $html, "attempt $attempt");
-            $this->assertStringNotContainsString('dimensions-login-resethint', $html, "attempt $attempt");
-        }
-        $this->assertFalse(isset($SESSION->{login::FAILURES_SESSION_KEY}));
-    }
-
-    /**
-     * The separator between the provider and the form needs both of them.
-     *
-     * With core's showloginform off the provider stands alone: no form, and no "or" leading to
-     * nothing. The positive half first, so the assertion is about the conjunction and not about a
-     * separator that never renders.
-     *
-     * @return void
-     */
-    public function test_the_separator_needs_both_a_provider_and_the_local_form(): void {
-        $this->resetAfterTest();
-
-        $renderer = $this->renderer();
-
-        $html = $renderer->render_login($this->form([self::GOOGLE]));
-        $this->assertStringContainsString('id="login"', $html);
-        $this->assertSame(1, substr_count($html, 'dimensions-login-separator'));
-
-        set_config('showloginform', 0);
-        $html = $renderer->render_login($this->form([self::GOOGLE]));
-        $this->assertStringContainsString('fa-brands fa-google', $html);
-        $this->assertStringNotContainsString('id="login"', $html);
-        $this->assertStringNotContainsString('dimensions-login-separator', $html);
-    }
-
-    /**
-     * Every page on the login layout carries the panel, not only the login page.
-     *
-     * Core designed the split layout for the whole login flow - password recovery, sign-up, the
-     * MFA challenge - and Boost Union's layout file renders the same template for all of them, so
-     * the panel belongs to the whole flow, by design. This pins that the hook fires on the password
-     * recovery page too; if the decision is ever reversed, this is the test to invert.
-     *
-     * @return void
-     */
-    public function test_every_page_of_the_login_flow_carries_the_panel(): void {
+    public function test_the_login_page_is_boost_unions(): void {
         global $PAGE;
         $this->resetAfterTest();
-
-        $renderer = $this->renderer('/login/forgot_password.php');
-        $PAGE->set_title('Forgotten password');
-        $PAGE->set_heading('Forgotten password');
-        $this->assertSame('login-forgot_password', $PAGE->pagetype);
-
-        $html = $renderer->header();
-
-        $this->assertStringContainsString('dimensions-login-panel', $html);
-        $this->assertStringContainsString(login::BODY_CLASS, $html);
-    }
-
-    /**
-     * With the page on, the panel is the institutional one.
-     *
-     * No logo is stored on the test site, so the wordmark - the site's short name - is what shows.
-     *
-     * @return void
-     */
-    public function test_the_panel_is_the_institutional_one_when_the_page_is_on(): void {
-        $this->resetAfterTest();
-
-        // The renderer first: the panel's notice goes through format_text(), whose filters touch
-        // $PAGE->theme, and the page cannot be set up after that.
-        $renderer = $this->renderer();
-        $context = login::layout_context(['bodyattributes' => 'class="pagelayout-login"', 'sitename' => 'Acme']);
-        $html = $renderer->render_from_template('core/login_panel', $context);
-
-        $this->assertStringContainsString('dimensions-login-panel', $html);
-        $this->assertStringContainsString('<p class="dimensions-login-wordmark">Acme</p>', $html);
-        $this->assertStringContainsString(get_string('login_panel_kicker', 'theme_dimensions'), $html);
-        $this->assertStringContainsString(get_string('login_panel_title', 'theme_dimensions'), $html);
-        $this->assertStringContainsString(get_string('login_panel_foot', 'theme_dimensions'), $html);
-        $this->assertStringNotContainsString('login-layout-left-content', $html);
-    }
-
-    /**
-     * Without the flag, the panel is Boost Union's, copied verbatim.
-     *
-     * The setting is on here - it is the flag in the context which decides, so that the copy of
-     * Boost Union's partial is exercised and not just carried.
-     *
-     * @return void
-     */
-    public function test_the_panel_stays_boost_unions_without_the_flag(): void {
-        $this->resetAfterTest();
-
-        $html = $this->renderer()->render_from_template('core/login_panel', [
-            'hasleftinstructions' => true,
-            'leftinstructionsupper' => '<p>Welcome to our platform.</p>',
-            'leftinstructionslower' => '',
-        ]);
-
-        $this->assertStringContainsString('login-layout-left-instructions-upper', $html);
-        $this->assertStringContainsString('<p>Welcome to our platform.</p>', $html);
-        $this->assertStringNotContainsString('dimensions-login-panel', $html);
-    }
-
-    /**
-     * The whole login layout is forced side by side, and carries the panel, while the page is on.
-     *
-     * This goes through the real layout: Boost Union's layout/login.php, set to its LEGACY
-     * arrangement, rendered by header(). It pins the one line that wires the layout hook up in
-     * render_from_template(), which no test of the pure context function can reach.
-     *
-     * @return void
-     */
-    public function test_the_login_layout_is_forced_side_by_side_when_the_page_is_on(): void {
-        global $PAGE;
-        $this->resetAfterTest();
-
         set_config('loginarrangement', 'legacy', 'theme_boost_union');
+
+        $method = new \ReflectionMethod(core_renderer::class, 'render_login');
+        $this->assertNotSame(core_renderer::class, $method->getDeclaringClass()->getName());
+
         $renderer = $this->renderer();
         $PAGE->set_title('Log in');
         $PAGE->set_heading('Log in');
+        $form = $renderer->render_login(new \core_auth\output\login(['manual'], ''));
+        $this->assertStringContainsString('<div id="theme_boost_union-loginform">', $form);
 
-        $html = $renderer->header();
-
-        $this->assertStringContainsString(login::BODY_CLASS, $html);
-        $this->assertStringContainsString('theme_boost_union-loginarrangement-sidebyside', $html);
-        $this->assertStringNotContainsString('theme_boost_union-loginarrangement-legacy', $html);
-        $this->assertStringContainsString('login-layout-left', $html);
-        $this->assertStringContainsString('dimensions-login-panel', $html);
-    }
-
-    /**
-     * With the page off, the layout is whatever Boost Union was told - the control for the above.
-     *
-     * @return void
-     */
-    public function test_the_login_layout_is_boost_unions_when_the_page_is_off(): void {
-        global $PAGE;
-        $this->resetAfterTest();
-
-        set_config('loginpage', login::SELECT_NO, 'theme_dimensions');
-        set_config('loginarrangement', 'legacy', 'theme_boost_union');
-        $renderer = $this->renderer();
-        $PAGE->set_title('Log in');
-        $PAGE->set_heading('Log in');
-
-        $html = $renderer->header();
-
-        $this->assertStringContainsString('theme_boost_union-loginarrangement-legacy', $html);
-        $this->assertStringNotContainsString(login::BODY_CLASS, $html);
-        $this->assertStringNotContainsString('dimensions-login-panel', $html);
+        $body = $this->body_tag($renderer->header());
+        $this->assertStringContainsString('pagelayout-login', $body);
+        $this->assertStringContainsString('theme_boost_union-loginarrangement-legacy', $body);
+        $this->assertStringNotContainsString('theme_dimensions-login', $body);
     }
 
     /**
@@ -1020,122 +667,10 @@ final class core_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * Boost Union's compact logo reaches the panel and the form's band, and nothing else.
-     *
-     * End to end: the same url travels two ways - the panel's img and the band's img in this
-     * theme's own form column - and the body carries no style attribute for it.
-     *
-     * @return void
-     */
-    public function test_the_compact_logo_reaches_the_panel_and_the_band(): void {
-        global $PAGE;
-        $this->resetAfterTest();
-        set_config('logocompact', 'brand.png', 'theme_boost_union');
-
-        $renderer = $this->renderer();
-        $PAGE->set_title('Sign in');
-        $PAGE->set_heading('Sign in');
-
-        // Asked of the renderer rather than spelled out: the assertion is that ONE url reaches both
-        // places, and re-typing Boost Union's own url builder here would only pin a copy of it.
-        $expected = $renderer->get_compact_logo_url()->out(false);
-        $this->assertStringContainsString('brand.png', $expected);
-
-        $form = $renderer->render_login($this->form());
-        $this->assertStringContainsString('<img class="dimensions-login-logo" src="' . $expected . '"', $form);
-        $this->assertStringNotContainsString('dimensions-login-wordmark', $form);
-
-        $html = $renderer->header();
-        $this->assertStringContainsString('<img class="dimensions-login-logo" src="' . $expected . '"', $html);
-        $this->assertStringNotContainsString('style=', $this->body_tag($html));
-    }
-
-    /**
-     * Without a compact logo the panel shows the wordmark.
-     *
-     * The control for the test above: without it, a chain that resolved nothing at all would pass
-     * every assertion about the wordmark that a working chain passes.
-     *
-     * @return void
-     */
-    public function test_without_a_compact_logo_the_wordmark_stands(): void {
-        global $PAGE;
-        $this->resetAfterTest();
-        unset_config('logocompact', 'theme_boost_union');
-
-        $renderer = $this->renderer();
-        $PAGE->set_title('Sign in');
-        $PAGE->set_heading('Sign in');
-        $html = $renderer->header();
-
-        $this->assertStringContainsString('dimensions-login-wordmark', $html);
-    }
-
-    /**
-     * A page of auth_loginsteps left on the login layout gets the flow's panel and nothing of its own.
-     *
-     * That plugin draws its access screens on its own shell, on the embedded layout (the test
-     * below). A page of it still rendered on the login layout - an older release, or a screen it
-     * has not moved - is any page of the login flow to this theme (decision 10): the class, the
-     * panel with its copy and its logo, and no class, attribute or property of its own. The panel
-     * and the logo inside it are the control: the bare body tag belongs to a page the hook really
-     * rewrote.
-     *
-     * @return void
-     */
-    public function test_a_plugin_page_on_the_login_layout_gets_the_flows_panel_and_nothing_of_its_own(): void {
-        global $PAGE;
-        $this->resetAfterTest();
-        set_config('logocompact', 'brand.png', 'theme_boost_union');
-
-        $renderer = $this->renderer('/auth/loginsteps/register.php');
-        $PAGE->set_title('Registration');
-        $PAGE->set_heading('Registration');
-        $this->assertSame('auth-loginsteps-register', $PAGE->pagetype);
-        $expected = $renderer->get_compact_logo_url()->out(false);
-
-        $html = $renderer->header();
-
-        $this->assertStringContainsString('<img class="dimensions-login-logo" src="' . $expected . '"', $html);
-        $this->assertStringContainsString(get_string('login_panel_title', 'theme_dimensions'), $html);
-        $body = $this->body_tag($html);
-        $this->assertStringContainsString(login::BODY_CLASS, $body);
-        $this->assertSame(1, substr_count($body, 'theme_dimensions-'), 'The login class is the theme\'s one mark.');
-        $this->assertStringNotContainsString('style=', $body);
-    }
-
-    /**
-     * The plugin's own shell, on the embedded layout, carries nothing of the login page.
-     *
-     * auth_loginsteps draws its reset, its registration, its identity door and its own sign-in page
-     * on the embedded layout, and the hook is keyed on the login layout's template, so none of
-     * them gets the class, the panel or the forced arrangement. The custom login page is on, which is
-     * the precondition, and the test above is the control: the same plugin on the login layout.
-     *
-     * @return void
-     */
-    public function test_the_plugins_shell_on_the_embedded_layout_carries_nothing_of_the_login_page(): void {
-        global $PAGE;
-        $this->resetAfterTest();
-
-        $this->assertTrue(login::page_enabled());
-        $renderer = $this->renderer('/auth/loginsteps/signin.php', 'embedded');
-        $PAGE->set_title('Sign in');
-        $PAGE->set_heading('Sign in');
-        $this->assertSame('auth-loginsteps-signin', $PAGE->pagetype);
-
-        $html = $renderer->header();
-
-        $this->assertStringContainsString('pagelayout-embedded', $this->body_tag($html));
-        $this->assertStringNotContainsString(login::BODY_CLASS, $html);
-        $this->assertStringNotContainsString('dimensions-login-panel', $html);
-    }
-
-    /**
      * The second factor is drawn on auth_loginsteps' shell, not on the login page, while that is the door.
      *
      * Through the real layout (header() runs layout/login.php). The control is the same page with
-     * the plugin's switch off, which keeps the flow's panel (decision 10, narrowed for this page).
+     * the plugin's switch off, which keeps Boost Union's login layout.
      *
      * @return void
      */
@@ -1156,15 +691,15 @@ final class core_renderer_test extends \advanced_testcase {
         $this->assertStringContainsString('<div id="page" class="theme-dimensions-loginshell">', $html);
         $this->assertStringContainsString('data-screen="mfa"', $html);
         $this->assertStringContainsString(s(get_string('loginshell_mfa_title', 'theme_dimensions')), $html);
-        $this->assertStringNotContainsString('dimensions-login-panel', $html);
+        $this->assertStringNotContainsString('theme_boost_union-loginarrangement-', $html);
     }
 
     /**
-     * With the plugin's shell switched off, the second factor keeps the login flow's panel.
+     * With the plugin's shell switched off, the second factor keeps Boost Union's login layout.
      *
      * @return void
      */
-    public function test_the_second_factor_keeps_the_panel_without_the_shell(): void {
+    public function test_the_second_factor_keeps_boost_unions_layout_without_the_shell(): void {
         global $PAGE;
         $this->resetAfterTest();
         set_config('loginshell', '0', 'auth_loginsteps');
@@ -1173,7 +708,7 @@ final class core_renderer_test extends \advanced_testcase {
         $PAGE->set_title('Multi-factor authentication');
         $html = $renderer->header();
 
-        $this->assertStringContainsString('dimensions-login-panel', $html);
+        $this->assertStringContainsString('theme_boost_union-loginarrangement-', $this->body_tag($html));
         $this->assertStringNotContainsString('theme-dimensions-loginshell', $html);
     }
 
@@ -1196,7 +731,7 @@ final class core_renderer_test extends \advanced_testcase {
      * The dark logo classes reach the body of an ordinary page and of the login layout while the site's logos are in force.
      *
      * The login half goes through Boost Union's layout/login.php, which asks body_attributes() itself; nothing else
-     * would show that the class reaches the page the theme's login logo is on.
+     * would show that the class reaches the page Boost Union's login logo is on.
      *
      * @return void
      */
@@ -1215,7 +750,7 @@ final class core_renderer_test extends \advanced_testcase {
         $PAGE->set_heading('Sign in');
         $body = $this->body_tag($renderer->header());
         $this->assertStringContainsString('dimensions-darklogo-compact', $body);
-        $this->assertStringContainsString(login::BODY_CLASS, $body, 'Control: the theme\'s login page drew this body.');
+        $this->assertStringContainsString('pagelayout-login', $body, 'Control: the login layout drew this body.');
     }
 
     /**

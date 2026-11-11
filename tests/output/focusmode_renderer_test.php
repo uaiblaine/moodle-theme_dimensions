@@ -28,7 +28,7 @@ namespace theme_dimensions\output;
 use core_course\customfield\course_handler;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\focusmodefields;
-use theme_dimensions\local\login;
+use theme_dimensions\local\yesno;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
@@ -103,7 +103,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
         focusmode::reset_caches();
         set_config('enablecompletion', 1);
         // The switch ships off; the tests about it set it back.
-        set_config('focusmode', login::SELECT_YES, focusmode::COMPONENT);
+        set_config('focusmode', yesno::YES, focusmode::COMPONENT);
     }
 
     /**
@@ -384,7 +384,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $cm = $this->activity($course);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
-        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        set_config('focusmode', yesno::NO, focusmode::COMPONENT);
 
         $html = $this->render($course, $cm);
 
@@ -1025,7 +1025,7 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $this->assertLessThan($messages, $entry);
 
         // The control, in this configuration: with the master switch off there is no way in.
-        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        set_config('focusmode', yesno::NO, focusmode::COMPONENT);
 
         $html = $this->render($course, $cm);
         $this->assertStringNotContainsString('dimensions-focus-entry', $html);

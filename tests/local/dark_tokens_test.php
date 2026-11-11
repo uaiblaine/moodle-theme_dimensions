@@ -33,7 +33,7 @@ use theme_dimensions\local\category\branding;
  * Every semantic alias of scss/post.scss turns with the page's colour mode, and every dark pair it forms reads.
  *
  * Core 5.3's dark mode turns Bootstrap's surfaces and ink and none of the theme's --dim-ds-* aliases, so an alias
- * left at its light value drew navy ink on a card the page had darkened (the login heading, 1.28:1) or a white card
+ * left at its light value drew navy ink on a card the page had darkened or a white card
  * under the ink the page had lightened (the profile and landing cards, 1.30 to 2.35:1). The dark half is compiled
  * by core's own dark-readable() and mix(), so its pairs are measured on compiled values, against core's dark
  * surfaces as the default preset sets them (a Boost Union "branded grey tones" site moves those surfaces).
@@ -257,8 +257,8 @@ final class dark_tokens_test extends \basic_testcase {
     /**
      * The two aliases added with the dark half keep the light pairs their components drew before.
      *
-     * They replaced primitives read directly (the login's lead route and the landing page's held place), so the light
-     * page must not move; the pair is measured on the light surfaces they sit on.
+     * They replaced primitives read directly, so the light page must not move; the pair is measured on the light
+     * surfaces they sit on.
      *
      * @return void
      */
@@ -298,14 +298,13 @@ final class dark_tokens_test extends \basic_testcase {
      *
      * A primitive is the same in both modes, so an ink read from one stays navy on the dark page; the ink a ground of
      * the page needs is a semantic alias, which turns with it. The exceptions sit on a plate they state themselves,
-     * the same in both modes: the login tag on the green accent, and the poster's kind tag on its white plate. The
-     * control is that each exception is still found where it is named.
+     * the same in both modes: the poster's kind tag on its white plate. The control is that the exception is still
+     * found where it is named.
      *
      * @return void
      */
     public function test_no_ink_reads_a_primitive_but_the_fixed_plates(): void {
         $allowed = [
-            'login.scss .dimensions-login-tag',
             'category.scss .dim-poster__kind',
         ];
         $found = [];

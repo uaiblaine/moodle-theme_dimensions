@@ -6,9 +6,8 @@ style, CI gates, lang-string rules, the `mdl` environment, git rules) — do not
 repeat them here. This file keeps only what is true for this plugin.
 
 Plugin context: `theme_dimensions` ("Dimensions", repository `moodle-theme_dimensions`), a
-community Moodle **theme** — a grandchild of Boost, child of Boost Union — carrying its own login
-page, category showcase, course landing pages, focus mode and course notice
-on top of Boost Union. It is meant to grow around the user experience of the owner's other plugins,
+community Moodle **theme** — a grandchild of Boost, child of Boost Union — carrying its own category
+showcase, course landing pages, focus mode and course notice on top of Boost Union, whose login page it keeps. It is meant to grow around the user experience of the owner's other plugins,
 Moodle's competency framework first, beside its siblings `local_dimensions`, `block_dimensions` and
 `block_compass`. It was imported from a private theme with the same feature set on Moodle 5.2; the
 design records behind it (the decisions D1-D39, the stage and round status blocks, the mockups and
@@ -218,7 +217,7 @@ config.php                     Inherits Boost Union's whole $THEME config, then 
 lib.php                        SCSS callbacks + the Boost Union settings-overview card callback.
 locallib.php                   Required from config.php on every request. Keep it empty-ish.
 settings.php                   Adds a tabbed page into Boost Union's settings category.
-classes/local/login.php        Reads the login page settings.
+classes/local/yesno.php        The stored values (1, 0) of the theme's yes/no select settings.
 classes/local/loginshell.php   Which login-layout pages (the second factor, the privileged session) stand on
                                auth_loginsteps' shell; layout/login.php draws them, templates/loginshell.mustache
                                is their bare page, scss/loginshell.scss lays core's form into the column.
@@ -250,8 +249,7 @@ classes/local/landingdefaults.php  The defaults a NEW course gets for the page m
                                format: the settings' choices, the clamped value, the one write. See its section.
 classes/local/hook/course/after_form_submission.php  Writes those defaults into a course create_course() just made.
 classes/local/hook/course/after_form_definition_after_data.php  Preselects them in a new course's form.
-classes/output/core_renderer.php  render_login() draws the theme's page or Boost Union's; render_from_template()
-                               colours the navbar, puts the name block in the user menu and sets
+classes/output/core_renderer.php  render_from_template() colours the navbar, puts the name block in the user menu and sets
                                Boost Union's courserelatedhints key to the course notice.
 classes/local/coursenotice/builder.php  The course notice's decisions: Boost Union's hints item by item,
                                the course-home gate, the editors' promotion section (the only minting
@@ -303,13 +301,10 @@ amd/src/focusmode.js           The switch in place (class, header actions, focus
 classes/external/set_focus_mode.php  Records a switch made in place, in the session.
 focus.php                      The no-JavaScript fallback of the switch: guards, a state change, a redirect.
 templates/core/user_menu_metadata.mustache  Adds the name beside the avatar, md and up.
-templates/loginform.mustache   The theme's login page's form column; core/loginform stays Boost Union's.
-templates/core/login_panel.mustache  The institutional panel, Boost Union's partial in the other branch.
 classes/local/upstream.php     The copies of core and Boost Union code and today's upstream of each; the snapshots
                                (*.upstream beside each copy), tests/local/upstream_test.php, scripts/upstream-merge.sh.
-scss/login.scss                Everything under body.theme_dimensions-login.
-tests/output/core_renderer_test.php  Renders the real login page: no remote image, the switch, the layout;
-                               and the navbar's name, through a real page header.
+tests/output/core_renderer_test.php  Renders real pages through a real header: the login layout (Boost Union's, or
+                               auth_loginsteps' shell), the navbar's name, the category hero.
 db/install.php, db/upgrade.php Provision the course custom fields; upgrade.php also builds the branding table.
 scss/pre.scss, scss/post.scss  The design system's tokens, all under --dim-ds-; lib.php assigns no $primary.
 scss/competency.scss           The competency pages and dialogues, scoped to core's page classes and dim-comp-.
@@ -323,22 +318,12 @@ templates/tool_lp/, templates/report_competency/, templates/block_lp/  Copies of
   `auth_loginsteps/logincpfmask`, armed from that plugin's `before_footer_html_generation` hook on
   the `login-index` page under any theme, with the `?nocpf=1` bypass read on the server). The theme
   carried a copy until 2026100503 and dropped it with the setting `logincpfvalidation`; do not bring
-  one back. What the theme owes the mask is the form's hooks (next bullet) and core's label: the
-  mask and the Behat steps that fill the form (`I set the field "Username"`) drive the field by it,
-  so renaming it to "CPF" is wrong; a site shows "CPF" through Language customisation.
-- **`core/loginform` is NOT overridden, deliberately - the theme's login page has its own
-  template.** Boost Union's `templates/core/loginform.mustache` is over 400 lines and
-  changes with every release; copying it to add two attributes would mean re-diffing it
-  forever. So auth_loginsteps' CPF mask binds to `form#login` / `#username`, stable in core, Boost
-  and Boost Union alike, and the theme's login page renders `templates/loginform.mustache`
-  (`theme_dimensions/loginform`), which keeps those same hooks. The one core
-  partial overridden is `core/login_panel`, 12 lines, with Boost Union's markup in the off
-  branch, tracked by its snapshot (see "Copies of upstream code").
-- **`render_login()` calls `parent::render_login()` only while the page is switched off.**
-  Boost Union builds its whole login context there, and "Leave it to Boost Union" must give
-  back exactly that page - provider image and all; the renderer test asserts the favicon IS
-  in that output, as the control. With the page on, the context is core's export plus what
-  this theme draws differently, and nothing of Boost Union's login settings is read.
+  one back. The mask and the Behat steps that fill the form (`I set the field "Username"`) drive the field
+  by core's label, so renaming it to "CPF" is wrong; a site shows "CPF" through Language customisation.
+- **No login template is overridden, deliberately** (`core/loginform`, `core/login_panel`, the layout's
+  `theme_boost/login`), and the renderer has no `render_login()`: the login page is Boost Union's (section
+  "The login layout"). Boost Union's `templates/core/loginform.mustache` is over 400 lines and changes with
+  every release; a copy would mean re-diffing it forever.
 
 ## Copies of upstream code
 
@@ -367,104 +352,33 @@ reflection on the class the copy would otherwise inherit from).
   2026-10-26 (core 5.3+ 2026100500.02, Boost Union 143e7497) was taken after reading all 26 copies against
   upstream: every body difference is a documented modification or a cosmetic local edit.
 
-## The theme's login page
+## The login layout
 
-The original design record (not part of this repository) holds its decisions; these are the facts the code rests on.
+The theme draws no login page of its own (retired in 2026100602, with its settings, templates, sheet and gates):
+the login page, its arrangement and every login setting are Boost Union's. What the theme still owns on the login
+layout is the shell branch below.
 
-- **Every decision is in `classes/local/login.php`, renderer-free.** `page_enabled()`,
-  `logo_url()`, `idp_mark()`, `local_icon_url()`, `providers_for_output()`, `panel()` and
-  `layout_context()` are all pure or config-only, which is what lets the guards be tested
-  and mutation-pinned without rendering. The renderer only calls them.
-- **The layout is rewritten in `render_from_template()`, guarded by the template NAME
-  `theme_boost/login`.** Boost Union's `layout/login.php` builds the context and renders it
-  in one call, so this is the only place a child theme sees it without owning a copy of that
-  file. By then the body attributes are already a string, so the body class is spliced in
-  with the same regex Boost Union uses for its own arrangement class; `$PAGE->add_body_class()`
-  would throw. The arrangement is forced side by side there too, because the panel lives in
-  the aside only that arrangement draws.
-- **The wiring of that hook is pinned by rendering the real layout.** `$renderer->header()`
-  runs Boost Union's `layout/login.php` inside PHPUnit, so
-  `test_the_login_layout_is_forced_side_by_side_when_the_page_is_on` proves the three lines
-  that call `layout_context()` are there - the pure function's own tests cannot. Mutation
-  `layout_hook_wired` is the check.
-- **No identity provider image is ever fetched from the provider, and the rule has a
-  control.** `local_icon_url()` keeps a url only under `$CFG->wwwroot . '/'` (the slash matters:
-  `wwwrootevil/...` is not this site). A known `servicetype` gets a Font Awesome Brands glyph
-  in the inherited colour and no image at all. The tests assert both the absence of
-  `accounts.google.com` and the presence of a same-origin icon; a rule tested only by absence
-  passes when nothing renders.
-- **The logo coupling has NO try/catch, on purpose.** `logo_url()` guards with `class_exists()`
-  and `method_exists()` and then calls the provider. A catch-all around the call would make the
-  guard dead code: the mutation deleting it would still return '' and the test would stay
-  green. If the plugin's file storage ever throws, that is a real fault and shows as one.
-- **The band below `lg` undoes core's padding with negative margins** (`-1.5rem -1rem`, the
-  value core gives `.login-layout-right` below lg in `theme/boost/scss/moodle/login.scss`)
-  so it runs edge to edge. If core changes that padding the band sits inset; re-measure on
-  upgrade.
-- **The panel's copy is a setting with the language string as fallback; the rest is strings
-  only.** `panel()` reads `loginpanelkicker/title/text/foot`, and an empty or whitespace value
-  means "use the string" - so the setting DEFAULTS are empty on purpose: a default of
-  `get_string(...)` would be written by `admin_apply_default_settings()` in the installer's
-  language and then shown to everyone. Kicker, title and text go through `format_string`
-  (markup stripped, plain spelling for the double stashes); the notice goes through
-  `format_text` and a triple stash, the only one in the login templates, because it may link
-  to the policy it names. Its switch is `loginpanelshowmonitoring`. The kicker also reaches the
-  form column, for the band below lg.
-- **The hero is one element at every width.** `.dimensions-login-hero` holds the brand, the kicker
-  and the `h1`; below lg it becomes the navy band (gradient, cut corner, edge to edge via the
-  negative margins) and from lg up only the `h1` is visible, the brand and the kicker being
-  `d-lg-none`. Two headings - one per width - would have been read twice by a screen reader
-  only if both were in the accessibility tree; `display: none` keeps the hidden one out, but
-  one `h1` is simpler to keep right.
-- **The separator is core 5.2's `.login-separator`**, whose lines and letter-spacing core
-  already styles; Boost Union's `.login-divider` is not used.
-- **Failed logins are counted in `$SESSION`, never on the account.** Core's
-  `login_failed_count` preference would need the typed username looked up, and a hint that
-  shows only when the lookup succeeds tells an anonymous visitor which usernames exist. The signal
-  is `errortitle` on core's renderable, which `set_error()` fills for `AUTH_LOGIN_FAILED`
-  alone - and **`login/index.php` folds every credential failure into that code first**
-  (wrong password, unknown username, suspended, LOCKOUT: `login/index.php:288-295`), so all of
-  them count. Only a failed captcha and an unauthorised login keep their own code and carry no
-  title; the control test renders two failed captchas, a state core really produces. The
-  first draft's control used a lockout, which core never delivers to `set_error()` - a vacuous
-  control the adversarial review caught. Core redirects after a failed post and renders the
-  error once, so one render with a title is one attempt; nothing resets the count, because a
-  logout terminates the session.
-- **The hook fires on EVERY page of the login layout, by decision.** Core's password recovery
-  and sign-up, the MFA challenge and the age pages all `set_pagelayout('login')`, and Boost
-  Union's `layout/login.php` renders `theme_boost/login` for all of them, so they all get the
-  panel and the forced arrangement. Decision 10 of the original design record (not part of this repository), narrowed by
-  auth_loginsteps' D22: that plugin's own screens (its reset, registration, identity door and
-  `signin.php`) are on `'embedded'`, which this hook never sees, and a page of it left on the login
-  layout is one more page of the flow - the class and the panel, nothing of its own.
-  `test_every_page_of_the_login_flow_carries_the_panel` pins the hook;
-  `test_the_plugins_shell_on_the_embedded_layout_carries_nothing_of_the_login_page` and
-  `test_a_plugin_page_on_the_login_layout_gets_the_flows_panel_and_nothing_of_its_own` pin the rest.
-  **Narrowed again on 2026-10-10 (the owner: "the MFA layout follows loginsteps"):** while
-  auth_loginsteps' shell is the site's door (`core_page_shell::available()`), `layout/login.php`
-  draws tool_mfa's second factor and tool_musudo's privileged session inside that plugin's frame,
-  so the panel never reaches them; `loginshell::PAGES` is the whole list. The hook above still
-  fires on every other login-layout page.
-- **The theme owns `layout/login.php` now, and it is a fallback first.** It `require`s Boost
-  Union's own layout file for every page `loginshell::for_page()` does not name, so the theme's
-  login page, its panel hook and every Boost Union login setting behave exactly as before; only the two
-  steps take the shell branch, which hands core's main content token to the plugin's frame and
-  prints a bare page (no navbar, no Boost Union includes). The plugin is optional and private (no
+- **`layout/login.php` is a fallback first.** It `require`s Boost Union's own layout file for every page
+  `loginshell::for_page()` does not name, so every Boost Union login setting behaves as under Boost Union itself;
+  only tool_mfa's second factor and tool_musudo's privileged session take the shell branch while auth_loginsteps'
+  shell is the site's door (`core_page_shell::available()`; the owner, 2026-10-10: "the MFA layout follows
+  loginsteps"). That branch hands core's main content token to the plugin's frame and prints a bare page (no
+  navbar, no Boost Union includes); `loginshell::PAGES` is the whole list. The plugin is optional and private (no
   CI dependency): the theme asks it by class name, and its tests skip without it.
+- **auth_loginsteps does not need the theme.** Its own screens (reset, registration, identity door, `signin.php`)
+  are on the `embedded` layout and its CPF mask binds to core's `form#login` / `#username` under any theme; the
+  shell branch is the only coupling, and it is the theme's.
+- `core_renderer_test::test_the_login_page_is_boost_unions` pins that the renderer overrides no `render_login()`
+  and that Boost Union's arrangement reaches the body; `test_the_second_factor_keeps_boost_unions_layout_without_the_shell`
+  is the shell branch's control (gate `loginshell_layout_fallback_gone`).
 - **A Bootstrap 5 utility cannot be outranked, only re-pointed.** `bg-*` and `text-*` are
   `!important` and compose `rgba(var(--bs-*-rgb), var(--bs-*-opacity))`, so a plain
   `background`/`color` changes nothing with every gate green; move the channel token on the element.
   And a button re-pointed through `--bs-btn-*` keeps the variant's colours when DISABLED, because
   Bootstrap writes `--bs-btn-disabled-*` from the original variant: state that trio too on any button
   that can be disabled.
-- **A provider name with a bare `&` is double-escaped, and not here.** auth_loginsteps returns
-  `format_string()`-escaped names, core's and this theme's templates double-stash them, and
-  un-escaping is non-injective. Fix at the plugin (`escape => false` in
-  `loginpage_idp_list()`), never with `html_entity_decode()` here.
-- **`--dim-ds-border-strong` and `--dim-ds-text-inverse-muted` were missing from `post.scss` on the first
-  pass**, so two `var()` reads resolved to nothing - the whole declaration invalid, not the
-  fallback. Every token `login.scss` reads must exist in `post.scss`; the review found it by
-  listing the `var(--...)` names and grepping each.
+- **Every token a sheet reads must exist in `post.scss`**: a `var()` read of a missing one makes the whole
+  declaration invalid, not the fallback. List the `var(--...)` names a sheet reads and grep each.
 - **The served stylesheet lies.** After editing SCSS: `mdl purge <stack>`, curl the page, curl the
   `theme/styles.php/...` url it names, and grep for the new rule. The first page request
   after a purge served a sheet compiled BEFORE the edit here once; the arbiter is an
@@ -620,7 +534,7 @@ already shaped decisions here:
   `test_the_toggle_shows_the_full_name_and_not_cores_first_name` and the gate
   `usermenu_firstname_dropped` hold it.
 - **Boost Union's binary selects store `'yes'`/`'no'`; this theme's store `1`/`0`.**
-  `THEME_BOOST_UNION_SETTING_SELECT_YES` is the string `'yes'`, while `login::SELECT_YES` is
+  `THEME_BOOST_UNION_SETTING_SELECT_YES` is the string `'yes'`, while `yesno::YES` is
   the integer `1`. Reading one plugin's setting with the other's vocabulary compares false
   and fails silently — a Behat scenario written with `| showfullnameinusermenu | 1 |` set a
   value Boost Union never recognises, and the failure read like a CSS bug. Always compare a
@@ -2084,11 +1998,6 @@ version's decisions; the switch in place and the owner's decisions D1-D5 of 2026
   reported "No scenarios" while the static gates stayed green. A 5.03 leg must say
   `moodle-dev/deps/moodle-theme_boost_union-53` (a 5.02 leg said `-502`); if it names the bare
   clone, the resolver has regressed and nothing the leg says about layout or Behat is evidence.
-- `classes/local/login.php` holds every login decision, and the "no" case of `loginpage`
-  carries weight, because a default-on setting read with a falsy fallback would report a stored
-  `0` as enabled. `tests/output/core_renderer_test.php`
-  renders the real page - the provider's favicon absent with the page on and PRESENT with it
-  off, the panel in the real layout through `header()`.
 - **`I log in as` never touches the login form on 5.2 and later**: `behat_auth::i_log_in_as()` visits
   `/auth/tests/behat/login.php?username=...`. A scenario that FILLS the form on a site where
   auth_loginsteps' CPF mask is armed must visit `/login/index.php?nocpf=1` first; the theme's own

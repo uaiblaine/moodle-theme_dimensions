@@ -30,7 +30,7 @@ use core_external\external_api;
 use PHPUnit\Framework\Attributes\CoversClass;
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\focusmodefields;
-use theme_dimensions\local\login;
+use theme_dimensions\local\yesno;
 
 /**
  * Tests of the focus mode service: what it records, for which course, and what it refuses.
@@ -61,7 +61,7 @@ final class set_focus_mode_test extends \advanced_testcase {
         $this->resetAfterTest();
         focusmode::reset_caches();
         unset($SESSION->{focusmode::SESSION_KEY}, $SESSION->{focusmode::SESSION_KEY_OUT});
-        set_config('focusmode', login::SELECT_YES, focusmode::COMPONENT);
+        set_config('focusmode', yesno::YES, focusmode::COMPONENT);
     }
 
     /**
@@ -147,7 +147,7 @@ final class set_focus_mode_test extends \advanced_testcase {
      */
     public function test_the_master_switch_off_refuses(): void {
         [$course, $cmid] = $this->course(false);
-        set_config('focusmode', login::SELECT_NO, focusmode::COMPONENT);
+        set_config('focusmode', yesno::NO, focusmode::COMPONENT);
 
         $response = $this->call($cmid, true);
 

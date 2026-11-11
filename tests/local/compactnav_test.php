@@ -144,7 +144,7 @@ final class compactnav_test extends \advanced_testcase {
         [$page, $course] = $this->activity_page();
         $this->assertTrue(compactnav::applies($page), 'Control: the ordinary activity page.');
 
-        set_config('focusmode', \theme_dimensions\local\login::SELECT_YES, focusmode::COMPONENT);
+        set_config('focusmode', \theme_dimensions\local\yesno::YES, focusmode::COMPONENT);
         focusmode::choose((int) $course->id, true);
 
         $this->assertTrue(focusmode::applies($page), 'Precondition: focus mode applies.');

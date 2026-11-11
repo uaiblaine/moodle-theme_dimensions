@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The login page is Boost Union's.** The theme's own login page (the institutional panel, the two ways in, the
+  local identity provider marks and the reset hint), retired once auth_loginsteps took over the sign-in, is removed
+  with its *Login page* tab: the login page, its arrangement and every login setting are Boost Union's again, on
+  every site. The upgrade deletes the six settings (`loginpage`, `loginpanelkicker`, `loginpaneltitle`,
+  `loginpaneltext`, `loginpanelshowmonitoring`, `loginpanelfoot`); the guest home page moves to *General settings*.
+  auth_loginsteps' shell still carries the second factor and the privileged session while it is the site's door
+  (2026100602).
+
 - **On a landing page, `[relatedcourses]` takes the band's place after both columns.** A shortcode written in the
   course's own summary or sections was drawn inside the description column. The page now draws the first one in the
   related courses band's place, below the description and the enrolment card, instead of the automatic band (with
