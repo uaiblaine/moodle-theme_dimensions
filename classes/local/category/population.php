@@ -2050,8 +2050,10 @@ final class population {
      * lists instead of gating rows in PHP: the hidden courses this viewer may
      * see (a term every branch is under, so a related course inside a clamped
      * category is still withheld while hidden), the unlisted courses the
-     * plugin admitted after the capped probe, and the viewer's own courses
-     * inside clamped categories. Each list is cut
+     * plugin admitted after the capped probe, the viewer's own courses
+     * inside clamped categories, and the courses of a category the plugin alone
+     * clamps that the viewer holds staff standing at. Each list reads the
+     * request's matches in core order and is cut
      * at {@see RESCUE_CAP} and what falls past the cap is withheld - fail
      * closed. What this mode gives up: the state grouping, the state chips
      * (a state chip on the request is dropped by {@see resolve()}), the hero's per-state counts
@@ -2209,22 +2211,24 @@ final class population {
             $where = "c.category {$catsql} AND c.visible = 1 AND {$state['column']} = :publicstate";
             $params['publicstate'] = discoverability::STATE_PUBLIC;
         } else {
-            /* Both lists read the matches of the request's term: capped at fifty in core order, a
-               list built over the whole subtree would leave out a match past the fiftieth unlisted
-               or hidden course of the subtree, which the PHP cut, whose probe runs over the
-               matches, keeps. population_test holds the two modes to the same count. */
+            /* Every list reads the matches of the request's term: capped at fifty in core order, a
+               list built over the whole subtree would leave out a match past the fiftieth unlisted,
+               hidden or clamped course of the subtree, which the PHP cut, which gates every match,
+               keeps. population_test and clamped_rescue_test hold the two modes to the same ids. */
             $rescued = self::rescued_hidden($scope, $criteria->search);
             $admitted = self::admitted_unlisted($scope, $criteria->search);
-            $related = self::related_in_clamped($scope);
+            $related = self::related_in_clamped($scope, $criteria->search);
+            $staff = self::staff_in_clamped($scope, $criteria->search);
             [$rsql, $rparams] = $DB->get_in_or_equal($rescued ?: [-1], SQL_PARAMS_NAMED, 'rsc');
             [$usql, $uparams] = $DB->get_in_or_equal($admitted ?: [-1], SQL_PARAMS_NAMED, 'unl');
             [$lsql, $lparams] = $DB->get_in_or_equal($related ?: [-1], SQL_PARAMS_NAMED, 'rel');
-            // Core's visibility governs both branches: a related course inside a clamped category is
+            [$ssql, $sparams] = $DB->get_in_or_equal($staff ?: [-1], SQL_PARAMS_NAMED, 'stf');
+            // Core's visibility governs every branch: a related course inside a clamped category is
             // still a hidden course unless the viewer may see hidden courses.
             $where = "((c.category {$catsql} AND ({$state['column']} <> :unlistedstate OR c.id {$usql}))"
-                . " OR c.id {$lsql})"
+                . " OR c.id {$lsql} OR c.id {$ssql})"
                 . " AND (c.visible = 1 OR c.id {$rsql})";
-            $params += $rparams + $uparams + $lparams + ['unlistedstate' => discoverability::STATE_UNLISTED];
+            $params += $rparams + $uparams + $lparams + $sparams + ['unlistedstate' => discoverability::STATE_UNLISTED];
         }
         $where .= ' AND c.id <> :siteid';
 
@@ -2368,20 +2372,142 @@ final class population {
     /**
      * The viewer's own courses inside clamped categories, capped: the rescue the clamps allow.
      *
+     * Read from the enrolments the scope already holds, with no statement, while they fit under
+     * {@see RESCUE_CAP}: the page's own statement applies the term to them. Past the cap, which
+     * of them are kept is decided as {@see rescued_hidden()} decides it - over the request's
+     * matches, in core order, one statement driven by the clamped categories holding them -
+     * because the first fifty enrolments whatever they were called would withhold a match the
+     * PHP cut, which gates every match, shows.
+     *
      * @param scope $scope The admitted subtree.
+     * @param string $term The request's normalised search term, '' for none.
      * @return int[]
      */
-    private static function related_in_clamped(scope $scope): array {
+    private static function related_in_clamped(scope $scope, string $term = ''): array {
+        global $DB;
+
         $related = [];
+        $categories = [];
         foreach ($scope->enrolments as $courseid => $mine) {
             $clamp = $scope->clamps[$mine->category] ?? 0;
             if ($clamp === 0) {
                 continue;
             }
             if ($mine->active || (($clamp & scope::CLAMP_PLUGIN) && !($clamp & scope::CLAMP_CORE) && $mine->inactive)) {
-                $related[] = (int) $courseid;
+                $related[(int) $courseid] = true;
+                $categories[(int) $mine->category] = true;
             }
         }
-        return array_slice($related, 0, self::RESCUE_CAP);
+        if (count($related) <= self::RESCUE_CAP) {
+            return array_keys($related);
+        }
+
+        [$catsql, $params] = $DB->get_in_or_equal(array_keys($categories), SQL_PARAMS_NAMED, 'rlc');
+        $where = "c.category {$catsql} AND c.id <> :siteid";
+        if ($term !== '') {
+            [$searchsql, $searchparams] = self::search_sql($term);
+            $where .= " AND {$searchsql}";
+            $params += $searchparams;
+        }
+        $ids = $DB->get_fieldset_sql(
+            "SELECT c.id FROM {course} c WHERE {$where} ORDER BY c.sortorder ASC, c.id ASC",
+            $params + ['siteid' => SITEID]
+        );
+        $kept = [];
+        foreach ($ids as $courseid) {
+            if (isset($related[(int) $courseid])) {
+                $kept[] = (int) $courseid;
+                if (count($kept) >= self::RESCUE_CAP) {
+                    break;
+                }
+            }
+        }
+        return $kept;
+    }
+
+    /**
+     * The courses of the categories the plugin alone clamps that this viewer holds staff standing at, capped.
+     *
+     * The SQL cut's half of {@see gate()}'s staff rescue: a category local_unlistedcourses
+     * withholds (and core does not) still lists a course to a viewer who is not related to it
+     * but is_viewing() it or holds moodle/course:viewhiddencourses at it - the plugin's own
+     * course-level staff term. A core clamp is lifted by an active enrolment alone, which
+     * {@see related_in_clamped()} carries, so only the plugin-only clamps are read.
+     *
+     * Built as {@see rescued_hidden()} is: one statement driven by those categories, over the
+     * request's matches, in core order, the gates asked per row at the preloaded context in
+     * gate()'s order - core's visibility first, then the staff standing, then, for an unlisted
+     * course, the plugin's own answer ({@see access::filter_courses()}, as gate()'s probe asks
+     * it) - and cut at {@see RESCUE_CAP}, past which the remainder is withheld. The statement
+     * reads the rows of those categories, as the PHP cut's population statement does; the
+     * capability checks stop at the cap.
+     *
+     * @param scope $scope The admitted subtree.
+     * @param string $term The request's normalised search term, '' for none.
+     * @return int[]
+     */
+    private static function staff_in_clamped(scope $scope, string $term = ''): array {
+        global $DB;
+
+        $categories = [];
+        foreach ($scope->clamps as $categoryid => $clamp) {
+            if ($clamp === scope::CLAMP_PLUGIN) {
+                $categories[] = (int) $categoryid;
+            }
+        }
+        if (!$categories) {
+            return [];
+        }
+        [$catsql, $params] = $DB->get_in_or_equal($categories, SQL_PARAMS_NAMED, 'stc');
+        $state = discoverability::state_sql('c');
+        $where = "c.category {$catsql} AND c.id <> :siteid";
+        if ($term !== '') {
+            [$searchsql, $searchparams] = self::search_sql($term);
+            $where .= " AND {$searchsql}";
+            $params += $searchparams;
+        }
+        $ctxselect = context_helper::get_preload_record_columns_sql('ctx');
+        $rows = $DB->get_records_sql(
+            "SELECT c.id, c.category, c.sortorder, c.visible, {$state['column']} AS liststate, {$ctxselect}
+               FROM {course} c
+               JOIN {context} ctx ON c.id = ctx.instanceid AND ctx.contextlevel = :contextcourse
+                    {$state['join']}
+              WHERE {$where}
+           ORDER BY c.sortorder ASC, c.id ASC",
+            $params + ['contextcourse' => CONTEXT_COURSE, 'siteid' => SITEID]
+        );
+        $candidates = [];
+        $unlisted = [];
+        foreach ($rows as $courseid => $row) {
+            $mine = $scope->enrolments[(int) $courseid] ?? null;
+            if ($mine && ($mine->active || $mine->inactive)) {
+                // A related course is related_in_clamped()'s, and spends none of this list.
+                continue;
+            }
+            $context = self::course_context($row);
+            $seeshidden = has_capability('moodle/course:viewhiddencourses', $context);
+            if (!$row->visible && !$seeshidden) {
+                continue;
+            }
+            if (!$seeshidden && !is_viewing($context)) {
+                continue;
+            }
+            $candidates[(int) $courseid] = true;
+            if ((int) $row->liststate === discoverability::STATE_UNLISTED) {
+                $unlisted[(int) $courseid] = $row;
+            }
+            if (count($candidates) >= self::RESCUE_CAP) {
+                break;
+            }
+        }
+        if ($unlisted) {
+            $admitted = access::filter_courses($unlisted);
+            foreach (array_keys($unlisted) as $courseid) {
+                if (!isset($admitted[$courseid])) {
+                    unset($candidates[$courseid]);
+                }
+            }
+        }
+        return array_keys($candidates);
     }
 }

@@ -327,6 +327,8 @@ final class lookcohorts_test extends \advanced_testcase {
         $this->choose_as($user, (int) $harbour->id);
         $other = $this->getDataGenerator()->create_cohort();
         cohort_add_member($other->id, $user->id);
+        // The look is taken off the list after the task was queued, with no sync: the members stay.
+        set_config(flavourchoice::SETTING, '', 'theme_dimensions');
 
         foreach ([(int) $other->id, (int) $this->cohort($harbour)->id] as $cohortid) {
             $task = new empty_look_cohort();
@@ -338,6 +340,38 @@ final class lookcohorts_test extends \advanced_testcase {
 
         $this->assertSame([], $this->members($harbour));
         $this->assertTrue($DB->record_exists('cohort_members', ['cohortid' => $other->id, 'userid' => $user->id]));
+    }
+
+    /**
+     * A queued emptying does nothing when the look is offered again before the task runs.
+     *
+     * The control is the same task for a look still off the list, which empties the cohort.
+     *
+     * @return void
+     */
+    public function test_the_adhoc_task_keeps_the_members_of_a_look_offered_again(): void {
+        $harbour = $this->flavour('Harbour');
+        $meadow = $this->flavour('Meadow');
+        $this->offer($harbour, $meadow);
+        $one = $this->getDataGenerator()->create_user();
+        $two = $this->getDataGenerator()->create_user();
+        $this->choose_as($one, (int) $harbour->id);
+        $this->choose_as($two, (int) $meadow->id);
+
+        // Both looks leave the list with no sync, as when the emptying was queued for each.
+        set_config(flavourchoice::SETTING, '', 'theme_dimensions');
+        foreach ([$harbour, $meadow] as $flavour) {
+            $task = new empty_look_cohort();
+            $task->set_custom_data(['cohortid' => (int) $this->cohort($flavour)->id]);
+            \core\task\manager::queue_adhoc_task($task);
+        }
+        // The administrator offers Harbour again before cron runs the tasks.
+        set_config(flavourchoice::SETTING, (string) $harbour->id, 'theme_dimensions');
+        $this->expectOutputRegex('/emptied cohort/');
+        $this->runAdhocTasks(empty_look_cohort::class);
+
+        $this->assertSame([(int) $one->id], $this->members($harbour), 'An offered look keeps its members.');
+        $this->assertSame([], $this->members($meadow), 'Control: a look still off the list is emptied.');
     }
 
     /**

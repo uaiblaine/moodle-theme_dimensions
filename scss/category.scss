@@ -711,6 +711,9 @@ body.dim-category {
         // on the light page and the card line on the dark one, where a dark band would otherwise
         // melt into the page.
         --dim-cta: var(--dim-primary);
+        // The ink on that fill, chosen the way Bootstrap chooses a button's: white or dark, whichever reads, from the
+        // same $primary the fill follows (a flavour compiles its own). The dark mode block sets it for its blue.
+        --dim-cta-ink: #{color-contrast($primary)};
         --dim-cta-hover: var(--dim-ds-blue-700, #050073);
         --dim-tint: var(--dim-ds-interactive-primary-tint, #edeefb);
         --dim-open-ring: var(--dim-primary);
@@ -1322,7 +1325,7 @@ body.dim-category {
     .dim-pill__input:checked + .dim-pill {
         border-color: var(--dim-cta);
         background: var(--dim-cta);
-        color: #fff;
+        color: var(--dim-cta-ink);
     }
 
     .dim-pill__input:focus-visible + .dim-pill {
@@ -1458,7 +1461,7 @@ body.dim-category {
         border: 0;
         border-radius: var(--dim-radius-sm);
         background: var(--dim-cta);
-        color: #fff;
+        color: var(--dim-cta-ink);
         font-family: var(--dim-font-brand);
         font-size: .9375rem;
         font-weight: 600;
@@ -1565,7 +1568,7 @@ body.dim-category {
         padding: 0 6px;
         border-radius: var(--dim-radius-pill);
         background: var(--dim-cta);
-        color: #fff;
+        color: var(--dim-cta-ink);
         font-size: .72rem;
         font-variant-numeric: tabular-nums;
     }
@@ -1693,11 +1696,11 @@ body.dim-category {
     .dim-quick--on {
         border-color: var(--dim-cta);
         background: var(--dim-cta);
-        color: #fff;
+        color: var(--dim-cta-ink);
 
         &:hover {
             background: var(--dim-cta);
-            color: #fff;
+            color: var(--dim-cta-ink);
         }
     }
 
@@ -1950,7 +1953,7 @@ body.dim-category {
     // dark mode.
     .dim-daterange__day--edge {
         background: var(--dim-cta);
-        color: #fff;
+        color: var(--dim-cta-ink);
         font-weight: 600;
 
         // The plain day's hover is a pale fill, and under the pointer that would leave the end's
@@ -2000,7 +2003,7 @@ body.dim-category {
     .dim-daterange__done {
         --bs-btn-bg: var(--dim-cta);
         --bs-btn-border-color: var(--dim-cta);
-        --bs-btn-color: #fff;
+        --bs-btn-color: var(--dim-cta-ink);
         --bs-btn-hover-bg: var(--dim-cta-hover);
         --bs-btn-hover-border-color: var(--dim-cta-hover);
         --bs-btn-hover-color: #fff;
@@ -4125,7 +4128,7 @@ body.dim-category {
         &[aria-checked="true"],
         &[aria-current="true"] {
             background: var(--dim-cta);
-            color: #fff;
+            color: var(--dim-cta-ink);
         }
 
         &[aria-disabled="true"] {
@@ -4559,7 +4562,7 @@ body.dim-category {
         border: 0;
         border-radius: var(--dim-ds-radius-sm, 6px);
         background: var(--dim-cta);
-        color: #fff;
+        color: var(--dim-cta-ink);
         font-weight: 600;
         text-decoration: none;
 
@@ -5166,7 +5169,7 @@ body.dim-category {
         &[aria-pressed="true"] {
             border-color: var(--dim-cta);
             background: var(--dim-cta);
-            color: #fff;
+            color: var(--dim-cta-ink);
         }
 
         &:focus-visible {
@@ -6053,7 +6056,7 @@ body.dim-category {
 
     .dim-cmodal__button--primary {
         --bs-btn-bg: var(--dim-cta);
-        --bs-btn-color: #fff;
+        --bs-btn-color: var(--dim-cta-ink);
         --bs-btn-border-color: var(--dim-cta);
         --bs-btn-hover-bg: var(--dim-cta-hover);
         --bs-btn-hover-color: #fff;
@@ -6062,7 +6065,7 @@ body.dim-category {
         --bs-btn-active-color: #fff;
         --bs-btn-active-border-color: var(--dim-cta-hover);
         --bs-btn-disabled-bg: var(--dim-cta);
-        --bs-btn-disabled-color: #fff;
+        --bs-btn-disabled-color: var(--dim-cta-ink);
         --bs-btn-disabled-border-color: var(--dim-cta);
     }
 
@@ -6310,6 +6313,7 @@ body.dim-category {
 :root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
 :root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
     --dim-cta: var(--dim-ds-blue-400, #4456ff);
+    --dim-cta-ink: #fff;
     --dim-cta-hover: var(--dim-ds-blue-500, #2a31c9);
     --dim-tint: var(--dim-surface-strong);
     --dim-open-ring: var(--dim-ds-blue-200, #adb2f0);

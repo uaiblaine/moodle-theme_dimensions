@@ -291,6 +291,43 @@ final class landing_test extends \core\tests\router\route_testcase {
     }
 
     /**
+     * A logged-in user asking for a course id that does not exist gets the ghost page, as for an unlisted course.
+     *
+     * The control is {@see test_a_ghosted_user_gets_the_unavailable_page} (the unlisted course, the same
+     * Location) and {@see test_an_enrolled_user_gets_a_non_public_course_without_head_tags} (a course the
+     * viewer may open is served, not ghosted): without the ghost for a missing id the lookup throws, and the
+     * two answers tell a logged-in user which ids exist.
+     */
+    public function test_a_logged_in_user_is_ghosted_for_a_course_that_does_not_exist(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->production_shape();
+        $missing = (int) $DB->get_field_sql('SELECT MAX(id) FROM {course}') + 1000;
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $response = $this->request((string) $missing);
+
+        $this->assertSame(302, $response->getStatusCode(), substr((string) $response->getBody(), 0, 2000));
+        $this->assertSame(redirector::ghost_url()->out(false), $response->getHeaderLine('Location'));
+    }
+
+    /**
+     * The guest is a visitor: a missing id gets the login page, never the ghost page.
+     */
+    public function test_the_guest_is_refused_with_the_login_page_for_a_course_that_does_not_exist(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->production_shape();
+        $missing = (int) $DB->get_field_sql('SELECT MAX(id) FROM {course}') + 1000;
+        $this->setGuestUser();
+
+        $response = $this->request((string) $missing);
+
+        $this->assertSame(302, $response->getStatusCode(), substr((string) $response->getBody(), 0, 2000));
+        $this->assertSame(get_login_url(), $response->getHeaderLine('Location'));
+    }
+
+    /**
      * An enrolled user gets the page of a course that is not public, and no head tags with it.
      */
     public function test_an_enrolled_user_gets_a_non_public_course_without_head_tags(): void {

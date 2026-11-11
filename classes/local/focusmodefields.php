@@ -203,18 +203,64 @@ final class focusmodefields {
 
         $lock = self::get_lock();
         if (!$lock) {
+            // The setting is saved already: leave the field to a task which retries until it gets the lock.
+            self::queue_reconcile();
             return;
         }
         try {
             $fieldid = (int) $field->get('id');
             if (self::count_courses_without_data($fieldid) > $inlinelimit) {
-                $task = new \theme_dimensions\task\materialise_focusmode_default();
-                $task->set_custom_data(['old' => $old, 'new' => (int) $new]);
-                \core\task\manager::queue_adhoc_task($task, true);
+                self::queue_reconcile();
                 return;
             }
             self::materialise_default($old);
             self::set_default($new);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Queue the task which brings the field in line with the setting.
+     *
+     * The task carries no data: it reads both sides when it runs, so a setting flipped back
+     * before cron leaves it nothing to do, and one queued copy is enough.
+     *
+     * @return void
+     */
+    private static function queue_reconcile(): void {
+        $task = new \theme_dimensions\task\materialise_focusmode_default();
+        \core\task\manager::queue_adhoc_task($task, true);
+    }
+
+    /**
+     * Bring the field's default in line with the setting as it stands now.
+     *
+     * Authoritative from the current state, never from what a queued request remembers: the
+     * setting may have moved again since. Under the provisioning lock, so that it cannot
+     * interleave with {@see sync_default()} or provisioning.
+     *
+     * @return int|null The number of rows written, or null when the lock was refused.
+     */
+    public static function reconcile_default(): ?int {
+        $lock = self::get_lock();
+        if (!$lock) {
+            return null;
+        }
+        try {
+            self::reset_field_cache();
+            $field = self::get_field();
+            if (!$field) {
+                return 0;
+            }
+            $current = $field->get_configdata_property('checkbydefault') ? 1 : 0;
+            $target = get_config(self::COMPONENT, 'focusmodenewcourses') == yesno::YES ? 1 : 0;
+            if ($current === $target) {
+                return 0;
+            }
+            $written = self::materialise_default($current);
+            self::set_default((bool) $target);
+            return $written;
         } finally {
             $lock->release();
         }

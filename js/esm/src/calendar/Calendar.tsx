@@ -408,7 +408,11 @@ const Calendar = (props: Props) => {
             zooming.current = readZoom(window.location.href);
             setZoom(zooming.current);
             const day = openOf(span, new URL(window.location.href).searchParams.get(DAY_PARAM), spanDays(span, firstday));
-            request(span, read.state || normalise(props.state), 'none', day || openingOf(span, props.today), false);
+            // The entry's state is adopted like its filter and zoom: the toolbar and every later change start from it.
+            const next = read.state || normalise(props.state);
+            latest.current = next;
+            setState(next);
+            request(span, next, 'none', day || openingOf(span, props.today), false);
             setOpenday(day);
         };
         window.addEventListener('popstate', onPop);

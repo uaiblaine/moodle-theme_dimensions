@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\task;
 
+use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\lookcohorts;
 
 /**
@@ -50,7 +51,7 @@ class empty_look_cohort extends \core\task\adhoc_task {
     }
 
     /**
-     * Remove every member of the cohort named in the custom data, if it is still a look cohort.
+     * Remove every member of the cohort named in the custom data, if it is still a look cohort and its look is still off the list.
      *
      * @return void
      */
@@ -61,6 +62,12 @@ class empty_look_cohort extends \core\task\adhoc_task {
         $ours = array_filter(lookcohorts::cohorts(), fn($cohort) => (int) $cohort->id === $cohortid);
         if (!$ours) {
             mtrace('Look cohorts: cohort ' . $cohortid . ' is not a look cohort - nothing removed.');
+            return;
+        }
+        // The task was queued when the look left the list; the list is read again now, because an
+        // administrator who offered the look since would otherwise see everyone stripped from its menus.
+        if (array_key_exists((int) array_key_first($ours), flavourchoice::offered())) {
+            mtrace('Look cohorts: cohort ' . $cohortid . ' is offered again - nothing removed.');
             return;
         }
 

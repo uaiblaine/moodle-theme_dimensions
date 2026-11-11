@@ -5,6 +5,23 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Six defects the comment audit found, fixed** (2026100604).
+  - *Focus mode default for new courses.* The queued task now reconciles the field with the setting as it stands when
+    it runs, so flipping the setting back before cron no longer writes the stale value, and a refused provisioning
+    lock queues a retrying task instead of dropping the change.
+  - *Landing page.* A logged-in user asking for a course id that does not exist gets the same unavailable-course
+    redirect as for a course withheld from them, so signed-in users can no longer tell which course ids exist.
+  - *Category showcase, state sort off.* The page lists to a viewer with staff standing at a course the courses of a
+    category local_unlistedcourses withholds, as the state-sorted page does, and a search reaches the viewer's own
+    courses past the first fifty in a withheld category.
+  - *Look cohorts.* A look cohort queued for emptying (more than 500 members) is not emptied by the adhoc task when the
+    administrator offered the look again before cron ran it.
+  - *Calendar.* Back and Forward adopt the filter state the address names, so the toolbar and the next change start
+    from what the grid shows instead of snapping back.
+  - *Category showcase colours.* The text on the call-to-action fill (checked chips, quick options, count badges,
+    calendar ends, poster buttons) is derived from the site's primary colour, so a light brand colour gets dark text
+    instead of white below 4.5:1.
+
 - **Comments say what the code does.** A review of every comment in the shipped code (PHP, JavaScript, templates,
   stylesheets) against the code it describes: 211 comments that no longer matched were corrected, and history,
   measurements and notes about the development environment were taken out. No code changed; the JavaScript builds

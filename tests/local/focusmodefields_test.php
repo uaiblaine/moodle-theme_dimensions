@@ -378,9 +378,6 @@ final class focusmodefields_test extends \advanced_testcase {
         $tasks = \core\task\manager::get_adhoc_tasks(materialise_focusmode_default::class);
         $this->assertCount(1, $tasks);
         $task = reset($tasks);
-        $customdata = (array) $task->get_custom_data();
-        $this->assertEquals(1, $customdata['old']);
-
         ob_start();
         $task->execute();
         $output = ob_get_clean();
@@ -397,25 +394,135 @@ final class focusmodefields_test extends \advanced_testcase {
     }
 
     /**
-     * The task says so and returns when it is handed nothing to write.
+     * Set the focus mode setting the way the admin form stores it.
      *
-     * A throwing adhoc task is retried for ever, so every path out of execute() is a
-     * return, including the ones which found nothing to do.
+     * @param bool $on The value.
+     * @return void
+     */
+    private function set_setting(bool $on): void {
+        set_config('focusmodenewcourses', $on ? yesno::YES : yesno::NO, focusmodefields::COMPONENT);
+    }
+
+    /**
+     * A setting flipped back before cron leaves the queued task nothing to write.
+     *
+     * The control is the first half: while the setting reads "off" the same task does move
+     * the field, so the end state is the setting's and not the field's own.
      *
      * @return void
      */
-    public function test_the_task_never_throws(): void {
+    public function test_a_setting_reverted_before_cron_leaves_the_field_alone(): void {
+        global $DB;
         $this->resetAfterTest();
-        $this->provision();
+        $fieldid = $this->provision();
+        focusmodefields::set_default(true);
+        focusmodefields::reset_field_cache();
+        $this->set_setting(true);
+        $course = self::getDataGenerator()->create_course();
 
-        $task = new materialise_focusmode_default();
-        $task->set_custom_data([]);
+        // The admin turns it off: queued above the limit.
+        $this->set_setting(false);
+        focusmodefields::sync_default(false, 0);
+        $tasks = \core\task\manager::get_adhoc_tasks(materialise_focusmode_default::class);
+        $this->assertCount(1, $tasks);
+        $task = reset($tasks);
+
+        // And back on before cron.
+        $this->set_setting(true);
+        focusmodefields::sync_default(true, 0);
 
         ob_start();
         $task->execute();
-        $output = ob_get_clean();
+        ob_end_clean();
 
-        $this->assertStringContainsString('nothing written', $output);
+        focusmodefields::reset_field_cache();
+        $this->assertEquals(1, focusmodefields::get_field()->get_configdata_property('checkbydefault'));
+        $this->assertFalse($DB->record_exists('customfield_data', [
+            'fieldid' => $fieldid,
+            'instanceid' => $course->id,
+        ]));
+
+        // Control: with the setting off the same task does move the field.
+        $this->set_setting(false);
+        ob_start();
+        $task->execute();
+        ob_end_clean();
+        focusmodefields::reset_field_cache();
+        $this->assertEquals(0, focusmodefields::get_field()->get_configdata_property('checkbydefault'));
+        $this->assertEquals(1, $DB->get_field('customfield_data', 'intvalue', [
+            'fieldid' => $fieldid,
+            'instanceid' => $course->id,
+        ]));
+    }
+
+    /**
+     * A refused lock queues the task instead of dropping the change, and the task retries.
+     *
+     * @return void
+     */
+    public function test_a_refused_lock_queues_a_task_which_brings_the_field_in_line(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        $fieldid = $this->provision();
+        focusmodefields::set_default(true);
+        focusmodefields::reset_field_cache();
+        $this->set_setting(true);
+        $course = self::getDataGenerator()->create_course();
+        $this->set_setting(false);
+
+        require_once($CFG->dirroot . '/theme/dimensions/tests/fixtures/refusing_lock_factory.php');
+        $CFG->lock_factory = \theme_dimensions\tests\refusing_lock_factory::class;
+        try {
+            focusmodefields::sync_default(false);
+            $tasks = \core\task\manager::get_adhoc_tasks(materialise_focusmode_default::class);
+            $this->assertCount(1, $tasks);
+            $task = reset($tasks);
+
+            // Still refused: the task throws, so core retries it.
+            try {
+                $task->execute();
+                $this->fail('A refused lock must make the task fail.');
+            } catch (\moodle_exception $e) {
+                $this->assertNotEmpty($e->getMessage());
+            }
+        } finally {
+            unset($CFG->lock_factory);
+        }
+
+        // Nothing moved while the lock was refused.
+        focusmodefields::reset_field_cache();
+        $this->assertEquals(1, focusmodefields::get_field()->get_configdata_property('checkbydefault'));
+
+        ob_start();
+        $task->execute();
+        ob_end_clean();
+
+        focusmodefields::reset_field_cache();
+        $this->assertEquals(0, focusmodefields::get_field()->get_configdata_property('checkbydefault'));
+        $this->assertEquals(1, $DB->get_field('customfield_data', 'intvalue', [
+            'fieldid' => $fieldid,
+            'instanceid' => $course->id,
+        ]));
+    }
+
+    /**
+     * The task agrees with the setting and writes nothing when the field already does.
+     *
+     * @return void
+     */
+    public function test_the_task_does_nothing_when_field_and_setting_agree(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $fieldid = $this->provision();
+        self::getDataGenerator()->create_course();
+        $this->set_setting(false);
+
+        $task = new materialise_focusmode_default();
+        ob_start();
+        $task->execute();
+        ob_end_clean();
+
+        $this->assertFalse($DB->record_exists('customfield_data', ['fieldid' => $fieldid]));
     }
 
     /**
