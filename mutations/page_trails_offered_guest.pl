@@ -1,2 +1,2 @@
 # The guest account is offered the Trilhas view.
-s/return isloggedin\(\) && !isguestuser\(\) && trail::available\(\);/return isloggedin() \&\& trail::available();/;
+s/return isloggedin\(\) && !isguestuser\(\) && self::trails_enabled\(\) && trail::available\(\);/return isloggedin() \&\& self::trails_enabled() \&\& trail::available();/;
