@@ -120,9 +120,10 @@ final class publicfiles {
      * @var int Source pixels above which no derivative is attempted.
      *
      * The derivative is made inside a page render, under raise_memory_limit(MEMORY_EXTRA): at
-     * least 384 MB on 64-bit ($CFG->extramemorylimit when higher). At 25 million pixels, decoding a
-     * PNG, rotating it and covering the canvas peaks about 200 MB over the request's baseline. The
-     * ceiling leaves room for the raw bytes and the page, and still admits a 24-megapixel photo.
+     * least 384 MB on 64-bit ($CFG->extramemorylimit when higher). At 25 million pixels, decoding a PNG
+     * and covering the canvas peaks about 190 MB over the request's baseline, and a JPEG that
+     * stored_file::rotate_image() turns upright from its EXIF orientation about 215 MB (both images
+     * are held at once). The ceiling leaves room for the raw bytes and the page, and still admits a 24-megapixel photo.
      */
     public const MAX_SOURCE_PIXELS = 25000000;
 
