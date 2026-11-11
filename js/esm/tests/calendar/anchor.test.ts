@@ -53,6 +53,17 @@ describe('the popover\'s anchor', () => {
         expect(anchor({top: 700, left: 50, bottom: 720, right: 200}, SIZE, VIEWPORT, 60).top).toBe(492);
     });
 
+    it('keeps below an opener when above would start under the navbar, though it lands in the gap above it', () => {
+        // Below does not fit (428 + 380 > 792) and above would start at 12px: clear of the viewport's 8px gap but
+        // under the 60px navbar (least top 68). Above is refused for the navbar alone, so it stays below, pulled up
+        // to the viewport's bottom gap (412). Changes that must make it fail: testing above against the gap
+        // instead of the navbar's offset (it would pick above and clamp to 68), or ignoring the offset (12).
+        const opener = {top: 400, left: 50, bottom: 420, right: 200};
+        const size = {width: 300, height: 380};
+        expect(anchor(opener, size, VIEWPORT, 60)).toEqual({top: 412, left: 50});
+        expect(anchor(opener, size, VIEWPORT, 0)).toEqual({top: 12, left: 50});
+    });
+
     it('caps the height, to scroll inside, only when neither side holds it under the navbar', () => {
         const capped = anchor({top: 390, left: 50, bottom: 410, right: 200}, {width: 300, height: 760}, VIEWPORT, 60);
         expect(capped.top).toBe(68);

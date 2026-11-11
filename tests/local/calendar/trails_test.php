@@ -339,6 +339,7 @@ final class trails_test extends \advanced_testcase {
         // Past the second step's end it is late, and still the next.
         $late = $this->answer('2027-03', 0, false, 0, self::at(4, 15))['trails'][0]['steps'][1];
         $this->assertSame(progress::LATE, $late['state']);
+        $this->assertTrue($late['next'], 'A late step is still the next one.');
 
         // The controls: another account of the same page, and one whose enrolment is suspended, read the schedule alone.
         $suspended = self::getDataGenerator()->create_user();

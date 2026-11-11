@@ -463,7 +463,7 @@ final class landingfields_test extends \advanced_testcase {
      * which must agree with them file for file.
      */
     public function test_badges_and_model_read_narrowly(): void {
-        global $CFG;
+        global $CFG, $DB;
 
         $this->resetAfterTest();
         $this->require_picture_type();
@@ -506,6 +506,22 @@ final class landingfields_test extends \advanced_testcase {
             array_map(fn($f) => $f->get_id(), landingfields::values($course->id)->crests),
             array_map(fn($f) => $f->get_id(), $badges)
         );
+
+        /* The narrow read, counted in statements once the caches the calls above filled are warm: one bulk read of
+           the course's field data (core's get_instance_data(), a recordset, which counts three statements on
+           PostgreSQL and one elsewhere), plus two file reads for badges(). Changes that must make it fail: badges()
+           or model() answered through values(), which reads the whole record another way. */
+        $recordset = $DB->get_dbfamily() === 'postgres' ? 3 : 1;
+        $reads = $DB->perf_get_reads();
+        landingfields::badges($course->id);
+        $badgereads = $DB->perf_get_reads() - $reads;
+        $this->assertSame($recordset + 2, $badgereads, 'badges() reads the picture fields and their files alone.');
+        $reads = $DB->perf_get_reads();
+        landingfields::model($course->id);
+        $this->assertSame($recordset, $DB->perf_get_reads() - $reads, 'model() reads the course data alone.');
+        $reads = $DB->perf_get_reads();
+        landingfields::values($course->id);
+        $this->assertNotSame($badgereads, $DB->perf_get_reads() - $reads, 'The control: values() is not the narrow read.');
     }
 
     /**

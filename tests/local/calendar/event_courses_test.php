@@ -269,6 +269,9 @@ final class event_courses_test extends \advanced_testcase {
     /**
      * Past the cap the earliest open courses are answered and the source says the rest were left out.
      *
+     * Changes that must make it fail: cutting the open layer by anything but start date, such as the latest
+     * start first or no order at all, which answers the same number of courses but not the earliest ones.
+     *
      * @return void
      */
     public function test_the_open_layer_is_capped(): void {
@@ -277,14 +280,18 @@ final class event_courses_test extends \advanced_testcase {
         $this->enable_enrol('self');
         $category = (int) self::getDataGenerator()->create_category()->id;
         $this->student = self::getDataGenerator()->create_user();
+        $ids = [];
         for ($i = 0; $i <= event_courses::OPEN_CAP; $i++) {
-            $this->open_course($category, 1 + intdiv($i, 3), 0);
+            $ids[$i] = $this->open_course($category, 1 + intdiv($i, 3), 0);
         }
 
         [$items, $source] = $this->items([keys::OPEN]);
 
         $this->assertCount(event_courses::OPEN_CAP, $items);
         $this->assertTrue($source->truncated());
+        // The one left out is the last to start; the first to start is answered.
+        $this->assertArrayHasKey($ids[0], $items, 'The earliest open course is answered.');
+        $this->assertArrayNotHasKey($ids[event_courses::OPEN_CAP], $items, 'The latest open course is the one left out.');
     }
 
     /**

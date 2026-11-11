@@ -522,9 +522,19 @@ describe('theme_dimensions/filterline/FilterLine', () => {
         expect(document.activeElement).toBe(page.field);
         expect(listbox(page.line).hidden).toBe(false);
 
-        fireEvent.keyDown(page.field, {key: 'Escape'});
-        expect(page.line.classList.contains('dim-line--searching')).toBe(false);
-        expect(listbox(page.line).hidden).toBe(true);
+        // Only the opener takes up room, as in a browser where the field is folded away: jsdom lays nothing out.
+        const layout = jest.spyOn(Element.prototype, 'getClientRects').mockImplementation(function(this: Element) {
+            return (this === opener ? [{}] : []) as unknown as DOMRectList;
+        });
+        try {
+            // Changes that must make it fail: closing without handing the focus back, or not at all.
+            fireEvent.keyDown(page.field, {key: 'Escape'});
+            expect(page.line.classList.contains('dim-line--searching')).toBe(false);
+            expect(listbox(page.line).hidden).toBe(true);
+            expect(document.activeElement).toBe(opener);
+        } finally {
+            layout.mockRestore();
+        }
     });
 
     it('imports the preview on the first pointer on the toolbar, and previews the active suggestion', async() => {

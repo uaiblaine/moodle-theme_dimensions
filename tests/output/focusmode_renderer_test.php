@@ -686,6 +686,36 @@ final class focusmode_renderer_test extends \advanced_testcase {
     }
 
     /**
+     * The action the parent appends in the page header survives the call, after the bar's own.
+     *
+     * Core appends the region main settings menu to the page's header actions inside full_header() when the page
+     * asked for it; the list is narrowed around that call, so the page must end up with the bar's toggle first and
+     * the parent's action second, each once. Changes that must make it fail: the parent's actions dropped when the
+     * list is put back, or put back before the bar's.
+     *
+     * @return void
+     */
+    public function test_the_parents_own_header_action_survives_after_the_bars(): void {
+        global $PAGE;
+
+        $this->without_linear_navigation();
+        $course = $this->course(true);
+        $cm = $this->activity($course, ['completion' => COMPLETION_TRACKING_MANUAL]);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $renderer = $this->renderer($course, $cm);
+        $PAGE->set_include_region_main_settings_in_header_actions(true);
+        $this->assertCount(0, $PAGE->get_header_actions(), 'Precondition: nothing is on the page before the header.');
+        $renderer->header();
+
+        $actions = $PAGE->get_header_actions();
+        $this->assertCount(2, $actions, 'The bar\'s toggle and the parent\'s settings menu, once each.');
+        $this->assertStringContainsString(self::MANUAL_TOGGLE, $actions[0], 'The bar\'s action stays first.');
+        $this->assertStringContainsString('id="region-main-settings-menu"', $actions[1], 'The parent\'s action comes after it.');
+        $this->assertStringNotContainsString(self::MANUAL_TOGGLE, $actions[1]);
+    }
+
+    /**
      * The previous and next controls are drawn in the foot, which core alone would not do.
      *
      * Core returns an empty string for activity_navigation() whenever the theme and the format

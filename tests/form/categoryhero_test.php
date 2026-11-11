@@ -801,6 +801,9 @@ final class categoryhero_test extends \advanced_testcase {
      * is a manager. A file picker shows a name, offers no thumbnail and has no control that
      * removes what it holds, so a cover, a film or a crest uploaded once could never be taken
      * away.
+     *
+     * Changes that must make it fail: handing an element an option set of its own, such as a second file
+     * or folders, in place of the list's.
      */
     public function test_one_list_builds_the_five_single_file_rows_and_none_of_them_is_a_picker(): void {
         $this->resetAfterTest();
@@ -821,11 +824,13 @@ final class categoryhero_test extends \advanced_testcase {
         foreach ($areas as $area => $options) {
             $element = $quickform->getElement($area);
             $this->assertSame('filemanager', $element->getType(), $area . ' is not a file manager.');
-            $this->assertSame(1, (int) $options['maxfiles'], $area . ' would hold more than one file.');
-            $this->assertSame(0, (int) $options['subdirs'], $area . ' would offer folders.');
+            // What the element was built with, not what the list says: the element is what a person uploads into.
+            $built = $property->getValue($element);
+            $this->assertSame(1, (int) $built['maxfiles'], $area . ' would hold more than one file.');
+            $this->assertSame(0, (int) $built['subdirs'], $area . ' would offer folders.');
             $this->assertEqualsCanonicalizing(
                 $typesutil->expand($options['accepted_types']),
-                $typesutil->expand($property->getValue($element)['accepted_types']),
+                $typesutil->expand($built['accepted_types']),
                 $area . ': the element was built with an option set of its own rather than with the list\'s.'
             );
         }

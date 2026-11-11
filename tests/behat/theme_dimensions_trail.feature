@@ -61,9 +61,8 @@ Feature: A trail's landing page draws its courses in order
     And I should see "Open Fundamentals" in the "[data-region='dim-cal-trails']" "css_element"
     And "[data-region='dim-cal-trailfilters']" "css_element" should be visible
     And "[data-action='dim-cal-types']" "css_element" should not be visible
-    # The months held are named in a band above the days, with no "next month" column after them.
+    # The months held are named in a band above the days (Jest pins the day cells, with no column after them).
     And "[data-region='dim-cal-trailmonths'] [data-action='dim-cal-trailmonth']" "css_element" should exist
-    And ".dim-cal__trailday--next" "css_element" should not exist
     # A course's dates are the quieter line under its name (a start alone here: the generator sets no end).
     And I should see "From" in the "[data-region='dim-cal-trailrow'] [data-region='dim-cal-traildates']" "css_element"
     # By weeks the second header row is the weeks; the zoom is written to the address.

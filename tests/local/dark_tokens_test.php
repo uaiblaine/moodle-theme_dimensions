@@ -158,6 +158,22 @@ final class dark_tokens_test extends \basic_testcase {
     }
 
     /**
+     * A palette primitive of post.scss as #rrggbb, a three-digit spelling expanded.
+     *
+     * @param string $name The primitive's name after the prefix, e.g. 'blue-700'.
+     * @return string The colour.
+     */
+    private function primitive(string $name): string {
+        preg_match('/^\$dim-ds-' . preg_quote($name, '/') . ': #([0-9a-f]{3}|[0-9a-f]{6});$/m', $this->scss(), $hex);
+        $this->assertNotEmpty($hex, "Precondition: \$dim-ds-{$name} is a primitive of post.scss.");
+        $digits = $hex[1];
+        if (strlen($digits) === 3) {
+            $digits = $digits[0] . $digits[0] . $digits[1] . $digits[1] . $digits[2] . $digits[2];
+        }
+        return '#' . $digits;
+    }
+
+    /**
      * Every semantic alias is declared for the dark page, or is named here as the same in both modes.
      *
      * An alias added to the light block and not to the dark one keeps its light value on a dark page, which is the
@@ -268,8 +284,17 @@ final class dark_tokens_test extends \basic_testcase {
         $light = $this->body($scss, "\n:root {", '--dim-ds-surface-page');
         $this->assertStringContainsString('--dim-ds-text-on-tint: var(--dim-ds-blue-700);', $light);
         $this->assertStringContainsString('--dim-ds-text-success: var(--dim-ds-green-700);', $light);
-        $this->assertGreaterThanOrEqual(4.5, branding::contrast('#edeefb', '#050073'), 'On-tint ink on the light tint.');
-        $this->assertGreaterThanOrEqual(4.5, branding::contrast('#f2f3f5', '#2f6b00'), 'Success ink on the subtle surface.');
+        // Changes that must make it fail: a lighter blue-700 or green-700, or a darker blue-050 or gray-100.
+        $this->assertGreaterThanOrEqual(
+            4.5,
+            branding::contrast($this->primitive('blue-050'), $this->primitive('blue-700')),
+            'On-tint ink on the light tint.'
+        );
+        $this->assertGreaterThanOrEqual(
+            4.5,
+            branding::contrast($this->primitive('gray-100'), $this->primitive('green-700')),
+            'Success ink on the subtle surface.'
+        );
     }
 
     /**
@@ -288,7 +313,12 @@ final class dark_tokens_test extends \basic_testcase {
         $compiler = new \core_scss();
         $compiler->append_raw_scss(implode("\n", $primitives[0]) . "\n.light { --amber: {$declared[1]}; }");
         $this->assertSame(1, preg_match('/--amber:\s*(#[0-9a-f]{6})/', $compiler->to_css(), $amber));
-        foreach (['#ffffff' => 'the card', '#f8f9fa' => 'the page', '#f2f3f5' => 'the subtle surface'] as $ground => $name) {
+        $grounds = [
+            $this->primitive('white') => 'the card',
+            $this->primitive('gray-050') => 'the page',
+            $this->primitive('gray-100') => 'the subtle surface',
+        ];
+        foreach ($grounds as $ground => $name) {
             $ratio = branding::contrast($ground, $amber[1]);
             $this->assertGreaterThanOrEqual(3.0, $ratio, sprintf('The amber %s on %s reads %.2f:1.', $amber[1], $name, $ratio));
         }

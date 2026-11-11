@@ -218,6 +218,25 @@ describe('theme_dimensions/listing/account', () => {
         expect(asked(ROWS)).toHaveLength(1);
         expect(asked(REMEMBER)).toEqual([]);
         expect(address().has('sort')).toBe(false);
+
+        // A typed search and a quick period are no more part of the remembered state than the tree is: the
+        // address stays bare of the organisation. Changes that must make it fail: counting the search or the
+        // period as a change to remember (every address would then name the organisation).
+        const search = document.querySelector<HTMLInputElement>('input[name="q"]') as HTMLInputElement;
+        search.value = 'ab';
+        search.dispatchEvent(new Event('input', {bubbles: true}));
+        jest.advanceTimersByTime(1000);
+        expect(address().get('q')).toBe('ab');
+        expect(asked(REMEMBER)).toEqual([]);
+        expect(address().has('sort')).toBe(false);
+
+        document.querySelector('[data-region="dim-vitrine-toolbar"]')?.insertAdjacentHTML('beforeend',
+            '<button type="button" data-action="dim-quick" data-from="2026-02-01" data-to="2026-02-28">February</button>');
+        (document.querySelector('[data-action="dim-quick"]') as HTMLElement).click();
+        jest.advanceTimersByTime(1000);
+        expect(address().get('from')).toBe('2026-02-01');
+        expect(asked(REMEMBER)).toEqual([]);
+        expect(address().has('sort')).toBe(false);
     });
 
     it('leaves for the grouped organisation once the state is remembered at once, or a second has passed', async() => {
@@ -232,6 +251,22 @@ describe('theme_dimensions/listing/account', () => {
         await jest.advanceTimersByTimeAsync(999);
         expect(redirected).not.toHaveBeenCalled();
         await jest.advanceTimersByTimeAsync(1);
+        expect(redirected).toHaveBeenCalledTimes(1);
+        expect(new URL(redirected.mock.calls[0][0]).searchParams.get('sort')).toBe('category');
+        redirected.mockClear();
+    });
+
+    it('leaves for the grouped organisation as soon as the state is remembered, without waiting the second out', async() => {
+        const redirected = location.redirect as unknown as jest.Mock;
+        redirected.mockImplementation(() => null);
+        rememberAnswers = true;
+        // A category no other test remembers: the shell sends a state only when it differs from the last one sent.
+        page({categoryid: 8});
+        start();
+        choose('sort', 'category');
+        expect(asked(REMEMBER)).toHaveLength(1);
+        // Changes that must make it fail: waiting for the timer alone, so the page leaves a second late.
+        await jest.advanceTimersByTimeAsync(0);
         expect(redirected).toHaveBeenCalledTimes(1);
         expect(new URL(redirected.mock.calls[0][0]).searchParams.get('sort')).toBe('category');
         redirected.mockClear();
