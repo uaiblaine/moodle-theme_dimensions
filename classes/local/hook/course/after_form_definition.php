@@ -44,7 +44,7 @@ use theme_dimensions\local\trail\trail;
  * landing page fields that only apply to some models, modalities and formats are hidden while they do not, the trail
  * model is not offered while trails are unavailable, the related courses' manual choice is an autocomplete of the
  * course's competencies, the focus mode box leaves the form while focus mode's master switch is off, and the picture
- * fields are tool_imagepicker's crop element where that optional plugin is installed.
+ * fields and core's course image are tool_imagepicker's crop element where that optional plugin is installed.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -70,6 +70,31 @@ class after_form_definition {
         self::offer_related_choice($hook->formwrapper->get_course(), $hook->mform);
         self::remove_focusmode_field($hook->mform);
         self::offer_image_picker($hook->mform);
+        self::offer_course_image_picker($hook->mform, $hook->formwrapper->get_course());
+    }
+
+    /**
+     * Draw core's course image with tool_imagepicker's element, where that plugin is installed and the field fits it.
+     *
+     * Core adds the course image as `overviewfiles_filemanager` with {@see course_overviewfiles_options()}; that array,
+     * its accepted types and the course context included, is what the picker gets, so core prepares and saves the
+     * same draft area. A site that allows more than one course image (`courseoverviewfileslimit`) or a type that is
+     * not a web image (`courseoverviewfilesext`) keeps core's file manager ({@see imagepicker::fits()}).
+     *
+     * @param \MoodleQuickForm $mform The course form.
+     * @param \stdClass $course The course being edited (no id when it is being created).
+     * @param string|null $element The picker's helper class; tests pass a stand-in or a class that does not exist.
+     * @return void
+     */
+    public static function offer_course_image_picker(\MoodleQuickForm $mform, \stdClass $course, ?string $element = null): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $options = course_overviewfiles_options($course);
+        if (!imagepicker::fits($options)) {
+            return;
+        }
+        imagepicker::replace_filemanager($mform, 'overviewfiles_filemanager', imagepicker::PROFILE_COURSE, $element, $options);
     }
 
     /**
