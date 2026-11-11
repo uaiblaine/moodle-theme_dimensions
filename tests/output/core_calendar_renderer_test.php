@@ -350,8 +350,8 @@ final class core_calendar_renderer_test extends \advanced_testcase {
     }
 
     /**
-     * Core's "Go to calendar..." goes under the upcoming block the theme answers, and stays where core answers the block
-     * (each refusal of blocks::applies() through its page) and under any other block; the caller's contents untouched.
+     * Core's "Go to calendar..." is dropped from the upcoming block the theme answers, and stays where core answers the block
+     * (a course page, the setting off, the guest) and under any other block; the caller's contents untouched.
      *
      * @return void
      */

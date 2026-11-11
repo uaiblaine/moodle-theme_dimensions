@@ -38,8 +38,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * tool_lp/user_competency_info, the three navigation modules, report_competency/grading_popup) or by a
  * core Behat selector (tool_lp's and report_competency's named selectors). A copy that drops one
  * renders, looks right and silently breaks a rating, a deletion or a dialogue, so two independent
- * checks hold each one: the hook's literal is in core's own file AND in the override (the diff duty,
- * made executable), and the rendered override carries it as an element.
+ * checks hold each one: the hook's literal is in core's own file and in the override, and the
+ * rendered override carries it as an element.
  *
  * Each template is rendered through the real engine under this theme, from its own example context -
  * the one context the mustache lint also validates - so what is parsed is what a browser receives,
@@ -522,7 +522,7 @@ final class competency_templates_test extends \advanced_testcase {
     /**
      * Three bars in one render name themselves by their own sentence, not by a shared id.
      *
-     * The uniqid helper is one value per render, and core's copy gave every bar of the template
+     * The uniqid helper is one value per render, and core's template gave every bar of the template
      * statistics the same id, so a bar named through an id would read the first sentence three times.
      *
      * @return void

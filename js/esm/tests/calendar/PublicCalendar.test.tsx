@@ -14,10 +14,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the public calendar's client, the visitor's shell (PROPOSAL.md section 19.2).
+ * Tests for the public calendar's client, the visitor's shell.
  *
  * Rendered inside a page like calendar_page.mustache's visitor mode; the visitor's service is core/ajax's fetchOne,
- * mocked. What is read: the first paint, the two chips, the one service asked without a login and with the page's
+ * mocked. What is read: the first paint, the two event types, the one service asked without a login and with the page's
  * language, the latest answer winning, a failure loading the address, and the popover's text and way in.
  *
  * @copyright  2026 Anderson Blaine

@@ -256,7 +256,7 @@ final class get_course_dialogue_test extends \advanced_testcase {
     }
 
     /**
-     * The content is what the card's details showed for a course with every fact, and nothing about the page's decision.
+     * The content is a course's excerpt, tiles and programme, and nothing about the page's decision.
      *
      * The summary decoded and shortened (an entity that decodes to a bare "<" included, which a PARAM_TEXT return would
      * refuse for the whole answer), the four tiles in the card's order with their icons - the workload, the modality,

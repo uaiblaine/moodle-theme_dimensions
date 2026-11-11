@@ -136,7 +136,7 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * The step popover's card readers (the course card contract, section 7): the block's declarations, one per line.
+     * The step popover's card readers: the block's declarations, one per line.
      *
      * @return string[] The declarations, as written.
      */
@@ -528,7 +528,7 @@ final class calendar_scss_test extends \advanced_testcase {
      * all-day strip and the hour box within the hour box's own bounds.
      *
      * The bounds are read from the hour box's rule, so a change to them that leaves the placeholder behind fails here.
-     * The header row (4rem) and the empty strip (2.625rem) are the drawn week's measured heights.
+     * The header row (4rem) and the empty strip (2.625rem) are the drawn week's heights.
      *
      * @return void
      */
@@ -674,7 +674,7 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * C4: the step popover is the course card's dialog variant (the course card contract, section 9). The 96px cover;
+     * The step popover is the course card's dialog variant. The 96px cover;
      * the close disc where a card's star would be, the course dialogue's cut to 32px, its colours the card tokens, darker
      * on hover, the card's focus ring, Bootstrap's close icon through the white filter; a completed step's green base and
      * green seal; the plugin's slot on its quiet ground; without the cover, a top edge in the category's colour, green
@@ -801,8 +801,8 @@ final class calendar_scss_test extends \advanced_testcase {
      * The Trilhas view's days scroll in a scroller drawn as block_compass's
      * strip (no native scrollbar in either engine, its overscroll kept from the page, snapped by the day, snap off while
      * the map drags), the trail column of every row held still over the days and the connectors, the fades taking no
-     * pointer; the months held are named in a band whose names stay in view (T3b replaced R3's last column); and the
-     * calendar's buttons are the mockup's, re-pointed through Bootstrap's own properties, the disabled trio included.
+     * pointer; the months held are named in a band whose names stay in view, with no last column; and the calendar's
+     * buttons are re-pointed through Bootstrap's own properties, the disabled trio included.
      *
      * @return void
      */
@@ -874,10 +874,11 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
-     * T3c: the zoom draws its days at the width its modifier declares; by months a bar keeps no room beside it or inside,
-     * so a day of .25rem still shows; the "Today" tag is the current step's pair, which reads in both modes; the weeks'
-     * lines and today's tag are placed in multiples of the day's width, as every line of the ground; the pressed zoom is
-     * the chosen trail's tint; a course's row holds its name and its dates within the row the connectors read.
+     * By months a bar keeps no room beside it or inside, so a day of .25rem still shows; the "Today" tag is the current
+     * step's pair, which reads in both modes; the weeks' lines and today's tag are placed in multiples of the day's width,
+     * as every line of the ground; the pressed zoom wears the interactive primary tint; a course's row button is
+     * 2.875rem tall; an open bar ends in the "no end date" chip. The day widths per zoom are compared with the client's
+     * by calendar_component_source_test.
      *
      * @return void
      */

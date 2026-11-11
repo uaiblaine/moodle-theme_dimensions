@@ -589,7 +589,7 @@ describe('the zoom (T3c)', () => {
     it('reads a day\'s width per zoom from TRACK, and the address\'s zoom as the server does', () => {
         expect([dayWidth('day'), dayWidth('week'), dayWidth('month')]).toEqual([TRACK.day, TRACK.week, TRACK.month]);
         expect([dayWidth('day'), dayWidth('week'), dayWidth('month')]).toEqual([3, 1, 0.25]);
-        // The mockup's three months fit about 400px by months: 92 days at 16px a rem.
+        // Three months fit about 400px by months: 92 days at 16px a rem.
         expect(92 * dayWidth('month') * 16).toBe(368);
         expect([zoomOf('week'), zoomOf('month'), zoomOf('day'), zoomOf('Week'), zoomOf(''), zoomOf(null), zoomOf(['week'])])
             .toEqual(['week', 'month', 'day', 'day', 'day', 'day', 'day']);
@@ -889,15 +889,15 @@ describe('the review of T3c', () => {
             {kind: 'horizontal', left: 2.4375, top: 5.1875, width: 0.1875, height: 0.125},
             {kind: 'right', left: 2.625, top: 5, width: 0.375, height: 0.5},
         ]);
-        // By months the next bar starts .75rem in: the turn keeps the room the days held leave before it.
+        // By months the next bar starts .75rem in: the turn keeps LINK.detour before it, inside the days held.
         expect(linksOf(pair, november, utc, true, 'month')).toEqual([
             {kind: 'horizontal', left: 0.1875, top: 1.6875, width: 2.3125, height: 0.125},
             {kind: 'vertical', left: 0.125, top: 1.6875, width: 0.125, height: 3.625},
             {kind: 'horizontal', left: 0.1875, top: 5.1875, width: 0.1875, height: 0.125},
             {kind: 'right', left: 0.375, top: 5, width: 0.375, height: 0.5},
         ]);
-        // A next course starting the 2nd, .25rem in: the turn moves in to stay inside the days held, and the line down is
-        // still drawn (at LINK.detour it fell before the first day and was cut away).
+        // A next course starting the 2nd, .25rem in: the turn moves in to stay inside the days held, so the line down is
+        // still drawn (a full LINK.detour before the bar would fall before the first day and be cut away).
         const early = [leg(1, '2026-11-11', '2026-11-23'), leg(2, '2026-11-02', '2026-11-15')];
         const pieces = linksOf(early, november, utc, true, 'month');
         expect(pieces.map((piece) => piece.kind)).toEqual(['horizontal', 'vertical', 'right']);

@@ -42,7 +42,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * is drawn. The predicate itself is covered by {@see \theme_dimensions\local\focusmode_test}; what
  * is shown or hidden under the body class is {@see \theme_dimensions\local\focusmode_scss_test}'s.
  *
- * Boost Union's navbar is on every one of these pages now, focused or not, so it is the control that
+ * Boost Union's navbar is on every one of these pages, focused or not, so it is the control that
  * the page rendered at all: {@see self::BU_NAVBAR_MARKER}. Without it "the bar is absent" and
  * "nothing was rendered" are the same assertion.
  *
@@ -58,10 +58,8 @@ final class focusmode_renderer_test extends \advanced_testcase {
     /**
      * @var string A marker only Boost Union's own navbar puts on the page.
      *
-     * The id belongs to the wrapper the navbar template draws around the user menu
-     * (BU/templates/theme_boost/navbar.mustache, core Boost's own naming). Boost Union's layout
-     * renders untouched in both skins, so the id is on every page below - which is what makes every
-     * "the bar is absent" assertion mean "the ordinary page was drawn" rather than "nothing came out".
+     * The id of the wrapper Boost Union's theme_boost/navbar template draws around the user menu, in
+     * both skins.
      */
     private const BU_NAVBAR_MARKER = 'id="usernavigation"';
 
@@ -86,10 +84,8 @@ final class focusmode_renderer_test extends \advanced_testcase {
     /**
      * Start every test with empty request caches and completion enabled on the site.
      *
-     * Nothing outside this theme flips usescourseindex any more: Boost Union's 5.2
-     * 'activitynavigation' setting, which did, is gone from its 5.3 branch. What decides whether a
-     * topics course shows previous and next on 5.3 is core's linear navigation, on by default; the
-     * tests that are about this theme's own row switch it off for topics and say so.
+     * Whether a topics course shows previous and next is decided by core's linear navigation, on by
+     * default; the tests about this theme's own row switch it off for topics and say so.
      *
      * @return void
      */
@@ -109,8 +105,8 @@ final class focusmode_renderer_test extends \advanced_testcase {
     /**
      * Switch core's linear navigation off for the topics format, the courses these tests create.
      *
-     * With it off 5.3 behaves as 5.2 did: the manual completion button is a header action, and core
-     * prints no previous and next anywhere on a format with a course index.
+     * With it off the manual completion button is a header action, and core prints no previous and
+     * next anywhere on a format with a course index.
      *
      * @return void
      */
@@ -182,16 +178,12 @@ final class focusmode_renderer_test extends \advanced_testcase {
     /**
      * Build this theme's core renderer on the real activity page of one course module.
      *
-     * The order is core_renderer_test::renderer()'s, adapted for an activity page: the course
-     * goes in before the theme is forced, because initialise_theme_and_output() sets it to the
-     * site otherwise and set_course() refuses to run once a theme is in place. The explicit
-     * render target and the reassignment of the global $OUTPUT are both load-bearing: PHPUnit
-     * runs as a CLI script, so the factory answers with core's CLI renderer without the target,
-     * and Boost Union's layout file - which header() includes - renders through $OUTPUT.
+     * The order, the explicit render target and the global $OUTPUT are core_renderer_test::renderer()'s
+     * (see there), adapted for an activity page.
      *
-     * The page itself is replaced too. header() may be called once per moodle_page, and several
-     * tests below render a control beside the case they are about; core replaces the global the
-     * same way (CORE/lib/tests/hook/navigation/primary_extend_test.php:38).
+     * The page itself is replaced too: header() may be called once per moodle_page, and several
+     * tests below render a control beside the case they are about. Core's own
+     * primary_extend_test replaces the global page the same way.
      *
      * @param \stdClass $course The course being viewed.
      * @param \cm_info $cm The activity being viewed.
@@ -691,6 +683,36 @@ final class focusmode_renderer_test extends \advanced_testcase {
         $actions = $PAGE->get_header_actions();
         $this->assertNotEmpty($actions);
         $this->assertStringContainsString(self::MANUAL_TOGGLE, $actions[0], 'The bar\'s action is back, first.');
+    }
+
+    /**
+     * The action the parent appends in the page header survives the call, after the bar's own.
+     *
+     * Core appends the region main settings menu to the page's header actions inside full_header() when the page
+     * asked for it; the list is narrowed around that call, so the page must end up with the bar's toggle first and
+     * the parent's action second, each once. Changes that must make it fail: the parent's actions dropped when the
+     * list is put back, or put back before the bar's.
+     *
+     * @return void
+     */
+    public function test_the_parents_own_header_action_survives_after_the_bars(): void {
+        global $PAGE;
+
+        $this->without_linear_navigation();
+        $course = $this->course(true);
+        $cm = $this->activity($course, ['completion' => COMPLETION_TRACKING_MANUAL]);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $renderer = $this->renderer($course, $cm);
+        $PAGE->set_include_region_main_settings_in_header_actions(true);
+        $this->assertCount(0, $PAGE->get_header_actions(), 'Precondition: nothing is on the page before the header.');
+        $renderer->header();
+
+        $actions = $PAGE->get_header_actions();
+        $this->assertCount(2, $actions, 'The bar\'s toggle and the parent\'s settings menu, once each.');
+        $this->assertStringContainsString(self::MANUAL_TOGGLE, $actions[0], 'The bar\'s action stays first.');
+        $this->assertStringContainsString('id="region-main-settings-menu"', $actions[1], 'The parent\'s action comes after it.');
+        $this->assertStringNotContainsString(self::MANUAL_TOGGLE, $actions[1]);
     }
 
     /**

@@ -124,7 +124,7 @@ final class population_test extends \advanced_testcase {
     }
 
     /**
-     * A category the viewer was clamped out of names no card: off the overline as it is off the chip.
+     * A category the viewer was clamped out of names no card: off the overline as it is off the tree.
      *
      * The enrolment rescues the course (the control that the page rendered it), and the
      * withheld subcategory's name reaches neither surface; an admin, whom nothing clamps, gets it.
@@ -852,15 +852,22 @@ final class population_test extends \advanced_testcase {
         \core_favourites\service_factory::get_service_for_user_context($usercontext)->create_favourite(
             'core_course',
             'courses',
-            $courses[4]->id,
-            \core\context\course::instance($courses[4]->id)
+            $courses[0]->id,
+            \core\context\course::instance($courses[0]->id)
         );
 
         $this->become($viewer);
+        /* Control: with nothing filtered the first page holds the enrolled course and the newest one, so the
+           favourite (the oldest course) and the chip's other courses sit past it. Changes that must make
+           this test fail: the favourites or the state filter applied to the page after it was cut. */
+        $unfiltered = population::resolve(new criteria($root->id, ['pagesize' => 2]));
+        $this->assertSame([(int) $courses[3]->id, (int) $courses[4]->id], $unfiltered->ids());
+        $this->assertSame(5, $unfiltered->total);
+
         $favourites = population::resolve(new criteria($root->id, ['pagesize' => 2, 'favourites' => true]));
-        $this->assertSame([(int) $courses[4]->id], $favourites->ids(), 'The favourite past the first page is on page one.');
+        $this->assertSame([(int) $courses[0]->id], $favourites->ids(), 'The favourite past the first page is on page one.');
         $this->assertSame(1, $favourites->total);
-        $this->assertTrue($favourites->rows[(int) $courses[4]->id]->favourite);
+        $this->assertTrue($favourites->rows[(int) $courses[0]->id]->favourite);
         $this->assertSame(1, $favourites->counts['total'], 'The "all" chip counts what it would leave under the favourites.');
         $this->assertSame(1, $favourites->counts[classifier::CHIP_FAVOURITES]);
 
@@ -869,6 +876,12 @@ final class population_test extends \advanced_testcase {
         $this->assertSame(1, $enrolled->counts[classifier::STATE_ENROLLED]);
         $this->assertSame(4, $enrolled->counts[classifier::STATE_NONE]);
         $this->assertSame(5, $enrolled->counts['total'], 'The histogram is taken before the chip.');
+
+        // A chip whose courses rank last: its first page is cut from the filtered population, not from page one.
+        $none = population::resolve(new criteria($root->id, ['pagesize' => 2, 'state' => classifier::STATE_NONE]));
+        $this->assertSame([(int) $courses[4]->id, (int) $courses[2]->id], $none->ids());
+        $this->assertSame(4, $none->total);
+        $this->assertTrue($none->hasmore);
     }
 
     /**
@@ -3240,6 +3253,9 @@ final class population_test extends \advanced_testcase {
 
     /**
      * Whether a watermark at an opacity leaves the name 4.5:1 and the chevron 3:1, recomputed here.
+     *
+     * An independent copy of {@see population::mark_alpha()}'s check, its constants spelled out (0.18 is
+     * population::CHEVRON_ALPHA).
      *
      * @param string $band The band.
      * @param string $ink The ink.

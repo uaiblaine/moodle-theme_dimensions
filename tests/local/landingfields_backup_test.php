@@ -32,9 +32,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * The badge pictures and the share picture survive a course backup and restore although their fields are visible to nobody.
  *
  * backup_theme_dimensions_plugin carries their rows and annotates their
- * file area itself ({@see landingfields::badge_definitions()} says why); this is the
- * test that keeps it doing so. Each test fails without the annotation and fails without the
- * rows: the files come back only when both halves are in the archive.
+ * file area itself ({@see landingfields::badge_definitions()} says why). Changes that must
+ * make each test fail: dropping the annotation, or dropping the rows; the files come back
+ * only when both halves are in the archive.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

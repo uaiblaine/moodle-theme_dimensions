@@ -172,7 +172,7 @@ final class page_trail_test extends \advanced_testcase {
     }
 
     /**
-     * T3c: the timeline's zoom is navigation like the trail: read as written (week or month exactly), dropped otherwise,
+     * The timeline's zoom is navigation like the trail: read as written (week or month exactly), dropped otherwise,
      * a list included; the address spells it after the trail, the forward carries it, and it is never state.
      *
      * @return void
@@ -279,7 +279,7 @@ final class page_trail_test extends \advanced_testcase {
         $this->assertStringContainsString('trail=' . $trail->id, $context['nexturl']);
         $this->assertSame('', $props['trails']['zoom'], 'Days, as the address names none.');
 
-        // T3c: the zoom the address names reaches the client, the page's own address and the arrows' links.
+        // The zoom the address names reaches the client, the page's own address and the arrows' links.
         self::forget_calendar();
         $_GET = [page::PARAM_VIEW => 'trail', state::PARAM_MONTH => '2027-03', page::PARAM_ZOOM => 'week'];
         $PAGE = new \moodle_page();

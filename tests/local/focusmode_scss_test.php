@@ -92,8 +92,8 @@ final class focusmode_scss_test extends \basic_testcase {
      *
      * Walks the braces rather than matching them, because a regular expression cannot tell a
      * nested rule from a top-level one. A selector counts as top-level when it sits at the root
-     * of the file, or directly inside an at-rule at the root - the reduced-motion block is the
-     * one this file really has, and its contents need the same scope as everything else.
+     * of the file, or directly inside an at-rule at the root - the breakpoint includes are the
+     * ones this file has, and their contents need the same scope as everything else.
      *
      * @param string $scss The stylesheet source, comments already removed.
      * @return array The selector strings, whitespace collapsed.
@@ -132,8 +132,8 @@ final class focusmode_scss_test extends \basic_testcase {
     /**
      * The theme's ordinary stylesheet, with its comments removed.
      *
-     * The pill both ways through focus mode wear is defined here and not in focusmode.scss,
-     * because the entry button renders on a page which carries no focus body class.
+     * The pill both ways through focus mode wear is a mixin of this sheet, which the reading bar's
+     * controls include as well.
      *
      * @return string The stylesheet source.
      */
@@ -217,9 +217,8 @@ final class focusmode_scss_test extends \basic_testcase {
      * spelling beside each of them is the one that is correct on every branch, so writing the
      * old name buys nothing at all and costs the rule an expiry date.
      *
-     * data-toggle is listed with the equals sign on purpose: Boost Union's own drawer markup,
-     * which the focus mode once copied verbatim, carries data-toggler and data-target, and
-     * neither is a Bootstrap attribute.
+     * data-toggle is listed with the equals sign so that Boost Union's drawer attribute
+     * data-toggler, which is not a Bootstrap attribute, does not match.
      *
      * @return array Regular expression => the spelling to use instead.
      */
@@ -347,7 +346,7 @@ final class focusmode_scss_test extends \basic_testcase {
     /**
      * No Bootstrap 4 spelling reaches a template, a module or a renderer.
      *
-     * This theme supports Moodle 5.2 alone, so the old names still resolve - through
+     * This theme supports Moodle 5.3 alone, so the old names still resolve - through
      * bs4-compat.scss, with a deprecation attached and a removal already scheduled. The rule is
      * therefore not about breakage today but about writing a vocabulary with a known expiry
      * date, and it is enforced here because nothing else in the pipeline reads a class name.
@@ -624,7 +623,7 @@ final class focusmode_scss_test extends \basic_testcase {
      * The focused skin hides Boost Union's chrome, and keeps what the reader works with.
      *
      * The list is the coupling with Boost Union's drawers template. Named here are the pieces the
-     * reduced shell used to leave out; refused are the ones it kept on purpose - the two drawers and
+     * focused skin hides; refused are the ones the reader keeps - the two drawers and
      * their togglers (a book's contents and a quiz's navigation are blocks), the activity header with
      * its anchor, the info banners and the footer, which in either skin is Boost Union's own.
      *

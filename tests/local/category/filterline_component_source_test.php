@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - Tests for how the logged-in shell hands its filter line to the component
+ * Theme Dimensions - Tests for how the shared listing hands its filter line to the component
  *
  * @package    theme_dimensions
  * @category   test
@@ -28,7 +28,7 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins the AMD half of the filter line component by reading the source.
+ * Pins the listing's half of the filter line component by reading the source.
  *
  * The component's behaviour is Jest's (js/esm/tests/filterline). What Jest cannot see is how the listing
  * hands the line over and keeps out of it: the mount is the server's line itself, named for core's
@@ -199,8 +199,8 @@ final class filterline_component_source_test extends \advanced_testcase {
      * replace a line it cannot draw with nothing); the line not put back (react_autoinit hears no added
      * node and the line is never drawn); the props nested under a key (the component renders nothing); the
      * dropterm listener added after the node goes in; the pending mount never released, or released only when
-     * the component draws (a line it cannot draw would hold every Behat step on the page: gate js_line_failed_released);
-     * the form's id read as a property (gate js_line_form_id_attribute): the visitor's script form carries a hidden
+     * the component draws (a line it cannot draw would hold every Behat step on the page);
+     * the form's id read as a property: the visitor's script form carries a hidden
      * field named "id", which form.id returns, so the component is handed {} and finds no line to draw or to
      * report failed on. Only the script entry has that field, so only a site without the router shows it.
      */
@@ -283,12 +283,12 @@ final class filterline_component_source_test extends \advanced_testcase {
      * No painter of the shared listing writes into what the component draws; it tells the component instead.
      *
      * The guard is one function: inside a line the component marked drawn, and outside the three frames it
-     * adopts, which stay the listing's to paint. On the visitor's shell no line is marked and every painter
-     * paints as it always did.
+     * adopts, which stay the listing's to paint. A line the component did not draw is painted as the server
+     * drew it.
      *
      * Changes that must make it fail: any painter's guard dropped (React redraws over the write, or loses
      * its focus); the adopted frames left out of the guard (More statuses, the fields, the sort and "Show
-     * as" would stop being painted on the logged-in shell); the state not told from paintControls() (Back
+     * as" would stop being painted); the state not told from paintControls() (Back
      * and Clear all would leave the line's controls on the old state).
      */
     public function test_no_painter_writes_into_what_the_component_draws(): void {
@@ -376,7 +376,7 @@ final class filterline_component_source_test extends \advanced_testcase {
      * The shared listing names the component, which is built, and both shells hand their line to it.
      *
      * Changes that must make it fail: a client naming the component itself; the
-     * visitor's module handing its line to nothing (gate js_public_line_armed); the component not built.
+     * store handing its line to nothing; the component not built.
      */
     public function test_both_shells_hand_their_line_to_the_component_named_in_the_listing(): void {
         $this->assertStringContainsString("    line: '" . self::SPECIFIER . "',\n", $this->listing());
@@ -453,10 +453,9 @@ final class filterline_component_source_test extends \advanced_testcase {
     /**
      * The first commit reads no layout: the line's first measure is the ResizeObserver's first entry's.
      *
-     * A measure inside React's commit forces the page's first full layout (PLAN 5.2.6); the observer's first entry
+     * A measure inside React's commit forces the page's first full layout; the observer's first entry
      * comes after the browser's own layout and before the paint, so the line is still folded before it is painted.
-     * The component's behaviour around it is Jest's (FilterLine.test.tsx); this holds the shape the mutation sweep,
-     * which runs PHPUnit alone, can redden.
+     * The component's behaviour around it is Jest's (FilterLine.test.tsx); this pins its source shape from PHPUnit.
      *
      * The line is hidden from the commit to that first fold (a fold in the callback moves nodes the browser already
      * laid out, a layout shift; hidden nodes count for none), unless it holds the focus, and shown again by the

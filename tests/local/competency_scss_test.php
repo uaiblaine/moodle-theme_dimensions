@@ -408,8 +408,9 @@ final class competency_scss_test extends \advanced_testcase {
     /**
      * The dark half is at the foot, scoped, and restates the progress bar's fill with the brand ink.
      *
-     * The brand fill is Bootstrap's primary, a navy that reads about 1.2:1 on a dark track; the light
-     * bar keeps it and the dark bar takes the brand ink on the value of both engines.
+     * The brand fill is Bootstrap's primary, which is the same colour in both modes and can all but vanish
+     * on the dark track; the light bar keeps it and the dark bar takes the brand ink on the value of both
+     * engines.
      *
      * @return void
      */
@@ -473,8 +474,8 @@ final class competency_scss_test extends \advanced_testcase {
     /**
      * The path clears core's floated "Path:" label, so the next row of the page starts below it.
      *
-     * Measured on the course competencies page: without the clearing pseudo-element, core's
-     * "Upon course completion" selector wrapped beside the label.
+     * Without the clearing pseudo-element, core's "Upon course completion" selector on the course
+     * competencies page wraps beside the label.
      *
      * @return void
      */

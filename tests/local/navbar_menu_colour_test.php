@@ -100,8 +100,8 @@ final class navbar_menu_colour_test extends \advanced_testcase {
     /**
      * Core's colour mode helpers, from the top of the file to the end of dark-readable().
      *
-     * The whole head and not the function alone: core 5.3 has since given dark-readable() a cache and helpers
-     * declared above it, and the function's own text no longer compiles by itself.
+     * The whole head and not the function alone: dark-readable()'s default arguments are variables declared above
+     * it ($dark-surface-raised, $dark-min-contrast), so the function's own text does not compile by itself.
      *
      * @param string $core The text of theme/boost/scss/moodle/colour-mode.scss.
      * @return string

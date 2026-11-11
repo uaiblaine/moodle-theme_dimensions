@@ -121,7 +121,7 @@ final class facets_test extends \advanced_testcase {
     /**
      * The allowlist is read once per request, and a changed setting or a changed set of fields is a new answer.
      *
-     * The page asks for it from five places, so it is memoised; what the memo may never do is answer for a setting
+     * The page asks for it from several places, so it is memoised; what the memo may never do is answer for a setting
      * or for fields it was not computed from. The control for each change is the answer before it.
      */
     public function test_fields_is_remembered_until_the_setting_or_the_fields_change(): void {

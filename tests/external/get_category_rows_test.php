@@ -296,7 +296,7 @@ final class get_category_rows_test extends \advanced_testcase {
     }
 
     /**
-     * The organisation and the two bounds reach the population, and the returns are unchanged.
+     * The organisation and the two bounds reach the population, and the card's returns keep their allowlist.
      *
      * The page drops a value it does not know and renders; this function
      * refuses one, because the only client it has is this theme's own module
@@ -348,7 +348,7 @@ final class get_category_rows_test extends \advanced_testcase {
         $this->assertSame(['Zulu'], array_column($end['cards'], 'fullname'), 'An end alone has no lower bound.');
         $this->assertSame(1, $end['filtercount']);
 
-        // The returns are the same allowlist they were: the card already carries its category's name.
+        // The card's returns name its category as the overline and carry no category id.
         $this->assertArrayHasKey('overline', $narrowed['cards'][0]);
         $this->assertArrayNotHasKey('categoryid', $narrowed['cards'][0]);
     }
@@ -771,7 +771,7 @@ final class get_category_rows_test extends \advanced_testcase {
      * The card keys of the returns are the keys the exporter really produces.
      *
      * The test above reads the card through clean_returnvalue(), which can only
-     * show a key the declaration dropped: an undeclared key never reaches the
+     * show a declared key the card stopped exporting: an undeclared key never reaches the
      * payload, so comparing the payload with the declaration can never see it.
      * This one reads the delegate's own output, before the allowlist runs, so a
      * key added to the card and forgotten in the returns is caught at the
@@ -791,7 +791,7 @@ final class get_category_rows_test extends \advanced_testcase {
         sort($declared);
 
         $this->assertSame($declared, $exported);
-        // The dialogue's content is fetched when it opens (get_course_dialogue): no card carries it any more.
+        // The dialogue's content is fetched when it opens (get_course_dialogue), so no card carries it.
         foreach (['detailsid', 'excerpt', 'facts', 'learn', 'learnlabel'] as $gone) {
             $this->assertNotContains($gone, $declared, "The rows still carry {$gone}.");
         }
@@ -958,9 +958,9 @@ final class get_category_rows_test extends \advanced_testcase {
     /**
      * A tree criterion the page does not offer is dropped, and every such id answers alike.
      *
-     * The oracle this pins shut: refusing a category that is not below the listed one while
-     * dropping one that is below it but withheld told an account which ids exist in a subtree it
-     * may not browse. Now a nonexistent id, a category of another tree, a withheld descendant (core
+     * Refusing a category that is not below the listed one while dropping one that is below it but
+     * withheld would tell an account which ids exist in a subtree it may not browse. So a
+     * nonexistent id, a category of another tree, a withheld descendant (core
      * hides it, the plugin does not list it), an id past anything the site holds, the listed
      * category itself and no criterion at all answer the same bytes, and the answer says no filter
      * is in force (the badge, the clear link and the next page's address are the unfiltered
@@ -968,7 +968,7 @@ final class get_category_rows_test extends \advanced_testcase {
      * that withheld nothing cannot pass.
      *
      * Every request is in a flat order, because the grouped default drops `cat` at construction
-     * and would answer alike with the guard back in place.
+     * and would answer alike whether or not the tree criterion is checked.
      *
      * @param bool $statesort The page-cutting mode.
      */
@@ -1447,7 +1447,7 @@ final class get_category_rows_test extends \advanced_testcase {
      * Every key of the panel's context is declared in the returns, and nothing else is.
      *
      * The card's own pair of tests, over the panel's context: the first direction reads the
-     * payload through clean_returnvalue(), which can only show a key the declaration dropped,
+     * payload through clean_returnvalue(), which can only show a declared key the builder dropped,
      * and the second reads the builder's own output before the allowlist runs, which is
      * the only place an undeclared key is still visible at all. The nested structures are
      * compared as well, since each is an allowlist of its own.
@@ -1514,7 +1514,7 @@ final class get_category_rows_test extends \advanced_testcase {
      *
      * The same property budget_test measures over the decision layer, measured
      * here over the delegate the web service actually calls - which adds the
-     * listing's four bulk reads, the card exports and the renderer, and must
+     * listing's bulk reads, the card exports and the renderer, and must
      * add nothing per course on top of them.
      *
      * The slope is measured between two listings of the same shape - a full

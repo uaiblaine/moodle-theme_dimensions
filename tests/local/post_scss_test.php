@@ -130,7 +130,7 @@ final class post_scss_test extends \basic_testcase {
      * The navbar has no border under its band.
      *
      * Core draws a 1px border-bottom on .navbar.fixed-top and Boost Union only recolours it, so without this rule it
-     * showed as a line under the band. The control is the band itself, in the same rule.
+     * shows as a line under the band. The control is the band itself, in the same rule.
      *
      * @return void
      */
@@ -238,8 +238,7 @@ final class post_scss_test extends \basic_testcase {
      *
      * Core's moremenu.scss paints that row in --mds-text-default (the React mount) or $dropdown-link-color (the
      * legacy markup), dark inks on the theme's dark surface, and hovers it in Bootstrap's compiled pair. The control
-     * is core's own rule, read from the stack's checkout: if core stops painting the row, this pin is the one to
-     * revisit.
+     * is core's own rule, read from core's source: if core stops painting the row, this pin is the one to revisit.
      *
      * @return void
      */
@@ -280,7 +279,7 @@ final class post_scss_test extends \basic_testcase {
     /**
      * An open navbar menu's toggle is a rounded pill, never a square in the ink's colour.
      *
-     * Bootstrap's open .btn reads --bs-btn-active-border-color, which Moodle's .btn never sets, so the border fell
+     * Bootstrap's open .btn reads --bs-btn-active-border-color, which Moodle's .btn never sets, so the border falls
      * back to currentColor round a toggle core squares at the bar's full height. The pill is the ::before, in the
      * navbar pills' hover tint, and the keyboard's ring goes round it. The control is the three menus in the
      * selector.
@@ -485,8 +484,8 @@ final class post_scss_test extends \basic_testcase {
     /**
      * The navbar's dark half keys on Boost Union's .navbar-dark, never on a colour mode the navbar no longer carries.
      *
-     * Boost Union's upgrade-503 stopped writing data-bs-theme on the navbar, so a rule keyed on it matches nothing
-     * and the pills and the dark logo fall back to their light values on the navy bar, silently.
+     * Boost Union's 5.3 navbar carries no data-bs-theme, so a rule keyed on it matches nothing and the pills and the
+     * dark logo fall back to their light values on the navy bar, silently.
      *
      * @return void
      */

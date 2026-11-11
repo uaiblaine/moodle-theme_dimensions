@@ -24,7 +24,7 @@ import type {Answer, Item, Key, Props} from '../../src/calendar/model';
 import {KEYS} from '../../src/calendar/model';
 
 /**
- * Midnight UTC of a day, in seconds.
+ * Midnight UTC of a day, or an hour of it, in seconds.
  *
  * @param {string} iso The day.
  * @param {number} hour The hour, UTC.

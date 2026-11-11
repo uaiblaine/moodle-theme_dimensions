@@ -225,8 +225,8 @@ final class core_renderer_test extends \advanced_testcase {
     /**
      * A visitor who is not logged in gets the institutional navbar too.
      *
-     * Core never sets usermenu.userfullname for a visitor, so a guard on that key skipped the navbar
-     * style on every public page. The control is the logged-in context, which carries the same style.
+     * Core never sets usermenu.userfullname for a visitor, so the navbar style must not be guarded on
+     * that key. The control is the logged-in context, which carries the same style.
      *
      * The navbar template is rendered with the layout's colour keys rather than through header():
      * Boost Union's layouts load includes/navbar.php with require_once, so only the first header()
@@ -249,7 +249,7 @@ final class core_renderer_test extends \advanced_testcase {
     /**
      * The dark navbar is Boost Union's coloured-dark pair, and the bar carries no colour mode of its own.
      *
-     * Boost Union's upgrade-503 maps every element of the navbar onto .navbar-dark and keeps the dropdowns
+     * Boost Union 5.3 maps every element of the navbar onto .navbar-dark and keeps the dropdowns
      * inside it in the page's colour mode, which a data-bs-theme on the nav would switch to dark.
      *
      * @return void
@@ -520,15 +520,13 @@ final class core_renderer_test extends \advanced_testcase {
     /**
      * The client module is armed for a real account and never for the guest.
      *
-     * The guest is routed to this shell on purpose: core counts it as logged in, so request.php
-     * sends it to the logged-in showcase rather than the anonymous one. All three of the showcase's web
-     * services refuse the guest, and the module's first act is to add the body class that hides
-     * the no-JavaScript "Filter" submit and to hide the numbered pager: the only two controls
-     * that work for a guest at all. Armed there, it answers every chip, every typed term and
-     * every "load more" with an exception dialogue over a page that used to page and filter.
+     * Core counts the guest as logged in, so {@see \theme_dimensions\local\category\request::handle()}
+     * sends it to the logged-in shell. Every service the module calls refuses the guest, and the module
+     * hides the no-JavaScript submits and the numbered pager, the only controls a guest can use: armed
+     * for the guest, every chip, term and "load more" would end in an exception dialogue.
      *
-     * The fix belongs here and never in the services' guest refusal, which is what keeps the
-     * guest account from writing a favourite onto a shared login.
+     * The guest is kept out at the arming, never by loosening the services' guest refusal, which is what
+     * keeps the guest account from writing a favourite onto a shared login.
      */
     public function test_the_client_module_is_armed_for_a_real_account_and_not_for_the_guest(): void {
         $this->resetAfterTest();

@@ -80,8 +80,7 @@ final class drawernav_test extends \advanced_testcase {
     /**
      * A core renderer, for the language menu's export.
      *
-     * @return
-enderer_base
+     * @return \renderer_base
      */
     private function core_renderer(): \renderer_base {
         global $PAGE;

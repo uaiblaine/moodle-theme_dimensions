@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins the invariants of amd/src/readingbar.js by reading its source, as drawer_source_test does for the drawer.
  *
- * Plugin CI runs no JavaScript unit tests, and the Behat site switches the scroll off on purpose, so the
+ * No JavaScript unit test runs over amd/src, and the Behat site switches the scroll off on purpose, so the
  * properties whose loss costs a reader are pinned by spelling, each assertion scoped to the one function it is
  * about: the listener is passive and only books a frame, the decision reads before it writes, nothing changes
  * while the bar is busy, the thresholds go both ways, the Behat site never moves the bar, the motion is the

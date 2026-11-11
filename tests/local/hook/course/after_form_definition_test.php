@@ -229,9 +229,9 @@ final class after_form_definition_test extends \advanced_testcase {
     /**
      * A course which never opted into a landing page gets no link.
      *
-     * The control is the test above: the same form, the same course generator and
-     * the same callback do produce the link once a model is stored, so a pass here
-     * is the model check answering and not the callback failing to run.
+     * The control is test_link_is_added_for_a_course_with_a_model(): the same form, course
+     * generator and callback produce the link once a model is stored, so a pass here is the
+     * model check answering and not the callback failing to run.
      */
     public function test_link_is_absent_without_a_model(): void {
         $this->resetAfterTest();

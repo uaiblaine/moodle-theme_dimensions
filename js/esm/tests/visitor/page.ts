@@ -17,7 +17,7 @@
  * The anonymous shell's toolbar and areas, as a visitor's public category page draws them.
  *
  * Captured from the page a 5.3 site served a visitor (category_toolbar and category_areas from the anonymous
- * shell's own export, 2026-10-28), with the site's address replaced. It is the visitor's markup, which the
+ * shell's own export), with the site's address replaced. It is the visitor's markup, which the
  * logged-in fixtures are not: no scope, no favourites star or field, no managers' menu, the route as the
  * form's action, merely listed areas (an empty data-titleurl). Recapture it from a public category page
  * when the toolbar's or the posters' templates change.

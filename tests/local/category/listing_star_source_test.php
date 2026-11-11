@@ -77,8 +77,7 @@ final class listing_star_source_test extends \basic_testcase {
      * course this page is not allowed to admit exists. The second half is the control: a module that called no
      * service at all would pass the first on its own.
      *
-     * Changes that must make it fail: the shell no longer arming the star (gate js_account_arms_star); the
-     * listener armed on every call.
+     * Changes that must make it fail: the shell no longer arming the star; the listener armed on every call.
      */
     public function test_the_star_calls_the_themes_own_service_and_is_armed_once(): void {
         $star = $this->read(self::STAR);

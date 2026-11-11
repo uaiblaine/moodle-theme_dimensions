@@ -172,8 +172,8 @@ final class clamped_rescue_test extends \advanced_testcase {
      * Under a search, an enrolment reaches a match past the first fifty of the viewer's courses in a clamped category.
      *
      * The category is hidden (core's clamp), lifted for each course by an active enrolment. The
-     * SQL cut's list of those courses is capped at RESCUE_CAP: cut before the term, it kept the
-     * first fifty enrolments whatever they were called and withheld the match the PHP cut shows.
+     * SQL cut's list of those courses is capped at RESCUE_CAP: cut before the term, it would keep
+     * the first fifty enrolments whatever their names and withhold the match the PHP cut shows.
      *
      * @param bool $statesort The mode.
      */

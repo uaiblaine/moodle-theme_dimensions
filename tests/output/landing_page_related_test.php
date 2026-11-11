@@ -156,7 +156,7 @@ final class landing_page_related_test extends \advanced_testcase {
     /**
      * A public page cleans its sections before the text filters: the editor's script goes, the shortcode's band stays.
      *
-     * Cleaning the finished HTML stripped the band's markup with the script (no covers, no data or aria attributes);
+     * Cleaning the finished HTML would strip the band's markup with the script (no covers, no data or aria attributes);
      * the fixture holds both, saved trusted by an administrator with trusted text on, so only the cleaning removes the
      * script. The page behind login keeps the trusted rendering, and is the control. Skipped without filter_shortcodes.
      */
@@ -283,7 +283,7 @@ final class landing_page_related_test extends \advanced_testcase {
         $this->assertStringContainsString('NENHUM', $context->relatednotice['message']);
         $this->assertMatchesRegularExpression('~dimensions-landing__relatednotice">\s*<div[^>]*alert-warning~', $html);
 
-        // Control: with no landing page drawn for the course, the text draws the block in place, and the band is the
+        // Control: with no lift armed for the course, the text draws the block in place, and the band is the
         // automatic one.
         shortcode::reset();
         [$context] = self::page($parent);

@@ -230,11 +230,9 @@ final class publicaccess_test extends \advanced_testcase {
     /**
      * The visitor's web service has a switch of its own, off until a stored '1', and it never closes a page.
      *
-     * It sits beside is_public() and not inside it: is_public() is the gate of the public page, the
-     * forward, the image route and the head tags, so a switch read inside it would take every public
-     * page off the internet on a site that never opened the service - which is every site, by default.
-     * The public category and the root are asked under each value of the switch; the root's own
-     * setting is the control that is_public() can still say no.
+     * It sits beside is_public(), never inside it ({@see publicaccess::client_enabled()} says why). The
+     * public category and the root are asked under each value of the switch; the root's own setting is
+     * the control that is_public() can still say no.
      *
      * @return void
      */

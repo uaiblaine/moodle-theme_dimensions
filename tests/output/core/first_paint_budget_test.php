@@ -42,14 +42,12 @@ require_once(__DIR__ . '/../../local/category/fixture.php');
  * The counts of a first paint that hold without a browser, as hard gates.
  *
  * The browser probe (tests/behat/theme_dimensions_perf.feature) measures paint and blocking time,
- * which are a trend until the hosts' noise is known; these are the parts of the same first paint a
- * render in process can count exactly, so they gate every change: the HTML bytes a card
- * and the rest of a listing cost, the hero's bytes, the AMD modules the page asks the browser to
- * load at once, and the strings it ships to JavaScript. Each byte ceiling is today's largest
- * measurement plus 3 %: two runs on one site differed by up to 1.3 %, for a reason not yet pinned
- * down, and the bytes depend on the site's plugins and ids. The module lists and string counts are
- * exact. A stage that lowers a number lowers its ceiling in the same change, and one that raises it
- * says why in the same change.
+ * which vary between hosts; these are the parts of the same first paint a render in process can
+ * count exactly: the HTML bytes a card and the rest of a listing cost, the hero's bytes, the AMD
+ * modules the page asks the browser to load at once, and the strings it ships to JavaScript. Each
+ * byte ceiling is the largest measurement plus 3 %, because the bytes vary slightly between runs and
+ * depend on the site's plugins and ids. The module lists and string counts are exact. A change that
+ * lowers a number lowers its ceiling, and one that raises it says why.
  *
  * The bytes are measured as a slope, a page of four cards against a page of twenty-four: the slope
  * is what one more card costs and the intercept what the listing costs without cards, so neither
@@ -78,8 +76,6 @@ final class first_paint_budget_test extends \advanced_testcase {
 
     /**
      * @var int HTML bytes of a logged-in flat listing without its cards: measured 17,326, + 3 %.
-     *   21 bytes over the largest earlier measurement (17,305), inside the run-to-run spread above: the intercept is
-     *   what the listing costs beside its cards.
      */
     private const LISTING_BYTES = 17846;
 
@@ -239,7 +235,7 @@ final class first_paint_budget_test extends \advanced_testcase {
     }
 
     /**
-     * Record a measurement beside budget_test's own, in the system temp directory.
+     * Record a measurement in the system temp directory, in the file the other budget tests write to.
      *
      * @param string $label What was measured.
      * @param array $numbers The numbers.
@@ -312,9 +308,8 @@ final class first_paint_budget_test extends \advanced_testcase {
     /**
      * The logged-in flat page asks for exactly these AMD modules at load, and adds exactly this many strings.
      *
-     * A module added to the first paint is a request and a parse on every showcase page, so it is
-     * a decision of the stage that adds it, written into this list in the same change; a module
-     * moved to first use (P0's dialogue, preview and film) leaves the list.
+     * A module added to the first paint is a request and a parse on every showcase page, so the change
+     * that adds it writes it into this list; a module moved to first use leaves the list.
      */
     public function test_the_logged_in_page_asks_for_exactly_its_modules_at_load(): void {
         [$categoryid, $viewer] = $this->seed(6);

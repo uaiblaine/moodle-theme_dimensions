@@ -216,11 +216,11 @@ final class cards_test extends \advanced_testcase {
      * The public shell mints the cover through the theme's route, and core's cache keeps core's URL.
      *
      * Core's course/overviewfiles route runs require_login() while the site forces login, so the
-     * cover of a visitor's card loads for nobody: the public page asks for the theme's own route,
-     * as the landing page's hero image already did. Two controls, and the test is worth nothing without
-     * either: the logged-in call still gets core's URL, and core's course_image cache - read by
-     * Boost Union's own cards and by the Dashboard, both behind the login - still holds core's URL
-     * after the PUBLIC call, so the public page's route cannot leak onto a logged-in page.
+     * cover of a visitor's card would load for nobody: the public page asks for the theme's own route,
+     * as the landing page's hero image does. Two controls: the logged-in call still gets core's URL,
+     * and core's course_image cache - read by Boost Union's own cards and by the Dashboard, both behind
+     * the login - still holds core's URL after the public call, so the theme's route cannot leak onto
+     * a logged-in page.
      */
     public function test_the_public_shell_mints_the_cover_through_the_theme_route(): void {
         global $CFG;

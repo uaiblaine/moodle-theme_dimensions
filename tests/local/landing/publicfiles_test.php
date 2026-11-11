@@ -24,8 +24,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * Tests for the file route of the public landing page.
  *
  * serve() itself sends bytes and stops the process, so it is not exercised here;
- * the checks it relies on are all in resolve(), which is. The route as a whole is
- * verified with real requests against a running site.
+ * the checks it relies on are all in resolve(), which is.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

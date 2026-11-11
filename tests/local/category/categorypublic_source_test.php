@@ -39,8 +39,8 @@ use theme_dimensions\output\category_panel;
  * session, so the properties pinned here are the ones whose loss is a leak or a cache poisoned for
  * every visitor rather than a screenshot: what it imports, all the way down; the one service it
  * calls, and how; the mark it writes on the body; and that a failure never reaches the page in the
- * server's words. moodle-plugin-ci has no JavaScript test runner, so they are assertions about
- * spelling, each scoped to the function it is about.
+ * server's words. They are assertions about spelling, over the sources and the builds, each scoped
+ * to the function it is about.
  *
  * Its calendar, its filter line and its posters with their panel are the React
  * components the logged-in shell draws (js/esm/src/daterange, filterline and areas), mounted through
@@ -470,8 +470,7 @@ final class categorypublic_source_test extends \basic_testcase {
      * the period's reader and the title marker, and names the three components it mounts, whose relative
      * imports the walk follows down to the bridge; the visitor's graph holds all of it.
      *
-     * Changes that must make it fail: the visitor's entry loading an AMD module instead of its shell (gate
-     * js_public_listing_through_esm).
+     * Changes that must make it fail: the visitor's entry loading an AMD module instead of its shell.
      */
     public function test_the_import_walk_is_transitive(): void {
         $listing = $this->graph(self::LISTING);
@@ -494,7 +493,7 @@ final class categorypublic_source_test extends \basic_testcase {
     /**
      * The walk crosses from AMD into the ES modules and back, which the visitor's rule depends on.
      *
-     * Read over a fixture, because no visitor's module reaches an ES module yet: an AMD entry loads an
+     * Read over a fixture, so each crossing is proved on its own: an AMD entry loads an
      * ES module through `core/esm!`, a second one names it for a React mount, the ES module imports the
      * bridge by relative path from a subdirectory, and the bridge asks RequireJS for a theme AMD
      * module by its quoted name, in its build alone. A template's name beside it is no edge.
@@ -526,8 +525,8 @@ final class categorypublic_source_test extends \basic_testcase {
      * client names one the walk would have to be taught. The preview the line imports on first use and
      * the panel's modules are reached too, down to the bridge.
      *
-     * Changes that must make it fail: a specifier dropped from the shared listing (gate
-     * js_public_graph_reaches_areas); a client naming a component itself.
+     * Changes that must make it fail: a specifier dropped from the shared listing; a client naming a
+     * component itself.
      */
     public function test_the_visitors_graph_reaches_each_component_named_once(): void {
         $graph = $this->graph(self::MODULE);
@@ -575,9 +574,8 @@ final class categorypublic_source_test extends \basic_testcase {
      * names the logged-in module answering it is one edit from importing it. The logged-in services are
      * the next test's. The controls: the account's entry names the star, and a comment alone is found.
      *
-     * Changes that must make it fail: a comment naming the account's entry in the shared listing (gate
-     * js_public_graph_names_vitrine), the account's shell in the component's panel (gate
-     * js_public_component_names_panel) or in the store (gate js_public_graph_names_account).
+     * Changes that must make it fail: a comment naming the account's entry in the shared listing, or the
+     * account's shell in the component's panel or in the store.
      */
     public function test_nothing_the_walk_reaches_names_the_logged_in_shell(): void {
         $graph = array_values(array_unique(array_merge($this->graph(self::MODULE), $this->graph(self::BRIDGE))));
@@ -604,9 +602,8 @@ final class categorypublic_source_test extends \basic_testcase {
      * reaches AMD through it, a visitor's component included, so it may reach nothing of a session
      * itself, whether or not a visitor's module imports it yet.
      *
-     * Changes that must make it fail: importing the star or the account's entry anywhere in the graph (gates
-     * js_public_graph_no_star, js_public_graph_panel_no_star); naming a logged-in service in any module of it; the
-     * bridge, in its source or either build, naming core_user/repository.
+     * Changes that must make it fail: importing the star or the account's entry anywhere in the graph; naming a
+     * logged-in service in any module of it; the bridge, in its source or either build, naming core_user/repository.
      */
     public function test_its_whole_import_graph_reaches_nothing_of_a_session(): void {
         $bridge = $this->graph(self::BRIDGE);
@@ -638,13 +635,13 @@ final class categorypublic_source_test extends \basic_testcase {
     /**
      * It calls the visitor's service and no other, posting with login not required and no cachekey.
      *
-     * core/ajax switches to a GET carrying the cachekey only when one is passed as the sixth
-     * argument; service.php then answers with ninety days of public caching, which would keep a
-     * withdrawn course in shared caches. Three arguments - async, and login not required - is a POST
-     * to service-nologin.php and nothing else.
+     * Core's ajax module switches to a GET carrying the cachekey only when one is passed in the
+     * options; service.php then answers with ninety days of public caching, which would keep a
+     * withdrawn course in shared caches. Options holding loginrequired false alone are a POST to
+     * service-nologin.php and nothing else.
      *
      * Changes that must make it fail: naming get_category_rows; a module of its graph calling a service;
-     * passing a cachekey (M.cfg.langrev or any other) to fetchOne, or login required (gate js_visitor_nologin).
+     * passing a cachekey (M.cfg.langrev or any other) to fetchOne, or login required.
      */
     public function test_it_calls_only_the_visitors_service_and_never_with_a_cachekey(): void {
         $source = $this->source();
@@ -1022,10 +1019,9 @@ final class categorypublic_source_test extends \basic_testcase {
      * is an event of its own and never reaches the click listener. The behaviour is Jest's; this is the
      * wiring and the spelling.
      *
-     * Changes that must make it fail: mounting the visitor's posters without links (gate
-     * js_public_posters_stay_links: buttons with no address); the component ignoring the option (gate
-     * js_panel_links_announced); intercepting a modified press (js_panel_modified_press); Space doing
-     * nothing on a poster (js_panel_space_toggles).
+     * Changes that must make it fail: mounting the visitor's posters without links (buttons with no
+     * address); the component ignoring the option; intercepting a modified press; Space doing nothing
+     * on a poster.
      */
     public function test_a_visitors_poster_stays_its_link_and_a_plain_press_opens_it(): void {
         $this->assertMatchesRegularExpression(
@@ -1098,10 +1094,9 @@ final class categorypublic_source_test extends \basic_testcase {
      * no prefetch: nothing asks on hover. The logged-in client names no question, and is asked every
      * time as it always was.
      *
-     * Changes that must make it fail: the visitor's question not handed to the component (gates
-     * js_public_question_named, js_areas_question_answered); asking an answered question again
-     * (js_panel_question_once); asking with no quiet (js_public_panel_quiet); dropping the ticket check
-     * after the quiet (js_panel_quiet_latest).
+     * Changes that must make it fail: the visitor's question not handed to the component, or not
+     * answered by it; asking an answered question again; asking with no quiet; dropping the ticket
+     * check after the quiet.
      */
     public function test_a_panels_question_is_asked_once_after_a_quiet(): void {
         $this->assertStringContainsString('question: panelQuestion,', $this->source());
@@ -1233,11 +1228,9 @@ final class categorypublic_source_test extends \basic_testcase {
      * on the form and never written; a client's focus on the search goes to the field or, folded, to its
      * icon. No area opens by itself on this shell.
      *
-     * Changes that must make it fail: the line or the calendar not handed over (gates js_public_line_armed,
-     * js_public_calendar_mounted); the line handed over after the calendar (js_public_line_before_calendar);
-     * the answer not told (js_public_line_answer_told); the field read where the component replaced it
-     * (js_public_line_input_delegated) or written into (js_public_erase_guard); the focus put on a folded
-     * field (js_public_focus_target); the automatic opening (js_public_no_autoopen).
+     * Changes that must make it fail: the line or the calendar not handed over; the line handed over after
+     * the calendar; the answer not told; the field read where the component replaced it, or written into;
+     * the focus put on a folded field; the automatic opening.
      */
     public function test_the_visitor_hands_its_controls_to_the_components(): void {
         $init = $this->body('init');
@@ -1321,11 +1314,11 @@ final class categorypublic_source_test extends \basic_testcase {
      * comments included. The controls: the walk reaches the shared modules, and from the logged-in shell it finds the
      * modules it forbids here, so a name the walk could not see is not what keeps this green.
      *
-     * Changes that must make it fail: the popover importing the description module again (gate cv_js_popover_no_core);
-     * a shared module naming the account's services (gate cv_js_model_no_account); the visitor's shell importing the
-     * logged-in one or its picker. The week view's modules are shared and walked like the month's. Core's
-     * editing is the logged-in shell's alone: a shared module importing calendar/editing or the popover's
-     * EditActions, or the bridge naming core's calendar modules, fails here (gate c5_js_bridge_names_nothing).
+     * Changes that must make it fail: the popover importing the description module; a shared module naming the
+     * account's services; the visitor's shell importing the logged-in one or its picker. The week view's modules
+     * are shared and walked like the month's. Core's editing is the logged-in shell's alone: a shared module
+     * importing calendar/editing or the popover's EditActions, or the bridge naming core's calendar modules,
+     * fails here.
      */
     public function test_the_public_calendar_reaches_nothing_of_a_session(): void {
         $graph = $this->graph(self::CALENDAR);
@@ -1357,8 +1350,8 @@ final class categorypublic_source_test extends \basic_testcase {
     /**
      * The public calendar calls its own service and no other, posted with login not required and no cachekey.
      *
-     * Changes that must make it fail: the service named otherwise; login required (gate cv_js_nologin); a cachekey
-     * passed; a second call site.
+     * Changes that must make it fail: the service named otherwise; login required; a cachekey passed; a second
+     * call site.
      */
     public function test_the_public_calendar_calls_only_its_service_and_never_with_a_cachekey(): void {
         $source = $this->source(self::CALENDAR);

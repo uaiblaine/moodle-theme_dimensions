@@ -126,7 +126,7 @@ final class remembered_test extends \advanced_testcase {
         ], remembered::for_category($categoryid), 'Control: a valid state is stored whole.');
 
         // Every value outside its vocabulary: an unknown organisation, view and chip, a field that is
-        // not on the site's filter list, an option the field does not have, and a value that is not a number.
+        // not on the site's filter list and an option the field does not have.
         remembered::record($categoryid, [
             remembered::KEY_SORT => 'bogus',
             remembered::KEY_VIEW => 'grid',
@@ -140,7 +140,8 @@ final class remembered_test extends \advanced_testcase {
             remembered::KEY_FIELDS => [$fieldid => 2],
         ], remembered::for_category($categoryid), 'Every value refused: the entry keeps what it held.');
 
-        // Of a set of field filters the valid ones are kept; a null forgets a key; nothing left is no entry.
+        // Of a set of field filters the valid ones are kept (an unknown field and a key that is not a
+        // field id are dropped); a null forgets a key; nothing left is no entry.
         remembered::record($categoryid, [remembered::KEY_FIELDS => [$fieldid => 3, $fieldid + 1000 => 1, 'x' => '1']]);
         $this->assertSame([$fieldid => 3], remembered::for_category($categoryid)[remembered::KEY_FIELDS]);
         remembered::record($categoryid, [
@@ -212,7 +213,7 @@ final class remembered_test extends \advanced_testcase {
     }
 
     /**
-     * However long the entries, the stored value fits core's column, the newest categories kept whole.
+     * However long the entries, the stored value fits {@see remembered::MAX_LENGTH}, the newest categories kept whole.
      */
     public function test_the_stored_value_always_fits_the_column(): void {
         $this->resetAfterTest();

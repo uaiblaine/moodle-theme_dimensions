@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for what the page may offer to edit and the instants core is handed (PROPOSAL.md section 23.3).
+ * Tests for what the page may offer to edit and the instants core is handed.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

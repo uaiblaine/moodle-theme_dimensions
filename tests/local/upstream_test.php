@@ -119,8 +119,8 @@ final class upstream_test extends \advanced_testcase {
     /**
      * The upstream of a method copy is the method it replaces, found through the parent class.
      *
-     * The control: Boost Union's course renderer does not override coursecat_subcategories(), so the upstream is
-     * core's, two classes up.
+     * The control: Boost Union's course renderer (and its intermediate class) does not override
+     * coursecat_subcategories(), so the upstream is core_course_renderer's.
      *
      * @return void
      */

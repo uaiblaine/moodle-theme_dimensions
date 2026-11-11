@@ -187,7 +187,7 @@ final class myprofile_renderer_test extends \advanced_testcase {
      * auth_loginsteps' Security category is drawn before every other, wherever it was added.
      *
      * A category with no "after" is appended where its plugin's callback added it, which is after
-     * core's own; the renderer is the one place that can put what the owner comes to change first.
+     * core's own; the renderer is the one place that can put first what a person comes to change.
      * The control is the order the tree itself holds.
      *
      * @return void

@@ -262,7 +262,7 @@ final class criteria_test extends \advanced_testcase {
     }
 
     /**
-     * The three parameters travel in the address, so the pager and the clear link keep them.
+     * The term, the organisation and the period travel in the address, so the pager and the clear link keep them.
      */
     public function test_the_parameters_round_trip_through_the_query(): void {
         $this->resetAfterTest();

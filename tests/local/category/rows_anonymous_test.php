@@ -42,8 +42,8 @@ require_once(__DIR__ . '/fixture.php');
 /**
  * What {@see rows::fetch()} answers a visitor, against what the anonymous page renders.
  *
- * The web service this method sits behind is logged-in only today, so nothing but this test
- * asks it a visitor's question. Four properties are pinned. The answer is the page's, card for
+ * {@see \theme_dimensions\external\get_public_category_rows} delegates to it with the anonymous
+ * flag on; this test asks it directly. Four properties are pinned. The answer is the page's, card for
  * card, whatever the site's forced login says and in both page-cutting modes. No address in it is
  * the logged-in shell's, which a visitor would land on the login form from. The visitor's merely
  * listed child is asked for as a slice of its parent and nothing else is: the same panel the page
@@ -98,7 +98,7 @@ final class rows_anonymous_test extends \advanced_testcase {
     /**
      * The four combinations every visitor test runs under: the site's forced login and the page-cutting mode.
      *
-     * Forced login off is the case where a visitor who is NOT asked as a visitor is served the
+     * Forced login off is the case where a visitor who is not asked as a visitor is served the
      * logged-in listing (user 0 may see every listed course then); forced login on is the case
      * where the same mistake is refused. A flag dropped on the way is a leak in the first and
      * an exception in the second, so a test holding only one of them proves half.
@@ -547,7 +547,7 @@ final class rows_anonymous_test extends \advanced_testcase {
             $this->assertStringNotContainsString('ZZ', json_encode($answer), $case);
         }
 
-        // Shape: eight at most, the child's public courses only, and fewer than the parent's whole listing.
+        // Shape: the child's public courses only, fewer than the parent's whole listing.
         $answer = $this->ask($root, ['sort' => 'name', 'slice' => $listed]);
         $this->assertSame(
             ['Curso da Neta', 'Curso Listado Publico', 'Zeta Curso Listado'],
@@ -706,10 +706,10 @@ final class rows_anonymous_test extends \advanced_testcase {
     /**
      * No export of cards reads the course contacts, a visitor's or a person's: only the course dialogue names them.
      *
-     * A statement count cannot see this on its own: the contacts are served from a cache that
-     * stays warm in the meter, so the meter empties it inside the metered call. The dialogue's
-     * content for the same course is the control that the contacts really cost a statement with
-     * the cache empty, and the warm runs are the control that the exports' cost is not the cache's.
+     * A statement count alone cannot see this: the contacts come from core's coursecontacts cache,
+     * so each export is counted warm and again with that cache purged inside the counted call; the
+     * two counts must agree. The dialogue's content for the same course is the control that the
+     * contacts really cost a statement with the cache empty.
      */
     public function test_no_export_of_cards_reads_course_contacts(): void {
         global $DB;

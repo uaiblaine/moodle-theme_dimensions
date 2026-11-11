@@ -164,7 +164,7 @@ final class course_badges_test extends \advanced_testcase {
     }
 
     /**
-     * The callback costs one statement of its own whatever the number of courses; the rest is what the values read.
+     * The callback's own statements are a fixed few whatever the number of courses; the rest is what the values read.
      *
      * Courses with no crest read the same at two and at eight. Courses with crests pay one statement for every badge
      * file of the call inside landingfields::values_many(); the callback's own reads are measured against

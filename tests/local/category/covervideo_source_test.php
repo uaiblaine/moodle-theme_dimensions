@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * Pins the invariants of the cover film by reading its source: amd/src/local/coverfilm.js, the film, and
  * amd/src/covervideo.js, the entry the page arms, which imports the film on the first intent towards a cover.
  *
- * Same shape and reasoning as {@see amd_source_test} and {@see daterange_source_test}: plugin CI
+ * Same shape and reasoning as {@see amd_source_test} and {@see daterange_component_source_test}: plugin CI
  * runs no JavaScript unit tests, so the properties of this module whose loss costs a wrong page
  * rather than a screenshot are pinned by reading its source, each assertion scoped to the function
  * it is about. The build-currency assertion at the foot is the only one that reads what a browser
@@ -467,9 +467,9 @@ final class covervideo_source_test extends \basic_testcase {
      *
      * A second press of the play control before the film has started pauses it while play() is
      * still pending, and the browser rejects that play() with an AbortError. Read as a refusal,
-     * the rejection stopped the band - rewound and forgotten - so the sound control's next press
-     * met a card at rest and started the film the reader had just paused. The Behat scenario
-     * "A finger pauses the film in place" meets this whenever the fixture loads slowly.
+     * the rejection would stop the band - rewound and forgotten - so the sound control's next press
+     * would meet a card at rest and start the film the reader had just paused. The Behat scenario
+     * "A finger pauses the film in place" reaches this path whenever the film loads slowly.
      *
      * Changes that must make it fail: reading every play() rejection as a refusal.
      */
@@ -575,9 +575,9 @@ final class covervideo_source_test extends \basic_testcase {
     /**
      * The module asks the server for nothing at all, which is what lets the anonymous shell have it.
      *
-     * The anonymous shell runs none of this theme's web services, and this is the one client
-     * module it loads. A module with no fetch in it is inside that rule rather than an exception
-     * to it, so the assertion is "no import" rather than "no core/ajax": the property that cannot
+     * The anonymous shell arms this module for every visitor, whether or not the site has opened
+     * the public listing's web service (request.php), so the film must work with no session and no
+     * service. The assertion is "no import" rather than "no core/ajax": the property that cannot
      * be eroded one import at a time.
      */
     public function test_the_module_asks_the_server_for_nothing(): void {
@@ -625,13 +625,13 @@ final class covervideo_source_test extends \basic_testcase {
     /**
      * Both shells arm the module, and the logged-in one arms it for everybody.
      *
-     * An arming inside the vitrine module's guard, which skips the guest, would leave the guest's
-     * pages without films, and the anonymous shell draws the same cards for visitors. Neither
+     * An arming inside the account client's guard (`isloggedin() && !isguestuser()`) would leave
+     * the guest's pages without films, and the anonymous shell draws the same cards for visitors. Neither
      * failure errors, and nothing else compares a module's name with the place it is armed, so the
      * two calls are read out of the two files.
      *
      * The indentation is what makes the assertion bite: at eight spaces the call is a statement of
-     * the method, and inside the vitrine module's `if` it would be at twelve.
+     * the method, and inside the account client's `if` it would be at twelve.
      */
     public function test_both_shells_arm_the_module(): void {
         $renderer = (string) file_get_contents($this->plugin_root() . '/classes/output/core/course_renderer.php');

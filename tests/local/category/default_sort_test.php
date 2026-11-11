@@ -82,8 +82,7 @@ final class default_sort_test extends \advanced_testcase {
     /**
      * An address naming no organisation gets the category's default, and the address still names nothing.
      *
-     * The category without a default is the control: its bare address is the grouped one, as
-     * before this setting existed.
+     * The category without a default is the control: its bare address is the grouped one.
      */
     public function test_an_address_naming_no_organisation_gets_the_categorys_default(): void {
         $this->resetAfterTest();
@@ -145,7 +144,7 @@ final class default_sort_test extends \advanced_testcase {
     }
 
     /**
-     * The default orders the page, and a grouped default without subcategories is the page of today.
+     * The default orders the page, and a grouped default without subcategories changes nothing.
      *
      * A flat default puts the courses in its order with no poster; a category whose stored default
      * is "By area" and that has no subcategory answers exactly as a category with no default does.

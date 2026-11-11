@@ -351,7 +351,7 @@ final class category_test extends \core\tests\router\route_testcase {
     }
 
     /**
-     * The ROOT answers a visitor with the same refusal as a nonexistent id while the site is closed.
+     * The root answers a visitor with the same refusal as a nonexistent id while the site is closed.
      *
      * The address exists - the route's plain integer parameter matches a 0 path segment and the
      * controller runs - and what a visitor gets is nevertheless the login page, because
@@ -406,7 +406,7 @@ final class category_test extends \core\tests\router\route_testcase {
         $this->assertStringContainsString('Brigada &amp; Resgate', $body, 'The public category is a card.');
         $this->assertStringNotContainsString('Categoria Interna', $body, 'A listed one has no card on the internet.');
         $this->assertStringNotContainsString('Curso Publico', $body, 'And a directory names no course at all.');
-        // Its search line, which a visitor submits: this shell arms no module to make it live.
+        // Its search line, which a visitor submits: with the client switch off, no module makes it live.
         $this->assertStringContainsString('dim-toolbar dim-toolbar--searchonly', $body, 'The search line.');
         $this->assertStringContainsString('dim-toolbar__submit dim-nojs-only', $body, 'With a button to submit it.');
         $this->assertStringNotContainsString('data-region="dim-filters"', $body, 'And no filter.');
@@ -477,7 +477,7 @@ final class category_test extends \core\tests\router\route_testcase {
     }
 
     /**
-     * The three ids a visitor's root has no poster for, each beside a search the root does not read.
+     * The three ids a visitor's root has no poster for, each sent with a search and a sort.
      *
      * @return array Case name => the id's kind.
      */
@@ -490,15 +490,14 @@ final class category_test extends \core\tests\router\route_testcase {
     }
 
     /**
-     * An open panel the visitor's root has no poster for is dropped, and the root reads no filter either.
+     * An open panel the visitor's root has no poster for is dropped, and the root reads no sort either.
      *
      * Each answers what the bare root answers - the same posters, no panel - so the parameter tells a
-     * visitor nothing about which ids exist or what they hold. And the chip beside it is not read: the
-     * root draws no control that could clear a filter, so a filter read there would narrow its panels
-     * and ride the hero's fold form with nothing on the page admitting it. That is the reason the root
-     * builds its request from its search and its open panel alone; a request read whole
-     * from the address carries the chip into the fold form, which the last assertion over it catches.
-     * The search IS read, and travels with the fold.
+     * visitor nothing about which ids exist or what they hold. The root builds its request from its
+     * search and its open panel alone ({@see criteria::root_from_request()}): it draws no control that
+     * could clear anything else, so a value read whole from the address would ride the hero's fold form
+     * with nothing on the page admitting it. The last assertion catches the sort carried there; the
+     * search is read, and travels with the fold.
      *
      * @param string $kind What the open parameter names: 'listed', 'grandchild' or 'bogus'.
      */
