@@ -799,7 +799,9 @@ final class categoryhero_test extends \advanced_testcase {
      * branding::single_file_areas() is what the form, form_data() and save() all read, so an
      * element offered with one option set, a draft prepared with a second and an area written
      * back with a third cannot happen: they are the same array. The identity assertion below is
-     * the whole of that property - the element's accepted types and limits are the list's.
+     * the whole of that property - the element's accepted types and limits are the list's. The types are
+     * compared expanded into extensions: tool_imagepicker's element, where it is installed, stores the list's
+     * 'web_image' that way, and the set is what is accepted.
      *
      * The second half needs the hero image beside it as the control: every file row of this form
      * is a manager. A file picker shows a name, offers no thumbnail and has no control that
@@ -821,14 +823,15 @@ final class categoryhero_test extends \advanced_testcase {
         $form = new categoryhero(null, ['categoryid' => $categoryid]);
         $quickform = self::quickform($form);
         $property = new \ReflectionProperty(\MoodleQuickForm_filemanager::class, '_options');
+        $typesutil = new \core_form\filetypes_util();
         foreach ($areas as $area => $options) {
             $element = $quickform->getElement($area);
             $this->assertSame('filemanager', $element->getType(), $area . ' is not a file manager.');
             $this->assertSame(1, (int) $options['maxfiles'], $area . ' would hold more than one file.');
             $this->assertSame(0, (int) $options['subdirs'], $area . ' would offer folders.');
-            $this->assertSame(
-                $options['accepted_types'],
-                $property->getValue($element)['accepted_types'],
+            $this->assertEqualsCanonicalizing(
+                $typesutil->expand($options['accepted_types']),
+                $typesutil->expand($property->getValue($element)['accepted_types']),
                 $area . ': the element was built with an option set of its own rather than with the list\'s.'
             );
         }

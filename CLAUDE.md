@@ -20,9 +20,13 @@ and, on deletion, cleared to 0 with the branding kept.
 Supports Moodle **5.3 only** (`$plugin->requires = 2026100500`, `$plugin->supported = [503, 503]`),
 on Boost Union's `MOODLE_503_STABLE` branch (v5.3-r1 onwards). Hard-depends on
 `theme_boost_union` (2026100500 or later) and `local_unlistedcourses` (2026100505);
-`customfield_picture`, `auth_loginsteps`, `local_page`, `tool_courserating` and `filter_shortcodes` (which reads `db/shortcodes.php`) are optional and asked for at run time,
+`customfield_picture`, `auth_loginsteps`, `local_page`, `tool_courserating`, `tool_imagepicker` and `filter_shortcodes` (which reads `db/shortcodes.php`) are optional and asked for at run time,
 never declared (`customfield_picture` through `landingfields::picture_type_available()`, `filter_shortcodes` through
-`core_component` and its config version, the other three by class name). CI is the fleet's fork of the moodle-an-hochschulen reusable workflow
+`core_component` and its config version, the other four by class name; `tool_imagepicker` through `local\imagepicker`,
+which draws every image field with its crop element where it is installed and core's file manager otherwise: the course
+form's picture fields are swapped in `after_form_definition::offer_image_picker()`, under the same name, so the draft
+area is the same either way; the share picture is cropped to `publicfiles::OG_WIDTH` x `OG_HEIGHT`, and the og
+derivative stays the one place that holds the 600 KB WhatsApp accepts). CI is the fleet's fork of the moodle-an-hochschulen reusable workflow
 (`uaiblaine/moodle-workflows`), one job in `.github/workflows/ci.yml` — **update it when `supported` changes**, and pin the matching Boost Union
 branch in `plugin-dependencies` at the same time (`MOODLE_503_STABLE`).
 The theme is mounted on the shared stack **m503** at `theme/dimensions`; the 5.2 history below
@@ -78,7 +82,7 @@ In a Claude Code cloud session none of `mdl`, the stacks, `~/dev/CLAUDE.md` or t
 exist. The cloud environment's setup script (`moodle-dev/cloud/setup.sh`) installs
 `moodle-plugin-ci` and the `mpci` runner instead, and `mpci` reads this repo's `ci.yml`: it installs
 `MOODLE_503_STABLE` with the `plugin-dependencies` (Boost Union's `MOODLE_503_STABLE`, `local_unlistedcourses`,
-and the optional `customfield_picture`, `local_page`, `block_compass`, `tool_courserating`, `mod_subcourse` and
+and the optional `customfield_picture`, `local_page`, `block_compass`, `tool_courserating`, `tool_imagepicker`, `mod_subcourse` and
 `filter_shortcodes`, all public) by itself.
 
 ```sh

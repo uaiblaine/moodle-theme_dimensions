@@ -73,6 +73,11 @@ jobs:
   # (upstream's MOODLE_405_STABLE, whose $plugin->supported is [405, 503]); the
   # tests skip themselves where it is absent.
   #
+  # tool_imagepicker is optional and NOT in version.php: where it is installed every image
+  # field of the theme (the landing page's picture fields, the category editor's images) is
+  # its crop element, otherwise core's file manager. It is here so the "with the plugin" half
+  # of tests/local/imagepicker_test.php runs; that half skips itself where it is absent.
+  #
   # behat-suite is required for a theme: core runs a theme's own features in a
   # suite named after the theme, never in the default one
   # (behat_config_util::get_behat_suites()), so without it every Behat job
@@ -93,3 +98,4 @@ jobs:
         marinaglancy/moodle-tool_courserating,MOODLE_405_STABLE
         uaiblaine/moodle-mod_subcourse,MOODLE_503_STABLE
         uaiblaine/moodle-filter_shortcodes,master
+        uaiblaine/moodle-tool_imagepicker,main
