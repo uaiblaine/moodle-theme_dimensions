@@ -1,8 +1,8 @@
 import{CLASSES as a,TOLERANCE as f,TRIES as g,paint as d}from"./steps";/**
  * What the filter line reads off the page: the width each step needs, and where its floating layers go.
  *
- * Every function here reads layout, and each says when it forces one. The steps' widths are measured
- * ONCE per content - the words, the counts, the slots - with the line under the measuring class (one
+ * Most functions here read layout, and each says when it forces one. The steps' widths are measured
+ * once per content - the words, the counts, the slots - with the line under the measuring class (one
  * row that never wraps, no transition, only the search shrinking, down to its step's floor) and every
  * cell of the scope drawn, a cell the counts hide shown for the measure and hidden again before anything
  * is painted: so a step follows the width and the language and never the numbers of the moment. A width change

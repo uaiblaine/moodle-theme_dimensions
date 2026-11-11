@@ -36,26 +36,19 @@ require_once($CFG->libdir . '/formslib.php');
 /**
  * The editor of a category's hero: a plain moodleform, complete without JavaScript.
  *
- * Never a dynamic_form: the page carries six file managers and must work with JavaScript off.
- * Four header sections - the category's own description, the appearance, the colours, the
- * public page - with short forms left on (setDisableShortforms(false)), so the accordion, its
- * expand-all control, the keyboard handling and core's own expansion of a section holding a
- * validation error come free; no JavaScript relocates any row. The colours' own section is the
- * whole two-column arrangement of the editor: the stylesheet lays that one fieldset out as a
- * grid and the contrast panel the module mounts inside it takes the right track, so the columns
- * are the form's and never a relocation. The colours are two free hex fields: with JavaScript
- * each carries a native colour swatch, and the pair gets a live preview on the band and the
- * contrast panel; with it off a manager types two hex values and still sees the stored pair.
- * What keeps an illegible hero off the site is not the widget but this form and
- * {@see branding::validate()} behind it: a value that is not a hex colour and a pair under
- * {@see branding::FLOOR} are both refused, with the measured ratio in the message. The pair is
- * the category's own only while "own colours" is ticked; unticked, the two fields are disabled,
- * show the pair the category inherits, and are neither validated nor stored.
+ * Not a dynamic_form: the page carries six file managers and must work with JavaScript off.
+ * Four header sections (description, appearance, colours, public page) with short forms left on
+ * (setDisableShortforms(false)), so core supplies the accordion, expand-all and the expansion of a
+ * section holding a validation error; no JavaScript relocates any row.
  *
- * The description section is the one field here that is not this plugin's: it edits core's own
- * coursecat description, in core's own editor with core's own options, and the page saves it
- * through core_course_category::update(). Everything a category page shows is therefore edited
- * on one screen, and core's page keeps working on the same data.
+ * The colours are two free hex fields. The JavaScript module adds a swatch, a live preview and a
+ * contrast panel, but the guard is this form and {@see branding::validate()}: a value that is not
+ * a hex colour and a pair under {@see branding::FLOOR} are refused. While "own colours" is
+ * unticked the fields are disabled, show the inherited pair, and are neither validated nor stored.
+ *
+ * The description section edits core's own coursecat description with core's editor options; the
+ * page saves it through core_course_category::update(), so core's category page keeps working on
+ * the same data.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -78,9 +71,8 @@ class categoryhero extends \moodleform {
         $mform->addElement('hidden', 'id', $categoryid);
         $mform->setType('id', PARAM_INT);
 
-        /* The category's own description, core's field in core's own editor. It is not this
-           plugin's column and is never written to this plugin's table: the page saves it through
-           core_course_category::update(), which is what fires course_category_updated and purges
+        /* Core's own category description, never stored in this plugin's table: the page saves it
+           through core_course_category::update(), which fires course_category_updated and purges
            core's caches. */
         $mform->addElement('header', 'descriptionheader', get_string('categoryhero_descriptionheader', self::COMPONENT));
         $mform->setExpanded('descriptionheader', true);
@@ -109,32 +101,25 @@ class categoryhero extends \moodleform {
         );
         $mform->addHelpButton('heroimage', 'categoryhero_image', self::COMPONENT);
 
-        /* The card's cover, its cover video and the three crests: five single-file areas, each a
-           file manager named after its file area, built from branding::single_file_areas() so
-           that the element, the draft area and the stored area are one name and one option set.
-           The area name is the contract - form_data() prepares and save() reads the draft under
-           it, so an element renamed here would store a manager's file nowhere at all, with the
-           page still saving and the form reopening empty.
+        /* The card's cover, its cover video and the three crests: one file manager per area of
+           branding::single_file_areas(), named after its file area. The area name is the contract:
+           form_data() prepares and save() reads the draft under it, so a renamed element would
+           silently store nothing.
 
-           A file manager and not a filepicker: a filepicker can only replace its file and has no
-           control that removes it. maxfiles is 1 in every one of the five option sets, so each
-           manager still holds one file per area.
+           A file manager with maxfiles 1, not a filepicker: a filepicker cannot remove its file.
 
-           The order is the list's: the still, the film, then the crests in badge order. The
-           video's limit is the site setting's and its extension list is a name check; the bytes
-           are read in validation() below. The crests' limit and vocabulary are the landing page's
-           own, so a crest a manager may put on a course is not refused on the course's
-           category - SVG among them (see branding::resolve()). */
+           The video's extension list is only a name check; its bytes are read in validation().
+           The crests take the landing page's limit and file types (SVG included, see
+           branding::resolve()), so a crest allowed on a course is allowed on its category. */
         foreach (branding::single_file_areas() as $area => $options) {
             $key = self::file_area_string($area);
             $mform->addElement('filemanager', $area, get_string($key, self::COMPONENT), null, $options);
             $mform->addHelpButton($area, $key, self::COMPONENT);
         }
 
-        /* The card's own text, beside the card's own files: what the card says in its parent's
-           grid instead of the beginning of the description, which the hero keeps showing. Plain
-           text capped at the length the card's excerpt is cut at, so a card with a text of its
-           own is never longer than one without. */
+        /* The card's own text in its parent's grid, in place of the description's excerpt (the hero
+           keeps the description). Capped at the excerpt's length, so a card with its own text is
+           never longer than one without. */
         $mform->addElement('text', 'cardsummary', get_string('categoryhero_cardsummary', self::COMPONENT), [
             'size' => 64,
             'maxlength' => branding::CARDSUMMARY_MAXLENGTH,
@@ -163,9 +148,8 @@ class categoryhero extends \moodleform {
             'client'
         );
 
-        /* The organisation an address naming none gets on this category. The vocabulary is the
-           address's own (criteria::SORTS), so a default is something a reader could have asked
-           for, and the toolbar's chips keep every other organisation one press away. */
+        /* The sort a listing address naming none gets on this category; the choices are the
+           address's own vocabulary (criteria::SORTS). */
         $mform->addElement(
             'select',
             'defaultsort',
@@ -176,21 +160,18 @@ class categoryhero extends \moodleform {
         $mform->setType('defaultsort', PARAM_ALPHA);
         $mform->setDefault('defaultsort', '');
 
-        /* The colours are a section of their own, which is what lets the stylesheet put the two
-           fields and the overlay in one column and the contrast panel the module mounts in the
-           other: the rows stay exactly where core drew them and a CSS grid over this fieldset's
-           container places them. A field belongs to the section it is declared after, so the
-           order of these calls is a layout decision. The overlay's hideIf names `layout`, in the
-           fieldset above: a dependency may cross a section, because M.form.initFormDependencies
-           works over the whole form. */
+        /* The colours get a section of their own so the stylesheet can lay this one fieldset out
+           as a two-column grid (fields and overlay, then the contrast panel the module mounts):
+           the rows stay where core drew them. A field belongs to the section it is declared after,
+           so the order of these calls is a layout decision. The overlay's hideIf on `layout` may
+           cross sections: M.form.initFormDependencies works over the whole form. */
         $mform->addElement('header', 'coloursheader', get_string('categoryhero_colours', self::COMPONENT));
         $mform->setExpanded('coloursheader', true);
 
-        /* Whether the pair is the category's own. Unticked, the category takes the pair of its
-           nearest ancestor that has one (branding::colours()), and the two fields below are
-           DISABLED rather than hidden: they show the inherited pair, which form_data() put there,
-           so the manager sees what the page draws and starts from it on ticking the box. The
-           sentence under the box names where the pair comes from. */
+        /* Unticked, the category takes the pair of its nearest ancestor that has one
+           (branding::colours()), and the two fields below are disabled rather than hidden: they
+           show the inherited pair form_data() put there, so ticking the box starts from what the
+           page draws. The static note names where the pair comes from. */
         $mform->addElement(
             'advcheckbox',
             'owncolours',
@@ -231,21 +212,17 @@ class categoryhero extends \moodleform {
         $mform->setDefault('overlay', branding::DEFAULT_OVERLAY);
         $mform->hideIf('overlay', 'layout', 'neq', branding::LAYOUT_IMAGE);
 
-        /* The last row of the colours section: the stored pair painted on a band with the
-           category's own name, server-rendered, so it is right with JavaScript off and the module
-           only has to keep it in step while the pair is typed. An `html` element and not a static
-           one: QuickForm's renderer appends it raw inside this fieldset's container
-           (HTML_QuickForm_html::accept() -> renderHtml()), which is the box the grid is drawn on,
-           and it carries no label column of its own. */
+        /* The stored pair on a band with the category's name, server-rendered so it is right with
+           JavaScript off. An `html` element, not a static one: QuickForm appends it raw inside this
+           fieldset's container (HTML_QuickForm_html::accept() -> renderHtml()), the box the grid is
+           drawn on, with no label column. */
         $mform->addElement('html', self::pair_preview($categoryid));
 
         $mform->addElement('header', 'publicheader', get_string('categoryhero_public', self::COMPONENT));
 
-        /* The short public description, above the long one, because it is what a share preview
-           and a search result show and the rich text is what a visitor reads on the page. The
-           maxlength attribute stops the field itself at the limit, so nobody writes 400
-           characters and then learns that half of them were never going to be shown; the server
-           refuses past it anyway, for a browser that ignores the attribute. */
+        /* The short public description (what a share preview and a search result show), above the
+           page's rich text. The maxlength attribute stops typing at the limit; validation() refuses
+           past it for a browser that ignores the attribute. */
         $mform->addElement('text', 'publicsummary', get_string('categoryhero_publicsummary', self::COMPONENT), [
             'size' => 80,
             'maxlength' => branding::PUBLICSUMMARY_MAXLENGTH,
@@ -268,7 +245,7 @@ class categoryhero extends \moodleform {
     }
 
     /**
-     * Server-side validation: every choice against its vocabulary, the tagline against its length.
+     * Server-side validation: choices, colours and their contrast, the cover video, lengths, public text addresses.
      *
      * @param array $data The submitted data.
      * @param array $files The submitted files.
@@ -282,9 +259,8 @@ class categoryhero extends \moodleform {
         if (branding::sort_choice((string) ($data['defaultsort'] ?? '')) === null) {
             $errors['defaultsort'] = get_string('categoryhero_invalidchoice', self::COMPONENT);
         }
-        /* The colours are asked about only when they are the category's own: unticked, the
-           fields are disabled, post nothing and store nothing, so a refusal on them would name a
-           value the manager cannot even edit. */
+        /* Colours are validated only when they are the category's own: unticked, the fields are
+           disabled and post nothing, so a refusal would name a value the manager cannot edit. */
         $owncolours = !empty($data['owncolours']);
         $bgcolour = $owncolours ? branding::hex((string) ($data['bgcolour'] ?? '')) : branding::DEFAULT_BG;
         if ($bgcolour === null) {
@@ -294,9 +270,8 @@ class categoryhero extends \moodleform {
         if ($inkcolour === null) {
             $errors['inkcolour'] = get_string('categoryhero_invalidcolour', self::COMPONENT);
         }
-        /* The floor is asked only of a pair that parsed: a ratio measured against a default
-           standing in for a value the person has still to fix would name a number they cannot
-           act on, on a field they did not type. */
+        /* The contrast floor is checked only on a pair that parsed: a ratio against a default
+           standing in for an invalid value would be a number the person cannot act on. */
         if ($bgcolour !== null && $inkcolour !== null) {
             $ratio = branding::contrast($bgcolour, $inkcolour);
             if ($ratio < branding::FLOOR) {
@@ -315,11 +290,9 @@ class categoryhero extends \moodleform {
         if (branding::overlay($data['overlay'] ?? null) === null) {
             $errors['overlay'] = get_string('categoryhero_invalidchoice', self::COMPONENT);
         }
-        /* The cover video is refused here, with a message on its own field, rather than stored
-           and then withheld by the route: a manager who uploads a file that is not a video would
-           otherwise save a page that looks saved and get a card that never plays, with nothing
-           anywhere saying why. The route and the cached payload refuse it as well, because this
-           form is not the only way into the file area. */
+        /* A file that is not a video is refused here, on its field, rather than stored and then
+           silently withheld by the file route. The route and the cached payload refuse it as well,
+           because this form is not the only way into the file area. */
         $videoerror = self::covervideo_error($data[branding::AREA_COVERVIDEO] ?? 0);
         if ($videoerror !== null) {
             $errors[branding::AREA_COVERVIDEO] = $videoerror;
@@ -330,10 +303,9 @@ class categoryhero extends \moodleform {
         if (\core_text::strlen(trim((string) ($data['cardsummary'] ?? ''))) > branding::CARDSUMMARY_MAXLENGTH) {
             $errors['cardsummary'] = get_string('maximumchars', '', branding::CARDSUMMARY_MAXLENGTH);
         }
-        /* The public page text is link-only, and a paste or a drag-and-drop is the one way a file
-           can still reach it. The address it leaves behind is refused here, on the field, rather
-           than stored as a picture nobody else can see; branding::UNSERVABLE_ADDRESS says why
-           each shape breaks. */
+        /* The public page text is link-only; a paste or a drag-and-drop can still leave a draft,
+           data: or blob: address in it, which is refused here rather than stored as a picture
+           nobody else can see. See branding::UNSERVABLE_ADDRESS. */
         $publictext = (string) ($data['publicdescription_editor']['text'] ?? '');
         if (branding::holds_unservable_address($publictext)) {
             $errors['publicdescription_editor'] = get_string('categoryhero_publictext_nofiles', self::COMPONENT);
@@ -351,43 +323,27 @@ class categoryhero extends \moodleform {
     /**
      * The public page text editor's options: its media controls hand back an address and nothing else.
      *
-     * Every value here is load-bearing. On 5.2 the multimedia button and the media manager cannot
-     * open on an editor without a draft area: `lib/form/editor.php` builds `$fpoptions` only when
-     * `maxfiles != 0`, and `tiny_media`'s embed dialogue dereferences it unguarded
-     * (`embed/embed.js`, the constructor) where its image dialogue tests
-     * `typeof options !== 'undefined'` first. It is a core defect, `return_types` cannot reach
-     * it, and `maxfiles` is the only lever - so the button works exactly when this editor has a
-     * draft area, and the rest of this option set is what makes that draft area unusable.
+     * Every value here is load-bearing. Core's multimedia dialogue cannot open on an editor without
+     * a draft area: `lib/form/editor.php` builds the file-picker options only when `maxfiles != 0`,
+     * and `tiny_media`'s embed dialogue reads them unguarded (`embed/embed.js`, the constructor),
+     * where its image dialogue tests `typeof options !== 'undefined'` first. So the editor gets a
+     * draft area, and the rest of the set makes it unusable:
      *
      * - `maxfiles => 1` builds the file-picker options, so the dialogue opens.
-     * - `return_types => FILE_EXTERNAL` makes it link-only: `initialise_filepicker()` keeps only
-     *   repositories that can return an external address, which leaves `areafiles`, `url` and
-     *   `wikimedia` and drops `upload`. Both dialogues compute their drop zone as "some
-     *   repository of type upload" (`image/image.js`, `embed/embed.js`), so with `upload` gone
-     *   there is no drop zone and no upload path on either. The media manager is the one
-     *   exception, and it is core's own doing: `manage.php` clears FILE_EXTERNAL out of the
-     *   value it is handed ("links are allowed in textarea but never allowed in filemanager"),
-     *   which for a FILE_EXTERNAL-only editor leaves 0 - and `MoodleQuickForm_filemanager`
-     *   reads 0 as `empty()` and restores FILE_INTERNAL | FILE_REFERENCE | FILE_CONTROLLED_LINK
-     *   in its place. So that one file manager does keep an upload repository, and says so with
-     *   a drop target; the next option is what stops anything landing in it.
-     * - `maxbytes => 1` and `areamaxbytes => 1` back that up: anything that did reach a
-     *   repository upload - a paste of an image, a file dragged into the body, both of which go
-     *   through `editor_tiny/uploader` whatever these options say, and the media manager's
-     *   restored upload repository above - is refused for its size before a byte is stored.
-     *   `areamaxbytes` is the half that matters, because an admin is exempt from `maxbytes`
-     *   alone (`get_user_max_upload_file_size()` answers USER_CAN_IGNORE_FILE_SIZE_LIMITS for
-     *   anybody holding `ignorefilesizelimits`). The paste fails earlier still, because that
-     *   uploader looks for a repository of type `upload` to name in its POST and finds none.
+     * - `return_types => FILE_EXTERNAL` keeps only repositories that return an external address,
+     *   dropping `upload`, so neither dialogue offers a drop zone. Exception: the media manager
+     *   (`tiny/plugins/media/manage.php`) strips FILE_EXTERNAL, leaving 0, which
+     *   `MoodleQuickForm_filemanager` reads as empty and replaces with
+     *   FILE_INTERNAL | FILE_REFERENCE | FILE_CONTROLLED_LINK, so that one manager keeps an upload.
+     * - `maxbytes => 1` and `areamaxbytes => 1` refuse whatever still reaches an upload (that
+     *   manager, a pasted or dragged image through `editor_tiny/uploader`) before a byte is stored.
+     *   `areamaxbytes` is the half that matters: holders of `moodle/course:ignorefilesizelimits`
+     *   are exempt from `maxbytes` alone.
      *
-     * This text has no file area and must not get one. The draft area the element mints is
-     * never handed to `file_save_draft_area_files()` by anything - {@see branding::save()} writes
-     * the row's text and the branding's own areas, and none of them is this one - so a file
-     * that somehow reached it would be an orphaned draft that core's own cleanup deletes.
-     * {@see branding::holds_unservable_address()} is the other half, and it refuses rather than
-     * strips: an address that cannot survive the trip to a public page (a draft file, a `blob:`
-     * or a `data:` URI) makes {@see branding::validate()} throw and {@see validation()} report
-     * `categoryhero_publictext_nofiles` on this field.
+     * The draft area is never saved by {@see branding::save()}, so a file that reached it stays an
+     * orphaned draft for core's cleanup. {@see branding::holds_unservable_address()} refuses (rather
+     * than strips) a draft, `blob:` or `data:` address: {@see validation()} reports
+     * `categoryhero_publictext_nofiles` and {@see branding::validate()} throws for other callers.
      *
      * @return array The options the editor element takes.
      */
@@ -403,11 +359,9 @@ class categoryhero extends \moodleform {
     /**
      * The language string key of one single-file area's label and its help button.
      *
-     * A literal per area rather than a name composed from the badge's position, so every key can
-     * be found by searching for it; this is also the only place that says which row of the form
-     * each of {@see branding::single_file_areas()} is. An area with no entry here is a
-     * programming error and says so, rather than rendering a row labelled with a missing-string
-     * notice - which on 5.2 under developer debugging is an uncaught error page, not a warning.
+     * A literal per area rather than a composed name, so every key can be found by searching for it.
+     * An area with no entry here is a programming error and throws, rather than rendering a row
+     * labelled with a missing-string notice.
      *
      * @param string $area One of the areas of {@see branding::single_file_areas()}.
      * @return string The key both packs carry, for the label and for `<key>_help`.
@@ -427,12 +381,9 @@ class categoryhero extends \moodleform {
     /**
      * What is wrong with the cover video a file manager has just posted, or null when nothing is.
      *
-     * A file manager never posts a file. It posts the id of a draft area holding one
-     * (lib/form/filemanager.php), so $files is empty here and the bytes have to be read out of
-     * that area - which is also the only place they exist before the form is saved. A draft id
-     * of zero is "no element was submitted", which is not a refusal; an empty draft area is the
-     * manager having removed the film, which is not a refusal either, and the loop below simply
-     * has nothing to grade.
+     * A file manager posts the id of a draft area, not a file, so $files is empty in validation()
+     * and the bytes are read from that draft area. A draft id of zero (no element submitted) and an
+     * empty draft area (the film removed) are not refusals.
      *
      * @param mixed $draftitemid The draft area the file manager submitted, 0 when there was none.
      * @return string|null The message for the field, or null.
@@ -463,17 +414,13 @@ class categoryhero extends \moodleform {
     /**
      * The pair preview: the category's own name on the solid band, in the pair it draws.
      *
-     * The colours reach a `style` attribute, and Mustache's escaping does not protect a CSS
-     * context (the hero's inline style is this feature's other such sink), so both halves pass
-     * {@see branding::hex()} here and a stored value that is not a hex colour is replaced by the
-     * default for its half - which is also what the field above it shows, so the band and the
-     * fields agree.
+     * The colours reach a `style` attribute, a CSS context Mustache's escaping does not protect, so
+     * both halves pass {@see branding::hex()} here and a stored value that is not a hex colour is
+     * replaced by its half's default.
      *
-     * A pair of the category's own is read raw, deliberately not through
-     * {@see branding::record()}, which sanitises on the way out: with the value arriving clean, the
-     * hex() calls here could be deleted without any test noticing, and they are the guard between
-     * a stored string and an inline style. Without a pair of its own the band shows the inherited
-     * pair, from {@see branding::colours()} - the pair the fields show and the page draws.
+     * A pair of the category's own is read raw, not through {@see branding::record()} (which
+     * sanitises on the way out), so the hex() calls here are the guard a test can observe. Without
+     * a pair of its own the band shows the inherited pair from {@see branding::colours()}.
      *
      * @param int $categoryid The category being edited.
      * @return string The rendered block, appended raw inside the colours fieldset.
@@ -489,7 +436,7 @@ class categoryhero extends \moodleform {
         $inkcolour = branding::hex((string) ($row?->inkcolour ?? '')) ?? branding::DEFAULT_INK;
         $category = \core_course_category::get($categoryid, IGNORE_MISSING, true);
         return $OUTPUT->render_from_template('theme_dimensions/categoryhero_pairpreview', [
-            // The PLAIN spelling: the template double-stashes the name, which escapes it once.
+            // The plain spelling: the template double-stashes the name, which escapes it once.
             'name' => $category ? $category->get_formatted_name(['escape' => false]) : '',
             'style' => 'background-color: ' . $bgcolour . '; color: ' . $inkcolour . ';',
         ]);
@@ -518,12 +465,10 @@ class categoryhero extends \moodleform {
     /**
      * Core's own options for the category description editor, for a category that exists.
      *
-     * A copy of core_course_editcategory_form::get_description_editor_options() (5.2), including
-     * the subdirs probe, because the two editors write into the same file area - coursecat /
-     * description, item 0, the category's context - and core's own page keeps editing it. A
-     * narrower option set here would drop files core's page accepted: maxfiles unlimited and
-     * noclean are core's, and lowering either would silently rewrite what a colleague saved on
-     * /course/editcategory.php.
+     * Mirrors {@see \core_course_editcategory_form::get_description_editor_options()}, subdirs probe
+     * included; keep in step. Both editors write the same file area (coursecat / description, item 0,
+     * the category's context), so a narrower set (fewer files, noclean off) would silently rewrite
+     * what was saved on /course/editcategory.php.
      *
      * @param int $categoryid The category.
      * @return array The editor options.
@@ -547,13 +492,12 @@ class categoryhero extends \moodleform {
     /**
      * The sentence under "own colours": where the pair comes from while the category has none of its own.
      *
-     * Asked about the PARENT, never the category: with a pair of its own the category's resolution
+     * Resolved from the parent, never the category: with a pair of its own the category's resolution
      * names itself, and the sentence is about what unticking the box would give. The source's name
-     * is printed only when the viewer may see that category on both counts: core's visibility
-     * (core_course_category::get() without the hidden flag answers null otherwise) and
-     * local_unlistedcourses' state (an unlisted category is withheld whatever core says). A manager
-     * of this category is not necessarily one of the category above it, and a withheld name is not
-     * this form's to reveal.
+     * is printed only when the viewer may see that category under core's visibility
+     * (core_course_category::get() without the hidden flag answers null otherwise) and under
+     * local_unlistedcourses (an unlisted category is withheld): a manager of this category need not
+     * manage the one above it.
      *
      * @param int $categoryid The category being edited.
      * @return string The sentence, HTML: the name in it is formatted and escaped once.
@@ -573,10 +517,9 @@ class categoryhero extends \moodleform {
     }
 
     /**
-     * The default organisation choices, labelled: the theme's, then the three the toolbar offers.
+     * The default sort choices, labelled: the theme's, then the three the toolbar offers.
      *
-     * Keyed by {@see criteria::SORTS}, the address's own vocabulary, and labelled with the
-     * toolbar's own strings, so the editor and the chips name each organisation alike.
+     * Keyed by {@see criteria::SORTS} and labelled with the toolbar's own strings.
      *
      * @return string[] value => label.
      */

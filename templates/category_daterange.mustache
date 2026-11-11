@@ -22,11 +22,13 @@
     two months that both boxes open. Either bound may be set alone; the server
     states what each keeps (criteria).
 
-    Only the client module (daterange) renders it. A reader without JavaScript
-    gets the toolbar's two native date fields, which stay in the document under
-    this control and keep carrying the two parameters the form posts; that is
-    why the toolbar mounts it into an empty region rather than drawing a
-    skeleton of it.
+    No page renders it: the client's DateRange component
+    (js/esm/src/daterange/DateRange.tsx) draws this markup itself, hook for
+    hook, and this template is its reference, rendered by the template lint and
+    card_markup_test. A reader without JavaScript gets the toolbar's two native
+    date fields, which stay in the document under this control and keep
+    carrying the two parameters the form posts; that is why the toolbar mounts
+    the control into an empty region rather than drawing a skeleton of it.
 
     Each box is a button and not an input: its value is never typed and it
     opens a disclosure. Both carry the same aria-controls, the popover's id,

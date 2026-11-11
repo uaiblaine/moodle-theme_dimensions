@@ -19,11 +19,12 @@ import { jsxDEV } from "react/jsx-dev-runtime";
  *   the day's items (its bars, its own items, its "+N"), Escape goes back to the day. The items are links and
  *   buttons out of the Tab order, so Tab from a day leaves the grid as from any other control.
  *
- * ONE ResizeObserver measures the grid, never per cell and never read on the mount path (its first entries are the
+ * One ResizeObserver measures the grid, never per cell and never read on the mount path (its first entries are the
  * first measures): the rows' container, whose height decides the density (until then the stylesheet's height stands,
- * layout.ROW_DEFAULT), and the frame the grid shares with the drawer, whose width decides the phone layout
- * ({@see PHONE}). The frame, not the grid: the open drawer narrows the grid, and the grid's own width would flip the
- * layout to the phone's the moment the drawer opened.
+ * layout.ROW_DEFAULT); the grid itself, whose height is handed to the page (onHeight) to cap the drawer; and the
+ * frame the grid shares with the drawer, whose width decides the phone layout ({@see PHONE}). The frame, not the
+ * grid: the open drawer narrows the grid, and the grid's own width would flip the layout to the phone's the moment
+ * the drawer opened.
  *
  * @module     theme_dimensions/calendar/MonthGrid
  * @copyright  2026 Anderson Blaine
@@ -181,12 +182,12 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-            lineNumber: 268,
+            lineNumber: 269,
             columnNumber: 21
           }
         )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 266,
+          lineNumber: 267,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("div", { ref: rows, className: "dim-cal__weeks", role: "rowgroup", children: weeks.map((week, index) => /* @__PURE__ */ jsxDEV(
@@ -209,12 +210,12 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-            lineNumber: 277,
+            lineNumber: 278,
             columnNumber: 21
           }
         )) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-          lineNumber: 275,
+          lineNumber: 276,
           columnNumber: 13
         })
       ]
@@ -223,7 +224,7 @@ const MonthGrid = /* @__PURE__ */ __name((props) => {
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/MonthGrid.tsx",
-      lineNumber: 253,
+      lineNumber: 254,
       columnNumber: 9
     }
   );

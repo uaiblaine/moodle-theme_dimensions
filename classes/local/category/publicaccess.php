@@ -106,7 +106,7 @@ final class publicaccess {
      * Off unless an explicit '1' opens it, like {@see root_enabled()}: a new endpoint on the
      * internet is opened on purpose, never by an upgrade arriving.
      *
-     * Read BESIDE {@see is_public()}, never inside it. is_public() is the gate of the public page,
+     * Read beside {@see is_public()}, never inside it. is_public() is the gate of the public page,
      * the forward of /course/index.php, the image route and the head tags, so a switch folded into
      * it would take every public page off the internet while this default is off. The web service
      * asks both.

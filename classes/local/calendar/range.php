@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - One month grid of the calendar, in one answer.
+ * Theme Dimensions - One window of the calendar, in one answer.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -41,7 +41,7 @@ use theme_dimensions\local\landingfields;
  * where core's month view exports it ten times. An item's url is its own page where it has one (an activity, a
  * category, an event course's landing page); an item that links to its course's page carries '' and the course
  * carries the page once (`courses[].url`), the site's home standing for it when there is no course. It holds
- * no HTML, no description and no image data: the course image is an ADDRESS ({@see cards::images()}, core's
+ * no HTML, no description and no image data: the course image is an address ({@see cards::images()}, core's
  * course_image answer read in bulk), never the generated pattern, which is far heavier than an address.
  *
  * The statements are flat in the number of events: everything read per course (the rows, their context,
@@ -328,7 +328,7 @@ final class range {
             "SELECT e.courseid, COUNT(DISTINCT ue.userid)
                FROM {enrol} e
                JOIN {user_enrolments} ue ON ue.enrolid = e.id
-              JOIN {user} u ON u.id = ue.userid
+               JOIN {user} u ON u.id = ue.userid
               WHERE e.courseid {$insql} AND e.status = :instanceenabled AND ue.status = :rowactive
                     AND u.deleted = 0 AND u.suspended = 0
                     AND ue.timestart <= :nowstart AND (ue.timeend = 0 OR ue.timeend > :nowend)
@@ -352,7 +352,7 @@ final class range {
      * Named when core lets the viewer see the category ({@see \core_course_category::get()} without
      * $alwaysreturnhidden answers null otherwise, from its record cache) and local_unlistedcourses does not
      * withhold it. The pair is branding::colours(), one statement for all of them, taken whole. Shared with the
-     * Trilhas view's answer ({@see trails::answer()}), which names its trails' and steps' categories by the same rule.
+     * Trails view's answer ({@see trails::answer()}), which names its trails' and steps' categories by the same rule.
      *
      * @param int[] $categoryids The categories.
      * @return array category id => ['id', 'name', 'bg', 'ink'].

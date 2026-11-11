@@ -29,7 +29,7 @@ use theme_dimensions\local\landingfields;
 /**
  * A trail: a course whose page model is {@see landingfields::MODEL_TRAIL}, and its steps, in the order the course shows them.
  *
- * The one reader of a trail's structure, for the landing page and the calendar's Trilhas view alike. Deciding that a
+ * The one reader of a trail's structure, for the landing page and the calendar's Trails view alike. Deciding that a
  * course IS a trail is the caller's, from its model; this class reads the steps of whatever course it is given. The
  * theme stores nothing of its own: the steps are the course's Subcourse activities, read from core's modinfo, and the
  * courses they refer to come from one statement for any number of trails.

@@ -33,47 +33,32 @@ use theme_dimensions\local\landing\redirector;
 /**
  * Ghosts what this user must not discover, forwards the enrolment page to the landing page, and points the guest home.
  *
- * after_config is the only moment early enough: enrol/index.php redirects on
- * its own several lines in (not-logged-in users to the login page, enrolled
- * users to the course), so anything later never sees the request. The
- * callback reads the request shape and delegates every real decision to
- * {@see redirector}, which is where the unit tests live.
+ * after_config is the only moment early enough: enrol/index.php redirects on its own a few
+ * lines in (visitors to the login page, enrolled users to the course). The callback reads the
+ * request shape and delegates every decision to {@see redirector}, where the unit tests live.
  *
- * Five request shapes are read. /enrol/index.php and /course/info.php are
- * ghosted over the COURSE they name, the first of them then forwarded to the
- * landing page; /course/index.php?categoryid=N is forwarded for a VISITOR to the
- * public page of a category the site serves anonymously, and otherwise ghosted
- * over the CATEGORY, which is what makes a guessed category URL answer the
- * same as a guessed course one. Without it the theme's renderer would withhold
- * the category from every listing and the page itself would still name it in
- * the heading, the breadcrumb and the title.
+ * The request shapes read:
+ * - every web request: the guest account's home page ({@see guesthome}), an in-memory override
+ *   of defaulthomepage that must be in place before index.php or the navigation reads it.
+ *   lib/setup.php dispatches after_config once the session has started, so isguestuser() reads
+ *   the real session. It reads no $SCRIPT, because under the router $SCRIPT is /r.php;
+ * - /enrol/index.php and /course/info.php: ghosted over the course they name, the first then
+ *   forwarded to the landing page;
+ * - /course/index.php?categoryid=N: a visitor is forwarded to the public page of a category the
+ *   site serves anonymously; a logged-in user other than the guest account is ghosted over the
+ *   category, so a guessed category URL answers as a guessed course one does instead of naming
+ *   the category in the heading, breadcrumb and title. The two never collide: one is for visitors, the other for
+ *   logged-in users;
+ * - /calendar/view.php: forwarded to the theme's calendar page ({@see coreview});
+ * - /calendar/export_execute.php: core's iCal feed, answered by the theme's copy ({@see ical})
+ *   so the feed withholds what the page withholds. That script defines NO_MOODLE_COOKIES, but
+ *   lib/setup.php still dispatches after_config for it.
  *
- * /calendar/view.php is the fourth: every view of core's calendar is forwarded to the theme's calendar page
- * ({@see coreview}), before core's view spends its ~1.2 s on a page the reader never sees. The fifth is
- * /calendar/export_execute.php, core's iCal feed, answered by the theme's copy of it ({@see ical}) under the same
- * switch, so the feed withholds the categories the page withholds. That script defines NO_MOODLE_COOKIES; the hook
- * still runs for it, since lib/setup.php dispatches after_config for every web request, last, once the session (an
- * empty one there), the language and $PAGE exist.
- *
- * The two answers of the category branch cannot collide: the forward is only
- * ever taken by somebody who is not logged in, and the ghost only by somebody
- * who is, so the order between them is a matter of cost and not of precedence.
- *
- * Before any of that, and on every web request whatever its script, the guest account's home
- * page is decided ({@see guesthome}): an in-memory override of defaulthomepage, which has to be
- * in place before index.php or any navigation reads it. after_config is dispatched by
- * lib/setup.php after the session has started, so isguestuser() reads the real session, and the
- * router's requests load lib/setup.php too (moodle_bootstrap_middleware::load_full_moodle()),
- * where $SCRIPT is /r.php - which is why that branch reads no $SCRIPT at all.
- *
- * The category and calendar branches have no unit test, and cannot have one: the callback
- * reads $SCRIPT and ends the request with redirect(). Its guards are Behat
- * scenarios - "Guessing the URL of an unlisted category reveals nothing about
- * it" in tests/behat/theme_dimensions_unlisted.feature, with the
- * listed category beside it as the control, and the visitor forward in
- * tests/behat/theme_dimensions_category.feature, with the public
- * category as the case and a listed and an unlisted one as its controls. The calendar decision is
- * coreview_test's, and the redirect is theme_dimensions_calendar.feature's.
+ * The category and calendar branches read $SCRIPT and end the request with redirect(), so they
+ * have no unit test. Their guards are Behat scenarios: "Guessing the URL of an unlisted category
+ * reveals nothing about it" (theme_dimensions_unlisted.feature), the visitor forward
+ * (theme_dimensions_category.feature) and the calendar redirect
+ * (theme_dimensions_calendar.feature); the calendar decision itself is coreview_test's.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -105,17 +90,14 @@ class after_config {
         $script = (string) ($SCRIPT ?? '');
         if ($script === '/course/index.php') {
             $categoryid = optional_param('categoryid', 0, PARAM_INT);
-            /* The id 0 is the root of the course index and is decided by the same two calls as
-               any other id: the forward asks category_page_target(0), which asks whether the
-               site serves the root anonymously, and the ghost below answers false for it by its
-               own guard - the pseudo-category holds no row, so it can be withheld from nobody.
+            /* The id 0 (the root of the course index) goes through the same two calls: the
+               forward asks whether the site serves the root anonymously, and the ghost answers
+               false for the pseudo-category, which holds no row.
 
                Decide inside the try and redirect outside it: redirect() ends the request, and
-               running it inside a catch-all would put the whole of Moodle's shutdown path under
-               this handler. The course branch below follows the same rule. */
+               inside a catch-all it would put Moodle's whole shutdown path under this handler. */
             try {
-                // Only a visitor is ever forwarded, and the request's own parameters are read
-                // only once there is a forward to carry them: nobody else pays for them.
+                // Only a visitor is forwarded; the request's parameters are read only then.
                 $target = isloggedin() ? null : redirector::category_page_target($categoryid);
                 if ($target !== null) {
                     $target->params(request::forwarded_params($categoryid));

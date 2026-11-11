@@ -36,22 +36,22 @@ use theme_dimensions\local\trail\display;
  * The related contents' one reader: which courses relate to a set of competencies, in what order, and which of them
  * the current reader may be shown.
  *
- * The plan is docs/related/PLAN.md. A candidate is a course, other than the ones excluded, linked to at least one
+ * A candidate is a course, other than the ones excluded, linked to at least one
  * competency of the set ({competency_coursecomp}). {@see rank()} orders them, purely: in automatic mode by tier
  * (identical set, then a course that grants a shared competency, then any course sharing one) and overlap, in manual
  * mode by how many of the chosen competencies a course covers; then the nearest start date and the name.
  *
  * Who is shown what is decided in two places, so a block is never left empty by refusals at the head of the ranking.
  * The candidates' statement already leaves out every course the gate would refuse for a reason the database can
- * tell (D10, D11): a hidden course, a frozen one while context freezing is on, for a visitor any course that is not
- * public by its own state and its category path, for an account the courses it is enrolled in or has completed (D5).
+ * tell: a hidden course, a frozen one while context freezing is on, for a visitor any course that is not
+ * public by its own state and its category path, for an account the courses it is enrolled in or has completed.
  * Then {@see find()} asks the reader's gate, the authority, slice by slice of the ranking, so its statements are
  * bounded by the number of cards asked for, never by the site: the trail's gate without its ghosts ({@see display}),
  * since a list of suggestions has no position for a ghost to keep. What the gate still refuses after the statement
  * is what depends on the account (a category closed to it, an unlisted course it has no way into), and the slices
  * reach past those.
  *
- * Nothing is stored and nothing is cached across requests (D39): one statement for the set, one for the candidates,
+ * Nothing is stored and nothing is cached across requests: one statement for the set, one for the candidates,
  * then per slice the rows and the gate.
  *
  * @package    theme_dimensions
@@ -124,8 +124,8 @@ final class finder {
      * The competencies a manual choice names, by the framework's idnumber and theirs, one statement.
      *
      * A competency idnumber is unique only inside its framework, a framework idnumber on the whole site, so a choice
-     * names one framework (D9). With a parent course, a competency not linked to it is not found: a manual choice
-     * picks among the parent's competencies (D4 allows any only where there is no parent).
+     * names one framework. With a parent course, a competency not linked to it is not found: a manual choice
+     * picks among the parent's competencies. Without one, any competency of the framework is found.
      *
      * @param string $framework The framework's idnumber.
      * @param string[] $idnumbers The competencies' idnumbers, inside that framework.
@@ -357,14 +357,14 @@ final class finder {
      * cost a card, never show one, while a term that refused too much would hide a course the reader may see. Hence
      * only refusals that hold for every reader of the kind:
      *
-     * - beside the statement's own `c.visible = 1` (D11: a hidden course is no suggestion, not even to a reader who
-     *   may open it), a frozen course while core's context freezing is on, its own context or any above it locked
-     *   (D10): core refuses every write capability there, self-enrolment included ({@see \core\context::is_locked()});
+     * - beside the statement's own `c.visible = 1` (a hidden course is no suggestion, not even to a reader who
+     *   may open it), a frozen course while core's context freezing is on, its own context or any above it locked:
+     *   core refuses every write capability there, self-enrolment included ({@see \core\context::is_locked()});
      * - a visitor: a course public by its own state, in a category path holding no hidden and no unlisted category,
      *   the terms of {@see discoverability::are_public()}; the plugin's answer is still asked of every card, and it
      *   fails closed where these terms cannot (a missing ancestor);
      * - an account: none it is enrolled in, in any state, or has completed, read on its own because an account may
-     *   have completed a course it is no longer enrolled in (D5).
+     *   have completed a course it is no longer enrolled in.
      *
      * @return array ['join' => string, 'where' => string, 'params' => array], over the aliases c and ctx.
      */

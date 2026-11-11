@@ -298,6 +298,20 @@ describe('theme_dimensions/listing/account', () => {
         await jest.advanceTimersByTimeAsync(0);
     });
 
+    it('runs the drain only while something is pending', async() => {
+        page({}, cardOf(81) + cardOf(82));
+        start();
+        expect(jest.getTimerCount()).toBe(0);
+        Watcher.last.seeAll();
+        expect(jest.getTimerCount()).toBe(1);
+        jest.advanceTimersByTime(100);
+        batches[0].resolve({details: []});
+        await jest.advanceTimersByTimeAsync(0);
+        // The next tick finds nothing pending and stops the interval.
+        await jest.advanceTimersByTimeAsync(100);
+        expect(jest.getTimerCount()).toBe(0);
+    });
+
     it('paints the progress row: the bar\'s width, the value, the label and the percentage; no number, no row', async() => {
         // Courses no other test settled.
         page({}, cardOf(61) + cardOf(62) + cardOf(63));

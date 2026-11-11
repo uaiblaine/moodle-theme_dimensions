@@ -184,9 +184,10 @@ final class calendar_component_source_test extends \basic_testcase {
     /**
      * No layout is read on the mount path: the reads of the tree are the popover's, when it opens, and the hour box's,
      * when a day or a week opens it and while it scrolls; each grid is measured by one ResizeObserver: the month's watches
-     * the rows (the density) and the frame the drawer shares (the phone), the week's the frame alone, and the phone's Day
-     * view, drawn with no grid beside it, has one of its own on the same frame, as the Trilhas view does; the step's
-     * popover reads as the event popover does, on an opening; and the Trilhas view's days scroller (TrailScroll.tsx) reads
+     * the rows (the density) and the frame the drawer shares (the phone), the week's the frame and its own root (the
+     * height it reports to the drawer), and the phone's Day view, drawn with no grid beside it, has one of its own on the
+     * same frame, as the Trilhas view does; the step's popover reads as the event popover does, on an opening; and the
+     * Trilhas view's days scroller (TrailScroll.tsx) reads
      * itself once per opening (today into view) and on a scroll, an arrow, a target the view asks for, a new zoom (T3c:
      * after placing the same day by arithmetic, through the same measure, so the count is unchanged) or the map, never on
      * another render, and writes every position through one place.

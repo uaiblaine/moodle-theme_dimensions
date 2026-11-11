@@ -23,8 +23,7 @@
  * shift a calendar square by that offset. The browser's clock is never read: the day the site calls
  * today arrives from the server.
  *
- * {@see period()} is criteria's reading of a period, the one both shells read an address through (the listing's
- * store and its shells).
+ * {@see period()} mirrors criteria's reading of a period; both shells read the period of an address through it.
  *
  * @module     theme_dimensions/daterange/calendar
  * @copyright  2026 Anderson Blaine
@@ -137,9 +136,9 @@ export const shiftMonth = (iso: string, months: number): string => {
 /**
  * A period as the server keeps it: each bound a real day or nothing, and the two in order.
  *
- * criteria's rule written in the client: a bound that is not a date is dropped and the other stands
- * alone, and a pair given backwards is the same period in order (the web service refuses a pair
- * given backwards).
+ * Mirrors \theme_dimensions\local\category\criteria: a bound that is not a date is dropped and the other
+ * stands alone, and a pair given backwards is the same period in order (the rows services refuse a pair
+ * given backwards, so the client orders it before it asks).
  *
  * @param {string} start The first day as given, or anything else.
  * @param {string} end The last day as given, or anything else.

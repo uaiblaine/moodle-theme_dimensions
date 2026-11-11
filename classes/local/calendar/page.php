@@ -46,13 +46,13 @@ use theme_dimensions\output\opengraph;
  * 5. The view, the month or the week, and the state are read, every value outside its vocabulary dropped ({@see state},
  *    {@see span()}); a category the range refuses (gone, hidden, unlisted) is dropped like any other value, so a stale
  *    saved category or a shared link to a withheld one shows the whole calendar and says nothing about the id. The
- *    open day ({@see PARAM_DAY}) is kept only inside the shown window ({@see day_from_request()}). The Trilhas view
- *    ({@see VIEW_TRAIL}) is read only for an account while trails are available, its trail and "Só as minhas" as
+ *    open day ({@see PARAM_DAY}) is kept only inside the shown window ({@see day_from_request()}). The Trails view
+ *    ({@see VIEW_TRAIL}) is read only for an account while trails are available, its trail and "Only mine" as
  *    navigation ({@see trail_from_request()}, {@see mine_from_request()}), and so is its timeline's zoom
  *    ({@see zoom_from_request()}): written to the address, never to the state.
  * 6. The window (the month grid's, or the week's seven days), the range's answer ({@see range::answer()}) and the
  *    category tree are computed once and handed to the renderable, which embeds them: the first paint costs no request.
- *    In the Trilhas view the range asks no source and the trails of the month and the next are the answer
+ *    In the Trails view the range asks no source and the trails of the month and the next are the answer
  *    ({@see trails::answer()}).
  *
  * @package    theme_dimensions
@@ -99,31 +99,31 @@ final class page {
     public const VIEW_DAY = 'day';
 
     /**
-     * @var string The Trilhas view: the trails of the month, an account's only and only
+     * @var string The Trails view: the trails of the month, an account's only and only
      *   while trails are available ({@see trail::available()}) and the site offers the view ({@see TRAILS_SETTING});
      *   for anyone else the address reads as the month.
      */
     public const VIEW_TRAIL = 'trail';
 
-    /** @var string The setting that offers the Trilhas view and its choice in the view switch ({@see trails_enabled()}). */
+    /** @var string The setting that offers the Trails view and its choice in the view switch ({@see trails_enabled()}). */
     public const TRAILS_SETTING = 'calendartrails';
 
-    /** @var string The address parameter of the one trail the Trilhas view keeps, its course id; navigation, never state. */
+    /** @var string The address parameter of the one trail the Trails view keeps, its course id; navigation, never state. */
     public const PARAM_TRAIL = 'trail';
 
-    /** @var string The address parameter of the Trilhas view's "Só as minhas", exactly '1' when on; navigation. */
+    /** @var string The address parameter of the Trails view's "Only mine", exactly '1' when on; navigation. */
     public const PARAM_MINE = 'mine';
 
     /**
-     * @var string The address parameter of the Trilhas timeline's zoom, {@see ZOOM_WEEK} or {@see ZOOM_MONTH}; absent for
+     * @var string The address parameter of the Trails timeline's zoom, {@see ZOOM_WEEK} or {@see ZOOM_MONTH}; absent for
      *   days. Navigation, like the trail: never state, never saved.
      */
     public const PARAM_ZOOM = 'zoom';
 
-    /** @var string The Trilhas timeline by weeks. */
+    /** @var string The Trails timeline by weeks. */
     public const ZOOM_WEEK = 'week';
 
-    /** @var string The Trilhas timeline by months. */
+    /** @var string The Trails timeline by months. */
     public const ZOOM_MONTH = 'month';
 
     /** @var \core\url|null Where to send the client, or null. */
@@ -273,7 +273,7 @@ final class page {
 
     /**
      * The view the request names: the week for exactly {@see VIEW_WEEK}, the day for exactly {@see VIEW_DAY}, the
-     * Trilhas view for exactly {@see VIEW_TRAIL} where {@see trails_offered()}, the month for anything else, never
+     * Trails view for exactly {@see VIEW_TRAIL} where {@see trails_offered()}, the month for anything else, never
      * refused.
      *
      * @return string {@see VIEW_MONTH}, {@see VIEW_WEEK}, {@see VIEW_DAY} or {@see VIEW_TRAIL}.
@@ -289,7 +289,7 @@ final class page {
     }
 
     /**
-     * Whether the page offers the Trilhas view: to a real account, while the site offers it and trails are available.
+     * Whether the page offers the Trails view: to a real account, while the site offers it and trails are available.
      *
      * A visitor's public calendar has no such view (the calendar asks an account to log in for it),
      * and without mod_subcourse there are no trails. Whether this account is shown any trail is not asked here: that
@@ -302,7 +302,7 @@ final class page {
     }
 
     /**
-     * Whether the site offers the Trilhas view: on unless an explicit '0' was stored, so no upgrade step writes it.
+     * Whether the site offers the Trails view: on unless an explicit '0' was stored, so no upgrade step writes it.
      *
      * @return bool
      */
@@ -332,7 +332,7 @@ final class page {
     }
 
     /**
-     * The Trilhas timeline's zoom the request names: exactly {@see ZOOM_WEEK} or {@see ZOOM_MONTH}, '' (days) for
+     * The Trails timeline's zoom the request names: exactly {@see ZOOM_WEEK} or {@see ZOOM_MONTH}, '' (days) for
      * anything else, a list included.
      *
      * @return string
@@ -454,7 +454,7 @@ final class page {
      * @param string $month The month, YYYY-MM.
      * @param string $week The week's first day, YYYY-MM-DD, in the week view.
      * @param string $day The open day, or ''; in the day view its day.
-     * @return array name => value; in the Trilhas view its trail, "Só as minhas" and the zoom too, when set.
+     * @return array name => value; in the Trails view its trail, "Only mine" and the zoom too, when set.
      */
     public static function span_params(string $view, string $month, string $week, string $day): array {
         if ($view === self::VIEW_TRAIL) {
@@ -470,10 +470,10 @@ final class page {
     }
 
     /**
-     * The address parameters of the Trilhas view: the view, the month, and the trail, "Só as minhas" and the zoom when
+     * The address parameters of the Trails view: the view, the month, and the trail, "Only mine" and the zoom when
      * set.
      *
-     * The one spelling of a Trilhas address, the landing page's "Ver no calendário" included.
+     * The one spelling of a Trails address, the landing page's "View in the calendar" link included.
      *
      * @param string $month The month, YYYY-MM.
      * @param int $trail The one trail, 0 for every trail.
@@ -650,7 +650,7 @@ final class page {
             return new self(self::core_calendar(), null);
         }
 
-        // The context comes before the answers: the Trilhas view's asks Boost Union's card settings, which read the
+        // The context comes before the answers: the Trails view's asks Boost Union's card settings, which read the
         // page's theme ({@see \theme_dimensions\local\card\boost_union::active()}), and an unset context makes core
         // abort that read on a real request.
         $context = \core\context\system::instance();
@@ -664,7 +664,7 @@ final class page {
         $window = window::from_iso($from, $to);
         $trailsanswer = null;
         if ($view === self::VIEW_TRAIL) {
-            // The Trilhas view draws no event: the month's answer is its days at zero, for a switch back to the month. Its
+            // The Trails view draws no event: the month's answer is its days at zero, for a switch back to the month. Its
             // own answer is the trails of the month and the next, the two months its timeline opens on.
             $answer = range::answer($window, $scope, [], $state->filters());
             $trailsanswer = trails::answer(
@@ -675,7 +675,8 @@ final class page {
                 time()
             );
         } else {
-            // Every key off asks no source: the answer is the window's days, each at zero (the service reads [] as all).
+            // A state with every key off ([]) asks no source and answers the window's days at zero; the range service, by
+            // contrast, reads an empty key list as every key.
             $answer = range::answer($window, $scope, $state->on(), $state->filters());
         }
 

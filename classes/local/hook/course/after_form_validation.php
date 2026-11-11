@@ -29,13 +29,12 @@ use theme_dimensions\local\landingfields;
 /**
  * Validates the landing page fields of the course settings form.
  *
- * Three rules. The video address: the landing page embeds it through core's
- * media manager, so an address no enabled media player handles would save
- * fine and then render as nothing. Refusing it here, with the field named,
- * is the only moment the editor is looking. The check is the same the page
- * will make, {@see embeddable()}, so the two cannot drift apart. And two
- * more rules: a self-paced course is always online, and a hybrid
- * offering's in-person hours fit inside its total.
+ * Three rules:
+ * - The video address: the landing page embeds it through core's media manager, so an
+ *   address no enabled media player handles would save and then render as nothing. The
+ *   check is the one the page makes, {@see embeddable()}.
+ * - A self-paced course is always online.
+ * - A hybrid offering's in-person hours fit inside its total.
  *
  * Only what the editor can see is refused. A field the form hides
  * ({@see after_form_definition::hide_inapplicable_fields()}) keeps its value and is
@@ -48,13 +47,13 @@ use theme_dimensions\local\landingfields;
  */
 class after_form_validation {
     /**
-     * Refuse a video address no enabled media player embeds.
+     * Add the errors of the three rules to the form's validation.
      *
      * @param \core_course\hook\after_form_validation $hook The hook.
      * @return void
      */
     public static function callback(\core_course\hook\after_form_validation $hook): void {
-        $hook->add_errors(self::round6_errors($hook->get_data()));
+        $hook->add_errors(self::format_and_workload_errors($hook->get_data()));
         $element = 'customfield_' . landingfields::SHORTNAME_VIDEOURL;
         $data = $hook->get_data();
         if (!isset($data[$element])) {
@@ -79,7 +78,7 @@ class after_form_validation {
      * @param array $data The submitted data.
      * @return array Errors keyed by element name, empty when the submission passes.
      */
-    private static function round6_errors(array $data): array {
+    private static function format_and_workload_errors(array $data): array {
         $model = (int) ($data['customfield_' . landingfields::SHORTNAME_MODEL] ?? 0);
         $modality = (int) ($data['customfield_' . landingfields::SHORTNAME_MODALITY] ?? 0);
         $format = (int) ($data['customfield_' . landingfields::SHORTNAME_FORMAT] ?? 0);

@@ -20,7 +20,7 @@
  * Drawn on both shells; on the visitor's no star is drawn and the scope may be absent: it draws what the server
  * drew. block_compass's FilterLine implements the same contract on its own; nothing is shared.
  *
- * WHO OWNS WHAT. The mount node is the server's line itself (dim-line), which the listing's
+ * Who owns what. The mount node is the server's line itself (dim-line), which the listing's
  * mountLine() names for core's react_autoinit, so the line keeps its place, its classes and the sibling
  * rules the stylesheet writes against it. A mount replaces its markup, so the first render draws the
  * markup the server drew, read off it ({@see ./model read()}), with the same names inside the same GET
@@ -43,7 +43,7 @@
  * - `dim-line:failed`, sent instead where the markup is not a line this component can draw, so the listing
  *   releases what it holds for the mount: the line stays the server's.
  *
- * A MOUNT AGAIN DRAWS THE LINE AGAIN. Core's react_autoinit unmounts a mounted node that leaves the document
+ * A second mount draws the line again. Core's react_autoinit unmounts a mounted node that leaves the document
  * and mounts it when it comes back, so a line moved after the hand-over - or under an ancestor that moved -
  * is mounted a second time onto a node React has just emptied. Unmounting therefore gives the adopted frames'
  * nodes back to the server's frames and keeps them, with the line's last state, for that node
@@ -165,7 +165,7 @@ const adopt = (source: Element | null, target: Element | null): void => {
  */
 const counterpart = (line: HTMLElement, was: Element): HTMLElement | null => {
     if (was.id) {
-        const found = line.querySelector<HTMLElement>(`[id="${was.id}"]`);
+        const found = line.querySelector<HTMLElement>(`#${CSS.escape(was.id)}`);
         if (found) {
             return found;
         }
@@ -173,7 +173,7 @@ const counterpart = (line: HTMLElement, was: Element): HTMLElement | null => {
     const action = was.getAttribute('data-action');
     if (action) {
         const value = was.getAttribute('value');
-        const selector = `[data-action="${action}"]` + (value === null ? '' : `[value="${value}"]`);
+        const selector = `[data-action="${CSS.escape(action)}"]` + (value === null ? '' : `[value="${CSS.escape(value)}"]`);
         return line.querySelector<HTMLElement>(selector);
     }
     const summary = was.closest('details');
@@ -453,8 +453,8 @@ const FilterLine = ({form}: FilterLineProps) => {
      * Apply one suggestion: the term dropped, then the very control it names pressed.
      *
      * The listing's handler of that control makes the one request, and the listing has dropped the typed
-     * term from its state first (dropterm), so the term goes in that same request; the field is emptied
-     * and the search stays open for the next pick, offering what is left once the press is drawn.
+     * term from its state first (dropterm), so that request carries no term; the field is emptied and the
+     * search stays open for the next pick, offering what is left once the press is drawn.
      *
      * @param {number} index The option's place.
      * @returns {void}
@@ -876,8 +876,8 @@ const FilterLine = ({form}: FilterLineProps) => {
 
         remember(toolbar, field.current ? field.current.value : '', rest.current);
         /* The first measure waits for the observer's first entry. Read inside this commit, it would force the page's
-           first full layout (PLAN 5.2.6); the entry comes after the browser's own layout and before the paint, so the
-           fold is still drawn before the line is first painted, and its width is the entry's content box - what
+           first full layout; the entry comes after the browser's own layout and before the paint, so the fold is
+           still drawn before the line is first painted, and its width is the entry's content box - what
            contentWidth() reads off the line - with no layout read for it. Without an observer it is taken here. */
         if (typeof ResizeObserver === 'undefined') {
             measureFirst();
@@ -937,7 +937,7 @@ const FilterLine = ({form}: FilterLineProps) => {
     // The first commit's effect, once: every later change reaches the listeners through api.
     }, []);
 
-    // A width the tries measured so far decide is a fold alone; a line narrowed past them measures the rest.
+    // A width the tries measured so far already decide (see settled() in ./steps) only refolds; a narrower one measures the rest.
     api.current.remeasureWidth = (() => (settled(st.widths, st.width) ? refold() : remeasure())) as (...args: never[]) => void;
 
     /* What changes a control's width: the words, which slots there are, and how many characters a count has - never

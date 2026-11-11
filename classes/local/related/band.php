@@ -28,7 +28,7 @@ use theme_dimensions\local\landingfields;
 use theme_dimensions\local\trail\trail;
 
 /**
- * The related courses band at the end of a landing page (R1 and R2 of docs/related/PLAN.md).
+ * The related courses band at the end of a landing page.
  *
  * The course's `dimensions_related` select decides how the band is drawn: empty or Automatic relates by the course's
  * whole set of competencies, Manual by the competencies an editor chose among them ({@see choice}), Off and any value
@@ -45,7 +45,7 @@ final class band {
     /** @var string The site setting holding how many courses the band lists at most. */
     public const SETTING_COUNT = 'relatedcount';
 
-    /** @var int What the setting reads as when it is unset or outside its choices (D8). */
+    /** @var int What the setting reads as when it is unset or outside its choices. */
     public const DEFAULT_COUNT = 4;
 
     /**
@@ -84,16 +84,6 @@ final class band {
             return finder::MODE_AUTO;
         }
         return $related === landingfields::RELATED_MANUAL ? finder::MODE_MANUAL : null;
-    }
-
-    /**
-     * Whether a course's choice draws the band: its select is empty, Automatic or Manual.
-     *
-     * @param \stdClass $values The course's landing page values ({@see landingfields::values()}).
-     * @return bool
-     */
-    public static function wanted(\stdClass $values): bool {
-        return self::mode($values) !== null;
     }
 
     /**

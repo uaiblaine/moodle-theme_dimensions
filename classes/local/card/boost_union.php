@@ -25,11 +25,12 @@
 namespace theme_dimensions\local\card;
 
 /**
- * The one reader of the three Boost Union settings that decide a course card (the course card contract, section 8).
+ * The one reader of the three Boost Union settings that decide a course card.
  *
  * The settings apply while the request's theme is Boost Union or names it among its parents, and Boost Union is
  * installed; theme_dimensions always is such a child, and the check stays because block_compass and local_dimensions
- * copy this class for any theme. Outside Boost Union every answer is the card's own rule: the progress row drawn,
+ * carry a copy of this class (their local\card_settings) that runs under any theme; keep the three in step. Outside
+ * Boost Union every answer is the card's own rule: the progress row drawn,
  * the images drawn, and the image of a course with none left to the theme's renderer.
  *
  * Every value is compared with literals equal to Boost Union's constants (THEME_BOOST_UNION_SETTING_* in its lib.php),
@@ -99,7 +100,7 @@ final class boost_union {
     /**
      * Whether the cards draw the progress row and its percentage.
      *
-     * Only the row: the completed seal and the cover's green base stay whatever this says (D13).
+     * Only the row: the completed seal and the cover's green base stay whatever this says.
      *
      * @param \moodle_page|null $page The page whose theme is asked; the request's by default.
      * @return bool False only when Boost Union applies and its setting says anything but "yes".

@@ -845,7 +845,7 @@ final class category_scss_test extends \basic_testcase {
         $checked = $this->rule_body($scss, '.dim-pill__input:checked + .dim-pill');
         $this->assertMatchesRegularExpression('~border-color:\s*var\(--dim-cta\);~', $checked);
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);~', $checked, 'The chosen chip is FILLED.');
-        $this->assertMatchesRegularExpression('~color:\s*#fff;~', $checked);
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-cta-ink\);~', $checked, 'The ink follows the fill.');
         $this->assertDoesNotMatchRegularExpression('~box-shadow~', $checked, 'The track\'s raised white face is gone.');
         $focus = $this->rule_body($scss, '.dim-pill__input:focus-visible + .dim-pill');
         $this->assertMatchesRegularExpression('~outline:\s*3px solid var\(--dim-ring\);\s*outline-offset:\s*2px;~', $focus);
@@ -859,10 +859,10 @@ final class category_scss_test extends \basic_testcase {
             $quickon,
             'The quick option in force is a chosen chip.'
         );
-        $this->assertMatchesRegularExpression('~color:\s*#fff;~', $quickon);
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-cta-ink\);~', $quickon);
         $this->assertStringNotContainsString('--dim-surface', $quickon, 'The page\'s surface is never the ink on the navy.');
         $edge = $this->rule_body($scss, '.dim-daterange__day--edge');
-        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*#fff;~', $edge);
+        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~', $edge);
         $this->assertMatchesRegularExpression(
             '~&:hover \{\s*background:\s*var\(--dim-cta-hover\);\s*color:\s*#fff;~',
             $edge,
@@ -919,7 +919,7 @@ final class category_scss_test extends \basic_testcase {
 
         $apply = $this->rule_body($scss, ".dim-toolbar__sortsubmit,\n    .dim-toolbar__submit");
         $this->assertMatchesRegularExpression('~min-height:\s*40px;~', $apply);
-        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*#fff;~', $apply);
+        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~', $apply);
 
         $clear = $this->rule_body($scss, '.dim-toolbar__clear');
         $this->assertMatchesRegularExpression('~padding:\s*0;~', $clear, 'A text button, not a 29.5px box.');
@@ -1420,7 +1420,7 @@ final class category_scss_test extends \basic_testcase {
         $scss = $this->stylesheet('category.scss');
         $badge = $this->rule_body($scss, '.dim-toolbar__filtercount');
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);~', $badge);
-        $this->assertMatchesRegularExpression('~color:\s*#fff;~', $badge);
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-cta-ink\);~', $badge);
         $this->assertStringNotContainsString('--dim-surface', $badge, 'The dark surface is never the badge\'s ink.');
         $dark = ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-vitrine,\s*'
             . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-cmodal \{[^}]*';

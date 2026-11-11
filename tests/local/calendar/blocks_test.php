@@ -334,6 +334,26 @@ final class blocks_test extends \advanced_testcase {
     }
 
     /**
+     * The no-JavaScript agenda leads where the block does: one rule, so a non-web address never reaches its href.
+     *
+     * @return void
+     */
+    public function test_the_agenda_applies_the_blocks_url_rule(): void {
+        $this->resetAfterTest();
+        $courses = [5 => ['url' => 'https://example.com/course/view.php?id=5']];
+        $item = static fn(string $url): array => ['url' => $url, 'courseid' => 5];
+
+        $this->assertSame('https://example.com/mod/x', \theme_dimensions\output\calendar_page::item_url(
+            $item('https://example.com/mod/x'),
+            $courses
+        ));
+        $this->assertSame($courses[5]['url'], \theme_dimensions\output\calendar_page::item_url(
+            $item('javascript:alert(1)'),
+            $courses
+        ), 'A non-web address falls back to the course page.');
+    }
+
+    /**
      * Neither block answers what the range drops: a category event of an unlisted category is in neither, beside a
      * listed category's event in both, the saved state narrowed to their parent (as the range's own test narrows).
      *

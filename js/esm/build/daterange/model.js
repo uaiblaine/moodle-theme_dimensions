@@ -2,7 +2,7 @@ import{bringIntoView as d,firstOf as l,monthAt as m,monthOf as p,onScreen as g,p
  * What the period control holds and every way it changes, as pure functions of that state.
  *
  * Two boxes, a start and an end, open one popover, and the box that opened it is the mode: the bound
- * the next press of a day sets. The presses write a DRAFT; "Done" or a press outside the control
+ * the next press of a day sets. The presses write a draft; "Done" or a press outside the control
  * applies it ({@see commit()}), and Escape or the keyboard walking out discards it ({@see close()}),
  * leaving the period that was in force. Each clearing control applies at once ({@see drop()}). The
  * component only renders this state and tells the listing when {@see apply()} says the period in force changed.

@@ -38,28 +38,17 @@ use theme_dimensions\local\landingfields;
 /**
  * Builds the template context of one course card, the same markup for the card and the list view.
  *
- * Everything a card says about a course is decided here from data the
- * listing already read in bulk: the population row (state, favourite,
- * visibility), the course row, the landing page values and the image.
- * Nothing in this class queries the database - a page of forty-eight
- * cards builds forty-eight of these and must cost no statement for it - and
- * the one context it asks for was preloaded by the population. With filterall
- * on, format_string() still loads each course context's filters; the render
- * budget tests assert that precondition.
+ * Everything a card says is decided here from data the listing already read in bulk: the population
+ * row (state, favourite, visibility), the course row, the landing page values and the image. Nothing
+ * in this class queries the database - a page of cards must cost no statement per card - and the one
+ * context it asks for was preloaded by the population. With filterall on, format_string() still loads
+ * each course context's filters; the render budget tests assert that precondition. Every text leaves
+ * in the plain spelling for the template's double stashes; a card holds no final HTML.
  *
- * Names and every other plain-text value leave in the PLAIN spelling for the
- * template's double stashes. There is no final HTML in a card at all.
- *
- * The crests over the image are the COURSE's own landing page badges and never the
- * category's ({@see badges()}); a course without a landing page model shows none.
- *
- * The eleven classifier states and what each one prints: the state pill of the
- * enrolment matrix's shared state area, one icon and one sentence. The pill is
- * the design system's own, never a Bootstrap utility: one class per state, and
- * scss/category.scss pairs each state with a background AND a text colour
- * token in both colour modes. Bootstrap 5's .badge forces white text and its
- * own padding, which is why the card writes neither it nor any bg-* here.
- * The icon is decorative (aria-hidden): the sentence carries the state.
+ * The state pill is one icon and one sentence per classifier state. Its class is the design system's,
+ * never Bootstrap's .badge or a bg-* utility (Bootstrap 5's .badge forces white text and its own
+ * padding); scss/category.scss pairs each class with a background and a text colour token in both
+ * colour modes. The icon is aria-hidden: the sentence carries the state.
  *
  * | state       | pill class             | call to action                                          |
  * |-------------|------------------------|---------------------------------------------------------|
@@ -79,82 +68,50 @@ use theme_dimensions\local\landingfields;
  * outside the table read the same way: dim-badge plus dim-badge--held,
  * --public and --hidden.
  *
- * The route line (core's default is kept):
- * a card telling the viewer about a row of theirs that is not active - it
- * starts later, it is an application, it is suspended, it ended - also says
- * when a method would take them now, and its call to action then goes there.
- * The routes are local_unlistedcourses' batch's, read once for the page
- * ({@see \theme_dimensions\local\category\cards::next_actions()}); the card
- * never decides one itself. A pending or waitlisted card keeps "view status"
- * as its button, whose page offers the route as well.
+ * The badge is about the course; the link is about the viewer. A viewer who may enter the course
+ * without enrolling (core's {@see can_access_course()} through {@see is_viewing()}) is sent to the
+ * course by every card, whatever the badge says: the table's row decides the word, {@see may_enter()}
+ * the destination, so such a viewer is never sent to the landing page.
  *
- * The opening line sits in the same place: a card with nothing on offer, or a
- * suspended or ended one, whose way in is refused only because an enrolment
- * window has not opened yet says on which date it opens. The date is the same
- * batch's `opens`, never worked out here ({@see opens_label()}); a scheduled,
- * pending or waitlisted card has its own date or route and never prints one.
+ * The route line: a card about a row of the viewer's that is not active (it starts later, it is an
+ * application, it is suspended, it ended) also says when a method would take them now, and its call to
+ * action then goes there. The routes are local_unlistedcourses' batch's, read once for the page
+ * ({@see \theme_dimensions\local\category\cards::next_actions()}); the card never decides one itself. A
+ * pending or waitlisted card keeps "View status" as its button, whose page offers the route as well.
+ * The opening line: a card with nothing on offer, suspended or ended, refused only because an enrolment
+ * window has not opened yet, says on which date it opens - the same batch's `opens` ({@see opens_label()}).
  *
- * The badge is about the course; the link is about the viewer, and the table
- * above is the badge's half alone. A viewer who may already enter the course
- * without enrolling in it - a manager, a course creator, anybody core's own
- * {@see can_access_course()} would let in through {@see is_viewing()} - is
- * sent to the course by every card, whatever the badge says: the row of the
- * table decides the WORD, {@see may_enter()} decides the DESTINATION, so such
- * a viewer is never sent to the landing page, the page for somebody who has to
- * enrol.
+ * A held event (the event model, an end date in the past) prints "Held" whatever the classifier said,
+ * muted and with nothing to press, unless the viewer may enter the course, in which case it keeps its
+ * badge and stays reachable. The anonymous shell prints "Public access" (a property of the course, not
+ * of the viewer) and its one call to action is the course's landing page; a public course without a
+ * landing page model has nothing to send a visitor to and gets none.
  *
- * The star carries THREE labels, not one. starlabel is the label of its
- * current state, which is what a reader without JavaScript gets and never
- * changes; starlabeladd and starlabelremove are both spellings, so the client
- * module can relabel the button the instant it is pressed instead of asking
- * the server for a sentence it already had. They are present whenever the
- * star is, because a button whose pressed state flips needs the word for the
- * state it is flipping INTO before the flip, not after it.
+ * The star carries three labels: starlabel is its current state's, what a reader without JavaScript
+ * gets; starlabeladd and starlabelremove let the client relabel the button the instant it is pressed.
  *
- * A held event (the event model, an end date in the past) prints "held"
- * whatever the classifier said; it is drawn in the muted style, and offers
- * nothing to press, unless the viewer may enter the course, in which case it
- * stays reachable with its badge unchanged. The anonymous shell
- * prints "public access" - a property of the course, not of the viewer - and
- * its one call to action is the course's own landing page, which is the page a
- * visitor may actually read; a public course that chose no landing page model has
- * nothing to send a visitor to, so it gets no call to action at all.
+ * "More information" is a link to the card's own page ({@see url()}), and with JavaScript it opens a
+ * dialogue. What the page decided stays on the card (the kicker and the two buttons under `modal`,
+ * {@see modal()}, written onto the link); what only the dialogue shows is fetched when it opens
+ * ({@see \theme_dimensions\local\category\dialogue}).
  *
- * "More information" is a link to the card's own page ({@see url()}), and with
- * JavaScript it opens a dialogue. What the page decided stays on the card:
- * the kicker and the two buttons under `modal` ({@see modal()}), which the
- * template writes onto the link, and the cover, the pill and the title the
- * card already prints. What only the dialogue shows - the excerpt, the facts,
- * the programme - is fetched when it opens
- * ({@see \theme_dimensions\local\category\dialogue}). Its two buttons decide
- * nothing of their own: the secondary one is the card's link ({@see url()} with
- * {@see may_enter()}), the primary one the state's word over that same rule,
- * and where both would open one page only the primary is drawn.
+ * A course tool_courserating rates, and somebody rated, opens its meta line with the rating on both
+ * shells (the plugin shows the aggregate to whoever may see the course listed): read once for the page
+ * ({@see \theme_dimensions\local\category\cards::ratings()}) and spelt as the dialogue spells it
+ * ({@see \theme_dimensions\local\category\dialogue::rating_line()}).
  *
- * A course tool_courserating rates, and somebody rated, opens its meta line with
- * the rating (`rating`: the average to one decimal in the reader's language, the
- * count, and the sentence a screen reader is told instead of the glyph and the
- * digits), on both shells: the plugin shows the aggregate to whoever may see the
- * course listed. The listing reads it once for the page
- * ({@see \theme_dimensions\local\category\cards::ratings()}); the card spells
- * it as the dialogue does ({@see \theme_dimensions\local\category\dialogue::rating_line()}).
+ * For the filter line's preview (js/esm/src/filterline/preview.ts) the card also carries the state chip
+ * the course counts under (`chip`, {@see classifier::chip()}, what the scope's filter keeps it by), the
+ * value of each filter field ({@see field_values()}) and the start day in the site's timezone
+ * (`startday`, the day {@see criteria::day_start()} compares a period's bounds with); the favourite is
+ * the star's own aria-pressed. A visitor's card states less: no chip and no star, only the fields a
+ * visitor may see, and a start day only on an event's date tile. None of it costs a statement.
  *
- * The card also carries the facts the filter line's preview decides a criterion on (contract section 6,
- * js/esm/src/filterline/preview.ts): the state chip the course counts under (`chip`, the classifier's
- * {@see classifier::chip()} of the row's own state, exactly what the scope's filter keeps it by), the value
- * of each filter field ({@see field_values()}) and the start day in the site's timezone (`startday`, the
- * day {@see criteria::day_start()} compares a period's bounds with). The favourite is the star's own
- * aria-pressed, which the star module keeps live. Each is what the card already shows its reader, and a
- * visitor's card states less: no chip and no star (it knows no viewer), only the fields a visitor may see,
- * and a start day only where the card prints one, an event's date tile. Nothing of it costs a statement.
- *
- * A card Boost Union draws without its cover, or a row without its thumbnail (contract section 8), keeps an edge in
- * its course category's colour: the band, instance data the listing hands in
- * ({@see \theme_dimensions\local\category\cards::bands()}) and the template writes on the article as
- * --dim-card-band, never a token. It leaves only through
- * {@see branding::hex()}, so the style attribute holds a #rrggbb or nothing. Such a card also draws the row at the
- * top of its body (`hastop`) that holds the kind, the crests and the star in the cover's place, when it has any of
- * the three.
+ * A card Boost Union's course overview settings draw without its cover, or a row without its thumbnail,
+ * keeps an edge in its course category's colour (`band`, {@see \theme_dimensions\local\category\cards::bands()}),
+ * written on the article as --dim-card-band. It leaves only through {@see branding::hex()}, so the style
+ * attribute holds a #rrggbb or nothing. Such a card also draws a row at the top of its body (`hastop`)
+ * holding the kind, the crests and the star in the cover's place, when it has any of the three.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -167,8 +124,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * @var array state => [pill classes, label string key, Font Awesome icon]. One design-system class per state.
      *
-     * The icons are the enrolment matrix mockup's, in the Font Awesome 6 names core 5.2 ships; card_markup_test
-     * checks each name against core's own icon font.
+     * The icons are Font Awesome 6 names; card_markup_test checks each against the icon font core ships.
      */
     private const BADGES = [
         classifier::STATE_ENROLLED => ['dim-badge dim-badge--enrolled', 'category_state_enrolled', 'fa-circle-check'],
@@ -199,10 +155,9 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * @var int How many of the course's badges a card draws.
      *
-     * The landing page's grid holds four; a card's corner holds three. The geometry decides it: at
-     * the card's 56px each (D2 of the course card contract), three of them, their gaps and the date
-     * tile already run most of the width of a card on a phone, and a fourth would reach the tile on
-     * the other side.
+     * The landing page's grid holds four; a card's corner holds three. At 56px each, three crests,
+     * their gaps and the date tile already run most of the width of a card on a phone, and a fourth
+     * would reach the tile on the other side.
      */
     public const MAX_BADGES = 3;
 
@@ -228,7 +183,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * @var array The strings every card of the request spells alike: language => component => key => text.
      *
-     * A listing builds a card per course and each one spelled the same dozen labels again; the
+     * A listing builds a card per course, so a label without parameters is read once per request; the
      * parameterised ones (the star's, the dates', the hours') still go through get_string() per card. Keyed
      * by the language in force, so a request or a test that switches language reads its own spelling;
      * {@see reset_strings()} is for a test that changes a language pack under the same language.
@@ -373,7 +328,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'hasoverline' => $this->overline !== null && $this->overline !== '',
             'imageurl' => $this->image instanceof \moodle_url ? $this->image->out(false) : $this->image,
             'hasimage' => $this->image !== null,
-            /* Boost Union's course overview settings, where it applies (contract section 8): the cover of the card
+            /* Boost Union's course overview settings, where it applies: the cover of the card
                view, the thumbnail of the list view, and the progress row. One markup serves both views, so the media
                band is drawn while either view shows it, and the article says which view leaves it out. */
             'showcover' => $showcover,
@@ -425,10 +380,10 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'starlabeladd' => get_string('category_star_add', self::COMPONENT, $fullname),
             'starlabelremove' => get_string('category_star_remove', self::COMPONENT, $fullname),
             /* "More information" opens the course dialogue, which is armed for a signed-in viewer only: a visitor's card
-               draws its one button, "Learn more", and nothing beside it (contract section 3). */
+               draws its one button, "Learn more", and nothing beside it. */
             'hasdetails' => !$this->anonymous && $url !== null,
             'detailslabel' => self::text('category_details'),
-            /* What an enrolled card becomes once the details service says the viewer completed the course (D4, option A):
+            /* What an enrolled card becomes once the details service says the viewer completed the course:
                the seal's words and the main action's. The client applies them with dim-card--done; no other card
                is asked about its completion, so no other card carries them. */
             'done' => $enrolled ? [
@@ -474,14 +429,10 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * The dialogue's keys the page decides: the kicker and its two buttons, written onto the card's link.
      *
-     * The SECONDARY button is the card's own link, whatever it is ({@see url()} with {@see may_enter()}): the
-     * course for somebody who may walk in, else the landing page of a course that chose a model, else the standard
-     * enrolment page - and nothing on the anonymous shell for a course with no landing page, whose card links
-     * nowhere either. It names the course or the event.
-     *
-     * The PRIMARY button is {@see modal_primary()}. When it would open the very page the secondary one opens -
-     * the enrolled reader's "Continue course" is the course page - only the primary is drawn: it is the one
-     * that says what the page is FOR. A disabled primary goes nowhere, so the secondary always stays beside it.
+     * The secondary button is the card's own link ({@see url()} with {@see may_enter()}), named after the course
+     * or the event; there is none where the card links nowhere. The primary button is {@see modal_primary()}.
+     * When the primary would open the page the secondary opens (the enrolled reader's "Continue course" is the
+     * course page), only the primary is drawn; a disabled primary goes nowhere, so the secondary stays beside it.
      *
      * @param string|null $state The classifier state, null on the anonymous shell.
      * @param \moodle_url|null $url The card's link ({@see url()}).
@@ -515,11 +466,10 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * The dialogue's primary button, or null where it draws none.
      *
      * An event already held enrols nobody and a visitor's card knows no state, so neither gets one. A course
-     * whose way in opens later - the card's opening line, {@see opens_label()}, decided exactly as the card
-     * decides it - gets a DISABLED button carrying that date, which is then printed nowhere else in the
-     * dialogue. Enrolled, free and open are relabelled ({@see MODAL_PRIMARY}): the first two go where the card
-     * goes (the course, since {@see may_enter()} lets both in), and "Enrol" goes to the enrolment surface the
-     * card's link would be for a reader who may NOT walk in ({@see url()} asked with false), so staff who may
+     * whose way in opens later (the card's opening line, {@see opens_label()}) gets a disabled button carrying
+     * that date, which the dialogue prints nowhere else. Enrolled, free and open are relabelled
+     * ({@see MODAL_PRIMARY}): the first two go where the card goes (the course, since {@see may_enter()} lets
+     * both in), and "Enrol" goes to the enrolment surface ({@see url()} asked with false), so staff who may
      * open the course are offered both. Every other state keeps the card's own call to action.
      *
      * @param string|null $state The classifier state, null on the anonymous shell.
@@ -620,9 +570,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
     }
 
     /**
-     * The crests over the card image: the COURSE's own landing page badges, up to {@see MAX_BADGES}.
-     *
-     * The card shows the course's badges and never the category's ({@see crests()} says which).
+     * The crests over the card image ({@see crests()}).
      *
      * @return array Entries of ['url' => string, 'alt' => string], in grid order, plain spelling.
      */
@@ -633,19 +581,16 @@ class category_card implements \core\output\renderable, \core\output\templatable
     /**
      * A course's crests: its own landing page badges, up to {@see MAX_BADGES}, named through the theme's file route.
      *
-     * The badges of the COURSE and never of the category it sits in, whose own crests belong to the
-     * category's hero and to its directory card: the two sets are stored in different places by
-     * different people and mean different things, these being the institutions running the course.
-     * A course with no landing page model shows none, even where badge files survive a model that was
-     * cleared, because the route serves a badge only while the course carries a model
-     * ({@see publicfiles::resolve()}) and an address nobody may open is no crest.
+     * The course's badges, never the category's: those belong to the category's hero and directory card,
+     * and name something else (these are the institutions running the course). A course with no landing
+     * page model shows none, even where badge files survive a cleared model, because the route serves a
+     * badge only while the course carries a model ({@see publicfiles::resolve()}).
      *
-     * They cost no statement: {@see \theme_dimensions\local\landingfields::values_many()}
-     * already read the badge files, so this only names files in hand. Always the theme's own file
-     * route, whoever is looking: the picture fields are visible to nobody, so the picture type's own
-     * URL refuses them to everybody, and that route's badge branch serves a visitor a public course's
-     * badge and a logged-in viewer any course they may see. Shared with
-     * theme_dimensions_course_badges(), the callback other plugins' cards ask.
+     * No statement: {@see \theme_dimensions\local\landingfields::values_many()} already read the badge
+     * files. Always the theme's own file route, whoever is looking: the picture fields are visible to
+     * nobody, so the picture type's own URL refuses them to everybody, while the route's badge branch
+     * serves a visitor a public course's badge and a logged-in viewer any course they may see. Shared
+     * with theme_dimensions_course_badges(), the callback other plugins' cards ask.
      *
      * @param \stdClass $course The course row; only its id is read.
      * @param \stdClass $values The course's landing page values ({@see landingfields::values()} shape).
@@ -705,30 +650,23 @@ class category_card implements \core\output\renderable, \core\output\templatable
     }
 
     /**
-     * Whether this viewer may walk into the course, which is a question about the VIEWER and not about the course.
+     * Whether this viewer may walk into the course without enrolling.
      *
-     * This is core's own {@see can_access_course()} with its enrolment half
-     * already answered: the classifier resolved the enrolment for the whole
-     * page in bulk, so what is left is the branch that lets staff in without
-     * an enrolment - {@see is_viewing()}, which is `moodle/course:view` at the
-     * course context. That context was preloaded by the population, and the
-     * capability is answered out of the access data the request already
-     * carries, so a page of forty-eight cards asks it forty-eight times and
-     * costs no statement for it (pinned in the budget test).
+     * Core's {@see can_access_course()} with its enrolment half already answered by the classifier, so
+     * what is left is the branch that lets staff in without an enrolment: {@see is_viewing()},
+     * `moodle/course:view` at the course context. The context was preloaded by the population and the
+     * capability is answered from the access data the request holds, so it costs no statement per card
+     * (pinned in the budget test).
      *
-     * Core's order is kept, and the order is the whole rule: `can_access_course()`
-     * refuses a hidden course to anybody without `moodle/course:viewhiddencourses`
-     * BEFORE it asks `is_viewing()`, so holding `moodle/course:view` alone does
-     * not open a hidden course. A viewer who may not see it hidden must not be
-     * handed a link that then refuses them, and the listing agrees: its own gate
-     * admits a hidden course to an active enrolment or to that same capability
-     * and to nothing else.
+     * Core's order is kept: `can_access_course()` refuses a hidden course to anybody without
+     * `moodle/course:viewhiddencourses` before it asks `is_viewing()`, so `moodle/course:view` alone
+     * does not open a hidden course, and no viewer is handed a link that then refuses them. The
+     * listing's own gate agrees: it admits a hidden course only to a holder of
+     * `moodle/course:viewhiddencourses`, and an enrolment does not rescue it
+     * ({@see \theme_dimensions\local\category\population::gate()}).
      *
-     * The two states the classifier already resolved come first and are left
-     * exactly as they were: an enrolment and guest access were always the
-     * course's own door. Free is guest access with no password only; guest
-     * access behind a key reads key, whose way in is the key form on the
-     * standard enrolment page.
+     * Enrolled and free (guest access with no password) always let the viewer in. Guest access behind
+     * a password reads key, whose way in is the key form on the standard enrolment page.
      *
      * @param string|null $state The classifier state, null on the anonymous shell.
      * @param \core\context\course $context The course context, preloaded by the population.
@@ -768,9 +706,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             ];
         }
         /* The viewer's own door first: somebody who may walk in is offered the course and not
-           the enrolment surface, whatever the badge beside it says (see may_enter()). The two
-           states that always could are inside that answer, so this branch is what they used to
-           get and nothing about them changed. */
+           the enrolment surface, whatever the badge beside it says (see may_enter()). */
         $key = $mayenter ? 'category_cta_access' : match ($state) {
             classifier::STATE_OPEN => 'category_cta_enrol',
             classifier::STATE_PENDING, classifier::STATE_WAITLISTED => 'category_cta_status',
@@ -796,8 +732,8 @@ class category_card implements \core\output\renderable, \core\output\templatable
         return [
             'label' => self::text($key),
             'url' => $target->out(false),
-            /* The outline is what "view the application" wears, so it follows the LABEL and not
-               the state: a viewer who may walk in is offered the course, and that is never quiet. */
+            /* The outline style follows the label, not the state: a viewer who may walk in is
+               offered the course, which is always a primary button. */
             'primary' => !in_array(
                 $key,
                 ['category_cta_status', 'category_cta_details', 'category_cta_enrolnow', 'category_cta_prerequisite'],

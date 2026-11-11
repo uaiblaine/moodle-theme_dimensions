@@ -1389,8 +1389,9 @@ final class card_markup_test extends \advanced_testcase {
     /**
      * The calendar's own template writes every hook its module reads, and names itself.
      *
-     * This template is rendered by the client and by nothing else, so the mustache lint is the
-     * only other thing that ever renders it and it reads structure rather than attributes. A
+     * Nothing renders this template: the client (DateRange.tsx) draws its markup and the template is that
+     * markup's reference, so the mustache lint is the only thing that ever renders it and it reads structure
+     * rather than attributes. A
      * region renamed here disarms the module in silence: a box stops opening, or the month grids
      * are written into nothing, on a page where every server-side test is still green.
      *

@@ -141,14 +141,16 @@ final class event_courses implements source {
         }
         $fieldid = (int) $field->get('id');
         $items = [];
+        // One instant for the whole answer, as core_events::items() does: every item's "held" is judged against it.
+        $now = time();
         if (in_array(keys::COURSE, $on, true)) {
             foreach ($this->enrolled($window, $scope, $fieldid) as $row) {
-                $items[] = self::item($row, keys::COURSE);
+                $items[] = self::item($row, keys::COURSE, $now);
             }
         }
         if (in_array(keys::OPEN, $on, true) && $scope->courseid === 0) {
             foreach ($this->open($window, $scope, $fieldid) as $row) {
-                $items[] = self::item($row, keys::OPEN);
+                $items[] = self::item($row, keys::OPEN, $now);
             }
         }
         return $items;
@@ -321,9 +323,10 @@ final class event_courses implements source {
      *
      * @param \stdClass $row The course row.
      * @param string $key Its key.
+     * @param int $now The time "held" is judged against.
      * @return array An item with exactly the keys of range::ITEM_KEYS.
      */
-    private static function item(\stdClass $row, string $key): array {
+    private static function item(\stdClass $row, string $key, int $now): array {
         $start = (int) $row->startdate;
         $end = (int) $row->enddate;
         $courseid = (int) $row->id;
@@ -350,7 +353,7 @@ final class event_courses implements source {
             'actionevent' => false,
             'action' => null,
             'overdue' => false,
-            'held' => $end > 0 && $end < time(),
+            'held' => $end > 0 && $end < $now,
         ]);
     }
 }

@@ -444,6 +444,58 @@ describe('the keys and the filters', () => {
         expect(ranges()).toEqual([]);
     });
 
+    it('adopts the state of the entry Back returns to: the toolbar and the next change start from it', async() => {
+        await mount(props());
+        // The entry the page opened on carries a state of its own (a city); the user then turns a key off in place.
+        window.history.replaceState({}, '', '/r.php/theme_dimensions/calendar?month=2026-11&city=Recife');
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-key="site"]') as HTMLElement);
+        });
+        const before = ranges().length;
+        // Back to an entry whose address names another state than the one on screen.
+        window.history.replaceState({}, '', '/r.php/theme_dimensions/calendar?month=2026-11&city=Olinda');
+        await act(async() => {
+            window.dispatchEvent(new PopStateEvent('popstate'));
+        });
+        expect(ranges()).toHaveLength(before + 1);
+        expect(ranges()[before]).toEqual(expect.objectContaining({city: 'Olinda'}));
+        // The toolbar reflects the adopted state: the site key is on again and a filter is applied.
+        const site = document.querySelector('[data-key="site"]') as HTMLInputElement;
+        expect(site.checked).toBe(true);
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).not.toBeNull();
+        // The next change merges into the adopted state, never the one left behind.
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-key="user"]') as HTMLElement);
+        });
+        expect(ranges()).toHaveLength(before + 2);
+        expect(ranges()[before + 1]).toEqual(expect.objectContaining({city: 'Olinda'}));
+        expect(ranges()[before + 1].keys).toEqual(['site', 'category', 'course', 'group', 'activity', 'other', 'open']);
+    });
+
+    it('Back to an address that names no state returns to the state the page was given', async() => {
+        await mount(props([], {state: {
+            off: [], categoryid: 0, recursive: true, model: [], modality: [], city: 'Recife', actiononly: false, colour: 'key',
+        }}));
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-action="dim-cal-clear"]') as HTMLElement);
+        });
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).toBeNull();
+        window.history.replaceState({}, '', '/r.php/theme_dimensions/calendar?month=2026-11');
+        await act(async() => {
+            window.dispatchEvent(new PopStateEvent('popstate'));
+        });
+        expect(document.querySelector('[data-action="dim-cal-clear"]')).not.toBeNull();
+    });
+
+    it('a change alone adopts its state: the toolbar and the request agree (control)', async() => {
+        await mount(props());
+        await act(async() => {
+            fireEvent.click(document.querySelector('[data-key="site"]') as HTMLElement);
+        });
+        expect((document.querySelector('[data-key="site"]') as HTMLInputElement).checked).toBe(false);
+        expect(ranges().pop()?.keys).toEqual(['category', 'course', 'group', 'user', 'activity', 'other', 'open']);
+    });
+
     it('remembers a state once, after a quiet, and not again when nothing changed', async() => {
         jest.useFakeTimers();
         await mount(props());

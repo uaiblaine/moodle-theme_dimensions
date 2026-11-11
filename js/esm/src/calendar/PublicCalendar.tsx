@@ -27,17 +27,17 @@
  *   the page's language.
  * - The latest request wins: a ticket is taken per request and checked after the await. A Pending token
  *   (theme_dimensions/calendar:range) spans the request to the painted grid.
- * - The month view and the week view as on the logged-in page: what is shown is a span with its answer,
- *   one call of the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
+ * - The month view and the week view as on the logged-in page: what is shown is a span with its answer, one call of
+ *   the service either way (calendar/weeks.ts); on a phone the Day view too (DayView.tsx), a day span on a desktop
  *   asked for and drawn as its month with the day's drawer open, as on the logged-in page.
- * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a chip
- *   and the open day replace it; Back and Forward read the address again.
+ * - The address has one writer (calendar/history.ts): a month or a week moved and a view switched push an entry, a
+ *   key toggled and the open day replace it; Back and Forward read the address again.
  * - A failure loads the address of what was asked for, which the server draws: a visitor is never shown the server's
  *   words.
  * - The description is the answer's own text, drawn as text; nothing is asked of core.
  *
- * What it imports is the point: nothing that reads the session or asks a logged-in service
- * (categorypublic_source_test walks its whole graph).
+ * What it imports is the point: nothing that reads the session or asks a logged-in service, not even named in a
+ * comment (categorypublic_source_test walks its whole graph, comments included).
  *
  * @module     theme_dimensions/calendar/PublicCalendar
  * @copyright  2026 Anderson Blaine
@@ -88,7 +88,7 @@ import type {Span, View} from './weeks';
 /** The one web service the visitor's calendar calls, answered without a session. */
 export const METHOD = 'theme_dimensions_get_public_calendar_range';
 
-/** The keys a visitor's calendar carries, in the order the chips are drawn (local\calendar\visitor::KEYS). */
+/** The keys a visitor's calendar carries, in the order the event types' dropdown lists them (local\calendar\visitor::KEYS). */
 export const VISITOR_KEYS: readonly Key[] = ['category', 'open'];
 
 /** The address parameter of the keys that are on. */
@@ -117,7 +117,7 @@ export type PublicProps = {
     urls: {page: string, home: string},
 };
 
-/** What the page shows: a month or a week and its answer, always together. */
+/** What the page shows: a month, a week or a day and its answer, always together. */
 type Shown = {span: Span, answer: PublicAnswer};
 
 /** How a request writes the address. */
@@ -220,8 +220,7 @@ export const emptyPublicAnswer = (days: string[]): PublicAnswer => ({...emptyAns
 const openingDay = (month: string, today: string): string => (today.startsWith(month) ? today : `${month}-01`);
 
 /**
- * The span the server's props name: the week or the day (a phone's) when they say so and name
- * one, else the month.
+ * The span the server's props name: the week or the day (a phone's) when they say so and name one, else the month.
  *
  * @param {object} props The server's props.
  * @returns {object} The span.

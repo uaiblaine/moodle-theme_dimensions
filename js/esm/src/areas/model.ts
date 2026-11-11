@@ -70,7 +70,10 @@ export const SELECTORS = {
     direct: '[data-region="dim-direct"]',
 };
 
-/** The classes the component writes; it reads none of them back as state. */
+/**
+ * The classes the component writes, which it never reads back as state, and `list`, the listing's list view, which
+ * it only reads.
+ */
 export const CLASSES = {
     posteropen: 'dim-poster--open',
     posterempty: 'dim-poster--empty',
@@ -93,7 +96,7 @@ export const PANEL_ID = 'dim-panel';
 /** The summary's id, which the server's Close of a zeroed area lands on: category_panel::ANCHOR_NOMATCH. */
 export const NOMATCH_ID = 'dim-nomatch';
 
-/** The panel's mark on the body, the shared module's own: the stylesheet's panel rules are written against it. */
+/** The component's mark on the body: the stylesheet's panel rules are written against it. */
 export const BODY_CLASS = 'dim-panel-js';
 
 /** Below this width the grid has two tracks: the stylesheet's own number. */

@@ -51,20 +51,20 @@ use theme_dimensions\local\trail\trail;
  * 2. The trails this account may discover, by the parent course's rule: the showcase's own gate,
  *    {@see population::admitted()} over the root scope, as the calendar's open events and the steps use it. An unlisted
  *    trail is therefore offered to an account enrolled in it or with a way to enrol, and to nobody else. Then, on the
- *    same page of candidates, the view's own rule ({@see shown_to()}, stage T3d): of what the gate admits, the trails
+ *    same page of candidates, the view's own rule ({@see shown_to()}): of what the gate admits, the trails
  *    this account takes part in, may enrol in, may see as public, or may edit. Both run inside the page, before the
  *    cap counts, so a trail the account is not shown never takes a shown one's place nor says "more".
- * 3. Their structure ({@see trail::many()}) and the steps this account sees ({@see display::many()}, section 6's
- *    account rule: in full or not at all, never a ghost), each batch one statement for every trail.
+ * 3. Their structure ({@see trail::many()}) and the steps this account sees ({@see display::many()}: a step is
+ *    drawn in full or not at all, never as a ghost), each batch one statement for every trail.
  * 4. The progress of the trails the account is enrolled in ({@see progress::many()}), over the steps drawn.
  * 5. The rows: the trails with a step drawn whose period meets the window, narrowed to one trail or to the account's
  *    own when asked. The period is the landing page's: from the first start to the last end over the steps drawn, left
  *    open by a step that starts and never ends.
- * 6. The image of each step's course, the popover's cover (the course card contract, section 9): one batch over the
+ * 6. The image of each step's course, the popover's cover: one batch over the
  *    courses of the steps drawn ({@see cards::images()}, the showcase's reader, with the renderer's cover for a course
  *    without one), and none while Boost Union's card view draws no image ({@see boost_union::show_images()}).
  *
- * `options` lists every trail of step 2 that has a step drawn, whatever its period: the view's "Trilha" choice. A
+ * `options` lists every trail of step 2 that has a step drawn, whatever its period: the view's trail selector. A
  * trail is never named to an account the gate or the view's rule refuses, so a shared address naming one shows nothing
  * of it. "Only mine" keeps the trails the account is actively enrolled in, which the rule always shows.
  *
@@ -72,7 +72,7 @@ use theme_dimensions\local\trail\trail;
  * public batch and the plugin's next-action batch (each once a page of candidates, and only over the trails still
  * undecided), one for the steps' referenced courses and their gate, at most one on {course_completions}, and at most
  * one on {files} for the steps' images.
- * Each trail course's modinfo and completion data are core's caches (trails_budget_test measures a warm page).
+ * Each trail course's modinfo and completion data are core's caches (trails_test counts a warm page).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -273,8 +273,8 @@ final class trails {
     }
 
     /**
-     * Whether the Trilhas view would list this trail course to the current account: the landing page's "Ver no
-     * calendário".
+     * Whether the Trilhas view would list this trail course to the current account: the landing page's calendar link
+     * (string landing_trail_calendar).
      *
      * The answer's own path over the one course, never a copy of it: the candidates' statement narrowed to the id (so a
      * course of another model is no trail), the showcase's gate and the view's rule ({@see kept()}), then the steps the
@@ -334,7 +334,7 @@ final class trails {
     }
 
     /**
-     * Which of these trail courses the Trilhas view shows the current account: the view's rule (stage T3d).
+     * Which of these trail courses the Trilhas view shows the current account: the view's rule.
      *
      * A trail is shown to an account that takes part in it, may join it, may see it as public, or may edit it. In
      * order, each cheaper than the next, and a trail decided by one step is asked nothing further:
@@ -343,7 +343,7 @@ final class trails {
      *    awaiting a decision, a waiting-list place. Read as the classifier folds local_unlistedcourses'
      *    {@see access::classify_enrolment()} into `type` ({@see classifier::enrolments()}), never re-derived. A
      *    suspended or expired enrolment counts for nothing here: such a trail goes on to the next steps.
-     * 2. Staff: whoever may edit the trail course, the owner's "who can edit", read as `moodle/course:update` at the
+     * 2. Staff: whoever may edit the trail course, read as `moodle/course:update` at the
      *    trail course's own context (a site administrator passes; the capability in another course does not), so a
      *    manager can check the view. The contexts are preloaded with the candidates.
      * 3. A public trail ({@see publicaccess::are_public()}, the landing page's own predicate), shown to every account,

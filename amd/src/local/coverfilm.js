@@ -29,14 +29,10 @@
  *
  * The rules:
  *
- * - A hover starts a film only on a pointer that can hover, (hover: hover) and (pointer: fine):
- *   a touch screen reports a hover for the tap that is about to become a press, so it never
- *   starts one and the play control is its path instead. Both halves of a hover are gated, on
- *   the event: a touch pointer fires pointerout when the finger lifts, before the click, and read
- *   as a departure that lift would stop the film the press is about to pause or unmute.
- *   hovers() is the predicate, and onOver() and onOut() both ask it before anything else.
- * - A pointer must rest for INTENT_DELAY before a film starts: a pointer crossing a grid on its
- *   way somewhere else should start nothing.
+ * - A hover starts a film only on a pointer that can hover (HOVER_QUERY); a finger's path is the
+ *   play control. Both halves of a hover are gated on the event's pointer: hovers() is the
+ *   predicate, and onOver() and onOut() both ask it before anything else.
+ * - A pointer must rest for INTENT_DELAY before a film starts.
  * - prefers-reduced-motion: reduce never auto-plays. The controls all still work: the reader has
  *   asked for less movement, not for less feature.
  * - Every start is muted, whatever the card before it did. Sound is a press, never an inheritance.
@@ -72,10 +68,8 @@ const INTENT_DELAY = 180;
  * tap it is about to deliver, so the pointer half of this pair keeps a press from being read as a
  * hover; the play control is the path a finger and a keyboard have.
  *
- * It describes the device and not the event, which is why hovers() exists beside it: a touch
- * device still delivers pointerover and pointerout for every tap, the second when the finger
- * lifts, so this query alone would refuse to start a film for a finger and still let the lift
- * stop one.
+ * It describes the device, not the event, so hovers() gates each event as well: a touch device
+ * still delivers pointerover and pointerout for every tap.
  */
 const HOVER_QUERY = '(hover: hover) and (pointer: fine)';
 
@@ -86,7 +80,8 @@ const MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const PLAYING_CLASS = 'dim-card__media--playing';
 
 /**
- * @type {String} The body class that reveals the control cluster, written here and nowhere else.
+ * @type {String} The body class that reveals the control cluster; the entry module theme_dimensions/covervideo
+ * writes it first, and init() writes it again so this module works alone.
  *
  * Deliberately not the showcase's dim-js, which is the account's listing mark and also hides the
  * toolbar's no-JavaScript "Filter" submit: this module is also armed where that one is not (the
@@ -158,12 +153,10 @@ const stilled = () => window.matchMedia(MOTION_QUERY).matches;
 /**
  * Whether an event came from a pointer that has a hover state at all.
  *
- * A finger and a stylus do not: the browser reports a pointerover as they touch down and a
- * pointerout as they lift, both of them parts of one press rather than of any hover. A pen is
- * answered alike because a pen that hovers is a feature of the hardware, not of the platform,
- * and a pen user pressing the cluster is served by the same path a finger is. An event with no
- * pointerType at all - a legacy mouse event, or one a test dispatched - is a mouse, which is the
- * reading that leaves the desktop page exactly as it was.
+ * A finger and a pen do not: the browser reports a pointerover as they touch down and a
+ * pointerout as they lift, both parts of one press. A pen is answered like a finger because
+ * hovering is a property of the hardware, not of the platform, and the cluster serves both. An
+ * event with no pointerType (a legacy mouse event, or one a test dispatched) is a mouse.
  *
  * @param {PointerEvent} event The event.
  * @return {Boolean} True for a pointer whose hover means something.
@@ -173,8 +166,7 @@ const hovers = (event) => event.pointerType !== 'touch' && event.pointerType !==
 /**
  * Write a toggle's state onto it: the flag a screen reader is given, and the glyph an eye reads.
  *
- * Both halves, from one call site, because a control that says one thing to one reader and
- * another to the next is worse than one that says nothing.
+ * Both from one call site, so the two can never disagree.
  *
  * @param {HTMLElement|null} button The control.
  * @param {Boolean} pressed Whether it is pressed.
@@ -298,7 +290,7 @@ const start = (band) => {
         return;
     }
     if (playing && playing !== band) {
-        // One film at a time: two previews at once is noise, and two sounds at once is worse.
+        // One film at a time, and so one sound at a time.
         stop(playing);
     }
     playing = band;
@@ -432,9 +424,7 @@ const expand = (band) => {
  */
 const onOver = (event) => {
     if (!hovers(event)) {
-        /* A finger's contact is not a hover: it is the first half of a press, and the cluster is
-           the path that press has. Nothing here is touched for it - see onOut() for the half
-           that matters. */
+        // A finger's contact is the first half of a press, not a hover; see onOut() for the half that matters.
         return;
     }
     const band = media(event.target);
@@ -562,8 +552,8 @@ const onTime = (event) => {
 /**
  * Full screen was entered or left.
  *
- * The browser's own control bar is drawn in exactly one place, and this is it: over a 150 px card
- * that bar is most of the picture, and it is why the element carries no controls attribute at all.
+ * The browser's own control bar is drawn in exactly one place, and this is it: over a card that bar
+ * is most of the picture, which is why the element carries no controls attribute at all.
  * Leaving takes it off again, from whichever film has it, so a card never keeps a bar it earned
  * in another state.
  *

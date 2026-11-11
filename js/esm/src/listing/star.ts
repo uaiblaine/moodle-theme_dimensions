@@ -41,7 +41,10 @@ const SELECTORS = {
 /** The body class that shows the star: this module's own mark. */
 const BODY_CLASS = 'dim-star-js';
 
-/** The theme's guarded wishlist service: never core's, which checks nothing a showcase must. */
+/**
+ * The theme's guarded wishlist service. Never core's favourites service: it only instantiates the course context,
+ * so it would star a course the showcase withholds from this reader.
+ */
 const TOGGLE_METHOD = 'theme_dimensions_toggle_wishlist';
 
 /** Whether the one listener is already installed. */

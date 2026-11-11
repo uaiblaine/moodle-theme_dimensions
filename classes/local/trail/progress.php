@@ -34,9 +34,9 @@ namespace theme_dimensions\local\trail;
  * not done, whatever the referenced course says, because the trail's author chose the activity's rule.
  *
  * Then, for a step not done: locked while core's availability refuses it to the reader (the reason is core's own
- * text); otherwise it is open, and the first open step is the one "Continuar" leads to. An open step whose end
- * has passed is late; the first open one that is not late is current, any other upcoming. So exactly one step,
- * the first open one, is the reader's next, and it is current or late.
+ * text); otherwise it is open. An open step whose end has passed is late; otherwise the first open step is current
+ * and any later one upcoming. So exactly one step, the first open one, is the reader's next (the one the landing
+ * page's "Continue" leads to), and it is current or late.
  *
  * Statements: core's completion data for the whole trail course in one read (the 'core/completion' cache, which the
  * course page fills too; filling it asks each activity's own completion rules, mod_subcourse's a row per activity),
@@ -140,7 +140,7 @@ final class progress {
             if ($completion->is_enabled($cm) != COMPLETION_TRACKING_NONE) {
                 $data = $completion->get_data($cm, true);
                 $isdone = in_array((int) $data->completionstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS], true);
-                $completed = (int) $data->timemodified;
+                $completed = $isdone ? (int) $data->timemodified : 0;
             } else if (isset($coursedone[$step->refcourseid])) {
                 $isdone = true;
                 $completed = $coursedone[$step->refcourseid];

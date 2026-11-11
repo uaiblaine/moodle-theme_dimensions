@@ -21,11 +21,10 @@
 // dimensions-focusmode and dimensions-focusmode-expanded on the focused skin, which the amd module
 // moves without a reload.
 
-/* The bar's height is a contract, not a style: every offset which stops the page sliding under a
-   fixed bar is compiled from Boost's own $navbar-height and none of those selectors matches on
-   .navbar itself, so a bar of a different height puts all of them out by the difference. It is
-   computed once, here, because two rules read it - the bar, and the height the overflow menu
-   may not exceed. */
+/* The bar must keep Boost's height: every offset that keeps the page clear of a fixed bar is
+   compiled from $navbar-height and none of those selectors matches .navbar itself, so a bar of
+   another height puts all of them out by the difference. Two rules read it: the bar, and the
+   overflow menu's height cap. */
 $dimensions-focusbar-height: $navbar-height + 1px;
 
 /* ---- Tokens ------------------------------------------------------------- */
@@ -58,11 +57,10 @@ body.dimensions-focusable:not(.dimensions-focusmode) .dimensions-focus-only {
 }
 
 /* Boost Union's chrome under the focused skin: everything the reduced shell leaves out,
-   named after Boost Union's own drawers template (BU/templates/theme_boost/drawers.mustache, branch
-   upgrade-503) and core's partials. This list is the coupling with Boost Union: re-read that
-   template on every Boost Union update, because a new element of it shows inside focus mode until
-   it is named here. Kept: the two drawers and their togglers, the info banners, the JavaScript
-   hint, the course notice, the activity header and Boost Union's footer.
+   named after Boost Union's drawers template (templates/theme_boost/drawers.mustache) and core's
+   partials. Re-read that template on every Boost Union update: a new element of it shows inside
+   focus mode until it is named here. Kept: the two drawers and their togglers, the info banners,
+   the JavaScript hint, the course notice, the activity header and Boost Union's footer.
 
    The navbar is named by its place and not by a class: the focus bar is a .navbar.fixed-top too,
    and Boost Union's menu bar is a second one. */
@@ -91,8 +89,7 @@ body.dimensions-focusmode #footnote {
 /* The activity information box stays core's, and under the focused skin only its description is
    left: the automatic conditions are the discreet line at the foot of the content instead,
    so the box's half that states them, its grey ground and the rule under the
-   description go. The box is the only place a module's intro is printed since Moodle 4.0, which is
-   why it is reduced here and never removed. */
+   description go. Core prints a module's intro only in this box, so it is reduced, never removed. */
 body.dimensions-focusmode #region-main .activity-details:not(:empty) {
     margin-bottom: 0;
     padding-right: 0;
@@ -139,18 +136,15 @@ body.dimensions-focusmode-expanded #page.drawers .main-inner {
 }
 
 /* ---- The bar ------------------------------------------------------------ */
-/* One row which cannot become two. The bar keeps .navbar.fixed-top on purpose - Boost's height,
-   its border and this theme's 3px signature band all come from it - and Bootstrap's .navbar
-   declares flex-wrap: wrap. Flex assigns items to lines by their hypothetical main size, before
-   min-width: 0 and any shrink factor are consulted, so on a phone the actions cluster would wrap
-   to a second row below the bar, over the page and the signature band, taking the overflow
-   trigger with it. What does not fit is truncated instead by the two zones which are allowed to
-   shrink - the heading, and whatever the activity module put in the header - while the controls
-   this theme owns keep a width which does not depend on what any of them is called. */
-/* The colour is Bootstrap's own navbar brand colour, which the colour mode already resolves:
-   white under .navbar-dark, near-black on a light navbar. The nav element itself has no
-   colour of its own - Bootstrap only sets the custom properties - so without this line every
-   "color: inherit" below would resolve to the page's body colour: dark type on the navy bar. */
+/* One row that never wraps. The bar keeps .navbar.fixed-top for Boost's height, its border and
+   the theme's 3px signature band, and Bootstrap's .navbar declares flex-wrap: wrap. Flex breaks
+   lines by hypothetical main size, before min-width: 0 or shrinking apply, so on a phone the
+   actions would wrap to a second row over the page, taking the overflow trigger with them. What
+   does not fit is truncated instead by the two zones allowed to shrink: the heading and the
+   activity's header actions. */
+/* The colour is Bootstrap's navbar brand colour, which the colour mode resolves (white under
+   .navbar-dark, near-black on a light navbar). Bootstrap sets only custom properties on the nav,
+   so without this every "color: inherit" below would take the body colour: dark type on navy. */
 body.dimensions-focusmode .dimensions-focusbar {
     display: flex;
     flex-wrap: nowrap;
@@ -161,19 +155,17 @@ body.dimensions-focusmode .dimensions-focusbar {
     color: var(--bs-navbar-brand-color, var(--bs-body-color));
 }
 
-/* The height is pinned to Boost's own, at a specificity a plugin's navbar rule does not reach.
-   mod_interactivevideo (and mod_flexbook, which borrows its body class) declares
-   .path-mod-interactivevideo .navbar.fixed-top { height: 70px } for its own in-navbar controls;
-   the bar is a .navbar.fixed-top too, so on those pages it would grow to 70px while the course
-   index drawer still starts at $navbar-height, ten pixels under it. */
+/* The height is pinned at a specificity a plugin's navbar rule does not reach.
+   mod_interactivevideo (and mod_flexbook, which borrows its body class) sets
+   .path-mod-interactivevideo .navbar.fixed-top to 70px high, which would make the bar overlap the
+   course index drawer, still placed at $navbar-height. */
 body.dimensions-focusmode .navbar.fixed-top.dimensions-focusbar {
     height: $dimensions-focusbar-height;
 }
 
-/* The heading yields four times faster than a header action when the row is short. Both truncate,
-   and the ratio is the judgement: a title cut to "Aula 12 - Pr..." still says which activity this
-   is, while a completion button cut to "M..." says nothing at all. flex-grow is 0 because the free
-   space is collected by the actions' own auto margin, not by this box. */
+/* The heading shrinks four times faster than a header action: a title cut to "Lesson 12 - Pr..."
+   still names the activity, a completion button cut to "M..." says nothing. flex-grow is 0
+   because the actions' auto margin takes the free space. */
 body.dimensions-focusmode .dimensions-focusbar-heading {
     display: flex;
     flex: 0 4 auto;
@@ -183,24 +175,19 @@ body.dimensions-focusmode .dimensions-focusbar-heading {
     min-width: 0;
 }
 
-/* The cap belongs to the wide bar, where it keeps a long activity name away from the controls.
-   Below md there is nothing to keep it away from - the controls are fixed squares by then, held
-   at the end of the row by the auto margin - and the cap would only throw away room the title has
-   no other source of. Written as a top-level include with fully qualified selectors inside on
-   purpose: the scope test reads a selector sitting one level under an at-rule, and would never
-   look at one nested inside another selector. */
+/* The cap keeps a long activity name away from the controls on the wide bar only: below md the
+   controls are fixed squares and the cap would only take room from the title. A top-level include
+   with fully qualified selectors, because the scope test reads selectors one level under an
+   at-rule and never inside another selector. */
 @include media-breakpoint-up(md) {
     body.dimensions-focusmode .dimensions-focusbar-heading {
         max-width: 46%;
     }
 }
 
-/* The overline follows the bar's own colour mode instead of naming a colour. A pale blue was
-   right on the dark brand-colour bar this theme fills in by default and close to invisible on a
-   light bar - and a light bar is not hypothetical: Boost Union ships navbarcolor as bg-body,
-   an administrator may set it back, and a flavour's look_navbarcolor may set it per organisation.
-   Inheriting the bar's own text colour and dimming it reads as secondary on both, with no second
-   palette to keep in step. */
+/* The overline inherits the bar's text colour, dimmed, instead of naming a colour: the bar is dark
+   by default but light when an administrator keeps Boost Union's navbarcolor at bg-body or a
+   flavour's look_navbarcolor sets it, and a fixed colour would fail on one of the two. */
 body.dimensions-focusmode .dimensions-focusbar-course {
     overflow: hidden;
     opacity: .8;
@@ -241,32 +228,26 @@ body.dimensions-focusmode .dimensions-focusbar-actions {
     margin-inline-start: auto;
 }
 
-/* The controls this theme owns never shrink, and below md every one of them is the same square,
-   so the width of this cluster is a constant: at most three squares and two gaps, whatever the
-   language and however long "Sair do modo foco" is in it. That constant is the reason the bar
-   cannot overflow again - everything to its left may shrink instead.
+/* The theme's controls never shrink, and below md each is the same square, so the cluster's width
+   is a constant (at most three squares and two gaps) in any language; everything to its left
+   shrinks instead.
 
-   Note what is not written above: min-width: 0 on the cluster. A flex item's automatic minimum
-   size is its content's, and with these children at flex: 0 0 auto that floor is the constant -
-   the browser computes it, so no number here can fall out of step with the controls. Writing
-   min-width: 0 removes the floor, and then the cluster shrinks along with the heading under a
-   long activity name, its buttons overflowing their own box. The one child which must still give
-   way keeps its own min-width: 0 below, and an item with that contributes nothing to the floor -
-   so a header action shrinks inside a cluster which does not. */
+   The cluster deliberately has no min-width: 0. Its automatic minimum is its content's, which
+   with these children at flex: 0 0 auto is that constant; min-width: 0 would let it shrink under
+   a long activity name and overflow its buttons. The header actions slot keeps its own
+   min-width: 0 below, so it adds nothing to that floor and shrinks inside the cluster. */
 body.dimensions-focusmode .dimensions-focusbar-actions > * {
     flex: 0 0 auto;
 }
 
-/* The one exception, and the only unbounded thing in the row: a header action is HTML the
-   activity module wrote - core's completion button or its status badge on most pages, but
-   mod_forum puts a whole quick search form here and a plugin may put anything at all. So the slot
-   holding them, and each of them inside it, shrinks before the theme's own controls do. Neither is
-   clipped: an element's own overflow does not clip its own outline, but a wrapper's does, and a
-   focus ring inside somebody else's markup is not this theme's to cut.
+/* The exception: a header action is HTML the activity module wrote (core's completion button or
+   status badge, mod_forum's search form, anything a plugin adds), so the slot and each action in
+   it shrink before the theme's controls do. Neither clips its overflow: a wrapper's overflow would
+   cut the focus ring of markup the theme does not own.
 
-   The slot is in the bar on every page and the amd module moves the actions in and out of it, so
-   an empty slot takes no box, and with it no gap of the row: the template writes it on one line,
-   and the module leaves it with no child at all, so :empty holds whenever nothing is in it. */
+   The slot is in the bar on every page and the amd module moves the actions in and out of it. An
+   empty slot takes no box and no gap: the template writes it on one line and the module leaves it
+   childless, so :empty matches. */
 body.dimensions-focusmode .dimensions-focusbar-actions > .dimensions-focusbar-headeractions {
     display: flex;
     flex: 0 1 auto;
@@ -297,24 +278,20 @@ body.dimensions-focusmode .dimensions-focusbar-actions .btn {
 }
 
 /* ---- The controls the bar owns ------------------------------------------ */
-/* The way out is a button, and it is the same button as the way in: one mixin in post.scss
-   dresses both (dimensions-navbar-pill). Both renderings of the exit are covered by this one
-   selector: the submit inside the leave form, which a manual session needs so that leaving also
-   clears the flag, and the plain link a course-level switch gets.
+/* The way out wears the way in's mixin (dimensions-navbar-pill, post.scss). One selector covers
+   both renderings of the exit: the submit of the leave form, which a manual session needs so that
+   leaving clears the flag, and the plain link a course-level switch gets.
 
-   The selectors below carry .dimensions-focusbar as well, which the rule above does not, so they
-   win on specificity rather than on source order - the kind of dependency a later reformat
-   breaks silently. The rule above is left alone on purpose: it also reaches core's manual
-   completion button, sitting in the same row, and neither that button's colour nor its metrics
-   are this theme's to alter. */
+   The selectors below carry .dimensions-focusbar, which the rule above does not, so they win on
+   specificity rather than source order. The rule above stays as it is: it also reaches core's
+   manual completion button in the same row, whose colour and metrics are core's. */
 body.dimensions-focusmode .dimensions-focusbar .dimensions-focusbar-actions .dimensions-focusbar-close {
     @include dimensions-navbar-pill;
 }
 
-/* The two icon-only controls keep the pill's geometry to the pixel and draw no hairline at all,
-   not on hover either. That is deliberate: the exit is then the only bordered control in the
-   cluster, which is what makes it read as the primary one. The border is kept and made
-   transparent rather than removed, so their box metrics stay identical to the exit's. */
+/* The two icon-only controls keep the pill's geometry but draw no border, hover included, so the
+   exit is the one bordered, primary control. The border is transparent rather than removed, so
+   their box metrics match the exit's. */
 body.dimensions-focusmode .dimensions-focusbar .dimensions-focusbar-actions .dimensions-focusbar-morebutton,
 body.dimensions-focusmode .dimensions-focusbar .dimensions-focusbar-actions .dimensions-focusbar-width {
     @include dimensions-navbar-pill;
@@ -323,56 +300,43 @@ body.dimensions-focusmode .dimensions-focusbar .dimensions-focusbar-actions .dim
     border-color: transparent;
 }
 
-/* Core's global .icon rule reaches in here: it gives every glyph half a rem of right margin, a
-   pre-flexbox spacer for a label that follows the glyph. These controls are flex boxes whose
-   gap is that same half rem, so it is a second copy of a space already drawn - and on an
-   icon-only control there is no label for it to separate at all, so it pushes the glyph off the
-   centre of a button that has a border, a hover fill and a focus ring to show it.
+/* Core's global .icon rule gives every glyph a right margin for a label after it. The exit
+   spaces its label with the pill's gap already, so the margin would add to it; the two icon-only
+   controls (and the exit at phone width) have no label, and the margin pushes the glyph off centre.
 
-   Three named controls and never the container. The container also holds
-   .dimensions-focusbar-action, which is markup this theme did not write - core's completion glyph
-   has a label after it, and a mod_forum search form brings its own icons - and their spacing is
-   core's to choose.
+   Three named controls, never the container: it also holds .dimensions-focusbar-action, markup
+   the theme did not write, whose spacing is core's or the activity's.
 
-   It cannot be done in the template either: the width toggle's two glyphs come from the pix
-   helper, which splits its body into three positional pieces and calls pix_icon() with no
-   attributes argument, so there is no slot for core's own m-0. */
+   The template cannot add m-0: the width toggle's glyphs come from the pix helper, which calls
+   pix_icon() with no attributes argument. */
 body.dimensions-focusmode .dimensions-focusbar-close .icon,
 body.dimensions-focusmode .dimensions-focusbar-morebutton .icon,
 body.dimensions-focusmode .dimensions-focusbar-width .icon {
     margin: 0;
 }
 
-/* No colour here on purpose. The bar is a .navbar, and post.scss gives every navbar dropdown the
-   navy surface with light text through Bootstrap's own --bs-dropdown-* tokens; a fixed dark
-   text colour on top of that would be dark on navy. Bootstrap reads the tokens by itself.
+/* No colour here: the bar is a .navbar, and post.scss colours every navbar dropdown through
+   Bootstrap's --bs-dropdown-* tokens; a fixed text colour would be dark on navy.
 
-   The wrap is load-bearing: Bootstrap sets .dropdown-item to nowrap, so without this a long label
-   (a teacher's "Advanced grading", say) would push straight out of the box the rule below
-   bounds - horizontally, where an overflow-y cannot help. */
+   Bootstrap sets .dropdown-item to nowrap, so without the wrap a long label (a teacher's
+   "Advanced grading") would overflow the menu's width cap below sideways, where overflow-y
+   cannot help. */
 body.dimensions-focusmode .dimensions-focusbar-actions .dropdown-item {
     font-size: var(--dim-ds-text-small);
     white-space: normal;
 }
 
-/* The overflow menu is positioned against the bar and never against the button which opens it.
-   Bootstrap disables Popper for every dropdown inside a navbar - Dropdown's navbar check is a
-   plain closest('.navbar'), and the popper config then ships a disabled applyStyles - so no
-   inline style and no data-popper-placement is ever written, nothing flips the menu back into
-   the viewport, and the plain CSS behind .dropdown-menu-end is the entire positioning: it pins
-   the menu's right edge to the toggle's and grows 256px of it leftwards, off the left of a phone
-   screen whenever the toggle is not near the right edge. data-bs-display="dynamic" cannot help -
-   the check is an OR whose navbar clause no config value reaches.
+/* The overflow menu is positioned against the bar, not against its toggle. Bootstrap disables
+   Popper's styles for any dropdown inside a .navbar, whatever data-bs-display says, so nothing
+   flips the menu back into the viewport: .dropdown-menu-end alone pins its right edge to the
+   toggle's and it grows leftwards, off a phone screen when the toggle is not near the right edge.
 
-   Taking the .dropdown out of the positioned chain makes the fixed bar itself the containing
-   block, so Bootstrap's own top: 100% - which it applies under the data-bs-popper="static"
-   attribute it sets - resolves to the bar's full height instead of the middle of a button. The
-   menu is then held between the bar's own edges: the inset is logical, so it mirrors with the
-   flex row in RTL, and the cap is a percentage of the bar rather than of the viewport, so a
-   scrollbar cannot spend it. The physical pair is restated first so the override does not rest
-   on the logical-versus-physical cascade alone. Nothing between the menu and the bar may be
-   positioned for this to hold; .dimensions-focusbar-actions is the only element there, and it is
-   not. */
+   A static .dropdown makes the fixed bar the containing block, so Bootstrap's top: 100% (under the
+   data-bs-popper="static" it sets) is the bar's full height. The menu is held between the bar's
+   edges: the inset is logical, so it mirrors in RTL, and the width cap is a percentage of the bar,
+   which a scrollbar cannot take. The physical pair is reset first so the override does not rely on
+   the logical-versus-physical cascade. Nothing between the menu and the bar may be positioned;
+   .dimensions-focusbar-actions, the only element there, is not. */
 body.dimensions-focusmode .dimensions-focusbar-more {
     position: static;
 }
@@ -387,17 +351,15 @@ body.dimensions-focusmode .dimensions-focusbar-more .dropdown-menu {
 }
 
 /* ---- The bar on a phone -------------------------------------------------- */
-/* md and not sm. md is the width this theme has already decided a navbar has no room for a text
-   label - the entry button's own template and .dimensions-usermenu-name in post.scss both key on
-   it - so the feature introduces no new breakpoint, and the way in and the way out collapse
-   together. It is also the first width where the labelled layout fits: at sm a labelled exit
-   beside core's completion button leaves the activity name about a hundred pixels, which is not
-   a name. The width control keeps its own lg breakpoint, and the course overline is already
-   d-none d-md-block in the template.
+/* md, the breakpoint below which the theme's navbar drops text labels (the entry button's template
+   and .dimensions-usermenu-name in post.scss key on it), so the way in and the way out collapse
+   together. At sm a labelled exit beside core's completion button would leave the activity name
+   about a hundred pixels. The width control keeps its own lg breakpoint, and the course overline
+   is d-none d-md-block in the template.
 
-   2.25rem is 36px in a 61px bar. It clears WCAG 2.2 SC 2.5.8 (Target Size Minimum, AA, 24 by 24)
-   with room for the 3px focus ring and its 2px offset; SC 2.5.5's 44px is AAA and this theme does
-   not claim it. Stated as minimums so a larger glyph is never clipped. */
+   2.25rem (36px in a 61px bar) clears WCAG 2.2 SC 2.5.8 (24 by 24, AA) with room for the 3px focus
+   ring and its 2px offset; SC 2.5.5's 44px is AAA and not claimed. Minimums, so a larger glyph is
+   never clipped. */
 @include media-breakpoint-down(md) {
     body.dimensions-focusmode .dimensions-focusbar .dimensions-focusbar-actions .dimensions-focusbar-close {
         @include dimensions-navbar-pill-icon;
@@ -417,7 +379,7 @@ body.dimensions-focusmode .dimensions-focusbar-leave {
 /* Core's own skip link is printed before the bar and must land on top of it: the bar is
    fixed, so without this the pill opens underneath and a keyboard user sees nothing. */
 body.dimensions-focusmode .visually-hidden-focusable:focus {
-    z-index: 1040;
+    z-index: $zindex-fixed + 10;
 }
 
 /* ---- The reading type --------------------------------------------------- */

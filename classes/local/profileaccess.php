@@ -76,10 +76,9 @@ class profileaccess {
      * Decide whether this viewer must be kept away from this profile.
      *
      * Memoised per request because the callback is not called once per page: core_user::search()
-     * runs can_view_profile() on every row it is about to return, up to 100 of them
-     * (lib/classes/user.php:399), and the message member-info service does the same over the ids
-     * it was given (message/externallib.php:3436). Without the memo one message search would cost
-     * one enrolment query per candidate.
+     * runs can_view_profile() on every row it reads, and core_message_external::get_member_info()
+     * does the same over up to 100 ids. Without the memo one search would cost one enrolment query
+     * per candidate.
      *
      * @param stdClass $user The user whose profile is being asked for.
      * @param stdClass|null $course The course whose page the request came from, if any.
@@ -95,8 +94,8 @@ class profileaccess {
             return core_user::VIEWPROFILE_DO_NOT_PREVENT;
         }
 
-        // Own profile. Core returns before ever calling this, but other callers of the callback
-        // machinery need not, and a veto on one's own profile would be a bug worth not writing.
+        // Own profile. Core returns before calling this, but another caller of the callback
+        // machinery need not.
         if ((int) $USER->id === (int) $user->id) {
             return core_user::VIEWPROFILE_DO_NOT_PREVENT;
         }
@@ -104,7 +103,7 @@ class profileaccess {
         // The viewer is part of the key: $USER changes within one request whenever
         // \core\session\manager::set_user() runs (CLI scripts, adhoc tasks acting as somebody,
         // "log in as"), and a key without it would answer one viewer with another viewer's
-        // decision. Pinned by test_the_memo_distinguishes_the_viewer().
+        // decision.
         $key = (int) $USER->id . ':' . (int) $user->id . ':' . (int) ($course->id ?? 0);
         if (!array_key_exists($key, self::$memo)) {
             self::$memo[$key] = self::decide($user, $course);
@@ -205,9 +204,10 @@ class profileaccess {
      * enrolment row on both sides, so it cannot see a teacher who holds their course by role
      * assignment alone, and that teacher would lose the students they teach.
      *
-     * Left as permissive as core's own leg on purpose. This class exists to close one specific
-     * hole, and every extra strictness here would silently overrule a core decision that has
-     * nothing to do with it.
+     * No group check, unlike core's own leg: a "do not prevent" hands the decision back to core,
+     * which applies its own checks (groups included) after the callbacks, while any extra strictness
+     * here would overrule core decisions unrelated to the hole this class closes. The capability
+     * tested is viewparticipants rather than core's viewdetails; see the class docblock.
      *
      * @param stdClass $user The user whose profile is being asked for.
      * @return bool True when such a course exists.

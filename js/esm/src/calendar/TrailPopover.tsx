@@ -14,14 +14,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * A step's popover in the Trilhas view, the course card's dialog variant (moodle-dev/docs/course-card/CONTRACT.md,
- * section 9): its course's cover, its category over its name, its dates as the meta line, "Course 3 of 5 · trail" in the
- * plugin's slot, its state and core's availability text for a learner, "View trail" and the main action.
+ * A step's popover in the Trilhas view, drawn as the course card's dialog: its course's cover, its category over its
+ * name, its dates as the meta line, "Course 3 of 5 · trail" in the plugin's slot, its state and core's availability
+ * text for a learner, "View trail" and the main action.
  *
  * The event popover's behaviour (EventPopover.tsx), for a step: role="dialog" labelled by the name, not modal; anchored
  * to the bar that opened it by the same rule ({@see anchor}), a bottom sheet on a phone; the focus on its heading once
  * shown; Escape, the close button, a press outside, or Tab past its last control close it and give the focus back to
- * the bar. Its two layout reads are the opener's box and its own, on an opening.
+ * the bar. Its layout reads (the opener's box, its own and the navbar's) are made on an opening only.
  *
  * - The cover is the step's course image (the answer's `image`, {@see safeImage()}: an address or the theme's SVG
  *   cover), an <img> with an empty alt; the category's band (look.ts categoryCover(), else the state's) is only the
@@ -31,8 +31,8 @@
  *   share a row at the top of the body, the close the calendar's standard icon button, since the disc is made to sit on
  *   an image; the popover keeps a top edge in the category's colour.
  * - A completed step: the state pill is the green seal, the cover gets a green base, and the main action reads "Review"
- *   instead of "Open course". There is no progress bar: the service carries no percentage per step (D11).
- * - The buttons are the calendar's own (D12): "View trail" btn-secondary, the main action btn-primary.
+ *   instead of "Open course". There is no progress bar: the service carries no percentage per step.
+ * - The buttons are the calendar's own: "View trail" btn-secondary, the main action btn-primary.
  *
  * @module     theme_dimensions/calendar/TrailPopover
  * @copyright  2026 Anderson Blaine
@@ -69,8 +69,8 @@ type TrailPopoverProps = {
 };
 
 /**
- * The trail's icon two stops joined by a winding path, drawn in the text's
- * colour. Decorative: whatever carries it names the trail in words.
+ * The trail's icon, two stops joined by a winding path, drawn in the text's colour. Decorative: whatever carries it
+ * names the trail in words.
  *
  * @param {object} props The icon's size, 16 by default.
  * @returns {object} The icon.
@@ -119,8 +119,8 @@ export const stateLabel = (strings: Strings, state: StepState): string => {
 };
 
 /**
- * A step's dates in one line: its span, "From" an open start, "Until" an end alone (local\calendar\page's server layer,
- * calendar_page::step_when(), says the same).
+ * A step's dates in one line: its span, "From" an open start, "Until" an end alone. Mirrors the server layer's
+ * {@see calendar_page::step_when()}; keep in step.
  *
  * @param {object} step The step.
  * @param {object} look The page's look.
@@ -166,8 +166,8 @@ export const stateLine = (step: TrailStep, look: Look, now: number): string => {
 };
 
 /**
- * The main action's label: "Review" for a completed step, "Open course" for any other (the course card contract,
- * section 3: a completed course reads "Review", whatever else is true of it).
+ * The main action's label: "Review" for a completed step, "Open course" for any other, as on the course cards, where a
+ * completed course reads "Review" whatever else is true of it.
  *
  * @param {object} step The step.
  * @param {object} strings The page's strings.

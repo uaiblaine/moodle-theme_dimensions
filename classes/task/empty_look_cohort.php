@@ -24,6 +24,7 @@
 
 namespace theme_dimensions\task;
 
+use theme_dimensions\local\flavourchoice;
 use theme_dimensions\local\lookcohorts;
 
 /**
@@ -32,8 +33,8 @@ use theme_dimensions\local\lookcohorts;
  * Queued by lookcohorts::empty_cohort(). The cohort is kept: a smart menu restricted by it then shows
  * to nobody, where a deleted cohort would leave the menu's rule empty and show it to everyone.
  *
- * It never throws. A throwing adhoc task is retried for ever, and the daily reconcile task empties
- * the cohort again if this run stopped half way.
+ * It never throws: core would retry a failed adhoc task, and the daily reconcile task empties the
+ * cohort again if this run stopped half way.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -50,7 +51,7 @@ class empty_look_cohort extends \core\task\adhoc_task {
     }
 
     /**
-     * Remove every member of the cohort named in the custom data, if it is still a look cohort.
+     * Remove every member of the cohort named in the custom data, if it is still a look cohort and its look is still off the list.
      *
      * @return void
      */
@@ -63,12 +64,18 @@ class empty_look_cohort extends \core\task\adhoc_task {
             mtrace('Look cohorts: cohort ' . $cohortid . ' is not a look cohort - nothing removed.');
             return;
         }
+        // The task was queued when the look left the list; the list is read again now, because an
+        // administrator who offered the look since would otherwise see everyone stripped from its menus.
+        if (array_key_exists((int) array_key_first($ours), flavourchoice::offered())) {
+            mtrace('Look cohorts: cohort ' . $cohortid . ' is offered again - nothing removed.');
+            return;
+        }
 
         try {
             lookcohorts::empty_members($cohortid);
             mtrace('Look cohorts: emptied cohort ' . $cohortid . '.');
         } catch (\Throwable $e) {
-            // Never throw: an adhoc task which throws is retried for ever.
+            // Never throw: core would retry the task, and the daily reconcile finishes the work.
             mtrace('Look cohorts: emptying cohort ' . $cohortid . ' failed - ' . $e->getMessage());
         }
     }

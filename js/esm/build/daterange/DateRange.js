@@ -14,8 +14,7 @@ import{useEffect as W,useLayoutEffect as Y,useRef as _,useState as M}from"react"
  * - it sends `dim-daterange:pick`, detail {from, to}, whenever the period in force changes;
  * - it takes `dim-daterange:set`, detail {from, to}, the period the address says, silently.
  *
- * Without the day the site calls today it draws nothing and says nothing, so the native fields stay
- * exactly as the server drew them: the browser's clock is the one answer this control may not use.
+ * Without the day the site calls today it draws nothing and says nothing ({@see DateRange}).
  *
  * @module     theme_dimensions/daterange/DateRange
  * @copyright  2026 Anderson Blaine

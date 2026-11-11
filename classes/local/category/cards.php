@@ -35,30 +35,28 @@ use theme_dimensions\local\landingfields;
  * Three layers, one statement each, every one bounded by the page size:
  * the course rows themselves, the landing page custom field values
  * ({@see landingfields::values_many()}) and the course images. Two more are read
- * only for the cards that need them, so a page without such a card pays nothing
- * for them: the routes beside a relationship and the opening dates
- * ({@see next_actions()}), and the prerequisite of a conditional card
+ * only for the cards that need them: the routes beside a relationship and the
+ * opening dates ({@see next_actions()}), and the prerequisite of a conditional card
  * ({@see prerequisites()}). Never build core_course_list_element one at a time for these:
- * get_custom_fields() and has_course_overviewfiles() each fall back to a
- * per-course query, and the last one has no bulk escape hatch in core at all.
+ * get_custom_fields() queries per course unless the record already carries customfields, and
+ * has_course_overviewfiles() always does, with no bulk form in core.
  *
  * The course contacts, the summary, the venue and the programme are not read
  * here: only the course dialogue shows them, and it fetches them for one course
- * when it opens ({@see dialogue}), so a page pays nothing for what nobody opened.
+ * when it opens ({@see dialogue}).
  *
  * One more layer belongs to an optional plugin: tool_courserating's average and count for the page's rated
  * courses ({@see ratings()}), one statement on its summary table, and nothing at all where the plugin is not
  * installed or rates no course anywhere ({@see ratings_enabled()}).
  *
- * The images reproduce core's own choice - the first file of the course's
- * overviewfiles area, in filename order, that passes the site's accepted
- * types, within courseoverviewfileslimit, and is a real image - from one
+ * The images reproduce core's own choice ({@see \core_course\cache\course_image::load_for_cache()}) - the
+ * first file of the course's overviewfiles area, in filename order, that passes the site's accepted
+ * types, within courseoverviewfileslimit, and is a valid image - from one
  * {files} statement over the page's contexts, and then write the answer into
- * core's course_image cache, the one Boost Union's cards and the Dashboard
- * read, so the next reader of the same course pays nothing. The cache is not
- * the source of the answer: it has a data source, and a miss on get_many()
- * would load one course at a time. It is only compared, so that an entry
- * already right is not written again ({@see warm_course_image_cache()}).
+ * core's course_image cache, which Boost Union's cards and the Dashboard read.
+ * The cache is not the source of the answer: its data source loads a missing key
+ * one course at a time. It is only compared, so that an entry already right is not
+ * written again ({@see warm_course_image_cache()}).
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -75,8 +73,8 @@ final class cards {
      * {@see \theme_dimensions\output\category_card} reads the model (the kind, the date tile, the call to
      * action, the crests' gate), the modality, the workload and the city (the meta line) and the four
      * crests. The venue and the programme are the dialogue's ({@see dialogue::SHORTNAMES}). A card that
-     * starts reading another value names its field here, or reads the empty value: cards_test compares the
-     * card's keys read this way with every field read, and reads the card's source for the keys it compares.
+     * starts reading another value names its field here, or reads the empty value: cards_test reads the
+     * card's source for the keys it reads and compares them with a read of every field.
      */
     public const CARD_SHORTNAMES = [
         landingfields::SHORTNAME_MODEL,
@@ -100,13 +98,11 @@ final class cards {
      *   plugin recorded it, rates, and somebody has rated it. It mirrors the plugin's own decision to show a course's
      *   rating at all, \tool_courserating\api::reindex_course() and update_course_rating_in_custom_field() (a
      *   ratingmode of RATEBY_NOONE prints nothing, and no rating prints nothing unless the site asks for empty stars,
-     *   which the showcase never draws). The mode is read from the row, never re-derived from the settings: the row is
-     *   what the plugin applies, kept current by its reindex and its course observers. :ratingnoone is
-     *   {@see rated_params()}'s. That is a deliberate choice over the live
-     *   {@see \tool_courserating\helper::get_course_rating_mode()}: after a change of the site's mode or of a course's
-     *   override the row lags until the plugin's reindex task runs (the settings' updated callback schedules it;
-     *   \tool_courserating\observer::course_updated() reindexes only with per-course settings on), exactly as the
-     *   plugin's own course-listing custom field lags, and the showcase follows the plugin's record.
+     *   which the showcase never draws). :ratingnoone is {@see rated_params()}'s. The mode is read from the row, not
+     *   from the live {@see \tool_courserating\helper::get_course_rating_mode()}: after a change of the site's mode or
+     *   of a course's override the row lags until the plugin's reindex task runs (the settings' updated callback
+     *   schedules it; \tool_courserating\observer::course_updated() reindexes only with per-course settings on),
+     *   exactly as the plugin's own course-listing custom field lags.
      */
     public const RATED = 'ratingmode <> :ratingnoone AND cntall > 0';
 
@@ -167,7 +163,7 @@ final class cards {
      * in a listing (\tool_courserating\permission::can_view_ratings()), and a page lists only those.
      *
      * The caller must pass only course ids the page has already admitted: this reads the plugin's summary for whatever
-     * ids it is given and checks no viewer. The enabled term reads the summary row's recorded mode ({@see RATED}).
+     * ids it is given and checks no viewer.
      *
      * @param int[] $courseids The page's ids.
      * @return \stdClass[] courseid => {avg: float, count: int}, for the page's rated courses only.
@@ -236,15 +232,14 @@ final class cards {
      * written into it would leak onto pages behind the login, where it is not the one to use.
      *
      * With $generated, a course with no image of its own gets what the theme's renderer answers for it
-     * ({@see \theme_dimensions\output\core_renderer::get_generated_image_for_id()}, D14 of the course card
-     * contract): its category's cover as an SVG data URI, or Boost Union's fallback image where that is the
-     * administrator's choice. Both shells take it as it is: the data URI needs no route, and Boost Union serves its
-     * fallback image from the system context without a login. The theme's own renderer is asked through
-     * course_covers() with the categories the rows already hold, so the answer costs no statement per course: one
-     * branding cache read for the page's categories (cold, seven statements per category missing from it and one
-     * for all), and Boost Union's file area once while its fallback is chosen. Another theme's renderer is asked
-     * course by course. Without $generated such a course stays null (the calendar and the landing page's steps,
-     * until they draw the card).
+     * ({@see \theme_dimensions\output\core_renderer::get_generated_image_for_id()}): its category's cover as an SVG
+     * data URI, or Boost Union's fallback image where that is the administrator's choice. Both shells take it as it
+     * is: the data URI needs no route, and Boost Union serves its fallback image from the system context without a
+     * login. The theme's own renderer is asked through course_covers() with the categories the rows already hold, so
+     * the answer costs no statement per course: one branding cache read for the page's categories
+     * ({@see branding::for_categories()} says what a miss costs), and Boost Union's file area once while its fallback
+     * is chosen. Another theme's renderer is asked course by course. Without $generated such a course stays null
+     * (the calendar's range and the landing page's steps ask that way).
      *
      * @param \stdClass[] $rows Population rows carrying the context preload columns, keyed by course id.
      * @param bool $public Whether this is the public shell, whose reader has no session.
@@ -378,11 +373,11 @@ final class cards {
     /**
      * The band colour of each card's course: its category's, for a card or a row drawn without its image.
      *
-     * Contract section 8: a card without its cover keeps a top edge, and a row without its thumbnail a leading edge,
-     * in the colour of the course's category, the one its cover would wear ({@see cover::colours()}: the category's
-     * pair, inherited, else the stylesheet's primary). The theme's renderer answers it, so a flavour's brand colour
-     * is the primary as it is on the covers; another theme's renderer leaves Boost's own blue. One branding cache read
-     * for the page's categories, as the covers' (cold, seven statements per category missing from it and one for all).
+     * A card without its cover keeps a top edge, and a row without its thumbnail a leading edge, in the colour of
+     * the course's category, the one its cover would wear ({@see cover::colours()}: the category's pair, inherited,
+     * else the stylesheet's primary). The theme's renderer answers it, so a flavour's brand colour is the primary as
+     * it is on the covers; another theme's renderer leaves Boost's own blue. One branding cache read for the page's
+     * categories, as the covers'.
      *
      * @param \stdClass[] $rows Population rows carrying the course's category, keyed by course id.
      * @return array courseid => lower-case #rrggbb, for every row with a category.

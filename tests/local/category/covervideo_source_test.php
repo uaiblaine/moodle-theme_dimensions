@@ -553,7 +553,7 @@ final class covervideo_source_test extends \basic_testcase {
      * prefers-reduced-motion and on touch devices - and full screen on a film nothing started is a
      * black rectangle; a film then started from the browser's own bar would outlive full screen
      * untracked, under the still, with nothing able to stop it. The reasoning, and why the
-     * adoption goes through toggle(), is in expand()'s docblock in amd/src/covervideo.js.
+     * adoption goes through toggle(), is in expand()'s docblock in amd/src/local/coverfilm.js.
      *
      * Changes that must make it fail: treating the film as already running, which leaves the
      * adoption unreachable.

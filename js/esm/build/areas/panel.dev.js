@@ -6,22 +6,21 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  *
  * The visitor's half is a set of options ({@see Options}): posters that stay links, a question asked once per
  * opening after a quiet, a failure the page takes over, and no automatic opening. The state is read and written
- * synchronously; what React draws from it (the summary of the areas with no
- * result) is told through `ui`.
+ * synchronously; what React draws from it (the summary of the areas with no result) is told through `ui`.
  *
- * WHO WRITES WHAT. The panel's element - the one list item of the grid the server always writes - is this
- * module's frame: its hidden state, its three transition classes (only through {@see settle}), the five
- * integers of its row and the open area's colour on its style, and its place in the DOM. Inside it the
- * panel's content is Mustache's: category_panel rendered by core/templates and inserted whole
- * ({@see renderWhole}) or region by region ({@see transplant}), never diffed. The cards in it keep their own
- * modules (the film, the dialogue, and on the logged-in shell what an account adds, painted on `painted`).
+ * The panel's element - the one list item of the grid the server always writes - is this module's frame: its
+ * hidden state, its three transition classes (only through {@see settle}), the five integers of its row and the
+ * open area's colour on its style, and its place in the DOM. Its content is category_panel rendered by
+ * core/templates and inserted whole ({@see renderWhole}) or region by region ({@see transplant}), never diffed.
+ * The cards in it keep their own modules (the film, the dialogue, and on the logged-in shell what an account
+ * adds, painted on `painted`).
  *
- * LAYOUT. The row is the five integers and the DOM order the last poster of the open one's row, both
- * counted from the posters shown and the grid's tracks (matchMedia and the view class), never read off a
- * box. Three reads remain, each said where it is made: a move from one open area to another reads the
- * pressed poster's top before and after, to keep it under the pointer; the scroll rule reads the panel's
- * box once the opening has settled; the rail reads its scroll from a ResizeObserver entry and from its own
- * scroll events. Nothing is measured at mount.
+ * Layout: the row (the five integers) and the DOM order (after the last poster of the open one's row) are both
+ * counted from the posters shown and the grid's tracks (matchMedia and the view class), never read off a box.
+ * The reads left, each said where it is made: a move from one open area to another reads the pressed poster's
+ * top before and after, to keep it under the pointer; the scroll rule reads the panel's box and the navbar's
+ * height once the opening has settled; a style read (no layout) fixes the shut state before the grow; the rail
+ * reads its scroll from a ResizeObserver entry and from its own scroll events. Nothing is measured at mount.
  *
  * @module     theme_dimensions/areas/panel
  * @copyright  2026 Anderson Blaine
@@ -240,11 +239,13 @@ const createPanel = /* @__PURE__ */ __name((nodes, ui, mode = optionsOf({})) => 
     const rect = panel.getBoundingClientRect();
     const bar = parseFloat(window.getComputedStyle(areas).getPropertyValue("--dim-navbar")) || 0;
     if (rect.bottom > window.innerHeight || rect.top < bar) {
-      const timer = window.setTimeout(resolve, SCROLL_END);
-      window.addEventListener("scrollend", () => {
+      const done = /* @__PURE__ */ __name(() => {
         window.clearTimeout(timer);
+        window.removeEventListener("scrollend", done);
         resolve();
-      }, { once: true });
+      }, "done");
+      const timer = window.setTimeout(done, SCROLL_END);
+      window.addEventListener("scrollend", done);
       window.scrollBy({ top: rect.top - (bar + SCROLL_GAP), behavior: reduced() ? "auto" : "smooth" });
       return;
     }

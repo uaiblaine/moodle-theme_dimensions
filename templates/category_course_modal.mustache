@@ -17,20 +17,18 @@
 {{!
     @template theme_dimensions/category_course_modal
 
-    The course dialogue's frame: core/modal itself, with three blocks of it changed. The dialogue
-    carries the plugin's own class, which every rule of its stylesheet is qualified by, and the
-    header keeps core's close button and a visually hidden title - the course's visible title lives
-    on the cover inside the body, so that it scrolls away with the picture it is printed on, and
-    the header is laid over the cover's corner. The hidden title is what core's root is labelled
-    by until categorycoursemodal hands that id to the cover's title and removes it, so the dialogue
-    has one heading, the one a reader sees; the body and the footer stay core's blocks, which the
-    module fills with the two parts of category_card_modal, rendered from the card and the fetched
-    content.
-    The hidden title keeps core's data-region="title": core/modal's constructor raises an exception
-    when the header has none.
+    The course dialogue's frame: core/modal with three blocks overridden. The dialogue carries the
+    plugin's own class, which qualifies every rule of its stylesheet. The header keeps core's close
+    button and a visually hidden title: the course's visible title is on the cover inside the body,
+    so it scrolls away with the picture it is printed on, and the header is laid over the cover's
+    corner. The hidden title labels core's root until categorycoursemodal moves that id to the
+    cover's title and removes it, so the dialogue has one heading, the visible one. It keeps
+    data-region="title" because core/modal's constructor reports an exception when the header has
+    none. The body and the footer stay core's blocks, which the module fills with the two parts of
+    category_card_modal.
 
-    Everything core/modal brings is kept: the focus trap, Escape, the close button, the backdrop
-    and the focus given back to the control that opened it.
+    Everything else core/modal brings is kept: the focus trap, Escape, the close button, the
+    backdrop and the focus given back to the control that opened it.
 
     Example context (json):
     {

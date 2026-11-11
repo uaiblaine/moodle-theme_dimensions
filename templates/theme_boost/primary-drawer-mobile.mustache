@@ -60,9 +60,9 @@
     * Move child node markup into its own template.
 }}
 {{!
-    theme_dimensions: this is Boost Union's override of theme_boost/primary-drawer-mobile, copied
-    verbatim from Boost Union's upgrade-503 branch (templates/theme_boost/primary-drawer-mobile.mustache,
-    release v5.2-r12, version 2026100500), with THREE modifications:
+    theme_dimensions: this is a copy of Boost Union's override of theme_boost/primary-drawer-mobile
+    (Boost Union's templates/theme_boost/primary-drawer-mobile.mustache; the version last re-diffed is the
+    snapshot primary-drawer-mobile.mustache.upstream beside this file), with three modifications:
 
     * A band behind the drawer's header carrying the navbar's own colour classes (navbarcolorclasses,
       the layout context key the navbar is drawn with), so every rule that paints the navbar - Boost
@@ -77,8 +77,9 @@
       theme_dimensions\local\drawernav applies. Boost Union's list below is untouched and is what
       every other session gets, the visitor's card included.
 
-    Re-diff it against Boost Union's copy on every Boost Union update and carry their changes over:
-    the list inside the inverted section is Boost Union's markup, line for line.
+    Re-diff it against Boost Union's template on every Boost Union update and carry their changes over
+    (scripts/upstream-merge.sh merges them against the snapshot): the list inside the inverted section is
+    Boost Union's markup, line for line.
 }}
 {{< theme_boost/drawer }}
     {{$id}}theme_boost-drawers-primary{{/id}}

@@ -25,7 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// Let codechecker ignore some sniffs for this file as we do not need a login check here..
+// Let codechecker ignore some sniffs for this file as we do not need a login check here.
 // phpcs:disable moodle.Files.RequireLogin.Missing
 
 // As a start, inherit the whole theme config from Boost Union.

@@ -15,7 +15,7 @@
 
 // The sign-in steps of other components drawn on auth_loginsteps' shell (layout/login.php,
 // classes/local/loginshell.php): tool_mfa's second factor and tool_musudo's privileged session.
-// The shell's own look is the plugin's stylesheet; this file lays the PAGE's content - core's
+// The shell's own look is the plugin's stylesheet; this file lays the page's content - core's
 // moodleform, the factor's header, its buttons - into the shell's single column. Every rule is
 // scoped under the bare page's own class, which only that layout writes, so nothing here reaches
 // an ordinary page, Boost Union's login page or the plugin's own screens.

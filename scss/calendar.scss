@@ -217,7 +217,7 @@ body.dim-calendar,
 body.dim-calendar {
     // The page takes the whole column: Boost caps .main-inner of the standard layout at
     // $course-content-maxwidth (Boost Union's coursecontentmaxwidth) from md up, lifted here so the grid and the day
-    // drawer have room. The body class outranks Boost's .pagelayout-standard selector by one class.
+    // drawer have room. body.dim-calendar outranks Boost's .pagelayout-standard selector by its type selector.
     @media (min-width: 768px) {
         #page.drawers .main-inner {
             max-width: none;
@@ -226,7 +226,7 @@ body.dim-calendar {
 
     // Half the gap between the navbar and the calendar's title: Boost's .main-inner margin-top (40px) and
     // padding-top (24px) are cut to 12px and 10px; the page header's own 16px is drawn by a child of #page-header,
-    // which the rule below cannot shrink. The body class puts these one class above Boost's #page.drawers
+    // which the rule below cannot shrink. body.dim-calendar outranks Boost's (.pagelayout-standard) #page.drawers
     // .main-inner, with no !important.
     #page.drawers .main-inner {
         margin-top: 12px;
@@ -394,8 +394,7 @@ body.dim-calendar {
 
     .dim-cal__form,
     .dim-cal__chips,
-    .dim-cal__filters,
-    .dim-cal__chiprow {
+    .dim-cal__filters {
         display: flex;
         flex-wrap: wrap;
         gap: .5rem;
@@ -1778,8 +1777,7 @@ body.dim-calendar {
         line-height: 1.35;
     }
 
-    .dim-cal__poprow > .dim-cal__trailicon,
-    .dim-cal__popicon {
+    .dim-cal__poprow > .dim-cal__trailicon {
         flex: none;
         width: 1rem;
         margin-top: 2px;
@@ -1787,7 +1785,7 @@ body.dim-calendar {
         text-align: center;
     }
 
-    // The public calendar's description is text (decision V2): its paragraphs are the line breaks it carries.
+    // The public calendar's description is plain text: its paragraphs are the line breaks it carries.
     .dim-cal__popdesc--text {
         white-space: pre-line;
     }
@@ -2031,8 +2029,8 @@ body.dim-calendar {
 
     // One native scroller, block_compass's strip: no scrollbar (the map replaces it), its overscroll kept from the
     // page, snapped by the day. Its scroll padding is the still column's width and a day, so a bar the keyboard
-    // focuses is scrolled out from under it. A month added before the days moves the position itself (TrailScroll.tsx
-    // keptLeft()), so the browser's own scroll anchoring is off.
+    // focuses is scrolled out from under it. A month added before the days moves the position itself (TrailScroll.tsx,
+    // through trails.ts keptLeft()), so the browser's own scroll anchoring is off.
     .dim-cal__trailscroll {
         overflow-anchor: none;
         overflow-x: auto;
@@ -2596,7 +2594,7 @@ body.dim-calendar {
         }
     }
 
-    // A locked step is hatched over its fill, as a locked step reads.
+    // A locked step's bar and its legend swatch are hatched over their fill.
     .dim-cal__trailbar--locked,
     .dim-cal__trailswatch--locked {
         background-image:
@@ -2664,7 +2662,7 @@ body.dim-calendar {
         visibility: hidden;
     }
 
-    // The map: a 2px line of the whole month under the days, in a 24px hit area; the thumb is the days in view (its
+    // The map: a 2px line of the days held under the days, in a 24px hit area; the thumb is the days in view (its
     // place and width written by the scroll), the tick today. It is aria-hidden: the arrows and the bars are the way.
     .dim-cal__trailmap {
         position: relative;
@@ -2930,12 +2928,12 @@ body.dim-calendar {
         background: var(--dim-cal-trailcurrent-edge);
     }
 
-    // The step's popover, the course card's dialog variant (moodle-dev/docs/course-card/CONTRACT.md, section 9): the
-    // course's cover with the close disc on it, the category over the name, the dates as the meta line, the trail's
-    // place in the plugin's slot, the state, core's reason in a quiet box, the actions at the end. The card's colours
-    // are the family's card tokens (post.scss), read here through the theme's card names, each the family token first
-    // and a literal last, as scss/category.scss's .dim-card reads them: these declarations hold the only colour
-    // literals of the sheet's rules (calendar_scss_test reads each one as such a reader and nothing else).
+    // The step's popover, the course card's dialog variant: the course's cover with the close disc on it, the category
+    // over the name, the dates as the meta line, the trail's place in the plugin's slot, the state, core's reason in a
+    // quiet box, the actions at the end. The card's colours are the family's card tokens (post.scss), read here through
+    // the theme's card names, each the family token first and a literal last, as scss/category.scss's .dim-card reads
+    // them: these declarations hold the only colour literals of the sheet's rules (calendar_scss_test reads each one as
+    // such a reader and nothing else).
     .dim-cal__trailpop {
         --dim-card-extra-bg: var(--dimensions-card-extra-bg, var(--bs-tertiary-bg, #f8f9fa));
         --dim-card-extra-icon: var(--dimensions-card-extra-icon, var(--bs-primary-text-emphasis, #062b4c));

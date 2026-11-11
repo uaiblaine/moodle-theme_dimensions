@@ -30,19 +30,19 @@ use theme_dimensions\local\landingfields;
 /**
  * Decides whether a request to the standard enrolment page forwards to the landing page.
  *
- * The decision logic lives here, pure and unit-testable; the after_config
- * hook callback only extracts the request shape (script, parameters) and
- * performs the redirect. Old links, the course listings' enrolment icons and
- * Moodle's own require_login() bounce all funnel through enrol/index.php, so
- * forwarding it is what makes the landing page the natural landing page of a
- * course that opted in.
+ * The decisions live here, unit-testable; the after_config hook callback
+ * ({@see \theme_dimensions\local\hook\after_config}) only reads the request
+ * (script, parameters) and performs the redirect. Old links, the course
+ * listings' enrolment icons and require_login()'s bounce of a non-enrolled user
+ * all go through enrol/index.php, so forwarding it makes the landing page the
+ * entry of a course that opted in.
  *
- * The ghost decisions live here too, for the same reason: {@see is_ghosted()}
- * answers over a COURSE and {@see is_category_ghosted()} over a CATEGORY, and
- * the same after_config callback asks both before any forwarding.
+ * The ghost decisions live here too: {@see is_ghosted()} and its address twins
+ * answer over a course, {@see is_category_ghosted()} over a category. On a
+ * course address the callback asks the ghost before the enrolment forward.
  *
  * {@see category_page_target()} is the category's counterpart of the enrolment
- * forward: a VISITOR who reaches the showcase's own address is sent to the
+ * forward: a visitor who reaches the showcase's own address is sent to the
  * public page of a public category rather than to core's forcelogin wall.
  *
  * @package    theme_dimensions
@@ -62,22 +62,19 @@ final class redirector {
     /**
      * Whether this request must be sent to the generic "not available" page.
      *
-     * True when the course is unlisted and the CURRENT user is none of
-     * enrolled, awaiting a decision on an application, staff of the course, or
-     * able to enrol - the predicate local_unlistedcourses owns. Checked before
-     * the landing page forward so that an unlisted course which also opted into a
-     * landing page does not show that landing page to somebody who must not know the
-     * course exists.
+     * True when the course is unlisted and the current user is none of enrolled,
+     * awaiting a decision on an application, staff of the course, or able to
+     * enrol: local_unlistedcourses' access::is_course_discoverable(). Checked
+     * before the landing page forward, so an unlisted course with a landing page
+     * model does not show it to somebody who must not know the course exists.
      *
-     * Visitors are deliberately NOT ghosted: they are not logged in, so the
-     * predicate can only answer "no" for them, and ghosting would strand
-     * somebody who would be eligible the moment they signed in. The standard
-     * pages send them through the login and this decision is taken again on
-     * the way back.
+     * Visitors and the guest are not ghosted: the predicate can only answer "no"
+     * for them, and ghosting would strand somebody who would be eligible once
+     * signed in. The standard pages send them through the login, and this is
+     * decided again on the way back.
      *
      * Fails open when the predicate class is missing: nobody is ghosted. The
-     * opposite of {@see publicaccess::is_public()}, which fails closed, and on
-     * purpose - see that class for why the two must differ.
+     * opposite of {@see publicaccess::is_public()} on purpose; that class says why.
      *
      * @param int $courseid The course id from the request.
      * @param string|null $predicate The predicate class; tests pass a nonexistent one to pin the fail-open answer.
@@ -157,18 +154,15 @@ final class redirector {
     }
 
     /**
-     * Whether this request must be sent to the generic "not available" page over its CATEGORY.
+     * Whether this request must be sent to the generic "not available" page over its category.
      *
-     * The exact shape of {@see is_ghosted()}, one level up: true when the category is unlisted
-     * and the CURRENT user holds none of the relationships local_unlistedcourses recognises
-     * with it - a cohort at the category's own context, a role at it or above it, or the
-     * capability to see hidden categories there. The category id 0 is the top-level
-     * pseudo-category and is never ghosted: it holds no row of its own, so asking the
-     * predicate about it would fail closed on a path that does not exist.
+     * The shape of {@see is_ghosted()}, one level up: true when the category is unlisted and the
+     * current user holds none of the relationships local_unlistedcourses' category_access
+     * recognises with it (a cohort at the category's own context, a role at it or above it, or
+     * the capability to see hidden categories there). The id 0 is the top-level pseudo-category
+     * and is never ghosted: it holds no row of its own, and the predicate would fail closed on it.
      *
-     * Visitors are deliberately NOT ghosted, for the reason {@see is_ghosted()} gives: they
-     * are not logged in, so the predicate can only answer "no" for them, and ghosting would
-     * strand somebody who would be eligible the moment they signed in.
+     * Visitors and the guest are not ghosted, for the reason {@see is_ghosted()} gives.
      *
      * Fails open when the predicate class is missing: nobody is ghosted, mirroring
      * {@see is_ghosted()} rather than {@see publicaccess::is_public()}.
@@ -204,21 +198,18 @@ final class redirector {
     /**
      * Where an anonymous hit on /course/index.php?categoryid=N goes, if anywhere.
      *
-     * Null means "leave the request alone", and core's forcelogin wall then answers as it
-     * always did: the id is no category's, somebody is logged in - the guest account
-     * included, which lands on the showcase like any other session - or the category is
-     * not one the site serves anonymously. Otherwise the public page, carrying whatever
-     * the request asked the showcase for, so a shared address keeps its search and its page.
+     * Null means "leave the request alone", and core's forcelogin wall answers: the id is no
+     * category's, somebody is logged in (the guest account included, which gets the showcase like
+     * any other session), or the site does not serve the category anonymously. Otherwise the public
+     * page carrying the showcase parameters, so a shared address keeps its search and its page.
      *
      * The id 0 is the root of the course index and is a real answer here:
-     * {@see categorypublicaccess::is_public()} owns whether the site serves it, so the guard
-     * below refuses a negative id and nothing else. Contrast {@see is_category_ghosted()},
-     * whose `<= 0` stays: the pseudo-category is never GHOSTED, because it holds no row and
-     * asking the predicate about it would fail closed on a path no category has.
+     * {@see categorypublicaccess::is_public()} decides whether the site serves it, so only a
+     * negative id is refused below. {@see is_category_ghosted()} keeps `<= 0`, because the
+     * pseudo-category is never ghosted.
      *
-     * Never throws: the predicate behind {@see categorypublicaccess::is_public()} answers
-     * false for an id that is not there rather than raising, which is what lets this run in
-     * an after_config callback over a parameter a visitor typed.
+     * Never throws: the predicate behind {@see categorypublicaccess::is_public()} answers false
+     * for an id that is not there, so this can run in after_config over a parameter a visitor typed.
      *
      * @param int $categoryid The category id from the request.
      * @param array $params The showcase parameters of the request to carry over.

@@ -23,8 +23,8 @@
 // without JavaScript the form is a plain moodleform with that one preview row.
 //
 // Every colour is a token read from Bootstrap's own set, so the panel follows the
-// site: light on a light page, dark on a dark one (Moodle 5.2's single dark-mode
-// mechanism moves the --bs-* tokens, so nothing here needs a second palette), and
+// site: light on a light page, dark on a dark one (Moodle's dark mode moves the
+// --bs-* tokens, so nothing here needs a second palette), and
 // branded wherever the flavour moved the primary. The tokens are declared here and
 // not in scss/category.scss, whose own block is scoped under the showcase's body
 // class and never reaches this page.
@@ -66,7 +66,7 @@ body.dim-categoryhero .dim-colour-row > input {
     flex: 1 1 auto;
     min-width: 0;
     max-width: 12rem;
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
 }
 
 body.dim-categoryhero .dim-colour-swatch {
@@ -308,7 +308,7 @@ body.dim-categoryhero .dim-contrast__suggestion-which {
 }
 
 body.dim-categoryhero .dim-contrast__suggestion-meta {
-    font-family: monospace;
+    font-variant-numeric: tabular-nums;
     font-size: 0.75rem;
     font-weight: 600;
 }
@@ -381,12 +381,10 @@ body.dim-categoryhero .dim-contrast__note.is-danger {
 
 // ---- The pair preview, the last row of the colours section -------------------
 // The category's own name on the band in the stored pair, so a manager sees the
-// two colours together before saving. The two colours are the only thing here
-// that is not a token: they are an inline style the form writes from
-// branding::hex() and the module rewrites as the pair is typed, which is why
-// nothing below sets a colour on this box or on anything inside it - a rule of
-// ours would either fight the inline style or, worse, win over it on the caption
-// and print a fixed colour on a band a manager just repainted.
+// two colours together before saving. The two colours are an inline style the
+// form writes from branding::hex() and the module rewrites as the pair is typed,
+// so nothing below sets a colour on this box or inside it: a rule here would
+// override the inline colour on the caption.
 
 body.dim-categoryhero .dim-pair-preview {
     padding: 0.875rem 1rem;
@@ -408,30 +406,25 @@ body.dim-categoryhero .dim-pair-preview__caption {
 }
 
 // ---- The colours section in two columns ---------------------------------------
-// Two columns by the form, never by JavaScript: the rows stay exactly where core
-// drew them, so no field can end up painted nowhere while still focusable, and a
-// grid over the colours fieldset's own container places them: the two colour
-// fields, the overlay and the preview in the left track, the contrast panel the
-// module appends last in the right one.
+// The rows stay where core drew them (JavaScript never moves a form row: a moved
+// row can leave a field painted nowhere while still focusable), and a grid over the colours fieldset's own container places them: the colour fields,
+// the overlay and the preview in the left track, the contrast panel the module
+// appends last in the right one.
 //
-// The markup is core's and is pinned by a PHPUnit render rather than guessed
+// The markup is core's and is pinned by a PHPUnit render
 // (categoryhero_test::test_the_colours_are_a_fieldset_whose_container_the_grid_can_place):
 // the header opens `fieldset.fitem.collapsible#id_coloursheader` and
 // lib/form/templates/element-header.mustache puts `div.fcontainer#id_coloursheadercontainer`
-// inside it, which is the box below, with every row of the section as a direct
-// child of it.
+// inside it, with every row of the section as a direct child.
 //
-// The gate is the class, added by the module once the panel is really mounted
-// (never written by the form): with JavaScript off there is no panel, and a grid
-// switched on by the server would leave an empty right-hand track beside the
-// fields.
+// The gate is the class the module adds once the panel is mounted (never the
+// form): without JavaScript there is no panel, and a server-side grid would leave
+// an empty right-hand track.
 //
-// A viewport query, deliberately, at the nearest Bootstrap breakpoint: the form
-// lives in #region-main, whose width the block drawer changes without changing
-// the window's, so the two-column state may hold a little longer than ideal with
-// the drawer open - accepted, because Moodle's stylelint rejects container queries
-// and the alternative (a flex basis, as the listing's shell uses) cannot place a
-// panel beside four rows.
+// A viewport query, at the nearest Bootstrap breakpoint: #region-main narrows when
+// the block drawer opens, so the two columns may hold a little too long then.
+// Moodle's stylelint rejects container queries, and a flex basis cannot place a
+// panel beside several rows.
 @media (min-width: 992px) {
     body.dim-categoryhero fieldset.dim-colours--split > .fcontainer {
         display: grid;
@@ -447,15 +440,13 @@ body.dim-categoryhero .dim-pair-preview__caption {
         grid-column: 1;
     }
 
-    // The 1 is what puts the panel on the first line: auto-placed, an item with
-    // a column and no row lands level with the last row instead, half way down.
-    // The 8 is headroom and not a row count - the container holds six rows
-    // (own colours, the sentence under it, the two colours, the overlay and the
-    // preview), and five whenever hideIf hides the overlay, because core writes
-    // display: none on that row (lib/form/form.js, _hideElement) and a
-    // display: none box is not a grid item at all. Implicit rows nothing lands
-    // in stay at zero height, so the span may safely outrun the rows; short of
-    // them, the panel's height would inflate row one alone.
+    // Row 1 puts the panel on the first line: an item with a column and no row is
+    // auto-placed level with the last row instead. The span of 8 is headroom, not
+    // a row count: the container holds six rows (own colours, the sentence under
+    // it, the two colours, the overlay, the preview), five while hideIf hides the
+    // overlay (lib/form/form.js _hideElement writes display: none, which takes the
+    // row out of the grid). Empty implicit rows have zero height, so the span may
+    // outrun the rows; a shorter span would stretch row one to the panel's height.
     body.dim-categoryhero fieldset.dim-colours--split > .fcontainer > .dim-contrast-aside {
         grid-column: 2;
         grid-row: 1 / span 8;

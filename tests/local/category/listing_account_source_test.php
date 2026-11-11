@@ -200,7 +200,7 @@ final class listing_account_source_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~^const BATCH_SIZE = 24;$~m', $shell);
         $this->assertMatchesRegularExpression('~^const BATCH_INTERVAL = 100;$~m', $shell);
         $this->assertStringContainsString('.slice(0, BATCH_SIZE)', $this->body('drainPending'));
-        $this->assertStringContainsString('window.setInterval(drainPending, BATCH_INTERVAL);', $this->body('start'));
+        $this->assertStringContainsString('window.setInterval(drainPending, BATCH_INTERVAL);', $this->body('startDraining'));
     }
 
     /**

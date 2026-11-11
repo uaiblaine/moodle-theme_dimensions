@@ -28,7 +28,7 @@ use core_customfield\data_controller;
 use theme_dimensions\local\landingfields;
 
 /**
- * The competencies an editor chose for a landing page's related courses band in manual mode (R2, D3, D9).
+ * The competencies an editor chose for a landing page's related courses band in manual mode.
  *
  * The choice is stored in the course field `dimensions_relatedpairs` as framework and competency idnumber pairs, a
  * JSON list of two-string lists: a competency idnumber is unique only inside its framework, and identifiers, unlike
@@ -212,7 +212,7 @@ final class choice {
     /**
      * The competency ids a stored choice names, read by framework: one statement per framework named.
      *
-     * {@see finder::resolve()} reads a competency idnumber inside its framework (D9). The band then keeps those linked
+     * {@see finder::resolve()} reads a competency idnumber inside its framework. The band then keeps those linked
      * to the course; the ids are not asked to be, so a choice copied from another course resolves the same way.
      *
      * @param array $pairs List of [framework idnumber, competency idnumber].

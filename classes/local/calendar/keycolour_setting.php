@@ -36,7 +36,7 @@ use theme_dimensions\local\category\branding;
  *
  * It is drawn as a plain text field behind a swatch (templates/admin_setting_keycolour.mustache) instead of core's
  * gradient picker: the server draws everything and amd/src/keycolour.js only keeps the swatch and the browser's native
- * colour input in step with the field (section 30.4).
+ * colour input in step with the field.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

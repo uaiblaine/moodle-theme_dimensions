@@ -42,7 +42,7 @@ use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\request;
 
 $courseid = required_param('id', PARAM_INT);
-// The guest entry's ask; only 1 asks, as on the route. A POST of the entry's form never reaches
+// The guest entry is asked for by guest=1 alone, as on the route. A POST of the entry's form never reaches
 // the redirect below: the form posts to links::page(), which is the route while the router is on.
 $guest = optional_param(links::GUEST_PARAM, 0, PARAM_INT) === 1;
 

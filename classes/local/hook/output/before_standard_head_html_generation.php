@@ -31,7 +31,7 @@ use theme_dimensions\output\opengraph;
  *
  * The hook is dispatched from core_renderer::standard_head_html(), so it runs
  * for every page this theme renders; the callback does nothing unless the
- * request of a public page - the landing page's or a category's - registered tags
+ * request of a public page (the landing page, a category page or the calendar) registered tags
  * through {@see opengraph::set()}.
  *
  * It uses this hook rather than before_http_headers, which core_renderer::header() also
@@ -49,8 +49,8 @@ class before_standard_head_html_generation {
      * The robots directive follows the site's own rule: a site open to search engines
      * ($CFG->opentowebcrawlers, "Open to search engines" under Site security settings) lets
      * its public pages be indexed, and any other site marks them noindex, so that a page
-     * exists there to unfurl a shared link and not to be listed. One rule for the landing page
-     * and the public category page alike, decided once for the site and never per page.
+     * exists there to unfurl a shared link and not to be listed. One rule for every public
+     * page, decided for the site and never per page.
      *
      * @param \core\hook\output\before_standard_head_html_generation $hook The hook.
      * @return void

@@ -362,7 +362,8 @@ final class core_events implements source {
     }
 
     /**
-     * The context an event's text is formatted in: its module's, its category's, its course's, else the system's.
+     * The context an event's text is formatted in: its module's, its category's, its course's, a user event's user
+     * context, else the system's.
      *
      * The module's comes with modinfo, which the event factory already loaded; the others are core's context
      * caches.

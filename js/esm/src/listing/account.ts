@@ -148,6 +148,9 @@ const answers = new Map<number, Detail>();
 /** Whether a details request is in flight: one at a time. */
 let inflight = false;
 
+/** The drain's interval, alive only while ids are pending. */
+let drainTimer: number | null = null;
+
 /**
  * Show core's exception dialogue for a failure.
  *
@@ -363,7 +366,7 @@ const discard = (card: HTMLElement): void => {
 };
 
 /**
- * Turn an enrolled card into the completed one (D4, option A): the seal for the pill, "Review" for the main action.
+ * Turn an enrolled card into the completed one: the seal for the pill, "Review" for the main action.
  *
  * The words are the card's own (data-done, data-review: the server writes them on an enrolled card alone), and the
  * mark takes the progress row away in the stylesheet as well as here, so a card never shows the bar and the seal.
@@ -457,16 +460,35 @@ const paintProgress = (details: Detail[]): void => {
 };
 
 /**
+ * Stop the drain's interval: the next id to arrive starts it again.
+ *
+ * @returns {void}
+ */
+const stopDraining = (): void => {
+    if (drainTimer !== null) {
+        window.clearInterval(drainTimer);
+        drainTimer = null;
+    }
+};
+
+/**
  * Send one batch of the pending set, if there is one and nothing else is in flight.
  *
  * @returns {Promise} Resolving when the batch has settled, one way or the other.
  */
 const drainPending = async(): Promise<void> => {
-    if (inflight || pending.size === 0) {
+    if (pending.size === 0) {
+        stopDraining();
+        return;
+    }
+    if (inflight) {
         return;
     }
     const batch = Array.from(pending).filter((id) => !settled.has(id)).slice(0, BATCH_SIZE);
     if (!batch.length) {
+        // Only settled ids were left: nothing to send, and nothing to wait for.
+        pending.clear();
+        stopDraining();
         return;
     }
     batch.forEach((id) => pending.delete(id));
@@ -482,6 +504,17 @@ const drainPending = async(): Promise<void> => {
     } finally {
         settle(batch);
         inflight = false;
+    }
+};
+
+/**
+ * Start the drain's interval if it is not running: it runs only while something is pending.
+ *
+ * @returns {void}
+ */
+const startDraining = (): void => {
+    if (drainTimer === null) {
+        drainTimer = window.setInterval(drainPending, BATCH_INTERVAL);
     }
 };
 
@@ -701,6 +734,7 @@ export const start = (): void => {
     if (!init(SHELL, Number(payload.categoryid) || Number(root.dataset.categoryid) || 0)) {
         return;
     }
+    drainTimer = null;
     observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             const courseid = Number((entry.target as HTMLElement).dataset.courseid);
@@ -709,12 +743,12 @@ export const start = (): void => {
             }
             if (entry.isIntersecting) {
                 pending.add(courseid);
+                startDraining();
             } else {
                 pending.delete(courseid);
             }
         });
     }, {rootMargin: OBSERVER_MARGIN});
-    window.setInterval(drainPending, BATCH_INTERVAL);
 
     /* A course card inside the panel between the posters is a smaller presentation with its "More information" out of
        reach: its progress is asked in one batch with the panel's rows. */

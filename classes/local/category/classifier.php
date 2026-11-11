@@ -88,7 +88,7 @@ use local_unlistedcourses\access;
  *   cap against a count of the non-expired rows of every status, and an
  *   existing row meaning an application is pending.
  * - enrol_fee (its enrol_page_hook(), mirrored by the resolver's
- *   resolve_fee()): the window, a cost above zero on the instance or in the
+ *   payable_cost()): the window, a cost above zero on the instance or in the
  *   plugin's config, no existing row.
  * - enrol_paypal ({@see \enrol_paypal_plugin::enrol_page_hook()}): the same
  *   three checks as enrol_fee, with the plugin's own default cost.
@@ -122,7 +122,7 @@ use local_unlistedcourses\access;
  * guest account the guest method, keyed or not.
  *
  * The states that are no relationship answer the chips in a coarser vocabulary
- * ({@see chip()}): the toolbar's chips are the six it always had, so a
+ * ({@see chip()}): the state chip has six values ({@see chips()}), so a
  * waiting-list application counts under "under review", guest access behind a
  * key under "open for enrolment", and suspended, ended and conditional under
  * none, which has no chip.
@@ -320,7 +320,7 @@ final class classifier {
      * in PHP. Rides the userid foreign key of {user_enrolments}.
      *
      * Every row is judged by local_unlistedcourses' access::classify_enrolment(), the one owner of
-     * the rule, so the population's clamp rescue and the plugin's primed memo cannot disagree.
+     * the rule, so the population's rescue and the plugin cannot disagree about a row.
      * "Active" is what is_enrolled($context, $user, '', true) means: the row active, the
      * instance enabled, and now inside the row's window. "Scheduled" is an active row on an
      * enabled instance whose start date is still ahead: core does not call the user enrolled
@@ -540,12 +540,9 @@ final class classifier {
             $endsat = 0;
             $prerequisiteid = 0;
             $opening = false;
-            /* The relationship is decided before the instance loop, never after it: a viewer who
-               already holds a row - one an administrator dated, an application, a suspension - is
-               told about that row, and an open self instance beside it is a route the card adds
-               ({@see cards::next_actions()}), never the state. The order is the plugin's own rank,
-               access::get_enrolment_state(): enrolled, scheduled, pending, waitlisted, suspended,
-               expired. */
+            /* The relationship is decided before the instance loop (see the method's docblock), in
+               the plugin's own rank, access::get_enrolment_state(): enrolled, scheduled, pending,
+               waitlisted, suspended, expired. */
             if ($mine && $mine->active) {
                 $state = self::STATE_ENROLLED;
             } else if ($mine && $mine->scheduled) {

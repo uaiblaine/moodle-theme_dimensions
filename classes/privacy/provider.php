@@ -63,8 +63,10 @@ use theme_dimensions\output\course_notice;
  *
  * Everything else the theme shows or writes about a person belongs to core's own subsystems,
  * which describe and delete it themselves: the courses they starred are core_course's own
- * favourite rows (component core_course, {@see \theme_dimensions\local\category\wishlist}), and
- * the landing page short links the theme mints carry user id 0.
+ * favourite rows (component core_course, {@see \theme_dimensions\local\category\wishlist}), the
+ * memberships of the look cohorts are core_cohort's (declared as a subsystem link,
+ * {@see \theme_dimensions\local\lookcohorts}), and the landing page short links the theme mints
+ * carry user id 0.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

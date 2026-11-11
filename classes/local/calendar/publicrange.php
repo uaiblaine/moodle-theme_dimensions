@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Theme Dimensions - One month grid of the public calendar, for a visitor.
+ * Theme Dimensions - One window of the public calendar, for a visitor.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -42,7 +42,7 @@ use theme_dimensions\local\landingfields;
  * - a course's `url` and `landingurl` are both its landing page, the one course page a visitor can open; `image` is
  *   '' (core's course image is served from `course/overviewfiles`, which asks for a login under forcelogin);
  *   `participants` is null (how many people take part is not told to the internet); `enrolled` is false; `join` is
- *   'open', so the popover's primary action is the landing page's "Inscrever-se";
+ *   'open', so the popover's primary action is "Enrol" (`calendar_join_open`), leading to the landing page;
  * - a category is named only when it is one of the public ones, with its branding pair; a public course in another
  *   category keeps categoryid 0 in the dictionary;
  * - `descriptions` carries the category events' text, which the logged-in answer leaves to core's own
@@ -99,6 +99,15 @@ final class publicrange {
             }
         }
         $courses = self::courses($courseids, $public);
+        $named = [];
+        foreach ($courses as $course) {
+            $named[$course['id']] = true;
+        }
+        // A course gone between the statements has no dictionary entry: drop its items, as range::answer() does.
+        $items = array_values(array_filter(
+            $items,
+            static fn(array $item): bool => $item['source'] !== public_courses::SOURCE || isset($named[$item['courseid']])
+        ));
         foreach ($courses as $course) {
             if ($course['categoryid']) {
                 $categoryids[$course['categoryid']] = true;

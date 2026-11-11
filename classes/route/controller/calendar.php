@@ -35,9 +35,9 @@ use Psr\Http\Message\ServerRequestInterface;
  * The prefix is core's: a plugin's page route always carries its frankenstyle name. Two things about the route's
  * shape are decisions:
  *
- * - No requirelogin in the attribute. The page sends a visitor to the login page and the guest account to core's
- *   calendar, which a router-level login gate would answer with core's login redirect for both; the real account's
- *   require_login() runs inside {@see page::handle()}.
+ * - No requirelogin in the attribute. The page serves a visitor the public calendar when the site offers it (the
+ *   login page otherwise) and sends the guest account to core's calendar, which a router-level login gate would
+ *   answer with core's login redirect for both; the real account's require_login() runs inside {@see page::handle()}.
  * - GET only, and no declared query parameter. Every control of the page is a GET form or a link, and the state is
  *   read from the query string by optional_param() (which core's validator leaves alone), so a stray parameter is
  *   dropped by the state's own vocabulary rather than refused by the router.

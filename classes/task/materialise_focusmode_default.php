@@ -27,16 +27,17 @@ namespace theme_dimensions\task;
 use theme_dimensions\local\focusmodefields;
 
 /**
- * Writes the previous focus mode default into the courses which never stored an answer.
+ * Brings the focus mode default for new courses in line with the setting.
  *
  * Queued by focusmodefields::sync_default() on a site with more courses than its inline
- * limit, so that changing the default for new courses does not carry thousands of writes
- * inside the administrator's own request. The task finishes the sequence: it materialises
- * the previous answer first and moves the default afterwards, in that order, because
- * checkbydefault is also what every course without a row reads.
+ * limit, or when it could not take the provisioning lock, so that changing the default
+ * does not carry thousands of writes inside the administrator's own request. It carries no
+ * data and decides from the setting and the field as they are when it runs: the setting may
+ * have been flipped back since it was queued. It materialises the field's current answer
+ * first and moves the default afterwards, in that order, because checkbydefault is also
+ * what every course without a row reads.
  *
- * It never throws. A throwing adhoc task is retried for ever, and there is nothing here a
- * retry could fix that mtrace has not already said.
+ * A refused lock throws, so that core retries the task with a back-off.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -53,31 +54,16 @@ class materialise_focusmode_default extends \core\task\adhoc_task {
     }
 
     /**
-     * Write the previous default into the row-less courses, then move the default.
+     * Reconcile the field's default with the setting.
      *
      * @return void
+     * @throws \moodle_exception When the provisioning lock is refused, so that the task is retried.
      */
     public function execute(): void {
-        /* Read the raw string rather than get_custom_data(): a task built without custom
-           data would hand json_decode() a null, which raises a deprecation notice. */
-        $raw = (string) $this->get_custom_data_as_string();
-        $data = $raw === '' ? [] : (array) json_decode($raw);
-        if (!array_key_exists('old', $data)) {
-            mtrace('Focus mode: no previous default in the custom data - nothing written.');
-            return;
+        $written = focusmodefields::reconcile_default();
+        if ($written === null) {
+            throw new \moodle_exception('locktimeout');
         }
-
-        try {
-            $written = focusmodefields::materialise_default((int) $data['old']);
-            mtrace('Focus mode: wrote the previous default into ' . $written . ' course(s).');
-            if (array_key_exists('new', $data)) {
-                focusmodefields::set_default((bool) $data['new']);
-                mtrace('Focus mode: the default for new courses is now ' . ($data['new'] ? '1' : '0') . '.');
-            }
-        } catch (\Throwable $e) {
-            // Never throw: an adhoc task which throws is retried for ever.
-            mtrace('Focus mode: writing the previous default failed - ' . $e->getMessage());
-            return;
-        }
+        mtrace('Focus mode: the default for new courses follows the setting; wrote ' . $written . ' course(s).');
     }
 }

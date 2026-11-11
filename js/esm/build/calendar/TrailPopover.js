@@ -1,12 +1,12 @@
 import{useEffect as I,useLayoutEffect as L,useRef as f,useState as E}from"react";import{say as h}from"../daterange/calendar";import{anchor as K}from"./EventPopover";import{categoryCover as P}from"./look";import{safeHref as C,safeImage as B}from"./model";import{fill as p}from"./strings";import{jsx as r,jsxs as l}from"react/jsx-runtime";/**
- * A step's popover in the Trilhas view, the course card's dialog variant (moodle-dev/docs/course-card/CONTRACT.md,
- * section 9): its course's cover, its category over its name, its dates as the meta line, "Course 3 of 5 · trail" in the
- * plugin's slot, its state and core's availability text for a learner, "View trail" and the main action.
+ * A step's popover in the Trilhas view, drawn as the course card's dialog: its course's cover, its category over its
+ * name, its dates as the meta line, "Course 3 of 5 · trail" in the plugin's slot, its state and core's availability
+ * text for a learner, "View trail" and the main action.
  *
  * The event popover's behaviour (EventPopover.tsx), for a step: role="dialog" labelled by the name, not modal; anchored
  * to the bar that opened it by the same rule ({@see anchor}), a bottom sheet on a phone; the focus on its heading once
  * shown; Escape, the close button, a press outside, or Tab past its last control close it and give the focus back to
- * the bar. Its two layout reads are the opener's box and its own, on an opening.
+ * the bar. Its layout reads (the opener's box, its own and the navbar's) are made on an opening only.
  *
  * - The cover is the step's course image (the answer's `image`, {@see safeImage()}: an address or the theme's SVG
  *   cover), an <img> with an empty alt; the category's band (look.ts categoryCover(), else the state's) is only the
@@ -16,8 +16,8 @@ import{useEffect as I,useLayoutEffect as L,useRef as f,useState as E}from"react"
  *   share a row at the top of the body, the close the calendar's standard icon button, since the disc is made to sit on
  *   an image; the popover keeps a top edge in the category's colour.
  * - A completed step: the state pill is the green seal, the cover gets a green base, and the main action reads "Review"
- *   instead of "Open course". There is no progress bar: the service carries no percentage per step (D11).
- * - The buttons are the calendar's own (D12): "View trail" btn-secondary, the main action btn-primary.
+ *   instead of "Open course". There is no progress bar: the service carries no percentage per step.
+ * - The buttons are the calendar's own: "View trail" btn-secondary, the main action btn-primary.
  *
  * @module     theme_dimensions/calendar/TrailPopover
  * @copyright  2026 Anderson Blaine

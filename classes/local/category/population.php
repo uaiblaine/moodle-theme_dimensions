@@ -243,7 +243,7 @@ final class population {
      *
      * What a period keeps, with one bound or both, is {@see criteria}'s rule;
      * this is its SQL. Each bound is its own comparison and either may be
-     * absent. Two placeholder NAMES even though one control produced both
+     * absent. Two placeholder names even though one control produced both
      * values: a named placeholder may appear only once per statement
      * ({@see \moodle_database::fix_sql_params()} counts occurrences). The upper
      * bound is exclusive and is already midnight of the day after the one
@@ -363,7 +363,7 @@ final class population {
      * cut and {@see sql_predicate()} for the SQL cut - for the reason the date
      * range is in both: a filter honoured by one mode and ignored by the other
      * is one address answering two ways with only a setting between them. It
-     * is appended BEFORE the facets are counted in either mode, because the
+     * is appended before the facets are counted in either mode, because the
      * tree is a filter like the others and the numbers beside the pills count
      * what is on the page.
      *
@@ -395,7 +395,7 @@ final class population {
      */
     public static function resolve(criteria $criteria): page_result {
         $scope = self::scope($criteria);
-        /* The tree's criterion is admitted or dropped HERE, on the one object every later reader
+        /* The tree's criterion is admitted or dropped here, on the one object every later reader
            of this request holds: the toolbar's filter count, the clear link, the pager's
            parameters and the tree's own marking are then all describing the listing that was
            really drawn. Dropping it later - or only inside the statement - would leave the page
@@ -762,10 +762,10 @@ final class population {
      * accordion names every poster with it - what the web service hands back and what the areas'
      * result mode reads. The two modes agree up to the probe cap because the SQL cut's two
      * exception lists read the matches as the PHP cut's probe does ({@see sql_predicate()});
-     * past fifty unrelated unlisted matches both under-count, the same way and fail-closed. One
-     * cap is the SQL cut's alone: it rescues at most fifty hidden matches
-     * ({@see rescued_hidden()}) where the PHP cut asks of every one, so a viewer who may see more
-     * than fifty hidden matches - staff, on a large site - reads fewer with the state sort off.
+     * past {@see PROBE_CAP} unrelated unlisted matches both under-count, the same way and
+     * fail-closed. One cap is the SQL cut's alone: it rescues at most {@see RESCUE_CAP} hidden
+     * matches ({@see rescued_hidden()}) where the PHP cut asks of every one, so a viewer who may
+     * see more hidden matches than that - staff, on a large site - reads fewer with the state sort off.
      *
      * The root also takes its panel from the request: every poster of the root opens one, and
      * {@see criteria::$open} is admitted against the directory's own ids, as a category page
@@ -1188,9 +1188,9 @@ final class population {
     /**
      * The rows among these that the showcase would list to this scope's viewer: {@see gate()}, for a caller outside the listing.
      *
-     * The calendar's "open events" layer asks it of a handful of event courses over the root scope
-     * (scope(new criteria(0))), so a course reaches the calendar exactly when the showcase would list it, by
-     * the same core and local_unlistedcourses rules, never by a rule of the calendar's own. The rows carry
+     * The calendar's event courses and trails and the related-content finder ask it over the root scope
+     * (scope(new criteria(0))), so a course reaches them exactly when the showcase would list it, by the
+     * same core and local_unlistedcourses rules, never by a rule of their own. The rows carry
      * what records() selects (id, category, visible, liststate and the context preload columns); the list
      * goes to the plugin's probe as the population's does, so keep it to a page.
      *
@@ -1425,7 +1425,7 @@ final class population {
      *
      * No card carries a number at rest: a count per card would be tallied
      * twice, once per page-cutting mode, over material the two modes assemble
-     * differently, and capped by the probe at fifty unrelated unlisted
+     * differently, and capped by the probe at {@see PROBE_CAP} unrelated unlisted
      * courses, so a big site would print numbers that are quietly short. A
      * search at the root is the one exception: a pill of matches, taken by
      * {@see resolve_root()}, where both modes read the same window.
@@ -1631,8 +1631,7 @@ final class population {
      * AA ({@see branding::FLOOR}) over the mark and the chevron keeps {@see CHEVRON_FLOOR} over the
      * mark and its disc, and a pair at the editor's own floor, which has no contrast to spare, gets
      * 0: no mark at all. The steps are whole hundredths, so no float error accumulates, and the
-     * blend is {@see branding::mix()}, which fails closed on a colour it refuses. It mirrors
-     * markAlpha() of the design prototype (the design's mockup).
+     * blend is {@see branding::mix()}, which fails closed on a colour it refuses.
      *
      * @param string $band The band colour.
      * @param string $ink The text colour.
@@ -1690,7 +1689,7 @@ final class population {
      *   ({@see expandable()}).
      *
      * One statement for every description, as {@see directory()} reads them, and nothing per
-     * poster after it but the text filters of a described area (two reads each).
+     * poster after it but the text filters of a described area.
      *
      * @param scope $scope The admitted subtree.
      * @param array $accordion The entries of {@see accordion()}.
@@ -1787,7 +1786,7 @@ final class population {
         ];
         if ($d20) {
             $options['cat'] = $childid;
-            // The parent's PUBLIC listing, whatever else the page is: the slice of a visitor's page.
+            // The parent's public listing, whatever else the page is: the slice of a visitor's page.
             $options['anonymous'] = true;
             return new criteria($page->categoryid, $options);
         }
@@ -1910,7 +1909,7 @@ final class population {
      * The text of a category's card: its own card text when it has one, else an excerpt of its description.
      *
      * The card text is plain and short by construction ({@see branding::CARDSUMMARY_MAXLENGTH},
-     * the length the excerpt is cut at), and it is returned in the PLAIN spelling: format_string()
+     * the length the excerpt is cut at), and it is returned in the plain spelling: format_string()
      * with escape off runs the filters (multilang) and strips any markup, and the card template's
      * double stash escapes it exactly once. The description's excerpt is already plain text.
      *
@@ -2051,8 +2050,10 @@ final class population {
      * lists instead of gating rows in PHP: the hidden courses this viewer may
      * see (a term every branch is under, so a related course inside a clamped
      * category is still withheld while hidden), the unlisted courses the
-     * plugin admitted after the capped probe, and the viewer's own courses
-     * inside clamped categories. Each list is cut
+     * plugin admitted after the capped probe, the viewer's own courses
+     * inside clamped categories, and the courses of a category the plugin alone
+     * clamps that the viewer holds staff standing at. Each list reads the
+     * request's matches in core order and is cut
      * at {@see RESCUE_CAP} and what falls past the cap is withheld - fail
      * closed. What this mode gives up: the state grouping, the state chips
      * (a state chip on the request is dropped by {@see resolve()}), the hero's per-state counts
@@ -2210,22 +2211,24 @@ final class population {
             $where = "c.category {$catsql} AND c.visible = 1 AND {$state['column']} = :publicstate";
             $params['publicstate'] = discoverability::STATE_PUBLIC;
         } else {
-            /* Both lists read the matches of the request's term: capped at fifty in core order, a
-               list built over the whole subtree would leave out a match past the fiftieth unlisted
-               or hidden course of the subtree, which the PHP cut, whose probe runs over the
-               matches, keeps. population_test holds the two modes to the same count. */
+            /* Every list reads the matches of the request's term: capped at fifty in core order, a
+               list built over the whole subtree would leave out a match past the fiftieth unlisted,
+               hidden or clamped course of the subtree, which the PHP cut, which gates every match,
+               keeps. population_test and clamped_rescue_test hold the two modes to the same ids. */
             $rescued = self::rescued_hidden($scope, $criteria->search);
             $admitted = self::admitted_unlisted($scope, $criteria->search);
-            $related = self::related_in_clamped($scope);
+            $related = self::related_in_clamped($scope, $criteria->search);
+            $staff = self::staff_in_clamped($scope, $criteria->search);
             [$rsql, $rparams] = $DB->get_in_or_equal($rescued ?: [-1], SQL_PARAMS_NAMED, 'rsc');
             [$usql, $uparams] = $DB->get_in_or_equal($admitted ?: [-1], SQL_PARAMS_NAMED, 'unl');
             [$lsql, $lparams] = $DB->get_in_or_equal($related ?: [-1], SQL_PARAMS_NAMED, 'rel');
-            // Core's visibility governs both branches: a related course inside a clamped category is
+            [$ssql, $sparams] = $DB->get_in_or_equal($staff ?: [-1], SQL_PARAMS_NAMED, 'stf');
+            // Core's visibility governs every branch: a related course inside a clamped category is
             // still a hidden course unless the viewer may see hidden courses.
             $where = "((c.category {$catsql} AND ({$state['column']} <> :unlistedstate OR c.id {$usql}))"
-                . " OR c.id {$lsql})"
+                . " OR c.id {$lsql} OR c.id {$ssql})"
                 . " AND (c.visible = 1 OR c.id {$rsql})";
-            $params += $rparams + $uparams + $lparams + ['unlistedstate' => discoverability::STATE_UNLISTED];
+            $params += $rparams + $uparams + $lparams + $sparams + ['unlistedstate' => discoverability::STATE_UNLISTED];
         }
         $where .= ' AND c.id <> :siteid';
 
@@ -2265,8 +2268,8 @@ final class population {
      * Under a search it scans the matches alone, so the cap spans the courses the request can
      * draw rather than the first hidden courses of the subtree: the PHP cut asks of every hidden
      * match, and a list cut over the whole subtree would withhold a match the other mode shows.
-     * The cap itself still differs from the PHP cut, which has none: past fifty hidden matches
-     * this viewer may see, the SQL cut shows fewer.
+     * The cap itself still differs from the PHP cut, which has none: past {@see RESCUE_CAP} hidden
+     * matches this viewer may see, the SQL cut shows fewer.
      *
      * @param scope $scope The admitted subtree.
      * @param string $term The request's normalised search term, '' for none.
@@ -2312,7 +2315,7 @@ final class population {
      *
      * Under a search it probes the matches alone, in core order - the window the PHP cut's probe
      * is ({@see gate()}, over {@see records()}, which already carries the term). Built over the
-     * whole subtree, it would ask about the first fifty unrelated unlisted courses whatever they
+     * whole subtree, it would ask about the first {@see PROBE_CAP} unrelated unlisted courses whatever they
      * were called and withhold a match past them that the PHP cut draws.
      *
      * @param scope $scope The admitted subtree.
@@ -2369,20 +2372,142 @@ final class population {
     /**
      * The viewer's own courses inside clamped categories, capped: the rescue the clamps allow.
      *
+     * Read from the enrolments the scope already holds, with no statement, while they fit under
+     * {@see RESCUE_CAP}: the page's own statement applies the term to them. Past the cap, which
+     * of them are kept is decided as {@see rescued_hidden()} decides it - over the request's
+     * matches, in core order, one statement driven by the clamped categories holding them -
+     * because the first fifty enrolments whatever they were called would withhold a match the
+     * PHP cut, which gates every match, shows.
+     *
      * @param scope $scope The admitted subtree.
+     * @param string $term The request's normalised search term, '' for none.
      * @return int[]
      */
-    private static function related_in_clamped(scope $scope): array {
+    private static function related_in_clamped(scope $scope, string $term = ''): array {
+        global $DB;
+
         $related = [];
+        $categories = [];
         foreach ($scope->enrolments as $courseid => $mine) {
             $clamp = $scope->clamps[$mine->category] ?? 0;
             if ($clamp === 0) {
                 continue;
             }
             if ($mine->active || (($clamp & scope::CLAMP_PLUGIN) && !($clamp & scope::CLAMP_CORE) && $mine->inactive)) {
-                $related[] = (int) $courseid;
+                $related[(int) $courseid] = true;
+                $categories[(int) $mine->category] = true;
             }
         }
-        return array_slice($related, 0, self::RESCUE_CAP);
+        if (count($related) <= self::RESCUE_CAP) {
+            return array_keys($related);
+        }
+
+        [$catsql, $params] = $DB->get_in_or_equal(array_keys($categories), SQL_PARAMS_NAMED, 'rlc');
+        $where = "c.category {$catsql} AND c.id <> :siteid";
+        if ($term !== '') {
+            [$searchsql, $searchparams] = self::search_sql($term);
+            $where .= " AND {$searchsql}";
+            $params += $searchparams;
+        }
+        $ids = $DB->get_fieldset_sql(
+            "SELECT c.id FROM {course} c WHERE {$where} ORDER BY c.sortorder ASC, c.id ASC",
+            $params + ['siteid' => SITEID]
+        );
+        $kept = [];
+        foreach ($ids as $courseid) {
+            if (isset($related[(int) $courseid])) {
+                $kept[] = (int) $courseid;
+                if (count($kept) >= self::RESCUE_CAP) {
+                    break;
+                }
+            }
+        }
+        return $kept;
+    }
+
+    /**
+     * The courses of the categories the plugin alone clamps that this viewer holds staff standing at, capped.
+     *
+     * The SQL cut's half of {@see gate()}'s staff rescue: a category local_unlistedcourses
+     * withholds (and core does not) still lists a course to a viewer who is not related to it
+     * but is_viewing() it or holds moodle/course:viewhiddencourses at it - the plugin's own
+     * course-level staff term. A core clamp is lifted by an active enrolment alone, which
+     * {@see related_in_clamped()} carries, so only the plugin-only clamps are read.
+     *
+     * Built as {@see rescued_hidden()} is: one statement driven by those categories, over the
+     * request's matches, in core order, the gates asked per row at the preloaded context in
+     * gate()'s order - core's visibility first, then the staff standing, then, for an unlisted
+     * course, the plugin's own answer ({@see access::filter_courses()}, as gate()'s probe asks
+     * it) - and cut at {@see RESCUE_CAP}, past which the remainder is withheld. The statement
+     * reads the rows of those categories, as the PHP cut's population statement does; the
+     * capability checks stop at the cap.
+     *
+     * @param scope $scope The admitted subtree.
+     * @param string $term The request's normalised search term, '' for none.
+     * @return int[]
+     */
+    private static function staff_in_clamped(scope $scope, string $term = ''): array {
+        global $DB;
+
+        $categories = [];
+        foreach ($scope->clamps as $categoryid => $clamp) {
+            if ($clamp === scope::CLAMP_PLUGIN) {
+                $categories[] = (int) $categoryid;
+            }
+        }
+        if (!$categories) {
+            return [];
+        }
+        [$catsql, $params] = $DB->get_in_or_equal($categories, SQL_PARAMS_NAMED, 'stc');
+        $state = discoverability::state_sql('c');
+        $where = "c.category {$catsql} AND c.id <> :siteid";
+        if ($term !== '') {
+            [$searchsql, $searchparams] = self::search_sql($term);
+            $where .= " AND {$searchsql}";
+            $params += $searchparams;
+        }
+        $ctxselect = context_helper::get_preload_record_columns_sql('ctx');
+        $rows = $DB->get_records_sql(
+            "SELECT c.id, c.category, c.sortorder, c.visible, {$state['column']} AS liststate, {$ctxselect}
+               FROM {course} c
+               JOIN {context} ctx ON c.id = ctx.instanceid AND ctx.contextlevel = :contextcourse
+                    {$state['join']}
+              WHERE {$where}
+           ORDER BY c.sortorder ASC, c.id ASC",
+            $params + ['contextcourse' => CONTEXT_COURSE, 'siteid' => SITEID]
+        );
+        $candidates = [];
+        $unlisted = [];
+        foreach ($rows as $courseid => $row) {
+            $mine = $scope->enrolments[(int) $courseid] ?? null;
+            if ($mine && ($mine->active || $mine->inactive)) {
+                // A related course is related_in_clamped()'s, and spends none of this list.
+                continue;
+            }
+            $context = self::course_context($row);
+            $seeshidden = has_capability('moodle/course:viewhiddencourses', $context);
+            if (!$row->visible && !$seeshidden) {
+                continue;
+            }
+            if (!$seeshidden && !is_viewing($context)) {
+                continue;
+            }
+            $candidates[(int) $courseid] = true;
+            if ((int) $row->liststate === discoverability::STATE_UNLISTED) {
+                $unlisted[(int) $courseid] = $row;
+            }
+            if (count($candidates) >= self::RESCUE_CAP) {
+                break;
+            }
+        }
+        if ($unlisted) {
+            $admitted = access::filter_courses($unlisted);
+            foreach (array_keys($unlisted) as $courseid) {
+                if (!isset($admitted[$courseid])) {
+                    unset($candidates[$courseid]);
+                }
+            }
+        }
+        return array_keys($candidates);
     }
 }

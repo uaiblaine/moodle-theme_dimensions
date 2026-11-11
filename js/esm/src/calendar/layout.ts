@@ -24,7 +24,8 @@
  *   row and never zigzags. Slots past the row's capacity ({@see barSlots()}) are hidden and counted per day.
  * - The density of a day comes from its row's height (measured by the grid, one ResizeObserver per grid) and from
  *   what the bars left: one item on a day with room is a CARD, a few that fit are LINES, more than fit is a SUMMARY
- *   (the lines that fit, then "+N" for the rest and the hidden bars, with a dot per key of what was left out).
+ *   (the lines that fit, then "+N" for the rest and the hidden bars, with a dot in its key for each of the first
+ *   {@see DOTS} lines left out).
  * - The count of a day is every item touching it, bars included: the day button's label says it.
  * - On a phone the month draws a dot row per day instead ({@see dayDots()}): a dot per key with items, from the
  *   answer's per-day counts, at most {@see DOTS}, then a "+".
@@ -59,7 +60,7 @@ export const MAX_BARS = 3;
 /** The row height the grid assumes until its first measure: the stylesheet's 9.25rem at 16px. */
 export const ROW_DEFAULT = 148;
 
-/** The most dots a summary draws. */
+/** The most dots a summary or a phone's day draws. */
 export const DOTS = 4;
 
 /** An item with the days it touches. */
@@ -76,7 +77,7 @@ export type WeekLayout = {
     timed: Placed[][],
 };
 
-/** The three densities of a day. */
+/** The densities of a day, 'none' for a day with nothing to draw. */
 export type Density = 'card' | 'lines' | 'summary' | 'none';
 
 /** What a day draws in its content. */

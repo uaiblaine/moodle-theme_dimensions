@@ -4,8 +4,9 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
  * The calendar page's days: the month grid, and the day and the time an instant falls on for the viewer.
  *
  * The grid is the showcase's timezone-free date core (daterange/calendar.ts, imported, never copied): weeks() lays the
- * month out on the site's first weekday, and the blanks it leaves are filled with the neighbouring months' days, the
- * same whole weeks local\calendar\page::grid() asks the range for. The browser's clock and its own timezone are never
+ * month out on the viewer's first weekday (core's calendar_get_starting_weekday(), handed by the server), and the blanks
+ * it leaves are filled with the neighbouring months' days, the same whole weeks local\calendar\page::grid() asks the
+ * range for. The browser's clock and its own timezone are never
  * read: today arrives from the server, and an instant is read in the VIEWER's timezone, which the server names, through
  * Intl's own zone data (a formatter, no arithmetic of ours); a zone Intl does not know reads as UTC.
  *

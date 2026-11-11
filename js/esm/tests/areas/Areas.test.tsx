@@ -277,6 +277,26 @@ describe('theme_dimensions/areas/Areas', () => {
         expect(panel.hidden).toBe(true);
     });
 
+    it('leaves no scrollend listener behind when the scroll fallback fires', async() => {
+        const rect = jest.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+            top: 0, bottom: window.innerHeight + 500, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0, toJSON: () => ({}),
+        });
+        window.scrollBy = jest.fn() as never;
+        const added = jest.spyOn(window, 'addEventListener');
+        const removed = jest.spyOn(window, 'removeEventListener');
+        await mount();
+        await press(controlOf(9));
+        await answer();
+        await flush(2000);
+        const listened = added.mock.calls.filter((call) => call[0] === 'scrollend');
+        const dropped = removed.mock.calls.filter((call) => call[0] === 'scrollend');
+        expect(listened.length).toBeGreaterThan(0);
+        expect(dropped.map((call) => call[1])).toEqual(expect.arrayContaining(listened.map((call) => call[1])));
+        rect.mockRestore();
+        added.mockRestore();
+        removed.mockRestore();
+    });
+
     it('opens a pressed poster in place: the address replaced, the holders in step, the rows asked and painted', async() => {
         await mount();
         await press(controlOf(9));

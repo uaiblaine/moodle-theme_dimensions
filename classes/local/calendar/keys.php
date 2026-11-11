@@ -33,18 +33,18 @@ use core_calendar\local\event\entities\event_interface;
  * ({@see \core_calendar\external\event_exporter_base::get_other_values()}): an event of a course module is an
  * activity, whatever its eventtype (a due date, a user or a group override); an event that names a component
  * and no module is "other" (an enrol plugin's, a competency's), whose eventtype string core cannot name
- * either; a site event, or any non-module event of the site course, is "site"; otherwise the eventtype is
+ * either; a site event, or a course event of the site course, is "site"; otherwise the eventtype is
  * the key (user, group, course, category), and an eventtype none of those names is "other". Two keys are the
  * theme's own sources: "course" also holds the event courses the viewer is enrolled in, and "open" the event
  * courses the viewer could join ({@see source\event_courses}).
  *
  * A key that is off is never answered: every item is classified and dropped after the vault (the post-filter,
- * always run). Where it is SAFE, the vault is not even asked ({@see arguments()}): an argument of
+ * always run). Where it is safe, the vault is not even asked ({@see arguments()}): an argument of
  * api::get_events() is emptied only when every key it can feed is off, because core's retrieval strategy
  * ({@see \core_calendar\local\event\strategies\raw_event_retrieval_strategy}) uses its arguments for more than
  * the rows they name:
  *
- * - users feeds the user events, the user OVERRIDES of an activity (courseid 0, picked by the MIN(priority)
+ * - users feeds the user events, the user overrides of an activity (courseid 0, picked by the MIN(priority)
  *   subquery: without them the viewer would be shown the activity's general date instead of their own), the
  *   group events (the subquery's group condition is built only inside the users branch, so with no user the
  *   group events find no partner row and vanish) and component events of the user;
@@ -62,7 +62,7 @@ use core_calendar\local\event\entities\event_interface;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class keys {
-    /** @var string Site events, and any non-module event of the site course. */
+    /** @var string Site events, and course events of the site course. */
     public const SITE = 'site';
     /** @var string Category events. */
     public const CATEGORY = 'category';

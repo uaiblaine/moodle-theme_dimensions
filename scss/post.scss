@@ -55,6 +55,15 @@ $dim-ds-yellow-800: #60451f;
 $dim-ds-red-100: #f4d6d2;
 $dim-ds-red-500: #ca3120;
 $dim-ds-red-800: #51140d;
+// The dark half's status pairs (ground, ink), each over the 4.5:1 floor: the course notice (coursenotice.scss) reads them;
+// the showcase's badges (category.scss) and the post's states below keep literal copies of the same values, which
+// family_tokens_test parses per mode.
+$dim-dark-open-bg: #18330c;
+$dim-dark-open-fg: #a9ee55; // 9.9:1.
+$dim-dark-pending-bg: #3a2c0c;
+$dim-dark-pending-fg: #f0c674; // 8.4:1.
+$dim-dark-info-bg: #0c2e33;
+$dim-dark-info-fg: #7fd8e4; // 8.8:1.
 
 :root {
     /* Primitives - the design system's blues (#070093 its navy, #4456FF its highlight). */
@@ -202,9 +211,9 @@ $dim-ds-red-800: #51140d;
 }
 
 /* ---- Family tokens: the contract with local_dimensions and block_dimensions ---- */
-/* The family tokens, the public half of the contract: 84 names under --dimensions-, the 33 both plugins read, the
-   21 local_dimensions alone reads and the course card's 30, which every plugin drawing a course card reads
-   (moodle-dev/docs/course-card/CONTRACT.md, section 7). A plugin reads each as var(--dimensions-x, <its own chain>), so
+/* The family tokens, the public half of the contract: the names under --dimensions- that local_dimensions and
+   block_dimensions read, the ones local_dimensions alone reads, and the course card's, which every plugin drawing a
+   course card reads. A plugin reads each as var(--dimensions-x, <its own chain>), so
    it looks the same without this theme and takes the theme's look under it. Every value is a
    Bootstrap property (so a flavour's brand colour and the page's colour mode move it), a design
    system token of this file, or another family token; the only colour literals are the dark pills' own
@@ -285,9 +294,9 @@ body,
     --dimensions-state-neutral-bg: var(--dim-ds-gray-200);
     --dimensions-state-neutral-ink: var(--dim-ds-gray-700);
     --dimensions-state-neutral-edge: var(--dimensions-state-neutral-bg);
-    /* The course card, every plugin's (CONTRACT.md section 7, the column "Under theme_dimensions"): the family's ground
-       and inks, Bootstrap's line, link hover, tertiary ground, track, brand and success triple, the design system's
-       radius, ring width, elevations (the navy tint of the theme's own card shadow) and motion. */
+    /* The course card, every plugin's: the family's ground and inks, Bootstrap's line, link hover, tertiary ground,
+       track, brand and success triple, the design system's radius, ring width, elevations (the navy tint of the
+       theme's own card shadow) and motion. */
     --dimensions-card-radius: var(--dim-ds-radius-lg);
     --dimensions-card-border-width: var(--bs-border-width);
     --dimensions-card-border: var(--bs-border-color);
@@ -564,7 +573,7 @@ $dimensions-menu-highlight: dimensions-menu-readable($dimensions-menu-lifted, $d
 }
 
 /* A smart menu (or a custom menu parent) collapsed into the "More" menu expands in place, and core paints its rows
-   gray-100, a light ground the menu's white ink cannot be read on, and sizes it to its content, so its pills ended
+   gray-100, a light ground the menu's white ink cannot be read on, and sizes it to its content, so its pills end
    short of the toggle's. The rows take the menu's own ground and pill, and the submenu the toggle's width. Core's
    selectors are repeated under .navbar, which is what outranks them. */
 .navbar .dropdownmoremenu > .dropdown-menu .dropdown-submenu > .dropdown-menu {
@@ -738,8 +747,8 @@ $dimensions-menu-logout-hover: dimensions-menu-readable($dim-ds-red-500, $dimens
 }
 
 /* ---- The notifications popover inside the navy chrome -------------------- */
-/* message_popup's popover is rendered INSIDE the navbar, so it reads whatever colour mode reaches it there - the
-   page's, now that the navbar carries none of its own - and core paints its container var(--bs-white), which the
+/* message_popup's popover is rendered inside the navbar, so it reads whatever colour mode reaches it there - the
+   page's, as the navbar carries none of its own - and core paints its container var(--bs-white), which the
    dark mode turns grey while the ink, the footer and the "See all" link keep half of the light palette. The popover
    is one surface in the page's mode: the colour mode tokens it reads are re-pointed here to the design system's
    semantic ones, which have a dark half of their own, on the container, where Bootstrap reads them from, so its
@@ -1237,7 +1246,7 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
    reading order down one column and up the next. A flex row keeps document order.
 
    The two-column cap is `flex: 1 1 45%` with a rem floor, not a grid `auto-fit`:
-   `repeat(auto-fit, minmax(19rem, 1fr))` silently resolves to three columns on a 1083px card,
+   `repeat(auto-fit, minmax(19rem, 1fr))` resolves to three columns on a wide card,
    and the modern ways of capping it - `minmax(max(19rem, 45%), 1fr)`, `container-type` - are
    rejected by Moodle's stylelint. Three items of 45% cannot share a row,
    so 45% is the cap; the floor keeps a column usable. It is governed by #region-main rather than

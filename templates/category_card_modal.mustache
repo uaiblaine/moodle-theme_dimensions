@@ -20,34 +20,30 @@
     The sheet and the actions of one course's "More information" dialogue, rendered in the browser by
     categorycoursemodal into core/modal's body and footer (the frame is category_course_modal).
 
-    Two halves, as the dialogue has two kinds of content. What the card already decided arrives from
-    the card's own markup when the reader presses its link: the cover (imageurl), the state pill
-    (badge), the title (fullname), the kicker and the two buttons (primary, secondary), which the card
-    writes onto its link from its context's modal keys. What only the dialogue shows - the excerpt, the
-    fact tiles and the programme's first lines with their labels - is theme_dimensions_get_course_dialogue's
-    answer. The dialogue opens at once with the first half and loading set, which draws a skeleton in
-    the content region; the module renders this template again once the answer is in and moves only the
-    new content region into the open dialogue, so the title that labels it is never replaced. A failed
-    request keeps the header and the buttons and says so in one sentence, with the course's own page.
+    Two halves. What the card already decided arrives from the card's own link, which carries its
+    context's modal keys: the cover (imageurl), the state pill (badge), the title (fullname), the kicker
+    and the two buttons (primary, secondary). What only the dialogue shows - the excerpt, the fact tiles,
+    the rating and the programme's first lines with their labels - is theme_dimensions_get_course_dialogue's
+    answer. The dialogue opens at once with the first half and loading set (a skeleton in the content
+    region); once the answer is in, the module renders this template again and moves only the new content
+    region into the open dialogue, so the title that labels it is never replaced. A failed request keeps
+    the header and the buttons and says so in one sentence, with a link to the course's own page.
 
-    With tool_courserating rating the course, the answer carries a rating block too, below the excerpt: the
-    average large, its five stars and the count (hidden from a screen reader, which is told the rating's
-    sentence), the distribution as five progress elements (never a width written into a style attribute),
-    and, where the plugin lets the viewer read its reviews, the plugin's own trigger of its reviews popup: an
-    element matching its listener's .tool_courserating-cfield .tool_courserating-ratings, named by the class
-    tool_courserating-ratings-courseid-<id>, which categorycoursemodal lets through after closing this dialogue.
+    With tool_courserating rating the course, a rating block follows the excerpt: the average, its five
+    stars and the count (hidden from a screen reader, which is read the rating's sentence instead), the
+    distribution as progress elements (no width written into a style attribute) and, where the plugin lets
+    the viewer read its reviews, the plugin's own trigger of its reviews popup: an element matching its
+    listener's .tool_courserating-cfield .tool_courserating-ratings, named by the class
+    tool_courserating-ratings-courseid-<id>. categorycoursemodal closes this dialogue on that press and
+    lets the event through to the plugin.
 
-    Three parts, each named by a hook: the sheet (the cover with the pill, the kicker and the title over
-    its gradient, then the content region), the content region inside it, and the actions. The title
-    carries core's own title hook and no id of its own: the module gives it the id core/modal's root is
-    labelled by, and a page holds many cards and one dialogue.
+    The title carries core's data-region="title" and no id of its own: the module gives it the id
+    core/modal's root is labelled by, because a page holds many cards and one dialogue.
 
-    The primary button is a link, or - for a course whose enrolment opens later - a button that is
+    The primary button is a link or, for a course whose enrolment opens later, a button that is
     aria-disabled, never disabled: a disabled button leaves the focus order, and a screen reader must
-    still reach the one place the opening date is printed and hear why it does nothing. Every icon is
-    decorative; the words carry the meaning.
-
-    Every text value arrives in the plain spelling and is escaped here.
+    still reach the one place the opening date is printed. Every icon is decorative. Every text value
+    arrives in the plain spelling and is escaped here.
 
     Example context (json):
     {

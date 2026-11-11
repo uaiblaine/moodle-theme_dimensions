@@ -27,10 +27,10 @@ namespace theme_dimensions\local\hook\block_compass;
 use theme_dimensions\local\landingfields;
 
 /**
- * Tells block_compass which course custom field says whether a course is a course or an event (block_compass ADR-019).
+ * Tells block_compass which course custom field says whether a course is a course or an event.
  *
  * Registered in db/hooks.php for \block_compass\hook\course_kinds; without the block nothing calls this. It names
- * the enrolment page model field ({@see landingfields::SHORTNAME_MODEL}) and its two stored values with their
+ * the enrolment page model field ({@see landingfields::SHORTNAME_MODEL}) and two of its stored values with their
  * nouns in the current language. It reads nothing: the block asks on every response of its open-courses line,
  * and uses the field only while core lists it as visible to everyone, as the theme creates it.
  *

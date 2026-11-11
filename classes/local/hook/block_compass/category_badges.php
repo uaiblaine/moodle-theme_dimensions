@@ -29,18 +29,16 @@ use theme_dimensions\local\category\branding;
 use theme_dimensions\local\landing\publicfiles;
 
 /**
- * Gives the categories block_compass's open-courses line names their first crest (block_compass ADR-019).
+ * Gives the categories block_compass's open-courses line names their first crest.
  *
  * Registered in db/hooks.php for \block_compass\hook\category_badges; without the block nothing calls this.
- * Only categories the current user may list are answered (first_crests() says how). A full
- * branding build costs seven statements a category, which the line must not pay: this listener keeps its
- * own small entry per category in the branding cache and reads its misses in one statement.
+ * A full branding build costs several statements a category, so this listener keeps its own small entry per
+ * category in the branding cache and reads its misses in one statement.
  *
  * Both rules of {@see branding::viewer_may_see()} apply, core's visibility and then local_unlistedcourses'
  * category discoverability, so a caller that passes unfiltered ids learns no crest of a category the reader may
- * not list. The plugin's question costs nothing on a site with no unlisted category. The crest's address
- * re-checks both on its own ({@see branding::resolve()}); an entry written by a read that raced an update can at
- * worst name a file the route then refuses.
+ * not list. The crest's address re-checks both on its own ({@see branding::resolve()}); an entry written by a
+ * read that raced an update can at worst name a file the route then refuses.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -163,8 +161,8 @@ class category_badges {
             'dot' => '.',
         ];
         // Index: course_categories by its primary key; context (contextlevel, instanceid); files (contextid,
-        // component, filearea, itemid). Bound: the asked categories (the line's twenty at most), three areas
-        // of at most one file each. The first column is unique: the file's id, or the category's negated.
+        // component, filearea, itemid). Bound: the asked categories, three areas of at most one file each.
+        // The first column is unique: the file's id, or the category's negated.
         $sql = "SELECT COALESCE(f.id, -cc.id) AS rowkey, cc.id AS categoryid, cc.visible,
                        ctx.id AS ctxid, ctx.path AS ctxpath, ctx.depth AS ctxdepth, ctx.contextlevel AS ctxlevel,
                        ctx.instanceid AS ctxinstance, ctx.locked AS ctxlocked,

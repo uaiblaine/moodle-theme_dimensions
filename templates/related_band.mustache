@@ -20,9 +20,8 @@
     The related courses band: a heading and the related courses as cards, each leading to the course's
     landing page. Drawn at the end of a landing page (landing_page::related()) and by the [relatedcourses]
     shortcode (theme_dimensions/related_block), from output\related_band. Its cards are the trail's course
-    cards without a number or a state, until the band draws the fleet's course card (moodle-dev
-    docs/course-card/CONTRACT.md); their covers are images. The heading's id is unique per band, since a
-    page may carry several shortcodes.
+    cards (theme_dimensions/landing_page) without a number or a state; their covers are images, never a
+    style attribute. The heading's id is unique per band, since a page may carry several shortcodes.
 
     Context variables required for this template:
     * region - The band's data-region: the landing page's or the shortcode's.

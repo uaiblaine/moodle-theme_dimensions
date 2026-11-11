@@ -51,7 +51,9 @@ use theme_dimensions\output\opengraph;
  * 2. The front page: everybody is enrolled there.
  * 3. A logged-in user who must not learn that the course exists gets the ghost
  *    page, decided by the predicate the standard enrolment page is ghosted with,
- *    and asked before the model check on purpose: a course without a model is
+ *    a missing id included ({@see redirector::is_address_ghosted()}, asked before
+ *    the lookup so that the lookup's error page cannot tell it apart), and asked
+ *    before the model check on purpose: a course without a model is
  *    forwarded to that page, and the ghost must not depend on the forward.
  *    Visitors are never ghosted; redirector::is_ghosted() says why.
  * 4. A course without a landing page model keeps the standard enrolment page.
@@ -61,12 +63,11 @@ use theme_dimensions\output\opengraph;
  *    under forcelogin, and its visibility half is already inside
  *    publicaccess::is_public(), which the visitor passed.
  * 6. The guest entry ({@see guestaccess}), asked for by guest=1 on the address or by the
- *    interstitial's form, and only where the course offers it: a session already logged in,
- *    the guest's included, goes straight to the course; the form's POST, with the session key,
- *    logs an anonymous visitor in as the guest and sends them there; an anonymous visitor of the
- *    address gets the interstitial, with the landing page's own head tags. Where the course does not
- *    offer it, the request is the plain landing page. It sits after every guard above, so it opens
- *    nothing they close: an anonymous visitor reaches it only for a public course.
+ *    interstitial's form, where the course offers it: a logged-in session (the guest's included)
+ *    goes straight to the course; the form's POST with the session key logs an anonymous visitor
+ *    in as the guest and sends them there; an anonymous visitor of the address gets the
+ *    interstitial. Where the course does not offer it, the answer is the plain landing page. It
+ *    comes after every guard above, so an anonymous visitor reaches it only for a public course.
  *
  * The guards mirror enrol/index.php rather than calling require_login($course),
  * which is exactly the call that sends a non-enrolled user to the standard
@@ -97,7 +98,8 @@ final class request {
      * Decide a request for a course's landing page.
      *
      * Sets up $PAGE and, for a public course, the head tags; the caller renders
-     * the header right after. Throws where the standard enrolment page throws.
+     * the header right after. Throws where the standard enrolment page throws, except for a missing id,
+     * where a logged-in user is ghosted.
      *
      * @param int $courseid The course id from the request.
      * @param bool $guest Whether the address asks for the guest entry (guest=1, {@see links::guest_page()}).
@@ -116,6 +118,13 @@ final class request {
         if ($visitor && !publicaccess::is_public($courseid)) {
             $SESSION->wantsurl = $landingurl->out(false);
             return self::redirect_to(new \core\url(get_login_url()));
+        }
+
+        /* A logged-in session is answered the same for a missing id as for a course it must not learn about:
+           the lookup below throws for the first and the ghost redirects for the second, which would tell
+           which ids exist. Visitors never reach this line and a site without the plugin is not ghosted. */
+        if (!$visitor && redirector::is_address_ghosted($courseid)) {
+            return self::redirect_to(redirector::ghost_url());
         }
 
         $course = get_course($courseid);
@@ -261,9 +270,9 @@ final class request {
     /**
      * The answer for an anonymous visitor of the guest entry's address: the interstitial.
      *
-     * A 200 carrying the landing page's own head tags - og:url and the canonical stay the landing page's
-     * page, the robots rule is the hook's - so a shared link unfurls exactly as the landing page's does,
-     * on a layout that prints the standard head and nothing of the site's navigation. $PAGE's own
+     * A 200 carrying the landing page's own head tags (og:url and the canonical stay the landing page's
+     * address, the robots rule is the head hook's), so a shared link unfurls exactly as the landing page's
+     * does, on a layout that prints the standard head and none of the site's navigation. $PAGE's own
      * address is the guest entry's, so a language switch comes back here rather than to the landing page.
      *
      * @param \stdClass $course The course.

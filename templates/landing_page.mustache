@@ -17,16 +17,17 @@
 {{!
     @template theme_dimensions/landing_page
 
-    The course enrolment landing page: navy hero with the course image behind it and,
-    beside the title, the grid of up to four institutional badges (below the
+    The course enrolment landing page: the hero, in the site's brand colour, with the course image
+    behind it and, beside the title, the grid of up to four institutional badges (below the
     text on narrow viewports); a reading column opening with the presentation
     video's media card when there is one, then the summary and the textarea
     sections, the latter in one panel; and the sticky enrolment card holding the
     fact rows, the enrolment area for the resolved state and, for somebody who
     manages the course without an enrolment, a way into it (landing_page::manage()).
 
-    The hero's inside is theme_dimensions/landing_hero. With herofullwidth the site draws the hero full width in
-    the page header (theme_dimensions/landing_header, armed as landing_hero) and this page draws none.
+    The hero's inside is theme_dimensions/landing_hero, which also documents its two style attribute
+    sinks (the image's url and the workload bar's widths). With herofullwidth the site draws the hero
+    full width in the page header (theme_dimensions/landing_header) and this page draws none.
 
     The summary is cut after its third paragraph by theme_dimensions/landingsummary, which unhides
     the "See more" toggle only when there is more; without JavaScript it is whole and the toggle
@@ -35,11 +36,9 @@
     The hero's emphasis block follows the scenario: the big date of an online
     event, the place of an in-person offering, the double ticket of a hybrid
     event (the date, then the two ways to take part) and the composition bar of
-    a hybrid course (its workload split into online and in-person hours). The
-    bar's two widths are integers from 0 to 100 made by
-    landing_page::hero_comp(), because a style attribute is a CSS context. The
-    hero's icons are decoration. A hybrid event offering two or more methods
-    draws each one as a track, headed by the instance's own name.
+    a hybrid course (its workload split into online and in-person hours). A
+    hybrid event offering two or more methods draws each one as a track, headed
+    by the instance's own name.
 
     A trail's page (the trail model) puts its courses in the hero's glass, one segment per course,
     and draws them in order after the summary, each a numbered card with its cover, category, hours
@@ -56,11 +55,6 @@
     there is one, by the partial theme_dimensions/related_band. A [relatedcourses] shortcode written in the
     course's summary or sections is drawn here instead of in the text, with its notice for an editor
     (relatednotice, core's warning) above the band.
-
-    The hero image's url is printed into a style attribute, a CSS context the
-    double stash does not protect, because a browser decodes the attribute
-    before the CSS parser reads it; landing_page::hero_image_url() therefore
-    answers null for any url styleurl::safe() refuses.
 
     The badge URLs go through the theme's own file route and the alt texts are
     plain spellings. The video's html is the markup of whichever enabled media

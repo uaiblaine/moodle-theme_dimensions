@@ -56,7 +56,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * ({@see links::guest_page()}): core's validator strips every undeclared
  * parameter from the request the controller is handed. It is a raw string and
  * only '1' asks, so a stray value is the plain landing page and never a validation
- * error - an integer type would answer "guest=yes" with a 500.
+ * error - an integer type would answer "guest=yes" with a 400.
  *
  * Every decision is in {@see request::handle()}; this method only turns its
  * answer into a response, the way core's restricted_module controller does. A

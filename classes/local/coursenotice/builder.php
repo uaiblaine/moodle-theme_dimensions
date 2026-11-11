@@ -38,7 +38,7 @@ use theme_dimensions\local\landingfields;
  * - Boost Union's hints, re-implemented item by item from theme_boost_union_get_course_related_hints()
  *   (BU/locallib.php): the same settings, read from theme_boost_union, the same capabilities, the
  *   same strings with the same placeholders and links, the same learner cases. Re-read that function
- *   on every Boost Union update; the parity table is in the original design record (not part of this repository).
+ *   on every Boost Union update and bring this class back to parity with it.
  * - The promotion section, for course editors only (moodle/course:update) and only on a course with
  *   a landing page model: the landing page's public address, the guest entry's address where the course offers
  *   it, and who may learn that the course exists - public, listed, unlisted - with what withholds it when
@@ -182,8 +182,8 @@ final class builder {
      *
      * A format with a view page lands on /course/view.php. A format without one that names a main
      * activity (core_courseformat\main_activity_interface; format_singleactivity is core's) lands on
-     * that activity's own view page: core's course/view.php redirects there, so that is where the
-     * course actually opens. The page must be that module's page (its cm) AND its view url, so the
+     * that activity's own view page: the format's page_set_course() redirects course/view.php there,
+     * so that is where the course actually opens. The page must be that module's page (its cm) AND its view url, so the
      * activity's other pages - a quiz attempt, a forum discussion - are not course homes.
      *
      * @param \moodle_page $page The page.
@@ -211,7 +211,7 @@ final class builder {
     /**
      * The promotion section: addresses, discoverability and the guest entry, for course editors.
      *
-     * The capability is asked FIRST, before anything that could mint, and the course home second.
+     * The capability is asked first, before anything that could mint, and the course home second.
      * The model is read through {@see landingfields::model()}, the cheap reader, so a course without
      * a landing page pays nothing more; the modality only once there is a model.
      *

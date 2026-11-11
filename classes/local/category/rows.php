@@ -268,7 +268,7 @@ final class rows {
      * child, a grandchild and an id nothing holds have no poster here. Those answer null, so the
      * caller drops the slice and none of them can be told from another.
      *
-     * The panel is built with the PAGE's request, as {@see category_panel::for_page()} does, so
+     * The panel is built with the page's request, as {@see category_panel::for_page()} does, so
      * what narrows it, its order and its ways out are the page's; the listing carries the slice's
      * own request, whose address is the "see all as a list" one.
      *

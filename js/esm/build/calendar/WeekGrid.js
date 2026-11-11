@@ -5,9 +5,9 @@ import{useEffect as K,useLayoutEffect as pe,useMemo as N,useRef as h,useState as
  * the day's button), the all-day strip (a rowheader, then seven gridcells holding the bars that start on each day, laid
  * out by layout.ts weekLayout() so a bar spans its columns) and the hour body (a rowheader, then a gridcell per day
  * with its timed items in the drawer's columns). The hour body is the whole day, 00:00 to 24:00, in the drawer's scroll
- * box (HourScroll.tsx, a rowgroup of the grid), opening on the week's busy band
- * (weeks.ts weekPlan()'s window) or, with nothing timed and "New event" offered, on the working hours. The layout is
- * weeks.ts weekPlan(), pure.
+ * box (HourScroll.tsx, a rowgroup of the grid), opening on the week's busy band (weeks.ts weekPlan()'s window) or, with
+ * nothing timed and "New event" offered, on the working hours (overlap.ts EMPTY_WINDOW). The layout is weeks.ts
+ * weekPlan(), pure.
  *
  * - One Tab stop, the selected day's header (roving tabindex). On a header the arrows move a day (past the week's ends
  *   the shell fetches the adjacent week), Home and End go to the week's ends, PageUp and PageDown a week; Enter opens
@@ -20,8 +20,9 @@ import{useEffect as K,useLayoutEffect as pe,useMemo as N,useRef as h,useState as
  *   on that day, and on an hour row of the body (an element carrying data-hour, so no layout is read) at that hour.
  * - The "now" line marks today's column at the server's time plus the minutes since the paint (the browser's clock is
  *   read only as time elapsed), aria-hidden.
- * - ONE ResizeObserver, on the frame the week shares with the drawer, never read on the mount path: below
- *   MonthGrid.PHONE the shell draws the agenda instead, seven sections whose header opens the day's sheet.
+ * - One ResizeObserver, never read on the mount path: on the frame the week shares with the drawer, for the phone
+ *   decision, and on the week itself, for the height it reports to the drawer. Below MonthGrid.PHONE (`phone`) the
+ *   week draws the agenda instead, seven sections whose header opens the day's sheet.
  *
  * @module     theme_dimensions/calendar/WeekGrid
  * @copyright  2026 Anderson Blaine

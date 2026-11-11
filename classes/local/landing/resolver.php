@@ -34,22 +34,20 @@ use local_unlistedcourses\access;
  * those hooks. can_self_enrol() exists but only enrol_self implements it -
  * enrol_fee keeps its user checks inside its hook and enrol_guest works
  * through try_guestaccess() during require_login. So this resolver carries
- * one adapter per known method, mirroring each plugin's own checks (the
- * file:line evidence is in the original design record, not part of this repository), and marks instances of unknown
- * plugins TYPE_FALLBACK, to be rendered through their own hook. enrol_paypal
- * and enrol_autoenrol are rendered through their hooks too, but listed only
- * where their own checks say the hook would offer something, so the
- * category card ({@see \theme_dimensions\local\category\classifier})
+ * one adapter per known method, mirroring each plugin's own checks, and marks
+ * instances of unknown plugins TYPE_FALLBACK, to be rendered through their own
+ * hook. enrol_paypal and enrol_autoenrol are rendered through their hooks too,
+ * but listed only where their own checks say the hook would offer something,
+ * so the category card ({@see \theme_dimensions\local\category\classifier})
  * can be held against this class for them as for the others.
  *
  * A method the user cannot use right now is hidden, never shown with a
  * reason or a teaser.
  *
  * The viewer's relationship is decided beside the methods, not instead of
- * them (core's default is kept): a viewer
- * enrolled from a later date, with an application, suspended or whose
- * enrolment ended is told so, and offered every method that would really take
- * them now. The relationship is local_unlistedcourses' own
+ * them: a viewer enrolled from a later date, with an application, suspended or
+ * whose enrolment ended is told so, and offered every method that would really
+ * take them now. The relationship is local_unlistedcourses' own
  * ({@see access::get_enrolment_state()}). enrol_coursecompleted offers nothing
  * to press, so it is no method: a viewer working towards its prerequisite is
  * told which course unlocks this one ({@see access::get_next_action()}), and
@@ -66,11 +64,11 @@ use local_unlistedcourses\access;
  */
 final class resolver {
     /**
-     * Resolve the enrolment area for one course and the CURRENT user ($USER).
+     * Resolve the enrolment area for one course and the current user ($USER).
      *
-     * The signature takes no user on purpose: enrol_self::can_self_enrol()
-     * and enrol_apply::allow_apply() both read the global $USER internally,
-     * so pretending to resolve for someone else would silently lie.
+     * The signature takes no user on purpose: enrol_self::can_self_enrol() reads
+     * the global $USER, and so do this class's own mirrors of the other plugins'
+     * checks, so resolving for someone else would silently answer for $USER.
      *
      * @param \stdClass $course The course record.
      * @return resolution The resolved state and usable methods.
@@ -423,7 +421,7 @@ final class resolver {
      * What the current user would pay on an enrol_fee or enrol_paypal instance, or null where its page offers no payment.
      *
      * Both plugins keep their user-facing checks inside enrol_page_hook() and check the same three
-     * things there (enrol/fee/classes/plugin.php and enrol/paypal/lib.php on 5.2): no row of the user
+     * things there (enrol/fee/classes/plugin.php and enrol/paypal/lib.php): no row of the user
      * on this instance, the enrolment window, and a cost above zero on the instance or in the
      * plugin's own default. An instance with no cost is misconfigured: core shows an error there,
      * and this hides it.

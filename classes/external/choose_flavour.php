@@ -36,7 +36,8 @@ use theme_dimensions\local\flavourchoice;
  * The menu's client module calls it and reloads the page, which then primes the new flavour. Every
  * decision is flavourchoice::choose()'s, the one write path the choice page's form shares: the site
  * default, or a flavour the setting offers now. Like the focus mode switch (set_focus_mode) it writes
- * one personal setting of the caller and logs no event; core logs none for a preference either.
+ * one personal setting of the caller and logs no event of its own (core logs none for a preference);
+ * the look cohort it moves the caller into logs core's cohort membership events.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -59,7 +60,7 @@ class choose_flavour extends external_api {
      *
      * @param int $flavourid The chosen flavour id, or 0 for the site default.
      * @return array chosen: the flavour id now in force for the caller.
-     * @throws \moodle_exception When the guest calls it, or the flavour is not offered.
+     * @throws \moodle_exception When the guest or somebody logged in as another user calls it, or the flavour is not offered.
      */
     public static function execute(int $flavourid): array {
         $params = self::validate_parameters(self::execute_parameters(), ['flavourid' => $flavourid]);

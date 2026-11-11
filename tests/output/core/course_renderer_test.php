@@ -555,9 +555,12 @@ final class course_renderer_test extends \advanced_testcase {
         access::reset_caches();
         category_access::reset_caches();
         $html = $renderer->search_courses(['search' => 'Carded Restricted Course']);
-        $this->assertStringContainsString('categoryname', $html, 'Precondition: the card presentation really rendered.');
+        $label = get_string('aria:coursecategory', 'core_course');
         $this->assertStringContainsString('Carded Restricted Course', $html, 'Control: the course itself must still show.');
         $this->assertStringNotContainsString('Carded Restricted Category', $html);
+        // The screen-reader label goes with the name, or a reader hears "Course category:" and no value.
+        $this->assertStringNotContainsString('categoryname', $html);
+        $this->assertStringNotContainsString($label, $html);
 
         $this->setUser($member);
         access::reset_caches();
@@ -569,6 +572,8 @@ final class course_renderer_test extends \advanced_testcase {
             $html,
             'Control: the cohort member must read the category on the same card.'
         );
+        $this->assertStringContainsString('categoryname', $html, 'Control: the card presentation names a category.');
+        $this->assertStringContainsString($label, $html, 'Control: and keeps its label.');
     }
 
     /**

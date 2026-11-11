@@ -46,25 +46,21 @@ use theme_dimensions\local\landingfields;
  * guest_page(). It needs a code of its own because core's /p/{shortcode} route drops the query
  * string: /p/<code>?guest=1 would arrive at the page without the parameter.
  *
- * The category showcase's own addresses live here too, for the same reason - one place spells
- * them - even though the class is named after the landing page: category_legacy() and
- * category_page() are the script and the route of the anonymous shell, and showcase() and
- * showcase_form() pick between that shell and core's /course/index.php for whichever viewer
- * is asking, so the listing, the pager, the toolbar and the hero never decide it themselves.
+ * The category showcase's addresses live here too, so one place spells them: category_legacy()
+ * and category_page() are the script and the route of the anonymous shell, and showcase() and
+ * showcase_form() pick between that shell and core's /course/index.php for the viewer asking.
  *
- * The router gate is $CFG->routerconfigured, the same assertion core's own URL builders read
- * (\core\url::routed_path(), \core\router::guess_basepath()): the administrator's word that
- * the web server rewrites unknown paths to r.php. The check which proves it
- * (\core\check\environment\router) makes five HTTP requests to the site itself and belongs to
- * the administration's checks, never to a page render.
+ * The router gate is $CFG->routerconfigured, the flag core's own URL builders read
+ * (\core\url::routed_path(), \core\router::guess_basepath()). The check which proves it
+ * (\core\check\environment\router) makes HTTP requests to the site itself and belongs to the
+ * environment checks, never to a page render.
  *
  * Codes are drawn by {@see shortcode} rather than by core's generator, whose alphabet cannot be
- * dictated; the row is written to core's table with core's own columns, so the route, the
- * manager and the handler contract stay core's. Uniqueness is global, as core demands of a
- * public code: no row of any user may hold the same code. The table's (userid, shortcode)
- * unique index is the arbiter when two editors open the same course form or course page at once: the loser
- * draws again, both then read back the row with the lowest id, and a course has one public
- * address however many editors it has.
+ * dictated; the row is written to core's table with core's own columns, so the route and the
+ * handler contract stay core's. Uniqueness is global, as core requires of a public code. The
+ * table's (userid, shortcode) unique index arbitrates two inserts of the same code (the loser
+ * draws again); two editors minting for one course at once both insert a row, and every reader
+ * takes the row with the lowest id, so a course has one public address.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -171,10 +167,8 @@ final class links {
      * The address of one page of the showcase, for whichever shell is drawing it.
      *
      * The logged-in shell is core's own category page, which this theme's course renderer
-     * takes over; the anonymous shell is the public page. Everything the listing links -
-     * the navigation tree, the area posters and their panel, the pager, the quick date options
-     * and the "clear filters" control - goes through here, so neither shell can hand a reader
-     * an address the other shell answers.
+     * takes over; the anonymous shell is the public page. Every address the listing links
+     * goes through here, so neither shell hands a reader an address only the other answers.
      *
      * @param int $categoryid The category id.
      * @param array $params Extra query parameters, name => value.
@@ -319,8 +313,7 @@ final class links {
      *
      * Draws until a code no row holds is written. A code taken between the check and the
      * insert fails on the table's unique index, which is the signal to draw again; once a row
-     * is in, the oldest row of the course is what every caller reads, so a race between two
-     * editors leaves both with the same address.
+     * is in, the course's oldest row is what every caller reads.
      *
      * @param int $courseid The course id.
      * @param string $linktype LINKTYPE or LINKTYPE_GUEST: each type is one address of its own.

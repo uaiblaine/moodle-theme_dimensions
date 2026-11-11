@@ -31,7 +31,8 @@ use theme_dimensions\local\landing\guestaccess;
  *
  * The form posts the session key and {@see guestaccess::ENTER_PARAM} to the landing page's own
  * address, where request::handle() logs the visitor in as the guest and sends them to the
- * course. The module landingguest submits it as soon as the page loads; the button is the same
+ * course. The module landingguest submits it as soon as the page loads (unless the page was
+ * reached through the browser's history); the button is the same
  * submission for a browser without JavaScript. A robot fetching the address for a link preview
  * runs no script and submits nothing, so it reads this page's head tags - the landing page's own,
  * registered by the request - and never opens a guest session.

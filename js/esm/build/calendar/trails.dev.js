@@ -1,16 +1,16 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 /**
- * The Trilhas view's model: the answer's shape, its address, the months it holds and where each step's bar and each
+ * The Trails view's model: the answer's shape, its address, the months it holds and where each step's bar and each
  * connector goes on them. Pure: no layout is read, the bars are grid columns and the connectors rem.
  *
- * - The view's trail and "Só as minhas" are navigation, like the view: in the address (`trail=`, `mine=1`), never in
+ * - The view's trail and "Only mine" are navigation, like the view: in the address (`trail=`, `mine=1`), never in
  *   the remembered state (local\calendar\page::trail_from_request(), mine_from_request()).
  * - A step's days are read in the viewer's timezone (days.ts zone()), as every item of the calendar.
- * - The view holds contiguous whole months ({@see Loaded}), at most {@see LOADED_CAP}: the first paint's answer is the
- *   month and the next (local\calendar\trails::OPENING), each further load is one call of one month, or by months of up to
- *   {@see BATCH_MONTHS} (local\calendar\trails::MONTHS, {@see batchOf()}), appended or prepended, and the
- *   answers are merged by trail id ({@see mergedOf()}), a trail kept while its period meets what is held.
+ * - The view holds contiguous whole months ({@see Loaded}), at most {@see capOf()}: the first paint's answer is the
+ *   month and the next (local\calendar\trails::OPENING), each further load is one call of one month or, at the month
+ *   zoom, of up to {@see BATCH_MONTHS} (local\calendar\trails::MONTHS, {@see batchOf()}), appended or prepended, and
+ *   the answers are merged by trail id ({@see mergedOf()}), a trail kept while its period meets what is held.
  * - A bar runs from its step's start to its end, clipped at the edges of what is held: a step that began earlier is
  *   marked `before`, one that ends later `after`. A step with a start and no end is `open`: it is drawn as its first
  *   {@see OPEN_DAYS} days, followed by a decorative chip ({@see chipLeft()}) saying it has no end;

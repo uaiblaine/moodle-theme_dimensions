@@ -169,6 +169,26 @@ final class progress_test extends \advanced_testcase {
     }
 
     /**
+     * A step undone after it was completed keeps a completion record with a time, and still answers 0: "completed"
+     * is the time of a step that is done, as of() documents.
+     */
+    public function test_an_undone_step_has_no_completed_time(): void {
+        $future = ['startdate' => time() - WEEKSECS, 'enddate' => time() + 4 * WEEKSECS];
+        $step = $this->step('Desfeito', true, $future);
+        $this->complete_activity($step->cmid);
+        $this->assertGreaterThan(0, $this->progress()['states'][$step->cmid]['completed'], 'The control: done has a time.');
+
+        $cm = get_fast_modinfo($this->trail, $this->learner->id)->get_cm($step->cmid);
+        (new \completion_info($this->trail))->update_state($cm, COMPLETION_INCOMPLETE, (int) $this->learner->id);
+        $data = (new \completion_info(get_course($this->trail->id)))->get_data($cm, true, (int) $this->learner->id);
+        $this->assertGreaterThan(0, (int) $data->timemodified, 'The precondition: the record keeps its time.');
+
+        $state = $this->progress()['states'][$step->cmid];
+        $this->assertNotSame(progress::DONE, $state['state']);
+        $this->assertSame(0, $state['completed']);
+    }
+
+    /**
      * An open step whose end passed is late, and is the next step when it comes first; the open step after it is
      * up next, not current.
      */

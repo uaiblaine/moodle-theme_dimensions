@@ -24,8 +24,8 @@
 
     Kept from core, because tool_lp/module_navigation and core/form-autocomplete read them: the select's
     id module-nav-<uniqid> (the JavaScript below binds and enhances it by that id), its label, the
-    form's class user-competency-course-navigation (core's tool_lp stylesheet hides the select by it
-    until the autocomplete has drawn its own control), the hidden fields courseid and mod, every
+    form's class user-competency-course-navigation (tool_lp's stylesheet hides the native select under
+    it; the autocomplete draws its own control in its place), the hidden fields courseid and mod, every
     option with its value and selected state, and the JavaScript itself. The module names keep core's
     double stash.
     Changed: the panel is the theme's (dim-comp-nav) in place of core's bordered box; core's float

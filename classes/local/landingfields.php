@@ -40,9 +40,9 @@ use core_customfield\field_controller;
  * not provisioned and nothing draws them, {@see picture_type_available()}),
  * created once so a fresh site is usable without an admin building them by
  * hand, and never deleted - they hold what course authors wrote about their
- * courses. The one exception is the retired "public enrolment page" checkbox,
+ * courses. The one exception was the retired "public enrolment page" checkbox,
  * which held no authored text and whose meaning moved into
- * local_unlistedcourses' discoverability state ({@see retire_public_field()}).
+ * local_unlistedcourses' discoverability state.
  * Provisioning is idempotent and serialised under a core Lock API
  * lock, because neither customfield_field nor customfield_category carries a
  * unique index and two concurrent first requests would silently create
@@ -90,9 +90,7 @@ class landingfields {
      * @var string[] The format, live class and in-person fields, in the order they sit right after the workload.
      *
      * A site that had the other fields before them gets them appended at the end of the category
-     * by {@see self::ensure_fields()}; the upgrade then moves them here with
-     * {@see self::place_format_fields()}, so that an upgraded site lists the fields in the same
-     * order as a fresh one.
+     * by {@see self::ensure_fields()}; a fresh site lists them in this order.
      */
     public const ROUND6_SHORTNAMES = [
         self::SHORTNAME_FORMAT,
@@ -185,16 +183,13 @@ class landingfields {
     public const SHORTNAME_RELATED = 'dimensions_related';
 
     /**
-     * @var string Shortname of the related contents' manual choice: the competencies the band relates by (D3).
+     * @var string Shortname of the related contents' manual choice: the competencies the band relates by.
      *
      * A text field holding framework and competency idnumber pairs ({@see related\choice}), read only while the
      * select says {@see RELATED_MANUAL}. Its form element is replaced by an autocomplete of the course's competencies
      * ({@see hook\course\after_form_definition}); identifiers, never ids, so the choice survives a backup and restore.
      */
     public const SHORTNAME_RELATEDPAIRS = 'dimensions_relatedpairs';
-
-    /** @var string Shortname of the retired "public landing page" checkbox, kept only so the upgrade can find it. */
-    public const SHORTNAME_RETIRED_PUBLIC = 'dimensions_public';
 
     /** @var int Stored value of the page model select for "course". */
     public const MODEL_COURSE = 1;
@@ -287,7 +282,7 @@ class landingfields {
      * MODALITY_* and FORMAT_* constants are bound to the ORDER of the lines
      * in the 'options' strings below. Never reorder them; a new option goes at
      * the end, and a site provisioned before it needs an upgrade step that
-     * appends it, as {@see add_hybrid_option()} does for the hybrid modality.
+     * appends it, as {@see add_trail_option()} does for the trail.
      *
      * @return array Map of shortname => ['type' => string, 'stringkey' => string, 'config' => array].
      */
@@ -775,16 +770,16 @@ class landingfields {
      * everyone. The video URL is the plain spelling of what the editor typed;
      * the page decides whether a player embeds it.
      *
-     * @param int $courseid The course id.
      * The format, live class and in-person fields arrive already read without contradiction
      * ({@see coherent()}): a page never has to ask whether a format, a live class or an
      * in-person figure may be shown beside the model and the modality it was saved with.
      *
-     * @return \stdClass Typed values: model/modality/format (int, 0 = unset), workload/
+     * @param int $courseid The course id.
+     * @return \stdClass Typed values: model/modality/format/related (int, 0 = unset), workload/
      *   inpersonworkload (float|null), liveclasses (bool), audience/programme/certification (HTML
      *   string|null), city/venue/address/publicdescription/videourl/liveclasseswhen/meetings
-     *   (plain string|null), crests (array of \stored_file in grid order), names (array of
-     *   shortname => plain field name).
+     *   (plain string|null), relatedpairs (raw string), crests (array of \stored_file in grid
+     *   order), names (array of shortname => plain field name).
      */
     public static function values(int $courseid): \stdClass {
         return self::values_many([$courseid], true)[$courseid];
@@ -800,7 +795,7 @@ class landingfields {
      * array statement (our field ids, the page's course ids; rides the
      * instanceid-fieldid-component-area-itemid index) and turned into the
      * same data controllers core would build, defaults included for a course
-     * without a row. Everything after that is exactly what values() did.
+     * without a row.
      *
      * The course contexts are asked for one by one; a caller listing a page
      * preloads them first (population::page_contexts(), which cards::values()
@@ -810,10 +805,10 @@ class landingfields {
      * textarea export runs format_text() with the text filters on, in the
      * course's context, and the first format_text() in a context loads that
      * context's active filters (a recordset) and then lets every active filter
-     * run - filter_activitynames alone reads the course record for each context
-     * it meets. On a page of 48 cards that is dozens of statements the card's
-     * excerpt cannot justify, so a listing asks for the textareas with $filters
-     * false: the same cleaning, the same pluginfile rewriting, no filter pass.
+     * run (filter_activitynames builds the course's modinfo). On a page of cards
+     * that is dozens of statements the card's excerpt cannot justify, so a listing
+     * asks for the textareas with $filters false: the same cleaning, the same
+     * pluginfile rewriting, no filter pass.
      * The landing page keeps the full, filtered rendering. The rewrite mirrors
      * customfield_textarea's data_controller::export_value() and must be
      * re-read against it on each core upgrade.
@@ -1356,23 +1351,42 @@ class landingfields {
     }
 
     /**
-     * Append the hybrid option to the modality select of a site provisioned before it.
+     * Append the trail option to the page model select of a site provisioned before it.
      *
-     * The option texts were written into the field's configdata when it was created, and
-     * {@see ensure_fields()} never rewrites a field that exists, so the third line has to be
-     * appended here. It is appended only to a select that still holds exactly the two lines it
-     * was created with: the stored value of an option is its position, so a third line an
-     * administrator added would become "hybrid" if this step appended a fourth one, and one
-     * edited into place already is the administrator's to keep. Written with a plain update for
-     * the reason {@see retire_public_field()} gives.
+     * The line is appended only to a select that still holds exactly the two lines it was created with (course and
+     * event), because the stored value of an option is its position: a third line an administrator added would become
+     * the trail if this step appended a fourth one. Written with a plain update, as the customfield API's save path is
+     * built for a request with an acting user.
      *
      * @return bool Whether the option was appended.
      */
-    public static function add_hybrid_option(): bool {
+    public static function add_trail_option(): bool {
+        return self::append_third_option(self::SHORTNAME_MODEL, 'landingfield_model_trail');
+    }
+
+    /**
+     * Append the manual line to the related contents select of a site provisioned before it.
+     *
+     * The same step as {@see add_trail_option()}, for the same reasons: the select here holds automatic and off.
+     *
+     * @return bool Whether the option was appended.
+     */
+    public static function add_related_manual_option(): bool {
+        return self::append_third_option(self::SHORTNAME_RELATED, 'landingfield_related_manual');
+    }
+
+    /**
+     * Append a third line to a select field that still holds exactly the two lines it was created with.
+     *
+     * @param string $shortname The select field's shortname.
+     * @param string $stringkey The theme's lang string holding the new line.
+     * @return bool Whether the option was appended.
+     */
+    private static function append_third_option(string $shortname, string $stringkey): bool {
         global $DB;
 
         self::reset_field_cache();
-        $field = self::get_field(self::SHORTNAME_MODALITY);
+        $field = self::get_field($shortname);
         if (!$field) {
             return false;
         }
@@ -1382,7 +1396,7 @@ class landingfields {
         if (count(array_filter($lines, 'strlen')) !== 2) {
             return false;
         }
-        $lines[] = get_string('landingfield_modality_hybrid', self::COMPONENT);
+        $lines[] = get_string($stringkey, self::COMPONENT);
         $config['options'] = implode("\n", $lines);
         $DB->update_record('customfield_field', (object) [
             'id' => $field->get('id'),
@@ -1391,142 +1405,6 @@ class landingfields {
         ]);
         self::reset_field_cache();
         return true;
-    }
-
-    /**
-     * Append the trail option to the page model select of a site provisioned before it.
-     *
-     * The same step as {@see add_hybrid_option()}, for the same reasons: the line is appended
-     * only to a select that still holds exactly the two lines it was created with (course and
-     * event), because the stored value of an option is its position.
-     *
-     * @return bool Whether the option was appended.
-     */
-    public static function add_trail_option(): bool {
-        global $DB;
-
-        self::reset_field_cache();
-        $field = self::get_field(self::SHORTNAME_MODEL);
-        if (!$field) {
-            return false;
-        }
-        $config = (array) $field->get('configdata');
-        $lines = preg_split("/\s*\n\s*/", trim((string) ($config['options'] ?? '')));
-        if (count(array_filter($lines, 'strlen')) !== 2) {
-            return false;
-        }
-        $lines[] = get_string('landingfield_model_trail', self::COMPONENT);
-        $config['options'] = implode("\n", $lines);
-        $DB->update_record('customfield_field', (object) [
-            'id' => $field->get('id'),
-            'configdata' => json_encode($config),
-            'timemodified' => time(),
-        ]);
-        self::reset_field_cache();
-        return true;
-    }
-
-    /**
-     * Append the manual line to the related contents select of a site provisioned before it.
-     *
-     * The same step as {@see add_hybrid_option()}, for the same reasons: the line is appended only to a select that
-     * still holds exactly the two lines it was created with (automatic and off), because the stored value of an
-     * option is its position.
-     *
-     * @return bool Whether the option was appended.
-     */
-    public static function add_related_manual_option(): bool {
-        global $DB;
-
-        self::reset_field_cache();
-        $field = self::get_field(self::SHORTNAME_RELATED);
-        if (!$field) {
-            return false;
-        }
-        $config = (array) $field->get('configdata');
-        $lines = preg_split("/\s*\n\s*/", trim((string) ($config['options'] ?? '')));
-        if (count(array_filter($lines, 'strlen')) !== 2) {
-            return false;
-        }
-        $lines[] = get_string('landingfield_related_manual', self::COMPONENT);
-        $config['options'] = implode("\n", $lines);
-        $DB->update_record('customfield_field', (object) [
-            'id' => $field->get('id'),
-            'configdata' => json_encode($config),
-            'timemodified' => time(),
-        ]);
-        self::reset_field_cache();
-        return true;
-    }
-
-    /**
-     * Move the format, live class and in-person fields to their place right after the workload.
-     *
-     * {@see ensure_fields()} appends a field it creates to the end of the category, which on a
-     * site provisioned before these fields existed puts the format and the live classes after the share
-     * picture. Each field is moved ahead of the target audience field, the one that follows them
-     * in {@see self::definitions()}, when both sit in the same category;
-     * moved one after the other in their own order, they land in that order. A field an
-     * administrator has moved to another category is left where it is.
-     *
-     * @return void
-     */
-    public static function place_format_fields(): void {
-        self::reset_field_cache();
-        $anchor = self::get_field(self::SHORTNAME_AUDIENCE);
-        if (!$anchor) {
-            return;
-        }
-        foreach (self::ROUND6_SHORTNAMES as $shortname) {
-            $field = self::get_field($shortname);
-            if ($field && (int) $field->get('categoryid') === (int) $anchor->get('categoryid')) {
-                api::move_field($field, (int) $anchor->get('categoryid'), (int) $anchor->get('id'));
-            }
-        }
-        self::reset_field_cache();
-    }
-
-    /**
-     * Delete the retired "public enrolment page" checkbox and its data.
-     *
-     * Its meaning moved into local_unlistedcourses' discoverability state,
-     * where publishing is a manager's act behind a capability; a checkbox
-     * that any course editor could tick would be a way around that gate, and
-     * left in the form it would be a control that does nothing. Nothing is
-     * migrated: a course is published by somebody who may, not by an
-     * upgrade. Plain deletes, because the customfield API's delete path is
-     * built for a request with an acting user and the handler's cache reset
-     * is test-only code that throws during an upgrade.
-     *
-     * The query matches every checkbox of the retired shortname in the course
-     * custom fields, in any category, not only in the theme's own. That is
-     * acceptable for a one-off call: the shortname belongs to the field
-     * this theme created, so a field of that name and type is the retired one
-     * wherever an administrator may have moved it.
-     *
-     * @return void
-     */
-    public static function retire_public_field(): void {
-        global $DB;
-
-        $sql = "SELECT f.id
-                  FROM {customfield_field} f
-                  JOIN {customfield_category} c ON c.id = f.categoryid
-                 WHERE c.component = :component
-                   AND c.area = :area
-                   AND f.shortname = :shortname
-                   AND f.type = :type";
-        $fieldids = $DB->get_fieldset_sql($sql, [
-            'component' => 'core_course',
-            'area' => 'course',
-            'shortname' => self::SHORTNAME_RETIRED_PUBLIC,
-            'type' => 'checkbox',
-        ]);
-        foreach ($fieldids as $fieldid) {
-            $DB->delete_records('customfield_data', ['fieldid' => $fieldid]);
-            $DB->delete_records('customfield_field', ['id' => $fieldid]);
-        }
-        self::reset_field_cache();
     }
 
     /**

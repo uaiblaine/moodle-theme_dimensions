@@ -22,7 +22,7 @@ namespace theme_dimensions\local;
  * Every template the theme overrides (templates/<component>/...) and every method it copies from core
  * keeps, next to the copy, a verbatim snapshot of the upstream it was last re-diffed against:
  * <copy>.upstream for a template, <copy file>.<method>.upstream for a method. Boost Union keeps its
- * copy of core's React navigation the same way (js/esm/src/nav/Nav.tsx.upstream).
+ * own copies of core the same way (e.g. templates/core/loginform.mustache.upstream).
  *
  * A script copied whole (core's calendar/export_execute.php, {@see self::FILES}) keeps the whole file as its snapshot:
  * <copy file>.<name>.upstream.
@@ -59,6 +59,34 @@ final class upstream {
             'method' => 'coursecat_subcategories',
             'upstreamclass' => null,
             'upstreammethod' => 'coursecat_subcategories',
+        ],
+        [
+            'file' => 'classes/output/core/course_renderer.php',
+            'class' => \theme_dimensions\output\core\course_renderer::class,
+            'method' => 'coursecat_category_content',
+            'upstreamclass' => null,
+            'upstreammethod' => 'coursecat_category_content',
+        ],
+        [
+            'file' => 'classes/output/core/course_renderer.php',
+            'class' => \theme_dimensions\output\core\course_renderer::class,
+            'method' => 'tagged_courses',
+            'upstreamclass' => null,
+            'upstreammethod' => 'tagged_courses',
+        ],
+        [
+            'file' => 'classes/output/core/course_renderer.php',
+            'class' => \theme_dimensions\output\core\course_renderer::class,
+            'method' => 'search_courses',
+            'upstreamclass' => null,
+            'upstreammethod' => 'search_courses',
+        ],
+        [
+            'file' => 'classes/output/core/course_renderer.php',
+            'class' => \theme_dimensions\output\core\course_renderer::class,
+            'method' => 'frontpage_available_courses',
+            'upstreamclass' => null,
+            'upstreammethod' => 'frontpage_available_courses',
         ],
         [
             'file' => 'classes/form/categoryhero.php',

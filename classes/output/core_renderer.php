@@ -94,12 +94,12 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      *
      * A layout carrying the user menu gets the navbar's colour and the name block in the menu, because Boost
      * Union's layouts build that context and render it in one call, and this is the only place a child theme
-     * sees it without owning a copy of every layout file. The name itself is left exactly as core wrote it -
-     * fullname($USER), from
-     * \core\user::get_user_navigation_info() through core\navigation\output\primary::get_user_menu() - so
-     * the navbar shows whatever the site's fullnamedisplay composes. The guard is the context's
-     * shape rather than the template's name on purpose: it survives Boost Union renaming or
-     * reorganising its layout templates, and it costs one isset() per render.
+     * sees it without owning a copy of every layout file. The name itself is left as core wrote it
+     * (fullname($USER), through core\navigation\output\primary::get_user_menu()), so the navbar shows
+     * whatever the site's fullnamedisplay composes. The user-menu, visitor, drawer and compact-navbar guards
+     * read the context's shape rather than the template's name, so they survive Boost Union renaming its
+     * layout templates, for one isset() a render; the course-notice and focus-mode guards, below, key on
+     * the template's name instead.
      *
      * A layout drawn for a visitor - a session that is not logged in, or the guest account - loses the
      * user menu while {@see guestnav::applies()}: core prints nothing in it for them but its "Log in"
@@ -111,21 +111,18 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * A layout drawn for a logged-in real account gets the theme's mobile drawer while
      * {@see drawernav::applies()}: its template data goes into the context as dimensionsdrawer, from the
      * primary navigation and the user menu core already put there, and the same override of
-     * theme_boost/primary-drawer-mobile draws it in place of Boost Union's list. Guarded by the SHAPE
-     * core writes for a logged-in account - mobileprimarynav beside usermenu.avatardata - for the reason
-     * given above; any other template's context is left as it came.
+     * theme_boost/primary-drawer-mobile draws it in place of Boost Union's list. Guarded by the shape
+     * core writes for a logged-in account: mobileprimarynav beside usermenu.avatardata.
      *
      * A layout whose primary navigation can overflow by more than {@see compactnav::MAXHIDDEN} items gets
      * {@see compactnav::BODY_ARMED} spliced into its body attributes and the compact navbar's module armed, while
-     * {@see compactnav::arms()} says so. Guarded by the SHAPE - bodyattributes beside primarymoremenu - because
-     * Boost Union's layouts build both before the one call that renders them, and the count is only in the latter.
+     * {@see compactnav::arms()} says so. Guarded by the shape bodyattributes beside primarymoremenu: Boost
+     * Union's layouts build both before the one call that renders them, and the count is only in the latter.
      *
      * The two layouts that print Boost Union's course related hints get this theme's course notice
-     * in their place, under the same key: Boost Union's include writes the key only when it has a
-     * hint, so the value is SET here whatever the include did, and an empty string when the notice
-     * says nothing - Boost Union's cards never reach the page. Guarded by the template's name,
-     * because the shape cannot be: the key is absent exactly when Boost Union had nothing to say.
-     * Focus mode keeps the notice in its reading column, as the ordinary page does.
+     * in their place, under the same key, set whatever Boost Union's include did ('' when the notice
+     * says nothing). Guarded by the template's name, not the shape: the include writes the key only
+     * when Boost Union has a hint, and the notice may have something to say when it has none.
      *
      * The drawers layout of a page that can switch focus mode in place is read, never rewritten,
      * for what focus mode adds to it ({@see focusmode::shell()}); Boost Union's template renders it
@@ -152,8 +149,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
 
         /* The visitor's navbar: core's "Log in" link and its guest sentence go, the theme's actions
            (appended by navbar_plugin_output()) replace them, and the mobile drawer's card reads the
-           same data from the layout context. Guarded by the SHAPE core writes for exactly these
-           visitors - usermenu.unauthenticateduser - for the reason the docblock gives. */
+           same data from the layout context. Guarded by the shape core writes for exactly these
+           visitors: usermenu.unauthenticateduser. */
         if (is_array($context) && isset($context['usermenu']['unauthenticateduser']) && guestnav::applies($this->page)) {
             $context['usermenu'] = false;
             $context['dimensionsguest'] = guestnav::context();
@@ -174,20 +171,15 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
             );
         }
 
-        /* The category showcase's hero draws the category's tabs itself, so the band the layout
-           would render under the header is switched off while a hero is armed. Guarded by the
-           SHAPE of the context - the key Boost Union's layout writes from the secondary
-           navigation - and not by the template's name, for the reason the docblock gives. If
-           Boost Union ever renames the key the band comes back beside the hero's tabs, which
-           the drift test in core_renderer_test reads as two tab strips on one page. */
+        /* The category showcase's hero draws the category's tabs itself, so the secondary navigation
+           band is switched off while a hero is armed, keyed on the key Boost Union's layout writes for
+           it. If Boost Union renames the key the band comes back beside the hero's tabs, which
+           core_renderer_test's drift test catches. */
         if (is_array($context) && array_key_exists('secondarymoremenu', $context) && category_hero::current() !== null) {
             $context['secondarymoremenu'] = false;
         }
 
-        /* The compact navbar on tablets (B5), armed only where the primary navigation can overflow by more than
-           compactnav::MAXHIDDEN items at all. Guarded by the SHAPE of a layout's context - its body attributes beside
-           the primary navigation's more menu, both of which Boost Union's layouts build before this one call - for the
-           reason the docblock gives. The module is armed here because this is where the decision is made. */
+        // The compact navbar on tablets: see the docblock. The module is armed where the decision is made.
         if (
             is_array($context)
             && isset($context['bodyattributes'], $context['primarymoremenu'])
@@ -204,12 +196,10 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
         }
 
         /* Focus mode reads the layout, after the guards above so the bar inherits the navbar colours
-           they resolved, and renders nothing in its place: the template Boost Union named renders
-           unchanged and the bar is printed by standard_top_of_body_html(), which that template
-           evaluates later in this same call. Boost Union's layout file ends with exactly this
-           template name - core Boost's own naming, which Boost Union had to keep to stay a valid
-           override target - and with Multi-tenancy installed it renders another one, where this
-           guard does not match and focus mode simply does not apply. */
+           they resolved, and renders nothing in its place: the bar is printed by
+           standard_top_of_body_html(), which this template evaluates later in the same call. Boost
+           Union's layout/drawers.php renders theme_boost/drawers, except on Moodle Workplace (its MWP
+           extension), where it renders local_boost_union_mwp/drawers and focus mode does not apply. */
         if (
             $templatename === 'theme_boost/drawers'
             && is_array($context)
@@ -334,10 +324,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * The top of the body, and on a page that can switch focus mode in place the bar after it.
      *
      * Boost Union's layout template prints this first inside the page wrapper, so the bar lands
-     * where the reduced shell used to draw it: after core's skip link, which this output carries,
-     * and before Boost Union's navbar. The bar is always in the page and the stylesheet shows it
-     * only under the focus mode body class; the status line beside it is not hidden with it, because
-     * it is what announces the switch in either direction.
+     * after core's skip link, which this output carries, and before Boost Union's navbar. The bar is
+     * always in the page and the stylesheet shows it only under the focus mode body class; the status
+     * line beside it is not hidden with it, because it is what announces the switch in either direction.
      *
      * @return string HTML.
      */
@@ -455,8 +444,8 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * menu, or before the last item. Each submenu item is a link to the choice page with its flavour
      * preselected and carries the flavour id for theme_dimensions/flavourchoice, which records the
      * choice in place. The current item points at '#', as core's current language does. Core's submenu
-     * template prints an item's text with a triple stash, so the text goes in ESCAPED; the title is
-     * printed double-stashed and goes in PLAIN. A context already carrying the submenu is left alone.
+     * template prints an item's text with a triple stash, so the text goes in escaped; the title is
+     * printed double-stashed and goes in plain. A context already carrying the submenu is left alone.
      *
      * @param array $context The layout template context.
      * @return array
@@ -544,7 +533,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * Boost Union calls this from inside its layout file, with the page's cm already set,
      * which is why focus mode needs no hook for the class and never meets
      * moodle_page::add_body_class()'s state guard. The classes are appended to
-     * $additionalclasses BEFORE delegating on purpose: Boost Union's own override does not
+     * $additionalclasses before delegating on purpose: Boost Union's own override does not
      * call core's, it rebuilds the attribute string itself, so a child theme which
      * post-processed that string would be editing finished HTML.
      *
@@ -622,19 +611,14 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     /**
      * The navbar's plugin output, with the way into focus mode spliced into it and the visitor's actions after it.
      *
-     * The position is the whole point and it is fixed by core's assembly order: the
-     * subsystems' callbacks run first, so message_popup's notification bell is already in
-     * the string when a plugin's callback would be appended - to the RIGHT of it, which is
-     * the one place this button may not go. A theme render_navbar_output() in lib.php
-     * therefore cannot reach the position, and copying Boost Union's navbar template to
-     * place the button by hand would mean re-diffing 160 lines for ever. Splicing the
-     * rendered button in front of the bell's own container is the only route left.
+     * The focus button must sit left of message_popup's notification bell. Core appends the plugins'
+     * render_navbar_output() callbacks in plugin type order, message before theme, so a callback in this
+     * theme's lib.php would land to the right of the bell, and copying Boost Union's navbar template would
+     * mean re-diffing it on every update; so the rendered button is spliced in front of the bell's
+     * container. With the bell absent (notifications disabled, or the processor switched off) the button
+     * is prepended instead.
      *
-     * With the id absent - notifications disabled, or the processor switched off - the
-     * button is prepended instead, so the worst case is a position and never a lost
-     * control.
-     *
-     * The visitor's actions ({@see guestnav}) are APPENDED: Boost Union's navbar prints this output
+     * The visitor's actions ({@see guestnav}) are appended: Boost Union's navbar prints this output
      * immediately before the user menu, which render_from_template() empties for the same visitors,
      * so the end of this string is the right end of the navbar.
      *
@@ -769,7 +753,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
     }
 
     /**
-     * The image of a course with none of its own (D14 of the course card contract): its category's cover.
+     * The image of a course with none of its own: its category's cover.
      *
      * Core asks this for every course whose overview files hold no image (course_summary_exporter, so the
      * Dashboard, My courses and Boost Union's cards among others), and the plugins of the card family ask it as
@@ -777,10 +761,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * (the parent's); otherwise an SVG of the course category's cover ({@see cover}), and for an id that names no
      * course, or the site course, the parent's pattern.
      *
-     * One call costs, cold, a statement for the course's category (none for the page's own course) and the branding
-     * cache's miss for that category (seven statements and one); warm, the category statement alone, and nothing
-     * for a course this renderer was already asked about. A grid asks {@see course_covers()} instead, with the
-     * categories its rows hold.
+     * One call costs a statement for the course's category (none for the page's own course, or for a course this
+     * renderer was already asked about) plus, cold, the branding cache's miss for that category. A grid asks
+     * {@see course_covers()} instead, with the categories its rows hold.
      *
      * @param int $id The course id.
      * @return string A data URI, or the URL of Boost Union's fallback image.
@@ -824,7 +807,7 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * The band colour of each of several categories: what a card without its cover edges itself with.
      *
      * The colour of the cover a course with no image gets ({@see course_covers()}), whatever the image source: its
-     * category's pair, inherited, else the stylesheet's primary (contract section 8, "A card without its cover").
+     * category's pair, inherited, else the stylesheet's primary.
      *
      * @param int[] $categoryids The categories.
      * @return array categoryid => lower-case #rrggbb.

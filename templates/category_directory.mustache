@@ -30,8 +30,9 @@
     poster opens a panel, and an empty one says so inside it. No poster wears a
     number at rest either - how much an area holds is a fact about a listing the
     reader has not opened, and the panel says it once open. Without JavaScript a
-    poster is a link reloading this page with its panel open; for a real account
-    the panel module turns it into a button and fetches the panel.
+    poster is a link reloading this page with its panel open; with the posters'
+    component it opens the panel in place (a button for an account, a link
+    announced as a button for a visitor).
 
     Past population::DIRECTORY_SLICE posters the rest sit inside a closed native
     disclosure, drawn open when the open poster is among them. It is a page cut
@@ -47,9 +48,9 @@
     first (category_searchline); under a term every poster wears how many matches
     its area holds, a poster with none leaves the grid for the summary of areas
     with no result, and the areas' own box says when nothing matched anywhere.
-    For a real account the listing's module runs here, reading the vitrine
-    payload, and searches as the reader types; without it the line's form
-    submits.
+    With a listing client armed (a real account, or a visitor while the public
+    client is on) the listing reads the vitrine payload and searches as the
+    reader types; without one the line's form submits.
 
     The container names itself as the showcase's region like the listing does,
     which keeps one body class and one stylesheet over both pages.

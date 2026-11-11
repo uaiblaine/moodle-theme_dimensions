@@ -27,20 +27,16 @@ namespace theme_dimensions\local\landing;
 /**
  * Whether a course's landing page may be served to a visitor who is not logged in.
  *
- * A thin adapter over local_unlistedcourses' discoverability::is_public(),
- * which is the gate for an anonymous page on a site that keeps forcelogin on:
- * it requires the PUBLIC state, a visible course and a visible category path,
- * and it is a property of the course, not of the viewer.
+ * A thin adapter over local_unlistedcourses' discoverability::is_public(), the gate
+ * for an anonymous page on a site that keeps forcelogin on: it requires the public
+ * state, a visible course and a visible, listed category path, and it depends on the
+ * course, not on the viewer.
  *
- * Fails closed. When the predicate class is missing - the dependency
- * uninstalled, a broken deploy - the answer is "not public", and the visitor
- * gets the login page. {@see redirector::is_ghosted()}, which
- * {@see request::handle()} asks for a logged-in user, deliberately fails
- * open: a missing predicate there means "do not ghost anybody", because
- * ghosting strands a logged-in user who is entitled to the course. One
- * withholds a page from the internet, the other from somebody who may be
- * entitled to it, so the asymmetry is intended and must not be harmonised.
- * Both are pinned by tests that hand the adapter a class that does not exist.
+ * Fails closed: without the predicate class (the dependency uninstalled, a broken
+ * deploy) no course is public and the visitor gets the login page.
+ * {@see redirector::is_ghosted()}, asked for a logged-in user, fails open instead,
+ * because ghosting there would strand a user entitled to the course. Keep the two
+ * asymmetric; tests pin both by handing in a class that does not exist.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

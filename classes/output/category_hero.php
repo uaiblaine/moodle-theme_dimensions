@@ -43,37 +43,31 @@ use theme_dimensions\local\landing\links;
  * The page header of the category showcase: branding, counts, the category's tabs, the fold control.
  *
  * Built by the page's two entries - the course renderer's course_category(), which core calls
- * BEFORE the page header is rendered, and request::handle() for the anonymous shell - and armed
+ * before the page header is rendered, and request::handle() for the anonymous shell - and armed
  * in a static registry the core renderer's full_header() reads while the layout renders. A hero
- * built where the listing is built knows the counts the listing knows, post-filter, at no extra
- * statement. The registry is static, like the Open Graph one: a test that renders the showcase
- * resets it in tearDown().
+ * built where the listing is built knows the listing's post-filter counts at no extra statement.
+ * A test that renders the showcase resets the registry.
  *
  * What the hero prints about the category comes from {@see branding} (cached across requests,
  * viewer-independent); what it prints about the viewer - the counts, the pencil, the tabs -
- * is computed per request and never cached. The crests on the title's line are the CATEGORY's
- * own, from that same payload: a course card shows the COURSE's landing page badges and a category
- * surface shows the category's, and neither ever borrows the other's.
+ * is computed per request and never cached. The crests on the title's line are the category's
+ * own, from that same payload, never a course's.
  * The tabs are core's own secondary navigation, exported through core's more_menu into the
  * hero's template; the band Boost Union's layout would render under the header is switched
- * off by the core renderer while a hero is armed.
- * The trail above the title is the hero's own, built from the category's path ({@see trail()}),
- * because core prints no breadcrumb once the page's URL carries a parameter besides the
- * category, and every control of the toolbar is a GET.
+ * off by the core renderer while a hero is armed. The trail above the title is the hero's own
+ * ({@see trail()}).
  *
  * The fold is the one thing the hero remembers per person: folded, the hero keeps its title row
  * and its tabs and drops the tagline, the description and the counts. It is written from the
  * hero's own GET form, so the page without JavaScript remembers it too, and the preference
- * belongs to the PERSON rather than to the category - which is why the root's hero keeps it and
- * posts to /course/index.php with no category of its own.
+ * belongs to the person rather than to the category - which is why the root's hero keeps it and
+ * submits to /course/index.php with no category of its own.
  *
- * The root of the course index is the one category this hero draws without a row behind it: no
- * context (the system context answers instead), no branding row (the defaults, read without a
- * statement, over the site-wide fallback image), no pencil (the appearance editor brands one real
- * category), no trail (the root IS the course index) and a title that is not top()'s own name,
- * which is the word "Top" - the word "Courses" over core's course index, and the SITE's full name
- * on the anonymous root, which has no course index above it. Its tabs are whatever secondary
- * navigation core gave that page, and a visitor has none.
+ * The root of the course index is the one category drawn without a row behind it: the system
+ * context, the branding defaults (no statement) over the site-wide fallback image, no pencil (the
+ * appearance editor brands one real category), no trail, and a title other than top()'s own name,
+ * "Top" ({@see root_title()}). Its tabs are whatever secondary navigation core gave that page, and a
+ * visitor has none.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -210,18 +204,17 @@ class category_hero implements renderable, templatable {
     }
 
     /**
-     * The hero's ONE inline style attribute: the custom properties the band paints itself from.
+     * The hero's one inline style attribute: the custom properties the band paints itself from.
      *
-     * This is a CSS-context sink, and Mustache's escaping does NOT protect a CSS context - so the
-     * guard is not the template, it is the VOCABULARY. Every value here comes out of
-     * {@see branding::stops()}, {@see branding::rgba()} or {@see branding::hex()}, each of which
-     * parses its input into integer channels and prints them back, so the string can only ever
-     * match ^(--dim-hero-[a-z-]+:\s*(#[0-9a-f]{6}|rgba\([0-9, .]+\));\s*)+$ - asserted by
-     * category_hero_test on a real export and on a poisoned row.
+     * This is a CSS-context sink, which Mustache's HTML escaping does not protect, so the guard is
+     * the vocabulary: every value comes out of {@see branding::stops()}, {@see branding::rgba()} or
+     * {@see branding::hex()}, each of which parses its input into integer channels and prints them
+     * back, so the string can only match ^(--dim-hero-[a-z-]+:\s*(#[0-9a-f]{6}|rgba\([0-9, .]+\));\s*)+$
+     * (asserted by category_hero_test on a real export and on a poisoned row).
      *
      * The stops turn translucent under a photograph, at the overlay the manager chose; the strip
-     * stays OPAQUE at every layout, because white tabs on a see-through strip vanish into the
-     * picture. The ring is the INK and not white: a white focus ring on a pale band is invisible.
+     * stays opaque at every layout, because white tabs on a see-through strip vanish into the
+     * picture. The ring is the ink, not white: a white focus ring on a pale band is invisible.
      *
      * @param array $branding The payload of {@see branding::for_category()}.
      * @param string $layout The layout actually drawn, which is not the stored one when an image
@@ -260,8 +253,8 @@ class category_hero implements renderable, templatable {
         $categoryid = (int) $this->category->id;
         $isroot = $categoryid === 0;
         /* The root of the course index has no context of its own: coursecat::instance(0) does
-           not exist, and the page core builds for it sets the SYSTEM context. Everything below
-           that asks a capability asks it there, which is where a site manager holds it. */
+           not exist, and the page core builds for it sets the system context, so every capability
+           below is asked there. */
         $context = $isroot ? \core\context\system::instance() : \core\context\coursecat::instance($categoryid);
         $branding = branding::for_category($categoryid);
 
@@ -288,7 +281,7 @@ class category_hero implements renderable, templatable {
             $classes[] = 'dim-hero--notabs';
         }
 
-        /* No pencil at the root: the appearance editor brands ONE category, and the
+        /* No pencil at the root: the appearance editor brands one category, and the
            pseudo-category has no row to brand. Its hero is the default band. */
         $pencil = null;
         if (!$isroot && has_capability('moodle/category:manage', $context)) {
@@ -297,13 +290,11 @@ class category_hero implements renderable, templatable {
                 'label' => get_string('categoryhero_pencil', self::COMPONENT),
             ];
         }
-        /* The category's OWN crests and nothing inherited from its parent: a category that has
-           none shows none, however its ancestors are branded. The colour pair is the one thing a
-           category inherits (branding::colours()), and it arrives already resolved in the payload.
-           A compact band - the compact layout or a hero the reader folded - keeps them, on the
-           title's line at about 36x40 (26x29 on a phone): at that size the silhouette is enough to
-           say whose area this is. The size is the stylesheet's alone; the context draws the same
-           crests, with the same alternative text, in both bands. */
+        /* The category's own crests, nothing inherited: a category that has none shows none,
+           however its ancestors are branded. The colour pair is the one thing a category inherits
+           (branding::colours()), already resolved in the payload. A compact or folded band keeps
+           the crests, smaller, on the title's line; the size is the stylesheet's alone, and the
+           context is the same in both bands. */
         $badges = branding::badges_for_output($categoryid, $branding['badges']);
         $stats = $this->stats($context);
         $fold = ($layout === branding::LAYOUT_COMPACT) ? null : $this->fold_form();
@@ -384,9 +375,9 @@ class category_hero implements renderable, templatable {
      * What names the root of the course index, which has no name of its own.
      *
      * The trail is empty at the root in both shells (see {@see trail()}), so this title is the
-     * whole of what names the page: "Courses" over core's course index, which is the page a
-     * logged-in reader asked for, and the SITE's own full name on the anonymous directory, which
-     * has no course index above it to be named after. The string comes from
+     * whole of what names the page: "Courses" over core's course index for a logged-in reader,
+     * and the site's full name on the anonymous directory, which has no course index above it to
+     * be named after. The string comes from
      * {@see request::site_name()}, which also titles the document, so the two cannot drift apart.
      *
      * @return string The title, plain spelling.
@@ -411,7 +402,7 @@ class category_hero implements renderable, templatable {
     private function trail(): array {
         $anonymous = $this->result->anonymous;
         if ((int) $this->category->id === 0) {
-            // The root IS the course index: a trail whose only entry is the page it is on.
+            // The root is the course index: its trail would name only the page it is on.
             return [];
         }
         $trail = [];
@@ -445,7 +436,7 @@ class category_hero implements renderable, templatable {
      * The enrolment count is offered when the viewer has one. The hidden count is a staff
      * number about the category and is shown behind the capability that names it, in the
      * category's context: the population admits a hidden course on that capability in the
-     * COURSE's context, which a teacher holds in their own hidden course, and "hidden from
+     * course's context, which a teacher holds in their own hidden course, and "hidden from
      * students" is not a line for that teacher's hero. In the SQL-cut mode (categorystatesort
      * off) the population holds the total alone.
      *

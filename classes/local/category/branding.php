@@ -64,10 +64,10 @@ use theme_dimensions\local\landingfields;
  * The files are served through the theme's own file route ({@see serve()}), and nothing about
  * a request is trusted: the route re-asks, for a logged-in requester, core whether the
  * category may be listed for this viewer and then the plugin - the two questions the page
- * itself asks - and refuses everything else with a bare 404. A visitor is asked the one
- * question the anonymous shell asks, {@see publicaccess::is_public()}, which fails closed and
- * runs before any lookup: the route is reachable exactly when the page is, for both classes
- * of viewer, and neither can be widened without widening the other.
+ * itself asks - and refuses everything else with a bare 404. A visitor is asked the anonymous
+ * shell's question, {@see publicaccess::is_public()}, which fails closed, and failing that the
+ * logged-in page's two ({@see resolve()} says why): the route is reachable exactly when a page
+ * that draws the image is.
  *
  * Seven route areas, all addressed with the category id as the pluginfile item id; the six that
  * hold a file store it at item 0. categoryhero serves the stored bytes to whoever may see the page. categorycover and
@@ -401,11 +401,10 @@ final class branding {
      * {@see contrast()} can grade text against it: the poster's watermark is the ink laid over
      * the band ({@see population::mark_alpha()}). 0 gives the base and 1 the top; anything
      * outside is clamped. The arithmetic is done in whole ten-thousandths and rounds half up,
-     * as the design prototype's Math.round() does on a positive number, because PHP's round()
-     * of a float lying just under .5 differs between 8.3 and 8.4.
+     * because PHP's round() of a float lying just under .5 differs between 8.3 and 8.4.
      *
-     * It has no default: a value {@see hex()} refuses on either side is null, which the caller's
-     * contrast() then reads as 1.0 and fails closed.
+     * It has no default: a value {@see hex()} refuses on either side is null, which a caller casting
+     * it to a string hands {@see contrast()} as '', read as 1.0: it fails closed.
      *
      * @param string $base The colour underneath.
      * @param string $top The colour laid over it.
@@ -782,7 +781,7 @@ final class branding {
      * Each of the editor's file managers takes a single file ({@see single_file_areas()}), so every
      * area this reads holds at most one file. The callers check what it is for themselves: a
      * non-image that reached the hero area another way is neither linked nor served, and one
-     * that reached a badge area is named but never served ({@see for_category()} says why the
+     * that reached a badge area is named but never served ({@see for_categories()} says why the
      * two differ).
      *
      * @param int $categoryid The category.
@@ -1073,6 +1072,7 @@ final class branding {
      * @param int $categoryid The category.
      * @param \stored_file $source The source image ({@see og_source()}).
      * @return \core\url The URL.
+     * @throws \dml_missing_record_exception When the category does not exist.
      */
     public static function ogimage_url(int $categoryid, \stored_file $source): \core\url {
         return \core\url::make_pluginfile_url(
@@ -1153,7 +1153,7 @@ final class branding {
      * landing page's badge fields (customfield_picture's type, where that optional plugin is installed)
      * take exactly these two values
      * ({@see \theme_dimensions\local\landingfields::CREST_MAXBYTES} and
-     * accepted_types web_image), which on 5.2 admits .svg - see {@see resolve()} for why an SVG
+     * accepted_types web_image), which admits .svg - see {@see resolve()} for why an SVG
      * crest is still served.
      *
      * @return array The options a filemanager element takes.
@@ -1558,11 +1558,11 @@ final class branding {
     /**
      * Observer of core's course_category_updated: a category may have moved, so every resolved pair may have.
      *
-     * Core fires this event from update(), change_parent() (a move), hide(), show() and, for each
-     * child it moves, delete_move(). The event does not say which of them fired it, and a move
-     * changes the pair of the category and of every descendant without one of its own, so the
-     * whole cache goes; an edit of a name or a visibility costs the same rebuild, which is cheap
-     * for a write this rare.
+     * Core fires this event from update(), change_parent() (a move), hide(), show(),
+     * change_sortorder_by_one() and, for each child it moves, delete_move(). The event does not
+     * say which of them fired it, and a move changes the pair of the category and of every
+     * descendant without one of its own, so the whole cache goes; an edit of a name or a
+     * visibility costs the same rebuild, which is cheap for a write this rare.
      *
      * @param \core\event\course_category_updated $event The event.
      * @return void
@@ -1681,7 +1681,7 @@ final class branding {
                route makes ({@see \theme_dimensions\local\landing\publicfiles::resolve()}):
                without it a same-origin .html written through the file API would be script for
                everyone who may see the category; the editor's file managers accept images only,
-               and this check makes that true of the route as well. It costs no crest: core 5.2's
+               and this check makes that true of the route as well. It costs no crest: core's
                file_system::get_imageinfo_from_path() parses an SVG for its viewBox rather than
                calling getimagesize(), so a well-formed SVG passes (branding_test asserts an SVG
                served and a non-image refused). Core still sends an SVG with Content-Disposition:
@@ -1713,7 +1713,7 @@ final class branding {
      * Send the image a request names, or answer 404. Does not return.
      *
      * Every answer is sent cacheability private, a visitor's included: send_stored_file()
-     * defaults to public for an anonymous requester, and the URL carries only the content hash,
+     * defaults to public for a visitor or the guest, and the URL carries only the content hash,
      * so it does not change when the category stops being public. A shared proxy would keep
      * serving the image for the whole hashed lifetime with nothing at the Moodle layer able to
      * clear it. A refusal is a bare 404, never

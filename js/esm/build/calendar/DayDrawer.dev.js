@@ -11,9 +11,9 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  *
  * - The drawer: an all-day strip (the bars covering the day, whole-day items, event courses), then the hour column
  *   with the overlap layout (calendar/overlap.ts). The column is the whole day, 00:00 to 24:00, in a scroll box of its
- *   own that is the drawer's body (HourScroll.tsx): it
- *   opens on the day's busy band (overlap.ts hourWindow()), or on the working hours (EMPTY_WINDOW) of a day with
- *   nothing timed on it, and is a Tab stop of its own while it holds no item.
+ *   own that is the drawer's body (HourScroll.tsx): it opens on the day's busy band (overlap.ts hourWindow()), or on
+ *   the working hours (EMPTY_WINDOW) of a day with nothing timed on it, and is a Tab stop of its own while it holds no
+ *   item.
  * - The sheet: the same content as a list, no hour column.
  *
  * An overlapping item carries a visible label as well as its column. Every item is a link to its own page that
@@ -21,8 +21,8 @@ import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
  * offers "New event"), a double-click on an hour row of the column opens core's form at that hour; the "New event"
  * "+" button in its head is the keyboard's way. On a day with nothing on it the column is still drawn while creation
  * is offered, under the "nothing on this day" line. A touch (or pen) held on an hour row for {@see HOLD_MS} without
- * moving more than {@see HOLD_SLOP}px opens the form at that hour too, the phone's way: a
- * move, a lift or the browser taking the touch to scroll the box (pointercancel) drops it, so it never fights the scroll.
+ * moving more than {@see HOLD_SLOP}px opens the form at that hour too, the phone's way: a move, a lift or the browser
+ * taking the touch to scroll the box (pointercancel) drops it, so it never fights the scroll.
  *
  * {@see DayBody} is everything under the drawer's head, exported for the Day view, so the day is drawn by one piece of
  * code wherever it is shown.
@@ -76,22 +76,22 @@ const link = /* @__PURE__ */ __name((entry, when, overlapping, look, extra, styl
       children: [
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__daywhen", children: when }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 185,
+          lineNumber: 184,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__dayname", children: entry.item.name }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 186,
+          lineNumber: 185,
           columnNumber: 13
         }),
         place !== "" ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__dayplace", children: place }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 187,
+          lineNumber: 186,
           columnNumber: 29
         }) : null,
         overlapping ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__overlapmark", children: look.strings.calendar_overlapmark }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 188,
+          lineNumber: 187,
           columnNumber: 28
         }) : null
       ]
@@ -100,7 +100,7 @@ const link = /* @__PURE__ */ __name((entry, when, overlapping, look, extra, styl
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-      lineNumber: 176,
+      lineNumber: 175,
       columnNumber: 9
     }
   );
@@ -120,7 +120,7 @@ const DayBody = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, lis
   }, "drop");
   useEffect(() => drop, [iso]);
   const onDoubleClick = /* @__PURE__ */ __name((event) => {
-    const row = event.target instanceof Element ? event.target.closest("[data-hour]") : null;
+    const row = rowOf(event.target);
     if (onCreate && row) {
       event.preventDefault();
       onCreate(Number(row.dataset.hour));
@@ -157,12 +157,12 @@ const DayBody = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, lis
   return /* @__PURE__ */ jsxDEV(Fragment, { children: [
     empty ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__dayempty", children: look.strings.calendar_dayempty }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-      lineNumber: 288,
+      lineNumber: 287,
       columnNumber: 22
     }) : null,
     plan.allday.length ? /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__allday", "data-region": "dim-cal-allday", children: plan.allday.map((entry) => link(entry, allday(entry), false, look, "dim-cal__dayitem--allday")) }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-      lineNumber: 290,
+      lineNumber: 289,
       columnNumber: 17
     }) : null,
     !list && (busy || onCreate) ? /* @__PURE__ */ jsxDEV(
@@ -201,7 +201,7 @@ const DayBody = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, lis
                 false,
                 {
                   fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-                  lineNumber: 317,
+                  lineNumber: 316,
                   columnNumber: 29
                 }
               )),
@@ -219,7 +219,7 @@ const DayBody = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, lis
           true,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-            lineNumber: 305,
+            lineNumber: 304,
             columnNumber: 21
           }
         )
@@ -228,7 +228,7 @@ const DayBody = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, lis
       false,
       {
         fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-        lineNumber: 295,
+        lineNumber: 294,
         columnNumber: 17
       }
     ) : null,
@@ -240,12 +240,12 @@ const DayBody = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, lis
       "dim-cal__dayitem--line"
     )) }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-      lineNumber: 331,
+      lineNumber: 330,
       columnNumber: 17
     }) : null
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-    lineNumber: 287,
+    lineNumber: 286,
     columnNumber: 9
   });
 }, "DayBody");
@@ -275,7 +275,7 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, v
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__drawerhead", children: [
           /* @__PURE__ */ jsxDEV("h2", { ref: heading, className: "dim-cal__drawertitle", id: HEADING, tabIndex: -1, "aria-live": "polite", children: say(iso, LONG_DAY, look.language) }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-            lineNumber: 378,
+            lineNumber: 377,
             columnNumber: 17
           }),
           action,
@@ -289,7 +289,7 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, v
               onClick: onClose,
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-xmark", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-                lineNumber: 389,
+                lineNumber: 388,
                 columnNumber: 21
               })
             },
@@ -297,13 +297,13 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, v
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-              lineNumber: 382,
+              lineNumber: 381,
               columnNumber: 17
             }
           )
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-          lineNumber: 377,
+          lineNumber: 376,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV(
@@ -320,7 +320,7 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, v
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-            lineNumber: 392,
+            lineNumber: 391,
             columnNumber: 13
           }
         )
@@ -330,7 +330,7 @@ const DayDrawer = /* @__PURE__ */ __name(({ look, iso, gridheight = 0, placed, v
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/DayDrawer.tsx",
-      lineNumber: 369,
+      lineNumber: 368,
       columnNumber: 9
     }
   );

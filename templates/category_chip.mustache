@@ -21,12 +21,12 @@
     does not show, as a link to the listing with that one criterion dropped and
     every other part of the request kept, so it works with no JavaScript. The
     listing's clients intercept it by its action (dim-chip-remove) and read what
-    it drops from data-param: a custom field's parameter (cf_<id>), chip, cat,
-    or period for both bounds of the start-date range. The label and the address
-    are the server's (category_toolbar::chips()); a client paints the chips of
-    every answer with the same markup and composes neither. The cross is drawn,
-    and the visually hidden words after it make the link's name say what a
-    press does.
+    it drops from data-param: q (the search), a custom field's parameter
+    (cf_<id>), chip, cat, or period for both bounds of the start-date range. The
+    label and the address are the server's (category_toolbar::chips()); the
+    client's createChip() (js/esm/src/listing/paint.ts) writes the same markup
+    for every answer and composes neither. The cross is decorative; the visually
+    hidden words after it name what a press does.
 
     Example context (json):
     {

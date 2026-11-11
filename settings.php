@@ -445,7 +445,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $tab->add($setting);
 
         // Setting: How the banner of every course landing page is drawn. Only a stored 'fullwidth' moves it out of the
-        // content column (heroformat::is_fullwidth()), so the default keeps the page a site had before the setting.
+        // content column (heroformat::is_fullwidth()), so an unset value keeps the banner in the column.
         $name = 'theme_dimensions/' . heroformat::SETTING;
         $title = get_string('landingheroformat', 'theme_dimensions', null, true);
         $description = get_string('landingheroformat_desc', 'theme_dimensions', null, true);
@@ -531,10 +531,9 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
 
         /* Setting: the root of the course index on the internet. Read the opposite way round from
            the two above it: they are on unless an explicit '0' closes them, this one is off unless
-           an explicit '1' opens it, because the root was never public before this setting and an
-           upgrade may not put a site's whole top level on the internet by arriving. A checkbox
-           rather than the tab's yes/no selects for the same reason - it is not one more of the
-           feature's switches but a decision about what the site publishes. */
+           an explicit '1' opens it, so an upgrade never puts a site's whole top level on the
+           internet. A checkbox rather than the tab's yes/no selects for the same reason: it is a
+           decision about what the site publishes, not one more of the feature's switches. */
         $name = 'theme_dimensions/' . publicaccess::SETTING_ROOT;
         $title = get_string('categoryrootpublic', 'theme_dimensions', null, true);
         $description = get_string('categoryrootpublic_desc', 'theme_dimensions', null, true);
@@ -610,11 +609,10 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
            is core's own upload sizes rather than a free field, because the value is read straight
            back into the field's maxbytes - a configtext defaults to PARAM_RAW and validates
            nothing, so a plausible number typed by hand would silently become the limit. The limit in
-           force is always one of the options (branding::covervideo_choices(): core drops every size at
-           or above the site's upload limit, the custom one included, which on a small-limit site left
-           the default unstorable), and the site's own upload limit still applies on top: the field is bounded by
-           the smaller of the two, which is what the help string says (an admin holding
-           ignorefilesizelimits is exempt from both, as core intends).
+           force is always one of the options, which core's list alone does not guarantee
+           ({@see branding::covervideo_choices()}), and the site's own upload limit still applies
+           on top: the field is bounded by the smaller of the two, which is what the help string
+           says (an admin holding ignorefilesizelimits is exempt from both, as core intends).
            $CFG->maxbytes is read through ?? and never bare: during a fresh install the admin tree
            is built before core's own defaults are stored, so the property does not exist yet and
            the bare read is a PHP warning, which fails moodle-plugin-ci's install step. */

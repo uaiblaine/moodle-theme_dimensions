@@ -323,7 +323,7 @@ export const scopeAfter = (cells: Cell[], options: Option[]): Cell[] => {
  * The line after an answer: the scope's counts and states, the star, the Filters badge.
  *
  * Each part the answer leaves out stays as it is: no scope options is a page whose state sort was
- * switched off under it (the listing's paintGroup() reads it the same way), and a toggle the answer
+ * switched off under it (the listing's paintStatus() reads it the same way), and a toggle the answer
  * says is not available is left alone, because a page drawn without one has nothing to repaint.
  *
  * @param {object} model The line.

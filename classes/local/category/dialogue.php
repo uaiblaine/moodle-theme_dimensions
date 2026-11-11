@@ -35,8 +35,8 @@ use theme_dimensions\local\landingfields;
  * the dialogue from its markup ({@see \theme_dimensions\output\category_card}). What only the dialogue
  * shows is built here, for one course, and fetched when a reader asks for it
  * ({@see \theme_dimensions\external\get_course_dialogue}, the one caller of {@see content()}): none of
- * it changes the page's decision about the course, so a page of forty-eight cards pays nothing for it
- * until somebody opens one.
+ * it changes the page's decision about the course, so a page of cards pays nothing for it until somebody
+ * opens one.
  *
  * The reads are one course's: its landing page values ({@see landingfields::values_many()} over
  * {@see SHORTNAMES}, the textareas unfiltered as a listing reads them), core's contacts for it and, with
@@ -45,8 +45,8 @@ use theme_dimensions\local\landingfields;
  *
  * Every value leaves in the PLAIN spelling for the template's double stashes: the summary and the
  * programme are reduced to text, because the dialogue shows an excerpt and a checklist, not a document.
- * The contacts are named to a logged-in reader only, which is the only reader the service admits: the
- * landing page, the theme's other anonymous surface, names nobody to the internet either.
+ * The contacts are named to a logged-in reader only, the only reader the service admits; no anonymous
+ * surface of the theme names them.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -294,9 +294,9 @@ final class dialogue {
     /**
      * The course contacts of one course, through core's bulk preload over that course alone.
      *
-     * The same spelling the card's facts used when every card carried them: the full name, and the role
-     * name as core_course_list_element::get_course_contacts() spells it. A contact holding two roles is named
-     * once, under the first.
+     * The full name, and the role name as {@see \core_course_list_element::get_course_contacts()} spells it
+     * (role_get_name() with ROLENAME_ALIAS in the course context). A contact holding two roles is named once,
+     * under the first.
      *
      * @param int $courseid The course.
      * @param \core\context\course $context Its context, where the role names are formatted.

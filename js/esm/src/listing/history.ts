@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The one writer of the showcase's history entries in js/esm/src.
+ * The one writer of the showcase's history entries in js/esm/src; the calendar page has its own, calendar/history.ts.
  *
  * On two disjoint sets of parameters: the listing's criteria ({@see writeUrl}) and the panel's open area and
  * order, replaced and never pushed ({@see replaceKeeping}). listing_source_test fails a write anywhere else.

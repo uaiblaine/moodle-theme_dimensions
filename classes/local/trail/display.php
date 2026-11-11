@@ -39,7 +39,7 @@ use theme_dimensions\local\landing\publicaccess;
  *
  * 1. The activity's restriction for this reader: one that hides it entirely (no text to show,
  *    {@see \cm_info::$availableinfo} empty while {@see \cm_info::$available} is false) takes the step away, one
- *    whose text is shown keeps it (drawn as any step for now; the locked state is not drawn yet). Availability, not
+ *    whose text is shown keeps it (an enrolled reader's {@see progress} marks it locked). Availability, not
  *    core's course-page visibility: the reader of a landing page is mostly not enrolled in the trail course, and
  *    core hides every activity of a course from a reader who lacks the module's view capability there. Where
  *    core does give this reader the activity ({@see \cm_info::$uservisible}, staff under any restriction), the
@@ -84,7 +84,7 @@ final class display {
     }
 
     /**
-     * The steps this reader sees of several trails, with the same statements as one: the calendar's Trilhas view.
+     * The steps this reader sees of several trails, with the same statements as one: the calendar's Trails view.
      *
      * The decision is {@see steps()}'s, step by step; the referenced courses of every trail are read and judged in one
      * batch. trails_test measures that the steps' availability adds no statement per trail.

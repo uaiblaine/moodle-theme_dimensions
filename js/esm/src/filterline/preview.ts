@@ -16,13 +16,13 @@
 /**
  * The filter line's preview: pointing at a filter lights the cards on screen it would keep.
  *
- * The preview's rules for the line's component, which both shells draw. It acts on the server's
- * cards and on the toolbar form, never on anything a component draws, and writes three classes: the
- * listing previewing, a kept card, a card that recedes. The stylesheet does both by remapping the card's
+ * Armed by the filter line's component on both shells. It acts on the server's cards and on the toolbar
+ * form, never on anything a component draws, and writes three classes: the listing previewing, a kept
+ * card, a card that recedes. The stylesheet rings a kept card and recedes the others by remapping their
  * own colour tokens, never by opacity.
  *
  * It answers a mouse or a pen pointing ({@see pointing}) and the keyboard's focus ({@see onFocus}), never
- * a finger, which has no hover to preview with. It previews a control that would NARROW the listing
+ * a finger, which has no hover to preview with. It previews a control that would narrow the listing
  * ({@see criterionOf}): one already in force, an "All" or the star already pressed would keep every card.
  * What a filter would keep is decided from facts the server wrote on each card and nothing else
  * ({@see factsOf}), with the criteria in force read off the form ({@see inForce}); a card that does not

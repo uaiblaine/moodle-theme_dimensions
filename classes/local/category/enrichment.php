@@ -31,9 +31,9 @@ use theme_dimensions\local\card\boost_union;
  * The one method behind theme_dimensions_get_card_details.
  *
  * Completion progress is the one thing a card cannot carry from the server:
- * core has no bulk progress API, so a page of forty-eight cards would pay for
- * forty-eight progress reads before anybody had scrolled. The client asks for
- * it in batches of at most {@see MAX_COURSES} as cards come into view.
+ * core has no bulk progress API, so a page would pay one progress read per
+ * card before anybody had scrolled. The client asks for it in batches of at
+ * most {@see MAX_COURSES} as cards come into view.
  *
  * The ids are filtered, not validated. An id this viewer may not see is
  * dropped from the answer and never named: reporting "you may not see 41"
@@ -52,9 +52,8 @@ use theme_dimensions\local\card\boost_union;
  * Where Boost Union's course progress setting hides the progress
  * ({@see boost_union::show_progress()}), no percentage is read or returned:
  * progress is null and there is no progresslabel, so no card draws a progress
- * row. hascompletion still says whether completion is on in the course, a fact
- * about the course that the completed seal rests on and the setting leaves
- * drawn (D13 of the course card contract), and so does completed.
+ * row. hascompletion and completed are still returned: the completed seal
+ * rests on them, and the setting leaves the seal drawn.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -106,7 +105,7 @@ final class enrichment {
                 $enabled[] = (int) $courseid;
             }
         }
-        // Whatever the progress setting says: the completed seal stays when the row is off (D13).
+        // Whatever the progress setting says: the completed seal stays when the progress row is off.
         $done = self::completed($enabled, (int) $USER->id);
 
         $details = [];
@@ -115,7 +114,8 @@ final class enrichment {
                 continue;
             }
             $course = $kept[$courseid];
-            $progress = $showprogress
+            // Core answers null for a course with completion off, after building a completion_info of its own: skip it.
+            $progress = $showprogress && in_array((int) $courseid, $enabled, true)
                 ? \core_completion\progress::get_course_progress_percentage($course, (int) $USER->id)
                 : null;
             $row = [

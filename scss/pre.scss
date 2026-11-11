@@ -17,8 +17,8 @@
 //
 // Loaded after Boost's and Boost Union's own pre SCSS, so plain assignments here win over
 // Bootstrap's !default values. Only what the design system fixes is set: Boost Union's own
-// settings (brandcolor, brandedgraytones, navbarcolor) and its flavours keep their say, because
-// the flavour per organisation is the centre of this platform, not a detail.
+// settings (brandcolor, brandedgraytones, navbarcolor) and its flavours keep their say, so each
+// organisation's flavour can recolour the site.
 //
 // The values are the theme's design system's tokens, and this file and post.scss are their
 // reference: change a value here, in one place, and derive new colours from the existing tokens.

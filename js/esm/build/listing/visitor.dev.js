@@ -196,7 +196,7 @@ const SHELL = {
   written: linkPosters,
   leave: navigate,
   answered: linkPosters,
-  // The native fields stay the server's and work: the visitor is told nothing, as before.
+  // The native fields stay the server's and work: the visitor is told nothing.
   unmounted: nothing,
   areas: {
     props: AREAS_PROPS,

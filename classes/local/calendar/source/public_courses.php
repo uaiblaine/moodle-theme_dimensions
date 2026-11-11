@@ -34,7 +34,7 @@ use theme_dimensions\local\landing\publicaccess;
 use theme_dimensions\local\landingfields;
 
 /**
- * The window's event courses whose landing page a visitor may open (decision V1): one bar each, key "open".
+ * The window's event courses whose landing page a visitor may open: one bar each, key "open".
  *
  * The visitor's version of {@see event_courses}' open layer, with no viewer in it. An event course is a course of the
  * event model (`dimensions_model` = {@see landingfields::MODEL_EVENT}, a stored row, as there) whose dates meet the
@@ -48,8 +48,8 @@ use theme_dimensions\local\landingfields;
  * purpose: they close the public category pages, and the category events with them, while a public course's landing
  * page stays open to visitors whatever they say. A bar names only what that page already shows.
  *
- * Each item leads to the landing page ({@see links::page()}), whose enrolment is the way in ("Inscrever-se"); the
- * name is {@see visitor::name()} in the course's context: core's multilang filter alone.
+ * Each item leads to the landing page ({@see links::page()}), whose enrolment is the way in; the name is
+ * {@see visitor::name()} in the course's context: core's multilang filter alone.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine

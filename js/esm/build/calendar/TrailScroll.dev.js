@@ -2,10 +2,10 @@ var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 import { jsxDEV } from "react/jsx-dev-runtime";
 /**
- * The Trilhas view's horizontal scroller, drawn as block_compass's calendar
- * strip is: one native scroller with its scrollbar hidden, its overscroll kept from the page, snapped by the day; round
- * arrows over the ends of the days' header, a fade over a side it can still scroll to, and under the grid the map, a 2px
- * line of the days held whose thumb is the days in view and whose tick is today.
+ * The Trilhas view's horizontal scroller, drawn as block_compass's calendar strip is: one native scroller with its
+ * scrollbar hidden, its overscroll kept from the page, snapped by the day; round arrows over the ends of the days'
+ * header, a fade over a side it can still scroll to, and under the grid the map, a 2px line of the days held whose thumb
+ * is the days in view and whose tick is today.
  *
  * - The grid inside it holds its trail column still (position: sticky), so only the days move; their widths are
  *   trails.ts TRACK, and every position is trails.ts arithmetic over the scroller's three numbers.
