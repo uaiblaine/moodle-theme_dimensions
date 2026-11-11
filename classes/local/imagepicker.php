@@ -50,6 +50,9 @@ final class imagepicker {
     /** @var string The plugin's element helper, asked for by name: the plugin is optional. */
     public const ELEMENT = '\\tool_imagepicker\\element';
 
+    /** @var string The picker's form element, whose aspect_ratio_choices() says the dialog offers a choice of ratios. */
+    public const PICKER_ELEMENT = '\\tool_imagepicker\\formelement\\imagepicker';
+
     /** @var string The core element an image field falls back to. */
     public const FILEMANAGER = 'filemanager';
 
@@ -65,15 +68,28 @@ final class imagepicker {
     /** @var string A category card's still. */
     public const PROFILE_COVER = 'cover';
 
+    /** @var string Core's course image (overviewfiles), drawn on the course cards, the landing page and as og:image. */
+    public const PROFILE_COURSE = 'course';
+
     /**
      * @var array The picker's options per profile.
      *
-     * The share picture is the og:image canvas exactly. A crest is shown fitted inside a 100 px box and as a
-     * poster's watermark, so 400 px covers both at a 3x screen with any shape the crest has. The background
-     * image fills the width of the page behind the band (and, cut from its centre, is the category's og:image,
-     * which needs no more than 1200 px), so a full HD width is the most a screen asks of it. The card's still
-     * is about 640 x 300 on the page, twice that for a 2x screen. Only the share picture fixes a shape: the
-     * other three are framed by the stylesheet, which fits or covers them.
+     * The share picture is the og:image canvas exactly, a fixed shape with no choice. The other three offer a
+     * choice of aspect ratios with the ideal one recommended ('cropaspectratio'), because the stylesheet frames
+     * them in boxes whose shape follows the window (measured on m503 at 1920, 1440, 1100 and 390 px wide):
+     *
+     * - A crest is drawn fitted, never cut, in a square or near-square box (100 x 100 on the landing page,
+     *   42 x 48 in the category hero): 1:1 is recommended and a free crop kept for a crest of another shape;
+     *   400 px covers either at a 3x screen.
+     * - The background image covers a full-width band (1.9 to 13 times as wide as it is high) and, cut from its
+     *   centre, is the category's 1200 x 630 og:image: 16:9 is close to the latter and keeps the band's middle
+     *   strip; a full HD width is the most a screen asks of it.
+     * - The card cover covers a poster of 374 x 288 (1.30) on a wide screen, 464 x 240 (1.93) at 1100 px and
+     *   358 x 168 (2.13) on a phone: 16:9 sits in the middle of that range and loses the least at either end;
+     *   1280 x 600 is twice the widest poster.
+     * - Core's course image covers a course card 150 px high and 356 to 462 px wide (2.4 to 3.1), a trail step's
+     *   176 x 110 (1.6) and the landing page's hero, and is the course's 1200 x 630 og:image (1.91) while there is no
+     *   share picture: 2:1 sits between them; 1600 px wide keeps the og:image sharp.
      */
     private const PROFILES = [
         self::PROFILE_SHARE => [
@@ -82,16 +98,28 @@ final class imagepicker {
             'cropmaxheight' => publicfiles::OG_HEIGHT,
         ],
         self::PROFILE_CREST => [
+            'cropaspectratio' => 1,
+            'cropaspectratios' => ['1:1', 'free'],
             'cropmaxwidth' => 400,
             'cropmaxheight' => 400,
         ],
         self::PROFILE_HERO => [
+            'cropaspectratio' => 16 / 9,
+            'cropaspectratios' => ['16:9', '21:9', '4:3', 'free'],
             'cropmaxwidth' => 1920,
             'cropmaxheight' => 1080,
         ],
         self::PROFILE_COVER => [
+            'cropaspectratio' => 16 / 9,
+            'cropaspectratios' => ['16:9', '2:1', '4:3', 'free'],
             'cropmaxwidth' => 1280,
             'cropmaxheight' => 600,
+        ],
+        self::PROFILE_COURSE => [
+            'cropaspectratio' => 2,
+            'cropaspectratios' => ['2:1', '16:9', '4:3', 'free'],
+            'cropmaxwidth' => 1600,
+            'cropmaxheight' => 900,
         ],
     ];
 
@@ -140,7 +168,26 @@ final class imagepicker {
         if (!self::available($element)) {
             return $options;
         }
-        return $options + self::PROFILES[$profile];
+        $profileoptions = self::PROFILES[$profile];
+        // A picker older than its choice of ratios would read the recommended ratio as a fixed one, and lock the
+        // selection of a field meant to be free: such a picker gets neither key.
+        if (isset($profileoptions['cropaspectratios']) && !self::offers_ratio_choices($element)) {
+            unset($profileoptions['cropaspectratios'], $profileoptions['cropaspectratio']);
+        }
+        return $options + $profileoptions;
+    }
+
+    /**
+     * Whether the picker's crop dialog offers a choice of aspect ratios (tool_imagepicker 2026111101 and later).
+     *
+     * @param string|null $element The helper class; a stand-in has no element class beside it, so it offers none.
+     * @return bool
+     */
+    private static function offers_ratio_choices(?string $element): bool {
+        if (($element ?? self::ELEMENT) !== self::ELEMENT) {
+            return false;
+        }
+        return class_exists(self::PICKER_ELEMENT) && method_exists(self::PICKER_ELEMENT, 'aspect_ratio_choices');
     }
 
     /**
@@ -164,13 +211,16 @@ final class imagepicker {
      * @param string $name The element's name.
      * @param string $profile One of the PROFILE_* constants.
      * @param string|null $element The helper class; tests pass a stand-in or a class that does not exist.
+     * @param array|null $base The field's own file manager options, when the caller has them (core's course image: its
+     *     accepted types and context, which the element cannot give back); null reads the limit off the element.
      * @return bool Whether the element was replaced.
      */
     public static function replace_filemanager(
         \MoodleQuickForm $mform,
         string $name,
         string $profile,
-        ?string $element = null
+        ?string $element = null,
+        ?array $base = null
     ): bool {
         if (!self::available($element) || !$mform->elementExists($name)) {
             return false;
@@ -180,7 +230,7 @@ final class imagepicker {
             return false;
         }
 
-        $options = self::options([
+        $options = self::options($base ?? [
             'maxbytes' => $old->getMaxbytes(),
             'maxfiles' => 1,
             'subdirs' => 0,
@@ -196,6 +246,27 @@ final class imagepicker {
             $mform->insertElementBefore($new, $next);
         }
         return true;
+    }
+
+    /**
+     * Whether a file manager's options are what the picker can hold without changing them: one file, web images only.
+     *
+     * The picker holds exactly one web image, so a field configured for more files, or for a type that is not a web
+     * image (or for any type, '*'), keeps core's file manager rather than lose what its configuration allows.
+     *
+     * @param array|null $options The field's file manager options.
+     * @return bool
+     */
+    public static function fits(?array $options): bool {
+        if (!$options || (int) ($options['maxfiles'] ?? 0) !== 1) {
+            return false;
+        }
+        $typesutil = new \core_form\filetypes_util();
+        $types = $typesutil->expand($options['accepted_types'] ?? '*');
+        if (!$types || in_array('*', $types, true)) {
+            return false;
+        }
+        return !array_diff($types, $typesutil->expand('web_image'));
     }
 
     /**

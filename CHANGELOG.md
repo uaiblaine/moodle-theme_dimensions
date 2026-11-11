@@ -5,6 +5,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The image fields' crop dialog offers a choice of aspect ratios, the ideal one recommended.** With tool_imagepicker
+  2026111101 or later, a badge offers 1:1 (recommended) or a free crop; the background image 16:9 (recommended), 21:9,
+  4:3 or free; the card cover 16:9 (recommended), 2:1, 4:3 or free. The recommendations follow the boxes measured on
+  the page: the poster that shows a card cover runs from 1.30 to 2.13 times as wide as it is high across window widths,
+  and the background image is also the category's 1200 x 630 link preview. The share picture keeps its one fixed shape.
+  An older picker gets no ratio at all, so a field meant to be free is never locked. **Core's course image** (the course
+  settings' *Course image*) is the picker too, with 2:1 recommended (16:9, 4:3 or free offered) and at most
+  1600 x 900: it covers course cards 2.4 to 3.1 times as wide as they are high, a trail step's 1.6 and the 1.91 of the
+  course's link preview. A site that allows more than one course image, or a type that is not a web image, keeps core's
+  field (2026100609).
+
 - **Image fields crop with tool_imagepicker where it is installed.** The landing page's share picture and four badges
   (customfield_picture's fields in the course settings) and the category editor's background image, card cover and
   three badges are the image picker's element: one web image with a crop dialog, under the same name and draft area,

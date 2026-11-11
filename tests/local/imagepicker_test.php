@@ -110,6 +110,15 @@ final class imagepicker_test extends \advanced_testcase {
     }
 
     /**
+     * Whether the installed picker's dialog offers a choice of aspect ratios.
+     *
+     * @return bool
+     */
+    private static function picker_offers_choices(): bool {
+        return class_exists(self::PICKER) && method_exists(self::PICKER, 'aspect_ratio_choices');
+    }
+
+    /**
      * The QuickForm behind a moodleform.
      *
      * @param \moodleform $form The form.
@@ -165,6 +174,23 @@ final class imagepicker_test extends \advanced_testcase {
     }
 
     /**
+     * A stand-in picker, which has no element class beside it, is never handed the choice of ratios or the recommended ratio
+     * it would read as a fixed one.
+     */
+    public function test_a_picker_without_ratio_choices_gets_no_ratio(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/theme/dimensions/tests/fixtures/imagepicker_stub.php');
+        $stub = \theme_dimensions\tests\fixtures\imagepicker_stub::class;
+        $this->assertTrue(imagepicker::available($stub), 'The stand-in has the helper\'s shape.');
+
+        $options = imagepicker::options([], imagepicker::PROFILE_COVER, $stub);
+
+        $this->assertArrayNotHasKey('cropaspectratios', $options);
+        $this->assertArrayNotHasKey('cropaspectratio', $options);
+        $this->assertSame(1280, $options['cropmaxwidth']);
+    }
+
+    /**
      * Without the plugin the course form keeps customfield_picture's file managers, in place.
      */
     public function test_without_the_plugin_the_course_form_is_left_alone(): void {
@@ -205,8 +231,14 @@ final class imagepicker_test extends \advanced_testcase {
         $this->assertSame(publicfiles::OG_WIDTH / publicfiles::OG_HEIGHT, $share['cropaspectratio']);
         $this->assertSame(publicfiles::OG_WIDTH, $share['cropmaxwidth']);
         $crest = self::picker_options($mform->getElement('customfield_' . landingfields::SHORTNAME_CREST1));
-        $this->assertNull($crest['cropaspectratio']);
         $this->assertSame(400, $crest['cropmaxwidth']);
+        if (self::picker_offers_choices()) {
+            $this->assertSame(1, $crest['cropaspectratio']);
+            $this->assertSame(['1:1', 'free'], $crest['cropaspectratios']);
+        } else {
+            $this->assertNull($crest['cropaspectratio'], 'An older picker would lock the crest to its recommended ratio.');
+        }
+        $this->assertEmpty($share['cropaspectratios'] ?? [], 'The share picture keeps its one fixed shape.');
     }
 
     /**
@@ -217,13 +249,115 @@ final class imagepicker_test extends \advanced_testcase {
         $this->require_plugin();
         global $CFG;
         require_once($CFG->dirroot . '/course/edit_form.php');
+        require_once($CFG->dirroot . '/course/lib.php');
         $mform = self::course_form();
         $formwrapper = $this->createMock(\course_edit_form::class);
         $formwrapper->method('get_course')->willReturn(new \stdClass());
 
+        $imageoptions = course_overviewfiles_options(new \stdClass());
+        $mform->addElement('filemanager', 'overviewfiles_filemanager', 'Course image', null, $imageoptions);
+
         after_form_definition::callback(new \core_course\hook\after_form_definition($formwrapper, $mform));
 
         $this->assertInstanceOf(self::PICKER, $mform->getElement('customfield_' . landingfields::SHORTNAME_SHAREIMAGE));
+        $this->assertInstanceOf(self::PICKER, $mform->getElement('overviewfiles_filemanager'), 'The course image too.');
+    }
+
+    /**
+     * The course form as core draws its course image: core's own options, then the summary field after it.
+     *
+     * @param \stdClass $course The course.
+     * @return \MoodleQuickForm
+     */
+    private static function course_image_form(\stdClass $course): \MoodleQuickForm {
+        global $CFG;
+        require_once($CFG->libdir . '/formslib.php');
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $mform = new \MoodleQuickForm('testform', 'post', '/');
+        $options = course_overviewfiles_options($course);
+        $mform->addElement('filemanager', 'overviewfiles_filemanager', 'Course image', null, $options);
+        $mform->addElement('text', 'summary', 'Summary');
+        return $mform;
+    }
+
+    /**
+     * Only one web image fits the picker: more files, any type, or a type that is not an image keep core's field.
+     */
+    public function test_only_one_web_image_fits_the_picker(): void {
+        $this->assertTrue(imagepicker::fits(['maxfiles' => 1, 'accepted_types' => ['.jpg', '.gif', '.png']]));
+        $this->assertTrue(imagepicker::fits(['maxfiles' => '1', 'accepted_types' => 'web_image']));
+        $this->assertFalse(imagepicker::fits(['maxfiles' => 2, 'accepted_types' => ['.jpg']]));
+        $this->assertFalse(imagepicker::fits(['maxfiles' => 1, 'accepted_types' => '*']));
+        $this->assertFalse(imagepicker::fits(['maxfiles' => 1, 'accepted_types' => ['.jpg', '.pdf']]));
+        $this->assertFalse(imagepicker::fits(null));
+    }
+
+    /**
+     * Without the plugin core's course image stays core's file manager.
+     */
+    public function test_without_the_plugin_the_course_image_is_cores(): void {
+        $this->resetAfterTest();
+        $course = self::getDataGenerator()->create_course();
+        $mform = self::course_image_form($course);
+
+        after_form_definition::offer_course_image_picker($mform, $course, self::MISSING);
+
+        $this->assertSame(\MoodleQuickForm_filemanager::class, get_class($mform->getElement('overviewfiles_filemanager')));
+    }
+
+    /**
+     * With the plugin core's course image is the picker, in its place, with core's own types and the course image's ratios.
+     */
+    public function test_with_the_plugin_the_course_image_is_the_picker(): void {
+        $this->resetAfterTest();
+        $this->require_plugin();
+        $course = self::getDataGenerator()->create_course();
+        $mform = self::course_image_form($course);
+
+        after_form_definition::offer_course_image_picker($mform, $course);
+
+        $element = $mform->getElement('overviewfiles_filemanager');
+        $this->assertInstanceOf(self::PICKER, $element);
+        $this->assertSame(['overviewfiles_filemanager', 'summary'], self::names($mform));
+        $types = (new \ReflectionProperty(\MoodleQuickForm_filemanager::class, '_options'))->getValue($element)['accepted_types'];
+        $typesutil = new \core_form\filetypes_util();
+        $this->assertEqualsCanonicalizing(
+            $typesutil->expand(course_overviewfiles_options($course)['accepted_types']),
+            $typesutil->expand($types),
+            'Core\'s course image types are kept.'
+        );
+        $options = self::picker_options($element);
+        $this->assertSame(1600, $options['cropmaxwidth']);
+        if (self::picker_offers_choices()) {
+            $this->assertSame(2, $options['cropaspectratio']);
+            $this->assertSame(['2:1', '16:9', '4:3', 'free'], $options['cropaspectratios']);
+        }
+    }
+
+    /**
+     * A site that allows more than one course image, or any file type, keeps core's file manager.
+     */
+    public function test_a_course_image_the_picker_cannot_hold_stays_cores(): void {
+        $this->resetAfterTest();
+        $this->require_plugin();
+        $course = self::getDataGenerator()->create_course();
+
+        set_config('courseoverviewfileslimit', 2);
+        $many = self::course_image_form($course);
+        after_form_definition::offer_course_image_picker($many, $course);
+        $this->assertSame(\MoodleQuickForm_filemanager::class, get_class($many->getElement('overviewfiles_filemanager')));
+
+        set_config('courseoverviewfileslimit', 1);
+        set_config('courseoverviewfilesext', '*');
+        $any = self::course_image_form($course);
+        after_form_definition::offer_course_image_picker($any, $course);
+        $this->assertSame(\MoodleQuickForm_filemanager::class, get_class($any->getElement('overviewfiles_filemanager')));
+
+        set_config('courseoverviewfilesext', '.jpg,.png');
+        $control = self::course_image_form($course);
+        after_form_definition::offer_course_image_picker($control, $course);
+        $this->assertInstanceOf(self::PICKER, $control->getElement('overviewfiles_filemanager'), 'The control: images only.');
     }
 
     /**
@@ -275,8 +409,19 @@ final class imagepicker_test extends \advanced_testcase {
             $this->assertInstanceOf(self::PICKER, $with->getElement($name), $name);
         }
         $this->assertSame(\MoodleQuickForm_filemanager::class, get_class($with->getElement(branding::AREA_COVERVIDEO)));
-        $this->assertSame(1920, self::picker_options($with->getElement('heroimage'))['cropmaxwidth']);
-        $this->assertSame(1280, self::picker_options($with->getElement(branding::AREA_COVER))['cropmaxwidth']);
+        $hero = self::picker_options($with->getElement('heroimage'));
+        $cover = self::picker_options($with->getElement(branding::AREA_COVER));
+        $this->assertSame(1920, $hero['cropmaxwidth']);
+        $this->assertSame(1280, $cover['cropmaxwidth']);
+        if (self::picker_offers_choices()) {
+            $this->assertSame(16 / 9, $hero['cropaspectratio']);
+            $this->assertSame(['16:9', '21:9', '4:3', 'free'], $hero['cropaspectratios']);
+            $this->assertSame(16 / 9, $cover['cropaspectratio']);
+            $this->assertSame(['16:9', '2:1', '4:3', 'free'], $cover['cropaspectratios']);
+        } else {
+            $this->assertNull($hero['cropaspectratio']);
+            $this->assertNull($cover['cropaspectratio']);
+        }
         $crestbytes = $with->getElement(branding::AREA_BADGES[0])->getMaxbytes();
         $this->assertSame(
             $without->getElement(branding::AREA_BADGES[0])->getMaxbytes(),
