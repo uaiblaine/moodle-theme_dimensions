@@ -390,6 +390,162 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
+     * A machine without the file writes it from the shared MUC entry compiled at these revisions, and compiles nothing.
+     *
+     * This is a web server's own localcache directory (a new cron container, another node) beside the MUC entry they
+     * all share. The MUC entry is left as it was: this process did not compile it.
+     *
+     * @param string $direction 'ltr' or 'rtl'.
+     * @return void
+     */
+    #[DataProvider('directions')]
+    public function test_a_build_writes_this_machines_files_from_a_stamped_entry(string $direction): void {
+        $id = $this->flavour();
+        $entry = builder::stamp(self::REV, self::SUBREV) . self::SHEET;
+        $this->seed_entry($id, $entry, $direction);
+        $factory = $this->lock_factory(true);
+        $compiler = fn(): string => $this->fail('A sheet the shared cache held was compiled again.');
+
+        $this->assertSame(builder::RESTORED, $this->builder($compiler, $factory)->build($id, $direction));
+
+        $this->assertSame(1, $factory->released);
+        $this->assert_stored($id, $direction);
+    }
+
+    /**
+     * The planner's restore writes the files in its own process, without the theme's lock or a compile.
+     *
+     * The lock is held elsewhere for the whole test: a visitor's compile of another flavour must not hold it up.
+     *
+     * @return void
+     */
+    public function test_a_restore_takes_no_lock_and_compiles_nothing(): void {
+        $id = $this->flavour();
+        $this->seed_entry($id, builder::stamp(self::REV, self::SUBREV) . self::SHEET);
+        $factory = $this->lock_factory(false);
+        $compiler = fn(): string => $this->fail('A restore compiled.');
+
+        $this->assertSame(builder::RESTORED, $this->builder($compiler, $factory)->restore($id));
+
+        $this->assertSame(0, $factory->asked);
+        $this->assert_stored($id, 'ltr');
+    }
+
+    /**
+     * An entry not stamped at the current revisions is compiled again, never copied; a restore answers null for it.
+     *
+     * Boost Union's styles.php stores its compile unstamped, and a theme build moves the sub-revision without purging the
+     * entry, so its stamp names the old one. The longer sub-revision checks that the stamp is read whole, not as a
+     * prefix. The control is the stamped entry of the test above.
+     *
+     * @param string $stamp The comment the entry starts with.
+     * @return void
+     */
+    #[DataProvider('unrestorable')]
+    public function test_an_entry_not_stamped_at_these_revisions_is_compiled_again(string $stamp): void {
+        $id = $this->flavour();
+        $this->seed_entry($id, $stamp . 'body{color:red}');
+        $compiles = 0;
+        $compiler = function () use (&$compiles): string {
+            $compiles++;
+            return self::SHEET;
+        };
+        $builder = $this->builder($compiler);
+
+        $this->assertNull($builder->restore($id));
+        $this->assertFileDoesNotExist(builder::sheet_path(self::REV, self::SUBREV, $id, 'ltr'));
+
+        $this->assertSame(builder::BUILT, $builder->build($id));
+        $this->assertSame(1, $compiles);
+        $this->assert_stored($id, 'ltr');
+    }
+
+    /**
+     * Entries a restore must not copy.
+     *
+     * @return array
+     */
+    public static function unrestorable(): array {
+        return [
+            'unstamped, as Boost Union stores it' => [''],
+            'an older sub-revision' => [builder::stamp(self::REV, self::SUBREV - 1)],
+            'an older global revision' => [builder::stamp(self::REV - 1, self::SUBREV)],
+            'a longer sub-revision' => [builder::stamp(self::REV, self::SUBREV * 10)],
+        ];
+    }
+
+    /**
+     * A reset landing while the restore writes the files undoes them, and leaves the MUC entry it did not write.
+     *
+     * The control is the same restore with steady revisions, which keeps the files.
+     *
+     * @return void
+     */
+    public function test_a_reset_landing_during_a_restore_removes_the_files_and_keeps_the_entry(): void {
+        $id = $this->flavour();
+        $entry = builder::stamp(self::REV, self::SUBREV) . self::SHEET;
+        $this->seed_entry($id, $entry);
+        $reads = 0;
+        $moving = function () use (&$reads): array {
+            $reads++;
+            return [$reads <= 1 ? self::REV : self::REV + 1, self::SUBREV];
+        };
+
+        $this->assertSame(builder::STALE, $this->builder(null, null, null, $moving)->restore($id));
+        $this->assertSame(2, $reads);
+        $this->assertFileDoesNotExist(builder::sheet_path(self::REV, self::SUBREV, $id, 'ltr'));
+        $this->assertFileDoesNotExist(make_temp_directory('theme/dimensions') . "/all_{$id}.css");
+        $this->assertSame($entry, \cache::make('core', 'postprocessedcss')->get("dimensions_{$id}_ltr"));
+
+        $still = fn(): array => [self::REV, self::SUBREV];
+        $this->assertSame(builder::RESTORED, $this->builder(null, null, null, $still)->restore($id));
+        $this->assert_stored($id, 'ltr');
+    }
+
+    /**
+     * A restore answers as a build does where there is nothing to write: a file already there, or nothing served.
+     *
+     * @param string $case Which precondition fails.
+     * @return void
+     */
+    #[DataProvider('skips')]
+    public function test_a_restore_writes_nothing_where_nothing_would_be_served(string $case): void {
+        global $CFG;
+
+        $id = $this->flavour();
+        $this->seed_entry($id, builder::stamp(self::REV, self::SUBREV) . self::SHEET);
+        $asked = $id;
+        if ($case === 'designer') {
+            $CFG->themedesignermode = 1;
+        } else if ($case === 'theme') {
+            set_config('theme', 'boost_union');
+        } else {
+            $asked += 100;
+            $this->seed_entry($asked, builder::stamp(self::REV, self::SUBREV) . self::SHEET);
+        }
+
+        $this->assertSame(builder::SKIPPED, $this->builder()->restore($asked));
+        $this->assertFileDoesNotExist(builder::sheet_path(self::REV, self::SUBREV, $asked, 'ltr'));
+    }
+
+    /**
+     * A restore leaves a file already there alone, and refuses a direction styles.php does not serve.
+     *
+     * @return void
+     */
+    public function test_a_restore_keeps_a_present_file_and_refuses_an_unknown_direction(): void {
+        $id = $this->flavour();
+        $this->write_sheet($id, 'existing');
+        $this->seed_entry($id, builder::stamp(self::REV, self::SUBREV) . self::SHEET);
+
+        $this->assertSame(builder::PRESENT, $this->builder()->restore($id));
+        $this->assertSame('existing', file_get_contents(builder::sheet_path(self::REV, self::SUBREV, $id, 'ltr')));
+
+        $this->expectException(\coding_exception::class);
+        $this->builder()->restore($id, '../rtl');
+    }
+
+    /**
      * A builder with harmless collaborators: a marked sheet, the real lock and a static that holds nothing.
      *
      * @param \Closure|null $compiler The compiler.
@@ -533,7 +689,19 @@ final class builder_test extends \advanced_testcase {
     }
 
     /**
-     * The sheet is in the MUC entry, the localcache file and the tempdir fallback.
+     * Put a sheet in the shared MUC entry alone, as another machine's build leaves it.
+     *
+     * @param int $id The flavour.
+     * @param string $css The entry.
+     * @param string $direction 'ltr' or 'rtl'.
+     * @return void
+     */
+    private function seed_entry(int $id, string $css, string $direction = 'ltr'): void {
+        \cache::make('core', 'postprocessedcss')->set(builder::cache_key($id, $direction), $css);
+    }
+
+    /**
+     * The sheet, stamped with the revisions of every test, is in the MUC entry, the localcache file and the tempdir.
      *
      * @param int $id The flavour.
      * @param string $direction 'ltr' or 'rtl'.
@@ -543,11 +711,12 @@ final class builder_test extends \advanced_testcase {
         global $CFG;
 
         $type = $direction === 'rtl' ? 'all-rtl' : 'all';
-        $this->assertSame(self::SHEET, \cache::make('core', 'postprocessedcss')->get("dimensions_{$id}_{$direction}"));
-        $this->assertSame(self::SHEET, file_get_contents(
+        $sheet = '/* theme_dimensions flavour sheet, revisions ' . self::REV . '_' . self::SUBREV . ' */' . self::SHEET;
+        $this->assertSame($sheet, \cache::make('core', 'postprocessedcss')->get("dimensions_{$id}_{$direction}"));
+        $this->assertSame($sheet, file_get_contents(
             "{$CFG->localcachedir}/theme/" . self::REV . "/dimensions/css/{$type}_" . self::SUBREV . "_{$id}.css"
         ));
-        $this->assertSame(self::SHEET, file_get_contents("{$CFG->tempdir}/theme/dimensions/{$type}_{$id}.css"));
+        $this->assertSame($sheet, file_get_contents("{$CFG->tempdir}/theme/dimensions/{$type}_{$id}.css"));
     }
 
     /**

@@ -280,7 +280,11 @@ request for a sheet already compiled takes 0.01 s. The theme compiles them befor
   tries it again.
 - **Several web servers:** the task fills the shared cache (`core/postprocessedcss`) and the
   compiled file of the machine that runs cron. Every other web server writes its own file from the
-  shared cache on its first request instead of compiling it.
+  shared cache on its first request instead of compiling it. A cron machine without the file (a cron
+  container started anew for each run, or cron moving between machines) writes it from the shared
+  cache in the task's own process, with no child process and no compile, when the cache holds the
+  sheet the theme compiled at the current theme revisions. So the application cache must be one every
+  machine reads (Redis, for instance); the local cache directory may be each machine's own.
 
 The same work can be run by hand, for instance as a step of a deployment
 (see *Installation*):

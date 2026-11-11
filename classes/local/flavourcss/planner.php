@@ -30,6 +30,11 @@ use theme_dimensions\local\flavourchoice;
  * revisions, so its absence sees every path that changes a flavour's CSS (a cache reset moves the global revision,
  * a theme build the sub-revision), and none of them has a hook to listen to.
  *
+ * The file is each web server's own, so the machine running cron may have none for a sheet the shared MUC entry
+ * already holds: a new cron container always, a cron that moves between machines often. Such a sheet is restored
+ * in this process ({@see builder::restore()}), with no child and no compile; only a sheet the entry cannot give is
+ * built by a child.
+ *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -39,7 +44,7 @@ final class planner {
     const FAILED = 'flavourcss_failed';
 
     /** @var int[] The exit codes a child gives when the builder answered; any other code is a failure. */
-    const ANSWERS = [builder::BUILT, builder::SKIPPED, builder::PRESENT, builder::BUSY, builder::STALE];
+    const ANSWERS = [builder::BUILT, builder::SKIPPED, builder::PRESENT, builder::BUSY, builder::STALE, builder::RESTORED];
 
     /** @var \Closure Builds one sheet in a child: fn(int $flavourid, string $direction, \Closure $log): int. */
     private \Closure $runner;
@@ -47,14 +52,20 @@ final class planner {
     /** @var \Closure Receives one line of output: fn(string $line): void. */
     private \Closure $log;
 
+    /** @var \Closure Restores one sheet from the MUC entry in this process: fn(int $flavourid, string $direction): ?int. */
+    private \Closure $restorer;
+
     /**
      * Each collaborator defaults to the real one; tests replace them.
      *
      * @param \Closure|null $runner Builds one sheet; default {@see self::run_child()}.
      * @param \Closure|null $log Receives output lines; default mtrace().
+     * @param \Closure|null $restorer Restores one sheet, or answers null; default {@see builder::restore()}.
      */
-    public function __construct(?\Closure $runner = null, ?\Closure $log = null) {
+    public function __construct(?\Closure $runner = null, ?\Closure $log = null, ?\Closure $restorer = null) {
         $this->runner = $runner ?? self::run_child(...);
+        $this->restorer = $restorer ?? fn(int $flavourid, string $direction): ?int
+            => (new builder())->restore($flavourid, $direction);
         $this->log = $log ?? function (string $line): void {
             mtrace($line);
         };
@@ -78,14 +89,12 @@ final class planner {
         if (!$todo) {
             return [];
         }
-        if (!$dryrun && self::php_binary() === null) {
-            ($this->log)('flavourcss: no PHP binary to run a child with ($CFG->pathtophp, or proc_open disabled); nothing built.');
-            return [];
-        }
+        $nochild = !$dryrun && self::php_binary() === null;
 
         [$rev, $subrev] = builder::revisions();
         $failed = self::failures();
         $results = [];
+        $unbuilt = 0;
         foreach ($todo as [$flavourid, $direction]) {
             $key = "{$flavourid}/{$direction}";
             if ($dryrun) {
@@ -94,16 +103,28 @@ final class planner {
                 continue;
             }
             $start = microtime(true);
-            $code = ($this->runner)($flavourid, $direction, $this->log);
+            // A sheet the shared cache already holds costs a copy here, not a process and a compile.
+            $code = ($this->restorer)($flavourid, $direction);
+            if ($code === null) {
+                if ($nochild) {
+                    $unbuilt++;
+                    continue;
+                }
+                $code = ($this->runner)($flavourid, $direction, $this->log);
+            }
             $results[$key] = $code;
             $seconds = microtime(true) - $start;
-            ($this->log)(sprintf('flavourcss: flavour %d (%s) exited %d in %.1f s', $flavourid, $direction, $code, $seconds));
+            ($this->log)(sprintf('flavourcss: flavour %d (%s) answered %d in %.1f s', $flavourid, $direction, $code, $seconds));
             // Anything but the builder's own answers failed: its exception (1), or a fatal error (255).
             if (!in_array($code, self::ANSWERS, true)) {
                 $failed[$key] = "{$rev}_{$subrev}";
             } else {
                 unset($failed[$key]);
             }
+        }
+        if ($unbuilt) {
+            ($this->log)("flavourcss: no PHP binary to run a child with (\$CFG->pathtophp, or proc_open disabled); "
+                . "{$unbuilt} sheet(s) not built.");
         }
         if (!$dryrun) {
             set_config(self::FAILED, $failed ? json_encode($failed) : null, 'theme_dimensions');

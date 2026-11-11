@@ -50,7 +50,8 @@ Options:
   -h, --help          Print this help.
 
 Exit status with --flavourid: 0 built, 2 nothing to build here, 3 already built, 4 the theme's lock was busy,
-5 a theme revision moved during the compile, 1 failed. With --all: 0, or 1 when a sheet failed.
+5 a theme revision moved during the compile, 6 this machine's files written from the shared cache (no compile),
+1 failed. With --all: 0, or 1 when a sheet failed.
 
 Example:
   php theme/dimensions/cli/build_flavour_css.php --all
