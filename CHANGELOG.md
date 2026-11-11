@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Boost Union's page background image works under Dimensions.** With the theme's SCSS inheritance left at its default
+  (*Inherit*), the image set in Boost Union's *Look > Page > Background image* never reached this theme's stylesheet:
+  Boost prints it from the active theme's own setting, and Boost Union's copy for its child themes asks the page,
+  which the stylesheet's compile does not have. The theme now prints it from Boost Union's setting. The category
+  showcase and the full-width landing page keep Boost's page ground, as every other page does, so they cover the image
+  instead of laying their text over it (2026100607).
+
 - **The calendar no longer jumps on its first paint.** The placeholder drawn while the calendar loads was shorter
   than the calendar: its toolbar left out the rows' margins (24 px in both views), and the week view's was a fixed
   28rem where the drawn week follows the window's height. It now takes the drawn calendar's height in the month and

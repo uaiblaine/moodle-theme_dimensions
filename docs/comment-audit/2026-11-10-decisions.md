@@ -125,3 +125,12 @@ Every setting changed for a check was put back afterwards (Boost Union's `backgr
 
 Every temporary change made for these checks was undone (focus mode on course 5047, the filter groups, the
 showcase switch, the background image and the inheritance setting).
+
+## G. Decided (2026-11-11)
+
+- **Q11:** the showcase covers the page background image. The two transparent grounds are gone from
+  `scss/category.scss`, and the same pair from `scss/landing.scss` (the full-width landing page), so every page of the
+  theme keeps Boost's `--bs-body-bg` ground on `.main-inner` and `#region-main`.
+- **Boost Union's page background image** now reaches the theme's stylesheet under 'Inherit'
+  (`classes/local/pagebackground.php`). Checked on m503b with an image: the Dashboard shows it around the content as
+  Boost Union does; the showcase, the calendar and the full-width landing page sit on their ground over it.

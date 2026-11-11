@@ -223,6 +223,8 @@ lib.php                        The SCSS callbacks and Boost Union's flavour CSS 
 locallib.php                   Required from config.php on every request. Keep it empty-ish.
 settings.php                   Adds a tabbed page into Boost Union's settings category.
 classes/local/yesno.php        The stored values (1, 0) of the theme's yes/no select settings.
+classes/local/pagebackground.php  Boost Union's page background image, printed by the extra SCSS callback under
+                               'Inherit' (Boost reads the active theme's setting; Boost Union's child-theme copy needs $PAGE).
 classes/local/loginshell.php   Which login-layout pages (the second factor, the privileged session) stand on
                                auth_loginsteps' shell; layout/login.php draws them, templates/loginshell.mustache
                                is their bare page, scss/loginshell.scss lays core's form into the column.
@@ -562,6 +564,14 @@ already shaped decisions here:
   `theme_boost_union_get_flavour_which_applies()` — Boost Union's own pre SCSS avoids that
   call for exactly this reason, and says so in a comment. (The theme's own `$primary` default
   read it that way until it was dropped in 2026100503.)
+- **Boost Union's extra SCSS reads `$PAGE` itself, and loses its child themes' page background image to it.**
+  Core calls every parent's extra SCSS callback with THIS theme, so Boost's `theme_boost_get_extra_scss()` looks for
+  `theme_dimensions/backgroundimage`, which does not exist; Boost Union re-calls it with its own config only when
+  `theme_boost_union_is_active_childtheme()` reads `$PAGE->theme` as a child, which `styles.php` does not. So under
+  'Inherit' the image never reached this sheet. `local\pagebackground::scss()` prints Boost's rule from Boost Union's
+  setting (under 'Duplicate' Boost Union's own copy does, so the theme stays out); `pagebackground_test` holds both.
+  Every page of the theme keeps Boost's ground on `.main-inner` and `#region-main`, so its content covers the image as
+  Boost's does: never make those transparent.
 - **Read the init logs, do not just check that they exited 0.** That notice was in the local
   `behat-init` output the whole time and was missed, because the init was judged by its exit
   status and its last lines. After any change to a SCSS callback:
