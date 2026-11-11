@@ -24,6 +24,13 @@ namespace theme_dimensions\local\flavourcss;
  * does that compile in a CLI process and fills the three stores styles.php reads, under the names it
  * reads them by: the MUC entry, the localcache file and the tempdir fallback.
  *
+ * Only the MUC entry is shared between web servers: the localcache directory is each machine's own. So a
+ * machine without the file, a new cron container included, first looks for the MUC entry and, when it is
+ * one this class compiled at the current revisions, writes the two files from it instead of compiling
+ * ({@see self::restore()}). The entry carries those revisions in a leading comment ({@see self::STAMP}),
+ * because its key carries none and a theme build moves the sub-revision without purging it: an entry
+ * without the stamp, or with older revisions, is compiled again.
+ *
  * Two guards keep it from writing a wrong sheet, which would be worse than a slow one:
  * - the static guard: Boost Union keeps the first flavour record a process reads in a static and never
  *   compares the id again (flavourslib.php, {@see self::BU_RECORD_FUNCTION}), so a second flavour compiled
@@ -58,6 +65,18 @@ final class builder {
 
     /** @var int A revision moved during the compile; nothing was written. */
     const STALE = 5;
+
+    /** @var int The shared MUC entry held the sheet for the current revisions; this machine's files were written from it. */
+    const RESTORED = 6;
+
+    /**
+     * The comment a compiled sheet starts with: the global revision and the sub-revision it was compiled at.
+     *
+     * A sprintf() format. The closing marker follows the numbers, so the stamp of sub-revision 7 is no prefix of 70's.
+     *
+     * @var string
+     */
+    const STAMP = '/* theme_dimensions flavour sheet, revisions %d_%d */';
 
     /** @var string The theme whose flavour sheets this class builds. */
     const THEME = 'dimensions';
@@ -122,7 +141,7 @@ final class builder {
      *
      * @param int $flavourid The flavour.
      * @param string $direction 'ltr' or 'rtl'.
-     * @return int One of BUILT, SKIPPED, PRESENT, BUSY, STALE.
+     * @return int One of BUILT, SKIPPED, PRESENT, BUSY, STALE, RESTORED.
      * @throws \coding_exception Outside the CLI, for an unknown direction, or when Boost Union's static holds another flavour.
      * @throws \moodle_exception When the compiled sheet lacks the theme's own rules.
      */
@@ -166,12 +185,16 @@ final class builder {
             if (file_exists($sheet)) {
                 return self::PRESENT;
             }
+            $restored = $this->restore_at($rev, $subrev, $flavourid, $direction);
+            if ($restored !== null) {
+                return $restored;
+            }
 
             [$theme, $css] = $this->compile($flavourid, $direction);
             if (!str_contains($css, self::MARKER)) {
                 throw new \moodle_exception('flavourcssfailed', 'theme_dimensions', '', $flavourid);
             }
-            self::store($theme, $rev, $subrev, $flavourid, $direction, $css);
+            self::store($theme, $rev, $subrev, $flavourid, $direction, self::stamp($rev, $subrev) . $css);
 
             // A reset during the compile or the writes would leave this sheet under the revision-less MUC key.
             // theme_reset_all_caches() moves the revision before it purges, so if the revision has not moved by now,
@@ -187,6 +210,78 @@ final class builder {
         } finally {
             $lock->release();
         }
+    }
+
+    /**
+     * Write this machine's two files from the shared MUC entry, when it holds the sheet for the current revisions.
+     *
+     * Compiles nothing and sets no flavour global, so it runs in any process, the planner's cron process included,
+     * and takes no lock: css_store_css() writes through a rename, and a visitor compiling meanwhile writes the same
+     * sheet. The stale-write guard still holds for the two files.
+     *
+     * @param int $flavourid The flavour.
+     * @param string $direction 'ltr' or 'rtl'.
+     * @return int|null SKIPPED, PRESENT, STALE or RESTORED; null when the entry is missing or was not stamped at the
+     *     current revisions, so the sheet must be compiled.
+     * @throws \coding_exception For an unknown direction.
+     */
+    public function restore(int $flavourid, string $direction = 'ltr'): ?int {
+        global $CFG, $DB;
+
+        if ($direction !== 'ltr' && $direction !== 'rtl') {
+            throw new \coding_exception('Unknown direction: ' . $direction);
+        }
+        if (!empty($CFG->themedesignermode) || $CFG->theme !== self::THEME) {
+            return self::SKIPPED;
+        }
+        if (!$DB->record_exists('theme_boost_union_flavours', ['id' => $flavourid])) {
+            return self::SKIPPED;
+        }
+        [$rev, $subrev] = ($this->revisions)();
+        if (file_exists(self::sheet_path($rev, $subrev, $flavourid, $direction))) {
+            return self::PRESENT;
+        }
+
+        return $this->restore_at($rev, $subrev, $flavourid, $direction);
+    }
+
+    /**
+     * Write the two files from the MUC entry if it carries the stamp of these revisions.
+     *
+     * An entry Boost Union's styles.php compiled carries no stamp, and one compiled before a theme build carries the
+     * old sub-revision (the build moves it without purging the entry); both are compiled again rather than copied.
+     *
+     * @param int $rev The global revision read for this attempt.
+     * @param int $subrev The sub-revision read for this attempt.
+     * @param int $flavourid The flavour.
+     * @param string $direction 'ltr' or 'rtl'.
+     * @return int|null STALE or RESTORED; null when there is nothing to copy.
+     */
+    private function restore_at(int $rev, int $subrev, int $flavourid, string $direction): ?int {
+        $css = \cache::make('core', 'postprocessedcss')->get(self::cache_key($flavourid, $direction));
+        if (!is_string($css) || !str_starts_with($css, self::stamp($rev, $subrev))) {
+            return null;
+        }
+        self::store(\core\output\theme_config::load(self::THEME), $rev, $subrev, $flavourid, $direction, $css, false);
+
+        // As after a compile: a reset that purged the entry while the files were written leaves them unread.
+        if (($this->revisions)() !== [$rev, $subrev]) {
+            self::forget($rev, $subrev, $flavourid, $direction, false);
+            return self::STALE;
+        }
+
+        return self::RESTORED;
+    }
+
+    /**
+     * The stamp a sheet compiled at these revisions starts with.
+     *
+     * @param int $rev The global revision.
+     * @param int $subrev The sub-revision.
+     * @return string The comment.
+     */
+    public static function stamp(int $rev, int $subrev): string {
+        return sprintf(self::STAMP, $rev, $subrev);
     }
 
     /**
@@ -292,8 +387,8 @@ final class builder {
      * Store a sheet where Boost Union's styles.php reads it, and remove the older revisions.
      *
      * A copy of theme_boost_union_flavour_styles_generate_and_store() (flavours/styles.php), modified: the
-     * sheet arrives compiled, so the MUC entry is written rather than read, and the directory is derived here;
-     * SVG is always forced on.
+     * sheet arrives compiled, so the MUC entry is written rather than read (or, restored from it, left as it is),
+     * and the directory is derived here; SVG is always forced on.
      *
      * @param \core\output\theme_config $theme The loaded theme.
      * @param int $rev The global theme revision.
@@ -301,6 +396,7 @@ final class builder {
      * @param int $flavourid The flavour.
      * @param string $direction 'ltr' or 'rtl'.
      * @param string $css The sheet.
+     * @param bool $muc Write the MUC entry too; false when the sheet was read from it.
      * @return void
      */
     private static function store(
@@ -309,13 +405,16 @@ final class builder {
         int $subrev,
         int $flavourid,
         string $direction,
-        string $css
+        string $css,
+        bool $muc = true
     ): void {
         global $CFG;
         require_once("{$CFG->libdir}/csslib.php");
         require_once("{$CFG->libdir}/filelib.php");
 
-        \cache::make('core', 'postprocessedcss')->set(self::cache_key($flavourid, $direction), $css);
+        if ($muc) {
+            \cache::make('core', 'postprocessedcss')->set(self::cache_key($flavourid, $direction), $css);
+        }
 
         make_localcache_directory('theme', false);
         css_store_css($theme, self::sheet_path($rev, $subrev, $flavourid, $direction), $css);
@@ -349,16 +448,22 @@ final class builder {
     /**
      * Remove a sheet just stored from the three places, when a reset may have purged before it was written.
      *
+     * A sheet restored from the MUC entry leaves the entry alone: this process did not write it, and by now it may
+     * be a visitor's compile at the new revisions.
+     *
      * @param int $rev The global revision it was stored under.
      * @param int $subrev The sub-revision it was stored under.
      * @param int $flavourid The flavour.
      * @param string $direction 'ltr' or 'rtl'.
+     * @param bool $muc Delete the MUC entry too.
      * @return void
      */
-    private static function forget(int $rev, int $subrev, int $flavourid, string $direction): void {
+    private static function forget(int $rev, int $subrev, int $flavourid, string $direction, bool $muc = true): void {
         global $CFG;
 
-        \cache::make('core', 'postprocessedcss')->delete(self::cache_key($flavourid, $direction));
+        if ($muc) {
+            \cache::make('core', 'postprocessedcss')->delete(self::cache_key($flavourid, $direction));
+        }
         $files = [
             self::sheet_path($rev, $subrev, $flavourid, $direction),
             "{$CFG->tempdir}/theme/" . self::THEME . '/' . self::filename(self::type($direction), 0, $flavourid),

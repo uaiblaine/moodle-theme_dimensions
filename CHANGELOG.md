@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The flavour stylesheets are no longer recompiled by a cron machine that lacks the files.** The compiled file of
+  a flavour lives in each machine's local cache directory, and only `core/postprocessedcss` is shared, so a cron
+  container started anew for each run found every file missing and compiled every flavour, in each direction, every
+  minute, holding the theme's lock all web servers share. Each sheet the theme compiles now starts with a comment
+  naming the theme revisions it was compiled at; a machine without the file writes it from the shared cache when that
+  comment names the current revisions, in the task's own process, with no child process and no compile. A sheet Boost
+  Union compiled itself, or one from before a theme build, is compiled again, as before. The command-line builder's
+  new exit status 6 says a sheet was written from the shared cache.
+
 - **The image fields' crop dialog offers a choice of aspect ratios, the ideal one recommended.** With tool_imagepicker
   2026111101 or later, a badge offers 1:1 (recommended) or a free crop; the background image 16:9 (recommended), 21:9,
   4:3 or free; the card cover 16:9 (recommended), 2:1, 4:3 or free. The recommendations follow the boxes measured on

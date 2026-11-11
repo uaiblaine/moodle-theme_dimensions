@@ -131,6 +131,47 @@ final class planner_test extends \advanced_testcase {
     }
 
     /**
+     * A sheet the restore answers for starts no child; one it cannot give (null) is built by a child, as before.
+     *
+     * @return void
+     */
+    public function test_a_restored_sheet_starts_no_child(): void {
+        $restored = $this->applied_flavour(1);
+        $built = $this->applied_flavour(2);
+        $restorer = fn(int $flavourid): ?int => $flavourid === $restored ? builder::RESTORED : null;
+        [$planner, $calls] = $this->planner(fn(): int => builder::BUILT, $restorer);
+
+        $results = $planner->run();
+
+        $this->assertSame(["{$restored}/ltr" => builder::RESTORED, "{$built}/ltr" => builder::BUILT], $results);
+        $this->assertSame([[$built, 'ltr']], $calls->getArrayCopy());
+        $this->assertSame([], $this->memo());
+    }
+
+    /**
+     * With the real restore, a new cron machine writes its file from the shared entry and starts no child.
+     *
+     * The control is a second flavour with no entry, which the child is asked to build.
+     *
+     * @return void
+     */
+    public function test_a_new_cron_machine_restores_from_the_shared_cache(): void {
+        $shared = $this->applied_flavour(1);
+        $cold = $this->applied_flavour(2);
+        \cache::make('core', 'postprocessedcss')->set(
+            builder::cache_key($shared, 'ltr'),
+            builder::stamp(self::REV, self::SUBREV) . ':root{--dim-ds-surface-page:#fff}'
+        );
+        [$planner, $calls] = $this->planner(fn(): int => builder::BUILT, null, true);
+
+        $results = $planner->run();
+
+        $this->assertSame(builder::RESTORED, $results["{$shared}/ltr"]);
+        $this->assertFileExists(builder::sheet_path(self::REV, self::SUBREV, $shared, 'ltr'));
+        $this->assertSame([[$cold, 'ltr']], $calls->getArrayCopy());
+    }
+
+    /**
      * A sheet whose build failed is not tried again until a revision moves; then it is, and success forgets it.
      *
      * The control is a busy lock (4), which is not a failure and is retried on the next run.
@@ -264,10 +305,14 @@ final class planner_test extends \advanced_testcase {
     /**
      * A planner whose child records each call and answers through the given closure.
      *
+     * The restore answers null unless one is given, so every missing sheet reaches the child.
+     *
      * @param \Closure $answer fn(int $flavourid, string $direction): int.
+     * @param \Closure|null $restorer The restore; null for one that never restores.
+     * @param bool $realrestore Use the builder's own restore instead.
      * @return array The planner, and the ArrayObject the calls are recorded in.
      */
-    private function planner(\Closure $answer): array {
+    private function planner(\Closure $answer, ?\Closure $restorer = null, bool $realrestore = false): array {
         $calls = new \ArrayObject();
         $runner = function (int $flavourid, string $direction) use ($answer, $calls): int {
             $calls[] = [$flavourid, $direction];
@@ -278,7 +323,11 @@ final class planner_test extends \advanced_testcase {
             // The tests read the results and the calls, not the log.
         };
 
-        return [new planner($runner, $quiet), $calls];
+        if (!$realrestore) {
+            $restorer ??= fn(): ?int => null;
+        }
+
+        return [new planner($runner, $quiet, $restorer), $calls];
     }
 
     /**
@@ -332,7 +381,7 @@ final class planner_test extends \advanced_testcase {
     }
 
     /**
-     * Remove every localcache theme sheet.
+     * Remove every flavour sheet: the localcache files, the tempdir fallbacks and the MUC entries.
      *
      * @return void
      */
@@ -341,5 +390,7 @@ final class planner_test extends \advanced_testcase {
         require_once("{$CFG->libdir}/filelib.php");
 
         fulldelete("{$CFG->localcachedir}/theme");
+        fulldelete("{$CFG->tempdir}/theme/dimensions");
+        \cache::make('core', 'postprocessedcss')->purge();
     }
 }

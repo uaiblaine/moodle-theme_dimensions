@@ -200,6 +200,30 @@ The CLI `--all` runs the same planner, for a deploy script right after `upgrade.
   the lock between flavours, and re-checks the file under the lock, so no flavour is compiled twice.
 - In a cluster, other nodes fill their own file from MUC on the first request (section 3.1).
 
+### 4.6 Several machines (2026-11-11)
+
+Only the MUC entry is shared; `localcachedir` may be each machine's own (Moodle requires `cachedir`
+and `tempdir` to be shared, not `localcachedir`). The planner's "missing" signal is the localcache
+file, so it sees only the machine running cron. Before this section, a cron container started anew
+for each run (a Kubernetes CronJob, say) found every file missing and compiled every flavour in
+both directions every minute, holding the theme's lock the cluster shares: `get_css_content()`
+reads no cache, and the builder never read the MUC entry.
+
+- **The stamp.** Every sheet the builder compiles starts with
+  `/* theme_dimensions flavour sheet, revisions <rev>_<subrev> */`. The MUC key carries no
+  revision, and a theme build (`theme_build_css_for_themes()`) moves the sub-revision without
+  purging the flavour entries, so an entry is trusted only when its stamp names the current
+  revisions. Boost Union's own compile carries no stamp and is compiled again once, after which the
+  entry is stamped.
+- **The restore** (`builder::restore()`): designer mode, theme and flavour checks as in step 1; the
+  file present answers "present"; a stamped entry is written to the localcache file and the tempdir
+  fallback, the MUC entry left as it is; the stale-write guard of step 7 runs on the two files. It
+  compiles nothing and sets no global, so it takes no lock and runs in the cron process.
+- **The planner** asks the restore first for every missing sheet and starts a child only when it
+  answers null. The builder asks it too, under the lock, after the re-check of step 4: a sheet
+  another machine compiled while this one waited is copied, not compiled.
+- Exit code 6, "restored", joins the builder's answers; the failure memo treats it as success.
+
 ## 5. Stages
 
 **S0. Probes, before any code. Done 2026-10-28 on m503b** (the test flavours were inserted with no
