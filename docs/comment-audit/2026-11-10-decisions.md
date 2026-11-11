@@ -67,3 +67,61 @@ No defect. Three notes:
   `access::filter_courses()`, so nothing the plugin refuses is admitted.
 - The staff list counts candidates against the cap before the plugin's filter, so refused unlisted courses spend
   places: an under-count, failing closed.
+
+## E. Browser checks on m503b (2026-11-11)
+
+Every setting changed for a check was put back afterwards (Boost Union's `backgroundimage` empty,
+`extrascssinheritance` 0, `categorypageenabled` 1, `categoryfilterfields` = modality, format).
+
+- **Q11, transparent grounds.** With Boost Union's page background image set, at 1366 px:
+  - Today's rules: the image shows behind the showcase's toolbar, its heading ("Cursos em ...") and the filter
+    counters, which sit straight on the image; the cards keep their own white ground; the hero's edge is unchanged.
+  - Without the two rules (Boost's `--bs-body-bg` ground back on `.main-inner` and `#region-main`): `.main-inner`
+    spans the whole width, so the showcase hides the image completely, like a page with no image.
+  - The decision is which of the two the showcase should look like; neither breaks the hero.
+  - **Found on the way:** with the default `extrascssinheritance` (inherit), the Dimensions stylesheet carries no
+    rule painting Boost Union's page background image at all (Boost's `theme_boost_get_extra_scss()` reads the
+    ACTIVE theme's `backgroundimage` setting, and Boost Union's own extra SCSS is pulled in only under "duplicate").
+    So on a site left at the defaults, Boost Union's page background image setting does nothing under Dimensions.
+- **B1 #23, #25, #36, breadcrumb.** With the showcase off, core 5.3 keeps the full breadcrumb on
+  `/course/index.php?categoryid=N` with `&perpage=10` and with `&q=x`. The claim was false; the three comments now give
+  the true reason the hero draws its own trail (one rule for both shells, the visitor's naming only public
+  ancestors). Not committed yet.
+- **B1 #18, hideIf on the number field.** Not settled in the browser: it needs a hideIf added in code on the shared
+  mount. The mechanism (a field hidden by hideIf is disabled and not submitted on 5.3) was measured before in a modal
+  form; the code avoids hideIf there, so the comment stands and nothing is at risk.
+- **B1 #11, filter groups.** With four groups configured, the toolbar stays one line (42 px) at 1280 px: the groups
+  live in the Filters panel, where they use about 730 of its ~1,100 px. A fifth short group would fit there; one with
+  many options would wrap. The cap of four is a design choice, not a measured limit.
+- **B1 #30, phone gutters.** At a 390 px viewport the calendar frame is 374 px, the viewport minus 16: true.
+- **B1 #34, week placeholder.** False: the placeholder is about 504 px (a 3.5rem head and a 28rem body), the drawn
+  week 724 px (a 64 px head and 660 px of hours), so the week view jumps about 220 px on its first paint. Fix
+  candidate: size `.dim-cal__placeholder--week` from the drawn week (4rem head, 41.25rem body at 16 px), and pin the
+  pair in calendar_scss_test.
+
+## F. Measurements (B2, 2026-11-11, m503b)
+
+- **#6, cold branding cache: holds.** `branding::for_categories()` with the `categorybranding` cache purged costs
+  7 statements per category plus 1 per batch (8, 36 and 71 for 1, 5 and 10 categories with no files and their contexts
+  loaded); add 1 per category the first time a process loads its context, and about 2-3 per category with files.
+- **#19, og image size: holds.** A 1200x630 image of random pixels at quality 82, through the real `cover()`, is
+  531.7-532.5 KB (519-520 KiB), under the 600 KiB fallback cap. Real course images on the site land far below it (a
+  1280x720 photo: 68 KiB). The owner's note: the ideal would be to convert the image to the right size up front, or to
+  warn the editor about WhatsApp's limits; that is part of the tool_imagepicker work in its own session.
+- **#20, the 25-megapixel ceiling: partly.** `stored_file::rotate_image()` rotates JPEGs with an EXIF orientation only,
+  so a PNG is never rotated: a 25 MP PNG decoded and covered peaks about 186 MB over the baseline, a 25 MP JPEG
+  rotated from its EXIF orientation about 214 MB (both images held at once). Both fit the site's 512M. The docblock
+  of `publicfiles::MAX_SOURCE_PIXELS` and the repo `CLAUDE.md` now say so.
+- **#33, dates per date-picker render: holds.** Opening the picker (two months, 77 days) makes 91 format calls.
+- **#39, room for the activity name in focus mode: does not hold.** At 576 px a labelled exit leaves the name 324 px
+  (440 with the icon alone), and core's completion button is not in the bar on 5.3; the md breakpoint follows the
+  navbar's own label breakpoint. The comment now says so.
+- **#46, the template lint and a lower-case constructor: holds.** A copy with `new info(` failed `mustache` with
+  ESLint `new-cap` ("A constructor name should not start with a lowercase letter"), a warning that fails the
+  zero-warning gate.
+- **#34, the week placeholder: fixed** in this change (6rem toolbar, the drawn week's header, strip and hour box
+  bounds); `calendar_scss_test::test_the_placeholder_is_as_tall_as_the_drawn_calendar` holds it. Measured equal in the
+  browser: week 820 = 820 px at 900 px tall, 620 = 620 at 700, month 1016 = 1016.
+
+Every temporary change made for these checks was undone (focus mode on course 5047, the filter groups, the
+showcase switch, the background image and the inheritance setting).

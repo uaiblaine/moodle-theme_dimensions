@@ -267,10 +267,9 @@ class core_renderer extends \theme_boost_union\output\core_renderer {
      * header actions are core's own, handed to the hero's template as the parent hands them
      * to core's; the renderable knows nothing about them, because they are the renderer's
      * concern. The breadcrumb is not handed over: the hero draws its own trail from the
-     * category's path, because core empties the breadcrumb as soon as the page's URL carries
-     * a parameter besides the category. With no hero armed the parent draws its header
-     * unchanged, but for the header actions of a page that opens in focus mode
-     * ({@see self::focus_full_header()}).
+     * category's path ({@see category_hero::trail()}), which also serves the public shell. With no hero
+     * armed the parent draws its header unchanged, but for the header actions of a page that opens in
+     * focus mode ({@see self::focus_full_header()}).
      *
      * @return string HTML to display the main header.
      */

@@ -959,9 +959,9 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   invalidation - a changed constant is a new name - and a purge costs one rebuild. It is
   made inside the page render, once, under `MEMORY_EXTRA` (at least 384 MB on 64-bit,
   `$CFG->extramemorylimit` when that is higher): the 25-megapixel
-  ceiling comes from measuring that a PNG at that size, rotated upright (core's
-  `stored_file::rotate_image()` honours the EXIF orientation, GD alone does not) and
-  cropped, peaks 200 MB over the request's baseline. Quality 82 holds a 1200x630 of pure
+  ceiling comes from measuring the peak over the request's baseline at that size: a PNG decoded
+  and cropped, about 190 MB; a JPEG that core's `stored_file::rotate_image()` turns upright from
+  its EXIF orientation (GD alone does not, and it rotates JPEGs only), about 215 MB. Quality 82 holds a 1200x630 of pure
   noise at 519 KB, under the 600 KB WhatsApp accepts; both numbers are pinned by tests.
 - **The og image has ONE source, `publicfiles::og_source()`, and two readers must agree on it**
   (T1, stage 16). The share picture (`dimensions_shareimage`) wins only when its derivative can be made;

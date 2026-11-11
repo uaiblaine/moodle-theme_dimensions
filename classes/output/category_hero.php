@@ -389,10 +389,9 @@ class category_hero implements renderable, templatable {
     /**
      * The trail above the title: the category's ancestors, root first, each a link to its own page.
      *
-     * Built from the category's path, not from core's breadcrumb: core prints no breadcrumb as
-     * soon as the page's URL carries any parameter besides the category, and every control of
-     * the toolbar is a GET, so the eyebrow of the design would leave the hero on the first click.
-     * A logged-in viewer gets the course index as the root and then every ancestor core lets
+     * Built from the category's path, not from core's breadcrumb, so that one rule names the ancestors on both shells:
+     * core's breadcrumb knows nothing of which categories are public, and the hero replaces the header that would
+     * print it. A logged-in viewer gets the course index as the root and then every ancestor core lets
      * them see. A visitor of the public shell gets the ancestors that are themselves public and
      * nothing else, not even a name (a category is on the internet when, and only when, its own
      * state says so), and no root, because the visitor has no course index.

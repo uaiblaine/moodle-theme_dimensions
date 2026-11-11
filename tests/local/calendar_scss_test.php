@@ -523,6 +523,51 @@ final class calendar_scss_test extends \advanced_testcase {
     }
 
     /**
+     * The first paint's placeholder is as tall as the page it stands in for, so the page does not jump when the client
+     * draws: the two toolbar rows with their margins, and in the week view the drawn week's header row, its empty
+     * all-day strip and the hour box within the hour box's own bounds.
+     *
+     * The bounds are read from the hour box's rule, so a change to them that leaves the placeholder behind fails here.
+     * The header row (4rem) and the empty strip (2.625rem) are the drawn week's measured heights.
+     *
+     * @return void
+     */
+    public function test_the_placeholder_is_as_tall_as_the_drawn_calendar(): void {
+        $scss = $this->scss();
+        $strip = 2.625;
+        $this->assertSame(1, preg_match('~\.dim-cal__toolbar \{[^}]*margin-bottom: ([\d.]+)rem;~', $scss, $margin));
+        $this->assertSame(1, preg_match('~\.dim-cal__ghosttools \{\s*height: ([\d.]+)rem;~', $scss, $tools));
+        $this->assertEqualsWithDelta(2 * (2.25 + (float) $margin[1]), (float) $tools[1], 0.001, 'Two toolbar rows and margins.');
+
+        $this->assertSame(1, preg_match(
+            '~\.dim-cal__hourbox--week \.dim-cal__hourscroll \{\s*min-height: ([\d.]+)rem;\s*'
+            . 'max-height: calc\(100vh - #\{\$navbar-height\} - ([\d.]+)rem\);~',
+            $scss,
+            $box
+        ));
+        $this->assertSame(1, preg_match(
+            '~\.dim-cal__weekcol \{[^}]*grid-template-rows: repeat\(var\(--dim-cal-hourcount, (\d+)\), ([\d.]+)rem\);~',
+            $scss,
+            $hours
+        ));
+        $this->assertSame(1, preg_match(
+            '~\.dim-cal__placeholder--week \.dim-cal__ghosthead \{\s*height: ([\d.]+)rem;~',
+            $scss,
+            $head
+        ));
+        $this->assertEqualsWithDelta(4.0, (float) $head[1], 0.001, 'The week\'s header row.');
+        $this->assertSame(1, preg_match(
+            '~\.dim-cal__placeholder--week \.dim-cal__ghostbody \{\s*height: calc\(100vh - #\{\$navbar-height\} - ([\d.]+)rem\);'
+            . '\s*min-height: ([\d.]+)rem;\s*max-height: ([\d.]+)rem;~',
+            $scss,
+            $body
+        ));
+        $this->assertEqualsWithDelta((float) $box[2] - $strip, (float) $body[1], 0.001, 'The hour box\'s viewport cap.');
+        $this->assertEqualsWithDelta((float) $box[1] + $strip, (float) $body[2], 0.001, 'The hour box\'s floor.');
+        $this->assertEqualsWithDelta((int) $hours[1] * (float) $hours[2] + $strip, (float) $body[3], 0.001, 'The whole day.');
+    }
+
+    /**
      * The week's all-day strip spans the seven day tracks of its row: one grid item, it would otherwise take the first
      * track alone and squeeze every bar into a day's width.
      *

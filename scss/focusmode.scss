@@ -353,9 +353,9 @@ body.dimensions-focusmode .dimensions-focusbar-more .dropdown-menu {
 /* ---- The bar on a phone -------------------------------------------------- */
 /* md, the breakpoint below which the theme's navbar drops text labels (the entry button's template
    and .dimensions-usermenu-name in post.scss key on it), so the way in and the way out collapse
-   together. At sm a labelled exit beside core's completion button would leave the activity name
-   about a hundred pixels. The width control keeps its own lg breakpoint, and the course overline
-   is d-none d-md-block in the template.
+   together; the md breakpoint is that consistency, not room (a labelled exit at sm still leaves the
+   activity name over 300px, and core's completion button is not in the bar). The width control keeps
+   its own lg breakpoint, and the course overline is d-none d-md-block in the template.
 
    2.25rem (36px in a 61px bar) clears WCAG 2.2 SC 2.5.8 (24 by 24, AA) with room for the 3px focus
    ring and its 2px offset; SC 2.5.5's 44px is AAA and not claimed. Minimums, so a larger glyph is

@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The calendar no longer jumps on its first paint.** The placeholder drawn while the calendar loads was shorter
+  than the calendar: its toolbar left out the rows' margins (24 px in both views), and the week view's was a fixed
+  28rem where the drawn week follows the window's height. It now takes the drawn calendar's height in the month and
+  the week, at every window height (2026100606).
+
 - **The comment audit's improvements, and code left behind removed** (2026100605).
   - *Guest home page.* On a site whose home page is a URL and whose Dashboard is not the home page (the 5.3
     default), a guest left on the "site home page" option no longer loops between the site root and `/my/`: core's own

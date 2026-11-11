@@ -256,8 +256,8 @@ body.dim-category {
 
     // The eyebrow of the design: the flavour bar, then the category's ancestors in the small
     // uppercase type, root first, each a link. It is the hero's own trail, built from the
-    // category's path (category_hero::trail()), so it is there on every URL of the page - core's
-    // breadcrumb, which it replaces, is empty the moment the URL carries a filter.
+    // category's path (category_hero::trail()), which also names only the public ancestors to a visitor;
+    // the hero replaces the header that would print core's breadcrumb.
     .dim-hero__trail-list {
         display: flex;
         flex-wrap: wrap;
