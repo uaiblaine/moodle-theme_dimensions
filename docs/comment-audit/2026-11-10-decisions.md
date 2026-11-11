@@ -52,3 +52,18 @@ longer exists). The 8 below need a step.
 - `empty_look_cohort` re-reads the offered looks without a lock (the lock helper is private to `lookcohorts`); a look
   offered again in the middle of an emptying run still loses that run's members.
 - `event_courses` judges `held` on the range's clock now; `public_courses.php:156` still reads `time()`.
+
+## D. Security read of the fixes (security-diff-read over 809ca26..1ba2b05)
+
+No defect. Three notes:
+
+- **A course core hides still answers differently from a missing id**, for a logged-in user: a missing id and a course
+  local_unlistedcourses withholds both get the ghost page now, while a core-hidden course the viewer may not see
+  reaches `request::handle()`'s `coursehidden` exception. Core's own `course/view.php` and `enrol/index.php` answer the
+  same way, and so does the theme's ghost on `enrol/index.php`; closing it would mean ghosting every core-hidden course,
+  which is a product decision beyond local_unlistedcourses' promise.
+- `population::staff_in_clamped()` applies the rescue cap, not `gate()`'s `PROBE_CAP` on unrelated unlisted probes, so
+  the SQL cut can admit more such staff courses than the PHP cut past 50. Every unlisted candidate still goes through
+  `access::filter_courses()`, so nothing the plugin refuses is admitted.
+- The staff list counts candidates against the cap before the plugin's filter, so refused unlisted courses spend
+  places: an under-count, failing closed.
