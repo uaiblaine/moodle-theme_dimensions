@@ -28,6 +28,7 @@ use local_unlistedcourses\category_access;
 use theme_dimensions\local\category\branding;
 use theme_dimensions\local\category\criteria;
 use theme_dimensions\local\category\unavailable_exception;
+use theme_dimensions\local\imagepicker;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -67,6 +68,8 @@ class categoryhero extends \moodleform {
         $mform = $this->_form;
 
         $categoryid = (int) $this->_customdata['categoryid'];
+        // The image picker's helper class: tests hand in a stand-in or a class that does not exist.
+        $picker = $this->_customdata['imagepicker'] ?? null;
 
         $mform->addElement('hidden', 'id', $categoryid);
         $mform->setType('id', PARAM_INT);
@@ -93,11 +96,11 @@ class categoryhero extends \moodleform {
         $mform->setDefault('layout', branding::DEFAULT_LAYOUT);
 
         $mform->addElement(
-            'filemanager',
+            imagepicker::element_type($picker),
             'heroimage',
             get_string('categoryhero_image', self::COMPONENT),
             null,
-            branding::filemanager_options()
+            imagepicker::options(branding::filemanager_options(), imagepicker::PROFILE_HERO, $picker)
         );
         $mform->addHelpButton('heroimage', 'categoryhero_image', self::COMPONENT);
 
@@ -110,10 +113,25 @@ class categoryhero extends \moodleform {
 
            The video's extension list is only a name check; its bytes are read in validation().
            The crests take the landing page's limit and file types (SVG included, see
-           branding::resolve()), so a crest allowed on a course is allowed on its category. */
+           branding::resolve()), so a crest allowed on a course is allowed on its category.
+
+           Every image area, the background image above included, is tool_imagepicker's crop
+           element where that optional plugin is installed (local\imagepicker): the same options
+           and draft area, plus the size each image is stored at. The video stays a file manager. */
         foreach (branding::single_file_areas() as $area => $options) {
             $key = self::file_area_string($area);
-            $mform->addElement('filemanager', $area, get_string($key, self::COMPONENT), null, $options);
+            $profile = self::image_profile($area);
+            if ($profile !== null) {
+                $mform->addElement(
+                    imagepicker::element_type($picker),
+                    $area,
+                    get_string($key, self::COMPONENT),
+                    null,
+                    imagepicker::options($options, $profile, $picker)
+                );
+            } else {
+                $mform->addElement('filemanager', $area, get_string($key, self::COMPONENT), null, $options);
+            }
             $mform->addHelpButton($area, $key, self::COMPONENT);
         }
 
@@ -354,6 +372,22 @@ class categoryhero extends \moodleform {
             'areamaxbytes' => 1,
             'return_types' => FILE_EXTERNAL,
         ];
+    }
+
+    /**
+     * The image picker profile of one single-file area, or null for the area that is not an image.
+     *
+     * @param string $area One of the areas of {@see branding::single_file_areas()}.
+     * @return string|null One of {@see imagepicker}'s PROFILE_* constants, or null for the cover video.
+     */
+    private static function image_profile(string $area): ?string {
+        if ($area === branding::AREA_COVER) {
+            return imagepicker::PROFILE_COVER;
+        }
+        if (in_array($area, branding::AREA_BADGES, true)) {
+            return imagepicker::PROFILE_CREST;
+        }
+        return null;
     }
 
     /**

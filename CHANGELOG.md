@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Image fields crop with tool_imagepicker where it is installed.** The landing page's share picture and four badges
+  (customfield_picture's fields in the course settings) and the category editor's background image, card cover and
+  three badges are the image picker's element: one web image with a crop dialog, under the same name and draft area,
+  with the field's own limit and types. The share picture is cropped to the 1200 x 630 shape of a link preview and
+  stored at that size; a badge at most 400 x 400, the background image 1920 x 1080 and the card cover 1280 x 600. The
+  plugin stays optional and is asked for by class name: without it the fields are core's file manager, as before. The
+  background image's help says it is also the category's shared-link picture, cut from its centre to 1200 x 630 and
+  sent under 600 KB, the most WhatsApp accepts (2026100608).
+
 - **Boost Union's page background image works under Dimensions.** With the theme's SCSS inheritance left at its default
   (*Inherit*), the image set in Boost Union's *Look > Page > Background image* never reached this theme's stylesheet:
   Boost prints it from the active theme's own setting, and Boost Union's copy for its child themes asks the page,

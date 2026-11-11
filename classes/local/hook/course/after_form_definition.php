@@ -26,6 +26,7 @@ namespace theme_dimensions\local\hook\course;
 
 use theme_dimensions\local\focusmode;
 use theme_dimensions\local\focusmodefields;
+use theme_dimensions\local\imagepicker;
 use theme_dimensions\local\landing\guestaccess;
 use theme_dimensions\local\landing\links;
 use theme_dimensions\local\landing\offer;
@@ -38,11 +39,12 @@ use theme_dimensions\local\trail\trail;
 /**
  * Adjusts the parts of the course settings form made of the fields this theme provisions.
  *
- * Six edits, not expressible through the custom field configuration itself: a course which already has a landing page
+ * Seven edits, not expressible through the custom field configuration itself: a course which already has a landing page
  * gains its public address and a link to the page, an event whose enrolment methods set no deadline is told so, the
  * landing page fields that only apply to some models, modalities and formats are hidden while they do not, the trail
  * model is not offered while trails are unavailable, the related courses' manual choice is an autocomplete of the
- * course's competencies, and the focus mode box leaves the form while focus mode's master switch is off.
+ * course's competencies, the focus mode box leaves the form while focus mode's master switch is off, and the picture
+ * fields are tool_imagepicker's crop element where that optional plugin is installed.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -67,6 +69,28 @@ class after_form_definition {
         self::hide_unavailable_model($hook->formwrapper->get_course(), $hook->mform);
         self::offer_related_choice($hook->formwrapper->get_course(), $hook->mform);
         self::remove_focusmode_field($hook->mform);
+        self::offer_image_picker($hook->mform);
+    }
+
+    /**
+     * Draw the picture fields with tool_imagepicker's element, where that optional plugin is installed.
+     *
+     * customfield_picture adds each as a plain file manager; {@see imagepicker::replace_filemanager()} puts the
+     * picker in its place under the same name, with the field's own limit and types, so core prepares and saves
+     * the same draft area. The share picture is cropped to the og:image canvas and stored at that size, a crest
+     * is stored at the size it is drawn at. Without the plugin, or without the picture type, nothing changes.
+     *
+     * @param \MoodleQuickForm $mform The course form.
+     * @param string|null $element The picker's helper class; tests pass a stand-in or a class that does not exist.
+     * @return void
+     */
+    public static function offer_image_picker(\MoodleQuickForm $mform, ?string $element = null): void {
+        foreach (landingfields::PICTURE_SHORTNAMES as $shortname) {
+            $profile = $shortname === landingfields::SHORTNAME_SHAREIMAGE
+                ? imagepicker::PROFILE_SHARE
+                : imagepicker::PROFILE_CREST;
+            imagepicker::replace_filemanager($mform, 'customfield_' . $shortname, $profile, $element);
+        }
     }
 
     /**
