@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins the invariants of amd/src/categoryhero.js by reading its source.
  *
- * Plugin CI runs no JavaScript unit tests, so the properties of the appearance form's module whose
+ * No Jest test covers this AMD module, so the properties of the appearance form's module whose
  * loss would cost more than a screenshot are pinned the way category_scss_test pins class names
  * and amd_source_test pins the showcase module. Three of them concern the pair of colours a
  * manager publishes:
@@ -547,8 +547,8 @@ final class categoryhero_source_test extends \basic_testcase {
         $build = $this->build();
         $this->assertStringContainsString('theme_dimensions/categoryhero_contrast', $build);
         $this->assertStringContainsString('categoryhero_contrast_suggest_heading', $build);
-        // The port's credit survives in the header comment; what must not survive is a
-        // dependency - a template, a string or a module of the plugin it was ported from.
+        // No dependency on the plugin the module was ported from: none of its templates,
+        // strings or modules.
         $this->assertStringNotContainsString('local_dimensions/', $build);
     }
 

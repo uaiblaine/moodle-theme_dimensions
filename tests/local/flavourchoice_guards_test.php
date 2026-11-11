@@ -27,7 +27,7 @@ namespace theme_dimensions\local;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Tests for the guards the security read of the whole feature asked to have pinned.
+ * Tests for the chosen look's security guards.
  *
  * The choice page's write is {@see flavourchoice::submitted()}, the one call flavour.php makes with its
  * form, so the page's rule (only the form's POST, with the session key and an offered option, writes)

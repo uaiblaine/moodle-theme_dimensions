@@ -151,7 +151,7 @@ final class card_markup_test extends \advanced_testcase {
     /**
      * One target per card: the stretched link is armed on a card the viewer can open, and the buttons are Bootstrap's.
      *
-     * Contract sections 4 and 6 (D9, D10): the stylesheet stretches the title's link over a card carrying
+     * The stylesheet stretches the title's link over a card carrying
      * dim-card--link, which the template writes only where the card has a page and is not muted, so a card the viewer
      * cannot open is no link and answers no hover. "More information" is btn-outline-secondary at btn-sm and keeps its
      * hook, which the course dialogue and the Behat steps find it by.
@@ -187,7 +187,7 @@ final class card_markup_test extends \advanced_testcase {
     /**
      * The progress row is a line of its own under the state pill, drawn only while Boost Union shows progress.
      *
-     * Contract section 3: the row follows the badge row and is no member of it, ships hidden (the logged-in shell
+     * The row follows the badge row and is no member of it, ships hidden (the logged-in shell
      * fills it once the course's details answer, and leaves it hidden for a course without completion tracking), and
      * a card without hasprogress (not enrolled, or Boost Union's courseoverviewshowcourseprogress set to "no") draws
      * no row at all.
@@ -217,7 +217,7 @@ final class card_markup_test extends \advanced_testcase {
     /**
      * The visitor's card draws one button and an enrolled card carries its completed words on the article.
      *
-     * hasdetails is false on a visitor's card (contract section 3), so "More information" is not drawn and the call to
+     * hasdetails is false on a visitor's card, so "More information" is not drawn and the call to
      * action, "Learn more", is the card's one button; done (an enrolled card's) becomes data-done and data-review.
      */
     public function test_the_details_link_and_the_completed_words_follow_the_card(): void {
@@ -242,7 +242,7 @@ final class card_markup_test extends \advanced_testcase {
     /**
      * A card without its cover writes its category's colour on the article and holds its kind in the top row.
      *
-     * The colour is instance data in a style attribute (contract section 8): the card hands in a hex, and the row at
+     * The colour is instance data in a style attribute: the card hands in a hex, and the row at
      * the top of the body is drawn only when the card says so, with the kind in the cover's place.
      */
     public function test_a_card_without_its_cover_draws_its_top_row_and_band(): void {
@@ -682,7 +682,7 @@ final class card_markup_test extends \advanced_testcase {
                 "The card no longer writes the {$hook} hook the client module addresses."
             );
         }
-        // The card carries no dialogue of its own any more: its content is fetched when it opens.
+        // The card carries no dialogue of its own: the dialogue's content is fetched when it opens.
         $this->assertSame(0, $card->query('//template | //details')->length, 'No inert dialogue, no disclosure.');
 
         /* The dialogue's parts, which categorycoursemodal renders and moves into core/modal: the sheet with its content
@@ -798,7 +798,7 @@ final class card_markup_test extends \advanced_testcase {
         }
         /* Both view buttons, because the module addresses them as a pair and swaps aria-pressed:
            ONE group of two named submits, List first, each named by a visually hidden word and a
-           tooltip. The phone's copy of the toggle is gone with the rows it swapped between. */
+           tooltip. There is no second copy of the toggle for the phone. */
         $this->assertSame(
             2,
             $toolbar->query('//button[@data-action="dim-view"][@name="view"]')->length,
@@ -1107,8 +1107,9 @@ final class card_markup_test extends \advanced_testcase {
             'And the server draws the period\'s chip in it: the calendar draws none of its own.'
         );
 
-        /* The covervideo module, whose SELECTORS are all eight of these. It addresses nothing by
-           class name, so this is the whole surface between the template and the client: the band
+        /* The cover film's module (amd/src/local/coverfilm.js, loaded by covervideo), whose SELECTORS
+           are all eight of these. It addresses nothing by class name, so this is the whole surface
+           between the template and the client: the band
            it marks as playing, the film it plays, the cluster Escape is scoped to, the bar it draws
            into, the glyph each toggle swaps, and the three actions. The poster is the only
            template that writes them, and the band it marks is the poster's whole card rather than
@@ -1389,11 +1390,10 @@ final class card_markup_test extends \advanced_testcase {
     /**
      * The calendar's own template writes every hook its module reads, and names itself.
      *
-     * Nothing renders this template: the client (DateRange.tsx) draws its markup and the template is that
-     * markup's reference, so the mustache lint is the only thing that ever renders it and it reads structure
-     * rather than attributes. A
-     * region renamed here disarms the module in silence: a box stops opening, or the month grids
-     * are written into nothing, on a page where every server-side test is still green.
+     * No page renders this template: the client (DateRange.tsx) draws the same markup itself and the
+     * template is its reference, which the mustache lint renders but reads for structure rather than
+     * attributes. This test keeps the reference naming every hook; it does not read DateRange.tsx, so
+     * the component's own markup is the Jest tests' (js/esm/tests/daterange).
      *
      * Two boxes, each a button named by its label and its date and each with its own clearing
      * control, and ONE popover both of them control: a start alone, an end alone and a range are
@@ -1628,8 +1628,8 @@ final class card_markup_test extends \advanced_testcase {
         $controls = $card->query($band . '/*[@data-region="dim-cover-controls"]');
         $this->assertSame(1, $controls->length);
         /* The gate class is covervideo's own and not the showcase's dim-js-only, which follows the
-           vitrine module's mark: that module is not armed for a visitor or the guest, who see
-           cover films too, and dim-js written from here would also hide the toolbar's
+           logged-in listing client's mark: that client is not armed for a visitor or the guest, who
+           see cover films too, and dim-js written from here would also hide the toolbar's
            no-JavaScript submit - the only filter control they have. */
         $this->assertStringContainsString(
             'dim-cover-js-only',

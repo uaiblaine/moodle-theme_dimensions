@@ -198,7 +198,7 @@ final class landing_page_test extends \advanced_testcase {
         $this->assertSame('São Paulo', $context->heroplace['city']);
         $this->assertSame('Teatro da Reitoria', $context->heroplace['venue']);
         $this->assertNotNull($context->heroplace['dateline']);
-        // The city moved out of the chips into the place block.
+        // The city is in the place block, not among the chips.
         $this->assertNotContains('São Paulo', $context->chips);
 
         $course = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_INPERSON, [], [
@@ -447,9 +447,9 @@ final class landing_page_test extends \advanced_testcase {
     /**
      * A public course's textarea sections are cleaned too, past the value's trust mark.
      *
-     * The fixture is the exact hole: trusted text enabled, the value saved by an
-     * admin (who holds moodle/site:trustcontent), so export_value() would ship
-     * the script. The non-public page is the control.
+     * The fixture is trusted text enabled and the value saved by an admin (who
+     * holds moodle/site:trustcontent), so export_value() would ship the script.
+     * The non-public page is the control.
      *
      * @return void
      */
@@ -817,7 +817,7 @@ final class landing_page_test extends \advanced_testcase {
      * name that category unless the viewer is independently eligible for it. A
      * cohort member is the control that the guard reads the real predicate
      * rather than blanking every category, and a guest in an ordinary, listed
-     * category is the control that the pre-existing behaviour is untouched.
+     * category is the control that the name is still shown there.
      */
     public function test_category_kicker_is_withheld_from_an_ineligible_viewer(): void {
         global $CFG, $PAGE;
@@ -857,7 +857,7 @@ final class landing_page_test extends \advanced_testcase {
         $context = (new landing_page($course, $values, $resolution, []))->export_for_template($renderer);
         $this->assertSame('Restricted Category', $context->categoryname, 'Control: the cohort member sees the name.');
 
-        // Control: a guest in an ordinary, listed category keeps the pre-existing behaviour.
+        // Control: a guest in an ordinary, listed category is told the category's name.
         $listedcourse = $this->create_offering(landingfields::MODEL_COURSE, landingfields::MODALITY_ONLINE);
         $listedvalues = landingfields::values($listedcourse->id);
         $this->setGuestUser();
@@ -1217,7 +1217,7 @@ final class landing_page_test extends \advanced_testcase {
      * Render an exported page with four badges in its hero, as the badge grid draws them.
      *
      * The course needs no picture: the grid is the template's, and what is proved here is that every
-     * new hero block renders beside four badges, in the same hero text column.
+     * hero block renders beside four badges, in the same hero text column.
      *
      * @param \stdClass $context The exported context.
      * @param \core\output\renderer_base $renderer The renderer.
@@ -1498,8 +1498,8 @@ final class landing_page_test extends \advanced_testcase {
     /**
      * A hybrid course's card names its meetings, its place and the workload's split, but no street address.
      *
-     * The address is for whoever goes somewhere once, on a date: the in-person event of the first test
-     * shows it, a hybrid course's recurring meetings do not.
+     * The address is for whoever goes somewhere once, on a date: an event shows it
+     * (test_a_hybrid_event_hero_is_the_double_ticket), a hybrid course's recurring meetings do not.
      */
     public function test_a_hybrid_course_card_names_the_meetings_the_place_and_the_split(): void {
         $this->resetAfterTest();

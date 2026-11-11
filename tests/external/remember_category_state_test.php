@@ -120,7 +120,7 @@ final class remember_category_state_test extends \advanced_testcase {
      * The favourites are a boolean of their own: the older chip spelling of them is never stored, and no
      * value outside the boolean reaches the function at all.
      *
-     * fav=true is the control; the favourites sent as a chip are refused like any chip outside the
+     * fav=true is the control; the favourites sent as a chip are dropped like any chip outside the
      * vocabulary, so nothing turns the toggle on; and a value that is not a boolean is refused by the
      * framework before the function runs.
      */

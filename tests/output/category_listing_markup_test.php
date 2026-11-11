@@ -39,8 +39,7 @@ use theme_dimensions\local\category\population;
  * the shapes the page has to keep, which no static check reads:
  *
  * - The navigation is a tree of links inside `.dim-vitrine__tree`, the region the Behat
- *   scenarios scope to, with the current category marked and a category the viewer may not
- *   follow present as text rather than absent.
+ *   scenarios scope to, every entry a link and the current category marked.
  * - Depth travels as a number on the item, which the stylesheet indents by; a name carries
  *   no indentation characters.
  * - The grouped organisation draws the areas - one poster per child and one panel slot
@@ -401,7 +400,7 @@ final class category_listing_markup_test extends \advanced_testcase {
     }
 
     /**
-     * An open poster past the slice draws the reveal OPEN, with the panel inside the revealed grid.
+     * An open poster past the slice draws the reveal open, with the panel inside the revealed grid.
      */
     public function test_an_open_poster_past_the_slice_opens_the_reveal(): void {
         $this->resetAfterTest();
@@ -429,11 +428,11 @@ final class category_listing_markup_test extends \advanced_testcase {
     }
 
     /**
-     * The toolbar is ONE line in the contract's slot order, the too-short notice, and the row under the line.
+     * The toolbar is one line in a fixed slot order, the too-short notice, and the row under the line.
      *
      * The line holds the scope, the search, the star, the Filters disclosure, the Organise menu,
-     * the view toggle and the managers' menu, in that order and nothing else (CONTRACT.md, section
-     * 1); the order in the document is the order on screen and the order of the tab. Each group's
+     * the view toggle and the managers' menu, in that order and nothing else; the order in the
+     * document is the order on screen and the order of the tab. Each group's
      * legend is its visible label, with no second spelling of it, save the scope's, which the
      * platter's cells name and the legend names for assistive technology alone.
      *
@@ -800,9 +799,9 @@ final class category_listing_markup_test extends \advanced_testcase {
         $opengrid = './section[@data-region="dim-areas"]/ul[@data-region="dim-areas-grid"]';
         $posters = $xpath->query($opengrid . '/li/article[@data-region="dim-area"]', $section);
         $entries = $this->example_context('category_directory')['areas']['posters'];
-        /* Non-vacuity, which this test has to state: an example context that ever emptied would
-           make every assertion below pass by never running, and the two entries are not
-           interchangeable - one carries an image and one the band with its watermark. */
+        /* An example context that emptied would make every assertion below pass by never running,
+           and the two entries are not interchangeable: one carries an image, the other the band
+           with its watermark. */
         $this->assertGreaterThan(1, count($entries), 'The example context must exercise the image AND the band.');
         $this->assertNotSame(
             empty($entries[0]['hasbadges']),
@@ -837,8 +836,8 @@ final class category_listing_markup_test extends \advanced_testcase {
             );
 
             /* The colours are the category's own pair, in one style attribute on the item. That
-               attribute is a CSS context, which Mustache's escaping does not protect - so the
-               guard is the vocabulary, and the assertion is that the attribute holds nothing else. */
+               attribute is a CSS context Mustache's escaping does not protect, so the guard is the
+               vocabulary, and the assertion is that the attribute holds nothing else. */
             $style = $poster->getAttribute('style');
             $this->assertSame($entry['style'], $style, 'The colours are the exported declaration, unaltered.');
             $this->assertMatchesRegularExpression(
@@ -957,8 +956,8 @@ final class category_listing_markup_test extends \advanced_testcase {
     /**
      * The stylesheet paints the card band from the custom property, with a fallback.
      *
-     * The stylesheet must still paint a band when the inline custom property is absent - a card
-     * rendered outside this page, or an export that stopped emitting the style - because an
+     * The stylesheet must still paint a band when the inline custom property is absent (a card
+     * rendered outside this page, or an export that stopped emitting the style), because an
      * unresolved var() is an invalid declaration and not a default: the band would have no colour
      * at all. That the property can only hold a hex colour is asserted on the rendered poster in
      * test_the_directory_is_a_card_per_category_and_no_listing; that it carries the category's own
@@ -993,7 +992,7 @@ final class category_listing_markup_test extends \advanced_testcase {
      * Rendered from the areas partial's own example, which draws an empty poster at rest beside a
      * poster wearing its pill and a zero poster the criterion hid. The pill is what the control is
      * described by, so it carries the id the description names; the zero poster's item is hidden,
-     * never removed; the summary is a CLOSED native disclosure after the grids carrying both of
+     * never removed; the summary is a closed native disclosure after the grids carrying both of
      * its sentences, naming a public area as a link and a visitor's merely listed one as text; and
      * the "nothing matches" box carries the page's way out, one of its dim-clear controls.
      */
@@ -1133,7 +1132,7 @@ final class category_listing_markup_test extends \advanced_testcase {
     /**
      * A zero panel says so with the term and suggests the areas with a result: links on the page, buttons in the client.
      *
-     * Rendered from a REAL export - an area opened under a search it misses - because one example
+     * Rendered from a real export (an area opened under a search it misses), because one example
      * context renders one state and the template's is the rows state. Both copies carry the same
      * action, area id and focus key on each suggestion, which is what lets the client convert the
      * server's links into its buttons the way it converts the orders and Close.

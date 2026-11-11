@@ -1644,7 +1644,7 @@ final class branding_test extends \advanced_testcase {
         $this->assertSame($sorted, $sizes, 'The rest keeps core\'s descending order.');
 
         // The control is a list that already holds the default. Core's own list under a larger site limit is no such
-        // list everywhere: get_max_upload_sizes() also caps at PHP's upload_max_filesize, 2 MB on the CI runners.
+        // list everywhere: get_max_upload_sizes() also caps at PHP's upload_max_filesize, whose default is 2 MB.
         $this->assertSame($choices, branding::covervideo_choices($choices), 'Control: a list holding the default, unchanged.');
 
         // The installer's path, under the small limit: core applies the page's defaults, and this one is stored.
@@ -1982,10 +1982,8 @@ final class branding_test extends \advanced_testcase {
     /**
      * @var array The four audited reference colours: key => [bg, ink].
      *
-     * The editor no longer offers them and branding no longer names them. They stay here for two
-     * reasons: they are the fixed set the overlay measurements below are taken against, which
-     * must not move with the editor, and the default pair is measured beside them. Nothing in
-     * production reads this table.
+     * The fixed set the overlay measurements below are taken against, with the default pair measured
+     * beside them. Nothing in production reads this table, so it does not move with the editor.
      */
     private const REFERENCE_COLOURS = [
         'navy' => ['bg' => '#070093', 'ink' => '#ffffff'],
@@ -2077,8 +2075,8 @@ final class branding_test extends \advanced_testcase {
                 . 'lightest overlay; none at the default of 78%.'
         );
         /* The default pair clears the floor over a white picture at 78% and 90%; at 60% no colour can
-           (3.27:1 here), which stays a manager's explicit choice that D31 measures and does not
-           refuse. The default layout is the solid band, where the pair reads 9.01:1. */
+           (3.27:1 here), which stays a manager's explicit choice, measured here and not refused.
+           The default layout is the solid band, where the pair reads 9.01:1. */
         $defaults = [0 => 1.00, 60 => 3.27, 78 => 5.08, 90 => 6.97];
         foreach ($defaults as $overlay => $expected) {
             $this->assertEqualsWithDelta(

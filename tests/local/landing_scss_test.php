@@ -133,7 +133,7 @@ final class landing_scss_test extends \advanced_testcase {
      * Brand colours on whose lightest stop white text reads under 4.5:1.
      *
      * Boost's default blue is the case that matters: a site with no brand colour gets it, one step darker.
-     * Its lightest stop reads about 4.0:1, so a lowered threshold reddens it.
+     * Its lightest stop reads about 4.3:1, so a floor lowered under that would leave it unshaded and fail here.
      *
      * @return array Named cases of one colour.
      */

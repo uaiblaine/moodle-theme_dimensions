@@ -29,7 +29,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
  * Pins the invariants of amd/src/compactnav.js by reading its source, as readingbar_source_test does for the reading
- * bar: plugin CI runs no JavaScript unit tests, and what the module measures is only visible in a browser.
+ * bar: no unit test runs the AMD modules (Jest covers js/esm alone), and what the module measures is only visible
+ * in a browser.
  *
  * Each assertion is scoped to the one function it is about: the module refuses to run without the server's armed
  * class (the setting off, the Moodle app, focus mode), it observes with a ResizeObserver and a MutationObserver and
@@ -174,9 +175,9 @@ final class compactnav_source_test extends \basic_testcase {
      * A split the navigation makes while compact cannot end the mode at a width the bar was compact at.
      *
      * The two modes lay the bar out differently, so a split made in the compact layout says nothing of the full bar;
-     * acting on it flipped the mode on every frame (the calendar page at 1089px, measured in the browser). Only more
-     * room than the widest overflow seen, or leaving the range, ends the mode. The Behat scenario "Resizing through
-     * narrow, wide and medium" is the behaviour; this pins the three lines it rests on.
+     * acting on it would flip the mode on every frame. Only more room than the widest overflow seen, or leaving the
+     * range, ends the mode. The Behat scenario "Resizing through narrow, wide and medium" is the behaviour; this pins
+     * the three lines it rests on.
      *
      * @return void
      */

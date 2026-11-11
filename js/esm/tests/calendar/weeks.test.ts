@@ -14,7 +14,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the week view's pure layer (PROPOSAL.md sections 21.2 and 21.3): the week's days from each first weekday
+ * Tests for the week view's pure layer: the week's days from each first weekday
  * across a month, a year and a daylight-saving change, the span and its address, the all-day strip, the hour body's
  * columns, the hour window over the week, the "now" line and the keyboard's moves.
  *

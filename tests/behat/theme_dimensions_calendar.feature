@@ -4,7 +4,7 @@ Feature: The theme's calendar page shows a month with spanning bars, event types
   As somebody studying on a Dimensions site
   I need each multi-day event drawn once, the keys and categories to narrow it, and my choices kept
 
-  # Thin smoke tests of the page (docs/calendar/PROPOSAL.md, stages C2 and C3): that the route serves it, that the
+  # Thin smoke tests of the page: that the route serves it, that the
   # client draws and narrows it, that a day opens its drawer (its sheet on a phone) and an event its popover, and that
   # the server's agenda stands without JavaScript. What the range answers, to whom,
   # is PHPUnit's (tests/local/calendar), and the layout and the keyboard contract are Jest's (js/esm/tests/calendar).
@@ -182,7 +182,7 @@ Feature: The theme's calendar page shows a month with spanning bars, event types
     And I click on "//section[@data-region='dim-cal-day']//a[@data-cal-pop][contains(normalize-space(.), 'Mentoring session')]" "xpath_element"
     And ".dim-cal__pop--sheet[data-region='dim-cal-popover']" "css_element" should exist
 
-  # The week view (docs/calendar/PROPOSAL.md section 21): its layout and keyboard are Jest's, these are the page.
+  # The week view: its layout and keyboard are Jest's, these are the page.
   @javascript
   Scenario: The week view shows two overlapping events side by side and keeps the view through a reload
     Given I log in as "student1"
@@ -211,7 +211,7 @@ Feature: The theme's calendar page shows a month with spanning bars, event types
     And ".dim-cal__drawer--sheet[data-region='dim-cal-day']" "css_element" should exist
     And I should see "Other area meeting" in the "[data-region='dim-cal-day']" "css_element"
 
-  # The Day view is a phone's (docs/calendar/PROPOSAL.md section 31): its layout and its creation paths are Jest's.
+  # The Day view is a phone's: its layout and its creation paths are Jest's.
   @javascript
   Scenario: On a phone the Day view shows one day and its arrows move it a day at a time
     Given I log in as "student1"
@@ -245,8 +245,8 @@ Feature: The theme's calendar page shows a month with spanning bars, event types
     And I should see "Other area meeting" in the "[data-region='dim-cal-agenda']" "css_element"
     And "//a[contains(@href, 'calendar/view.php')]" "xpath_element" should not exist in the "[data-region='dim-cal']" "css_element"
 
-  # Core's calendar leads to the page, whatever its view (docs/calendar/PROPOSAL.md sections 15 and 27): the decision
-  # is PHPUnit's (tests/local/calendar/coreview_test.php), these are the redirect itself.
+  # Core's calendar leads to the page, whatever its view: the decision is PHPUnit's
+  # (tests/local/calendar/coreview_test.php), these are the redirect itself.
   Scenario: Core's month view lands on the theme's page, on the month its address named
     Given I log in as "student1"
     When I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
@@ -273,7 +273,7 @@ Feature: The theme's calendar page shows a month with spanning bars, event types
     When I visit "/calendar/view.php?view=month&cal_d=1&cal_m=3&cal_y=2027"
     Then the url should match "calendar/view\.php"
 
-  # Core's calendar blocks drawn with the theme's calendar (docs/calendar/PROPOSAL.md section 17): the decision and the
+  # Core's calendar blocks drawn with the theme's calendar: the decision and the
   # data are PHPUnit's (tests/local/calendar/blocks_test.php, tests/output/core_calendar_renderer_test.php), the arrows
   # and the keyboard Jest's (js/esm/tests/calendar/block.test.ts). The blocks draw the month of now and the next days,
   # so these scenarios read dates relative to today rather than March 2027.
@@ -308,7 +308,7 @@ Feature: The theme's calendar page shows a month with spanning bars, event types
     And I click on "Full calendar" "link" in the "[data-region='dim-calblock-upcoming']" "css_element"
     And the url should match "theme_dimensions/calendar|theme/dimensions/calendar\.php"
 
-  # Stage C5 (docs/calendar/PROPOSAL.md section 23): creating is core's form, reached from the page's "New event", which
+  # Creating is core's form, reached from the page's "New event", which
   # the page draws only when core would. Who may edit what is PHPUnit's (tests/local/calendar/editing_test.php).
   @javascript
   Scenario: An administrator creates an event from "New event" with core's form and sees it in the month

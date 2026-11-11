@@ -74,8 +74,8 @@ final class profileaccess_test extends \advanced_testcase {
     /**
      * The control for the test above: the same pair, once they share a course, is not prevented.
      *
-     * Without this the "prevented" assertion would also pass against a rule that prevents
-     * everything, which is the failure mode a negative test cannot see on its own.
+     * Without it the "prevented" assertion above would also pass against a rule that prevents
+     * everything.
      *
      * @return void
      */
@@ -96,9 +96,9 @@ final class profileaccess_test extends \advanced_testcase {
     /**
      * A course contact of some other course is a stranger like anyone else.
      *
-     * This is the whole point of the class, so it carries two controls: that the subject really
-     * does hold a course contact role, and that core really would have opened the profile on the
-     * strength of it.
+     * This is the gap the class closes, so it carries two controls: that the subject holds a
+     * course contact role (the core rule this class narrows is armed), and that core's own
+     * can_view_profile() refuses the viewer end to end, which proves the callback is registered.
      *
      * @return void
      */
@@ -125,8 +125,8 @@ final class profileaccess_test extends \advanced_testcase {
             profileaccess::control_view_profile($subject)
         );
 
-        // Control two, and the one that matters: end to end through core, which is also the only
-        // assertion that fails if the callback in lib.php is renamed, moved or never registered.
+        // Control two, end to end through core: the only assertion that fails if the callback in
+        // lib.php is renamed, moved or never registered.
         $this->assertFalse(\core\user::can_view_profile($subject));
     }
 
@@ -302,7 +302,7 @@ final class profileaccess_test extends \advanced_testcase {
      * The memo answers per subject and per course, not once for the whole request.
      *
      * A memo keyed only by the subject would answer the site profile's question on the in-course
-     * page, which is exactly the distinction this class exists to draw.
+     * page.
      *
      * @return void
      */
@@ -334,11 +334,9 @@ final class profileaccess_test extends \advanced_testcase {
     /**
      * The memo answers per viewer too, not once per subject for the whole request.
      *
-     * $USER is not constant for a request: \core\session\manager::set_user() switches it in CLI
-     * scripts, in adhoc tasks that act as somebody, and behind "log in as". A memo without the
-     * viewer in its key hands one person's answer to the next one, and it fails in the dangerous
-     * direction - deny, then wrongly deny again for somebody entitled. The test deliberately does
-     * not call reset_caches() between the two viewers.
+     * $USER is not constant for a request ({@see profileaccess::control_view_profile()} says where it
+     * switches), so a memo without the viewer in its key would deny the classmate the stranger's
+     * answer. The test deliberately does not call reset_caches() between the two viewers.
      *
      * @return void
      */

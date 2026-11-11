@@ -35,8 +35,7 @@ use theme_dimensions\output\calendar_page;
 /**
  * The calendar page end to end: core's router, this controller, the shared decision.
  *
- * One request per test (the harness builds a router per request, and a second one registers every route twice);
- * expected addresses are spelled after the request. Each redirect is asserted beside the page another test serves.
+ * Each redirect is asserted beside the page another test serves.
  *
  * @package    theme_dimensions
  * @category   test
@@ -47,7 +46,7 @@ use theme_dimensions\output\calendar_page;
 #[CoversClass(page::class)]
 final class calendar_test extends \core\tests\router\route_testcase {
     /**
-     * Forget the request parameters and the plugin's memos.
+     * Configure the router and forget local_unlistedcourses' category memo.
      *
      * @return void
      */

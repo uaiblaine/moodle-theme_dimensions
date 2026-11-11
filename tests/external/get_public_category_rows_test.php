@@ -46,12 +46,11 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  *
  * PHPUnit cannot reach what lib/ajax/service-nologin.php adds - the cookie-less session, the
  * headers, a real batch, the forced login read nowhere on that path - and the NO_MOODLE_COOKIES
- * branch of call_external_function() is skipped under PHPUNIT_TEST. Those were measured over HTTP
- * (the original design record, not part of this repository). What is pinned here: every refusal is the same bytes; nothing
- * that is not public travels, with forced login on and off and in both page-cutting modes; the
- * answer is the anonymous page's; the slice and the tree's criterion are no oracle; the language
- * is spoken and given back; a malformed request is refused before a statement is read; and a page
- * costs no statement per course or per card.
+ * branch of call_external_function() is skipped under PHPUNIT_TEST; none of that is pinned here.
+ * What is pinned: every refusal is the same bytes; nothing that is not public travels, with forced
+ * login on and off and in both page-cutting modes; the answer is the anonymous page's; the slice and
+ * the tree's criterion are no oracle; the language is spoken and given back; a malformed request is
+ * refused before a statement is read; and a page costs no statement per course or per card.
  *
  * Every refusal and every drop has an admitted case beside it in the same run, so no assertion
  * passes against a function that answers nothing.
@@ -87,13 +86,13 @@ final class get_public_category_rows_test extends \advanced_testcase {
     /** @var string A valid 1x1 PNG. */
     private const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
-    /** @var int The most reads a visitor's flat page may cost with the page cut in PHP: the measured value. */
+    /** @var int The most reads a visitor's flat page may cost with the page cut in PHP: today's cost, no headroom. */
     private const CEILING_PHP = 17;
 
-    /** @var int The same with the page cut in SQL: the measured value. */
+    /** @var int The same with the page cut in SQL: today's cost, no headroom. */
     private const CEILING_SQL = 19;
 
-    /** @var int The most reads the refusal of a category the predicate is asked about may cost: the measured value. */
+    /** @var int The most reads the refusal of a category the predicate is asked about may cost: today's cost. */
     private const CEILING_REFUSAL = 1;
 
     /** @var array The fixture's ids, by role. */
@@ -375,10 +374,9 @@ final class get_public_category_rows_test extends \advanced_testcase {
      * A missing id, a negative one, a merely listed category, an unlisted one, a hidden one, a
      * public one under a hidden parent, a merely listed child that holds public courses, each of
      * the four switches, the root the site keeps closed, the guest and a real account. Compared as
-     * the whole exception the framework returns, with debugging below DEVELOPER, which is the
-     * only level at which the refusal is one: at DEVELOPER the framework adds a backtrace naming
-     * the line that refused. The public category and the root, asked by the same visitor under the
-     * same settings, are the controls.
+     * the whole exception the framework returns, with debugging below DEVELOPER: at DEVELOPER the
+     * framework adds a backtrace naming the line that refused. The public category and the root,
+     * asked by the same visitor under the same settings, are the controls.
      *
      * @param bool $forcelogin Whether the site forces login.
      */
@@ -728,7 +726,7 @@ final class get_public_category_rows_test extends \advanced_testcase {
         $unknown = $this->ask(['categoryid' => $root, 'sort' => 'name', 'lang' => 'qq']);
         $this->assertSame($english['countline'], $unknown['countline'], 'An uninstalled pack is the request\'s own language.');
 
-        // Below DEVELOPER, where the refusal is one: at DEVELOPER it carries the calling line.
+        // Below DEVELOPER: at DEVELOPER the refusal carries a backtrace naming the line that refused.
         $CFG->debug = DEBUG_NONE;
         $CFG->debugdeveloper = false;
         $refusal = $this->refused(['categoryid' => $this->ids['listed'], 'lang' => 'xx']);
@@ -903,9 +901,8 @@ final class get_public_category_rows_test extends \advanced_testcase {
      *
      * Two public categories of six and of two hundred courses, at a page of four, cost the same; the
      * large one at a page of four and of forty-eight costs the same. Measured on execute(), with
-     * the per-request state reset as a new request would have it; the ceilings are the measured
-     * values. The refusal of a category the predicate has to be asked about stays within the
-     * predicate's own statements.
+     * the per-request state reset as a new request would have it. The refusal of a category the
+     * predicate has to be asked about stays within the predicate's own statements.
      *
      * @param bool $statesort The page-cutting mode.
      */

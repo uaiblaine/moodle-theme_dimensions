@@ -38,8 +38,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * and contrast panel - under the editor page's. Each must read only custom
  * properties it declares (an unresolved var() invalidates the whole declaration),
  * use no !important, and the templates and classes of the showcase must write
- * Bootstrap 5 spellings only - the Bootstrap 4 names resolve on 5.2 through a
- * compatibility layer Moodle 6.0 removes.
+ * Bootstrap 5 spellings only - the Bootstrap 4 names resolve on Moodle 5.x only
+ * through a compatibility layer Moodle 6.0 removes.
  *
  * The editor's file cannot borrow the showcase's tokens: those are declared
  * inside a block scoped to the showcase's body class and no element of the
@@ -66,7 +66,7 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The one other thing a top-level selector may carry in front of its scope.
      *
-     * Moodle 5.2's single dark-mode mechanism is the data-bs-theme attribute on the html
+     * Moodle 5.3's single dark-mode mechanism is the data-bs-theme attribute on the html
      * element, which is an ancestor of the body: a rule that only applies in dark mode has
      * to name it before the body class. Nothing else may precede the scope.
      *
@@ -171,7 +171,7 @@ final class category_scss_test extends \basic_testcase {
         /* The refusal page, what a reader gets instead of a listing, does not match the globs
            either. The page scripts (category.php, categoryhero.php) and the editor's form
            (classes/form/categoryhero.php) write no class name: the form builds moodleform
-           elements and the scripts only add a body class. Add a file here the day it writes one. */
+           elements and the scripts add at most a body class. Add a file here the day it writes one. */
         $files[] = $root . '/templates/unavailable.mustache';
         foreach (array_keys(self::SHEETS) as $sheet) {
             $files[] = $root . '/scss/' . $sheet;
@@ -811,8 +811,8 @@ final class category_scss_test extends \basic_testcase {
      * no calendar and no quick options; they take the same language, the quick options as chips.
      *
      * The chosen chip, the quick option in force and the calendar's two ends use the call to
-     * action's pair: --dim-cta is the navy on the light page and #4456ff on the dark one, where
-     * --dim-primary with the page's surface as its ink reads 1.1:1.
+     * action's pair: --dim-cta is the brand primary on the light page and #4456ff on the dark one,
+     * each with its own ink, because the page's surface is no ink on a primary that does not turn.
      */
     public function test_the_toolbar_controls_wear_the_designs_skin(): void {
         $scss = $this->stylesheet('category.scss');
@@ -989,17 +989,19 @@ final class category_scss_test extends \basic_testcase {
      * The filter line is one wrapping row of 40px controls, and the Filters panel is a popover from sm up.
      *
      * The line wraps where it does not fit, which is its whole narrow behaviour without
-     * JavaScript, and is the positioned ancestor of the panel, which opens under the LINE (not under
-     * its own control) from the sm breakpoint up, scrolls inside itself and stays in the flow below
-     * it. The scope is a platter: a grey track, the chosen cell raised in the page's surface. The
-     * row under the line is no box at rest - display: contents, so it takes no gap of the toolbar's
+     * JavaScript, and is the positioned ancestor of the panel, which opens under the line (not under
+     * its own control) from the sm breakpoint up and grows with its content (it is no scroll
+     * container, or it would clip the date calendar); below sm it stays in the flow. The scope is a
+     * platter: a grey track, the chosen cell raised in the page's surface. The row under the line
+     * is no box at rest - display: contents, so it takes no gap of the toolbar's
      * column - and everything in it but the count sentence goes. Every control of the line is 40px,
      * 44px on a phone.
      *
      * Changes that must make it fail: the wrap dropped from the line; the line not positioned (the
-     * panel is then placed against the page); the popover's absolute position or its inner scroll
-     * dropped; the row at rest kept as a box; a chip shorter than a control; the search's basis moved
-     * off the first step's floor (the unmeasured line would wrap where the first step fits).
+     * panel is then placed against the page); the popover's absolute position dropped, or an
+     * overflow or max-height given to it; the row at rest kept as a box; a chip shorter than a
+     * control; the search's basis moved off the first step's floor (the unmeasured line would wrap
+     * where the first step fits).
      */
     public function test_the_filter_line_wraps_and_its_panel_is_a_popover_from_sm(): void {
         $scss = $this->stylesheet('category.scss');
@@ -1409,11 +1411,11 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The Filter badge and its open outline read in both colour modes; the summary's links are 44px on a phone.
      *
-     * The badge is the call to action's pair: the navy and white on the light page, #4456ff and
-     * white (5.2:1) on the dark one. The page's surface is never its ink, because the institutional
-     * navy is not redefined for the dark mode and the dark surface on it reads 1.1:1. The open
-     * summary's line is the open poster's ring, which follows the mode the same way instead of
-     * vanishing into the dark card. On a phone the area links of the "nothing in N areas" summary
+     * The badge is the call to action's pair: the brand primary with its contrasting ink on the
+     * light page, #4456ff and white (5.2:1) on the dark one. The page's surface is never its ink,
+     * because the brand primary does not turn with the mode and the dark surface on it would not
+     * read. The open summary's line is the open poster's ring, which follows the mode the same way
+     * instead of vanishing into the dark card. On a phone the area links of the "nothing in N areas" summary
      * take the 44px of every other control there.
      */
     public function test_the_filter_badge_reads_in_the_dark_and_the_summarys_links_are_44px(): void {
@@ -1590,10 +1592,10 @@ final class category_scss_test extends \basic_testcase {
     /**
      * While a panel is open the other posters go grey under the vignette, and the open one says so in words.
      *
-     * Image AND text dim, easing in
-     * and out on the card's own transition, lifting most of the way under a pointer and all the way
-     * under the focus; the list view greys and fades instead. The vignette is the card's last box,
-     * transparent to the pointer. The open poster carries "Open", shown by its open class alone.
+     * Image and text dim together, easing in and out on the card's own transition, lifting most of
+     * the way under a pointer and all the way under the focus; the list view greys and fades instead.
+     * The vignette is the card's last box, transparent to the pointer. The open poster carries "Open",
+     * shown by its open class alone.
      */
     public function test_the_other_posters_dim_under_a_vignette_and_the_open_one_says_so(): void {
         $scss = $this->stylesheet('category.scss');
@@ -1880,11 +1882,11 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The filter line's preview lights a kept card with a 2px ring and lets the others recede by their own tokens.
      *
-     * Contract section 6, drawn as block_compass's calendar strip draws it: the ring is the accent, 2px and
-     * inside the card's edge (a rail that scrolls would clip an outside one), a pixel narrower than the 3px focus
-     * ring; a dim card paints its surface, its inks and its line with the receding values (the card's own colours
-     * are contract tokens, which only the family token feeds, so the receding card sets what they paint), and
-     * remaps every state pill's fill WITH its ink, the call to action, "More information" and the film over its
+     * The shared course card's preview, drawn as block_compass's calendar strip draws it: the ring is the accent,
+     * 2px and inside the card's edge (a rail that scrolls would clip an outside one), a pixel narrower than the 3px
+     * focus ring; a dim card paints its surface, its inks and its line with the receding values (the card's own
+     * colours are contract tokens, which only the family token feeds, so the receding card sets what they paint),
+     * and remaps every state pill's fill with its ink, the call to action, "More information" and the film over its
      * image, and nothing of it is opacity or a filter, which would fade the focus
      * ring of whatever is inside it. The change eases only where motion is welcome. Each of the tokens has its
      * dark value in a block at the foot of the file, where the badge test reads the dark half.
@@ -2016,10 +2018,10 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The card is one target: the title's link stretches over it, and every control of the card stays over the link.
      *
-     * Contract section 4 (D9). The stretched link is armed by dim-card--link alone, which the template writes on a
+     * The stretched link is armed by dim-card--link alone, which the template writes on a
      * card the reader may open; the call to action, "More information" and the star are positioned over its z-index,
      * the list view's star included (in the flow there, and still positioned, or the link would swallow its press).
-     * Without its image (section 8) the card view drops the band and keeps a top edge in the category's colour, and
+     * Without its image the card view drops the band and keeps a top edge in the category's colour, and
      * the list view drops the thumbnail and keeps a leading edge.
      */
     public function test_the_card_is_one_target_with_its_controls_over_it(): void {
@@ -2253,10 +2255,10 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The course dialogue's close button wears the white filter under the name core's Bootstrap declares.
      *
-     * The cross is a dark SVG on a dark disc, so it is visible only through Bootstrap's white filter. Bootstrap 5.3.4
-     * moved that filter to --bs-btn-close-filter, set by its btn-close-white() mixin, and stopped declaring the
-     * --bs-btn-close-white-filter this rule read before; the other test of this class exempts every --bs-* name, so
-     * this one reads core's Bootstrap for the two names, and reddens when Bootstrap renames them again.
+     * The cross is a dark SVG on a dark disc, so it is visible only through Bootstrap's white filter. From Bootstrap
+     * 5.3.4 that filter is --bs-btn-close-filter, set by its btn-close-white() mixin, and --bs-btn-close-white-filter
+     * is no longer declared; the declared-property test of this class exempts every --bs-* name, so this one reads
+     * core's Bootstrap for the two names, and fails when Bootstrap renames them again.
      *
      * @return void
      */
@@ -2341,7 +2343,7 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The panel's heading has no eyebrow, and its category link is underlined on hover and focus only, in both modes.
      *
-     * The link reads as the card's title does (contract section 5). In light mode the heading's own rule says so; in
+     * The link reads as the card's title does. In light mode the heading's own rule says so; in
      * dark mode core underlines every link of #region-main at (1,6,1), so the theme's two rules outweigh it, as the
      * card title's do ({@see test_the_card_title_outranks_cores_dark_underline()}).
      */
@@ -2389,10 +2391,10 @@ final class category_scss_test extends \basic_testcase {
     /**
      * The progress row is a bar and a percentage in the card's tokens, and a completed card trades it for the seal.
      *
-     * Contract sections 3 and 7: a 6px track (--dim-card-track, --dim-card-fill, --dim-card-track-height) whose fill
-     * is the course's percentage, the number at the right in tabular figures; hidden until filled, and never drawn on
-     * a completed card, whose pill is the green seal and whose cover gets its green base (--dim-card-done,
-     * --dim-card-done-edge). The old inline sentence is gone.
+     * A track (--dim-card-track, --dim-card-fill, --dim-card-track-height) whose fill is the course's percentage,
+     * the number at the right in tabular figures; hidden until filled, and never drawn on a completed card, whose
+     * pill is the green seal and whose cover gets its green base (--dim-card-done, --dim-card-done-edge). No inline
+     * progress sentence (.dim-card__prog) is drawn.
      */
     public function test_the_progress_row_and_the_completed_card_paint_through_the_card_tokens(): void {
         $scss = $this->stylesheet('category.scss');

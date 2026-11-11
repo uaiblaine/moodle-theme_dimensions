@@ -39,8 +39,8 @@ require_once(__DIR__ . '/fixture.php');
  *
  * Core's calendar_get_view() runs first whatever the theme does (the block calls it before the renderer), so what the
  * theme adds is its own range answer and its template, measured as range_budget_test measures a call (perf_get_reads()
- * after one warm call, every per-request memo reset). Core's half is measured the same way, for the record. "Now" is
- * the 10th of next month at 09:00, so the month block draws the seeded month and the agenda its next 21 days.
+ * after one warm call, every per-request memo reset). Core's half is measured the same way, as the comparison. "Now"
+ * is the 10th of next month at 09:00, so the month block draws the seeded month and the agenda its next 21 days.
  *
  * @package    theme_dimensions
  * @category   test
@@ -51,10 +51,10 @@ require_once(__DIR__ . '/fixture.php');
 final class blocks_budget_test extends \advanced_testcase {
     use fixture;
 
-    /** @var int The month block's own statements at 25 courses: 533 statements, a tenth over. */
+    /** @var int The month block's own statements at 25 courses: 533 plus a tenth. */
     private const MONTH_BUDGET = 586;
 
-    /** @var int The agenda's own statements at 25 courses: 226 statements (a 7-day piece), a tenth over. */
+    /** @var int The agenda's own statements at 25 courses: 226 (its first, 7-day piece) plus a tenth. */
     private const UPCOMING_BUDGET = 249;
 
     /**
@@ -142,10 +142,9 @@ final class blocks_budget_test extends \advanced_testcase {
     }
 
     /**
-     * At 25 courses each block's own half stays within its budget; core's half is recorded beside it.
+     * At 25 courses each block's own half stays within its budget, and the theme's month costs less than core's.
      *
-     * Core's month block costs 733 statements and about 880 ms, core's upcoming block 13 and 23 ms; the theme's
-     * month 533 and about 105 ms, its agenda 226 and 45 ms. The bounds keep a tenth of headroom over the theme's statements.
+     * Only statements are asserted; the milliseconds measure() returns are not.
      *
      * @return void
      */

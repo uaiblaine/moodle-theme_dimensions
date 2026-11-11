@@ -30,8 +30,7 @@ use core\hook\manager;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
- * Tests for category_badges::answer(), the theme's listener on block_compass's category crest hook (ADR-019 of
- * block_compass).
+ * Tests for category_badges::answer(), the theme's listener on block_compass's category crest hook.
  *
  * block_compass is optional, so every test skips without the hook class. The hook is dispatched through a hook
  * manager that knows only this theme's own db/hooks.php, so what answers is the registration this repository
@@ -209,7 +208,7 @@ final class category_badges_test extends \advanced_testcase {
     /**
      * Cold, the misses are read in one statement for every asked category; warm, nothing is read.
      *
-     * Core is warmed first (the configuration, the reader's access data), as block_compass's budget tests do; then
+     * Core is warmed first (the configuration, the reader's access data); then
      * the theme's cache is purged for the cold call, and each measured call starts with core's context cache reset,
      * as a new request would.
      *

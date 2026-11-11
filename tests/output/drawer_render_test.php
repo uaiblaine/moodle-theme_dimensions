@@ -232,7 +232,7 @@ final class drawer_render_test extends \advanced_testcase {
         // The language panel: core's address with its lang attribute, the current one not a link.
         $this->assertStringContainsString('href="https://example.com/my/courses.php?lang=pt_br" lang="pt-BR"', $html);
         $this->assertMatchesRegularExpression('~<span class="dimensions-drawer-item is-current" aria-current="true">~', $html);
-        // A sub-panel's parent address, and the escaped name of the current account.
+        // A sub-panel's parent address, and the name of the current account.
         $this->assertStringContainsString('<a class="dimensions-drawer-openparent" href="https://example.com/help">', $html);
         $this->assertStringContainsString('<span class="dimensions-drawer-name">Ana Beatriz Souza</span>', $html);
     }

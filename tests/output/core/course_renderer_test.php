@@ -403,7 +403,7 @@ final class course_renderer_test extends \advanced_testcase {
     /**
      * In COUNT mode the number beside a category name counts only the courses this user may discover.
      *
-     * Core appends " (N)" from the raw get_courses_count() (course/renderer.php:886-890), and Boost Union a
+     * Core appends " (N)" from the raw get_courses_count() (core_course_renderer::coursecat_category()), and Boost Union a
      * bare badge under its categorylistingpresentation setting; both include unlisted courses, and the
      * front page's category list prints them, so the test reads both spellings. Two courses, one of
      * them unlisted: the outsider reads 1, the enrolled user (the control) reads the real 2, and
@@ -481,7 +481,7 @@ final class course_renderer_test extends \advanced_testcase {
      * A tree whose every child is unlisted offers an outsider no expand-all control.
      *
      * The companion of the test above, one level up: core decides the "Expand all" link from the
-     * category's RAW child count (course/renderer.php:925), so the link would survive over a tree
+     * category's raw child count (core_course_renderer::coursecat_tree()), so the link would survive over a tree
      * that holds nothing expandable for this viewer. The parent's own course is the control that
      * the tree rendered at all - without it coursecat_tree() returns the empty string for
      * everybody and the assertion would pass over nothing.
@@ -724,7 +724,7 @@ final class course_renderer_test extends \advanced_testcase {
      * The listing above filters the children before this method ever sees
      * them, so on the tree's own path the guard here withholds nothing - which
      * is precisely why it needs a test that does not go through the tree. It is
-     * the net under every OTHER caller: core's coursecat_tree(), the two front
+     * the net under every other caller: core's coursecat_tree(), the two front
      * page methods, and whatever core adds next, each of which may hand this
      * method a category it chose somewhere else. Driven by reflection for that
      * reason - a public entry point would filter first and test the filter
@@ -773,11 +773,11 @@ final class course_renderer_test extends \advanced_testcase {
      *
      * This is the case that shows the guard is not redundant with the filters
      * under it. Everything nested inside an unlisted category is itself
-     * undiscoverable - the state is a property of the PATH - so a subcategory
-     * is dropped by the listing filter whatever this guard does. A COURSE is
+     * undiscoverable - the state is a property of the path - so a subcategory
+     * is dropped by the listing filter whatever this guard does. A course is
      * not: access::filter_courses() deliberately rescues one for the people who
      * hold a relationship with the course itself - enrolled, applying, staff -
-     * so without the guard the expander would answer a request naming THIS
+     * so without the guard the expander would answer a request naming this
      * category with that person's own course box, which confirms both that the
      * category exists and that it is the one their course sits in.
      * redirector::is_category_ghosted() gives the same person the same answer
@@ -1012,9 +1012,9 @@ final class course_renderer_test extends \advanced_testcase {
     /**
      * A category the plugin withholds falls back to core's page for the stranger, and shows the showcase to the member.
      *
-     * Core's page is what the site rendered before this method existed, and
-     * its own listing filter withholds the course from the stranger too; the
-     * cohort member is the control that the fallback is the guard answering.
+     * Core's page has its own listing filter, which withholds the course from
+     * the stranger too; the cohort member is the control that the fallback is
+     * the guard answering.
      */
     public function test_a_withheld_category_falls_back_to_core_for_the_stranger(): void {
         $this->prepare_showcase();
@@ -1306,8 +1306,8 @@ final class course_renderer_test extends \advanced_testcase {
      * open one the rendering control, so a directory that had rendered nothing could not pass.
      *
      * Its posters open panels like any other page's and its search line is live, so a real account
-     * gets the account's client there (listingaccount, which replaced the panel's and the listing's
-     * modules). The guest gets none, anywhere: the showcase's web services refuse it, and it
+     * gets the account's client there (listingaccount). The guest gets none, anywhere: the
+     * showcase's web services refuse it, and it
      * opens a panel through the address instead. The client is asserted through the page's own
      * requirements (`$PAGE->requires->get_end_code()` names every AMD call of the page), and a real
      * category page rendered beside it is the control: the same viewer, the same client.
@@ -1395,8 +1395,8 @@ final class course_renderer_test extends \advanced_testcase {
      * with the fold, and a term that matches nothing sends every poster of the directory to the
      * summary, each still in the document.
      *
-     * The control is at the end: the same filter IS a real one, and empties the category page
-     * below, where there is a control for it and a link to clear it.
+     * The control is at the end: the same search term is a real criterion on the category page
+     * below, where there is a control for it and a link to clear it, and empties it.
      */
     public function test_a_filter_on_the_root_narrows_nothing_and_its_search_reaches_the_fold(): void {
         global $PAGE;
@@ -1441,7 +1441,7 @@ final class course_renderer_test extends \advanced_testcase {
         $this->assertStringContainsString('data-filtered="1"', $searched, 'In result mode.');
         unset($_GET[criteria::PARAM_SEARCH], $_GET[criteria::PARAM_STATE], $_GET[criteria::PARAM_SORT]);
 
-        // The control: the same organisation and search ARE real where the page offers controls for them.
+        // The control: the same search is real where the page offers a control for it.
         $_GET[criteria::PARAM_SEARCH] = 'zzzznothing';
         $below = $renderer->course_category((int) $open->id);
         unset($_GET[criteria::PARAM_SEARCH]);
@@ -1451,7 +1451,7 @@ final class course_renderer_test extends \advanced_testcase {
     /**
      * The category ids of a rendered directory's cards, in document order.
      *
-     * The poster's OWN attribute, never the section's: the regions wrapping the
+     * The poster's own attribute, never the section's: the regions wrapping the
      * whole directory carry `data-categoryid="0"` too, and a query that
      * collected them would report entries on a page with no poster at all.
      *

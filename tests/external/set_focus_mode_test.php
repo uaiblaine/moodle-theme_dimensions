@@ -141,8 +141,6 @@ final class set_focus_mode_test extends \advanced_testcase {
     /**
      * With the master switch off the service refuses and writes nothing.
      *
-     * While it is off nothing of the feature runs.
-     *
      * @return void
      */
     public function test_the_master_switch_off_refuses(): void {

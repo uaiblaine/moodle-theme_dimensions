@@ -43,14 +43,25 @@ describe('the popover\'s anchor', () => {
     });
 
     it('stays under the fixed navbar: flips below an opener near the top, and never rises above it', () => {
-        // A bar at the top of the viewport, a 60px navbar: above would start at -8 px.
+        // A bar just under a 60px navbar: there is room below, so it goes there (above would start at -138px).
         expect(anchor({top: 70, left: 50, bottom: 90, right: 200}, SIZE, VIEWPORT, 60)).toEqual({top: 98, left: 50});
-        // Pushed below by the navbar offset where the old placement put it at the viewport's edge.
+        // A tall popover near the bottom goes above, between the navbar's offset and the viewport's bottom gap.
         const flipped = anchor({top: 740, left: 50, bottom: 760, right: 200}, {width: 300, height: 600}, VIEWPORT, 60);
         expect(flipped.top).toBeGreaterThanOrEqual(68);
         expect(flipped.top + 600).toBeLessThanOrEqual(792);
         // Above, when it fits under the navbar: the offset is the least top.
         expect(anchor({top: 700, left: 50, bottom: 720, right: 200}, SIZE, VIEWPORT, 60).top).toBe(492);
+    });
+
+    it('keeps below an opener when above would start under the navbar, though it lands in the gap above it', () => {
+        // Below does not fit (428 + 380 > 792) and above would start at 12px: clear of the viewport's 8px gap but
+        // under the 60px navbar (least top 68). Above is refused for the navbar alone, so it stays below, pulled up
+        // to the viewport's bottom gap (412). Changes that must make it fail: testing above against the gap
+        // instead of the navbar's offset (it would pick above and clamp to 68), or ignoring the offset (12).
+        const opener = {top: 400, left: 50, bottom: 420, right: 200};
+        const size = {width: 300, height: 380};
+        expect(anchor(opener, size, VIEWPORT, 60)).toEqual({top: 412, left: 50});
+        expect(anchor(opener, size, VIEWPORT, 0)).toEqual({top: 12, left: 50});
     });
 
     it('caps the height, to scroll inside, only when neither side holds it under the navbar', () => {

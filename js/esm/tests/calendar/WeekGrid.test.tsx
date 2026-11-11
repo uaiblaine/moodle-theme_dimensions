@@ -14,9 +14,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Tests for the week view on both shells (PROPOSAL.md sections 21.2 and 21.3), by what a reader and a screen reader
- * meet: the grid and its labels, the strip, overlaps side by side, the "now" line, the view switch and its address,
- * one range call per week, the keyboard contract, and the phone's agenda.
+ * Tests for the week view on both shells, by what a reader and a screen reader meet: the grid and its labels, the
+ * strip, overlaps side by side, the "now" line, the view switch and its address, one range call per week, the
+ * keyboard contract, and the phone's agenda.
  *
  * @copyright  2026 Anderson Blaine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -140,7 +140,7 @@ const ranges = (): Array<Record<string, unknown>> => fetched.mock.calls
  */
 const view = (view: string): HTMLElement => document.querySelector(`[data-action="dim-cal-view-${view}"]`) as HTMLElement;
 
-/** Two overlapping meetings on the 17th, a point item and a three-day congress. */
+/** Two overlapping meetings on the 17th, a point item and a breakfast on the 18th, and a three-day congress. */
 const BUSY = [
     item({id: 1, name: 'Mentoring', timestart: at('2026-11-17', 14), timeduration: HOUR}),
     item({id: 2, name: 'Area meeting', timestart: at('2026-11-17', 14) + 1800, timeduration: HOUR}),
@@ -536,7 +536,7 @@ describe('the phone\'s week', () => {
             observers[0]([{target: frame, contentRect: {width: 900, height: 999}}]);
         });
         expect(frame.style.getPropertyValue('--dim-cal-gridheight')).toBe('612px');
-        // A re-render the report triggers (the drawer opening) leaves the same frame carrying it.
+        // A re-render (the drawer opening changes the frame's class) leaves the same frame carrying it.
         await act(async() => {
             fireEvent.click(day('2026-11-17'));
         });

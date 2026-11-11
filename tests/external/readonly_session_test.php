@@ -38,13 +38,12 @@ require_once(__DIR__ . '/../local/category/fixture.php');
  * Core's contract for a read-only session is the one write_close() checks
  * (lib/classes/session/manager.php, the array_session_diff() of $SESSION taken at session start
  * and at close): no $SESSION key added, removed or changed. That is what is asserted here around
- * the showcase's three logged-in reads, the mobile drawer's summary and the calendar range, the way the
- * clients make them (the range builds core's calendar sets without the session-only key bitmask core
- * writes into $SESSION, see \theme_dimensions\local\calendar\scope).
- * $USER is not compared, as core
- * does not compare it. The page's own preference writes (category_listing::view(),
- * category_hero::fold(), remembered::record()) are page code and the remember_category_state write
- * service; no read reaches them.
+ * the showcase's three logged-in reads, the mobile drawer's summary, the calendar range and the
+ * calendar trails, the way the clients make them (the range builds core's calendar sets without the
+ * session-only key bitmask core writes into $SESSION, see \theme_dimensions\local\calendar\scope).
+ * $USER is not compared, as core does not compare it. The page's own preference writes
+ * (category_listing::view(), category_hero::fold(), remembered::record()) are page code and the
+ * remember_category_state write service; no read reaches them.
  *
  * get_public_category_rows and its calendar twin get_public_calendar_range are the two reads left
  * undeclared: they are served by service-nologin.php under NO_MOODLE_COOKIES, so there is no session

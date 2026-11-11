@@ -28,11 +28,11 @@ namespace theme_dimensions\local\category;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 /**
- * Pins how the shared listing of js/esm/src/listing reaches the AMD clients, and who writes the history.
+ * Pins how the AMD entries reach the shared listing of js/esm/src/listing, and who writes the history.
  *
- * The AMD listing is TypeScript under a barrel's names, and each
- * page's AMD entry starts its shell through `core/esm!`. The painters' own rules are read by amd_source_test and
- * the component source tests, their behaviour is Jest's (js/esm/tests/listing).
+ * Each page's AMD entry starts its TypeScript shell through `core/esm!`, and the store and the shells call the
+ * listing by the names of its barrel (listing.ts). The painters' own rules are read by amd_source_test and the
+ * component source tests, their behaviour is Jest's (js/esm/tests/listing).
  *
  * @package    theme_dimensions
  * @category   test
@@ -123,14 +123,13 @@ final class listing_source_test extends \basic_testcase {
     }
 
     /**
-     * Each AMD entry starts its TypeScript shell through core's ES module loader, and no AMD module loads the AMD listing.
+     * Each AMD entry starts its TypeScript shell through core's ES module loader, and loads nothing else.
      *
-     * An entry loading an AMD client again would run a second copy of the listing, with its own counters and its own
-     * history writer, beside the store.
+     * An entry loading another listing client would run a second copy of the listing, with its own counters and its
+     * own history writer, beside the store.
      *
-     * Changes that must make it fail: the account's entry loading an AMD client instead of its shell (gate
-     * js_vitrine_listing_through_esm; the visitor's entry is js_public_listing_through_esm, read by
-     * categorypublic_source_test's walk).
+     * Changes that must make it fail: either entry loading anything but its shell (the visitor's entry is also read
+     * by categorypublic_source_test's walk).
      */
     public function test_the_amd_clients_load_the_typescript_listing(): void {
         foreach (self::ENTRIES as $entry => $shell) {
@@ -156,10 +155,10 @@ final class listing_source_test extends \basic_testcase {
     /**
      * The barrel exports every name a shell calls on the listing, nothing it does not have, and nothing no shell calls.
      *
-     * A name the barrel left out is undefined at run time, in the browser alone; a name no shell calls is one the
-     * barrel kept for a client that is gone (the AMD clients' four are gone).
+     * A name the barrel left out is undefined at run time, in the browser alone; a name no shell calls is dead
+     * export.
      *
-     * Changes that must make it fail: a name dropped from the barrel (gate js_listing_barrel_complete).
+     * Changes that must make it fail: a name dropped from the barrel; a name kept that no shell calls.
      */
     public function test_the_barrel_exports_every_name_the_amd_clients_call(): void {
         $barrel = $this->uncommented($this->read('js/esm/src/listing/listing.ts'));
@@ -205,8 +204,8 @@ final class listing_source_test extends \basic_testcase {
      * The visitor's page loads the store, so a store that imported a shell, named a service or spelled a
      * shell's mark would carry that shell to every page that loads it.
      *
-     * Changes that must make it fail: the store importing a shell (gate js_store_names_no_shell), or spelling a
-     * mark, a service or a method of its own.
+     * Changes that must make it fail: the store importing a shell, or spelling a mark, a service or a method of its
+     * own.
      */
     public function test_the_store_reaches_no_shell(): void {
         $store = $this->read('js/esm/src/listing/store.ts');
@@ -234,9 +233,8 @@ final class listing_source_test extends \basic_testcase {
      * its own writer, calendar/history.ts (the listing's keeps the showcase's forms in step after each write, which
      * the calendar has none of), and no other module of calendar/ writes either.
      *
-     * Changes that must make it fail: a history call spelled outside history.ts, the panel's own included (gate
-     * js_history_one_writer); the panel's write pushing (gate js_history_keeps_entry); the criteria pushed whatever
-     * the caller asked (gate js_history_push_flag).
+     * Changes that must make it fail: a history call spelled outside history.ts, the panel's own included; the
+     * panel's write pushing; the criteria pushed whatever the caller asked.
      */
     public function test_only_the_history_module_writes_the_address(): void {
         $sources = $this->esm_sources();

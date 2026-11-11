@@ -33,9 +33,9 @@ use theme_dimensions\local\hook\output\before_http_headers;
  * Tests for the look a person chose and how it reaches Boost Union's flavour cache.
  *
  * Most tests read Boost Union's session cache after flavourchoice::prime(), because that entry is the
- * whole contract: Boost Union's resolver answers every consumer from it. The two tests that render a
+ * whole contract: Boost Union's resolver answers every consumer from it. The tests that render a
  * real page header go through the resolver itself and run in a process of their own, because the
- * resolver keeps its first answer in a function static for the life of the process.
+ * resolver (and Boost Union's favicon()) keeps its first answer in a function static for the life of the process.
  *
  * The first prime of a session purges Boost Union's cache (the marker has nothing to compare with),
  * so a test that seeds that cache with what Boost Union "resolved" primes once first.
@@ -467,9 +467,9 @@ final class flavourchoice_test extends \advanced_testcase {
     /**
      * The admin page offers the flavours themselves: the setting's choices are what choices() lists.
      *
-     * The setting is read from the admin tree, as the settings page builds it, because the defect it pins
-     * lives in settings.php: handed the array callable [flavourchoice::class, 'choices'], core's
-     * multicheckbox keeps the array as its choices and offered the class name and the method name.
+     * The setting is read from the admin tree, as settings.php builds it: handed an array callable such as
+     * [flavourchoice::class, 'choices'], core's multicheckbox keeps the array itself as its choices and
+     * offers the class name and the method name.
      *
      * @return void
      */

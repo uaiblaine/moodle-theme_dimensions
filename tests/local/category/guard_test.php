@@ -131,7 +131,7 @@ final class guard_test extends \advanced_testcase {
             'a course core hides' => $this->refusal(fn() => guard::course((int) $hidden->id)),
             'a course the plugin withholds' => $this->refusal(fn() => guard::course((int) $unlisted->id)),
             'a course under a withheld category' => $this->refusal(fn() => guard::course((int) $incategory->id)),
-            // The site course, which both gates admit on their own: see the test below.
+            // The site course: with something unlisted the plugin refuses it first; see the test below.
             'the site course' => $this->refusal(fn() => guard::course(SITEID)),
         ], guard::ERROR_COURSE);
 

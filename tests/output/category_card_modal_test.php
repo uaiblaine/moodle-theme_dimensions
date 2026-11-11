@@ -373,7 +373,7 @@ final class category_card_modal_test extends \advanced_testcase {
     /**
      * A visitor's card draws its one button, "Learn more" to the landing page, and no "More information".
      *
-     * Contract section 3: the course dialogue is never armed for a visitor, so the link that opens it is not drawn,
+     * The course dialogue is never armed for a visitor, so the link that opens it is not drawn,
      * in the flat list and the panel alike (both draw this card). The control is the same course's card for a
      * signed-in learner, which keeps both; a course with no landing page gives a visitor no button at all.
      */
@@ -407,7 +407,7 @@ final class category_card_modal_test extends \advanced_testcase {
     /**
      * Only an enrolled card carries the completed state's words, which the client applies once the course is completed.
      *
-     * The seal's "Completed" and the main action's "Review" (D4, option A) ride on the article as data-done and
+     * The seal's "Completed" and the main action's "Review" ride on the article as data-done and
      * data-review; a card the details service is never asked about (any other state, or a visitor's) carries neither.
      */
     public function test_only_an_enrolled_card_carries_its_completed_words(): void {

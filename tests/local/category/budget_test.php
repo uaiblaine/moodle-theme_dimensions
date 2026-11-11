@@ -651,21 +651,17 @@ final class budget_test extends \advanced_testcase {
      * Time is bounded as a RATIO, not in seconds. The median of interleaved
      * renders of two hundred courses is divided by the median for a root of
      * one full page of courses, both in this process: a loaded host slows both
-     * alike, so the ratio holds where a wall-clock ceiling does not. A single
-     * timed render mostly measures the host: a 0.5 s ceiling on one render
-     * flaked whenever two CI legs or mutation workers shared it, and the medians
-     * on a quiet stack are 35 to 95 ms against one render's 120 to 200 ms right
-     * after seeding.
+     * alike, so the ratio holds where a wall-clock ceiling does not: a single
+     * timed render mostly measures the host, and the first renders after
+     * seeding are slower than the medians.
      *
      * Both roots fill the same page, so the cards' layers cost the same on both
      * sides, and what the ratio sees is what the population pays per course
      * beyond that page: the per-row cost that no statement count can see. It
      * measures 0.96 to 1.3. A render whose cost grew linearly with N would
-     * approach 200/48 (4.2), so COST_RATIO = 2.5 is passed once each of the 152
-     * extra courses costs about a fiftieth of a whole page's render (0.6 to
-     * 1.8 ms); the wall-clock ceiling needed about 2 ms a course on a quiet host.
-     * The read ceiling and the memory bound are unchanged, and the slope tests
-     * above hold the statements flat in N and in P.
+     * approach 200/48 (4.2), so COST_RATIO = 2.5 is exceeded once each of the 152
+     * extra courses costs more than about a hundredth of a whole page's render. The slope
+     * tests above hold the statements flat in N and in P.
      *
      * @param bool $statesort The mode.
      */

@@ -36,7 +36,7 @@ use theme_dimensions\local\landingfields;
 /**
  * Tests for course_badges::answer(), the theme's listener on block_compass's crests hook.
  *
- * block_compass is optional and not a CI dependency of every run, so every test skips without the hook
+ * block_compass is optional (not declared in version.php), so every test skips without the hook
  * class; the tests that store a crest skip without customfield_picture as well, as tests/course_badges_test.php
  * does. The hook is dispatched through a hook manager that knows only this theme's own db/hooks.php, so what
  * answers is the registration this repository ships.
@@ -195,7 +195,8 @@ final class course_badges_test extends \advanced_testcase {
     }
 
     /**
-     * An id with no crest is not answered at all: not a course with a model and no badge, not an id with no course.
+     * An id with no crest is not answered at all: not a course with a model and no badge, not a course whose model
+     * was cleared over a surviving badge file, not an id with no course.
      *
      * The crested course beside them is the control, so an empty answer is not a listener that never ran.
      */

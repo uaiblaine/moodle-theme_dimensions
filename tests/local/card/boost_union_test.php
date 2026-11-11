@@ -28,7 +28,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Tests for the reader of Boost Union's three course overview settings (the course card contract, section 8).
+ * Tests for the reader of Boost Union's three course overview settings.
  *
  * Every answer is asked of a page whose theme is forced, so a test never depends on the PHPUnit site's own theme:
  * this theme, a child of Boost Union, for the settings to apply, and Boost, which names no Boost Union, for the
@@ -164,7 +164,7 @@ final class boost_union_test extends \advanced_testcase {
     }
 
     /**
-     * Without a page the request's own is asked: the control that the default argument reaches the global.
+     * Without a page the request's own is asked: the default argument reaches $PAGE.
      */
     public function test_the_request_page_is_asked_by_default(): void {
         global $PAGE;

@@ -30,10 +30,10 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 /**
  * Pins the invariants of amd/src/categorycoursemodal.js by reading its source.
  *
- * Same shape and reasoning as {@see covervideo_source_test}: plugin CI runs no JavaScript unit test,
- * so what this module must keep doing is read out of its source, each assertion scoped to the
- * function it is about, and the build-currency assertion at the foot is what says the browser is
- * served this source. Behat is the gate that executes it (the client feature's dialogue scenario).
+ * Same shape as {@see covervideo_source_test}: no Jest test covers this AMD module, so what it must
+ * keep doing is read out of its source, each assertion scoped to the function it is about, and the
+ * build-currency assertion at the foot is what says the browser is served this source. Behat executes
+ * it (the dialogue scenarios of theme_dimensions_category_client.feature).
  *
  * @package    theme_dimensions
  * @category   test
@@ -218,9 +218,8 @@ final class categorycoursemodal_source_test extends \basic_testcase {
      * The content is asked for on intent, once per course for the page's life, and the press reuses what it finds.
      *
      * A pointer or the focus resting on the link for the cover film's own INTENT_DELAY starts the request; a finger is
-     * gated out of both halves of the hover, because it brackets every tap with an over and an out (hover logic gates BOTH
-     * halves on the pointer type). An answer is kept per course; a failure is forgotten, so the next
-     * opening asks again.
+     * gated out of both halves of the hover, because it brackets every tap with an over and an out. An answer is kept
+     * per course; a failure is forgotten, so the next opening asks again.
      */
     public function test_the_content_is_asked_for_on_intent_and_kept_per_course(): void {
         $source = $this->source();

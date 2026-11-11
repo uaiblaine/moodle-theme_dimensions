@@ -31,11 +31,10 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * Pins the invariants of an account's listing client by reading its source: js/esm/src/listing/account.ts, the shell
  * over the shared store, and amd/src/listingaccount.js, its entry.
  *
- * This shell replaced the account's two AMD clients: what only an
- * account has (the remembered state, the view preference, the progress, the panel's request) is the shell's,
- * and what both shells do (the tickets, the appended page, the tree, the chips, clear) is the store's, read here for
- * the gates that were written over the account's client. Their behaviour is Jest's (js/esm/tests/listing); these are
- * the PHPUnit side the mutation sweep can redden, each scoped to one function through body().
+ * What only an account has (the remembered state, the view preference, the progress, the panel's request) is the
+ * shell's, and what both shells do (the tickets, the appended page, the tree, the chips, clear) is the store's, read
+ * here too where the account depends on it. Their behaviour is Jest's (js/esm/tests/listing); these pin the source
+ * from PHPUnit, each assertion scoped to one function through body().
  *
  * @package    theme_dimensions
  * @category   test
@@ -108,8 +107,8 @@ final class listing_account_source_test extends \basic_testcase {
      * The star (./star) is armed whatever the page draws: the root's directory has no listing to arm, and its
      * panels' cards have stars.
      *
-     * Changes that must make it fail: the star no longer armed (gate js_account_arms_star); the entry loading
-     * another module (gate js_vitrine_listing_through_esm); the entry or its build not made from this source.
+     * Changes that must make it fail: the star no longer armed; the entry loading another module; the entry or
+     * its build not made from this source.
      */
     public function test_the_entry_starts_the_shell_which_arms_the_star(): void {
         $entry = $this->read(self::ENTRY);
@@ -139,8 +138,7 @@ final class listing_account_source_test extends \basic_testcase {
      * Every failure is core's exception dialogue, loaded through the bridge, a calendar that could not mount included;
      * the progress of a panel's cards is decoration and fails in silence.
      *
-     * Changes that must make it fail: the calendar's failure swallowed on the account's shell (gate
-     * js_calendar_failure_told).
+     * Changes that must make it fail: the calendar's failure swallowed on the account's shell.
      */
     public function test_the_shell_is_the_logged_in_one_and_reports_through_core(): void {
         $shell = $this->read(self::SHELL);
@@ -156,7 +154,7 @@ final class listing_account_source_test extends \basic_testcase {
         );
         $this->assertStringContainsString('answer.catch(exception);', $this->body('rows'), 'Every failed page is shown.');
         $this->assertStringContainsString('exception(error);', $this->body('drainPending'));
-        // A calendar that could not mount is the dialogue too, as it was with the AMD clients; the store asks the shell.
+        // A calendar that could not mount is the dialogue too; the store asks the shell.
         $this->assertStringContainsString("\n    unmounted: exception,\n", $shell);
         $this->assertStringContainsString(
             'Listing.mountCalendar(root, state, setRange).catch(shell.unmounted);',
@@ -172,8 +170,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * A settled id is unobserved, and settling is what a finished batch does whatever it answered.
      *
-     * Changes that must make it fail: deleting `observer.unobserve(card);` from settle() (gate js_unobserve_on_settle);
-     * leaving a settled id in the pending set (gate js_settle_leaves_pending); moving `settle(batch)` into the `try`.
+     * Changes that must make it fail: deleting `observer.unobserve(card);` from settle(); leaving a settled id in the
+     * pending set; moving `settle(batch)` into the `try`.
      */
     public function test_a_settled_course_is_unobserved_and_every_finished_batch_settles(): void {
         $settle = $this->body('settle');
@@ -206,8 +204,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * The shell holds no card disclosure: "More information" is a link the course dialogue's module intercepts.
      *
-     * The card's details panel, its one-open-at-a-time rule and its Escape are gone; what the shell still
-     * hears on its own is the automatic opening's note.
+     * The shell names no hook of a card disclosure (a details panel, a one-open-at-a-time rule, an Escape);
+     * what it hears on its own is the automatic opening's note.
      */
     public function test_the_shell_holds_no_card_disclosure(): void {
         $source = $this->read(self::SHELL);
@@ -220,8 +218,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * A replaced grid gives its cards back to the observer before it discards them.
      *
-     * Changes that must make it fail: deleting the unobserve from discard() (gate js_replace_unobserves); the store
-     * painting the grid without the shell's discard; the shell handing none.
+     * Changes that must make it fail: deleting the unobserve from discard(); the store painting the grid without
+     * the shell's discard; the shell handing none.
      */
     public function test_a_replaced_grid_unobserves_the_cards_it_discards(): void {
         $this->assertStringContainsString(
@@ -241,8 +239,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * Every card an answer draws is armed, an appended page's as a replaced one's, and a card of the panel never is.
      *
-     * Changes that must make it fail: arming the panel's cards at start (gate js_mini_no_peek); the store no longer
-     * handing the shell the cards it drew.
+     * Changes that must make it fail: arming the panel's cards at start; the store no longer handing the shell the
+     * cards it drew.
      */
     public function test_every_card_drawn_is_armed_and_a_card_of_the_panel_never_is(): void {
         $this->assertStringContainsString(
@@ -266,8 +264,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * An appended page is state of the document and is never written into the address bar.
      *
-     * Changes that must make it fail: moving `state.page = lastpage;` out of the `!append` branch (gate
-     * js_appended_page_not_in_address); asking for `state.page + 1` instead of `lastpage + 1`.
+     * Changes that must make it fail: moving `state.page = lastpage;` out of the `!append` branch; asking for
+     * `state.page + 1` instead of `lastpage + 1`.
      */
     public function test_the_appended_page_is_not_the_page_the_address_names(): void {
         $apply = $this->body('applyResponse', self::STORE);
@@ -281,7 +279,7 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * An answer overtaken while its cards were rendering paints nothing and tells the posters nothing.
      *
-     * Changes that must make it fail: the latest-request check only before the render (gate js_rows_ticket_after_render).
+     * Changes that must make it fail: the latest-request check only before the render.
      */
     public function test_an_answer_overtaken_while_rendering_paints_nothing(): void {
         $apply = $this->body('applyResponse', self::STORE);
@@ -299,8 +297,7 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * Every rows request carries the page size and the favourites the address names, and the root its term alone.
      *
-     * Changes that must make it fail: dropping perpage (gate js_rows_carry_page_size) or fav (gate js_rows_carry_fav)
-     * from rowsArgs(); the root asking for more than its term.
+     * Changes that must make it fail: dropping perpage or fav from rowsArgs(); the root asking for more than its term.
      */
     public function test_every_rows_request_carries_the_addresss_criteria(): void {
         $args = $this->body('rowsArgs');
@@ -336,8 +333,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * The favourites toggle is intercepted and fetched with a history entry; the address carries it.
      *
-     * Changes that must make it fail: the press let through to its submit (gate js_fav_toggle_intercepted); the toggle
-     * not flipped or not applied in onFav().
+     * Changes that must make it fail: the press let through to its submit; the toggle not flipped or not applied in
+     * onFav().
      */
     public function test_the_favourites_toggle_is_a_fetch_with_a_history_entry(): void {
         $this->assertMatchesRegularExpression(
@@ -370,8 +367,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * A tree entry is intercepted and fetched: the one control of the toolbar that is a filter and no navigation.
      *
-     * Changes that must make it fail: deleting `event.preventDefault();` from the tree branch (gate
-     * js_tree_click_fetches); deleting `state.cat = cat;`.
+     * Changes that must make it fail: deleting `event.preventDefault();` from the tree branch; deleting
+     * `state.cat = cat;`.
      */
     public function test_a_tree_entry_is_a_filter_the_store_fetches_and_never_a_navigation(): void {
         $this->assertMatchesRegularExpression(
@@ -391,8 +388,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * A chip and "Clear filters" are fetched in place, and the focus goes to the search box.
      *
-     * Changes that must make it fail: the focus left where Clear was pressed (gate js_clear_focuses_search); a chip
-     * left to its link (gate js_chip_intercepted); the term kept for a suggestion's press (gate js_vitrine_drop_term).
+     * Changes that must make it fail: the focus left where Clear was pressed; a chip left to its link; the term kept
+     * for a suggestion's press.
      */
     public function test_a_chip_and_clear_are_fetched_in_place_and_focus_the_search(): void {
         $listen = $this->body('listen', self::STORE);
@@ -448,10 +445,8 @@ final class listing_account_source_test extends \basic_testcase {
     /**
      * The state a reader leaves a category in is remembered on every change, and the address then names it.
      *
-     * Changes that must make it fail: the guard on the account or the root dropped (gate js_remember_guard); "clear
-     * filters" no longer remembering (gate js_clear_remembers); the change told after the write (gate
-     * js_changed_before_write); the landing address pushed, a history entry Back stops on (gate
-     * js_history_start_replaces).
+     * Changes that must make it fail: the guard on the account or the root dropped; "clear filters" no longer
+     * remembering; the change told after the write; the landing address pushed, a history entry Back stops on.
      */
     public function test_the_state_left_on_a_category_is_remembered_and_the_address_names_it(): void {
         $remember = $this->body('remember');
@@ -505,8 +500,7 @@ final class listing_account_source_test extends \basic_testcase {
      *
      * Core refuses the guest's preference and stores none for a visitor; canpersist is the server's word for it.
      *
-     * Changes that must make it fail: writing the preference whatever the account (gate
-     * js_view_preference_real_account).
+     * Changes that must make it fail: writing the preference whatever the account.
      */
     public function test_the_view_preference_is_written_for_a_real_account_only(): void {
         $changed = $this->body('changed');
@@ -528,9 +522,8 @@ final class listing_account_source_test extends \basic_testcase {
      * The component holds the posters' numbers from the pending event until the answer's; a failed request sends none,
      * so the shell tells it, for the latest replacing request on a page with areas, beside core's dialogue.
      *
-     * Changes that must make it fail: a poster written from the store again (gate js_areas_shells_untouched); the
-     * shell handed the answer after the posters' component, which then opens an area with no note (gate
-     * js_answered_before_criteria); the failure not told (gate js_failed_tells_posters).
+     * Changes that must make it fail: a poster written from the store; the shell handed the answer after the
+     * posters' component, which then opens an area with no note; the failure not told.
      */
     public function test_an_answer_tells_the_posters_and_writes_none_of_them(): void {
         $areas = $this->body('paintAreas', self::STORE);
@@ -583,9 +576,8 @@ final class listing_account_source_test extends \basic_testcase {
      * one not below the area), and reads the period as the calendar reads one, so a hand-edited pair given backwards
      * never reaches a service that refuses it. At the root it carries the term alone.
      *
-     * Changes that must make it fail: a direct key sent (gate js_panel_sends_no_direct); the period read raw (gate
-     * js_panel_period_read); the root's term not sent (gate js_root_panel_carries_query); no progress painter handed
-     * to the shared mount (gate js_areas_progress_painted).
+     * Changes that must make it fail: a direct key sent; the period read raw; the root's term not sent; no progress
+     * painter handed to the shared mount.
      */
     public function test_a_panel_asks_for_the_subtree_eight_courses_and_the_pages_criteria(): void {
         $shell = $this->read(self::SHELL);

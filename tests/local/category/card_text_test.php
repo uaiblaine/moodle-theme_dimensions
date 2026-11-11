@@ -87,7 +87,8 @@ final class card_text_test extends \advanced_testcase {
         $this->assertTrue($posters['Own']['hasdescription']);
         $this->assertSame('Cursos de resgate e salvamento.', $posters['Fallback']['description']);
 
-        // And at the root, the same builder: the parent's directory card has neither, the control.
+        // At the root the directory card goes through the same builder; the generator gives the parent a description,
+        // so the card summary must win over it there too.
         branding::save($parent, (object) ['cardsummary' => 'Texto do diretório']);
         $directory = array_column(population::resolve(new criteria(0))->directory, 'description', 'id');
         $this->assertSame('Texto do diretório', $directory[$parent]);

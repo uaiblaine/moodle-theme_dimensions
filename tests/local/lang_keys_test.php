@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  *
  * settings.php reads the description of each landing default as its key plus '_desc', and the two
  * custom field classes read the name and the description of each provisioned field as its string key
- * plus '_desc'. A literal-id sweep cannot see those ids, and a missing string only shows as the
+ * plus '_desc'. A search for literal string ids cannot see those ids, and a missing string only shows as the
  * [[id]] placeholder on the admin page or in the course field form.
  *
  * @package    theme_dimensions

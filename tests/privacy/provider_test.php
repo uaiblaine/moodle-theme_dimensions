@@ -110,10 +110,11 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Every user-linked column of the plugin's tables is declared, so a new one cannot be added unnoticed.
+     * The branding table's user columns are exactly the ones its metadata declares.
      *
-     * The column list is read from the live table, and the declared one must be exactly the columns
-     * named for a user: a second column holding a user id would fail here until it is described.
+     * The columns are read from the installed table and matched by name (userid or usermodified): a
+     * new column of either name fails the precondition, so it cannot be added without revisiting the
+     * metadata. A user column under any other name is not seen.
      *
      * @return void
      */
@@ -140,7 +141,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * A stored view choice is exported by its own name, beside or without the width choice.
+     * A stored view choice is exported by its own name, and the width and fold never chosen are not.
      *
      * @return void
      */
@@ -438,7 +439,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * The export names the categories the REQUEST's subject saved, whoever runs it.
+     * The export names the categories the request's subject saved, whoever runs it.
      *
      * The export runs while another person, who saved a category of their own, is the session
      * user: the privacy manager and tool_dataprivacy's task never switch $USER to the subject,
@@ -535,9 +536,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
      *
      * The table is keyed by category id alone, so every method must first ask that the context is
      * a category's: a course whose id equals a branded category's would otherwise export, list or
-     * clear that category's stamp. PHPUnit restores the sequences, so the first course and the
-     * first category a test creates share an id, which the precondition checks. The control is
-     * the same deletion through the category's own context, which does clear the stamp.
+     * clear that category's stamp. The category is imported under the course's id, which the
+     * precondition checks. The control is the same deletion through the category's own context,
+     * which does clear the stamp.
      *
      * @return void
      */

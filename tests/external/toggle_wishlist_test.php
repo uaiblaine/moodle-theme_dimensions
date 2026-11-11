@@ -106,7 +106,7 @@ final class toggle_wishlist_test extends \advanced_testcase {
     }
 
     /**
-     * The refusal matrix: four ways to miss, one answer, and an admitted course as the control.
+     * The refusal matrix: six ways to miss, one answer, and an admitted course as the control.
      */
     public function test_every_course_it_withholds_answers_alike(): void {
         $this->resetAfterTest();
@@ -324,29 +324,41 @@ final class toggle_wishlist_test extends \advanced_testcase {
     }
 
     /**
-     * The theme never calls core's own favourite web service, from PHP or from JavaScript.
+     * The theme's PHP, AMD and ES modules never name core's own favourite web service.
      *
      * core_course_set_favourite_courses instantiates a course context and checks
      * nothing else: no visibility question, no discoverability question. Reaching
-     * it from this feature's client would be a way around every gate in this file,
-     * so the rule is that the name appears nowhere the theme owns.
+     * it from this feature's client would be a way around every gate in this file.
+     * The sweep reads lib.php, classes/, amd/src, amd/build, js/esm/src (ts, tsx) and
+     * js/esm/build; the ES star module is also held by
+     * {@see \theme_dimensions\local\category\listing_star_source_test}.
      *
-     * amd/build is swept as well as amd/src, and it is the half that matters:
-     * Moodle serves the build and never the source, so a source that was cleaned
-     * and never rebuilt still ships the old call to every browser.
+     * The builds are swept as well as the sources because Moodle serves the build, so a
+     * source that was cleaned and never rebuilt still ships the old call.
+     *
+     * Changes that must make it fail: a call to the service from any file of the logged-in
+     * client other than the one the star module owns, such as js/esm/src/listing/account.ts.
      */
     public function test_core_s_own_favourite_service_is_named_nowhere_in_the_theme(): void {
         $root = dirname(__DIR__, 2);
         $haystacks = [$root . '/lib.php'];
-        foreach (['/classes', '/amd/src', '/amd/build'] as $directory) {
+        $extensions = ['php', 'js', 'ts', 'tsx'];
+        $directories = ['/classes', '/amd/src', '/amd/build', '/js/esm/src', '/js/esm/build'];
+        $read = [];
+        foreach ($directories as $directory) {
             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root . $directory));
             foreach ($iterator as $file) {
-                if ($file->isFile() && in_array($file->getExtension(), ['php', 'js'], true)) {
+                if ($file->isFile() && in_array($file->getExtension(), $extensions, true)) {
                     $haystacks[] = $file->getPathname();
+                    $read[$directory][$file->getExtension()] = true;
                 }
             }
         }
         $this->assertGreaterThan(50, count($haystacks), 'The sweep must actually have files to read.');
+        // The controls: the ES tree is read, sources and builds alike.
+        $this->assertArrayHasKey('ts', $read['/js/esm/src'], 'The sweep must have read a .ts source.');
+        $this->assertArrayHasKey('tsx', $read['/js/esm/src'], 'The sweep must have read a .tsx source.');
+        $this->assertArrayHasKey('js', $read['/js/esm/build'], 'The sweep must have read an ES build.');
 
         $offenders = [];
         foreach ($haystacks as $path) {

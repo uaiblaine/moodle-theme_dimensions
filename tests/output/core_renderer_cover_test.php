@@ -30,7 +30,7 @@ use theme_dimensions\local\card\cover;
 use theme_dimensions\local\category\branding;
 
 /**
- * Tests for core_renderer::get_generated_image_for_id() and the cover it draws (D14 of the course card contract).
+ * Tests for core_renderer::get_generated_image_for_id() and the cover it draws.
  *
  * The renderer is this theme's, built on a page drawn in this theme; the flavour Boost Union would apply is handed in
  * through the renderer's seam, because Boost Union memoises its lookup for the whole process.

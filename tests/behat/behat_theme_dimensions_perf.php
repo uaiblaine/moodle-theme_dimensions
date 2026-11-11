@@ -39,7 +39,7 @@ use theme_dimensions\local\landing\links;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class behat_theme_dimensions_perf extends behat_base {
-    /** @var int Courses in the flat category: two pages' worth of the first screen, every one with a cover. */
+    /** @var int Courses in the flat category, each with a cover: one page at the smallest size, population::PAGESIZES[0]. */
     private const FLAT_COURSES = 24;
 
     /** @var int Areas under the grouped category. */

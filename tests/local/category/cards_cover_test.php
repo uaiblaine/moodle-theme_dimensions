@@ -248,7 +248,7 @@ final class cards_cover_test extends \advanced_testcase {
     }
 
     /**
-     * The progress row is an enrolled card's alone and follows Boost Union's setting; the completed words stay (D13).
+     * The progress row is an enrolled card's alone and follows Boost Union's setting; the completed words stay.
      *
      * The same course drawn as an enrolled card and as one in any other state: only the enrolled one is ever asked about
      * its details, so only it draws the row (hasprogress) and carries the seal's and "Review"'s words (done). With

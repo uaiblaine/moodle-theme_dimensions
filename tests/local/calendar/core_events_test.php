@@ -37,9 +37,10 @@ require_once(__DIR__ . '/fixture.php');
  *
  * One month, three viewers (a student, an editing teacher, a manager at the system level with
  * calendar_adminseesall off), and the cases that make visibility interesting. Each case states, per viewer,
- * whether core shows it, and both readings are held to that table as well as to each other: a case that
- * nobody sees and a case that everybody sees prove nothing alone, so every case is seen by one viewer and
- * hidden from another.
+ * whether core shows it, and both readings are held to that table as well as to each other. A case that
+ * nobody sees or everybody sees proves nothing about a rule alone, so each rule's case is seen by one viewer
+ * and hidden from another; the rows every viewer sees (and another user's event, which none does) are the
+ * controls that the reading ran.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
