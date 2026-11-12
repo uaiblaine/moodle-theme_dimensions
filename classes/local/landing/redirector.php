@@ -68,6 +68,10 @@ final class redirector {
      * before the landing page forward, so an unlisted course with a landing page
      * model does not show it to somebody who must not know the course exists.
      *
+     * True as well when core withholds the course from the current user ({@see core_withholds()}):
+     * otherwise core's "This course is currently unavailable" error would answer a course core hides
+     * where a missing id and an unlisted course get the ghost page, and tell the three apart.
+     *
      * Visitors and the guest are not ghosted: the predicate can only answer "no"
      * for them, and ghosting would strand somebody who would be eligible once
      * signed in. The standard pages send them through the login, and this is
@@ -92,7 +96,35 @@ final class redirector {
             // The plugin is a declared dependency, but never fail a page over it.
             return false;
         }
-        return !$predicate::is_course_discoverable($courseid);
+        if (!$predicate::is_course_discoverable($courseid)) {
+            return true;
+        }
+        return self::core_withholds($courseid);
+    }
+
+    /**
+     * Whether core's enrolment page refuses the course to the current user.
+     *
+     * The two guards of enrol/index.php, which {@see request::handle()} repeats for a site without
+     * local_unlistedcourses: a hidden course without the capability to see it hidden, and a course
+     * whose category listing the user may not view while holding no active enrolment in it. A course
+     * that does not exist is not withheld here: {@see is_address_ghosted()} answers for a missing id.
+     *
+     * @param int $courseid The course.
+     * @return bool True when core would refuse it.
+     */
+    private static function core_withholds(int $courseid): bool {
+        global $DB, $USER;
+
+        $course = $DB->get_record('course', ['id' => $courseid], 'id, category, visible');
+        if (!$course) {
+            return false;
+        }
+        $context = \core\context\course::instance($courseid);
+        if (!$course->visible && !has_capability('moodle/course:viewhiddencourses', $context)) {
+            return true;
+        }
+        return !\core_course_category::can_view_course_info($course) && !is_enrolled($context, $USER, '', true);
     }
 
     /**

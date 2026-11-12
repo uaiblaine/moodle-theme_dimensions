@@ -1892,10 +1892,24 @@ final class population_test extends \advanced_testcase {
      */
     public function test_criteria_refuse_unknown_options_and_states(): void {
         $this->resetAfterTest();
-        $criteria = new criteria(3, ['page' => -2, 'pagesize' => 0, 'fields' => ['7' => '2', 'x' => 1, '8' => 0]]);
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_customfield');
+        $field = $generator->create_field([
+            'categoryid' => $generator->create_category()->get('id'),
+            'type' => 'select',
+            'shortname' => 'refusefield',
+            'name' => 'Refuse field',
+            'configdata' => ['options' => "One\nTwo\nThree", 'defaultvalue' => ''],
+        ]);
+        set_config(facets::SETTING, 'refusefield', 'theme_dimensions');
+        $fieldid = (int) $field->get('id');
+        $criteria = new criteria(3, [
+            'page' => -2,
+            'pagesize' => 0,
+            'fields' => [(string) $fieldid => '2', 'x' => 1, (string) ($fieldid + 1000) => 0],
+        ]);
         $this->assertSame(0, $criteria->page);
         $this->assertSame(1, $criteria->pagesize);
-        $this->assertSame([7 => 2], $criteria->fields);
+        $this->assertSame([$fieldid => 2], $criteria->fields);
         $this->assertSame(96, population::page_size(500));
         $this->assertSame(48, population::page_size());
         set_config(population::SETTING_PAGESIZE, '24', 'theme_dimensions');

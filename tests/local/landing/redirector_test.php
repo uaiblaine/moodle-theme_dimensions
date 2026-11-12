@@ -61,6 +61,119 @@ final class redirector_test extends \advanced_testcase {
     }
 
     /**
+     * Forget what local_unlistedcourses memoised, so the predicate reads the fixture of this test.
+     *
+     * @return void
+     */
+    protected function setUp(): void {
+        parent::setUp();
+        \local_unlistedcourses\discoverability::reset_caches();
+        \local_unlistedcourses\access::reset_caches();
+        \local_unlistedcourses\category_access::reset_caches();
+    }
+
+    /**
+     * A hidden course is ghosted for a plain logged-in user, and only for those without the capability to see it.
+     *
+     * An enrolled student is ghosted too, as enrol/index.php refuses them; for them only this half decides.
+     * The controls are the same course for an editing teacher and the admin, who hold viewhiddencourses, and the
+     * same course once visible, for the same plain user.
+     *
+     * Guards core_withholds()'s hidden-course half.
+     *
+     * @return void
+     */
+    public function test_a_hidden_course_is_ghosted_for_a_user_who_cannot_see_it_hidden(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course(['visible' => 0]);
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $plain = $generator->create_user();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+
+        $this->setUser($plain);
+        $this->assertTrue(redirector::is_ghosted((int) $course->id), 'A plain user is ghosted off a hidden course.');
+        $this->assertTrue(redirector::is_address_ghosted((int) $course->id));
+
+        /* The enrolment rescues the category half (can_view_course_info() refuses a hidden course on its own), so only
+           the hidden-course half ghosts a student: enrol/index.php refuses them the hidden course all the same. */
+        $this->setUser($student);
+        $this->assertTrue(redirector::is_ghosted((int) $course->id), 'An enrolled student is ghosted off a hidden course.');
+
+        $this->setUser($teacher);
+        $this->assertFalse(redirector::is_ghosted((int) $course->id), 'Control: an editing teacher sees it hidden.');
+        $this->assertFalse(redirector::is_address_ghosted((int) $course->id));
+
+        $this->setAdminUser();
+        $this->assertFalse(redirector::is_ghosted((int) $course->id), 'Control: so does the admin.');
+
+        $course->visible = 1;
+        update_course($course);
+        $this->setUser($plain);
+        $this->assertFalse(redirector::is_ghosted((int) $course->id), 'Control: the same course visible is not ghosted.');
+        $this->assertFalse(redirector::is_address_ghosted((int) $course->id));
+    }
+
+    /**
+     * A course in a category whose listing the user may not view ghosts those with no active enrolment in it.
+     *
+     * The control is the same user once enrolled.
+     *
+     * Guards core_withholds()'s category half.
+     *
+     * @return void
+     */
+    public function test_a_course_of_an_unviewable_category_is_ghosted_unless_enrolled(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $closed = $generator->create_category();
+        $course = $generator->create_course(['category' => $closed->id]);
+        $outsider = $generator->create_user();
+        $member = $generator->create_user();
+        $generator->enrol_user($member->id, $course->id);
+
+        $this->setUser($outsider);
+        $this->assertFalse(redirector::is_ghosted((int) $course->id), 'Precondition: before the prohibition it is open.');
+
+        assign_capability(
+            'moodle/category:viewcourselist',
+            CAP_PROHIBIT,
+            (int) $CFG->defaultuserroleid,
+            \core\context\coursecat::instance((int) $closed->id)->id,
+            true
+        );
+        accesslib_clear_all_caches_for_unit_testing();
+
+        $this->setUser($outsider);
+        $this->assertTrue(redirector::is_ghosted((int) $course->id), 'Not enrolled, the category closed: ghosted.');
+        $this->assertTrue(redirector::is_address_ghosted((int) $course->id));
+
+        $this->setUser($member);
+        $this->assertFalse(redirector::is_ghosted((int) $course->id), 'Control: the enrolled user is not ghosted.');
+    }
+
+    /**
+     * Without the predicate class a hidden course ghosts nobody, core's own refusal being left to answer.
+     *
+     * The control is the same viewer on the same course through the real predicate, who is ghosted.
+     *
+     * @return void
+     */
+    public function test_a_hidden_course_ghosts_nobody_without_the_plugin(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course(['visible' => 0]);
+        $this->setUser($generator->create_user());
+
+        $this->assertTrue(redirector::is_ghosted((int) $course->id), 'Control: the real predicate ghosts it.');
+        $this->assertFalse(redirector::is_ghosted((int) $course->id, '\\nonexistent\\cls'));
+    }
+
+    /**
      * A model course forwards non-enrolled users (and visitors) to the landing page.
      */
     public function test_model_course_forwards(): void {

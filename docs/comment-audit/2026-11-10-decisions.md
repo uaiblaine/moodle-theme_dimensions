@@ -134,3 +134,20 @@ showcase switch, the background image and the inheritance setting).
 - **Boost Union's page background image** now reaches the theme's stylesheet under 'Inherit'
   (`classes/local/pagebackground.php`). Checked on m503b with an image: the Dashboard shows it around the content as
   Boost Union does; the showcase, the calendar and the full-width landing page sit on their ground over it.
+
+## H. Decided (2026-11-12)
+
+- **Q3:** `remembered::MAX_LENGTH` rose to 4096. Twenty entries carrying every key measure about 2,240 bytes, so only
+  eleven fitted under 1333; now the count of twenty is the bound that applies.
+  `related\choice::MAX_LENGTH` stays 1333: there it is a real column bound (customfield_text stores in `charvalue`).
+- **Q9:** kept. The dots stand for timed items only, and hidden multi-day bars count in "+N".
+- **C, all four fixed:**
+  - `public_courses` judges `held` against one instant per answer.
+  - `empty_members()` settles each person under their lock, from their recorded choice.
+  - The `criteria` constructor keeps only the site's filter fields with an option's value. Both listing services
+    already refused other field ids, so this closes no live leak; it moves the rule to where every listing is built.
+  - A course core withholds is ghosted (D's first note): `redirector::is_ghosted()` now also asks enrol/index.php's
+    two guards, so a hidden course or one in an unviewable category answers like a missing id on the landing page,
+    `/enrol/index.php` and `/course/info.php`.
+    The listing services already refused such a course with their one refusal, because core's
+    `can_view_course_info()` checks visibility. `course/view.php` keeps core's answer.

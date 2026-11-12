@@ -48,6 +48,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[CoversClass(criteria::class)]
+#[CoversClass(rows::class)]
 final class criteria_test extends \advanced_testcase {
     /**
      * The timezones every date rule has to hold in.
@@ -316,9 +317,10 @@ final class criteria_test extends \advanced_testcase {
             (new criteria(7, ['datefrom' => '2026-09-17', 'dateto' => '2026-09-19']))->filter_count(),
             'Two bounds of one control are one filter.'
         );
+        [$fieldid] = $this->select_fields(1, 1);
         $mixed = new criteria(7, [
             'search' => 'resgate',
-            'fields' => [4 => 1],
+            'fields' => [$fieldid => 1],
             'datefrom' => '2026-09-17',
         ]);
         $this->assertSame(2, $mixed->filter_count(), 'The field and the period are in the panel; the term is in its own box.');
@@ -353,12 +355,13 @@ final class criteria_test extends \advanced_testcase {
             $this->assertSame(1, $more->narrowing_count());
         }
         $this->assertTrue(criteria::is_scope(null), 'No state is the scope\'s "all".');
+        [$first, $second] = $this->select_fields(2, 2);
         $everything = new criteria(7, [
             'sort' => criteria::SORT_NAME,
             'search' => 'resgate',
             'state' => classifier::STATE_PENDING,
             'favourites' => true,
-            'fields' => [4 => 1, 5 => 2],
+            'fields' => [$first => 1, $second => 2],
             'datefrom' => '2026-09-17',
             'dateto' => '2026-09-20',
             'cat' => 9,
@@ -563,10 +566,11 @@ final class criteria_test extends \advanced_testcase {
      */
     public function test_clear_keeps_the_panel_and_a_call_to_action_carries_what_narrows(): void {
         $this->resetAfterTest();
+        [$fieldid] = $this->select_fields(1, 1);
         $grouped = new criteria(7, [
             'search' => 'resgate',
             'state' => classifier::STATE_OPEN,
-            'fields' => [5 => 2],
+            'fields' => [$fieldid => 2],
             'datefrom' => '2026-09-17',
             'dateto' => '2026-09-19',
             'sort' => criteria::SORT_CATEGORY,
@@ -584,7 +588,7 @@ final class criteria_test extends \advanced_testcase {
             [
                 criteria::PARAM_SEARCH => 'resgate',
                 criteria::PARAM_STATE => classifier::STATE_OPEN,
-                criteria::PARAM_FIELD_PREFIX . '5' => 2,
+                criteria::PARAM_FIELD_PREFIX . $fieldid => 2,
                 criteria::PARAM_DATEFROM => '2026-09-17',
                 criteria::PARAM_DATETO => '2026-09-19',
             ],
@@ -749,6 +753,93 @@ final class criteria_test extends \advanced_testcase {
         $shell = criteria::from_request(7, [], true);
         $this->assertFalse($shell->favourites, 'The anonymous shell restores no favourites.');
         $this->assertNull($shell->state, 'Nor anything else the session left.');
+    }
+
+    /**
+     * Select course custom fields, the first $filtered of them named in the site's filter setting.
+     *
+     * @param int $count How many fields to create, each with three options.
+     * @param int $filtered How many of them, from the first, are filter fields.
+     * @return int[] The field ids, in creation order.
+     */
+    private function select_fields(int $count, int $filtered): array {
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_customfield');
+        $categoryid = $generator->create_category()->get('id');
+        $ids = [];
+        $shortnames = [];
+        for ($i = 0; $i < $count; $i++) {
+            $field = $generator->create_field([
+                'categoryid' => $categoryid,
+                'type' => 'select',
+                'shortname' => 'critfield' . $i,
+                'name' => 'Criteria field ' . $i,
+                'configdata' => ['options' => "One\nTwo\nThree", 'defaultvalue' => ''],
+            ]);
+            $ids[] = (int) $field->get('id');
+            if ($i < $filtered) {
+                $shortnames[] = 'critfield' . $i;
+            }
+        }
+        set_config(facets::SETTING, implode(',', $shortnames), 'theme_dimensions');
+        return $ids;
+    }
+
+    /**
+     * The constructor keeps only the site's filter fields, each with a value one of its options has.
+     *
+     * The request is the same three times over, so only the field the setting names, with a value in range,
+     * can survive; the control is that this one does.
+     */
+    public function test_only_a_filter_field_with_a_value_of_its_options_survives(): void {
+        $this->resetAfterTest();
+        [$filter, $other] = $this->select_fields(2, 1);
+
+        $this->assertSame([$filter => 2], (new criteria(7, ['fields' => [$filter => 2]]))->fields, 'Control: kept.');
+        $this->assertSame([], (new criteria(7, ['fields' => [$filter => 4]]))->fields, 'Past its three options.');
+        $this->assertSame([], (new criteria(7, ['fields' => [$other => 2]]))->fields, 'A select field outside the setting.');
+        $this->assertSame(
+            [$filter => 2],
+            (new criteria(7, ['fields' => [$filter => 2, $other => 2, 999999 => 1]]))->fields,
+            'Of the three, the filter field survives alone.'
+        );
+        $this->assertSame([], (new criteria(7, ['fields' => [999999 => 1]]))->fields, 'An id that is no field at all.');
+    }
+
+    /**
+     * The listing service is not narrowed by a custom field the site did not name as a filter.
+     *
+     * A course holding the value in a field outside the setting still shows; the control is the same request
+     * on a filter field, which narrows.
+     */
+    public function test_the_listing_is_not_narrowed_by_a_field_outside_the_filter_setting(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        [$filter, $other] = $this->select_fields(2, 1);
+        $generator = $this->getDataGenerator();
+        $category = $generator->create_category();
+        $with = $generator->create_course(['category' => $category->id]);
+        $without = $generator->create_course(['category' => $category->id]);
+        \core_course\customfield\course_handler::create()->instance_form_save((object) [
+            'id' => $with->id,
+            'customfield_critfield0' => 2,
+            'customfield_critfield1' => 2,
+        ]);
+        $listing = \core_course_category::get((int) $category->id);
+
+        $all = rows::fetch($listing, []);
+        $this->assertSame(2, $all['total'], 'Precondition: both courses list.');
+
+        $narrowed = rows::fetch($listing, ['filters' => [$filter => 2]]);
+        $this->assertSame([(int) $with->id], array_column($narrowed['cards'], 'id'), 'Control: a filter field narrows.');
+
+        $ignored = rows::fetch($listing, ['filters' => [$other => 2]]);
+        $this->assertEqualsCanonicalizing(
+            array_column($all['cards'], 'id'),
+            array_column($ignored['cards'], 'id'),
+            'A field outside the setting does not narrow.'
+        );
+        $this->assertSame($all['total'], $ignored['total']);
+        $this->assertContains((int) $without->id, array_column($ignored['cards'], 'id'));
     }
 
     /**

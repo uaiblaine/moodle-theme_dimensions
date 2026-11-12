@@ -121,16 +121,19 @@ final class public_courses {
             $kept = array_slice($kept, 0, event_courses::OPEN_CAP);
         }
         $this->truncated = $surplus || $bound;
-        return array_map([self::class, 'item'], $kept);
+        // One instant for the whole answer, as event_courses::items() does: every item's "held" is judged against it.
+        $now = time();
+        return array_map(static fn(\stdClass $row): array => self::item($row, $now), $kept);
     }
 
     /**
      * One public event course as an item.
      *
      * @param \stdClass $row The course row.
+     * @param int $now The time "held" is judged against.
      * @return array An item with exactly the keys of range::ITEM_KEYS.
      */
-    private static function item(\stdClass $row): array {
+    private static function item(\stdClass $row, int $now): array {
         $courseid = (int) $row->id;
         $start = (int) $row->startdate;
         $end = (int) $row->enddate;
@@ -153,7 +156,7 @@ final class public_courses {
             'actionevent' => false,
             'action' => null,
             'overdue' => false,
-            'held' => $end > 0 && $end < time(),
+            'held' => $end > 0 && $end < $now,
         ]);
     }
 }

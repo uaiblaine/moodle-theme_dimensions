@@ -375,6 +375,33 @@ final class lookcohorts_test extends \advanced_testcase {
     }
 
     /**
+     * Emptying a cohort of a look that is offered again spares the people who chose it.
+     *
+     * The call stands for an emptying whose member list was read before the administrator offered the look
+     * again. The control is a member added behind the theme's back, with no choice, who is removed.
+     *
+     * @return void
+     */
+    public function test_emptying_a_cohort_keeps_the_members_who_chose_the_look(): void {
+        $harbour = $this->flavour('Harbour');
+        $this->offer($harbour);
+        $chooser = $this->getDataGenerator()->create_user();
+        $stranger = $this->getDataGenerator()->create_user();
+        $this->choose_as($chooser, (int) $harbour->id);
+        cohort_add_member((int) $this->cohort($harbour)->id, (int) $stranger->id);
+        $this->assertSame(
+            [(int) $chooser->id, (int) $stranger->id],
+            $this->members($harbour),
+            'Precondition: both are members.'
+        );
+
+        lookcohorts::empty_members((int) $this->cohort($harbour)->id);
+
+        $this->assertSame([(int) $chooser->id], $this->members($harbour), 'The person who chose the look stays.');
+        $this->assertNotContains((int) $stranger->id, $this->members($harbour), 'Control: a member with no choice goes.');
+    }
+
+    /**
      * An idnumber another owner already holds is reported and never taken over.
      *
      * @return void

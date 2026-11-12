@@ -288,8 +288,9 @@ final class criteria {
      *   anonymous (bool), open (int, the child whose panel is drawn), psort (string, the panel's
      *   order), withposters (bool), defaultsort (string, the organisation in force when sort is ''
      *   or unknown), remembered (bool, see {@see $remembered}). Unknown keys are refused; an
-     *   unknown state, an unknown sort or default, an unknown panel order and a malformed date are
-     *   dropped, and a pair of dates given backwards is put in order, because they arrive from a
+     *   unknown state, an unknown sort or default, an unknown panel order, a field that is not one of
+     *   the site's filter fields ({@see facets::fields()}) or a value none of its options has, and a
+     *   malformed date are dropped, and a pair of dates given backwards is put in order, because they arrive from a
      *   query string. The booleans arrive from a web service or from the page, never from an
      *   address.
      * @throws \coding_exception On an unknown option key.
@@ -331,11 +332,16 @@ final class criteria {
         $this->state = ($state !== null && in_array((string) $state, classifier::filters(), true)) ? (string) $state : null;
         $this->favourites = (bool) ($options['favourites'] ?? false);
 
+        /* Only the site's filter fields, each with a value one of its options has, whoever builds the request:
+           population::fields_sql() narrows by any field id it is handed, so a caller that forgot the allowlist the
+           listing services apply would answer what a custom field the reader is not shown holds. */
         $fields = [];
-        foreach ((array) ($options['fields'] ?? []) as $fieldid => $value) {
+        $requested = (array) ($options['fields'] ?? []);
+        $counts = $requested ? remembered::field_options() : [];
+        foreach ($requested as $fieldid => $value) {
             $fieldid = (int) $fieldid;
             $value = (int) $value;
-            if ($fieldid > 0 && $value > 0) {
+            if ($value > 0 && $value <= ($counts[$fieldid] ?? 0)) {
                 $fields[$fieldid] = $value;
             }
         }
@@ -458,11 +464,10 @@ final class criteria {
      */
     public static function from_request(int $categoryid, array $fieldids, bool $anonymous = false): self {
         $fields = [];
-        // A value no option has would keep no course and draw no chip: the remembered path drops it the same way.
-        $counts = $fieldids ? remembered::field_options() : [];
+        // A value no option has is dropped by the constructor, as the remembered path drops it.
         foreach ($fieldids as $fieldid) {
             $value = optional_param(self::PARAM_FIELD_PREFIX . (int) $fieldid, 0, PARAM_INT);
-            if ($value > 0 && $value <= ($counts[(int) $fieldid] ?? 0)) {
+            if ($value > 0) {
                 $fields[(int) $fieldid] = $value;
             }
         }

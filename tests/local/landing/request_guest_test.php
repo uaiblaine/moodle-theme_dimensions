@@ -206,6 +206,37 @@ final class request_guest_test extends \advanced_testcase {
     }
 
     /**
+     * A logged-in reader asking for a hidden course with a landing page model is sent to the ghost page.
+     *
+     * It is not told "coursehidden", which would tell a hidden course from a missing id. The control is a teacher
+     * who may see the course hidden: no redirect to the ghost page, the landing page is answered.
+     */
+    public function test_a_logged_in_reader_asking_for_a_hidden_course_is_ghosted(): void {
+        $this->resetAfterTest();
+        $course = $this->make_course(false);
+        $course->visible = 0;
+        update_course($course);
+        $generator = $this->getDataGenerator();
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($generator->create_user());
+        \local_unlistedcourses\discoverability::reset_caches();
+        \local_unlistedcourses\access::reset_caches();
+
+        $answer = request::handle((int) $course->id);
+
+        $this->assertNotNull($answer->redirect);
+        $this->assertSame(redirector::ghost_url()->out(false), $answer->redirect->out(false));
+
+        $this->setUser($teacher);
+        $seen = request::handle((int) $course->id);
+        $this->assertTrue(
+            $seen->redirect === null || $seen->redirect->out(false) !== redirector::ghost_url()->out(false),
+            'Control: a teacher is not sent to the ghost page.'
+        );
+    }
+
+    /**
      * The guest account, already logged in, goes straight to the course as well.
      */
     public function test_the_guest_account_goes_straight_to_the_course(): void {

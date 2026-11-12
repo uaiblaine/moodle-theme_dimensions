@@ -58,7 +58,10 @@ use theme_dimensions\output\opengraph;
  *    Visitors are never ghosted; redirector::is_ghosted() says why.
  * 4. A course without a landing page model keeps the standard enrolment page.
  * 5. The guards enrol/index.php applies: a hidden course, a login-as session, a
- *    category the user may not see. The last one is not asked of a visitor: it
+ *    category the user may not see. Where step 3 can ghost, it has already ghosted the first
+ *    and the last ({@see redirector::is_ghosted()}), so that a course core hides answers as a
+ *    missing one does; their exceptions remain for a site without local_unlistedcourses.
+ *    The last one is not asked of a visitor: it
  *    ends in a capability check, accesslib denies every capability to user id 0
  *    under forcelogin, and its visibility half is already inside
  *    publicaccess::is_public(), which the visitor passed.

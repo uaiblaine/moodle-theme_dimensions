@@ -70,9 +70,10 @@ final class remembered {
 
     /**
      * @var int The longest value stored, in bytes. The theme's own bound: user_preferences.value has been a text column
-     *   since Moodle 5.0 (it was char(1333) before), so this only keeps the row small.
+     *   since Moodle 5.0 (it was char(1333) before). Set so that {@see MAX_CATEGORIES} entries carrying every key fit
+     *   (about 2.3 KB), which leaves the count as the bound that applies; this one only stops a malformed map.
      */
-    public const MAX_LENGTH = 1333;
+    public const MAX_LENGTH = 4096;
 
     /** @var string Key of an entry: the organisation. */
     public const KEY_SORT = 's';
