@@ -249,7 +249,13 @@ final class lookcohorts {
     }
 
     /**
-     * Remove every member of a cohort, member by member through core's function.
+     * Remove every member of a look cohort whose recorded choice is not that look, member by member through core's function.
+     *
+     * Each person is settled under their own lock, from their record, as {@see self::sync_user()} settles
+     * them: the member list is read once at the start, so a look offered again while a long emptying runs
+     * would otherwise lose the people who chose it since. A person whose lock cannot be taken is left for
+     * the next run: {@see self::provision()} empties every cohort off the list again, and the daily
+     * reconcile task provisions first.
      *
      * @param int $cohortid The cohort.
      * @return void
@@ -257,9 +263,27 @@ final class lookcohorts {
     public static function empty_members(int $cohortid): void {
         global $DB;
 
+        $flavourid = null;
+        foreach (self::cohorts() as $id => $cohort) {
+            if ((int) $cohort->id === $cohortid) {
+                $flavourid = (int) $id;
+            }
+        }
         $members = $DB->get_fieldset_select('cohort_members', 'userid', 'cohortid = :cohortid', ['cohortid' => $cohortid]);
         foreach ($members as $userid) {
-            cohort_remove_member($cohortid, (int) $userid);
+            $userid = (int) $userid;
+            $lock = self::lock('user' . $userid);
+            if (!$lock) {
+                continue;
+            }
+            try {
+                $member = $DB->record_exists('cohort_members', ['cohortid' => $cohortid, 'userid' => $userid]);
+                if ($member && self::recorded_choice($userid) !== $flavourid) {
+                    cohort_remove_member($cohortid, $userid);
+                }
+            } finally {
+                $lock->release();
+            }
         }
     }
 

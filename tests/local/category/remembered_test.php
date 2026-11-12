@@ -224,7 +224,11 @@ final class remembered_test extends \advanced_testcase {
                 remembered::KEY_VIEW => category_toolbar::VIEW_CARDS,
                 remembered::KEY_STATE => classifier::STATE_ENROLLED,
                 remembered::KEY_FAVOURITES => true,
-                remembered::KEY_FIELDS => [100001 => 1, 100002 => 2, 100003 => 3, 100004 => 4],
+                // Encode() does not validate, so more fields than the site allows make twenty entries overflow.
+                remembered::KEY_FIELDS => array_combine(
+                    range(100000001, 100000012),
+                    range(1, 12)
+                ),
             ];
         }
         $this->assertGreaterThan(remembered::MAX_LENGTH, strlen(json_encode($map)), 'Precondition: twenty of these do not fit.');
@@ -235,6 +239,30 @@ final class remembered_test extends \advanced_testcase {
         $this->assertNotEmpty($kept);
         $this->assertSame(array_slice(array_keys($map), -count($kept)), $kept, 'The newest are the ones kept.');
         $this->assertSame(['s', 'v', 't', 'fav', 'f'], array_keys(json_decode($json, true)[(string) end($kept)]), 'Kept whole.');
+    }
+
+    /**
+     * Twenty entries carrying every key at their longest realistic values all survive encoding: the contract of MAX_LENGTH.
+     */
+    public function test_twenty_entries_with_every_key_at_their_longest_all_fit(): void {
+        $this->resetAfterTest();
+        $map = [];
+        for ($i = 0; $i < remembered::MAX_CATEGORIES; $i++) {
+            $map[2000000000 + $i] = [
+                remembered::KEY_SORT => criteria::SORT_CATEGORY,
+                remembered::KEY_VIEW => category_toolbar::VIEW_CARDS,
+                remembered::KEY_STATE => classifier::STATE_CONDITIONAL,
+                remembered::KEY_FAVOURITES => true,
+                remembered::KEY_FIELDS => array_combine(
+                    range(2000000001, 2000000000 + facets::MAX_FIELDS),
+                    array_fill(0, facets::MAX_FIELDS, 999)
+                ),
+            ];
+        }
+        $json = remembered::encode($map);
+        $this->assertLessThanOrEqual(remembered::MAX_LENGTH, strlen($json));
+        $this->assertCount(remembered::MAX_CATEGORIES, json_decode($json, true));
+        $this->assertCount(facets::MAX_FIELDS, json_decode($json, true)['2000000019']['f']);
     }
 
     /**

@@ -5,6 +5,23 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A course core hides gets the ghost page, as a missing or unlisted course does.** For a logged-in reader, the
+  landing page, `/enrol/index.php` and `/course/info.php` answered a hidden course the reader may not see, or one in a
+  category whose listing the reader may not view, with core's "This course is currently unavailable", where a missing id
+  and an unlisted course get the "not available" page: the two answers told which ids hold a course. Both now get the
+  ghost page. A site without local_unlistedcourses keeps core's answers.
+- **A listing request keeps only the site's filter fields, however it is built.** The two listing services refused a
+  field outside the filter setting, but the request itself took any field id, and the listing narrows by whatever it is
+  given. The request now drops a field that is not one of the showcase's filters, or a value none of its options has,
+  so no future caller can narrow by a custom field the reader is not shown.
+- **Emptying a look's cohort spares whoever chose the look again.** A long emptying, run after a look left the list,
+  removed everyone it found at the start; a look offered again in the meantime lost the people who had chosen it until
+  the daily reconcile. Each person is now settled under their own lock, from their recorded choice.
+- **The showcase remembers twenty categories however many filters each holds.** The remembered state's cap rose from
+  1,333 to 4,096 bytes: twenty entries with every filter set came to about 2,300 bytes, so only eleven were kept.
+- The public calendar judges whether an event course is over against one instant per answer, as the logged-in calendar
+  does.
+
 - **The flavour stylesheets are no longer recompiled by a cron machine that lacks the files.** The compiled file of
   a flavour lives in each machine's local cache directory, and only `core/postprocessedcss` is shared, so a cron
   container started anew for each run found every file missing and compiled every flavour, in each direction, every
