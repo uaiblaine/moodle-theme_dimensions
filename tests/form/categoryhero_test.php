@@ -1192,8 +1192,7 @@ final class categoryhero_test extends \advanced_testcase {
      * oracle again.
      */
     public function test_the_page_refuses_through_the_form(): void {
-        global $CFG;
-        $source = file_get_contents($CFG->dirroot . '/theme/dimensions/categoryhero.php');
+        $source = file_get_contents(dirname(__DIR__, 2) . '/categoryhero.php');
 
         $this->assertStringContainsString('$coursecat = categoryhero_form::editable_category($id);', $source);
         $this->assertStringNotContainsString('require_capability(', $source);

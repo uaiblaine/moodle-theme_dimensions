@@ -695,11 +695,17 @@ final class core_renderer_test extends \advanced_testcase {
     /**
      * With the plugin's shell switched off, the second factor keeps Boost Union's login layout.
      *
+     * Everything else is the shell test's (the plugin installed and the door), so the switch is the only difference.
+     *
      * @return void
      */
     public function test_the_second_factor_keeps_boost_unions_layout_without_the_shell(): void {
         global $PAGE;
         $this->resetAfterTest();
+        if (!class_exists(\auth_loginsteps\output\core_page_shell::class)) {
+            $this->markTestSkipped('auth_loginsteps is not installed.');
+        }
+        set_config('auth', 'loginsteps');
         set_config('loginshell', '0', 'auth_loginsteps');
 
         $renderer = $this->renderer('/admin/tool/mfa/auth.php');

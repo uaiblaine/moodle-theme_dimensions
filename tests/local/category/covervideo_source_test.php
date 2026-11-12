@@ -128,7 +128,7 @@ final class covervideo_source_test extends \basic_testcase {
             $this->assertMatchesRegularExpression(
                 "~document\.addEventListener\('" . $event . "', on~",
                 $init,
-                'The ' . $event . ' listener is no longer delegated on the document.'
+                'The ' . $event . ' listener is delegated on the document.'
             );
         }
         $this->assertStringContainsString(

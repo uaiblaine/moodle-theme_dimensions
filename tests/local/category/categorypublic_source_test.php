@@ -591,8 +591,6 @@ final class categorypublic_source_test extends \basic_testcase {
         $this->assertSame(['listingaccount'], $this->logged_in_names('entry'), 'A comment alone is found.');
     }
 
-
-
     /**
      * Nothing a visitor's page loads reads the session, stars a course or asks a logged-in service.
      *
@@ -1178,7 +1176,7 @@ final class categorypublic_source_test extends \basic_testcase {
             "~^    const ticket = \+\+seq;\n(?:    (?:/\*|  )[^\n]*\n)*"
                 . "    const pending = new Pending\('theme_dimensions/listing:rows'\);\n~",
             $request,
-            'The token is taken with the ticket, before anything is asked (gate js_store_rows_pending).'
+            'The token is taken with the ticket, before anything is asked.'
         );
         $this->assertMatchesRegularExpression(
             '~\} finally \{\s*if \(ticket === seq\) \{\s*root\.removeAttribute\(\'aria-busy\'\);\s*\}\s*'

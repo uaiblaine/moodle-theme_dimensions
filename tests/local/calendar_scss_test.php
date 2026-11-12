@@ -876,8 +876,8 @@ final class calendar_scss_test extends \advanced_testcase {
     /**
      * By months a bar keeps no room beside it or inside, so a day of .25rem still shows; the "Today" tag is the current
      * step's pair, which reads in both modes; the weeks' lines and today's tag are placed in multiples of the day's width,
-     * as every line of the ground; the pressed zoom wears the interactive primary tint; a course's row button is
-     * 2.875rem tall; an open bar ends in the "no end date" chip. The day widths per zoom are compared with the client's
+     * as every line of the ground; the pressed zoom wears the interactive primary tint; a course's row button fits
+     * inside the trail row; an open bar ends in the "no end date" chip. The day widths per zoom are compared with the client's
      * by calendar_component_source_test.
      *
      * @return void
@@ -909,7 +909,13 @@ final class calendar_scss_test extends \advanced_testcase {
                 . 'var\(--bs-primary-bg-subtle\)\);~',
             $scss
         );
-        $this->assertMatchesRegularExpression('~\.dim-cal__trailfind \{[^}]*height: 2\.875rem;~', $scss);
+        $this->assertSame(1, preg_match('~--dim-cal-trail-row: ([\d.]+)rem;~', $scss, $row), 'The trail row is declared.');
+        $this->assertSame(
+            1,
+            preg_match('~\.dim-cal__trailfind \{[^}]*height: ([\d.]+)rem;~', $scss, $find),
+            'The find button\'s height is declared.'
+        );
+        $this->assertLessThan((float) $row[1], (float) $find[1], 'The find button fits inside the row the connectors read.');
         $this->assertMatchesRegularExpression(
             '~\.dim-cal__trailnoend \{\s*position: absolute;\s*inset-inline-start: calc\(var\(--dim-cal-trail-label\) \+ '
                 . 'var\(--dim-cal-chip-start, 0rem\)\);\s*top: 50%;\s*z-index: 1;\s*margin-top: -\.625rem;\s*'

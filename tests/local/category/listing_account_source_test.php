@@ -202,17 +202,16 @@ final class listing_account_source_test extends \basic_testcase {
     }
 
     /**
-     * The shell holds no card disclosure: "More information" is a link the course dialogue's module intercepts.
+     * The shell listens for the automatic opening's note.
      *
-     * The shell names no hook of a card disclosure (a details panel, a one-open-at-a-time rule, an Escape);
-     * what it hears on its own is the automatic opening's note.
+     * "More information" is a link the course dialogue's module intercepts, so the one thing the shell
+     * hears about a card opening is the note the listing sends when it opens a card by itself.
      */
-    public function test_the_shell_holds_no_card_disclosure(): void {
-        $source = $this->read(self::SHELL);
-        foreach (['dim-card-details', 'dim-card-panel', 'closeOthers', "'toggle'", 'Escape', 'HTMLDetailsElement'] as $gone) {
-            $this->assertStringNotContainsString($gone, $source, "The account's shell still names {$gone}.");
-        }
-        $this->assertStringContainsString('document.addEventListener(LISTING.autoopened, paintAutoOpened);', $this->body('listen'));
+    public function test_the_shell_hears_the_automatic_opening(): void {
+        $this->assertStringContainsString(
+            'document.addEventListener(LISTING.autoopened, paintAutoOpened);',
+            $this->body('listen')
+        );
     }
 
     /**

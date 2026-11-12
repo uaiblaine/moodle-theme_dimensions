@@ -122,29 +122,24 @@ final class blocks_budget_test extends \advanced_testcase {
     }
 
     /**
-     * One render as a new request: its statements and milliseconds, after one warm call.
+     * One render as a new request: its statements, after one warm call.
      *
      * @param callable $render The render.
-     * @return array [statements, milliseconds, output]
+     * @return array [statements, output]
      */
     private function measure(callable $render): array {
         $render();
         $output = '';
-        $milliseconds = 0.0;
-        $reads = $this->reads(function () use ($render, &$output, &$milliseconds): void {
+        $reads = $this->reads(function () use ($render, &$output): void {
             \core_calendar\local\event\container::reset_caches();
             \course_modinfo::clear_instance_cache();
-            $before = hrtime(true);
             $output = $render();
-            $milliseconds = (hrtime(true) - $before) / 1e6;
         });
-        return [$reads, $milliseconds, $output];
+        return [$reads, $output];
     }
 
     /**
      * At 25 courses each block's own half stays within its budget, and the theme's month costs less than core's.
-     *
-     * Only statements are asserted; the milliseconds measure() returns are not.
      *
      * @return void
      */
@@ -181,8 +176,8 @@ final class blocks_budget_test extends \advanced_testcase {
             return $renderer->render_from_template(calendar_block_upcoming::TEMPLATE, $block->export_for_template($renderer));
         });
 
-        $this->assertStringContainsString('dim-cal-key--course', $month[2], 'The month was read.');
-        $this->assertSame(10, substr_count($upcoming[2], 'data-region="dim-calblock-item"'), 'Core\'s default count.');
+        $this->assertStringContainsString('dim-cal-key--course', $month[1], 'The month was read.');
+        $this->assertSame(10, substr_count($upcoming[1], 'data-region="dim-calblock-item"'), 'Core\'s default count.');
         $this->assertLessThanOrEqual(self::MONTH_BUDGET, $month[0], 'The month block\'s statements.');
         $this->assertLessThanOrEqual(self::UPCOMING_BUDGET, $upcoming[0], 'The agenda\'s statements.');
         $this->assertLessThan($core['monthblock'][0], $month[0], 'The theme\'s month costs less than core\'s, which it adds to.');

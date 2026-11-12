@@ -57,10 +57,12 @@ class theme_dimensions_coverage extends \core\test\phpunit\coverage_info {
      * @var array Paths relative to the theme root.
      */
     protected $includelistfiles = [
+        'calendar.php',
         'category.php',
         'categoryhero.php',
         'db/install.php',
         'db/upgrade.php',
+        'flavour.php',
         'focus.php',
         'landing.php',
         'settings.php',

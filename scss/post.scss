@@ -330,8 +330,8 @@ body,
 }
 
 /* The dark half. Moodle 5.3's one colour-mode signal is data-bs-theme on the html element, so the
-   attribute is read on :root and nowhere else: Boost Union writes it on its navbar too, and a
-   plugin inside that navbar must still get the page's tokens. Of the shared names, three differ from
+   attribute is read on :root and nowhere else: an element carrying its own data-bs-theme (a dark
+   surface) must not switch a plugin's tokens inside it. Of the shared names, three differ from
    the light chain: the brand ink, which Bootstrap's dark emphasis leaves at 3.28:1 on a dark card (the design
    system's lighter stop of the hue, as the showcase reads it); the ring, which the next stop up
    keeps over 3:1 on every dark surface; and a shadow, which a navy tint at a tenth cannot draw on a

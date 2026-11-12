@@ -221,6 +221,7 @@ final class ical_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_withholding_keeps_what_names_no_category_and_drops_a_category_that_is_gone(): void {
+        global $DB;
         $this->resetAfterTest();
         [$student, $ids] = $this->seed();
         $events = [
@@ -231,7 +232,11 @@ final class ical_test extends \advanced_testcase {
         ];
         $this->assertSame([11, 12], array_keys(ical::admitted($events)));
         $none = [21 => (object) ['id' => 21, 'categoryid' => 0]];
-        $this->assertSame($none, ical::admitted($none), 'Nothing of a category: nothing is asked.');
+        $before = (int) $DB->perf_get_reads();
+        $kept = ical::admitted($none);
+        $reads = (int) $DB->perf_get_reads() - $before;
+        $this->assertSame($none, $kept, 'Nothing of a category: the events are kept.');
+        $this->assertSame(0, $reads, 'Nothing of a category: no statement is run to ask about one.');
     }
 
     /**

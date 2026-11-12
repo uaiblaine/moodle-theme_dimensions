@@ -110,17 +110,15 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * The branding table's user columns are exactly the ones its metadata declares.
+     * Every user column of the plugin's tables is declared in the privacy metadata, and the other way round.
      *
-     * The columns are read from the installed table and matched by name (userid or usermodified): a
-     * new column of either name fails the precondition, so it cannot be added without revisiting the
-     * metadata. A user column under any other name is not seen.
+     * The columns are read from db/install.xml: a field that a foreign key points at the user table,
+     * or named userid, usermodified, anything ending in userid, or anything ending in by. A new column
+     * of that kind fails the comparison, so it cannot be added without revisiting the metadata.
      *
      * @return void
      */
     public function test_every_user_column_of_the_branding_table_is_declared(): void {
-        global $DB;
-
         $declared = [];
         foreach (provider::get_metadata(new collection('theme_dimensions'))->get_collection() as $item) {
             if ($item instanceof database_table) {
@@ -128,16 +126,37 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
             }
         }
 
-        $columns = array_filter(
-            array_keys($DB->get_columns('theme_dimensions_cat')),
-            static fn(string $name): bool => preg_match('~^(userid|usermodified)$~', $name) === 1
-        );
-        $this->assertSame(['usermodified'], array_values($columns), 'Precondition: the table holds one user column.');
-        $declaredusers = array_filter(
-            $declared['theme_dimensions_cat'],
-            static fn(string $name): bool => preg_match('~^(userid|usermodified)$~', $name) === 1
-        );
-        $this->assertSame(['usermodified'], array_values($declaredusers));
+        $xml = simplexml_load_file(dirname(__DIR__, 2) . '/db/install.xml');
+        $this->assertNotFalse($xml, 'Precondition: install.xml parses.');
+        $byname = static fn(string $name): bool => preg_match('~^(usermodified|.*userid|.*by)$~', $name) === 1;
+        $found = [];
+        foreach ($xml->TABLES->TABLE as $table) {
+            $users = [];
+            foreach ($table->KEYS->KEY ?? [] as $key) {
+                if ((string) $key['REFTABLE'] === 'user') {
+                    $users = array_merge($users, explode(',', (string) $key['FIELDS']));
+                }
+            }
+            foreach ($table->FIELDS->FIELD as $field) {
+                if ($byname((string) $field['NAME'])) {
+                    $users[] = (string) $field['NAME'];
+                }
+            }
+            $found[(string) $table['NAME']] = array_values(array_unique($users));
+        }
+
+        $this->assertSame(['usermodified'], $found['theme_dimensions_cat'], 'Precondition: the table holds one user column.');
+        foreach ($found as $name => $users) {
+            $this->assertArrayHasKey($name, $declared, "The table {$name} is declared.");
+            foreach ($users as $user) {
+                $this->assertContains($user, $declared[$name], "{$name}.{$user} is declared.");
+            }
+            $this->assertEqualsCanonicalizing(
+                array_values(array_filter($declared[$name], $byname)),
+                array_values(array_intersect($users, array_filter($declared[$name], $byname))),
+                "Every declared user column of {$name} is in install.xml."
+            );
+        }
     }
 
     /**

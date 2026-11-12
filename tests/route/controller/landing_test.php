@@ -37,10 +37,9 @@ use Psr\Http\Message\ResponseInterface;
 /**
  * The landing page route, end to end: core's router, this controller, the shared request.
  *
- * The harness builds a router per process_request(), and a second router built in the same
- * test - by a second request, or by spelling a route address before the request - registers
- * every route twice and the request fails. So each test makes one request, and the expected
- * addresses are built afterwards, through the same router.
+ * A router built outside the harness before the request - by spelling a route address first -
+ * registers every route twice and the request fails. So the expected addresses are built after
+ * the request, through the harness's router.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -226,8 +225,7 @@ final class landing_test extends \core\tests\router\route_testcase {
      * A visitor gets the same answer for a course that does not exist: nothing tells an anonymous
      * client which ids exist.
      *
-     * A test of its own, beside the refusal above, because each test may make one request (see the
-     * class docblock); the two assert the same status, Location, wantsurl, empty body and absent head tags.
+     * The two refusals assert the same status, Location, wantsurl, empty body and absent head tags.
      */
     public function test_a_visitor_is_refused_the_same_way_for_a_course_that_does_not_exist(): void {
         global $DB, $SESSION;

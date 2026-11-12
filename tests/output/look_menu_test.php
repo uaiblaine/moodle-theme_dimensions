@@ -313,7 +313,9 @@ final class look_menu_test extends \advanced_testcase {
         [$harbour] = $this->marked_looks();
         $this->setUser($this->getDataGenerator()->create_user());
 
-        $this->assertStringNotContainsString('dimensions-look-mark', $this->look_submenu($this->header()), 'Off: no mark.');
+        $off = $this->look_submenu($this->header());
+        $this->assertNotSame('', $off, 'Precondition: the submenu is drawn.');
+        $this->assertStringNotContainsString('dimensions-look-mark', $off, 'Off: no mark.');
 
         set_config(flavourchoice::ICONS_SETTING, 1, 'theme_dimensions');
         $submenu = $this->look_submenu($this->header());

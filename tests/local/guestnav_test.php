@@ -129,7 +129,7 @@ final class guestnav_test extends \advanced_testcase {
     }
 
     /**
-     * The login, maintenance, embedded and secure layouts draw no navbar this feature could change.
+     * The layouts without the navbar draw nothing this feature could change.
      *
      * @return void
      */
@@ -139,10 +139,9 @@ final class guestnav_test extends \advanced_testcase {
 
         $this->assertTrue(guestnav::applies($this->page('standard')), 'Control: an ordinary layout.');
         $this->assertTrue(guestnav::applies($this->page('frontpage')), 'Control: the front page.');
-        $this->assertFalse(guestnav::applies($this->page('login')));
-        $this->assertFalse(guestnav::applies($this->page('maintenance')));
-        $this->assertFalse(guestnav::applies($this->page('embedded')));
-        $this->assertFalse(guestnav::applies($this->page('secure')));
+        foreach (['login', 'maintenance', 'embedded', 'redirect', 'popup', 'frametop', 'print', 'secure'] as $layout) {
+            $this->assertFalse(guestnav::applies($this->page($layout)), 'The ' . $layout . ' layout is left alone.');
+        }
     }
 
     /**

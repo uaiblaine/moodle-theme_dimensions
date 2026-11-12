@@ -249,7 +249,7 @@ final class compactnav_source_test extends \basic_testcase {
             'const drawerOverPage = () => bar.compact && bar.drawer !== null && bar.drawer.classList.contains(CLASSES.SHOW)'
                 . ' && !isSmall();',
             $this->source(),
-            'Only at a width core gives the drawer no backdrop: below md core\'s own does it.'
+            'Only at a width core gives the drawer no backdrop: below 991px (pagehelpers\' Sizes.medium) core\'s own does it.'
         );
     }
 

@@ -417,6 +417,7 @@ final class get_card_details_test extends \advanced_testcase {
             'A batch that costs the same for four courses as for twenty-four is not being measured.'
         );
     }
+
     /**
      * The delegate requires the legacy completion library itself: a web-service request never loads it.
      *

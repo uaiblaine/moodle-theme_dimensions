@@ -168,6 +168,7 @@ final class set_focus_mode_test extends \advanced_testcase {
         $response = $this->call($cmid, true);
 
         $this->assertTrue($response['error']);
+        $this->assertSame('requireloginerror', $response['exception']->errorcode);
         $this->assertFalse(focusmode::in_session((int) $course->id));
     }
 
