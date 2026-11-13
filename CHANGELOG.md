@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The first page after a cohort change keeps the chosen look, with Boost Union's purge flag fix too.** Boost Union
+  2026100501 clears its flavour purge flag itself, after the one purge it still does on the first page that flag is
+  seen; that purge runs after the theme wrote the choice, so the theme keeps clearing the flag first. A new test
+  draws that first page through a real header, and the test that waited for Boost Union to clear the flag, red now
+  that it does, is gone.
 - **A course core hides gets the ghost page, as a missing or unlisted course does.** For a logged-in reader, the
   landing page, `/enrol/index.php` and `/course/info.php` answered a hidden course the reader may not see, or one in a
   category whose listing the reader may not view, with core's "This course is currently unavailable", where a missing id

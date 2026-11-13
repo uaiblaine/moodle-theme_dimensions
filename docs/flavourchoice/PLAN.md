@@ -63,6 +63,9 @@ An administrator can also show or hide Boost Union smart menus by the look a per
   cleared (`smartmenus/menulib.php:681`). From then on, step 3 purges that person's cache on every
   request and step 5 re-runs: all flavours, then their cohorts, on every page. It would also erase a
   primed choice (section 4.2, step 2).
+  Fixed upstream in Boost Union 2026100501 (its issue 1472, 2026-11-11): the resolver now unsets the flag right
+  after its purge. The theme keeps its own purge-and-clear before writing the choice, because the
+  resolver's one purge still runs after the prime and would cost the first page after the change.
 - **The stylesheet does not depend on the person.** `flavours/styles.php` compiles from the flavour id
   in the URL and caches the result under `<theme>_<flavourid>_ltr`. So the compile cost grows with the
   number of flavours offered, never with the number of people choosing them.
