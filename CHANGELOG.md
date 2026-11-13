@@ -5,6 +5,9 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- The category showcase's stylesheet drops three rules keyed on `body.drawer-open-left`, a class no script of Boost
+  5.3 or Boost Union sets: a drawers layout marks an open drawer on `#page` instead. Nothing on the page moves. Its
+  comments now say how Moodle 5.3.1 lays out the page beside an open side drawer.
 - **The first page after a cohort change keeps the chosen look, with Boost Union's purge flag fix too.** Boost Union
   2026100501 clears its flavour purge flag itself, after the one purge it still does on the first page that flag is
   seen; that purge runs after the theme wrote the choice, so the theme keeps clearing the flag first. A new test
