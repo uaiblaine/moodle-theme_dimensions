@@ -1179,9 +1179,10 @@ facts the code rests on.
   course** and adds a guard for a LOGGED-IN viewer only; the plugin's `is_public()` already
   refuses a public course under an unlisted category, so nothing reaches the visitor path that
   it may not be told.
-- **The spec holds eighty gates and a theme PHPUnit run is three minutes**, so a full sweep is
-  four hours of exclusive stack time. Sweep `--only` the gates a change touches (the eleven
-  category ones are `cat_tree_filter`, `cat_node_guard`, `cat_content_guard`,
+- **The spec holds about two thousand gates (1971) and a whole theme PHPUnit run is 2360 tests in
+  about 25 minutes** (m503b, Moodle 5.3.1, 2026-11-13), so a full sweep is out of reach. Sweep a change
+  with `mdl mutate moodle-theme_dimensions mutations/gates.conf --fast --changed <base>`, or `--only`
+  the gates it touches (the eleven category ones are `cat_tree_filter`, `cat_node_guard`, `cat_content_guard`,
   `cat_expand_count`, `cat_expandall_filter`, `cat_card_badge`, `cat_name_guard`,
   `cat_tag_guard`, `cat_ghost_fail_open`, `cat_ghost_visitor`, `cat_kicker_guard`).
 

@@ -44,7 +44,11 @@
 // md up: #page.drawers pays 3rem of side padding, its .main-inner half a rem and its
 // div[role="main"] 15px. The column maximum is this theme's own: three cards do not fit the 830px
 // ($course-content-maxwidth) the page's limitedwidth class would otherwise impose. A Boost release
-// that changes any of them moves the title off the first card's edge, and no test reads it.
+// that changes any of them moves the title off the first card's edge, and no test reads it. From lg
+// up an open side drawer takes that side's 3rem away (layout.scss, #page.drawers.show-drawer-left
+// and .show-drawer-right, since 5.3.1): .main-inner still escapes by the full 3rem, so the navy runs
+// that far under the drawer, which paints over it, and the title and the cards move with Boost's
+// own content, still on one edge.
 $dim-page-pad: 48px;
 $dim-inner-pad: 8px;
 $dim-main-pad: 15px;
@@ -52,11 +56,6 @@ $dim-column: 1200px;
 // What the navy has to escape to reach the viewport edge, and the track its content keeps
 // inside it: the box the column has, minus the padding that box pays.
 $dim-bleed: $dim-page-pad + $dim-inner-pad;
-// What Boost pays on the left instead of the 3rem above once a left drawer is open: its rule
-// (drawer.scss, body.drawer-open-left #page.drawers) sets padding-left: 1rem and outbids the page
-// padding, so with a drawer the side inset is 16px, not 48. In px because SCSS cannot add rem to
-// px; the root size is 16px.
-$dim-drawer-gap: 16px;
 $dim-track: $dim-column - 2 * $dim-inner-pad;
 
 body.dim-category {
@@ -91,13 +90,6 @@ body.dim-category {
             padding-inline: $dim-bleed;
         }
 
-        // Boost's own 1rem gap between an open left drawer and the page: the band takes it,
-        // because it must reach the drawer, and the column keeps the inset it had.
-        &.drawer-open-left #page.drawers .main-inner {
-            margin-left: -$dim-drawer-gap;
-            padding-left: $dim-drawer-gap + $dim-inner-pad;
-        }
-
         &.limitedwidth #page.drawers .main-inner > :not(#page-header) {
             max-width: $dim-track;
             margin-inline: auto;
@@ -110,17 +102,6 @@ body.dim-category {
             max-width: none;
             margin-inline: -$dim-bleed;
             padding-inline: 0;
-        }
-
-        &.drawer-open-left #page-header {
-            margin-left: -($dim-drawer-gap + $dim-inner-pad);
-        }
-
-        // ...and the band's own inset follows the column it has to align with: the title sits
-        // on the first card's left edge with a drawer open exactly as it does without one.
-        &.drawer-open-left .dim-hero__band,
-        &.drawer-open-left .dim-hero__tabs {
-            padding-left: $dim-drawer-gap + $dim-inner-pad;
         }
     }
 
