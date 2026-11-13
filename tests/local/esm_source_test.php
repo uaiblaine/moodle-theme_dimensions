@@ -34,8 +34,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
  * minified `X.js` with no map and a development `X.dev.js` with its `X.dev.js.map`, served while
  * JavaScript is not cached. The development map carries the source it was made from, so its
  * currency is asserted here byte for byte, on every CI that runs PHPUnit. The minified file has no
- * map: the gate for its bytes is the CI's ESM tree check, which rebuilds
- * the installed copy and compares the whole js/esm with the committed one. What this test can say of
+ * map: the gate for its bytes is mdl ci's ESM tree check on a 5.3 leg, which rebuilds the installed
+ * copy and compares the whole js/esm with the committed one (GitHub's reusable workflow has no such
+ * step). What this test can say of
  * it is that it exists and loads the same modules as the development build beside it.
  *
  * @package    theme_dimensions

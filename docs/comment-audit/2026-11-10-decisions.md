@@ -151,3 +151,48 @@ showcase switch, the background image and the inheritance setting).
     `/enrol/index.php` and `/course/info.php`.
     The listing services already refused such a course with their one refusal, because core's
     `can_view_course_info()` checks visibility. `course/view.php` keeps core's answer.
+
+## I. The tests report's section 4, settled (2026-11-12)
+
+The 29 claims of `2026-11-11-tests-report.md` section 4, checked against core 5.3, Boost Union 5.3 and the plugin
+checkouts, measured through `mdl ci` on an isolated clone, and in the stack's Selenium Chromium. 17 hold, 9 hold in
+part, 1 is false, 2 numbers drifted. Every comment that was wrong or loose is reworded on branch `audit-unverified-claims`.
+
+- **Hold:** the zone.ts reason (a TZ set inside a Jest test leaves the offset at 0; set at process start, 300); the
+  site course admitted by `can_view_course_info()`; the public rows ceilings (exactly 17, 19 and 1); tiny_media's
+  unguarded options; `candidates()` paging (it orders by `c.sortorder`, which follows the category tree); round() on
+  PHP 8.3 against 8.4 (26 against 25 with alpha 0.9, 26 on both with an integer percent); the render-time ratio (1.05
+  and 1.25); `perfdebug` above 7 switches the cache statistics on; the script entry's hidden `id` field
+  (`links.php`, anonymous and without the router only); the visitor's posters; MDL-84465; the backup's two halves
+  (dropping the file annotation or the picture rows each reddens `test_a_hidden_badge_survives_a_course_copy`);
+  enrol_apply's queue; `getDrawerZIndex()`; PHPUnit's sequence offsets; tool_lp's proficiency selector; Boost Union's
+  `d-none` brand.
+- **False:** the WebM fixture plays in today's Selenium Chromium (150, headed and headless) and in Chrome 156: the
+  feature's comment no longer gives that as the reason for the MP4.
+- **Drifted:** the month and agenda blocks cost 536 and 229 statements at 25 courses (533 and 226 when the budgets
+  were set; both are still under them). The range probe: see below.
+- **In part, reworded:** the dialogue's flat count (8 statements a course; the split between the landing values and
+  the contacts was never shown); the Font Awesome variables (reached through `lib/bundles/fontawesome.scss` since
+  MDL-88766); the overflow of #region-main's ancestors (the body takes `overflow: hidden` while a drawer is open at md
+  and below or a modal locks the scroll); the course notice (a missing category row, the course's own or an
+  ancestor's); the ESM tree check (mdl ci only: GitHub's reusable workflow has none, being added in its own task);
+  the competency hooks (a few are read by nobody and are kept to mirror core); Boost Union's navbar (Bootstrap's
+  navbar schemes and the `--bs-navbar-*` properties, not "every element onto .navbar-dark"); the router (a router
+  built before the request registers every route twice, but a second request fails for another reason: core's "The
+  theme has already been set up for this page", so `CLAUDE.md` and `category_test` are corrected); filter_emoticon
+  (the debugging call is shown; "the router turns it into a failure" was not).
+
+### Decided
+
+- **#11:** the cap of four filter groups stays, named as the design's choice: the groups live in the Filters panel,
+  where a fifth short group would still fit at 1280 px.
+- **#43:** 80x88 is the full band's size at every width (it wraps rather than shrinks), not the smallest a crest
+  reads at: the compact band draws 36x40 (26x29 on a phone) and the cards 56x62. The template's comment says so.
+- **#38:** no change. Measured on m503: the glyph is 13 px at 15 px from the field's edge, the typed text starts at
+  41 px, the box is 40 px tall, the chips are `.82rem` (13.12 px).
+- **#8, the range probe's budget:** the answer did not grow. Measured with the same probe at C1 (1252c05, where the
+  bounds were set) and today: 108,957 and 109,311 bytes at 25 courses, so the "floor of 55,189 bytes" was never this
+  seed's weight and the 110,378-byte bound had about 1 % of headroom from the start. The only new key is `editing`
+  (343 bytes); events are nine tenths of the answer. Statements went from 117/536 (5/25 courses) at C1 to 123/562
+  today. The bounds are now today's cost plus a tenth (136 and 29,302 bytes at 5 courses, 619 and 120,243 at 25), the
+  rule the docblock always stated.

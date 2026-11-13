@@ -621,8 +621,8 @@ final class categoryhero_test extends \advanced_testcase {
      *
      * Four values, each load-bearing. With `maxfiles` at 0 the multimedia button and the media
      * manager cannot open at all: lib/form/editor.php builds the file-picker options only when it
-     * is non-zero, and tiny_media's embed dialogue dereferences them unguarded where its image
-     * dialogue tests for undefined first. So `maxfiles => 1` is what makes the button work, and
+     * is non-zero, and tiny_media's embed dialogue and media manager dereference them unguarded
+     * where its image dialogue tests for undefined first. So `maxfiles => 1` is what makes the button work, and
      * the other three are what keep the draft area it mints unusable: FILE_EXTERNAL drops every
      * repository that cannot return an address - `upload` among them, which is what both dialogues
      * compute their drop zone from - and the two byte limits refuse anything that reached a

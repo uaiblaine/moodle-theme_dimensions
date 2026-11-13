@@ -51,10 +51,10 @@ require_once(__DIR__ . '/fixture.php');
 final class blocks_budget_test extends \advanced_testcase {
     use fixture;
 
-    /** @var int The month block's own statements at 25 courses: 533 plus a tenth. */
+    /** @var int The month block's own statements at 25 courses (about 535) plus a tenth. */
     private const MONTH_BUDGET = 586;
 
-    /** @var int The agenda's own statements at 25 courses: 226 (its first, 7-day piece) plus a tenth. */
+    /** @var int The agenda's own statements at 25 courses (about 228, its first, 7-day piece) plus a tenth. */
     private const UPCOMING_BUDGET = 249;
 
     /**

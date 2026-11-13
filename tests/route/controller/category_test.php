@@ -44,10 +44,10 @@ use theme_dimensions\output\opengraph;
 /**
  * The anonymous shell of the showcase, end to end: core's router, this controller, the shared request.
  *
- * The harness builds a router per process_request(), and a second router built in the same test -
- * by a second request, or by spelling a route address before the request - registers every route
- * twice and the request fails. So each test makes exactly one request, and the expected addresses
- * are built afterwards, through that same router.
+ * A router built before the request - by spelling a route address first - registers every route
+ * twice and the request fails; a second request in the same test fails too, because the first left
+ * $PAGE's theme set up ("The theme has already been set up for this page"). So each test makes
+ * exactly one request, and the expected addresses are built afterwards, through the harness's router.
  *
  * Each refusal is asserted against the page that is served in another test of the same class: a
  * controller answering the login page to everybody would fail the first test, which is what

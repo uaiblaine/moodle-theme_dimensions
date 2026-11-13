@@ -527,7 +527,9 @@ final class category_scss_test extends \basic_testcase {
      * height and the box never leaves the top.
      *
      * Sticky also stops working, silently, under any ancestor whose overflow is not visible.
-     * Core's and Boost Union's ancestors of #region-main set none; this test holds the half that
+     * Core's and Boost Union's static ancestors of #region-main set none (the body takes overflow:
+     * hidden only while a drawer is open at md and below, or a modal locks the scroll, when the
+     * tree is covered anyway); this test holds the half that
      * is ours: no rule of this stylesheet puts an overflow on the two boxes between the tree and
      * #region-main.
      *

@@ -357,7 +357,8 @@ final class card_markup_test extends \advanced_testcase {
      * Nothing in the pipeline reads an icon name: a misspelt one renders an empty square or nothing at all, and
      * every gate stays green. So each name of the badge table is looked up in core's icon map
      * (lib/bundles/fontawesome/scss/_variables.scss above the public directory, which theme_boost's fontawesome.scss
-     * imports since 5.3; its "$fa-icons" list is what the font answers to); the route line's arrow is checked the same
+     * reaches through lib/bundles/fontawesome.scss since 5.3, MDL-88766; its "$fa-icons" list is what the font
+     * answers to); the route line's arrow is checked the same
      * way. A made-up name is the control.
      */
     public function test_every_badge_icon_is_one_core_draws_and_is_hidden_from_readers(): void {
