@@ -622,10 +622,14 @@ rests on:
   and a deleted flavour leaves the marker with no record, so neither is written. The marker (`flavourchoice`, a session
   cache) keeps the chosen id even when the record is gone, or a deleted flavour would read as a new choice, with a
   purge and a query, on every page.
-- **Boost Union's flavour purge flag is never cleared by Boost Union** (`eventobservers.php` sets it on cohort
-  membership changes, nothing unsets it), and its resolver purges the cache whenever it is set. `absorb_purge_flag()`
-  does that purge once and clears it; `flavourchoice_test` reddens when Boost Union starts clearing the flag itself,
-  and the step goes then.
+- **Boost Union's flavour purge flag is absorbed before the choice is written.** `eventobservers.php` sets it on cohort
+  membership changes, and the resolver purges the cache when it sees it, AFTER `prime()` wrote the page's record, so the
+  page would show Boost Union's own flavour. Boost Union 2026100501 (its issue 1472) clears the flag after that purge, which
+  limits the loss to the first page after each cohort change; 2026100500, which the theme's dependency
+  still accepts, never clears it. `absorb_purge_flag()` does the purge first and clears the flag, so even that first page
+  keeps the choice. It is not obsolete while the resolver purges after the hook: the real-page test
+  `test_a_real_page_after_a_cohort_change_follows_the_choice` reddens without it, measured on both releases
+  (2026-11-12): the page carries the category's flavour instead of the choice.
 
 - **The Look menu changes nothing on a GET.** Every item links to `flavour.php` with its flavour preselected, and
   that page only shows a POST form; with JavaScript, `amd/src/flavourchoice.js` writes through

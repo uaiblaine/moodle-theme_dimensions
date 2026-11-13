@@ -614,11 +614,13 @@ final class flavourchoice {
      *
      * Boost Union sets theme_boost_union_flavours_purgesessioncache when a person joins or leaves a cohort
      * that a flavour applies to (classes/eventobservers.php), and its resolver purges the session cache
-     * whenever the flag is set, before it reads the cache. Nothing in Boost Union ever clears that flag,
-     * so from then on the resolver would purge, on every page, the record {@see self::prime()} has just
-     * written, and the choice would be lost for that person for good. The purge the flag asks for is
-     * done here, once, and the flag cleared. flavourchoice_test pins the defect: when Boost Union clears
-     * its own flag, that test reddens and this step goes.
+     * when it sees the flag, before it reads the cache. The resolver runs after {@see self::prime()}, so
+     * that purge would erase the record prime() has just written and the page would show Boost Union's
+     * own flavour. Boost Union 2026100501 clears the flag after that purge, which limits the loss to the
+     * first page after each cohort change; 2026100500, which this theme still accepts, never clears it,
+     * so every later page would lose the choice too. Doing the purge here, before the record is written,
+     * and clearing the flag keeps the choice on that first page under both. The real-page test after a
+     * cohort change in flavourchoice_test holds it.
      *
      * @return void
      */

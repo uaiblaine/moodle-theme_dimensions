@@ -406,41 +406,6 @@ final class flavourchoice_test extends \advanced_testcase {
     }
 
     /**
-     * Boost Union still never clears its flavour purge flag; when it does, absorb_purge_flag() goes.
-     *
-     * Boost Union's code is read for every use of the preference's name: it may be set and read, and the
-     * day a call clears it this test reddens, saying the theme's own clearing is no longer needed.
-     *
-     * @return void
-     */
-    public function test_boost_union_still_never_clears_its_flavour_purge_flag(): void {
-        global $CFG;
-
-        $name = 'theme_boost_union_flavours_purgesessioncache';
-        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($CFG->dirroot . '/theme/boost_union'));
-        $sets = 0;
-        $reads = 0;
-        foreach ($files as $file) {
-            if ($file->getExtension() !== 'php' || str_contains($file->getPathname(), '/tests/')) {
-                continue;
-            }
-            $source = file_get_contents($file->getPathname());
-            if (!str_contains($source, $name)) {
-                continue;
-            }
-            $this->assertDoesNotMatchRegularExpression(
-                "~unset_user_preference\\(\\s*'{$name}'|set_user_preference\\(\\s*'{$name}'\\s*,\\s*(false|0|'')~",
-                $source,
-                'Boost Union clears its flag now: drop flavourchoice::absorb_purge_flag() and this test.'
-            );
-            $sets += preg_match_all("~set_user_preference\\(\\s*'{$name}'\\s*,\\s*true~", $source);
-            $reads += preg_match_all("~get_user_preferences\\(\\s*'{$name}'~", $source);
-        }
-        $this->assertGreaterThan(0, $sets, 'Precondition: Boost Union sets the flag.');
-        $this->assertGreaterThan(0, $reads, 'Precondition: Boost Union reads the flag.');
-    }
-
-    /**
      * The setting's choices are every flavour in Boost Union's order, and its stored list is parsed to ids.
      *
      * @return void
@@ -474,6 +439,9 @@ final class flavourchoice_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_settings_page_offers_the_flavours(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+
         $this->resetAfterTest();
         $this->setAdminUser();
         $harbour = $this->flavour('Harbour', ['sort' => 1]);
@@ -701,6 +669,33 @@ final class flavourchoice_test extends \advanced_testcase {
 
         $this->assertMatchesRegularExpression('~<body[^>]*class="[^"]*\bflavour-' . $campus->id . '\b~', $html);
         $this->assertDoesNotMatchRegularExpression('~<body[^>]*class="[^"]*\bflavour-' . $harbour->id . '\b~', $html);
+    }
+
+    /**
+     * The first page after a cohort change follows the choice, and leaves Boost Union's purge flag cleared.
+     *
+     * Boost Union raises the flag when the person joins or leaves a cohort a flavour applies to, and its resolver
+     * purges the session cache when it sees the flag, which is after the header hook has primed the page.
+     *
+     * @return void
+     */
+    #[RunInSeparateProcess]
+    public function test_a_real_page_after_a_cohort_change_follows_the_choice(): void {
+        $this->resetAfterTest();
+        $category = $this->getDataGenerator()->create_category(['idnumber' => 'LOOKCAT']);
+        $campus = $this->flavour('Campus', ['applytocategories_ids' => 'LOOKCAT']);
+        $harbour = $this->flavour('Harbour');
+        $this->offer($harbour);
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        set_user_preference(flavourchoice::PREFERENCE, $harbour->id);
+        set_user_preference('theme_boost_union_flavours_purgesessioncache', true);
+
+        $html = $this->category_page_header((int) $category->id);
+
+        $this->assertMatchesRegularExpression('~<body[^>]*class="[^"]*\bflavour-' . $harbour->id . '\b~', $html);
+        $this->assertDoesNotMatchRegularExpression('~<body[^>]*class="[^"]*\bflavour-' . $campus->id . '\b~', $html);
+        $this->assertNull(get_user_preferences('theme_boost_union_flavours_purgesessioncache', null, $user->id));
     }
 
     /**
