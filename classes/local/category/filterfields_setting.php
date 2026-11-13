@@ -30,8 +30,10 @@ use core_course\customfield\course_handler;
  * A multiselect over the site's select-type course custom fields, refusing more than four.
  *
  * The filter groups are an allowlist validated against the live vocabulary,
- * never a free text, and four is the cap because a fifth group stops fitting
- * the toolbar on a laptop. {@see facets::fields()} applies the same cap when it
+ * never a free text. Four is the design's cap, not a limit of the layout: the
+ * groups live in the Filters panel, where four short groups take about two
+ * thirds of its width at 1280px and a fifth short one would still fit (one with
+ * many options would wrap). {@see facets::fields()} applies the same cap when it
  * reads the stored shortnames, so an over-long stored value still renders its
  * first four; this class keeps the form from storing a selection the page
  * would silently truncate.

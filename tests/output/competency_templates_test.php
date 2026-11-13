@@ -32,11 +32,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * Pins the hooks core's JavaScript and Behat read in the theme's copies of tool_lp, report_competency
  * and block_lp templates.
  *
- * The theme restyles those templates and must never change what they do. Every hook below is read by
+ * The theme restyles those templates and must never change what they do. The hooks below are read by
  * one of core's AMD modules (tool_lp/evidence_delete, tool_lp/competencyactions,
  * tool_lp/competencydialogue, tool_lp/grade_dialogue, tool_lp/user_competency_workflow,
- * tool_lp/user_competency_info, the three navigation modules, report_competency/grading_popup) or by a
- * core Behat selector (tool_lp's and report_competency's named selectors). A copy that drops one
+ * tool_lp/user_competency_info, the three navigation modules, report_competency/grading_popup), by a
+ * core Behat selector (tool_lp's and report_competency's named selectors), or are a literal core's own
+ * template hands to one of those modules; the few no reader reads (class hooks core styles, the
+ * statistics, summary and grader regions, block_lp's page regions) are kept to mirror core's markup.
+ * A copy that drops one
  * renders, looks right and silently breaks a rating, a deletion or a dialogue, so two independent
  * checks hold each one: the hook's literal is in core's own file and in the override, and the
  * rendered override carries it as an element.

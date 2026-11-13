@@ -161,14 +161,14 @@ final class range_budget_test extends \advanced_testcase {
     /**
      * The probe's shape at 5 and 25 courses stays within its budget, and its answer within its weight.
      *
-     * The statement bounds are the shape's cost plus a tenth: 112 statements at 5 courses, 531 at 25. What grows with
-     * the courses is core's module callbacks (about ten statements per assignment due date); without activities the
-     * shape costs 21 and 15. The weight bound at 25 courses is twice the floor of 55,189 bytes of JSON.
+     * Each bound is the shape's cost plus a tenth: 123 statements and 26,638 bytes of JSON at 5 courses, 562 and
+     * 109,311 at 25. What grows with the courses is core's module callbacks and the events themselves, which are
+     * nine tenths of the answer's weight.
      *
      * @return void
      */
     public function test_the_month_stays_within_its_budget(): void {
-        foreach ([5 => [125, 40000], 25 => [585, 110378]] as $n => [$statements, $bytes]) {
+        foreach ([5 => [136, 29302], 25 => [619, 120243]] as $n => [$statements, $bytes]) {
             [$answer, $reads] = $this->measure($this->seed($n));
             $json = json_encode($answer);
 

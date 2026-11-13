@@ -595,7 +595,8 @@ final class builder_test extends \advanced_testcase {
     /**
      * A public course the predicate refuses for a reason the notice cannot name is still not called public.
      *
-     * A category id no row holds is the one such reason the predicate has today: it fails closed.
+     * A category no row holds - the course's own, or an ancestor on its path - is the one such reason the predicate
+     * has today: it fails closed.
      *
      * @return void
      */

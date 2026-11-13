@@ -249,8 +249,9 @@ final class core_renderer_test extends \advanced_testcase {
     /**
      * The dark navbar is Boost Union's coloured-dark pair, and the bar carries no colour mode of its own.
      *
-     * Boost Union 5.3 maps every element of the navbar onto .navbar-dark and keeps the dropdowns
-     * inside it in the page's colour mode, which a data-bs-theme on the nav would switch to dark.
+     * Boost Union 5.3 colours the bar with Bootstrap's navbar schemes (navbar-dark bg-primary and
+     * friends), maps core's own navbar elements onto the --bs-navbar-* properties, and keeps the
+     * dropdowns in the page's colour mode, which a data-bs-theme on the nav would switch to dark.
      *
      * @return void
      */

@@ -362,8 +362,8 @@ final class get_course_dialogue_test extends \advanced_testcase {
     /**
      * One course's content costs the same statements whatever it holds: three contacts or one, six lines or two.
      *
-     * The reads are one course's: its landing page values in one statement and its contacts in one (core's cache is
-     * emptied inside the meter, so each measurement pays for them), never one per contact or per line.
+     * The reads are one course's and the same count whatever it holds (core's cache is emptied inside the meter, so
+     * each measurement pays for them), never one per contact or per line.
      */
     public function test_the_statements_are_flat_for_one_course(): void {
         $this->prepare();

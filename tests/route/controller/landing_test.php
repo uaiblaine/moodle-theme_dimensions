@@ -177,8 +177,8 @@ final class landing_test extends \core\tests\router\route_testcase {
      * A text filter running over a textarea field finds a page context already set.
      *
      * A real request reaches the shared request with an empty $PAGE; filter_emoticon reads
-     * $PAGE->theme while it formats the text, and a page with no context makes that a
-     * debugging call, which the router turns into a failed response under developer debugging.
+     * $PAGE->theme while it formats the text, and initialising the theme of a page with no
+     * context calls debugging() ("$PAGE->context was not set"), which this test refuses.
      */
     public function test_a_filtered_textarea_is_read_with_the_page_context_set(): void {
         global $PAGE;

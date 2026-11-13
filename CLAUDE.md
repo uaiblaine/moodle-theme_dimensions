@@ -1057,9 +1057,12 @@ not logged in, with `forcelogin` left on. The facts that shape it:
   router of its own, and the request then fails with FastRoute's "Cannot register two routes matching"
   and a 500: every route ends up mapped twice. Measured 2026-09-13 on `shortlink_route_test`, in three
   orderings, with and without `\core\di::reset_container()`. Seed the `shortlink` row directly in
-  such a test; `links_test` covers the spelling of `share()`. Two `process_request()` calls in one test are
-  fine on 5.3 (`calendar_test`'s week and day tests make two): what fails is a router built outside the
-  harness before a request. Expected addresses are fine to spell AFTER the request, through the same router.
+  such a test; `links_test` covers the spelling of `share()`. A second `process_request()` in one test builds
+  no second set of routes (`calendar_test`'s week and day tests make two and pass), but it can fail for
+  another reason: on the landing route the second answers 500 with core's "The theme has already been set
+  up for this page" coding_exception, because the first request left `$PAGE`'s theme initialised. So keep
+  one request per test wherever the first one renders a page. Expected addresses are fine to spell AFTER
+  the request, through the same router.
 - **Under PHPUnit `$OUTPUT->header()` renders nothing**, so a route test cannot read the head tags from
   the response body; the controller guards the write like core's `restricted_module` does, and
   `landing_test` reads `opengraph::current()`, the registry the shared request arms, while

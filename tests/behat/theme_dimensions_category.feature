@@ -564,8 +564,8 @@ Feature: The category showcase lists what a person may discover, and its filters
     And "body.dim-cover-js" "css_element" should exist
     # And the film really runs: the control reports itself pressed, which the module writes when
     # the film starts and takes back if the browser refuses to play it at all. The fixture is
-    # tests/fixtures/cover.mp4, an 11-second MP4, on purpose: the WebM beside it decodes and
-    # play() resolves, but in a Chromium browser its currentTime was seen never to advance.
+    # tests/fixtures/cover.mp4, an 11-second MP4; the WebM beside it plays as well in today's
+    # Selenium Chromium, so either fixture holds this step.
     When I click on "Play the film of Test category" "button"
     Then the "aria-pressed" attribute of "Play the film of Test category" "button" should contain "true"
 
