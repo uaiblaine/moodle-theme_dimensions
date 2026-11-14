@@ -213,6 +213,107 @@ final class course_badges_test extends \advanced_testcase {
     }
 
     /**
+     * The answer's reads do not grow with the number of courses, nor with the number of their categories.
+     *
+     * block_compass dispatches the hook on every get_attention and every card batch of up to 24 ids, outside any
+     * cache. Each course here sits in a category of its own, the worst case: core's can_view_course_info() looks a
+     * course's category context up by (level, instance), which cost one {context} statement per category of the batch
+     * until the listener's course statement brought those contexts too. Measured as a request sees it: the shared
+     * layers warm (one dispatch first), core's per-request context cache and local_unlistedcourses' memos empty. The
+     * four statements: the courses with both their contexts, local_unlistedcourses' course states, the landing page
+     * field data and the badge files. The control: every course is answered, so the meter ran over the whole rule.
+     */
+    public function test_the_reads_do_not_grow_with_the_courses_or_their_categories(): void {
+        global $DB;
+
+        $this->theme_hooks();
+        $generator = self::getDataGenerator();
+        $courses = [];
+        for ($i = 0; $i < 24; $i++) {
+            $category = $generator->create_category();
+            $courses[] = $this->course_with_badges(landingfields::MODEL_COURSE, ['crest.png'], ['category' => $category->id]);
+        }
+        $this->setUser($generator->create_user());
+        $measure = function (array $ids) use ($DB): array {
+            \core\context_helper::reset_caches();
+            access::reset_caches();
+            $before = (int) $DB->perf_get_reads();
+            $badges = $this->ask($ids);
+            return [(int) $DB->perf_get_reads() - $before, $badges];
+        };
+        $this->ask($courses);
+
+        $reads = [];
+        foreach ([1, 6, 24] as $n) {
+            [$reads[$n], $badges] = $measure(array_slice($courses, 0, $n));
+            $this->assertSame(array_slice($courses, 0, $n), array_keys($badges), "Control: all {$n} courses are answered.");
+        }
+
+        $this->assertSame($reads[6], $reads[24], "{$reads[6]} reads for six courses in six categories, {$reads[24]} for 24.");
+        $this->assertSame(4, $reads[24], 'The courses with their contexts, the course states, the field data, the badge files.');
+        $this->assertSame($reads[1], $reads[24], 'One course costs what 24 do.');
+    }
+
+    /**
+     * Over several categories the answer is, byte for byte, what the rule gives with every context looked up alone.
+     *
+     * The reference is the rule's pipeline without the listener's preload - plain course rows, each context fetched
+     * by core on demand, as the listener read them before it brought the category contexts with its rows - so the
+     * preloaded contexts change the cost and nothing else: the same courses kept, the same addresses, texts, order
+     * and cut at three. One course sits in a category whose listing the student may not view: the preloaded category
+     * context must be the one that refuses it, while the enrolled course of that category is the control.
+     */
+    public function test_the_answer_is_what_the_rule_gives_without_the_preload(): void {
+        global $CFG, $DB;
+
+        $this->theme_hooks();
+        $generator = self::getDataGenerator();
+        $closed = $generator->create_category();
+        assign_capability(
+            'moodle/category:viewcourselist',
+            CAP_PROHIBIT,
+            (int) $CFG->defaultuserroleid,
+            \core\context\coursecat::instance((int) $closed->id)->id,
+            true
+        );
+        $one = $generator->create_category();
+        $two = $generator->create_category(['parent' => $one->id]);
+        $four = ['um.png', 'dois.png', 'tres.png', 'quatro.png'];
+        $courses = [
+            $this->course_with_badges(landingfields::MODEL_COURSE, $four, ['category' => $one->id]),
+            $this->course_with_badges(landingfields::MODEL_EVENT, ['evento.png'], ['category' => $two->id]),
+            $this->course_with_badges(landingfields::MODEL_COURSE, ['b.png', 'a.png'], ['category' => $two->id]),
+            $this->course_with_badges(landingfields::MODEL_COURSE, ['fechado.png'], ['category' => $closed->id]),
+            $this->course_with_badges(landingfields::MODEL_COURSE, ['meu.png'], ['category' => $closed->id]),
+            $this->course_with_badges(landingfields::MODEL_COURSE, ['padrao.png']),
+        ];
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $courses[4]);
+        $this->setUser($student);
+
+        \core\context_helper::reset_caches();
+        access::reset_caches();
+        $rows = $DB->get_records_list('course', 'id', $courses, 'id ASC', 'id, category, visible');
+        $kept = \theme_dimensions\local\landing\publicfiles::viewer_may_see_many($rows);
+        $reference = [];
+        foreach (landingfields::values_many($kept, false) as $courseid => $values) {
+            $crests = \theme_dimensions\output\category_card::crests((object) ['id' => (int) $courseid], $values);
+            if ($crests) {
+                $reference[(int) $courseid] = $crests;
+            }
+        }
+
+        \core\context_helper::reset_caches();
+        access::reset_caches();
+        $badges = $this->ask($courses);
+
+        $this->assertSame($reference, $badges, 'The same courses, crests, addresses, texts and order.');
+        $this->assertSame([$courses[0], $courses[1], $courses[2], $courses[4], $courses[5]], array_keys($badges));
+        $this->assertSame(['um', 'dois', 'tres'], array_column($badges[$courses[0]], 'alt'), 'Three, in grid order.');
+        $this->assertArrayNotHasKey($courses[3], $badges, 'The closed category refuses the course the student is not in.');
+    }
+
+    /**
      * A fault behind the answer is reported to developers and answers nothing, and the block's response goes on.
      *
      * The control is a source that answers, through the same seam: its crests reach the hook, and an id the block

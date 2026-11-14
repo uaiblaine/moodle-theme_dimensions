@@ -579,9 +579,11 @@ function theme_dimensions_extend_burecommendations(): array {
  * its alternative text name the file, so a course the reader may not discover - hidden, unlisted, or in a listing
  * they cannot view and are not enrolled in - gets none, whatever the caller passed. A visitor gets none.
  *
- * Cost: one statement for the courses and their contexts, one batch of local_unlistedcourses' course states, the
- * category contexts can_view_course_info() reads, then landingfields::values_many() over the courses kept (the field
- * data and the badge files, one statement each).
+ * Cost, the same for one course or the block's 24: one statement for the courses with their own and their categories'
+ * contexts, one batch of local_unlistedcourses' course states, then landingfields::values_many() over the courses kept
+ * (the field data and the badge files, one statement each). Nothing is cached across requests: the contexts go into
+ * core's per-request context cache, a node-local static rebuilt from the database on every call, so a cold node or a
+ * fresh cron pays the same statements.
  *
  * @param int[] $courseids Course ids.
  * @return array courseid => list of ['url' => string, 'alt' => plain string], for every positive id given; empty for
@@ -597,16 +599,30 @@ function theme_dimensions_course_badges(array $courseids): array {
     }
     [$insql, $params] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'crs');
     $ctxselect = \core\context_helper::get_preload_record_columns_sql('ctx');
-    // Rides the primary key and the context's instance index; the contexts arrive with the rows, so values_many() pays none.
+    /* Rides the primary key and the context's instance index. Both contexts arrive with the rows: the course's, so
+       values_many() pays none, and its category's, which core_course_category::can_view_course_info() reads through
+       coursecat::instance() in viewer_may_see_many() - one {context} statement per category otherwise, since core's
+       context cache lives only as long as the request. LEFT JOIN: a category whose context row is missing is left to
+       instance(), which builds it as before. */
     $courses = $DB->get_records_sql(
-        "SELECT c.id, c.category, c.visible, {$ctxselect}
+        "SELECT c.id, c.category, c.visible, {$ctxselect},
+                catctx.id AS catctxid, catctx.path AS catctxpath, catctx.depth AS catctxdepth,
+                catctx.contextlevel AS catctxlevel, catctx.instanceid AS catctxinstance, catctx.locked AS catctxlocked
            FROM {course} c
            JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = :contextcourse
+      LEFT JOIN {context} catctx ON catctx.instanceid = c.category AND catctx.contextlevel = :contextcoursecat
           WHERE c.id {$insql}",
-        $params + ['contextcourse' => CONTEXT_COURSE]
+        $params + ['contextcourse' => CONTEXT_COURSE, 'contextcoursecat' => CONTEXT_COURSECAT]
     );
     foreach ($courses as $course) {
         \core\context_helper::preload_from_record($course);
+        $category = new \stdClass();
+        foreach (['ctxid', 'ctxpath', 'ctxdepth', 'ctxlevel', 'ctxinstance', 'ctxlocked'] as $column) {
+            $category->$column = $course->{'cat' . $column};
+            unset($course->{'cat' . $column});
+        }
+        // A missing row leaves nulls, which the preload ignores.
+        \core\context_helper::preload_from_record($category);
     }
     $kept = \theme_dimensions\local\landing\publicfiles::viewer_may_see_many($courses);
     $values = \theme_dimensions\local\landingfields::values_many($kept, false);

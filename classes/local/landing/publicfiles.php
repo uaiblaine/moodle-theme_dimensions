@@ -504,7 +504,12 @@ final class publicfiles {
      * A visitor gets nothing here, although the route serves a public course's badge to anybody:
      * the caller builds a logged-in reader's cards, and nothing is the safe answer.
      *
-     * @param \stdClass[] $courses Course rows carrying id, category and visible, their contexts preloaded.
+     * The course's context and its category's are read from core's context cache, so preload both: core's
+     * can_view_course_info() looks the category's up through coursecat::instance(), one {context} statement per
+     * category otherwise ({@see theme_dimensions_course_badges()} brings both with its rows).
+     *
+     * @param \stdClass[] $courses Course rows carrying id, category and visible, their contexts and their categories'
+     *     contexts preloaded.
      * @return int[] The ids of the courses kept, in the order given.
      */
     public static function viewer_may_see_many(array $courses): array {

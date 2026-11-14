@@ -211,7 +211,7 @@ final class course_badges_test extends \advanced_testcase {
         $owntwo = $callback(array_slice($crested, 0, 2)) - $valuesonly(array_slice($crested, 0, 2));
         $owneight = $callback($crested) - $valuesonly($crested);
         $this->assertSame($owntwo, $owneight, 'The callback\'s own reads beyond the values do not grow with the courses.');
-        $this->assertLessThanOrEqual(3, $owneight, 'The courses with their contexts, the course states, the category\'s context.');
+        $this->assertSame(2, $owneight, 'The courses with their own and their categories\' contexts, the course states.');
     }
 
     /**

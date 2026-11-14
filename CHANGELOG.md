@@ -5,6 +5,13 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **block_compass's crests cost the same for one course or a batch of 24.** The theme's answer to the block's course
+  crests hook read each course's category context on its own, through Moodle's `can_view_course_info()`: one
+  database statement per category of every batch, on every first paint (`get_attention`) and every card batch
+  (`get_card_details`), 6 to 24 extra reads a call. The answer's one course statement now brings those contexts
+  too, so the hook costs the same few statements whatever the number of courses and categories (four, two more
+  when local_unlistedcourses has an unlisted course among them to decide), and answers exactly as before
+  (2026100613).
 - **A trail gets its kind in block_compass, as an event does.** The theme's answer to the block's course kinds hook
   named the course and the event models only, so a trail drew no kind in the All courses view and was counted as a
   course in the open-for-enrolment line. It now names the trail model too (`trail` / `trilha`), after course and
