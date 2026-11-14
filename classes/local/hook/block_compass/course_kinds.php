@@ -27,10 +27,10 @@ namespace theme_dimensions\local\hook\block_compass;
 use theme_dimensions\local\landingfields;
 
 /**
- * Tells block_compass which course custom field says whether a course is a course or an event.
+ * Tells block_compass which course custom field says whether a course is a course, an event or a trail.
  *
  * Registered in db/hooks.php for \block_compass\hook\course_kinds; without the block nothing calls this. It names
- * the enrolment page model field ({@see landingfields::SHORTNAME_MODEL}) and two of its stored values with their
+ * the enrolment page model field ({@see landingfields::SHORTNAME_MODEL}) and three of its stored values with their
  * nouns in the current language. It reads nothing: the block asks on every response of its open-courses line,
  * and uses the field only while core lists it as visible to everyone, as the theme creates it.
  *
@@ -40,7 +40,8 @@ use theme_dimensions\local\landingfields;
  */
 class course_kinds {
     /**
-     * Answers the hook: the model field, a course for MODEL_COURSE and an event for MODEL_EVENT.
+     * Answers the hook: the model field, a course for MODEL_COURSE, an event for
+     * MODEL_EVENT and a trail for MODEL_TRAIL, in that order (the block keeps it, `course` first).
      *
      * Whatever throws is reported to developers and answered as nothing, as the block's own dispatch does: the
      * split by kind decorates a line, and a fault here must not take the block's response with it.
@@ -66,6 +67,12 @@ class course_kinds {
                 'event',
                 get_string('compass_kind_event', 'theme_dimensions'),
                 get_string('compass_kind_events', 'theme_dimensions')
+            );
+            $hook->add_kind(
+                landingfields::MODEL_TRAIL,
+                'trail',
+                get_string('compass_kind_trail', 'theme_dimensions'),
+                get_string('compass_kind_trails', 'theme_dimensions')
             );
         } catch (\Throwable $exception) {
             debugging(
