@@ -111,11 +111,11 @@ final class myprofile_renderer_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         $tree = new tree();
-        $tree->add_category(new category('coursedetails', 'Course details'));
+        $tree->add_category(new category('contact', 'User details'));
         $tree->add_node(new node(
-            'coursedetails',
-            'courseprofiles',
-            'Course profiles',
+            'contact',
+            'interests',
+            'Interests',
             null,
             null,
             '<ul><li>Human rights</li></ul>'

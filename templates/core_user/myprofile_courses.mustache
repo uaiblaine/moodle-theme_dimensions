@@ -1,0 +1,37 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_dimensions/core_user/myprofile_courses
+
+    The course list of a profile's "Course profiles" node, in the markup core builds for it in
+    core_myprofile_navigation(): printed in place of core's list when that one names a course the
+    viewer may not discover.
+
+    Context variables required for this template:
+    * courses - The courses left: name (formatted and escaped by the caller), url (false for the page's own course), dimmed.
+    * viewmore - The address of the whole list, or false when the list was not cut.
+
+    Example context (json):
+    {
+        "courses": [
+            {"name": "Human rights", "url": "https://example.org/user/view.php?id=5&course=8", "dimmed": false},
+            {"name": "First aid", "url": false, "dimmed": false}
+        ],
+        "viewmore": "https://example.org/user/profile.php?id=5&showallcourses=1"
+    }
+}}
+<ul>{{#courses}}<li>{{#url}}<a {{#dimmed}}class="dimmed" {{/dimmed}}href="{{url}}">{{{name}}}</a>{{/url}}{{^url}}{{{name}}}{{/url}}</li>{{/courses}}{{#viewmore}}<li class="viewmore"><a title="{{#str}}viewmore{{/str}}" href="{{viewmore}}">{{#str}}viewmore{{/str}}</a></li>{{/viewmore}}</ul>

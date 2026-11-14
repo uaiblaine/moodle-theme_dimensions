@@ -225,6 +225,27 @@ course whose participant list they may see, or when they come from the page of a
 other person is a course contact. The rule only ever narrows core's answer, and it applies while
 core's `forceloginforprofiles` is on (Boost Union's recommendations overview says whether it is).
 
+### Courses on a profile
+
+Moodle's profile page lists every course of the person it shows, to anybody who may open the profile.
+The theme prints that list without the courses local_unlistedcourses would not list to the reader,
+so a profile no longer names an unlisted course to somebody outside it; the person themself, and
+anybody the plugin admits to the course, still read it. The *View more* link and the list's limit
+(`navcourselimit`) count the courses left, and a list with no course left is not printed at all.
+A profile that names no withheld course is printed exactly as Moodle built it.
+
+A theme can only change what its pages draw, so these keep Moodle's own rules and still name such a
+course:
+
+- the *Courses* branch Moodle's navigation tree adds under a person (the Navigation block);
+- the pages a profile links to that list the person's activity course by course (forum posts, notes,
+  the grade overview report);
+- global search results, when global search is enabled;
+- the Moodle App and any other client of Moodle's web services.
+
+Hiding the course list of every profile (`hiddenuserfields`, *My courses*) closes the first of these
+as well, for listed courses too.
+
 ### Guest access
 
 A course whose guest access needs no password gets an *Enter as guest* address beside its landing

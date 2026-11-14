@@ -440,6 +440,27 @@ function theme_dimensions_control_view_profile($user, $course = null, $userconte
 }
 
 /**
+ * Keep whose profile a profile tree is, for the course list the theme's profile renderer filters.
+ *
+ * Adds no node. Core hands every myprofile_navigation callback the profile's owner and the course the
+ * profile is shown inside, which the renderer is never told; {@see \theme_dimensions\local\profilecourses}
+ * keeps them per tree and rebuilds the "Course profiles" list from them without the courses
+ * local_unlistedcourses would not list to the viewer.
+ *
+ * get_plugins_with_function() reads this file for every installed theme, active or not; the callback
+ * reads nothing and another theme's renderer never asks for what it kept.
+ *
+ * @param \core_user\output\myprofile\tree $tree The tree being built.
+ * @param stdClass $user The user whose profile it is.
+ * @param bool $iscurrentuser Whether the viewer is that user.
+ * @param stdClass|null $course The course the profile is shown inside, if any.
+ * @return void
+ */
+function theme_dimensions_myprofile_navigation(\core_user\output\myprofile\tree $tree, $user, $iscurrentuser, $course) {
+    \theme_dimensions\local\profilecourses::record($tree, $user, $course ?: null);
+}
+
+/**
  * Serve the theme's file areas: the public landing page's, the category branding's, the hero fallback's and the
  * dark logos'.
  *

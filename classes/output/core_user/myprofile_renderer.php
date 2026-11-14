@@ -28,6 +28,7 @@ use core_user\output\myprofile\category;
 use core_user\output\myprofile\node;
 use core_user\output\myprofile\tree;
 use renderable;
+use theme_dimensions\local\profilecourses;
 
 /**
  * Renders the user profile in the theme's design system, from templates rather than from PHP.
@@ -46,10 +47,11 @@ use renderable;
  * definition list of facts and nodes that are only a link become a list of actions at the foot of
  * the card; nothing is dropped, invented or moved across categories.
  *
- * Nothing is filtered here, on purpose: the tree has no removal API (a callback can add but never
- * prune), so a renderer could withhold a node, but the profile's privacy is $CFG->hiddenuserfields,
- * which core consults while building the tree, and a second rule here would be a place for the two
- * to disagree.
+ * One node is filtered, and only one: core's "Course profiles" list names every course of the profile's
+ * owner, and {@see profilecourses} answers what it may name to this viewer under local_unlistedcourses.
+ * The tree has no removal API (a callback can add but never prune), so the renderer is the only place
+ * that list can be replaced. Everything else the profile shows stays $CFG->hiddenuserfields' to decide,
+ * which core consults while building the tree: no other node is withheld or rewritten here.
  *
  * @package    theme_dimensions
  * @copyright  2026 Anderson Blaine
@@ -63,6 +65,9 @@ class myprofile_renderer extends \core_user\output\myprofile\renderer {
      */
     private const FIRST_CATEGORIES = ['loginsteps_security'];
 
+    /** @var tree|null The tree being rendered, which says whose courses its course list names. */
+    private ?tree $tree = null;
+
     /**
      * Render the whole profile.
      *
@@ -72,16 +77,21 @@ class myprofile_renderer extends \core_user\output\myprofile\renderer {
     public function render_tree(tree $tree) {
         $categories = [];
         $first = [];
-        foreach ($tree->categories as $category) {
-            $context = $this->category_context($category);
-            if ($context === null) {
-                continue;
+        $this->tree = $tree;
+        try {
+            foreach ($tree->categories as $category) {
+                $context = $this->category_context($category);
+                if ($context === null) {
+                    continue;
+                }
+                if (in_array((string) $category->name, self::FIRST_CATEGORIES, true)) {
+                    $first[] = $context;
+                } else {
+                    $categories[] = $context;
+                }
             }
-            if (in_array((string) $category->name, self::FIRST_CATEGORIES, true)) {
-                $first[] = $context;
-            } else {
-                $categories[] = $context;
-            }
+        } finally {
+            $this->tree = null;
         }
         $categories = array_merge($first, $categories);
 
@@ -116,10 +126,13 @@ class myprofile_renderer extends \core_user\output\myprofile\renderer {
      * Render a single node.
      *
      * @param node $node The node.
-     * @return string HTML.
+     * @return string HTML, empty for a course list with nothing left to name.
      */
     public function render_node(node $node) {
         $context = $this->node_context($node);
+        if ($context === null) {
+            return '';
+        }
         $context['isfact'] = ($context['content'] !== '');
 
         return $this->render_from_template('theme_dimensions/core_user/myprofile_node', $context);
@@ -137,6 +150,9 @@ class myprofile_renderer extends \core_user\output\myprofile\renderer {
 
         foreach ($category->nodes as $node) {
             $context = $this->node_context($node);
+            if ($context === null) {
+                continue;
+            }
             if ($context['content'] !== '') {
                 $facts[] = $context;
             } else if ($context['hasurl'] || $context['title'] !== '') {
@@ -172,9 +188,17 @@ class myprofile_renderer extends \core_user\output\myprofile\renderer {
      * button as a node's title, with no content and no url. Pinned by myprofile_renderer_test.
      *
      * @param node $node The node.
-     * @return array The context.
+     * @return array|null The context, or null for a course list that must not print.
      */
-    protected function node_context(node $node): array {
+    protected function node_context(node $node): ?array {
+        $content = (string) $node->content;
+        if ((string) $node->name === profilecourses::NODE) {
+            $content = $this->course_list($content);
+            if ($content === null) {
+                return null;
+            }
+        }
+
         $url = $node->url;
         $icon = $node->icon;
 
@@ -190,10 +214,29 @@ class myprofile_renderer extends \core_user\output\myprofile\renderer {
             'title' => (string) $node->title,
             'hasurl' => !empty($url),
             'url' => !empty($url) ? $url->out(false) : '',
-            'content' => (string) $node->content,
+            'content' => $content,
             'hasicon' => ($iconhtml !== ''),
             'iconhtml' => $iconhtml,
             'classes' => trim((string) $node->classes),
         ];
+    }
+
+    /**
+     * The course list of the "Course profiles" node, as this viewer may read it.
+     *
+     * @param string $content Core's list.
+     * @return string|null Core's list when it names nothing withheld, the list without the withheld
+     *     courses otherwise, or null when no course is left and the node must not print.
+     */
+    protected function course_list(string $content): ?string {
+        $replacement = profilecourses::replacement($this->tree);
+        if ($replacement === null) {
+            return $content;
+        }
+        if (!$replacement['courses']) {
+            return null;
+        }
+
+        return $this->render_from_template('theme_dimensions/core_user/myprofile_courses', $replacement);
     }
 }

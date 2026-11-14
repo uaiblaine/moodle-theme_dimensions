@@ -5,6 +5,14 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A profile no longer names a course local_unlistedcourses withholds from the reader.** Moodle's "Course
+  profiles" list on `user/profile.php` and `user/view.php` named every course of the profile's owner, with a link, to
+  anybody who may open the profile. The theme now builds that list again from Moodle's own query with the plugin's
+  listing rule applied before the "View more" cut, and prints it in place of Moodle's whenever Moodle's names a
+  withheld course; a list with no course left is not printed, and a profile naming nothing withheld is printed as
+  Moodle built it. Costs one statement and the plugin's batch read per profile page. Not covered, because no
+  renderer draws them: the navigation tree's *Courses* branch under a person, the forum posts, notes and grade
+  overview pages of a person, global search, and the web services.
 - The category showcase's stylesheet drops three rules keyed on `body.drawer-open-left`, a class no script of Boost
   5.3 or Boost Union sets: a drawers layout marks an open drawer on `#page` instead. Nothing on the page moves. Its
   comments now say how Moodle 5.3.1 lays out the page beside an open side drawer.
