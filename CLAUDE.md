@@ -269,7 +269,9 @@ classes/output/course_notice.php  The notice's renderable and its fold preferenc
 templates/course_notice.mustache, scss/coursenotice.scss, amd/src/coursenotice.js  Its markup, styles,
                                and the fold, the copy buttons and the MooTube move.
 classes/output/core_user/myprofile_renderer.php  The profile page, from templates.
-templates/core_user/myprofile_*.mustache         Its three templates.
+templates/core_user/myprofile_*.mustache         Its four templates.
+classes/local/profilecourses.php  The profile's course list without the courses local_unlistedcourses withholds
+                               from the viewer; fed by theme_dimensions_myprofile_navigation() in lib.php.
 mutations/gates.conf           Mutation spec: `mdl mutate moodle-theme_dimensions
                                mutations/gates.conf`. Every guard must redden a test.
 classes/local/category/branding.php  The hero of a category: the row, the audited palette, the
@@ -358,7 +360,7 @@ reflection on the class the copy would otherwise inherit from).
 - **A new override gets its snapshot in the same commit** (the script writes it: "new snapshot"), after checking
   that the copy tracks today's upstream; `test_every_copy_has_a_snapshot_and_every_snapshot_a_copy` fails
   otherwise. A new method copy is added to `upstream::METHODS` first.
-- **The three `core_user/myprofile_*` templates copy nothing** (core draws the profile in PHP) and are
+- **The four `core_user/myprofile_*` templates copy nothing** (core draws the profile in PHP) and are
   `upstream::OWN_TEMPLATES`; a test reddens if core or Boost Union ever ships one of those names.
 - The snapshots ship in the release (as Boost Union's does); `/scripts` is `export-ignore`d. The baseline of
   2026-10-26 (core 5.3+ 2026100500.02, Boost Union 143e7497) was taken after reading all 26 copies against
@@ -737,9 +739,29 @@ The theme reads no profile fields: the navbar shows what `fullname()` composes (
 - **The tree cannot be pruned.** `node`'s properties are all private behind a `__get`, and
   `tree::add_node()` throws `coding_exception` on a duplicate name, so a `myprofile_navigation`
   callback can add but never remove or replace. A renderer is the only place a node could be
-  withheld — and it deliberately is not used for that. What the profile shows is configured
+  withheld, and it is used for ONE node (below). Everything else the profile shows is configured
   through `$CFG->hiddenuserfields`, which core consults while BUILDING the tree; a second,
   invisible rule in the presentation layer would be a place for the two to disagree.
+- **The "Course profiles" list is rebuilt without the courses local_unlistedcourses withholds from the
+  viewer** (`local\profilecourses`, the owner's decision of 2026-11-13 over the plugin's audit finding
+  SA-F1). Core's node is pre-built HTML naming every course of the profile's owner. `replacement()`
+  runs core's query again (`enrol_get_all_users_courses()`), applies core's hidden-course rule and then
+  `access::filter_courses()` once, and answers null (core's content stands) when nothing is withheld,
+  so the copy of core's loop prints only on a profile that names a withheld course. It was rebuilt, not
+  parsed: taking links out of core's HTML leaves a list cut at `navcourselimit` short by the number of
+  courses withheld. The copy mirrors core's cut, "View more" after the Nth course whatever follows.
+  `profilecourses_test::test_the_rebuilt_list_is_cores_list_without_the_withheld_course` compares the
+  copy with core's own list item for item (site profile and in-course, cut and whole) and reddens when
+  `core_myprofile_navigation()` changes: re-read `lib/myprofilelib.php` then.
+- **Whose profile a tree is comes from `theme_dimensions_myprofile_navigation()`** (`lib.php`), which adds
+  no node and records core's `$user` and `$course` per tree in a `WeakMap`; the renderer is never told
+  either. A course list whose tree nobody recorded is withheld (fail closed); without the plugin's
+  class core's content stands (fail open). `get_plugins_with_function()` caches which plugins define the
+  callback, so the node vanishes on a site that took the code without the upgrade, until it runs.
+- **A test that builds a profile tree forces the theme FIRST**: core's badge callback asks for a
+  renderer inside `manager::build_tree()`, which initialises the page's theme, and `force_theme()`
+  throws after that. As the administrator on the stacks, tool_muloginas' callback also throws there
+  under PHPUnit: use an enrolled user as the control viewer.
 - **The renderer does not reach the heading, the picture or the "About me" block.**
   `user/profile.php` and `user/view.php` print those themselves before handing the tree over,
   and only `hiddenuserfields` reaches the description (`user/profile.php:237-254`). They are

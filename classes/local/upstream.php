@@ -149,13 +149,14 @@ final class upstream {
      * The templates under templates/<component>/ that are the theme's own and copy nothing.
      *
      * Core draws the profile page in PHP (core_user\output\myprofile\renderer), so the theme's renderer renders
-     * these three under core_user's name with no core template behind them. Every other template there must
+     * these four under core_user's name with no core template behind them. Every other template there must
      * have an upstream: one that loses it is a template core removed, which the theme then overrides in vain.
      *
      * @var string[]
      */
     const OWN_TEMPLATES = [
         'core_user/myprofile_category',
+        'core_user/myprofile_courses',
         'core_user/myprofile_node',
         'core_user/myprofile_tree',
     ];
