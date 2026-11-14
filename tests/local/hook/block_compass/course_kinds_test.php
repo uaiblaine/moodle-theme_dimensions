@@ -68,11 +68,11 @@ final class course_kinds_test extends \advanced_testcase {
     }
 
     /**
-     * The listener names the model field and its two values with this theme's nouns, reading nothing.
+     * The listener names the model field and its three values with this theme's nouns, reading nothing.
      *
      * @return void
      */
-    public function test_names_the_model_field_and_its_two_kinds(): void {
+    public function test_names_the_model_field_and_its_three_kinds(): void {
         global $DB;
 
         // Warm what the block's own requests have warm: the configuration and the theme's strings.
@@ -94,7 +94,19 @@ final class course_kinds_test extends \advanced_testcase {
                 'one' => get_string('compass_kind_event', 'theme_dimensions'),
                 'many' => get_string('compass_kind_events', 'theme_dimensions'),
             ],
+            landingfields::MODEL_TRAIL => [
+                'key' => 'trail',
+                'one' => get_string('compass_kind_trail', 'theme_dimensions'),
+                'many' => get_string('compass_kind_trails', 'theme_dimensions'),
+            ],
         ], $hook->get_kinds());
+        $this->assertSame([1, 2, 3], array_keys($hook->get_kinds()), 'the block keeps this order, course first');
+        $this->assertSame(['trail', 'trails'], [
+            get_string('compass_kind_trail', 'theme_dimensions'),
+            get_string('compass_kind_trails', 'theme_dimensions'),
+        ]);
+        $this->assertArrayNotHasKey(0, $hook->get_kinds(), 'a course with no model stays unnamed');
+        $this->assertArrayNotHasKey(4, $hook->get_kinds(), 'a value beyond the options stays unnamed');
     }
 
     /**
@@ -104,6 +116,9 @@ final class course_kinds_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_block_takes_the_model_field_only_while_visible_to_everyone(): void {
+        // The block's observers of custom field events run after the commit ('internal' => false), and the purge of
+        // its field cache is one of them: under the default rollback reset they would never fire.
+        $this->preventResetByRollback();
         landingfields::ensure_fields();
         \block_compass\local\filter_fields::purge();
         $field = landingfields::get_field(landingfields::SHORTNAME_MODEL);

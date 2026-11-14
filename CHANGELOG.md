@@ -5,6 +5,11 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A trail gets its kind in block_compass, as an event does.** The theme's answer to the block's course kinds hook
+  named the course and the event models only, so a trail drew no kind in the All courses view and was counted as a
+  course in the open-for-enrolment line. It now names the trail model too (`trail` / `trilha`), after course and
+  event: the line reads "6 courses, 4 events and 2 trails start by ...", and a trail's row carries the Trail pill
+  (2026100612).
 - **A profile no longer names a course local_unlistedcourses withholds from the reader.** Moodle's "Course
   profiles" list on `user/profile.php` and `user/view.php` named every course of the profile's owner, with a link, to
   anybody who may open the profile. The theme now builds that list again from Moodle's own query with the plugin's
