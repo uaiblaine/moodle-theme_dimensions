@@ -309,6 +309,13 @@ class category_card implements \core\output\renderable, \core\output\templatable
             landingfields::MODEL_TRAIL => 'landingfield_model_trail',
             default => null,
         };
+        // The kind's glyph, keyed on the model as the label is (the fleet Design System's D57).
+        $kindicon = match ($this->values->model) {
+            landingfields::MODEL_COURSE => 'fa-graduation-cap',
+            landingfields::MODEL_EVENT => 'fa-calendar-day',
+            landingfields::MODEL_TRAIL => 'fa-route',
+            default => null,
+        };
         $badges = $this->badges();
         $start = (int) $this->course->startdate;
         // A visitor's card states a start day only where it prints one: an event's date tile.
@@ -351,6 +358,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
             'badgeslabel' => self::text('category_badges'),
             'isevent' => $isevent,
             'kindlabel' => $kindkey ? self::text($kindkey) : null,
+            'kindicon' => $kindicon,
             'haskind' => $kindkey !== null,
             'datetile' => $this->datetile($isevent),
             'meta' => $this->meta($isevent),

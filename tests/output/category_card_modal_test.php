@@ -195,6 +195,25 @@ final class category_card_modal_test extends \advanced_testcase {
     }
 
     /**
+     * Each kind draws its own glyph: the cap for a course, the day for an event, the route for a trail, none without one.
+     */
+    public function test_each_kind_draws_its_icon(): void {
+        $this->seed();
+        $trail = self::getDataGenerator()->create_course(['category' => $this->ids['root'], 'fullname' => 'Trilha Aberta']);
+        course_handler::create()->instance_form_save((object) [
+            'id' => $trail->id,
+            'customfield_' . landingfields::SHORTNAME_MODEL => landingfields::MODEL_TRAIL,
+        ]);
+
+        $cards = $this->cards();
+
+        $this->assertSame('fa-route', $cards[(int) $trail->id]->kindicon);
+        $this->assertSame('fa-calendar-day', $cards[$this->ids['event']]->kindicon);
+        $this->assertSame('fa-graduation-cap', $cards[$this->ids['open']]->kindicon);
+        $this->assertNull($cards[$this->ids['openplain']]->kindicon, 'A course with no model draws no glyph.');
+    }
+
+    /**
      * The dialogue's sheet as categorycoursemodal renders it from a card: what the card holds, and no content.
      *
      * The module reads the kicker and the buttons off the attributes the card writes from its modal keys, and the

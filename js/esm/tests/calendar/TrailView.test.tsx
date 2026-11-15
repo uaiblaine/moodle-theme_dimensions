@@ -222,6 +222,12 @@ describe('the switch', () => {
         expect(page.querySelector('[data-action="dim-cal-view-trail"]')?.getAttribute('aria-pressed')).toBe('true');
         expect(page.querySelector('[data-action="dim-cal-types"]')?.closest('[hidden]')).not.toBeNull();
         expect(page.querySelector('[data-region="dim-cal-trailfilters"]')).not.toBeNull();
+        // The picker's icon is Font Awesome's route, the course card's trail glyph, decorative.
+        const icon = page.querySelector('[data-region="dim-cal-trailfilters"] .dim-cal__trailpick > .dim-cal__trailicon');
+        expect(icon?.tagName).toBe('I');
+        expect(icon?.classList.contains('fa-route')).toBe(true);
+        expect(icon?.getAttribute('aria-hidden')).toBe('true');
+        expect(page.querySelector('.dim-cal__trailicon svg, svg.dim-cal__trailicon')).toBeNull();
         expect(page.querySelector('[data-action="dim-cal-new"]')).toBeNull();
         const url = new URL(window.location.href);
         expect([url.searchParams.get('view'), url.searchParams.get('month')]).toEqual(['trail', '2026-11']);
@@ -690,6 +696,7 @@ describe('the step\'s popover', () => {
         expect(pop.getAttribute('role')).toBe('dialog');
         expect(pop.querySelector('h2')?.textContent).toBe('Prática');
         expect(pop.querySelector('[data-region="dim-cal-trailposition"]')?.textContent).toBe('Course 2 of 2 · Trilha de Gestão');
+        expect(pop.querySelector('[data-region="dim-cal-trailposition"] > i.fa.fa-route.dim-cal__trailicon')).not.toBeNull();
         expect(pop.textContent).toContain('The course\'s dates');
         expect(pop.textContent).toContain('Prática supervisionada');
         expect(pop.querySelector('.dim-cal__trailcategory')?.textContent).toBe('Gestão');

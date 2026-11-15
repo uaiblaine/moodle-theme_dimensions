@@ -740,6 +740,44 @@ final class get_category_rows_test extends \advanced_testcase {
     }
 
     /**
+     * A card's kind glyph survives the returns, so a page the client appends draws a trail's route as page one does.
+     */
+    public function test_a_cards_kind_icon_arrives_through_the_returns(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        course_handler::reset_caches();
+        landingfields::reset_field_cache();
+        landingfields::ensure_fields();
+        landingfields::reset_field_cache();
+
+        $generator = self::getDataGenerator();
+        $category = $generator->create_category();
+        $ids = [];
+        $models = [
+            'course' => landingfields::MODEL_COURSE,
+            'event' => landingfields::MODEL_EVENT,
+            'trail' => landingfields::MODEL_TRAIL,
+        ];
+        foreach ($models as $name => $model) {
+            $course = $generator->create_course(['category' => $category->id, 'fullname' => "Kind {$name}"]);
+            course_handler::create()->instance_form_save((object) [
+                'id' => $course->id,
+                'customfield_' . landingfields::SHORTNAME_MODEL => $model,
+            ]);
+            $ids[$name] = (int) $course->id;
+        }
+        $plain = $generator->create_course(['category' => $category->id, 'fullname' => 'Kind none']);
+
+        $this->become($generator->create_user());
+        $cards = array_column($this->data(['categoryid' => (int) $category->id])['cards'], null, 'id');
+
+        $this->assertSame('fa-route', $cards[$ids['trail']]['kindicon']);
+        $this->assertSame('fa-calendar-day', $cards[$ids['event']]['kindicon']);
+        $this->assertSame('fa-graduation-cap', $cards[$ids['course']]['kindicon']);
+        $this->assertNull($cards[(int) $plain->id]['kindicon'], 'Control: a course with no model draws no glyph.');
+    }
+
+    /**
      * Every key of the card context is declared in the returns, and nothing else is.
      */
     public function test_the_declared_card_keys_and_the_exported_card_keys_are_the_same_set(): void {
