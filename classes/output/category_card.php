@@ -175,7 +175,7 @@ class category_card implements \core\output\renderable, \core\output\templatable
      * than the card it opened from; a state the card offers nothing for gets no primary button either.
      */
     private const MODAL_PRIMARY = [
-        classifier::STATE_ENROLLED => ['category_modal_continue', 'fa-play'],
+        classifier::STATE_ENROLLED => ['category_modal_continue', 'fa-arrow-right'],
         classifier::STATE_FREE => ['category_modal_free', 'fa-arrow-right'],
         classifier::STATE_OPEN => ['category_modal_enrol', 'fa-arrow-right'],
     ];

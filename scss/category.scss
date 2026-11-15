@@ -647,37 +647,55 @@ body.dim-category {
         // system's primitives, because nothing else in the page states the badge's text
         // colour: Bootstrap's .badge would, and forces white. The contrast of each pair is
         // in the comment beside it; the dark half of every pair is at the foot of this file.
+        // Each state's EDGE is the Design System label's 1px line, which shows against its own fill
+        // (1.25:1 at least, the contrast beside it): a tint's is its ink mixed into its fill at 30%, the
+        // derivation of the family's state edges where the pair is the same (post.scss); the solid
+        // enrolled fill has no darker ink, so its edge is the palette's next stop down.
         --dim-badge-enrolled-bg: var(--dim-ds-blue-600, #070093);
         --dim-badge-enrolled-fg: var(--dim-ds-white, #fff); // 14.7:1.
+        --dim-badge-enrolled-edge: var(--dim-ds-blue-800, #030050); // 1.28:1 on its fill.
         --dim-badge-open-bg: var(--dim-ds-green-050, #f0fbe0);
         --dim-badge-open-fg: var(--dim-ds-green-800, #1e4500); // 10.3:1.
+        --dim-badge-open-edge: #{mix($dim-ds-green-800, $dim-ds-green-050, 30%)}; // 1.74:1.
         --dim-badge-pending-bg: var(--dim-ds-yellow-100, #fcefdc);
         --dim-badge-pending-fg: var(--dim-ds-yellow-800, #60451f); // 7.8:1.
+        --dim-badge-pending-edge: #{mix($dim-ds-yellow-800, $dim-ds-yellow-100, 30%)}; // 1.64:1.
         --dim-badge-scheduled-bg: var(--dim-ds-blue-050, #edeefb);
         --dim-badge-scheduled-fg: var(--dim-ds-blue-700, #050073); // 14.5:1.
+        --dim-badge-scheduled-edge: #{mix($dim-ds-blue-700, $dim-ds-blue-050, 30%)}; // 2.0:1.
         --dim-badge-free-bg: var(--dim-ds-cyan-100, #cce6ea);
         --dim-badge-free-fg: var(--dim-ds-cyan-800, #00343c); // 10.3:1.
+        --dim-badge-free-edge: #{mix($dim-ds-cyan-800, $dim-ds-cyan-100, 30%)}; // 1.76:1.
         --dim-badge-none-bg: var(--dim-ds-gray-200, #e9ecef);
         --dim-badge-none-fg: var(--dim-ds-gray-700, #505050); // 6.8:1.
+        --dim-badge-none-edge: #{mix($dim-ds-gray-700, $dim-ds-gray-200, 30%)}; // 1.59:1.
         --dim-badge-held-bg: var(--dim-ds-gray-200, #e9ecef);
         --dim-badge-held-fg: var(--dim-ds-gray-700, #505050); // 6.8:1.
+        --dim-badge-held-edge: #{mix($dim-ds-gray-700, $dim-ds-gray-200, 30%)}; // 1.59:1.
         --dim-badge-public-bg: var(--dim-ds-cyan-100, #cce6ea);
         --dim-badge-public-fg: var(--dim-ds-cyan-800, #00343c); // 10.3:1.
+        --dim-badge-public-edge: #{mix($dim-ds-cyan-800, $dim-ds-cyan-100, 30%)}; // 1.76:1.
         --dim-badge-hidden-bg: var(--dim-ds-red-100, #f4d6d2);
         --dim-badge-hidden-fg: var(--dim-ds-red-800, #51140d); // 10.6:1.
+        --dim-badge-hidden-edge: #{mix($dim-ds-red-800, $dim-ds-red-100, 30%)}; // 1.81:1.
         // The enrolment matrix's five further states reuse the measured pairs of their families, so
         // their ratios are those above: the waiting list pending's, suspended and ended none's, key
         // free's, conditional scheduled's.
         --dim-badge-waitlisted-bg: var(--dim-ds-yellow-100, #fcefdc);
         --dim-badge-waitlisted-fg: var(--dim-ds-yellow-800, #60451f); // 7.8:1.
+        --dim-badge-waitlisted-edge: #{mix($dim-ds-yellow-800, $dim-ds-yellow-100, 30%)}; // 1.64:1.
         --dim-badge-suspended-bg: var(--dim-ds-gray-200, #e9ecef);
         --dim-badge-suspended-fg: var(--dim-ds-gray-700, #505050); // 6.8:1.
+        --dim-badge-suspended-edge: #{mix($dim-ds-gray-700, $dim-ds-gray-200, 30%)}; // 1.59:1.
         --dim-badge-expired-bg: var(--dim-ds-gray-200, #e9ecef);
         --dim-badge-expired-fg: var(--dim-ds-gray-700, #505050); // 6.8:1.
+        --dim-badge-expired-edge: #{mix($dim-ds-gray-700, $dim-ds-gray-200, 30%)}; // 1.59:1.
         --dim-badge-key-bg: var(--dim-ds-cyan-100, #cce6ea);
         --dim-badge-key-fg: var(--dim-ds-cyan-800, #00343c); // 10.3:1.
+        --dim-badge-key-edge: #{mix($dim-ds-cyan-800, $dim-ds-cyan-100, 30%)}; // 1.76:1.
         --dim-badge-conditional-bg: var(--dim-ds-blue-050, #edeefb);
         --dim-badge-conditional-fg: var(--dim-ds-blue-700, #050073); // 14.5:1.
+        --dim-badge-conditional-edge: #{mix($dim-ds-blue-700, $dim-ds-blue-050, 30%)}; // 2.0:1.
         // The posters' five, each with its dark value at the foot of this file. The call to
         // action's fill (the site's primary, the design's lighter blue in the dark mode, where a
         // dark primary is a hole in the page) and its hover; the tint of a pressed quiet control and of the
@@ -731,6 +749,7 @@ body.dim-category {
         --dim-recede-line: var(--bs-border-color, #dee2e6);
         --dim-recede-pill-bg: var(--dim-badge-none-bg);
         --dim-recede-pill-fg: var(--dim-badge-none-fg);
+        --dim-recede-pill-edge: var(--dim-badge-none-edge);
         --dim-recede-film: rgba(255, 255, 255, .6);
     }
 
@@ -2185,6 +2204,10 @@ body.dim-category {
         --dim-card-done-bg: var(--dimensions-card-done-bg, var(--bs-success-bg-subtle, #d7e4d6));
         --dim-card-done-ink: var(--dimensions-card-done-ink, var(--bs-success-text-emphasis, #153114));
         --dim-card-done-edge: var(--dimensions-card-done-edge, 4px);
+        // The completed seal's 1px line. Not a contract token, and not named -edge: --dim-card-done-edge above is the
+        // height of the cover's green base. Bootstrap's success border beside its success fill, one triple that
+        // follows the colour mode (1.35:1 on the light fill, 1.77:1 on the dark one), as the calendar's seal reads it.
+        --dim-card-done-rim: var(--dimensions-success-edge, var(--bs-success-border-subtle, #aecaad));
         --dim-card-shadow: var(--dimensions-card-shadow, 0 1px 2px rgba(0, 0, 0, .08));
         --dim-card-shadow-hover: var(--dimensions-card-shadow-hover, 0 6px 16px rgba(0, 0, 0, .12));
         --dim-card-focus-ring: var(--dimensions-card-focus-ring, var(--dimensions-focus-ring, var(--bs-emphasis-color, #000)));
@@ -2333,8 +2356,8 @@ body.dim-category {
         left: 10px;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 3px 10px;
+        gap: .25rem;
+        padding: .125rem .5rem;
         border-radius: var(--dim-radius-pill);
         background: var(--dim-card-chip-bg);
         backdrop-filter: blur(4px);
@@ -2506,14 +2529,10 @@ body.dim-category {
         text-align: right;
     }
 
-    // The completed card: the state pill becomes the green seal and the cover gets a green base, drawn
-    // over the image and the film. The cover-less card's top edge and the thumbnail-less row's leading edge turn green
-    // in their own rules (Boost Union's images, below), and the seal and the base stay when the progress row is off.
-    .dim-badge--done {
-        background: var(--dim-card-done-bg);
-        color: var(--dim-card-done-ink);
-    }
-
+    // The completed card: the state pill becomes the green seal (below the state labels, whose base edge it re-points)
+    // and the cover gets a green base, drawn over the image and the film. The cover-less card's top edge and the
+    // thumbnail-less row's leading edge turn green in their own rules (Boost Union's images, below), and the seal and
+    // the base stay when the progress row is off.
     .dim-card--done .dim-card__media::before {
         content: "";
         position: absolute;
@@ -2526,88 +2545,119 @@ body.dim-category {
         pointer-events: none;
     }
 
-    // The state badge. One class per state, each reading the pair of tokens declared on the
-    // token roots above (and overridden for the dark mode at the foot of this file), because
-    // a background with no ink of its own is exactly the defect Bootstrap's .badge produces.
+    // The state badge, the Design System's status label: a 6px rectangle with a 1px edge in its state's edge. One
+    // class per state, each re-pointing the edge, the fill and the ink together from the tokens declared on the token
+    // roots above (and overridden for the dark mode at the foot of this file), because a background with no ink of its
+    // own is exactly the defect Bootstrap's .badge produces. The base draws the none state.
     .dim-badge {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 3px 10px;
-        border-radius: var(--dim-radius-pill);
+        gap: .25rem;
+        padding: .125rem .5rem;
+        border: 1px solid var(--dim-badge-none-edge);
+        border-radius: var(--dim-ds-radius-sm);
+        background: var(--dim-badge-none-bg);
+        color: var(--dim-badge-none-fg);
         font-size: .75rem;
         font-weight: 600;
         line-height: 1.4;
     }
 
+    // The state's icon is decorative, in the label's own size and ink (it inherits the colour), pinned here so no other
+    // rule sizes the glyph above the words and stretches the rectangle.
+    .dim-badge .fa {
+        font-size: 1em;
+        line-height: 1;
+    }
+
     .dim-badge--enrolled {
+        border-color: var(--dim-badge-enrolled-edge);
         background: var(--dim-badge-enrolled-bg);
         color: var(--dim-badge-enrolled-fg);
     }
 
     .dim-badge--pending {
+        border-color: var(--dim-badge-pending-edge);
         background: var(--dim-badge-pending-bg);
         color: var(--dim-badge-pending-fg);
     }
 
     .dim-badge--scheduled {
+        border-color: var(--dim-badge-scheduled-edge);
         background: var(--dim-badge-scheduled-bg);
         color: var(--dim-badge-scheduled-fg);
     }
 
     .dim-badge--open {
+        border-color: var(--dim-badge-open-edge);
         background: var(--dim-badge-open-bg);
         color: var(--dim-badge-open-fg);
     }
 
     .dim-badge--free {
+        border-color: var(--dim-badge-free-edge);
         background: var(--dim-badge-free-bg);
         color: var(--dim-badge-free-fg);
     }
 
     .dim-badge--none {
+        border-color: var(--dim-badge-none-edge);
         background: var(--dim-badge-none-bg);
         color: var(--dim-badge-none-fg);
     }
 
     .dim-badge--held {
+        border-color: var(--dim-badge-held-edge);
         background: var(--dim-badge-held-bg);
         color: var(--dim-badge-held-fg);
     }
 
     .dim-badge--public {
+        border-color: var(--dim-badge-public-edge);
         background: var(--dim-badge-public-bg);
         color: var(--dim-badge-public-fg);
     }
 
     .dim-badge--hidden {
+        border-color: var(--dim-badge-hidden-edge);
         background: var(--dim-badge-hidden-bg);
         color: var(--dim-badge-hidden-fg);
     }
 
     .dim-badge--waitlisted {
+        border-color: var(--dim-badge-waitlisted-edge);
         background: var(--dim-badge-waitlisted-bg);
         color: var(--dim-badge-waitlisted-fg);
     }
 
     .dim-badge--suspended {
+        border-color: var(--dim-badge-suspended-edge);
         background: var(--dim-badge-suspended-bg);
         color: var(--dim-badge-suspended-fg);
     }
 
     .dim-badge--expired {
+        border-color: var(--dim-badge-expired-edge);
         background: var(--dim-badge-expired-bg);
         color: var(--dim-badge-expired-fg);
     }
 
     .dim-badge--key {
+        border-color: var(--dim-badge-key-edge);
         background: var(--dim-badge-key-bg);
         color: var(--dim-badge-key-fg);
     }
 
     .dim-badge--conditional {
+        border-color: var(--dim-badge-conditional-edge);
         background: var(--dim-badge-conditional-bg);
         color: var(--dim-badge-conditional-fg);
+    }
+
+    .dim-badge--done {
+        border-color: var(--dim-card-done-rim);
+        background: var(--dim-card-done-bg);
+        color: var(--dim-card-done-ink);
     }
 
     // The route line under the pill: a method would also take the viewer now; and the opening line in the
@@ -2723,14 +2773,22 @@ body.dim-category {
     .dim-card__topkind {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 3px 10px;
+        gap: .25rem;
+        padding: .125rem .5rem;
         border: var(--dim-card-border-width) solid var(--dim-card-border);
         border-radius: var(--dim-radius-pill);
         background: var(--dim-card-extra-bg);
         color: var(--dim-card-ink);
         font-size: .75rem;
         font-weight: 600;
+    }
+
+    // The kind's glyph is the words' size, on the cover and in the cover-less row; the list's leading cell, where the
+    // glyph is all that shows, sizes the whole element instead.
+    .dim-card__kind .fa,
+    .dim-card__topkind .fa {
+        font-size: 1em;
+        line-height: 1;
     }
 
     .dim-vitrine--cards .dim-card--nocover .dim-card__crests {
@@ -2790,24 +2848,34 @@ body.dim-category {
         --dim-card-film: var(--dim-recede-film);
         --dim-badge-enrolled-bg: var(--dim-recede-pill-bg);
         --dim-badge-enrolled-fg: var(--dim-recede-pill-fg);
+        --dim-badge-enrolled-edge: var(--dim-recede-pill-edge);
         --dim-badge-scheduled-bg: var(--dim-recede-pill-bg);
         --dim-badge-scheduled-fg: var(--dim-recede-pill-fg);
+        --dim-badge-scheduled-edge: var(--dim-recede-pill-edge);
         --dim-badge-pending-bg: var(--dim-recede-pill-bg);
         --dim-badge-pending-fg: var(--dim-recede-pill-fg);
+        --dim-badge-pending-edge: var(--dim-recede-pill-edge);
         --dim-badge-waitlisted-bg: var(--dim-recede-pill-bg);
         --dim-badge-waitlisted-fg: var(--dim-recede-pill-fg);
+        --dim-badge-waitlisted-edge: var(--dim-recede-pill-edge);
         --dim-badge-open-bg: var(--dim-recede-pill-bg);
         --dim-badge-open-fg: var(--dim-recede-pill-fg);
+        --dim-badge-open-edge: var(--dim-recede-pill-edge);
         --dim-badge-free-bg: var(--dim-recede-pill-bg);
         --dim-badge-free-fg: var(--dim-recede-pill-fg);
+        --dim-badge-free-edge: var(--dim-recede-pill-edge);
         --dim-badge-key-bg: var(--dim-recede-pill-bg);
         --dim-badge-key-fg: var(--dim-recede-pill-fg);
+        --dim-badge-key-edge: var(--dim-recede-pill-edge);
         --dim-badge-conditional-bg: var(--dim-recede-pill-bg);
         --dim-badge-conditional-fg: var(--dim-recede-pill-fg);
+        --dim-badge-conditional-edge: var(--dim-recede-pill-edge);
         --dim-badge-public-bg: var(--dim-recede-pill-bg);
         --dim-badge-public-fg: var(--dim-recede-pill-fg);
+        --dim-badge-public-edge: var(--dim-recede-pill-edge);
         --dim-badge-hidden-bg: var(--dim-recede-pill-bg);
         --dim-badge-hidden-fg: var(--dim-recede-pill-fg);
+        --dim-badge-hidden-edge: var(--dim-recede-pill-edge);
 
         // The call to action stays a Bootstrap button, so it is re-pointed through its own variables.
         .dim-card__cta {
@@ -5733,14 +5801,21 @@ body.dim-category {
         object-fit: cover;
     }
 
+    // The card's state label as it is, the label's one size, lifted off the cover by a shadow.
     .dim-cmodal__pill {
         position: absolute;
         top: 16px;
         left: 16px;
         z-index: 2;
-        padding: 5px 11px;
-        font-size: .78rem;
         box-shadow: 0 1px 4px rgba(0, 0, 0, .35);
+    }
+
+    // A completed card's seal is copied here with its class, and the dialogue is appended to body, outside every card:
+    // the seal's three colours are declared again for it, as the card declares them.
+    .dim-cmodal__pill.dim-badge--done {
+        --dim-card-done-bg: var(--dimensions-card-done-bg, var(--bs-success-bg-subtle, #d7e4d6));
+        --dim-card-done-ink: var(--dimensions-card-done-ink, var(--bs-success-text-emphasis, #153114));
+        --dim-card-done-rim: var(--dimensions-success-edge, var(--bs-success-border-subtle, #aecaad));
     }
 
     .dim-cmodal__heading {
@@ -6261,6 +6336,28 @@ body.dim-category {
     --dim-badge-key-fg: #7fd8e4; // 8.8:1.
     --dim-badge-conditional-bg: #1c2350;
     --dim-badge-conditional-fg: #b9c1ff; // 8.6:1.
+}
+
+// The dark edges, in a block of their own: a Sass interpolation's braces would cut the block above for a reader that
+// stops at the first closing brace (family_tokens_test). Each is lighter than its fill, where a darker line would melt
+// into the dark page: the ink mixed in at 30%, as the family's dark state edges (post.scss), and the palette's next
+// stop up for the enrolled fill. The contrast on the fill is beside each.
+:root[data-bs-theme="dark"] body.dim-category .dim-vitrine,
+:root[data-bs-theme="dark"] body.dim-category .dim-cmodal {
+    --dim-badge-enrolled-edge: #{$dim-ds-blue-300}; // 1.64:1.
+    --dim-badge-open-edge: #{mix(#a9ee55, #18330c, 30%)}; // 2.22:1.
+    --dim-badge-pending-edge: #{mix(#f0c674, #3a2c0c, 30%)}; // 2.07:1.
+    --dim-badge-scheduled-edge: #{mix(#b9c1ff, #1c2350, 30%)}; // 2.02:1.
+    --dim-badge-free-edge: #{mix(#7fd8e4, #0c2e33, 30%)}; // 2.08:1.
+    --dim-badge-none-edge: #{mix(#b4bccd, #262b3b, 30%)}; // 1.93:1.
+    --dim-badge-held-edge: #{mix(#b4bccd, #262b3b, 30%)}; // 1.93:1.
+    --dim-badge-public-edge: #{mix(#7fd8e4, #0c2e33, 30%)}; // 2.08:1.
+    --dim-badge-hidden-edge: #{mix(#f4b4ab, #3a1512, 30%)}; // 2.04:1.
+    --dim-badge-waitlisted-edge: #{mix(#f0c674, #3a2c0c, 30%)}; // 2.07:1.
+    --dim-badge-suspended-edge: #{mix(#b4bccd, #262b3b, 30%)}; // 1.93:1.
+    --dim-badge-expired-edge: #{mix(#b4bccd, #262b3b, 30%)}; // 1.93:1.
+    --dim-badge-key-edge: #{mix(#7fd8e4, #0c2e33, 30%)}; // 2.08:1.
+    --dim-badge-conditional-edge: #{mix(#b9c1ff, #1c2350, 30%)}; // 2.02:1.
 }
 
 // ---- The posters' tokens in the dark mode -------------------------------------------------

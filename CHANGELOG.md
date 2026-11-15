@@ -5,6 +5,15 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A course card's state label is a rectangle with an edge, its icon the size of its words** (2026100616). The
+  label under a card's title ("Enrolled", "Open for enrolment", "Hidden from students" and the other states) and its
+  copy on the course dialogue's cover are 6px rectangles, 2px 8px at 0.75rem / 600, with a 1px edge in the state's
+  colour in both colour modes, no longer pills; the icon inside is the words' size, in their ink, 4px from them.
+  "Completed" keeps the rectangle and its check, with a green edge. The dialogue's copy of the label is the card's own
+  size, no longer larger. A card's kind on its cover ("Course", "Event") stays a pill, its icon 4px from the word,
+  2px 8px. A receding card in the filter line's preview greys its label's edge with its fill. The course dialogue's
+  "Continue course" button draws an arrow like its other actions, no longer a triangle: a direction is an arrow or a
+  chevron, never a caret.
 - **Small labels read in sentence case, and status labels are rectangles with an edge** (2026100615). No stylesheet
   of the theme sets text in capitals any more: the filter groups' names, the category hero's trail, the course
   dialogue's kicker and facts, the competency pages' headings, the drawer's labels, the landing page's kicker and
