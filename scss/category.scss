@@ -631,6 +631,15 @@ body.dim-category {
         --dim-radius: var(--dim-ds-radius-lg, 12px);
         --dim-radius-sm: var(--dim-ds-radius-sm, 6px);
         --dim-radius-pill: var(--dim-ds-radius-pill, 50rem);
+        // The fleet Design System's names the filter bar paints with and this file had no alias for. The brand tone's
+        // ground and edge pair with --dim-primary-ink, its ink, in both modes (post.scss turns all three).
+        --dim-radius-md: var(--dimensions-radius-md, 8px);
+        --dim-radius-xl: var(--dimensions-radius-xl, 16px);
+        --dim-brand-tint: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle, #cfe2f2));
+        --dim-brand-edge: var(--dimensions-brand-edge, var(--bs-primary-border-subtle, #9fc4e5));
+        --dim-elevation-sm: var(--dimensions-elevation-sm, 0 1px 2px rgba(7, 0, 147, .08), 0 1px 3px rgba(7, 0, 147, .06));
+        --dim-elevation-md: var(--dimensions-elevation-md, 0 4px 12px rgba(7, 0, 147, .10));
+        --dim-elevation-lg: var(--dimensions-elevation-lg, 0 12px 32px rgba(7, 0, 147, .14));
         // The brand face, which the design names on its controls and its titles; its running text is
         // the reading face. Declared on the roots so the toolbar reads it as well as the areas: the
         // theme's body face is the brand one, and the toolbar has both.
@@ -947,22 +956,22 @@ body.dim-category {
     // toolbar, and the site's fixed navbar (1030) covers a menu that flips upward into it.
     //
     // The toolbar is no card: the filter line, the notice and the row under the line are a column
-    // 10px apart with no border, no surface and no padding, so the controls sit on the page
-    // itself. Every value below that names the design is what the browser computes for it (15px
-    // body, rem at 16px).
+    // 8px apart (the Design System's bar gap) with no border, no surface and no padding, so the
+    // controls sit on the page itself. Every value below that names the design is what the browser
+    // computes for it (15px body, rem at 16px).
     .dim-toolbar {
         position: relative;
         z-index: 30;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: .5rem;
     }
 
     .dim-toolbar__row {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 10px;
+        gap: .5rem;
     }
 
     // ---- The filter line -----------------------------------------------------------------------
@@ -976,7 +985,7 @@ body.dim-category {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 10px;
+        gap: .5rem;
     }
 
     // The search's basis is the first step's floor (13rem, the dim-line--s1 rule below), so a line that
@@ -990,9 +999,11 @@ body.dim-category {
         min-width: 0;
     }
 
-    // The scope: one radio group drawn as a platter, a grey track holding counted cells, the
-    // chosen one raised in the page's surface. It wraps inside itself on a narrow line rather
-    // than scrolling: a scroll container would clip the cells' focus ring, which is outside them.
+    // The scope: one radio group drawn as the Design System's segmented control, an inset platter
+    // holding counted cells, the chosen one raised in the page's surface. It wraps inside itself on
+    // a narrow line rather than scrolling: a scroll container would clip the cells' focus ring,
+    // which is outside them. The platter's 3px padding and transparent 1px border make 32px cells
+    // a 40px control, the height of every other control of the line.
     .dim-line__scope {
         flex: 0 1 auto;
     }
@@ -1003,17 +1014,20 @@ body.dim-category {
         align-items: center;
         gap: 2px;
         padding: 3px;
-        border-radius: var(--dim-radius-sm);
+        border: 1px solid transparent;
+        border-radius: var(--dim-radius);
         background: var(--dim-surface-strong);
     }
 
     .dim-line__scope .dim-pill {
-        min-height: 34px;
-        padding: 4px 12px;
-        border-color: transparent;
-        border-radius: var(--dim-radius-sm);
+        min-height: 2rem;
+        padding: 0 .75rem;
+        border: 0;
+        border-radius: var(--dim-radius-md);
         background: transparent;
         color: var(--dim-muted);
+        font-size: .875rem;
+        font-weight: 500;
 
         &:hover {
             background: var(--dim-surface);
@@ -1021,13 +1035,18 @@ body.dim-category {
         }
     }
 
-    // The chosen cell is the raised one, in the page's surface and ink: the platter's own way of
-    // saying which, where every other chosen chip of the toolbar is filled.
+    // The chosen cell is the raised one, in the page's surface and ink with no border: the
+    // platter's own way of saying which, where a chosen option of the panel takes the brand tone.
     .dim-line__scope .dim-pill__input:checked + .dim-pill {
-        border-color: var(--dim-control-line);
         background: var(--dim-surface);
         color: var(--dim-ink);
-        box-shadow: var(--dim-ds-shadow-sm);
+        font-weight: 600;
+        box-shadow: var(--dim-elevation-sm);
+    }
+
+    // A cell's count stays quiet when its cell is chosen.
+    .dim-line__scope .dim-pill__input:checked + .dim-pill .dim-pill__count {
+        color: var(--dim-muted);
     }
 
     // The search is a pill, its magnifier at the start and its eraser at the end. The eraser is
@@ -1071,8 +1090,10 @@ body.dim-category {
         display: none;
     }
 
-    // The line's icon buttons - the star, the Organise menu's summary - are 40px squares on a
-    // field's corners and boundary, the same face as the Filters control beside them.
+    // The line's icon buttons - the star, the Organise menu's summary - are 40px squares, the same
+    // face as the Filters control beside them. The Design System draws an icon button borderless
+    // inside a capsule; standing alone on the line, each keeps its own control line and surface so
+    // it does not float, and takes the button's radius and its hover and pressed tones.
     .dim-line__iconbtn {
         display: inline-flex;
         flex: 0 0 auto;
@@ -1082,7 +1103,7 @@ body.dim-category {
         min-height: 40px;
         padding: 0;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-sm);
+        border-radius: var(--dim-radius-md);
         background: var(--dim-surface);
         color: var(--dim-ink);
         cursor: pointer;
@@ -1094,7 +1115,8 @@ body.dim-category {
         }
 
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-surface-subtle);
+            color: var(--dim-ink);
         }
 
         &:focus-visible {
@@ -1111,8 +1133,8 @@ body.dim-category {
     }
 
     .dim-line__organise[open] > .dim-line__iconbtn {
-        border-color: var(--dim-open-ring);
-        background: var(--dim-tint);
+        border-color: var(--dim-brand-edge);
+        background: var(--dim-brand-tint);
         color: var(--dim-primary-ink);
     }
 
@@ -1252,44 +1274,33 @@ body.dim-category {
         }
     }
 
-    // The pill track scrolls sideways on a narrow screen, and never widens the page: options laid
-    // out wider than the toolbar would otherwise take the document with them. The scrollbar is
-    // thin rather than hidden, because a track that scrolls and never says so is a track whose
-    // last option nobody finds.
-    //
-    // The track is a plain row of chips 6px apart, the width of the box it is in. A scroll
-    // container clips the focus ring, which is OUTSIDE the chip (3px at 2px), at the track's
-    // edge. So the track carries 5px of padding for the ring to be drawn in and takes the same
-    // 5px back as a negative margin: the ring has room, the chips do not move, and the box is no
-    // wider than the one it is in, plus that room.
+    // A group's options wrap onto further lines inside the box they are in, 6px apart, so every
+    // option stays in view and none widens the page; the track is no scroll container, so the
+    // focus ring outside an option is never clipped.
     .dim-toolbar__pills {
         display: flex;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 6px;
-        max-width: calc(100% + 10px);
-        margin: -5px;
-        padding: 5px;
-        overflow-x: auto;
-        scrollbar-width: thin;
+        gap: .375rem;
+        min-width: 0;
     }
 
-    // The design's chip: outlined, 36px, the brand face at 13.12px and 600, its count and the
-    // Favourites star 6px from the label.
+    // An option of the panel is the Design System's filter panel option: a 28px rounded rectangle
+    // on the control line, never a pill, its count 6px from the label.
     .dim-pill {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        min-height: 36px;
+        gap: .375rem;
+        min-height: 1.75rem;
         margin: 0;
-        padding: 6px 12px;
+        padding: 0 .5rem;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-pill);
+        border-radius: var(--dim-radius-sm);
         background: var(--dim-surface);
         color: var(--dim-ink);
         font-family: var(--dim-font-brand);
-        font-size: .82rem;
-        font-weight: 600;
+        font-size: .8125rem;
+        font-weight: 500;
         white-space: nowrap;
         cursor: pointer;
         transition:
@@ -1297,20 +1308,20 @@ body.dim-category {
             color var(--dim-motion) var(--dim-ease),
             border-color var(--dim-motion) var(--dim-ease);
 
-        // The pill answers the pointer with a background, as every other control of this toolbar
-        // does. The design draws no hover at all; this one is a deliberate departure from it.
+        // The option answers the pointer with a background, as every other control of this toolbar
+        // does; the Design System draws no hover on it.
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-surface-subtle);
+            color: var(--dim-ink);
         }
     }
 
-    // The chosen chip is filled, in the call to action's pair: the site's primary with white on the
-    // light page and #4456ff with white on the dark one (--dim-cta follows the mode, where a dark
-    // primary would be a hole in the dark page; the design's navy is 1.1:1 against its surface).
+    // The chosen option wears the chip's look, the brand tone's ground, edge and ink, never a solid
+    // fill: the tone turns with the colour mode (post.scss), so it reads on both pages.
     .dim-pill__input:checked + .dim-pill {
-        border-color: var(--dim-cta);
-        background: var(--dim-cta);
-        color: var(--dim-cta-ink);
+        border-color: var(--dim-brand-edge);
+        background: var(--dim-brand-tint);
+        color: var(--dim-primary-ink);
     }
 
     .dim-pill__input:focus-visible + .dim-pill {
@@ -1318,14 +1329,16 @@ body.dim-category {
         outline-offset: 2px;
     }
 
+    // The quiet counter: text only, beside its label.
     .dim-pill__count {
-        opacity: .8;
-        font-size: .72rem;
+        color: var(--dim-muted);
+        font-size: .75rem;
+        font-weight: 600;
         font-variant-numeric: tabular-nums;
     }
 
     .dim-pill__input:checked + .dim-pill .dim-pill__count {
-        opacity: 1;
+        color: var(--dim-primary-ink);
     }
 
     // The view toggle and the kebab end the line, after the search that grows between.
@@ -1337,7 +1350,7 @@ body.dim-category {
         display: inline-flex;
         flex: none;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-sm);
+        border-radius: var(--dim-radius-md);
         overflow: hidden;
     }
 
@@ -1360,11 +1373,12 @@ body.dim-category {
         cursor: pointer;
 
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-surface-subtle);
+            color: var(--dim-ink);
         }
 
         &[aria-pressed="true"] {
-            background: var(--dim-tint);
+            background: var(--dim-brand-tint);
             color: var(--dim-primary-ink);
         }
 
@@ -1393,14 +1407,14 @@ body.dim-category {
     // as a stray glyph rather than as their sibling. The design has no kebab, so the trigger takes
     // the language of the control beside it: the segmented toggle's 1px boundary and field corners
     // on the page's surface, its 42px height so the cluster is one line, the hover every control
-    // here makes, and - open - the pressed face of the Filter summary (the tint, its ink and a
-    // line of that ink), because an open menu is a pressed control: a trigger that goes quiet the
+    // here makes, and - open - the pressed face of the Filter summary (the brand tone's ground,
+    // edge and ink), because an open menu is a pressed control: a trigger that goes quiet the
     // moment it is pressed reads as if the press did nothing.
     .dim-toolbar__manage .dropdown-toggle {
         width: 42px;
         height: 42px;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-sm);
+        border-radius: var(--dim-radius-md);
         background: var(--dim-surface);
         color: var(--dim-ink);
         transition:
@@ -1409,13 +1423,13 @@ body.dim-category {
             border-color var(--dim-motion) var(--dim-ease);
 
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-surface-subtle);
             color: var(--dim-ink);
         }
 
         &[aria-expanded="true"] {
-            border-color: var(--dim-primary-ink);
-            background: var(--dim-tint);
+            border-color: var(--dim-brand-edge);
+            background: var(--dim-brand-tint);
             color: var(--dim-primary-ink);
         }
 
@@ -1472,8 +1486,8 @@ body.dim-category {
         min-width: 0;
     }
 
-    // The design's Filter button: a field's corners and boundary, 40px like every control of the
-    // line, the brand face at 15px and 600, its glyph a 1em box.
+    // The design's Filter button: a button's corners and the control line, 40px like every control
+    // of the line, the brand face at 15px and 600, its glyph a 1em box.
     .dim-toolbar__filterstoggle {
         display: inline-flex;
         align-items: center;
@@ -1481,7 +1495,7 @@ body.dim-category {
         min-height: 40px;
         padding: 0 14px;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-sm);
+        border-radius: var(--dim-radius-md);
         background: var(--dim-surface);
         color: var(--dim-ink);
         font-family: var(--dim-font-brand);
@@ -1497,7 +1511,8 @@ body.dim-category {
 
         // It is a button and hovers like one.
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-surface-subtle);
+            color: var(--dim-ink);
         }
 
         // The design's ring, which the site's global rule gives a button and not a summary.
@@ -1514,8 +1529,9 @@ body.dim-category {
         font-size: 1.125rem;
 
         &[aria-pressed="true"] {
-            border-color: var(--dim-open-ring);
-            background: var(--dim-tint);
+            border-color: var(--dim-brand-edge);
+            background: var(--dim-brand-tint);
+            color: var(--dim-primary-ink);
 
             .fa-star {
                 color: var(--dim-star-on);
@@ -1530,50 +1546,53 @@ body.dim-category {
         white-space: nowrap;
     }
 
-    // The open state's line is the open poster's ring: the site's primary on the light card, and on
-    // the dark one a light violet, where a dark primary would not read. Under it, the design's
-    // pressed face: the tint and its ink.
+    // Open, it is a pressed control: the brand tone's ground, edge and ink, which turn with the
+    // colour mode (post.scss), so the open face reads on the dark card as on the light one.
     .dim-toolbar__filters[open] .dim-toolbar__filterstoggle {
-        border-color: var(--dim-open-ring);
-        background: var(--dim-tint);
+        border-color: var(--dim-brand-edge);
+        background: var(--dim-brand-tint);
         color: var(--dim-primary-ink);
     }
 
-    // The count badge is the call to action's pair: the site's primary with white on the light page,
-    // and in the dark mode #4456ff with white (5.2:1), the same pair as the dark "enrolled" badge.
-    // The page's surface is never its ink: on the dark page that would be a dark surface on a fill.
-    // The design's geometry: a 20px disc that grows into a pill past one digit, its number
-    // centred. The sentence beside the digit is visually hidden and absolutely placed, so it is no
-    // grid item and does not move it.
+    // The count badge is the Design System's loud counter, its brand fill this file's call to action
+    // pair: the site's primary with its contrasting ink on the light page, and in the dark mode
+    // #4456ff with white (5.2:1), where a dark primary would be a hole in the page. The page's
+    // surface is never its ink: on the dark page that would be a dark surface on a fill. A 16px
+    // disc that grows into a pill past one digit, its number centred; the sentence beside the
+    // digit is visually hidden and absolutely placed, so it is no grid item and does not move it.
     .dim-toolbar__filtercount {
         display: inline-grid;
         place-items: center;
-        min-width: 20px;
-        height: 20px;
-        padding: 0 6px;
+        min-width: 1rem;
+        height: 1rem;
+        padding: 0 .25rem;
         border-radius: var(--dim-radius-pill);
         background: var(--dim-cta);
         color: var(--dim-cta-ink);
-        font-size: .72rem;
+        font-size: .75rem;
+        font-weight: 700;
+        line-height: 1rem;
         font-variant-numeric: tabular-nums;
     }
 
     // The panel is a column of groups on a narrow screen and a row of them where there is room;
     // the row lives in the md media query near the foot of this file: a wrapping flex row of
     // content-sized groups, because equal columns wrap a wide facet inside its track while leaving
-    // others empty. The design's panel skin: 14px by 16px of padding, a card's line at 8px
-    // corners, the subtle surface, and 14px between the groups (30px across them, in the md query).
-    // From the sm breakpoint up it is a popover under the line (the sm media query below).
+    // others empty. The Design System's filter panel: 12px of padding, a card's line at the
+    // panel's 12px corners, the page's surface, and 14px between the groups (30px across them, in
+    // the md query). From the sm breakpoint up it is a popover under the line (the sm media query
+    // below).
     .dim-toolbar__panel {
         display: flex;
         flex-direction: column;
         gap: 14px;
         min-width: 0;
         margin-top: 10px;
-        padding: 14px 16px;
+        padding: .75rem;
         border: 1px solid var(--dim-line);
-        border-radius: var(--dim-ds-radius-md, 8px);
-        background: var(--dim-surface-subtle);
+        border-radius: var(--dim-radius);
+        background: var(--dim-surface);
+        color: var(--dim-ink);
     }
 
     // The date group is a row of its own - the field, then the quick options beside it - and it
@@ -1642,29 +1661,28 @@ body.dim-category {
     // The quick options are LINKS: they carry the same two parameters the fields above them
     // carry, so they read as pills and behave as addresses.
     //
-    // They must still LOOK and hover like buttons: a pill that answers the pointer by underlining
-    // itself reads as a link in the middle of a row of buttons. The boundary is the one every
-    // control of this toolbar carries, and the hover is a background toggle - the same move the
-    // pills beside them make. The design has no quick options (its period group is chips), so
-    // they wear the design's chip: 36px, the brand face at 13.12px and 600, the same outline.
+    // They must still LOOK and hover like buttons: an option that answers the pointer by
+    // underlining itself reads as a link in the middle of a row of buttons. They wear the panel's
+    // option (.dim-pill): 28px, the control line, the 6px corners, .8125rem at 500, and the same
+    // background on hover.
     .dim-quick {
         display: inline-flex;
         align-items: center;
-        min-height: 36px;
-        padding: 6px 12px;
+        min-height: 1.75rem;
+        padding: 0 .5rem;
         border: 1px solid var(--dim-control-line);
-        border-radius: var(--dim-radius-pill);
+        border-radius: var(--dim-radius-sm);
         background: var(--dim-surface);
         color: var(--dim-ink);
         font-family: var(--dim-font-brand);
-        font-size: .82rem;
-        font-weight: 600;
+        font-size: .8125rem;
+        font-weight: 500;
         text-decoration: none;
         white-space: nowrap;
         transition: background var(--dim-motion) var(--dim-ease), color var(--dim-motion) var(--dim-ease);
 
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-surface-subtle);
             color: var(--dim-ink);
             text-decoration: none;
         }
@@ -1675,17 +1693,15 @@ body.dim-category {
         }
     }
 
-    // The one in force is filled, which is the pressed face of the same button - the chosen chip's
-    // own pair. Never the page's surface as its ink, which in the dark mode is a dark surface on
-    // the fill.
+    // The one in force is a chosen option: the brand tone's ground, edge and ink, the same on hover.
     .dim-quick--on {
-        border-color: var(--dim-cta);
-        background: var(--dim-cta);
-        color: var(--dim-cta-ink);
+        border-color: var(--dim-brand-edge);
+        background: var(--dim-brand-tint);
+        color: var(--dim-primary-ink);
 
         &:hover {
-            background: var(--dim-cta);
-            color: var(--dim-cta-ink);
+            background: var(--dim-brand-tint);
+            color: var(--dim-primary-ink);
         }
     }
 
@@ -1720,9 +1736,10 @@ body.dim-category {
         min-width: 0;
     }
 
-    // Each box is as tall as the chips it shares its line with (36px), and focus is the design's
-    // ring rather than a halo. The inline end keeps the room the clearing control is drawn in,
-    // whether or not it is there, so a box does not change width when its date is set.
+    // Each box is as tall as the quick options it shares its line with (28px: the field's own block
+    // padding goes), and focus is the design's ring rather than a halo. The inline end keeps the
+    // room the clearing control is drawn in, whether or not it is there, so a box does not change
+    // width when its date is set.
     .dim-daterange__field {
         display: inline-flex;
         flex: 0 1 auto;
@@ -1731,8 +1748,10 @@ body.dim-category {
         width: auto;
         min-width: 9.5rem;
         max-width: 14rem;
-        min-height: 36px;
+        min-height: 1.75rem;
+        padding-top: 0;
         padding-right: 2.25rem;
+        padding-bottom: 0;
         border-radius: var(--dim-radius-sm);
         font-size: .875rem;
         text-align: left;
@@ -2004,32 +2023,28 @@ body.dim-category {
     // ---- The row under the line ------------------------------------------------------------------
     // It exists while something narrows: the count sentence, then one chip per criterion the line
     // does not show, "Clear all", "See all as a list" and the automatic opening's note, RIGHT
-    // AFTER one another so they read as controls of what the sentence says. One line at full
-    // control height that scrolls sideways and never widens the page; the scroll container would
-    // clip the chips' focus ring, which is outside them, so the row keeps 5px of room for it and
-    // takes the same 5px back as a negative margin, as the pill tracks do.
+    // AFTER one another so they read as controls of what the sentence says. The Design System's
+    // chips row: 6px apart, wrapping onto further lines, never a sideways scroll and never wider
+    // than the page. An item goes to the next line whole; only one wider than the row on its own
+    // shrinks, and the chips inside it wrap.
     //
     // The design's count row is its own block, 12px under the line and 18px over what follows, in
     // the reading face at .92rem and the muted ink. It is the toolbar's last row, so it takes the
-    // difference between those and the gaps already around it: the toolbar's 10px above (2 more)
-    // and the listing's 14px below (4 more). Change either gap and this row moves. The margin is
-    // that 2px 0 4px less the 5px of ring room on every side.
+    // difference between those and the gaps already around it: the toolbar's 8px above (4 more)
+    // and the listing's 14px below (4 more). Change either gap and this row moves.
     .dim-line__chips {
         display: flex;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 4px 14px;
-        max-width: calc(100% + 10px);
-        margin: -3px -5px -1px;
-        padding: 5px;
-        overflow-x: auto;
-        scrollbar-width: thin;
+        gap: .375rem;
+        margin: .25rem 0;
         color: var(--dim-muted);
         font-family: var(--dim-ds-font-reading);
         font-size: .92rem;
 
         > * {
-            flex: none;
+            flex: 0 1 auto;
+            min-width: 0;
         }
     }
 
@@ -2045,7 +2060,8 @@ body.dim-category {
 
     .dim-line__chiplist {
         display: flex;
-        gap: 6px;
+        flex-wrap: wrap;
+        gap: .375rem;
 
         &:empty {
             display: none;
@@ -2064,28 +2080,27 @@ body.dim-category {
         }
     }
 
-    // A chip: a link in the brand face at full control height, whose line is the open poster's
-    // ring (--dim-open-ring: the site's primary on the light page, the light violet on the dark
-    // one) - with its cross after the label, and focus the design's ring.
+    // A chip: the Design System's chip, a link in the brand face, a 28px rounded rectangle in the
+    // brand tone's ground, edge and ink, its 12px cross after the label, and focus the design's ring.
+    // The tone turns with the colour mode (post.scss), so the chip reads on both pages.
     .dim-chip {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        min-height: 40px;
-        padding: 0 12px;
-        border: 1px solid var(--dim-open-ring);
-        border-radius: var(--dim-radius-pill);
-        background: var(--dim-surface);
+        gap: .375rem;
+        min-height: 1.75rem;
+        padding: 0 .375rem 0 .5rem;
+        border: 1px solid var(--dim-brand-edge);
+        border-radius: var(--dim-radius-sm);
+        background: var(--dim-brand-tint);
         color: var(--dim-primary-ink);
         font-family: var(--dim-font-brand);
         font-size: .8125rem;
-        font-weight: 600;
+        font-weight: 500;
         text-decoration: none;
         white-space: nowrap;
-        transition: background var(--dim-motion) var(--dim-ease);
 
         &:hover {
-            background: var(--dim-surface-strong);
+            background: var(--dim-brand-tint);
             color: var(--dim-primary-ink);
             text-decoration: none;
         }
@@ -2094,22 +2109,27 @@ body.dim-category {
             outline: 3px solid var(--dim-ring);
             outline-offset: 2px;
         }
+
+        .fa {
+            font-size: .75rem;
+        }
     }
 
-    // "Clear all" is the design's text button: the link ink, underlined 2px off the text, in
-    // the sentence's own type - no glyph and no button box beside a line of text. It is still a
-    // link, so it works with no script.
+    // "Clear all" is the Design System's text button: the body ink, underlined 2px off the text,
+    // no glyph and no button box beside a line of text. It is still a link, so it works with no
+    // script.
     .dim-toolbar__clear {
-        padding: 0;
+        padding: 0 .25rem;
         border: 0;
         background: none;
-        color: var(--dim-primary-ink);
-        font: inherit;
+        color: var(--dim-ink);
+        font-size: .8125rem;
+        font-weight: 600;
         text-decoration: underline;
         text-underline-offset: 2px;
 
         &:hover {
-            color: var(--dim-primary-ink);
+            color: var(--dim-ink);
             text-decoration-thickness: 2px;
         }
     }
@@ -4941,8 +4961,8 @@ body.dim-category {
 
         .dim-toolbar__filtercount {
             position: absolute;
-            top: -6px;
-            right: -6px;
+            top: -4px;
+            right: -4px;
         }
     }
 
@@ -5014,7 +5034,7 @@ body.dim-category {
 
         > .dim-line__searchclose {
             display: inline-flex;
-            margin-inline-start: 10px;
+            margin-inline-start: .5rem;
         }
     }
 
@@ -5252,8 +5272,7 @@ body.dim-category {
             width: max-content;
             max-width: 100%;
             margin-top: 0;
-            background: var(--dim-surface);
-            box-shadow: var(--dim-shadow);
+            box-shadow: var(--dim-elevation-md);
         }
     }
 
@@ -5288,8 +5307,7 @@ body.dim-category {
             width: max-content;
             max-width: 100%;
             margin-top: 0;
-            background: var(--dim-surface);
-            box-shadow: var(--dim-shadow);
+            box-shadow: var(--dim-elevation-md);
         }
     }
 
@@ -5319,9 +5337,8 @@ body.dim-category {
             overflow-y: auto;
             overscroll-behavior: contain;
             border-width: 1px 0 0;
-            border-radius: var(--dim-radius) var(--dim-radius) 0 0;
-            background: var(--dim-surface);
-            box-shadow: var(--dim-shadow);
+            border-radius: var(--dim-radius-xl) var(--dim-radius-xl) 0 0;
+            box-shadow: var(--dim-elevation-lg);
         }
 
         // The control wraps, so the calendar takes a row of its own under the two boxes.
@@ -5522,17 +5539,6 @@ body.dim-category {
             flex: 1 1 100%;
         }
 
-        // ---- The last resort: a track wider than the WHOLE panel ---------------------------
-        // A group is never wider than the panel (max-width: 100% on the group), so a facet with
-        // more options than the panel can hold on one line - a longer language, a fifth state -
-        // would otherwise scroll, and on a desktop an overlay scrollbar draws nothing until the
-        // track is already moving, so the options past the edge go unseen. Wrapping is the
-        // fallback for that case ONLY: a group that fits keeps its max-content width and its
-        // options stay on one line.
-        .dim-toolbar__pills {
-            flex-wrap: wrap;
-        }
-
         // Two months side by side from here up, the width the calendar's component counts two months at
         // (WIDE in daterange/DateRange.tsx): two 7-column months of 40px days, their gap and the padding.
         .dim-daterange__pop {
@@ -5621,8 +5627,9 @@ body.dim-category {
             }
         }
 
+        // The cells take 36px, so the platter round them is 44px like the controls beside it.
         .dim-line__scope .dim-pill {
-            min-height: 38px;
+            min-height: 2.25rem;
         }
 
         // Every control of the toolbar is 44px on a phone: the pills of the organisation and of
