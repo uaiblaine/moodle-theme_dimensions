@@ -1189,10 +1189,8 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
     .calendarmonth {
         th.header {
             color: var(--dim-ds-text-muted);
-            font-size: .6875rem;
+            font-size: .75rem;
             font-weight: 600;
-            letter-spacing: .12em;
-            text-transform: uppercase;
         }
 
         td.weekend {
@@ -1364,17 +1362,16 @@ body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {
 
 /* Label above value, not beside it. A course name, an email address and a list of roles have
    nothing like a common width, and a two-column definition list either truncates them or leaves
-   a ragged gutter. Uppercased small type separates the label without needing a second colour. */
+   a ragged gutter. The label is the Design System's eyebrow: small type at 600 in sentence case,
+   which separates it from the value without a second colour. */
 /* --dim-ds-text-muted, not --dim-ds-text-subtle. The subtle grey is #969696, which is 2.96:1 on the white
-   card and fails WCAG AA for text of any size; at the 11px this label is set in it is not a
+   card and fails WCAG AA for text of any size; at the 12px this label is set in it is not a
    borderline call. The muted grey is 8.06:1 and still reads as secondary next to the value. */
 .dimensions-profile-fact-label {
     margin: 0 0 var(--dim-ds-space-3xs);
     color: var(--dim-ds-text-muted);
-    font-size: .6875rem;
+    font-size: .75rem;
     font-weight: 600;
-    letter-spacing: .08em;
-    text-transform: uppercase;
 }
 
 .dimensions-profile-fact-value {

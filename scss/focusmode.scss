@@ -42,8 +42,6 @@ body.dimensions-focusmode,
     --dim-ds-text-h5: 1rem;
     --dim-ds-text-small: 0.875rem;
     --dim-ds-text-caption: 0.75rem;
-    --dim-ds-text-overline: 0.6875rem;
-    --dim-ds-tracking-overline: 0.12em;
     --dim-ds-weight-medium: 500;
     --dim-ds-weight-semibold: 600;
 }
@@ -192,12 +190,10 @@ body.dimensions-focusmode .dimensions-focusbar-course {
     overflow: hidden;
     opacity: .8;
     color: inherit;
-    font-size: var(--dim-ds-text-overline);
-    font-weight: var(--dim-ds-weight-medium);
-    letter-spacing: var(--dim-ds-tracking-overline);
+    font-size: var(--dim-ds-text-caption);
+    font-weight: var(--dim-ds-weight-semibold);
     text-decoration: none;
     text-overflow: ellipsis;
-    text-transform: uppercase;
     white-space: nowrap;
 }
 

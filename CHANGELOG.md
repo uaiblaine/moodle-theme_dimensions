@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **Small labels read in sentence case, and status labels are rectangles with an edge** (2026100615). No stylesheet
+  of the theme sets text in capitals any more: the filter groups' names, the category hero's trail, the course
+  dialogue's kicker and facts, the competency pages' headings, the drawer's labels, the landing page's kicker and
+  facts, the profile's field labels, the calendar's weekday names, the focus bar's course line and the contrast
+  panel's caption read as their strings are written, without letter-spacing; the small labels among them are
+  0.75rem at weight 600. The labels that state something - a competency's rating, core's proficiency badges, the
+  course notice's chips, an event's kind, a learning step's state and hours, an enrolment deadline, the contrast
+  panel's verdict and standard, and the reading bar's activity status - are 6px rectangles at 0.75rem with a 1px
+  edge in their tone, no longer pills; the course notice's chips drop their dot. Where a tone had no edge the theme mixes its ink into its ground at 30%, in both colour modes; the
+  current Trilhas step's label and the landing page's current step take a rim that differs from their fill, the
+  contrast panel's neutral tone takes Bootstrap's secondary border (the page's line did not show on it), and the
+  landing page's deadline label takes the pending state's colours, which now follow the dark mode. A course card's
+  kind on its cover stays a pill.
 - **A ratchet holds the theme's SCSS to the fleet Design System's scales** (tests only; no version change).
   `tests/local/scale_ratchet_test.php` reads every sheet of `scss/` and records today's off-scale uses per sheet and
   value: 128 font sizes, 10 weights, 235 spaces, 20 radii and 28 durations off the scales, 17 `text-transform:

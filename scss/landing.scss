@@ -55,7 +55,8 @@ $dim-landing-from: shade-color($dim-landing-base, 18%);
 $dim-landing-to: tint-color($dim-landing-base, 12%);
 
 // The three stops, the ink of the section titles and checks (the base, which reads at the floor on white as
-// white reads on it) and the panel's soft border, declared on each root that paints them.
+// white reads on it), the panel's soft border, and the 1px edge of a label filled with the ink (its own ink mixed
+// into it at 30%, the theme's rule for a state's edge), declared on each root that paints them.
 @mixin dim-landing-ground {
     --dim-landing-from: #{$dim-landing-from};
     --dim-landing-mid: #{$dim-landing-base};
@@ -63,6 +64,7 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
     --dim-landing-ink: #{$dim-landing-base};
     --dim-landing-soft: #{tint-color($dim-landing-base, 78%)};
     --dim-landing-on-ink: #{$white};
+    --dim-landing-ink-edge: #{mix($white, $dim-landing-base, 30%)};
 }
 
 // The section title, the course card and the related courses band: the landing page's, and the same rules under the
@@ -149,12 +151,18 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         font-variant-numeric: tabular-nums;
     }
 
+    // The step's hours, a status label on the quiet ground, edged in the strong border (1.5:1 on it in the light mode).
     .dimensions-landing__stephours {
-        padding: 0.0625rem 0.5625rem;
-        border-radius: var(--dim-ds-radius-pill);
+        display: inline-flex;
+        align-items: center;
+        padding: 0.125rem 0.5rem;
+        border: 1px solid var(--dim-ds-border-strong);
+        border-radius: var(--dim-ds-radius-sm);
         background: var(--dim-ds-surface-subtle);
+        color: var(--dim-ds-text-body);
         font-size: 0.75rem;
         font-weight: 600;
+        line-height: 1.4;
     }
 
     .dimensions-landing__stepwhen {
@@ -208,11 +216,12 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
 }
 
 // The dark half of the ground: the ink lifted until it reads on the raised card, the check dark on it, the border
-// a mix of the brand and that card.
+// a mix of the brand and that card, and the label's edge the dark check mixed into the lifted ink.
 @mixin dim-landing-dark-ground {
     --dim-landing-ink: #{dim-landing-dark-ink($dim-landing-base)};
     --dim-landing-on-ink: #{$gray-900};
     --dim-landing-soft: #{mix($dim-landing-base, $gray-800, 50%)};
+    --dim-landing-ink-edge: #{mix($gray-900, dim-landing-dark-ink($dim-landing-base), 30%)};
 }
 
 .theme_dimensions-landing {
@@ -349,8 +358,6 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         margin-bottom: 0.5rem;
         font-size: 0.75rem;
         font-weight: 600;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
         color: var(--dim-ds-accent-progress);
     }
 
@@ -724,10 +731,8 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
 
         dt {
             flex: 0 0 42%;
-            font-size: 0.6875rem;
+            font-size: 0.75rem;
             font-weight: 600;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
             color: var(--dim-ds-text-muted);
         }
 
@@ -816,14 +821,19 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         }
     }
 
-    // The last days of a deadline: text only, in the design system's amber pair.
+    // The last days of a deadline: a status label in the pending state's triple, the design system's amber pair with
+    // its edge and its dark mode (post.scss).
     .dimensions-landing__urgent {
-        padding: 0 0.5rem;
-        border-radius: var(--dim-ds-radius-pill);
-        background: var(--dim-ds-yellow-100);
-        color: var(--dim-ds-yellow-800);
+        display: inline-flex;
+        align-items: center;
+        padding: 0.125rem 0.5rem;
+        border: 1px solid var(--dimensions-state-pending-edge);
+        border-radius: var(--dim-ds-radius-sm);
+        background: var(--dimensions-state-pending-bg);
+        color: var(--dimensions-state-pending-ink);
         font-size: 0.75rem;
         font-weight: 600;
+        line-height: 1.4;
     }
 
     .dimensions-landing__offers {
@@ -993,28 +1003,32 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
         font-weight: 600;
     }
 
-    /* A learner's states: the tag beside the hours, the number turned into a check or a lock, the next step's
-       card ringed in the ink. The tints are Bootstrap's subtle pairs, which carry their own dark mode. */
+    /* A learner's states: the status label beside the hours, the number turned into a check or a lock, the next
+       step's card ringed in the ink. The tints are Bootstrap's subtle triples, which carry their own dark mode; a
+       label without a state is the hours' quiet one. */
     .dimensions-landing__stepstate {
-        padding: 0.0625rem 0.5625rem;
-        border-radius: var(--dim-ds-radius-pill);
+        display: inline-flex;
+        align-items: center;
+        padding: 0.125rem 0.5rem;
+        border: 1px solid var(--dim-ds-border-strong);
+        border-radius: var(--dim-ds-radius-sm);
         background: var(--dim-ds-surface-subtle);
         color: var(--dim-ds-text-body);
         font-size: 0.75rem;
         font-weight: 600;
+        line-height: 1.4;
     }
 
-    .dimensions-landing__step--done {
-        .dimensions-landing__stepnum {
-            border-color: var(--dim-ds-text-success);
-            background: var(--dim-ds-text-success);
-            color: var(--dim-ds-surface-card);
-        }
+    .dimensions-landing__step--done .dimensions-landing__stepnum {
+        border-color: var(--dim-ds-text-success);
+        background: var(--dim-ds-text-success);
+        color: var(--dim-ds-surface-card);
+    }
 
-        .dimensions-landing__stepstate {
-            background: var(--bs-success-bg-subtle, #d1e7dd);
-            color: var(--bs-success-text-emphasis, #0a3622);
-        }
+    .dimensions-landing__step--done .dimensions-landing__stepstate {
+        border-color: var(--bs-success-border-subtle, #a3cfbb);
+        background: var(--bs-success-bg-subtle, #d1e7dd);
+        color: var(--bs-success-text-emphasis, #0a3622);
     }
 
     .dimensions-landing__step--current,
@@ -1032,25 +1046,28 @@ $dim-landing-to: tint-color($dim-landing-base, 12%);
     }
 
     .dimensions-landing__step--current .dimensions-landing__stepstate {
+        border-color: var(--dim-landing-ink-edge);
         background: var(--dim-landing-ink);
         color: var(--dim-landing-on-ink);
     }
 
     .dimensions-landing__step--late .dimensions-landing__stepstate {
+        border-color: var(--bs-danger-border-subtle, #f1aeb5);
         background: var(--bs-danger-bg-subtle, #f8d7da);
         color: var(--bs-danger-text-emphasis, #58151c);
     }
 
-    .dimensions-landing__step--locked {
-        .dimensions-landing__stepnum {
-            border-color: var(--dim-ds-border-strong);
-            background: var(--dim-ds-surface-strong);
-            color: var(--dim-ds-text-muted);
-        }
+    .dimensions-landing__step--locked .dimensions-landing__stepnum {
+        border-color: var(--dim-ds-border-strong);
+        background: var(--dim-ds-surface-strong);
+        color: var(--dim-ds-text-muted);
+    }
 
-        .dimensions-landing__stepstate {
-            background: var(--dim-ds-surface-strong);
-        }
+    // The strong ground under the same strong border: 1.4:1 between the two in the light mode.
+    .dimensions-landing__step--locked .dimensions-landing__stepstate {
+        border-color: var(--dim-ds-border-strong);
+        background: var(--dim-ds-surface-strong);
+        color: var(--dim-ds-text-body);
     }
 
     .dimensions-landing__stepnum .icon {

@@ -934,9 +934,16 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-ds-radius-md, 8px\);~', $panel);
         $legend = $this->rule_body($scss, '.dim-toolbar__grouplabel');
         $this->assertMatchesRegularExpression('~margin:\s*0 0 6px;~', $legend);
-        $this->assertMatchesRegularExpression('~font-size:\s*\.72rem;~', $legend);
-        $this->assertMatchesRegularExpression('~letter-spacing:\s*\.1em;~', $legend);
-        $this->assertMatchesRegularExpression('~text-transform:\s*uppercase;~', $legend);
+        $this->assertMatchesRegularExpression(
+            '~font-size:\s*\.75rem;\s*font-weight:\s*600;~',
+            $legend,
+            'The group\'s name is the Design System\'s eyebrow: 0.75rem at 600.'
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '~letter-spacing|text-transform~',
+            $legend,
+            'The eyebrow is in sentence case, as its string is written: no capitals and no tracking.'
+        );
 
         $row = $this->rule_body($scss, '.dim-line__chips');
         $this->assertMatchesRegularExpression(

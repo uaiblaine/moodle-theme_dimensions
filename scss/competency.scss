@@ -40,21 +40,23 @@
 // --dim-ds-radius-* and --dim-ds-space-*. Moodle 5.3's one dark mechanism is data-bs-theme on the html
 // element; the dark half is at the foot of the file.
 
-/* ---- The state pills: rated, proficient, not proficient, not rated ---------- */
-/* A pill is never colour alone: the template writes its text and an icon (templates/tool_lp,
-   templates/report_competency). Not proficient is the warning family, as in local_dimensions'
-   grade badge, not the danger one: it is a state of learning, not an error. */
+/* ---- The state labels: rated, proficient, not proficient, not rated ---------- */
+/* The Design System's status label (moodle-dev/docs/design-system/components/status-label.md): a 6px
+   rectangle with a 1px edge in its tone's edge, never a pill. A label is never colour alone: the template
+   writes its text and an icon (templates/tool_lp, templates/report_competency). Not proficient is the
+   warning family, as in local_dimensions' grade badge, not the danger one: it is a state of learning, not
+   an error. */
 .dim-comp-pill {
     display: inline-flex;
     align-items: center;
     gap: var(--dim-ds-space-xxs);
     max-width: 100%;
-    padding: .1875rem .625rem;
+    padding: .125rem .5rem;
     border: 1px solid var(--dimensions-neutral-edge);
-    border-radius: var(--dim-ds-radius-pill);
+    border-radius: var(--dim-ds-radius-sm);
     background-color: var(--dimensions-neutral-tint);
     color: var(--dimensions-neutral-ink);
-    font-size: .8125rem;
+    font-size: .75rem;
     font-weight: 600;
     line-height: 1.4;
     vertical-align: middle;
@@ -112,9 +114,7 @@
     margin: 0 0 var(--dim-ds-space-xxs);
     color: var(--dimensions-ink-muted);
     font-size: .75rem;
-    font-weight: 700;
-    letter-spacing: .02em;
-    text-transform: uppercase;
+    font-weight: 600;
 }
 
 .dim-comp-summary {
@@ -202,8 +202,10 @@ body.path-report-competency [data-region="competency-summary"] > dl:not([data-re
 
 /* Core's proficiency badges, where the theme does not own the template (user_competency_summary_in_plan
    and _in_course, course_competencies_page): Bootstrap's bg-* utilities are !important, so the
-   colour stays core's pair (white on success or danger) and the theme gives the badge the pill's
-   shape and an icon, so the state is not carried by the colour alone. */
+   colour stays core's pair (white on success or danger) and the theme gives the badge the state
+   label's shape, its tone's edge and an icon, so the state is not carried by the colour alone. The edge
+   is the family's success or danger edge, lighter than core's solid fill on the light page and darker on
+   the dark one, where Bootstrap keeps the same fill. */
 body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-success,
 body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-danger,
 body.path-admin-tool-lp [data-region="coursecompetencies"] .badge.bg-success,
@@ -214,15 +216,29 @@ body.path-report-competency [data-region="competency-summary"] .badge.bg-danger 
     float: none;
     align-items: center;
     gap: var(--dim-ds-space-xxs);
-    padding: .1875rem .625rem;
-    border-radius: var(--dim-ds-radius-pill);
-    font-size: .8125rem;
+    padding: .125rem .5rem;
+    border: 1px solid var(--dimensions-neutral-edge);
+    border-radius: var(--dim-ds-radius-sm);
+    font-size: .75rem;
     font-weight: 600;
+    line-height: 1.4;
 
     &::before {
         font: var(--fa-font-solid);
         font-size: .875em;
     }
+}
+
+body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-success,
+body.path-admin-tool-lp [data-region="coursecompetencies"] .badge.bg-success,
+body.path-report-competency [data-region="competency-summary"] .badge.bg-success {
+    border-color: var(--dimensions-success-edge);
+}
+
+body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-danger,
+body.path-admin-tool-lp [data-region="coursecompetencies"] .badge.bg-danger,
+body.path-report-competency [data-region="competency-summary"] .badge.bg-danger {
+    border-color: var(--dimensions-danger-edge);
 }
 
 body.path-admin-tool-lp [data-region="competency-summary"] .badge.bg-success::before,
@@ -485,9 +501,7 @@ body.path-report-competency [data-region="evidence-listing"] {
         margin-bottom: var(--dim-ds-space-xs);
         color: var(--dimensions-ink-muted);
         font-size: .75rem;
-        font-weight: 700;
-        letter-spacing: .02em;
-        text-transform: uppercase;
+        font-weight: 600;
     }
 
     > dd {

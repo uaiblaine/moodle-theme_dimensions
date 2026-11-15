@@ -38,13 +38,21 @@
     --dim-notice-cta: var(--dim-ds-blue-600, #070093);
     --dim-notice-cta-ink: var(--dim-ds-white, #fff);
     --dim-notice-ring: var(--dim-ds-focus-ring, #4456ff);
-    // The chip and note tones: the design system's feedback hues, each with its own ink.
+    // The chip and note tones: the design system's feedback hues, each with its own ink, and the chip's 1px
+    // edge, which is its ink mixed into its ground at 30% (the theme's rule for a state's edge, post.scss), so it
+    // shows against the ground; the neutral triple is Bootstrap's own, which carries its dark mode.
     --dim-notice-ok-bg: var(--dim-ds-green-050, #f0fbe0);
     --dim-notice-ok-fg: var(--dim-ds-green-700, #2f6b00);
+    --dim-notice-ok-edge: #{mix($dim-ds-green-700, $dim-ds-green-050, 30%)};
     --dim-notice-warn-bg: var(--dim-ds-yellow-100, #fcefdc);
     --dim-notice-warn-fg: var(--dim-ds-yellow-800, #60451f);
+    --dim-notice-warn-edge: #{mix($dim-ds-yellow-800, $dim-ds-yellow-100, 30%)};
     --dim-notice-info-bg: var(--dim-ds-cyan-100, #cce6ea);
     --dim-notice-info-fg: var(--dim-ds-cyan-800, #00343c);
+    --dim-notice-info-edge: #{mix($dim-ds-cyan-800, $dim-ds-cyan-100, 30%)};
+    --dim-notice-neutral-bg: var(--bs-secondary-bg-subtle, #e2e3e5);
+    --dim-notice-neutral-fg: var(--bs-secondary-text-emphasis, #2b2f32);
+    --dim-notice-neutral-edge: var(--bs-secondary-border-subtle, #c4c8cb);
     --dim-notice-chamfer: 18px;
 
     position: relative;
@@ -104,40 +112,37 @@
     list-style: none;
 }
 
+// A chip is the Design System's status label: a 6px rectangle with a 1px edge in its tone, the words alone
+// (no dot: the text carries the state, and the tone only repeats it). Every chip names a tone; the neutral
+// triple is the ground of one that does not.
 .dim-coursenotice .dim-coursenotice__chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 9px;
-    border-radius: var(--dim-ds-radius-pill, 50rem);
-    background: var(--dim-notice-subtle);
-    color: var(--dim-notice-muted);
-    font-size: .76rem;
-    font-weight: 500;
-    line-height: 1;
+    padding: .125rem .5rem;
+    border: 1px solid var(--dim-notice-neutral-edge);
+    border-radius: var(--dim-ds-radius-sm, 6px);
+    background: var(--dim-notice-neutral-bg);
+    color: var(--dim-notice-neutral-fg);
+    font-size: .75rem;
+    font-weight: 600;
+    line-height: 1.4;
     white-space: nowrap;
 }
 
-.dim-coursenotice .dim-coursenotice__chip::before {
-    content: "";
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: currentcolor;
-    opacity: .8;
-}
-
 .dim-coursenotice .dim-coursenotice__chip--ok {
+    border-color: var(--dim-notice-ok-edge);
     background: var(--dim-notice-ok-bg);
     color: var(--dim-notice-ok-fg);
 }
 
 .dim-coursenotice .dim-coursenotice__chip--warn {
+    border-color: var(--dim-notice-warn-edge);
     background: var(--dim-notice-warn-bg);
     color: var(--dim-notice-warn-fg);
 }
 
 .dim-coursenotice .dim-coursenotice__chip--info {
+    border-color: var(--dim-notice-info-edge);
     background: var(--dim-notice-info-bg);
     color: var(--dim-notice-info-fg);
 }
@@ -301,7 +306,7 @@ body#page-course-view-mtube .dim-coursenotice.dim-coursenotice--mtube {
 // The surfaces, lines and body inks follow Bootstrap's own dark tokens already. The brand inks move
 // to the design system's lighter stops (the navy would be a hole in a dark page), and the chip tones
 // take the dark pairs the category showcase's badges were audited with (the $dim-dark-* variables of post.scss): each over
-// the 4.5:1 floor.
+// the 4.5:1 floor, its edge the ink mixed into the ground at 30%, lighter than the ground here.
 :root[data-bs-theme="dark"] .dim-coursenotice {
     --dim-notice-mark: var(--dim-ds-blue-300, #7c84ff);
     --dim-notice-heading: var(--dim-ds-blue-200, #adb2f0);
@@ -314,4 +319,7 @@ body#page-course-view-mtube .dim-coursenotice.dim-coursenotice--mtube {
     --dim-notice-warn-fg: #{$dim-dark-pending-fg}; // 8.4:1.
     --dim-notice-info-bg: #{$dim-dark-info-bg};
     --dim-notice-info-fg: #{$dim-dark-info-fg}; // 8.8:1.
+    --dim-notice-ok-edge: #{mix($dim-dark-open-fg, $dim-dark-open-bg, 30%)};
+    --dim-notice-warn-edge: #{mix($dim-dark-pending-fg, $dim-dark-pending-bg, 30%)};
+    --dim-notice-info-edge: #{mix($dim-dark-info-fg, $dim-dark-info-bg, 30%)};
 }

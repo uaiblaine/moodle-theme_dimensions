@@ -297,8 +297,50 @@ final class calendar_scss_test extends \advanced_testcase {
         $this->resetAfterTest();
         $modes = $this->compiled();
         $this->assertSame(array_keys($modes['light']), array_keys($modes['dark']));
-        // The triples, the Trilhas connectors' grey and the four surfaces.
-        $this->assertCount((count(self::KEYS) + count(self::TRAIL_KEYS)) * 3 + 1 + 4, $modes['light']);
+        // The triples, the Trilhas connectors' grey, the current state label's rim and the four surfaces.
+        $this->assertCount((count(self::KEYS) + count(self::TRAIL_KEYS)) * 3 + 1 + 1 + 4, $modes['light']);
+    }
+
+    /**
+     * Every Trilhas state label draws a 1px edge that shows against its own fill, in both modes.
+     *
+     * A state label is the Design System's status label, a 6px rectangle edged in its state's edge. The current step's
+     * edge is its fill on the light page (the bar draws no rim), so its label reads the rim instead, which must show
+     * against the fill at the theme's floor for a state's edge (family_tokens_test::EDGE_FLOOR, 1.25:1).
+     *
+     * @return void
+     */
+    public function test_every_trail_state_label_shows_its_edge(): void {
+        $this->resetAfterTest();
+        $measured = 0;
+        foreach ($this->compiled() as $mode => $tokens) {
+            foreach (['trailcurrent', 'traildone', 'traillate', 'traillocked', 'trailupcoming'] as $state) {
+                $edge = $state === 'trailcurrent' ? $tokens['--dim-cal-trailcurrent-rim'] : $tokens["--dim-cal-{$state}-edge"];
+                $this->assertGreaterThanOrEqual(
+                    1.25,
+                    branding::contrast($tokens["--dim-cal-{$state}-tint"], $edge),
+                    "{$mode} {$state}: the label's edge {$edge} shows on its fill."
+                );
+                $measured++;
+            }
+        }
+        $this->assertSame(10, $measured);
+        $scss = $this->scss();
+        $this->assertMatchesRegularExpression(
+            '~\.dim-cal__trailstate--current \{\s*--dim-cal-edge: var\(--dim-cal-trailcurrent-rim\);\s*\}~',
+            $scss,
+            'The current state label reads the rim.'
+        );
+        $this->assertSame(
+            1,
+            substr_count($scss, '.dim-cal__trailstate--current {'),
+            'The rim is pointed at once, after the loop that points every state at its triple.'
+        );
+        $this->assertGreaterThan(
+            strpos($scss, '.dim-cal__trailstate--#{$state},'),
+            strpos($scss, '.dim-cal__trailstate--current {'),
+            'The rim comes after the loop, so it wins at the same specificity.'
+        );
     }
 
     /**
