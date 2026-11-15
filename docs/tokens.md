@@ -123,8 +123,29 @@ Only `local_dimensions` reads these.
 | `--dimensions-state-scheduled-edge` | Its edge. |
 | `--dimensions-state-scheduled-ink` | Its text. |
 
-The state pills are the theme's own category showcase's: the same colour pairs, in both modes. The
-theme's pills draw no edge, so under the theme each `-edge` is its pill's own ground.
+The state pills are the theme's own category showcase's: the same colour pairs, in both modes. Each
+`-edge` is a one pixel line that shows against its pill's ground: darker than the ground on the light
+page and lighter on the dark one, mixed from the pill's own ink and ground (the solid "enrolled" fill
+takes the palette's next stop instead).
+
+## Design system tokens (10)
+
+The scales of the fleet Design System, read by every plugin of the family. The radius steps and the
+ring's width are the same in both modes; the elevations are navy-tinted on the light page and black
+on the dark one.
+
+| Token | Meaning |
+|---|---|
+| `--dimensions-control-line` | The border of an outlined control and of a filter panel's option, darker than `--dimensions-line`. |
+| `--dimensions-focus-width` | The width of the focus ring, 3px (a plugin's fallback is 2px). |
+| `--dimensions-radius-xs` | 4px: menu items, the search field's eraser. |
+| `--dimensions-radius-sm` | 6px: chips, panel options, status labels, tooltips. |
+| `--dimensions-radius-md` | 8px: buttons, menus, the search field. |
+| `--dimensions-radius-lg` | 12px: cards, panels, the filter bar's capsule. |
+| `--dimensions-radius-xl` | 16px: the top of a sheet. |
+| `--dimensions-elevation-sm` | The shadow of a resting card, the capsule, a chosen segment. |
+| `--dimensions-elevation-md` | The shadow of a popover or a menu. |
+| `--dimensions-elevation-lg` | The shadow of a dialogue or a sheet. |
 
 ## Card tokens (30)
 

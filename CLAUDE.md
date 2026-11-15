@@ -465,6 +465,14 @@ local_dimensions, specified in the fleet's `moodle-dev/docs/course-card/CONTRACT
 section 7, the tokens; section 9, the dialog variant). `tests/local/course_card_contract_test.php` and
 `family_tokens_test` hold this repository's half; change a suffix in all three plugins at once.
 
+The fleet Design System's scales (`moodle-dev/docs/design-system/tokens.md`) are ten more family tokens,
+`--dimensions-control-line`, `-focus-width`, `-radius-{xs,sm,md,lg,xl}` and `-elevation-{sm,md,lg}`, each reading
+the `--dim-ds-*` step of the same name (the control line reads Bootstrap's gray-500); the dark elevations are
+black, with the light steps' offsets and blurs. A state's `-edge` is never its own ground: a tint's is
+`mix(ink, ground, 30%)` in both modes, the solid enrolled fill takes blue-800 (light) and blue-300 (dark), and
+`family_tokens_test` measures each against its ground (`EDGE_FLOOR`, 1.25). Bootstrap's `$border-radius` is the
+scale's md, 8px, Boost's own (`scss/pre.scss`); a new radius variable there must sit on 4/6/8/12/16.
+
 Rules from the design system's readme which this theme has to keep honouring, and which have
 already shaped decisions here:
 
