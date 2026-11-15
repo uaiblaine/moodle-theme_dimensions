@@ -2053,6 +2053,13 @@ version's decisions; the switch in place and the owner's decisions D1-D5 of 2026
   tests answers the first rule of a selector wherever it sits, so a second copy written one level
   up (outside a media query or a page gate) passes every assertion about the first. Count the
   selector (`substr_count(...) === 1`) and match the gates and the rule as one nest.
+- **`tests/local/scale_ratchet_test.php` holds every sheet of `scss/` to the fleet Design System's scales**
+  (type, weight, space, radius, motion) and to its rules 2 and 3 (no new pill, no `text-transform: uppercase`).
+  Its `OFF_SCALE_*` constants record today's off-scale uses per sheet and value, and the comparison is exact:
+  counts only go down, and the change that brings a use onto the scale lowers its count (or drops the entry at 0)
+  in the same commit, or the test fails. A new sheet is named in `SHEETS`. Only literal values of CSS properties
+  are judged: a `var()` (its fallback included), a Sass variable, an interpolation or a function call is not, and
+  neither is a `$` or `--` declaration (the scale's own tokens).
 - **Behat scenarios of the public page keep `forcelogin = 1`** - that is the point. The feature's
   Background switches it off for the older scenarios; the public ones switch it back on
   inside the scenario. `the course "X" is "public" for discoverability` is the theme's
