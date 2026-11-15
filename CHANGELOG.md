@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A ratchet holds the theme's SCSS to the fleet Design System's scales** (tests only; no version change).
+  `tests/local/scale_ratchet_test.php` reads every sheet of `scss/` and records today's off-scale uses per sheet and
+  value: 128 font sizes, 10 weights, 235 spaces, 20 radii and 28 durations off the scales, 17 `text-transform:
+  uppercase` (rule 3, sentence case) and 55 pill radii (rule 2, no pill on a control). The counts are exact, so a new
+  use fails and so does one brought onto the scale until its count is lowered in the same change; a new sheet fails
+  until it is named. The scales are block_compass's constants, unchanged. Eight new mutation gates (`ds_scale_*`).
 - **The theme declares the fleet Design System's scales, and buttons take Moodle's own 8px corners.** Ten new
   family tokens, on the same three roots and in both colour modes as the others: `--dimensions-control-line` (the
   border of an outlined control, Bootstrap's gray-500), `--dimensions-focus-width` (the ring's 3px),
