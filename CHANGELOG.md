@@ -5,6 +5,18 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The category showcase's filter bar wears the fleet Design System's measures** (2026100618). Its controls sit 8px
+  apart. The scope ("All", "My courses" and the others) is a segmented control: 32px cells at 0.875rem on a grey
+  platter with 12px corners, the chosen cell raised in white at weight 600 with no border, its count quiet. The star,
+  Filters, Organise, the view switch and the managers' menu keep their own 1px line and white ground but take 8px
+  corners, a light grey on hover and, pressed or open, the brand colour's pale tint with its edge and ink. The Filters
+  badge is a 16px counter at 0.75rem / 700, 4px off the button's corner where the button is an icon. The Filters
+  panel has 12px corners and 12px of padding on white, with a popover's shadow, and the phone's bottom sheet 16px
+  corners. Its options and the quick date options are 28px rectangles at 0.8125rem / 500, no longer pills; the chosen
+  one takes the brand colour's tint, edge and ink instead of a solid fill, and a group's options wrap onto further
+  lines instead of scrolling sideways. The date boxes are as tall as those options. The chips under the line are
+  28px rectangles in the same brand tint, their cross 12px, and the row wraps instead of scrolling; "Clear all" is
+  0.8125rem / 600, underlined, in the body ink. On a phone every control keeps its 44px.
 - **A trail draws Font Awesome's route, on the course card and in the calendar** (2026100617). A trail's card in the
   showcase tags its kind ("Trail") with the route, no longer with the course's graduation cap; a course keeps the cap
   and an event the calendar day. The card's icon now comes from the server with its label, so the cards a page loads

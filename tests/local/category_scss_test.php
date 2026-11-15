@@ -733,136 +733,134 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * The pill tracks are the design's row of chips, and scroll sideways rather than widening the page.
+     * The option tracks wrap inside the box they are in, and never widen the page.
      *
-     * The overflow: the automatic minimum size of a flex item is its content, so on a phone a
-     * track of options wider than the toolbar widens the disclosure and then the document, and the
-     * page scrolls sideways. The disclosure's min-width: 0 is therefore part of the same rule:
-     * without it the track's max-width has nothing to resolve against but a box the track itself
-     * widened.
+     * The Design System's filter panel lays a group's options out in a row that wraps, 6px apart
+     * (moodle-dev/docs/design-system/components/filter-panel.md): every option stays in view at every
+     * width, where a sideways scroll hid the last ones behind a scrollbar an overlay platform draws
+     * only once it is moving, and clipped the focus ring drawn outside an option. The automatic
+     * minimum size of a flex item is its content, so the disclosure's min-width: 0 stays part of the
+     * rule: without it the track's widest option could still set the disclosure's width on a phone.
      *
-     * The scroll is the phone's answer alone. From the md breakpoint the panel lays the facets
-     * out side by side, each narrower than the panel, and a one-line track there would hide its
-     * last options behind a scrollbar an overlay platform draws only once it is being scrolled.
-     * Both halves are pinned: nowrap and the scroll in the rule itself, wrap inside the md query.
-     *
-     * The skin is the design's .pills, a plain row of chips 6px apart with no band behind them.
-     * The scroll container would clip the focus ring, which is drawn outside the chip (3px at
-     * 2px), so the track keeps 5px of room for it and takes the same 5px back as a negative
-     * margin: the ring is drawn whole and the chips do not move.
-     *
-     * Changes that must make it fail: the disclosure's min-width deleted (its assertion); the wrap
-     * deleted from the md query (the last).
+     * Changes that must make it fail: the wrap taken off the track (gate ds_bar_option_track_wraps); a
+     * scroll put back on it; the disclosure's min-width deleted.
      */
-    public function test_the_pill_tracks_hug_their_options_and_scroll_rather_than_widen_the_page(): void {
+    public function test_the_option_tracks_wrap_inside_their_box_and_never_widen_the_page(): void {
         $scss = $this->stylesheet('category.scss');
 
-        $track = [1 => $this->rule_body($scss, '.dim-toolbar__pills')];
-        $this->assertMatchesRegularExpression('~display:\s*flex;~', $track[1], 'The design\'s .pills: a row of chips.');
-        $this->assertMatchesRegularExpression('~gap:\s*6px;~', $track[1], 'Six pixels between chips, the design\'s.');
+        $track = $this->rule_body($scss, '.dim-toolbar__pills');
+        $this->assertMatchesRegularExpression('~display:\s*flex;~', $track, 'A row of options.');
+        $this->assertMatchesRegularExpression('~flex-wrap:\s*wrap;~', $track, 'That wraps onto further lines.');
+        $this->assertMatchesRegularExpression('~gap:\s*\.375rem;~', $track, 'Six pixels between options.');
+        $this->assertMatchesRegularExpression('~min-width:\s*0;~', $track);
+        $this->assertDoesNotMatchRegularExpression(
+            '~overflow|scrollbar-width|max-width~',
+            $track,
+            'No scroll container: it would hide the last options and clip the focus ring.'
+        );
         $this->assertDoesNotMatchRegularExpression(
             '~background|border-radius~',
-            $track[1],
-            'No band behind the chips: the track draws no background and no radius.'
-        );
-        $this->assertMatchesRegularExpression(
-            '~max-width:\s*calc\(100% \+ 10px\);~',
-            $track[1],
-            'Never wider than the box it is in, plus the room its ring is drawn in.'
-        );
-        $this->assertMatchesRegularExpression('~flex-wrap:\s*nowrap;~', $track[1], 'One line that scrolls, never two.');
-        $this->assertMatchesRegularExpression('~overflow-x:\s*auto;~', $track[1]);
-        $this->assertMatchesRegularExpression(
-            '~scrollbar-width:\s*thin;~',
-            $track[1],
-            'A track that scrolls and never says so is a track whose last option nobody finds.'
-        );
-        $this->assertMatchesRegularExpression(
-            '~margin:\s*-5px;\s*padding:\s*5px;~',
-            $track[1],
-            'The ring outside a chip needs room inside the scroll container, and the chips must not move for it.'
+            $track,
+            'No band behind the options: the track draws no background and no radius.'
         );
 
-        $filters = [1 => $this->rule_body($scss, '.dim-toolbar__filters')];
+        $filters = $this->rule_body($scss, '.dim-toolbar__filters');
         $this->assertMatchesRegularExpression(
             '~min-width:\s*0;~',
-            $filters[1],
+            $filters,
             'Without this the track\'s own content sets the disclosure\'s width and the page overflows.'
         );
-
-        /* The other half: from md up a track wider than the whole panel wraps instead of
-           scrolling, because a desktop overlay scrollbar draws nothing until it is scrolled. A
-           group that fits keeps its content's width, so this is the last resort, not the layout. */
-        $wide = $this->wide_block($scss);
-        $this->assertMatchesRegularExpression(
-            '~\.dim-toolbar__pills \{\s*flex-wrap:\s*wrap;\s*\}~',
-            $wide,
-            'A facet whose options are wider than the panel wraps them; it does not hide them.'
+        $this->assertStringNotContainsString(
+            '.dim-toolbar__pills {',
+            $this->wide_block($scss),
+            'The track wraps at every width, so the md query holds no fallback for it.'
         );
     }
 
     /**
-     * The toolbar's controls wear the design's skin, and each chosen face reads in both colour modes.
+     * The toolbar's controls wear the fleet Design System's measures, and each chosen face reads in both colour modes.
      *
-     * The values are the design's as a browser computes them (the design's mockup:
-     * .tb, .chip, .pills input:checked + .chip, .tb__fbtn, .tb__badge, .viewseg, .tb__apply,
-     * .linkbtn, .tb__panel, .fgroup legend), each design token mapped onto the one this file
-     * already reads: --btn is --dim-cta, --btn-ink white, --control-line --dim-control-line,
-     * --surface --dim-surface, --text --dim-ink, --tint --dim-tint, --tint-ink and --link
-     * --dim-primary-ink, --dim-ds-radius-pill and --dim-ds-radius-sm the theme's own. The design has no kebab,
-     * no calendar and no quick options; they take the same language, the quick options as chips.
+     * The values are moodle-dev/docs/design-system's (filter-bar.md, segmented-control.md, icon-button.md,
+     * filter-panel.md, chip.md, counter.md), each family name read through this file's alias: brand-tint
+     * --dim-brand-tint, brand-edge --dim-brand-edge, brand-ink --dim-primary-ink, surface-alt --dim-surface-subtle,
+     * control-line --dim-control-line, radius sm, md and lg --dim-radius-sm, --dim-radius-md and --dim-radius.
+     * A panel option is a 28px rectangle at .8125rem / 500; chosen, it takes the chip's look, the brand tone's
+     * ground, edge and ink, never a solid fill; so does the quick option in force. The bar's icon buttons stand
+     * alone (no capsule yet), so each keeps its control line and surface and takes the button's 8px corners,
+     * the alternative surface on hover and the brand tone pressed or open.
      *
-     * The chosen chip, the quick option in force and the calendar's two ends use the call to
-     * action's pair: --dim-cta is the brand primary on the light page and #4456ff on the dark one,
-     * each with its own ink, because the page's surface is no ink on a primary that does not turn.
+     * The Filters badge and the calendar's two ends keep the call to action's pair: --dim-cta is the brand
+     * primary on the light page and #4456ff on the dark one, each with its own ink, because the page's surface is
+     * no ink on a primary that does not turn.
      */
     public function test_the_toolbar_controls_wear_the_designs_skin(): void {
         $scss = $this->stylesheet('category.scss');
 
         $toolbar = $this->rule_body($scss, '.dim-toolbar');
-        $this->assertMatchesRegularExpression('~gap:\s*10px;~', $toolbar, 'The design\'s rows are 10px apart.');
+        $this->assertMatchesRegularExpression('~gap:\s*\.5rem;~', $toolbar, 'The bar\'s rows are 8px apart.');
         $this->assertDoesNotMatchRegularExpression(
             '~padding|border|background~',
             $toolbar,
             'The toolbar is no card: the design\'s controls sit on the page itself.'
         );
 
-        $chip = $this->rule_body($scss, '.dim-pill');
+        $option = $this->rule_body($scss, '.dim-pill');
         $declarations = [
-            'min-height:\s*36px;',
-            'padding:\s*6px 12px;',
-            'gap:\s*6px;',
+            'min-height:\s*1\.75rem;',
+            'padding:\s*0 \.5rem;',
+            'gap:\s*\.375rem;',
             'border:\s*1px solid var\(--dim-control-line\);',
-            'border-radius:\s*var\(--dim-radius-pill\);',
+            'border-radius:\s*var\(--dim-radius-sm\);',
             'background:\s*var\(--dim-surface\);',
             'color:\s*var\(--dim-ink\);',
-            'font-family:\s*var\(--dim-font-brand\);',
-            'font-size:\s*\.82rem;',
-            'font-weight:\s*600;',
+            'font-size:\s*\.8125rem;',
+            'font-weight:\s*500;',
         ];
         foreach ($declarations as $declaration) {
-            $this->assertMatchesRegularExpression('~' . $declaration . '~', $chip, 'The design\'s .chip: ' . $declaration);
+            $this->assertMatchesRegularExpression('~' . $declaration . '~', $option, 'The panel option: ' . $declaration);
         }
-        $this->assertMatchesRegularExpression('~&:hover \{\s*background:~', $chip, 'The chip keeps its hover background.');
+        $this->assertStringNotContainsString('--dim-radius-pill', $option, 'An option is a rectangle, never a pill.');
+        $this->assertMatchesRegularExpression(
+            '~&:hover \{\s*background:\s*var\(--dim-surface-subtle\);\s*color:\s*var\(--dim-ink\);~',
+            $option,
+            'The option keeps its hover background, with its ink.'
+        );
         $checked = $this->rule_body($scss, '.dim-pill__input:checked + .dim-pill');
-        $this->assertMatchesRegularExpression('~border-color:\s*var\(--dim-cta\);~', $checked);
-        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);~', $checked, 'The chosen chip is FILLED.');
-        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-cta-ink\);~', $checked, 'The ink follows the fill.');
-        $this->assertDoesNotMatchRegularExpression('~box-shadow~', $checked, 'The track\'s raised white face is gone.');
+        $this->assertMatchesRegularExpression('~border-color:\s*var\(--dim-brand-edge\);~', $checked);
+        $this->assertMatchesRegularExpression(
+            '~background:\s*var\(--dim-brand-tint\);~',
+            $checked,
+            'The chosen option takes the brand tone\'s ground, never a solid fill.'
+        );
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-primary-ink\);~', $checked, 'The ink follows the ground.');
+        $this->assertDoesNotMatchRegularExpression('~--dim-cta|box-shadow~', $checked, 'No solid fill, no raised face.');
         $focus = $this->rule_body($scss, '.dim-pill__input:focus-visible + .dim-pill');
         $this->assertMatchesRegularExpression('~outline:\s*3px solid var\(--dim-ring\);\s*outline-offset:\s*2px;~', $focus);
         $count = $this->rule_body($scss, '.dim-pill__count');
-        $this->assertMatchesRegularExpression('~opacity:\s*\.8;~', $count);
-        $this->assertMatchesRegularExpression('~font-size:\s*\.72rem;~', $count);
+        $this->assertMatchesRegularExpression(
+            '~color:\s*var\(--dim-muted\);\s*font-size:\s*\.75rem;\s*font-weight:\s*600;\s*font-variant-numeric:\s*tabular-nums;~',
+            $count,
+            'The quiet counter: .75rem at 600 in the muted ink.'
+        );
+        $this->assertStringNotContainsString('opacity', $count, 'Quiet by its ink, not by fading.');
+        $this->assertMatchesRegularExpression(
+            '~color:\s*var\(--dim-primary-ink\);~',
+            $this->rule_body($scss, '.dim-pill__input:checked + .dim-pill .dim-pill__count'),
+            'A chosen option\'s count takes its brand ink.'
+        );
 
+        $quick = $this->rule_body($scss, '.dim-quick');
+        $this->assertMatchesRegularExpression('~min-height:\s*1\.75rem;\s*padding:\s*0 \.5rem;~', $quick, 'The option\'s box.');
+        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-radius-sm\);~', $quick);
+        $this->assertMatchesRegularExpression('~font-size:\s*\.8125rem;\s*font-weight:\s*500;~', $quick);
         $quickon = $this->rule_body($scss, '.dim-quick--on');
         $this->assertMatchesRegularExpression(
-            '~background:\s*var\(--dim-cta\);~',
+            '~border-color:\s*var\(--dim-brand-edge\);\s*background:\s*var\(--dim-brand-tint\);\s*'
+                . 'color:\s*var\(--dim-primary-ink\);~',
             $quickon,
-            'The quick option in force is a chosen chip.'
+            'The quick option in force is a chosen option.'
         );
-        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-cta-ink\);~', $quickon);
-        $this->assertStringNotContainsString('--dim-surface', $quickon, 'The page\'s surface is never the ink on the navy.');
+        $this->assertStringNotContainsString('--dim-surface', $quickon, 'The page\'s surface is never its ink.');
         $edge = $this->rule_body($scss, '.dim-daterange__day--edge');
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~', $edge);
         $this->assertMatchesRegularExpression(
@@ -874,34 +872,57 @@ final class category_scss_test extends \basic_testcase {
         $summary = $this->rule_body($scss, '.dim-toolbar__filterstoggle');
         $this->assertMatchesRegularExpression('~padding:\s*0 14px;~', $summary);
         $this->assertMatchesRegularExpression(
-            '~border-radius:\s*var\(--dim-radius-sm\);~',
+            '~border:\s*1px solid var\(--dim-control-line\);\s*border-radius:\s*var\(--dim-radius-md\);~',
             $summary,
-            'The design\'s Filter is no pill.'
+            'Standing alone it keeps its control line, at a button\'s 8px corners.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~&:hover \{\s*background:\s*var\(--dim-surface-subtle\);\s*color:\s*var\(--dim-ink\);~',
+            $summary
         );
         $this->assertMatchesRegularExpression('~font-size:\s*\.9375rem;~', $summary);
         $this->assertMatchesRegularExpression(
             '~&:focus-visible \{\s*outline:\s*3px solid var\(--dim-ring\);\s*outline-offset:\s*2px;~',
             $summary
         );
+        $pressed = '~border-color:\s*var\(--dim-brand-edge\);\s*background:\s*var\(--dim-brand-tint\);\s*'
+            . 'color:\s*var\(--dim-primary-ink\);~';
         $this->assertMatchesRegularExpression(
-            '~background:\s*var\(--dim-tint\);~',
+            $pressed,
             $this->rule_body($scss, '.dim-toolbar__filters[open] .dim-toolbar__filterstoggle'),
-            'Open, it wears the design\'s pressed face.'
+            'Open, it wears the pressed face: the brand tone.'
+        );
+        $this->assertMatchesRegularExpression($pressed, $this->rule_body($scss, '.dim-line__organise[open] > .dim-line__iconbtn'));
+        $this->assertMatchesRegularExpression($pressed, $this->rule_body($scss, '.dim-toolbar__star'), 'The star, pressed.');
+        $icon = $this->rule_body($scss, '.dim-line__iconbtn');
+        $this->assertMatchesRegularExpression(
+            '~border:\s*1px solid var\(--dim-control-line\);\s*border-radius:\s*var\(--dim-radius-md\);\s*'
+                . 'background:\s*var\(--dim-surface\);~',
+            $icon,
+            'An icon button standing alone keeps its control line and surface, at 8px corners.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~&:hover \{\s*background:\s*var\(--dim-surface-subtle\);\s*color:\s*var\(--dim-ink\);~',
+            $icon
         );
         $badge = $this->rule_body($scss, '.dim-toolbar__filtercount');
-        $this->assertMatchesRegularExpression('~min-width:\s*20px;\s*height:\s*20px;\s*padding:\s*0 6px;~', $badge);
-        $this->assertMatchesRegularExpression('~font-size:\s*\.72rem;~', $badge);
+        $this->assertMatchesRegularExpression('~min-width:\s*1rem;\s*height:\s*1rem;\s*padding:\s*0 \.25rem;~', $badge);
+        $this->assertMatchesRegularExpression(
+            '~font-size:\s*\.75rem;\s*font-weight:\s*700;\s*line-height:\s*1rem;~',
+            $badge,
+            'The loud counter: 16px at .75rem / 700.'
+        );
 
         $view = $this->rule_body($scss, '.dim-toolbar__view');
         $this->assertMatchesRegularExpression('~border:\s*1px solid var\(--dim-control-line\);~', $view, 'A segmented control.');
-        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-radius-sm\);~', $view);
+        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-radius-md\);~', $view);
         $this->assertMatchesRegularExpression('~overflow:\s*hidden;~', $view);
         $this->assertDoesNotMatchRegularExpression('~background~', $view, 'The view switch has no grey track behind it.');
         $button = $this->rule_body($scss, '.dim-toolbar__viewbtn');
         $this->assertMatchesRegularExpression('~min-height:\s*40px;~', $button);
         $this->assertMatchesRegularExpression('~padding:\s*6px 12px;~', $button);
         $this->assertMatchesRegularExpression(
-            '~&\[aria-pressed="true"\] \{\s*background:\s*var\(--dim-tint\);\s*color:\s*var\(--dim-primary-ink\);~',
+            '~&\[aria-pressed="true"\] \{\s*background:\s*var\(--dim-brand-tint\);\s*color:\s*var\(--dim-primary-ink\);~',
             $button
         );
         $this->assertMatchesRegularExpression(
@@ -917,21 +938,30 @@ final class category_scss_test extends \basic_testcase {
 
         $kebab = $this->rule_body($scss, '.dim-toolbar__manage .dropdown-toggle');
         $this->assertMatchesRegularExpression('~width:\s*42px;\s*height:\s*42px;~', $kebab, 'As tall as the toggle beside it.');
-        $this->assertMatchesRegularExpression('~border:\s*1px solid var\(--dim-control-line\);~', $kebab);
+        $this->assertMatchesRegularExpression(
+            '~border:\s*1px solid var\(--dim-control-line\);\s*border-radius:\s*var\(--dim-radius-md\);~',
+            $kebab
+        );
+        $this->assertMatchesRegularExpression(
+            '~&\[aria-expanded="true"\] \{\s*border-color:\s*var\(--dim-brand-edge\);\s*background:\s*var\(--dim-brand-tint\);~',
+            $kebab
+        );
 
         $apply = $this->rule_body($scss, ".dim-toolbar__sortsubmit,\n    .dim-toolbar__submit");
         $this->assertMatchesRegularExpression('~min-height:\s*40px;~', $apply);
         $this->assertMatchesRegularExpression('~background:\s*var\(--dim-cta\);\s*color:\s*var\(--dim-cta-ink\);~', $apply);
 
         $clear = $this->rule_body($scss, '.dim-toolbar__clear');
-        $this->assertMatchesRegularExpression('~padding:\s*0;~', $clear, 'A text button, not a 29.5px box.');
-        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-primary-ink\);~', $clear);
-        $this->assertMatchesRegularExpression('~text-underline-offset:\s*2px;~', $clear);
-        $this->assertDoesNotMatchRegularExpression('~font-weight~', $clear, 'The sentence\'s own weight.');
+        $this->assertMatchesRegularExpression('~padding:\s*0 \.25rem;~', $clear, 'A text button, not a box.');
+        $this->assertMatchesRegularExpression('~border:\s*0;\s*background:\s*none;~', $clear);
+        $this->assertMatchesRegularExpression('~color:\s*var\(--dim-ink\);~', $clear);
+        $this->assertMatchesRegularExpression('~font-size:\s*\.8125rem;\s*font-weight:\s*600;~', $clear);
+        $this->assertMatchesRegularExpression('~text-decoration:\s*underline;\s*text-underline-offset:\s*2px;~', $clear);
 
         $panel = $this->rule_body($scss, '.dim-toolbar__panel');
-        $this->assertMatchesRegularExpression('~padding:\s*14px 16px;~', $panel);
-        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-ds-radius-md, 8px\);~', $panel);
+        $this->assertMatchesRegularExpression('~padding:\s*\.75rem;~', $panel);
+        $this->assertMatchesRegularExpression('~border-radius:\s*var\(--dim-radius\);~', $panel, 'The panel\'s 12px corners.');
+        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-surface\);\s*color:\s*var\(--dim-ink\);~', $panel);
         $legend = $this->rule_body($scss, '.dim-toolbar__grouplabel');
         $this->assertMatchesRegularExpression('~margin:\s*0 0 6px;~', $legend);
         $this->assertMatchesRegularExpression(
@@ -947,9 +977,9 @@ final class category_scss_test extends \basic_testcase {
 
         $row = $this->rule_body($scss, '.dim-line__chips');
         $this->assertMatchesRegularExpression(
-            '~margin:\s*-3px -5px -1px;\s*padding:\s*5px;~',
+            '~margin:\s*\.25rem 0;~',
             $row,
-            'The design\'s 12px above and 18px below, less the gaps already there (10px and 14px), less 5px of ring room.'
+            'The design\'s 12px above and 18px below, less the gaps already there (8px and 14px).'
         );
         $this->assertMatchesRegularExpression('~gap:\s*14px;~', $this->rule_body($scss, '.dim-vitrine'), 'The 14px it counts on.');
     }
@@ -1000,17 +1030,20 @@ final class category_scss_test extends \basic_testcase {
      * The line wraps where it does not fit, which is its whole narrow behaviour without
      * JavaScript, and is the positioned ancestor of the panel, which opens under the line (not under
      * its own control) from the sm breakpoint up and grows with its content (it is no scroll
-     * container, or it would clip the date calendar); below sm it stays in the flow. The scope is a
-     * platter: a grey track, the chosen cell raised in the page's surface. The row under the line
-     * is no box at rest - display: contents, so it takes no gap of the toolbar's
-     * column - and everything in it but the count sentence goes. Every control of the line is 40px,
-     * 44px on a phone.
+     * container, or it would clip the date calendar); below sm it stays in the flow, at the popover's
+     * elevation from sm up. The scope is the Design System's segmented control: an inset platter at
+     * the panel's 12px corners holding 32px cells at 8px, the chosen one raised in the page's surface
+     * with no border. The row under the line is no box at rest - display: contents, so it takes no gap
+     * of the toolbar's column - and everything in it but the count sentence goes; narrowed, it wraps
+     * its chips, 28px rectangles in the brand tone. Every control of the line is 40px, 44px on a phone.
      *
      * Changes that must make it fail: the wrap dropped from the line; the line not positioned (the
      * panel is then placed against the page); the popover's absolute position dropped, or an
-     * overflow or max-height given to it; the row at rest kept as a box; a chip shorter than a
-     * control; the search's basis moved off the first step's floor (the unmeasured line would wrap
-     * where the first step fits).
+     * overflow or max-height given to it; the row at rest kept as a box; the chips row given its
+     * sideways scroll back (gate ds_bar_chips_row_wraps); a chip rounded into a pill
+     * (ds_bar_chip_rectangle); the platter's corners back at 6px (ds_bar_scope_platter_radius); a cell
+     * off 32px (ds_bar_scope_cell_height); the search's basis moved off the first step's floor (the
+     * unmeasured line would wrap where the first step fits).
      */
     public function test_the_filter_line_wraps_and_its_panel_is_a_popover_from_sm(): void {
         $scss = $this->stylesheet('category.scss');
@@ -1018,7 +1051,7 @@ final class category_scss_test extends \basic_testcase {
         $line = $this->rule_body($scss, '.dim-line');
         $this->assertMatchesRegularExpression('~position:\s*relative;~', $line, 'The panel is placed against the line.');
         $this->assertMatchesRegularExpression('~display:\s*flex;\s*flex-wrap:\s*wrap;~', $line, 'One row that wraps.');
-        $this->assertMatchesRegularExpression('~gap:\s*10px;~', $line);
+        $this->assertMatchesRegularExpression('~gap:\s*\.5rem;~', $line, 'The bar\'s 8px gap.');
         $this->assertMatchesRegularExpression(
             '~flex:\s*1 1 13rem;\s*min-width:\s*0;~',
             $this->rule_body($scss, '.dim-toolbar__search'),
@@ -1055,14 +1088,36 @@ final class category_scss_test extends \basic_testcase {
             'The Filters summary is an item of the line, never lifted out of it.'
         );
 
+        $platter = $this->rule_body($scss, '.dim-line__cells');
         $this->assertMatchesRegularExpression(
-            '~background:\s*var\(--dim-surface-strong\);~',
-            $this->rule_body($scss, '.dim-line__cells'),
-            'The scope\'s grey track.'
+            '~gap:\s*2px;\s*padding:\s*3px;\s*border:\s*1px solid transparent;\s*border-radius:\s*var\(--dim-radius\);\s*'
+                . 'background:\s*var\(--dim-surface-strong\);~',
+            $platter,
+            'The scope\'s inset platter: 2px between cells, the one named 3px padding, the panel\'s 12px corners.'
+        );
+        $scopecell = $this->rule_body($scss, '.dim-line__scope .dim-pill');
+        $this->assertMatchesRegularExpression(
+            '~min-height:\s*2rem;\s*padding:\s*0 \.75rem;\s*border:\s*0;\s*border-radius:\s*var\(--dim-radius-md\);~',
+            $scopecell,
+            'A 32px cell at 8px corners: with the platter\'s padding and border, a 40px control.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~color:\s*var\(--dim-muted\);\s*font-size:\s*\.875rem;\s*font-weight:\s*500;~',
+            $scopecell
         );
         $cell = $this->rule_body($scss, '.dim-line__scope .dim-pill__input:checked + .dim-pill');
-        $this->assertMatchesRegularExpression('~background:\s*var\(--dim-surface\);~', $cell, 'The chosen cell is raised.');
-        $this->assertMatchesRegularExpression('~box-shadow:\s*var\(--dim-ds-shadow-sm\);~', $cell);
+        $this->assertMatchesRegularExpression(
+            '~background:\s*var\(--dim-surface\);\s*color:\s*var\(--dim-ink\);\s*font-weight:\s*600;\s*'
+                . 'box-shadow:\s*var\(--dim-elevation-sm\);~',
+            $cell,
+            'The chosen cell is raised.'
+        );
+        $this->assertStringNotContainsString('border', $cell, 'The chosen cell has no border.');
+        $this->assertMatchesRegularExpression(
+            '~color:\s*var\(--dim-muted\);~',
+            $this->rule_body($scss, '.dim-line__scope .dim-pill__input:checked + .dim-pill .dim-pill__count'),
+            'A chosen cell\'s count stays quiet.'
+        );
         $this->assertDoesNotMatchRegularExpression(
             '~overflow~',
             $this->rule_body($scss, '.dim-line__cells'),
@@ -1074,6 +1129,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression('~position:\s*absolute;~', $popover[1]);
         $this->assertMatchesRegularExpression('~top:\s*calc\(100% \+ 6px\);~', $popover[1], 'Under the line.');
         $this->assertMatchesRegularExpression('~max-width:\s*100%;~', $popover[1], 'Never wider than the line.');
+        $this->assertMatchesRegularExpression('~box-shadow:\s*var\(--dim-elevation-md\);~', $popover[1], 'A popover\'s elevation.');
         $this->assertDoesNotMatchRegularExpression(
             '~overflow|max-height~',
             $popover[1],
@@ -1093,11 +1149,29 @@ final class category_scss_test extends \basic_testcase {
             'Everything but the count sentence goes, and the sentence stays the live region.'
         );
         $row = $this->rule_body($scss, '.dim-line__chips');
-        $this->assertMatchesRegularExpression('~flex-wrap:\s*nowrap;~', $row, 'One line under the line.');
-        $this->assertMatchesRegularExpression('~overflow-x:\s*auto;~', $row, 'That scrolls rather than widening the page.');
-        $this->assertMatchesRegularExpression('~max-width:\s*calc\(100% \+ 10px\);~', $row);
+        $this->assertMatchesRegularExpression('~flex-wrap:\s*wrap;~', $row, 'The chips row wraps onto further lines.');
+        $this->assertMatchesRegularExpression('~gap:\s*\.375rem;~', $row, 'Six pixels between its items.');
+        $this->assertDoesNotMatchRegularExpression(
+            '~overflow|scrollbar-width~',
+            $row,
+            'No sideways scroll: it would hide chips and clip their focus ring.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~> \* \{\s*flex:\s*0 1 auto;\s*min-width:\s*0;\s*\}~',
+            $row,
+            'An item wider than the row on its own shrinks, so the row never widens the page.'
+        );
+        $this->assertMatchesRegularExpression('~flex-wrap:\s*wrap;~', $this->rule_body($scss, '.dim-line__chiplist'));
         $chip = $this->rule_body($scss, '.dim-chip');
-        $this->assertMatchesRegularExpression('~min-height:\s*40px;~', $chip, 'A chip is a control at full height.');
+        $this->assertMatchesRegularExpression(
+            '~gap:\s*\.375rem;\s*min-height:\s*1\.75rem;\s*padding:\s*0 \.375rem 0 \.5rem;\s*'
+                . 'border:\s*1px solid var\(--dim-brand-edge\);\s*border-radius:\s*var\(--dim-radius-sm\);\s*'
+                . 'background:\s*var\(--dim-brand-tint\);\s*color:\s*var\(--dim-primary-ink\);~',
+            $chip,
+            'A chip is a 28px rectangle in the brand tone, never a pill.'
+        );
+        $this->assertMatchesRegularExpression('~font-size:\s*\.8125rem;\s*font-weight:\s*500;~', $chip);
+        $this->assertMatchesRegularExpression('~\.fa \{\s*font-size:\s*\.75rem;\s*\}~', $chip, 'Its cross is 12px.');
         $this->assertMatchesRegularExpression('~&:focus-visible \{\s*outline:\s*3px solid var\(--dim-ring\);~', $chip);
 
         $phone = $this->phone_block($scss);
@@ -1116,6 +1190,11 @@ final class category_scss_test extends \basic_testcase {
             '~\.dim-line__iconbtn,\s*\.dim-toolbar__filterstoggle,\s*\.dim-chip \{\s*min-height:\s*44px;~',
             $phone,
             'Every control of the line is 44px on a phone.'
+        );
+        $this->assertMatchesRegularExpression(
+            '~\.dim-line__scope \.dim-pill \{\s*min-height:\s*2\.25rem;\s*\}~',
+            $phone,
+            'And so is the scope: 36px cells in the platter\'s padding and border.'
         );
     }
 
@@ -1361,8 +1440,8 @@ final class category_scss_test extends \basic_testcase {
      * legend is not the fieldset's rendered legend, so it lays out as a flex item beside the track
      * instead of above it. Bootstrap's reboot gives every legend the whole width, which would put
      * the label on its own line, so the width is reset too. The colon is the stylesheet's, so the
-     * string stays the group's name. The row under the line centres its controls with the design's
-     * gaps and the clear link right after the chips rather than pushed to the far end; an empty
+     * string stays the group's name. The row under the line centres its controls 6px apart (the
+     * Design System's chips row) and the clear link right after the chips rather than pushed to the far end; an empty
      * period region is out of the row, or its two gaps would double the distance. On a phone every pill and quick
      * option of the toolbar is 44px tall.
      */
@@ -1390,7 +1469,7 @@ final class category_scss_test extends \basic_testcase {
 
         $row = $this->rule_body($scss, '.dim-line__chips');
         $this->assertMatchesRegularExpression('~align-items:\s*center;~', $row);
-        $this->assertMatchesRegularExpression('~gap:\s*4px 14px;~', $row);
+        $this->assertMatchesRegularExpression('~gap:\s*\.375rem;~', $row);
         $this->assertDoesNotMatchRegularExpression(
             '~margin-left:\s*auto~',
             $this->rule_body($scss, '.dim-toolbar__clear'),
@@ -1418,14 +1497,14 @@ final class category_scss_test extends \basic_testcase {
     }
 
     /**
-     * The Filter badge and its open outline read in both colour modes; the summary's links are 44px on a phone.
+     * The Filter badge and its open face read in both colour modes; the summary's links are 44px on a phone.
      *
      * The badge is the call to action's pair: the brand primary with its contrasting ink on the
      * light page, #4456ff and white (5.2:1) on the dark one. The page's surface is never its ink,
      * because the brand primary does not turn with the mode and the dark surface on it would not
-     * read. The open summary's line is the open poster's ring, which follows the mode the same way
-     * instead of vanishing into the dark card. On a phone the area links of the "nothing in N areas" summary
-     * take the 44px of every other control there.
+     * read. The open summary is the brand tone (ground, edge, ink), which post.scss turns with the
+     * mode; the ink is the dark mode's lighter blue rather than a primary the dark card swallows. On a
+     * phone the area links of the "nothing in N areas" summary take the 44px of every other control there.
      */
     public function test_the_filter_badge_reads_in_the_dark_and_the_summarys_links_are_44px(): void {
         $scss = $this->stylesheet('category.scss');
@@ -1440,12 +1519,25 @@ final class category_scss_test extends \basic_testcase {
             $scss,
             'The fill follows the mode: the lighter blue on the dark page.'
         );
+        $open = $this->rule_body($scss, '.dim-toolbar__filters[open] .dim-toolbar__filterstoggle');
+        $this->assertMatchesRegularExpression('~border-color:\s*var\(--dim-brand-edge\);~', $open);
         $this->assertMatchesRegularExpression(
-            '~border-color:\s*var\(--dim-open-ring\);~',
-            $this->rule_body($scss, '.dim-toolbar__filters[open] .dim-toolbar__filterstoggle'),
-            'The open summary\'s line is the open poster\'s ring, not the navy the dark card swallows.'
+            '~color:\s*var\(--dim-primary-ink\);~',
+            $open,
+            'The open summary\'s ink is the brand ink that follows the mode, not the navy the dark card swallows.'
         );
-        $this->assertMatchesRegularExpression('~' . $dark . '--dim-open-ring:\s*var\(--dim-ds-blue-200, #adb2f0\);~', $scss);
+        $this->assertMatchesRegularExpression(
+            '~:root\[data-bs-theme="dark"\] body\.dim-category \.dim-hero,\s*' . $dark . '--dim-primary-ink:\s*'
+                . 'var\(--dim-ds-blue-200, #adb2f0\);~',
+            $scss
+        );
+        $tokens = $this->rule_body($scss, ".dim-vitrine,\n    .dim-cmodal");
+        $this->assertMatchesRegularExpression(
+            '~--dim-brand-tint:\s*var\(--dimensions-brand-tint,~',
+            $tokens,
+            'The brand tone is the family\'s, which post.scss declares for both modes.'
+        );
+        $this->assertMatchesRegularExpression('~--dim-brand-edge:\s*var\(--dimensions-brand-edge,~', $tokens);
 
         $found = preg_match_all('~@media \(max-width: 575\.98px\) \{(.*?)\n    \}~s', $scss, $matches);
         $this->assertGreaterThan(0, $found);
@@ -1864,7 +1956,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertMatchesRegularExpression(
             '~\.dim-line--s4 \{\s*\.dim-toolbar__filters\[open\] \{\s*flex:\s*none;\s*\}\s*\.dim-toolbar__panel \{\s*'
                 . 'position:\s*fixed;\s*top:\s*auto;\s*right:\s*0;\s*bottom:\s*0;\s*left:\s*0;[^}]*max-height:\s*80vh;'
-                . '[^}]*overflow-y:\s*auto;[^}]*border-radius:\s*var\(--dim-radius\) var\(--dim-radius\) 0 0;[^}]*\}\s*'
+                . '[^}]*overflow-y:\s*auto;[^}]*border-radius:\s*var\(--dim-radius-xl\) var\(--dim-radius-xl\) 0 0;[^}]*\}\s*'
                 . '\.dim-daterange \{\s*flex-wrap:\s*wrap;\s*\}\s*'
                 . '\.dim-daterange__pop \{\s*position:\s*static;\s*flex:\s*1 1 100%;~',
             $scss
