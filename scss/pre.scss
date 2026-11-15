@@ -29,10 +29,11 @@
 $font-family-sans-serif: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
 // ---- Shape -----------------------------------------------------------------
-// 4 / 6 / 8 / 12 / 16 / pill, with the destinations the design system writes down: controls 6,
-// cards 12, hero 16. Bootstrap only carries three steps, so these are the three that map.
+// 4 / 6 / 8 / 12 / 16 / pill, with the destinations the design system writes down: controls 8
+// (Boost's own radius, so a button has one shape under either theme), cards 12, hero 16. Bootstrap
+// only carries three steps, so these are the three that map.
 $border-radius-sm: 4px;
-$border-radius: 6px;
+$border-radius: 8px;
 $border-radius-lg: 12px;
 
 // ---- Elevation -------------------------------------------------------------

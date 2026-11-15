@@ -5,6 +5,17 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The theme declares the fleet Design System's scales, and buttons take Moodle's own 8px corners.** Ten new
+  family tokens, on the same three roots and in both colour modes as the others: `--dimensions-control-line` (the
+  border of an outlined control, Bootstrap's gray-500), `--dimensions-focus-width` (the ring's 3px),
+  `--dimensions-radius-xs` to `-xl` (4, 6, 8, 12 and 16px) and `--dimensions-elevation-sm`, `-md` and `-lg` (the
+  theme's navy-tinted shadows; black on the dark page, with the same offsets and blurs). No component of the theme
+  reads them yet. The six `--dimensions-state-*-edge` tokens are no longer their pill's own ground: each is a line
+  that shows around it, darker on the light page and lighter on the dark one, mixed from the pill's ink and ground
+  at 30 % (the solid "enrolled" fill takes the palette's next stop), so a status label drawing its 1px edge has one;
+  under the theme only local_dimensions' locked-card disc draws it today. Bootstrap's `$border-radius` moves from 6px
+  to 8px, Boost's value, so buttons, form fields and every other control drawn at the default radius are two pixels
+  rounder (2026100614).
 - **block_compass's crests cost the same for one course or a batch of 24.** The theme's answer to the block's course
   crests hook read each course's category context on its own, through Moodle's `can_view_course_info()`: one
   database statement per category of every batch, on every first paint (`get_attention`) and every card batch

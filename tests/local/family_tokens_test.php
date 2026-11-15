@@ -72,6 +72,29 @@ final class family_tokens_test extends \basic_testcase {
     /** @var string[] The motion suffixes local_dimensions alone reads; its state suffixes come from STATES. */
     private const MOTION = ['motion-fast', 'motion-base', 'motion-ease'];
 
+    /**
+     * @var array The fleet Design System's scales, suffix => the design system token the light page reads: the control
+     *      line, the ring's width, the radius steps and the elevations, read by every plugin of the family.
+     */
+    private const SYSTEM = [
+        'control-line' => '--bs-gray-500',
+        'focus-width' => '--dim-ds-focus-ring-width',
+        'radius-xs' => '--dim-ds-radius-xs',
+        'radius-sm' => '--dim-ds-radius-sm',
+        'radius-md' => '--dim-ds-radius-md',
+        'radius-lg' => '--dim-ds-radius-lg',
+        'radius-xl' => '--dim-ds-radius-xl',
+        'elevation-sm' => '--dim-ds-shadow-sm',
+        'elevation-md' => '--dim-ds-shadow-md',
+        'elevation-lg' => '--dim-ds-shadow-lg',
+    ];
+
+    /** @var int[] The radius scale in pixels, xs to xl: Moodle Design System 5.3.0's steps. */
+    private const RADIUS_SCALE = [4, 6, 8, 12, 16];
+
+    /** @var float The least contrast of a state's edge with its own ground: Bootstrap's subtle border on its subtle fill. */
+    private const EDGE_FLOOR = 1.25;
+
     /** @var array The enrolment states local_dimensions reads => the showcase's badge state wearing the same pair. */
     private const STATES = [
         'enrolled' => 'enrolled',
@@ -140,6 +163,15 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
+     * The Design System's names, with their prefix.
+     *
+     * @return string[]
+     */
+    private static function system(): array {
+        return array_map(static fn(string $suffix): string => '--dimensions-' . $suffix, array_keys(self::SYSTEM));
+    }
+
+    /**
      * Every name of the contract, shared first, the card's last.
      *
      * @return string[] The custom property names, with their prefix.
@@ -150,8 +182,49 @@ final class family_tokens_test extends \basic_testcase {
                 static fn(string $suffix): string => '--dimensions-' . $suffix,
                 array_merge(self::SHARED, self::local_only())
             ),
+            self::system(),
             self::card()
         );
+    }
+
+    /**
+     * The relative luminance of a colour, as WCAG 2 defines it.
+     *
+     * @param string $hex Six hexadecimal digits after a hash.
+     * @return float
+     */
+    private static function luminance(string $hex): float {
+        $luminance = 0.0;
+        foreach ([0.2126, 0.7152, 0.0722] as $i => $weight) {
+            $channel = hexdec(substr($hex, 1 + 2 * $i, 2)) / 255;
+            $luminance += $weight * ($channel <= 0.03928 ? $channel / 12.92 : (($channel + 0.055) / 1.055) ** 2.4);
+        }
+        return $luminance;
+    }
+
+    /**
+     * A state's edge as a colour, and the pair it was mixed from when it is a mix.
+     *
+     * An edge is a palette token, or Sass's mix() of two colours at a weight, each a palette variable or a literal.
+     *
+     * @param string $value The declared value.
+     * @param array $palette The palette, from palette().
+     * @return array ['hex' => string, 'ink' => ?string, 'ground' => ?string], the last two null for a token.
+     */
+    private function edge(string $value, array $palette): array {
+        $colour = '(\$dim-ds-[a-z0-9-]+|#[0-9a-f]{6})';
+        if (!preg_match('~^#\{mix\(' . $colour . ', ' . $colour . ', (\d+)%\)\}$~', $value, $mix)) {
+            return ['hex' => $this->hex($value, $palette), 'ink' => null, 'ground' => null];
+        }
+        $resolve = static fn(string $one): string => $one[0] === '$' ? $palette['--' . substr($one, 1)] : $one;
+        [$ink, $ground, $weight] = [$resolve($mix[1]), $resolve($mix[2]), (int) $mix[3] / 100];
+        $hex = '#';
+        foreach ([1, 3, 5] as $at) {
+            $hex .= sprintf('%02x', (int) round(
+                hexdec(substr($ink, $at, 2)) * $weight + hexdec(substr($ground, $at, 2)) * (1 - $weight)
+            ));
+        }
+        return ['hex' => $hex, 'ink' => $ink, 'ground' => $ground];
     }
 
     /**
@@ -286,7 +359,7 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
-     * The list holds 33 shared names, 21 local-only ones and the card's 30, none twice.
+     * The list holds 33 shared names, 21 local-only ones, the Design System's 10 and the card's 30, none twice.
      *
      * Every other test reads the stylesheet and the document against these constants, so a typo
      * here would be copied into both and pass.
@@ -296,7 +369,8 @@ final class family_tokens_test extends \basic_testcase {
         $this->assertCount(21, self::local_only());
         $this->assertCount(30, array_unique(self::card()));
         $this->assertSame([], array_values(array_diff(self::CARD_COLOURS, self::CARD)), 'Every colour is a card suffix.');
-        $this->assertCount(84, array_unique(self::names()));
+        $this->assertCount(10, self::SYSTEM);
+        $this->assertCount(94, array_unique(self::names()));
     }
 
     /**
@@ -367,8 +441,12 @@ final class family_tokens_test extends \basic_testcase {
             $declarations = $this->family_declarations($blocks[$mode][0]['body']);
             $names = array_column($declarations, 0);
             foreach ($declarations as [$name, $value]) {
-                if (in_array($name, self::card(), true)) {
-                    // The card's lengths, shadows and gradients have a test of their own.
+                if (in_array($name, self::card(), true) || in_array($name, self::system(), true)) {
+                    // The card's and the scales' lengths, shadows and gradients have tests of their own.
+                    continue;
+                }
+                if (str_ends_with($name, '-edge') && str_starts_with($name, '--dimensions-state-')) {
+                    // A state's edge is derived from its own pair, and measured against it in a test of its own.
                     continue;
                 }
                 if (preg_match('~^#[0-9a-f]{6}$~', $value)) {
@@ -469,7 +547,7 @@ final class family_tokens_test extends \basic_testcase {
     }
 
     /**
-     * Each enrolment state wears the showcase's badge of the same family, in both modes, its edge its own ground.
+     * Each enrolment state wears the showcase's badge of the same family, in both modes.
      *
      * The light half names the same design system token as the badge; the dark half resolves to the badge's
      * colour, through the palette where the palette holds it. Read from scss/category.scss itself, so a pill
@@ -515,18 +593,143 @@ final class family_tokens_test extends \basic_testcase {
                     "{$name}: the dark {$badge} badge's colour."
                 );
             }
-            foreach (['light' => $light, 'dark' => $dark] as $mode => $values) {
-                $this->assertSame(
-                    "var(--dimensions-state-{$state}-bg)",
-                    $values["--dimensions-state-{$state}-edge"],
-                    "The {$mode} {$state} edge is its own ground: the showcase's badges draw none."
-                );
-            }
         }
     }
 
     /**
-     * The public document lists exactly the declared names, the shared, the local-only and the card's apart.
+     * Every state's edge shows as a one pixel line against its own ground, in both modes.
+     *
+     * A status label draws its state's edge around its state's ground, so an edge equal to the ground, or one step
+     * from it, is a label with no edge. Each edge is darker than its ground on the light page and lighter on the
+     * dark one (a darker line there melts into the page), at no less than the contrast of Bootstrap's subtle border
+     * on its subtle fill; and an edge mixed from a pair is mixed from its own state's ink and ground, so a pill
+     * the showcase re-colours takes its edge along.
+     */
+    public function test_every_state_edge_shows_against_its_ground(): void {
+        $palette = $this->palette();
+        $blocks = $this->blocks();
+        $mixed = 0;
+        foreach (['light', 'dark'] as $mode) {
+            $values = array_column($this->family_declarations($blocks[$mode][0]['body']), 1, 0);
+            foreach (array_keys(self::STATES) as $state) {
+                $ground = $this->hex($values["--dimensions-state-{$state}-bg"], $palette);
+                $ink = $this->hex($values["--dimensions-state-{$state}-ink"], $palette);
+                $edge = $this->edge($values["--dimensions-state-{$state}-edge"], $palette);
+                $label = "The {$mode} {$state} edge";
+                $this->assertMatchesRegularExpression('~^#[0-9a-f]{6}$~', $ground, "Precondition: {$label}'s ground is a colour.");
+                $this->assertMatchesRegularExpression('~^#[0-9a-f]{6}$~', $edge['hex'], "{$label} is a colour.");
+                if ($edge['ink'] !== null) {
+                    $mixed++;
+                    $this->assertSame($ink, $edge['ink'], "{$label} is mixed from its own ink.");
+                    $this->assertSame($ground, $edge['ground'], "{$label} is mixed into its own ground.");
+                }
+                [$edgelight, $groundlight] = [self::luminance($edge['hex']), self::luminance($ground)];
+                $contrast = (max($edgelight, $groundlight) + 0.05) / (min($edgelight, $groundlight) + 0.05);
+                $this->assertGreaterThanOrEqual(
+                    self::EDGE_FLOOR,
+                    $contrast,
+                    "{$label} ({$edge['hex']}) reads " . round($contrast, 2) . ':1 on its ground (' . $ground . ').'
+                );
+                if ($mode === 'light') {
+                    $this->assertLessThan($groundlight, $edgelight, "{$label} is darker than its ground.");
+                } else {
+                    $this->assertGreaterThan($groundlight, $edgelight, "{$label} is lighter than its ground.");
+                }
+            }
+        }
+        $this->assertSame(10, $mixed, 'Control: the five tints carry a mixed edge in each mode.');
+        $this->assertEqualsWithDelta(
+            1.263253,
+            (self::luminance('#888888') + 0.05) / (self::luminance('#777777') + 0.05),
+            0.0001,
+            'Control: the contrast maths, on a pair of tests/fixtures/contrast_pairs.json.'
+        );
+    }
+
+    /**
+     * The Design System's scales read the theme's own steps, the same in both modes but for the elevations.
+     *
+     * A plugin's fallback is the fleet's literal for each step (4 to 16 px, a 2 px ring, the navy elevations), so a
+     * name missing here or pointing at another step is the theme looking unlike what the Design System documents.
+     * The dark page keeps each elevation's offset and blur and draws it in black, because a navy tint cannot draw
+     * on a dark ground; the resting step is the dark course card's shadow.
+     */
+    public function test_the_design_system_scales_read_the_themes_own_steps(): void {
+        $palette = $this->palette();
+        $blocks = $this->blocks();
+        $light = array_column($this->family_declarations($blocks['light'][0]['body']), 1, 0);
+        $dark = array_column($this->family_declarations($blocks['dark'][0]['body']), 1, 0);
+
+        foreach (self::SYSTEM as $suffix => $token) {
+            $name = '--dimensions-' . $suffix;
+            $this->assertSame("var({$token})", $light[$name], "{$name} on the light page.");
+            if (str_starts_with($token, '--dim-ds-')) {
+                $this->assertArrayHasKey($token, $palette, "{$name} reads {$token}, which post.scss does not declare.");
+            }
+            if (!str_starts_with($suffix, 'elevation-')) {
+                $this->assertSame($light[$name], $dark[$name], "{$name} is the same step on the dark page.");
+            }
+        }
+
+        foreach (['xs', 'sm', 'md', 'lg', 'xl'] as $i => $step) {
+            $this->assertSame(self::RADIUS_SCALE[$i] . 'px', $palette["--dim-ds-radius-{$step}"], "The {$step} radius.");
+        }
+        $this->assertSame('3px', $palette['--dim-ds-focus-ring-width'], 'The ring is the theme\'s 3 px.');
+
+        $drawn = 0;
+        foreach (['sm', 'md', 'lg'] as $step) {
+            $navy = $palette["--dim-ds-shadow-{$step}"];
+            $this->assertSame(
+                1,
+                preg_match('~^(0 \d+px \d+px) rgba\(7, 0, 147, \.\d+\)~', $navy, $lightshadow),
+                "Precondition: the light {$step} elevation is a navy shadow."
+            );
+            $black = $dark["--dimensions-elevation-{$step}"];
+            $this->assertSame(
+                1,
+                preg_match('~^(0 \d+px \d+px) rgba\(var\(--bs-black-rgb\), \.\d+\)$~', $black, $darkshadow),
+                "The dark {$step} elevation is one black shadow: {$black}."
+            );
+            $this->assertSame($lightshadow[1], $darkshadow[1], "The dark {$step} elevation keeps the light offset and blur.");
+            $drawn++;
+        }
+        $this->assertSame(3, $drawn, 'Control: the three elevations were read.');
+        $this->assertSame(
+            $dark['--dimensions-card-shadow'],
+            $dark['--dimensions-elevation-sm'],
+            'The resting elevation of the dark page is the dark card\'s shadow.'
+        );
+    }
+
+    /**
+     * Bootstrap's radius variables sit on the Design System's scale, and a control's is the 8 px step.
+     *
+     * Bootstrap carries three steps and a dropdown's, compiled before the tokens exist, so they are literals in
+     * scss/pre.scss: a button's radius must be Boost's own 8 px, the scale's md, or an action button has one shape
+     * under this theme and another under Boost.
+     */
+    public function test_bootstraps_radius_variables_sit_on_the_scale(): void {
+        $pre = $this->stylesheet('pre.scss');
+        preg_match_all('~^\$([a-z-]*border-radius[a-z-]*):\s*([^;]+);$~m', $pre, $matches);
+        $radii = array_combine($matches[1], $matches[2]);
+        $this->assertSame(
+            [
+                'border-radius-sm' => '4px',
+                'border-radius' => '8px',
+                'border-radius-lg' => '12px',
+                'dropdown-border-radius' => '8px',
+            ],
+            $radii,
+            'The four radius variables of scss/pre.scss.'
+        );
+        foreach ($radii as $variable => $value) {
+            $this->assertContains((int) $value, self::RADIUS_SCALE, "\${$variable}: {$value} is off the scale.");
+        }
+        $this->assertSame($this->palette()['--dim-ds-radius-md'], $radii['border-radius'], 'A control\'s radius is the md step.');
+    }
+
+    /**
+     * The public document lists exactly the declared names, the shared, the local-only, the scales and the card's apart.
      *
      * docs/ is left out of the release archive (.gitattributes), so a site installed from it has no
      * document to read and the test skips there; in the repository and in CI the folder is present, and
@@ -542,22 +745,23 @@ final class family_tokens_test extends \basic_testcase {
 
         $sections = [];
         foreach (preg_split('~^## ~m', $document) as $section) {
-            if (preg_match('~^(Shared tokens|Local-only tokens|Card tokens) \((\d+)\)~', $section, $heading)) {
+            if (preg_match('~^(Shared tokens|Local-only tokens|Design system tokens|Card tokens) \((\d+)\)~', $section, $heading)) {
                 preg_match_all('~^\| \x60(--dimensions-[a-z0-9-]+)\x60 \| [^|\n]*\S[^|\n]* \|$~m', $section, $rows);
                 $sections[$heading[1]] = ['count' => (int) $heading[2], 'names' => $rows[1]];
             }
         }
         $this->assertSame(
-            ['Shared tokens', 'Local-only tokens', 'Card tokens'],
+            ['Shared tokens', 'Local-only tokens', 'Design system tokens', 'Card tokens'],
             array_keys($sections),
-            'The three sections, shared first, the card\'s last.'
+            'The four sections, shared first, the card\'s last.'
         );
 
         $declared = array_column($this->family_declarations($this->blocks()['light'][0]['body']), 0);
         $shared = array_map(static fn(string $suffix): string => '--dimensions-' . $suffix, self::SHARED);
         $expected = [
             'Shared tokens' => $shared,
-            'Local-only tokens' => array_values(array_diff($declared, $shared, self::card())),
+            'Local-only tokens' => array_values(array_diff($declared, $shared, self::system(), self::card())),
+            'Design system tokens' => array_values(array_intersect($declared, self::system())),
             'Card tokens' => array_values(array_intersect($declared, self::card())),
         ];
         foreach ($expected as $title => $names) {
@@ -567,6 +771,7 @@ final class family_tokens_test extends \basic_testcase {
             $this->assertSame(count($names), $sections[$title]['count'], "{$title}: the heading's count.");
         }
         $this->assertCount(21, $sections['Local-only tokens']['names'], 'Control: the local-only names are the 21.');
+        $this->assertCount(10, $sections['Design system tokens']['names'], 'Control: the Design System names are the 10.');
         $this->assertCount(30, $sections['Card tokens']['names'], 'Control: the card names are the 30.');
     }
 }

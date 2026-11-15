@@ -212,14 +212,15 @@ $dim-dark-info-fg: #7fd8e4; // 8.8:1.
 
 /* ---- Family tokens: the contract with local_dimensions and block_dimensions ---- */
 /* The family tokens, the public half of the contract: the names under --dimensions- that local_dimensions and
-   block_dimensions read, the ones local_dimensions alone reads, and the course card's, which every plugin drawing a
-   course card reads. A plugin reads each as var(--dimensions-x, <its own chain>), so
-   it looks the same without this theme and takes the theme's look under it. Every value is a
-   Bootstrap property (so a flavour's brand colour and the page's colour mode move it), a design
-   system token of this file, or another family token; the only colour literals are the dark pills' own
-   colours, which the showcase's badges already measured (scss/category.scss, at its foot) and the
-   palette has no token for. A card token may also be a length, a duration, an opacity, or a shadow or a
-   gradient drawn from a token's channels. tests/local/family_tokens_test.php holds the list, the roots and the
+   block_dimensions read, the ones local_dimensions alone reads, the fleet Design System's scales (the control
+   line, the ring's width, the radius steps and the elevations), and the course card's, which every plugin drawing
+   a course card reads. A plugin reads each as var(--dimensions-x, <its own chain>), so it looks the same without
+   this theme and takes the theme's look under it. Every value is a Bootstrap property (so a flavour's brand colour
+   and the page's colour mode move it), a design system token of this file, or another family token; a state's
+   edge is Sass's mix() of its own pair. The only colour literals are the dark pills' own colours, which the
+   showcase's badges already measured (scss/category.scss, at its foot) and the palette has no token for. A card
+   token may also be a length, a duration, an opacity, or a shadow or a gradient drawn from a token's channels,
+   and a dark elevation is such a shadow. tests/local/family_tokens_test.php holds the list, the roots and the
    values.
 
    Three roots, because a token derived from a --bs-* property is computed where it is declared:
@@ -268,32 +269,47 @@ body,
        veil of the page's own surface. */
     --dimensions-shadow: rgba(var(--dim-ds-shadow-rgb), .1);
     --dimensions-scrim: rgba(var(--bs-body-bg-rgb), .72);
+    /* The border of an outlined control and of a filter panel's option, darker than the line. */
+    --dimensions-control-line: var(--bs-gray-500);
+    /* The ring's width, beside its colour above. */
+    --dimensions-focus-width: var(--dim-ds-focus-ring-width);
+    /* The radius scale and the three elevations, the design system's own steps. */
+    --dimensions-radius-xs: var(--dim-ds-radius-xs);
+    --dimensions-radius-sm: var(--dim-ds-radius-sm);
+    --dimensions-radius-md: var(--dim-ds-radius-md);
+    --dimensions-radius-lg: var(--dim-ds-radius-lg);
+    --dimensions-radius-xl: var(--dim-ds-radius-xl);
+    --dimensions-elevation-sm: var(--dim-ds-shadow-sm);
+    --dimensions-elevation-md: var(--dim-ds-shadow-md);
+    --dimensions-elevation-lg: var(--dim-ds-shadow-lg);
     /* Motion, local_dimensions alone: the design system's own. */
     --dimensions-motion-fast: var(--dim-ds-motion-fast);
     --dimensions-motion-base: var(--dim-ds-motion-base);
     --dimensions-motion-ease: var(--dim-ds-motion-ease);
     /* Enrolment states, local_dimensions alone: the pairs of the showcase's state badges, enrolled
        the enrolled pill's, scheduled the scheduled one's, pending pending's, open open's, guest the
-       free pill's and neutral the none pill's (scss/category.scss). The pills draw no edge, so each
-       edge is its own fill. */
+       free pill's and neutral the none pill's (scss/category.scss). An edge is a one pixel line that
+       shows against its own ground: a tint's is its ink mixed into the ground at 30 %, darker on the
+       light page; the solid enrolled fill has no darker ink, so its edge is the palette's next stop
+       down. tests/local/family_tokens_test.php measures every edge against its ground. */
     --dimensions-state-enrolled-bg: var(--dim-ds-blue-600);
     --dimensions-state-enrolled-ink: var(--dim-ds-white);
-    --dimensions-state-enrolled-edge: var(--dimensions-state-enrolled-bg);
+    --dimensions-state-enrolled-edge: var(--dim-ds-blue-800);
     --dimensions-state-scheduled-bg: var(--dim-ds-blue-050);
     --dimensions-state-scheduled-ink: var(--dim-ds-blue-700);
-    --dimensions-state-scheduled-edge: var(--dimensions-state-scheduled-bg);
+    --dimensions-state-scheduled-edge: #{mix($dim-ds-blue-700, $dim-ds-blue-050, 30%)};
     --dimensions-state-pending-bg: var(--dim-ds-yellow-100);
     --dimensions-state-pending-ink: var(--dim-ds-yellow-800);
-    --dimensions-state-pending-edge: var(--dimensions-state-pending-bg);
+    --dimensions-state-pending-edge: #{mix($dim-ds-yellow-800, $dim-ds-yellow-100, 30%)};
     --dimensions-state-open-bg: var(--dim-ds-green-050);
     --dimensions-state-open-ink: var(--dim-ds-green-800);
-    --dimensions-state-open-edge: var(--dimensions-state-open-bg);
+    --dimensions-state-open-edge: #{mix($dim-ds-green-800, $dim-ds-green-050, 30%)};
     --dimensions-state-guest-bg: var(--dim-ds-cyan-100);
     --dimensions-state-guest-ink: var(--dim-ds-cyan-800);
-    --dimensions-state-guest-edge: var(--dimensions-state-guest-bg);
+    --dimensions-state-guest-edge: #{mix($dim-ds-cyan-800, $dim-ds-cyan-100, 30%)};
     --dimensions-state-neutral-bg: var(--dim-ds-gray-200);
     --dimensions-state-neutral-ink: var(--dim-ds-gray-700);
-    --dimensions-state-neutral-edge: var(--dimensions-state-neutral-bg);
+    --dimensions-state-neutral-edge: #{mix($dim-ds-gray-700, $dim-ds-gray-200, 30%)};
     /* The course card, every plugin's: the family's ground and inks, Bootstrap's line, link hover, tertiary ground,
        track, brand and success triple, the design system's radius, ring width, elevations (the navy tint of the
        theme's own card shadow) and motion. */
@@ -335,7 +351,7 @@ body,
    the light chain: the brand ink, which Bootstrap's dark emphasis leaves at 3.28:1 on a dark card (the design
    system's lighter stop of the hue, as the showcase reads it); the ring, which the next stop up
    keeps over 3:1 on every dark surface; and a shadow, which a navy tint at a tenth cannot draw on a
-   dark page. */
+   dark page, so the shadow colour and the three elevations are black. */
 :root[data-bs-theme="dark"],
 :root[data-bs-theme="dark"] body,
 :root[data-bs-theme="dark"] .modal {
@@ -375,25 +391,38 @@ body,
     --dimensions-motion-fast: var(--dim-ds-motion-fast);
     --dimensions-motion-base: var(--dim-ds-motion-base);
     --dimensions-motion-ease: var(--dim-ds-motion-ease);
-    /* The showcase's dark pills, pair for pair (scss/category.scss); enrolled is the highlight blue. */
+    --dimensions-control-line: var(--bs-gray-500);
+    --dimensions-focus-width: var(--dim-ds-focus-ring-width);
+    --dimensions-radius-xs: var(--dim-ds-radius-xs);
+    --dimensions-radius-sm: var(--dim-ds-radius-sm);
+    --dimensions-radius-md: var(--dim-ds-radius-md);
+    --dimensions-radius-lg: var(--dim-ds-radius-lg);
+    --dimensions-radius-xl: var(--dim-ds-radius-xl);
+    /* The elevations in black, with the light steps' offsets and blurs: the resting step is the dark card's own. */
+    --dimensions-elevation-sm: 0 1px 2px rgba(var(--bs-black-rgb), .5);
+    --dimensions-elevation-md: 0 4px 12px rgba(var(--bs-black-rgb), .55);
+    --dimensions-elevation-lg: 0 12px 32px rgba(var(--bs-black-rgb), .6);
+    /* The showcase's dark pills, pair for pair (scss/category.scss); enrolled is the highlight blue. An edge is
+       lighter than its ground here, where a darker one would melt into the page: the ink mixed in at 30 %, and the
+       palette's next stop up for the enrolled fill. */
     --dimensions-state-enrolled-bg: var(--dim-ds-blue-400);
     --dimensions-state-enrolled-ink: var(--dim-ds-white);
-    --dimensions-state-enrolled-edge: var(--dimensions-state-enrolled-bg);
+    --dimensions-state-enrolled-edge: var(--dim-ds-blue-300);
     --dimensions-state-scheduled-bg: #1c2350;
     --dimensions-state-scheduled-ink: #b9c1ff;
-    --dimensions-state-scheduled-edge: var(--dimensions-state-scheduled-bg);
+    --dimensions-state-scheduled-edge: #{mix(#b9c1ff, #1c2350, 30%)};
     --dimensions-state-pending-bg: #3a2c0c;
     --dimensions-state-pending-ink: #f0c674;
-    --dimensions-state-pending-edge: var(--dimensions-state-pending-bg);
+    --dimensions-state-pending-edge: #{mix(#f0c674, #3a2c0c, 30%)};
     --dimensions-state-open-bg: #18330c;
     --dimensions-state-open-ink: #a9ee55;
-    --dimensions-state-open-edge: var(--dimensions-state-open-bg);
+    --dimensions-state-open-edge: #{mix(#a9ee55, #18330c, 30%)};
     --dimensions-state-guest-bg: #0c2e33;
     --dimensions-state-guest-ink: #7fd8e4;
-    --dimensions-state-guest-edge: var(--dimensions-state-guest-bg);
+    --dimensions-state-guest-edge: #{mix(#7fd8e4, #0c2e33, 30%)};
     --dimensions-state-neutral-bg: #262b3b;
     --dimensions-state-neutral-ink: #b4bccd;
-    --dimensions-state-neutral-edge: var(--dimensions-state-neutral-bg);
+    --dimensions-state-neutral-edge: #{mix(#b4bccd, #262b3b, 30%)};
     /* The course card on the dark page. Four differ from the light chain: the brand's stop for the extra slot's icon
        and the bar's fill (Bootstrap's dark primary reads under 3:1 on the dark track), the success emphasis for the
        completed base (a graphic on a dark ground), and black shadows, which a navy tint cannot draw on a dark page.
