@@ -240,6 +240,32 @@ final class card_markup_test extends \advanced_testcase {
     }
 
     /**
+     * The kind's glyph is the card's own key, in the cover's tag and in the top row: a trail draws the route.
+     *
+     * The template once chose the glyph from isevent, so a trail drew the course's cap; the control is the
+     * example's course card, which keeps its cap.
+     */
+    public function test_a_trail_card_draws_the_route_glyph(): void {
+        $this->resetAfterTest();
+        $card = $this->example_context('category_card');
+        $this->assertTrue($card['haskind'] && $card['showcover'], 'Precondition: the example draws the cover\'s tag.');
+        $glyphs = '//*[' . self::has_class('dim-card__kind') . ' or ' . self::has_class('dim-card__topkind') . ']/i';
+
+        $course = $this->render_context('category_card', ['hastop' => true] + $card)->query($glyphs);
+        $this->assertSame(2, $course->length, 'Precondition: the tag and the top row each draw a glyph.');
+        foreach ($course as $glyph) {
+            $this->assertSame('fa fa-graduation-cap', $glyph->getAttribute('class'), 'Control: a course keeps its cap.');
+        }
+
+        $trail = ['kindlabel' => 'Trail', 'kindicon' => 'fa-route', 'isevent' => false, 'hastop' => true] + $card;
+        $glyphs = $this->render_context('category_card', $trail)->query($glyphs);
+        $this->assertSame(2, $glyphs->length);
+        foreach ($glyphs as $glyph) {
+            $this->assertSame('fa fa-route', $glyph->getAttribute('class'));
+        }
+    }
+
+    /**
      * A card without its cover writes its category's colour on the article and holds its kind in the top row.
      *
      * The colour is instance data in a style attribute: the card hands in a hex, and the row at

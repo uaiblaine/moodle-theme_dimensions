@@ -1794,12 +1794,18 @@ body.dim-calendar {
         line-height: 1.35;
     }
 
+    // The trail's icon is a Font Awesome glyph: its font sizes it, in the 16px box the drawn icon had.
+    .dim-cal__trailicon {
+        width: 1rem;
+        font-size: .875rem;
+        line-height: 1;
+        text-align: center;
+    }
+
     .dim-cal__poprow > .dim-cal__trailicon {
         flex: none;
-        width: 1rem;
         margin-top: 2px;
         color: var(--dim-ds-text-link, var(--bs-link-color));
-        text-align: center;
     }
 
     // The public calendar's description is plain text: its paragraphs are the line breaks it carries.

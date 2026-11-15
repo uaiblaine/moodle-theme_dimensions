@@ -69,29 +69,13 @@ type TrailPopoverProps = {
 };
 
 /**
- * The trail's icon, two stops joined by a winding path, drawn in the text's colour. Decorative: whatever carries it
- * names the trail in words.
+ * The trail's icon, Font Awesome's route as the course card's trail draws it, in the text's colour. Decorative:
+ * whatever carries it names the trail in words.
  *
- * @param {object} props The icon's size, 16 by default.
  * @returns {object} The icon.
  */
-export const TrailIcon = ({size = 16}: {size?: number}) => (
-    <svg
-        className="dim-cal__trailicon"
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        aria-hidden="true"
-        focusable="false"
-    >
-        <circle cx="5" cy="18" r="2"></circle>
-        <circle cx="19" cy="6" r="2"></circle>
-        <path d="M7 18h6a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h6"></path>
-    </svg>
+export const TrailIcon = () => (
+    <i className="fa fa-route dim-cal__trailicon" aria-hidden="true"></i>
 );
 
 /**

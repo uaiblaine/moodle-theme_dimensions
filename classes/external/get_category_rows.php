@@ -635,6 +635,13 @@ class get_category_rows extends external_api {
                 null,
                 NULL_ALLOWED
             ),
+            'kindicon' => new external_value(
+                PARAM_ALPHANUMEXT,
+                'The model\'s Font Awesome class (fa-graduation-cap, fa-calendar-day, fa-route), null where no model was chosen.',
+                VALUE_REQUIRED,
+                null,
+                NULL_ALLOWED
+            ),
             'haskind' => new external_value(PARAM_BOOL, 'Whether there is a model label.'),
             'datetile' => new external_single_structure([
                 'day' => new external_value(PARAM_TEXT, 'The day of the month.'),

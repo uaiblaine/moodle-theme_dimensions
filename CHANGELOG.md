@@ -5,6 +5,12 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **A trail draws Font Awesome's route, on the course card and in the calendar** (2026100617). A trail's card in the
+  showcase tags its kind ("Trail") with the route, no longer with the course's graduation cap; a course keeps the cap
+  and an event the calendar day. The card's icon now comes from the server with its label, so the cards a page loads
+  as the reader scrolls or filters draw the same icon as the first page (the rows services return it as `kindicon`).
+  The Trilhas view's trail picker and the trail popover's position line draw the same route glyph, 14px in the 16px
+  box the hand-drawn icon had.
 - **A course card's state label is a rectangle with an edge, its icon the size of its words** (2026100616). The
   label under a card's title ("Enrolled", "Open for enrolment", "Hidden from students" and the other states) and its
   copy on the course dialogue's cover are 6px rectangles, 2px 8px at 0.75rem / 600, with a 1px edge in the state's

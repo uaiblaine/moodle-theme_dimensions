@@ -34,45 +34,11 @@ import { safeHref, safeImage } from "./model";
 import { fill } from "./strings";
 const TITLE = "dim-cal-trailpop-title";
 const DAY = { day: "numeric", month: "long", year: "numeric" };
-const TrailIcon = /* @__PURE__ */ __name(({ size = 16 }) => /* @__PURE__ */ jsxDEV(
-  "svg",
-  {
-    className: "dim-cal__trailicon",
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    "aria-hidden": "true",
-    focusable: "false",
-    children: [
-      /* @__PURE__ */ jsxDEV("circle", { cx: "5", cy: "18", r: "2" }, void 0, false, {
-        fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-        lineNumber: 91,
-        columnNumber: 9
-      }),
-      /* @__PURE__ */ jsxDEV("circle", { cx: "19", cy: "6", r: "2" }, void 0, false, {
-        fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-        lineNumber: 92,
-        columnNumber: 9
-      }),
-      /* @__PURE__ */ jsxDEV("path", { d: "M7 18h6a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h6" }, void 0, false, {
-        fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-        lineNumber: 93,
-        columnNumber: 9
-      })
-    ]
-  },
-  void 0,
-  true,
-  {
-    fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-    lineNumber: 79,
-    columnNumber: 5
-  }
-), "TrailIcon");
+const TrailIcon = /* @__PURE__ */ __name(() => /* @__PURE__ */ jsxDEV("i", { className: "fa fa-route dim-cal__trailicon", "aria-hidden": "true" }, void 0, false, {
+  fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
+  lineNumber: 78,
+  columnNumber: 5
+}), "TrailIcon");
 const stateLabel = /* @__PURE__ */ __name((strings, state) => {
   switch (state) {
     case "done":
@@ -127,13 +93,13 @@ const StatePill = /* @__PURE__ */ __name(({ step, state }) => {
   return /* @__PURE__ */ jsxDEV("p", { className: `dim-cal__trailstate${tone}` + (done ? " dim-cal__trailseal" : ""), "data-region": "dim-cal-trailstate", children: [
     done ? /* @__PURE__ */ jsxDEV("i", { className: "fa fa-check", "aria-hidden": "true" }, void 0, false, {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-      lineNumber: 228,
+      lineNumber: 212,
       columnNumber: 21
     }) : null,
     state
   ] }, void 0, true, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-    lineNumber: 227,
+    lineNumber: 211,
     columnNumber: 9
   });
 }, "StatePill");
@@ -149,7 +115,7 @@ const Cover = /* @__PURE__ */ __name(({ step, look, image, failed, setFailed, on
       children: [
         image !== "" && image !== failed ? /* @__PURE__ */ jsxDEV("img", { className: "dim-cal__popcoverimg", src: image, alt: "", onError: () => setFailed(image) }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 261,
+          lineNumber: 245,
           columnNumber: 17
         }) : null,
         /* @__PURE__ */ jsxDEV(
@@ -162,7 +128,7 @@ const Cover = /* @__PURE__ */ __name(({ step, look, image, failed, setFailed, on
             onClick: () => onClose(true),
             children: /* @__PURE__ */ jsxDEV("span", { className: "btn-close", "aria-hidden": "true" }, void 0, false, {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-              lineNumber: 270,
+              lineNumber: 254,
               columnNumber: 17
             })
           },
@@ -170,7 +136,7 @@ const Cover = /* @__PURE__ */ __name(({ step, look, image, failed, setFailed, on
           false,
           {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 263,
+            lineNumber: 247,
             columnNumber: 13
           }
         )
@@ -180,7 +146,7 @@ const Cover = /* @__PURE__ */ __name(({ step, look, image, failed, setFailed, on
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-      lineNumber: 255,
+      lineNumber: 239,
       columnNumber: 9
     }
   );
@@ -242,7 +208,7 @@ const TrailPopover = /* @__PURE__ */ __name(({ look, trail, step, opener, sheet,
   const image = covers ? safeImage(step.image) : "";
   const names = category ? /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailcategory", children: category.name }, void 0, false, {
     fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-    lineNumber: 359,
+    lineNumber: 343,
     columnNumber: 30
   }) : null;
   const when = [stepWhen(step, look), stepOpenEnd(step, look)].filter((part) => part !== "").join(" \xB7 ");
@@ -260,7 +226,7 @@ const TrailPopover = /* @__PURE__ */ __name(({ look, trail, step, opener, sheet,
       children: [
         covers ? /* @__PURE__ */ jsxDEV(Cover, { step, look, image, failed, setFailed, onClose }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 374,
+          lineNumber: 358,
           columnNumber: 17
         }) : /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__traildialogtop", children: [
           names,
@@ -274,7 +240,7 @@ const TrailPopover = /* @__PURE__ */ __name(({ look, trail, step, opener, sheet,
               onClick: () => onClose(true),
               children: /* @__PURE__ */ jsxDEV("i", { className: "fa fa-xmark", "aria-hidden": "true" }, void 0, false, {
                 fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-                lineNumber: 385,
+                lineNumber: 369,
                 columnNumber: 25
               })
             },
@@ -282,60 +248,60 @@ const TrailPopover = /* @__PURE__ */ __name(({ look, trail, step, opener, sheet,
             false,
             {
               fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-              lineNumber: 378,
+              lineNumber: 362,
               columnNumber: 21
             }
           )
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 376,
+          lineNumber: 360,
           columnNumber: 17
         }),
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__trailpopnames", children: [
           covers ? names : null,
           /* @__PURE__ */ jsxDEV("h2", { ref: heading, className: "dim-cal__poptitle", id: TITLE, tabIndex: -1, children: step.name }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 391,
+            lineNumber: 375,
             columnNumber: 17
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 389,
+          lineNumber: 373,
           columnNumber: 13
         }),
         /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__trailmeta", "data-region": "dim-cal-trailwhen", children: [
           /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: `${look.strings.calendar_when}: ` }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 394,
+            lineNumber: 378,
             columnNumber: 17
           }),
           when !== "" ? `${when} \xB7 ` : "",
           /* @__PURE__ */ jsxDEV("span", { className: "dim-cal__trailsource", children: step.expected ? look.strings.calendar_trailexpected : look.strings.calendar_trailcoursedates }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 396,
+            lineNumber: 380,
             columnNumber: 17
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 393,
+          lineNumber: 377,
           columnNumber: 13
         }),
         step.coursename !== step.name ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__trailmeta", "data-region": "dim-cal-trailcoursename", children: [
           /* @__PURE__ */ jsxDEV("span", { className: "visually-hidden", children: `${look.strings.calendar_course}: ` }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 402,
+            lineNumber: 386,
             columnNumber: 21
           }),
           step.coursename
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 401,
+          lineNumber: 385,
           columnNumber: 17
         }) : null,
         /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__poprow dim-cal__trailextra", "data-region": "dim-cal-trailposition", children: [
           /* @__PURE__ */ jsxDEV(TrailIcon, {}, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 407,
+            lineNumber: 391,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("span", { children: fill(look.strings.calendar_trailposition, {
@@ -344,38 +310,38 @@ const TrailPopover = /* @__PURE__ */ __name(({ look, trail, step, opener, sheet,
             trail: trail.name
           }) }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 408,
+            lineNumber: 392,
             columnNumber: 17
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 406,
+          lineNumber: 390,
           columnNumber: 13
         }),
         state !== "" ? /* @__PURE__ */ jsxDEV(StatePill, { step, state }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 416,
+          lineNumber: 400,
           columnNumber: 29
         }) : null,
         step.state === "locked" && step.reason !== "" ? /* @__PURE__ */ jsxDEV("p", { className: "dim-cal__popquiet", "data-region": "dim-cal-trailreason", children: step.reason }, void 0, false, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 418,
+          lineNumber: 402,
           columnNumber: 17
         }) : null,
         /* @__PURE__ */ jsxDEV("div", { className: "dim-cal__popactions dim-cal__trailpopactions", children: [
           /* @__PURE__ */ jsxDEV("a", { className: "btn btn-secondary", href: safeHref(trail.url, look.home), children: look.strings.calendar_trailpage }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 421,
+            lineNumber: 405,
             columnNumber: 17
           }),
           /* @__PURE__ */ jsxDEV("a", { className: "btn btn-primary", href: safeHref(step.url, look.home), children: mainLabel(step, look.strings) }, void 0, false, {
             fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-            lineNumber: 422,
+            lineNumber: 406,
             columnNumber: 17
           })
         ] }, void 0, true, {
           fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-          lineNumber: 420,
+          lineNumber: 404,
           columnNumber: 13
         })
       ]
@@ -384,7 +350,7 @@ const TrailPopover = /* @__PURE__ */ __name(({ look, trail, step, opener, sheet,
     true,
     {
       fileName: "public/theme/dimensions/js/esm/src/calendar/TrailPopover.tsx",
-      lineNumber: 363,
+      lineNumber: 347,
       columnNumber: 9
     }
   );
