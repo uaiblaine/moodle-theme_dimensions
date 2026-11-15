@@ -1938,6 +1938,11 @@ final class category_scss_test extends \basic_testcase {
                 $dim,
                 "The {$badge[1]} pill's fill recedes with its ink."
             );
+            $this->assertStringContainsString(
+                "--dim-badge-{$badge[1]}-edge: var(--dim-recede-pill-edge);",
+                $dim,
+                "The {$badge[1]} pill's edge recedes with its fill."
+            );
         }
         $this->assertMatchesRegularExpression(
             '~\.dim-card__cta \{\s*--bs-btn-bg:\s*var\(--dim-recede-pill-bg\);\s*--bs-btn-color:\s*var\(--dim-recede-pill-fg\);~',
@@ -2016,6 +2021,7 @@ final class category_scss_test extends \basic_testcase {
         }
         $this->assertMatchesRegularExpression('~--dim-recede-pill-bg:\s*var\(--dim-badge-none-bg\);~', $roots);
         $this->assertMatchesRegularExpression('~--dim-recede-pill-fg:\s*var\(--dim-badge-none-fg\);~', $roots);
+        $this->assertMatchesRegularExpression('~--dim-recede-pill-edge:\s*var\(--dim-badge-none-edge\);~', $roots);
         $dark = ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-vitrine,\s*'
             . ':root\[data-bs-theme="dark"\] body\.dim-category \.dim-cmodal \{([^}]*)\}';
         $this->assertSame(1, preg_match('~' . $dark . '\s*$~', $darkhalf, $last), 'The preview\'s dark block closes the file.');
@@ -2418,6 +2424,7 @@ final class category_scss_test extends \basic_testcase {
         $this->assertStringContainsString('text-align: right;', $pct);
 
         $seal = $this->rule_body($scss, '.dim-badge--done');
+        $this->assertStringContainsString('border-color: var(--dim-card-done-rim);', $seal);
         $this->assertStringContainsString('background: var(--dim-card-done-bg);', $seal);
         $this->assertStringContainsString('color: var(--dim-card-done-ink);', $seal);
         $base = $this->rule_body($scss, '.dim-card--done .dim-card__media::before');
