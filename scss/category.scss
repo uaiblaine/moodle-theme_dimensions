@@ -229,8 +229,8 @@ body.dim-category {
         min-width: 0;
     }
 
-    // The eyebrow of the design: the flavour bar, then the category's ancestors in the small
-    // uppercase type, root first, each a link. It is the hero's own trail, built from the
+    // The eyebrow of the design: the flavour bar, then the category's ancestors in small type, in
+    // sentence case, root first, each a link. It is the hero's own trail, built from the
     // category's path (category_hero::trail()), which also names only the public ancestors to a visitor;
     // the hero replaces the header that would print core's breadcrumb.
     .dim-hero__trail-list {
@@ -241,10 +241,8 @@ body.dim-category {
         margin: 0 0 8px;
         padding: 0;
         list-style: none;
-        font-size: .6875rem;
+        font-size: .75rem;
         font-weight: 600;
-        letter-spacing: .12em;
-        text-transform: uppercase;
     }
 
     .dim-hero__trail-list::before {
@@ -1189,19 +1187,17 @@ body.dim-category {
     // what assistive technology announces and what the reader sees; category_listing_markup_test
     // forbids an aria-hidden copy of it beside the legend.
     //
-    // Each filter group's name is the design's small uppercase heading, 6px above its chips, in
-    // the brand face; the reboot floats a legend at the whole width and clears the element after
-    // it, so that margin is what separates the two.
+    // Each filter group's name is the Design System's eyebrow, a small heading in sentence case, 6px
+    // above its chips, in the brand face; the reboot floats a legend at the whole width and clears the
+    // element after it, so that margin is what separates the two.
     .dim-toolbar__grouplabel {
         flex: none;
         margin: 0 0 6px;
         padding: 0;
         color: var(--dim-muted);
         font-family: var(--dim-font-brand);
-        font-size: .72rem;
+        font-size: .75rem;
         font-weight: 600;
-        letter-spacing: .1em;
-        text-transform: uppercase;
         white-space: nowrap;
     }
 
@@ -1220,7 +1216,7 @@ body.dim-category {
     }
 
     // The organisation's label is running text and not a group heading - the reading face at its
-    // own weight, none of the headings' capitals.
+    // own size and weight.
     .dim-toolbar__group--sort > .dim-toolbar__grouplabel {
         float: left;
         width: auto;
@@ -1230,8 +1226,6 @@ body.dim-category {
         font-family: var(--dim-ds-font-reading);
         font-size: .88rem;
         font-weight: 400;
-        letter-spacing: normal;
-        text-transform: none;
         white-space: nowrap;
 
         &::after {
@@ -3509,8 +3503,6 @@ body.dim-category {
         color: var(--dim-ds-blue-700, #050073);
         font-size: .68rem;
         font-weight: 600;
-        letter-spacing: .06em;
-        text-transform: uppercase;
     }
 
     // Under a criterion every poster wears how many results its area holds, under
@@ -5042,10 +5034,8 @@ body.dim-category {
         padding: 6px 10px 4px;
         color: var(--dim-muted);
         font-family: var(--dim-font-brand);
-        font-size: .72rem;
+        font-size: .75rem;
         font-weight: 600;
-        letter-spacing: .1em;
-        text-transform: uppercase;
     }
 
     .dim-line__option {
@@ -5765,10 +5755,8 @@ body.dim-category {
         margin: 0;
         color: var(--dim-cmodal-on-media-muted);
         font-family: var(--dim-font-brand);
-        font-size: .72rem;
-        font-weight: 700;
-        letter-spacing: .14em;
-        text-transform: uppercase;
+        font-size: .75rem;
+        font-weight: 600;
     }
 
     .dim-cmodal__title {
@@ -5972,10 +5960,8 @@ body.dim-category {
     .dim-cmodal__factlabel {
         display: block;
         color: var(--dim-muted);
-        font-size: .72rem;
+        font-size: .75rem;
         font-weight: 600;
-        letter-spacing: .06em;
-        text-transform: uppercase;
     }
 
     .dim-cmodal__factvalue {

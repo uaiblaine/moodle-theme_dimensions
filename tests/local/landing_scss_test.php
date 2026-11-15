@@ -371,4 +371,30 @@ final class landing_scss_test extends \advanced_testcase {
             $this->rule($css, "{$panel}:not(.dimensions-landing__relatedlist){$part}");
         }
     }
+
+    /**
+     * The current step's status label, filled with the ink, draws a 1px edge that shows against that fill in both modes.
+     *
+     * The edge is the label's own ink mixed into its fill at 30% (the theme's rule for a state's edge), so it is
+     * lighter than the brand fill on the light page and darker than the lifted ink on the dark one, at no less than
+     * the theme's floor for a state's edge (family_tokens_test::EDGE_FLOOR, 1.25:1).
+     *
+     * @param string $primary The brand colour.
+     */
+    #[DataProvider('light_provider')]
+    #[DataProvider('branded_provider')]
+    public function test_the_current_step_label_shows_its_edge_in_both_modes(string $primary): void {
+        $css = $this->compile($primary);
+        $current = $this->rule($css, '.theme_dimensions-landing .dimensions-landing__step--current .dimensions-landing__stepstate');
+        $this->assertStringContainsString('border-color: var(--dim-landing-ink-edge)', $current);
+        $this->assertStringContainsString('background: var(--dim-landing-ink)', $current);
+        foreach (['.theme_dimensions-landing', ':root[data-bs-theme="dark"] .theme_dimensions-landing'] as $root) {
+            $block = $this->rule($css, $root);
+            $this->assertSame(1, preg_match('~--dim-landing-ink:\s*([^;]+);~', $block, $ink), "{$root} declares the ink.");
+            $this->assertSame(1, preg_match('~--dim-landing-ink-edge:\s*([^;]+);~', $block, $edge), "{$root} declares the edge.");
+            [$ink, $edge] = [trim($ink[1]), trim($edge[1])];
+            $this->assertNotSame($ink, $edge, "{$root}: the edge is not the fill.");
+            $this->assertGreaterThanOrEqual(1.25, branding::contrast($ink, $edge), "{$root}: {$edge} shows on {$ink}.");
+        }
+    }
 }

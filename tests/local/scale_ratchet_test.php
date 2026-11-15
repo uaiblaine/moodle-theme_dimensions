@@ -100,15 +100,15 @@ final class scale_ratchet_test extends \basic_testcase {
     private const OFF_SCALE_FONT_SIZE = [
         'calendar.scss' => [
             '0.625rem' => 5,
-            '0.6875rem' => 10,
+            '0.6875rem' => 8,
             '1.125rem' => 1,
             '1.625rem' => 1,
         ],
         'category.scss' => [
             '0.5625rem' => 1,
-            '0.6875rem' => 2,
+            '0.6875rem' => 1,
             '0.68rem' => 1,
-            '0.72rem' => 7,
+            '0.72rem' => 3,
             '0.74rem' => 1,
             '0.75em' => 1,
             '0.78125rem' => 1,
@@ -138,7 +138,7 @@ final class scale_ratchet_test extends \basic_testcase {
             '18px' => 1,
         ],
         'categoryhero.scss' => [
-            '0.625rem' => 5,
+            '0.625rem' => 3,
             '0.6875rem' => 2,
             '1.0625rem' => 1,
         ],
@@ -148,18 +148,15 @@ final class scale_ratchet_test extends \basic_testcase {
         ],
         'coursenotice.scss' => [
             '0.72rem' => 1,
-            '0.76rem' => 1,
             '0.82rem' => 1,
             '0.8rem' => 3,
             '0.9375rem' => 1,
             '0.9rem' => 1,
         ],
         'drawer.scss' => [
-            '0.6875rem' => 2,
             '0.9375rem' => 2,
         ],
         'landing.scss' => [
-            '0.6875rem' => 1,
             '0.7rem' => 1,
             '0.9375rem' => 3,
             '1.0625rem' => 2,
@@ -172,7 +169,6 @@ final class scale_ratchet_test extends \basic_testcase {
             '1.125rem' => 1,
         ],
         'post.scss' => [
-            '0.6875rem' => 2,
             '0.9375rem' => 1,
         ],
         'readingbar.scss' => [
@@ -205,11 +201,11 @@ final class scale_ratchet_test extends \basic_testcase {
             '-1px' => 1,
             '0.4375rem' => 2,
             '0.5625rem' => 1,
-            '0.625rem' => 12,
+            '0.625rem' => 10,
             '0.875rem' => 6,
             '1.125rem' => 1,
             '10px' => 1,
-            '1px' => 6,
+            '1px' => 5,
             '2.125rem' => 1,
             '2.25rem' => 1,
             '2.375rem' => 1,
@@ -241,32 +237,27 @@ final class scale_ratchet_test extends \basic_testcase {
         ],
         'categoryhero.scss' => [
             '0.4375rem' => 1,
-            '0.5625rem' => 2,
+            '0.5625rem' => 1,
             '0.625rem' => 1,
             '0.6875rem' => 1,
-            '0.8125rem' => 1,
             '0.875rem' => 1,
             '0.9375rem' => 1,
             '1.5rem' => 1,
         ],
         'competency.scss' => [
             '0.2em' => 1,
-            '0.625rem' => 2,
         ],
         'coursenotice.scss' => [
             '1.75rem' => 1,
             '10px' => 5,
             '14px' => 2,
             '18px' => 2,
-            '5px' => 1,
             '7px' => 3,
-            '9px' => 1,
         ],
         'landing.scss' => [
             '-3.5rem' => 2,
-            '0.0625rem' => 3,
+            '0.0625rem' => 1,
             '0.35rem' => 1,
-            '0.5625rem' => 2,
             '0.625rem' => 11,
             '0.875rem' => 3,
             '1.125rem' => 2,
@@ -351,36 +342,11 @@ final class scale_ratchet_test extends \basic_testcase {
     ];
 
     /**
-     * @var array Capital-letter transforms today, sheet => value => uses (rule 3, sentence case: the target is none).
+     * @var array Capital-letter transforms, sheet => value => uses (rule 3, sentence case): none, and none may come back.
      *
-     * Lower a count when a label is set in sentence case; never raise it.
+     * A label is written in sentence case in its language string; no stylesheet changes its case.
      */
-    private const OFF_SCALE_UPPERCASE = [
-        'calendar.scss' => [
-            'uppercase' => 1,
-        ],
-        'category.scss' => [
-            'uppercase' => 6,
-        ],
-        'categoryhero.scss' => [
-            'uppercase' => 1,
-        ],
-        'competency.scss' => [
-            'uppercase' => 2,
-        ],
-        'drawer.scss' => [
-            'uppercase' => 2,
-        ],
-        'focusmode.scss' => [
-            'uppercase' => 1,
-        ],
-        'landing.scss' => [
-            'uppercase' => 2,
-        ],
-        'post.scss' => [
-            'uppercase' => 2,
-        ],
-    ];
+    private const OFF_SCALE_UPPERCASE = [];
 
     /**
      * @var array Pill radii today, sheet => the pill token => declarations (rule 2: only counters are round).
@@ -389,35 +355,26 @@ final class scale_ratchet_test extends \basic_testcase {
      */
     private const OFF_SCALE_PILL = [
         'calendar.scss' => [
-            'var(--dim-ds-radius-pill, 50rem)' => 7,
+            'var(--dim-ds-radius-pill, 50rem)' => 4,
         ],
         'category.scss' => [
             'var(--dim-ds-radius-pill, 50rem)' => 8,
             'var(--dim-radius-pill)' => 14,
         ],
-        'categoryhero.scss' => [
-            'var(--dim-ds-radius-pill, 50rem)' => 2,
-        ],
         'competency.scss' => [
-            'var(--dim-ds-radius-pill)' => 8,
-        ],
-        'coursenotice.scss' => [
-            'var(--dim-ds-radius-pill, 50rem)' => 1,
+            'var(--dim-ds-radius-pill)' => 6,
         ],
         'drawer.scss' => [
             'var(--dim-ds-radius-pill)' => 2,
         ],
         'landing.scss' => [
-            'var(--dim-ds-radius-pill)' => 6,
+            'var(--dim-ds-radius-pill)' => 3,
         ],
         'phonenav.scss' => [
             'var(--dim-ds-radius-pill)' => 1,
         ],
         'post.scss' => [
             'var(--dim-ds-radius-pill)' => 3,
-        ],
-        'readingbar.scss' => [
-            'var(--dim-ds-radius-pill)' => 1,
         ],
         'sheets.scss' => [
             'var(--dim-ds-radius-pill)' => 2,
@@ -529,7 +486,7 @@ final class scale_ratchet_test extends \basic_testcase {
      *
      * @param string $property A regular expression body matched against the whole property name.
      * @param array|null $sheets Path => source to read; null reads every sheet of scss/.
-     * @return array A list of [sheet, "sheet:line selector { property: value }", property, value].
+     * @return array A list of [sheet, "sheet:line selector { property: value }", property, value, innermost selector].
      */
     private function declarations(string $property, ?array $sheets = null): array {
         $found = [];
@@ -545,7 +502,7 @@ final class scale_ratchet_test extends \basic_testcase {
                 }
                 $value = trim(substr($statement, $colon + 1));
                 $value = trim((string) preg_replace('/(?:\s*!(?:important|default)\b)+$/i', '', $value));
-                $found[] = [$sheet, "{$sheet}:{$line} {$selector} { {$name}: {$value} }", $name, $value];
+                $found[] = [$sheet, "{$sheet}:{$line} {$selector} { {$name}: {$value} }", $name, $value, $selector];
             }
         }
 
@@ -791,22 +748,47 @@ final class scale_ratchet_test extends \basic_testcase {
     /**
      * The capital-letter transforms among some declarations: uppercase, and the small capitals that read as one.
      *
+     * A capital initial is sentence case, not a capital-letter label: rule 3 forbids setting a label in capitals, and a
+     * text that arrives in lower case (Intl's month names in Portuguese) needs its first letter raised to read as a
+     * sentence. So an uppercase or capitalize transform in a rule whose innermost selector ends in ::first-letter, in
+     * every part of its list, is not counted; the same declaration on the element itself, or in a list where one part
+     * is the element, is.
+     *
      * @param array $declarations From declarations().
      * @return array A list of [sheet, value, use].
      */
     private function off_case(array $declarations): array {
         $off = [];
-        foreach ($declarations as [$sheet, $use, $property, $value]) {
+        foreach ($declarations as [$sheet, $use, $property, $value, $selector]) {
             $value = strtolower($value);
+            $initial = $property === 'text-transform' && in_array($value, ['uppercase', 'capitalize'], true)
+                && $this->first_letter_only($selector);
             if (
-                ($property === 'text-transform' && $value === 'uppercase')
-                || ($property !== 'text-transform' && preg_match('/^(?:all-)?small-caps$/', $value))
+                !$initial
+                && (($property === 'text-transform' && $value === 'uppercase')
+                    || ($property !== 'text-transform' && preg_match('/^(?:all-)?small-caps$/', $value)))
             ) {
                 $off[] = [$sheet, $value, $use];
             }
         }
 
         return $off;
+    }
+
+    /**
+     * Whether every selector of a list ends in the ::first-letter pseudo-element, so a rule paints a first letter only.
+     *
+     * @param string $selector An innermost block header, as statements() keeps it.
+     * @return bool True when no part of the list is the element itself.
+     */
+    private function first_letter_only(string $selector): bool {
+        foreach (explode(',', $selector) as $part) {
+            if (!preg_match('/::first-letter$/i', trim($part))) {
+                return false;
+            }
+        }
+
+        return $selector !== '';
     }
 
     /**
@@ -922,7 +904,9 @@ final class scale_ratchet_test extends \basic_testcase {
      * The reader keeps what the ratchets must judge and drops what they must not, on a sheet written for it.
      *
      * Changes that must make it fail: comments read as code, a Sass variable or a token declaration judged, a
-     * var() fallback or Sass maths counted, a nested rule lost, or .5rem keyed apart from 0.5rem.
+     * var() fallback or Sass maths counted, a nested rule lost, .5rem keyed apart from 0.5rem, a ::first-letter
+     * capital initial counted as a capital-letter label, or the same transform on the element (alone or in a list
+     * with its first letter) let through.
      *
      * @return void
      */
@@ -945,6 +929,9 @@ final class scale_ratchet_test extends \basic_testcase {
             '    transition: opacity .3s, color var(--dim-ds-motion-fast, 120ms) $ease, top 150ms;',
             '    background: url("data:image/svg+xml;utf8,<svg></svg>");',
             '}',
+            '.b::first-letter { text-transform: uppercase; }',
+            '.b { text-transform: uppercase; }',
+            '.c::first-letter, .c { text-transform: uppercase; }',
         ]);
         $sheets = ['fixture.scss' => $source];
         $keys = function (array $off): array {
@@ -963,7 +950,11 @@ final class scale_ratchet_test extends \basic_testcase {
         );
         $this->assertSame(['0.9rem @ fixture.scss:13'], $keys($this->off_font_sizes($this->declarations('font-size', $sheets))));
         $this->assertSame(['650 @ fixture.scss:13'], $keys($this->off_font_weights($this->declarations('font-weight', $sheets))));
-        $this->assertSame(['uppercase @ fixture.scss:13'], $keys($this->off_case($this->declarations('text-transform', $sheets))));
+        $this->assertSame(
+            ['uppercase @ fixture.scss:13', 'uppercase @ fixture.scss:19', 'uppercase @ fixture.scss:20'],
+            $keys($this->off_case($this->declarations('text-transform', $sheets))),
+            'A first letter raised is sentence case (line 18); the element in capitals is not (13, 19, 20).'
+        );
         $this->assertSame(
             ['0.3s @ fixture.scss:15'],
             $keys($this->off_durations($this->declarations('(?:transition|animation)(?:-[a-z-]+)?', $sheets)))
@@ -1036,15 +1027,31 @@ final class scale_ratchet_test extends \basic_testcase {
     }
 
     /**
-     * Labels are in sentence case: no uppercase transform and no small capitals (rule 3), and only ever fewer.
+     * Labels are in sentence case: no uppercase transform and no small capitals anywhere (rule 3).
      *
-     * Changes that must make it fail: one more text-transform: uppercase, or one fewer.
+     * Rule 3 forbids a label set in capitals, not a capital initial: the calendar's month names arrive from Intl in the
+     * language's own case (lower case in Portuguese), and the one transform the sheets keep raises only their first
+     * letter (::first-letter), which off_case() does not count. That rule is also the control that the reader reaches
+     * text-transform declarations, beside the theme's tabular figures for the font variants: an empty list of uses then
+     * means no capitals, not a reader that read nothing.
+     *
+     * Changes that must make it fail: one text-transform: uppercase on an element, or a small-caps font variant, in any
+     * sheet; the month name's uppercase moved from its first letter to the element itself.
      *
      * @return void
      */
     public function test_labels_are_in_sentence_case(): void {
         $declarations = $this->declarations('text-transform|font-variant(?:-caps)?');
-        $this->assertGreaterThanOrEqual(15, count($declarations), 'fewer than 15 text-transform declarations read');
+        $this->assertGreaterThanOrEqual(
+            1,
+            count($this->declarations('text-transform')),
+            'no text-transform declaration read: the month name\'s first letter is one'
+        );
+        $this->assertGreaterThanOrEqual(
+            40,
+            count($this->declarations('font-variant-numeric')),
+            'fewer than 40 font-variant-numeric declarations read'
+        );
         $this->assert_ratchet($this->off_case($declarations), self::OFF_SCALE_UPPERCASE, 'OFF_SCALE_UPPERCASE');
     }
 

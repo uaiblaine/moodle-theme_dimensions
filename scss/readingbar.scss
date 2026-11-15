@@ -275,22 +275,22 @@ body.dimensions-readingbar {
     }
 }
 
-/* The activity's status, read-only. Both words are in the markup and data-state shows one, so the module
-   flips an attribute and composes no text. "Completed" wears the family's success pair, a ground that
-   states its ink; "Pending" is the navbar's outline pill. */
+/* The activity's status, read-only: the Design System's status label, a 6px rectangle with a 1px edge,
+   not a control. Both words are in the markup and data-state shows one, so the module flips an attribute
+   and composes no text. "Completed" wears the family's success triple, a ground that states its ink;
+   "Pending" is outlined in the layer's line on the layer's own ground. */
 .navbar.fixed-top .dimensions-ctxbar-status {
     display: inline-flex;
     flex: 0 0 auto;
     gap: .25rem;
     align-items: center;
-    min-height: 1.875rem;
-    padding: .25rem .75rem;
+    padding: .125rem .5rem;
     border: 1px solid var(--dim-ctxbar-line);
-    border-radius: var(--dim-ds-radius-pill);
+    border-radius: var(--dim-ds-radius-sm);
     color: var(--bs-navbar-brand-color, var(--bs-body-color));
-    font-size: .8125rem;
+    font-size: .75rem;
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.4;
     white-space: nowrap;
 
     .icon {

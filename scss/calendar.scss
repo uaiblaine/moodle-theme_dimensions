@@ -129,6 +129,9 @@ body.dim-calendar,
     --dim-cal-trailcurrent-tint: #{$dim-ds-blue-600};
     --dim-cal-trailcurrent-edge: #{$dim-ds-blue-600};
     --dim-cal-trailcurrent-ink: #{$dim-ds-white};
+    // The current step's state label draws a 1px edge, which the step's own edge (its fill, on the light page) cannot:
+    // the palette's next stop down, as the family's solid enrolled fill takes (post.scss).
+    --dim-cal-trailcurrent-rim: #{$dim-ds-blue-800};
     --dim-cal-traildone-tint: #{$dim-ds-green-050};
     --dim-cal-traildone-edge: #{$dim-ds-green-700};
     --dim-cal-traildone-ink: #{$dim-ds-green-800};
@@ -185,6 +188,7 @@ body.dim-calendar,
     --dim-cal-trailcurrent-tint: #{mix($dim-ds-blue-500, $dark-surface-raised, 30%)};
     --dim-cal-trailcurrent-edge: #{dark-readable($dim-ds-blue-500, $dark-surface-raised, 3)};
     --dim-cal-trailcurrent-ink: #{dim-cal-on-mix($dim-ds-blue-050, $dim-ds-blue-500, 30%)};
+    --dim-cal-trailcurrent-rim: #{dark-readable($dim-ds-blue-500, $dark-surface-raised, 3)};
     --dim-cal-traildone-tint: #{mix($dim-ds-green-700, $dark-surface-raised, 35%)};
     --dim-cal-traildone-edge: #{dark-readable($dim-ds-green-700, $dark-surface-raised, 3)};
     --dim-cal-traildone-ink: #{dim-cal-on-mix($dim-ds-green-050, $dim-ds-green-700, 35%)};
@@ -1238,14 +1242,20 @@ body.dim-calendar {
         flex-basis: 100%;
     }
 
-    // An overlapping item says so in words, beside the column it was moved to.
+    // An overlapping item says so in words, beside the column it was moved to: a status label in the overdue triple.
+    // It sits on the first line of a 40px item of the hour columns, so it keeps the item's line height and no padding
+    // above or below, where the label's own 1.4 and 2px would push the item's time line out of the box.
     .dim-cal__overlapmark {
-        padding: 0 .375rem;
-        border-radius: var(--dim-ds-radius-pill, 50rem);
+        display: inline-flex;
+        align-items: center;
+        padding: 0 .5rem;
+        border: 1px solid var(--dim-cal-overdue-edge);
+        border-radius: var(--dim-ds-radius-sm, 6px);
         background: var(--dim-cal-overdue-tint);
         color: var(--dim-cal-overdue-ink);
-        font-size: .6875rem;
+        font-size: .75rem;
         font-weight: 600;
+        line-height: 1.2;
     }
 
     // The hour column: one row of a fixed height per hour of the whole day (--dim-cal-hourcount, DayDrawer.tsx), inside
@@ -1706,17 +1716,19 @@ body.dim-calendar {
         font-variant-numeric: tabular-nums;
     }
 
+    // The event's kind, a status label in its key's triple.
     .dim-cal__kind {
         display: inline-flex;
         gap: .375rem;
         align-items: center;
-        padding: 2px .625rem;
+        padding: .125rem .5rem;
         border: 1px solid var(--dim-cal-edge);
-        border-radius: var(--dim-ds-radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-sm, 6px);
         background: var(--dim-cal-tint);
         color: var(--dim-cal-ink);
         font-size: .75rem;
         font-weight: 600;
+        line-height: 1.4;
     }
 
     .dim-cal__popfacts {
@@ -2599,6 +2611,11 @@ body.dim-calendar {
         }
     }
 
+    // The current state's label takes the rim, the one edge that differs from the current fill in both modes.
+    .dim-cal__trailstate--current {
+        --dim-cal-edge: var(--dim-cal-trailcurrent-rim);
+    }
+
     // A locked step's bar and its legend swatch are hatched over their fill.
     .dim-cal__trailbar--locked,
     .dim-cal__trailswatch--locked {
@@ -2899,17 +2916,21 @@ body.dim-calendar {
         font-size: .75rem;
     }
 
+    // A step's state, a status label in its state's triple.
     .dim-cal__trailstate {
         align-self: flex-start;
         justify-self: start;
+        display: inline-flex;
+        align-items: center;
         margin: 0;
-        padding: 1px .5rem;
+        padding: .125rem .5rem;
         border: 1px solid var(--dim-cal-edge);
-        border-radius: var(--dim-ds-radius-pill, 50rem);
+        border-radius: var(--dim-ds-radius-sm, 6px);
         background: var(--dim-cal-tint);
         color: var(--dim-cal-ink);
-        font-size: .6875rem;
+        font-size: .75rem;
         font-weight: 600;
+        line-height: 1.4;
     }
 
     // The phone's "Today" line, between the steps behind and the steps ahead.
@@ -3074,17 +3095,15 @@ body.dim-calendar {
         color: var(--dim-card-extra-icon);
     }
 
+    // In the popover the label may carry the seal's check before its words.
     .dim-cal__trailpop .dim-cal__trailstate {
-        display: inline-flex;
         gap: .375rem;
-        align-items: center;
-        padding: 2px .625rem;
-        font-size: .75rem;
     }
 
-    // A completed step's pill is the card's green seal.
+    // A completed step's label is the card's green seal, edged in the success family's edge: the seal's ground is
+    // Bootstrap's success tint, whose own edge it is.
     .dim-cal__trailpop .dim-cal__trailseal {
-        border-color: var(--dim-card-done-bg);
+        border-color: var(--dimensions-success-edge, var(--bs-success-border-subtle));
         background: var(--dim-card-done-bg);
         color: var(--dim-card-done-ink);
     }
