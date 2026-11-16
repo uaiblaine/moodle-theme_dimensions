@@ -531,7 +531,7 @@ final class profilelayer_test extends \advanced_testcase {
     }
 
     /**
-     * Look, Language and the colour mode are the "Display" group's, from the drawer's own builders.
+     * Look, Language and the colour mode are the "Display" group's, from the layer's own builders.
      *
      * @return void
      */
@@ -566,6 +566,81 @@ final class profilelayer_test extends \advanced_testcase {
         $this->assertSame([false, true], array_column($look['options'], 'iscurrent'));
         $this->assertSame(['0', '3'], array_column($look['options'], 'flavour'));
         $this->assertSame([false, ['url' => null, 'colour' => '#123456']], array_column($look['options'], 'mark'));
+    }
+
+    /**
+     * The colour mode control exists only while core lets this person choose a colour mode, the mode in force checked.
+     *
+     * @return void
+     */
+    public function test_the_colour_mode_control_follows_cores_colour_modes(): void {
+        $this->resetAfterTest();
+        $this->person();
+
+        set_config('enablecolourmodes', 0, 'theme_boost');
+        $this->assertFalse(\theme_boost\colour_mode::can_choose_mode(), 'Precondition: colour modes are off.');
+        $this->assertNull(profilelayer::appearance());
+
+        set_config('enablecolourmodes', 1, 'theme_boost');
+        set_user_preference(\theme_boost\colour_mode::PREFERENCE, 'dark');
+        $appearance = profilelayer::appearance();
+        $this->assertNotNull($appearance);
+        $this->assertSame(\theme_boost\colour_mode::get_cookie_attributes(), $appearance['cookieattributes']);
+        $this->assertSame(['light', 'dark', 'auto'], array_column($appearance['options'], 'mode'));
+        $this->assertSame([false, true, false], array_column($appearance['options'], 'isactive'));
+        $this->assertSame(get_string('colourmode:auto', 'theme_boost'), $appearance['options'][2]['label']);
+        $this->assertSame(
+            get_string('colourmodeselected', 'theme_boost', get_string('colourmode:dark', 'theme_boost')),
+            $appearance['options'][1]['togglelabel']
+        );
+
+        $this->setGuestUser();
+        $this->assertNull(profilelayer::appearance(), 'The guest cannot store a preference.');
+    }
+
+    /**
+     * The language choice exists only while core's language menu offers more than one language, the current one checked
+     * and every other one core's own address with its lang attribute.
+     *
+     * @return void
+     */
+    public function test_the_language_follows_cores_language_menu(): void {
+        global $CFG, $PAGE;
+        $this->resetAfterTest();
+        $this->person();
+        $page = $this->page();
+        $output = $PAGE->get_renderer('core');
+
+        $this->assertCount(1, get_string_manager()->get_list_of_translations(), 'Precondition: English alone.');
+        $this->assertNull(profilelayer::language($page, $output));
+
+        $folder = $CFG->dataroot . '/lang/xx';
+        check_dir_exists($folder);
+        file_put_contents(
+            $folder . '/langconfig.php',
+            "<?php\n\$string['thislanguage'] = 'Xx';\n\$string['parentlanguage'] = '';\n"
+        );
+        get_string_manager()->reset_caches();
+        $this->assertCount(2, get_string_manager()->get_list_of_translations(), 'Precondition: two languages.');
+
+        $language = profilelayer::language($page, $output);
+        $this->assertNotNull($language);
+        $bylang = array_column($language['items'], null, 'lang');
+        $this->assertArrayHasKey('xx', $bylang, 'The other language carries its lang attribute.');
+        $this->assertStringStartsWith('Xx', $bylang['xx']['text']);
+        $this->assertFalse($bylang['xx']['iscurrent']);
+        $this->assertSame((new \moodle_url('/my/', ['lang' => 'xx']))->out(false), $bylang['xx']['url']);
+        $current = array_values(array_filter($language['items'], fn($item) => $item['iscurrent']));
+        $this->assertCount(1, $current, 'The current language is marked.');
+        $this->assertNotSame('', $language['current']);
+
+        $context = $this->context(['items' => [], 'submenus' => []]);
+        $views = array_column($context['subviews'], null, 'key');
+        $this->assertArrayHasKey(profilelayer::VIEW_LANGUAGE, $views, 'The layer draws it as a sub-view.');
+        $this->assertContains('xx', array_column($views[profilelayer::VIEW_LANGUAGE]['options'], 'lang'));
+
+        $CFG->langmenu = 0;
+        $this->assertNull(profilelayer::language($page, $output), 'The site switched the language menu off.');
     }
 
     /**

@@ -189,7 +189,8 @@ final class compactnav_scss_test extends \basic_testcase {
     /**
      * Core anchors every .drawer-left from lg up (zero width, an anchored right offset, clipped), and the primary drawer
      * is one: in compact mode it must be the plain overlay drawer again, under a selector the anchored ones cannot outrank,
-     * over the navbar and the full height of the screen as below md.
+     * over the navbar and the full height of the screen as below md, and as wide as there: the theme's
+     * $dimensions-drawer-width (post_scss_test::test_the_navigation_drawer_is_the_side_layers_width).
      *
      * @return void
      */
@@ -205,11 +206,11 @@ final class compactnav_scss_test extends \basic_testcase {
 
         foreach (
             [
-                'left: calc(-#{$drawer-left-width} + -10px);',
+                'left: calc(-#{$dimensions-drawer-width} + -10px);',
                 'right: auto;',
                 'top: 0;',
-                'width: $drawer-left-width;',
-                'max-width: $drawer-left-width;',
+                'width: $dimensions-drawer-width;',
+                'max-width: $dimensions-drawer-width;',
                 'height: 100vh;',
                 'max-height: 100vh;',
                 'overflow: visible;',
@@ -221,7 +222,7 @@ final class compactnav_scss_test extends \basic_testcase {
 
         $this->assertStringContainsString('left: 0;', $shown, 'Open, against the left edge.');
         $this->assertStringContainsString('right: auto;', $shown);
-        $this->assertStringContainsString('width: $drawer-left-width;', $shown);
+        $this->assertStringContainsString('width: $dimensions-drawer-width;', $shown);
     }
 
     /**

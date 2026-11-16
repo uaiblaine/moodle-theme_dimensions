@@ -396,13 +396,14 @@ final class post_scss_test extends \basic_testcase {
     }
 
     /**
-     * The navbar's dividers are a quiet rule on a dark bar, and the colour mode menu leaves the collapsed navbar where the
-     * drawer carries the appearance switch, and the navbar at every width where the armed profile layer carries it.
+     * The navbar's dividers are a quiet rule on a dark bar, and the colour mode menu leaves the navbar at every width
+     * where the armed profile layer carries it.
      *
      * The divider's property is declared on the divider itself, where Boost Union's own declarations read it. The colour
-     * mode menu is hidden only while the drawer holds its twin (.dimensions-drawer-modes): a visitor's drawer has none;
-     * and while amd/src/profilelayer.js has written dimensions-profilelayer-modes on the body, which it does only once it
-     * has armed a layer that holds the control (profilelayer_source_test): with the module not running, the menu stays.
+     * mode menu is hidden only while amd/src/profilelayer.js has written dimensions-profilelayer-modes on the body, which
+     * it does only once it has armed a layer that holds the control (profilelayer_source_test): with the module not
+     * running, the menu stays. The navigation drawer carries no colour mode control (D72), so no rule keys on it: one
+     * would hide the navbar's menu with no twin anywhere.
      *
      * @return void
      */
@@ -413,19 +414,45 @@ final class post_scss_test extends \basic_testcase {
             '/\n\.navbar\.navbar-dark \.divider \{\s*--bu-navbar-divider-color: rgba\(255, 255, 255, \.15\);\s*\}/',
             $scss
         );
-        foreach (
-            [
-                '@include media-breakpoint-down(md) {' . "\n" . '    body:has(.dimensions-drawer-modes) #usernavigation {',
-                "\nbody.dimensions-nav-compact:has(.dimensions-drawer-modes) #usernavigation {",
-                "\nbody.dimensions-profilelayer-modes #usernavigation {",
-            ] as $scope
-        ) {
-            $at = strpos($scss, $scope);
-            $this->assertNotFalse($at, 'Missing scope: ' . $scope);
-            $this->assertMatchesRegularExpression(
-                '/^[^{]*\{\s*\.colourmodemenu,\s*\.colourmodemenu \+ \.divider \{\s*display: none;/',
-                substr($scss, $at + strlen($scope) - 1)
-            );
+        $scope = "\nbody.dimensions-profilelayer-modes #usernavigation {";
+        $at = strpos($scss, $scope);
+        $this->assertNotFalse($at, 'Missing scope: ' . $scope);
+        $this->assertMatchesRegularExpression(
+            '/^[^{]*\{\s*\.colourmodemenu,\s*\.colourmodemenu \+ \.divider \{\s*display: none;/',
+            substr($scss, $at + strlen($scope) - 1)
+        );
+        $this->assertSame(1, substr_count($scss, '.colourmodemenu + .divider'), 'The layer\'s rule is the only one.');
+        $this->assertStringNotContainsString('dimensions-drawer-modes', $scss);
+    }
+
+    /**
+     * The navigation drawer is the side layer's 320px (20rem), at most 85% of a phone's width, from the theme's own
+     * variable on Boost's primary drawer below md; the compact navbar's copy of the geometry reads the same variable,
+     * and neither redefines core's $drawer-left-width, which places the course index too.
+     *
+     * @return void
+     */
+    public function test_the_navigation_drawer_is_the_side_layers_width(): void {
+        $root = dirname(__DIR__, 2);
+        $scss = (string) file_get_contents($root . '/scss/post.scss');
+        $this->assertStringContainsString("\n\$dimensions-drawer-width: 20rem;\n", $scss);
+        $this->assertSame(1, preg_match(
+            '~@include media-breakpoint-down\(md\) \{\s*#theme_boost-drawers-primary\.drawer-primary\.drawer-left \{'
+                . '(.*?)&\.show \{([^}]*)\}~s',
+            $scss,
+            $found
+        ), 'The id and the two drawer classes, below md.');
+        [, $drawer, $shown] = $found;
+        $this->assertStringContainsString('left: calc(-#{$dimensions-drawer-width} + -10px);', $drawer, 'Off screen, closed.');
+        $this->assertStringContainsString('width: $dimensions-drawer-width;', $drawer);
+        $this->assertStringContainsString('max-width: 85vw;', $drawer);
+        $this->assertStringContainsString('left: 0;', $shown);
+
+        $compact = (string) file_get_contents($root . '/scss/compactnav.scss');
+        $this->assertSame(3, substr_count($compact, 'width: $dimensions-drawer-width;'), 'width, max-width and the open width.');
+        foreach ([$scss, $compact] as $sheet) {
+            $this->assertDoesNotMatchRegularExpression('~\$drawer-left-width\s*:~', $sheet, 'Core\'s variable is never set.');
+            $this->assertStringNotContainsString('width: $drawer-left-width;', $sheet);
         }
     }
 

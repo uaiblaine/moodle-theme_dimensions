@@ -24,34 +24,24 @@
 
 namespace theme_dimensions\local;
 
-use theme_boost\colour_mode;
-
 /**
  * Whether the mobile primary drawer is the theme's own, and the template data it is drawn from.
  *
  * The drawer is theme_boost/primary-drawer-mobile, which the theme overrides; the renderer writes
  * {@see context()} into the layout context as dimensionsdrawer while {@see applies()}, and the override
  * draws theme_dimensions/drawer_nav instead of Boost Union's list. Nothing here renders: the builder
- * reads only what core and Boost Union already put in the layout context (mobileprimarynav, usermenu)
- * and three cheap facts of the session, so every clause is testable alone.
+ * reads only the primary navigation core and Boost Union already put in the layout context
+ * (mobileprimarynav) and the page, so every clause is testable alone.
  *
- * What the drawer shows, top to bottom:
+ * The drawer is where to go, and holds nothing about the person (moodle-dev/docs/design-system/components/
+ * side-layer.md, D72): the identity, the colour mode, the Look and the language are the profile layer's
+ * ({@see profilelayer}). What it shows, top to bottom:
  *
- * - The identity: core's avatars, name and metadata lines from the user menu, exactly as core composed
- *   them (fullname() under the site's fullnamedisplay; under "log in as", the real user's name with
- *   core's "You are logged in as" line). The drawer composes no name and reads no profile field.
- * - The role line: "Site administrator" when is_siteadmin() - a read of
- *   $CFG->siteadmins, no statement - and nothing else at render time. The number of courses in progress
- *   (core's own timeline classification, the "In progress" filter of My courses) costs a statement per
- *   course, so it arrives with the deferred call ({@see drawersummary}) when the drawer is first shown,
- *   never with the page. A per-course role ("Student") is not a site fact and is not shown.
- * - The "Continue where you left off" card: a skeleton the client fills from the same deferred call.
+ * - The "Continue where you left off" card: a skeleton the client fills from a deferred call
+ *   ({@see drawersummary}) when the drawer is first shown, never with the page.
  * - The sections: core's primary nodes and the custom menu as "Browse"; each Boost Union smart menu in
  *   submenu mode as a section of its own, labelled with the menu's title, its items as the rows. Inline
  *   smart menus are already merged into the top level by Boost Union and stay in "Browse".
- * - The footer: the appearance switch while core lets this person choose a colour mode, the Look row while
- *   the theme offers a choice of flavours ({@see flavourchoice::menu()}), and the language row while core's
- *   language menu offers more than one language.
  *
  * A row with children opens a sub-panel. Every panel is rendered flat, after the root, as a section with
  * an anchor of its own: without the client module, the row is a link to that section and its back control
@@ -71,12 +61,6 @@ final class drawernav {
 
     /** @var string The id of the root panel; amd/src/drawer.js starts there. */
     public const ROOT = 'dimensions-drawer-panel-root';
-
-    /** @var string The id of the language panel. */
-    public const LANGUAGE = 'dimensions-drawer-panel-lang';
-
-    /** @var string The id of the Look panel. */
-    public const LOOK = 'dimensions-drawer-panel-look';
 
     /** @var string The prefix of every other panel's id, followed by a counter. */
     public const PANEL_PREFIX = 'dimensions-drawer-panel-';
@@ -104,18 +88,6 @@ final class drawernav {
 
     /** @var string[] The link attributes a node may carry onto its row. Boost Union's smart menu items set target. */
     private const ATTRIBUTES = ['target', 'rel'];
-
-    /**
-     * @var array The colour modes and their glyphs, in the order the switch shows them.
-     *
-     * The glyphs are colour_mode::ICONS', which is private: core's module writes the one of the chosen
-     * option onto the navbar menu's toggle, and the drawer's options carry the same data-icon.
-     */
-    private const MODES = [
-        'light' => 'fa-sun',
-        'dark' => 'fa-moon',
-        'auto' => 'fa-circle-half-stroke',
-    ];
 
     /** @var string The navigation key of the calendar: core's guest node, and the row the drawer adds for an account. */
     public const CALENDAR = 'calendar';
@@ -212,13 +184,10 @@ final class drawernav {
      *
      * @param array $nodes The layout context's mobileprimarynav: core's arrays, the custom menu's and Boost
      *      Union's objects.
-     * @param array $usermenu The layout context's usermenu, as core's get_user_menu() built it.
-     * @param \moodle_page $page The page being rendered, for the language menu.
-     * @param \renderer_base $output The renderer, for the language menu's export.
-     * @return array rootid, identity, sections, panels, appearance (array|false), look (array|false) and language
-     *      (array|false).
+     * @param \moodle_page $page The page being rendered, for the calendar row.
+     * @return array rootid, sections and panels.
      */
-    public static function context(array $nodes, array $usermenu, \moodle_page $page, \renderer_base $output): array {
+    public static function context(array $nodes, \moodle_page $page): array {
         $panels = [];
         $counter = 0;
         $rootlabel = get_string('navigation');
@@ -256,188 +225,10 @@ final class drawernav {
             $sections[$index]['id'] = self::SECTION_PREFIX . ($index + 1);
         }
 
-        $appearance = self::appearance();
-        $look = self::look($page);
-        $language = self::language($page, $output);
-
         return [
             'rootid' => self::ROOT,
-            'identity' => self::identity($usermenu),
             'sections' => $sections,
             'panels' => $panels,
-            'appearance' => $appearance ?? false,
-            'look' => $look ?? false,
-            'language' => $language ?? false,
-        ];
-    }
-
-    /**
-     * The identity header: core's avatars, name and metadata, and the role line's render-time part.
-     *
-     * The avatars and the metadata are printed raw by the template, as core's own user_menu_metadata
-     * prints them: core wrote that HTML (user_picture(), its own strings). The name is printed escaped.
-     *
-     * @param array $usermenu The layout context's usermenu.
-     * @return array avatars, fullname, metadata, roleline.
-     */
-    public static function identity(array $usermenu): array {
-        $avatars = [];
-        foreach ((array) ($usermenu['avatardata'] ?? []) as $avatar) {
-            $avatars[] = ['content' => (string) ($avatar['content'] ?? ''), 'classes' => (string) ($avatar['classes'] ?? '')];
-        }
-        $metadata = [];
-        foreach ((array) ($usermenu['metadata'] ?? []) as $line) {
-            $metadata[] = ['content' => (string) ($line['content'] ?? ''), 'classes' => (string) ($line['classes'] ?? '')];
-        }
-
-        return [
-            'avatars' => $avatars,
-            'fullname' => (string) ($usermenu['userfullname'] ?? ''),
-            'metadata' => $metadata,
-            'roleline' => is_siteadmin() ? get_string('drawer_siteadmin', self::COMPONENT) : '',
-        ];
-    }
-
-    /**
-     * The appearance switch, or null while core does not let this person choose a colour mode.
-     *
-     * Core's own question, colour_mode::can_choose_mode(): Boost's setting enablecolourmodes and a logged-in,
-     * non-guest session, which can store a preference. The write is core's too: the options carry the hooks of
-     * theme_boost/colourmode, which sets data-bs-theme, the preference and the cookie, and marks the
-     * chosen option in every [data-region="colourmode-menu"], this one included.
-     *
-     * @return array|null cookieattributes and modes (mode, label, icon, togglelabel, isactive, tabindex).
-     */
-    public static function appearance(): ?array {
-        if (!class_exists(colour_mode::class) || !colour_mode::can_choose_mode()) {
-            return null;
-        }
-
-        $current = colour_mode::get_current_mode();
-        $modes = [];
-        foreach (self::MODES as $mode => $icon) {
-            if (!in_array($mode, colour_mode::get_modes(), true)) {
-                continue;
-            }
-            $label = self::mode_label($mode);
-            $modes[] = [
-                'mode' => $mode,
-                'label' => $label,
-                'icon' => $icon,
-                'togglelabel' => get_string('colourmodeselected', 'theme_boost', $label),
-                'isactive' => $mode === $current,
-                'tabindex' => $mode === $current ? 0 : -1,
-            ];
-        }
-
-        return ['cookieattributes' => colour_mode::get_cookie_attributes(), 'modes' => $modes];
-    }
-
-    /**
-     * The name core gives a colour mode.
-     *
-     * @param string $mode One of the keys of {@see self::MODES}.
-     * @return string
-     */
-    private static function mode_label(string $mode): string {
-        return match ($mode) {
-            'light' => get_string('colourmode:light', 'theme_boost'),
-            'dark' => get_string('colourmode:dark', 'theme_boost'),
-            'auto' => get_string('colourmode:auto', 'theme_boost'),
-        };
-    }
-
-    /**
-     * The Look row and its panel, or null while the theme offers no choice of flavours to this person.
-     *
-     * The items are {@see flavourchoice::menu()}'s: the site default first, each a link to the choice page
-     * with its flavour preselected, carrying the flavour id for theme_dimensions/flavourchoice, which records
-     * the choice in place. The current look is not a link, as the current language is not.
-     *
-     * @param \moodle_page $page The page being rendered, the one the choice comes back to.
-     * @return array|null panelid, parentid, backlabel, backaria, current (the current look's plain label) and
-     *      items (id, text, url, iscurrent, mark: null or theme_dimensions/look_mark's url and colour).
-     */
-    public static function look(\moodle_page $page): ?array {
-        return self::look_from(flavourchoice::menu($page->url));
-    }
-
-    /**
-     * The Look row and its panel from a {@see flavourchoice::menu()} answer already asked for this page.
-     *
-     * The profile layer ({@see profilelayer}) builds its Look from here with the answer the renderer asked once
-     * for the user menu's Look submenu, so a page asks flavourchoice once for both.
-     *
-     * @param array|null $menu flavourchoice::menu()'s answer: null while the theme offers no choice to this person.
-     * @return array|null As {@see look()}.
-     */
-    public static function look_from(?array $menu): ?array {
-        if ($menu === null) {
-            return null;
-        }
-
-        $items = [];
-        foreach ($menu['items'] as $item) {
-            $items[] = [
-                'id' => $item['id'],
-                'text' => $item['text'],
-                'url' => $item['url']->out(false),
-                'iscurrent' => $item['iscurrent'],
-                'mark' => $item['mark'],
-            ];
-        }
-
-        $rootlabel = get_string('navigation');
-
-        return [
-            'panelid' => self::LOOK,
-            'parentid' => self::ROOT,
-            'backlabel' => $rootlabel,
-            'backaria' => get_string('drawer_back', self::COMPONENT, $rootlabel),
-            'current' => $menu['current'],
-            'items' => $items,
-        ];
-    }
-
-    /**
-     * The language row and its panel, or null while core's language menu offers nothing.
-     *
-     * Core decides through \core\output\language_menu: the site's langmenu setting, a course that forces
-     * its language, and fewer than two installed languages each leave its export empty. The addresses are
-     * the ones it builds (the page's own url with lang=), and the current language is not a link.
-     *
-     * @param \moodle_page $page The page being rendered.
-     * @param \renderer_base $output The renderer the export is given.
-     * @return array|null panelid, parentid, backlabel, backaria, current (the current language's name) and items
-     *      (text, url, lang, iscurrent).
-     */
-    public static function language(\moodle_page $page, \renderer_base $output): ?array {
-        $menu = (new \core\output\language_menu($page))->export_for_template($output);
-        if (empty($menu['items'])) {
-            return null;
-        }
-
-        $items = [];
-        foreach ($menu['items'] as $node) {
-            $url = $node['url'] instanceof \moodle_url ? $node['url'] : new \moodle_url((string) $node['url']);
-            $lang = (string) $url->get_param('lang');
-            $items[] = [
-                'text' => (string) $node['text'],
-                'url' => $url->out(false),
-                'lang' => $lang !== '' ? get_html_lang_attribute_value($lang) : '',
-                'iscurrent' => !empty($node['isactive']),
-            ];
-        }
-
-        $rootlabel = get_string('navigation');
-
-        return [
-            'panelid' => self::LANGUAGE,
-            'parentid' => self::ROOT,
-            'backlabel' => $rootlabel,
-            'backaria' => get_string('drawer_back', self::COMPONENT, $rootlabel),
-            'current' => (string) ($menu['title'] ?? ''),
-            'items' => $items,
         ];
     }
 
@@ -446,7 +237,7 @@ final class drawernav {
      *
      * @param array $nodes The nodes.
      * @param string $parentid The id of the panel the rows are drawn in.
-     * @param string $parentlabel The plain name of that panel, for the back control of a sub-panel.
+     * @param string $parentlabel The plain name of that panel, for the name of a sub-panel's back control.
      * @param int $level The level of that panel, 0 for the root.
      * @param array $panels The panels collected so far, appended to.
      * @param int $counter The last panel number handed out, advanced.
@@ -566,7 +357,6 @@ final class drawernav {
             'parentid' => $parentid,
             'level' => $level,
             'title' => $title,
-            'backlabel' => $parentlabel,
             'backaria' => get_string('drawer_back', self::COMPONENT, $parentlabel),
             'items' => $items,
             'hasurl' => $url !== '' && $url !== '#',

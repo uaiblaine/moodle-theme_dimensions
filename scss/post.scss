@@ -1063,25 +1063,6 @@ body.dimensions-darklogo-full #logoimage {
     --bu-navbar-divider-color: rgba(255, 255, 255, .15);
 }
 
-/* Where the drawer carries the appearance switch (drawernav, a logged-in account core lets choose a colour mode), the
-   navbar's own colour mode menu is the same control twice: it leaves the navbar wherever the hamburger is the way in,
-   below md and in the compact navbar, with the divider after it, which would otherwise open the group. */
-@include media-breakpoint-down(md) {
-    body:has(.dimensions-drawer-modes) #usernavigation {
-        .colourmodemenu,
-        .colourmodemenu + .divider {
-            display: none;
-        }
-    }
-}
-
-body.dimensions-nav-compact:has(.dimensions-drawer-modes) #usernavigation {
-    .colourmodemenu,
-    .colourmodemenu + .divider {
-        display: none;
-    }
-}
-
 /* Where the profile layer carries the colour mode control (theme_dimensions\local\profilelayer), the navbar's own menu
    is the same control twice at every width, since the user button opens the layer everywhere. Keyed on the class
    amd/src/profilelayer.js writes on the body once it has armed such a layer, never on the layer's markup alone: a page
@@ -1137,6 +1118,24 @@ $dimensions-logo-height: calc(#{$navbar-height} - 2 * var(--dim-ds-space-xs));
 #theme_boost-drawers-primary.drawer-primary {
     top: 0;
     height: 100vh;
+}
+
+/* The navigation drawer's width is the side layer's (D72), on Boost's primary drawer that holds it: 320px, at most 85%
+   of a phone's width. The theme's own number, never core's $drawer-left-width, which also places the course index's
+   docked geometry from lg up. Below md only, where the hamburger opens this drawer; the compact navbar's copy of the
+   geometry (compactnav.scss) reads the same variable between md and xl. */
+$dimensions-drawer-width: 20rem;
+
+@include media-breakpoint-down(md) {
+    #theme_boost-drawers-primary.drawer-primary.drawer-left {
+        left: calc(-#{$dimensions-drawer-width} + -10px);
+        width: $dimensions-drawer-width;
+        max-width: 85vw;
+
+        &.show {
+            left: 0;
+        }
+    }
 }
 
 body:has(#theme_boost-drawers-primary.show) .navbar.fixed-top {

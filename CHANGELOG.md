@@ -5,6 +5,19 @@ All notable changes to `theme_dimensions` are recorded in this file, in the form
 
 ## Unreleased (v5.3-r1-dev)
 
+- **The side menu is the site's navigation alone, and Escape closes it** (2026100626). The side menu of a logged-in
+  account no longer shows the person's name, picture and role line, nor the colour mode switch, the look and the
+  language: those are in the profile layer the user button opens. It keeps the "Continue where you left off" card,
+  the site's navigation and the smart menus in their sections, and their sliding sub-panels. Its rows follow the
+  Design System's side layer: 40px (44px on a touch screen) at a smaller text size, a muted icon, the current page in
+  the brand's tint and ink without the mark on its edge, and a sub-panel's head is a back button beside its title.
+  The menu is 320px wide (at most 85% of a phone's screen) instead of Moodle's 285px, the same in the tablet navbar.
+  Escape at the menu's root closes it and gives the focus back to the menu button; inside a sub-panel it still goes
+  back one level. The navbar's own colour mode menu is no longer hidden where the side menu used to carry the switch;
+  it is hidden wherever the profile layer carries it, as before. Web service: `theme_dimensions_get_drawer_summary`
+  returns the card alone (`resume`); `inprogress` and `inprogresstext` are gone, and with them the statement that
+  counted the courses in progress. The language strings `drawer_siteadmin`, `drawer_inprogress_one` and
+  `drawer_inprogress_many` are removed.
 - **The category showcase's navigation is sorted into groups, ready for the row of pills that will draw it**
   (2026100625). Nothing changes on the page yet: the hero still shows Moodle's tabs. A new class reads the category's navigation as Moodle
   builds it for the viewer and sorts every destination into "Category", then "Settings", "User and access", "Courses

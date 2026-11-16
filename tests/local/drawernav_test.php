@@ -67,25 +67,13 @@ final class drawernav_test extends \advanced_testcase {
     }
 
     /**
-     * The template data for the given nodes, with an empty user menu.
+     * The template data for the given nodes.
      *
      * @param array $nodes The mobile primary navigation.
-     * @param array $usermenu The user menu.
      * @return array
      */
-    private function context(array $nodes, array $usermenu = []): array {
-        return drawernav::context($nodes, $usermenu, $this->page(), $this->core_renderer());
-    }
-
-    /**
-     * A core renderer, for the language menu's export.
-     *
-     * @return \renderer_base
-     */
-    private function core_renderer(): \renderer_base {
-        global $PAGE;
-
-        return $PAGE->get_renderer('core');
+    private function context(array $nodes): array {
+        return drawernav::context($nodes, $this->page());
     }
 
     /**
@@ -306,7 +294,7 @@ final class drawernav_test extends \advanced_testcase {
         $this->assertSame(drawernav::ROOT, $first['parentid']);
         $this->assertSame(1, $first['level']);
         $this->assertSame('Top', $first['title']);
-        $this->assertSame(get_string('navigation'), $first['backlabel']);
+        $this->assertSame(get_string('drawer_back', 'theme_dimensions', get_string('navigation')), $first['backaria']);
         $this->assertTrue($first['hasurl'], 'Top has an address of its own.');
         $this->assertSame(get_string('drawer_openparent', 'theme_dimensions', 'Top'), $first['openlabel']);
         $this->assertCount(2, $first['items']);
@@ -315,77 +303,26 @@ final class drawernav_test extends \advanced_testcase {
         $this->assertSame($first['items'][0]['panelid'], $second['id']);
         $this->assertSame($first['id'], $second['parentid']);
         $this->assertSame(2, $second['level']);
-        $this->assertSame('Top', $second['backlabel']);
+        $this->assertSame(get_string('drawer_back', 'theme_dimensions', 'Top'), $second['backaria']);
         $this->assertFalse($second['hasurl'], 'A "#" address is no page to open.');
         $this->assertTrue($second['items'][0]['iscurrent'], 'The current page three levels down is marked.');
     }
 
     /**
-     * The identity is core's: avatars, the name and the metadata lines, and the role line for an administrator alone.
+     * The drawer holds nothing about the person (D72, D77): its data is the navigation alone, whoever is logged in and
+     * whatever the site lets them choose; the identity, the colour mode, the Look and the language are the profile
+     * layer's (profilelayer_test).
+     *
+     * The force is on: an administrator, with core's colour modes enabled and two languages installed, each of which
+     * once gave the drawer a key of its own.
      *
      * @return void
      */
-    public function test_the_identity_is_cores_and_the_role_line_names_an_administrator(): void {
+    public function test_the_drawer_holds_nothing_about_the_person(): void {
+        global $CFG, $PAGE;
         $this->resetAfterTest();
-        $usermenu = [
-            'avatardata' => [['content' => '<img src="x" class="userpicture">', 'classes' => 'current']],
-            'userfullname' => 'Ana & Bia',
-            'metadata' => [['content' => 'You are logged in as X', 'classes' => 'viewingas']],
-        ];
-
-        $this->setUser(self::getDataGenerator()->create_user());
-        $identity = drawernav::identity($usermenu);
-        $this->assertSame('Ana & Bia', $identity['fullname']);
-        $this->assertSame($usermenu['avatardata'], $identity['avatars']);
-        $this->assertSame($usermenu['metadata'], $identity['metadata']);
-        $this->assertSame('', $identity['roleline'], 'Control: an ordinary account has no render-time role.');
-
         $this->setAdminUser();
-        $this->assertSame(get_string('drawer_siteadmin', 'theme_dimensions'), drawernav::identity($usermenu)['roleline']);
-    }
-
-    /**
-     * The appearance switch exists only while core lets this person choose a colour mode.
-     *
-     * @return void
-     */
-    public function test_the_appearance_switch_follows_cores_colour_modes(): void {
-        $this->resetAfterTest();
-        $this->setUser(self::getDataGenerator()->create_user());
-
-        set_config('enablecolourmodes', 0, 'theme_boost');
-        $this->assertFalse(\theme_boost\colour_mode::can_choose_mode(), 'Precondition: colour modes are off.');
-        $this->assertNull(drawernav::appearance());
-
         set_config('enablecolourmodes', 1, 'theme_boost');
-        set_user_preference(\theme_boost\colour_mode::PREFERENCE, 'dark');
-        $appearance = drawernav::appearance();
-        $this->assertNotNull($appearance);
-        $this->assertSame(\theme_boost\colour_mode::get_cookie_attributes(), $appearance['cookieattributes']);
-        $this->assertSame(['light', 'dark', 'auto'], array_column($appearance['modes'], 'mode'));
-        $this->assertSame([false, true, false], array_column($appearance['modes'], 'isactive'));
-        $this->assertSame([-1, 0, -1], array_column($appearance['modes'], 'tabindex'), 'Only the chosen one is in the tab order.');
-        $this->assertSame(get_string('colourmode:auto', 'theme_boost'), $appearance['modes'][2]['label']);
-
-        $this->setGuestUser();
-        $this->assertNull(drawernav::appearance(), 'The guest cannot store a preference.');
-    }
-
-    /**
-     * The language row exists only while core's language menu offers more than one language.
-     *
-     * @return void
-     */
-    public function test_the_language_row_follows_cores_language_menu(): void {
-        global $CFG;
-        $this->resetAfterTest();
-        $this->setUser(self::getDataGenerator()->create_user());
-        $page = $this->page();
-        $output = $this->core_renderer();
-
-        $this->assertCount(1, get_string_manager()->get_list_of_translations(), 'Precondition: English alone.');
-        $this->assertNull(drawernav::language($page, $output));
-
         $folder = $CFG->dataroot . '/lang/xx';
         check_dir_exists($folder);
         file_put_contents(
@@ -393,22 +330,15 @@ final class drawernav_test extends \advanced_testcase {
             "<?php\n\$string['thislanguage'] = 'Xx';\n\$string['parentlanguage'] = '';\n"
         );
         get_string_manager()->reset_caches();
-        $this->assertCount(2, get_string_manager()->get_list_of_translations(), 'Precondition: two languages.');
+        $this->assertNotNull(profilelayer::appearance(), 'Precondition: this person may choose a colour mode.');
+        $this->assertNotNull(profilelayer::language($this->page(), $PAGE->get_renderer('core')), 'Precondition.');
 
-        $language = drawernav::language($page, $output);
-        $this->assertNotNull($language);
-        $this->assertSame(drawernav::LANGUAGE, $language['panelid']);
-        $this->assertSame(drawernav::ROOT, $language['parentid']);
-        $bylang = array_column($language['items'], null, 'lang');
-        $this->assertArrayHasKey('xx', $bylang, 'The other language carries its lang attribute.');
-        $this->assertStringStartsWith('Xx', $bylang['xx']['text']);
-        $this->assertFalse($bylang['xx']['iscurrent']);
-        $this->assertSame((new \moodle_url('/my/courses.php', ['lang' => 'xx']))->out(false), $bylang['xx']['url']);
-        $current = array_values(array_filter($language['items'], fn($item) => $item['iscurrent']));
-        $this->assertCount(1, $current, 'The current language is marked.');
+        $context = $this->context([['key' => 'home', 'text' => 'Home', 'url' => new \moodle_url('/'), 'isactive' => false,
+            'haschildren' => 0, 'children' => []]]);
 
-        $CFG->langmenu = 0;
-        $this->assertNull(drawernav::language($page, $output), 'The site switched the language menu off.');
+        $this->assertSame(['rootid', 'sections', 'panels'], array_keys($context));
+        $this->assertSame(drawernav::ROOT, $context['rootid']);
+        $this->assertNotEmpty($context['sections'], 'Control: the navigation was built.');
     }
 
     /**
@@ -471,7 +401,7 @@ final class drawernav_test extends \advanced_testcase {
         // Boost Union's hidden nodes win.
         $page = $this->page();
         $page->theme->removedprimarynavitems = ['calendar'];
-        $hidden = drawernav::context($core, [], $page, $this->core_renderer())['sections'][0]['items'];
+        $hidden = drawernav::context($core, $page)['sections'][0]['items'];
         $this->assertSame(['Dashboard', 'My courses', 'Custom'], array_column($hidden, 'text'));
     }
 
@@ -487,7 +417,7 @@ final class drawernav_test extends \advanced_testcase {
         $page->set_pagetype(\theme_dimensions\local\calendar\page::PAGETYPE);
         $core = [['key' => 'mycourses', 'text' => 'My courses', 'url' => new \moodle_url('/my/courses.php'), 'isactive' => false,
             'haschildren' => 0, 'children' => []]];
-        $items = drawernav::context($core, [], $page, $this->core_renderer())['sections'][0]['items'];
+        $items = drawernav::context($core, $page)['sections'][0]['items'];
         $this->assertTrue($items[1]['iscurrent']);
         $this->assertFalse($items[0]['iscurrent']);
     }

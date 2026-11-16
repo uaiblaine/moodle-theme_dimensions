@@ -304,6 +304,13 @@ the layer's script does not run, the user button opens Boost Union's menu as bef
 the Moodle app never get it; switched off, the user menu is Boost Union's alone. It stores nothing: the colour mode,
 the look and the language keep Moodle's and the theme's existing preferences.
 
+The side menu of a logged-in account (`theme_dimensions/navbardrawer`, the menu button on a phone and in the tablet
+navbar) is the site's navigation alone and holds nothing about the person: a "Continue where you left off" card
+(asked for when the menu is first opened, never with the page), the site's navigation and Boost Union's smart menus
+in labelled sections, whose sub-menus slide in with a back button beside their title. It is 320px wide, at most 85%
+of a phone's screen. Escape inside a sub-menu goes back one level, and at the root closes the menu, giving the focus
+back to the menu button.
+
 - **The fields**: the full name in the site's format (`fullname`), the alternate name (`alternatename`), the first
   name (`firstname`), the username (`username`), the email address (`email`), the ID number (`idnumber`) and each
   custom profile field of type text, drop-down menu or social (`profile_field_<shortname>`).
@@ -554,7 +561,7 @@ The theme also stores seven user preferences: the focus mode reading width, the 
 and filters, at most twenty categories), whether they folded a category page's header, whether
 they folded the course notice, the event keys, category and filters they left the theme's calendar
 page in (`theme_dimensions_calendar`, at `/theme/dimensions/calendar.php`), and the Boost Union flavour they chose as their look
-(`theme_dimensions_flavour`), chosen in the user menu's *Look* submenu, the mobile drawer or the page
+(`theme_dimensions_flavour`), chosen in the user menu's *Look* submenu, the profile layer or the page
 `/theme/dimensions/flavour.php`, which the *Look* link of the preferences page opens. Uninstalling the theme deletes them. Which flavour a session last
 applied as that look is kept in the session only (cache `flavourchoice`).
 
