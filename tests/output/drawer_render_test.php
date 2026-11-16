@@ -85,6 +85,24 @@ final class drawer_render_test extends \advanced_testcase {
     }
 
     /**
+     * The theme's drawer element alone, out of a page, as the browser would build it.
+     *
+     * @param string $html The page or a part of it.
+     * @return string The drawer's outer markup.
+     */
+    private function drawer_only(string $html): string {
+        $document = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML('<?xml encoding="utf-8"?>' . $html);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        $drawer = $document->getElementById('dimensions-drawer');
+        $this->assertNotNull($drawer, 'Precondition: the page draws the theme\'s drawer.');
+
+        return (string) $document->saveHTML($drawer);
+    }
+
+    /**
      * A template's own example context.
      *
      * @param string $name The template's file name in templates/, without the extension.
@@ -101,7 +119,7 @@ final class drawer_render_test extends \advanced_testcase {
     }
 
     /**
-     * A logged-in account gets the theme's drawer in place of Boost Union's list, with its name and its sections.
+     * A logged-in account gets the theme's drawer in place of Boost Union's list, with its sections.
      *
      * @return void
      */
@@ -116,7 +134,6 @@ final class drawer_render_test extends \advanced_testcase {
 
         $this->assertStringContainsString(self::DRAWER, $html);
         $this->assertStringNotContainsString(self::BU_LIST, $html);
-        $this->assertMatchesRegularExpression('~<span class="dimensions-drawer-name">Ana Souza</span>~', $html);
         $this->assertStringContainsString('>' . get_string('drawer_browse', 'theme_dimensions') . '</p>', $html);
         $this->assertMatchesRegularExpression(
             '~<a class="dimensions-drawer-item is-current" href="[^"]*/my/courses\.php" aria-current="page">~',
@@ -129,6 +146,47 @@ final class drawer_render_test extends \advanced_testcase {
         $off = $this->drawer_html();
         $this->assertStringNotContainsString(self::DRAWER, $off);
         $this->assertStringContainsString(self::BU_LIST, $off, 'Control: Boost Union\'s list with the feature off.');
+    }
+
+    /**
+     * The drawer holds nothing about the person (D72, D77): no name, no picture, no role line, no colour mode control,
+     * no Look and no language. They are the profile layer's.
+     *
+     * The force is on: an administrator with a name, core's colour modes enabled and a look offered, each of which
+     * once drew a part of the drawer; and the page still carries the navbar's own colour mode menu outside it.
+     *
+     * @return void
+     */
+    public function test_the_drawer_holds_nothing_about_the_person(): void {
+        global $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $USER->firstname = 'Ana';
+        $USER->lastname = 'Souza';
+        set_config('enablecolourmodes', 1, 'theme_boost');
+        $flavour = $this->getDataGenerator()->get_plugin_generator('theme_boost_union')->create_flavour(['title' => 'Harbour']);
+        set_config(\theme_dimensions\local\flavourchoice::SETTING, (string) $flavour->id, 'theme_dimensions');
+
+        $html = $this->renderer()->header();
+        $drawer = $this->drawer_only($html);
+
+        $this->assertStringContainsString('data-action="set-colourmode"', $html, 'Control: the page draws a colour mode control.');
+        $this->assertStringContainsString('dimensions-drawer-section', $drawer, 'Control: the drawer was drawn.');
+        foreach (
+            [
+                'Ana Souza',
+                'data-region="colourmode-menu"',
+                'data-action="set-colourmode"',
+                'data-dimensions-flavour',
+                '?lang=',
+                'dimensions-drawer-role',
+                'userpicture',
+                'userinitials',
+                'Site administrator',
+            ] as $absent
+        ) {
+            $this->assertStringNotContainsString($absent, $drawer, $absent);
+        }
     }
 
     /**
@@ -185,7 +243,7 @@ final class drawer_render_test extends \advanced_testcase {
     }
 
     /**
-     * The template, from its own example, carries every hook amd/src/drawer.js and core's colourmode address.
+     * The template, from its own example, carries every hook amd/src/drawer.js addresses.
      *
      * @return void
      */
@@ -212,28 +270,27 @@ final class drawer_render_test extends \advanced_testcase {
             'href="#dimensions-drawer-panel-root" data-action="dimensions-drawer-back" aria-label="Back to Navigation"',
             $html
         );
+        // A sub-panel's head is the side layer's sub-view header: the back control, named for its parent, then the title.
+        $this->assertMatchesRegularExpression(
+            '~<div class="dimensions-drawer-sub">\s*<a class="dimensions-drawer-back" href="#dimensions-drawer-panel-root"'
+                . '[^>]*>\s*<i class="icon fa fa-chevron-left fa-fw" aria-hidden="true"></i>\s*</a>\s*'
+                . '<p class="dimensions-drawer-title" id="dimensions-drawer-panel-1-title">Help centre</p>\s*</div>~',
+            $html
+        );
         // The summary's targets.
-        foreach (['resume', 'resume-link', 'resume-title', 'resume-sub', 'resume-bar', 'role'] as $region) {
+        foreach (['resume', 'resume-link', 'resume-title', 'resume-sub', 'resume-bar'] as $region) {
             $this->assertStringContainsString('data-region="dimensions-drawer-' . $region . '"', $html, $region);
         }
         $this->assertStringContainsString('data-region="dimensions-drawer-resume" aria-busy="true"', $html);
-        // Core's colour mode hooks, and the radio group the module moves with the arrows.
+        // The current page.
         $this->assertMatchesRegularExpression(
-            '~role="radiogroup" aria-labelledby="dimensions-drawer-appearance" data-region="colourmode-menu"'
-                . ' data-cookieattributes="; Max-Age=31536000; Path=/; SameSite=Lax"~',
+            '~<a class="dimensions-drawer-item is-current" href="https://example.com/my/courses\.php" aria-current="page">~',
             $html
         );
-        $this->assertSame(3, substr_count($html, 'data-action="set-colourmode"'));
-        $this->assertMatchesRegularExpression(
-            '~role="radio" aria-checked="true" tabindex="0" data-action="set-colourmode" data-colourmode="auto"'
-                . ' data-icon="fa-circle-half-stroke" data-togglelabel="Colour mode: System"~',
-            $html
-        );
-        // The language panel: core's address with its lang attribute, the current one not a link.
-        $this->assertStringContainsString('href="https://example.com/my/courses.php?lang=pt_br" lang="pt-BR"', $html);
-        $this->assertMatchesRegularExpression('~<span class="dimensions-drawer-item is-current" aria-current="true">~', $html);
-        // A sub-panel's parent address, and the name of the current account.
+        // A sub-panel's parent address.
         $this->assertStringContainsString('<a class="dimensions-drawer-openparent" href="https://example.com/help">', $html);
-        $this->assertStringContainsString('<span class="dimensions-drawer-name">Ana Beatriz Souza</span>', $html);
+        // Nothing about the person, and no colour mode module to load.
+        $this->assertStringNotContainsString('colourmode', $html);
+        $this->assertStringNotContainsString('dimensions-drawer-role', $html);
     }
 }

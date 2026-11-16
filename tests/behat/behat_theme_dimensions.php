@@ -517,7 +517,7 @@ class behat_theme_dimensions extends behat_base {
     /**
      * Give the primary navigation more room in the compact layout than in the full bar, on the page in the browser.
      *
-     * The two layouts differ on a real page (the hamburger takes room, the colour mode menu leaves for the drawer), and
+     * The two layouts differ on a real page (the hamburger takes room in the compact one), and
      * where the compact one gives core's navigation more room, the navigation re-splits there to fit: a module that
      * reads that split as "the full bar fits" flips the mode on every frame. Only a width a few pixels wide shows it
      * on a real page, so this rule shrinks the navigation's items to one pixel while the bar is compact (they are hidden

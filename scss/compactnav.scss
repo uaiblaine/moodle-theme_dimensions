@@ -76,15 +76,16 @@ body.dimensions-navcompact-armed {
                clip, a top that clears the page title, rounded corners. That is the course index's geometry, and the
                primary drawer carries drawer-left too, so at tablet width it would open narrow and clipped.
                Here it is the plain overlay drawer of post.scss: against the left edge, offscreen while closed, over
-               the navbar, the full height of the viewport, with core's own slide. The
+               the navbar, the full height of the viewport, with core's own slide, and the theme's width
+               ($dimensions-drawer-width, post.scss) rather than core's $drawer-left-width. The
                compact body classes and the drawer's id outrank the anchored selectors (which also carry :has() for
                the docked drawers' right offset), so no !important is needed. */
             #theme_boost-drawers-primary.drawer-primary.drawer-left {
-                left: calc(-#{$drawer-left-width} + -10px);
+                left: calc(-#{$dimensions-drawer-width} + -10px);
                 right: auto;
                 top: 0;
-                width: $drawer-left-width;
-                max-width: $drawer-left-width;
+                width: $dimensions-drawer-width;
+                max-width: $dimensions-drawer-width;
                 height: 100vh;
                 max-height: 100vh;
                 overflow: visible;
@@ -94,7 +95,7 @@ body.dimensions-navcompact-armed {
                 &.show {
                     left: 0;
                     right: auto;
-                    width: $drawer-left-width;
+                    width: $dimensions-drawer-width;
                 }
             }
         }

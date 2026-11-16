@@ -18,12 +18,14 @@
 // templates/drawer_nav.mustache and templates/drawer_item.mustache, drawn inside Boost's primary drawer
 // by this theme's override of theme_boost/primary-drawer-mobile (theme_dimensions\local\drawernav).
 // This file is concatenated into the theme's main SCSS and so reaches every page of the site: every rule
-// is nested under the drawer's own class, which nothing core or Boost Union ships carries, and the dark
-// half at the foot names :root[data-bs-theme="dark"] before it, Moodle 5.3's one colour-mode signal.
+// is nested under the drawer's own class, which nothing core or Boost Union ships carries.
 //
 // The drawer's tokens are declared on its root and read the theme's family tokens, each with Bootstrap's
-// own as the fallback, so the colour mode and a flavour's brand colour move them; no literal colour is
-// written here. Every painted background states the ink it pairs with.
+// own as the fallback, so the colour mode and a flavour's brand colour move them (the family's dark half
+// is the drawer's dark mode); no literal colour is written here. Every painted background states the ink
+// it pairs with. The rows, the current row and a sub-panel's head are the side layer's
+// (moodle-dev/docs/design-system/components/side-layer.md, D69, D72); the drawer's width is post.scss's,
+// on Boost's primary drawer that holds it.
 //
 // Without amd/src/drawer.js the panels are sections one under the other; the module adds
 // dimensions-drawer-js and they become layers in one viewport. Only the current one is visible: the
@@ -35,9 +37,10 @@
     --dim-drawer-ink: var(--dimensions-ink, var(--bs-body-color));
     --dim-drawer-muted: var(--dimensions-ink-muted, var(--bs-secondary-color));
     --dim-drawer-tint: var(--dimensions-surface-alt, var(--bs-tertiary-bg));
+    --dim-drawer-inset: var(--dimensions-surface-inset, var(--bs-secondary-bg));
+    --dim-drawer-line: var(--dimensions-line, var(--bs-border-color));
     --dim-drawer-current: var(--dimensions-brand-tint, var(--bs-primary-bg-subtle));
-    --dim-drawer-current-ink: var(--dimensions-ink-strong, var(--bs-emphasis-color));
-    --dim-drawer-mark: var(--dimensions-brand-fill, var(--bs-primary));
+    --dim-drawer-current-ink: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis));
     --dim-drawer-glyph: var(--dimensions-brand-ink, var(--bs-primary-text-emphasis));
     --dim-drawer-brand: var(--dimensions-brand-fill, var(--bs-primary));
     --dim-drawer-on-brand: var(--dimensions-on-brand-fill, var(--dim-ds-text-inverse));
@@ -49,7 +52,7 @@
     flex: 1 0 auto;
     background-color: var(--dim-drawer-surface);
     color: var(--dim-drawer-ink);
-    font-size: .9375rem;
+    font-size: .875rem;
 
     @keyframes dimensions-drawer-pulse {
         0%,
@@ -125,59 +128,6 @@
         .dimensions-drawer-resume[aria-busy="true"] .dimensions-drawer-resume-link {
             animation: dimensions-drawer-pulse 1.2s ease-in-out infinite;
         }
-    }
-
-    // ---- Identity ----------------------------------------------------------------------------------
-    .dimensions-drawer-who {
-        display: flex;
-        gap: var(--dim-ds-space-sm);
-        align-items: center;
-        padding: var(--dim-ds-space-3xs) var(--dim-ds-space-xs);
-    }
-
-    .dimensions-drawer-avatars {
-        display: inline-flex;
-        flex: 0 0 auto;
-        align-items: center;
-
-        .userpicture,
-        .userinitials {
-            width: 2.75rem;
-            height: 2.75rem;
-        }
-
-        // Core's second avatar under "log in as": the real user's, overlapping the one being viewed as.
-        .avatar.realuser {
-            margin-left: -.75rem;
-
-            .userpicture,
-            .userinitials {
-                width: 1.75rem;
-                height: 1.75rem;
-            }
-        }
-    }
-
-    .dimensions-drawer-whotext {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-        line-height: 1.3;
-    }
-
-    .dimensions-drawer-name {
-        font-weight: 600;
-        overflow-wrap: anywhere;
-    }
-
-    .dimensions-drawer-meta,
-    .dimensions-drawer-role {
-        color: var(--dim-drawer-muted);
-        font-size: .8125rem;
-    }
-
-    .dimensions-drawer-role:empty {
-        display: none;
     }
 
     // ---- "Continue where you left off" -----------------------------------------------------------
@@ -281,16 +231,22 @@
         list-style: none;
     }
 
+    // A row is 40px, 44px under a coarse pointer, as every side layer's row.
     .dimensions-drawer-item {
         display: flex;
         gap: var(--dim-ds-space-sm);
         align-items: center;
-        min-height: 2.75rem;
-        padding: var(--dim-ds-space-xxs) var(--dim-ds-space-sm);
+        min-height: 2.5rem;
+        padding: var(--dim-ds-space-xxs) var(--dim-ds-space-xs);
         border-radius: var(--dim-ds-radius-md);
         background-color: transparent;
         color: var(--dim-drawer-ink);
+        font-size: .875rem;
         text-decoration: none;
+
+        @media (pointer: coarse) {
+            min-height: 2.75rem;
+        }
 
         &:hover {
             background-color: var(--dim-drawer-tint);
@@ -299,26 +255,32 @@
         }
     }
 
+    // The current page: the brand's tint and ink, its glyph in the ink too; no mark on the edge (D72).
     .dimensions-drawer-item.is-current {
         background-color: var(--dim-drawer-current);
-        box-shadow: inset 3px 0 0 var(--dim-drawer-mark);
         color: var(--dim-drawer-current-ink);
         font-weight: 600;
+
+        .dimensions-drawer-icon,
+        .dimensions-drawer-text .icon {
+            color: var(--dim-drawer-current-ink);
+        }
     }
 
     .dimensions-drawer-icon {
         flex: 0 0 auto;
         margin: 0;
-        color: var(--dim-drawer-glyph);
+        color: var(--dim-drawer-muted);
     }
 
+    // A Boost Union smart menu item draws its own icon inside the text, where the row's glyph would be.
     .dimensions-drawer-text {
         flex: 1 1 auto;
         min-width: 0;
         overflow-wrap: anywhere;
 
         .icon {
-            color: var(--dim-drawer-glyph);
+            color: var(--dim-drawer-muted);
         }
     }
 
@@ -329,16 +291,29 @@
     }
 
     // ---- A sub-panel's head and foot ---------------------------------------------------------------
+    // The side layer's sub-view header: the back icon button and the title, a line under them, across the
+    // panel's whole width (the panel's own padding given back). No close button: Boost's drawer band above
+    // carries one already.
+    .dimensions-drawer-sub {
+        display: flex;
+        gap: var(--dim-ds-space-xs);
+        align-items: center;
+        margin: calc(-1 * var(--dim-ds-space-sm)) calc(-1 * var(--dim-ds-space-sm)) 0;
+        padding: var(--dim-ds-space-sm) var(--dim-ds-space-xs);
+        border-bottom: 1px solid var(--dim-drawer-line);
+    }
+
+    // The side layer's icon button: 32px square, the muted ink, the name in aria-label.
     .dimensions-drawer-back {
         display: inline-flex;
-        gap: var(--dim-ds-space-xxs);
+        flex: none;
         align-items: center;
-        align-self: flex-start;
-        min-height: 2.75rem;
-        padding: 0 var(--dim-ds-space-xs);
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
         border-radius: var(--dim-ds-radius-md);
-        color: var(--dim-drawer-glyph);
-        font-weight: 700;
+        background-color: transparent;
+        color: var(--dim-drawer-muted);
         text-decoration: none;
 
         .icon {
@@ -346,17 +321,18 @@
         }
 
         &:hover {
-            background-color: var(--dim-drawer-tint);
-            color: var(--dim-drawer-glyph);
+            background-color: var(--dim-drawer-inset);
+            color: var(--dim-drawer-ink);
         }
     }
 
     .dimensions-drawer-title {
+        flex: 1 1 auto;
+        min-width: 0;
         margin: 0;
-        padding: 0 var(--dim-ds-space-xs);
-        font-size: 1.25rem;
-        font-weight: 700;
-        line-height: 1.2;
+        font-size: 1rem;
+        font-weight: 600;
+        overflow-wrap: anywhere;
     }
 
     .dimensions-drawer-openparent {
@@ -378,59 +354,14 @@
         }
     }
 
-    // ---- Appearance --------------------------------------------------------------------------------
-    // Core's colourmode module marks the chosen option with aria-checked and .active; the rule reads aria-checked.
-    .dimensions-drawer-modes {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: var(--dim-ds-space-3xs);
-        padding: 3px;
-        border-radius: var(--dim-ds-radius-pill);
-        background-color: var(--dim-drawer-tint);
-        color: var(--dim-drawer-ink);
-    }
-
-    .dimensions-drawer-mode {
-        display: inline-flex;
-        gap: var(--dim-ds-space-xxs);
-        align-items: center;
-        justify-content: center;
-        min-height: 2.75rem;
-        padding: 0 var(--dim-ds-space-xxs);
-        border: 0;
-        border-radius: var(--dim-ds-radius-pill);
-        background-color: transparent;
-        color: var(--dim-drawer-ink);
-        font-size: .8125rem;
-
-        .icon {
-            margin: 0;
-        }
-
-        &[aria-checked="true"] {
-            background-color: var(--dim-drawer-brand);
-            color: var(--dim-drawer-on-brand);
-            font-weight: 700;
-        }
-    }
-
     // ---- The theme's ring, on every control the drawer draws ---------------------------------------
     .dimensions-drawer-item,
     .dimensions-drawer-back,
     .dimensions-drawer-openparent,
-    .dimensions-drawer-resume-link,
-    .dimensions-drawer-mode {
+    .dimensions-drawer-resume-link {
         &:focus-visible {
             outline: var(--dim-ds-focus-ring-width) solid var(--dim-drawer-ring);
             outline-offset: 2px;
         }
     }
-}
-
-// ---- The dark half ------------------------------------------------------------------------------------
-// The surfaces and inks follow Bootstrap's dark tokens through the family tokens already. The current
-// row's mark is the brand fill, which a navy brand turns into a line nobody sees on a dark surface: it
-// takes the highlight blue instead.
-:root[data-bs-theme="dark"] .dimensions-drawer {
-    --dim-drawer-mark: var(--dim-ds-accent-highlight);
 }

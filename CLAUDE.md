@@ -536,6 +536,14 @@ already shaped decisions here:
   `#theme_boost-drawers-primary.show`, where the backdrop (appended later to the body) paints over it. The header
   band is an element of the drawer template carrying `navbarcolorclasses` and the class `.navbar`, so every rule
   that paints the navbar paints it; its Bootstrap box properties are put back in `post.scss`.
+- **The primary drawer's width is the theme's `$dimensions-drawer-width` (20rem, `post.scss`), never core's
+  `$drawer-left-width`**, which also places the course index's docked geometry from lg up. Set below md on
+  `#theme_boost-drawers-primary.drawer-primary.drawer-left` (`max-width: 85vw`), and read by the compact navbar's copy
+  of the geometry (`compactnav.scss`): change both together (`post_scss_test::test_the_navigation_drawer_is_the_side_layers_width`).
+- **Escape at the drawer's root closes it through Boost's own instance** (`Drawers.getDrawerInstanceForNode(drawer)
+  .closeDrawer()`, `drawer.js` `closeOnEscape()`, listening on Boost's primary drawer so the header's close button is
+  covered): its backdrop, events and focus return stay Boost's. Boost's drawers module listens for no key, and holds no
+  focus trap; the theme adds none to Boost's drawer without the owner.
 - **The brand on a phone is an edit of the rendered layout.** Boost Union's navbar partial writes
   `navbar-brand d-none d-md-flex`, and `d-none` is `!important`, which this theme's stylesheet may not outrank;
   `core_renderer::brand_on_phones()` replaces that class list once in the output of `HINT_LAYOUTS`
@@ -655,7 +663,7 @@ rests on:
   `theme_dimensions_choose_flavour` and reloads. Both go through `flavourchoice::choose()`, which re-checks the list,
   so a stale menu or a hand-made request cannot store a flavour that is not offered. The user menu's submenu items
   print `{{{text}}}` and `{{{url}}}` (Boost Union's `core/user_action_menu_submenu_items`), so the renderer hands them
-  the ESCAPED title and a `moodle_url`; the drawer's panel prints `{{text}}` and gets the PLAIN one.
+  the ESCAPED title and a `moodle_url`; the profile layer's sub-view prints `{{label}}` and gets the PLAIN one.
 - **Somebody logged in as another user gets no look.** `menu()` answers null and `choose()` refuses, because the
   choice and the look cohort it moves are that person's; the prime still applies the person's own look.
 - **A page another theme draws drops what this theme primed** (`flavourchoice::unprime()`, from `prime()`): Boost
@@ -799,9 +807,9 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   re-appends it last; any other item at those addresses is a row), the language submenu (found by core's
   `languageselector` title: its id is a `uniqid()`, so there is no stabler mark) and the Look are "Display",
   everything else with an address is "My area" in core's order. A new kind of core item gets its place in `profilelayer::sort()` by its address.
-- **Colour mode, Look and Language come from `drawernav`'s builders** (`appearance()`, `look_from()`, `language()`):
-  the drawer keeps its own copies until stage S4, which moves the builders here; until then a change to one of them
-  changes both surfaces.
+- **Colour mode, Look and Language are the layer's own builders** (`appearance()`, `look()`, `language()`), and
+  nowhere else: the navigation drawer holds nothing about the person (D72; `drawernav::context()` answers `rootid`,
+  `sections` and `panels` alone, `drawernav_test::test_the_drawer_holds_nothing_about_the_person`).
 - **"Edit profile" is a copy of core's rule for the profile page's `editprofile` node** (`lib/myprofilelib.php`),
   asked for one's own record on the site profile, with the own-profile capability asked first so the common case
   reads no user context. `profilelayer_test::test_edit_profile_follows_cores_profile_page` builds core's tree beside
@@ -831,7 +839,8 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   back) on any `theme_boost/drawers:show`. The backdrop (z 1050) covers the navbar (1030), so the hamburger cannot be
   pressed while the layer is open. `readingbar.js` holds the navbar while an element of the nav is
   `aria-expanded="true"`, which the user button is while the layer is open. Escape is listened for on the layer alone
-  and stopped there; `drawer.js` listens on its own root, Bootstrap's dropdown on its toggles. The focus is held with
+  and stopped there; `drawer.js` listens on its own root (a sub-panel's Escape, stopped there) and on Boost's primary
+  drawer (Escape at the root closes it), Bootstrap's dropdown on its toggles. The focus is held with
   `core/local/aria/focuslock`, released BEFORE it is given back (`close()`), or focuslock pulls it in again.
 - **Escape closes a sub-view first, then the layer; the focus returns to the row, then to the user button** (gates
   `js_profilelayer_escape_order`, `js_profilelayer_subview_focus_return`, `js_profilelayer_focus_return`). The dialog's
@@ -840,7 +849,7 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   control; core's `applyMode()` marks `aria-checked` and `.active` on every `[data-region="colourmode-menu"]` of the
   page, the layer's included. The module then writes `dimensions-profilelayer-modes` on the body, by which
   `scss/post.scss` hides the navbar's own colour mode menu at every width (gates `colourmode_layer_twin`,
-  `js_profilelayer_twin_class_guarded`). The drawer's clauses of that rule (`.dimensions-drawer-modes`) stay until S4.
+  `js_profilelayer_twin_class_guarded`). It is the twin rule's only clause: the drawer carries no colour mode control.
 - **Look is `flavourchoice.js`'s**, delegated from the document on `data-dimensions-flavour`; the layer's click
   handler must never `preventDefault()` a Look option. The checked option (`aria-checked="true"`) does nothing, as
   the user menu's `aria-current` one (gate `js_flavourchoice_checked_current`).
@@ -861,9 +870,6 @@ it, `scss/profilelayer.scss` styles it and `amd/src/profilelayer.js` opens it. T
   a URL and is unaffected; `"..." should exist in the user menu` reads the dropdown's markup, which stays. A step that
   presses `#user-menu-toggle` and then reads `#user-action-menu`, or `I should see "..." user submenu`, needs the
   layer off (`theme_dimensions_servicename.feature` does so) or the layer's own selectors.
-- **S4 still has to** remove the drawer's appearance switch, Look and Language (plan section 5), and with them the
-  `.dimensions-drawer-modes` clauses of the twin rule; then `colourmode_phone_twin` goes with them and
-  `colourmode_layer_twin` is the only one. Touch nothing of the drawer's template, module or sheet before that.
 - **Every selector of `scss/profilelayer.scss` starts with one of the layer's own classes** and every colour reads a
   `--dim-layer-*` token declared on `.dimensions-layer` over a family token (`profilelayer_scss_test`); the family's
   dark half is the layer's dark mode. A view is `display: flex` and `hidden` at once: Bootstrap's reboot keeps
